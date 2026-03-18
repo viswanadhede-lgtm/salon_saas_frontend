@@ -1,0 +1,315 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Select a subscription plan for BharathBots Salon management software.">
+    <title>Choose your plan - BharathBots</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="styles.css">
+    <link rel="stylesheet" href="plans.css">
+    <style>
+        .current-plan-badge {
+            display: inline-block;
+            background: #10b981;
+            color: #fff;
+            font-size: 0.7rem;
+            font-weight: 700;
+            letter-spacing: 0.06em;
+            text-transform: uppercase;
+            padding: 3px 10px;
+            border-radius: 20px;
+            margin-bottom: 10px;
+        }
+        .plan-card.is-current-plan {
+            outline: 2px solid #10b981;
+            outline-offset: 2px;
+        }
+        .btn-current-plan {
+            background: #d1fae5 !important;
+            color: #065f46 !important;
+            border: 1.5px solid #10b981 !important;
+            cursor: default !important;
+            font-weight: 700;
+            pointer-events: none;
+        }
+    </style>
+</head>
+<body class="plans-page">
+    <div class="plans-container">
+        <!-- Header -->
+        <div class="plans-header">
+            <div class="logo">
+                <svg width="32" height="32" viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <rect x="2" y="6" width="28" height="20" rx="4" stroke="currentColor" stroke-width="2"/>
+                    <path d="M8 12C8 12 11 16 16 16C21 16 24 12 24 12" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+                    <circle cx="16" cy="16" r="2" fill="currentColor"/>
+                </svg>
+                <span>BharathBots</span>
+            </div>
+            <h1>Choose your plan</h1>
+            <p>Start with a plan that fits your salon. You can upgrade anytime.</p>
+
+            <!-- Billing Toggle -->
+            <div style="margin-top: 1.75rem; display: flex; flex-direction: column; align-items: center; gap: 0.75rem;">
+                <div style="display: inline-flex; align-items: center; background: #f1f5f9; border-radius: 9999px; padding: 4px; gap: 4px;">
+                    <button id="toggleMonthly" onclick="setBilling('monthly')" style="padding: 0.45rem 1.25rem; border-radius: 9999px; border: none; font-size: 0.9rem; font-weight: 600; cursor: pointer; background: var(--primary); color: white; transition: all 0.2s;">Monthly</button>
+                    <button id="toggleAnnual" onclick="setBilling('annual')" style="padding: 0.45rem 1.25rem; border-radius: 9999px; border: none; font-size: 0.9rem; font-weight: 600; cursor: pointer; background: transparent; color: var(--text-muted); transition: all 0.2s;">Annual <span style="margin-left: 4px; background: #fef3c7; color: #92400e; font-size: 0.75rem; padding: 2px 8px; border-radius: 9999px;">Save ~17%</span></button>
+                </div>
+                <div style="display: inline-flex; align-items: center; background: #ecfdf5; color: #047857; padding: 0.5rem 1.1rem; border-radius: 9999px; font-weight: 600; font-size: 0.9rem; border: 1px solid #10b981;">
+                    ✨ 7-Day Free Trial on any plan &mdash; no credit card required!
+                </div>
+            </div>
+        </div>
+
+        <!-- Plans Grid -->
+        <div class="plans-grid">
+            <!-- Basic Plan -->
+            <div class="plan-card">
+                <div class="plan-card-header">
+                    <h3>Basic</h3>
+                    <p style="font-size: 0.85rem; color: var(--text-muted); margin-top: 4px; margin-bottom: 20px;">Best for small salons starting digital operations</p>
+                    <div class="price">
+                        <span class="currency">₹</span>
+                        <span class="amount" data-monthly="1,999" data-annual="19,999">1,999</span>
+                        <span class="period" data-monthly="/ month" data-annual="/ year">/ month</span>
+                    </div>
+                </div>
+                
+                <div class="plan-features">
+                    <ul>
+                        <li><svg class="check-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>1 Branch</li>
+                        <li><svg class="check-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>Up to 5 staff accounts</li>
+                        <li><svg class="check-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>Bookings management</li>
+                        <li><svg class="check-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>Customers CRM</li>
+                        <li><svg class="check-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>Services management</li>
+                        <li><svg class="check-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>Basic dashboard analytics</li>
+                        <li><svg class="check-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>Basic reports</li>
+                        <li><svg class="check-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>Payment tracking</li>
+                        <li><svg class="check-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>Staff schedule view</li>
+                        <li><svg class="check-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>Owner + Staff roles only</li>
+                        <li><svg class="check-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>Email support</li>
+                        <li style="color: #94a3b8; text-decoration: line-through;"><svg class="check-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="stroke: #cbd5e1;"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>POS system</li>
+                        <li style="color: #94a3b8; text-decoration: line-through;"><svg class="check-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="stroke: #cbd5e1;"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>Marketing tools</li>
+                        <li style="color: #94a3b8; text-decoration: line-through;"><svg class="check-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="stroke: #cbd5e1;"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>Advanced analytics</li>
+                        <li style="color: #94a3b8; text-decoration: line-through;"><svg class="check-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="stroke: #cbd5e1;"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>Multi-branch</li>
+                    </ul>
+                </div>
+                
+                <button class="btn-primary btn-plan" data-plan="basic">Start Basic 7-Day Trial</button>
+            </div>
+
+            <!-- Advance Plan -->
+            <div class="plan-card plan-featured">
+                <div class="popular-badge">Most Popular</div>
+                <div class="plan-card-header">
+                    <h3>Advance</h3>
+                    <p style="font-size: 0.85rem; color: var(--text-muted); margin-top: 4px; margin-bottom: 20px;">For busy, multi-stylist salons</p>
+                    <div class="price">
+                        <span class="currency">₹</span>
+                        <span class="amount" data-monthly="4,999" data-annual="49,999">4,999</span>
+                        <span class="period" data-monthly="/ month" data-annual="/ year">/ month</span>
+                    </div>
+                </div>
+                
+                <div class="plan-features">
+                    <div class="feature-subtitle">Everything in Basic, plus:</div>
+                    <ul>
+                        <li><svg class="check-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>Up to 3 branches</li>
+                        <li><svg class="check-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>Up to 12 staff accounts</li>
+                        <li><svg class="check-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>POS system</li>
+                        <li><svg class="check-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>Product sales</li>
+                        <li><svg class="check-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>Sales history</li>
+                        <li><svg class="check-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>Advanced reports</li>
+                        <li><svg class="check-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>Offers & coupons</li>
+                        <li><svg class="check-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>Appointment reminders</li>
+                        <li><svg class="check-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>Customer search intelligence</li>
+                        <li><svg class="check-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>Roles & permissions system</li>
+                        <li><svg class="check-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>Marketing campaigns</li>
+                    </ul>
+                </div>
+                
+                <button class="btn-primary btn-plan featured-btn" data-plan="advance">Start Advance 7-Day Trial</button>
+            </div>
+
+            <!-- Pro Plan -->
+            <div class="plan-card">
+                <div class="plan-card-header">
+                    <h3>Pro</h3>
+                    <p style="font-size: 0.85rem; color: var(--text-muted); margin-top: 4px; margin-bottom: 20px;">Best for multi-branch chains</p>
+                    <div class="price">
+                        <span class="currency">₹</span>
+                        <span class="amount" data-monthly="9,999" data-annual="99,999">9,999</span>
+                        <span class="period" data-monthly="/ month" data-annual="/ year">/ month</span>
+                    </div>
+                </div>
+                
+                <div class="plan-features">
+                    <div class="feature-subtitle">Everything in Advance, plus:</div>
+                    <ul>
+                        <li><svg class="check-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>Up to 10 branches</li>
+                        <li><svg class="check-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>Unlimited staff</li>
+                        <li><svg class="check-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>Membership programs</li>
+                        <li><svg class="check-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>Online booking page</li>
+                        <li><svg class="check-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>Ad campaign tools</li>
+                        <li><svg class="check-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>Deep analytics dashboard</li>
+                        <li><svg class="check-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>Branch performance comparison</li>
+                        <li><svg class="check-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>Custom fields</li>
+                        <li><svg class="check-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>Advanced permissions</li>
+                        <li><svg class="check-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>Priority support</li>
+                    </ul>
+                </div>
+                
+                <button class="btn-primary btn-plan" data-plan="pro">Start Pro 7-Day Trial</button>
+            </div>
+
+            <!-- Enterprise Plan -->
+            <div class="plan-card">
+                <div class="plan-card-header">
+                    <h3>Enterprise</h3>
+                    <p style="font-size: 0.85rem; color: var(--text-muted); margin-top: 4px; margin-bottom: 20px;">For large franchise networks</p>
+                    <div class="price" id="enterprisePriceBlock">
+                        <span class="currency" id="enterpriseCurrency">₹</span>
+                        <span class="amount" id="enterpriseAmount">19,999+</span>
+                        <span class="period" id="enterprisePeriod">/ month</span>
+                    </div>
+                </div>
+                
+                <div class="plan-features">
+                    <div class="feature-subtitle">Everything in Pro, plus:</div>
+                    <ul>
+                        <li><svg class="check-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>Unlimited branches</li>
+                        <li><svg class="check-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>AI receptionist</li>
+                        <li><svg class="check-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>WhatsApp booking automation</li>
+                        <li><svg class="check-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>Custom integrations</li>
+                        <li><svg class="check-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>Dedicated support & SLA</li>
+                        <li><svg class="check-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>Custom analytics</li>
+                        <li><svg class="check-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>White label options</li>
+                    </ul>
+                </div>
+                
+                <button class="btn-primary btn-plan" data-plan="enterprise">Contact Sales</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Scripts -->
+    <script>
+        let currentBilling = 'monthly';
+
+        function setBilling(mode) {
+            currentBilling = mode;
+
+            // Update toggle button styles
+            const monthlyBtn = document.getElementById('toggleMonthly');
+            const annualBtn  = document.getElementById('toggleAnnual');
+            const primary = getComputedStyle(document.documentElement).getPropertyValue('--primary').trim() || '#6366f1';
+
+            if (mode === 'annual') {
+                annualBtn.style.background  = primary;
+                annualBtn.style.color       = 'white';
+                monthlyBtn.style.background = 'transparent';
+                monthlyBtn.style.color      = '#64748b';
+            } else {
+                monthlyBtn.style.background = primary;
+                monthlyBtn.style.color      = 'white';
+                annualBtn.style.background  = 'transparent';
+                annualBtn.style.color       = '#64748b';
+            }
+
+            // Update standard plan prices via data-attributes
+            document.querySelectorAll('.amount[data-monthly]').forEach(el => {
+                el.textContent = el.getAttribute('data-' + mode);
+            });
+            document.querySelectorAll('.period[data-monthly]').forEach(el => {
+                el.textContent = el.getAttribute('data-' + mode);
+            });
+
+            // Update Enterprise card separately
+            const entCurrency = document.getElementById('enterpriseCurrency');
+            const entAmount   = document.getElementById('enterpriseAmount');
+            const entPeriod   = document.getElementById('enterprisePeriod');
+            if (mode === 'annual') {
+                entCurrency.style.display = 'none';
+                entAmount.textContent     = 'Contact Sales';
+                entPeriod.textContent     = 'for annual pricing';
+                entAmount.style.fontSize  = '1.8rem';
+            } else {
+                entCurrency.style.display = '';
+                entAmount.textContent     = '19,999+';
+                entPeriod.textContent     = '/ month';
+                entAmount.style.fontSize  = '';
+            }
+        }
+
+        document.addEventListener('DOMContentLoaded', () => {
+            // Highlight current plan if coming from billing page
+            const params = new URLSearchParams(window.location.search);
+            const currentPlan = params.get('current');
+            if (currentPlan) {
+                const currentCard = document.querySelector(`.plan-card [data-plan="${currentPlan}"]`)?.closest('.plan-card');
+                if (currentCard) {
+                    currentCard.classList.add('is-current-plan');
+                    // Insert badge at the top of the card
+                    const badge = document.createElement('div');
+                    badge.className = 'current-plan-badge';
+                    badge.textContent = '✓ Current Plan';
+                    currentCard.insertBefore(badge, currentCard.firstChild);
+                    // Update the button
+                    const btn = currentCard.querySelector('.btn-plan');
+                    if (btn) {
+                        btn.textContent = 'Current Plan';
+                        btn.classList.add('btn-current-plan');
+                        btn.disabled = true;
+                    }
+                }
+            }
+
+            // Check auth state (safeguard)
+            const token = localStorage.getItem('auth_token');
+            if (token) {
+                console.log("Authenticated User Token:", token);
+                // All future API calls would look roughly like this:
+                /*
+                fetch('https://api.bharathbots.com/v1/plans', {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                })
+                */
+            } else {
+                console.warn("No auth token found, user might not be logged in properly.");
+            }
+
+            // Plan Selection Logic
+            const planButtons = document.querySelectorAll('.btn-plan');
+            
+            planButtons.forEach(btn => {
+                btn.addEventListener('click', (e) => {
+                    const selectedPlan = e.target.getAttribute('data-plan');
+                    const originalText = e.target.textContent;
+                    
+                    // Small visual feedback loop
+                    e.target.textContent = 'Selecting...';
+                    e.target.style.opacity = '0.8';
+                    
+                    // In a real scenario we might do an API call here to save it to DB
+                    setTimeout(() => {
+                        // Store in local storage
+                        localStorage.setItem('selected_plan', selectedPlan);
+                        e.target.textContent = 'Selected!';
+                        e.target.style.backgroundColor = '#10b981'; // Success green
+                        
+                        setTimeout(() => {
+                            // Redirect to onboarding page (to create salon and branch)
+                            window.location.href = 'onboarding.html';
+                        }, 800);
+                        
+                    }, 600);
+                });
+            });
+        });
+    </script>
+</body>
+</html>
+

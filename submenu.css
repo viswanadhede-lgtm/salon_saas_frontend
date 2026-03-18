@@ -1,0 +1,125 @@
+/* Added to dashboard.css for submenu support */
+
+/* Submenu Styles */
+.has-submenu {
+    position: relative;
+    cursor: pointer; /* Ensures the parent div area is clickable */
+}
+
+.submenu-toggle {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    width: 100%;
+}
+
+/* This overrides the standard .nav-link display to space-between 
+   only when the arrow is present */
+.nav-link.submenu-toggle {
+    padding-right: 0.5rem; /* less padding for the arrow */
+}
+
+/* Better approach: wrap the left side contents so space-between works purely on [icon+text] and [arrow] */
+.nav-link.submenu-toggle {
+    display: grid;
+    grid-template-columns: auto 1fr auto;
+    align-items: center;
+    gap: 0.75rem;
+}
+
+.submenu-arrow {
+    width: 16px;
+    height: 16px;
+    transition: transform 0.2s ease;
+    color: var(--text-muted);
+}
+
+/* Rotate arrow when open */
+.nav-item.submenu-open .submenu-arrow {
+    transform: rotate(180deg);
+}
+
+/* The actual dropdown menu */
+.submenu {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+    margin-left: 2.25rem; /* Indent underneath the icon */
+    position: relative;
+    
+    /* Animation states */
+    max-height: 0;
+    overflow: hidden;
+    transition: max-height 0.3s ease-out, opacity 0.2s ease-out;
+    opacity: 0;
+    visibility: hidden;
+}
+
+.nav-item.submenu-open .submenu {
+    max-height: 300px; /* Arbitrary max height large enough to hold items */
+    opacity: 1;
+    visibility: visible;
+    margin-top: 0.25rem;
+    margin-bottom: 0.5rem;
+}
+
+/* Optional: Add a subtle connecting line */
+.submenu::before {
+    content: '';
+    position: absolute;
+    left: -0.85rem;
+    top: 0;
+    bottom: 0.5rem;
+    width: 1px;
+    background-color: var(--border);
+}
+
+.submenu-link {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    padding: 0.5rem 0.5rem;
+    border-radius: 0.375rem;
+    color: var(--text-muted);
+    font-size: 0.85rem;
+    font-weight: 500;
+    text-decoration: none;
+    transition: all 0.2s ease;
+}
+
+.submenu-link:hover {
+    color: var(--text-main);
+    background-color: transparent;
+}
+
+.submenu-link:hover .submenu-bullet {
+    color: var(--accent);
+    transform: scale(1.2);
+}
+
+.submenu-bullet {
+    font-size: 1rem;
+    line-height: 1;
+    color: #cbd5e1;
+    transition: color 0.2s ease, transform 0.2s ease;
+}
+
+/* Handle Collapsed Sidebar State */
+.sidebar.collapsed .submenu-arrow {
+    display: none;
+}
+
+.sidebar.collapsed .submenu {
+    display: none !important; /* Force hide in collapsed mode for now */
+}
+
+/* Make sure active state works on submenu toggle */
+.nav-item.submenu-open .submenu-toggle {
+    background-color: transparent;
+}
+
+/* For grid fix when collapsed */
+.sidebar.collapsed .nav-link.submenu-toggle {
+    display: flex;
+    justify-content: center;
+}

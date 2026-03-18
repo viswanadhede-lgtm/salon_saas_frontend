@@ -1,0 +1,1818 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Dashboard for BharathBots Salon SaaS.">
+    <title>Dashboard - BharathBots</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="styles.css">
+    <link rel="stylesheet" href="dashboard.css">
+    <link rel="stylesheet" href="submenu.css">
+    <!-- Feather Icons for a clean SaaS look -->
+    <script src="https://unpkg.com/feather-icons"></script>
+    <style>
+        .offers-filter-chk,
+        .offers-filter-radio {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 5px 0;
+            font-size: 0.88rem;
+            color: #334155;
+            cursor: pointer;
+            user-select: none;
+        }
+        .offers-filter-chk input[type="checkbox"],
+        .offers-filter-radio input[type="radio"] {
+            width: 15px;
+            height: 15px;
+            flex-shrink: 0;
+            accent-color: #6366f1;
+            cursor: pointer;
+        }
+        #btnFilterOffers:hover {
+            background: #f1f5f9;
+        }
+        #btnOffersFilterApply:hover {
+            background: #4f46e5;
+        }
+        #btnOffersFilterReset:hover {
+            background: #f8fafc;
+        }
+    </style>
+</head>
+
+<body class="dashboard-body" style="min-height: calc(100vh / 0.93);">
+
+    <!-- Collapsible Sidebar -->
+    <aside class="sidebar" id="sidebar">
+        <div class="sidebar-header">
+            <div class="logo">
+                <svg width="24" height="24" viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <rect x="2" y="6" width="28" height="20" rx="4" stroke="currentColor" stroke-width="2" />
+                    <path d="M8 12C8 12 11 16 16 16C21 16 24 12 24 12" stroke="currentColor" stroke-width="2"
+                        stroke-linecap="round" />
+                    <circle cx="16" cy="16" r="2" fill="currentColor" />
+                </svg>
+                <span class="logo-text">BharathBots</span>
+            </div>
+            <button class="toggle-btn" id="sidebarToggle" title="Close sidebar">
+                <i data-feather="sidebar" class="toggle-icon"></i>
+            </button>
+        </div>
+
+        <nav class="sidebar-nav">
+            <ul class="nav-list">
+                <!-- Dashboard -->
+                <li class="nav-item" title="Dashboard">
+                    <a href="dashboard.html" class="nav-link">
+                        <i data-feather="home" class="nav-icon"></i>
+                        <span class="nav-text">Dashboard</span>
+                    </a>
+                </li>
+
+                <!-- Bookings -->
+                <li class="nav-item" title="Bookings">
+                    <a href="bookings.html" class="nav-link">
+                        <i data-feather="calendar" class="nav-icon"></i>
+                        <span class="nav-text">Bookings</span>
+                    </a>
+                </li>
+
+                <!-- Customers -->
+                <li class="nav-item" title="Customers">
+                    <a href="customers.html" class="nav-link">
+                        <i data-feather="users" class="nav-icon"></i>
+                        <span class="nav-text">Customers</span>
+                    </a>
+                </li>
+
+                <!-- Staff -->
+                <li class="nav-item" title="Staff">
+                    <a href="staff.html" class="nav-link">
+                        <i data-feather="user-check" class="nav-icon"></i>
+                        <span class="nav-text">Staff</span>
+                    </a>
+                </li>
+
+                <!-- Services -->
+                <li class="nav-item" title="Services">
+                    <a href="services.html" class="nav-link">
+                        <i data-feather="scissors" class="nav-icon"></i>
+                        <span class="nav-text">Services</span>
+                    </a>
+                </li>
+
+                <!-- Sales -->
+                <li class="nav-item has-submenu" title="Sales">
+                    <div class="nav-link submenu-toggle">
+                        <i data-feather="dollar-sign" class="nav-icon"></i>
+                        <span class="nav-text">Sales</span>
+                        <i data-feather="chevron-down" class="submenu-arrow"></i>
+                    </div>
+                    <ul class="submenu">
+                        <li><a href="pos.html" class="submenu-link"><span class="submenu-bullet">&bull;</span><span
+                                    class="nav-text">Point of Sale</span></a></li>
+                        <li><a href="products.html" class="submenu-link"><span class="submenu-bullet">&bull;</span><span
+                                    class="nav-text">Products</span></a></li>
+                        <li><a href="sales-history.html" class="submenu-link"><span
+                                    class="submenu-bullet">&bull;</span><span class="nav-text">Sales History</span></a>
+                        </li>
+                    </ul>
+                </li>
+
+                <!-- Payments -->
+                <li class="nav-item has-submenu" title="Payments">
+                    <div class="nav-link submenu-toggle">
+                        <i data-feather="credit-card" class="nav-icon"></i>
+                        <span class="nav-text">Payments</span>
+                        <i data-feather="chevron-down" class="submenu-arrow"></i>
+                    </div>
+                    <ul class="submenu">
+                        <li><a href="pending-payments.html" class="submenu-link"><span
+                                    class="submenu-bullet">&bull;</span><span class="nav-text">Pending
+                                    Payments</span></a></li>
+                        <li><a href="payments-history.html" class="submenu-link"><span
+                                    class="submenu-bullet">&bull;</span><span class="nav-text">Payments
+                                    History</span></a></li>
+                    </ul>
+                </li>
+
+                <!-- Marketing -->
+                <li class="nav-item has-submenu active" title="Marketing">
+                    <div class="nav-link submenu-toggle">
+                        <i data-feather="gift" class="nav-icon"></i>
+                        <span class="nav-text">Marketing</span>
+                        <i data-feather="chevron-down" class="submenu-arrow"></i>
+                    </div>
+                    <ul class="submenu">
+                        <li><a href="offers.html" class="submenu-link active"><span
+                                    class="submenu-bullet">&bull;</span><span class="nav-text">Offers</span></a></li>
+                        <li><a href="coupons.html" class="submenu-link"><span class="submenu-bullet">&bull;</span><span
+                                    class="nav-text">Coupons</span></a></li>
+                        <li><a href="memberships.html" class="submenu-link"><span
+                                    class="submenu-bullet">&bull;</span><span class="nav-text">Memberships</span></a>
+                        </li>
+                        <li><a href="ad-campaigns.html" class="submenu-link"><span
+                                    class="submenu-bullet">&bull;</span><span class="nav-text">Ad Campaigns</span></a>
+                        </li>
+                    </ul>
+                </li>
+
+                <!-- Analytics -->
+                <li class="nav-item has-submenu" title="Analytics">
+                    <div class="nav-link submenu-toggle">
+                        <i data-feather="bar-chart-2" class="nav-icon"></i>
+                        <span class="nav-text">Analytics</span>
+                        <i data-feather="chevron-down" class="submenu-arrow"></i>
+                    </div>
+                    <ul class="submenu">
+                        <li><a href="overview.html" class="submenu-link"><span class="submenu-bullet">&bull;</span><span
+                                    class="nav-text">Overview</span></a></li>
+                        <li><a href="reports.html" class="submenu-link"><span class="submenu-bullet">&bull;</span><span
+                                    class="nav-text">Reports</span></a></li>
+                    </ul>
+                </li>
+
+                <!-- Settings -->
+                <li class="nav-item has-submenu" title="Settings">
+                    <div class="nav-link submenu-toggle">
+                        <i data-feather="settings" class="nav-icon"></i>
+                        <span class="nav-text">Settings</span>
+                        <i data-feather="chevron-down" class="submenu-arrow"></i>
+                    </div>
+                    <ul class="submenu">
+                        <li><a href="company.html" class="submenu-link"><span class="submenu-bullet">&bull;</span><span
+                                    class="nav-text">Company</span></a></li>
+                        <li><a href="branches.html" class="submenu-link"><span class="submenu-bullet">&bull;</span><span
+                                    class="nav-text">Branches</span></a></li>
+                        <li><a href="users.html" class="submenu-link"><span class="submenu-bullet">&bull;</span><span
+                                    class="nav-text">Users</span></a></li>
+                        <li><a href="roles-permissions.html" class="submenu-link"><span
+                                    class="submenu-bullet">&bull;</span><span class="nav-text">Roles &
+                                    Permissions</span></a></li>
+                        <li><a href="custom-fields.html" class="submenu-link"><span
+                                    class="submenu-bullet">&bull;</span><span class="nav-text">Custom Fields</span></a>
+                        </li>
+                        <li><a href="billing-subscription.html" class="submenu-link"><span
+                                    class="submenu-bullet">&bull;</span><span class="nav-text">Billing & Subscription</span></a>
+                        </li>
+                    </ul>
+                </li>
+            </ul>
+        </nav>
+
+    </aside>
+
+    <!-- Main Content Wrapper -->
+    <div class="main-wrapper" id="mainWrapper">
+
+        <!-- Top Header Bar -->
+        <header class="top-header">
+            <div class="header-left">
+                <!-- Branch Switcher -->
+                <div class="branch-switcher">
+                    <i data-feather="map-pin" class="branch-icon"></i>
+                    <select id="branchSelect" class="branch-select">
+                        <option value="branch_1">Downtown Branch</option>
+                        <option value="branch_2">Uptown Spa</option>
+                    </select>
+                </div>
+            </div>
+
+            <div class="header-center">
+                <div class="search-bar">
+                    <i data-feather="search" class="search-icon"></i>
+                    <input type="text" placeholder="Search bookings, customers..." class="search-input">
+                </div>
+            </div>
+
+            <div class="header-right">
+                <!-- Quick Actions -->
+                <div class="quick-actions">
+                    <button class="qa-btn qa-primary" id="btnNewBooking">
+                        <i data-feather="calendar" class="qa-icon"></i>
+                        <span>New Booking</span>
+                    </button>
+                </div>
+                <div class="header-divider"></div>
+                <div class="plan-badge" id="headerPlanBadge">Growth</div>
+                <button class="icon-btn" title="Notifications">
+                    <i data-feather="bell"></i>
+                    <span class="notification-dot"></span>
+                </button>
+                <div class="user-profile" id="userProfileDropdown">
+                    <div class="avatar" id="avatarBtn">
+                        <img src="https://ui-avatars.com/api/?name=Admin+User&background=1E3A8A&color=fff" alt="User">
+                    </div>
+
+                    <!-- Profile Dropdown Menu -->
+                    <div class="profile-dropdown" id="profileMenu">
+                        <div class="dropdown-header">
+                            <p class="dropdown-name">Admin User</p>
+                            <p class="dropdown-role">Owner</p>
+                        </div>
+                        <div class="dropdown-divider"></div>
+                        <ul class="dropdown-list">
+                            <li>
+                                <a href="#" class="dropdown-item">
+                                    <i data-feather="user"></i>
+                                    <span>Profile</span>
+                                </a>
+                            </li>
+                            <li>
+                                <a href="#" class="dropdown-item">
+                                    <i data-feather="calendar"></i>
+                                    <span>Schedule</span>
+                                </a>
+                            </li>
+                            <li>
+                                <a href="#" class="dropdown-item">
+                                    <i data-feather="settings"></i>
+                                    <span>Settings</span>
+                                </a>
+                            </li>
+                            <li>
+                                <a href="#" class="dropdown-item">
+                                    <i data-feather="help-circle"></i>
+                                    <span>Support</span>
+                                </a>
+                            </li>
+                            <li>
+                                <a href="#" class="dropdown-item text-danger">
+                                    <i data-feather="log-out"></i>
+                                    <span>Logout</span>
+                                </a>
+                            </li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </header>
+
+        <!-- Profile Dropdown Backdrop -->
+        <div id="profileBackdrop" class="profile-backdrop"></div>
+
+        <!-- Page Content -->
+        <main class="content-area" style="padding:0; display: flex; flex-direction: column;">
+
+            <!-- Page Header -->
+            <div
+                style="display:flex; align-items:center; justify-content:space-between; padding:18px 32px 14px; background:#fff; border-bottom:1px solid #e2e8f0;">
+                <div>
+                    <h1 style="font-size:1.45rem; font-weight:700; color:#1e293b; margin:0;">Offers</h1>
+                    <p style="font-size:0.92rem; color:#64748b; margin:2px 0 0;">Manage promotional discounts for
+                        services</p>
+                </div>
+                <div style="display:flex; align-items:center; gap:10px;">
+                    <div
+                        style="background:#fff; border:1px solid #e2e8f0; border-radius:8px; padding:0 12px; display:flex; align-items:center; width:240px; height:40px;">
+                        <i data-feather="search" style="color:#94a3b8; width:16px; height:16px; flex-shrink:0;"></i>
+                        <input type="text" placeholder="Search offers..."
+                            style="border:none; background:transparent; padding:8px; font-size:0.85rem; outline:none; width:100%;">
+                    </div>
+                    <!-- Filter Dropdown Container -->
+                    <div id="offersFilterContainer" style="position:relative;">
+                        <button id="btnFilterOffers" class="btn btn-secondary"
+                            style="height:40px; display:flex; align-items:center; gap:6px; padding:0 14px;">
+                            <i data-feather="filter" style="width:15px; height:15px;"></i> Filter
+                        </button>
+                        <!-- Filter Panel -->
+                        <div id="offersFilterPanel" style="
+                            display:none;
+                            position:absolute;
+                            top:calc(100% + 8px);
+                            right:0;
+                            width:460px;
+                            background:#fff;
+                            border:1px solid #e2e8f0;
+                            border-radius:12px;
+                            box-shadow:0 8px 24px rgba(0,0,0,0.12);
+                            z-index:200;
+                            overflow:hidden;
+                        ">
+                            <!-- Header -->
+                            <div style="padding:14px 18px 12px; border-bottom:1px solid #e2e8f0; display:flex; align-items:center; justify-content:space-between;">
+                                <span style="font-weight:700; color:#1e293b; font-size:0.95rem;">Filter Offers</span>
+                                <button id="btnCloseOffersFilter" style="background:none;border:none;cursor:pointer;color:#94a3b8;padding:2px;">
+                                    <i data-feather="x" style="width:16px;height:16px;"></i>
+                                </button>
+                            </div>
+
+                            <!-- Body: 2-column grid -->
+                            <div style="display:grid; grid-template-columns:1fr 1fr; gap:0; padding:0;">
+
+                                <!-- Left Column -->
+                                <div style="padding:16px 18px; border-right:1px solid #f1f5f9;">
+
+                                    <!-- Status -->
+                                    <div style="margin-bottom:18px;">
+                                        <p style="font-size:0.75rem; font-weight:700; color:#64748b; text-transform:uppercase; letter-spacing:0.06em; margin:0 0 8px;">Status</p>
+                                        <label class="offers-filter-chk"><input type="checkbox" value="active"> Active</label>
+                                        <label class="offers-filter-chk"><input type="checkbox" value="scheduled"> Scheduled</label>
+                                        <label class="offers-filter-chk"><input type="checkbox" value="expired"> Expired</label>
+                                        <label class="offers-filter-chk"><input type="checkbox" value="inactive"> Inactive</label>
+                                    </div>
+
+                                    <!-- Discount Type -->
+                                    <div>
+                                        <p style="font-size:0.75rem; font-weight:700; color:#64748b; text-transform:uppercase; letter-spacing:0.06em; margin:0 0 8px;">Discount Type</p>
+                                        <label class="offers-filter-chk"><input type="checkbox" value="percentage"> Percentage</label>
+                                        <label class="offers-filter-chk"><input type="checkbox" value="flat"> Flat Amount</label>
+                                    </div>
+
+                                </div>
+
+                                <!-- Right Column -->
+                                <div style="padding:16px 18px;">
+
+                                    <!-- Applicable Service -->
+                                    <div style="margin-bottom:18px;">
+                                        <p style="font-size:0.75rem; font-weight:700; color:#64748b; text-transform:uppercase; letter-spacing:0.06em; margin:0 0 8px;">Applicable Service</p>
+                                        <label class="offers-filter-chk"><input type="checkbox" value="all"> All Services</label>
+                                        <label class="offers-filter-chk"><input type="checkbox" value="haircut"> Haircut</label>
+                                        <label class="offers-filter-chk"><input type="checkbox" value="facial"> Facial</label>
+                                        <label class="offers-filter-chk"><input type="checkbox" value="massage"> Massage</label>
+                                        <label class="offers-filter-chk"><input type="checkbox" value="beard_trim"> Beard Trim</label>
+                                    </div>
+
+                                    <!-- Validity -->
+                                    <div>
+                                        <p style="font-size:0.75rem; font-weight:700; color:#64748b; text-transform:uppercase; letter-spacing:0.06em; margin:0 0 8px;">Validity</p>
+                                        <label class="offers-filter-radio"><input type="radio" name="offerValidity" value="running"> Currently Running</label>
+                                        <label class="offers-filter-radio"><input type="radio" name="offerValidity" value="starting_soon"> Starting Soon</label>
+                                        <label class="offers-filter-radio"><input type="radio" name="offerValidity" value="ending_soon"> Ending Soon</label>
+                                        <label class="offers-filter-radio"><input type="radio" name="offerValidity" value="custom"> Custom Date Range</label>
+                                    </div>
+
+                                </div>
+
+                            </div>
+
+                            <!-- Footer -->
+                            <div style="padding:12px 18px; border-top:1px solid #e2e8f0; display:flex; justify-content:space-between; gap:10px;">
+                                <button id="btnOffersFilterReset"
+                                    style="flex:1; padding:8px 0; border:1px solid #e2e8f0; background:#fff; border-radius:8px; font-size:0.85rem; font-weight:500; color:#475569; cursor:pointer;">
+                                    Reset
+                                </button>
+                                <button id="btnOffersFilterApply"
+                                    style="flex:1; padding:8px 0; background:#6366f1; border:none; border-radius:8px; font-size:0.85rem; font-weight:600; color:#fff; cursor:pointer;">
+                                    Apply
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                    <button class="qa-btn qa-primary" id="btnCreateOffer">
+                        <i data-feather="plus" class="qa-icon"></i>
+                        <span>Create Offer</span>
+                    </button>
+                </div>
+            </div>
+
+            <div class="page-content" style="padding: 1.5rem 0.8rem; flex: 1; display: flex; flex-direction: column;">
+                <!-- Offers Table Area -->
+                <div class="table-container"
+                    style="background: #fff; border-radius: 12px; border: 1px solid #e2e8f0; box-shadow: 0 1px 3px rgba(0,0,0,0.05); overflow: hidden; flex: 1;">
+                    <table class="data-table" style="width: 100%; border-collapse: collapse; text-align: left;">
+                        <thead>
+                            <tr style="background: #f8fafc; border-bottom: 1px solid #e2e8f0;">
+                                <th
+                                    style="padding: 14px 20px; font-weight: 600; color: #475569; font-size: 0.85rem; text-transform: uppercase; letter-spacing: 0.05em;">
+                                    Offer Name</th>
+                                <th
+                                    style="padding: 14px 20px; font-weight: 600; color: #475569; font-size: 0.85rem; text-transform: uppercase; letter-spacing: 0.05em;">
+                                    Discount</th>
+                                <th
+                                    style="padding: 14px 20px; font-weight: 600; color: #475569; font-size: 0.85rem; text-transform: uppercase; letter-spacing: 0.05em;">
+                                    Discount Type</th>
+                                <th
+                                    style="padding: 14px 20px; font-weight: 600; color: #475569; font-size: 0.85rem; text-transform: uppercase; letter-spacing: 0.05em;">
+                                    Applicable Services</th>
+                                <th
+                                    style="padding: 14px 20px; font-weight: 600; color: #475569; font-size: 0.85rem; text-transform: uppercase; letter-spacing: 0.05em;">
+                                    Validity</th>
+                                <th
+                                    style="padding: 14px 20px; font-weight: 600; color: #475569; font-size: 0.85rem; text-transform: uppercase; letter-spacing: 0.05em;">
+                                    Status</th>
+                                <th
+                                    style="padding: 14px 20px; font-weight: 600; color: #475569; font-size: 0.85rem; text-transform: uppercase; letter-spacing: 0.05em;">
+                                    Usage</th>
+                                <th
+                                    style="padding: 14px 20px; font-weight: 600; color: #475569; font-size: 0.85rem; text-transform: uppercase; letter-spacing: 0.05em; text-align: center;">
+                                    Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <!-- Row 1: Active -->
+                            <tr style="border-bottom: 1px solid #e2e8f0; transition: background 0.2s;">
+                                <td style="padding: 16px 20px;">
+                                    <div style="font-weight: 600; color: #1e293b; font-size: 0.95rem;">Summer Glow Offer
+                                    </div>
+                                </td>
+                                <td style="padding: 16px 20px;">
+                                    <span
+                                        style="font-weight: 700; color: #0284c7; background: #e0f2fe; padding: 4px 8px; border-radius: 6px; font-size: 0.85rem;">20%
+                                        OFF</span>
+                                </td>
+                                <td style="padding: 16px 20px;">
+                                    <div style="font-size: 0.9rem; color: #334155;">Percentage</div>
+                                </td>
+                                <td style="padding: 16px 20px;">
+                                    <div class="service-tooltip-wrapper"
+                                        style="position: relative; display: inline-block; cursor: help;"
+                                        title="Facials&#10;Skin Care Routine">
+                                        <span style="font-size: 0.9rem; color: #334155;">Facials <span
+                                                style="color: #64748b; font-size: 0.8rem; background: #f1f5f9; padding: 2px 6px; border-radius: 4px; margin-left: 4px;">+1</span></span>
+                                    </div>
+                                </td>
+                                <td style="padding: 16px 20px;">
+                                    <div style="font-size: 0.9rem; color: #334155;">Jun 1 – Jun 30</div>
+                                </td>
+                                <td style="padding: 16px 20px;">
+                                    <span class="badge-pill"
+                                        style="background: #dcfce7; color: #166534; font-size: 0.75rem; padding: 4px 10px; border-radius: 999px; font-weight: 600; display: inline-flex; align-items: center; gap: 4px;">
+                                        <span
+                                            style="width: 6px; height: 6px; border-radius: 50%; background: #22c55e;"></span>
+                                        Active
+                                    </span>
+                                </td>
+                                <td style="padding: 16px 20px;">
+                                    <div style="font-size: 0.9rem; color: #334155;"><span
+                                            style="font-weight: 600;">12</span> / 50</div>
+                                </td>
+                                <td style="padding: 16px 20px; text-align: center;">
+                                    <div class="dropdown" style="position: relative; display: inline-block;">
+                                        <button class="icon-btn dropbtn"
+                                            style="display: flex; align-items: center; gap: 6px; padding: 6px 12px; border-radius: 6px; border: 1px solid #e2e8f0; background: #fff; font-size: 0.85rem; font-weight: 500; color: #334155; cursor: pointer;"
+                                            onclick="toggleDropdown(this)">
+                                            Actions <i data-feather="chevron-down" style="width: 14px; height: 14px;"></i>
+                                        </button>
+                                        <!-- Actions Dropdown (hidden by default, handled by JS) -->
+                                        <div class="dropdown-content"
+                                            style="display: none; position: absolute; right: 0; top: 100%; min-width: 140px; background: #fff; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1), 0 2px 4px -1px rgba(0,0,0,0.06); border-radius: 8px; border: 1px solid #e2e8f0; z-index: 10; padding: 4px 0;">
+                                            <a href="#"
+                                                style="display: flex; align-items: center; gap: 8px; padding: 8px 16px; color: #334155; text-decoration: none; font-size: 0.9rem;"><i
+                                                    data-feather="edit-2" style="width: 14px; height: 14px;"></i>
+                                                Edit</a>
+                                            <a href="#"
+                                                style="display: flex; align-items: center; gap: 8px; padding: 8px 16px; color: #334155; text-decoration: none; font-size: 0.9rem;"><i
+                                                    data-feather="copy" style="width: 14px; height: 14px;"></i>
+                                                Duplicate</a>
+                                            <div style="height: 1px; background: #e2e8f0; margin: 4px 0;"></div>
+                                            <a href="#"
+                                                style="display: flex; align-items: center; gap: 8px; padding: 8px 16px; color: #e11d48; text-decoration: none; font-size: 0.9rem;"><i
+                                                    data-feather="x-circle" style="width: 14px; height: 14px;"></i>
+                                                Deactivate</a>
+                                            <a href="#"
+                                                style="display: flex; align-items: center; gap: 8px; padding: 8px 16px; color: #ef4444; text-decoration: none; font-size: 0.9rem;"><i
+                                                    data-feather="trash-2" style="width: 14px; height: 14px;"></i>
+                                                Delete</a>
+                                        </div>
+                                    </div>
+                                </td>
+                            </tr>
+
+                            <!-- Row 2: Always Active -->
+                            <tr style="border-bottom: 1px solid #e2e8f0; transition: background 0.2s;">
+                                <td style="padding: 16px 20px;">
+                                    <div style="font-weight: 600; color: #1e293b; font-size: 0.95rem;">New Customer
+                                        Offer</div>
+                                </td>
+                                <td style="padding: 16px 20px;">
+                                    <span
+                                        style="font-weight: 700; color: #15803d; background: #dcfce7; padding: 4px 8px; border-radius: 6px; font-size: 0.85rem;">₹200
+                                        OFF</span>
+                                </td>
+                                <td style="padding: 16px 20px;">
+                                    <div style="font-size: 0.9rem; color: #334155;">Flat</div>
+                                </td>
+                                <td style="padding: 16px 20px;">
+                                    <div style="font-size: 0.9rem; color: #334155;">All Services</div>
+                                </td>
+                                <td style="padding: 16px 20px;">
+                                    <div style="font-size: 0.9rem; color: #64748b; font-style: italic;">Always Active
+                                    </div>
+                                </td>
+                                <td style="padding: 16px 20px;">
+                                    <span class="badge-pill"
+                                        style="background: #dcfce7; color: #166534; font-size: 0.75rem; padding: 4px 10px; border-radius: 999px; font-weight: 600; display: inline-flex; align-items: center; gap: 4px;">
+                                        <span
+                                            style="width: 6px; height: 6px; border-radius: 50%; background: #22c55e;"></span>
+                                        Active
+                                    </span>
+                                </td>
+                                <td style="padding: 16px 20px;">
+                                    <div style="font-size: 0.9rem; color: #334155;"><span
+                                            style="font-weight: 600;">34</span> uses</div>
+                                </td>
+                                <td style="padding: 16px 20px; text-align: center;">
+                                    <div class="dropdown" style="position: relative; display: inline-block;">
+                                        <button class="icon-btn dropbtn"
+                                            style="display: flex; align-items: center; gap: 6px; padding: 6px 12px; border-radius: 6px; border: 1px solid #e2e8f0; background: #fff; font-size: 0.85rem; font-weight: 500; color: #334155; cursor: pointer;"
+                                            onclick="toggleDropdown(this)">
+                                            Actions <i data-feather="chevron-down" style="width: 14px; height: 14px;"></i>
+                                        </button>
+                                        <div class="dropdown-content"
+                                            style="display: none; position: absolute; right: 0; top: 100%; min-width: 140px; background: #fff; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1), 0 2px 4px -1px rgba(0,0,0,0.06); border-radius: 8px; border: 1px solid #e2e8f0; z-index: 10; padding: 4px 0; text-align: left;">
+                                            <a href="#"
+                                                style="display: flex; align-items: center; gap: 8px; padding: 8px 16px; color: #334155; text-decoration: none; font-size: 0.9rem;"><i
+                                                    data-feather="edit-2" style="width: 14px; height: 14px;"></i>
+                                                Edit</a>
+                                            <a href="#"
+                                                style="display: flex; align-items: center; gap: 8px; padding: 8px 16px; color: #334155; text-decoration: none; font-size: 0.9rem;"><i
+                                                    data-feather="copy" style="width: 14px; height: 14px;"></i>
+                                                Duplicate</a>
+                                            <div style="height: 1px; background: #e2e8f0; margin: 4px 0;"></div>
+                                            <a href="#"
+                                                style="display: flex; align-items: center; gap: 8px; padding: 8px 16px; color: #e11d48; text-decoration: none; font-size: 0.9rem;"><i
+                                                    data-feather="x-circle" style="width: 14px; height: 14px;"></i>
+                                                Deactivate</a>
+                                            <a href="#"
+                                                style="display: flex; align-items: center; gap: 8px; padding: 8px 16px; color: #ef4444; text-decoration: none; font-size: 0.9rem;"><i
+                                                    data-feather="trash-2" style="width: 14px; height: 14px;"></i>
+                                                Delete</a>
+                                        </div>
+                                    </div>
+                                </td>
+                            </tr>
+
+                            <!-- Row 3: Scheduled -->
+                            <tr style="border-bottom: 1px solid #e2e8f0; transition: background 0.2s;">
+                                <td style="padding: 16px 20px;">
+                                    <div style="font-weight: 600; color: #1e293b; font-size: 0.95rem;">Diwali Special
+                                    </div>
+                                </td>
+                                <td style="padding: 16px 20px;">
+                                    <span
+                                        style="font-weight: 700; color: #0284c7; background: #e0f2fe; padding: 4px 8px; border-radius: 6px; font-size: 0.85rem;">15%
+                                        OFF</span>
+                                </td>
+                                <td style="padding: 16px 20px;">
+                                    <div style="font-size: 0.9rem; color: #334155;">Percentage</div>
+                                </td>
+                                <td style="padding: 16px 20px;">
+                                    <div style="font-size: 0.9rem; color: #334155;">Haircut <span
+                                            style="color: #64748b; font-size: 0.8rem; background: #f1f5f9; padding: 2px 6px; border-radius: 4px; margin-left: 4px; cursor: help;"
+                                            title="Hair Coloring&#10;Hair Spa">+2</span></div>
+                                </td>
+                                <td style="padding: 16px 20px;">
+                                    <div style="font-size: 0.9rem; color: #334155;">Oct 20 – Nov 5</div>
+                                </td>
+                                <td style="padding: 16px 20px;">
+                                    <span class="badge-pill"
+                                        style="background: #e0f2fe; color: #0369a1; font-size: 0.75rem; padding: 4px 10px; border-radius: 999px; font-weight: 600; display: inline-flex; align-items: center; gap: 4px;">
+                                        <span
+                                            style="width: 6px; height: 6px; border-radius: 50%; background: #0ea5e9;"></span>
+                                        Scheduled
+                                    </span>
+                                </td>
+                                <td style="padding: 16px 20px;">
+                                    <div style="font-size: 0.9rem; color: #94a3b8;">Not started</div>
+                                </td>
+                                <td style="padding: 16px 20px; text-align: center;">
+                                    <div class="dropdown" style="position: relative; display: inline-block;">
+                                        <button class="icon-btn dropbtn"
+                                            style="display: flex; align-items: center; gap: 6px; padding: 6px 12px; border-radius: 6px; border: 1px solid #e2e8f0; background: #fff; font-size: 0.85rem; font-weight: 500; color: #334155; cursor: pointer;"
+                                            onclick="toggleDropdown(this)">
+                                            Actions <i data-feather="chevron-down" style="width: 14px; height: 14px;"></i>
+                                        </button>
+                                        <div class="dropdown-content"
+                                            style="display: none; position: absolute; right: 0; top: 100%; min-width: 140px; background: #fff; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1), 0 2px 4px -1px rgba(0,0,0,0.06); border-radius: 8px; border: 1px solid #e2e8f0; z-index: 10; padding: 4px 0; text-align: left;">
+                                            <a href="#"
+                                                style="display: flex; align-items: center; gap: 8px; padding: 8px 16px; color: #334155; text-decoration: none; font-size: 0.9rem;"><i
+                                                    data-feather="edit-2" style="width: 14px; height: 14px;"></i>
+                                                Edit</a>
+                                            <a href="#"
+                                                style="display: flex; align-items: center; gap: 8px; padding: 8px 16px; color: #334155; text-decoration: none; font-size: 0.9rem;"><i
+                                                    data-feather="copy" style="width: 14px; height: 14px;"></i>
+                                                Duplicate</a>
+                                            <div style="height: 1px; background: #e2e8f0; margin: 4px 0;"></div>
+                                            <a href="#"
+                                                style="display: flex; align-items: center; gap: 8px; padding: 8px 16px; color: #ef4444; text-decoration: none; font-size: 0.9rem;"><i
+                                                    data-feather="trash-2" style="width: 14px; height: 14px;"></i>
+                                                Delete</a>
+                                        </div>
+                                    </div>
+                                </td>
+                            </tr>
+
+                            <!-- Row 4: Expired -->
+                            <tr style="border-bottom: 1px solid #e2e8f0; transition: background 0.2s;">
+                                <td style="padding: 16px 20px;">
+                                    <div style="font-weight: 500; color: #64748b; font-size: 0.95rem;">Spring Renewal
+                                    </div>
+                                </td>
+                                <td style="padding: 16px 20px;">
+                                    <span
+                                        style="font-weight: 700; color: #64748b; background: #f1f5f9; padding: 4px 8px; border-radius: 6px; font-size: 0.85rem;">10%
+                                        OFF</span>
+                                </td>
+                                <td style="padding: 16px 20px;">
+                                    <div style="font-size: 0.9rem; color: #334155;">Percentage</div>
+                                </td>
+                                <td style="padding: 16px 20px;">
+                                    <div style="font-size: 0.9rem; color: #64748b;">Massages <span
+                                            style="font-size: 0.8rem; background: #f1f5f9; padding: 2px 6px; border-radius: 4px; margin-left: 4px; cursor: help;"
+                                            title="Aromatherapy">+1</span></div>
+                                </td>
+                                <td style="padding: 16px 20px;">
+                                    <div style="font-size: 0.9rem; color: #64748b;">Mar 1 – Apr 1</div>
+                                </td>
+                                <td style="padding: 16px 20px;">
+                                    <span class="badge-pill"
+                                        style="background: #f1f5f9; color: #475569; font-size: 0.75rem; padding: 4px 10px; border-radius: 999px; font-weight: 600; display: inline-flex; align-items: center; gap: 4px;">
+                                        <span
+                                            style="width: 6px; height: 6px; border-radius: 50%; background: #94a3b8;"></span>
+                                        Expired
+                                    </span>
+                                </td>
+                                <td style="padding: 16px 20px;">
+                                    <div style="font-size: 0.9rem; color: #64748b;">42 uses</div>
+                                </td>
+                                <td style="padding: 16px 20px; text-align: center;">
+                                    <div class="dropdown" style="position: relative; display: inline-block;">
+                                        <button class="icon-btn dropbtn"
+                                            style="display: flex; align-items: center; gap: 6px; padding: 6px 12px; border-radius: 6px; border: 1px solid #e2e8f0; background: #fff; font-size: 0.85rem; font-weight: 500; color: #334155; cursor: pointer;"
+                                            onclick="toggleDropdown(this)">
+                                            Actions <i data-feather="chevron-down" style="width: 14px; height: 14px;"></i>
+                                        </button>
+                                        <div class="dropdown-content"
+                                            style="display: none; position: absolute; right: 0; top: 100%; min-width: 140px; background: #fff; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1), 0 2px 4px -1px rgba(0,0,0,0.06); border-radius: 8px; border: 1px solid #e2e8f0; z-index: 10; padding: 4px 0; text-align: left;">
+                                            <a href="#"
+                                                style="display: flex; align-items: center; gap: 8px; padding: 8px 16px; color: #334155; text-decoration: none; font-size: 0.9rem;"><i
+                                                    data-feather="copy" style="width: 14px; height: 14px;"></i>
+                                                Duplicate</a>
+                                            <div style="height: 1px; background: #e2e8f0; margin: 4px 0;"></div>
+                                            <a href="#"
+                                                style="display: flex; align-items: center; gap: 8px; padding: 8px 16px; color: #ef4444; text-decoration: none; font-size: 0.9rem;"><i
+                                                    data-feather="trash-2" style="width: 14px; height: 14px;"></i>
+                                                Delete</a>
+                                        </div>
+                                    </div>
+                                </td>
+                            </tr>
+
+                            <!-- Row 5: Inactive (Max Usage Reached Example) -->
+                            <tr
+                                style="border-bottom: 1px solid #e2e8f0; transition: background 0.2s; background: #fdf2f8;">
+                                <td style="padding: 16px 20px;">
+                                    <div style="font-weight: 500; color: #334155; font-size: 0.95rem;">Flash Sale 50
+                                    </div>
+                                </td>
+                                <td style="padding: 16px 20px;">
+                                    <span
+                                        style="font-weight: 700; color: #b91c1c; background: #fee2e2; padding: 4px 8px; border-radius: 6px; font-size: 0.85rem;">₹500
+                                        OFF</span>
+                                </td>
+                                <td style="padding: 16px 20px;">
+                                    <div style="font-size: 0.9rem; color: #334155;">Flat</div>
+                                </td>
+                                <td style="padding: 16px 20px;">
+                                    <div style="font-size: 0.9rem; color: #475569;">All Services</div>
+                                </td>
+                                <td style="padding: 16px 20px;">
+                                    <div style="font-size: 0.9rem; color: #475569;">Jul 1 – Jul 3</div>
+                                </td>
+                                <td style="padding: 16px 20px;">
+                                    <span class="badge-pill"
+                                        style="background: #fee2e2; color: #b91c1c; font-size: 0.75rem; padding: 4px 10px; border-radius: 999px; font-weight: 600; display: inline-flex; align-items: center; gap: 4px;">
+                                        <span
+                                            style="width: 6px; height: 6px; border-radius: 50%; background: #ef4444;"></span>
+                                        Inactive
+                                    </span>
+                                </td>
+                                <td style="padding: 16px 20px;">
+                                    <div style="font-size: 0.9rem; color: #e11d48; font-weight: 600;">50 / 50 <span
+                                            style="font-size: 0.75rem; color: #64748b; font-weight: 400; display: block;">Max
+                                            limit reached</span></div>
+                                </td>
+                                <td style="padding: 16px 20px; text-align: center;">
+                                    <div class="dropdown" style="position: relative; display: inline-block;">
+                                        <button class="icon-btn dropbtn"
+                                            style="display: flex; align-items: center; gap: 6px; padding: 6px 12px; border-radius: 6px; border: 1px solid #e2e8f0; background: #fff; font-size: 0.85rem; font-weight: 500; color: #334155; cursor: pointer;"
+                                            onclick="toggleDropdown(this)">
+                                            Actions <i data-feather="chevron-down" style="width: 14px; height: 14px;"></i>
+                                        </button>
+                                        <div class="dropdown-content"
+                                            style="display: none; position: absolute; right: 0; top: 100%; min-width: 140px; background: #fff; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1), 0 2px 4px -1px rgba(0,0,0,0.06); border-radius: 8px; border: 1px solid #e2e8f0; z-index: 10; padding: 4px 0; text-align: left;">
+                                            <a href="#"
+                                                style="display: flex; align-items: center; gap: 8px; padding: 8px 16px; color: #334155; text-decoration: none; font-size: 0.9rem;"><i
+                                                    data-feather="edit-2" style="width: 14px; height: 14px;"></i>
+                                                Edit</a>
+                                            <a href="#"
+                                                style="display: flex; align-items: center; gap: 8px; padding: 8px 16px; color: #334155; text-decoration: none; font-size: 0.9rem;"><i
+                                                    data-feather="copy" style="width: 14px; height: 14px;"></i>
+                                                Duplicate</a>
+                                            <div style="height: 1px; background: #e2e8f0; margin: 4px 0;"></div>
+                                            <a href="#"
+                                                style="display: flex; align-items: center; gap: 8px; padding: 8px 16px; color: #059669; text-decoration: none; font-size: 0.9rem;"><i
+                                                    data-feather="check-circle" style="width: 14px; height: 14px;"></i>
+                                                Reactivate</a>
+                                            <a href="#"
+                                                style="display: flex; align-items: center; gap: 8px; padding: 8px 16px; color: #ef4444; text-decoration: none; font-size: 0.9rem;"><i
+                                                    data-feather="trash-2" style="width: 14px; height: 14px;"></i>
+                                                Delete</a>
+                                        </div>
+                                    </div>
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+
+            </div>
+        </main>
+    </div>
+
+    <script src="dashboard.js"></script>
+    <script>
+        // Move init logic to the end of the file
+    </script>
+
+    <!-- Create Offer Modal -->
+    <div class="modal-overlay" id="offerModalOverlay">
+        <div class="modal-container" id="offerModal" style="width: 600px; max-width: 90vw;">
+            <!-- Header -->
+            <div class="modal-header">
+                <div class="header-titles">
+                    <h2>Create Offer</h2>
+                    <p class="subtitle">Set up a new promotional discount.</p>
+                </div>
+                <button class="modal-close" id="closeOfferModal"><i data-feather="x"></i></button>
+            </div>
+
+            <div class="modal-body" style="padding: 1.5rem; overflow-y: auto;">
+                <div class="form-grid" style="grid-template-columns: 1fr; gap: 20px;">
+
+                    <!-- Offer Name -->
+                    <div class="form-group" style="margin-bottom: 0;">
+                        <label class="form-label" for="offerName">Offer Name <span class="text-rose">*</span></label>
+                        <input type="text" id="offerName" class="form-input" placeholder="e.g., Summer Glow Offer">
+                    </div>
+
+                    <!-- Discount Type & Value -->
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px;">
+                        <div class="form-group" style="margin-bottom: 0;">
+                            <label class="form-label" for="offerDiscountType">Discount Type <span
+                                    class="text-rose">*</span></label>
+                            <select id="offerDiscountType" class="form-select">
+                                <option value="percentage" selected>Percentage (%)</option>
+                                <option value="flat">Flat Amount (₹)</option>
+                            </select>
+                        </div>
+                        <div class="form-group" style="margin-bottom: 0;">
+                            <label class="form-label" for="offerDiscountValue">Discount Value <span
+                                    class="text-rose">*</span></label>
+                            <input type="number" id="offerDiscountValue" class="form-input" placeholder="e.g., 20">
+                        </div>
+                    </div>
+
+                    <!-- Applicable Services (Custom Dropdown) -->
+                    <div class="form-group" style="position: relative; margin-bottom: 0;">
+                        <label class="form-label">Applicable Services <span class="text-rose">*</span></label>
+                        <div class="filter-dropdown-container" style="width: 100%; position: relative;">
+                            <button type="button" class="form-input" id="offerServicesBtn"
+                                style="display: flex; justify-content: space-between; align-items: center; text-align: left; background: #fff; cursor: pointer; height: 42px; width: 100%;">
+                                <span id="offerServicesText" style="color: #94a3b8;">Select services...</span>
+                                <i data-feather="chevron-down" style="width: 16px; height: 16px; color: #94a3b8;"></i>
+                            </button>
+
+                            <!-- Custom Dropdown Menu -->
+                            <div id="offerServicesMenu"
+                                style="display: none; position: absolute; top: calc(100% + 4px); left: 0; width: 100%; background: #fff; border: 1px solid #e2e8f0; border-radius: 8px; box-shadow: 0 10px 15px -3px rgba(0,0,0,0.1), 0 4px 6px -2px rgba(0,0,0,0.05); z-index: 50;">
+                                <div style="padding: 12px 16px; max-height: 220px; overflow-y: auto;">
+                                    <style>
+                                        .custom-chk-circle {
+                                            appearance: none;
+                                            -webkit-appearance: none;
+                                            width: 16px !important;
+                                            height: 16px !important;
+                                            border: 2px solid #cbd5e1;
+                                            border-radius: 50%;
+                                            background-color: #fff;
+                                            outline: none;
+                                            cursor: pointer;
+                                            position: relative;
+                                            transition: all 0.2s ease;
+                                            flex: 0 0 16px !important;
+                                            margin: 0 !important;
+                                            padding: 0 !important;
+                                        }
+
+                                        .custom-chk-circle:checked {
+                                            border-color: #4f46e5;
+                                            background-color: #4f46e5;
+                                        }
+
+                                        .custom-chk-circle:checked::after {
+                                            content: '';
+                                            position: absolute;
+                                            top: 50%;
+                                            left: 50%;
+                                            width: 6px;
+                                            height: 6px;
+                                            background-color: #ffffff;
+                                            border-radius: 50%;
+                                            transform: translate(-50%, -50%);
+                                        }
+
+                                        .service-lbl {
+                                            display: flex;
+                                            align-items: center;
+                                            justify-content: flex-start;
+                                            gap: 12px;
+                                            cursor: pointer;
+                                            padding: 10px 0;
+                                            margin: 0 !important;
+                                            border-bottom: 1px solid #f8fafc;
+                                        }
+
+                                        .service-lbl:last-child {
+                                            border-bottom: none;
+                                        }
+
+                                        .service-lbl span {
+                                            font-size: 0.9rem;
+                                            color: #1e293b;
+                                            font-weight: 500;
+                                            user-select: none;
+                                            margin: 0 !important;
+                                            padding: 0 !important;
+                                            line-height: 1;
+                                        }
+                                    </style>
+                                    <div id="servicesCheckboxList" style="display: flex; flex-direction: column;">
+                                        <label class="service-lbl">
+                                            <input type="checkbox" value="All Services" class="custom-chk-circle">
+                                            <span>All Services</span>
+                                        </label>
+                                        <label class="service-lbl">
+                                            <input type="checkbox" value="Hair Care" class="custom-chk-circle">
+                                            <span>Hair Care</span>
+                                        </label>
+                                        <label class="service-lbl">
+                                            <input type="checkbox" value="Styling" class="custom-chk-circle">
+                                            <span>Styling</span>
+                                        </label>
+                                        <label class="service-lbl">
+                                            <input type="checkbox" value="Skin Care" class="custom-chk-circle">
+                                            <span>Skin Care</span>
+                                        </label>
+                                    </div>
+                                </div>
+                                <div
+                                    style="padding: 12px 16px; border-top: 1px solid #f1f5f9; display: flex; justify-content: space-between; gap: 12px;">
+                                    <button type="button" id="resetServicesBtn"
+                                        style="flex: 1; padding: 10px 0; border: 1px solid #e2e8f0; border-radius: 6px; background: #fff; font-size: 0.9rem; font-weight: 600; color: #64748b; cursor: pointer;">Reset</button>
+                                    <button type="button" id="applyServicesBtn"
+                                        style="flex: 1; padding: 10px 0; border: none; border-radius: 6px; background: #6366f1; font-size: 0.9rem; font-weight: 600; color: #fff; cursor: pointer;">Apply</button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Validity Dates -->
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px;">
+                        <div class="form-group" style="margin-bottom: 0;">
+                            <label class="form-label" for="offerStartDate">Start Date <span
+                                    class="text-rose">*</span></label>
+                            <input type="date" id="offerStartDate" class="form-input">
+                        </div>
+                        <div class="form-group" style="margin-bottom: 0;">
+                            <label class="form-label" for="offerEndDate">End Date <span
+                                    class="text-muted">(Optional)</span></label>
+                            <input type="date" id="offerEndDate" class="form-input">
+                        </div>
+                    </div>
+
+                    <!-- Usage Limit -->
+                    <div class="form-group" style="margin-bottom: 0;">
+                        <label class="form-label" for="offerUsageLimit">Usage Limit <span
+                                class="text-muted">(Optional)</span></label>
+                        <input type="number" id="offerUsageLimit" class="form-input"
+                            placeholder="e.g., 50 (leave blank for unlimited)">
+                    </div>
+
+                    <!-- Status -->
+                    <div class="form-group" style="margin-bottom: 0;">
+                        <label class="form-label" for="offerStatus">Status</label>
+                        <select id="offerStatus" class="form-select">
+                            <option value="active" selected>Active</option>
+                            <option value="inactive">Inactive</option>
+                        </select>
+                    </div>
+
+                </div>
+            </div>
+
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" id="btnCancelOffer">Cancel</button>
+                <button type="button" class="btn btn-primary" id="btnSaveOffer">Create Offer</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Premium New Booking Modal -->
+    <div class="modal-overlay" id="bookingModalOverlay">
+        <div class="modal-container" id="bookingModal">
+            <!-- Header -->
+            <div class="modal-header">
+                <div class="header-titles">
+                    <h2>New Booking</h2>
+                    <p class="subtitle">Create a new appointment for a customer.</p>
+                </div>
+                <button class="modal-close" id="closeBookingModal"><i data-feather="x"></i></button>
+            </div>
+
+            <div class="modal-body" style="padding: 1.5rem; overflow-y: auto;">
+                <div class="modal-form-side" style="width: 100%; max-width: none; flex: 1; padding: 0; border: none;">
+                    <div style="width: 100%; display: grid; grid-template-columns: 1fr 1fr; gap: 32px;">
+
+                        <!-- LEFT COLUMN -->
+                        <div style="display: flex; flex-direction: column;">
+                            <!-- Customer Ident -->
+                            <div class="form-group relative">
+                                <label class="form-label" for="phoneSearch">Phone Number <span
+                                        class="text-rose">*</span></label>
+                                <input type="tel" id="phoneSearch" class="form-input" placeholder="Enter phone number"
+                                    autocomplete="off">
+                                <div class="search-suggestions" id="searchSuggestions"></div>
+                            </div>
+
+                            <div class="customer-badge-container" id="customerBadgeContainer"
+                                style="display:none; margin-bottom: 8px;">
+                                <span class="badge-pill existing-badge" id="customerBadge">Existing Customer</span>
+                            </div>
+
+                            <div class="form-group span-full" id="newCustomerBadgeContainer"
+                                style="display:none; margin-bottom: 8px;">
+                                <span class="badge-pill new-badge" id="newCustomerBadge">New Customer</span>
+                            </div>
+
+                            <div class="form-group" id="customerNameGroup">
+                                <label class="form-label" for="customerName">Customer Name <span
+                                        class="text-rose">*</span></label>
+                                <input type="text" id="customerName" class="form-input"
+                                    placeholder="Enter customer name">
+                            </div>
+
+                            <div class="form-group" id="customerEmailGroup">
+                                <label class="form-label" for="customerEmail">Email <span id="emailOptionalLabel"
+                                        class="text-muted"></span></label>
+                                <input type="email" id="customerEmail" class="form-input"
+                                    placeholder="Enter email address">
+                            </div>
+
+                            <!-- Booking Notes -->
+                            <div class="form-group section-gap flex-grow" style="margin-bottom: 1.5rem;">
+                                <label class="form-label" for="bookingNotes">Booking Notes <span
+                                        class="text-muted">(Optional)</span></label>
+                                <textarea id="bookingNotes" class="form-input form-textarea"
+                                    placeholder="Add optional notes for this booking..."
+                                    style="min-height: 120px;"></textarea>
+                            </div>
+                        </div>
+
+                        <!-- RIGHT COLUMN -->
+                        <div style="display: flex; flex-direction: column;">
+                            <!-- Service Selection -->
+                            <div class="form-group" style="margin-top: 0;">
+                                <label class="form-label" for="bookingService">Service <span
+                                        class="text-rose">*</span></label>
+                                <select id="bookingService" class="form-select">
+                                    <option value="" disabled selected>Select a service</option>
+                                    <!-- populated via JS -->
+                                </select>
+                            </div>
+
+                            <div class="form-grid" id="serviceMetaFields" style="display:none;">
+                                <div class="form-group">
+                                    <label class="form-label">Duration</label>
+                                    <input type="text" class="form-input read-only-input" id="roDuration" readonly>
+                                </div>
+                                <div class="form-group">
+                                    <label class="form-label">Price</label>
+                                    <input type="text" class="form-input read-only-input" id="roPrice" readonly>
+                                </div>
+                            </div>
+
+                            <!-- Staff Selection -->
+                            <div class="form-group section-gap">
+                                <label class="form-label" for="bookingStaff">Staff <span
+                                        class="text-rose">*</span></label>
+                                <select id="bookingStaff" class="form-select">
+                                    <option value="" disabled selected>Select staff member</option>
+                                    <!-- populated via JS -->
+                                </select>
+                            </div>
+
+                            <!-- Date & Time -->
+                            <div class="form-grid section-gap">
+                                <div class="form-group">
+                                    <label class="form-label" for="bookingDate">Date <span
+                                            class="text-rose">*</span></label>
+                                    <input type="date" id="bookingDate" class="form-input">
+                                </div>
+                                <div class="form-group">
+                                    <label class="form-label" for="bookingTime">Time <span
+                                            class="text-rose">*</span></label>
+                                    <div class="relative" style="display: flex; gap: 8px;">
+                                        <input type="time" id="bookingTime" class="form-input" style="flex: 1;">
+                                        <button type="button" class="btn btn-secondary" id="btnTimeNow"
+                                            style="padding: 0 12px; height: 40px; font-size: 13px;">Now</button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div> <!-- /inner form container -->
+                </div>
+            </div>
+
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" id="btnCancelBooking">Cancel</button>
+                <button type="button" class="btn btn-primary" id="btnConfirmBooking" disabled>Confirm Booking</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Toast Notification -->
+    <div id="toastNotification" class="toast-notification">Booking created successfully (demo)</div>
+
+    <!-- Profile Modal -->
+    <div class="modal-overlay" id="genericModalOverlay">
+        <div class="modal-container" id="genericModal" style="width: 75%; max-width: 75%; min-height: 85vh;">
+            <div class="modal-header">
+                <div class="header-titles">
+                    <h2 id="genericModalTitle">Profile</h2>
+                    <p class="subtitle" id="genericModalSubtitle">View and manage your personal profile.</p>
+                </div>
+                <button class="modal-close" id="closeGenericModal"><i data-feather="x"></i></button>
+            </div>
+
+            <!-- Profile Body: 2-column layout -->
+            <div class="modal-body" style="padding: 2rem 0; flex: 1; overflow-y: auto;" id="genericModalBody">
+
+                <!-- ===== PROFILE CONTENT ===== -->
+                <style>
+                    /* Premium Profile Polish */
+                    #profileContent .form-label {
+                        font-size: 0.85rem;
+                        font-weight: 600;
+                        margin-bottom: 6px;
+                        color: #475569;
+                        transition: color 0.2s ease;
+                    }
+
+                    #profileContent .form-group:hover .form-label {
+                        color: #1e293b;
+                    }
+
+                    #profileContent .form-input {
+                        height: 46px;
+                        font-size: 0.95rem;
+                        padding: 10px 16px;
+                        border-radius: 10px;
+                        border: 1px solid #e2e8f0;
+                        background-color: #fafafa;
+                        box-shadow: 0 1px 2px rgba(0, 0, 0, 0.02) inset;
+                        transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+                    }
+
+                    #profileContent .form-input:hover:not(.read-only-input) {
+                        background-color: #ffffff;
+                        border-color: #cbd5e1;
+                        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.03);
+                    }
+
+                    #profileContent .form-input:focus {
+                        background-color: #ffffff;
+                        border-color: #8b5cf6;
+                        box-shadow: 0 0 0 4px rgba(139, 92, 246, 0.12), 0 2px 4px rgba(0, 0, 0, 0.05);
+                        transform: translateY(-1px);
+                    }
+
+                    #profileContent .read-only-input {
+                        background-color: #f8fafc;
+                        border-color: #f1f5f9;
+                        color: #64748b;
+                        box-shadow: none !important;
+                        transform: none !important;
+                    }
+
+                    #profileContent .form-grid {
+                        gap: 24px !important;
+                        margin-bottom: 24px !important;
+                    }
+
+                    #profileContent .form-group {
+                        margin-bottom: 24px;
+                    }
+
+                    /* Avatar Hover Effect */
+                    .profile-avatar-wrap {
+                        transition: transform 0.4s cubic-bezier(0.34, 1.56, 0.64, 1), box-shadow 0.4s ease;
+                    }
+
+                    .profile-avatar-wrap:hover {
+                        transform: scale(1.05) translateY(-2px);
+                        box-shadow: 0 0 0 6px #e0e7ff, 0 12px 24px rgba(30, 58, 138, 0.2) !important;
+                    }
+
+                    /* Subtle pulsing background for photo button */
+                    .change-photo-btn {
+                        transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+                        position: relative;
+                        overflow: hidden;
+                    }
+
+                    .change-photo-btn::before {
+                        content: '';
+                        position: absolute;
+                        top: 50%;
+                        left: 50%;
+                        width: 100%;
+                        height: 100%;
+                        background: radial-gradient(circle, rgba(255, 255, 255, 0.8) 0%, rgba(255, 255, 255, 0) 60%);
+                        transform: translate(-50%, -50%) scale(0);
+                        opacity: 0;
+                        transition: transform 0.5s ease, opacity 0.5s ease;
+                    }
+
+                    .change-photo-btn:hover::before {
+                        transform: translate(-50%, -50%) scale(2);
+                        opacity: 0.1;
+                    }
+
+                    .change-photo-btn:hover {
+                        transform: translateY(-2px);
+                        box-shadow: 0 4px 12px rgba(79, 70, 229, 0.15);
+                    }
+
+                    .change-photo-btn:active {
+                        transform: translateY(0);
+                    }
+
+                    /* Text subtle lift */
+                    .profile-name-display {
+                        background: linear-gradient(135deg, #1e3a8a 0%, #3b82f6 100%);
+                        -webkit-background-clip: text;
+                        background-clip: text;
+                        -webkit-text-fill-color: transparent;
+                        display: inline-block;
+                    }
+                </style>
+                <div id="profileContent"
+                    style="display: grid; grid-template-columns: 35% 65%; gap: 0; min-height: 100%; width: 100%;">
+
+                    <!-- LEFT: Avatar column -->
+                    <div
+                        style="display: flex; flex-direction: column; align-items: center; padding: 1rem 2.5rem 2rem 2.5rem; border-right: 1px solid #f1f5f9; width: 100%; box-sizing: border-box; justify-content: flex-start;">
+                        <!-- Avatar Circle -->
+                        <div class="profile-avatar-wrap"
+                            style="width: 140px; height: 140px; margin-bottom: 24px; box-shadow: 0 0 0 4px #c7d2fe, 0 6px 16px rgba(30, 58, 138, 0.18);">
+                            <img id="profileAvatarImg"
+                                src="https://ui-avatars.com/api/?name=Admin+User&background=1E3A8A&color=fff&size=256"
+                                alt="Profile Avatar">
+                        </div>
+                        <!-- Change Photo -->
+                        <label for="profilePhotoInput" class="change-photo-btn"
+                            style="padding: 10px 20px; font-size: 0.95rem; margin-bottom: 32px; border-radius: 8px;">
+                            <i data-feather="camera" style="width: 16px; height: 16px;"></i>
+                            Change Photo
+                        </label>
+                        <input type="file" id="profilePhotoInput" accept="image/*" style="display:none;">
+                        <!-- Identity Summary -->
+                        <p class="profile-name-display" style="font-size: 1.35rem; margin-bottom: 6px;">Admin User</p>
+                        <p class="profile-role-display" style="font-size: 0.95rem; padding: 6px 18px;">Owner</p>
+                    </div>
+
+                    <!-- RIGHT: Form fields -->
+                    <div
+                        style="display: flex; flex-direction: column; padding: 1rem 2.5rem 3rem 2.5rem; gap: 0; width: 100%; max-width: 720px; margin: 0 auto; box-sizing: border-box; justify-content: flex-start;">
+
+                        <!-- First Name + Last Name -->
+                        <div class="form-grid" style="gap: 16px; margin-bottom: 16px;">
+                            <div class="form-group" style="margin-bottom: 0;">
+                                <label class="form-label" for="profileFirstName">First Name</label>
+                                <input type="text" id="profileFirstName" class="form-input" value="Admin"
+                                    placeholder="First name">
+                            </div>
+                            <div class="form-group" style="margin-bottom: 0;">
+                                <label class="form-label" for="profileLastName">Last Name</label>
+                                <input type="text" id="profileLastName" class="form-input" value="User"
+                                    placeholder="Last name">
+                            </div>
+                        </div>
+
+                        <!-- Phone Number -->
+                        <div class="form-group">
+                            <label class="form-label" for="profilePhone">Phone Number</label>
+                            <input type="tel" id="profilePhone" class="form-input" value="+91 98765 43210"
+                                placeholder="Phone number">
+                        </div>
+
+                        <!-- Emergency Contact Split -->
+                        <div class="form-grid" style="gap: 16px; margin-bottom: 24px;">
+                            <div class="form-group" style="margin-bottom: 0;">
+                                <label class="form-label" for="profileEmergencyName">Emergency Contact Name</label>
+                                <input type="text" id="profileEmergencyName" class="form-input"
+                                    placeholder="Contact name">
+                            </div>
+                            <div class="form-group" style="margin-bottom: 0;">
+                                <label class="form-label" for="profileEmergencyPhone">Emergency Contact Number</label>
+                                <input type="tel" id="profileEmergencyPhone" class="form-input"
+                                    placeholder="Contact number">
+                            </div>
+                        </div>
+
+                        <!-- Email (read-only) -->
+                        <div class="form-group">
+                            <label class="form-label" for="profileEmail">Email</label>
+                            <input type="email" id="profileEmail" class="form-input read-only-input"
+                                value="admin@salon.com" readonly>
+                        </div>
+
+                        <!-- Role (read-only) -->
+                        <div class="form-group">
+                            <label class="form-label" for="profileRole">Role</label>
+                            <input type="text" id="profileRole" class="form-input read-only-input" value="Owner"
+                                readonly>
+                        </div>
+
+                        <!-- Joined On (read-only) -->
+                        <div class="form-group">
+                            <label class="form-label" for="profileJoined">Joined On</label>
+                            <input type="text" id="profileJoined" class="form-input read-only-input"
+                                value="January 15, 2024" readonly>
+                        </div>
+
+                    </div>
+                </div>
+
+                <!-- ===== SETTINGS CONTENT ===== -->
+                <div id="settingsContent"
+                    style="display: none; grid-template-columns: 65% 35%; gap: 0; min-height: 100%; width: 100%;">
+
+                    <!-- LEFT: App Preferences -->
+                    <div
+                        style="display: flex; flex-direction: column; padding: 1rem 2.5rem 3rem 2.5rem; border-right: 1px solid #f1f5f9; width: 100%; box-sizing: border-box; justify-content: center; align-items: center;">
+                        <div style="width: 100%; max-width: 450px;">
+                            <h3
+                                style="font-size: 1.1rem; font-weight: 600; color: #1e293b; margin-bottom: 24px; padding-bottom: 12px; border-bottom: 1px solid #e2e8f0; width: 100%;">
+                                App Preferences</h3>
+
+                            <!-- Language -->
+                            <div class="form-group">
+                                <label class="form-label" for="settingsLanguage">Language</label>
+                                <select id="settingsLanguage" class="form-input"
+                                    style="appearance: auto; cursor: pointer;">
+                                    <option value="en" selected>English</option>
+                                    <option value="hi">Hindi</option>
+                                    <option value="te">Telugu</option>
+                                    <option value="ta">Tamil</option>
+                                </select>
+                            </div>
+
+                            <!-- Theme -->
+                            <div class="form-group">
+                                <label class="form-label" for="settingsTheme">Theme</label>
+                                <select id="settingsTheme" class="form-input"
+                                    style="appearance: auto; cursor: pointer;">
+                                    <option value="light" selected>Light</option>
+                                    <option value="dark">Dark</option>
+                                    <option value="system">System Default</option>
+                                </select>
+                            </div>
+
+                            <!-- Notifications -->
+                            <div class="form-group">
+                                <label class="form-label" for="settingsNotifications">Notifications</label>
+                                <select id="settingsNotifications" class="form-input"
+                                    style="appearance: auto; cursor: pointer;">
+                                    <option value="enabled" selected>Enabled</option>
+                                    <option value="disabled">Disabled</option>
+                                </select>
+                            </div>
+
+                            <!-- Time Zone -->
+                            <div class="form-group">
+                                <label class="form-label" for="settingsTimeZone">Time Zone</label>
+                                <select id="settingsTimeZone" class="form-input"
+                                    style="appearance: auto; cursor: pointer;">
+                                    <option value="Asia/Kolkata" selected>Asia/Kolkata (IST)</option>
+                                    <option value="UTC">UTC</option>
+                                </select>
+                            </div>
+
+                            <!-- Date & Time Format -->
+                            <div class="form-group">
+                                <label class="form-label" for="settingsDateTimeFormat">Date & Time Format</label>
+                                <select id="settingsDateTimeFormat" class="form-input"
+                                    style="appearance: auto; cursor: pointer;">
+                                    <option value="DD MMM YYYY, hh:mm A" selected>DD MMM YYYY, hh:mm A</option>
+                                    <option value="MM/DD/YYYY, HH:mm">MM/DD/YYYY, HH:mm</option>
+                                    <option value="YYYY-MM-DD, HH:mm">YYYY-MM-DD, HH:mm</option>
+                                </select>
+                            </div>
+                        </div> <!-- /max-width container -->
+                    </div>
+
+                    <!-- RIGHT: App Information -->
+                    <div
+                        style="display: flex; flex-direction: column; padding: 1rem 2.5rem 3rem 2.5rem; gap: 0; width: 100%; box-sizing: border-box; justify-content: flex-start;">
+                        <h3
+                            style="font-size: 1.1rem; font-weight: 600; color: #1e293b; margin-bottom: 24px; padding-bottom: 12px; border-bottom: 1px solid #e2e8f0;">
+                            App Information</h3>
+
+                        <!-- Version -->
+                        <div class="form-group">
+                            <label class="form-label">Version</label>
+                            <p id="settingsVersion"
+                                style="font-size: 0.95rem; color: #3b82f6; margin: 0; padding-top: 10px; font-weight: 600;">
+                                v1.0.0</p>
+                        </div>
+
+                        <!-- Status -->
+                        <div class="form-group">
+                            <label class="form-label">Status</label>
+                            <div
+                                style="display: flex; align-items: center; justify-content: space-between; padding-top: 10px;">
+                                <p id="settingsStatus"
+                                    style="font-size: 0.95rem; color: #10b981; font-weight: 600; margin: 0;">Up to date
+                                </p>
+                                <button id="btnUpdateApp" class="btn btn-primary"
+                                    style="display: none; padding: 6px 14px; font-size: 0.8rem; height: auto; border-radius: 6px;">Update</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- ===== OTHER SECTION CONTENT (placeholder) ===== -->
+                <div id="genericPlaceholderContent"
+                    style="display:none; align-items: center; justify-content: center; height: 100%; text-align: center; color: #94a3b8;">
+                    <div>
+                        <i data-feather="layers"
+                            style="width: 40px; height: 40px; margin-bottom: 12px; stroke: #cbd5e1;"></i>
+                        <p style="font-size: 0.95rem; font-weight: 500; margin: 0;">Content coming soon</p>
+                        <p style="font-size: 0.8rem; margin-top: 4px;">This section is under construction.</p>
+                    </div>
+                </div>
+
+            </div>
+
+            <div class="modal-footer" id="genericModalFooter"
+                style="justify-content: flex-end; align-items: center; gap: 12px;">
+                <button type="button" class="btn btn-secondary" id="btnCloseGenericModal"
+                    style="flex: none; width: 140px;">Cancel</button>
+                <button type="button" class="btn btn-primary" id="btnSaveGenericModal"
+                    style="flex: none; width: 160px;">Save Changes</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Schedule Modal -->
+    <div class="modal-overlay" id="scheduleModalOverlay">
+        <div class="modal-container" id="scheduleModal" style="min-height: 60vh;">
+            <div class="modal-header">
+                <div class="header-titles">
+                    <h2 id="scheduleModalTitle">Schedule</h2>
+                    <p class="subtitle" id="scheduleModalSubtitle">View your upcoming work schedule.</p>
+                </div>
+                <button class="modal-close" id="closeScheduleModal"><i data-feather="x"></i></button>
+            </div>
+
+            <div class="modal-body" style="padding: 1.5rem; flex: 1; overflow-y: auto; flex-direction: column;">
+
+                <!-- Tab Headers -->
+                <div class="schedule-tabs"
+                    style="display: flex; gap: 8px; margin-bottom: 1.5rem; border-bottom: 1px solid #f1f5f9; padding-bottom: 0.5rem;">
+                    <button class="schedule-tab-btn active" id="tabBtnThisWeek"
+                        style="padding: 8px 16px; border: none; background: none; font-weight: 600; font-size: 0.95rem; color: #1e3a8a; border-bottom: 2px solid #1e3a8a; cursor: pointer; transition: all 0.2s;">This
+                        Week</button>
+                    <button class="schedule-tab-btn" id="tabBtnNextWeek"
+                        style="padding: 8px 16px; border: none; background: none; font-weight: 500; font-size: 0.95rem; color: #64748b; border-bottom: 2px solid transparent; cursor: pointer; transition: all 0.2s;">Next
+                        Week</button>
+                </div>
+
+                <!-- Tab Content: This Week -->
+                <div class="schedule-tab-pane" id="paneThisWeek" style="display: block;">
+                    <!-- Column Headers -->
+                    <div
+                        style="display: grid; grid-template-columns: 100px 120px 1fr 1fr; padding: 6px 16px 10px 16px; border-bottom: 1px solid #e2e8f0; margin-bottom: 8px;">
+                        <div
+                            style="font-size: 0.75rem; font-weight: 700; color: #94a3b8; text-transform: uppercase; letter-spacing: 0.05em;">
+                            Date</div>
+                        <div
+                            style="font-size: 0.75rem; font-weight: 700; color: #94a3b8; text-transform: uppercase; letter-spacing: 0.05em;">
+                            Day</div>
+                        <div
+                            style="font-size: 0.75rem; font-weight: 700; color: #94a3b8; text-transform: uppercase; letter-spacing: 0.05em;">
+                            Time</div>
+                        <div
+                            style="font-size: 0.75rem; font-weight: 700; color: #94a3b8; text-transform: uppercase; letter-spacing: 0.05em; text-align: right;">
+                            Comments</div>
+                    </div>
+                    <ul class="schedule-list"
+                        style="list-style: none; padding: 0; margin: 0; display: flex; flex-direction: column; gap: 8px;">
+                        <li class="schedule-item"
+                            style="display: grid; grid-template-columns: 100px 120px 1fr 1fr; padding: 12px 16px; background: #f8fafc; border-radius: 8px; align-items: center;">
+                            <div class="schedule-date" style="font-size: 0.85rem; color: #64748b; font-weight: 500;">Mar
+                                9</div>
+                            <div class="schedule-day" style="font-weight: 600; color: #334155; font-size: 0.9rem;">
+                                Monday</div>
+                            <div class="schedule-time" style="color: #0f172a; font-size: 0.9rem; font-weight: 500;">
+                                09:00 AM - 06:00 PM</div>
+                            <div class="schedule-notes" style="color: #64748b; font-size: 0.85rem; text-align: right;">
+                                Opening shift</div>
+                        </li>
+                        <li class="schedule-item"
+                            style="display: grid; grid-template-columns: 100px 120px 1fr 1fr; padding: 12px 16px; background: #f8fafc; border-radius: 8px; align-items: center;">
+                            <div class="schedule-date" style="font-size: 0.85rem; color: #64748b; font-weight: 500;">Mar
+                                10</div>
+                            <div class="schedule-day" style="font-weight: 600; color: #334155; font-size: 0.9rem;">
+                                Tuesday</div>
+                            <div class="schedule-time" style="color: #0f172a; font-size: 0.9rem; font-weight: 500;">
+                                09:00 AM - 06:00 PM</div>
+                            <div class="schedule-notes" style="color: #94a3b8; font-size: 0.85rem; text-align: right;">-
+                            </div>
+                        </li>
+                        <li class="schedule-item"
+                            style="display: grid; grid-template-columns: 100px 120px 1fr 1fr; padding: 12px 16px; background: #fff5f5; border: 1px dashed #fecdd3; border-radius: 8px; align-items: center;">
+                            <div class="schedule-date" style="font-size: 0.85rem; color: #64748b; font-weight: 500;">Mar
+                                11</div>
+                            <div class="schedule-day" style="font-weight: 600; color: #334155; font-size: 0.9rem;">
+                                Wednesday</div>
+                            <div class="schedule-time off" style="color: #e11d48; font-size: 0.9rem; font-weight: 600;">
+                                Off</div>
+                            <div class="schedule-notes off"
+                                style="color: #fca5a5; font-size: 0.85rem; text-align: right;">-</div>
+                        </li>
+                        <li class="schedule-item"
+                            style="display: grid; grid-template-columns: 100px 120px 1fr 1fr; padding: 12px 16px; background: #f8fafc; border-radius: 8px; align-items: center;">
+                            <div class="schedule-date" style="font-size: 0.85rem; color: #64748b; font-weight: 500;">Mar
+                                12</div>
+                            <div class="schedule-day" style="font-weight: 600; color: #334155; font-size: 0.9rem;">
+                                Thursday</div>
+                            <div class="schedule-time" style="color: #0f172a; font-size: 0.9rem; font-weight: 500;">
+                                10:00 AM - 07:00 PM</div>
+                            <div class="schedule-notes" style="color: #94a3b8; font-size: 0.85rem; text-align: right;">-
+                            </div>
+                        </li>
+                        <li class="schedule-item"
+                            style="display: grid; grid-template-columns: 100px 120px 1fr 1fr; padding: 12px 16px; background: #f8fafc; border-radius: 8px; align-items: center;">
+                            <div class="schedule-date" style="font-size: 0.85rem; color: #64748b; font-weight: 500;">Mar
+                                13</div>
+                            <div class="schedule-day" style="font-weight: 600; color: #334155; font-size: 0.9rem;">
+                                Friday</div>
+                            <div class="schedule-time" style="color: #0f172a; font-size: 0.9rem; font-weight: 500;">
+                                10:00 AM - 08:00 PM</div>
+                            <div class="schedule-notes" style="color: #64748b; font-size: 0.85rem; text-align: right;">
+                                Late shift</div>
+                        </li>
+                        <li class="schedule-item"
+                            style="display: grid; grid-template-columns: 100px 120px 1fr 1fr; padding: 12px 16px; background: #f8fafc; border-radius: 8px; align-items: center;">
+                            <div class="schedule-date" style="font-size: 0.85rem; color: #64748b; font-weight: 500;">Mar
+                                14</div>
+                            <div class="schedule-day" style="font-weight: 600; color: #334155; font-size: 0.9rem;">
+                                Saturday</div>
+                            <div class="schedule-time" style="color: #0f172a; font-size: 0.9rem; font-weight: 500;">
+                                08:00 AM - 04:00 PM</div>
+                            <div class="schedule-notes" style="color: #64748b; font-size: 0.85rem; text-align: right;">
+                                Weekend shift</div>
+                        </li>
+                        <li class="schedule-item"
+                            style="display: grid; grid-template-columns: 100px 120px 1fr 1fr; padding: 12px 16px; background: #fff5f5; border: 1px dashed #fecdd3; border-radius: 8px; align-items: center;">
+                            <div class="schedule-date" style="font-size: 0.85rem; color: #64748b; font-weight: 500;">Mar
+                                15</div>
+                            <div class="schedule-day" style="font-weight: 600; color: #334155; font-size: 0.9rem;">
+                                Sunday</div>
+                            <div class="schedule-time off" style="color: #e11d48; font-size: 0.9rem; font-weight: 600;">
+                                Off</div>
+                            <div class="schedule-notes off"
+                                style="color: #fca5a5; font-size: 0.85rem; text-align: right;">-</div>
+                        </li>
+                    </ul>
+                </div>
+
+                <!-- Tab Content: Next Week -->
+                <div class="schedule-tab-pane" id="paneNextWeek" style="display: none;">
+                    <!-- Column Headers -->
+                    <div
+                        style="display: grid; grid-template-columns: 100px 120px 1fr 1fr; padding: 6px 16px 10px 16px; border-bottom: 1px solid #e2e8f0; margin-bottom: 8px;">
+                        <div
+                            style="font-size: 0.75rem; font-weight: 700; color: #94a3b8; text-transform: uppercase; letter-spacing: 0.05em;">
+                            Date</div>
+                        <div
+                            style="font-size: 0.75rem; font-weight: 700; color: #94a3b8; text-transform: uppercase; letter-spacing: 0.05em;">
+                            Day</div>
+                        <div
+                            style="font-size: 0.75rem; font-weight: 700; color: #94a3b8; text-transform: uppercase; letter-spacing: 0.05em;">
+                            Time</div>
+                        <div
+                            style="font-size: 0.75rem; font-weight: 700; color: #94a3b8; text-transform: uppercase; letter-spacing: 0.05em; text-align: right;">
+                            Comments</div>
+                    </div>
+                    <ul class="schedule-list"
+                        style="list-style: none; padding: 0; margin: 0; display: flex; flex-direction: column; gap: 8px;">
+                        <li class="schedule-item"
+                            style="display: grid; grid-template-columns: 100px 120px 1fr 1fr; padding: 12px 16px; background: #f8fafc; border-radius: 8px; align-items: center;">
+                            <div class="schedule-date" style="font-size: 0.85rem; color: #64748b; font-weight: 500;">Mar
+                                16</div>
+                            <div class="schedule-day" style="font-weight: 600; color: #334155; font-size: 0.9rem;">
+                                Monday</div>
+                            <div class="schedule-time" style="color: #0f172a; font-size: 0.9rem; font-weight: 500;">
+                                10:00 AM - 07:00 PM</div>
+                            <div class="schedule-notes" style="color: #94a3b8; font-size: 0.85rem; text-align: right;">-
+                            </div>
+                        </li>
+                        <li class="schedule-item"
+                            style="display: grid; grid-template-columns: 100px 120px 1fr 1fr; padding: 12px 16px; background: #f8fafc; border-radius: 8px; align-items: center;">
+                            <div class="schedule-date" style="font-size: 0.85rem; color: #64748b; font-weight: 500;">Mar
+                                17</div>
+                            <div class="schedule-day" style="font-weight: 600; color: #334155; font-size: 0.9rem;">
+                                Tuesday</div>
+                            <div class="schedule-time" style="color: #0f172a; font-size: 0.9rem; font-weight: 500;">
+                                10:00 AM - 07:00 PM</div>
+                            <div class="schedule-notes" style="color: #94a3b8; font-size: 0.85rem; text-align: right;">-
+                            </div>
+                        </li>
+                        <li class="schedule-item"
+                            style="display: grid; grid-template-columns: 100px 120px 1fr 1fr; padding: 12px 16px; background: #f8fafc; border-radius: 8px; align-items: center;">
+                            <div class="schedule-date" style="font-size: 0.85rem; color: #64748b; font-weight: 500;">Mar
+                                18</div>
+                            <div class="schedule-day" style="font-weight: 600; color: #334155; font-size: 0.9rem;">
+                                Wednesday</div>
+                            <div class="schedule-time" style="color: #0f172a; font-size: 0.9rem; font-weight: 500;">
+                                09:00 AM - 06:00 PM</div>
+                            <div class="schedule-notes" style="color: #94a3b8; font-size: 0.85rem; text-align: right;">-
+                            </div>
+                        </li>
+                        <li class="schedule-item"
+                            style="display: grid; grid-template-columns: 100px 120px 1fr 1fr; padding: 12px 16px; background: #fff5f5; border: 1px dashed #fecdd3; border-radius: 8px; align-items: center;">
+                            <div class="schedule-date" style="font-size: 0.85rem; color: #64748b; font-weight: 500;">Mar
+                                19</div>
+                            <div class="schedule-day" style="font-weight: 600; color: #334155; font-size: 0.9rem;">
+                                Thursday</div>
+                            <div class="schedule-time off" style="color: #e11d48; font-size: 0.9rem; font-weight: 600;">
+                                Off</div>
+                            <div class="schedule-notes off"
+                                style="color: #fca5a5; font-size: 0.85rem; text-align: right;">-</div>
+                        </li>
+                        <li class="schedule-item"
+                            style="display: grid; grid-template-columns: 100px 120px 1fr 1fr; padding: 12px 16px; background: #f8fafc; border-radius: 8px; align-items: center;">
+                            <div class="schedule-date" style="font-size: 0.85rem; color: #64748b; font-weight: 500;">Mar
+                                20</div>
+                            <div class="schedule-day" style="font-weight: 600; color: #334155; font-size: 0.9rem;">
+                                Friday</div>
+                            <div class="schedule-time" style="color: #0f172a; font-size: 0.9rem; font-weight: 500;">
+                                09:00 AM - 08:00 PM</div>
+                            <div class="schedule-notes" style="color: #64748b; font-size: 0.85rem; text-align: right;">
+                                Extended</div>
+                        </li>
+                        <li class="schedule-item"
+                            style="display: grid; grid-template-columns: 100px 120px 1fr 1fr; padding: 12px 16px; background: #f8fafc; border-radius: 8px; align-items: center;">
+                            <div class="schedule-date" style="font-size: 0.85rem; color: #64748b; font-weight: 500;">Mar
+                                21</div>
+                            <div class="schedule-day" style="font-weight: 600; color: #334155; font-size: 0.9rem;">
+                                Saturday</div>
+                            <div class="schedule-time" style="color: #0f172a; font-size: 0.9rem; font-weight: 500;">
+                                08:00 AM - 04:00 PM</div>
+                            <div class="schedule-notes" style="color: #94a3b8; font-size: 0.85rem; text-align: right;">-
+                            </div>
+                        </li>
+                        <li class="schedule-item"
+                            style="display: grid; grid-template-columns: 100px 120px 1fr 1fr; padding: 12px 16px; background: #fff5f5; border: 1px dashed #fecdd3; border-radius: 8px; align-items: center;">
+                            <div class="schedule-date" style="font-size: 0.85rem; color: #64748b; font-weight: 500;">Mar
+                                22</div>
+                            <div class="schedule-day" style="font-weight: 600; color: #334155; font-size: 0.9rem;">
+                                Sunday</div>
+                            <div class="schedule-time off" style="color: #e11d48; font-size: 0.9rem; font-weight: 600;">
+                                Off</div>
+                            <div class="schedule-notes off"
+                                style="color: #fca5a5; font-size: 0.85rem; text-align: right;">-</div>
+                        </li>
+                    </ul>
+                </div>
+
+            </div>
+
+            <div class="modal-footer" style="justify-content: flex-end;">
+                <button type="button" class="btn btn-secondary" id="btnCloseScheduleFooter">Close</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Init Feather Icons
+        document.addEventListener('DOMContentLoaded', () => {
+            feather.replace();
+        });
+
+        // Offers scripts
+        document.addEventListener('DOMContentLoaded', () => {
+            const btnCreateOffer = document.getElementById('btnCreateOffer');
+            const overlayCreateOffer = document.getElementById('offerModalOverlay');
+            const btnCloseCreateOffer = document.getElementById('closeOfferModal');
+            const btnCancelCreateOffer = document.getElementById('btnCancelOffer');
+
+            if (btnCreateOffer && overlayCreateOffer) {
+                btnCreateOffer.addEventListener('click', () => {
+                    overlayCreateOffer.classList.add('active');
+                });
+            }
+
+            const closeOfferModal = () => {
+                if (overlayCreateOffer) {
+                    overlayCreateOffer.classList.remove('active');
+                }
+            };
+
+            if (btnCloseCreateOffer) btnCloseCreateOffer.addEventListener('click', closeOfferModal);
+            if (btnCancelCreateOffer) btnCancelCreateOffer.addEventListener('click', closeOfferModal);
+            
+            // Close when clicking outside modal box
+            if (overlayCreateOffer) {
+                overlayCreateOffer.addEventListener('click', (e) => {
+                    if (e.target === overlayCreateOffer) {
+                        closeOfferModal();
+                    }
+                });
+            }
+
+            // Toggle Flat vs Percentage
+            const discountTypeSelect = document.getElementById('offerDiscountType');
+            const discountValueInput = document.getElementById('offerDiscountValue');
+
+            if (discountTypeSelect && discountValueInput) {
+                discountTypeSelect.addEventListener('change', (e) => {
+                    if (e.target.value === 'percentage') {
+                        discountValueInput.placeholder = "e.g., 20";
+                    } else {
+                        discountValueInput.placeholder = "e.g., 200";
+                    }
+                });
+            }
+
+            // Custom Services Dropdown Logic
+            const offerServicesBtn = document.getElementById('offerServicesBtn');
+            const offerServicesMenu = document.getElementById('offerServicesMenu');
+            const offerServicesText = document.getElementById('offerServicesText');
+            const resetServicesBtn = document.getElementById('resetServicesBtn');
+            const applyServicesBtn = document.getElementById('applyServicesBtn');
+            const serviceCheckboxes = document.querySelectorAll('#servicesCheckboxList input[type="checkbox"]');
+
+            if (offerServicesBtn && offerServicesMenu) {
+                offerServicesBtn.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    offerServicesMenu.style.display = offerServicesMenu.style.display === 'block' ? 'none' : 'block';
+                });
+
+                document.addEventListener('click', (e) => {
+                    if (!offerServicesBtn.contains(e.target) && !offerServicesMenu.contains(e.target)) {
+                        offerServicesMenu.style.display = 'none';
+                    }
+                });
+
+                applyServicesBtn.addEventListener('click', () => {
+                    const selected = Array.from(serviceCheckboxes)
+                        .filter(chk => chk.checked)
+                        .map(chk => chk.value);
+
+                    if (selected.length === 0) {
+                        offerServicesText.textContent = "Select services...";
+                        offerServicesText.style.color = "#94a3b8";
+                    } else if (selected.includes("All Categories")) {
+                        offerServicesText.textContent = "All Categories";
+                        offerServicesText.style.color = "#1e293b";
+                    } else if (selected.length === 1) {
+                        offerServicesText.textContent = selected[0];
+                        offerServicesText.style.color = "#1e293b";
+                    } else {
+                        offerServicesText.textContent = `${selected[0]} +${selected.length - 1} more`;
+                        offerServicesText.style.color = "#1e293b";
+                    }
+                    offerServicesMenu.style.display = 'none';
+                });
+
+                resetServicesBtn.addEventListener('click', () => {
+                    serviceCheckboxes.forEach(chk => chk.checked = false);
+                    offerServicesText.textContent = "Select services...";
+                    offerServicesText.style.color = "#94a3b8";
+                });
+            }
+        });
+
+        // Toggle dropdown for table action buttons
+        function toggleDropdown(button) {
+            const dropdownContent = button.nextElementSibling;
+            const allDropdowns = document.querySelectorAll('.dropdown-content');
+            allDropdowns.forEach(dd => {
+                if (dd !== dropdownContent) dd.style.display = 'none';
+            });
+            dropdownContent.style.display = dropdownContent.style.display === 'block' ? 'none' : 'block';
+        }
+
+        // Close all dropdowns when clicking outside
+        window.addEventListener('click', (e) => {
+            if (!e.target.closest('.dropbtn')) {
+                document.querySelectorAll('.dropdown-content').forEach(dd => {
+                    dd.style.display = 'none';
+                });
+            }
+
+            // Also close filter panel if click is outside the container
+            const filterContainer = document.getElementById('offersFilterContainer');
+            const filterPanel = document.getElementById('offersFilterPanel');
+            if (filterPanel && filterContainer && !filterContainer.contains(e.target)) {
+                filterPanel.style.display = 'none';
+            }
+        });
+
+        // Filter panel logic
+        document.addEventListener('DOMContentLoaded', () => {
+            const btnFilterOffers = document.getElementById('btnFilterOffers');
+            const offersFilterPanel = document.getElementById('offersFilterPanel');
+            const btnCloseOffersFilter = document.getElementById('btnCloseOffersFilter');
+            const btnOffersFilterReset = document.getElementById('btnOffersFilterReset');
+            const btnOffersFilterApply = document.getElementById('btnOffersFilterApply');
+
+            if (btnFilterOffers && offersFilterPanel) {
+                btnFilterOffers.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    const isOpen = offersFilterPanel.style.display === 'block';
+                    offersFilterPanel.style.display = isOpen ? 'none' : 'block';
+                    if (window.feather) feather.replace();
+                });
+            }
+
+            if (btnCloseOffersFilter) {
+                btnCloseOffersFilter.addEventListener('click', () => {
+                    offersFilterPanel.style.display = 'none';
+                });
+            }
+
+            if (btnOffersFilterReset) {
+                btnOffersFilterReset.addEventListener('click', () => {
+                    offersFilterPanel.querySelectorAll('input[type="checkbox"]').forEach(cb => cb.checked = false);
+                    offersFilterPanel.querySelectorAll('input[type="radio"]').forEach(rb => rb.checked = false);
+                });
+            }
+
+            if (btnOffersFilterApply) {
+                btnOffersFilterApply.addEventListener('click', () => {
+                    offersFilterPanel.style.display = 'none';
+                    // Placeholder: collect filter values and apply to table here
+                });
+            }
+
+            // Prevent clicks inside the panel from closing it
+            offersFilterPanel && offersFilterPanel.addEventListener('click', (e) => e.stopPropagation());
+        });
+    </script>
+</body>
+
+</html>

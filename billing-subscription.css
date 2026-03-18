@@ -1,0 +1,794 @@
+/* ============================================================
+   billing.css – Premium Billing Page Styles for BharathBots
+   ============================================================ */
+
+.billing-page-body .main-wrapper {
+    overflow-y: auto;
+    overflow-x: hidden;
+}
+
+/* ---- Page Layout ---- */
+.billing-page {
+    padding: 2rem 2.5rem;
+    width: 100%;
+    box-sizing: border-box;
+    display: flex;
+    flex-direction: column;
+    gap: 1.5rem;
+    overflow-y: auto;
+}
+
+.billing-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1.5rem;
+}
+
+.billing-section {
+    width: 100%;
+}
+
+.billing-card {
+    background: #ffffff;
+    border-radius: 16px;
+    border: 1px solid #f1f5f9;
+    padding: 1.75rem;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.04), 0 4px 12px rgba(0,0,0,0.02);
+    transition: box-shadow 0.3s ease;
+}
+
+.billing-card:hover {
+    box-shadow: 0 2px 6px rgba(0,0,0,0.06), 0 8px 24px rgba(0,0,0,0.04);
+}
+
+/* ---- Back link & Page Header ---- */
+.back-link {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 0.85rem;
+    font-weight: 500;
+    color: #64748b;
+    text-decoration: none;
+    margin-bottom: 0.5rem;
+    transition: color 0.2s ease;
+}
+.back-link:hover { color: #1e3a8a; }
+.back-link i { width: 14px; height: 14px; }
+
+.page-title-wrap { margin-top: 0.25rem; }
+.page-title {
+    font-size: 1.5rem;
+    font-weight: 800;
+    color: #0f172a;
+    margin: 0;
+    letter-spacing: -0.03em;
+}
+.page-subtitle {
+    font-size: 0.875rem;
+    color: #64748b;
+    margin: 0.2rem 0 0 0;
+}
+
+/* ---- Section Header ---- */
+.section-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    margin-bottom: 1.25rem;
+}
+.section-title {
+    font-size: 1.05rem;
+    font-weight: 700;
+    color: #0f172a;
+    margin: 0;
+    letter-spacing: -0.02em;
+}
+.section-sub {
+    font-size: 0.8rem;
+    color: #94a3b8;
+    margin: 0.15rem 0 0 0;
+}
+.addon-count-badge {
+    background: #ede9fe;
+    color: #7c3aed;
+    font-size: 0.75rem;
+    font-weight: 600;
+    padding: 4px 10px;
+    border-radius: 20px;
+}
+
+/* ============================================================
+   SECTION 1: Plan Row (Current Plan + Add-ons side by side)
+   ============================================================ */
+.plan-row {
+    display: flex;
+    gap: 1.25rem;
+    align-items: stretch;
+}
+
+/* ---- Current Plan Card ---- */
+.billing-plan-card {
+    background: linear-gradient(135deg, #1e3a8a 0%, #1d4ed8 60%, #4f46e5 100%);
+    border-radius: 20px;
+    padding: 2rem 2.5rem;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 2rem;
+    position: relative;
+    overflow: hidden;
+    box-shadow: 0 8px 32px rgba(30, 58, 138, 0.3);
+}
+
+/* Compact modifier – shrinks the plan card so add-ons card fits */
+.billing-plan-card--compact {
+    flex: 1.6;
+    padding: 1.6rem 2rem;
+}
+.billing-plan-card--compact .plan-price { font-size: 2.2rem; }
+.billing-plan-card--compact .plan-price-row { margin-bottom: 1rem; }
+.billing-plan-card--compact .plan-meta-grid { gap: 1.1rem; }
+.billing-plan-card--compact .plan-badge { margin-bottom: 0.75rem; }
+
+/* ---- Active Add-ons Mini Card ---- */
+.billing-plan-card--addons {
+    flex: 1;
+    flex-direction: column;
+    align-items: flex-start;
+    padding: 1.6rem 1.75rem;
+    gap: 0;
+}
+
+.plan-badge--addons {
+    background: rgba(255,255,255,0.12) !important;
+    border-color: rgba(255,255,255,0.2) !important;
+}
+.plan-badge--addons i { stroke: #a5f3fc !important; }
+
+/* Mini add-on list inside the add-ons card */
+.addons-mini-list {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    width: 100%;
+    margin-top: 0.5rem;
+}
+
+.addon-mini-item {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    background: rgba(255,255,255,0.1);
+    border: 1px solid rgba(255,255,255,0.15);
+    border-radius: 12px;
+    padding: 10px 12px;
+    backdrop-filter: blur(4px);
+}
+
+.addon-mini-icon {
+    width: 32px; height: 32px;
+    border-radius: 8px;
+    display: flex; align-items: center; justify-content: center;
+    flex-shrink: 0;
+}
+.addon-mini-icon i { width: 15px; height: 15px; }
+.addon-mini-icon--green { background: rgba(16,185,129,0.25); color: #6ee7b7; }
+.addon-mini-icon--purple { background: rgba(139,92,246,0.25); color: #c4b5fd; }
+
+.addon-mini-info { flex: 1; min-width: 0; }
+.addon-mini-name {
+    font-size: 0.82rem;
+    font-weight: 600;
+    color: rgba(255,255,255,0.95);
+    margin: 0;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+.addon-mini-price {
+    font-size: 0.72rem;
+    color: rgba(255,255,255,0.55);
+    margin: 2px 0 0 0;
+}
+
+.addon-mini-badge {
+    font-size: 0.68rem;
+    font-weight: 700;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    background: rgba(74,222,128,0.2);
+    color: #4ade80;
+    border: 1px solid rgba(74,222,128,0.35);
+    border-radius: 20px;
+    padding: 3px 9px;
+    white-space: nowrap;
+    flex-shrink: 0;
+}
+
+.addon-mini-total {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-top: 12px;
+    padding-top: 10px;
+    border-top: 1px solid rgba(255,255,255,0.12);
+    width: 100%;
+}
+.addon-mini-total-label {
+    font-size: 0.75rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: rgba(255,255,255,0.45);
+}
+.addon-mini-total-value {
+    font-size: 0.95rem;
+    font-weight: 700;
+    color: #ffffff;
+}
+
+/* Decorative blur circles */
+.billing-plan-card::before {
+    content: '';
+    position: absolute;
+    top: -40px; right: -40px;
+    width: 200px; height: 200px;
+    background: rgba(255,255,255,0.07);
+    border-radius: 50%;
+}
+.billing-plan-card::after {
+    content: '';
+    position: absolute;
+    bottom: -60px; left: 30%;
+    width: 260px; height: 260px;
+    background: rgba(255,255,255,0.04);
+    border-radius: 50%;
+}
+
+.plan-info { position: relative; z-index: 1; flex: 1; }
+
+.billing-plan-card .plan-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 7px;
+    background: rgba(255,255,255,0.15);
+    backdrop-filter: blur(8px);
+    color: #ffffff;
+    font-size: 0.85rem;
+    font-weight: 700;
+    padding: 6px 14px;
+    border-radius: 20px;
+    border: 1px solid rgba(255,255,255,0.25);
+    margin-bottom: 1rem;
+    letter-spacing: 0.02em;
+}
+.billing-plan-card .plan-badge i { width: 14px; height: 14px; stroke: #fbbf24; }
+
+.plan-price-row {
+    display: flex;
+    align-items: baseline;
+    gap: 4px;
+    margin-bottom: 1.25rem;
+}
+.plan-price {
+    font-size: 2.75rem;
+    font-weight: 800;
+    color: #ffffff;
+    letter-spacing: -0.04em;
+    line-height: 1;
+}
+.plan-period { font-size: 1rem; color: rgba(255,255,255,0.6); font-weight: 500; }
+
+.plan-meta-grid {
+    display: grid;
+    grid-template-columns: repeat(4, auto);
+    gap: 1.5rem;
+}
+.meta-label {
+    display: block;
+    font-size: 0.7rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: rgba(255,255,255,0.5);
+    margin-bottom: 3px;
+}
+.meta-value {
+    font-size: 0.9rem;
+    font-weight: 600;
+    color: rgba(255,255,255,0.95);
+}
+.status-active {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    color: #4ade80 !important;
+}
+.status-dot {
+    width: 7px; height: 7px;
+    background: #4ade80;
+    border-radius: 50%;
+    animation: pulse-dot 1.5s ease infinite;
+}
+@keyframes pulse-dot {
+    0%, 100% { opacity: 1; transform: scale(1); }
+    50% { opacity: 0.6; transform: scale(1.3); }
+}
+
+.plan-actions {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    position: relative;
+    z-index: 1;
+    min-width: 170px;
+}
+
+/* ============================================================
+   Buttons
+   ============================================================ */
+.btn-billing {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    padding: 10px 20px;
+    border-radius: 10px;
+    font-size: 0.9rem;
+    font-weight: 600;
+    cursor: pointer;
+    border: none;
+    transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+    font-family: inherit;
+    white-space: nowrap;
+}
+.btn-billing i { width: 16px; height: 16px; }
+
+.btn-billing-primary {
+    background: #ffffff;
+    color: #1e3a8a;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.12);
+}
+.btn-billing-primary:hover {
+    background: #f1f5f9;
+    transform: translateY(-1px);
+    box-shadow: 0 4px 16px rgba(0,0,0,0.15);
+}
+
+.btn-billing-secondary {
+    background: rgba(255,255,255,0.15);
+    color: #ffffff;
+    border: 1px solid rgba(255,255,255,0.3);
+    backdrop-filter: blur(4px);
+}
+.btn-billing-secondary:hover {
+    background: rgba(255,255,255,0.25);
+    transform: translateY(-1px);
+}
+
+/* Secondary inside cards (non-plan-card) */
+.billing-card .btn-billing-secondary {
+    background: #f8fafc;
+    color: #334155;
+    border: 1px solid #e2e8f0;
+}
+.billing-card .btn-billing-secondary:hover {
+    background: #f1f5f9;
+    border-color: #cbd5e1;
+    transform: translateY(-1px);
+}
+
+.btn-billing-ghost {
+    background: none;
+    border: 1px solid #e2e8f0;
+    color: #64748b;
+    padding: 8px 16px;
+    font-size: 0.85rem;
+}
+.btn-billing-ghost:hover {
+    background: #f8fafc;
+    color: #334155;
+}
+
+.btn-billing-danger { background: #fef2f2; color: #dc2626; border: 1px solid #fecaca; }
+.btn-billing-danger:hover { background: #fee2e2; transform: translateY(-1px); }
+.btn-full-width { width: 100%; }
+
+/* ============================================================
+   SECTIONS 2 & 3: Add-on Items
+   ============================================================ */
+.addon-list {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+.addon-item {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    padding: 14px 16px;
+    background: #f8fafc;
+    border-radius: 12px;
+    border: 1px solid #f1f5f9;
+    transition: all 0.2s ease;
+}
+.addon-item:hover { background: #f1f5f9; border-color: #e2e8f0; }
+.addon-item--active { border-left: 3px solid #10b981; }
+
+.addon-icon {
+    width: 38px; height: 38px;
+    border-radius: 10px;
+    display: flex; align-items: center; justify-content: center;
+    flex-shrink: 0;
+}
+.addon-icon i { width: 18px; height: 18px; }
+.addon-icon--green { background: #d1fae5; color: #059669; }
+.addon-icon--purple { background: #ede9fe; color: #7c3aed; }
+.addon-icon--blue { background: #dbeafe; color: #2563eb; }
+.addon-icon--orange { background: #fff7ed; color: #ea580c; }
+
+.addon-info { flex: 1; min-width: 0; }
+.addon-name { font-size: 0.9rem; font-weight: 600; color: #0f172a; margin: 0; }
+.addon-price { font-size: 0.8rem; color: #64748b; margin: 2px 0 0 0; }
+
+.btn-addon-add {
+    display: inline-flex; align-items: center; gap: 5px;
+    padding: 7px 14px;
+    background: #eff6ff;
+    color: #2563eb;
+    border: 1px solid #bfdbfe;
+    border-radius: 8px;
+    font-size: 0.8rem;
+    font-weight: 600;
+    cursor: pointer;
+    white-space: nowrap;
+    transition: all 0.2s ease;
+    font-family: inherit;
+}
+.btn-addon-add i { width: 13px; height: 13px; }
+.btn-addon-add:hover:not([disabled]) { background: #2563eb; color: #fff; border-color: #2563eb; transform: translateY(-1px); }
+.btn-addon-add[disabled] { background: #f0fdf4; color: #16a34a; border-color: #bbf7d0; cursor: default; }
+.btn-addon-add.btn-addon-added { background: #f0fdf4; color: #16a34a; border-color: #bbf7d0; }
+
+.btn-addon-remove {
+    display: inline-flex; align-items: center; gap: 4px;
+    padding: 6px 12px;
+    background: #fff5f5;
+    color: #e11d48;
+    border: 1px solid #fecdd3;
+    border-radius: 8px;
+    font-size: 0.8rem;
+    font-weight: 600;
+    cursor: pointer;
+    white-space: nowrap;
+    transition: all 0.2s ease;
+    font-family: inherit;
+}
+.btn-addon-remove i { width: 12px; height: 12px; }
+.btn-addon-remove:hover { background: #e11d48; color: #fff; border-color: #e11d48; }
+
+/* ============================================================
+/* ============================================================
+   SECTION 2: Quality Plan Features Card (Light Theme)
+   ============================================================ */
+.billing-plan-card--features-theme {
+    background: #ffffff;
+    color: #0f172a;
+    border-radius: 20px;
+    padding: 0;
+    overflow: hidden;
+    box-shadow: 0 4px 16px rgba(0,0,0,0.03);
+    position: relative;
+    border: 1px solid #f1f5f9;
+}
+
+.features-card-header {
+    background: #f8fafc;
+    padding: 1.75rem 2.5rem;
+    border-bottom: 1px solid #e2e8f0;
+    display: flex;
+    align-items: center;
+    gap: 1.25rem;
+    position: relative;
+}
+.features-card-header .section-title { color: #0f172a !important; }
+.features-card-header .section-sub { color: #64748b; }
+
+.features-card-header-icon {
+    width: 44px; height: 44px;
+    background: #e0e7ff;
+    color: #4f46e5;
+    border-radius: 12px;
+    display: flex; align-items: center; justify-content: center;
+}
+.features-count-badge {
+    margin-left: auto;
+    background: #dcfce7; color: #16a34a;
+    font-size: 0.75rem; font-weight: 700;
+    padding: 4px 12px; border-radius: 20px;
+}
+
+.features-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1rem 2rem;
+    padding: 2rem 2.5rem;
+    position: relative;
+    z-index: 1;
+}
+.features-grid--excluded { padding-top: 1.5rem; padding-bottom: 2.5rem; }
+
+.feature-row { display: flex; align-items: center; gap: 12px; }
+.feature-label { font-size: 0.92rem; font-weight: 500; color: #334155; }
+.feature-row--excluded .feature-label { color: #94a3b8; }
+
+.features-divider {
+    width: 100%; height: 1px;
+    background: #f1f5f9;
+    position: relative; margin: 0;
+}
+.features-divider span {
+    position: absolute; top: 50%; left: 2.5rem; transform: translateY(-50%);
+    background: #ffffff; padding: 0 10px;
+    font-size: 0.75rem; font-weight: 600; text-transform: uppercase;
+    letter-spacing: 0.05em; color: #94a3b8;
+}
+
+.feature-check {
+    width: 24px; height: 24px; border-radius: 6px;
+    background: #dcfce7; color: #16a34a;
+    display: flex; align-items: center; justify-content: center; flex-shrink: 0;
+}
+.feature-check i { width: 14px; height: 14px; stroke-width: 3; }
+.feature-check--no { background: #f1f5f9; color: #cbd5e1; }
+
+/* ============================================================
+   SECTION 3: Available Add-ons (Light Theme)
+   ============================================================ */
+.billing-plan-card--addons-theme {
+    background: #ffffff;
+    color: #0f172a;
+    border-radius: 20px;
+    padding: 2rem 2.5rem;
+    border: 1px solid #f1f5f9;
+    box-shadow: 0 4px 16px rgba(0,0,0,0.03);
+    position: relative;
+    overflow: hidden;
+}
+.billing-plan-card--addons-theme .section-title { color: #0f172a; }
+.billing-plan-card--addons-theme .section-sub { color: #64748b; }
+.billing-plan-card--addons-theme .addon-count-badge { background: #eff6ff; color: #2563eb; }
+
+.addon-list--rich { gap: 14px; position: relative; z-index: 1; }
+
+.addon-item--rich {
+    padding: 16px 20px;
+    background: #ffffff;
+    border: 1px solid #e2e8f0;
+    border-radius: 12px;
+    transition: all 0.2s ease;
+}
+.addon-item--rich:hover {
+    background: #f8fafc;
+    border-color: #cbd5e1;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+}
+.addon-item--rich.addon-item--active {
+    background: #f8fafc;
+    border-color: #e2e8f0;
+    border-left: 4px solid #10b981;
+}
+
+.addon-icon--blue { background: #dbeafe; color: #2563eb; }
+.addon-icon--orange { background: #fff7ed; color: #ea580c; }
+
+.addon-item--rich .addon-name { color: #0f172a; font-size: 0.95rem; font-weight: 600; }
+.addon-item--rich .addon-desc { color: #64748b; }
+.addon-item--rich .addon-price { color: #334155; font-weight: 500; }
+
+.btn-addon-cta {
+    background: #ffffff; color: #0f172a; border: 1px solid #e2e8f0;
+    padding: 8px 16px; border-radius: 8px; font-weight: 600;
+}
+.btn-addon-cta:hover { background: #1e3a8a; color: #ffffff; border-color: #1e3a8a; transform: translateY(-1px); }
+
+.btn-addon-active-state {
+    background: transparent !important; border: none !important;
+    color: #10b981 !important; font-weight: 700; font-size: 0.85rem; padding: 0; cursor: default;
+}
+
+/* ============================================================
+   SECTION 4: Payment Method Card (Light Theme)
+   ============================================================ */
+.billing-plan-card--payment-theme {
+    background: #ffffff;
+    color: #0f172a;
+    border-radius: 20px;
+    padding: 2rem 2.5rem;
+    border: 1px solid #f1f5f9;
+    box-shadow: 0 4px 16px rgba(0,0,0,0.03);
+    position: relative;
+    overflow: hidden;
+}
+
+.billing-plan-card--payment-theme .section-title { color: #0f172a; }
+.billing-plan-card--payment-theme .section-sub { color: #64748b; }
+
+.billing-plan-card--payment-theme .btn-billing-secondary {
+    background: #f8fafc !important;
+    border-color: #e2e8f0 !important;
+    color: #334155 !important;
+}
+.billing-plan-card--payment-theme .btn-billing-secondary:hover {
+    background: #f1f5f9 !important;
+    border-color: #cbd5e1 !important;
+}
+.billing-plan-card--payment-theme .secure-note {
+    color: #94a3b8;
+}
+
+.payment-method-card {
+    background: linear-gradient(135deg, #1a1f71, #2d3a8c);
+    border-radius: 16px;
+    padding: 1.5rem 1.75rem;
+    position: relative;
+    overflow: hidden;
+    color: #fff;
+    box-shadow: 0 4px 20px rgba(0,0,0,0.3);
+}
+.payment-method-card::before {
+    content: '';
+    position: absolute;
+    top: -30px; right: -30px;
+    width: 140px; height: 140px;
+    background: rgba(255,255,255,0.06);
+    border-radius: 50%;
+}
+
+.card-chip {
+    width: 36px; height: 28px;
+    background: linear-gradient(135deg, #c9a227, #f5d17a);
+    border-radius: 5px;
+    margin-bottom: 1.5rem;
+    position: relative;
+}
+.card-chip::before {
+    content: '';
+    position: absolute;
+    top: 50%; left: 0; right: 0;
+    height: 1px;
+    background: rgba(0,0,0,0.15);
+    transform: translateY(-50%);
+}
+
+.card-network { position: absolute; top: 1.4rem; right: 1.5rem; }
+.card-number { font-size: 1.15rem; font-weight: 600; letter-spacing: 0.15em; margin-bottom: 1.25rem; }
+.card-meta { display: flex; gap: 2rem; }
+.card-meta-label { font-size: 0.65rem; text-transform: uppercase; letter-spacing: 0.08em; color: rgba(255,255,255,0.5); margin: 0 0 3px 0; }
+.card-meta-value { font-size: 0.9rem; font-weight: 600; color: #fff; margin: 0; }
+
+.secure-note {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 0.75rem;
+    color: #94a3b8;
+    margin-top: 0.75rem;
+}
+.secure-note i { width: 12px; height: 12px; }
+
+/* ============================================================
+   SECTION 5: Payment History Table (Light Theme)
+   ============================================================ */
+.billing-plan-card--history-theme {
+    background: #ffffff;
+    color: #0f172a;
+    border-radius: 20px;
+    padding: 2.5rem;
+    border: 1px solid #f1f5f9;
+    box-shadow: 0 4px 16px rgba(0,0,0,0.03);
+    position: relative;
+}
+.billing-plan-card--history-theme .section-title { color: #0f172a; }
+.billing-plan-card--history-theme .section-sub { color: #64748b; }
+.billing-plan-card--history-theme .btn-billing-ghost {
+    color: #64748b; border: 1px solid #e2e8f0; background: transparent;
+}
+.billing-plan-card--history-theme .btn-billing-ghost:hover {
+    background: #f8fafc; color: #334155;
+}
+
+.payment-table-wrap { overflow-x: auto; border-radius: 12px; border: 1px solid #e2e8f0; background: #ffffff; }
+.payment-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.875rem;
+}
+.payment-table thead tr { background: #f8fafc; border-bottom: 1px solid #e2e8f0; }
+.payment-table th {
+    text-align: left;
+    padding: 14px 20px;
+    font-size: 0.75rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: #64748b;
+    white-space: nowrap;
+}
+.payment-table tbody tr {
+    border-bottom: 1px solid #f8fafc;
+    transition: background 0.2s ease;
+}
+.payment-table tbody tr:last-child { border-bottom: none; }
+.payment-table tbody tr:hover { background: #f8fafc; }
+.payment-table td { padding: 16px 20px; color: #334155; vertical-align: middle; }
+.td-date { color: #64748b; font-size: 0.85rem; white-space: nowrap; }
+.td-desc { color: #0f172a; font-weight: 500; }
+.td-amount { font-weight: 700; color: #0f172a; }
+
+.status-pill {
+    display: inline-flex; align-items: center;
+    padding: 4px 10px;
+    border-radius: 20px;
+    font-size: 0.75rem;
+    font-weight: 600;
+    white-space: nowrap;
+}
+.status-pill--paid { background: #f0fdf4; color: #16a34a; border: 1px solid #bbf7d0; }
+.status-pill--due { background: #fff7ed; color: #ea580c; border: 1px solid #fed7aa; }
+.status-pill--pending { background: #fefce8; color: #ca8a04; border: 1px solid #fef08a; }
+
+.billing-plan-card--history-theme .btn-invoice {
+    display: inline-flex; align-items: center; gap: 5px;
+    padding: 6px 12px;
+    background: #f8fafc;
+    color: #334155;
+    border: 1px solid #e2e8f0;
+    border-radius: 7px;
+    font-size: 0.8rem;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+.billing-plan-card--history-theme .btn-invoice:hover { background: #1e3a8a; color: #fff; border-color: #1e3a8a; }
+
+.billing-plan-card--history-theme .btn-pay-now {
+    background: #fff7ed;
+    color: #ea580c;
+    border-color: #fed7aa;
+}
+.billing-plan-card--history-theme .btn-pay-now:hover { background: #ea580c; color: #fff; border-color: #ea580c; transform: translateY(-1px); }
+
+/* ============================================================
+   Toast Notification
+   ============================================================ */
+.billing-toast {
+    position: fixed;
+    bottom: 2rem; right: 2rem;
+    background: #0f172a;
+    color: #fff;
+    padding: 12px 20px;
+    border-radius: 10px;
+    font-size: 0.9rem;
+    font-weight: 500;
+    box-shadow: 0 8px 24px rgba(0,0,0,0.2);
+    transform: translateY(80px);
+    opacity: 0;
+    transition: all 0.35s cubic-bezier(0.16, 1, 0.3, 1);
+    z-index: 9999;
+}
+.billing-toast.show { transform: translateY(0); opacity: 1; }
+
+/* ============================================================
+   Responsive
+   ============================================================ */
+@media (max-width: 900px) {
+    .billing-grid { grid-template-columns: 1fr; }
+    .plan-row { flex-direction: column; }
+    .billing-plan-card--compact,
+    .billing-plan-card--addons { flex: none; width: 100%; }
+    .billing-plan-card { flex-direction: column; align-items: flex-start; }
+    .plan-meta-grid { grid-template-columns: repeat(2, auto); }
+    .plan-actions { flex-direction: row; flex-wrap: wrap; width: 100%; }
+}

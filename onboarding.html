@@ -1,0 +1,203 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Set up your salon and branches in BharathBots Salon Saas.">
+    <title>Salon Setup - BharathBots</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="styles.css">
+    <link rel="stylesheet" href="onboarding.css">
+</head>
+<body class="onboarding-page">
+    <div class="onboarding-container">
+        
+        <!-- Header -->
+        <div class="onboarding-header">
+            <div class="logo">
+                <svg width="24" height="24" viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <rect x="2" y="6" width="28" height="20" rx="4" stroke="currentColor" stroke-width="2"/>
+                    <path d="M8 12C8 12 11 16 16 16C21 16 24 12 24 12" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+                    <circle cx="16" cy="16" r="2" fill="currentColor"/>
+                </svg>
+                <span>BharathBots</span>
+            </div>
+        </div>
+
+        <!-- Wizard Card -->
+        <div class="wizard-card">
+            
+            <!-- Progress Indicator -->
+            <div class="wizard-progress">
+                <div class="progress-step active" data-step="1">
+                    <div class="step-circle">1</div>
+                    <span class="step-label">Salon Details</span>
+                </div>
+                <div class="progress-line"></div>
+                <div class="progress-step" data-step="2">
+                    <div class="step-circle">2</div>
+                    <span class="step-label">Branch Details</span>
+                </div>
+                <div class="progress-line"></div>
+                <div class="progress-step" data-step="3">
+                    <div class="step-circle">3</div>
+                    <span class="step-label">Confirm Setup</span>
+                </div>
+            </div>
+
+            <!-- Wizard Contents -->
+            <div class="wizard-content">
+                
+                <!-- STEP 1: Salon Details -->
+                <div class="wizard-step active" id="step1">
+                    <div class="step-header">
+                        <h2>Salon Details</h2>
+                        <p>Tell us about your business to get started.</p>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="salonName">Salon / Company Name</label>
+                        <input type="text" id="salonName" placeholder="e.g. Lumina Grand Spa" required>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="businessType">Business Type</label>
+                        <select id="businessType" class="form-select" required>
+                            <option value="" disabled selected>Select business type</option>
+                            <option value="salon">Salon</option>
+                            <option value="spa">Spa</option>
+                            <option value="clinic">Clinic</option>
+                        </select>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="salonPhone">Phone Number</label>
+                        <input type="tel" id="salonPhone" placeholder="+91 (000) 000-0000" required>
+                    </div>
+
+                    <div class="row-group">
+                        <div class="form-group half">
+                            <label for="country">Country</label>
+                            <select id="country" class="form-select" required>
+                                <option value="IN" selected>India</option>
+                                <option value="US">United States</option>
+                                <option value="UK">United Kingdom</option>
+                                <option value="AE">UAE</option>
+                            </select>
+                        </div>
+                        <div class="form-group half">
+                            <label for="timezone">Timezone</label>
+                            <select id="timezone" class="form-select" required>
+                                <option value="Asia/Kolkata" selected>(UTC+05:30) Chennai, Kolkata, Mumbai</option>
+                                <option value="America/New_York">(UTC-05:00) Eastern Time</option>
+                                <option value="Europe/London">(UTC+00:00) London</option>
+                                <option value="Asia/Dubai">(UTC+04:00) Abu Dhabi, Muscat</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="wizard-actions right-align">
+                        <button class="btn-primary btn-next" onclick="nextStep(2)">Continue to Branch</button>
+                    </div>
+                </div>
+
+                <!-- STEP 2: Branch Details -->
+                <div class="wizard-step" id="step2">
+                    <div class="step-header">
+                        <h2>Branch Details</h2>
+                        <p>Add your first salon branch. You can add more later.</p>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="locationName">Branch Name</label>
+                        <input type="text" id="locationName" placeholder="e.g. Downtown Branch" required>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="address">Address</label>
+                        <input type="text" id="address" placeholder="123 Main Street" required>
+                    </div>
+
+                    <div class="row-group">
+                        <div class="form-group half">
+                            <label for="city">City</label>
+                            <input type="text" id="city" placeholder="Bangalore" required>
+                        </div>
+                        <div class="form-group half">
+                            <label for="state">State / Province</label>
+                            <input type="text" id="state" placeholder="Karnataka" required>
+                        </div>
+                    </div>
+
+                    <div class="row-group">
+                        <div class="form-group half">
+                            <label for="pincode">Pincode / Zip Code</label>
+                            <input type="text" id="pincode" placeholder="560001" required>
+                        </div>
+                        <div class="form-group half">
+                            <label for="locationPhone">Branch Phone Number</label>
+                            <input type="tel" id="locationPhone" placeholder="+91 (000) 000-0000" required>
+                        </div>
+                    </div>
+
+                    <div class="wizard-actions space-between">
+                        <button class="btn-secondary btn-back" onclick="prevStep(1)">Back</button>
+                        <button class="btn-primary btn-next" onclick="prepareConfirmation()">Review Details</button>
+                    </div>
+                </div>
+
+                <!-- STEP 3: Confirm Setup -->
+                <div class="wizard-step" id="step3">
+                    <div class="step-header">
+                        <h2>Confirm Setup</h2>
+                        <p>Review your details before we create your workspace.</p>
+                    </div>
+
+                    <div class="summary-card">
+                        <div class="summary-row">
+                            <span class="summary-label">Selected Plan</span>
+                            <span class="summary-value highlight-plan" id="summaryPlan">--</span>
+                        </div>
+                        <hr class="summary-divider">
+                        <div class="summary-row">
+                            <span class="summary-label">Salon Name</span>
+                            <span class="summary-value" id="summarySalon">--</span>
+                        </div>
+                        <div class="summary-row">
+                            <span class="summary-label">Business Type</span>
+                            <span class="summary-value capitalize" id="summaryType">--</span>
+                        </div>
+                        <hr class="summary-divider">
+                        <div class="summary-row">
+                            <span class="summary-label">Branch Details</span>
+                            <span class="summary-value" id="summaryLocation">--</span>
+                        </div>
+                        <div class="summary-row">
+                            <span class="summary-label">City</span>
+                            <span class="summary-value" id="summaryCity">--</span>
+                        </div>
+                        <div class="summary-row">
+                            <span class="summary-label">Pincode</span>
+                            <span class="summary-value" id="summaryPincode">--</span>
+                        </div>
+                    </div>
+
+                    <!-- Error display area -->
+                    <div id="apiError" class="api-error" style="display: none;"></div>
+
+                    <div class="wizard-actions space-between">
+                        <button class="btn-secondary btn-back" onclick="prevStep(2)">Edit Details</button>
+                        <button class="btn-primary" id="btnSubmit" onclick="submitOnboarding()">Create My Salon</button>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+    </div>
+
+    <!-- Scripts -->
+    <script src="onboarding.js"></script>
+</body>
+</html>

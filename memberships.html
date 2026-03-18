@@ -1,0 +1,2340 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Dashboard for BharathBots Salon SaaS.">
+    <title>Dashboard - BharathBots</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="styles.css">
+    <link rel="stylesheet" href="dashboard.css">
+    <link rel="stylesheet" href="submenu.css">
+    <!-- Feather Icons for a clean SaaS look -->
+    <script src="https://unpkg.com/feather-icons"></script>
+
+    <style>
+        /* ── Memberships Page Header (Shared with Customers) ─────────────────────────────── */
+        .page-header-container {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 0.75rem 0;
+            gap: 1rem;
+            border-bottom: 1px solid #e2e8f0;
+            margin-bottom: 1.25rem;
+        }
+
+        .title-block {
+            display: flex;
+            flex-direction: column;
+            gap: 2px;
+        }
+
+        .page-title {
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: #0f172a;
+            margin: 0;
+            line-height: 1.2;
+            letter-spacing: -0.3px;
+        }
+
+        .page-caption {
+            font-size: 0.875rem;
+            color: #64748b;
+            margin: 0;
+            font-weight: 400;
+        }
+
+        .header-actions {
+            display: flex;
+            align-items: center;
+            justify-content: flex-end;
+            gap: 0.625rem;
+        }
+
+        /* Search — compact design */
+        .integrated-search-wrap {
+            display: flex;
+            align-items: center;
+            height: 38px;
+            width: 400px;
+            background: #fff;
+            border: 1px solid #e2e8f0;
+            border-radius: 0.5rem;
+            overflow: hidden;
+        }
+
+        .integrated-search-wrap:focus-within {
+            background: #fff;
+            border-color: #a855f7;
+            box-shadow: 0 4px 12px rgba(168, 85, 247, 0.15), 0 0 0 3px rgba(168, 85, 247, 0.1);
+            transform: translateY(-1px);
+        }
+
+        .integrated-search-icon {
+            width: 15px;
+            height: 15px;
+            color: #94a3b8;
+            flex-shrink: 0;
+            margin-left: 0.75rem;
+            pointer-events: none;
+        }
+
+        .integrated-search-input {
+            flex: 1;
+            min-width: 0;
+            padding: 0.55rem 0.75rem;
+            border: none;
+            background: transparent;
+            font-size: 0.875rem;
+            font-family: inherit;
+            color: #0f172a;
+            outline: none;
+        }
+        /* Toggle Switch Styling */
+        .toggle-switch { position: relative; display: inline-block; width: 44px; height: 24px; }
+        .toggle-switch input { opacity: 0; width: 0; height: 0; }
+        .toggle-slider {
+            position: absolute; cursor: pointer; inset: 0;
+            background: #cbd5e1; border-radius: 24px; transition: 0.2s;
+        }
+        .toggle-slider:before {
+            content: ""; position: absolute; height: 18px; width: 18px;
+            left: 3px; bottom: 3px; background: #fff; border-radius: 50%; transition: 0.2s;
+        }
+        .toggle-switch input:checked + .toggle-slider { background: #7c3aed; }
+        .toggle-switch input:checked + .toggle-slider:before { transform: translateX(20px); }
+
+        .modal-section-title {
+            font-size: 0.75rem;
+            font-weight: 700;
+            color: #94a3b8;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            margin: 1.5rem 0 1rem;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        .modal-section-title::after {
+            content: '';
+            flex: 1;
+            height: 1px;
+            background: #f1f5f9;
+        }
+        
+        .benefit-row {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 1.25rem;
+            margin-bottom: 1.25rem;
+        }
+        
+        .free-svc-item {
+            display: grid;
+            grid-template-columns: 1fr 70px 130px 32px;
+            gap: 8px;
+            align-items: center;
+            margin-bottom: 8px;
+            animation: slideIn 0.2s ease-out;
+        }
+
+        @keyframes slideIn {
+            from { opacity: 0; transform: translateY(5px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        
+        /* Layout Fixes */
+        #planModal .modal-body {
+            display: block !important;
+            flex-direction: column !important;
+            overflow-x: hidden !important;
+        }
+
+        .benefit-row {
+            display: grid !important;
+            grid-template-columns: 1fr 1fr !important;
+            gap: 1.25rem !important;
+            margin-bottom: 1.25rem !important;
+            width: 100% !important;
+        }
+
+        .modal-section-title {
+            width: 100% !important;
+            display: flex !important;
+            align-items: center !important;
+            gap: 10px !important;
+            margin: 1.5rem 0 1rem !important;
+        }
+        
+        #planModal .form-group,
+        #assignModal .form-group {
+            display: flex !important;
+            flex-direction: column !important;
+            width: 100% !important;
+            margin-bottom: 1.5rem !important;
+        }
+
+        #assignModal .modal-body {
+            display: block !important;
+            padding: 1.5rem !important;
+        }
+
+        .modal-grid-2 {
+            display: grid !important;
+            grid-template-columns: 1fr 1fr !important;
+            gap: 2rem !important;
+        }
+
+        .payment-method-group {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+            margin-top: 8px;
+        }
+
+        .payment-method-card {
+            border: 1px solid #e2e8f0;
+            border-radius: 8px;
+            padding: 10px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            cursor: pointer;
+            transition: all 0.2s;
+            font-size: 0.85rem;
+            color: #475569;
+            background: #f8fafc;
+        }
+
+        .payment-method-card:hover {
+            border-color: #cbd5e1;
+            background: #f1f5f9;
+        }
+
+        .payment-method-card.active {
+            border-color: #1e3a8a;
+            background: #eff6ff;
+            color: #1e3a8a;
+            font-weight: 600;
+        }
+
+        .payment-method-card input {
+            display: none;
+        }
+
+        .svc-dropdown-label {
+            display: flex !important;
+            align-items: center !important;
+            justify-content: flex-start !important;
+            gap: 10px !important;
+            padding: 7px 14px !important;
+            width: 100% !important;
+            box-sizing: border-box !important;
+            cursor: pointer !important;
+            transition: background 0.2s !important;
+            font-size: 0.85rem !important;
+            color: #334155 !important;
+            text-align: left !important;
+        }
+        .svc-dropdown-label:hover {
+            background: #f8fafc !important;
+        }
+        .svc-dropdown-label input {
+            margin: 0 !important;
+            width: 16px !important;
+            height: 16px !important;
+            flex-shrink: 0 !important;
+        }
+        .search-action-btn {
+            display: none;
+        }
+
+        /* Override dashboard.css for white buttons */
+        .qa-btn.qa-secondary {
+            background-color: #ffffff !important;
+        }
+
+
+        /* Dropdown Actions Styling */
+        .dropdown-container {
+            position: relative;
+            display: inline-block;
+        }
+
+        .dropdown-content {
+            display: none;
+            position: absolute;
+            right: 0;
+            background-color: #ffffff;
+            min-width: 170px;
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+            border-radius: 10px;
+            z-index: 1000;
+            border: 1px solid #e2e8f0;
+            margin-top: 8px;
+            overflow: hidden;
+            text-align: left !important;
+            animation: slideIn 0.2s ease-out;
+        }
+
+        .dropdown-item-link {
+            padding: 10px 16px !important;
+            text-decoration: none !important;
+            display: flex !important;
+            align-items: center !important;
+            justify-content: flex-start !important;
+            gap: 12px !important;
+            color: #475569 !important;
+            font-size: 0.9rem !important;
+            transition: all 0.2s !important;
+            text-align: left !important;
+            width: 100%;
+            box-sizing: border-box;
+        }
+
+        .dropdown-item-link:hover {
+            background-color: #f8fafc !important;
+            color: #1e293b !important;
+        }
+
+        .dropdown-item-link i {
+            width: 16px !important;
+            height: 16px !important;
+            color: #94a3b8 !important;
+            flex-shrink: 0;
+        }
+
+        .dropdown-item-link:hover i {
+            color: #64748b !important;
+        }
+
+        .dropdown-item-link.text-danger {
+            color: #ef4444 !important;
+        }
+
+        .dropdown-item-link.text-danger i {
+            color: #fca5a5 !important;
+        }
+
+        .dropdown-item-link.text-danger:hover {
+            background-color: #fef2f2 !important;
+            color: #dc2626 !important;
+        }
+
+        .dropdown-item-link.text-danger:hover i {
+            color: #ef4444 !important;
+        }
+
+
+        /* Data Table */
+        .premium-table {
+            width: 100%;
+            border-collapse: collapse;
+            text-align: left;
+            background: #ffffff;
+        }
+
+        .premium-table th {
+            font-size: 0.75rem;
+            font-weight: 600;
+            color: #64748b;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            padding: 1rem 1.5rem;
+            border-bottom: 2px solid #e2e8f0;
+            background-color: #f8fafc;
+        }
+
+        .premium-table th:first-child,
+        .premium-table td:first-child {
+            padding-left: 2rem;
+        }
+
+        .premium-table th:last-child,
+        .premium-table td:last-child {
+            padding-right: 2rem;
+        }
+
+        .premium-table td {
+            padding: 1rem 1.5rem;
+            border-bottom: 1px solid #f1f5f9;
+            vertical-align: middle;
+            color: #334155;
+            font-size: 0.9rem;
+        }
+
+        .premium-table tbody tr:hover {
+            background-color: #f8fafc;
+        }
+
+        /* Icon backgrounds */
+        .bg-indigo-light { background-color: #eef2ff; color: #4f46e5; }
+        .bg-emerald-light { background-color: #ecfdf5; color: #10b981; }
+        .bg-amber-light { background-color: #fffbeb; color: #d97706; }
+        .bg-rose-light { background-color: #fff1f2; color: #e11d48; }
+    </style>
+</head>
+
+<body class="dashboard-body">
+
+    <!-- Collapsible Sidebar -->
+    <aside class="sidebar" id="sidebar">
+        <div class="sidebar-header">
+            <div class="logo">
+                <svg width="24" height="24" viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <rect x="2" y="6" width="28" height="20" rx="4" stroke="currentColor" stroke-width="2" />
+                    <path d="M8 12C8 12 11 16 16 16C21 16 24 12 24 12" stroke="currentColor" stroke-width="2"
+                        stroke-linecap="round" />
+                    <circle cx="16" cy="16" r="2" fill="currentColor" />
+                </svg>
+                <span class="logo-text">BharathBots</span>
+            </div>
+            <button class="toggle-btn" id="sidebarToggle" title="Close sidebar">
+                <i data-feather="sidebar" class="toggle-icon"></i>
+            </button>
+        </div>
+
+        <nav class="sidebar-nav">
+            <ul class="nav-list">
+                <!-- Dashboard -->
+                <li class="nav-item" title="Dashboard">
+                    <a href="dashboard.html" class="nav-link">
+                        <i data-feather="home" class="nav-icon"></i>
+                        <span class="nav-text">Dashboard</span>
+                    </a>
+                </li>
+
+                <!-- Bookings -->
+                <li class="nav-item" title="Bookings">
+                    <a href="bookings.html" class="nav-link">
+                        <i data-feather="calendar" class="nav-icon"></i>
+                        <span class="nav-text">Bookings</span>
+                    </a>
+                </li>
+
+                <!-- Customers -->
+                <li class="nav-item" title="Customers">
+                    <a href="customers.html" class="nav-link">
+                        <i data-feather="users" class="nav-icon"></i>
+                        <span class="nav-text">Customers</span>
+                    </a>
+                </li>
+
+                <!-- Staff -->
+                <li class="nav-item" title="Staff">
+                    <a href="staff.html" class="nav-link">
+                        <i data-feather="user-check" class="nav-icon"></i>
+                        <span class="nav-text">Staff</span>
+                    </a>
+                </li>
+
+                <!-- Services -->
+                <li class="nav-item" title="Services">
+                <a href="services.html" class="nav-link">
+                    <i data-feather="scissors" class="nav-icon"></i>
+                    <span class="nav-text">Services</span>
+                </a>
+            </li>
+
+                <!-- Sales -->
+                <li class="nav-item has-submenu" title="Sales">
+                    <div class="nav-link submenu-toggle">
+                        <i data-feather="dollar-sign" class="nav-icon"></i>
+                        <span class="nav-text">Sales</span>
+                        <i data-feather="chevron-down" class="submenu-arrow"></i>
+                    </div>
+                    <ul class="submenu">
+                        <li><a href="pos.html" class="submenu-link"><span class="submenu-bullet">&bull;</span><span
+                                    class="nav-text">Point of Sale</span></a></li>
+                        <li><a href="products.html" class="submenu-link"><span class="submenu-bullet">&bull;</span><span
+                                    class="nav-text">Products</span></a></li>
+                        <li><a href="sales-history.html" class="submenu-link"><span class="submenu-bullet">&bull;</span><span class="nav-text">Sales History</span></a></li>
+                    </ul>
+                </li>
+
+                <!-- Payments -->
+                <li class="nav-item has-submenu" title="Payments">
+                    <div class="nav-link submenu-toggle">
+                        <i data-feather="credit-card" class="nav-icon"></i>
+                        <span class="nav-text">Payments</span>
+                        <i data-feather="chevron-down" class="submenu-arrow"></i>
+                    </div>
+                    <ul class="submenu">
+                        <li><a href="pending-payments.html" class="submenu-link"><span class="submenu-bullet">&bull;</span><span
+                                    class="nav-text">Pending Payments</span></a></li>
+                        <li><a href="payments-history.html" class="submenu-link"><span class="submenu-bullet">&bull;</span><span
+                                    class="nav-text">Payments History</span></a></li>
+                    </ul>
+                </li>
+
+                <!-- Marketing -->
+                <li class="nav-item has-submenu active" title="Marketing">
+                    <div class="nav-link submenu-toggle">
+                        <i data-feather="gift" class="nav-icon"></i>
+                        <span class="nav-text">Marketing</span>
+                        <i data-feather="chevron-down" class="submenu-arrow"></i>
+                    </div>
+                    <ul class="submenu">
+                        <li><a href="offers.html" class="submenu-link"><span class="submenu-bullet">&bull;</span><span
+                                    class="nav-text">Offers</span></a></li>
+                        <li><a href="coupons.html" class="submenu-link"><span class="submenu-bullet">&bull;</span><span
+                                    class="nav-text">Coupons</span></a></li>
+                        <li><a href="memberships.html" class="submenu-link active"><span class="submenu-bullet">&bull;</span><span
+                                    class="nav-text">Memberships</span></a></li>
+                        <li><a href="ad-campaigns.html" class="submenu-link"><span class="submenu-bullet">&bull;</span><span
+                                    class="nav-text">Ad Campaigns</span></a></li>
+                    </ul>
+                </li>
+
+                <!-- Analytics -->
+                <li class="nav-item has-submenu" title="Analytics">
+                    <div class="nav-link submenu-toggle">
+                        <i data-feather="bar-chart-2" class="nav-icon"></i>
+                        <span class="nav-text">Analytics</span>
+                        <i data-feather="chevron-down" class="submenu-arrow"></i>
+                    </div>
+                    <ul class="submenu">
+                        <li><a href="overview.html" class="submenu-link"><span class="submenu-bullet">&bull;</span><span
+                                    class="nav-text">Overview</span></a></li>
+                        <li><a href="reports.html" class="submenu-link"><span class="submenu-bullet">&bull;</span><span
+                                    class="nav-text">Reports</span></a></li>
+                    </ul>
+                </li>
+
+                <!-- Settings -->
+                <li class="nav-item has-submenu" title="Settings">
+                    <div class="nav-link submenu-toggle">
+                        <i data-feather="settings" class="nav-icon"></i>
+                        <span class="nav-text">Settings</span>
+                        <i data-feather="chevron-down" class="submenu-arrow"></i>
+                    </div>
+                    <ul class="submenu">
+                        <li><a href="company.html" class="submenu-link"><span class="submenu-bullet">&bull;</span><span
+                                    class="nav-text">Company</span></a></li>
+                        <li><a href="branches.html" class="submenu-link"><span class="submenu-bullet">&bull;</span><span
+                                    class="nav-text">Branches</span></a></li>
+                        <li><a href="users.html" class="submenu-link"><span class="submenu-bullet">&bull;</span><span
+                                    class="nav-text">Users</span></a></li>
+                        <li><a href="roles-permissions.html" class="submenu-link"><span class="submenu-bullet">&bull;</span><span
+                                    class="nav-text">Roles & Permissions</span></a></li>
+                        <li><a href="custom-fields.html" class="submenu-link"><span class="submenu-bullet">&bull;</span><span
+                                    class="nav-text">Custom Fields</span></a></li>
+                        <li><a href="billing-subscription.html" class="submenu-link"><span class="submenu-bullet">&bull;</span><span
+                                    class="nav-text">Billing & Subscription</span></a></li>
+                    </ul>
+                </li>
+            </ul>
+        </nav>
+
+    </aside>
+
+    <!-- Main Content Wrapper -->
+    <div class="main-wrapper" id="mainWrapper">
+
+        <!-- Top Header Bar -->
+        <header class="top-header">
+            <div class="header-left">
+                <!-- Branch Switcher -->
+                <div class="branch-switcher">
+                    <i data-feather="map-pin" class="branch-icon"></i>
+                    <select id="branchSelect" class="branch-select">
+                        <option value="branch_1">Downtown Branch</option>
+                        <option value="branch_2">Uptown Spa</option>
+                    </select>
+                </div>
+            </div>
+
+            <div class="header-center">
+                <div class="search-bar">
+                    <i data-feather="search" class="search-icon"></i>
+                    <input type="text" placeholder="Search bookings, customers..." class="search-input">
+                </div>
+            </div>
+
+            <div class="header-right">
+                <!-- Quick Actions -->
+                <div class="quick-actions">
+                    <button class="qa-btn qa-primary" id="btnNewBooking">
+                        <i data-feather="calendar" class="qa-icon"></i>
+                        <span>New Booking</span>
+                    </button>
+                </div>
+                <div class="header-divider"></div>
+                <div class="plan-badge" id="headerPlanBadge">Growth</div>
+                <button class="icon-btn" title="Notifications">
+                    <i data-feather="bell"></i>
+                    <span class="notification-dot"></span>
+                </button>
+                <div class="user-profile" id="userProfileDropdown">
+                    <div class="avatar" id="avatarBtn">
+                        <img src="https://ui-avatars.com/api/?name=Admin+User&background=1E3A8A&color=fff" alt="User">
+                    </div>
+
+                    <!-- Profile Dropdown Menu -->
+                    <div class="profile-dropdown" id="profileMenu">
+                        <div class="dropdown-header">
+                            <p class="dropdown-name">Admin User</p>
+                            <p class="dropdown-role">Owner</p>
+                        </div>
+                        <div class="dropdown-divider"></div>
+                        <ul class="dropdown-list">
+                            <li>
+                                <a href="#" class="dropdown-item">
+                                    <i data-feather="user"></i>
+                                    <span>Profile</span>
+                                </a>
+                            </li>
+                            <li>
+                                <a href="#" class="dropdown-item">
+                                    <i data-feather="calendar"></i>
+                                    <span>Schedule</span>
+                                </a>
+                            </li>
+                            <li>
+                                <a href="#" class="dropdown-item">
+                                    <i data-feather="settings"></i>
+                                    <span>Settings</span>
+                                </a>
+                            </li>
+                            <li>
+                                <a href="#" class="dropdown-item">
+                                    <i data-feather="help-circle"></i>
+                                    <span>Support</span>
+                                </a>
+                            </li>
+                            <li>
+                                <a href="#" class="dropdown-item text-danger">
+                                    <i data-feather="log-out"></i>
+                                    <span>Logout</span>
+                                </a>
+                            </li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </header>
+
+        <!-- Profile Dropdown Backdrop -->
+        <div id="profileBackdrop" class="profile-backdrop"></div>
+
+        <!-- Page Content -->
+        <main class="content-area" style="display: flex; flex-direction: column; padding: 0; background-color: #f8fafc;">
+            
+            <!-- Premium Header Section -->
+            <div style="background-color: #ffffff; padding: 1rem 2rem; border-bottom: 1px solid #e2e8f0;">
+                <div class="page-header-container" style="border-bottom: none; margin-bottom: 0;">
+                <!-- Left: Title + Caption -->
+                <div class="title-block">
+                    <h1 class="page-title">Memberships</h1>
+                    <p class="page-caption">Manage customer membership plans and benefits</p>
+                </div>
+
+                <!-- Right: Search + Filter + Actions -->
+                <div class="header-actions">
+                    <!-- Integrated Search Bar -->
+                    <div class="integrated-search-wrap">
+                        <i data-feather="search" class="integrated-search-icon"></i>
+                        <input type="text" id="membershipSearch" placeholder="Search plans..." class="integrated-search-input">
+                    </div>
+                        <div style="position: relative;">
+                            <button id="btnFilter" class="qa-btn qa-secondary">
+                                <i data-feather="filter" class="qa-icon"></i>
+                                Filter
+                            </button>
+                            
+                            <!-- Filter Dropdown Panel -->
+                            <div id="filterPanel" style="display: none; position: absolute; top: calc(100% + 8px); right: 0; width: 580px; background: white; border-radius: 12px; box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1), 0 8px 10px -6px rgba(0, 0, 0, 0.1); border: 1px solid #e2e8f0; z-index: 100; padding: 1.5rem;">
+                                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.25rem;">
+                                    <h3 style="font-size: 1rem; font-weight: 700; color: #0f172a; margin: 0;">Filter Memberships</h3>
+                                    <button id="closeFilter" style="background: none; border: none; color: #94a3b8; cursor: pointer; padding: 4px;"><i data-feather="x" style="width: 18px; height: 18px;"></i></button>
+                                </div>
+                                
+                                <div id="filterGrid" style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 1.5rem; margin-bottom: 1.5rem;">
+                                    <!-- Column 1: Plan Type -->
+                                    <div id="filterColPlanType">
+                                        <p style="font-size: 0.75rem; font-weight: 700; color: #94a3b8; text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 12px;">Plan Type</p>
+                                        <div style="display: flex; flex-direction: column; gap: 10px;">
+                                            <label style="display: flex; align-items: center; gap: 8px; cursor: pointer; font-size: 0.9rem; color: #475569;"><input type="checkbox" checked style="accent-color: #1e3a8a;"> Gold Membership</label>
+                                            <label style="display: flex; align-items: center; gap: 8px; cursor: pointer; font-size: 0.9rem; color: #475569;"><input type="checkbox" style="accent-color: #1e3a8a;"> Silver Membership</label>
+                                            <label style="display: flex; align-items: center; gap: 8px; cursor: pointer; font-size: 0.9rem; color: #475569;"><input type="checkbox" style="accent-color: #1e3a8a;"> VIP Premium</label>
+                                            <label style="display: flex; align-items: center; gap: 8px; cursor: pointer; font-size: 0.9rem; color: #475569;"><input type="checkbox" style="accent-color: #1e3a8a;"> Trial Plan</label>
+                                        </div>
+                                    </div>
+                                    
+                                    <!-- Column 2: Duration -->
+                                    <div id="filterColDuration">
+                                        <p style="font-size: 0.75rem; font-weight: 700; color: #94a3b8; text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 12px;">Duration</p>
+                                        <div style="display: flex; flex-direction: column; gap: 10px;">
+                                            <label style="display: flex; align-items: center; gap: 8px; cursor: pointer; font-size: 0.9rem; color: #475569;"><input type="checkbox" style="accent-color: #1e3a8a;"> 1 Month</label>
+                                            <label style="display: flex; align-items: center; gap: 8px; cursor: pointer; font-size: 0.9rem; color: #475569;"><input type="checkbox" style="accent-color: #1e3a8a;"> 3 Months</label>
+                                            <label style="display: flex; align-items: center; gap: 8px; cursor: pointer; font-size: 0.9rem; color: #475569;"><input type="checkbox" style="accent-color: #1e3a8a;"> 6 Months</label>
+                                            <label style="display: flex; align-items: center; gap: 8px; cursor: pointer; font-size: 0.9rem; color: #475569;"><input type="checkbox" checked style="accent-color: #1e3a8a;"> 12 Months</label>
+                                        </div>
+                                    </div>
+
+                                    <!-- Column 3: Status -->
+                                    <div id="filterColStatus">
+                                        <p style="font-size: 0.75rem; font-weight: 700; color: #94a3b8; text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 12px;">Status</p>
+                                        <div style="display: flex; flex-direction: column; gap: 10px;">
+                                            <label style="display: flex; align-items: center; gap: 8px; cursor: pointer; font-size: 0.9rem; color: #475569;"><input type="checkbox" checked style="accent-color: #1e3a8a;"> Active</label>
+                                            <label style="display: flex; align-items: center; gap: 8px; cursor: pointer; font-size: 0.9rem; color: #475569;"><input type="checkbox" style="accent-color: #1e3a8a;"> Expired</label>
+                                            <label style="display: flex; align-items: center; gap: 8px; cursor: pointer; font-size: 0.9rem; color: #475569;"><input type="checkbox" style="accent-color: #1e3a8a;"> Cancelled</label>
+                                            <label style="display: flex; align-items: center; gap: 8px; cursor: pointer; font-size: 0.9rem; color: #475569;"><input type="checkbox" style="accent-color: #1e3a8a;"> Disabled</label>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div style="display: flex; gap: 12px; padding-top: 1.25rem; border-top: 1px solid #f1f5f9;">
+                                    <button id="resetFilter" style="flex: 1; padding: 10px; background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; font-size: 0.9rem; font-weight: 600; color: #64748b; cursor: pointer;">Reset</button>
+                                    <button id="applyFilter" style="flex: 1; padding: 10px; background: #1e3a8a; border: none; border-radius: 8px; font-size: 0.9rem; font-weight: 600; color: white; cursor: pointer;">Apply Filter</button>
+                                </div>
+                            </div>
+                        </div>
+                        <button id="primaryActionBtn" class="qa-btn qa-primary">
+                            <i data-feather="plus" id="actionIcon" class="qa-icon"></i>
+                            <span id="actionText">Create Plan</span>
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Main Content Body -->
+            <div style="padding: 1.5rem 0; flex: 1;">
+                
+
+                <!-- Tabs Navigation -->
+                <div style="display: flex; gap: 2.5rem; border-bottom: 2px solid #e2e8f0; margin-bottom: 1.5rem; padding: 0 2rem;">
+                    <button class="nav-tab active" data-tab="plans" style="padding: 0.75rem 0; font-size: 0.95rem; font-weight: 600; color: #7c3aed; background: none; border: none; border-bottom: 3px solid #7c3aed; cursor: pointer; transition: all 0.2s; margin-bottom: -2px;">
+                        Membership Plans
+                    </button>
+                    <button class="nav-tab" data-tab="purchases" style="padding: 0.75rem 0; font-size: 0.95rem; font-weight: 500; color: #64748b; background: none; border: none; border-bottom: 3px solid transparent; cursor: pointer; transition: all 0.2s; margin-bottom: -2px;">
+                        Purchases
+                    </button>
+                    <button class="nav-tab" data-tab="usage" style="padding: 0.75rem 0; font-size: 0.95rem; font-weight: 500; color: #64748b; background: none; border: none; border-bottom: 3px solid transparent; cursor: pointer; transition: all 0.2s; margin-bottom: -2px;">
+                        Usage History
+                    </button>
+                </div>
+
+                <!-- Table Containers -->
+                <div style="width: 100%; margin: 0;">
+                
+                <!-- 1. Membership Plans Table -->
+                <div id="plansTableContent" class="tab-content active" style="overflow-x: auto;">
+                    <table class="premium-table">
+                        <thead>
+                            <tr>
+                                <th>Plan Name</th>
+                                <th>Price</th>
+                                <th>Duration</th>
+                                <th>Benefits</th>
+                                <th>Members</th>
+                                <th>Status</th>
+                                <th style="text-align: right;">Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td>
+                                    <span style="font-weight: 600; color: #1e293b; display: block;">Gold Membership</span>
+                                </td>
+                                <td>
+                                    <span style="font-weight: 600; color: #059669;">₹2,999</span>
+                                </td>
+                                <td style="color: #64748b;">12 Months</td>
+                                <td style="color: #64748b;">20% off services</td>
+                                <td>
+                                    <button onclick="viewMembersByPlan('Gold Membership')" style="padding: 4px 10px; background-color: #eff6ff; color: #1e40af; border: 1px solid #bfdbfe; border-radius: 6px; font-size: 0.85rem; font-weight: 500; cursor: pointer; display: flex; align-items: center; gap: 4px;">
+                                        32 members
+                                        <i data-feather="external-link" style="width: 12px; height: 12px;"></i>
+                                    </button>
+                                </td>
+                                <td>
+                                    <span style="display: inline-flex; align-items: center; gap: 6px; padding: 4px 10px; border-radius: 20px; font-size: 0.75rem; font-weight: 600; background-color: #ecfdf5; color: #059669;">
+                                        <span style="width: 6px; height: 6px; border-radius: 50%; background-color: #10b981;"></span>
+                                        Active
+                                    </span>
+                                </td>
+                                <td style="text-align: right;">
+                                    <div class="dropdown-container">
+                                        <button class="dropdown-toggle" onclick="toggleDropdown(this)" style="padding: 6px 14px; background: #fff; border: 1px solid #e2e8f0; border-radius: 8px; font-size: 0.85rem; font-weight: 600; color: #475569; cursor: pointer; display: flex; align-items: center; gap: 6px; display: inline-flex; transition: all 0.2s;">
+                                            Actions
+                                            <i data-feather="chevron-down" style="width: 15px; height: 15px; color: #94a3b8;"></i>
+                                        </button>
+                                        <div class="dropdown-content">
+                                            <a href="#" class="dropdown-item-link"><i data-feather="edit-2"></i> Edit</a>
+                                            <a href="#" class="dropdown-item-link text-danger"><i data-feather="trash-2"></i> Delete</a>
+                                        </div>
+                                    </div>
+                                </td>
+                            </tr>
+                            <tr>
+                                <td>
+                                    <span style="font-weight: 600; color: #1e293b; display: block;">Silver Membership</span>
+                                </td>
+                                <td>
+                                    <span style="font-weight: 600; color: #059669;">₹1,499</span>
+                                </td>
+                                <td style="color: #64748b;">6 Months</td>
+                                <td style="color: #64748b;">10% off services</td>
+                                <td>
+                                    <button onclick="viewMembersByPlan('Silver Membership')" style="padding: 4px 10px; background-color: #eff6ff; color: #1e40af; border: 1px solid #bfdbfe; border-radius: 6px; font-size: 0.85rem; font-weight: 500; cursor: pointer; display: flex; align-items: center; gap: 4px;">
+                                        18 members
+                                        <i data-feather="external-link" style="width: 12px; height: 12px;"></i>
+                                    </button>
+                                </td>
+                                <td>
+                                    <span style="display: inline-flex; align-items: center; gap: 6px; padding: 4px 10px; border-radius: 20px; font-size: 0.75rem; font-weight: 600; background-color: #ecfdf5; color: #059669;">
+                                        <span style="width: 6px; height: 6px; border-radius: 50%; background-color: #10b981;"></span>
+                                        Active
+                                    </span>
+                                </td>
+                                <td style="text-align: right;">
+                                    <div class="dropdown-container">
+                                        <button class="dropdown-toggle" onclick="toggleDropdown(this)" style="padding: 6px 14px; background: #fff; border: 1px solid #e2e8f0; border-radius: 8px; font-size: 0.85rem; font-weight: 600; color: #475569; cursor: pointer; display: flex; align-items: center; gap: 6px; display: inline-flex; transition: all 0.2s;">
+                                            Actions
+                                            <i data-feather="chevron-down" style="width: 15px; height: 15px; color: #94a3b8;"></i>
+                                        </button>
+                                        <div class="dropdown-content" style="display:none; position: absolute; right: 0; background: #fff; min-width: 160px; box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1); border-radius: 10px; z-index: 100; border: 1px solid #e2e8f0; margin-top: 5px;">
+                                            <a href="#" style="padding: 10px 16px; text-decoration: none; display: block; color: #475569; font-size: 0.9rem; transition: background-color 0.2s;"><i data-feather="edit-2" style="width: 14px; height: 14px; margin-right: 8px;"></i> Edit</a>
+                                            <a href="#" style="padding: 10px 16px; text-decoration: none; display: block; color: #ef4444; font-size: 0.9rem; transition: background-color 0.2s;"><i data-feather="trash-2" style="width: 14px; height: 14px; margin-right: 8px;"></i> Delete</a>
+                                        </div>
+                                    </div>
+                                </td>
+                            </tr>
+                            <!-- VIP Premium -->
+                            <tr>
+                                <td>
+                                    <span style="font-weight: 600; color: #1e293b; display: block;">VIP Premium</span>
+                                </td>
+                                <td>
+                                    <span style="font-weight: 600; color: #059669;">₹5,000</span>
+                                </td>
+                                <td style="color: #64748b;">12 Months</td>
+                                <td style="color: #64748b;">Free haircut monthly</td>
+                                <td>
+                                    <button onclick="viewMembersByPlan('VIP Premium')" style="padding: 4px 10px; background-color: #eff6ff; color: #1e40af; border: 1px solid #bfdbfe; border-radius: 6px; font-size: 0.85rem; font-weight: 500; cursor: pointer; display: flex; align-items: center; gap: 4px;">
+                                        5 members
+                                        <i data-feather="external-link" style="width: 12px; height: 12px;"></i>
+                                    </button>
+                                </td>
+                                <td>
+                                    <span style="display: inline-flex; align-items: center; gap: 6px; padding: 4px 10px; border-radius: 20px; font-size: 0.75rem; font-weight: 600; background-color: #ecfdf5; color: #059669;">
+                                        <span style="width: 6px; height: 6px; border-radius: 50%; background-color: #10b981;"></span>
+                                        Active
+                                    </span>
+                                </td>
+                                <td style="text-align: right;">
+                                    <div class="dropdown-container">
+                                        <button class="dropdown-toggle" onclick="toggleDropdown(this)" style="padding: 6px 14px; background: #fff; border: 1px solid #e2e8f0; border-radius: 8px; font-size: 0.85rem; font-weight: 600; color: #475569; cursor: pointer; display: flex; align-items: center; gap: 6px; display: inline-flex; transition: all 0.2s;">
+                                            Actions
+                                            <i data-feather="chevron-down" style="width: 15px; height: 15px; color: #94a3b8;"></i>
+                                        </button>
+                                        <div class="dropdown-content" style="display:none; position: absolute; right: 0; background: #fff; min-width: 160px; box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1); border-radius: 10px; z-index: 100; border: 1px solid #e2e8f0; margin-top: 5px;">
+                                            <a href="#" style="padding: 10px 16px; text-decoration: none; display: block; color: #475569; font-size: 0.9rem; transition: background-color 0.2s;"><i data-feather="edit-2" style="width: 14px; height: 14px; margin-right: 8px;"></i> Edit</a>
+                                            <a href="#" style="padding: 10px 16px; text-decoration: none; display: block; color: #ef4444; font-size: 0.9rem; transition: background-color 0.2s;"><i data-feather="trash-2" style="width: 14px; height: 14px; margin-right: 8px;"></i> Delete</a>
+                                        </div>
+                                    </div>
+                                </td>
+                            </tr>
+                            <!-- Trial Plan -->
+                            <tr>
+                                <td>
+                                    <span style="font-weight: 600; color: #1e293b; display: block;">Trial Plan</span>
+                                </td>
+                                <td>
+                                    <span style="font-weight: 600; color: #059669;">₹499</span>
+                                </td>
+                                <td style="color: #64748b;">1 Month</td>
+                                <td style="color: #64748b;">5% discount</td>
+                                <td>
+                                    <button onclick="viewMembersByPlan('Trial Plan')" style="padding: 4px 10px; background-color: #eff6ff; color: #1e40af; border: 1px solid #bfdbfe; border-radius: 6px; font-size: 0.85rem; font-weight: 500; cursor: pointer; display: flex; align-items: center; gap: 4px;">
+                                        12 members
+                                        <i data-feather="external-link" style="width: 12px; height: 12px;"></i>
+                                    </button>
+                                </td>
+                                <td>
+                                    <span style="display: inline-flex; align-items: center; gap: 6px; padding: 4px 10px; border-radius: 20px; font-size: 0.75rem; font-weight: 600; background-color: #f1f5f9; color: #64748b;">
+                                        <span style="width: 6px; height: 6px; border-radius: 50%; background-color: #94a3b8;"></span>
+                                        Disabled
+                                    </span>
+                                </td>
+                                <td style="text-align: right;">
+                                    <div class="dropdown-container">
+                                        <button class="dropdown-toggle" onclick="toggleDropdown(this)" style="padding: 6px 14px; background: #fff; border: 1px solid #e2e8f0; border-radius: 8px; font-size: 0.85rem; font-weight: 600; color: #475569; cursor: pointer; display: flex; align-items: center; gap: 6px; display: inline-flex; transition: all 0.2s;">
+                                            Actions
+                                            <i data-feather="chevron-down" style="width: 15px; height: 15px; color: #94a3b8;"></i>
+                                        </button>
+                                        <div class="dropdown-content">
+                                            <a href="#" class="dropdown-item-link"><i data-feather="play"></i> Enable</a>
+                                            <a href="#" class="dropdown-item-link text-danger"><i data-feather="trash-2"></i> Delete</a>
+                                        </div>
+                                    </div>
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+
+                <!-- 2. Purchases Table (Hidden by default) -->
+                <div id="purchasesTableContent" class="tab-content" style="display:none; overflow-x: auto;">
+                    <table class="premium-table">
+                        <thead>
+                            <tr>
+                                <th>Customer</th>
+                                <th>Membership Plan</th>
+                                <th>Plan Price</th>
+                                <th>Duration</th>
+                                <th>Purchase Date</th>
+                                <th>Expiry Date</th>
+                                <th>Status</th>
+                                <th style="text-align: right;">Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <!-- Arjun Patel -->
+                            <tr>
+                                <td>
+                                    <div style="display: flex; align-items: center; gap: 12px;">
+                                        <div style="width: 32px; height: 32px; border-radius: 50%; background-color: #f1f5f9; display: flex; align-items: center; justify-content: center; color: #1e3a8a; font-weight: 700; font-size: 0.75rem; border: 1px solid #e2e8f0;">AP</div>
+                                        <div>
+                                            <a href="#" style="font-weight: 600; color: #1e3a8a; display: block; text-decoration: none; cursor: pointer; transition: color 0.2s;" onmouseover="this.style.textDecoration='underline'" onmouseout="this.style.textDecoration='none'">Arjun Patel</a>
+                                        </div>
+                                    </div>
+                                </td>
+                                <td>
+                                    <span class="badge badge-silver">Silver Plan</span>
+                                </td>
+                                <td>
+                                    <span style="background-color: #ecfdf5; color: #059669; border: 1px solid #d1fae5; padding: 0.25rem 0.6rem; border-radius: 1rem; font-size: 0.75rem; font-weight: 600;">₹1,499</span>
+                                </td>
+                                <td style="color: #64748b; font-size: 0.9rem;">6 Months</td>
+                                <td style="color: #64748b;">Feb 2, 2024</td>
+                                <td style="color: #64748b;">Aug 2, 2024</td>
+                                <td>
+                                    <span style="display: inline-flex; align-items: center; gap: 6px; padding: 4px 10px; border-radius: 20px; font-size: 0.75rem; font-weight: 600; background-color: #ecfdf5; color: #059669;">
+                                        Active
+                                    </span>
+                                </td>
+                                <td style="text-align: right;">
+                                    <div class="dropdown-container">
+                                        <button class="dropdown-toggle" onclick="toggleDropdown(this)" style="padding: 6px 14px; background: #fff; border: 1px solid #e2e8f0; border-radius: 8px; font-size: 0.85rem; font-weight: 600; color: #475569; cursor: pointer; display: flex; align-items: center; gap: 6px; display: inline-flex; transition: all 0.2s;">
+                                            Actions
+                                            <i data-feather="chevron-down" style="width: 15px; height: 15px; color: #94a3b8;"></i>
+                                        </button>
+                                        <div class="dropdown-content">
+                                            <a href="#" class="dropdown-item-link"><i data-feather="eye"></i> View Details</a>
+                                            <a href="#" class="dropdown-item-link"><i data-feather="file-text"></i> History</a>
+                                            <a href="#" class="dropdown-item-link text-danger"><i data-feather="x-circle"></i> Terminate</a>
+                                        </div>
+                                    </div>
+                                </td>
+                            </tr>
+                            <!-- Neha Gupta -->
+                            <tr>
+                                <td>
+                                    <div style="display: flex; align-items: center; gap: 12px;">
+                                        <div style="width: 32px; height: 32px; border-radius: 50%; background-color: #f1f5f9; display: flex; align-items: center; justify-content: center; color: #1e3a8a; font-weight: 700; font-size: 0.75rem; border: 1px solid #e2e8f0;">NG</div>
+                                        <div>
+                                            <a href="#" style="font-weight: 600; color: #1e3a8a; display: block; text-decoration: none; cursor: pointer; transition: color 0.2s;" onmouseover="this.style.textDecoration='underline'" onmouseout="this.style.textDecoration='none'">Neha Gupta</a>
+                                        </div>
+                                    </div>
+                                </td>
+                                <td>
+                                    <span class="badge badge-indigo">Trial Plan</span>
+                                </td>
+                                <td>
+                                    <span style="background-color: #ecfdf5; color: #059669; border: 1px solid #d1fae5; padding: 0.25rem 0.6rem; border-radius: 1rem; font-size: 0.75rem; font-weight: 600;">₹499</span>
+                                </td>
+                                <td style="color: #64748b; font-size: 0.9rem;">1 Month</td>
+                                <td style="color: #64748b;">Mar 1, 2024</td>
+                                <td style="color: #64748b;">Apr 1, 2024</td>
+                                <td>
+                                    <span style="display: inline-flex; align-items: center; gap: 6px; padding: 4px 10px; border-radius: 20px; font-size: 0.75rem; font-weight: 600; background-color: #fef2f2; color: #ef4444;">
+                                        Expired
+                                    </span>
+                                </td>
+                                <td style="text-align: right;">
+                                    <div class="dropdown-container">
+                                        <button class="dropdown-toggle" onclick="toggleDropdown(this)" style="padding: 6px 14px; background: #fff; border: 1px solid #e2e8f0; border-radius: 8px; font-size: 0.85rem; font-weight: 600; color: #475569; cursor: pointer; display: flex; align-items: center; gap: 6px; display: inline-flex; transition: all 0.2s;">
+                                            Actions
+                                            <i data-feather="chevron-down" style="width: 15px; height: 15px; color: #94a3b8;"></i>
+                                        </button>
+                                        <div class="dropdown-content">
+                                            <a href="#" class="dropdown-item-link"><i data-feather="eye"></i> View Details</a>
+                                            <a href="#" class="dropdown-item-link"><i data-feather="file-text"></i> History</a>
+                                            <a href="#" class="dropdown-item-link text-danger"><i data-feather="x-circle"></i> Terminate</a>
+                                        </div>
+                                    </div>
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+
+                <!-- 3. Usage Table (Hidden by default) -->
+                <div id="usageTableContent" class="tab-content" style="display:none; overflow-x: auto;">
+                    <table class="premium-table">
+                        <thead>
+                            <tr>
+                                <th>Customer</th>
+                                <th>Membership</th>
+                                <th>Service</th>
+                                <th>Discount</th>
+                                <th>Date</th>
+                                <th>Staff</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td>
+                                    <span style="font-weight: 600; color: #1e293b;">Riya Sharma</span>
+                                </td>
+                                <td>
+                                    <span style="font-size: 0.9rem; color: #64748b;">Gold Plan</span>
+                                </td>
+                                <td>
+                                    <span style="font-size: 0.9rem; color: #0f172a; font-weight: 500;">Premium Facial</span>
+                                </td>
+                                <td>
+                                    <span style="font-weight: 600; color: #059669;">₹400</span>
+                                </td>
+                                <td style="color: #64748b; font-size: 0.9rem;">Mar 10, 2024</td>
+                                <td>
+                                    <span style="font-size: 0.9rem; color: #0f172a;">Anita</span>
+                                </td>
+                            </tr>
+                            <tr>
+                                <td>
+                                    <span style="font-weight: 600; color: #1e293b;">Riya Sharma</span>
+                                </td>
+                                <td>
+                                    <span style="font-size: 0.9rem; color: #64748b;">Gold Plan</span>
+                                </td>
+                                <td>
+                                    <span style="font-size: 0.9rem; color: #0f172a; font-weight: 500;">Haircut</span>
+                                </td>
+                                <td>
+                                    <span style="font-weight: 600; color: #059669;">₹250</span>
+                                </td>
+                                <td style="color: #64748b; font-size: 0.9rem;">Mar 18, 2024</td>
+                                <td>
+                                    <span style="font-size: 0.9rem; color: #0f172a;">Rahul</span>
+                                </td>
+                            </tr>
+                            <tr>
+                                <td>
+                                    <span style="font-weight: 600; color: #1e293b;">Arjun Patel</span>
+                                </td>
+                                <td>
+                                    <span style="font-size: 0.9rem; color: #64748b;">Silver Plan</span>
+                                </td>
+                                <td>
+                                    <span style="font-size: 0.9rem; color: #0f172a; font-weight: 500;">Massage</span>
+                                </td>
+                                <td>
+                                    <span style="font-weight: 600; color: #059669;">₹150</span>
+                                </td>
+                                <td style="color: #64748b; font-size: 0.9rem;">Mar 20, 2024</td>
+                                <td>
+                                    <span style="font-size: 0.9rem; color: #0f172a;">Sneha</span>
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+
+                </div>
+
+            </div>
+
+        </main>
+    </div>
+
+    <script src="dashboard.js"></script>
+    <script>
+        // Init Feather Icons
+        feather.replace();
+
+        // Global state for open dropdowns
+        let openDropdown = null;
+
+        // Toggle dropdown logic
+        window.toggleDropdown = function(btn) {
+            const dropdown = btn.nextElementSibling;
+            
+            // Close other dropdowns
+            if (openDropdown && openDropdown !== dropdown) {
+                openDropdown.style.display = 'none';
+            }
+            
+            if (dropdown.style.display === 'none' || dropdown.style.display === '') {
+                dropdown.style.display = 'block';
+                openDropdown = dropdown;
+            } else {
+                dropdown.style.display = 'none';
+                openDropdown = null;
+            }
+            
+            event.stopPropagation();
+        };
+
+        // Close dropdowns on outside click
+        window.onclick = function(event) {
+            if (!event.target.closest('.dropdown-toggle')) {
+                if (openDropdown) {
+                    openDropdown.style.display = 'none';
+                    openDropdown = null;
+                }
+            }
+        };
+
+        // Tab Switching Logic
+        const tabs = document.querySelectorAll('.nav-tab');
+        const contents = document.querySelectorAll('.tab-content');
+        const searchInput = document.getElementById('membershipSearch');
+        const actionText = document.getElementById('actionText');
+        const actionIcon = document.getElementById('actionIcon');
+        const primaryActionBtn = document.getElementById('primaryActionBtn');
+
+        tabs.forEach(tab => {
+            tab.addEventListener('click', () => {
+                const target = tab.getAttribute('data-tab');
+
+                // Update tab styles
+                tabs.forEach(t => {
+                    t.classList.remove('active');
+                    t.style.fontWeight = '500';
+                    t.style.color = '#64748b';
+                    t.style.borderBottomColor = 'transparent';
+                });
+                tab.classList.add('active');
+                tab.style.fontWeight = '600';
+                tab.style.color = '#7c3aed';
+                tab.style.borderBottomColor = '#7c3aed';
+
+                // Update table visibility
+                contents.forEach(content => {
+                    content.style.display = 'none';
+                });
+                document.getElementById(`${target}TableContent`).style.display = 'block';
+
+                // Update Context-Aware Header Controls
+                const filterPanel = document.getElementById('filterPanel');
+                const filterGrid = document.getElementById('filterGrid');
+                const filterColDuration = document.getElementById('filterColDuration');
+                const filterColStatus = document.getElementById('filterColStatus');
+
+                if (target === 'plans') {
+                    searchInput.placeholder = 'Search plans...';
+                    actionText.innerText = 'Create Plan';
+                    primaryActionBtn.classList.remove('qa-secondary');
+                    primaryActionBtn.classList.add('qa-primary');
+                    actionIcon.setAttribute('data-feather', 'plus');
+                    
+                    // Reset Filter UI
+                    filterPanel.style.width = '580px';
+                    filterGrid.style.gridTemplateColumns = 'repeat(3, 1fr)';
+                    filterColDuration.style.display = 'block';
+                    filterColStatus.style.display = 'block';
+                    document.getElementById('applyFilter').innerText = 'Apply Filter';
+                    feather.replace();
+                } else if (target === 'purchases') {
+                    searchInput.placeholder = 'Search customers...';
+                    actionText.innerText = 'Assign Membership';
+                    primaryActionBtn.classList.remove('qa-secondary');
+                    primaryActionBtn.classList.add('qa-primary');
+                    actionIcon.setAttribute('data-feather', 'user-plus');
+
+                    // Reset Filter UI
+                    filterPanel.style.width = '580px';
+                    filterGrid.style.gridTemplateColumns = 'repeat(3, 1fr)';
+                    filterColDuration.style.display = 'block';
+                    filterColStatus.style.display = 'block';
+                    document.getElementById('applyFilter').innerText = 'Apply Filter';
+                    feather.replace();
+                } else if (target === 'usage') {
+                    searchInput.placeholder = 'Search usage history...';
+                    actionText.innerText = 'Export';
+                    primaryActionBtn.classList.remove('qa-primary');
+                    primaryActionBtn.classList.add('qa-secondary');
+                    actionIcon.setAttribute('data-feather', 'download');
+
+                    // Compact Filter UI for Usage History
+                    filterPanel.style.width = '240px';
+                    filterGrid.style.gridTemplateColumns = '1fr';
+                    filterColDuration.style.display = 'none';
+                    filterColStatus.style.display = 'none';
+                    document.getElementById('applyFilter').innerText = 'Apply';
+                    feather.replace();
+                }
+                
+                // Re-apply search on tab switch
+                if (typeof applySearch === 'function') applySearch();
+            });
+        });
+
+        // Live Search Functionality
+        function applySearch() {
+            const query = searchInput.value.toLowerCase();
+            const activeTab = document.querySelector('.nav-tab.active').getAttribute('data-tab');
+            const tableContent = document.getElementById(`${activeTab}TableContent`);
+            if (!tableContent) return;
+            
+            const tableBody = tableContent.querySelector('tbody');
+            if (!tableBody) return;
+            
+            const rows = tableBody.querySelectorAll('tr');
+            rows.forEach(row => {
+                const text = row.innerText.toLowerCase();
+                row.style.display = text.includes(query) ? '' : 'none';
+            });
+        }
+
+        searchInput.addEventListener('input', applySearch);
+
+        // Assign Membership Customer Search Logic
+        const custSearchInput = document.getElementById('custSearchInput');
+        if (custSearchInput) {
+            custSearchInput.addEventListener('input', (e) => {
+                const query = e.target.value.toLowerCase();
+                // Simulated real-time lookup
+                if (query.length > 2) {
+                    console.log(`Searching for customer: ${query}`);
+                    // Here you would typically show a dropdown of results
+                }
+            });
+        }
+    </script>
+
+    <!-- Premium New Booking Modal -->
+    <div class="modal-overlay" id="bookingModalOverlay">
+        <div class="modal-container" id="bookingModal">
+            <!-- Header -->
+            <div class="modal-header">
+                <div class="header-titles">
+                    <h2>New Booking</h2>
+                    <p class="subtitle">Create a new appointment for a customer.</p>
+                </div>
+                <button class="modal-close" id="closeBookingModal"><i data-feather="x"></i></button>
+            </div>
+
+            <div class="modal-body" style="padding: 1.5rem; overflow-y: auto;">
+                <div class="modal-form-side" style="width: 100%; max-width: none; flex: 1; padding: 0; border: none;">
+                    <div style="width: 100%; display: grid; grid-template-columns: 1fr 1fr; gap: 32px;">
+
+                        <!-- LEFT COLUMN -->
+                        <div style="display: flex; flex-direction: column;">
+                            <!-- Customer Ident -->
+                            <div class="form-group relative">
+                                <label class="form-label" for="phoneSearch">Phone Number <span
+                                        class="text-rose">*</span></label>
+                                <input type="tel" id="phoneSearch" class="form-input" placeholder="Enter phone number"
+                                    autocomplete="off">
+                                <div class="search-suggestions" id="searchSuggestions"></div>
+                            </div>
+
+                            <div class="customer-badge-container" id="customerBadgeContainer"
+                                style="display:none; margin-bottom: 8px;">
+                                <span class="badge-pill existing-badge" id="customerBadge">Existing Customer</span>
+                            </div>
+
+                            <div class="form-group span-full" id="newCustomerBadgeContainer"
+                                style="display:none; margin-bottom: 8px;">
+                                <span class="badge-pill new-badge" id="newCustomerBadge">New Customer</span>
+                            </div>
+
+                            <div class="form-group" id="customerNameGroup">
+                                <label class="form-label" for="customerName">Customer Name <span
+                                        class="text-rose">*</span></label>
+                                <input type="text" id="customerName" class="form-input"
+                                    placeholder="Enter customer name">
+                            </div>
+
+                            <div class="form-group" id="customerEmailGroup">
+                                <label class="form-label" for="customerEmail">Email <span id="emailOptionalLabel"
+                                        class="text-muted"></span></label>
+                                <input type="email" id="customerEmail" class="form-input"
+                                    placeholder="Enter email address">
+                            </div>
+
+                            <!-- Booking Notes -->
+                            <div class="form-group section-gap flex-grow" style="margin-bottom: 1.5rem;">
+                                <label class="form-label" for="bookingNotes">Booking Notes <span
+                                        class="text-muted">(Optional)</span></label>
+                                <textarea id="bookingNotes" class="form-input form-textarea"
+                                    placeholder="Add optional notes for this booking..."
+                                    style="min-height: 120px;"></textarea>
+                            </div>
+                        </div>
+
+                        <!-- RIGHT COLUMN -->
+                        <div style="display: flex; flex-direction: column;">
+                            <!-- Service Selection -->
+                            <div class="form-group" style="margin-top: 0;">
+                                <label class="form-label" for="bookingService">Service <span
+                                        class="text-rose">*</span></label>
+                                <select id="bookingService" class="form-select">
+                                    <option value="" disabled selected>Select a service</option>
+                                    <!-- populated via JS -->
+                                </select>
+                            </div>
+
+                            <div class="form-grid" id="serviceMetaFields" style="display:none;">
+                                <div class="form-group">
+                                    <label class="form-label">Duration</label>
+                                    <input type="text" class="form-input read-only-input" id="roDuration" readonly>
+                                </div>
+                                <div class="form-group">
+                                    <label class="form-label">Price</label>
+                                    <input type="text" class="form-input read-only-input" id="roPrice" readonly>
+                                </div>
+                            </div>
+
+                            <!-- Staff Selection -->
+                            <div class="form-group section-gap">
+                                <label class="form-label" for="bookingStaff">Staff <span
+                                        class="text-rose">*</span></label>
+                                <select id="bookingStaff" class="form-select">
+                                    <option value="" disabled selected>Select staff member</option>
+                                    <!-- populated via JS -->
+                                </select>
+                            </div>
+
+                            <!-- Date & Time -->
+                            <div class="form-grid section-gap">
+                                <div class="form-group">
+                                    <label class="form-label" for="bookingDate">Date <span
+                                            class="text-rose">*</span></label>
+                                    <input type="date" id="bookingDate" class="form-input">
+                                </div>
+                                <div class="form-group">
+                                    <label class="form-label" for="bookingTime">Time <span
+                                            class="text-rose">*</span></label>
+                                    <div class="relative" style="display: flex; gap: 8px;">
+                                        <input type="time" id="bookingTime" class="form-input" style="flex: 1;">
+                                        <button type="button" class="btn btn-secondary" id="btnTimeNow"
+                                            style="padding: 0 12px; height: 40px; font-size: 13px;">Now</button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div> <!-- /inner form container -->
+                </div>
+            </div>
+
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" id="btnCancelBooking">Cancel</button>
+                <button type="button" class="btn btn-primary" id="btnConfirmBooking" disabled>Confirm Booking</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Toast Notification -->
+    <div id="toastNotification" class="toast-notification">Booking created successfully (demo)</div>
+
+    <!-- Profile Modal -->
+    <div class="modal-overlay" id="genericModalOverlay">
+        <div class="modal-container" id="genericModal" style="width: 75%; max-width: 75%; min-height: 85vh;">
+            <div class="modal-header">
+                <div class="header-titles">
+                    <h2 id="genericModalTitle">Profile</h2>
+                    <p class="subtitle" id="genericModalSubtitle">View and manage your personal profile.</p>
+                </div>
+                <button class="modal-close" id="closeGenericModal"><i data-feather="x"></i></button>
+            </div>
+
+            <!-- Profile Body: 2-column layout -->
+            <div class="modal-body" style="padding: 2rem 0; flex: 1; overflow-y: auto;" id="genericModalBody">
+
+                <!-- ===== PROFILE CONTENT ===== -->
+                <style>
+                    /* Premium Profile Polish */
+                    #profileContent .form-label {
+                        font-size: 0.85rem;
+                        font-weight: 600;
+                        margin-bottom: 6px;
+                        color: #475569;
+                        transition: color 0.2s ease;
+                    }
+
+                    #profileContent .form-group:hover .form-label {
+                        color: #1e293b;
+                    }
+
+                    #profileContent .form-input {
+                        height: 46px;
+                        font-size: 0.95rem;
+                        padding: 10px 16px;
+                        border-radius: 10px;
+                        border: 1px solid #e2e8f0;
+                        background-color: #fafafa;
+                        box-shadow: 0 1px 2px rgba(0, 0, 0, 0.02) inset;
+                        transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+                    }
+
+                    #profileContent .form-input:hover:not(.read-only-input) {
+                        background-color: #ffffff;
+                        border-color: #cbd5e1;
+                        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.03);
+                    }
+
+                    #profileContent .form-input:focus {
+                        background-color: #ffffff;
+                        border-color: #8b5cf6;
+                        box-shadow: 0 0 0 4px rgba(139, 92, 246, 0.12), 0 2px 4px rgba(0, 0, 0, 0.05);
+                        transform: translateY(-1px);
+                    }
+
+                    #profileContent .read-only-input {
+                        background-color: #f8fafc;
+                        border-color: #f1f5f9;
+                        color: #64748b;
+                        box-shadow: none !important;
+                        transform: none !important;
+                    }
+
+                    #profileContent .form-grid {
+                        gap: 24px !important;
+                        margin-bottom: 24px !important;
+                    }
+
+                    #profileContent .form-group {
+                        margin-bottom: 24px;
+                    }
+
+                    /* Avatar Hover Effect */
+                    .profile-avatar-wrap {
+                        transition: transform 0.4s cubic-bezier(0.34, 1.56, 0.64, 1), box-shadow 0.4s ease;
+                    }
+
+                    .profile-avatar-wrap:hover {
+                        transform: scale(1.05) translateY(-2px);
+                        box-shadow: 0 0 0 6px #e0e7ff, 0 12px 24px rgba(30, 58, 138, 0.2) !important;
+                    }
+
+                    /* Subtle pulsing background for photo button */
+                    .change-photo-btn {
+                        transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+                        position: relative;
+                        overflow: hidden;
+                    }
+
+                    .change-photo-btn::before {
+                        content: '';
+                        position: absolute;
+                        top: 50%;
+                        left: 50%;
+                        width: 100%;
+                        height: 100%;
+                        background: radial-gradient(circle, rgba(255, 255, 255, 0.8) 0%, rgba(255, 255, 255, 0) 60%);
+                        transform: translate(-50%, -50%) scale(0);
+                        opacity: 0;
+                        transition: transform 0.5s ease, opacity 0.5s ease;
+                    }
+
+                    .change-photo-btn:hover::before {
+                        transform: translate(-50%, -50%) scale(2);
+                        opacity: 0.1;
+                    }
+
+                    .change-photo-btn:hover {
+                        transform: translateY(-2px);
+                        box-shadow: 0 4px 12px rgba(79, 70, 229, 0.15);
+                    }
+
+                    .change-photo-btn:active {
+                        transform: translateY(0);
+                    }
+
+                    /* Text subtle lift */
+                    .profile-name-display {
+                        background: linear-gradient(135deg, #1e3a8a 0%, #3b82f6 100%);
+                        -webkit-background-clip: text;
+                        background-clip: text;
+                        -webkit-text-fill-color: transparent;
+                        display: inline-block;
+                    }
+                </style>
+                <div id="profileContent"
+                    style="display: grid; grid-template-columns: 35% 65%; gap: 0; min-height: 100%; width: 100%;">
+
+                    <!-- LEFT: Avatar column -->
+                    <div
+                        style="display: flex; flex-direction: column; align-items: center; padding: 1rem 2.5rem 2rem 2.5rem; border-right: 1px solid #f1f5f9; width: 100%; box-sizing: border-box; justify-content: flex-start;">
+                        <!-- Avatar Circle -->
+                        <div class="profile-avatar-wrap"
+                            style="width: 140px; height: 140px; margin-bottom: 24px; box-shadow: 0 0 0 4px #c7d2fe, 0 6px 16px rgba(30, 58, 138, 0.18);">
+                            <img id="profileAvatarImg"
+                                src="https://ui-avatars.com/api/?name=Admin+User&background=1E3A8A&color=fff&size=256"
+                                alt="Profile Avatar">
+                        </div>
+                        <!-- Change Photo -->
+                        <label for="profilePhotoInput" class="change-photo-btn"
+                            style="padding: 10px 20px; font-size: 0.95rem; margin-bottom: 32px; border-radius: 8px;">
+                            <i data-feather="camera" style="width: 16px; height: 16px;"></i>
+                            Change Photo
+                        </label>
+                        <input type="file" id="profilePhotoInput" accept="image/*" style="display:none;">
+                        <!-- Identity Summary -->
+                        <p class="profile-name-display" style="font-size: 1.35rem; margin-bottom: 6px;">Admin User</p>
+                        <p class="profile-role-display" style="font-size: 0.95rem; padding: 6px 18px;">Owner</p>
+                    </div>
+
+                    <!-- RIGHT: Form fields -->
+                    <div
+                        style="display: flex; flex-direction: column; padding: 1rem 2.5rem 3rem 2.5rem; gap: 0; width: 100%; max-width: 720px; margin: 0 auto; box-sizing: border-box; justify-content: flex-start;">
+
+                        <!-- First Name + Last Name -->
+                        <div class="form-grid" style="gap: 16px; margin-bottom: 16px;">
+                            <div class="form-group" style="margin-bottom: 0;">
+                                <label class="form-label" for="profileFirstName">First Name</label>
+                                <input type="text" id="profileFirstName" class="form-input" value="Admin"
+                                    placeholder="First name">
+                            </div>
+                            <div class="form-group" style="margin-bottom: 0;">
+                                <label class="form-label" for="profileLastName">Last Name</label>
+                                <input type="text" id="profileLastName" class="form-input" value="User"
+                                    placeholder="Last name">
+                            </div>
+                        </div>
+
+                        <!-- Phone Number -->
+                        <div class="form-group">
+                            <label class="form-label" for="profilePhone">Phone Number</label>
+                            <input type="tel" id="profilePhone" class="form-input" value="+91 98765 43210"
+                                placeholder="Phone number">
+                        </div>
+
+                        <!-- Emergency Contact Split -->
+                        <div class="form-grid" style="gap: 16px; margin-bottom: 24px;">
+                            <div class="form-group" style="margin-bottom: 0;">
+                                <label class="form-label" for="profileEmergencyName">Emergency Contact Name</label>
+                                <input type="text" id="profileEmergencyName" class="form-input"
+                                    placeholder="Contact name">
+                            </div>
+                            <div class="form-group" style="margin-bottom: 0;">
+                                <label class="form-label" for="profileEmergencyPhone">Emergency Contact Number</label>
+                                <input type="tel" id="profileEmergencyPhone" class="form-input"
+                                    placeholder="Contact number">
+                            </div>
+                        </div>
+
+                        <!-- Email (read-only) -->
+                        <div class="form-group">
+                            <label class="form-label" for="profileEmail">Email</label>
+                            <input type="email" id="profileEmail" class="form-input read-only-input"
+                                value="admin@salon.com" readonly>
+                        </div>
+
+                        <!-- Role (read-only) -->
+                        <div class="form-group">
+                            <label class="form-label" for="profileRole">Role</label>
+                            <input type="text" id="profileRole" class="form-input read-only-input" value="Owner"
+                                readonly>
+                        </div>
+
+                        <!-- Joined On (read-only) -->
+                        <div class="form-group">
+                            <label class="form-label" for="profileJoined">Joined On</label>
+                            <input type="text" id="profileJoined" class="form-input read-only-input"
+                                value="January 15, 2024" readonly>
+                        </div>
+
+                    </div>
+                </div>
+
+                <!-- ===== SETTINGS CONTENT ===== -->
+                <div id="settingsContent"
+                    style="display: none; grid-template-columns: 65% 35%; gap: 0; min-height: 100%; width: 100%;">
+
+                    <!-- LEFT: App Preferences -->
+                    <div
+                        style="display: flex; flex-direction: column; padding: 1rem 2.5rem 3rem 2.5rem; border-right: 1px solid #f1f5f9; width: 100%; box-sizing: border-box; justify-content: center; align-items: center;">
+                        <div style="width: 100%; max-width: 450px;">
+                            <h3
+                                style="font-size: 1.1rem; font-weight: 600; color: #1e293b; margin-bottom: 24px; padding-bottom: 12px; border-bottom: 1px solid #e2e8f0; width: 100%;">
+                                App Preferences</h3>
+
+                            <!-- Language -->
+                            <div class="form-group">
+                                <label class="form-label" for="settingsLanguage">Language</label>
+                                <select id="settingsLanguage" class="form-input"
+                                    style="appearance: auto; cursor: pointer;">
+                                    <option value="en" selected>English</option>
+                                    <option value="hi">Hindi</option>
+                                    <option value="te">Telugu</option>
+                                    <option value="ta">Tamil</option>
+                                </select>
+                            </div>
+
+                            <!-- Theme -->
+                            <div class="form-group">
+                                <label class="form-label" for="settingsTheme">Theme</label>
+                                <select id="settingsTheme" class="form-input"
+                                    style="appearance: auto; cursor: pointer;">
+                                    <option value="light" selected>Light</option>
+                                    <option value="dark">Dark</option>
+                                    <option value="system">System Default</option>
+                                </select>
+                            </div>
+
+                            <!-- Notifications -->
+                            <div class="form-group">
+                                <label class="form-label" for="settingsNotifications">Notifications</label>
+                                <select id="settingsNotifications" class="form-input"
+                                    style="appearance: auto; cursor: pointer;">
+                                    <option value="enabled" selected>Enabled</option>
+                                    <option value="disabled">Disabled</option>
+                                </select>
+                            </div>
+
+                            <!-- Time Zone -->
+                            <div class="form-group">
+                                <label class="form-label" for="settingsTimeZone">Time Zone</label>
+                                <select id="settingsTimeZone" class="form-input"
+                                    style="appearance: auto; cursor: pointer;">
+                                    <option value="Asia/Kolkata" selected>Asia/Kolkata (IST)</option>
+                                    <option value="UTC">UTC</option>
+                                </select>
+                            </div>
+
+                            <!-- Date & Time Format -->
+                            <div class="form-group">
+                                <label class="form-label" for="settingsDateTimeFormat">Date & Time Format</label>
+                                <select id="settingsDateTimeFormat" class="form-input"
+                                    style="appearance: auto; cursor: pointer;">
+                                    <option value="DD MMM YYYY, hh:mm A" selected>DD MMM YYYY, hh:mm A</option>
+                                    <option value="MM/DD/YYYY, HH:mm">MM/DD/YYYY, HH:mm</option>
+                                    <option value="YYYY-MM-DD, HH:mm">YYYY-MM-DD, HH:mm</option>
+                                </select>
+                            </div>
+                        </div> <!-- /max-width container -->
+                    </div>
+
+                    <!-- RIGHT: App Information -->
+                    <div
+                        style="display: flex; flex-direction: column; padding: 1rem 2.5rem 3rem 2.5rem; gap: 0; width: 100%; box-sizing: border-box; justify-content: flex-start;">
+                        <h3
+                            style="font-size: 1.1rem; font-weight: 600; color: #1e293b; margin-bottom: 24px; padding-bottom: 12px; border-bottom: 1px solid #e2e8f0;">
+                            App Information</h3>
+
+                        <!-- Version -->
+                        <div class="form-group">
+                            <label class="form-label">Version</label>
+                            <p id="settingsVersion"
+                                style="font-size: 0.95rem; color: #3b82f6; margin: 0; padding-top: 10px; font-weight: 600;">
+                                v1.0.0</p>
+                        </div>
+
+                        <!-- Status -->
+                        <div class="form-group">
+                            <label class="form-label">Status</label>
+                            <div
+                                style="display: flex; align-items: center; justify-content: space-between; padding-top: 10px;">
+                                <p id="settingsStatus"
+                                    style="font-size: 0.95rem; color: #10b981; font-weight: 600; margin: 0;">Up to date
+                                </p>
+                                <button id="btnUpdateApp" class="btn btn-primary"
+                                    style="display: none; padding: 6px 14px; font-size: 0.8rem; height: auto; border-radius: 6px;">Update</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- ===== OTHER SECTION CONTENT (placeholder) ===== -->
+                <div id="genericPlaceholderContent"
+                    style="display:none; align-items: center; justify-content: center; height: 100%; text-align: center; color: #94a3b8;">
+                    <div>
+                        <i data-feather="layers"
+                            style="width: 40px; height: 40px; margin-bottom: 12px; stroke: #cbd5e1;"></i>
+                        <p style="font-size: 0.95rem; font-weight: 500; margin: 0;">Content coming soon</p>
+                        <p style="font-size: 0.8rem; margin-top: 4px;">This section is under construction.</p>
+                    </div>
+                </div>
+
+            </div>
+
+            <div class="modal-footer" id="genericModalFooter"
+                style="justify-content: flex-end; align-items: center; gap: 12px;">
+                <button type="button" class="btn btn-secondary" id="btnCloseGenericModal"
+                    style="flex: none; width: 140px;">Cancel</button>
+                <button type="button" class="btn btn-primary" id="btnSaveGenericModal"
+                    style="flex: none; width: 160px;">Save Changes</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Schedule Modal -->
+    <div class="modal-overlay" id="scheduleModalOverlay">
+        <div class="modal-container" id="scheduleModal" style="min-height: 60vh;">
+            <div class="modal-header">
+                <div class="header-titles">
+                    <h2 id="scheduleModalTitle">Schedule</h2>
+                    <p class="subtitle" id="scheduleModalSubtitle">View your upcoming work schedule.</p>
+                </div>
+                <button class="modal-close" id="closeScheduleModal"><i data-feather="x"></i></button>
+            </div>
+
+            <div class="modal-body" style="padding: 1.5rem; flex: 1; overflow-y: auto; flex-direction: column;">
+
+                <!-- Tab Headers -->
+                <div class="schedule-tabs"
+                    style="display: flex; gap: 8px; margin-bottom: 1.5rem; border-bottom: 1px solid #f1f5f9; padding-bottom: 0.5rem;">
+                    <button class="schedule-tab-btn active" id="tabBtnThisWeek"
+                        style="padding: 8px 16px; border: none; background: none; font-weight: 600; font-size: 0.95rem; color: #1e3a8a; border-bottom: 2px solid #1e3a8a; cursor: pointer; transition: all 0.2s;">This
+                        Week</button>
+                    <button class="schedule-tab-btn" id="tabBtnNextWeek"
+                        style="padding: 8px 16px; border: none; background: none; font-weight: 500; font-size: 0.95rem; color: #64748b; border-bottom: 2px solid transparent; cursor: pointer; transition: all 0.2s;">Next
+                        Week</button>
+                </div>
+
+                <!-- Tab Content: This Week -->
+                <div class="schedule-tab-pane" id="paneThisWeek" style="display: block;">
+                    <!-- Column Headers -->
+                    <div
+                        style="display: grid; grid-template-columns: 100px 120px 1fr 1fr; padding: 6px 16px 10px 16px; border-bottom: 1px solid #e2e8f0; margin-bottom: 8px;">
+                        <div
+                            style="font-size: 0.75rem; font-weight: 700; color: #94a3b8; text-transform: uppercase; letter-spacing: 0.05em;">
+                            Date</div>
+                        <div
+                            style="font-size: 0.75rem; font-weight: 700; color: #94a3b8; text-transform: uppercase; letter-spacing: 0.05em;">
+                            Day</div>
+                        <div
+                            style="font-size: 0.75rem; font-weight: 700; color: #94a3b8; text-transform: uppercase; letter-spacing: 0.05em;">
+                            Time</div>
+                        <div
+                            style="font-size: 0.75rem; font-weight: 700; color: #94a3b8; text-transform: uppercase; letter-spacing: 0.05em; text-align: right;">
+                            Comments</div>
+                    </div>
+                    <ul class="schedule-list"
+                        style="list-style: none; padding: 0; margin: 0; display: flex; flex-direction: column; gap: 8px;">
+                        <li class="schedule-item"
+                            style="display: grid; grid-template-columns: 100px 120px 1fr 1fr; padding: 12px 16px; background: #f8fafc; border-radius: 8px; align-items: center;">
+                            <div class="schedule-date" style="font-size: 0.85rem; color: #64748b; font-weight: 500;">Mar
+                                9</div>
+                            <div class="schedule-day" style="font-weight: 600; color: #334155; font-size: 0.9rem;">
+                                Monday</div>
+                            <div class="schedule-time" style="color: #0f172a; font-size: 0.9rem; font-weight: 500;">
+                                09:00 AM - 06:00 PM</div>
+                            <div class="schedule-notes" style="color: #64748b; font-size: 0.85rem; text-align: right;">
+                                Opening shift</div>
+                        </li>
+                        <li class="schedule-item"
+                            style="display: grid; grid-template-columns: 100px 120px 1fr 1fr; padding: 12px 16px; background: #f8fafc; border-radius: 8px; align-items: center;">
+                            <div class="schedule-date" style="font-size: 0.85rem; color: #64748b; font-weight: 500;">Mar
+                                10</div>
+                            <div class="schedule-day" style="font-weight: 600; color: #334155; font-size: 0.9rem;">
+                                Tuesday</div>
+                            <div class="schedule-time" style="color: #0f172a; font-size: 0.9rem; font-weight: 500;">
+                                09:00 AM - 06:00 PM</div>
+                            <div class="schedule-notes" style="color: #94a3b8; font-size: 0.85rem; text-align: right;">-
+                            </div>
+                        </li>
+                        <li class="schedule-item"
+                            style="display: grid; grid-template-columns: 100px 120px 1fr 1fr; padding: 12px 16px; background: #fff5f5; border: 1px dashed #fecdd3; border-radius: 8px; align-items: center;">
+                            <div class="schedule-date" style="font-size: 0.85rem; color: #64748b; font-weight: 500;">Mar
+                                11</div>
+                            <div class="schedule-day" style="font-weight: 600; color: #334155; font-size: 0.9rem;">
+                                Wednesday</div>
+                            <div class="schedule-time off" style="color: #e11d48; font-size: 0.9rem; font-weight: 600;">
+                                Off</div>
+                            <div class="schedule-notes off"
+                                style="color: #fca5a5; font-size: 0.85rem; text-align: right;">-</div>
+                        </li>
+                        <li class="schedule-item"
+                            style="display: grid; grid-template-columns: 100px 120px 1fr 1fr; padding: 12px 16px; background: #f8fafc; border-radius: 8px; align-items: center;">
+                            <div class="schedule-date" style="font-size: 0.85rem; color: #64748b; font-weight: 500;">Mar
+                                12</div>
+                            <div class="schedule-day" style="font-weight: 600; color: #334155; font-size: 0.9rem;">
+                                Thursday</div>
+                            <div class="schedule-time" style="color: #0f172a; font-size: 0.9rem; font-weight: 500;">
+                                10:00 AM - 07:00 PM</div>
+                            <div class="schedule-notes" style="color: #94a3b8; font-size: 0.85rem; text-align: right;">-
+                            </div>
+                        </li>
+                        <li class="schedule-item"
+                            style="display: grid; grid-template-columns: 100px 120px 1fr 1fr; padding: 12px 16px; background: #f8fafc; border-radius: 8px; align-items: center;">
+                            <div class="schedule-date" style="font-size: 0.85rem; color: #64748b; font-weight: 500;">Mar
+                                13</div>
+                            <div class="schedule-day" style="font-weight: 600; color: #334155; font-size: 0.9rem;">
+                                Friday</div>
+                            <div class="schedule-time" style="color: #0f172a; font-size: 0.9rem; font-weight: 500;">
+                                10:00 AM - 08:00 PM</div>
+                            <div class="schedule-notes" style="color: #64748b; font-size: 0.85rem; text-align: right;">
+                                Late shift</div>
+                        </li>
+                        <li class="schedule-item"
+                            style="display: grid; grid-template-columns: 100px 120px 1fr 1fr; padding: 12px 16px; background: #f8fafc; border-radius: 8px; align-items: center;">
+                            <div class="schedule-date" style="font-size: 0.85rem; color: #64748b; font-weight: 500;">Mar
+                                14</div>
+                            <div class="schedule-day" style="font-weight: 600; color: #334155; font-size: 0.9rem;">
+                                Saturday</div>
+                            <div class="schedule-time" style="color: #0f172a; font-size: 0.9rem; font-weight: 500;">
+                                08:00 AM - 04:00 PM</div>
+                            <div class="schedule-notes" style="color: #64748b; font-size: 0.85rem; text-align: right;">
+                                Weekend shift</div>
+                        </li>
+                        <li class="schedule-item"
+                            style="display: grid; grid-template-columns: 100px 120px 1fr 1fr; padding: 12px 16px; background: #fff5f5; border: 1px dashed #fecdd3; border-radius: 8px; align-items: center;">
+                            <div class="schedule-date" style="font-size: 0.85rem; color: #64748b; font-weight: 500;">Mar
+                                15</div>
+                            <div class="schedule-day" style="font-weight: 600; color: #334155; font-size: 0.9rem;">
+                                Sunday</div>
+                            <div class="schedule-time off" style="color: #e11d48; font-size: 0.9rem; font-weight: 600;">
+                                Off</div>
+                            <div class="schedule-notes off"
+                                style="color: #fca5a5; font-size: 0.85rem; text-align: right;">-</div>
+                        </li>
+                    </ul>
+                </div>
+
+                <!-- Tab Content: Next Week -->
+                <div class="schedule-tab-pane" id="paneNextWeek" style="display: none;">
+                    <!-- Column Headers -->
+                    <div
+                        style="display: grid; grid-template-columns: 100px 120px 1fr 1fr; padding: 6px 16px 10px 16px; border-bottom: 1px solid #e2e8f0; margin-bottom: 8px;">
+                        <div
+                            style="font-size: 0.75rem; font-weight: 700; color: #94a3b8; text-transform: uppercase; letter-spacing: 0.05em;">
+                            Date</div>
+                        <div
+                            style="font-size: 0.75rem; font-weight: 700; color: #94a3b8; text-transform: uppercase; letter-spacing: 0.05em;">
+                            Day</div>
+                        <div
+                            style="font-size: 0.75rem; font-weight: 700; color: #94a3b8; text-transform: uppercase; letter-spacing: 0.05em;">
+                            Time</div>
+                        <div
+                            style="font-size: 0.75rem; font-weight: 700; color: #94a3b8; text-transform: uppercase; letter-spacing: 0.05em; text-align: right;">
+                            Comments</div>
+                    </div>
+                    <ul class="schedule-list"
+                        style="list-style: none; padding: 0; margin: 0; display: flex; flex-direction: column; gap: 8px;">
+                        <li class="schedule-item"
+                            style="display: grid; grid-template-columns: 100px 120px 1fr 1fr; padding: 12px 16px; background: #f8fafc; border-radius: 8px; align-items: center;">
+                            <div class="schedule-date" style="font-size: 0.85rem; color: #64748b; font-weight: 500;">Mar
+                                16</div>
+                            <div class="schedule-day" style="font-weight: 600; color: #334155; font-size: 0.9rem;">
+                                Monday</div>
+                            <div class="schedule-time" style="color: #0f172a; font-size: 0.9rem; font-weight: 500;">
+                                10:00 AM - 07:00 PM</div>
+                            <div class="schedule-notes" style="color: #94a3b8; font-size: 0.85rem; text-align: right;">-
+                            </div>
+                        </li>
+                        <li class="schedule-item"
+                            style="display: grid; grid-template-columns: 100px 120px 1fr 1fr; padding: 12px 16px; background: #f8fafc; border-radius: 8px; align-items: center;">
+                            <div class="schedule-date" style="font-size: 0.85rem; color: #64748b; font-weight: 500;">Mar
+                                17</div>
+                            <div class="schedule-day" style="font-weight: 600; color: #334155; font-size: 0.9rem;">
+                                Tuesday</div>
+                            <div class="schedule-time" style="color: #0f172a; font-size: 0.9rem; font-weight: 500;">
+                                10:00 AM - 07:00 PM</div>
+                            <div class="schedule-notes" style="color: #94a3b8; font-size: 0.85rem; text-align: right;">-
+                            </div>
+                        </li>
+                        <li class="schedule-item"
+                            style="display: grid; grid-template-columns: 100px 120px 1fr 1fr; padding: 12px 16px; background: #f8fafc; border-radius: 8px; align-items: center;">
+                            <div class="schedule-date" style="font-size: 0.85rem; color: #64748b; font-weight: 500;">Mar
+                                18</div>
+                            <div class="schedule-day" style="font-weight: 600; color: #334155; font-size: 0.9rem;">
+                                Wednesday</div>
+                            <div class="schedule-time" style="color: #0f172a; font-size: 0.9rem; font-weight: 500;">
+                                09:00 AM - 06:00 PM</div>
+                            <div class="schedule-notes" style="color: #94a3b8; font-size: 0.85rem; text-align: right;">-
+                            </div>
+                        </li>
+                        <li class="schedule-item"
+                            style="display: grid; grid-template-columns: 100px 120px 1fr 1fr; padding: 12px 16px; background: #fff5f5; border: 1px dashed #fecdd3; border-radius: 8px; align-items: center;">
+                            <div class="schedule-date" style="font-size: 0.85rem; color: #64748b; font-weight: 500;">Mar
+                                19</div>
+                            <div class="schedule-day" style="font-weight: 600; color: #334155; font-size: 0.9rem;">
+                                Thursday</div>
+                            <div class="schedule-time off" style="color: #e11d48; font-size: 0.9rem; font-weight: 600;">
+                                Off</div>
+                            <div class="schedule-notes off"
+                                style="color: #fca5a5; font-size: 0.85rem; text-align: right;">-</div>
+                        </li>
+                        <li class="schedule-item"
+                            style="display: grid; grid-template-columns: 100px 120px 1fr 1fr; padding: 12px 16px; background: #f8fafc; border-radius: 8px; align-items: center;">
+                            <div class="schedule-date" style="font-size: 0.85rem; color: #64748b; font-weight: 500;">Mar
+                                20</div>
+                            <div class="schedule-day" style="font-weight: 600; color: #334155; font-size: 0.9rem;">
+                                Friday</div>
+                            <div class="schedule-time" style="color: #0f172a; font-size: 0.9rem; font-weight: 500;">
+                                09:00 AM - 08:00 PM</div>
+                            <div class="schedule-notes" style="color: #64748b; font-size: 0.85rem; text-align: right;">
+                                Extended</div>
+                        </li>
+                        <li class="schedule-item"
+                            style="display: grid; grid-template-columns: 100px 120px 1fr 1fr; padding: 12px 16px; background: #f8fafc; border-radius: 8px; align-items: center;">
+                            <div class="schedule-date" style="font-size: 0.85rem; color: #64748b; font-weight: 500;">Mar
+                                21</div>
+                            <div class="schedule-day" style="font-weight: 600; color: #334155; font-size: 0.9rem;">
+                                Saturday</div>
+                            <div class="schedule-time" style="color: #0f172a; font-size: 0.9rem; font-weight: 500;">
+                                08:00 AM - 04:00 PM</div>
+                            <div class="schedule-notes" style="color: #94a3b8; font-size: 0.85rem; text-align: right;">-
+                            </div>
+                        </li>
+                        <li class="schedule-item"
+                            style="display: grid; grid-template-columns: 100px 120px 1fr 1fr; padding: 12px 16px; background: #fff5f5; border: 1px dashed #fecdd3; border-radius: 8px; align-items: center;">
+                            <div class="schedule-date" style="font-size: 0.85rem; color: #64748b; font-weight: 500;">Mar
+                                22</div>
+                            <div class="schedule-day" style="font-weight: 600; color: #334155; font-size: 0.9rem;">
+                                Sunday</div>
+                            <div class="schedule-time off" style="color: #e11d48; font-size: 0.9rem; font-weight: 600;">
+                                Off</div>
+                            <div class="schedule-notes off"
+                                style="color: #fca5a5; font-size: 0.85rem; text-align: right;">-</div>
+                        </li>
+                    </ul>
+                </div>
+
+            </div>
+
+            <div class="modal-footer" style="justify-content: flex-end;">
+                <button type="button" class="btn btn-secondary" id="btnCloseScheduleFooter">Close</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Create Membership Plan Modal -->
+    <div class="modal-overlay" id="planModalOverlay">
+        <div class="modal-container" id="planModal" style="width: 680px; max-width: 95%;">
+            <div class="modal-header">
+                <div class="header-titles">
+                    <h2>Create Membership Plan</h2>
+                    <p class="subtitle">Define a new membership product and its benefits.</p>
+                </div>
+                <button class="modal-close" id="closePlanModal"><i data-feather="x"></i></button>
+            </div>
+            
+            <div class="modal-body" style="padding: 0 1.5rem 1.5rem; overflow-y: auto; max-height: 75vh;">
+                
+                <!-- Section 1: Plan Details -->
+                <div class="modal-section-title" style="margin-top: 1.25rem;">Plan Details</div>
+                
+                <div class="form-group" style="margin-bottom: 1.25rem;">
+                    <label class="form-label">Plan Name <span class="text-rose">*</span></label>
+                    <input type="text" id="planNameInput" class="form-input" placeholder="e.g., Gold Membership">
+                </div>
+                
+                <div class="benefit-row">
+                    <div class="form-group">
+                        <label class="form-label">Price (₹) <span class="text-rose">*</span></label>
+                        <input type="number" id="planPriceInput" class="form-input" placeholder="e.g., 2999">
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Duration <span class="text-rose">*</span></label>
+                        <select id="planDurationInput" class="form-select">
+                            <option value="1">1 Month</option>
+                            <option value="3">3 Months</option>
+                            <option value="6">6 Months</option>
+                            <option value="12" selected>12 Months</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="benefit-row">
+                    <div class="form-group">
+                        <label class="form-label">Description <span class="text-muted">(Optional)</span></label>
+                        <textarea id="planDescInput" class="form-input" placeholder="Summarize the plan..." style="min-height: 80px;"></textarea>
+                    </div>
+                    <div class="form-group" style="display: flex; flex-direction: column; justify-content: center;">
+                        <label class="form-label">Status</label>
+                        <div style="display: flex; align-items: center; gap: 12px; margin-top: 4px;">
+                            <label class="toggle-switch">
+                                <input type="checkbox" id="planStatusToggle" checked>
+                                <span class="toggle-slider"></span>
+                            </label>
+                            <span id="planStatusLabel" style="font-size: 0.9rem; font-weight: 500; color: #1e293b;">Active</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Section 2: Benefits -->
+                <div class="modal-section-title">Benefits</div>
+
+                <div class="benefit-row" style="align-items: flex-end;">
+                    <div class="form-group">
+                        <label class="form-label">Discount Type <span class="text-rose">*</span></label>
+                        <select id="planDiscountType" class="form-select">
+                            <option value="percentage">Percentage (%)</option>
+                            <option value="flat">Flat Amount (₹)</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Discount Value <span class="text-rose">*</span></label>
+                        <input type="number" id="planDiscountValue" class="form-input" placeholder="e.g., 20">
+                    </div>
+                </div>
+
+                <div class="form-group" style="margin-bottom: 1.5rem;">
+                    <label class="form-label">Applicable Services</label>
+                    <div style="position:relative;">
+                        <button id="planSvcBtn" type="button" class="form-input" style="text-align:left; cursor:pointer; display:flex; align-items:center; justify-content:space-between; padding-right: 12px;">
+                            <span id="planSvcText" style="color: #94a3b8;">Select services...</span>
+                            <i data-feather="chevron-down" style="width:18px; height:18px; color:#64748b;"></i>
+                        </button>
+                        <div id="planSvcMenu" style="display:none; position:absolute; top:calc(100% + 4px); left:0; right:0; background:#fff; border:1px solid #e2e8f0; border-radius:10px; z-index:100; box-shadow:0 10px 15px -3px rgba(0,0,0,0.1); overflow:hidden;">
+                            <div id="planSvcCheckboxList" style="padding:4px 0; max-height:240px; overflow-y:auto; display: block !important;">
+                                <label class="svc-dropdown-label"><input type="checkbox" value="All Services" style="accent-color:#7c3aed;"> All Services</label>
+                                <label class="svc-dropdown-label"><input type="checkbox" value="Haircut" style="accent-color:#7c3aed;"> Haircut</label>
+                                <label class="svc-dropdown-label"><input type="checkbox" value="Facial" style="accent-color:#7c3aed;"> Facial</label>
+                                <label class="svc-dropdown-label"><input type="checkbox" value="Massage" style="accent-color:#7c3aed;"> Massage</label>
+                                <label class="svc-dropdown-label"><input type="checkbox" value="Manicure" style="accent-color:#7c3aed;"> Manicure</label>
+                            </div>
+                            <div style="border-top:1px solid #f1f5f9; padding:10px; display:flex; gap:10px;">
+                                <button id="planSvcReset" type="button" style="flex:1; padding:6px; border:1px solid #e2e8f0; border-radius:6px; background:#fff; font-size:0.8rem; color:#64748b; cursor:pointer;">Reset</button>
+                                <button id="planSvcApply" type="button" style="flex:1; padding:6px; border:none; border-radius:6px; background:#7c3aed; font-size:0.8rem; color:#fff; font-weight:600; cursor:pointer;">Apply</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="form-group" style="margin-bottom: 1.5rem;">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+                        <label class="form-label" style="margin: 0;">Free Services <span class="text-muted">(Optional)</span></label>
+                        <button type="button" id="btnAddFreeSvc" style="background: none; border: none; color: #7c3aed; font-size: 0.85rem; font-weight: 600; cursor: pointer; display: flex; align-items: center; gap: 4px;">
+                            <i data-feather="plus-circle" style="width: 14px; height: 14px;"></i> Add Service
+                        </button>
+                    </div>
+                    <div id="freeSvcList">
+                        <!-- Dynamic rows here -->
+                    </div>
+                    <div id="noFreeSvcMsg" style="text-align: center; padding: 20px; background: #f8fafc; border: 1px dashed #e2e8f0; border-radius: 10px; color: #94a3b8; font-size: 0.85rem;">
+                        No free services added yet.
+                    </div>
+                </div>
+
+                <div class="benefit-row">
+                    <div class="form-group">
+                        <label class="form-label">Max Uses Per Month</label>
+                        <input type="number" id="planMaxUsesMonth" class="form-input" placeholder="e.g., 4" min="0">
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Max Uses Per Customer</label>
+                        <input type="number" id="planMaxUsesCustomer" class="form-input" placeholder="e.g., 20" min="0">
+                    </div>
+                </div>
+
+                <div style="padding: 1rem; background: #faf5ff; border: 1px solid #f3e8ff; border-radius: 12px; margin-top: 0.5rem;">
+                    <div style="display: flex; align-items: center; justify-content: space-between;">
+                        <div>
+                            <p style="font-size: 0.9rem; font-weight: 700; color: #581c87; margin: 0;">Auto Apply Benefits</p>
+                            <p style="font-size: 0.8rem; color: #7e22ce; margin: 2px 0 0;">Automatically apply discounts during checkout for members.</p>
+                        </div>
+                        <label class="toggle-switch">
+                            <input type="checkbox" id="planAutoApplyToggle" checked>
+                            <span class="toggle-slider"></span>
+                        </label>
+                    </div>
+                </div>
+
+            </div>
+            
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" id="btnCancelPlan">Cancel</button>
+                <button type="button" class="btn btn-primary" id="btnSavePlan" style="min-width: 140px;">Create Plan</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Assign Membership Modal -->
+    <div class="modal-overlay" id="assignModalOverlay">
+        <div class="modal-container" id="assignModal" style="width: 850px; max-width: 95%;">
+            <div class="modal-header">
+                <div class="header-titles">
+                    <h2>Assign Membership</h2>
+                    <p class="subtitle">Assign a membership plan and record payment details.</p>
+                </div>
+                <button class="modal-close" id="closeAssignModal"><i data-feather="x"></i></button>
+            </div>
+            <div class="modal-body">
+                <div class="modal-grid-2">
+                    <!-- Left Column: Assignment Details -->
+                    <div class="modal-left-col">
+                        <div class="modal-section-title" style="margin-top: 0 !important; font-size: 0.7rem !important;">Membership Details</div>
+                        <div class="form-group">
+                            <label class="form-label">Search Customer <span class="text-rose">*</span></label>
+                            <div style="position: relative;">
+                                <i data-feather="search" style="position: absolute; left: 12px; top: 50%; transform: translateY(-50%); width: 16px; height: 16px; color: #94a3b8;"></i>
+                                <input type="text" id="custSearchInput" class="form-input" placeholder="Search by name or phone..." style="padding-left: 40px;">
+                            </div>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Select Plan <span class="text-rose">*</span></label>
+                            <select id="assignPlanInput" class="form-select">
+                                <option value="" disabled selected>Choose a plan</option>
+                                <option value="gold">Gold Membership (₹2,999)</option>
+                                <option value="silver">Silver Membership (₹1,499)</option>
+                                <option value="vip">VIP Premium (₹5,000)</option>
+                                <option value="trial">Trial Plan (₹499)</option>
+                            </select>
+                        </div>
+                        <div class="form-group" style="margin-bottom: 0 !important;">
+                            <label class="form-label">Purchase Date</label>
+                            <input type="date" id="assignDateInput" class="form-input" value="2026-03-14">
+                        </div>
+                    </div>
+
+                    <!-- Right Column: Payment Details -->
+                    <div class="modal-right-col" style="border-left: 1px solid #f1f5f9; padding-left: 2rem;">
+                        <div class="modal-section-title" style="margin-top: 0 !important; font-size: 0.7rem !important;">Payment Information</div>
+                        
+                        <div class="form-group" style="margin-bottom: 1.5rem !important;">
+                            <label class="form-label">Payment Method <span class="text-rose">*</span></label>
+                            <div class="payment-method-group">
+                                <label class="payment-method-card active">
+                                    <input type="radio" name="payMethod" value="cash" checked>
+                                    <i data-feather="dollar-sign" style="width: 14px; height: 14px;"></i> Cash
+                                </label>
+                                <label class="payment-method-card">
+                                    <input type="radio" name="payMethod" value="card">
+                                    <i data-feather="credit-card" style="width: 14px; height: 14px;"></i> Card
+                                </label>
+                                <label class="payment-method-card">
+                                    <input type="radio" name="payMethod" value="upi">
+                                    <i data-feather="smartphone" style="width: 14px; height: 14px;"></i> UPI
+                                </label>
+                                <label class="payment-method-card">
+                                    <input type="radio" name="payMethod" value="online">
+                                    <i data-feather="globe" style="width: 14px; height: 14px;"></i> Online
+                                </label>
+                            </div>
+                        </div>
+
+                        <div class="form-group">
+                            <label class="form-label">Discount (Optional)</label>
+                            <div style="position: relative;">
+                                <span style="position: absolute; left: 12px; top: 50%; transform: translateY(-50%); color: #64748b; font-size: 0.9rem;">₹</span>
+                                <input type="number" id="assignDiscount" class="form-input" placeholder="0.00" style="padding-left: 25px;">
+                            </div>
+                        </div>
+
+                        <div class="form-group" style="margin-bottom: 0 !important;">
+                            <label class="form-label">Notes (Optional)</label>
+                            <textarea id="assignNotes" class="form-input" placeholder="Add payment notes..." style="height: 80px; resize: none;"></textarea>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" id="btnCancelAssign">Cancel</button>
+                <button type="button" class="btn btn-primary" id="btnConfirmAssign" style="min-width: 160px;">Confirm Payment</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Modal logic
+        const planModal = document.getElementById('planModalOverlay');
+        const assignModal = document.getElementById('assignModalOverlay');
+        const primaryBtn = document.getElementById('primaryActionBtn');
+
+        // Handle Primary Action Button (Create/Assign)
+        if (primaryBtn) {
+            primaryBtn.addEventListener('click', () => {
+                const currentTab = document.querySelector('.nav-tab.active').getAttribute('data-tab');
+                if (currentTab === 'plans') {
+                    planModal.classList.add('active');
+                    if (window.feather) feather.replace();
+                } else if (currentTab === 'purchases') {
+                    assignModal.classList.add('active');
+                    if (window.feather) feather.replace();
+                }
+            });
+        }
+
+        // Close Modals
+        const closePlan = document.getElementById('closePlanModal');
+        const cancelPlan = document.getElementById('btnCancelPlan');
+        const closeAssign = document.getElementById('closeAssignModal');
+        const cancelAssign = document.getElementById('btnCancelAssign');
+
+        if (closePlan) closePlan.onclick = () => planModal.classList.remove('active');
+        if (cancelPlan) cancelPlan.onclick = () => planModal.classList.remove('active');
+        if (closeAssign) closeAssign.onclick = () => assignModal.classList.remove('active');
+        if (cancelAssign) cancelAssign.onclick = () => assignModal.classList.remove('active');
+
+        // Simulated Save Actions
+        const savePlanBtn = document.getElementById('btnSavePlan');
+        if (savePlanBtn) {
+            savePlanBtn.onclick = () => {
+                planModal.classList.remove('active');
+                showToast('Membership plan created successfully');
+            };
+        }
+
+        const confirmAssignBtn = document.getElementById('btnConfirmAssign');
+        if (confirmAssignBtn) {
+            confirmAssignBtn.onclick = () => {
+                const planValue = document.getElementById('assignPlanInput').value;
+                const custName = document.getElementById('custSearchInput').value;
+                
+                if (!custName || !planValue) {
+                    showToast('Please fill in all required fields');
+                    return;
+                }
+
+                assignModal.classList.remove('active');
+                showToast('Membership assigned and payment recorded successfully');
+                
+                // Optional: Reset form
+                document.getElementById('custSearchInput').value = '';
+                document.getElementById('assignPlanInput').value = '';
+                document.getElementById('assignDiscount').value = '';
+                document.getElementById('assignNotes').value = '';
+            };
+        }
+
+        // Payment Method Card Selection
+        const paymentCards = document.querySelectorAll('.payment-method-card');
+        paymentCards.forEach(card => {
+            card.addEventListener('click', function() {
+                paymentCards.forEach(c => c.classList.remove('active'));
+                this.classList.add('active');
+                this.querySelector('input').checked = true;
+            });
+        });
+
+        // Status Toggle Label update
+        document.getElementById('planStatusToggle').addEventListener('change', (e) => {
+            document.getElementById('planStatusLabel').innerText = e.target.checked ? 'Active' : 'Disabled';
+        });
+
+        // Applicable Services Dropdown
+        const svcBtn = document.getElementById('planSvcBtn');
+        const svcMenu = document.getElementById('planSvcMenu');
+        const svcText = document.getElementById('planSvcText');
+        const svcCheckboxes = document.querySelectorAll('#planSvcCheckboxList input[type="checkbox"]');
+        
+        svcBtn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            svcMenu.style.display = svcMenu.style.display === 'block' ? 'none' : 'block';
+        });
+
+        document.getElementById('planSvcApply').addEventListener('click', () => {
+            const selected = Array.from(svcCheckboxes).filter(c => c.checked).map(c => c.value);
+            if (!selected.length) {
+                svcText.innerText = 'Select services...';
+                svcText.style.color = '#94a3b8';
+            } else if (selected.includes('All Services')) {
+                svcText.innerText = 'All Services';
+                svcText.style.color = '#1e293b';
+            } else if (selected.length === 1) {
+                svcText.innerText = selected[0];
+                svcText.style.color = '#1e293b';
+            } else {
+                svcText.innerText = `${selected[0]} +${selected.length - 1} more`;
+                svcText.style.color = '#1e293b';
+            }
+            svcMenu.style.display = 'none';
+        });
+
+        document.getElementById('planSvcReset').addEventListener('click', () => {
+            svcCheckboxes.forEach(c => c.checked = false);
+            svcText.innerText = 'Select services...';
+            svcText.style.color = '#94a3b8';
+        });
+
+        // Free Services Dynamic List
+        const freeSvcList = document.getElementById('freeSvcList');
+        const noFreeSvcMsg = document.getElementById('noFreeSvcMsg');
+        const btnAddFreeSvc = document.getElementById('btnAddFreeSvc');
+
+        btnAddFreeSvc.addEventListener('click', () => {
+            noFreeSvcMsg.style.display = 'none';
+            const row = document.createElement('div');
+            row.className = 'free-svc-item';
+            row.innerHTML = `
+                <select class="form-select" style="padding: 6px 10px;">
+                    <option value="Haircut">Haircut</option>
+                    <option value="Facial">Facial</option>
+                    <option value="Massage">Massage</option>
+                    <option value="Manicure">Manicure</option>
+                </select>
+                <input type="number" class="form-input" value="1" min="1" style="padding: 6px 10px; text-align: center;">
+                <select class="form-select" style="padding: 6px 10px;">
+                    <option value="per month">Per Month</option>
+                    <option value="per membership">Per Membership</option>
+                </select>
+                <button type="button" class="btn-remove" style="background: none; border: none; color: #ef4444; cursor: pointer; display: flex; align-items: center; justify-content: center;">
+                    <i data-feather="trash-2" style="width: 16px; height: 16px;"></i>
+                </button>
+            `;
+            freeSvcList.appendChild(row);
+            feather.replace();
+            
+            row.querySelector('.btn-remove').onclick = () => {
+                row.remove();
+                if (freeSvcList.children.length === 0) noFreeSvcMsg.style.display = 'block';
+            };
+        });
+
+        function showToast(msg) {
+            const toast = document.getElementById('toastNotification');
+            toast.innerText = msg;
+            toast.classList.add('show');
+            setTimeout(() => toast.classList.remove('show'), 3000);
+        }
+
+        // Close on clicking anywhere else
+        window.addEventListener('click', (e) => {
+            if (e.target === planModal) planModal.classList.remove('active');
+            if (e.target === assignModal) assignModal.classList.remove('active');
+            
+            // Close filter panel on outside click
+            const fBtn = document.getElementById('btnFilter');
+            const fPanel = document.getElementById('filterPanel');
+            if (fBtn && fPanel && !fBtn.contains(e.target) && !fPanel.contains(e.target)) {
+                fPanel.style.display = 'none';
+            }
+
+            // Close plan service menu on outside click
+            const sBtn = document.getElementById('planSvcBtn');
+            const sMenu = document.getElementById('planSvcMenu');
+            if (sBtn && sMenu && !sBtn.contains(e.target) && !sMenu.contains(e.target)) {
+                sMenu.style.display = 'none';
+            }
+
+            // Close all dropdowns on outside click
+            if (!e.target.closest('.dropdown-container')) {
+                document.querySelectorAll('.dropdown-content').forEach(d => d.style.display = 'none');
+            }
+        });
+
+        // Filter Toggle
+        const filterBtn = document.getElementById('btnFilter');
+        const filterPanel = document.getElementById('filterPanel');
+        filterBtn.onclick = (e) => {
+            filterPanel.style.display = filterPanel.style.display === 'none' ? 'block' : 'none';
+            e.stopPropagation();
+        };
+
+        document.getElementById('closeFilter').onclick = () => filterPanel.style.display = 'none';
+        document.getElementById('applyFilter').onclick = () => filterPanel.style.display = 'none';
+        document.getElementById('resetFilter').onclick = () => {
+            filterPanel.querySelectorAll('input[type="checkbox"]').forEach(cb => cb.checked = false);
+        };
+
+        // Member Count Shortcut Logic
+        window.viewMembersByPlan = function(planName) {
+            // Switch to purchases tab
+            const purchasesTab = document.querySelector('[data-tab="purchases"]');
+            purchasesTab.click();
+            
+            // Log for demo
+            console.log(`Filtering purchases for plan: ${planName}`);
+            showToast(`Showing members for ${planName}`);
+            
+            // In a real app, this would filter the table rows
+        };
+    </script>
+</body>
+
+</html>
+

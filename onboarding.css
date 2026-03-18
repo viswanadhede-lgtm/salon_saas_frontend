@@ -1,0 +1,295 @@
+/* onboarding.css - specific styling for the onboarding wizard */
+
+.onboarding-page {
+    background-color: var(--bg-secondary);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 2rem 1rem;
+    min-height: 100vh;
+}
+
+.onboarding-container {
+    width: 100%;
+    max-width: 650px;
+    animation: fadeIn 0.5s ease-out;
+}
+
+/* Header */
+.onboarding-header {
+    text-align: center;
+    margin-bottom: 2rem;
+}
+
+.onboarding-header .logo {
+    justify-content: center;
+    color: var(--primary);
+}
+
+/* Wizard Card */
+.wizard-card {
+    background: white;
+    border-radius: 1.25rem;
+    box-shadow: var(--shadow-xl);
+    border: 1px solid var(--border);
+    overflow: hidden;
+}
+
+/* Progress Indicator */
+.wizard-progress {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 2rem 3rem;
+    background: #f8fafc;
+    border-bottom: 1px solid var(--border);
+}
+
+.progress-step {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    position: relative;
+    z-index: 2;
+}
+
+.step-circle {
+    width: 2.5rem;
+    height: 2.5rem;
+    border-radius: 50%;
+    background-color: white;
+    border: 2px solid #cbd5e1;
+    color: #64748b;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 600;
+    margin-bottom: 0.5rem;
+    transition: all 0.3s ease;
+}
+
+.step-label {
+    font-size: 0.8rem;
+    font-weight: 500;
+    color: #64748b;
+    transition: color 0.3s ease;
+}
+
+/* Active and Completed Steps */
+.progress-step.active .step-circle {
+    border-color: var(--accent);
+    background-color: var(--accent);
+    color: white;
+    box-shadow: 0 0 0 4px rgba(217, 70, 239, 0.15);
+}
+
+.progress-step.active .step-label {
+    color: var(--primary);
+    font-weight: 600;
+}
+
+.progress-step.completed .step-circle {
+    border-color: var(--accent);
+    background-color: white;
+    color: var(--accent);
+}
+
+.progress-line {
+    flex: 1;
+    height: 2px;
+    background-color: #e2e8f0;
+    margin: 0 1rem;
+    margin-bottom: 1.5rem; /* Aligning with circles */
+    position: relative;
+    z-index: 1;
+}
+
+.progress-line.completed {
+    background-color: var(--accent);
+}
+
+/* Wizard Content */
+.wizard-content {
+    padding: 2.5rem 3rem 3rem;
+}
+
+.wizard-step {
+    display: none;
+    animation: fadeInStep 0.4s ease;
+}
+
+@keyframes fadeInStep {
+    from { opacity: 0; transform: translateY(10px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+.wizard-step.active {
+    display: block;
+}
+
+.step-header {
+    margin-bottom: 2rem;
+}
+
+.step-header h2 {
+    font-size: 1.5rem;
+    font-weight: 700;
+    color: var(--text-main);
+    margin-bottom: 0.5rem;
+}
+
+.step-header p {
+    color: var(--text-muted);
+    font-size: 0.95rem;
+}
+
+/* Form extensions */
+.form-select {
+    width: 100%;
+    padding: 0.75rem 1rem;
+    border: 1px solid var(--border);
+    border-radius: 0.5rem;
+    font-size: 0.95rem;
+    font-family: inherit;
+    color: var(--text-main);
+    background-color: #fff;
+    cursor: pointer;
+    appearance: auto;
+}
+
+.form-select:focus {
+    outline: none;
+    border-color: var(--border-focus);
+    box-shadow: 0 0 0 3px rgba(217, 70, 239, 0.1);
+}
+
+.row-group {
+    display: flex;
+    gap: 1rem;
+}
+
+.half {
+    flex: 1;
+}
+
+/* Summary Card (Step 3) */
+.summary-card {
+    background: var(--bg-secondary);
+    border: 1px solid var(--border);
+    border-radius: 0.75rem;
+    padding: 1.5rem;
+    margin-bottom: 2rem;
+}
+
+.summary-row {
+    display: flex;
+    justify-content: space-between;
+    padding: 0.5rem 0;
+}
+
+.summary-label {
+    color: var(--text-muted);
+    font-size: 0.9rem;
+}
+
+.summary-value {
+    font-weight: 500;
+    color: var(--text-main);
+    font-size: 0.95rem;
+    text-align: right;
+}
+
+.capitalize {
+    text-transform: capitalize;
+}
+
+.highlight-plan {
+    color: var(--accent);
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    font-size: 0.85rem;
+}
+
+.summary-divider {
+    border: 0;
+    border-top: 1px solid #e2e8f0;
+    margin: 1rem 0;
+}
+
+/* Actions */
+.wizard-actions {
+    display: flex;
+    margin-top: 2.5rem;
+}
+
+.wizard-actions.right-align {
+    justify-content: flex-end;
+}
+
+.wizard-actions.space-between {
+    justify-content: space-between;
+}
+
+.btn-secondary {
+    background: white;
+    color: var(--text-main);
+    border: 1px solid var(--border);
+    padding: 0.875rem 1.5rem;
+    border-radius: 0.5rem;
+    font-weight: 600;
+    font-size: 1rem;
+    font-family: inherit;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.btn-secondary:hover {
+    background: #f8fafc;
+    border-color: #cbd5e1;
+}
+
+.wizard-actions button {
+    width: auto;
+    min-width: 140px;
+}
+
+.api-error {
+    background: #fef2f2;
+    color: #ef4444;
+    padding: 0.75rem;
+    border-radius: 0.5rem;
+    margin-bottom: 1.5rem;
+    font-size: 0.9rem;
+    border: 1px solid #fecaca;
+}
+
+/* Responsive */
+@media (max-width: 640px) {
+    .wizard-progress {
+        padding: 1.5rem;
+    }
+    
+    .step-label {
+        display: none; /* Hide labels on very small screens to save space */
+    }
+    
+    .wizard-content {
+        padding: 2rem 1.5rem;
+    }
+    
+    .row-group {
+        flex-direction: column;
+        gap: 0;
+    }
+    
+    .wizard-actions button {
+        width: 100%;
+        margin-top: 0;
+    }
+    
+    .wizard-actions.space-between {
+        flex-direction: column-reverse;
+        gap: 1rem;
+    }
+}

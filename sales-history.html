@@ -1,0 +1,1095 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Sales History - BharathBots Salon SaaS">
+    <title>Sales History - BharathBots</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="styles.css">
+    <link rel="stylesheet" href="dashboard.css">
+    <link rel="stylesheet" href="submenu.css">
+    <script src="https://unpkg.com/feather-icons"></script>
+
+    <style>
+        body.todays-bookings-body { background: #f8fafc; }
+        .tb-page-wrapper { display: flex; flex-direction: column; height: calc(100vh / 0.93); overflow: hidden; }
+        .tb-page-header { display: flex; align-items: center; justify-content: space-between; padding: 18px 32px 14px 32px; background: #fff; border-bottom: 1px solid #e2e8f0; flex-shrink: 0; }
+        .tb-table-area { flex: 1; overflow-y: auto; padding: 0; }
+        .tb-row { border-bottom: 1px solid #e3ecf5; transition: background 0.15s; }
+        .tb-row:nth-child(even) { background: #ffffff; }
+        .tb-row:hover { background: #dce9f1f5; }
+        .tb-status-pill { display: inline-block; padding: 3px 10px; border-radius: 20px; font-size: 0.78rem; font-weight: 600; }
+        .tb-status-booked    { background: #dbeafe; color: #1d4ed8; }
+        .tb-status-completed { background: #d1fae5; color: #065f46; }
+        .tb-status-noshow    { background: #fee2e2; color: #991b1b; }
+        .tb-status-cancelled { background: #fef9c3; color: #92400e; }
+        .tb-payment-paid    { background: #d1fae5; color: #065f46; }
+        .tb-payment-pending { background: #fef3c7; color: #92400e; }
+        .tb-payment-partial { background: #ffe4e6; color: #9f1239; }
+        .tb-action-btn { display: flex; align-items: center; gap: 6px; padding: 6px 12px; border-radius: 7px; border: 1px solid #e2e8f0; background: #fff; font-size: 0.8rem; font-weight: 500; color: #374151; cursor: pointer; transition: all 0.15s; white-space: nowrap; }
+        .tb-action-btn:hover { background: #f1f5f9; border-color: #cbd5e1; }
+        .tb-action-btn svg { flex-shrink: 0; }
+        .tb-actions-menu { position: fixed; background: #fff; border: 1px solid #e2e8f0; border-radius: 10px; box-shadow: 0 8px 30px rgba(15,23,42,0.12); min-width: 190px; z-index: 800; overflow: hidden; animation: dropIn 0.15s ease; }
+        @keyframes dropIn { from { opacity: 0; transform: translateY(-6px); } to { opacity: 1; transform: translateY(0); } }
+        .tb-menu-item { display: flex; align-items: center; gap: 10px; padding: 10px 16px; font-size: 0.855rem; font-weight: 500; color: #374151; cursor: pointer; transition: background 0.12s; border: none; background: none; width: 100%; text-align: left; }
+        .tb-menu-item:hover { background: #f8fafc; }
+        .tb-menu-item.danger { color: #dc2626; }
+        .tb-menu-item.danger:hover { background: #fff1f2; }
+        .tb-menu-item + .tb-menu-item { border-top: 1px solid #f1f5f9; }
+        .customer-link { font-weight: 600; color: #4f46e5; cursor: pointer; text-decoration: none; transition: all 0.2s; }
+        .customer-link:hover { color: #4338ca; text-decoration: underline; }
+        .action-summary-overlay { display: none; position: fixed; inset: 0; z-index: 900; background: rgba(15,23,42,0.45); align-items: center; justify-content: center; }
+        @keyframes summaryPop { from { opacity: 0; transform: scale(0.92) translateY(8px); } to { opacity: 1; transform: scale(1) translateY(0); } }
+        .tb-toast { position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%) translateY(20px); background: #1e293b; color: #fff; padding: 12px 24px; border-radius: 10px; font-size: 0.875rem; font-weight: 500; opacity: 0; transition: all 0.3s ease; z-index: 1000; white-space: nowrap; }
+        .tb-toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+    </style>
+</head>
+
+<body class="dashboard-body sales-history-body">
+
+    <!-- Sidebar -->
+    <aside class="sidebar" id="sidebar">
+        <div class="sidebar-header">
+            <div class="logo">
+                <svg width="24" height="24" viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <rect x="2" y="6" width="28" height="20" rx="4" stroke="currentColor" stroke-width="2" />
+                    <path d="M8 12C8 12 11 16 16 16C21 16 24 12 24 12" stroke="currentColor" stroke-width="2" stroke-linecap="round" />
+                    <circle cx="16" cy="16" r="2" fill="currentColor" />
+                </svg>
+                <span class="logo-text">BharathBots</span>
+            </div>
+            <button class="toggle-btn" id="sidebarToggle" title="Close sidebar">
+                <i data-feather="sidebar" class="toggle-icon"></i>
+            </button>
+        </div>
+        <nav class="sidebar-nav">
+            <ul class="nav-list">
+                <li class="nav-item" title="Dashboard"><a href="dashboard.html" class="nav-link"><i data-feather="home" class="nav-icon"></i><span class="nav-text">Dashboard</span></a></li>
+                <li class="nav-item" title="Bookings"><a href="bookings.html" class="nav-link"><i data-feather="calendar" class="nav-icon"></i><span class="nav-text">Bookings</span></a></li>
+                <li class="nav-item" title="Customers"><a href="customers.html" class="nav-link"><i data-feather="users" class="nav-icon"></i><span class="nav-text">Customers</span></a></li>
+                <li class="nav-item" title="Staff"><a href="staff.html" class="nav-link"><i data-feather="user-check" class="nav-icon"></i><span class="nav-text">Staff</span></a></li>
+                <li class="nav-item" title="Services"><a href="services.html" class="nav-link"><i data-feather="scissors" class="nav-icon"></i><span class="nav-text">Services</span></a></li>
+                <li class="nav-item has-submenu active" title="Sales">
+                    <div class="nav-link submenu-toggle"><i data-feather="dollar-sign" class="nav-icon"></i><span class="nav-text">Sales</span><i data-feather="chevron-down" class="submenu-arrow"></i></div>
+                    <ul class="submenu">
+                        <li><a href="pos.html" class="submenu-link"><span class="submenu-bullet">&bull;</span><span class="nav-text">Point of Sale</span></a></li>
+                        <li><a href="products.html" class="submenu-link"><span class="submenu-bullet">&bull;</span><span class="nav-text">Products</span></a></li>
+                        <li><a href="sales-history.html" class="submenu-link active"><span class="submenu-bullet">&bull;</span><span class="nav-text">Sales History</span></a></li>
+                    </ul>
+                </li>
+                <li class="nav-item has-submenu" title="Payments">
+                    <div class="nav-link submenu-toggle"><i data-feather="credit-card" class="nav-icon"></i><span class="nav-text">Payments</span><i data-feather="chevron-down" class="submenu-arrow"></i></div>
+                    <ul class="submenu">
+                        <li><a href="pending-payments.html" class="submenu-link"><span class="submenu-bullet">&bull;</span><span class="nav-text">Pending Payments</span></a></li>
+                        <li><a href="payments-history.html" class="submenu-link"><span class="submenu-bullet">&bull;</span><span class="nav-text">Payments History</span></a></li>
+                    </ul>
+                </li>
+                <li class="nav-item has-submenu" title="Marketing">
+                    <div class="nav-link submenu-toggle"><i data-feather="gift" class="nav-icon"></i><span class="nav-text">Marketing</span><i data-feather="chevron-down" class="submenu-arrow"></i></div>
+                    <ul class="submenu">
+                        <li><a href="offers.html" class="submenu-link"><span class="submenu-bullet">&bull;</span><span
+                                    class="nav-text">Offers</span></a></li>
+                        <li><a href="coupons.html" class="submenu-link"><span class="submenu-bullet">&bull;</span><span
+                                    class="nav-text">Coupons</span></a></li>
+                        <li><a href="memberships.html" class="submenu-link"><span class="submenu-bullet">&bull;</span><span
+                                    class="nav-text">Memberships</span></a></li>
+                        <li><a href="ad-campaigns.html" class="submenu-link"><span class="submenu-bullet">&bull;</span><span
+                                    class="nav-text">Ad Campaigns</span></a></li>
+                    </ul>
+                </li>
+                <li class="nav-item has-submenu" title="Analytics">
+                    <div class="nav-link submenu-toggle"><i data-feather="bar-chart-2" class="nav-icon"></i><span class="nav-text">Analytics</span><i data-feather="chevron-down" class="submenu-arrow"></i></div>
+                    <ul class="submenu">
+                        <li><a href="overview.html" class="submenu-link"><span class="submenu-bullet">&bull;</span><span
+                                    class="nav-text">Overview</span></a></li>
+                        <li><a href="reports.html" class="submenu-link"><span class="submenu-bullet">&bull;</span><span
+                                    class="nav-text">Reports</span></a></li>
+                    </ul>
+                </li>
+                <li class="nav-item has-submenu" title="Settings">
+                    <div class="nav-link submenu-toggle"><i data-feather="settings" class="nav-icon"></i><span class="nav-text">Settings</span><i data-feather="chevron-down" class="submenu-arrow"></i></div>
+                    <ul class="submenu">
+                        <li><a href="company.html" class="submenu-link"><span class="submenu-bullet">&bull;</span><span class="nav-text">Company</span></a></li>
+                        <li><a href="branches.html" class="submenu-link"><span class="submenu-bullet">&bull;</span><span class="nav-text">Branches</span></a></li>
+                        <li><a href="users.html" class="submenu-link"><span class="submenu-bullet">&bull;</span><span class="nav-text">Users</span></a></li>
+                        <li><a href="roles-permissions.html" class="submenu-link"><span class="submenu-bullet">&bull;</span><span class="nav-text">Roles &amp; Permissions</span></a></li>
+                        <li><a href="custom-fields.html" class="submenu-link"><span class="submenu-bullet">&bull;</span><span class="nav-text">Custom Fields</span></a></li>
+                        <li><a href="billing-subscription.html" class="submenu-link"><span class="submenu-bullet">&bull;</span><span class="nav-text">Billing & Subscription</span></a></li>
+                    </ul>
+                </li>
+            </ul>
+        </nav>
+    </aside>
+
+    <!-- Main Wrapper -->
+    <div class="main-wrapper" id="mainContent">
+
+        <!-- Top Header Bar -->
+        <header class="top-header">
+            <div class="header-left">
+                <div class="branch-switcher">
+                    <i data-feather="map-pin" class="branch-icon"></i>
+                    <select id="branchSelect" class="branch-select">
+                        <option value="branch_1">Downtown Branch</option>
+                        <option value="branch_2">Uptown Spa</option>
+                    </select>
+                </div>
+            </div>
+            <div class="header-center">
+                <div class="search-bar">
+                    <i data-feather="search" class="search-icon"></i>
+                    <input type="text" placeholder="Search bookings, customers..." class="search-input">
+                </div>
+            </div>
+            <div class="header-right">
+                <div class="quick-actions">
+                    <button class="qa-btn qa-primary" id="btnNewBooking">
+                        <i data-feather="calendar" class="qa-icon"></i>
+                        <span>New Booking</span>
+                    </button>
+                </div>
+                <div class="header-divider"></div>
+                <div class="plan-badge" id="headerPlanBadge">Growth</div>
+                <button class="icon-btn" title="Notifications">
+                    <i data-feather="bell"></i>
+                    <span class="notification-dot"></span>
+                </button>
+                <div class="user-profile" id="userProfileDropdown">
+                    <div class="avatar" id="avatarBtn">
+                        <img src="https://ui-avatars.com/api/?name=Admin+User&background=1E3A8A&color=fff" alt="User">
+                    </div>
+                    <div class="profile-dropdown" id="profileMenu">
+                        <div class="dropdown-header">
+                            <p class="dropdown-name">Admin User</p>
+                            <p class="dropdown-role">Owner</p>
+                        </div>
+                        <div class="dropdown-divider"></div>
+                        <ul class="dropdown-list">
+                            <li><a href="#" class="dropdown-item"><i data-feather="user"></i><span>Profile</span></a></li>
+                            <li><a href="#" class="dropdown-item"><i data-feather="calendar"></i><span>Schedule</span></a></li>
+                            <li><a href="#" class="dropdown-item"><i data-feather="settings"></i><span>Settings</span></a></li>
+                            <li><a href="#" class="dropdown-item"><i data-feather="help-circle"></i><span>Support</span></a></li>
+                            <li><a href="#" class="dropdown-item text-danger"><i data-feather="log-out"></i><span>Logout</span></a></li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </header>
+
+        <div id="profileBackdrop" class="profile-backdrop"></div>
+
+        <!-- Page Content -->
+        <main class="content-area" style="padding:0;">
+
+            <!-- Section Title Bar (Sales History) -->
+            <div class="tb-page-header" style="border-bottom: 1px solid #e2e8f0; padding: 18px 32px 14px 32px; background: #fff;">
+                <div style="display:flex; align-items:center; gap:14px;">
+                    <div>
+                        <h1 style="font-size:1.45rem; font-weight:700; color:#1e293b; margin:0;">Sales History</h1>
+                        <p style="font-size:0.95rem; color:#64748b; margin:2px 0 0 0;">View completed product sales</p>
+                    </div>
+                </div>
+                <div style="display:flex; align-items:center; gap:10px;">
+                    <div style="background:#fff; border:1px solid #e2e8f0; border-radius:8px; padding:0 12px; display:flex; align-items:center; width:220px; height:40px;">
+                        <i data-feather="search" style="color:#94a3b8; width:16px; height:16px; flex-shrink:0;"></i>
+                        <input type="text" id="hsSearchInput" placeholder="Search sale or customer" style="border:none; background:transparent; padding:8px; font-size:0.88rem; outline:none; width:100%;">
+                    </div>
+
+                    <!-- Filter Button -->
+                    <div style="position:relative;">
+                        <button id="hsFilterBtn" class="btn btn-secondary" style="height:40px; display:flex; align-items:center; gap:6px; padding:0 14px;"
+                            onclick="event.stopPropagation(); var m=document.getElementById('hsFilterMenu'); m.style.display=(m.style.display==='block'?'none':'block');">
+                            <i data-feather="filter" style="width:15px; height:15px;"></i> Filter
+                        </button>
+                        <div id="hsFilterMenu" style="display:none; position:absolute; top:46px; right:0; width:240px; background:#fff; border:1px solid #e2e8f0; border-radius:10px; box-shadow:0 8px 24px rgba(15,23,42,0.1); padding:16px; z-index:9999;">
+                            <p style="font-size:0.72rem; font-weight:700; color:#94a3b8; text-transform:uppercase; letter-spacing:0.06em; margin:0 0 8px 0;">Payment Method</p>
+                            <div style="display:flex; flex-direction:column; gap:6px; margin-bottom:14px;">
+                                <label style="display:flex; align-items:center; gap:8px; font-size:0.85rem; color:#374151; cursor:pointer;"><input type="checkbox" class="hs-filter-cb" value="cash"> Cash</label>
+                                <label style="display:flex; align-items:center; gap:8px; font-size:0.85rem; color:#374151; cursor:pointer;"><input type="checkbox" class="hs-filter-cb" value="card"> Card</label>
+                                <label style="display:flex; align-items:center; gap:8px; font-size:0.85rem; color:#374151; cursor:pointer;"><input type="checkbox" class="hs-filter-cb" value="upi"> UPI</label>
+                            </div>
+                            <p style="font-size:0.72rem; font-weight:700; color:#94a3b8; text-transform:uppercase; letter-spacing:0.06em; margin:0 0 8px 0;">Staff</p>
+                            <div style="display:flex; flex-direction:column; gap:6px; margin-bottom:14px;">
+                                <label style="display:flex; align-items:center; gap:8px; font-size:0.85rem; color:#374151; cursor:pointer;"><input type="checkbox" class="hs-filter-cb" value="Sarah"> Sarah</label>
+                                <label style="display:flex; align-items:center; gap:8px; font-size:0.85rem; color:#374151; cursor:pointer;"><input type="checkbox" class="hs-filter-cb" value="Michael"> Michael</label>
+                                <label style="display:flex; align-items:center; gap:8px; font-size:0.85rem; color:#374151; cursor:pointer;"><input type="checkbox" class="hs-filter-cb" value="Anjali"> Anjali</label>
+                            </div>
+                            <p style="font-size:0.72rem; font-weight:700; color:#94a3b8; text-transform:uppercase; letter-spacing:0.06em; margin:0 0 8px 0;">Categories</p>
+                            <div style="display:flex; flex-direction:column; gap:6px; margin-bottom:14px;">
+                                <label style="display:flex; align-items:center; gap:8px; font-size:0.85rem; color:#374151; cursor:pointer;"><input type="checkbox" class="hs-filter-cb" value="Hair care"> Hair care</label>
+                                <label style="display:flex; align-items:center; gap:8px; font-size:0.85rem; color:#374151; cursor:pointer;"><input type="checkbox" class="hs-filter-cb" value="Skin care"> Skin care</label>
+                                <label style="display:flex; align-items:center; gap:8px; font-size:0.85rem; color:#374151; cursor:pointer;"><input type="checkbox" class="hs-filter-cb" value="Style products"> Style products</label>
+                            </div>
+                            <div style="display:flex; gap:8px;">
+                                <button onclick="event.stopPropagation(); hsClearFilter();" style="flex:1; padding:7px 0; border:1px solid #e2e8f0; background:#fff; border-radius:7px; font-size:0.83rem; color:#64748b; cursor:pointer;">Clear</button>
+                                <button onclick="event.stopPropagation(); hsApplyFilter();" style="flex:1; padding:7px 0; border:none; background:#1e3a8a; border-radius:7px; font-size:0.83rem; color:#fff; cursor:pointer; font-weight:600;">Apply</button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Date Range Button -->
+                    <div style="position:relative;">
+                        <button id="hsDateBtn" class="btn btn-secondary" style="height:40px; display:flex; align-items:center; gap:6px; padding:0 14px;"
+                            onclick="event.stopPropagation(); var m=document.getElementById('hsDateMenu'); m.style.display=(m.style.display==='block'?'none':'block'); document.getElementById('hsFilterMenu').style.display='none';">
+                            <i data-feather="calendar" style="width:15px; height:15px;"></i>
+                            <span id="hsDateLabel">Date Range</span>
+                        </button>
+                        <div id="hsDateMenu" style="display:none; position:absolute; top:46px; right:0; width:170px; background:#fff; border:1px solid #e2e8f0; border-radius:10px; box-shadow:0 8px 24px rgba(15,23,42,0.1); padding:6px 0; z-index:9999;">
+                            <button onclick="event.stopPropagation(); document.getElementById('hsDateLabel').textContent='Today'; document.getElementById('hsDateMenu').style.display='none';"
+                                style="width:100%; padding:9px 16px; text-align:left; border:none; background:none; font-size:0.85rem; color:#374151; cursor:pointer;" onmouseover="this.style.background='#f8fafc'" onmouseout="this.style.background='none'">Today</button>
+                            <button onclick="event.stopPropagation(); document.getElementById('hsDateLabel').textContent='Last 7 days'; document.getElementById('hsDateMenu').style.display='none';"
+                                style="width:100%; padding:9px 16px; text-align:left; border:none; background:none; font-size:0.85rem; color:#374151; cursor:pointer;" onmouseover="this.style.background='#f8fafc'" onmouseout="this.style.background='none'">Last 7 days</button>
+                            <button onclick="event.stopPropagation(); document.getElementById('hsDateLabel').textContent='Last 30 days'; document.getElementById('hsDateMenu').style.display='none';"
+                                style="width:100%; padding:9px 16px; text-align:left; border:none; background:none; font-size:0.85rem; color:#374151; cursor:pointer;" onmouseover="this.style.background='#f8fafc'" onmouseout="this.style.background='none'">Last 30 days</button>
+                            <button onclick="event.stopPropagation(); document.getElementById('hsDateLabel').textContent='This month'; document.getElementById('hsDateMenu').style.display='none';"
+                                style="width:100%; padding:9px 16px; text-align:left; border:none; background:none; font-size:0.85rem; color:#374151; cursor:pointer;" onmouseover="this.style.background='#f8fafc'" onmouseout="this.style.background='none'">This month</button>
+                            <button onclick="event.stopPropagation(); document.getElementById('hsDateLabel').textContent='Custom Range'; document.getElementById('hsDateMenu').style.display='none';"
+                                style="width:100%; padding:9px 16px; text-align:left; border:none; background:none; font-size:0.85rem; color:#374151; cursor:pointer;" onmouseover="this.style.background='#f8fafc'" onmouseout="this.style.background='none'">Custom Range...</button>
+                        </div>
+                    </div>
+
+                    <!-- Export Button -->
+                    <div style="position:relative;">
+                        <button id="hsExportBtn" class="btn btn-secondary" style="height:40px; display:flex; align-items:center; gap:6px; padding:0 14px;"
+                            onclick="event.stopPropagation(); var m=document.getElementById('hsExportMenu'); m.style.display=(m.style.display==='block'?'none':'block'); document.getElementById('hsFilterMenu').style.display='none'; document.getElementById('hsDateMenu').style.display='none';">
+                            <i data-feather="download" style="width:15px; height:15px;"></i> Export
+                        </button>
+                        <div id="hsExportMenu" style="display:none; position:absolute; top:46px; right:0; width:165px; background:#fff; border:1px solid #e2e8f0; border-radius:10px; box-shadow:0 8px 24px rgba(15,23,42,0.1); padding:6px 0; z-index:9999;">
+                            <button onclick="event.stopPropagation(); document.getElementById('hsExportMenu').style.display='none'; hsExportData('csv');"
+                                style="width:100%; padding:9px 16px; text-align:left; border:none; background:none; font-size:0.85rem; color:#374151; cursor:pointer; display:flex; align-items:center; gap:8px;" onmouseover="this.style.background='#f8fafc'" onmouseout="this.style.background='none'">
+                                <i data-feather="file-text" style="width:14px; height:14px; color:#64748b;"></i> Export as CSV
+                            </button>
+                            <button onclick="event.stopPropagation(); document.getElementById('hsExportMenu').style.display='none'; hsExportData('excel');"
+                                style="width:100%; padding:9px 16px; text-align:left; border:none; background:none; font-size:0.85rem; color:#374151; cursor:pointer; display:flex; align-items:center; gap:8px;" onmouseover="this.style.background='#f8fafc'" onmouseout="this.style.background='none'">
+                                <i data-feather="grid" style="width:14px; height:14px; color:#64748b;"></i> Export as Excel
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Table Area -->
+            <div class="tb-table-area" style="overflow-x:hidden;">
+                <table id="hsTable" style="width:100%; border-collapse:collapse; font-size:0.875rem; table-layout:fixed;">
+                    <colgroup>
+                        <col style="width:11%">
+                        <col style="width:15%">
+                        <col style="width:14%">
+                        <col style="width:20%">
+                        <col style="width:9%">
+                        <col style="width:9%">
+                        <col style="width:9%">
+                        <col style="width:13%">
+                    </colgroup>
+                    <thead>
+                        <tr style="background:#fff; border-bottom:2px solid #e2e8f0; position:sticky; top:0; z-index:10;">
+                            <th style="padding:13px 12px 13px 24px; text-align:left; font-size:0.75rem; font-weight:600; color:#64748b; text-transform:uppercase; letter-spacing:0.05em;">Sale ID</th>
+                            <th style="padding:13px 12px; text-align:left; font-size:0.75rem; font-weight:600; color:#64748b; text-transform:uppercase; letter-spacing:0.05em;">Customer</th>
+                            <th style="padding:13px 12px; text-align:left; font-size:0.75rem; font-weight:600; color:#64748b; text-transform:uppercase; letter-spacing:0.05em;">Date</th>
+                            <th style="padding:13px 12px; text-align:left; font-size:0.75rem; font-weight:600; color:#64748b; text-transform:uppercase; letter-spacing:0.05em;">Products</th>
+                            <th style="padding:13px 12px; text-align:left; font-size:0.75rem; font-weight:600; color:#64748b; text-transform:uppercase; letter-spacing:0.05em;">Total</th>
+                            <th style="padding:13px 12px; text-align:left; font-size:0.75rem; font-weight:600; color:#64748b; text-transform:uppercase; letter-spacing:0.05em;">Payment</th>
+                            <th style="padding:13px 12px; text-align:left; font-size:0.75rem; font-weight:600; color:#64748b; text-transform:uppercase; letter-spacing:0.05em;">Staff</th>
+                            <th style="padding:13px 24px 13px 12px; text-align:left; font-size:0.75rem; font-weight:600; color:#64748b; text-transform:uppercase; letter-spacing:0.05em;">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody id="hsTableBody"></tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- Sale Details Modal -->
+        <div class="modal-overlay" id="saleDetailsModalOverlay">
+            <div class="modal-container" id="saleDetailsModal" style="width: 600px; max-width: 95%;">
+                <div class="modal-header">
+                    <div class="header-titles">
+                        <h2>Sale Details</h2>
+                        <p class="subtitle" id="sdSubtitle">Loading...</p>
+                    </div>
+                    <div style="display: flex; gap: 8px; margin-right: 16px;">
+                        <button class="btn btn-secondary" id="sdPrintBtn" style="height: 32px; padding: 0 10px; font-size: 0.8rem;">
+                            <i data-feather="printer" style="width:14px; height:14px; margin-right:4px;"></i> Print
+                        </button>
+                        <button class="btn" id="sdRefundBtn" style="height: 32px; padding: 0 10px; font-size: 0.8rem; background: #fff1f2; color: #dc2626; border: 1px solid #fecdd3;">
+                            <i data-feather="corner-up-left" style="width:14px; height:14px; margin-right:4px;"></i> Refund
+                        </button>
+                    </div>
+                    <button class="modal-close" id="closeSaleDetailsModal"><i data-feather="x"></i></button>
+                </div>
+                <div class="modal-body" style="padding: 1.5rem; overflow-y: auto; max-height: 70vh;">
+                    <div style="background: #f8fafc; border-radius: 8px; padding: 16px; margin-bottom: 24px; display: grid; grid-template-columns: 1fr 1fr; gap: 16px;">
+                        <div><p style="font-size:0.75rem; color:#64748b; font-weight:600; text-transform:uppercase; margin-bottom:4px;">Customer</p><p style="font-size:0.9rem; color:#1e293b; font-weight:600;" id="sdCustomer">-</p></div>
+                        <div><p style="font-size:0.75rem; color:#64748b; font-weight:600; text-transform:uppercase; margin-bottom:4px;">Staff</p><p style="font-size:0.9rem; color:#1e293b; font-weight:500;" id="sdStaff">-</p></div>
+                        <div><p style="font-size:0.75rem; color:#64748b; font-weight:600; text-transform:uppercase; margin-bottom:4px;">Date &amp; Time</p><p style="font-size:0.9rem; color:#1e293b; font-weight:500;" id="sdDate">-</p></div>
+                        <div><p style="font-size:0.75rem; color:#64748b; font-weight:600; text-transform:uppercase; margin-bottom:4px;">Payment Method</p><p style="font-size:0.9rem; color:#1e293b; font-weight:500;" id="sdPayment">-</p></div>
+                    </div>
+                    <h3 style="font-size:0.95rem; font-weight:600; color:#1e293b; margin-bottom:12px;">Items Purchased</h3>
+                    <div style="border: 1px solid #e2e8f0; border-radius: 8px; overflow: hidden; margin-bottom: 24px;">
+                        <table style="width: 100%; border-collapse: collapse; text-align: left;">
+                            <thead style="background: #f1f5f9; border-bottom: 1px solid #e2e8f0;">
+                                <tr>
+                                    <th style="padding: 10px 16px; font-size: 0.8rem; font-weight: 600; color: #475569;">Item</th>
+                                    <th style="padding: 10px 16px; font-size: 0.8rem; font-weight: 600; color: #475569; text-align: center;">Qty</th>
+                                    <th style="padding: 10px 16px; font-size: 0.8rem; font-weight: 600; color: #475569; text-align: right;">Price</th>
+                                    <th style="padding: 10px 16px; font-size: 0.8rem; font-weight: 600; color: #475569; text-align: right;">Total</th>
+                                </tr>
+                            </thead>
+                            <tbody id="sdItemsList"></tbody>
+                        </table>
+                    </div>
+                    <div style="display: flex; justify-content: flex-end;">
+                        <div style="width: 250px;">
+                            <div style="display: flex; justify-content: space-between; margin-bottom: 8px; font-size: 0.9rem; color: #475569;"><span>Subtotal</span><span id="sdSubtotal">-</span></div>
+                            <div style="display: flex; justify-content: space-between; margin-bottom: 8px; font-size: 0.9rem; color: #475569;"><span>Tax</span><span id="sdTax">-</span></div>
+                            <div style="display: flex; justify-content: space-between; margin-bottom: 12px; font-size: 0.9rem; color: #475569;"><span>Discount</span><span id="sdDiscount" style="color: #059669;">-</span></div>
+                            <div style="border-top: 1px solid #e2e8f0; padding-top: 12px; display: flex; justify-content: space-between; font-size: 1.1rem; font-weight: 700; color: #1e293b;"><span>Total</span><span id="sdTotal">-</span></div>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" id="closeSaleDetailsBtn">Close</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Refund Confirmation Overlay -->
+        <div class="action-summary-overlay" id="refundSummaryOverlay" style="display:none;">
+            <div class="modal-container" style="width: 440px; border-radius: 12px; padding: 0.5rem; text-align: center;">
+                <div class="modal-body" style="padding: 2rem 1.5rem 1.5rem 1.5rem; display: flex; flex-direction: column; align-items: center;">
+                    <div style="width: 56px; height: 56px; border-radius: 50%; background: #fff1f2; display: flex; align-items: center; justify-content: center; margin-bottom: 16px;">
+                        <i data-feather="alert-triangle" style="color: #dc2626; width: 28px; height: 28px;"></i>
+                    </div>
+                    <h3 style="font-size: 1.25rem; font-weight: 700; color: #1e293b; margin-bottom: 8px;">Confirm Refund</h3>
+                    <p style="font-size: 0.95rem; color: #475569; margin-bottom: 24px; line-height: 1.5;">Are you sure you want to refund this sale? This action will reverse the revenue and cannot be undone.</p>
+                    <div style="display: flex; gap: 12px; width: 100%;">
+                        <button class="btn btn-secondary" id="cancelRefundBtn" style="flex: 1; justify-content: center; height: 44px;">Never mind</button>
+                        <button class="btn" id="confirmRefundBtn" style="flex: 1; justify-content: center; height: 44px; background: #dc2626; color: white; border: none;">Yes, Refund</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        </main>
+    </div>
+
+    <!-- Page-level helpers (load-order safe) -->
+    <script>
+        function hsToggleMenu(e, menuId) {
+            e.stopPropagation();
+            ['hsFilterMenu', 'hsDateMenu', 'hsExportMenu'].forEach(function(id) {
+                if (id !== menuId) { var m = document.getElementById(id); if (m) m.style.display = 'none'; }
+            });
+            var menu = document.getElementById(menuId);
+            if (!menu) return;
+            menu.style.display = (menu.style.display === 'block') ? 'none' : 'block';
+        }
+        function hsShowToast(msg, color) {
+            var toast = document.getElementById('toastNotification');
+            if (!toast) return;
+            toast.textContent = msg || 'Done';
+            toast.style.background = color || '#3b82f6';
+            toast.classList.add('show');
+            setTimeout(function() { toast.classList.remove('show'); }, 3000);
+        }
+    </script>
+
+
+<div class="modal-overlay" id="bookingModalOverlay">
+        <div class="modal-container" id="bookingModal">
+            <!-- Header -->
+            <div class="modal-header">
+                <div class="header-titles">
+                    <h2>New Booking</h2>
+                    <p class="subtitle">Create a new appointment for a customer.</p>
+                </div>
+                <button class="modal-close" id="closeBookingModal"><i data-feather="x"></i></button>
+            </div>
+
+            <div class="modal-body" style="padding: 1.5rem; overflow-y: auto;">
+                <div class="modal-form-side" style="width: 100%; max-width: none; flex: 1; padding: 0; border: none;">
+                    <div style="width: 100%; display: grid; grid-template-columns: 1fr 1fr; gap: 32px;">
+
+                        <!-- LEFT COLUMN -->
+                        <div style="display: flex; flex-direction: column;">
+                            <!-- Customer Ident -->
+                            <div class="form-group relative">
+                                <label class="form-label" for="phoneSearch">Phone Number <span
+                                        class="text-rose">*</span></label>
+                                <input type="tel" id="phoneSearch" class="form-input" placeholder="Enter phone number"
+                                    autocomplete="off">
+                                <div class="search-suggestions" id="searchSuggestions"></div>
+                            </div>
+
+                            <div class="customer-badge-container" id="customerBadgeContainer"
+                                style="display:none; margin-bottom: 8px;">
+                                <span class="badge-pill existing-badge" id="customerBadge">Existing Customer</span>
+                            </div>
+
+                            <div class="form-group span-full" id="newCustomerBadgeContainer"
+                                style="display:none; margin-bottom: 8px;">
+                                <span class="badge-pill new-badge" id="newCustomerBadge">New Customer</span>
+                            </div>
+
+                            <div class="form-group" id="customerNameGroup">
+                                <label class="form-label" for="customerName">Customer Name <span
+                                        class="text-rose">*</span></label>
+                                <input type="text" id="customerName" class="form-input"
+                                    placeholder="Enter customer name">
+                            </div>
+
+                            <div class="form-group" id="customerEmailGroup">
+                                <label class="form-label" for="customerEmail">Email <span id="emailOptionalLabel"
+                                        class="text-muted"></span></label>
+                                <input type="email" id="customerEmail" class="form-input"
+                                    placeholder="Enter email address">
+                            </div>
+
+                            <!-- Booking Notes -->
+                            <div class="form-group section-gap flex-grow" style="margin-bottom: 1.5rem;">
+                                <label class="form-label" for="bookingNotes">Booking Notes <span
+                                        class="text-muted">(Optional)</span></label>
+                                <textarea id="bookingNotes" class="form-input form-textarea"
+                                    placeholder="Add optional notes for this booking..."
+                                    style="min-height: 120px;"></textarea>
+                            </div>
+                        </div>
+
+                        <!-- RIGHT COLUMN -->
+                        <div style="display: flex; flex-direction: column;">
+                            <!-- Service Selection -->
+                            <div class="form-group" style="margin-top: 0;">
+                                <label class="form-label" for="bookingService">Service <span
+                                        class="text-rose">*</span></label>
+                                <select id="bookingService" class="form-select">
+                                    <option value="" disabled selected>Select a service</option>
+                                    <!-- populated via JS -->
+                                </select>
+                            </div>
+
+                            <div class="form-grid" id="serviceMetaFields" style="display:none;">
+                                <div class="form-group">
+                                    <label class="form-label">Duration</label>
+                                    <input type="text" class="form-input read-only-input" id="roDuration" readonly>
+                                </div>
+                                <div class="form-group">
+                                    <label class="form-label">Price</label>
+                                    <input type="text" class="form-input read-only-input" id="roPrice" readonly>
+                                </div>
+                            </div>
+
+                            <!-- Staff Selection -->
+                            <div class="form-group section-gap">
+                                <label class="form-label" for="bookingStaff">Staff <span
+                                        class="text-rose">*</span></label>
+                                <select id="bookingStaff" class="form-select">
+                                    <option value="" disabled selected>Select staff member</option>
+                                    <!-- populated via JS -->
+                                </select>
+                            </div>
+
+                            <!-- Date & Time -->
+                            <div class="form-grid section-gap">
+                                <div class="form-group">
+                                    <label class="form-label" for="bookingDate">Date <span
+                                            class="text-rose">*</span></label>
+                                    <input type="date" id="bookingDate" class="form-input">
+                                </div>
+                                <div class="form-group">
+                                    <label class="form-label" for="bookingTime">Time <span
+                                            class="text-rose">*</span></label>
+                                    <div class="relative" style="display: flex; gap: 8px;">
+                                        <input type="time" id="bookingTime" class="form-input" style="flex: 1;">
+                                        <button type="button" class="btn btn-secondary" id="btnTimeNow"
+                                            style="padding: 0 12px; height: 40px; font-size: 13px;">Now</button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div> <!-- /inner form container -->
+                </div>
+            </div>
+
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" id="btnCancelBooking">Cancel</button>
+                <button type="button" class="btn btn-primary" id="btnConfirmBooking" disabled>Confirm Booking</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Toast Notification -->
+    <div id="toastNotification" class="toast-notification">Booking created successfully (demo)</div>
+
+    <!-- Profile Modal -->
+    <div class="modal-overlay" id="genericModalOverlay">
+        <div class="modal-container" id="genericModal" style="width: 75%; max-width: 75%; min-height: 85vh;">
+            <div class="modal-header">
+                <div class="header-titles">
+                    <h2 id="genericModalTitle">Profile</h2>
+                    <p class="subtitle" id="genericModalSubtitle">View and manage your personal profile.</p>
+                </div>
+                <button class="modal-close" id="closeGenericModal"><i data-feather="x"></i></button>
+            </div>
+
+            <!-- Profile Body: 2-column layout -->
+            <div class="modal-body" style="padding: 2rem 0; flex: 1; overflow-y: auto;" id="genericModalBody">
+
+                <!-- ===== PROFILE CONTENT ===== -->
+                <style>
+                    /* Premium Profile Polish */
+                    #profileContent .form-label {
+                        font-size: 0.85rem;
+                        font-weight: 600;
+                        margin-bottom: 6px;
+                        color: #475569;
+                        transition: color 0.2s ease;
+                    }
+
+                    #profileContent .form-group:hover .form-label {
+                        color: #1e293b;
+                    }
+
+                    #profileContent .form-input {
+                        height: 46px;
+                        font-size: 0.95rem;
+                        padding: 10px 16px;
+                        border-radius: 10px;
+                        border: 1px solid #e2e8f0;
+                        background-color: #fafafa;
+                        box-shadow: 0 1px 2px rgba(0, 0, 0, 0.02) inset;
+                        transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+                    }
+
+                    #profileContent .form-input:hover:not(.read-only-input) {
+                        background-color: #ffffff;
+                        border-color: #cbd5e1;
+                        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.03);
+                    }
+
+                    #profileContent .form-input:focus {
+                        background-color: #ffffff;
+                        border-color: #8b5cf6;
+                        box-shadow: 0 0 0 4px rgba(139, 92, 246, 0.12), 0 2px 4px rgba(0, 0, 0, 0.05);
+                        transform: translateY(-1px);
+                    }
+
+                    #profileContent .read-only-input {
+                        background-color: #f8fafc;
+                        border-color: #f1f5f9;
+                        color: #64748b;
+                        box-shadow: none !important;
+                        transform: none !important;
+                    }
+
+                    #profileContent .form-grid {
+                        gap: 24px !important;
+                        margin-bottom: 24px !important;
+                    }
+
+                    #profileContent .form-group {
+                        margin-bottom: 24px;
+                    }
+
+                    /* Avatar Hover Effect */
+                    .profile-avatar-wrap {
+                        transition: transform 0.4s cubic-bezier(0.34, 1.56, 0.64, 1), box-shadow 0.4s ease;
+                    }
+
+                    .profile-avatar-wrap:hover {
+                        transform: scale(1.05) translateY(-2px);
+                        box-shadow: 0 0 0 6px #e0e7ff, 0 12px 24px rgba(30, 58, 138, 0.2) !important;
+                    }
+
+                    /* Subtle pulsing background for photo button */
+                    .change-photo-btn {
+                        transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+                        position: relative;
+                        overflow: hidden;
+                    }
+
+                    .change-photo-btn::before {
+                        content: '';
+                        position: absolute;
+                        top: 50%;
+                        left: 50%;
+                        width: 100%;
+                        height: 100%;
+                        background: radial-gradient(circle, rgba(255, 255, 255, 0.8) 0%, rgba(255, 255, 255, 0) 60%);
+                        transform: translate(-50%, -50%) scale(0);
+                        opacity: 0;
+                        transition: transform 0.5s ease, opacity 0.5s ease;
+                    }
+
+                    .change-photo-btn:hover::before {
+                        transform: translate(-50%, -50%) scale(2);
+                        opacity: 0.1;
+                    }
+
+                    .change-photo-btn:hover {
+                        transform: translateY(-2px);
+                        box-shadow: 0 4px 12px rgba(79, 70, 229, 0.15);
+                    }
+
+                    .change-photo-btn:active {
+                        transform: translateY(0);
+                    }
+
+                    /* Text subtle lift */
+                    .profile-name-display {
+                        background: linear-gradient(135deg, #1e3a8a 0%, #3b82f6 100%);
+                        -webkit-background-clip: text;
+                        background-clip: text;
+                        -webkit-text-fill-color: transparent;
+                        display: inline-block;
+                    }
+                </style>
+                <div id="profileContent"
+                    style="display: grid; grid-template-columns: 35% 65%; gap: 0; min-height: 100%; width: 100%;">
+
+                    <!-- LEFT: Avatar column -->
+                    <div
+                        style="display: flex; flex-direction: column; align-items: center; padding: 1rem 2.5rem 2rem 2.5rem; border-right: 1px solid #f1f5f9; width: 100%; box-sizing: border-box; justify-content: flex-start;">
+                        <!-- Avatar Circle -->
+                        <div class="profile-avatar-wrap"
+                            style="width: 140px; height: 140px; margin-bottom: 24px; box-shadow: 0 0 0 4px #c7d2fe, 0 6px 16px rgba(30, 58, 138, 0.18);">
+                            <img id="profileAvatarImg"
+                                src="https://ui-avatars.com/api/?name=Admin+User&background=1E3A8A&color=fff&size=256"
+                                alt="Profile Avatar">
+                        </div>
+                        <!-- Change Photo -->
+                        <label for="profilePhotoInput" class="change-photo-btn"
+                            style="padding: 10px 20px; font-size: 0.95rem; margin-bottom: 32px; border-radius: 8px;">
+                            <i data-feather="camera" style="width: 16px; height: 16px;"></i>
+                            Change Photo
+                        </label>
+                        <input type="file" id="profilePhotoInput" accept="image/*" style="display:none;">
+                        <!-- Identity Summary -->
+                        <p class="profile-name-display" style="font-size: 1.35rem; margin-bottom: 6px;">Admin User</p>
+                        <p class="profile-role-display" style="font-size: 0.95rem; padding: 6px 18px;">Owner</p>
+                    </div>
+
+                    <!-- RIGHT: Form fields -->
+                    <div
+                        style="display: flex; flex-direction: column; padding: 1rem 2.5rem 3rem 2.5rem; gap: 0; width: 100%; max-width: 720px; margin: 0 auto; box-sizing: border-box; justify-content: flex-start;">
+
+                        <!-- First Name + Last Name -->
+                        <div class="form-grid" style="gap: 16px; margin-bottom: 16px;">
+                            <div class="form-group" style="margin-bottom: 0;">
+                                <label class="form-label" for="profileFirstName">First Name</label>
+                                <input type="text" id="profileFirstName" class="form-input" value="Admin"
+                                    placeholder="First name">
+                            </div>
+                            <div class="form-group" style="margin-bottom: 0;">
+                                <label class="form-label" for="profileLastName">Last Name</label>
+                                <input type="text" id="profileLastName" class="form-input" value="User"
+                                    placeholder="Last name">
+                            </div>
+                        </div>
+
+                        <!-- Phone Number -->
+                        <div class="form-group">
+                            <label class="form-label" for="profilePhone">Phone Number</label>
+                            <input type="tel" id="profilePhone" class="form-input" value="+91 98765 43210"
+                                placeholder="Phone number">
+                        </div>
+
+                        <!-- Emergency Contact Split -->
+                        <div class="form-grid" style="gap: 16px; margin-bottom: 24px;">
+                            <div class="form-group" style="margin-bottom: 0;">
+                                <label class="form-label" for="profileEmergencyName">Emergency Contact Name</label>
+                                <input type="text" id="profileEmergencyName" class="form-input"
+                                    placeholder="Contact name">
+                            </div>
+                            <div class="form-group" style="margin-bottom: 0;">
+                                <label class="form-label" for="profileEmergencyPhone">Emergency Contact Number</label>
+                                <input type="tel" id="profileEmergencyPhone" class="form-input"
+                                    placeholder="Contact number">
+                            </div>
+                        </div>
+
+                        <!-- Email (read-only) -->
+                        <div class="form-group">
+                            <label class="form-label" for="profileEmail">Email</label>
+                            <input type="email" id="profileEmail" class="form-input read-only-input"
+                                value="admin@salon.com" readonly>
+                        </div>
+
+                        <!-- Role (read-only) -->
+                        <div class="form-group">
+                            <label class="form-label" for="profileRole">Role</label>
+                            <input type="text" id="profileRole" class="form-input read-only-input" value="Owner"
+                                readonly>
+                        </div>
+
+                        <!-- Joined On (read-only) -->
+                        <div class="form-group">
+                            <label class="form-label" for="profileJoined">Joined On</label>
+                            <input type="text" id="profileJoined" class="form-input read-only-input"
+                                value="January 15, 2024" readonly>
+                        </div>
+
+                    </div>
+                </div>
+
+                <!-- ===== SETTINGS CONTENT ===== -->
+                <div id="settingsContent"
+                    style="display: none; grid-template-columns: 65% 35%; gap: 0; min-height: 100%; width: 100%;">
+
+                    <!-- LEFT: App Preferences -->
+                    <div
+                        style="display: flex; flex-direction: column; padding: 1rem 2.5rem 3rem 2.5rem; border-right: 1px solid #f1f5f9; width: 100%; box-sizing: border-box; justify-content: center; align-items: center;">
+                        <div style="width: 100%; max-width: 450px;">
+                            <h3
+                                style="font-size: 1.1rem; font-weight: 600; color: #1e293b; margin-bottom: 24px; padding-bottom: 12px; border-bottom: 1px solid #e2e8f0; width: 100%;">
+                                App Preferences</h3>
+
+                            <!-- Language -->
+                            <div class="form-group">
+                                <label class="form-label" for="settingsLanguage">Language</label>
+                                <select id="settingsLanguage" class="form-input"
+                                    style="appearance: auto; cursor: pointer;">
+                                    <option value="en" selected>English</option>
+                                    <option value="hi">Hindi</option>
+                                    <option value="te">Telugu</option>
+                                    <option value="ta">Tamil</option>
+                                </select>
+                            </div>
+
+                            <!-- Theme -->
+                            <div class="form-group">
+                                <label class="form-label" for="settingsTheme">Theme</label>
+                                <select id="settingsTheme" class="form-input"
+                                    style="appearance: auto; cursor: pointer;">
+                                    <option value="light" selected>Light</option>
+                                    <option value="dark">Dark</option>
+                                    <option value="system">System Default</option>
+                                </select>
+                            </div>
+
+                            <!-- Notifications -->
+                            <div class="form-group">
+                                <label class="form-label" for="settingsNotifications">Notifications</label>
+                                <select id="settingsNotifications" class="form-input"
+                                    style="appearance: auto; cursor: pointer;">
+                                    <option value="enabled" selected>Enabled</option>
+                                    <option value="disabled">Disabled</option>
+                                </select>
+                            </div>
+
+                            <!-- Time Zone -->
+                            <div class="form-group">
+                                <label class="form-label" for="settingsTimeZone">Time Zone</label>
+                                <select id="settingsTimeZone" class="form-input"
+                                    style="appearance: auto; cursor: pointer;">
+                                    <option value="Asia/Kolkata" selected>Asia/Kolkata (IST)</option>
+                                    <option value="UTC">UTC</option>
+                                </select>
+                            </div>
+
+                            <!-- Date & Time Format -->
+                            <div class="form-group">
+                                <label class="form-label" for="settingsDateTimeFormat">Date & Time Format</label>
+                                <select id="settingsDateTimeFormat" class="form-input"
+                                    style="appearance: auto; cursor: pointer;">
+                                    <option value="DD MMM YYYY, hh:mm A" selected>DD MMM YYYY, hh:mm A</option>
+                                    <option value="MM/DD/YYYY, HH:mm">MM/DD/YYYY, HH:mm</option>
+                                    <option value="YYYY-MM-DD, HH:mm">YYYY-MM-DD, HH:mm</option>
+                                </select>
+                            </div>
+                        </div> <!-- /max-width container -->
+                    </div>
+
+                    <!-- RIGHT: App Information -->
+                    <div
+                        style="display: flex; flex-direction: column; padding: 1rem 2.5rem 3rem 2.5rem; gap: 0; width: 100%; box-sizing: border-box; justify-content: flex-start;">
+                        <h3
+                            style="font-size: 1.1rem; font-weight: 600; color: #1e293b; margin-bottom: 24px; padding-bottom: 12px; border-bottom: 1px solid #e2e8f0;">
+                            App Information</h3>
+
+                        <!-- Version -->
+                        <div class="form-group">
+                            <label class="form-label">Version</label>
+                            <p id="settingsVersion"
+                                style="font-size: 0.95rem; color: #3b82f6; margin: 0; padding-top: 10px; font-weight: 600;">
+                                v1.0.0</p>
+                        </div>
+
+                        <!-- Status -->
+                        <div class="form-group">
+                            <label class="form-label">Status</label>
+                            <div
+                                style="display: flex; align-items: center; justify-content: space-between; padding-top: 10px;">
+                                <p id="settingsStatus"
+                                    style="font-size: 0.95rem; color: #10b981; font-weight: 600; margin: 0;">Up to date
+                                </p>
+                                <button id="btnUpdateApp" class="btn btn-primary"
+                                    style="display: none; padding: 6px 14px; font-size: 0.8rem; height: auto; border-radius: 6px;">Update</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- ===== OTHER SECTION CONTENT (placeholder) ===== -->
+                <div id="genericPlaceholderContent"
+                    style="display:none; align-items: center; justify-content: center; height: 100%; text-align: center; color: #94a3b8;">
+                    <div>
+                        <i data-feather="layers"
+                            style="width: 40px; height: 40px; margin-bottom: 12px; stroke: #cbd5e1;"></i>
+                        <p style="font-size: 0.95rem; font-weight: 500; margin: 0;">Content coming soon</p>
+                        <p style="font-size: 0.8rem; margin-top: 4px;">This section is under construction.</p>
+                    </div>
+                </div>
+
+            </div>
+
+            <div class="modal-footer" id="genericModalFooter"
+                style="justify-content: flex-end; align-items: center; gap: 12px;">
+                <button type="button" class="btn btn-secondary" id="btnCloseGenericModal"
+                    style="flex: none; width: 140px;">Cancel</button>
+                <button type="button" class="btn btn-primary" id="btnSaveGenericModal"
+                    style="flex: none; width: 160px;">Save Changes</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Schedule Modal -->
+    <div class="modal-overlay" id="scheduleModalOverlay">
+        <div class="modal-container" id="scheduleModal" style="min-height: 60vh;">
+            <div class="modal-header">
+                <div class="header-titles">
+                    <h2 id="scheduleModalTitle">Schedule</h2>
+                    <p class="subtitle" id="scheduleModalSubtitle">View your upcoming work schedule.</p>
+                </div>
+                <button class="modal-close" id="closeScheduleModal"><i data-feather="x"></i></button>
+            </div>
+
+            <div class="modal-body" style="padding: 1.5rem; flex: 1; overflow-y: auto; flex-direction: column;">
+
+                <!-- Tab Headers -->
+                <div class="schedule-tabs"
+                    style="display: flex; gap: 8px; margin-bottom: 1.5rem; border-bottom: 1px solid #f1f5f9; padding-bottom: 0.5rem;">
+                    <button class="schedule-tab-btn active" id="tabBtnThisWeek"
+                        style="padding: 8px 16px; border: none; background: none; font-weight: 600; font-size: 0.95rem; color: #1e3a8a; border-bottom: 2px solid #1e3a8a; cursor: pointer; transition: all 0.2s;">This
+                        Week</button>
+                    <button class="schedule-tab-btn" id="tabBtnNextWeek"
+                        style="padding: 8px 16px; border: none; background: none; font-weight: 500; font-size: 0.95rem; color: #64748b; border-bottom: 2px solid transparent; cursor: pointer; transition: all 0.2s;">Next
+                        Week</button>
+                </div>
+
+                <!-- Tab Content: This Week -->
+                <div class="schedule-tab-pane" id="paneThisWeek" style="display: block;">
+                    <!-- Column Headers -->
+                    <div
+                        style="display: grid; grid-template-columns: 100px 120px 1fr 1fr; padding: 6px 16px 10px 16px; border-bottom: 1px solid #e2e8f0; margin-bottom: 8px;">
+                        <div
+                            style="font-size: 0.75rem; font-weight: 700; color: #94a3b8; text-transform: uppercase; letter-spacing: 0.05em;">
+                            Date</div>
+                        <div
+                            style="font-size: 0.75rem; font-weight: 700; color: #94a3b8; text-transform: uppercase; letter-spacing: 0.05em;">
+                            Day</div>
+                        <div
+                            style="font-size: 0.75rem; font-weight: 700; color: #94a3b8; text-transform: uppercase; letter-spacing: 0.05em;">
+                            Time</div>
+                        <div
+                            style="font-size: 0.75rem; font-weight: 700; color: #94a3b8; text-transform: uppercase; letter-spacing: 0.05em; text-align: right;">
+                            Comments</div>
+                    </div>
+                    <ul class="schedule-list"
+                        style="list-style: none; padding: 0; margin: 0; display: flex; flex-direction: column; gap: 8px;">
+                        <li class="schedule-item"
+                            style="display: grid; grid-template-columns: 100px 120px 1fr 1fr; padding: 12px 16px; background: #f8fafc; border-radius: 8px; align-items: center;">
+                            <div class="schedule-date" style="font-size: 0.85rem; color: #64748b; font-weight: 500;">Mar
+                                9</div>
+                            <div class="schedule-day" style="font-weight: 600; color: #334155; font-size: 0.9rem;">
+                                Monday</div>
+                            <div class="schedule-time" style="color: #0f172a; font-size: 0.9rem; font-weight: 500;">
+                                09:00 AM - 06:00 PM</div>
+                            <div class="schedule-notes" style="color: #64748b; font-size: 0.85rem; text-align: right;">
+                                Opening shift</div>
+                        </li>
+                        <li class="schedule-item"
+                            style="display: grid; grid-template-columns: 100px 120px 1fr 1fr; padding: 12px 16px; background: #f8fafc; border-radius: 8px; align-items: center;">
+                            <div class="schedule-date" style="font-size: 0.85rem; color: #64748b; font-weight: 500;">Mar
+                                10</div>
+                            <div class="schedule-day" style="font-weight: 600; color: #334155; font-size: 0.9rem;">
+                                Tuesday</div>
+                            <div class="schedule-time" style="color: #0f172a; font-size: 0.9rem; font-weight: 500;">
+                                09:00 AM - 06:00 PM</div>
+                            <div class="schedule-notes" style="color: #94a3b8; font-size: 0.85rem; text-align: right;">-
+                            </div>
+                        </li>
+                        <li class="schedule-item"
+                            style="display: grid; grid-template-columns: 100px 120px 1fr 1fr; padding: 12px 16px; background: #fff5f5; border: 1px dashed #fecdd3; border-radius: 8px; align-items: center;">
+                            <div class="schedule-date" style="font-size: 0.85rem; color: #64748b; font-weight: 500;">Mar
+                                11</div>
+                            <div class="schedule-day" style="font-weight: 600; color: #334155; font-size: 0.9rem;">
+                                Wednesday</div>
+                            <div class="schedule-time off" style="color: #e11d48; font-size: 0.9rem; font-weight: 600;">
+                                Off</div>
+                            <div class="schedule-notes off"
+                                style="color: #fca5a5; font-size: 0.85rem; text-align: right;">-</div>
+                        </li>
+                        <li class="schedule-item"
+                            style="display: grid; grid-template-columns: 100px 120px 1fr 1fr; padding: 12px 16px; background: #f8fafc; border-radius: 8px; align-items: center;">
+                            <div class="schedule-date" style="font-size: 0.85rem; color: #64748b; font-weight: 500;">Mar
+                                12</div>
+                            <div class="schedule-day" style="font-weight: 600; color: #334155; font-size: 0.9rem;">
+                                Thursday</div>
+                            <div class="schedule-time" style="color: #0f172a; font-size: 0.9rem; font-weight: 500;">
+                                10:00 AM - 07:00 PM</div>
+                            <div class="schedule-notes" style="color: #94a3b8; font-size: 0.85rem; text-align: right;">-
+                            </div>
+                        </li>
+                        <li class="schedule-item"
+                            style="display: grid; grid-template-columns: 100px 120px 1fr 1fr; padding: 12px 16px; background: #f8fafc; border-radius: 8px; align-items: center;">
+                            <div class="schedule-date" style="font-size: 0.85rem; color: #64748b; font-weight: 500;">Mar
+                                13</div>
+                            <div class="schedule-day" style="font-weight: 600; color: #334155; font-size: 0.9rem;">
+                                Friday</div>
+                            <div class="schedule-time" style="color: #0f172a; font-size: 0.9rem; font-weight: 500;">
+                                10:00 AM - 08:00 PM</div>
+                            <div class="schedule-notes" style="color: #64748b; font-size: 0.85rem; text-align: right;">
+                                Late shift</div>
+                        </li>
+                        <li class="schedule-item"
+                            style="display: grid; grid-template-columns: 100px 120px 1fr 1fr; padding: 12px 16px; background: #f8fafc; border-radius: 8px; align-items: center;">
+                            <div class="schedule-date" style="font-size: 0.85rem; color: #64748b; font-weight: 500;">Mar
+                                14</div>
+                            <div class="schedule-day" style="font-weight: 600; color: #334155; font-size: 0.9rem;">
+                                Saturday</div>
+                            <div class="schedule-time" style="color: #0f172a; font-size: 0.9rem; font-weight: 500;">
+                                08:00 AM - 04:00 PM</div>
+                            <div class="schedule-notes" style="color: #64748b; font-size: 0.85rem; text-align: right;">
+                                Weekend shift</div>
+                        </li>
+                        <li class="schedule-item"
+                            style="display: grid; grid-template-columns: 100px 120px 1fr 1fr; padding: 12px 16px; background: #fff5f5; border: 1px dashed #fecdd3; border-radius: 8px; align-items: center;">
+                            <div class="schedule-date" style="font-size: 0.85rem; color: #64748b; font-weight: 500;">Mar
+                                15</div>
+                            <div class="schedule-day" style="font-weight: 600; color: #334155; font-size: 0.9rem;">
+                                Sunday</div>
+                            <div class="schedule-time off" style="color: #e11d48; font-size: 0.9rem; font-weight: 600;">
+                                Off</div>
+                            <div class="schedule-notes off"
+                                style="color: #fca5a5; font-size: 0.85rem; text-align: right;">-</div>
+                        </li>
+                    </ul>
+                </div>
+
+                <!-- Tab Content: Next Week -->
+                <div class="schedule-tab-pane" id="paneNextWeek" style="display: none;">
+                    <!-- Column Headers -->
+                    <div
+                        style="display: grid; grid-template-columns: 100px 120px 1fr 1fr; padding: 6px 16px 10px 16px; border-bottom: 1px solid #e2e8f0; margin-bottom: 8px;">
+                        <div
+                            style="font-size: 0.75rem; font-weight: 700; color: #94a3b8; text-transform: uppercase; letter-spacing: 0.05em;">
+                            Date</div>
+                        <div
+                            style="font-size: 0.75rem; font-weight: 700; color: #94a3b8; text-transform: uppercase; letter-spacing: 0.05em;">
+                            Day</div>
+                        <div
+                            style="font-size: 0.75rem; font-weight: 700; color: #94a3b8; text-transform: uppercase; letter-spacing: 0.05em;">
+                            Time</div>
+                        <div
+                            style="font-size: 0.75rem; font-weight: 700; color: #94a3b8; text-transform: uppercase; letter-spacing: 0.05em; text-align: right;">
+                            Comments</div>
+                    </div>
+                    <ul class="schedule-list"
+                        style="list-style: none; padding: 0; margin: 0; display: flex; flex-direction: column; gap: 8px;">
+                        <li class="schedule-item"
+                            style="display: grid; grid-template-columns: 100px 120px 1fr 1fr; padding: 12px 16px; background: #f8fafc; border-radius: 8px; align-items: center;">
+                            <div class="schedule-date" style="font-size: 0.85rem; color: #64748b; font-weight: 500;">Mar
+                                16</div>
+                            <div class="schedule-day" style="font-weight: 600; color: #334155; font-size: 0.9rem;">
+                                Monday</div>
+                            <div class="schedule-time" style="color: #0f172a; font-size: 0.9rem; font-weight: 500;">
+                                10:00 AM - 07:00 PM</div>
+                            <div class="schedule-notes" style="color: #94a3b8; font-size: 0.85rem; text-align: right;">-
+                            </div>
+                        </li>
+                        <li class="schedule-item"
+                            style="display: grid; grid-template-columns: 100px 120px 1fr 1fr; padding: 12px 16px; background: #f8fafc; border-radius: 8px; align-items: center;">
+                            <div class="schedule-date" style="font-size: 0.85rem; color: #64748b; font-weight: 500;">Mar
+                                17</div>
+                            <div class="schedule-day" style="font-weight: 600; color: #334155; font-size: 0.9rem;">
+                                Tuesday</div>
+                            <div class="schedule-time" style="color: #0f172a; font-size: 0.9rem; font-weight: 500;">
+                                10:00 AM - 07:00 PM</div>
+                            <div class="schedule-notes" style="color: #94a3b8; font-size: 0.85rem; text-align: right;">-
+                            </div>
+                        </li>
+                        <li class="schedule-item"
+                            style="display: grid; grid-template-columns: 100px 120px 1fr 1fr; padding: 12px 16px; background: #f8fafc; border-radius: 8px; align-items: center;">
+                            <div class="schedule-date" style="font-size: 0.85rem; color: #64748b; font-weight: 500;">Mar
+                                18</div>
+                            <div class="schedule-day" style="font-weight: 600; color: #334155; font-size: 0.9rem;">
+                                Wednesday</div>
+                            <div class="schedule-time" style="color: #0f172a; font-size: 0.9rem; font-weight: 500;">
+                                09:00 AM - 06:00 PM</div>
+                            <div class="schedule-notes" style="color: #94a3b8; font-size: 0.85rem; text-align: right;">-
+                            </div>
+                        </li>
+                        <li class="schedule-item"
+                            style="display: grid; grid-template-columns: 100px 120px 1fr 1fr; padding: 12px 16px; background: #fff5f5; border: 1px dashed #fecdd3; border-radius: 8px; align-items: center;">
+                            <div class="schedule-date" style="font-size: 0.85rem; color: #64748b; font-weight: 500;">Mar
+                                19</div>
+                            <div class="schedule-day" style="font-weight: 600; color: #334155; font-size: 0.9rem;">
+                                Thursday</div>
+                            <div class="schedule-time off" style="color: #e11d48; font-size: 0.9rem; font-weight: 600;">
+                                Off</div>
+                            <div class="schedule-notes off"
+                                style="color: #fca5a5; font-size: 0.85rem; text-align: right;">-</div>
+                        </li>
+                        <li class="schedule-item"
+                            style="display: grid; grid-template-columns: 100px 120px 1fr 1fr; padding: 12px 16px; background: #f8fafc; border-radius: 8px; align-items: center;">
+                            <div class="schedule-date" style="font-size: 0.85rem; color: #64748b; font-weight: 500;">Mar
+                                20</div>
+                            <div class="schedule-day" style="font-weight: 600; color: #334155; font-size: 0.9rem;">
+                                Friday</div>
+                            <div class="schedule-time" style="color: #0f172a; font-size: 0.9rem; font-weight: 500;">
+                                09:00 AM - 08:00 PM</div>
+                            <div class="schedule-notes" style="color: #64748b; font-size: 0.85rem; text-align: right;">
+                                Extended</div>
+                        </li>
+                        <li class="schedule-item"
+                            style="display: grid; grid-template-columns: 100px 120px 1fr 1fr; padding: 12px 16px; background: #f8fafc; border-radius: 8px; align-items: center;">
+                            <div class="schedule-date" style="font-size: 0.85rem; color: #64748b; font-weight: 500;">Mar
+                                21</div>
+                            <div class="schedule-day" style="font-weight: 600; color: #334155; font-size: 0.9rem;">
+                                Saturday</div>
+                            <div class="schedule-time" style="color: #0f172a; font-size: 0.9rem; font-weight: 500;">
+                                08:00 AM - 04:00 PM</div>
+                            <div class="schedule-notes" style="color: #94a3b8; font-size: 0.85rem; text-align: right;">-
+                            </div>
+                        </li>
+                        <li class="schedule-item"
+                            style="display: grid; grid-template-columns: 100px 120px 1fr 1fr; padding: 12px 16px; background: #fff5f5; border: 1px dashed #fecdd3; border-radius: 8px; align-items: center;">
+                            <div class="schedule-date" style="font-size: 0.85rem; color: #64748b; font-weight: 500;">Mar
+                                22</div>
+                            <div class="schedule-day" style="font-weight: 600; color: #334155; font-size: 0.9rem;">
+                                Sunday</div>
+                            <div class="schedule-time off" style="color: #e11d48; font-size: 0.9rem; font-weight: 600;">
+                                Off</div>
+                            <div class="schedule-notes off"
+                                style="color: #fca5a5; font-size: 0.85rem; text-align: right;">-</div>
+                        </li>
+                    </ul>
+                </div>
+
+            </div>
+
+            <div class="modal-footer" style="justify-content: flex-end;">
+                <button type="button" class="btn btn-secondary" id="btnCloseScheduleFooter">Close</button>
+            </div>
+        </div>
+    </div>
+
+    
+    <script src="sales-history.js"></script>
+    <script src="dashboard.js"></script>
+</body>
+</html>
+

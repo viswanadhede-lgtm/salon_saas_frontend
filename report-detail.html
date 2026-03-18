@@ -1,0 +1,2134 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Detailed Report View for BharathBots Salon SaaS.">
+    <title>Report Detail - BharathBots</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="styles.css">
+    <link rel="stylesheet" href="dashboard.css">
+    <link rel="stylesheet" href="submenu.css">
+    <link rel="stylesheet" href="reports.css">
+    <!-- Feather Icons -->
+    <script src="https://unpkg.com/feather-icons"></script>
+    <!-- Chart.js -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        /* Detail View Specific Styles */
+        .report-actions {
+            display: flex;
+            gap: 12px;
+            align-items: center;
+        }
+
+        .btn-outline {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 8px 16px;
+            border: 1px solid #e2e8f0;
+            border-radius: 8px;
+            background: white;
+            color: #64748b;
+            font-size: 0.875rem;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .btn-outline:hover {
+            border-color: #cbd5e1;
+            background: #f8fafc;
+            color: #1e293b;
+        }
+
+        .btn-outline i {
+            width: 14px;
+            height: 14px;
+        }
+
+        .filter-bar {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 16px;
+            background: white;
+            padding: 1rem 1.5rem;
+            border-radius: 12px;
+            border: 1px solid #f1f5f9;
+            margin-bottom: 1.5rem;
+            align-items: center;
+        }
+
+        .filter-group {
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+        }
+
+        .filter-group label {
+            font-size: 0.75rem;
+            font-weight: 600;
+            color: #94a3b8;
+            text-transform: uppercase;
+            letter-spacing: 0.025em;
+        }
+
+        .filter-group select, 
+        .filter-group input {
+            padding: 8px 12px;
+            border-radius: 8px;
+            border: 1px solid #e2e8f0;
+            font-size: 0.875rem;
+            color: #1e293b;
+            outline: none;
+            background: #f8fafc;
+            min-width: 160px;
+        }
+
+        .kpi-row {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 1.5rem;
+            margin-bottom: 1.5rem;
+        }
+
+        .kpi-card {
+            background: white;
+            padding: 1.5rem;
+            border-radius: 16px;
+            border: 1px solid #f1f5f9;
+        }
+
+        .kpi-card .label {
+            font-size: 0.875rem;
+            color: #64748b;
+            margin-bottom: 8px;
+        }
+
+        .kpi-card .value {
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: #1e293b;
+            margin-bottom: 4px;
+        }
+
+        .sub-stats {
+            margin-top: 12px;
+            padding-top: 12px;
+            border-top: 1px dashed #e2e8f0;
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+        }
+
+        .sub-stat {
+            display: flex;
+            justify-content: space-between;
+            font-size: 0.75rem;
+            color: #64748b;
+        }
+
+        .sub-stat span:last-child {
+            font-weight: 600;
+            color: #1e293b;
+        }
+
+        .charts-grid {
+            display: grid;
+            grid-template-columns: 1.5fr 1fr;
+            gap: 1.5rem;
+            margin-bottom: 1.5rem;
+        }
+
+        .chart-card {
+            background: white;
+            padding: 1.5rem;
+            border-radius: 16px;
+            border: 1px solid #f1f5f9;
+            height: 400px;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .chart-card h3 {
+            font-size: 1rem;
+            font-weight: 600;
+            color: #1e293b;
+            margin-bottom: 1.5rem;
+        }
+
+        .chart-container {
+            flex: 1;
+            position: relative;
+            min-height: 0;
+        }
+
+        /* Advanced Infographic Styles */
+        .infographic-container {
+            display: grid;
+            grid-template-columns: 160px 1fr 180px;
+            gap: 1.5rem;
+            align-items: center;
+            height: 100%;
+            padding: 0.5rem 0;
+        }
+
+        .primary-insight {
+            text-align: left;
+            padding-right: 1.5rem;
+            border-right: 1px solid #f1f5f9;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            height: 80%;
+        }
+
+        .primary-value {
+            font-size: 2.5rem;
+            font-weight: 800;
+            color: #1e293b;
+            line-height: 1;
+            margin-bottom: 8px;
+        }
+
+        .primary-label {
+            font-size: 0.75rem;
+            color: #64748b;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.025em;
+        }
+
+        .chart-hub {
+            position: relative;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100%;
+        }
+
+        .result-center {
+            position: absolute;
+            width: 70px;
+            height: 70px;
+            background: #ffffff;
+            border-radius: 50%;
+            box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.15), 0 4px 8px rgba(0, 0, 0, 0.05);
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            z-index: 10;
+            border: 4px solid #f8fafc;
+        }
+
+        .result-title {
+            font-size: 0.65rem;
+            font-weight: 800;
+            color: #1e293b;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            margin-bottom: 1px;
+        }
+
+        .result-subtitle {
+            font-size: 0.5rem;
+            color: #64748b;
+            font-weight: 700;
+            letter-spacing: 0.02em;
+        }
+
+        .metric-list {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+
+        .metric-item {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .metric-icon-wrap {
+            width: 32px;
+            height: 32px;
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .metric-info h4 {
+            font-size: 0.8rem;
+            font-weight: 600;
+            margin: 0;
+            color: #1e293b;
+        }
+
+        .metric-info p {
+            font-size: 0.7rem;
+            color: #64748b;
+            margin: 0;
+        }
+
+        /* Modern Glassmorphism Hover Card */
+        #customChartTooltip {
+            position: absolute;
+            pointer-events: none;
+            opacity: 0;
+            background: rgba(255, 255, 255, 0.85);
+            backdrop-filter: blur(8px) saturate(160%);
+            -webkit-backdrop-filter: blur(8px) saturate(160%);
+            border: 1px solid rgba(255, 255, 255, 0.4);
+            border-radius: 12px;
+            box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1), 0 0 0 1px rgba(0, 0, 0, 0.02);
+            padding: 10px 14px;
+            z-index: 9999;
+            transition: opacity 0.15s ease;
+            min-width: 140px;
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+            right: -120px;
+            top: 20px;
+        }
+
+        #connectorLineSvg {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            z-index: 9998;
+            overflow: visible;
+        }
+
+        .tooltip-header {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .tooltip-icon {
+            width: 28px;
+            height: 28px;
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1rem;
+            background: #fff;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.05);
+        }
+
+        .tooltip-title {
+            font-size: 0.8rem;
+            font-weight: 700;
+            color: #1e293b;
+            margin: 0;
+        }
+
+        .tooltip-body {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .tooltip-value {
+            font-size: 1rem;
+            font-weight: 800;
+            color: #1e293b;
+        }
+
+        .tooltip-trend {
+            display: flex;
+            align-items: center;
+            gap: 3px;
+            font-size: 0.65rem;
+            font-weight: 600;
+            color: #10b981;
+            margin-top: 1px;
+        }
+
+        /* Toggle Switch Styles */
+        .toggle-container {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            cursor: pointer;
+        }
+
+        .toggle-label {
+            font-size: 0.7rem;
+            font-weight: 600;
+            color: #64748b;
+        }
+
+        .switch {
+            position: relative;
+            display: inline-block;
+            width: 28px;
+            height: 16px;
+        }
+
+        .switch input { opacity: 0; width: 0; height: 0; }
+
+        .slider {
+            position: absolute;
+            cursor: pointer;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background-color: #e2e8f0;
+            transition: .3s;
+            border-radius: 16px;
+        }
+
+        .slider:before {
+            position: absolute;
+            content: "";
+            height: 12px; width: 12px;
+            left: 2px; bottom: 2px;
+            background-color: white;
+            transition: .3s;
+            border-radius: 50%;
+        }
+
+        input:checked + .slider { background-color: #6366f1; }
+        input:checked + .slider:before { transform: translateX(12px); }
+
+        .chart-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1.5rem;
+        }
+
+        .chart-header h3 { margin-bottom: 0; }
+
+        @media (max-width: 1024px) {
+            .charts-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        .data-table-container {
+            background: white;
+            border-radius: 16px;
+            border: 1px solid #f1f5f9;
+            overflow: hidden;
+        }
+
+        .table-header {
+            padding: 1.25rem 1.5rem;
+            border-bottom: 1px solid #f1f5f9;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .table-header h2 {
+            font-size: 1.125rem;
+            font-weight: 600;
+            color: #1e293b;
+            margin: 0;
+        }
+
+        .custom-table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        .custom-table th {
+            text-align: left;
+            padding: 1rem 1.5rem;
+            background: #f8fafc;
+            font-size: 0.75rem;
+            font-weight: 600;
+            color: #94a3b8;
+            text-transform: uppercase;
+            letter-spacing: 0.025em;
+        }
+
+        .custom-table td {
+            padding: 1rem 1.5rem;
+            border-bottom: 1px solid #f1f5f9;
+            font-size: 0.875rem;
+            color: #1e293b;
+        }
+
+        .custom-table tr:hover {
+            background: #f8fafc;
+        }
+
+        .back-link {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            text-decoration: none;
+            color: #64748b;
+            font-size: 0.875rem;
+            margin-bottom: 1rem;
+            transition: color 0.2s ease;
+        }
+
+        .back-link:hover {
+            color: #6366f1;
+        }
+    </style>
+</head>
+
+<body class="dashboard-body">
+
+    <!-- Collapsible Sidebar -->
+    <aside class="sidebar" id="sidebar">
+        <div class="sidebar-header">
+            <div class="logo">
+                <svg width="24" height="24" viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <rect x="2" y="6" width="28" height="20" rx="4" stroke="currentColor" stroke-width="2" />
+                    <path d="M8 12C8 12 11 16 16 16C21 16 24 12 24 12" stroke="currentColor" stroke-width="2"
+                        stroke-linecap="round" />
+                    <circle cx="16" cy="16" r="2" fill="currentColor" />
+                </svg>
+                <span class="logo-text">BharathBots</span>
+            </div>
+            <button class="toggle-btn" id="sidebarToggle" title="Close sidebar">
+                <i data-feather="sidebar" class="toggle-icon"></i>
+            </button>
+        </div>
+
+        <nav class="sidebar-nav">
+            <ul class="nav-list">
+                <!-- Dashboard -->
+                <li class="nav-item" title="Dashboard">
+                    <a href="dashboard.html" class="nav-link">
+                        <i data-feather="home" class="nav-icon"></i>
+                        <span class="nav-text">Dashboard</span>
+                    </a>
+                </li>
+
+                <!-- Bookings -->
+                <li class="nav-item" title="Bookings">
+                    <a href="bookings.html" class="nav-link">
+                        <i data-feather="calendar" class="nav-icon"></i>
+                        <span class="nav-text">Bookings</span>
+                    </a>
+                </li>
+
+                <!-- Customers -->
+                <li class="nav-item" title="Customers">
+                    <a href="customers.html" class="nav-link">
+                        <i data-feather="users" class="nav-icon"></i>
+                        <span class="nav-text">Customers</span>
+                    </a>
+                </li>
+
+                <!-- Staff -->
+                <li class="nav-item" title="Staff">
+                    <a href="staff.html" class="nav-link">
+                        <i data-feather="user-check" class="nav-icon"></i>
+                        <span class="nav-text">Staff</span>
+                    </a>
+                </li>
+
+                <!-- Services -->
+                <li class="nav-item" title="Services">
+                <a href="services.html" class="nav-link">
+                    <i data-feather="scissors" class="nav-icon"></i>
+                    <span class="nav-text">Services</span>
+                </a>
+            </li>
+
+                <!-- Sales -->
+                <li class="nav-item has-submenu" title="Sales">
+                    <div class="nav-link submenu-toggle">
+                        <i data-feather="dollar-sign" class="nav-icon"></i>
+                        <span class="nav-text">Sales</span>
+                        <i data-feather="chevron-down" class="submenu-arrow"></i>
+                    </div>
+                    <ul class="submenu">
+                        <li><a href="pos.html" class="submenu-link"><span class="submenu-bullet">&bull;</span><span
+                                    class="nav-text">Point of Sale</span></a></li>
+                        <li><a href="products.html" class="submenu-link"><span class="submenu-bullet">&bull;</span><span
+                                    class="nav-text">Products</span></a></li>
+                        <li><a href="sales-history.html" class="submenu-link"><span class="submenu-bullet">&bull;</span><span class="nav-text">Sales History</span></a></li>
+                    </ul>
+                </li>
+
+                <!-- Payments -->
+                <li class="nav-item has-submenu" title="Payments">
+                    <div class="nav-link submenu-toggle">
+                        <i data-feather="credit-card" class="nav-icon"></i>
+                        <span class="nav-text">Payments</span>
+                        <i data-feather="chevron-down" class="submenu-arrow"></i>
+                    </div>
+                    <ul class="submenu">
+                        <li><a href="pending-payments.html" class="submenu-link"><span class="submenu-bullet">&bull;</span><span
+                                    class="nav-text">Pending Payments</span></a></li>
+                        <li><a href="payments-history.html" class="submenu-link"><span class="submenu-bullet">&bull;</span><span
+                                    class="nav-text">Payments History</span></a></li>
+                    </ul>
+                </li>
+
+                <!-- Marketing -->
+                <li class="nav-item has-submenu" title="Marketing">
+                    <div class="nav-link submenu-toggle">
+                        <i data-feather="gift" class="nav-icon"></i>
+                        <span class="nav-text">Marketing</span>
+                        <i data-feather="chevron-down" class="submenu-arrow"></i>
+                    </div>
+                    <ul class="submenu">
+                        <li><a href="offers.html" class="submenu-link"><span class="submenu-bullet">&bull;</span><span
+                                    class="nav-text">Offers</span></a></li>
+                        <li><a href="coupons.html" class="submenu-link"><span class="submenu-bullet">&bull;</span><span
+                                    class="nav-text">Coupons</span></a></li>
+                        <li><a href="memberships.html" class="submenu-link"><span class="submenu-bullet">&bull;</span><span
+                                    class="nav-text">Memberships</span></a></li>
+                        <li><a href="ad-campaigns.html" class="submenu-link"><span class="submenu-bullet">&bull;</span><span
+                                    class="nav-text">Ad Campaigns</span></a></li>
+                    </ul>
+                </li>
+
+                <!-- Analytics -->
+                <li class="nav-item has-submenu active" title="Analytics">
+                    <div class="nav-link submenu-toggle">
+                        <i data-feather="bar-chart-2" class="nav-icon"></i>
+                        <span class="nav-text">Analytics</span>
+                        <i data-feather="chevron-down" class="submenu-arrow"></i>
+                    </div>
+                    <ul class="submenu">
+                        <li><a href="overview.html" class="submenu-link"><span class="submenu-bullet">&bull;</span><span
+                                    class="nav-text">Overview</span></a></li>
+                        <li><a href="reports.html" class="submenu-link active"><span class="submenu-bullet">&bull;</span><span
+                                    class="nav-text">Reports</span></a></li>
+                    </ul>
+                </li>
+
+                <!-- Settings -->
+                <li class="nav-item has-submenu" title="Settings">
+                    <div class="nav-link submenu-toggle">
+                        <i data-feather="settings" class="nav-icon"></i>
+                        <span class="nav-text">Settings</span>
+                        <i data-feather="chevron-down" class="submenu-arrow"></i>
+                    </div>
+                    <ul class="submenu">
+                        <li><a href="company.html" class="submenu-link"><span class="submenu-bullet">&bull;</span><span
+                                    class="nav-text">Company</span></a></li>
+                        <li><a href="branches.html" class="submenu-link"><span class="submenu-bullet">&bull;</span><span
+                                    class="nav-text">Branches</span></a></li>
+                        <li><a href="users.html" class="submenu-link"><span class="submenu-bullet">&bull;</span><span
+                                    class="nav-text">Users</span></a></li>
+                        <li><a href="roles-permissions.html" class="submenu-link"><span class="submenu-bullet">&bull;</span><span
+                                    class="nav-text">Roles & Permissions</span></a></li>
+                        <li><a href="custom-fields.html" class="submenu-link"><span class="submenu-bullet">&bull;</span><span
+                                    class="nav-text">Custom Fields</span></a></li>
+                        <li><a href="billing-subscription.html" class="submenu-link"><span class="submenu-bullet">&bull;</span><span
+                                    class="nav-text">Billing & Subscription</span></a></li>
+                    </ul>
+                </li>
+            </ul>
+        </nav>
+
+    </aside>
+
+    <!-- Main Content Wrapper -->
+    <div class="main-wrapper" id="mainWrapper">
+        <header class="top-header">
+            <div class="header-left">
+                <!-- Branch Switcher -->
+                <div class="branch-switcher">
+                    <i data-feather="map-pin" class="branch-icon"></i>
+                    <select id="branchSelect" class="branch-select">
+                        <option value="branch_1">Downtown Branch</option>
+                        <option value="branch_2">Uptown Spa</option>
+                    </select>
+                </div>
+            </div>
+
+            <div class="header-center">
+                <div class="search-bar">
+                    <i data-feather="search" class="search-icon"></i>
+                    <input type="text" placeholder="Search bookings, customers..." class="search-input">
+                </div>
+            </div>
+
+            <div class="header-right">
+                <!-- Quick Actions -->
+                <div class="quick-actions">
+                    <button class="qa-btn qa-primary" id="btnNewBooking">
+                        <i data-feather="calendar" class="qa-icon"></i>
+                        <span>New Booking</span>
+                    </button>
+                </div>
+                <div class="header-divider"></div>
+                <div class="plan-badge" id="headerPlanBadge">Growth</div>
+                <button class="icon-btn" title="Notifications">
+                    <i data-feather="bell"></i>
+                    <span class="notification-dot"></span>
+                </button>
+                <div class="user-profile" id="userProfileDropdown">
+                    <div class="avatar" id="avatarBtn">
+                        <img src="https://ui-avatars.com/api/?name=Admin+User&background=1E3A8A&color=fff" alt="User">
+                    </div>
+
+                    <!-- Profile Dropdown Menu -->
+                    <div class="profile-dropdown" id="profileMenu">
+                        <div class="dropdown-header">
+                            <p class="dropdown-name">Admin User</p>
+                            <p class="dropdown-role">Owner</p>
+                        </div>
+                        <div class="dropdown-divider"></div>
+                        <ul class="dropdown-list">
+                            <li>
+                                <a href="#" class="dropdown-item">
+                                    <i data-feather="user"></i>
+                                    <span>Profile</span>
+                                </a>
+                            </li>
+                            <li>
+                                <a href="#" class="dropdown-item">
+                                    <i data-feather="calendar"></i>
+                                    <span>Schedule</span>
+                                </a>
+                            </li>
+                            <li>
+                                <a href="#" class="dropdown-item">
+                                    <i data-feather="settings"></i>
+                                    <span>Settings</span>
+                                </a>
+                            </li>
+                            <li>
+                                <a href="#" class="dropdown-item">
+                                    <i data-feather="help-circle"></i>
+                                    <span>Support</span>
+                                </a>
+                            </li>
+                            <li>
+                                <a href="#" class="dropdown-item text-danger">
+                                    <i data-feather="log-out"></i>
+                                    <span>Logout</span>
+                                </a>
+                            </li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </header>
+
+        <!-- Profile Dropdown Backdrop -->
+        <div id="profileBackdrop" class="profile-backdrop"></div>
+
+        <main class="content-area">
+            <div class="content-header">
+                <div class="header-title">
+                    <a href="reports.html" class="back-link">
+                        <i data-feather="arrow-left" style="width: 14px;"></i>
+                        Back to Library
+                    </a>
+                    <h1 id="reportTitle">Financial Report</h1>
+                    <p class="subtitle" id="reportSubtitle">Detailed analysis of your business finances</p>
+                </div>
+                <div class="header-actions">
+                    <div class="report-actions">
+                        <button class="btn-outline">
+                            <i data-feather="download"></i>
+                            Export CSV
+                        </button>
+                        <button class="btn-outline">
+                            <i data-feather="printer"></i>
+                            Print
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Filters -->
+            <div class="filter-bar">
+                <div class="filter-group">
+                    <label>Date Range</label>
+                    <input type="date" value="2024-03-01">
+                </div>
+                <div class="filter-group">
+                    <label>Branch</label>
+                    <select>
+                        <option>All Branches</option>
+                        <option>Downtown</option>
+                        <option>Indiranagar</option>
+                    </select>
+                </div>
+                <div class="filter-group" style="margin-left: auto;">
+                    <button class="btn-primary" style="padding: 10px 20px; border-radius: 8px;">Apply Filters</button>
+                </div>
+            </div>
+
+            <!-- KPIs -->
+            <div class="kpi-row" id="kpiRow">
+                <div class="kpi-card">
+                    <div class="label" id="kpiLabel1">Total Revenue</div>
+                    <div class="value" id="kpiValue1">₹2,82,900</div>
+                    <div id="kpiSub1"></div>
+                </div>
+                <div class="kpi-card">
+                    <div class="label" id="kpiLabel2">Total Transactions</div>
+                    <div class="value" id="kpiValue2">2,142</div>
+                    <div id="kpiSub2"></div>
+                </div>
+                <div class="kpi-card">
+                    <div class="label" id="kpiLabel3">Average Ticket</div>
+                    <div class="value" id="kpiValue3">₹1,320</div>
+                    <div id="kpiSub3"></div>
+                </div>
+                <div class="kpi-card">
+                    <div class="label" id="kpiLabel4">Total Discounts</div>
+                    <div class="value" id="kpiValue4">₹12,450</div>
+                    <div id="kpiSub4"></div>
+                </div>
+            </div>
+
+            <!-- Charts Grid -->
+            <div class="charts-grid">
+                <div class="chart-card">
+                    <div class="chart-header">
+                        <h3 id="leftChartTitle">Performance Trend</h3>
+                    </div>
+                    <div class="chart-container">
+                        <canvas id="trendChart"></canvas>
+                    </div>
+                </div>
+                <div class="chart-card">
+                    <div class="chart-header">
+                        <h3 id="rightChartTitle">Distribution</h3>
+                        <label class="toggle-container">
+                            <span class="toggle-label">Hover Info</span>
+                            <div class="switch">
+                                <input type="checkbox" id="hoverToggle" checked>
+                                <span class="slider"></span>
+                            </div>
+                        </label>
+                    </div>
+                    <div class="infographic-container">
+                        <!-- Left: Primary Insight -->
+                        <div class="primary-insight">
+                            <div class="primary-value" id="heroMetricValue">82%</div>
+                            <div class="primary-label" id="heroMetricLabel">Revenue from Services</div>
+                            <p id="heroMetricInsight" style="font-size: 0.75rem; color: #94a3b8; margin-top: 12px;">Primary driver of business growth this month.</p>
+                        </div>
+
+                        <!-- Center: Radial Diagram -->
+                        <div class="chart-hub" id="chartHub">
+                            <svg id="connectorLineSvg">
+                                <path id="connectorPath" d="" fill="none" stroke-width="1.5" stroke-dasharray="0" style="opacity: 0; transition: opacity 0.2s;"></path>
+                                <circle id="connectorAnchor" r="4" fill="#ccc" style="opacity: 0; transition: opacity 0.2s;"></circle>
+                            </svg>
+                            <div style="width: 240px; height: 240px; position: relative; z-index: 5;">
+                                <canvas id="distributionChart"></canvas>
+                            </div>
+                            <div class="result-center">
+                                <span class="result-title">Result</span>
+                                <span class="result-subtitle">ANALYSIS</span>
+                            </div>
+                            
+                            <!-- Custom Tooltip -->
+                            <div id="customChartTooltip">
+                                <div class="tooltip-header">
+                                    <div class="tooltip-icon" id="tooltipIcon">✂️</div>
+                                    <h4 class="tooltip-title" id="tooltipTitle">Services</h4>
+                                </div>
+                                <div class="tooltip-body">
+                                    <div class="tooltip-value" id="tooltipValue">₹2,82,900</div>
+                                    <div class="tooltip-trend" id="tooltipTrend">
+                                        <i data-feather="trending-up" style="width: 12px; height: 12px;"></i>
+                                        <span>+14.2%</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Right: Detailed Metrics -->
+                        <div class="metric-list" id="infographicLegend">
+                            <!-- Populated via JS -->
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Table -->
+            <div class="data-table-container">
+                <div class="table-header">
+                    <h2>Detailed Records</h2>
+                    <input type="text" placeholder="Search records..." style="padding: 8px 12px; border: 1px solid #e2e8f0; border-radius: 8px; font-size: 0.875rem;">
+                </div>
+                <table class="custom-table" id="reportTable">
+                    <thead id="tableHead">
+                        <tr>
+                            <th>Date</th>
+                            <th>Transaction Type</th>
+                            <th>Description</th>
+                            <th>Category</th>
+                            <th>Payment Method</th>
+                            <th>Amount</th>
+                            <th>Status</th>
+                        </tr>
+                    </thead>
+                    <tbody id="tableBody">
+                        <!-- Data will be populated based on type -->
+                    </tbody>
+                </table>
+            </div>
+        </main>
+    </div>
+
+    
+    <!-- Premium New Booking Modal -->
+<!-- Premium New Booking Modal -->
+    <div class="modal-overlay" id="bookingModalOverlay">
+        <div class="modal-container" id="bookingModal">
+            <!-- Header -->
+            <div class="modal-header">
+                <div class="header-titles">
+                    <h2>New Booking</h2>
+                    <p class="subtitle">Create a new appointment for a customer.</p>
+                </div>
+                <button class="modal-close" id="closeBookingModal"><i data-feather="x"></i></button>
+            </div>
+
+            <div class="modal-body" style="padding: 1.5rem; overflow-y: auto;">
+                <div class="modal-form-side" style="width: 100%; max-width: none; flex: 1; padding: 0; border: none;">
+                    <div style="width: 100%; display: grid; grid-template-columns: 1fr 1fr; gap: 32px;">
+
+                        <!-- LEFT COLUMN -->
+                        <div style="display: flex; flex-direction: column;">
+                            <!-- Customer Ident -->
+                            <div class="form-group relative">
+                                <label class="form-label" for="phoneSearch">Phone Number <span
+                                        class="text-rose">*</span></label>
+                                <input type="tel" id="phoneSearch" class="form-input" placeholder="Enter phone number"
+                                    autocomplete="off">
+                                <div class="search-suggestions" id="searchSuggestions"></div>
+                            </div>
+
+                            <div class="customer-badge-container" id="customerBadgeContainer"
+                                style="display:none; margin-bottom: 8px;">
+                                <span class="badge-pill existing-badge" id="customerBadge">Existing Customer</span>
+                            </div>
+
+                            <div class="form-group span-full" id="newCustomerBadgeContainer"
+                                style="display:none; margin-bottom: 8px;">
+                                <span class="badge-pill new-badge" id="newCustomerBadge">New Customer</span>
+                            </div>
+
+                            <div class="form-group" id="customerNameGroup">
+                                <label class="form-label" for="customerName">Customer Name <span
+                                        class="text-rose">*</span></label>
+                                <input type="text" id="customerName" class="form-input"
+                                    placeholder="Enter customer name">
+                            </div>
+
+                            <div class="form-group" id="customerEmailGroup">
+                                <label class="form-label" for="customerEmail">Email <span id="emailOptionalLabel"
+                                        class="text-muted"></span></label>
+                                <input type="email" id="customerEmail" class="form-input"
+                                    placeholder="Enter email address">
+                            </div>
+
+                            <!-- Booking Notes -->
+                            <div class="form-group section-gap flex-grow" style="margin-bottom: 1.5rem;">
+                                <label class="form-label" for="bookingNotes">Booking Notes <span
+                                        class="text-muted">(Optional)</span></label>
+                                <textarea id="bookingNotes" class="form-input form-textarea"
+                                    placeholder="Add optional notes for this booking..."
+                                    style="min-height: 120px;"></textarea>
+                            </div>
+                        </div>
+
+                        <!-- RIGHT COLUMN -->
+                        <div style="display: flex; flex-direction: column;">
+                            <!-- Service Selection -->
+                            <div class="form-group" style="margin-top: 0;">
+                                <label class="form-label" for="bookingService">Service <span
+                                        class="text-rose">*</span></label>
+                                <select id="bookingService" class="form-select">
+                                    <option value="" disabled selected>Select a service</option>
+                                    <!-- populated via JS -->
+                                </select>
+                            </div>
+
+                            <div class="form-grid" id="serviceMetaFields" style="display:none;">
+                                <div class="form-group">
+                                    <label class="form-label">Duration</label>
+                                    <input type="text" class="form-input read-only-input" id="roDuration" readonly>
+                                </div>
+                                <div class="form-group">
+                                    <label class="form-label">Price</label>
+                                    <input type="text" class="form-input read-only-input" id="roPrice" readonly>
+                                </div>
+                            </div>
+
+                            <!-- Staff Selection -->
+                            <div class="form-group section-gap">
+                                <label class="form-label" for="bookingStaff">Staff <span
+                                        class="text-rose">*</span></label>
+                                <select id="bookingStaff" class="form-select">
+                                    <option value="" disabled selected>Select staff member</option>
+                                    <!-- populated via JS -->
+                                </select>
+                            </div>
+
+                            <!-- Date & Time -->
+                            <div class="form-grid section-gap">
+                                <div class="form-group">
+                                    <label class="form-label" for="bookingDate">Date <span
+                                            class="text-rose">*</span></label>
+                                    <input type="date" id="bookingDate" class="form-input">
+                                </div>
+                                <div class="form-group">
+                                    <label class="form-label" for="bookingTime">Time <span
+                                            class="text-rose">*</span></label>
+                                    <div class="relative" style="display: flex; gap: 8px;">
+                                        <input type="time" id="bookingTime" class="form-input" style="flex: 1;">
+                                        <button type="button" class="btn btn-secondary" id="btnTimeNow"
+                                            style="padding: 0 12px; height: 40px; font-size: 13px;">Now</button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div> <!-- /inner form container -->
+                </div>
+            </div>
+
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" id="btnCancelBooking">Cancel</button>
+                <button type="button" class="btn btn-primary" id="btnConfirmBooking" disabled>Confirm Booking</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Toast Notification -->
+    <div id="toastNotification" class="toast-notification">Booking created successfully (demo)</div>
+
+    <!-- Profile Modal -->
+    <div class="modal-overlay" id="genericModalOverlay">
+        <div class="modal-container" id="genericModal" style="width: 75%; max-width: 75%; min-height: 85vh;">
+            <div class="modal-header">
+                <div class="header-titles">
+                    <h2 id="genericModalTitle">Profile</h2>
+                    <p class="subtitle" id="genericModalSubtitle">View and manage your personal profile.</p>
+                </div>
+                <button class="modal-close" id="closeGenericModal"><i data-feather="x"></i></button>
+            </div>
+
+            <!-- Profile Body: 2-column layout -->
+            <div class="modal-body" style="padding: 2rem 0; flex: 1; overflow-y: auto;" id="genericModalBody">
+
+                <!-- ===== PROFILE CONTENT ===== -->
+                <style>
+                    /* Premium Profile Polish */
+                    #profileContent .form-label {
+                        font-size: 0.85rem;
+                        font-weight: 600;
+                        margin-bottom: 6px;
+                        color: #475569;
+                        transition: color 0.2s ease;
+                    }
+
+                    #profileContent .form-group:hover .form-label {
+                        color: #1e293b;
+                    }
+
+                    #profileContent .form-input {
+                        height: 46px;
+                        font-size: 0.95rem;
+                        padding: 10px 16px;
+                        border-radius: 10px;
+                        border: 1px solid #e2e8f0;
+                        background-color: #fafafa;
+                        box-shadow: 0 1px 2px rgba(0, 0, 0, 0.02) inset;
+                        transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+                    }
+
+                    #profileContent .form-input:hover:not(.read-only-input) {
+                        background-color: #ffffff;
+                        border-color: #cbd5e1;
+                        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.03);
+                    }
+
+                    #profileContent .form-input:focus {
+                        background-color: #ffffff;
+                        border-color: #8b5cf6;
+                        box-shadow: 0 0 0 4px rgba(139, 92, 246, 0.12), 0 2px 4px rgba(0, 0, 0, 0.05);
+                        transform: translateY(-1px);
+                    }
+
+                    #profileContent .read-only-input {
+                        background-color: #f8fafc;
+                        border-color: #f1f5f9;
+                        color: #64748b;
+                        box-shadow: none !important;
+                        transform: none !important;
+                    }
+
+                    #profileContent .form-grid {
+                        gap: 24px !important;
+                        margin-bottom: 24px !important;
+                    }
+
+                    #profileContent .form-group {
+                        margin-bottom: 24px;
+                    }
+
+                    /* Avatar Hover Effect */
+                    .profile-avatar-wrap {
+                        transition: transform 0.4s cubic-bezier(0.34, 1.56, 0.64, 1), box-shadow 0.4s ease;
+                    }
+
+                    .profile-avatar-wrap:hover {
+                        transform: scale(1.05) translateY(-2px);
+                        box-shadow: 0 0 0 6px #e0e7ff, 0 12px 24px rgba(30, 58, 138, 0.2) !important;
+                    }
+
+                    /* Subtle pulsing background for photo button */
+                    .change-photo-btn {
+                        transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+                        position: relative;
+                        overflow: hidden;
+                    }
+
+                    .change-photo-btn::before {
+                        content: '';
+                        position: absolute;
+                        top: 50%;
+                        left: 50%;
+                        width: 100%;
+                        height: 100%;
+                        background: radial-gradient(circle, rgba(255, 255, 255, 0.8) 0%, rgba(255, 255, 255, 0) 60%);
+                        transform: translate(-50%, -50%) scale(0);
+                        opacity: 0;
+                        transition: transform 0.5s ease, opacity 0.5s ease;
+                    }
+
+                    .change-photo-btn:hover::before {
+                        transform: translate(-50%, -50%) scale(2);
+                        opacity: 0.1;
+                    }
+
+                    .change-photo-btn:hover {
+                        transform: translateY(-2px);
+                        box-shadow: 0 4px 12px rgba(79, 70, 229, 0.15);
+                    }
+
+                    .change-photo-btn:active {
+                        transform: translateY(0);
+                    }
+
+                    /* Text subtle lift */
+                    .profile-name-display {
+                        background: linear-gradient(135deg, #1e3a8a 0%, #3b82f6 100%);
+                        -webkit-background-clip: text;
+                        background-clip: text;
+                        -webkit-text-fill-color: transparent;
+                        display: inline-block;
+                    }
+                </style>
+                <div id="profileContent"
+                    style="display: grid; grid-template-columns: 35% 65%; gap: 0; min-height: 100%; width: 100%;">
+
+                    <!-- LEFT: Avatar column -->
+                    <div
+                        style="display: flex; flex-direction: column; align-items: center; padding: 1rem 2.5rem 2rem 2.5rem; border-right: 1px solid #f1f5f9; width: 100%; box-sizing: border-box; justify-content: flex-start;">
+                        <!-- Avatar Circle -->
+                        <div class="profile-avatar-wrap"
+                            style="width: 140px; height: 140px; margin-bottom: 24px; box-shadow: 0 0 0 4px #c7d2fe, 0 6px 16px rgba(30, 58, 138, 0.18);">
+                            <img id="profileAvatarImg"
+                                src="https://ui-avatars.com/api/?name=Admin+User&background=1E3A8A&color=fff&size=256"
+                                alt="Profile Avatar">
+                        </div>
+                        <!-- Change Photo -->
+                        <label for="profilePhotoInput" class="change-photo-btn"
+                            style="padding: 10px 20px; font-size: 0.95rem; margin-bottom: 32px; border-radius: 8px;">
+                            <i data-feather="camera" style="width: 16px; height: 16px;"></i>
+                            Change Photo
+                        </label>
+                        <input type="file" id="profilePhotoInput" accept="image/*" style="display:none;">
+                        <!-- Identity Summary -->
+                        <p class="profile-name-display" style="font-size: 1.35rem; margin-bottom: 6px;">Admin User</p>
+                        <p class="profile-role-display" style="font-size: 0.95rem; padding: 6px 18px;">Owner</p>
+                    </div>
+
+                    <!-- RIGHT: Form fields -->
+                    <div
+                        style="display: flex; flex-direction: column; padding: 1rem 2.5rem 3rem 2.5rem; gap: 0; width: 100%; max-width: 720px; margin: 0 auto; box-sizing: border-box; justify-content: flex-start;">
+
+                        <!-- First Name + Last Name -->
+                        <div class="form-grid" style="gap: 16px; margin-bottom: 16px;">
+                            <div class="form-group" style="margin-bottom: 0;">
+                                <label class="form-label" for="profileFirstName">First Name</label>
+                                <input type="text" id="profileFirstName" class="form-input" value="Admin"
+                                    placeholder="First name">
+                            </div>
+                            <div class="form-group" style="margin-bottom: 0;">
+                                <label class="form-label" for="profileLastName">Last Name</label>
+                                <input type="text" id="profileLastName" class="form-input" value="User"
+                                    placeholder="Last name">
+                            </div>
+                        </div>
+
+                        <!-- Phone Number -->
+                        <div class="form-group">
+                            <label class="form-label" for="profilePhone">Phone Number</label>
+                            <input type="tel" id="profilePhone" class="form-input" value="+91 98765 43210"
+                                placeholder="Phone number">
+                        </div>
+
+                        <!-- Emergency Contact Split -->
+                        <div class="form-grid" style="gap: 16px; margin-bottom: 24px;">
+                            <div class="form-group" style="margin-bottom: 0;">
+                                <label class="form-label" for="profileEmergencyName">Emergency Contact Name</label>
+                                <input type="text" id="profileEmergencyName" class="form-input"
+                                    placeholder="Contact name">
+                            </div>
+                            <div class="form-group" style="margin-bottom: 0;">
+                                <label class="form-label" for="profileEmergencyPhone">Emergency Contact Number</label>
+                                <input type="tel" id="profileEmergencyPhone" class="form-input"
+                                    placeholder="Contact number">
+                            </div>
+                        </div>
+
+                        <!-- Email (read-only) -->
+                        <div class="form-group">
+                            <label class="form-label" for="profileEmail">Email</label>
+                            <input type="email" id="profileEmail" class="form-input read-only-input"
+                                value="admin@salon.com" readonly>
+                        </div>
+
+                        <!-- Role (read-only) -->
+                        <div class="form-group">
+                            <label class="form-label" for="profileRole">Role</label>
+                            <input type="text" id="profileRole" class="form-input read-only-input" value="Owner"
+                                readonly>
+                        </div>
+
+                        <!-- Joined On (read-only) -->
+                        <div class="form-group">
+                            <label class="form-label" for="profileJoined">Joined On</label>
+                            <input type="text" id="profileJoined" class="form-input read-only-input"
+                                value="January 15, 2024" readonly>
+                        </div>
+
+                    </div>
+                </div>
+
+                <!-- ===== SETTINGS CONTENT ===== -->
+                <div id="settingsContent"
+                    style="display: none; grid-template-columns: 65% 35%; gap: 0; min-height: 100%; width: 100%;">
+
+                    <!-- LEFT: App Preferences -->
+                    <div
+                        style="display: flex; flex-direction: column; padding: 1rem 2.5rem 3rem 2.5rem; border-right: 1px solid #f1f5f9; width: 100%; box-sizing: border-box; justify-content: center; align-items: center;">
+                        <div style="width: 100%; max-width: 450px;">
+                            <h3
+                                style="font-size: 1.1rem; font-weight: 600; color: #1e293b; margin-bottom: 24px; padding-bottom: 12px; border-bottom: 1px solid #e2e8f0; width: 100%;">
+                                App Preferences</h3>
+
+                            <!-- Language -->
+                            <div class="form-group">
+                                <label class="form-label" for="settingsLanguage">Language</label>
+                                <select id="settingsLanguage" class="form-input"
+                                    style="appearance: auto; cursor: pointer;">
+                                    <option value="en" selected>English</option>
+                                    <option value="hi">Hindi</option>
+                                    <option value="te">Telugu</option>
+                                    <option value="ta">Tamil</option>
+                                </select>
+                            </div>
+
+                            <!-- Theme -->
+                            <div class="form-group">
+                                <label class="form-label" for="settingsTheme">Theme</label>
+                                <select id="settingsTheme" class="form-input"
+                                    style="appearance: auto; cursor: pointer;">
+                                    <option value="light" selected>Light</option>
+                                    <option value="dark">Dark</option>
+                                    <option value="system">System Default</option>
+                                </select>
+                            </div>
+
+                            <!-- Notifications -->
+                            <div class="form-group">
+                                <label class="form-label" for="settingsNotifications">Notifications</label>
+                                <select id="settingsNotifications" class="form-input"
+                                    style="appearance: auto; cursor: pointer;">
+                                    <option value="enabled" selected>Enabled</option>
+                                    <option value="disabled">Disabled</option>
+                                </select>
+                            </div>
+
+                            <!-- Time Zone -->
+                            <div class="form-group">
+                                <label class="form-label" for="settingsTimeZone">Time Zone</label>
+                                <select id="settingsTimeZone" class="form-input"
+                                    style="appearance: auto; cursor: pointer;">
+                                    <option value="Asia/Kolkata" selected>Asia/Kolkata (IST)</option>
+                                    <option value="UTC">UTC</option>
+                                </select>
+                            </div>
+
+                            <!-- Date & Time Format -->
+                            <div class="form-group">
+                                <label class="form-label" for="settingsDateTimeFormat">Date & Time Format</label>
+                                <select id="settingsDateTimeFormat" class="form-input"
+                                    style="appearance: auto; cursor: pointer;">
+                                    <option value="DD MMM YYYY, hh:mm A" selected>DD MMM YYYY, hh:mm A</option>
+                                    <option value="MM/DD/YYYY, HH:mm">MM/DD/YYYY, HH:mm</option>
+                                    <option value="YYYY-MM-DD, HH:mm">YYYY-MM-DD, HH:mm</option>
+                                </select>
+                            </div>
+                        </div> <!-- /max-width container -->
+                    </div>
+
+                    <!-- RIGHT: App Information -->
+                    <div
+                        style="display: flex; flex-direction: column; padding: 1rem 2.5rem 3rem 2.5rem; gap: 0; width: 100%; box-sizing: border-box; justify-content: flex-start;">
+                        <h3
+                            style="font-size: 1.1rem; font-weight: 600; color: #1e293b; margin-bottom: 24px; padding-bottom: 12px; border-bottom: 1px solid #e2e8f0;">
+                            App Information</h3>
+
+                        <!-- Version -->
+                        <div class="form-group">
+                            <label class="form-label">Version</label>
+                            <p id="settingsVersion"
+                                style="font-size: 0.95rem; color: #3b82f6; margin: 0; padding-top: 10px; font-weight: 600;">
+                                v1.0.0</p>
+                        </div>
+
+                        <!-- Status -->
+                        <div class="form-group">
+                            <label class="form-label">Status</label>
+                            <div
+                                style="display: flex; align-items: center; justify-content: space-between; padding-top: 10px;">
+                                <p id="settingsStatus"
+                                    style="font-size: 0.95rem; color: #10b981; font-weight: 600; margin: 0;">Up to date
+                                </p>
+                                <button id="btnUpdateApp" class="btn btn-primary"
+                                    style="display: none; padding: 6px 14px; font-size: 0.8rem; height: auto; border-radius: 6px;">Update</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- ===== OTHER SECTION CONTENT (placeholder) ===== -->
+                <div id="genericPlaceholderContent"
+                    style="display:none; align-items: center; justify-content: center; height: 100%; text-align: center; color: #94a3b8;">
+                    <div>
+                        <i data-feather="layers"
+                            style="width: 40px; height: 40px; margin-bottom: 12px; stroke: #cbd5e1;"></i>
+                        <p style="font-size: 0.95rem; font-weight: 500; margin: 0;">Content coming soon</p>
+                        <p style="font-size: 0.8rem; margin-top: 4px;">This section is under construction.</p>
+                    </div>
+                </div>
+
+            </div>
+
+            <div class="modal-footer" id="genericModalFooter"
+                style="justify-content: flex-end; align-items: center; gap: 12px;">
+                <button type="button" class="btn btn-secondary" id="btnCloseGenericModal"
+                    style="flex: none; width: 140px;">Cancel</button>
+                <button type="button" class="btn btn-primary" id="btnSaveGenericModal"
+                    style="flex: none; width: 160px;">Save Changes</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Schedule Modal -->
+    <div class="modal-overlay" id="scheduleModalOverlay">
+        <div class="modal-container" id="scheduleModal" style="min-height: 60vh;">
+            <div class="modal-header">
+                <div class="header-titles">
+                    <h2 id="scheduleModalTitle">Schedule</h2>
+                    <p class="subtitle" id="scheduleModalSubtitle">View your upcoming work schedule.</p>
+                </div>
+                <button class="modal-close" id="closeScheduleModal"><i data-feather="x"></i></button>
+            </div>
+
+            <div class="modal-body" style="padding: 1.5rem; flex: 1; overflow-y: auto; flex-direction: column;">
+
+                <!-- Tab Headers -->
+                <div class="schedule-tabs"
+                    style="display: flex; gap: 8px; margin-bottom: 1.5rem; border-bottom: 1px solid #f1f5f9; padding-bottom: 0.5rem;">
+                    <button class="schedule-tab-btn active" id="tabBtnThisWeek"
+                        style="padding: 8px 16px; border: none; background: none; font-weight: 600; font-size: 0.95rem; color: #1e3a8a; border-bottom: 2px solid #1e3a8a; cursor: pointer; transition: all 0.2s;">This
+                        Week</button>
+                    <button class="schedule-tab-btn" id="tabBtnNextWeek"
+                        style="padding: 8px 16px; border: none; background: none; font-weight: 500; font-size: 0.95rem; color: #64748b; border-bottom: 2px solid transparent; cursor: pointer; transition: all 0.2s;">Next
+                        Week</button>
+                </div>
+
+                <!-- Tab Content: This Week -->
+                <div class="schedule-tab-pane" id="paneThisWeek" style="display: block;">
+                    <!-- Column Headers -->
+                    <div
+                        style="display: grid; grid-template-columns: 100px 120px 1fr 1fr; padding: 6px 16px 10px 16px; border-bottom: 1px solid #e2e8f0; margin-bottom: 8px;">
+                        <div
+                            style="font-size: 0.75rem; font-weight: 700; color: #94a3b8; text-transform: uppercase; letter-spacing: 0.05em;">
+                            Date</div>
+                        <div
+                            style="font-size: 0.75rem; font-weight: 700; color: #94a3b8; text-transform: uppercase; letter-spacing: 0.05em;">
+                            Day</div>
+                        <div
+                            style="font-size: 0.75rem; font-weight: 700; color: #94a3b8; text-transform: uppercase; letter-spacing: 0.05em;">
+                            Time</div>
+                        <div
+                            style="font-size: 0.75rem; font-weight: 700; color: #94a3b8; text-transform: uppercase; letter-spacing: 0.05em; text-align: right;">
+                            Comments</div>
+                    </div>
+                    <ul class="schedule-list"
+                        style="list-style: none; padding: 0; margin: 0; display: flex; flex-direction: column; gap: 8px;">
+                        <li class="schedule-item"
+                            style="display: grid; grid-template-columns: 100px 120px 1fr 1fr; padding: 12px 16px; background: #f8fafc; border-radius: 8px; align-items: center;">
+                            <div class="schedule-date" style="font-size: 0.85rem; color: #64748b; font-weight: 500;">Mar
+                                9</div>
+                            <div class="schedule-day" style="font-weight: 600; color: #334155; font-size: 0.9rem;">
+                                Monday</div>
+                            <div class="schedule-time" style="color: #0f172a; font-size: 0.9rem; font-weight: 500;">
+                                09:00 AM - 06:00 PM</div>
+                            <div class="schedule-notes" style="color: #64748b; font-size: 0.85rem; text-align: right;">
+                                Opening shift</div>
+                        </li>
+                        <li class="schedule-item"
+                            style="display: grid; grid-template-columns: 100px 120px 1fr 1fr; padding: 12px 16px; background: #f8fafc; border-radius: 8px; align-items: center;">
+                            <div class="schedule-date" style="font-size: 0.85rem; color: #64748b; font-weight: 500;">Mar
+                                10</div>
+                            <div class="schedule-day" style="font-weight: 600; color: #334155; font-size: 0.9rem;">
+                                Tuesday</div>
+                            <div class="schedule-time" style="color: #0f172a; font-size: 0.9rem; font-weight: 500;">
+                                09:00 AM - 06:00 PM</div>
+                            <div class="schedule-notes" style="color: #94a3b8; font-size: 0.85rem; text-align: right;">-
+                            </div>
+                        </li>
+                        <li class="schedule-item"
+                            style="display: grid; grid-template-columns: 100px 120px 1fr 1fr; padding: 12px 16px; background: #fff5f5; border: 1px dashed #fecdd3; border-radius: 8px; align-items: center;">
+                            <div class="schedule-date" style="font-size: 0.85rem; color: #64748b; font-weight: 500;">Mar
+                                11</div>
+                            <div class="schedule-day" style="font-weight: 600; color: #334155; font-size: 0.9rem;">
+                                Wednesday</div>
+                            <div class="schedule-time off" style="color: #e11d48; font-size: 0.9rem; font-weight: 600;">
+                                Off</div>
+                            <div class="schedule-notes off"
+                                style="color: #fca5a5; font-size: 0.85rem; text-align: right;">-</div>
+                        </li>
+                        <li class="schedule-item"
+                            style="display: grid; grid-template-columns: 100px 120px 1fr 1fr; padding: 12px 16px; background: #f8fafc; border-radius: 8px; align-items: center;">
+                            <div class="schedule-date" style="font-size: 0.85rem; color: #64748b; font-weight: 500;">Mar
+                                12</div>
+                            <div class="schedule-day" style="font-weight: 600; color: #334155; font-size: 0.9rem;">
+                                Thursday</div>
+                            <div class="schedule-time" style="color: #0f172a; font-size: 0.9rem; font-weight: 500;">
+                                10:00 AM - 07:00 PM</div>
+                            <div class="schedule-notes" style="color: #94a3b8; font-size: 0.85rem; text-align: right;">-
+                            </div>
+                        </li>
+                        <li class="schedule-item"
+                            style="display: grid; grid-template-columns: 100px 120px 1fr 1fr; padding: 12px 16px; background: #f8fafc; border-radius: 8px; align-items: center;">
+                            <div class="schedule-date" style="font-size: 0.85rem; color: #64748b; font-weight: 500;">Mar
+                                13</div>
+                            <div class="schedule-day" style="font-weight: 600; color: #334155; font-size: 0.9rem;">
+                                Friday</div>
+                            <div class="schedule-time" style="color: #0f172a; font-size: 0.9rem; font-weight: 500;">
+                                10:00 AM - 08:00 PM</div>
+                            <div class="schedule-notes" style="color: #64748b; font-size: 0.85rem; text-align: right;">
+                                Late shift</div>
+                        </li>
+                        <li class="schedule-item"
+                            style="display: grid; grid-template-columns: 100px 120px 1fr 1fr; padding: 12px 16px; background: #f8fafc; border-radius: 8px; align-items: center;">
+                            <div class="schedule-date" style="font-size: 0.85rem; color: #64748b; font-weight: 500;">Mar
+                                14</div>
+                            <div class="schedule-day" style="font-weight: 600; color: #334155; font-size: 0.9rem;">
+                                Saturday</div>
+                            <div class="schedule-time" style="color: #0f172a; font-size: 0.9rem; font-weight: 500;">
+                                08:00 AM - 04:00 PM</div>
+                            <div class="schedule-notes" style="color: #64748b; font-size: 0.85rem; text-align: right;">
+                                Weekend shift</div>
+                        </li>
+                        <li class="schedule-item"
+                            style="display: grid; grid-template-columns: 100px 120px 1fr 1fr; padding: 12px 16px; background: #fff5f5; border: 1px dashed #fecdd3; border-radius: 8px; align-items: center;">
+                            <div class="schedule-date" style="font-size: 0.85rem; color: #64748b; font-weight: 500;">Mar
+                                15</div>
+                            <div class="schedule-day" style="font-weight: 600; color: #334155; font-size: 0.9rem;">
+                                Sunday</div>
+                            <div class="schedule-time off" style="color: #e11d48; font-size: 0.9rem; font-weight: 600;">
+                                Off</div>
+                            <div class="schedule-notes off"
+                                style="color: #fca5a5; font-size: 0.85rem; text-align: right;">-</div>
+                        </li>
+                    </ul>
+                </div>
+
+                <!-- Tab Content: Next Week -->
+                <div class="schedule-tab-pane" id="paneNextWeek" style="display: none;">
+                    <!-- Column Headers -->
+                    <div
+                        style="display: grid; grid-template-columns: 100px 120px 1fr 1fr; padding: 6px 16px 10px 16px; border-bottom: 1px solid #e2e8f0; margin-bottom: 8px;">
+                        <div
+                            style="font-size: 0.75rem; font-weight: 700; color: #94a3b8; text-transform: uppercase; letter-spacing: 0.05em;">
+                            Date</div>
+                        <div
+                            style="font-size: 0.75rem; font-weight: 700; color: #94a3b8; text-transform: uppercase; letter-spacing: 0.05em;">
+                            Day</div>
+                        <div
+                            style="font-size: 0.75rem; font-weight: 700; color: #94a3b8; text-transform: uppercase; letter-spacing: 0.05em;">
+                            Time</div>
+                        <div
+                            style="font-size: 0.75rem; font-weight: 700; color: #94a3b8; text-transform: uppercase; letter-spacing: 0.05em; text-align: right;">
+                            Comments</div>
+                    </div>
+                    <ul class="schedule-list"
+                        style="list-style: none; padding: 0; margin: 0; display: flex; flex-direction: column; gap: 8px;">
+                        <li class="schedule-item"
+                            style="display: grid; grid-template-columns: 100px 120px 1fr 1fr; padding: 12px 16px; background: #f8fafc; border-radius: 8px; align-items: center;">
+                            <div class="schedule-date" style="font-size: 0.85rem; color: #64748b; font-weight: 500;">Mar
+                                16</div>
+                            <div class="schedule-day" style="font-weight: 600; color: #334155; font-size: 0.9rem;">
+                                Monday</div>
+                            <div class="schedule-time" style="color: #0f172a; font-size: 0.9rem; font-weight: 500;">
+                                10:00 AM - 07:00 PM</div>
+                            <div class="schedule-notes" style="color: #94a3b8; font-size: 0.85rem; text-align: right;">-
+                            </div>
+                        </li>
+                        <li class="schedule-item"
+                            style="display: grid; grid-template-columns: 100px 120px 1fr 1fr; padding: 12px 16px; background: #f8fafc; border-radius: 8px; align-items: center;">
+                            <div class="schedule-date" style="font-size: 0.85rem; color: #64748b; font-weight: 500;">Mar
+                                17</div>
+                            <div class="schedule-day" style="font-weight: 600; color: #334155; font-size: 0.9rem;">
+                                Tuesday</div>
+                            <div class="schedule-time" style="color: #0f172a; font-size: 0.9rem; font-weight: 500;">
+                                10:00 AM - 07:00 PM</div>
+                            <div class="schedule-notes" style="color: #94a3b8; font-size: 0.85rem; text-align: right;">-
+                            </div>
+                        </li>
+                        <li class="schedule-item"
+                            style="display: grid; grid-template-columns: 100px 120px 1fr 1fr; padding: 12px 16px; background: #f8fafc; border-radius: 8px; align-items: center;">
+                            <div class="schedule-date" style="font-size: 0.85rem; color: #64748b; font-weight: 500;">Mar
+                                18</div>
+                            <div class="schedule-day" style="font-weight: 600; color: #334155; font-size: 0.9rem;">
+                                Wednesday</div>
+                            <div class="schedule-time" style="color: #0f172a; font-size: 0.9rem; font-weight: 500;">
+                                09:00 AM - 06:00 PM</div>
+                            <div class="schedule-notes" style="color: #94a3b8; font-size: 0.85rem; text-align: right;">-
+                            </div>
+                        </li>
+                        <li class="schedule-item"
+                            style="display: grid; grid-template-columns: 100px 120px 1fr 1fr; padding: 12px 16px; background: #fff5f5; border: 1px dashed #fecdd3; border-radius: 8px; align-items: center;">
+                            <div class="schedule-date" style="font-size: 0.85rem; color: #64748b; font-weight: 500;">Mar
+                                19</div>
+                            <div class="schedule-day" style="font-weight: 600; color: #334155; font-size: 0.9rem;">
+                                Thursday</div>
+                            <div class="schedule-time off" style="color: #e11d48; font-size: 0.9rem; font-weight: 600;">
+                                Off</div>
+                            <div class="schedule-notes off"
+                                style="color: #fca5a5; font-size: 0.85rem; text-align: right;">-</div>
+                        </li>
+                        <li class="schedule-item"
+                            style="display: grid; grid-template-columns: 100px 120px 1fr 1fr; padding: 12px 16px; background: #f8fafc; border-radius: 8px; align-items: center;">
+                            <div class="schedule-date" style="font-size: 0.85rem; color: #64748b; font-weight: 500;">Mar
+                                20</div>
+                            <div class="schedule-day" style="font-weight: 600; color: #334155; font-size: 0.9rem;">
+                                Friday</div>
+                            <div class="schedule-time" style="color: #0f172a; font-size: 0.9rem; font-weight: 500;">
+                                09:00 AM - 08:00 PM</div>
+                            <div class="schedule-notes" style="color: #64748b; font-size: 0.85rem; text-align: right;">
+                                Extended</div>
+                        </li>
+                        <li class="schedule-item"
+                            style="display: grid; grid-template-columns: 100px 120px 1fr 1fr; padding: 12px 16px; background: #f8fafc; border-radius: 8px; align-items: center;">
+                            <div class="schedule-date" style="font-size: 0.85rem; color: #64748b; font-weight: 500;">Mar
+                                21</div>
+                            <div class="schedule-day" style="font-weight: 600; color: #334155; font-size: 0.9rem;">
+                                Saturday</div>
+                            <div class="schedule-time" style="color: #0f172a; font-size: 0.9rem; font-weight: 500;">
+                                08:00 AM - 04:00 PM</div>
+                            <div class="schedule-notes" style="color: #94a3b8; font-size: 0.85rem; text-align: right;">-
+                            </div>
+                        </li>
+                        <li class="schedule-item"
+                            style="display: grid; grid-template-columns: 100px 120px 1fr 1fr; padding: 12px 16px; background: #fff5f5; border: 1px dashed #fecdd3; border-radius: 8px; align-items: center;">
+                            <div class="schedule-date" style="font-size: 0.85rem; color: #64748b; font-weight: 500;">Mar
+                                22</div>
+                            <div class="schedule-day" style="font-weight: 600; color: #334155; font-size: 0.9rem;">
+                                Sunday</div>
+                            <div class="schedule-time off" style="color: #e11d48; font-size: 0.9rem; font-weight: 600;">
+                                Off</div>
+                            <div class="schedule-notes off"
+                                style="color: #fca5a5; font-size: 0.85rem; text-align: right;">-</div>
+                        </li>
+                    </ul>
+                </div>
+
+            </div>
+
+            <div class="modal-footer" style="justify-content: flex-end;">
+                <button type="button" class="btn btn-secondary" id="btnCloseScheduleFooter">Close</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Global Bookings Actions Dropdown -->
+    <div id="bkGlobalDropdown" class="bk-dropdown" style="position: fixed; display: none;"></div>
+
+    <script src="dashboard.js"></script>
+    <script>
+        feather.replace();
+
+        // Handle URL Parameters for dynamic content
+        const urlParams = new URLSearchParams(window.location.search);
+        const reportType = urlParams.get('type') || 'financial';
+
+        const reportData = {
+            financial: {
+                title: 'Financial Reports',
+                subtitle: 'Revenue, payments, and discounts analysis',
+                kpis: ['Total Revenue', 'Total Transactions', 'Avg. Ticket', 'Discounts Given'],
+                values: ['₹5,42,000', '1,240', '₹437', '₹15,200'],
+                breakdowns: {
+                    1: [
+                        { label: 'Service Revenue', value: '₹4,12,000' },
+                        { label: 'Product Revenue', value: '₹1,30,000' },
+                        { label: 'Member. Revenue', value: '₹54,200' }
+                    ]
+                },
+                charts: {
+                    left: { title: 'Revenue Trend', type: 'line', labels: ['Nov', 'Dec', 'Jan', 'Feb', 'Mar', 'Apr'], datasets: [{ label: 'Revenue', data: [380000, 410000, 420000, 480000, 510000, 542000], color: '#6366f1' }] },
+                    right: { title: 'Revenue Breakdown', type: 'polarArea', labels: ['Services', 'Products', 'Memberships'], datasets: [{ data: [412000, 130000, 54200], colors: ['#6366f1', '#10b981', '#f59e0b'] }] }
+                },
+                infographic: {
+                    heroValue: '76%',
+                    heroLabel: 'Service Revenue',
+                    heroInsight: 'Services remain the primary revenue driver, up 12% from last quarter.',
+                    icons: ['✂️', '📦', '👥'],
+                    trends: ['+12.5%', '+5.2%', '+8.1%']
+                },
+                headers: ['Date', 'Transaction Type', 'Description', 'Category', 'Payment Method', 'Amount', 'Status'],
+                rows: [
+                    { date: '12 Mar 2024', type: 'Service Sale', desc: 'Haircut – Rahul', cat: 'Service', method: 'UPI', amt: '₹1,200', status: 'Completed' },
+                    { date: '12 Mar 2024', type: 'Product Sale', desc: 'Volumizing Shampoo', cat: 'Product', method: 'Cash', amt: '₹850', status: 'Completed' },
+                    { date: '11 Mar 2024', type: 'Membership Purchase', desc: 'Gold Membership – Priya', cat: 'Membership', method: 'Card', amt: '₹5,000', status: 'Completed' },
+                    { date: '11 Mar 2024', type: 'Service Sale', desc: 'Hair Spa & Massage', cat: 'Service', method: 'UPI', amt: '₹2,500', status: 'Completed' },
+                    { date: '10 Mar 2024', type: 'Refund', desc: 'Product Return – Face Cream', cat: 'Refund', method: 'Wallet', amt: '-₹1,200', status: 'Refunded' },
+                    { date: '10 Mar 2024', type: 'Service Sale', desc: 'Bridal Makeup Advance', cat: 'Service', method: 'Card', amt: '₹2,000', status: 'Pending' },
+                    { date: '09 Mar 2024', type: 'Product Sale', desc: 'Beard Oil', cat: 'Product', method: 'UPI', amt: '₹450', status: 'Completed' },
+                    { date: '09 Mar 2024', type: 'Service Sale', desc: 'Full Beard Trim', cat: 'Service', method: 'Cash', amt: '₹600', status: 'Completed' },
+                    { date: '08 Mar 2024', type: 'Membership Purchase', desc: 'Silver Renewal – Anita', cat: 'Membership', method: 'UPI', amt: '₹2,500', status: 'Completed' },
+                    { date: '08 Mar 2024', type: 'Service Sale', desc: 'Pedicure & Manicure', cat: 'Service', method: 'Card', amt: '₹1,500', status: 'Completed' },
+                    { date: '07 Mar 2024', type: 'Service Sale', desc: 'Hair Coloring – Sarah', cat: 'Service', method: 'UPI', amt: '₹3,500', status: 'Completed' },
+                    { date: '07 Mar 2024', type: 'Product Sale', desc: 'Matte Clay Wax', cat: 'Product', method: 'Cash', amt: '₹1,100', status: 'Completed' },
+                    { date: '06 Mar 2024', type: 'Membership Purchase', desc: 'Platinum Plan – Arjun', cat: 'Membership', method: 'UPI', amt: '₹15,000', status: 'Completed' },
+                    { date: '06 Mar 2024', type: 'Service Sale', desc: 'D-Tan Facial', cat: 'Service', method: 'Card', amt: '₹1,800', status: 'Completed' },
+                    { date: '05 Mar 2024', type: 'Service Sale', desc: 'Pedicure Deluxe', cat: 'Service', method: 'UPI', amt: '₹1,200', status: 'Completed' },
+                    { date: '05 Mar 2024', type: 'Product Sale', desc: 'Hair Serum Pro', cat: 'Product', method: 'UPI', amt: '₹2,400', status: 'Completed' },
+                    { date: '04 Mar 2024', type: 'Service Sale', desc: 'Kids Haircut', cat: 'Service', method: 'Cash', amt: '₹450', status: 'Completed' },
+                    { date: '04 Mar 2024', type: 'Service Sale', desc: 'Root Touch up', cat: 'Service', method: 'Card', amt: '₹1,500', status: 'Completed' },
+                    { date: '03 Mar 2024', type: 'Service Sale', desc: 'Deep Tissue Massage', cat: 'Service', method: 'UPI', amt: '₹2,800', status: 'Completed' },
+                    { date: '03 Mar 2024', type: 'Product Sale', desc: 'Organic Face Wash', cat: 'Product', method: 'Card', amt: '₹750', status: 'Completed' }
+                ]
+            },
+            bookings: {
+                title: 'Booking & Appointment Reports',
+                subtitle: 'Appointments, cancellations, and peak hours',
+                kpis: ['Total Bookings', 'Completion Rate', 'Cancellations', 'No-shows'],
+                values: ['812', '92%', '45', '12'],
+                charts: {
+                    left: { title: 'Booking Trend', type: 'line', labels: ['W1 Feb', 'W2 Feb', 'W3 Feb', 'W4 Feb', 'W1 Mar', 'W2 Mar'], datasets: [{ label: 'Bookings', data: [165, 172, 180, 210, 195, 227], color: '#6366f1' }] },
+                    right: { title: 'Booking Outcomes', type: 'polarArea', labels: ['Completed', 'Cancelled', 'No-show'], datasets: [{ data: [747, 45, 12], colors: ['#10b981', '#f43f5e', '#94a3b8'] }] }
+                },
+                infographic: {
+                    heroValue: '92%',
+                    heroLabel: 'Completion Rate',
+                    heroInsight: 'Exceptional service fulfillment rates this month.',
+                    icons: ['✅', '❌', '⏳'],
+                    trends: ['+2.1%', '-15.4%', '-5.2%']
+                },
+                headers: ['Date', 'Time', 'Customer', 'Service', 'Staff', 'Duration', 'Price', 'Status'],
+                rows: [
+                    { date: '12 Mar 2024', time: '02:00 PM', name: 'Priya Kapoor', service: 'Haircut', staff: 'Anjali', dur: '60 min', price: '₹1,200', status: 'Completed' },
+                    { date: '12 Mar 2024', time: '10:30 AM', name: 'Savitri', service: 'Facial', staff: 'Anita', dur: '45 min', price: '₹1,500', status: 'Completed' },
+                    { date: '11 Mar 2024', time: '04:00 PM', name: 'Ravi Kumar', service: 'Hair Spa', staff: 'Michael', dur: '90 min', price: '₹2,500', status: 'Completed' },
+                    { date: '11 Mar 2024', time: '11:00 AM', name: 'Ishani', service: 'Manicure', staff: 'Sarah', dur: '30 min', price: '₹600', status: 'Cancelled' },
+                    { date: '10 Mar 2024', time: '01:00 PM', name: 'Kushal', service: 'Beard Trim', staff: 'Rahul', dur: '20 min', price: '₹450', status: 'Completed' },
+                    { date: '10 Mar 2024', time: '05:30 PM', name: 'Megha', service: 'Bridal Makeup', staff: 'Anjali', dur: '120 min', price: '₹5,000', status: 'Confirmed' },
+                    { date: '09 Mar 2024', time: '09:00 AM', name: 'Amit J', service: 'Shampoo', staff: 'Michael', dur: '15 min', price: '₹300', status: 'No-show' },
+                    { date: '09 Mar 2024', time: '03:15 PM', name: 'Tanvi', service: 'Waxing', staff: 'Anita', dur: '40 min', price: '₹800', status: 'Completed' },
+                    { date: '08 Mar 2024', time: '12:00 PM', name: 'Arjun', service: 'Hair Color', staff: 'Sarah', dur: '100 min', price: '₹3,500', status: 'Completed' },
+                    { date: '08 Mar 2024', time: '06:45 PM', name: 'Nisha', service: 'Threadings', staff: 'Anita', dur: '15 min', price: '₹150', status: 'Completed' },
+                    { date: '07 Mar 2024', time: '02:30 PM', name: 'Deepika R', service: 'Head Massage', staff: 'Rahul', dur: '30 min', price: '₹800', status: 'Completed' },
+                    { date: '07 Mar 2024', time: '11:15 AM', name: 'Suresh V', service: 'Clean-up', staff: 'Anita', dur: '40 min', price: '₹1,100', status: 'Completed' },
+                    { date: '06 Mar 2024', time: '04:45 PM', name: 'Rahul M', service: 'Global Color', staff: 'Michael', dur: '150 min', price: '₹4,500', status: 'Completed' },
+                    { date: '06 Mar 2024', time: '10:00 AM', name: 'Sunita P', service: 'Pedicure', staff: 'Sarah', dur: '45 min', price: '₹850', status: 'Completed' },
+                    { date: '05 Mar 2024', time: '01:30 PM', name: 'Vijay K', service: 'Blow Dry', staff: 'Rahul', dur: '30 min', price: '₹600', status: 'Completed' },
+                    { date: '05 Mar 2024', time: '03:00 PM', name: 'Rashmi', service: 'Body Scrub', staff: 'Anjali', dur: '60 min', price: '₹2,200', status: 'Cancelled' },
+                    { date: '04 Mar 2024', time: '12:00 PM', name: 'Anil S', service: 'Shave', staff: 'Arjun', dur: '20 min', price: '₹350', status: 'Completed' },
+                    { date: '04 Mar 2024', time: '05:00 PM', name: 'Kavita', service: 'Bridal Trial', staff: 'Anjali', dur: '90 min', price: '₹2,500', status: 'Completed' },
+                    { date: '03 Mar 2024', time: '11:00 AM', name: 'Rohit P', service: 'Haircut', staff: 'Michael', dur: '40 min', price: '₹1,000', status: 'No-show' },
+                    { date: '03 Mar 2024', time: '02:00 PM', name: 'Sneha', service: 'Facial', staff: 'Anita', dur: '60 min', price: '₹1,500', status: 'Completed' }
+                ]
+            },
+            customers: {
+                title: 'Customer Reports',
+                subtitle: 'New vs returning customers and retention rates',
+                kpis: ['Total Customers', 'New This Month', 'Retention Rate', 'Avg. Lifetime Value'],
+                values: ['4,250', '145', '78%', '₹12,500'],
+                charts: {
+                    left: { title: 'Customer Growth', type: 'line', labels: ['Nov', 'Dec', 'Jan', 'Feb', 'Mar', 'Apr'], datasets: [{ label: 'Total Customers', data: [3500, 3650, 3800, 3950, 4100, 4250], color: '#8b5cf6' }] },
+                    right: { title: 'Customer Mix', type: 'polarArea', labels: ['New', 'Returning'], datasets: [{ data: [145, 4105], colors: ['#6366f1', '#10b981'] }] }
+                },
+                infographic: {
+                    heroValue: '96%',
+                    heroLabel: 'Retention Rate',
+                    heroInsight: 'Strong loyalty base with high repeat visit frequency.',
+                    icons: ['⭐️', '🔄'],
+                    trends: ['+4.5%', '+1.2%']
+                },
+                headers: ['Customer Name', 'Phone', 'Total Visits', 'Total Spend', 'Average Spend', 'Last Visit', 'Membership', 'Status'],
+                rows: [
+                    { name: 'Priya Kapoor', phone: '9876543210', visits: '8', total: '₹12,500', avg: '₹1,560', last: '10 Mar 2024', member: 'Gold', status: 'Active' },
+                    { name: 'Savitri D', phone: '8897549530', visits: '12', total: '₹15,400', avg: '₹1,283', last: '12 Mar 2024', member: 'Platinum', status: 'VIP' },
+                    { name: 'Ravi Kumar', phone: '9988776655', visits: '4', total: '₹8,200', avg: '₹2,050', last: '11 Mar 2024', member: 'Silver', status: 'Active' },
+                    { name: 'Anita Sharma', phone: '9845012345', visits: '2', total: '₹1,200', avg: '₹600', last: '01 Feb 2024', member: 'None', status: 'Inactive' },
+                    { name: 'Megha Rao', phone: '9731234567', visits: '15', total: '₹45,000', avg: '₹3,000', last: '10 Mar 2024', member: 'Gold', status: 'VIP' },
+                    { name: 'Kushal B', phone: '9900112233', visits: '6', total: '₹3,600', avg: '₹600', last: '10 Mar 2024', member: 'None', status: 'Active' },
+                    { name: 'Ishani Roy', phone: '9588443322', visits: '3', total: '₹2,100', avg: '₹700', last: '11 Mar 2024', member: 'Silver', status: 'Active' },
+                    { name: 'Arjun Singh', phone: '9632554411', visits: '1', total: '₹3,500', avg: '₹3,500', last: '08 Mar 2024', member: 'None', status: 'Active' },
+                    { name: 'Tanvi M', phone: '9123445566', visits: '5', total: '₹4,000', avg: '₹800', last: '09 Mar 2024', member: 'Silver', status: 'Active' },
+                    { name: 'Nisha K', phone: '9944556677', visits: '10', total: '₹6,500', avg: '₹650', last: '08 Mar 2024', member: 'None', status: 'Inactive' },
+                    { name: 'Rahul Gupta', phone: '9876500111', visits: '22', total: '₹35,000', avg: '₹1,590', last: '07 Mar 2024', member: 'Platinum', status: 'VIP' },
+                    { name: 'Deepa Jain', phone: '9554433221', visits: '7', total: '₹9,800', avg: '₹1,400', last: '07 Mar 2024', member: 'Gold', status: 'Active' },
+                    { name: 'Vikram S', phone: '9988001122', visits: '3', total: '₹4,500', avg: '₹1,500', last: '06 Mar 2024', member: 'Silver', status: 'Active' },
+                    { name: 'Sunita M', phone: '9443322110', visits: '18', total: '₹28,500', avg: '₹1,583', last: '06 Mar 2024', member: 'Gold', status: 'VIP' },
+                    { name: 'Gopal Krishan', phone: '9112233445', visits: '5', total: '₹6,000', avg: '₹1,200', last: '05 Mar 2024', member: 'None', status: 'Active' },
+                    { name: 'Rashmi V', phone: '9223344556', visits: '9', total: '₹14,200', avg: '₹1,577', last: '05 Mar 2024', member: 'Silver', status: 'Active' },
+                    { name: 'Kushal P', phone: '9334455667', visits: '2', total: '₹2,500', avg: '₹1,250', last: '04 Mar 2024', member: 'None', status: 'Active' },
+                    { name: 'Kavita L', phone: '9445566778', visits: '11', total: '₹22,000', avg: '₹2,000', last: '04 Mar 2024', member: 'Platinum', status: 'Active' },
+                    { name: 'Anil Roy', phone: '9556677889', visits: '6', total: '₹7,200', avg: '₹1,200', last: '03 Mar 2024', member: 'None', status: 'Active' },
+                    { name: 'Sneha B', phone: '9667788990', visits: '14', total: '₹25,400', avg: '₹1,814', last: '03 Mar 2024', member: 'Gold', status: 'VIP' }
+                ]
+            },
+            services: {
+                title: 'Service Performance Report',
+                subtitle: 'Analysis of service popularity, revenue contribution, and staff efficiency',
+                kpis: ['Total Services Performed', 'Service Revenue', 'Top Service', 'Avg. Service Price'],
+                values: ['1,280', '₹3,12,000', 'Haircut', '₹425'],
+                charts: {
+                    left: { title: 'Top Services by Revenue', type: 'bar', labels: ['Haircut', 'Facial', 'Spa', 'Color', 'Pedicure', 'Massage'], datasets: [{ label: 'Revenue', data: [120000, 217500, 142000, 157500, 89600, 128000], color: '#6366f1' }] },
+                    right: { title: 'Category Distribution', type: 'polarArea', labels: ['Hair', 'Skin', 'Nails', 'Makeup'], datasets: [{ data: [45, 30, 20, 5], colors: ['#6366f1', '#10b981', '#f59e0b', '#ec4899'] }], options: { circumference: 180, rotation: -90 } }
+                },
+                infographic: {
+                    heroValue: '45%',
+                    heroLabel: 'Hair Services Lead',
+                    heroInsight: 'Hair services contribute nearly half of total service volume.',
+                    icons: ['✂️', '🧴', '💅', '💄'],
+                    trends: ['+6.2%', '+3.4%', '+2.1%', '+12.5%']
+                },
+                headers: ['Service Name', 'Category', 'Bookings', 'Revenue', 'Average Price', 'Top Staff'],
+                rows: [
+                    { name: 'Haircut', cat: 'Hair', bookings: '320', rev: '₹1,20,000', avg: '₹375', staff: 'Rahul' },
+                    { name: 'Facial', cat: 'Skin', bookings: '145', rev: '₹2,17,500', avg: '₹1,500', staff: 'Anita' },
+                    { name: 'Hair Spa', cat: 'Hair', bookings: '88', rev: '₹1,32,000', avg: '₹1,500', staff: 'Michael' },
+                    { name: 'Pedicure', cat: 'Nails', bookings: '112', rev: '₹89,600', avg: '₹800', staff: 'Sarah' },
+                    { name: 'Manicure', cat: 'Nails', bookings: '95', rev: '₹57,000', avg: '₹600', staff: 'Sarah' },
+                    { name: 'Bridal Makeup', cat: 'Makeup', bookings: '12', rev: '₹60,000', avg: '₹5,000', staff: 'Anjali' },
+                    { name: 'Beard Trim', cat: 'Hair', bookings: '210', rev: '₹94,500', avg: '₹450', staff: 'Rahul' },
+                    { name: 'Hair Color', cat: 'Hair', bookings: '45', rev: '₹1,57,500', avg: '₹3,500', staff: 'Michael' },
+                    { name: 'Waxing', cat: 'Skin', bookings: '185', rev: '₹1,48,000', avg: '₹800', staff: 'Anita' },
+                    { name: 'Massage', cat: 'Wellness', bookings: '64', rev: '₹1,28,000', avg: '₹2,000', staff: 'Anita' },
+                    { name: 'Global Hair Color', cat: 'Hair', bookings: '38', rev: '₹1,33,000', avg: '₹3,500', staff: 'Michael' },
+                    { name: 'Head Massage', cat: 'Hair', bookings: '150', rev: '₹1,20,000', avg: '₹800', staff: 'Rahul' },
+                    { name: 'Pedicure Deluxe', cat: 'Nails', bookings: '74', rev: '₹88,800', avg: '₹1,200', staff: 'Sarah' },
+                    { name: 'D-Tan Facial', cat: 'Skin', bookings: '92', rev: '₹1,65,600', avg: '₹1,800', staff: 'Anita' },
+                    { name: 'Kids Haircut', cat: 'Hair', bookings: '120', rev: '₹54,000', avg: '₹450', staff: 'Rahul' }
+                ]
+            },
+            products: {
+                title: 'Product & Retail Reports',
+                subtitle: 'Retail sales, inventory turnover, and units sold',
+                kpis: ['Total Retail Sales', 'Units Sold', 'Top Product', 'Low Stock Items'],
+                values: ['₹82,400', '412', 'Clay Wax', '8'],
+                charts: {
+                    left: { title: 'Top Products by Sales', type: 'bar', labels: ['Wax', 'Shampoo', 'Serum', 'Oil', 'Mist', 'Gel'], datasets: [{ label: 'Units Sold', data: [150, 120, 84, 65, 68, 145], color: '#10b981' }] },
+                    right: { title: 'Retail Category Mix', type: 'polarArea', labels: ['Styling', 'Treatment', 'Skin Care', 'Grooming'], datasets: [{ data: [260, 140, 120, 80], colors: ['#10b981', '#6366f1', '#f59e0b', '#ec4899'] }] }
+                },
+                infographic: {
+                    heroValue: '42%',
+                    heroLabel: 'Styling Products',
+                    heroInsight: 'Clays and Waxes are top retail performers this month.',
+                    icons: ['🧴', '💧', '✨', '🪒'],
+                    trends: ['+18.4%', '+4.2%', '+2.1%', '+1.5%']
+                },
+                headers: ['Product Name', 'Category', 'Units Sold', 'Revenue', 'Average Price', 'Stock Remaining'],
+                rows: [
+                    { name: 'Volumizing Shampoo', cat: 'Hair Care', sold: '120', rev: '₹48,000', avg: '₹400', stock: '32' },
+                    { name: 'Moisturizing Conditioner', cat: 'Hair Care', sold: '95', rev: '₹42,750', avg: '₹450', stock: '18' },
+                    { name: 'Matte Clay Wax', cat: 'Styling', sold: '150', rev: '₹90,000', avg: '₹600', stock: '45' },
+                    { name: 'Vitamin C Serum', cat: 'Skin Care', sold: '42', rev: '₹1,05,000', avg: '₹2,500', stock: '8' },
+                    { name: 'Beard Oil', cat: 'Men\'s Grooming', sold: '65', rev: '₹52,000', avg: '₹800', stock: '12' },
+                    { name: 'Face Wash (Active)', cat: 'Skin Care', sold: '84', rev: '₹58,800', avg: '₹700', stock: '5' },
+                    { name: 'Hair Serum Pro', cat: 'Hair Care', sold: '40', rev: '₹60,000', avg: '₹1,500', stock: '15' },
+                    { name: 'Moroccan Oil', cat: 'Treatment', sold: '28', rev: '₹98,000', avg: '₹3,500', stock: '4' },
+                    { name: 'Styling Hair Spray', cat: 'Styling', sold: '110', rev: '₹66,000', avg: '₹600', stock: '22' },
+                    { name: 'Detox Charcoal Mask', cat: 'Skin Care', sold: '35', rev: '₹42,000', avg: '₹1,200', stock: '10' },
+                    { name: 'Tea Tree Oil', cat: 'Wellness', sold: '55', rev: '₹44,000', avg: '₹800', stock: '25' },
+                    { name: 'Hair Sculpting Paste', cat: 'Styling', sold: '130', rev: '₹78,000', avg: '₹600', stock: '30' },
+                    { name: 'Aloe Soothing Gel', cat: 'Skin Care', sold: '145', rev: '₹1,01,500', avg: '₹700', stock: '60' },
+                    { name: 'Hydrating Mist', cat: 'Skin Care', sold: '68', rev: '₹81,600', avg: '₹1,200', stock: '12' },
+                    { name: 'Argan Oil Shampoo', cat: 'Hair Care', sold: '110', rev: '₹99,000', avg: '₹900', stock: '35' }
+                ]
+            },
+            staff: {
+                title: 'Staff Performance Report',
+                subtitle: 'Revenue, bookings, and efficiency metrics by staff member',
+                kpis: ['Top Performer', 'Total Staff Revenue', 'Total Bookings Handled', 'Avg. Revenue per Booking'],
+                values: ['Rahul', '₹15,42,000', '1,284', '₹1,200'],
+                charts: {
+                    left: { title: 'Revenue by Staff', type: 'bar', labels: ['Rahul', 'Anita', 'Anjali', 'Michael'], datasets: [{ label: 'Revenue', data: [210000, 195000, 245000, 182000], color: '#6366f1' }] },
+                    right: { title: 'Top Perfomer Share', type: 'polarArea', labels: ['Anjali', 'Rahul', 'Anita', 'Michael'], datasets: [{ data: [24, 21, 19, 18], colors: ['#8b5cf6', '#6366f1', '#10b981', '#f59e0b'] }] }
+                },
+                infographic: {
+                    heroValue: '24%',
+                    heroLabel: 'Anjali (Top Lead)',
+                    heroInsight: 'Highest revenue contribution driven by high-value bridal services.',
+                    icons: ['👑', '✂️', '🧴', '💈'],
+                    trends: ['+15.2%', '+4.1%', '+2.5%', '+1.8%']
+                },
+                headers: ['Staff Name', 'Role', 'Bookings', 'Services', 'Revenue', 'Avg. Ticket', 'Utilization %'],
+                rows: [
+                    { name: 'Rahul', role: 'Senior Stylist', count: '210', completed: '198', rev: '₹2,10,000', avg: '₹1,060', util: '78%' },
+                    { name: 'Anita', role: 'Skin Specialist', count: '145', completed: '142', rev: '₹1,95,000', avg: '₹1,345', util: '82%' },
+                    { name: 'Michael', role: 'Hair Specialist', count: '160', completed: '155', rev: '₹1,82,000', avg: '₹1,137', util: '75%' },
+                    { name: 'Anjali', role: 'Makeup Artist', count: '42', completed: '40', rev: '₹2,45,000', avg: '₹5,833', util: '65%' },
+                    { name: 'Sarah', role: 'Nail Artist', count: '115', completed: '110', rev: '₹68,500', avg: '₹595', util: '88%' },
+                    { name: 'Priya', role: 'Junior Stylist', count: '95', completed: '92', rev: '₹52,000', avg: '₹547', util: '70%' },
+                    { name: 'Arjun', role: 'Barber', count: '180', completed: '175', rev: '₹85,000', avg: '₹472', util: '92%' },
+                    { name: 'Deepika', role: 'Therapist', count: '60', completed: '58', rev: '₹1,20,000', avg: '₹2,000', util: '60%' },
+                    { name: 'Suresh', role: 'Stylist', count: '130', completed: '125', rev: '₹95,000', avg: '₹730', util: '74%' },
+                    { name: 'Neha', role: 'Aesthetician', count: '85', completed: '82', rev: '₹1,10,000', avg: '₹1,294', util: '68%' }
+                ]
+            },
+            branch: {
+                title: 'Branch Performance Report',
+                subtitle: 'Comparative analysis of performance across salon locations',
+                kpis: ['Leading Branch', 'Total Branch Revenue', 'Avg. Branch Revenue', 'Total Bookings'],
+                values: ['Indiranagar', '₹32,45,000', '₹3,24,500', '5,280'],
+                charts: {
+                    left: { title: 'Revenue by Branch', type: 'bar', labels: ['Indira', 'White', 'Kora', 'HSR'], datasets: [{ label: 'Revenue', data: [520000, 480000, 390000, 310000], color: '#6366f1' }] },
+                    right: { title: 'Branch Distribution', type: 'polarArea', labels: ['Indira', 'White', 'Kora', 'HSR'], datasets: [{ data: [52, 48, 39, 31], colors: ['#6366f1', '#10b981', '#f59e0b', '#ec4899'] }] }
+                },
+                infographic: {
+                    heroValue: '35%',
+                    heroLabel: 'Indiranagar Revenue',
+                    heroInsight: 'Downtown & Indiranagar outperform other zones consistently.',
+                    icons: ['📍', '🏢', '🗺️', '🏠'],
+                    trends: ['+8.2%', '+12.5%', '+4.1%', '+2.8%']
+                },
+                headers: ['Branch Name', 'Bookings', 'Revenue', 'Customers', 'Average Ticket', 'Top Service', 'Growth %'],
+                rows: [
+                    { name: 'Indiranagar', bookings: '850', rev: '₹5,20,000', cust: '420', avg: '₹612', top: 'Haircut', growth: '+8%' },
+                    { name: 'Whitefield', bookings: '720', rev: '₹4,80,000', cust: '380', avg: '₹667', top: 'Facial', growth: '+12%' },
+                    { name: 'Koramangala', bookings: '640', rev: '₹3,90,000', cust: '310', avg: '₹609', top: 'Beard Trim', growth: '+5%' },
+                    { name: 'Jayanagar', bookings: '510', rev: '₹2,60,000', cust: '250', avg: '₹510', top: 'Hair Spa', growth: '-2%' },
+                    { name: 'HSR Layout', bookings: '480', rev: '₹3,10,000', cust: '240', avg: '₹645', top: 'Manicure', growth: '+15%' },
+                    { name: 'Downtown', bookings: '920', rev: '₹6,10,000', cust: '480', avg: '₹663', top: 'Bridal Makeup', growth: '+10%' },
+                    { name: 'Malleshwaram', bookings: '410', rev: '₹1,95,000', cust: '195', avg: '₹475', top: 'Haircut', growth: '+3%' },
+                    { name: 'Bannerghatta', bookings: '350', rev: '₹2,30,000', cust: '180', avg: '₹657', top: 'Pedicure', growth: '+6%' },
+                    { name: 'Whitefield Annex', bookings: '210', rev: '₹1,25,000', cust: '115', avg: '₹595', top: 'Hair Color', growth: '-5%' },
+                    { name: 'Sarjapur', bookings: '290', rev: '₹1,85,000', cust: '145', avg: '₹637', top: 'Massage', growth: '+4%' }
+                ]
+            },
+            marketing: {
+                title: 'Marketing & Promotions Report',
+                subtitle: 'Analysis of campaign effectiveness, offer redemptions, and marketing ROI',
+                kpis: ['Coupons Used', 'Offer Revenue', 'Active Campaigns', 'ROI'],
+                values: ['412', '₹1,42,500', '6', '4.2x'],
+                charts: {
+                    left: { title: 'Campaign Performance', type: 'bar', labels: ['Diwali', 'Summer', 'Member', 'Refer', 'Insta', 'Weekend'], datasets: [{ label: 'Revenue', data: [480000, 150000, 125000, 105000, 35200, 18500], color: '#ec4899' }] },
+                    right: { title: 'Campaign Impact Mix', type: 'polarArea', labels: ['Festive', 'Seasonal', 'Loyalty', 'Referral'], datasets: [{ data: [48, 25, 20, 15], colors: ['#ec4899', '#f59e0b', '#6366f1', '#10b981'] }] }
+                },
+                infographic: {
+                    heroValue: '4.2x',
+                    heroLabel: 'Marketing ROI',
+                    heroInsight: 'Festive campaigns achieved record-high engagement rates.',
+                    icons: ['🎁', '☀️', '🥇', '📣'],
+                    trends: ['+24.5%', '+12.2%', '+8.5%', '+15.1%']
+                },
+                headers: ['Campaign / Promotion', 'Type', 'Redemptions', 'Bookings Generated', 'Revenue Generated', 'Discount Given', 'ROI'],
+                rows: [
+                    { name: 'WELCOME10', type: 'Coupon', red: '65', book: '65', rev: '₹32,000', disc: '₹4,500', roi: '7.1x' },
+                    { name: 'Summer Facial Offer', type: 'Offer', red: '120', book: '115', rev: '₹1,50,000', disc: '₹22,000', roi: '6.8x' },
+                    { name: 'Diwali Campaign', type: 'Campaign', red: '240', book: '235', rev: '₹4,80,000', disc: '₹75,000', roi: '6.4x' },
+                    { name: 'Gold Member Promo', type: 'Membership Promotion', red: '45', book: '42', rev: '₹1,25,000', disc: '₹15,000', roi: '8.3x' },
+                    { name: 'INSTA25', type: 'Coupon', red: '88', book: '88', rev: '₹35,200', disc: '₹8,800', roi: '4.0x' },
+                    { name: 'Weekend Grooming', type: 'Offer', red: '72', book: '70', rev: '₹18,500', disc: '₹2,500', roi: '7.4x' },
+                    { name: 'Corporate Ties', type: 'Campaign', red: '34', book: '34', rev: '₹52,000', disc: '₹7,800', roi: '6.6x' },
+                    { name: 'Bridal Referral', type: 'Offer', red: '15', book: '15', rev: '₹1,05,000', disc: '₹10,500', roi: '10.0x' },
+                    { name: 'GLOW500', type: 'Coupon', red: '110', book: '110', rev: '₹66,000', disc: '₹11,000', roi: '6.0x' },
+                    { name: 'Birthday Special', type: 'Offer', red: '42', book: '40', rev: '₹12,600', disc: '₹4,200', roi: '3.0x' }
+                ]
+            },
+            membership: {
+                title: 'Membership Performance Report',
+                subtitle: 'Subscription metrics, renewals, and member engagement analysis',
+                kpis: ['Active Members', 'New Signups', 'Renewal Rate', 'Membership Revenue'],
+                values: ['342', '28', '85%', '₹2,45,000'],
+                charts: {
+                    left: { title: 'Membership Growth', type: 'line', labels: ['Nov', 'Dec', 'Jan', 'Feb', 'Mar', 'Apr'], datasets: [{ label: 'Active Members', data: [210, 225, 240, 280, 310, 342], color: '#f59e0b' }] },
+                    right: { title: 'Plan Adoption Mix', type: 'polarArea', labels: ['Gold', 'Silver', 'Platinum', 'VIP'], datasets: [{ data: [82, 124, 45, 15], colors: ['#f59e0b', '#94a3b8', '#6366f1', '#8b5cf6'] }] }
+                },
+                infographic: {
+                    heroValue: '56%',
+                    heroLabel: 'Gold Plan Adoption',
+                    heroInsight: 'Most members prefer mid-tier Gold plans for balanced benefits.',
+                    icons: ['👑', '🥈', '💎', '⭐'],
+                    trends: ['+12.4%', '+8.2%', '+4.5%', '+2.1%']
+                },
+                headers: ['Membership Plan', 'Active Members', 'New Members', 'Revenue', 'Usage Count', 'Renewals', 'Expiry Soon'],
+                rows: [
+                    { name: 'Gold Membership', active: '82', new: '12', rev: '₹1,64,000', usage: '210', renew: '9', expiry: '6' },
+                    { name: 'Silver Membership', active: '124', new: '18', rev: '₹1,24,000', usage: '185', renew: '12', expiry: '14' },
+                    { name: 'Platinum Plan', active: '45', new: '5', rev: '₹1,35,000', usage: '92', renew: '3', expiry: '2' },
+                    { name: 'VIP Exclusive', active: '15', new: '2', rev: '₹75,000', usage: '48', renew: '1', expiry: '1' },
+                    { name: 'Annual Basic', active: '54', new: '8', rev: '₹54,000', usage: '65', renew: '4', expiry: '8' },
+                    { name: 'Family Bundle', active: '22', new: '3', rev: '₹33,000', usage: '42', renew: '2', expiry: '3' },
+                    { name: 'Quarterly Silver', active: '38', new: '10', rev: '₹38,000', usage: '50', renew: '5', expiry: '5' },
+                    { name: 'Bridal Deluxe Membership', active: '12', new: '4', rev: '₹60,000', usage: '20', renew: '0', expiry: '2' }
+                ]
+            }
+        };
+
+        if (reportData[reportType]) {
+            const data = reportData[reportType];
+            document.getElementById('reportTitle').innerText = data.title;
+            document.getElementById('reportSubtitle').innerText = data.subtitle;
+            
+            // Update KPIs
+            for(let i=1; i<=4; i++) {
+                document.getElementById(`kpiLabel${i}`).innerText = data.kpis[i-1];
+                document.getElementById(`kpiValue${i}`).innerText = data.values[i-1];
+                
+                // Update Breakdowns/Sub-stats
+                const subDiv = document.getElementById(`kpiSub${i}`);
+                if (data.breakdowns && data.breakdowns[i]) {
+                    subDiv.innerHTML = `
+                        <div class="sub-stats">
+                            ${data.breakdowns[i].map(item => `
+                                <div class="sub-stat">
+                                    <span>${item.label}</span>
+                                    <span>${item.value}</span>
+                                </div>
+                            `).join('')}
+                        </div>
+                    `;
+                } else {
+                    subDiv.innerHTML = '';
+                }
+            }
+
+            // Update Table
+            const head = document.getElementById('tableHead');
+            const body = document.getElementById('tableBody');
+            
+            if (data.headers) {
+                head.innerHTML = `<tr>${data.headers.map(h => `<th>${h}</th>`).join('')}</tr>`;
+            }
+
+            if (data.rows) {
+                body.innerHTML = data.rows.map(row => {
+                    const rowValues = Object.values(row);
+                    const cells = rowValues.map((val, index) => {
+                        let style = '';
+                        if (val === 'Completed' || val === 'Active') style = 'color: #10b981; font-weight: 600;';
+                        if (val === 'VIP') style = 'color: #8b5cf6; font-weight: 700;';
+                        if (val === 'Refunded' || val === 'Inactive') style = 'color: #f43f5e; font-weight: 600;';
+                        if (val === 'Pending') style = 'color: #f59e0b; font-weight: 600;';
+                        if (val === 'Cancelled' || val === 'No-show') style = 'color: #94a3b8; font-weight: 600;';
+                        if (val === 'Confirmed') style = 'color: #6366f1; font-weight: 600;';
+                        if (String(val).startsWith('+')) style = 'color: #10b981; font-weight: 600;';
+                        if (String(val).startsWith('-')) style = 'color: #f43f5e;';
+                        
+                        // ROI highlighting (e.g. 7.1x)
+                        if (String(val).endsWith('x') && !isNaN(parseFloat(val)) && parseFloat(val) >= 5) {
+                            style = 'color: #8b5cf6; font-weight: 700;';
+                        }
+                        
+                        // Low stock highlighting for Product Report (Stock is the last column)
+                        if (reportType === 'products' && index === 5 && !isNaN(val) && Number(val) < 10) {
+                            style = 'color: #f43f5e; font-weight: 700;';
+                        }
+
+                        // Expiry soon highlighting for Membership Report (Expiry is the last column)
+                        if (reportType === 'membership' && index === 6 && !isNaN(val) && Number(val) > 10) {
+                            style = 'color: #f43f5e; font-weight: 700;';
+                        }
+                        
+                        return `<td style="${style}">${val}</td>`;
+                    }).join('');
+                    return `<tr>${cells}</tr>`;
+                }).join('');
+            }
+            // Update Infographic Content
+            const infographic = data.infographic;
+            if (infographic) {
+                document.getElementById('heroMetricValue').innerText = infographic.heroValue;
+                document.getElementById('heroMetricLabel').innerText = infographic.heroLabel;
+                document.getElementById('heroMetricInsight').innerText = infographic.heroInsight;
+
+                const legend = document.getElementById('infographicLegend');
+                legend.innerHTML = data.charts.right.labels.map((label, i) => `
+                    <div class="metric-item">
+                        <div class="metric-icon-wrap" style="background: ${data.charts.right.datasets[0].colors[i]}20; color: ${data.charts.right.datasets[0].colors[i]};">
+                            <span style="font-size: 1rem;">${infographic.icons[i]}</span>
+                        </div>
+                        <div class="metric-info">
+                            <h4>${label}</h4>
+                            <p>${infographic.trends[i]} vs last month</p>
+                        </div>
+                    </div>
+                `).join('');
+            }
+
+            // Update Charts
+            if (data.charts) {
+                document.getElementById('leftChartTitle').innerText = data.charts.left.title;
+                document.getElementById('rightChartTitle').innerText = data.charts.right.title;
+
+                // Left Chart (Trend/Bar)
+                const ctxLeft = document.getElementById('trendChart').getContext('2d');
+                new Chart(ctxLeft, {
+                    type: data.charts.left.type,
+                    data: {
+                        labels: data.charts.left.labels,
+                        datasets: data.charts.left.datasets.map(ds => ({
+                            label: ds.label,
+                            data: ds.data,
+                            borderColor: ds.color,
+                            backgroundColor: data.charts.left.type === 'line' ? `${ds.color}10` : ds.color,
+                            borderWidth: 2,
+                            tension: 0.4,
+                            fill: data.charts.left.type === 'line',
+                            borderRadius: data.charts.left.type === 'bar' ? 6 : 0
+                        }))
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: { legend: { display: false } },
+                        scales: data.charts.left.type !== 'doughnut' && data.charts.left.type !== 'polarArea' ? {
+                            y: { beginAtZero: true, grid: { color: '#f1f5f9' }, ticks: { color: '#94a3b8', font: { size: 11 } } },
+                            x: { grid: { display: false }, ticks: { color: '#94a3b8', font: { size: 11 } } }
+                        } : {}
+                    }
+                });
+
+                // Right Chart (Distribution/Radial)
+                const ctxRight = document.getElementById('distributionChart').getContext('2d');
+                const distributionChart = new Chart(ctxRight, {
+                    type: data.charts.right.type,
+                    data: {
+                        labels: data.charts.right.labels,
+                        datasets: data.charts.right.datasets.map(ds => ({
+                            data: ds.data,
+                            backgroundColor: ds.colors.map(c => c + 'D9'), // Add transparency (85%)
+                            borderColor: '#ffffff',
+                            borderWidth: 2,
+                            hoverOffset: 15,
+                            hoverBackgroundColor: ds.colors
+                        }))
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        animation: { duration: 400, easing: 'easeOutQuart' },
+                        layout: { padding: 10 },
+                        scales: {
+                            r: { display: false, grid: { display: false }, ticks: { display: false }, startAngle: -90 }
+                        },
+                        circumference: 180,
+                        plugins: {
+                            legend: { display: false },
+                            tooltip: { enabled: false }
+                        },
+                        onHover: (event, activeElements) => {
+                            const isEnabled = document.getElementById('hoverToggle').checked;
+                            const path = document.getElementById('connectorPath');
+                            const anchor = document.getElementById('connectorAnchor');
+                            const tooltip = document.getElementById('customChartTooltip');
+                            
+                            if (activeElements.length > 0 && isEnabled) {
+                                const index = activeElements[0].index;
+                                const label = distributionChart.data.labels[index];
+                                const rawValue = distributionChart.data.datasets[0].data[index];
+                                const formattedValue = typeof rawValue === 'number' && rawValue > 1000 ? '₹' + rawValue.toLocaleString() : rawValue;
+                                
+                                const icons = infographic.icons;
+                                const colors = data.charts.right.datasets[0].colors;
+                                const trends = infographic.trends;
+                                
+                                tooltip.querySelector('#tooltipIcon').innerText = icons[index];
+                                tooltip.querySelector('#tooltipTitle').innerText = label;
+                                tooltip.querySelector('#tooltipValue').innerText = formattedValue;
+                                tooltip.querySelector('#tooltipTrend span').innerText = trends[index];
+                                
+                                tooltip.style.opacity = '1';
+
+                                // Logic for Connector Line
+                                const chartMeta = distributionChart.getDatasetMeta(0);
+                                const element = chartMeta.data[index];
+                                const { startAngle, endAngle, outerRadius } = element;
+                                const midAngle = startAngle + (endAngle - startAngle) / 2;
+                                
+                                const hub = document.getElementById('chartHub');
+                                const hubRect = hub.getBoundingClientRect();
+                                const centerX = hubRect.width / 2;
+                                const centerY = hubRect.height / 2;
+                                
+                                const midRadius = outerRadius * 0.7; 
+                                const x1 = centerX + Math.cos(midAngle) * midRadius;
+                                const y1 = centerY + Math.sin(midAngle) * midRadius;
+                                
+                                const x2 = tooltip.offsetLeft;
+                                const y2 = tooltip.offsetTop + (tooltip.offsetHeight / 2);
+                                
+                                const cpX = (x1 + x2) / 2;
+                                const cpY = y1; 
+                                
+                                const d = `M ${x1} ${y1} Q ${cpX} ${cpY} ${x2} ${y2}`;
+                                
+                                path.setAttribute('d', d);
+                                path.setAttribute('stroke', colors[index]);
+                                path.style.opacity = '1';
+                                
+                                anchor.setAttribute('cx', x1);
+                                anchor.setAttribute('cy', y1);
+                                anchor.setAttribute('fill', colors[index]);
+                                anchor.style.opacity = '1';
+                            } else {
+                                tooltip.style.opacity = '0';
+                                path.style.opacity = '0';
+                                anchor.style.opacity = '0';
+                            }
+                        }
+                    }
+                });
+
+                // Hide tooltip when mouse leaves canvas
+                document.getElementById('distributionChart').addEventListener('mouseleave', () => {
+                    document.getElementById('customChartTooltip').style.opacity = '0';
+                    document.getElementById('connectorPath').style.opacity = '0';
+                    document.getElementById('connectorAnchor').style.opacity = '0';
+                });
+            }
+        }
+    </script>
+</body>
+
+</html>
+
+
+
