@@ -132,6 +132,9 @@ function submitOnboarding() {
 
         const branchName = document.getElementById('locationName').value;
         const branchAddress = document.getElementById('address').value;
+        const branchCity = document.getElementById('city').value;
+        const branchState = document.getElementById('state').value;
+        const branchPincode = document.getElementById('pincode').value;
         const branchPhone = document.getElementById('locationPhone').value;
 
         const payload = {
@@ -152,6 +155,9 @@ function submitOnboarding() {
             branch: {
                 name: branchName,
                 address: branchAddress,
+                city: branchCity,
+                state: branchState,
+                pincode: branchPincode,
                 phone: branchPhone
             }
         };
