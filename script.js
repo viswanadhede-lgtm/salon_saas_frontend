@@ -32,6 +32,19 @@ document.addEventListener('DOMContentLoaded', () => {
         signupForm.addEventListener('submit', (e) => {
             e.preventDefault();
             
+            const fullname = document.getElementById('fullname').value;
+            const email = document.getElementById('email').value;
+            const phone = document.getElementById('phone').value;
+            const password = document.getElementById('password').value;
+            
+            const signupData = {
+                full_name: fullname,
+                email: email,
+                phone: phone,
+                password: password
+            };
+            localStorage.setItem('signup_data', JSON.stringify(signupData));
+            
             const btn = signupForm.querySelector('.btn-primary');
             const originalText = btn.textContent;
             

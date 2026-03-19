@@ -1,3 +1,5 @@
+import { API } from '../config/api.js';
+
 document.addEventListener('DOMContentLoaded', () => {
     
     // Auth Check
@@ -99,8 +101,13 @@ function prepareConfirmation() {
     nextStep(3);
 }
 
+window.nextStep = nextStep;
+window.prevStep = prevStep;
+window.prepareConfirmation = prepareConfirmation;
+window.submitOnboarding = submitOnboarding;
+
 // ----------------------------------------------------------------
-// API MOCK LOGIC
+// API LOGIC
 // ----------------------------------------------------------------
 
 function submitOnboarding() {
@@ -115,82 +122,73 @@ function submitOnboarding() {
     btn.disabled = true;
     errDiv.style.display = 'none';
 
-    // Mock API delays
-    
-    // 1. Create Company Request
-    setTimeout(() => {
-        btn.textContent = 'Creating Branch...';
-        
-        // 2. Create Branch Request
-        setTimeout(() => {
+    try {
+        const data = JSON.parse(localStorage.getItem("signup_data") || '{}');
+        const companyName = document.getElementById('salonName').value;
+        const businessType = document.getElementById('businessType').value;
+        const businessPhone = document.getElementById('salonPhone').value;
+        const country = document.getElementById('country').value;
+        const timezone = document.getElementById('timezone').value;
+
+        const branchName = document.getElementById('locationName').value;
+        const branchAddress = document.getElementById('address').value;
+        const branchPhone = document.getElementById('locationPhone').value;
+
+        const payload = {
+            full_name: data.full_name,
+            email: data.email,
+            phone: data.phone,
+            password: data.password,
+            plan_id: data.plan_id,
+
+            company: {
+                name: companyName,
+                business_type: businessType,
+                phone: businessPhone,
+                country: country,
+                timezone: timezone
+            },
+
+            branch: {
+                name: branchName,
+                address: branchAddress,
+                phone: branchPhone
+            }
+        };
+
+        fetch(API.AUTH_REGISTER_COMPANY, {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json"
+            },
+            body: JSON.stringify(payload)
+        })
+        .then(res => res.json())
+        .then(respData => {
+            console.log("Register response:", respData);
             btn.textContent = 'Success! Redirecting...';
             btn.style.backgroundColor = '#10b981';
             
-            // 3. Complete and redirect
             setTimeout(() => {
                 window.location.href = 'dashboard.html';
             }, 1000);
-            
-        }, 1200);
-
-    }, 1000);
-    
-    /* 
-    REAL API IMPLEMENTATION EXAMPLE:
-    
-    const token = localStorage.getItem('auth_token');
-    const headers = {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${token}`
-    };
-
-    // 1. Create Company
-    fetch('https://api.bharathbots.com/v1/companies', {
-        method: 'POST',
-        headers: headers,
-        body: JSON.stringify({
-            name: document.getElementById('salonName').value,
-            business_type: document.getElementById('businessType').value,
-            phone: document.getElementById('salonPhone').value,
-            country: document.getElementById('country').value,
-            timezone: document.getElementById('timezone').value,
-            plan: localStorage.getItem('selected_plan')
         })
-    })
-    .then(companyRes => companyRes.json())
-    .then(companyData => {
-        const companyId = companyData.id;
-
-        // 2. Create Branch
-        return fetch('https://api.bharathbots.com/v1/branches', {
-            method: 'POST',
-            headers: headers,
-            body: JSON.stringify({
-                company_id: companyId,
-                name: document.getElementById('locationName').value,
-                address: document.getElementById('address').value,
-                city: document.getElementById('city').value,
-                state: document.getElementById('state').value,
-                pincode: document.getElementById('pincode').value,
-                phone: document.getElementById('locationPhone').value
-            })
+        .catch(err => {
+            console.error("Error:", err);
+            btn.textContent = originalText;
+            btn.style.opacity = '1';
+            btn.style.cursor = 'pointer';
+            btn.disabled = false;
+            errDiv.textContent = err.message || 'An error occurred during setup.';
+            errDiv.style.display = 'block';
         });
-    })
-    .then(branchRes => {
-        if (!branchRes.ok) throw new Error('Failed to create branch');
-        // Success
-        window.location.href = 'dashboard.html';
-    })
-    .catch(error => {
-        // Reset UI
+    } catch (e) {
+        console.error(e);
+        errDiv.textContent = 'Failed to parse signup data or missing fields.';
+        errDiv.style.display = 'block';
         btn.textContent = originalText;
+        btn.disabled = false;
         btn.style.opacity = '1';
         btn.style.cursor = 'pointer';
-        btn.disabled = false;
-        
-        // Show error
-        errDiv.textContent = error.message || 'An error occurred during setup.';
-        errDiv.style.display = 'block';
-    });
-    */
+    }
 }

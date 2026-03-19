@@ -297,6 +297,10 @@
                     setTimeout(() => {
                         // Store in local storage
                         localStorage.setItem('selected_plan', selectedPlan);
+                        let signupData = JSON.parse(localStorage.getItem('signup_data') || '{}');
+                        signupData.plan_id = selectedPlan;
+                        localStorage.setItem('signup_data', JSON.stringify(signupData));
+
                         e.target.textContent = 'Selected!';
                         e.target.style.backgroundColor = '#10b981'; // Success green
                         
