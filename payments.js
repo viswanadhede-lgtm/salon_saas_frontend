@@ -68,7 +68,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const btnTrial = document.getElementById('btnStartTrial');
     if (btnTrial) {
         btnTrial.addEventListener('click', () => {
-            triggerFreeTrial(btnTrial, companyId);
+            triggerFreeTrial(btnTrial, companyId, planId);
         });
     }
 
@@ -253,13 +253,13 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
-    function triggerFreeTrial(btnElement, companyId) {
+    function triggerFreeTrial(btnElement, companyId, planId) {
         const originalText = btnElement.textContent;
         setLoadingState(btnElement, 'Activating Trial...');
 
         const payload = {
             company_id: companyId,
-            plan_id: 'plan_trial'
+            plan_id: planId
         };
 
         fetch(API.START_FREE_TRIAL, {
