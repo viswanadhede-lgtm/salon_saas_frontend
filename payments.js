@@ -1,0 +1,313 @@
+import { API } from './config/api.js';
+
+document.addEventListener('DOMContentLoaded', () => {
+    
+    // Core State
+    const params = new URLSearchParams(window.location.search);
+    const companyId = params.get('company_id');
+    const msgDiv = document.getElementById('paymentMessage');
+    
+    let billingCycle = 'monthly'; 
+    let basePlanMonthly = 0;
+    let basePlanAnnual = 0;
+    
+    let dynamicAddonsPricing = {};
+
+    if (!companyId) {
+        showMessage('Error: No company ID found. Return to signup to start over.', 'error');
+        disableAllActions();
+        return;
+    }
+
+    // 1. Load Selected Plan
+    const signupData = JSON.parse(localStorage.getItem('signup_data') || '{}');
+    const planId = signupData.plan_id;
+    const planName = signupData.plan_name;
+
+    if (!planId) {
+        showMessage('Error: No plan selected. Please go back to select a plan.', 'error');
+        disableAllActions();
+        return;
+    }
+
+    renderPlanSummary(planId, planName);
+
+    // 2. Fetch and Render Addons
+    fetchAddons();
+
+    // 3. Setup Billing Configuration Handlers
+    const btnMonthly = document.getElementById('toggleMonthly');
+    const btnAnnual = document.getElementById('toggleAnnual');
+
+    btnMonthly.addEventListener('click', () => {
+        billingCycle = 'monthly';
+        btnMonthly.classList.add('active');
+        btnAnnual.classList.remove('active');
+        updatePricingDisplay();
+    });
+
+    btnAnnual.addEventListener('click', () => {
+        billingCycle = 'annual';
+        btnAnnual.classList.add('active');
+        btnMonthly.classList.remove('active');
+        updatePricingDisplay();
+    });
+
+    // Initialize first display
+    updatePricingDisplay();
+
+    // 4. Action Buttons
+    const btnPayNow = document.getElementById('btnPayNow');
+    if (btnPayNow) {
+        btnPayNow.addEventListener('click', () => {
+            const addons = getSelectedAddons();
+            triggerPaymentLinkCreation(btnPayNow, planId, companyId, addons, billingCycle);
+        });
+    }
+
+    const btnTrial = document.getElementById('btnStartTrial');
+    if (btnTrial) {
+        btnTrial.addEventListener('click', () => {
+            triggerFreeTrial(btnTrial, companyId);
+        });
+    }
+
+    // --- Logic Functions ---
+
+    function fetchAddons() {
+        fetch(API.READ_ADDONS, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ company_id: companyId })
+        })
+        .then(res => res.json())
+        .then(addonsArray => {
+            const container = document.getElementById('addonsListContainer');
+            
+            // Expected format: array of { addon_id, name, price, description, status }
+            const activeAddons = (addonsArray || []).filter(a => a.status === 'active');
+            
+            if (activeAddons.length === 0) {
+                container.innerHTML = '<h3 class="subsection-title">Supercharge your plan</h3><p style="color: var(--text-muted); font-size: 0.9rem;">No add-ons currently available.</p>';
+                return;
+            }
+
+            let addonsHtml = '<h3 class="subsection-title">Supercharge your plan</h3>';
+
+            activeAddons.forEach(addon => {
+                const monPrice = parseFloat(addon.price) || 0;
+                const annPrice = monPrice * 10; // Nominal annual discount assumption
+
+                dynamicAddonsPricing[addon.addon_id] = {
+                    name: addon.name,
+                    monthly: monPrice,
+                    annual: annPrice
+                };
+
+                addonsHtml += `
+                    <label class="addon-item">
+                        <div class="addon-info">
+                            <h4>${addon.name}</h4>
+                            <p style="font-size: 0.8rem; color: var(--text-muted); margin: 4px 0 6px 0;">${addon.description || ''}</p>
+                            <span class="addon-price" id="price_${addon.addon_id}">+₹${monPrice.toLocaleString('en-IN')}/mo</span>
+                        </div>
+                        <div class="addon-toggle">
+                            <input type="checkbox" value="${addon.addon_id}" class="addon-checkbox">
+                            <span class="custom-toggle"></span>
+                        </div>
+                    </label>
+                `;
+            });
+
+            container.innerHTML = addonsHtml;
+
+            // Bind events for dynamically injected checkboxes
+            const newCheckboxes = document.querySelectorAll('.addon-checkbox');
+            newCheckboxes.forEach(chk => {
+                chk.addEventListener('change', updatePricingDisplay);
+            });
+
+            // Re-render display to apply active billing cycle prices
+            updatePricingDisplay();
+        })
+        .catch(err => {
+            console.error('Error fetching addons:', err);
+            const container = document.getElementById('addonsListContainer');
+            container.innerHTML = '<h3 class="subsection-title">Supercharge your plan</h3><p style="color: var(--text-muted); font-size: 0.9rem;">Failed to load add-ons.</p>';
+        });
+    }
+
+    function renderPlanSummary(id, fallbackName) {
+        const PLANS = {
+            'plan_01': { name: 'Basic', monthly: 1999, annual: 19999, benefits: ['1 Branch', 'Up to 5 staff accounts', 'Bookings & Customers CRM', 'Basic dashboard analytics', 'Payment tracking'] },
+            'plan_02': { name: 'Advance', monthly: 4999, annual: 49999, benefits: ['Up to 3 branches', 'Up to 12 staff accounts', 'POS & Product sales', 'Offers & coupons', 'Advanced reports'] },
+            'plan_03': { name: 'Pro', monthly: 9999, annual: 99999, benefits: ['Up to 10 branches', 'Unlimited staff accounts', 'Membership programs', 'Online booking page', 'Deep analytics dashboard'] },
+            'plan_04': { name: 'Enterprise', monthly: 19999, annual: 199999, benefits: ['Unlimited branches', 'AI receptionist included', 'WhatsApp booking automation', 'Custom integrations', 'Dedicated support & SLA'] },
+            'plan_trial': { name: 'Free Trial', monthly: 0, annual: 0, benefits: ['7 days unrestricted access'] }
+        };
+
+        const plan = PLANS[id] || { name: fallbackName || 'Unknown Plan', monthly: 0, annual: 0, benefits: ['Standard features'] };
+        
+        // Save base pricing constraints for summary calculations
+        basePlanMonthly = plan.monthly;
+        basePlanAnnual = plan.annual;
+
+        const container = document.getElementById('planSummaryCard');
+        let benefitsHtml = plan.benefits.map(b => `<li><svg class="check-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg> ${b}</li>`).join('');
+
+        container.innerHTML = `
+            <div class="summary-header">
+                <h3>${plan.name} Plan</h3>
+            </div>
+            <div class="summary-body">
+                <ul class="summary-benefits vertical-benefits">
+                    ${benefitsHtml}
+                </ul>
+            </div>
+        `;
+        
+        document.getElementById('receiptPlanName').textContent = `${plan.name} Plan`;
+    }
+
+    function updatePricingDisplay() {
+        const isAnnual = billingCycle === 'annual';
+        
+        // 1. Update Addon Prices on toggles (looping dynamically loaded addons)
+        Object.keys(dynamicAddonsPricing).forEach(addonId => {
+            const priceEl = document.getElementById('price_' + addonId);
+            if (priceEl) {
+                const addonData = dynamicAddonsPricing[addonId];
+                priceEl.textContent = isAnnual ? `+₹${addonData.annual.toLocaleString('en-IN')}/yr` : `+₹${addonData.monthly.toLocaleString('en-IN')}/mo`;
+            }
+        });
+
+        // 2. Update Receipt Summary
+        const planCost = isAnnual ? basePlanAnnual : basePlanMonthly;
+        document.getElementById('receiptPlanPrice').textContent = `₹${planCost.toLocaleString('en-IN')}`;
+        
+        let addonsTotal = 0;
+        let addonsHtml = '';
+        
+        const checkboxes = document.querySelectorAll('.addon-checkbox:checked');
+        checkboxes.forEach(chk => {
+            const addonKey = chk.value;
+            const addonData = dynamicAddonsPricing[addonKey];
+            if (addonData) {
+                const cost = isAnnual ? addonData.annual : addonData.monthly;
+                addonsTotal += cost;
+                
+                addonsHtml += `
+                    <div class="receipt-row addon-row">
+                        <span>+ ${addonData.name}</span>
+                        <span>₹${cost.toLocaleString('en-IN')}</span>
+                    </div>
+                `;
+            }
+        });
+        
+        const dynContainer = document.getElementById('dynamicAddonsContainer');
+        if (dynContainer) dynContainer.innerHTML = addonsHtml;
+        
+        // Calculate Total
+        const total = planCost + addonsTotal;
+        document.getElementById('receiptTotalPrice').textContent = `₹${total.toLocaleString('en-IN')}`;
+        
+        // Update Note
+        document.getElementById('billingNote').textContent = isAnnual ? 'Billed annually' : 'Billed monthly';
+    }
+
+    function getSelectedAddons() {
+        const checkboxes = document.querySelectorAll('.addon-checkbox:checked');
+        return Array.from(checkboxes).map(cb => cb.value);
+    }
+
+    function triggerPaymentLinkCreation(btnElement, planId, companyId, addons, cycle) {
+        const originalText = btnElement.innerHTML;
+        setLoadingState(btnElement, 'Processing...');
+
+        const payload = {
+            company_id: companyId,
+            plan_id: planId,
+            addons: addons,
+            billing_cycle: cycle
+        };
+
+        fetch(API.CREATE_PAYMENT_LINK, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload)
+        })
+        .then(res => res.json())
+        .then(data => {
+            if (data && data.payment_link) {
+                showMessage('Redirecting to secure gateway...', 'success');
+                window.location.href = data.payment_link;
+            } else {
+                throw new Error("Invalid response from payment service.");
+            }
+        })
+        .catch(err => {
+            console.error('Payment Error:', err);
+            resetLoadingState(btnElement, originalText);
+            showMessage('Failed to create payment link. Please try again.', 'error');
+        });
+    }
+
+    function triggerFreeTrial(btnElement, companyId) {
+        const originalText = btnElement.textContent;
+        setLoadingState(btnElement, 'Activating Trial...');
+
+        const payload = {
+            company_id: companyId,
+            plan_id: 'plan_trial'
+        };
+
+        fetch(API.START_FREE_TRIAL, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload)
+        })
+        .then(res => {
+            if (!res.ok) throw new Error("API Exception");
+            return res.json();
+        })
+        .then(data => {
+            showMessage('Trial activated! Opening your workspace...', 'success');
+            setTimeout(() => {
+                window.location.href = 'dashboard.html';
+            }, 1000);
+        })
+        .catch(err => {
+            console.error('Trial Error:', err);
+            resetLoadingState(btnElement, originalText);
+            showMessage('Failed to activate free trial. Please try again.', 'error');
+        });
+    }
+
+    // --- UI Helpers ---
+
+    function showMessage(text, type) {
+        msgDiv.textContent = text;
+        msgDiv.className = 'payment-message ' + type;
+        msgDiv.style.display = 'block';
+    }
+
+    function setLoadingState(btn, text) {
+        btn.innerHTML = `<span class="spinner"></span> ${text}`;
+        btn.disabled = true;
+        btn.style.opacity = '0.7';
+        btn.style.cursor = 'wait';
+    }
+
+    function resetLoadingState(btn, originalHTML) {
+        btn.innerHTML = originalHTML;
+        btn.disabled = false;
+        btn.style.opacity = '1';
+        btn.style.cursor = 'pointer';
+    }
+
+    function disableAllActions() {
+        document.querySelectorAll('button').forEach(b => b.disabled = true);
+        document.querySelectorAll('input').forEach(i => i.disabled = true);
+    }
+});

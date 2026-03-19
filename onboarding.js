@@ -174,11 +174,12 @@ function submitOnboarding() {
         .then(res => res.json())
         .then(respData => {
             console.log("Register response:", respData);
-            btn.textContent = 'Success! Redirecting...';
+            btn.textContent = 'Success! Redirecting to setup payments...';
             btn.style.backgroundColor = '#10b981';
             
             setTimeout(() => {
-                window.location.href = 'dashboard.html';
+                const companyId = respData.company_id || (respData.data && respData.data.company_id) || '';
+                window.location.href = `payments.html?company_id=${companyId}`;
             }, 1000);
         })
         .catch(err => {
