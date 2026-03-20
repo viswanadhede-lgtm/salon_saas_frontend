@@ -274,17 +274,14 @@ document.addEventListener('DOMContentLoaded', () => {
             const data = Array.isArray(responseData) ? responseData[0] : responseData;
             if (data && data.order_id) {
                 const options = {
-                    "key": data.key_id, // Strictly using key from backend
+                    "key": data.key_id,
                     "amount": data.amount || 0, 
                     "currency": data.currency || "INR",
                     "name": "BharathBots",
                     "description": "Subscription Activation",
                     "order_id": data.order_id,
-                    "handler": function (response) {
-                        // After successful payment from Razorpay's UI
-                        setLoadingState(btnElement, 'Processing payment...');
-                        pollAuthGuard(btnElement, originalText);
-                    },
+                    "callback_url": `${window.location.origin}/payment-result.html`,
+                    "redirect": true,
                     "modal": {
                         "ondismiss": function() {
                             resetLoadingState(btnElement, originalText);
@@ -315,47 +312,6 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
-    function pollAuthGuard(btnElement, originalText) {
-        let attempts = 0;
-        const maxAttempts = 10;
-        const token = localStorage.getItem('auth_token') || '';
-
-        const checkStatus = () => {
-            if (attempts >= maxAttempts) {
-                resetLoadingState(btnElement, originalText);
-                showMessage('Payment is being processed. Please refresh or check again in a few moments.', 'success');
-                return;
-            }
-
-            attempts++;
-            fetch(API.AUTH_GUARD, {
-                method: 'POST',
-                headers: { 
-                    'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${token}` 
-                }
-            })
-            .then(res => res.json())
-            .then(data => {
-                if (data && data.subscription_status === "active") {
-                    showMessage('Payment verified! Redirecting to your dashboard...', 'success');
-                    setTimeout(() => {
-                        window.location.href = 'dashboard.html';
-                    }, 1000);
-                } else {
-                    // Not active yet, retry
-                    setTimeout(checkStatus, 3000);
-                }
-            })
-            .catch(err => {
-                console.error('Auth Guard Check Error:', err);
-                // Keep trying even on error (e.g. transient network failure)
-                setTimeout(checkStatus, 3000);
-            });
-        };
-
-        checkStatus();
-    }
 
     function triggerFreeTrial(btnElement, companyId, planId) {
         const originalText = btnElement.textContent;

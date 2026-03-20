@@ -1,0 +1,319 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Setting Up Your Workspace — BharathBots</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+        :root {
+            --primary: #6366f1;
+            --primary-glow: rgba(99, 102, 241, 0.2);
+            --success: #10b981;
+            --success-glow: rgba(16, 185, 129, 0.2);
+            --error: #ef4444;
+            --warning: #f59e0b;
+            --bg: #f5f6fa;
+            --surface: #ffffff;
+            --border: rgba(0,0,0,0.07);
+            --text: #0f172a;
+            --text-muted: #64748b;
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background: var(--bg);
+            color: var(--text);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            overflow: hidden;
+        }
+
+        /* Ambient background blobs */
+        body::before {
+            content: '';
+            position: fixed;
+            width: 600px; height: 600px;
+            background: radial-gradient(circle, rgba(99,102,241,0.07) 0%, transparent 70%);
+            top: -150px; left: -150px;
+            border-radius: 50%;
+            pointer-events: none;
+        }
+        body::after {
+            content: '';
+            position: fixed;
+            width: 500px; height: 500px;
+            background: radial-gradient(circle, rgba(16,185,129,0.05) 0%, transparent 70%);
+            bottom: -100px; right: -100px;
+            border-radius: 50%;
+            pointer-events: none;
+        }
+
+        .card {
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: 24px;
+            padding: 56px 48px;
+            max-width: 480px;
+            width: 90%;
+            text-align: center;
+            position: relative;
+            z-index: 1;
+            box-shadow: 0 4px 32px rgba(0,0,0,0.07);
+            transition: all 0.5s ease;
+        }
+
+        /* --- Logo --- */
+        .logo {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+            margin-bottom: 40px;
+            color: var(--text-muted);
+            font-size: 0.95rem;
+            font-weight: 500;
+        }
+        .logo svg { color: var(--primary); }
+
+        /* --- Spinner / Icon area --- */
+        .icon-area {
+            width: 80px; height: 80px;
+            margin: 0 auto 32px;
+            position: relative;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        /* Rotating ring */
+        .spinner-ring {
+            position: absolute;
+            inset: 0;
+            border-radius: 50%;
+            border: 3px solid transparent;
+            border-top-color: var(--primary);
+            border-right-color: var(--primary);
+            animation: spin 1s linear infinite;
+        }
+        .spinner-ring::before {
+            content: '';
+            position: absolute;
+            inset: 6px;
+            border-radius: 50%;
+            border: 2px solid transparent;
+            border-top-color: rgba(99,102,241,0.3);
+            animation: spin 1.5s linear infinite reverse;
+        }
+
+        /* Pulse dot in centre */
+        .pulse-dot {
+            width: 20px; height: 20px;
+            background: var(--primary);
+            border-radius: 50%;
+            box-shadow: 0 0 0 0 var(--primary-glow);
+            animation: pulse 1.8s ease-in-out infinite;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+        @keyframes pulse {
+            0%, 100% { box-shadow: 0 0 0 0 var(--primary-glow); }
+            50%       { box-shadow: 0 0 0 14px transparent; }
+        }
+
+        /* Success / Error icon states */
+        .icon-area.success .spinner-ring { display: none; }
+        .icon-area.success .pulse-dot {
+            background: var(--success);
+            box-shadow: 0 0 0 0 var(--success-glow);
+            animation: none;
+        }
+        .icon-area.error .spinner-ring { display: none; }
+        .icon-area.error .pulse-dot {
+            background: var(--error);
+            box-shadow: none;
+            animation: none;
+        }
+
+        /* SVG tick / cross inside dot when resolved */
+        .icon-area .result-icon {
+            display: none;
+            position: absolute;
+            inset: 0;
+            align-items: center;
+            justify-content: center;
+        }
+        .icon-area.success .result-icon,
+        .icon-area.error .result-icon { display: flex; }
+        .icon-area.success .pulse-dot,
+        .icon-area.error .pulse-dot { width: 80px; height: 80px; border-radius: 50%; }
+
+        /* --- Heading & sub --- */
+        .heading {
+            font-size: 1.55rem;
+            font-weight: 700;
+            letter-spacing: -0.5px;
+            margin-bottom: 10px;
+            line-height: 1.3;
+        }
+        .subtext {
+            color: var(--text-muted);
+            font-size: 0.92rem;
+            line-height: 1.6;
+            min-height: 44px;
+        }
+
+        /* --- Steps --- */
+        .steps {
+            margin-top: 36px;
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+            text-align: left;
+        }
+        .step {
+            display: flex;
+            align-items: center;
+            gap: 14px;
+            padding: 14px 16px;
+            border-radius: 12px;
+            border: 1px solid var(--border);
+            background: rgba(255,255,255,0.02);
+            font-size: 0.87rem;
+            color: var(--text-muted);
+            transition: all 0.4s ease;
+        }
+        .step.active {
+            border-color: rgba(99,102,241,0.4);
+            background: rgba(99,102,241,0.06);
+            color: var(--text);
+        }
+        .step.done {
+            border-color: rgba(16,185,129,0.35);
+            background: rgba(16,185,129,0.04);
+            color: var(--success);
+        }
+        .step.failed {
+            border-color: rgba(239,68,68,0.35);
+            background: rgba(239,68,68,0.04);
+            color: var(--error);
+        }
+
+        .step-icon {
+            width: 28px; height: 28px;
+            border-radius: 50%;
+            border: 1.5px solid currentColor;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+            font-size: 0.75rem;
+            font-weight: 600;
+        }
+        .step.active .step-icon {
+            border-color: var(--primary);
+            background: rgba(99,102,241,0.15);
+            color: var(--primary);
+        }
+        .step.active .step-icon::after {
+            content: '';
+            width: 8px; height: 8px;
+            background: var(--primary);
+            border-radius: 50%;
+            animation: pulse 1.2s ease infinite;
+        }
+        .step.done .step-icon {
+            border-color: var(--success);
+            background: rgba(16,185,129,0.15);
+            color: var(--success);
+        }
+        .step.done .step-icon::after { content: '✓'; }
+        .step.failed .step-icon {
+            border-color: var(--error);
+            background: rgba(239,68,68,0.15);
+            color: var(--error);
+        }
+        .step.failed .step-icon::after { content: '✕'; }
+        .step:not(.active):not(.done):not(.failed) .step-icon::after { content: '·'; font-size: 1.2rem; }
+
+        /* --- Error action button --- */
+        .retry-btn {
+            display: none;
+            margin-top: 28px;
+            padding: 13px 32px;
+            background: linear-gradient(135deg, var(--primary), #818cf8);
+            border: none;
+            border-radius: 12px;
+            color: #fff;
+            font-family: 'Inter', sans-serif;
+            font-size: 0.95rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: opacity 0.2s;
+        }
+        .retry-btn:hover { opacity: 0.85; }
+
+        /* Fade-in animation for card */
+        @keyframes fadeUp {
+            from { opacity: 0; transform: translateY(20px); }
+            to   { opacity: 1; transform: translateY(0);    }
+        }
+        .card { animation: fadeUp 0.5s ease both; }
+    </style>
+</head>
+<body>
+    <div class="card">
+        <!-- Logo -->
+        <div class="logo">
+            <svg width="22" height="22" viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <rect x="2" y="6" width="28" height="20" rx="4" stroke="currentColor" stroke-width="2"/>
+                <path d="M8 12C8 12 11 16 16 16C21 16 24 12 24 12" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+                <circle cx="16" cy="16" r="2" fill="currentColor"/>
+            </svg>
+            BharathBots
+        </div>
+
+        <!-- Icon area -->
+        <div class="icon-area" id="iconArea">
+            <div class="spinner-ring"></div>
+            <div class="pulse-dot"></div>
+            <div class="result-icon" id="resultIcon"></div>
+        </div>
+
+        <!-- Heading & sub -->
+        <h1 class="heading" id="heading">Getting your setup ready</h1>
+        <p class="subtext" id="subtext">We're confirming your payment and activating your workspace. This usually takes a few seconds.</p>
+
+        <!-- Steps tracker -->
+        <div class="steps">
+            <div class="step active" id="step1">
+                <div class="step-icon"></div>
+                <span>Verifying payment with Razorpay</span>
+            </div>
+            <div class="step" id="step2">
+                <div class="step-icon"></div>
+                <span>Activating your subscription</span>
+            </div>
+            <div class="step" id="step3">
+                <div class="step-icon"></div>
+                <span>Preparing your dashboard</span>
+            </div>
+        </div>
+
+        <!-- Retry button (shown only on failure) -->
+        <button class="retry-btn" id="retryBtn" onclick="window.location.href='payments.html'">
+            Try Again
+        </button>
+    </div>
+
+    <script type="module" src="payment-result.js"></script>
+</body>
+</html>
