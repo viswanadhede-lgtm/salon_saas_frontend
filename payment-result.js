@@ -28,7 +28,14 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     // --- Read & validate session token ---
-    const token = localStorage.getItem('token');
+    // First try URL param (handles cross-origin localStorage — token passed from payments page)
+    // Then fall back to localStorage on this domain
+    const tokenFromUrl = params.get('t');
+    if (tokenFromUrl) {
+        localStorage.setItem('token', tokenFromUrl);
+        console.log('[payment-result] Token received from URL param and stored in localStorage.');
+    }
+    const token = tokenFromUrl || localStorage.getItem('token');
     console.log('[payment-result] Token present:', !!token, token ? `(${token.substring(0, 10)}...)` : '(missing)');
 
     if (!token) {

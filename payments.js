@@ -282,10 +282,12 @@ document.addEventListener('DOMContentLoaded', () => {
                     "order_id": data.order_id,
                     "handler": function (response) {
                         // Payment successful — redirect to result page with all proofs as query params
+                        // Also carry the token forward to handle cross-origin localStorage
                         const params = new URLSearchParams({
                             razorpay_payment_id: response.razorpay_payment_id,
                             razorpay_order_id:   response.razorpay_order_id,
-                            razorpay_signature:  response.razorpay_signature
+                            razorpay_signature:  response.razorpay_signature,
+                            t: localStorage.getItem('token') || ''
                         });
                         window.location.href = `${RAZORPAY.CALLBACK_URL}?${params.toString()}`;
                     },
