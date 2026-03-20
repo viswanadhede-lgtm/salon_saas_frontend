@@ -175,11 +175,14 @@ function submitOnboarding() {
         .then(respData => {
             console.log("Register response:", respData);
 
+            // Unwrap array response e.g. [{ "token": "...", "company_id": "..." }]
+            const resp = Array.isArray(respData) ? respData[0] : respData;
+
             // Store session token immediately after successful registration
-            const token = respData.token || (respData.data && respData.data.token) || '';
+            const token = resp.token || (resp.data && resp.data.token) || '';
             if (token) {
                 localStorage.setItem('token', token);
-                console.log('[onboarding] Session token stored.');
+                console.log('[onboarding] Session token stored:', token.substring(0, 10) + '...');
             } else {
                 console.warn('[onboarding] No token in registration response.');
             }
@@ -188,7 +191,7 @@ function submitOnboarding() {
             btn.style.backgroundColor = '#10b981';
             
             setTimeout(() => {
-                const companyId = respData.company_id || (respData.data && respData.data.company_id) || '';
+                const companyId = resp.company_id || (resp.data && resp.data.company_id) || '';
                 window.location.href = `payments.html?company_id=${companyId}`;
             }, 1000);
         })
