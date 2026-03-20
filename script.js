@@ -1,5 +1,3 @@
-import { API } from './config/api.js';
-
 document.addEventListener('DOMContentLoaded', () => {
     // Password visibility toggle
     const togglePasswordBtn = document.querySelector('.btn-toggle-password');
@@ -85,43 +83,17 @@ document.addEventListener('DOMContentLoaded', () => {
             btn.style.cursor = 'wait';
             btn.disabled = true;
 
-            const email = document.getElementById('email').value;
-            const password = document.getElementById('password').value;
-
-            // Make real API call
-            fetch(API.AUTH_LOGIN_TEMP, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ email, password })
-            })
-            .then(res => {
-                if (!res.ok) throw new Error("Login failed");
-                return res.json();
-            })
-            .then(data => {
-                // Save token if returning it
-                if (data && data.token) {
-                    localStorage.setItem('auth_token', data.token);
-                }
-                
+            // Simulate API call
+            setTimeout(() => {
                 btn.textContent = 'Welcome back!';
+                // Briefly flash a success color (green)
                 btn.style.backgroundColor = '#10b981'; 
                 
                 setTimeout(() => {
-                    // Redirect to dashboard on successful login
-                    window.location.href = 'dashboard.html';
-                }, 1000);
-            })
-            .catch(err => {
-                console.error("Signin Error:", err);
-                btn.textContent = originalText;
-                btn.style.opacity = '1';
-                btn.style.cursor = 'pointer';
-                btn.disabled = false;
-                
-                // Show error message (could enhance to display below form)
-                alert("Login failed. Please check your credentials and try again.");
-            });
+                    // Redirect to plans page for onboarding
+                    window.location.href = 'plans.html';
+                }, 2500);
+            }, 1200);
         });
     }
 
