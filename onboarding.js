@@ -175,16 +175,16 @@ function submitOnboarding() {
         .then(respData => {
             console.log("Register response:", respData);
 
-            // Unwrap array response e.g. [{ "token": "...", "company_id": "..." }]
+            // Unwrap array response if needed
             const resp = Array.isArray(respData) ? respData[0] : respData;
 
-            // Store session token immediately after successful registration
-            const token = resp.token || (resp.data && resp.data.token) || '';
+            // Store session token — key is "session_token" from backend
+            const token = resp.session_token || resp.token || '';
             if (token) {
                 localStorage.setItem('token', token);
                 console.log('[onboarding] Session token stored:', token.substring(0, 10) + '...');
             } else {
-                console.warn('[onboarding] No token in registration response.');
+                console.warn('[onboarding] No token in registration response.', resp);
             }
 
             btn.textContent = 'Success! Redirecting to setup payments...';
