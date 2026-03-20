@@ -270,7 +270,8 @@ document.addEventListener('DOMContentLoaded', () => {
             body: JSON.stringify(payload)
         })
         .then(res => res.json())
-        .then(data => {
+        .then(responseData => {
+            const data = Array.isArray(responseData) ? responseData[0] : responseData;
             if (data && data.order_id) {
                 const options = {
                     "key": data.key_id, // Strictly using key from backend
