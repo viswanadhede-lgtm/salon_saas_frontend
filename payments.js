@@ -13,6 +13,10 @@ document.addEventListener('DOMContentLoaded', () => {
     
     let dynamicAddonsPricing = {};
 
+    // Session token — sent with every API call
+    const token = localStorage.getItem('token') || '';
+    console.log('[payments] Token present:', !!token);
+
     if (!companyId) {
         showMessage('Error: No company ID found. Return to signup to start over.', 'error');
         disableAllActions();
@@ -77,7 +81,10 @@ document.addEventListener('DOMContentLoaded', () => {
     function fetchAddons() {
         fetch(API.READ_ADDONS, {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${token}`
+            },
             body: JSON.stringify({ company_id: companyId })
         })
         .then(res => res.json())
@@ -234,7 +241,10 @@ document.addEventListener('DOMContentLoaded', () => {
 
         fetch(API.CREATE_PAYMENT_LINK, {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${token}`
+            },
             body: JSON.stringify(payload)
         })
         .then(res => res.json())
@@ -266,7 +276,10 @@ document.addEventListener('DOMContentLoaded', () => {
 
         fetch(API.CREATE_ORDER, {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${token}`
+            },
             body: JSON.stringify(payload)
         })
         .then(res => res.json())
@@ -333,7 +346,10 @@ document.addEventListener('DOMContentLoaded', () => {
 
         fetch(API.START_FREE_TRIAL, {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${token}`
+            },
             body: JSON.stringify(payload)
         })
         .then(res => {
