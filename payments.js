@@ -61,7 +61,7 @@ document.addEventListener('DOMContentLoaded', () => {
     if (btnPayNow) {
         btnPayNow.addEventListener('click', () => {
             const addons = getSelectedAddons();
-            triggerPaymentLinkCreation(btnPayNow, planId, companyId, addons, billingCycle);
+            triggerOrderCreation(btnPayNow, planId, companyId, addons, billingCycle);
         });
     }
 
@@ -251,6 +251,109 @@ document.addEventListener('DOMContentLoaded', () => {
             resetLoadingState(btnElement, originalText);
             showMessage('Failed to create payment link. Please try again.', 'error');
         });
+    }
+
+    function triggerOrderCreation(btnElement, planId, companyId, addons, cycle) {
+        const originalText = btnElement.innerHTML;
+        setLoadingState(btnElement, 'Initiating Payment...');
+
+        const payload = {
+            company_id: companyId,
+            plan_id: planId,
+            addons: addons,
+            billing_cycle: cycle
+        };
+
+        fetch(API.CREATE_ORDER, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload)
+        })
+        .then(res => res.json())
+        .then(data => {
+            if (data && data.order_id) {
+                const options = {
+                    "key": data.key_id, // Strictly using key from backend
+                    "amount": data.amount || 0, 
+                    "currency": data.currency || "INR",
+                    "name": "BharathBots",
+                    "description": "Subscription Activation",
+                    "order_id": data.order_id,
+                    "handler": function (response) {
+                        // After successful payment from Razorpay's UI
+                        setLoadingState(btnElement, 'Processing payment...');
+                        pollAuthGuard(btnElement, originalText);
+                    },
+                    "modal": {
+                        "ondismiss": function() {
+                            resetLoadingState(btnElement, originalText);
+                            showMessage('Payment was cancelled.', 'error');
+                        }
+                    },
+                    "theme": {
+                        "color": "#6366f1"
+                    }
+                };
+
+                const rzp = new window.Razorpay(options);
+                
+                rzp.on('payment.failed', function (response) {
+                    resetLoadingState(btnElement, originalText);
+                    showMessage(`Payment failed: ${response.error.description}`, 'error');
+                });
+                
+                rzp.open();
+            } else {
+                throw new Error("Invalid response: missing order_id");
+            }
+        })
+        .catch(err => {
+            console.error('Order Creation Error:', err);
+            resetLoadingState(btnElement, originalText);
+            showMessage('Failed to initialize payment gateway. Please try again.', 'error');
+        });
+    }
+
+    function pollAuthGuard(btnElement, originalText) {
+        let attempts = 0;
+        const maxAttempts = 10;
+        const token = localStorage.getItem('auth_token') || '';
+
+        const checkStatus = () => {
+            if (attempts >= maxAttempts) {
+                resetLoadingState(btnElement, originalText);
+                showMessage('Payment is being processed. Please refresh or check again in a few moments.', 'success');
+                return;
+            }
+
+            attempts++;
+            fetch(API.AUTH_GUARD, {
+                method: 'POST',
+                headers: { 
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${token}` 
+                }
+            })
+            .then(res => res.json())
+            .then(data => {
+                if (data && data.subscription_status === "active") {
+                    showMessage('Payment verified! Redirecting to your dashboard...', 'success');
+                    setTimeout(() => {
+                        window.location.href = 'dashboard.html';
+                    }, 1000);
+                } else {
+                    // Not active yet, retry
+                    setTimeout(checkStatus, 3000);
+                }
+            })
+            .catch(err => {
+                console.error('Auth Guard Check Error:', err);
+                // Keep trying even on error (e.g. transient network failure)
+                setTimeout(checkStatus, 3000);
+            });
+        };
+
+        checkStatus();
     }
 
     function triggerFreeTrial(btnElement, companyId, planId) {

@@ -4,5 +4,7 @@ export const API = {
   AUTH_REGISTER_COMPANY: `${BASE_URL}/auth_register_company`,
   CREATE_PAYMENT_LINK: `${BASE_URL}/create_payment_link`,
   START_FREE_TRIAL: `${BASE_URL}/start_free_trial`,
-  READ_ADDONS: `${BASE_URL}/read_addons`
+  READ_ADDONS: `${BASE_URL}/read_addons`,
+  CREATE_ORDER: `${BASE_URL}/create_order`,
+  AUTH_GUARD: `${BASE_URL}/auth_guard`
 };
