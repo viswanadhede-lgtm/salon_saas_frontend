@@ -73,27 +73,47 @@ document.addEventListener('DOMContentLoaded', () => {
     if (signinForm) {
         signinForm.addEventListener('submit', (e) => {
             e.preventDefault();
-            
+
+            const email = document.getElementById('email').value;
+            const password = document.getElementById('password').value;
+
             const btn = signinForm.querySelector('.btn-primary');
             const originalText = btn.textContent;
-            
-            // Simple visual feedback for the user
+
             btn.textContent = 'Signing in...';
             btn.style.opacity = '0.8';
             btn.style.cursor = 'wait';
             btn.disabled = true;
 
-            // Simulate API call
-            setTimeout(() => {
-                btn.textContent = 'Welcome back!';
-                // Briefly flash a success color (green)
-                btn.style.backgroundColor = '#10b981'; 
-                
-                setTimeout(() => {
-                    // Redirect to plans page for onboarding
-                    window.location.href = 'plans.html';
-                }, 2500);
-            }, 1200);
+            fetch('https://dev.bharathbots.com/webhook/auth_login', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ email, password })
+            })
+            .then(res => res.json())
+            .then(data => {
+                console.log('[signin] Login response:', data);
+                const token = data.token || (data.data && data.data.token) || '';
+                if (token) {
+                    localStorage.setItem('token', token);
+                    console.log('[signin] Session token stored.');
+                    btn.textContent = 'Welcome back!';
+                    btn.style.backgroundColor = '#10b981';
+                    setTimeout(() => {
+                        window.location.href = 'dashboard.html';
+                    }, 1500);
+                } else {
+                    throw new Error('No token in login response.');
+                }
+            })
+            .catch(err => {
+                console.error('[signin] Login error:', err);
+                btn.textContent = originalText;
+                btn.style.opacity = '1';
+                btn.style.cursor = 'pointer';
+                btn.disabled = false;
+                alert('Sign in failed. Please check your credentials and try again.');
+            });
         });
     }
 

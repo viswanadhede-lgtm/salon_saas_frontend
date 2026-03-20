@@ -174,6 +174,16 @@ function submitOnboarding() {
         .then(res => res.json())
         .then(respData => {
             console.log("Register response:", respData);
+
+            // Store session token immediately after successful registration
+            const token = respData.token || (respData.data && respData.data.token) || '';
+            if (token) {
+                localStorage.setItem('token', token);
+                console.log('[onboarding] Session token stored.');
+            } else {
+                console.warn('[onboarding] No token in registration response.');
+            }
+
             btn.textContent = 'Success! Redirecting to setup payments...';
             btn.style.backgroundColor = '#10b981';
             

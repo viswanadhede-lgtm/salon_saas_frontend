@@ -27,6 +27,19 @@ document.addEventListener('DOMContentLoaded', () => {
         return;
     }
 
+    // --- Read & validate session token ---
+    const token = localStorage.getItem('token');
+    console.log('[payment-result] Token present:', !!token, token ? `(${token.substring(0, 10)}...)` : '(missing)');
+
+    if (!token) {
+        console.error('[payment-result] No session token found. Stopping execution.');
+        showError(
+            'Session Expired',
+            'Your session could not be verified. Please sign in again and retry the payment.'
+        );
+        return;
+    }
+
     // --- Step 1 is already "active" in HTML, start the flow ---
     verifyPayment();
 
@@ -53,7 +66,10 @@ document.addEventListener('DOMContentLoaded', () => {
 
             fetch(API.PAYMENT_STATUS, {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${token}`
+                },
                 body: JSON.stringify(payload)
             })
             .then(res => res.json())
@@ -88,7 +104,6 @@ document.addEventListener('DOMContentLoaded', () => {
     // PHASE 2: Call /auth_guard to check subscription activation
     // ---------------------------------------------------------------
     function checkSubscription() {
-        const token = localStorage.getItem('auth_token') || '';
         let attempts = 0;
         const maxAttempts = 10;
 
@@ -100,15 +115,19 @@ document.addEventListener('DOMContentLoaded', () => {
 
             attempts++;
 
+            const outgoingHeaders = {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${token}`
+            };
+            console.log('[payment-result] Calling auth_guard — headers:', outgoingHeaders);
+
             fetch(API.AUTH_GUARD, {
                 method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${token}`
-                }
+                headers: outgoingHeaders
             })
             .then(res => res.json())
             .then(data => {
+                console.log('[payment-result] auth_guard response:', data);
                 if (data && data.subscription_status === 'active') {
                     // Step 2 done → step 3 → redirect
                     markDone(step2);
