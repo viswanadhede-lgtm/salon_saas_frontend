@@ -280,8 +280,15 @@ document.addEventListener('DOMContentLoaded', () => {
                     "name": "BharathBots",
                     "description": "Subscription Activation",
                     "order_id": data.order_id,
-                    "callback_url": RAZORPAY.CALLBACK_URL,
-                    "redirect": true,
+                    "handler": function (response) {
+                        // Payment successful — redirect to result page with all proofs as query params
+                        const params = new URLSearchParams({
+                            razorpay_payment_id: response.razorpay_payment_id,
+                            razorpay_order_id:   response.razorpay_order_id,
+                            razorpay_signature:  response.razorpay_signature
+                        });
+                        window.location.href = `${RAZORPAY.CALLBACK_URL}?${params.toString()}`;
+                    },
                     "modal": {
                         "ondismiss": function() {
                             resetLoadingState(btnElement, originalText);
