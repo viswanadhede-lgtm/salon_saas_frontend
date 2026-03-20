@@ -57,24 +57,21 @@ document.addEventListener('DOMContentLoaded', () => {
                 body: JSON.stringify(payload)
             })
             .then(res => res.json())
-            .then(data => {
-                const status = (data.status || data.payment_status || '').toLowerCase();
+            .then(result => {
+                // Unwrap array response: [{ "status": "paid" }]
+                const data = Array.isArray(result) ? result[0] : result;
+                const status = (data.status || '').toLowerCase();
 
-                if (status === 'successful') {
-                    // Step 1 done → move to step 2
+                if (status === 'paid') {
+                    // ✅ Payment confirmed — move to auth_guard
                     markDone(step1);
                     markActive(step2);
                     checkSubscription();
                 } else if (status === 'pending') {
+                    // ⏳ Not confirmed yet — retry
                     setTimeout(checkStatus, 3000);
-                } else if (status === 'failed') {
-                    markFailed(step1);
-                    showError(
-                        'Payment Failed',
-                        'Your payment could not be processed. No charges have been made. Please try again.'
-                    );
                 } else {
-                    // Unknown status — retry
+                    // Unknown — retry as caution
                     setTimeout(checkStatus, 3000);
                 }
             })
