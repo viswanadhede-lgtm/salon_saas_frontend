@@ -1,4 +1,4 @@
-import { API } from './config/api.js';
+import { API, RAZORPAY } from './config/api.js';
 
 document.addEventListener('DOMContentLoaded', () => {
     
@@ -280,7 +280,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     "name": "BharathBots",
                     "description": "Subscription Activation",
                     "order_id": data.order_id,
-                    "callback_url": `${window.location.origin}/payment-result.html`,
+                    "callback_url": RAZORPAY.CALLBACK_URL,
                     "redirect": true,
                     "modal": {
                         "ondismiss": function() {

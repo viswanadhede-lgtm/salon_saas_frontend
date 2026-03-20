@@ -1,5 +1,10 @@
 const BASE_URL = "https://dev.bharathbots.com/webhook";
 
+// Razorpay Configuration
+export const RAZORPAY = {
+  CALLBACK_URL: "https://www.bharathbots.com/payment-result.html"
+};
+
 export const API = {
   AUTH_REGISTER_COMPANY: `${BASE_URL}/auth_register_company`,
   CREATE_PAYMENT_LINK: `${BASE_URL}/create_payment_link`,
