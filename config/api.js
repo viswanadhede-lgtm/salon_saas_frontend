@@ -6,5 +6,6 @@ export const API = {
   START_FREE_TRIAL: `${BASE_URL}/start_free_trial`,
   READ_ADDONS: `${BASE_URL}/read_addons`,
   CREATE_ORDER: `${BASE_URL}/create_order`,
-  AUTH_GUARD: `${BASE_URL}/auth_guard`
+  AUTH_GUARD: `${BASE_URL}/auth_guard`,
+  AUTH_LOGIN_TEMP: `${BASE_URL}/auth_login_temp`
 };
