@@ -1,16 +1,158 @@
 // logout.js – Shared secure logout handler for all dashboard pages
 
 (function () {
+
+    // ─── Inject Modal HTML & CSS on load ──────────────────────────────────────
+    function injectLogoutModal() {
+        const style = document.createElement('style');
+        style.textContent = `
+            #logoutModalBackdrop {
+                display: none;
+                position: fixed;
+                inset: 0;
+                background: rgba(15, 23, 42, 0.55);
+                backdrop-filter: blur(4px);
+                z-index: 99999;
+                align-items: center;
+                justify-content: center;
+            }
+            #logoutModalBackdrop.active {
+                display: flex;
+            }
+            #logoutModalBox {
+                background: #fff;
+                border-radius: 16px;
+                padding: 2rem 2rem 1.5rem;
+                width: 100%;
+                max-width: 380px;
+                box-shadow: 0 20px 60px rgba(0,0,0,0.2);
+                text-align: center;
+                animation: logoutFadeIn 0.2s ease;
+            }
+            @keyframes logoutFadeIn {
+                from { opacity: 0; transform: scale(0.95) translateY(10px); }
+                to   { opacity: 1; transform: scale(1) translateY(0); }
+            }
+            #logoutModalBox .logout-icon {
+                width: 52px;
+                height: 52px;
+                background: #fef2f2;
+                border-radius: 50%;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                margin: 0 auto 1rem;
+            }
+            #logoutModalBox .logout-icon svg {
+                color: #ef4444;
+                width: 24px;
+                height: 24px;
+            }
+            #logoutModalBox h3 {
+                font-size: 1.1rem;
+                font-weight: 700;
+                color: #0f172a;
+                margin: 0 0 0.4rem;
+            }
+            #logoutModalBox p {
+                font-size: 0.875rem;
+                color: #64748b;
+                margin: 0 0 1.5rem;
+            }
+            #logoutModalBox .logout-actions {
+                display: flex;
+                gap: 0.75rem;
+            }
+            #logoutModalBox .btn-cancel-logout {
+                flex: 1;
+                padding: 0.65rem 1rem;
+                border-radius: 8px;
+                border: 1.5px solid #e2e8f0;
+                background: #fff;
+                font-size: 0.875rem;
+                font-weight: 600;
+                color: #475569;
+                cursor: pointer;
+                transition: background 0.15s;
+            }
+            #logoutModalBox .btn-cancel-logout:hover {
+                background: #f8fafc;
+            }
+            #logoutModalBox .btn-confirm-logout {
+                flex: 1;
+                padding: 0.65rem 1rem;
+                border-radius: 8px;
+                border: none;
+                background: #ef4444;
+                font-size: 0.875rem;
+                font-weight: 600;
+                color: #fff;
+                cursor: pointer;
+                transition: background 0.15s;
+            }
+            #logoutModalBox .btn-confirm-logout:hover {
+                background: #dc2626;
+            }
+        `;
+        document.head.appendChild(style);
+
+        const backdrop = document.createElement('div');
+        backdrop.id = 'logoutModalBackdrop';
+        backdrop.innerHTML = `
+            <div id="logoutModalBox">
+                <div class="logout-icon">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path>
+                        <polyline points="16 17 21 12 16 7"></polyline>
+                        <line x1="21" y1="12" x2="9" y2="12"></line>
+                    </svg>
+                </div>
+                <h3>Logout</h3>
+                <p>Are you sure you want to logout?</p>
+                <div class="logout-actions">
+                    <button class="btn-cancel-logout" id="logoutCancelBtn">Cancel</button>
+                    <button class="btn-confirm-logout" id="logoutConfirmBtn">Yes, Logout</button>
+                </div>
+            </div>
+        `;
+        document.body.appendChild(backdrop);
+
+        // Cancel
+        document.getElementById('logoutCancelBtn').addEventListener('click', closeLogoutModal);
+
+        // Close on backdrop click
+        backdrop.addEventListener('click', (e) => {
+            if (e.target === backdrop) closeLogoutModal();
+        });
+
+        // Confirm logout
+        document.getElementById('logoutConfirmBtn').addEventListener('click', () => {
+            closeLogoutModal();
+            handleLogout();
+        });
+    }
+
+    function openLogoutModal() {
+        document.getElementById('logoutModalBackdrop').classList.add('active');
+    }
+
+    function closeLogoutModal() {
+        document.getElementById('logoutModalBackdrop').classList.remove('active');
+    }
+
+    // ─── Bind logout button click → show modal ─────────────────────────────────
     document.addEventListener('DOMContentLoaded', () => {
-        // Find any element that contains a "Logout" span inside a .text-danger link
+        injectLogoutModal();
+
         document.querySelectorAll('.dropdown-item.text-danger, a.dropdown-item[style*="color:#ef4444"]').forEach(logoutBtn => {
             logoutBtn.addEventListener('click', (e) => {
                 e.preventDefault();
-                handleLogout();
+                openLogoutModal();
             });
         });
     });
 
+    // ─── Actual Logout Logic ───────────────────────────────────────────────────
     function handleLogout() {
         const token = localStorage.getItem('token');
 
@@ -33,14 +175,15 @@
             console.error('[logout] Network error during logout:', err);
         })
         .finally(() => {
-            // Always clear localStorage and redirect, even if the API call fails
+            // Always clear localStorage and redirect
             localStorage.removeItem('token');
             localStorage.removeItem('company_id');
             localStorage.removeItem('role_id');
             localStorage.removeItem('signup_data');
             localStorage.removeItem('selected_plan');
             console.log('[logout] Local session cleared. Redirecting to sign-in.');
-            window.location.href = 'index.html';
+            window.location.href = 'signin.html';
         });
     }
+
 })();
