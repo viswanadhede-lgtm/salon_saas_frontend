@@ -48,7 +48,7 @@ document.addEventListener('DOMContentLoaded', () => {
             const btn = signupForm.querySelector('.btn-primary');
             const originalText = btn.textContent;
             
-            btn.textContent = 'Checking availability...';
+            btn.textContent = 'Signing up...';
             btn.style.opacity = '0.8';
             btn.style.cursor = 'wait';
             btn.disabled = true;
