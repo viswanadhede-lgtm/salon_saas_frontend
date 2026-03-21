@@ -115,11 +115,22 @@ document.addEventListener('DOMContentLoaded', () => {
             })
             .then(res => res.json())
             .then(data => {
-                console.log('[signin] Login response:', data);
-                const token = data.token || (data.data && data.data.token) || '';
+                const responseData = Array.isArray(data) ? data[0] : data;
+                console.log('[signin] Login response:', responseData);
+                
+                const token = responseData.session_token || responseData.token || (responseData.data && responseData.data.token) || '';
                 if (token) {
+                    // Store critical auth data
                     localStorage.setItem('token', token);
-                    console.log('[signin] Session token stored.');
+                    
+                    if (responseData.company_id) {
+                        localStorage.setItem('company_id', responseData.company_id);
+                    }
+                    if (responseData.role_id) {
+                        localStorage.setItem('role_id', responseData.role_id);
+                    }
+
+                    console.log('[signin] Session data stored.');
                     btn.textContent = 'Welcome back!';
                     btn.style.backgroundColor = '#10b981';
                     setTimeout(() => {
