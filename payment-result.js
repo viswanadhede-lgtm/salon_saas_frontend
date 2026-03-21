@@ -1,4 +1,5 @@
 import { API, fetchWithAuth } from './config/api.js';
+import { FEATURES } from './config/feature-registry.js';
 
 document.addEventListener('DOMContentLoaded', () => {
 
@@ -85,7 +86,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     // ✅ Payment confirmed — move to auth_guard
                     markDone(step1);
                     markActive(step2);
-                    checkSubscription();
+                    requestDashboardAccess();
                 } else if (status === 'pending') {
                     // ⏳ Not confirmed yet — retry
                     setTimeout(checkStatus, 3000);
@@ -104,50 +105,35 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     // ---------------------------------------------------------------
-    // PHASE 2: Call /auth_guard to check subscription activation
+    // PHASE 2: Request Dashboard Access via /auth_guard
     // ---------------------------------------------------------------
-    function checkSubscription() {
-        let attempts = 0;
-        const maxAttempts = 10;
+    function requestDashboardAccess() {
+        console.log('[payment-result] Verifying Dashboard Access with auth_guard...');
 
-        const poll = () => {
-            if (attempts >= maxAttempts) {
-                showPending();
-                return;
-            }
-
-            attempts++;
-
-            const outgoingHeaders = {
-                'Content-Type': 'application/json'
-            };
-            console.log('[payment-result] Calling auth_guard — using fetchWithAuth');
-
-            fetchWithAuth(API.AUTH_GUARD, {
-                method: 'POST'
-            })
-            .then(res => res.json())
-            .then(data => {
-                console.log('[payment-result] auth_guard response:', data);
-                if (data && data.subscription_status === 'active') {
-                    // Step 2 done → step 3 → redirect
-                    markDone(step2);
-                    markActive(step3);
-                    showSuccess();
-                    setTimeout(() => {
-                        window.location.href = 'dashboard.html';
-                    }, 2000);
-                } else {
-                    setTimeout(poll, 3000);
-                }
-            })
-            .catch(err => {
-                console.error('Auth Guard Error:', err);
-                setTimeout(poll, 3000);
-            });
-        };
-
-        poll();
+        // Make a single call passing the DASHBOARD_ACCESS feature key
+        fetchWithAuth(API.AUTH_GUARD, {
+            method: 'POST'
+        }, FEATURES.DASHBOARD_ACCESS)
+        .then(res => {
+            if (!res.ok) throw new Error("Unauthorized");
+            return res.json();
+        })
+        .then(data => {
+            console.log('[payment-result] auth_guard feature access response:', data);
+            
+            // Assume success if the backend didn't reject the specific feature request
+            markDone(step2);
+            markActive(step3);
+            showSuccess();
+            
+            setTimeout(() => {
+                window.location.href = 'dashboard.html';
+            }, 2000);
+        })
+        .catch(err => {
+            console.error('Auth Guard Feature Access Error:', err);
+            showError('Dashboard Access Denied', 'Your payment succeeded, but dashboard access could not be granted right now. Please try refreshing or contact support.');
+        });
     }
 
     // ---------------------------------------------------------------
