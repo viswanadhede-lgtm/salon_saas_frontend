@@ -131,7 +131,7 @@ function submitOnboarding() {
         const timezone = document.getElementById('timezone').value;
 
         const branchName = document.getElementById('locationName').value;
-        const branchAddress = document.getElementById('address').value;
+        const branchAddress = document.getElementById('branchAddress').value;
         const branchCity = document.getElementById('city').value;
         const branchState = document.getElementById('state').value;
         const branchPincode = document.getElementById('pincode').value;
