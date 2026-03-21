@@ -1,4 +1,5 @@
-import { API, RAZORPAY } from './config/api.js';
+import { API, RAZORPAY, fetchWithAuth } from './config/api.js';
+import { FEATURES } from './config/feature-registry.js';
 
 document.addEventListener('DOMContentLoaded', () => {
     
@@ -79,14 +80,10 @@ document.addEventListener('DOMContentLoaded', () => {
     // --- Logic Functions ---
 
     function fetchAddons() {
-        fetch(API.READ_ADDONS, {
+        fetchWithAuth(API.READ_ADDONS, {
             method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'Authorization': `Bearer ${token}`
-            },
             body: JSON.stringify({ company_id: companyId })
-        })
+        }, FEATURES.BILLING_SUBSCRIPTION_MANAGEMENT)
         .then(res => res.json())
         .then(addonsArray => {
             const container = document.getElementById('addonsListContainer');
@@ -239,14 +236,10 @@ document.addEventListener('DOMContentLoaded', () => {
             billing_cycle: cycle
         };
 
-        fetch(API.CREATE_PAYMENT_LINK, {
+        fetchWithAuth(API.CREATE_PAYMENT_LINK, {
             method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'Authorization': `Bearer ${token}`
-            },
             body: JSON.stringify(payload)
-        })
+        }, FEATURES.BILLING_SUBSCRIPTION_MANAGEMENT)
         .then(res => res.json())
         .then(data => {
             if (data && data.payment_link) {
@@ -274,14 +267,10 @@ document.addEventListener('DOMContentLoaded', () => {
             billing_cycle: cycle
         };
 
-        fetch(API.CREATE_ORDER, {
+        fetchWithAuth(API.CREATE_ORDER, {
             method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'Authorization': `Bearer ${token}`
-            },
             body: JSON.stringify(payload)
-        })
+        }, FEATURES.BILLING_SUBSCRIPTION_MANAGEMENT)
         .then(res => res.json())
         .then(responseData => {
             const data = Array.isArray(responseData) ? responseData[0] : responseData;
@@ -344,12 +333,8 @@ document.addEventListener('DOMContentLoaded', () => {
             plan_id: planId
         };
 
-        fetch(API.START_FREE_TRIAL, {
+        fetchWithAuth(API.START_FREE_TRIAL, {
             method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'Authorization': `Bearer ${token}`
-            },
             body: JSON.stringify(payload)
         })
         .then(res => {

@@ -1,4 +1,4 @@
-import { API } from './config/api.js';
+import { API, fetchWithAuth } from './config/api.js';
 
 document.addEventListener('DOMContentLoaded', () => {
 
@@ -71,12 +71,8 @@ document.addEventListener('DOMContentLoaded', () => {
 
             attempts++;
 
-            fetch(API.PAYMENT_STATUS, {
+            fetchWithAuth(API.PAYMENT_STATUS, {
                 method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${token}`
-                },
                 body: JSON.stringify(payload)
             })
             .then(res => res.json())
@@ -123,14 +119,12 @@ document.addEventListener('DOMContentLoaded', () => {
             attempts++;
 
             const outgoingHeaders = {
-                'Content-Type': 'application/json',
-                'Authorization': `Bearer ${token}`
+                'Content-Type': 'application/json'
             };
-            console.log('[payment-result] Calling auth_guard — headers:', outgoingHeaders);
+            console.log('[payment-result] Calling auth_guard — using fetchWithAuth');
 
-            fetch(API.AUTH_GUARD, {
-                method: 'POST',
-                headers: outgoingHeaders
+            fetchWithAuth(API.AUTH_GUARD, {
+                method: 'POST'
             })
             .then(res => res.json())
             .then(data => {
