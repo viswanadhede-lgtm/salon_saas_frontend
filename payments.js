@@ -342,10 +342,27 @@ document.addEventListener('DOMContentLoaded', () => {
             return res.json();
         })
         .then(data => {
-            showMessage('Trial activated! Opening your workspace...', 'success');
-            setTimeout(() => {
-                window.location.href = 'dashboard.html';
-            }, 1000);
+            const responseObj = Array.isArray(data) ? data[0] : data;
+            
+            if (responseObj && responseObj.success) {
+                setLoadingState(btnElement, 'Verifying Access...');
+                
+                // Chain the auth_guard permission check
+                return fetchWithAuth(API.AUTH_GUARD, { method: 'POST' }, FEATURES.DASHBOARD_ACCESS, 'read')
+                    .then(res => {
+                        if (!res.ok) throw new Error("Unauthorized dashboard access");
+                        return res.json();
+                    })
+                    .then(guardData => {
+                        console.log('[payments] Free trial auth_guard response:', guardData);
+                        showMessage('Trial activated! Opening your workspace...', 'success');
+                        setTimeout(() => {
+                            window.location.href = 'dashboard.html';
+                        }, 1000);
+                    });
+            } else {
+                throw new Error(responseObj.message || "Failed to activate free trial.");
+            }
         })
         .catch(err => {
             console.error('Trial Error:', err);
