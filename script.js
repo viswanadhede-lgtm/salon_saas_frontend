@@ -48,23 +48,46 @@ document.addEventListener('DOMContentLoaded', () => {
             const btn = signupForm.querySelector('.btn-primary');
             const originalText = btn.textContent;
             
-            // Simple visual feedback for the user
-            btn.textContent = 'Creating account...';
+            btn.textContent = 'Checking availability...';
             btn.style.opacity = '0.8';
             btn.style.cursor = 'wait';
             btn.disabled = true;
 
-            // Simulate API call
-            setTimeout(() => {
-                btn.textContent = 'Welcome to BharathBots!';
-                // Briefly flash a success color (green)
-                btn.style.backgroundColor = '#10b981'; 
+            // Fetch to check email existence
+            fetch('https://dev.bharathbots.com/webhook/auth_check_email_exists', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ email: email })
+            })
+            .then(res => res.json())
+            .then(data => {
+                // Backend returns an array like [ { "email_exists": true } ]
+                const responseObj = Array.isArray(data) ? data[0] : data;
                 
-                setTimeout(() => {
-                    // Redirect to plans page for onboarding
-                    window.location.href = 'plans.html';
-                }, 1500);
-            }, 1200);
+                if (responseObj && responseObj.email_exists === true) {
+                    btn.textContent = originalText;
+                    btn.style.opacity = '1';
+                    btn.style.cursor = 'pointer';
+                    btn.disabled = false;
+                    alert('Account already exists. Please login.');
+                } else {
+                    // Email is free, proceed to plans 
+                    btn.textContent = 'Welcome to BharathBots!';
+                    btn.style.backgroundColor = '#10b981'; 
+                    
+                    setTimeout(() => {
+                        window.location.href = 'plans.html';
+                    }, 1500);
+                }
+            })
+            .catch(err => {
+                console.error('[signup] Check email error:', err);
+                btn.textContent = originalText;
+                btn.style.opacity = '1';
+                btn.style.cursor = 'pointer';
+                btn.disabled = false;
+                alert('An error occurred checking the email. Please try again.');
+            });
         });
     }
 
