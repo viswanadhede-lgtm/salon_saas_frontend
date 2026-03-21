@@ -110,10 +110,10 @@ document.addEventListener('DOMContentLoaded', () => {
     function requestDashboardAccess() {
         console.log('[payment-result] Verifying Dashboard Access with auth_guard...');
 
-        // Make a single call passing the DASHBOARD_ACCESS feature key
+        // Make a single call passing the DASHBOARD_ACCESS feature key and 'read' action
         fetchWithAuth(API.AUTH_GUARD, {
             method: 'POST'
-        }, FEATURES.DASHBOARD_ACCESS)
+        }, FEATURES.DASHBOARD_ACCESS, 'read')
         .then(res => {
             if (!res.ok) throw new Error("Unauthorized");
             return res.json();

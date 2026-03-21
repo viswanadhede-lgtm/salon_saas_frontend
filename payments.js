@@ -83,7 +83,7 @@ document.addEventListener('DOMContentLoaded', () => {
         fetchWithAuth(API.READ_ADDONS, {
             method: 'POST',
             body: JSON.stringify({ company_id: companyId })
-        }, FEATURES.BILLING_SUBSCRIPTION_MANAGEMENT)
+        }, FEATURES.BILLING_SUBSCRIPTION_MANAGEMENT, 'read')
         .then(res => res.json())
         .then(addonsArray => {
             const container = document.getElementById('addonsListContainer');
@@ -239,7 +239,7 @@ document.addEventListener('DOMContentLoaded', () => {
         fetchWithAuth(API.CREATE_PAYMENT_LINK, {
             method: 'POST',
             body: JSON.stringify(payload)
-        }, FEATURES.BILLING_SUBSCRIPTION_MANAGEMENT)
+        }, FEATURES.BILLING_SUBSCRIPTION_MANAGEMENT, 'create')
         .then(res => res.json())
         .then(data => {
             if (data && data.payment_link) {
@@ -270,7 +270,7 @@ document.addEventListener('DOMContentLoaded', () => {
         fetchWithAuth(API.CREATE_ORDER, {
             method: 'POST',
             body: JSON.stringify(payload)
-        }, FEATURES.BILLING_SUBSCRIPTION_MANAGEMENT)
+        }, FEATURES.BILLING_SUBSCRIPTION_MANAGEMENT, 'create')
         .then(res => res.json())
         .then(responseData => {
             const data = Array.isArray(responseData) ? responseData[0] : responseData;

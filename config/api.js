@@ -17,15 +17,16 @@ export const API = {
 };
 
 /**
- * Standardized fetch wrapper that automatically injects the Authorization token 
- * and an optional X-Feature-Key header for feature gating on the backend.
+ * Standardized fetch wrapper that automatically injects the Authorization token,
+ * an optional X-Feature-Key header, and an X-Action-Type header for backend RBAC gating.
  * 
  * @param {string} url - The API endpoint URL
  * @param {Object} options - Standard fetch options (method, body, etc.)
  * @param {string|null} featureKey - The feature constant from feature-registry.js (e.g., FEATURES.DASHBOARD_ACCESS)
+ * @param {string|null} actionType - The CRUD action being performed ('create', 'read', 'update', 'delete')
  * @returns {Promise<Response>}
  */
-export async function fetchWithAuth(url, options = {}, featureKey = null) {
+export async function fetchWithAuth(url, options = {}, featureKey = null, actionType = null) {
     const token = localStorage.getItem('token');
     
     // Initialize headers object, merging with any provided in options
@@ -40,6 +41,10 @@ export async function fetchWithAuth(url, options = {}, featureKey = null) {
 
     if (featureKey) {
         headers['X-Feature-Key'] = featureKey;
+    }
+
+    if (actionType) {
+        headers['X-Action-Type'] = actionType;
     }
 
     // Merge our computed headers back into the options

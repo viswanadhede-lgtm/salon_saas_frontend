@@ -144,7 +144,7 @@ function submitOnboarding() {
             password: data.password,
             plan_id: data.plan_id,
             plan_name: data.plan_name,
-            role: "owner",
+            role_id: "role_01",
 
             company: {
                 name: companyName,
