@@ -78,6 +78,197 @@
     }, 3000);
 })();
 
+// ─── Forgot Password Modal ──────────────────────────────────────────────────
+(function () {
+    function injectForgotPasswordModal() {
+        // Styles
+        const style = document.createElement('style');
+        style.textContent = `
+            #fwdBackdrop {
+                display: none;
+                position: fixed;
+                inset: 0;
+                background: rgba(15,23,42,0.55);
+                backdrop-filter: blur(4px);
+                z-index: 999999;
+                align-items: center;
+                justify-content: center;
+            }
+            #fwdBackdrop.active { display: flex; }
+            #fwdBox {
+                background: #fff;
+                border-radius: 16px;
+                padding: 2rem;
+                width: 100%;
+                max-width: 420px;
+                box-shadow: 0 24px 64px rgba(0,0,0,0.22);
+                animation: fwdIn 0.2s ease;
+            }
+            @keyframes fwdIn {
+                from { opacity:0; transform: scale(0.95) translateY(12px); }
+                to   { opacity:1; transform: scale(1) translateY(0); }
+            }
+            #fwdBox .fwd-header {
+                display: flex; align-items: center; gap: 12px; margin-bottom: 1.25rem;
+            }
+            #fwdBox .fwd-icon {
+                width: 44px; height: 44px; border-radius: 50%;
+                background: #eff6ff;
+                display: flex; align-items: center; justify-content: center; flex-shrink: 0;
+            }
+            #fwdBox .fwd-icon svg {
+                width: 20px; height: 20px;
+                stroke: #1e3a8a; fill: none;
+                stroke-width: 2; stroke-linecap: round; stroke-linejoin: round;
+            }
+            #fwdBox h3 { font-size: 1.05rem; font-weight: 700; color: #0f172a; margin: 0 0 2px; }
+            #fwdBox .fwd-sub { font-size: 0.8rem; color: #64748b; margin: 0; }
+            #fwdBox .fwd-label {
+                display: block; font-size: 0.8rem; font-weight: 600;
+                color: #475569; margin-bottom: 6px;
+            }
+            #fwdBox .fwd-input {
+                width: 100%; padding: 10px 12px;
+                border: 1.5px solid #e2e8f0; border-radius: 8px;
+                font-size: 0.875rem; color: #0f172a;
+                outline: none; box-sizing: border-box;
+                transition: border-color 0.15s;
+            }
+            #fwdBox .fwd-input:focus { border-color: #1e3a8a; }
+            #fwdBox .fwd-msg {
+                font-size: 0.8rem; margin-top: 8px; display: none; line-height: 1.5;
+            }
+            #fwdBox .fwd-actions {
+                display: flex; gap: 0.75rem; margin-top: 1.5rem;
+            }
+            #fwdBox .fwd-cancel {
+                flex: 1; padding: 0.65rem;
+                border-radius: 8px; border: 1.5px solid #e2e8f0;
+                background: #fff; font-size: 0.875rem; font-weight: 600;
+                color: #475569; cursor: pointer;
+            }
+            #fwdBox .fwd-cancel:hover { background: #f8fafc; }
+            #fwdBox .fwd-submit {
+                flex: 1; padding: 0.65rem;
+                border-radius: 8px; border: none;
+                background: #1e3a8a; font-size: 0.875rem; font-weight: 600;
+                color: #fff; cursor: pointer; transition: background 0.15s;
+            }
+            #fwdBox .fwd-submit:hover { background: #1e40af; }
+            #fwdBox .fwd-submit:disabled { opacity: 0.6; cursor: wait; }
+        `;
+        document.head.appendChild(style);
+
+        // HTML
+        const backdrop = document.createElement('div');
+        backdrop.id = 'fwdBackdrop';
+        backdrop.innerHTML = `
+            <div id="fwdBox">
+                <div class="fwd-header">
+                    <div class="fwd-icon">
+                        <svg viewBox="0 0 24 24"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+                    </div>
+                    <div>
+                        <h3>Forgot Password?</h3>
+                        <p class="fwd-sub">We'll send a reset link to your email.</p>
+                    </div>
+                </div>
+                <label class="fwd-label" for="fwdEmail">Email Address</label>
+                <input type="email" id="fwdEmail" class="fwd-input" placeholder="Enter your registered email">
+                <p class="fwd-msg" id="fwdMsg"></p>
+                <div class="fwd-actions">
+                    <button type="button" class="fwd-cancel" id="fwdCancelBtn">Cancel</button>
+                    <button type="button" class="fwd-submit" id="fwdSubmitBtn">Send Reset Link</button>
+                </div>
+            </div>
+        `;
+        document.body.appendChild(backdrop);
+
+        // Close on backdrop click / cancel
+        backdrop.addEventListener('click', e => { if (e.target === backdrop) closeModal(); });
+        document.getElementById('fwdCancelBtn').addEventListener('click', closeModal);
+
+        // Submit
+        document.getElementById('fwdSubmitBtn').addEventListener('click', () => {
+            const email = document.getElementById('fwdEmail').value.trim();
+            const msgEl = document.getElementById('fwdMsg');
+            const btn = document.getElementById('fwdSubmitBtn');
+
+            if (!email) {
+                msgEl.style.color = '#ef4444';
+                msgEl.textContent = 'Please enter your email address.';
+                msgEl.style.display = 'block';
+                return;
+            }
+
+            btn.disabled = true;
+            btn.textContent = 'Sending...';
+            btn.style.cursor = 'wait';
+            document.body.style.cursor = 'wait';
+            msgEl.style.display = 'none';
+
+            fetch('https://dev.bharathbots.com/webhook/auth_reset_password_request', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ email })
+            })
+            .then(res => res.json())
+            .then(data => {
+                const result = Array.isArray(data) ? data[0] : data;
+                if (result && result.success) {
+                    msgEl.style.color = '#16a34a';
+                    msgEl.textContent = result.message || 'Reset link sent to your registered email ID. Please check your inbox and reset your password.';
+                    msgEl.style.display = 'block';
+                    // Hide the action buttons after success
+                    document.querySelector('#fwdBox .fwd-actions').style.display = 'none';
+                } else {
+                    msgEl.style.color = '#ef4444';
+                    msgEl.textContent = (result && result.message) || 'Something went wrong. Please try again.';
+                    msgEl.style.display = 'block';
+                }
+            })
+            .catch(() => {
+                msgEl.style.color = '#ef4444';
+                msgEl.textContent = 'Network error. Please check your connection and try again.';
+                msgEl.style.display = 'block';
+            })
+            .finally(() => {
+                btn.disabled = false;
+                btn.textContent = 'Send Reset Link';
+                btn.style.cursor = '';
+                document.body.style.cursor = '';
+            });
+        });
+    }
+
+    function openModal() {
+        // Pre-fill email from the signin form if available
+        const signinEmail = document.getElementById('email');
+        const fwdEmail = document.getElementById('fwdEmail');
+        const msgEl = document.getElementById('fwdMsg');
+        const actions = document.querySelector('#fwdBox .fwd-actions');
+        if (fwdEmail && signinEmail) fwdEmail.value = signinEmail.value.trim();
+        if (msgEl) msgEl.style.display = 'none';
+        if (actions) actions.style.display = 'flex';
+        document.getElementById('fwdBackdrop').classList.add('active');
+    }
+
+    function closeModal() {
+        document.getElementById('fwdBackdrop').classList.remove('active');
+    }
+
+    document.addEventListener('DOMContentLoaded', () => {
+        injectForgotPasswordModal();
+        const link = document.getElementById('forgotPasswordLink');
+        if (link) {
+            link.addEventListener('click', e => {
+                e.preventDefault();
+                openModal();
+            });
+        }
+    });
+})();
+
 document.addEventListener('DOMContentLoaded', () => {
     // Password visibility toggle
     const togglePasswordBtn = document.querySelector('.btn-toggle-password');
