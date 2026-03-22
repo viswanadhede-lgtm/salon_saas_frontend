@@ -32,7 +32,7 @@ document.addEventListener('DOMContentLoaded', () => {
             if (e.target.files && e.target.files[0]) {
                 const reader = new FileReader();
                 reader.onload = function(e) {
-                    logoPreview.innerHTML = <img src=" + e.target.result + " alt="Company Logo" style="width: 100%; height: 100%; object-fit: cover;">;
+                    logoPreview.innerHTML = `<img src="${e.target.result}" alt="Company Logo" style="width: 100%; height: 100%; object-fit: cover;">`;
                     if (!hasChanges) {
                         hasChanges = true;
                         stickyFooter.classList.add('show');

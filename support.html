@@ -463,16 +463,16 @@
             <footer
                 style="margin-top: 1.5rem; padding: 1rem 0 0.5rem; border-top: 1px solid #f1f5f9; display: flex; align-items: center; justify-content: center; gap: 6px; flex-wrap: wrap; font-size: 0.8rem; color: #94a3b8;">
                 <span>© 2026 BharathBots</span>
-                <span style="opacity: 0.4;">?</span>
+                <span style="opacity: 0.4;">•</span>
                 <a href="#" style="color: #94a3b8; text-decoration: none; transition: color 0.15s;"
                     onmouseover="this.style.color='#475569';" onmouseout="this.style.color='#94a3b8';">Terms</a>
-                <span style="opacity: 0.4;">?</span>
+                <span style="opacity: 0.4;">•</span>
                 <a href="#" style="color: #94a3b8; text-decoration: none; transition: color 0.15s;"
                     onmouseover="this.style.color='#475569';" onmouseout="this.style.color='#94a3b8';">Privacy</a>
-                <span style="opacity: 0.4;">?</span>
+                <span style="opacity: 0.4;">•</span>
                 <a href="#" style="color: #94a3b8; text-decoration: none; transition: color 0.15s;"
                     onmouseover="this.style.color='#475569';" onmouseout="this.style.color='#94a3b8';">System Status</a>
-                <span style="opacity: 0.4;">?</span>
+                <span style="opacity: 0.4;">•</span>
                 <span>v1.0</span>
             </footer>
 
@@ -484,7 +484,7 @@
         // Init Feather Icons
         feather.replace();
 
-        // ?????? Support Knowledge Base ??????????????????????????????????????????????????????????????????????????????????????
+        // ====== Support Knowledge Base =========================================================================
         const SUPPORT_KB = [
             // Bookings
             { category: 'Bookings', question: 'How do I create a new booking?', answer: 'Click the "New Booking" button in the top-right of the header. Fill in the customer phone number, select a service, staff member, date and time, then click "Confirm Booking".' },
@@ -495,20 +495,20 @@
 
             // Billing & Subscription
             { category: 'Billing', question: 'How do I change my subscription plan?', answer: 'Navigate to Billing via the avatar dropdown menu. Click "Change Plan" to see available options. Upgrades take effect immediately; downgrades take effect at the end of your billing cycle.' },
-            { category: 'Billing', question: 'Where can I download my invoice?', answer: 'Go to Billing ?? Payment History. Each invoice row has a "Download" icon on the right side that exports a PDF receipt.' },
+            { category: 'Billing', question: 'Where can I download my invoice?', answer: 'Go to Billing → Payment History. Each invoice row has a "Download" icon on the right side that exports a PDF receipt.' },
             { category: 'Billing', question: 'How do I update my payment method?', answer: 'In the Billing page, scroll to the "Payment Method" card. Click "Update Card" and enter your new card details. Your next billing cycle will use the updated card.' },
             { category: 'Billing', question: 'What happens if my payment fails?', answer: 'You will receive an email notification. The system will retry automatically after 3 days. If payment still fails, your account will move to a limited mode until billing is resolved.' },
 
             // Staff
-            { category: 'Staff', question: 'How do I add a new staff member?', answer: 'Go to Staff ?? Staff List from the sidebar. Click "Add Staff", enter their name, role, email and phone. They will receive an invite email to activate their account.' },
-            { category: 'Staff', question: 'How do I set staff working hours?', answer: 'Navigate to Staff ?? Working Hours. Select the staff member and toggle on each working day. Set the start and end times for each day. Click Save.' },
-            { category: 'Staff', question: 'How do I assign services to a staff member?', answer: 'Go to Staff ?? Service Assignment. Select the staff member and check the services they are qualified to perform. This controls which staff appear when customers book a specific service.' },
-            { category: 'Staff', question: 'Can I deactivate a staff member without deleting them?', answer: 'Yes. In Staff ?? Staff List, click the staff card and toggle "Active" to off. Deactivated staff do not appear in booking forms but their history is retained.' },
+            { category: 'Staff', question: 'How do I add a new staff member?', answer: 'Go to Staff → Staff List from the sidebar. Click "Add Staff", enter their name, role, email and phone. They will receive an invite email to activate their account.' },
+            { category: 'Staff', question: 'How do I set staff working hours?', answer: 'Navigate to Staff → Working Hours. Select the staff member and toggle on each working day. Set the start and end times for each day. Click Save.' },
+            { category: 'Staff', question: 'How do I assign services to a staff member?', answer: 'Go to Staff → Service Assignment. Select the staff member and check the services they are qualified to perform. This controls which staff appear when customers book a specific service.' },
+            { category: 'Staff', question: 'Can I deactivate a staff member without deleting them?', answer: 'Yes. In Staff → Staff List, click the staff card and toggle "Active" to off. Deactivated staff do not appear in booking forms but their history is retained.' },
 
             // Services
-            { category: 'Services', question: 'How do I add a new service?', answer: 'Go to Services ?? Services from the sidebar. Click "Add Service", fill in the name, category, duration, and price. Save to make it available for booking.' },
-            { category: 'Services', question: 'How do I organise services into categories?', answer: 'Go to Services ?? Categories. Create or edit categories here. When adding or editing a service, you can assign it to a category for easier browsing.' },
-            { category: 'Services', question: 'How do I update the price of a service?', answer: 'Go to Services ?? Services, find the service and click Edit. Update the price field and click Save. Existing bookings are not affected.' },
+            { category: 'Services', question: 'How do I add a new service?', answer: 'Go to Services → Services from the sidebar. Click "Add Service", fill in the name, category, duration, and price. Save to make it available for booking.' },
+            { category: 'Services', question: 'How do I organise services into categories?', answer: 'Go to Services → Categories. Create or edit categories here. When adding or editing a service, you can assign it to a category for easier browsing.' },
+            { category: 'Services', question: 'How do I update the price of a service?', answer: 'Go to Services → Services, find the service and click Edit. Update the price field and click Save. Existing bookings are not affected.' },
 
             // Dashboard
             { category: 'Dashboard', question: 'My dashboard numbers are not updating live', answer: 'The dashboard auto-refreshes every 5 minutes. For immediate updates after a booking, manually refresh the browser page. Live real-time sync is planned for the next major release.' },
@@ -519,16 +519,16 @@
             { category: 'Customers', question: 'Can I view a customer\'s booking history?', answer: 'Yes. Open the Customers section, click any customer name to open their profile. The profile page shows all past and upcoming bookings, total spend, and notes.' },
 
             // Settings & App
-            { category: 'Settings', question: 'How do I change the app language?', answer: 'Click your avatar in the top-right ?? Settings. Under "App Preferences", select your preferred language from the Language dropdown and save.' },
-            { category: 'Settings', question: 'How do I change the theme to dark mode?', answer: 'Click your avatar ?? Settings ?? App Preferences. Change the Theme to "Dark". The change applies instantly without a page reload.' },
-            { category: 'Settings', question: 'How do I update the app?', answer: 'Go to avatar ?? Settings ?? App Information. If an update is available, an "Update" button will appear next to the version status. Click it to install.' },
+            { category: 'Settings', question: 'How do I change the app language?', answer: 'Click your avatar in the top-right → Settings. Under "App Preferences", select your preferred language from the Language dropdown and save.' },
+            { category: 'Settings', question: 'How do I change the theme to dark mode?', answer: 'Click your avatar → Settings → App Preferences. Change the Theme to "Dark". The change applies instantly without a page reload.' },
+            { category: 'Settings', question: 'How do I update the app?', answer: 'Go to avatar → Settings → App Information. If an update is available, an "Update" button will appear next to the version status. Click it to install.' },
 
             // Marketing
-            { category: 'Marketing', question: 'How do I create a discount coupon?', answer: 'Navigate to Marketing ?? Coupons. Click "Create Coupon", set the code, discount type (percentage or flat), value, and expiry date.' },
-            { category: 'Marketing', question: 'How do I create membership plans?', answer: 'Go to Marketing ?? Membership Plans. Click "Add Plan", define the plan name, included services, validity period, and price.' },
+            { category: 'Marketing', question: 'How do I create a discount coupon?', answer: 'Navigate to Marketing → Coupons. Click "Create Coupon", set the code, discount type (percentage or flat), value, and expiry date.' },
+            { category: 'Marketing', question: 'How do I create membership plans?', answer: 'Go to Marketing → Membership Plans. Click "Add Plan", define the plan name, included services, validity period, and price.' },
         ];
 
-        // ?????? Search Logic ??????????????????????????????????????????????????????????????????????????????????????????????????????????
+        // ====== Search Logic =================================================================================
         let autoSearchTimer;
 
         function highlight(text, query) {
@@ -537,7 +537,7 @@
             return text.replace(new RegExp(`(${escaped})`, 'gi'), '<mark style="background:#fef3c7; color:#92400e; border-radius:3px; padding:0 2px;">$1</mark>');
         }
 
-        // Called on every keystroke ?? manages button state AND auto-fires results
+        // Called on every keystroke → manages button state AND auto-fires results
         function onSupportInput(value) {
             const btn = document.getElementById('searchManualBtn');
             const clearBtn = document.getElementById('searchClearBtn');
@@ -570,7 +570,7 @@
             const inner = document.getElementById('searchResultsInner');
 
             const btn = document.getElementById('searchManualBtn');
-            btn.textContent = 'Searching?';
+            btn.textContent = 'Searching...';
             btn.disabled = true;
 
             setTimeout(() => {

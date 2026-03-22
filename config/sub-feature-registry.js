@@ -3,6 +3,9 @@
  * within a page that can be individually allowed or restricted based on a user's role.
  */
 export const SUB_FEATURES = {
+    // ---- DASHBOARD ----
+    DASHBOARD_CREATE_BOOKING: 'dashboard_create_booking',
+    
     // ---- BOOKINGS ----
     BOOKING_CREATE: 'booking_create',
     BOOKING_EDIT: 'booking_edit',
@@ -48,6 +51,9 @@ import { FEATURES } from './feature-registry.js';
 
 // Parent-Child mapping used to generate the checkboxes dynamically in roles UI
 export const SUB_FEATURES_MAP = {
+    [FEATURES.DASHBOARD_ACCESS]: [
+        { key: SUB_FEATURES.DASHBOARD_CREATE_BOOKING, label: 'Create Booking (Quick Action)' }
+    ],
     [FEATURES.BOOKINGS_MANAGEMENT]: [
         { key: SUB_FEATURES.BOOKING_CREATE, label: 'Create Bookings' },
         { key: SUB_FEATURES.BOOKING_EDIT, label: 'Edit Bookings' },
