@@ -30,7 +30,7 @@ const ROUTE_MAP = {
 };
 
 const PUBLIC_ROUTES = [
-    '/login.html',
+    '/signin.html',
     '/signup.html',
     '/reset-password.html',
     '/change-password.html',
@@ -55,7 +55,7 @@ export async function runGlobalAuthGuard() {
     const token = localStorage.getItem('token');
     if (!token) {
         console.warn('[Auth Guard] No active session token found, redirecting to login.');
-        window.location.href = 'login.html';
+        window.location.href = 'signin.html';
         return;
     }
 
@@ -68,7 +68,7 @@ export async function runGlobalAuthGuard() {
         if (!response.ok) {
             console.error('[Auth Guard] Strict Access Denied (HTTP ' + response.status + ') - Logging out.');
             localStorage.removeItem('token');
-            window.location.href = 'login.html';
+            window.location.href = 'signin.html';
             return;
         }
 
@@ -83,7 +83,7 @@ export async function runGlobalAuthGuard() {
              }
              
              // Temporarily routing all rejections to login for maximum safety
-             window.location.href = 'login.html'; 
+             window.location.href = 'signin.html'; 
              return;
         }
         
@@ -91,7 +91,7 @@ export async function runGlobalAuthGuard() {
         if (!data.session_valid || !data.subscription_active || !data.feature_allowed) {
              console.error('[Auth Guard] Backend explicitly denied access based on token, subscription, or role restrictions.');
              if (!data.session_valid) localStorage.removeItem('token');
-             window.location.href = 'login.html'; 
+             window.location.href = 'signin.html'; 
              return;
         }
 
