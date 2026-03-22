@@ -143,6 +143,7 @@
     // ─── Bind logout button click → show modal ─────────────────────────────────
     document.addEventListener('DOMContentLoaded', () => {
         injectLogoutModal();
+        injectLoggingOutOverlay();
 
         document.querySelectorAll('.dropdown-item.text-danger, a.dropdown-item[style*="color:#ef4444"]').forEach(logoutBtn => {
             logoutBtn.addEventListener('click', (e) => {
@@ -152,8 +153,79 @@
         });
     });
 
+    // ─── Inject Logging-out Overlay ────────────────────────────────────────────
+    function injectLoggingOutOverlay() {
+        const style = document.createElement('style');
+        style.textContent = `
+            #loggingOutOverlay {
+                display: none;
+                position: fixed;
+                inset: 0;
+                background: rgba(15, 23, 42, 0.75);
+                backdrop-filter: blur(6px);
+                z-index: 999999;
+                align-items: center;
+                justify-content: center;
+                flex-direction: column;
+                gap: 20px;
+            }
+            #loggingOutOverlay.active { display: flex; }
+            #loggingOutOverlay .lou-box {
+                background: #fff;
+                border-radius: 16px;
+                padding: 2rem 2.5rem;
+                display: flex;
+                flex-direction: column;
+                align-items: center;
+                gap: 16px;
+                box-shadow: 0 24px 64px rgba(0,0,0,0.25);
+                animation: louFadeIn 0.2s ease;
+            }
+            @keyframes louFadeIn {
+                from { opacity: 0; transform: scale(0.95) translateY(12px); }
+                to   { opacity: 1; transform: scale(1) translateY(0); }
+            }
+            #loggingOutOverlay .lou-spinner {
+                width: 44px; height: 44px;
+                border: 4px solid #e2e8f0;
+                border-top-color: #ef4444;
+                border-radius: 50%;
+                animation: louSpin 0.75s linear infinite;
+            }
+            @keyframes louSpin { to { transform: rotate(360deg); } }
+            #loggingOutOverlay .lou-text {
+                font-size: 1rem; font-weight: 600;
+                color: #0f172a; margin: 0;
+            }
+            #loggingOutOverlay .lou-sub {
+                font-size: 0.8rem; color: #64748b; margin: 0;
+            }
+        `;
+        document.head.appendChild(style);
+
+        const overlay = document.createElement('div');
+        overlay.id = 'loggingOutOverlay';
+        overlay.innerHTML = `
+            <div class="lou-box">
+                <div class="lou-spinner"></div>
+                <p class="lou-text">Logging you out…</p>
+                <p class="lou-sub">Please wait a moment.</p>
+            </div>
+        `;
+        document.body.appendChild(overlay);
+    }
+
+    function showLoggingOutOverlay() {
+        const overlay = document.getElementById('loggingOutOverlay');
+        if (overlay) overlay.classList.add('active');
+        document.body.style.cursor = 'wait';
+    }
+
     // ─── Actual Logout Logic ───────────────────────────────────────────────────
     function handleLogout() {
+        // Show the "Logging you out..." overlay
+        showLoggingOutOverlay();
+
         const token = localStorage.getItem('token');
 
         fetch('https://dev.bharathbots.com/webhook/auth_logout', {
@@ -182,8 +254,10 @@
             localStorage.removeItem('signup_data');
             localStorage.removeItem('selected_plan');
             console.log('[logout] Local session cleared. Redirecting to sign-in.');
-            window.location.href = 'signin.html';
+            document.body.style.cursor = '';
+            window.location.href = 'signin.html?loggedout=true';
         });
     }
 
 })();
+

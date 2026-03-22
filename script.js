@@ -1,3 +1,83 @@
+// ─── Show "Logged out successfully" toast if redirected from logout ────────────
+(function () {
+    const params = new URLSearchParams(window.location.search);
+    if (!params.has('loggedout')) return;
+
+    // Remove the query param from the URL without reloading
+    const cleanUrl = window.location.pathname;
+    window.history.replaceState({}, '', cleanUrl);
+
+    // Inject toast styles
+    const style = document.createElement('style');
+    style.textContent = `
+        #loggedOutToast {
+            position: fixed;
+            top: 24px;
+            right: 24px;
+            z-index: 999999;
+            background: #fff;
+            border: 1.5px solid #bbf7d0;
+            border-radius: 12px;
+            padding: 14px 20px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            box-shadow: 0 8px 32px rgba(0,0,0,0.12);
+            font-family: inherit;
+            animation: lotIn 0.3s ease;
+            min-width: 260px;
+        }
+        @keyframes lotIn {
+            from { opacity: 0; transform: translateY(-12px); }
+            to   { opacity: 1; transform: translateY(0); }
+        }
+        #loggedOutToast.fade-out {
+            animation: lotOut 0.3s ease forwards;
+        }
+        @keyframes lotOut {
+            to { opacity: 0; transform: translateY(-12px); }
+        }
+        #loggedOutToast .lot-icon {
+            width: 36px; height: 36px; border-radius: 50%;
+            background: #dcfce7;
+            display: flex; align-items: center; justify-content: center;
+            flex-shrink: 0;
+        }
+        #loggedOutToast .lot-icon svg {
+            width: 18px; height: 18px;
+            stroke: #16a34a; fill: none;
+            stroke-width: 2.5; stroke-linecap: round; stroke-linejoin: round;
+        }
+        #loggedOutToast .lot-text {
+            font-size: 0.875rem; font-weight: 600; color: #0f172a; margin: 0;
+        }
+        #loggedOutToast .lot-sub {
+            font-size: 0.78rem; color: #64748b; margin: 2px 0 0;
+        }
+    `;
+    document.head.appendChild(style);
+
+    // Inject toast HTML
+    const toast = document.createElement('div');
+    toast.id = 'loggedOutToast';
+    toast.innerHTML = `
+        <div class="lot-icon">
+            <svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg>
+        </div>
+        <div>
+            <p class="lot-text">Logged out successfully</p>
+            <p class="lot-sub">See you next time!</p>
+        </div>
+    `;
+    document.body.appendChild(toast);
+
+    // Auto-dismiss after 3s
+    setTimeout(() => {
+        toast.classList.add('fade-out');
+        setTimeout(() => toast.remove(), 300);
+    }, 3000);
+})();
+
 document.addEventListener('DOMContentLoaded', () => {
     // Password visibility toggle
     const togglePasswordBtn = document.querySelector('.btn-toggle-password');
