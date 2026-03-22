@@ -276,15 +276,6 @@
         const profileContent = document.getElementById('profileContent');
         if (!profileContent) return;
 
-        // ── Feature gate: only show if subscription includes password_management ──
-        const features = window.Subscription && Array.isArray(window.Subscription.features)
-            ? window.Subscription.features
-            : [];
-        if (!features.includes('password_management')) {
-            console.info('[change-password] Feature "password_management" not in subscription. Button hidden.');
-            return;
-        }
-
         // Left column is the first child div
         const leftCol = profileContent.querySelector('div');
         if (!leftCol) return;

@@ -29,7 +29,6 @@ export const FEATURES = {
     CUSTOM_ROLES_PERMISSIONS: 'custom_roles_permissions',
     USER_MANAGEMENT: 'user_management',
     BILLING_SUBSCRIPTION_MANAGEMENT: 'billing_subscription_management',
-    PASSWORD_MANAGEMENT: 'password_management',
 
     // Staff/Operations
     VIEW_SCHEDULE: 'view_schedule',
