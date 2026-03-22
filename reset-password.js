@@ -75,7 +75,9 @@
         })
         .then(res => res.json())
         .then(data => {
-            const result = Array.isArray(data) ? data[0] : data;
+            // Normalise: handles [{}], {}, and [{json:{}}] shapes
+            const raw    = Array.isArray(data) ? data[0] : data;
+            const result = (raw && raw.json) ? raw.json : raw;
 
             if (result && result.success) {
                 showSuccess();
@@ -119,6 +121,8 @@
         if (backLink) backLink.style.display = 'none';
         successEl.style.display = 'block';
         document.querySelector('.rp-subtitle').style.display = 'none';
+        // Auto-redirect to sign in after 2s
+        setTimeout(() => { window.location.href = 'signin.html'; }, 2000);
     }
 
     function showInvalidToken() {
