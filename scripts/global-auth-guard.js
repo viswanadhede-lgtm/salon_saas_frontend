@@ -29,29 +29,20 @@ const ROUTE_MAP = {
     '/billing.html': FEATURES.BILLING_SUBSCRIPTION_MANAGEMENT
 };
 
-const PUBLIC_ROUTES = [
-    '/signin.html',
-    '/signup.html',
-    '/reset-password.html',
-    '/change-password.html',
-    '/payment-result.html',
-    '/landing.html',
-    '/'
-];
-
 export async function runGlobalAuthGuard() {
     const path = window.location.pathname;
     const filename = path.substring(path.lastIndexOf('/')) || '/';
 
-    // 1. Instantly skip public routes (login/reset pages shouldn't block themselves)
-    if (PUBLIC_ROUTES.includes(filename)) {
+    // 1. Map route to the strictly matching feature key
+    const featureKey = ROUTE_MAP[filename] || null;
+    
+    // 2. If the current page is not linked to an overarching Security Feature, it is considered Public!
+    if (!featureKey) {
+        console.log(`[Auth Guard] Public Route Detected: ${filename}. Bypassing security checks.`);
         return;
     }
 
-    // 2. Map route to the strictly matching feature key
-    const featureKey = ROUTE_MAP[filename] || null;
-    
-    // We enforce session validation everywhere except explicitly public routes
+    // 3. We enforce session validation solely on these explicit Feature Pages
     const token = localStorage.getItem('token');
     if (!token) {
         console.warn('[Auth Guard] No active session token found, redirecting to login.');
