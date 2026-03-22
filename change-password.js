@@ -193,8 +193,8 @@
                 </div>
 
                 <div class="cpwd-actions">
-                    <button class="cpwd-cancel" id="cpwdCancelBtn">Cancel</button>
-                    <button class="cpwd-submit" id="cpwdSubmitBtn">Update Password</button>
+                    <button type="button" class="cpwd-cancel" id="cpwdCancelBtn">Cancel</button>
+                    <button type="button" class="cpwd-submit" id="cpwdSubmitBtn">Update Password</button>
                 </div>
             </div>
         `;
