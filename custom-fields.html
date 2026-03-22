@@ -39,7 +39,7 @@
             <ul class="nav-list">
                 <!-- Dashboard -->
                 <li class="nav-item" title="Dashboard">
-                    <a href="dashboard.html" class="nav-link">
+                    <a href="dashboard.html" class="nav-link" data-feature="dashboard_access">
                         <i data-feather="home" class="nav-icon"></i>
                         <span class="nav-text">Dashboard</span>
                     </a>
@@ -47,7 +47,7 @@
 
                 <!-- Bookings -->
                 <li class="nav-item" title="Bookings">
-                    <a href="bookings.html" class="nav-link">
+                    <a href="bookings.html" class="nav-link" data-feature="bookings_management">
                         <i data-feather="calendar" class="nav-icon"></i>
                         <span class="nav-text">Bookings</span>
                     </a>
@@ -55,7 +55,7 @@
 
                 <!-- Customers -->
                 <li class="nav-item" title="Customers">
-                    <a href="customers.html" class="nav-link">
+                    <a href="customers.html" class="nav-link" data-feature="customers_management">
                         <i data-feather="users" class="nav-icon"></i>
                         <span class="nav-text">Customers</span>
                     </a>
@@ -63,7 +63,7 @@
 
                 <!-- Staff -->
                 <li class="nav-item" title="Staff">
-                    <a href="staff.html" class="nav-link">
+                    <a href="staff.html" class="nav-link" data-feature="staff_management">
                         <i data-feather="user-check" class="nav-icon"></i>
                         <span class="nav-text">Staff</span>
                     </a>
@@ -71,7 +71,7 @@
 
                 <!-- Services -->
                 <li class="nav-item" title="Services">
-                <a href="services.html" class="nav-link">
+                <a href="services.html" class="nav-link" data-feature="services_management">
                     <i data-feather="scissors" class="nav-icon"></i>
                     <span class="nav-text">Services</span>
                 </a>
@@ -85,11 +85,11 @@
                         <i data-feather="chevron-down" class="submenu-arrow"></i>
                     </div>
                     <ul class="submenu">
-                        <li><a href="pos.html" class="submenu-link"><span class="submenu-bullet">&bull;</span><span
+                        <li><a href="pos.html" class="submenu-link" data-feature="pos_system"><span class="submenu-bullet">&bull;</span><span
                                     class="nav-text">Point of Sale</span></a></li>
-                        <li><a href="products.html" class="submenu-link"><span class="submenu-bullet">&bull;</span><span
+                        <li><a href="products.html" class="submenu-link" data-feature="product_management"><span class="submenu-bullet">&bull;</span><span
                                     class="nav-text">Products</span></a></li>
-                        <li><a href="sales-history.html" class="submenu-link"><span class="submenu-bullet">&bull;</span><span class="nav-text">Sales History</span></a></li>
+                        <li><a href="sales-history.html" class="submenu-link" data-feature="sales_history"><span class="submenu-bullet">&bull;</span><span class="nav-text">Sales History</span></a></li>
                     </ul>
                 </li>
 
@@ -101,9 +101,9 @@
                         <i data-feather="chevron-down" class="submenu-arrow"></i>
                     </div>
                     <ul class="submenu">
-                        <li><a href="pending-payments.html" class="submenu-link"><span class="submenu-bullet">&bull;</span><span
+                        <li><a href="pending-payments.html" class="submenu-link" data-feature="pending_payments"><span class="submenu-bullet">&bull;</span><span
                                     class="nav-text">Pending Payments</span></a></li>
-                        <li><a href="payments-history.html" class="submenu-link"><span class="submenu-bullet">&bull;</span><span
+                        <li><a href="payments-history.html" class="submenu-link" data-feature="payments_history"><span class="submenu-bullet">&bull;</span><span
                                     class="nav-text">Payments History</span></a></li>
                     </ul>
                 </li>
@@ -116,13 +116,13 @@
                         <i data-feather="chevron-down" class="submenu-arrow"></i>
                     </div>
                     <ul class="submenu">
-                        <li><a href="offers.html" class="submenu-link"><span class="submenu-bullet">&bull;</span><span
+                        <li><a href="offers.html" class="submenu-link" data-feature="marketing_offers"><span class="submenu-bullet">&bull;</span><span
                                     class="nav-text">Offers</span></a></li>
-                        <li><a href="coupons.html" class="submenu-link"><span class="submenu-bullet">&bull;</span><span
+                        <li><a href="coupons.html" class="submenu-link" data-feature="marketing_coupons"><span class="submenu-bullet">&bull;</span><span
                                     class="nav-text">Coupons</span></a></li>
-                        <li><a href="memberships.html" class="submenu-link"><span class="submenu-bullet">&bull;</span><span
+                        <li><a href="memberships.html" class="submenu-link" data-feature="marketing_memberships"><span class="submenu-bullet">&bull;</span><span
                                     class="nav-text">Memberships</span></a></li>
-                        <li><a href="ad-campaigns.html" class="submenu-link"><span class="submenu-bullet">&bull;</span><span
+                        <li><a href="ad-campaigns.html" class="submenu-link" data-feature="marketing_campaigns"><span class="submenu-bullet">&bull;</span><span
                                     class="nav-text">Ad Campaigns</span></a></li>
                     </ul>
                 </li>
@@ -135,9 +135,9 @@
                         <i data-feather="chevron-down" class="submenu-arrow"></i>
                     </div>
                     <ul class="submenu">
-                        <li><a href="overview.html" class="submenu-link"><span class="submenu-bullet">&bull;</span><span
+                        <li><a href="overview.html" class="submenu-link" data-feature="analytics_overview"><span class="submenu-bullet">&bull;</span><span
                                     class="nav-text">Overview</span></a></li>
-                        <li><a href="reports.html" class="submenu-link"><span class="submenu-bullet">&bull;</span><span
+                        <li><a href="reports.html" class="submenu-link" data-feature="reports_access"><span class="submenu-bullet">&bull;</span><span
                                     class="nav-text">Reports</span></a></li>
                     </ul>
                 </li>
@@ -150,17 +150,17 @@
                         <i data-feather="chevron-down" class="submenu-arrow"></i>
                     </div>
                     <ul class="submenu">
-                        <li><a href="company.html" class="submenu-link"><span class="submenu-bullet">&bull;</span><span
+                        <li><a href="company.html" class="submenu-link" data-feature="company_settings"><span class="submenu-bullet">&bull;</span><span
                                     class="nav-text">Company</span></a></li>
-                        <li><a href="branches.html" class="submenu-link"><span class="submenu-bullet">&bull;</span><span
+                        <li><a href="branches.html" class="submenu-link" data-feature="branch_management"><span class="submenu-bullet">&bull;</span><span
                                     class="nav-text">Branches</span></a></li>
-                        <li><a href="users.html" class="submenu-link"><span class="submenu-bullet">&bull;</span><span
+                        <li><a href="users.html" class="submenu-link" data-feature="user_management"><span class="submenu-bullet">&bull;</span><span
                                     class="nav-text">Users</span></a></li>
-                        <li><a href="roles-permissions.html" class="submenu-link"><span class="submenu-bullet">&bull;</span><span
+                        <li><a href="roles-permissions.html" class="submenu-link" data-feature="roles_permissions"><span class="submenu-bullet">&bull;</span><span
                                     class="nav-text">Roles & Permissions</span></a></li>
                         <li><a href="custom-fields.html" class="submenu-link active"><span class="submenu-bullet">&bull;</span><span
                                     class="nav-text">Custom Fields</span></a></li>
-                        <li><a href="billing-subscription.html" class="submenu-link"><span class="submenu-bullet">&bull;</span><span
+                        <li><a href="billing-subscription.html" class="submenu-link" data-feature="billing_subscription_management"><span class="submenu-bullet">&bull;</span><span
                                     class="nav-text">Billing & Subscription</span></a></li>
                     </ul>
                 </li>
@@ -964,7 +964,8 @@
         </div>
     </div>
 
-<script src="logout.js"></script><script src="change-password.js"></script></body>
+<script src="logout.js"></script><script src="change-password.js"></script>    <script type="module" src="scripts/sub-features/sub-feature-gate.js"></script>
+</body>
 
 </html>
 

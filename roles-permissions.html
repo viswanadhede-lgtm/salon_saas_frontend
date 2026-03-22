@@ -202,31 +202,31 @@
         <nav class="sidebar-nav">
             <ul class="nav-list">
                 <li class="nav-item" title="Dashboard">
-                    <a href="dashboard.html" class="nav-link">
+                    <a href="dashboard.html" class="nav-link" data-feature="dashboard_access">
                         <i data-feather="home" class="nav-icon"></i>
                         <span class="nav-text">Dashboard</span>
                     </a>
                 </li>
                 <li class="nav-item" title="Bookings">
-                    <a href="bookings.html" class="nav-link">
+                    <a href="bookings.html" class="nav-link" data-feature="bookings_management">
                         <i data-feather="calendar" class="nav-icon"></i>
                         <span class="nav-text">Bookings</span>
                     </a>
                 </li>
                 <li class="nav-item" title="Customers">
-                    <a href="customers.html" class="nav-link">
+                    <a href="customers.html" class="nav-link" data-feature="customers_management">
                         <i data-feather="users" class="nav-icon"></i>
                         <span class="nav-text">Customers</span>
                     </a>
                 </li>
                 <li class="nav-item" title="Staff">
-                    <a href="staff.html" class="nav-link">
+                    <a href="staff.html" class="nav-link" data-feature="staff_management">
                         <i data-feather="user-check" class="nav-icon"></i>
                         <span class="nav-text">Staff</span>
                     </a>
                 </li>
                 <li class="nav-item" title="Services">
-                    <a href="services.html" class="nav-link">
+                    <a href="services.html" class="nav-link" data-feature="services_management">
                         <i data-feather="scissors" class="nav-icon"></i>
                         <span class="nav-text">Services</span>
                     </a>
@@ -238,9 +238,9 @@
                         <i data-feather="chevron-down" class="submenu-arrow"></i>
                     </div>
                     <ul class="submenu">
-                        <li><a href="pos.html" class="submenu-link"><span class="submenu-bullet">&bull;</span><span class="nav-text">Point of Sale</span></a></li>
-                        <li><a href="products.html" class="submenu-link"><span class="submenu-bullet">&bull;</span><span class="nav-text">Products</span></a></li>
-                        <li><a href="sales-history.html" class="submenu-link"><span class="submenu-bullet">&bull;</span><span class="nav-text">Sales History</span></a></li>
+                        <li><a href="pos.html" class="submenu-link" data-feature="pos_system"><span class="submenu-bullet">&bull;</span><span class="nav-text">Point of Sale</span></a></li>
+                        <li><a href="products.html" class="submenu-link" data-feature="product_management"><span class="submenu-bullet">&bull;</span><span class="nav-text">Products</span></a></li>
+                        <li><a href="sales-history.html" class="submenu-link" data-feature="sales_history"><span class="submenu-bullet">&bull;</span><span class="nav-text">Sales History</span></a></li>
                     </ul>
                 </li>
                 <li class="nav-item has-submenu" title="Payments">
@@ -250,8 +250,8 @@
                         <i data-feather="chevron-down" class="submenu-arrow"></i>
                     </div>
                     <ul class="submenu">
-                        <li><a href="pending-payments.html" class="submenu-link"><span class="submenu-bullet">&bull;</span><span class="nav-text">Pending Payments</span></a></li>
-                        <li><a href="payments-history.html" class="submenu-link"><span class="submenu-bullet">&bull;</span><span class="nav-text">Payments History</span></a></li>
+                        <li><a href="pending-payments.html" class="submenu-link" data-feature="pending_payments"><span class="submenu-bullet">&bull;</span><span class="nav-text">Pending Payments</span></a></li>
+                        <li><a href="payments-history.html" class="submenu-link" data-feature="payments_history"><span class="submenu-bullet">&bull;</span><span class="nav-text">Payments History</span></a></li>
                     </ul>
                 </li>
                 <li class="nav-item has-submenu" title="Marketing">
@@ -261,10 +261,10 @@
                         <i data-feather="chevron-down" class="submenu-arrow"></i>
                     </div>
                     <ul class="submenu">
-                        <li><a href="offers.html" class="submenu-link"><span class="submenu-bullet">&bull;</span><span class="nav-text">Offers</span></a></li>
-                        <li><a href="coupons.html" class="submenu-link"><span class="submenu-bullet">&bull;</span><span class="nav-text">Coupons</span></a></li>
-                        <li><a href="memberships.html" class="submenu-link"><span class="submenu-bullet">&bull;</span><span class="nav-text">Memberships</span></a></li>
-                        <li><a href="ad-campaigns.html" class="submenu-link"><span class="submenu-bullet">&bull;</span><span class="nav-text">Ad Campaigns</span></a></li>
+                        <li><a href="offers.html" class="submenu-link" data-feature="marketing_offers"><span class="submenu-bullet">&bull;</span><span class="nav-text">Offers</span></a></li>
+                        <li><a href="coupons.html" class="submenu-link" data-feature="marketing_coupons"><span class="submenu-bullet">&bull;</span><span class="nav-text">Coupons</span></a></li>
+                        <li><a href="memberships.html" class="submenu-link" data-feature="marketing_memberships"><span class="submenu-bullet">&bull;</span><span class="nav-text">Memberships</span></a></li>
+                        <li><a href="ad-campaigns.html" class="submenu-link" data-feature="marketing_campaigns"><span class="submenu-bullet">&bull;</span><span class="nav-text">Ad Campaigns</span></a></li>
                     </ul>
                 </li>
                 <li class="nav-item has-submenu" title="Analytics">
@@ -274,8 +274,8 @@
                         <i data-feather="chevron-down" class="submenu-arrow"></i>
                     </div>
                     <ul class="submenu">
-                        <li><a href="overview.html" class="submenu-link"><span class="submenu-bullet">&bull;</span><span class="nav-text">Overview</span></a></li>
-                        <li><a href="reports.html" class="submenu-link"><span class="submenu-bullet">&bull;</span><span class="nav-text">Reports</span></a></li>
+                        <li><a href="overview.html" class="submenu-link" data-feature="analytics_overview"><span class="submenu-bullet">&bull;</span><span class="nav-text">Overview</span></a></li>
+                        <li><a href="reports.html" class="submenu-link" data-feature="reports_access"><span class="submenu-bullet">&bull;</span><span class="nav-text">Reports</span></a></li>
                     </ul>
                 </li>
                 <!-- Settings — active -->
@@ -286,12 +286,12 @@
                         <i data-feather="chevron-down" class="submenu-arrow"></i>
                     </div>
                     <ul class="submenu">
-                        <li><a href="company.html" class="submenu-link"><span class="submenu-bullet">&bull;</span><span class="nav-text">Company</span></a></li>
-                        <li><a href="branches.html" class="submenu-link"><span class="submenu-bullet">&bull;</span><span class="nav-text">Branches</span></a></li>
-                        <li><a href="users.html" class="submenu-link"><span class="submenu-bullet">&bull;</span><span class="nav-text">Users</span></a></li>
+                        <li><a href="company.html" class="submenu-link" data-feature="company_settings"><span class="submenu-bullet">&bull;</span><span class="nav-text">Company</span></a></li>
+                        <li><a href="branches.html" class="submenu-link" data-feature="branch_management"><span class="submenu-bullet">&bull;</span><span class="nav-text">Branches</span></a></li>
+                        <li><a href="users.html" class="submenu-link" data-feature="user_management"><span class="submenu-bullet">&bull;</span><span class="nav-text">Users</span></a></li>
                         <li><a href="roles-permissions.html" class="submenu-link active"><span class="submenu-bullet">&bull;</span><span class="nav-text">Roles &amp; Permissions</span></a></li>
-                        <li><a href="custom-fields.html" class="submenu-link"><span class="submenu-bullet">&bull;</span><span class="nav-text">Custom Fields</span></a></li>
-                        <li><a href="billing-subscription.html" class="submenu-link"><span class="submenu-bullet">&bull;</span><span class="nav-text">Billing & Subscription</span></a></li>
+                        <li><a href="custom-fields.html" class="submenu-link" data-feature="custom_fields"><span class="submenu-bullet">&bull;</span><span class="nav-text">Custom Fields</span></a></li>
+                        <li><a href="billing-subscription.html" class="submenu-link" data-feature="billing_subscription_management"><span class="submenu-bullet">&bull;</span><span class="nav-text">Billing & Subscription</span></a></li>
                     </ul>
                 </li>
             </ul>
@@ -416,12 +416,9 @@
                         <table class="perm-table" style="width: 100%; border-collapse: collapse; border-radius: 8px; overflow: hidden; border: 1px solid #e2e8f0;">
                             <thead>
                                 <tr style="background: #f8fafc;">
-                                    <th style="padding: 12px 20px; text-align: left; font-size: 0.72rem; font-weight: 700; color: #64748b; text-transform: uppercase; letter-spacing: 0.05em; border-bottom: 2px solid #e2e8f0; width: 34%;">Module</th>
-                                    <th style="padding: 12px 16px; text-align: center; font-size: 0.72rem; font-weight: 700; color: #64748b; text-transform: uppercase; letter-spacing: 0.05em; border-bottom: 2px solid #e2e8f0; width: 8%;">All</th>
-                                    <th style="padding: 12px 16px; text-align: center; font-size: 0.72rem; font-weight: 700; color: #64748b; text-transform: uppercase; letter-spacing: 0.05em; border-bottom: 2px solid #e2e8f0; width: 14.5%;">View</th>
-                                    <th style="padding: 12px 16px; text-align: center; font-size: 0.72rem; font-weight: 700; color: #64748b; text-transform: uppercase; letter-spacing: 0.05em; border-bottom: 2px solid #e2e8f0; width: 14.5%;">Create</th>
-                                    <th style="padding: 12px 16px; text-align: center; font-size: 0.72rem; font-weight: 700; color: #64748b; text-transform: uppercase; letter-spacing: 0.05em; border-bottom: 2px solid #e2e8f0; width: 14.5%;">Edit</th>
-                                    <th style="padding: 12px 16px; text-align: center; font-size: 0.72rem; font-weight: 700; color: #64748b; text-transform: uppercase; letter-spacing: 0.05em; border-bottom: 2px solid #e2e8f0; width: 14.5%;">Delete</th>
+                                    <th style="padding: 12px 20px; text-align: left; font-size: 0.75rem; font-weight: 700; color: #64748b; text-transform: uppercase; letter-spacing: 0.05em; border-bottom: 2px solid #e2e8f0; width: 25%;">Module / Page</th>
+                                    <th style="padding: 12px 16px; text-align: center; font-size: 0.75rem; font-weight: 700; color: #64748b; text-transform: uppercase; letter-spacing: 0.05em; border-bottom: 2px solid #e2e8f0; width: 15%;">Access Page</th>
+                                    <th style="padding: 12px 16px; text-align: left; font-size: 0.75rem; font-weight: 700; color: #64748b; text-transform: uppercase; letter-spacing: 0.05em; border-bottom: 2px solid #e2e8f0; width: 60%;">Granular Permissions</th>
                                 </tr>
                             </thead>
                             <tbody id="permissionsMatrixBody">
@@ -556,12 +553,9 @@
                             <table class="modal-perm-table" style="width: 100%; border-collapse: collapse;">
                                 <thead>
                                     <tr>
-                                        <th style="text-align: left; width: 34%; border-bottom: 2px solid #f1f5f9;">Module</th>
-                                        <th style="border-bottom: 2px solid #f1f5f9; width: 10%;">All</th>
-                                        <th style="border-bottom: 2px solid #f1f5f9; width: 14%;">View</th>
-                                        <th style="border-bottom: 2px solid #f1f5f9; width: 14%;">Create</th>
-                                        <th style="border-bottom: 2px solid #f1f5f9; width: 14%;">Edit</th>
-                                        <th style="border-bottom: 2px solid #f1f5f9; width: 14%;">Delete</th>
+                                        <th style="text-align: left; width: 25%; border-bottom: 2px solid #f1f5f9;">Module / Page</th>
+                                        <th style="text-align: center; border-bottom: 2px solid #f1f5f9; width: 15%;">Access Page</th>
+                                        <th style="text-align: left; border-bottom: 2px solid #f1f5f9; width: 60%;">Granular Permissions</th>
                                     </tr>
                                 </thead>
                                 <tbody id="modalPermissionsBody">
@@ -975,11 +969,12 @@
 
     <!-- Scripts -->
     <script src="dashboard.js"></script>
-    <script src="roles-permissions.js"></script>
+    <script type="module" src="roles-permissions.js"></script>
     <script>
         feather.replace();
     </script>
 
-<script src="logout.js"></script><script src="change-password.js"></script></body>
+<script src="logout.js"></script><script src="change-password.js"></script>    <script type="module" src="scripts/sub-features/sub-feature-gate.js"></script>
+</body>
 </html>
 

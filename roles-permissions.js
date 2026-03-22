@@ -1,35 +1,15 @@
 /**
  * roles-permissions.js
- * Handles the Roles & Permissions page interactions:
- *  - Rendering roles list
- *  - Switching active role & populating the permissions matrix
- *  - Add / Edit role modal
- *  - Delete confirmation dialog
+ * Automatically generating the UI based on Feature & Sub-Feature Registries!
  */
 
-'use strict';
+import { FEATURES, MODULES_META } from './config/feature-registry.js';
+import { SUB_FEATURES, SUB_FEATURES_MAP } from './config/sub-feature-registry.js';
 
-// ─── Module definitions ───────────────────────────────────────────────────────
-const MODULES = [
-    { key: 'dashboard',  label: 'Dashboard',  icon: 'home',        actions: ['view'] },
-    { key: 'bookings',   label: 'Bookings',   icon: 'calendar',    actions: ['view', 'create', 'edit', 'delete'] },
-    { key: 'customers',  label: 'Customers',  icon: 'users',       actions: ['view', 'create', 'edit', 'delete'] },
-    { key: 'staff',      label: 'Staff',      icon: 'user-check',  actions: ['view', 'create', 'edit', 'delete'] },
-    { key: 'services',   label: 'Services',   icon: 'scissors',    actions: ['view', 'create', 'edit', 'delete'] },
-    { key: 'sales',      label: 'Sales',      icon: 'dollar-sign', actions: ['view', 'create', 'edit', 'delete'] },
-    { key: 'payments',   label: 'Payments',   icon: 'credit-card', actions: ['view', 'create', 'edit', 'delete'] },
-    { key: 'marketing',  label: 'Marketing',  icon: 'gift',        actions: ['view', 'create', 'edit', 'delete'] },
-    { key: 'analytics',  label: 'Analytics',  icon: 'bar-chart-2', actions: ['view'] },
-    { key: 'settings',   label: 'Settings',   icon: 'settings',    actions: ['view', 'create', 'edit', 'delete'] },
-];
+// MOCK: The Owner's current Subscription limits (We intentionally omit Ad Campaigns to test the lock UI)
+const MOCK_SUBSCRIPTION_FEATURES = Object.values(FEATURES).filter(f => f !== FEATURES.MARKETING_CAMPAIGNS);
 
-// ─── Default role definitions ─────────────────────────────────────────────────
-const ALL = { view: true, create: true, edit: true, delete: true };
-const VIEW_ONLY = { view: true, create: false, edit: false, delete: false };
-const VIEW_CREATE = { view: true, create: true, edit: false, delete: false };
-const VIEW_CREATE_EDIT = { view: true, create: true, edit: true, delete: false };
-const NONE = { view: false, create: false, edit: false, delete: false };
-
+// Mock role database structure matching actual backend payload pattern
 let rolesData = [
     {
         id: 'owner',
@@ -37,56 +17,8 @@ let rolesData = [
         description: 'Full system access. Cannot be modified or deleted.',
         protected: true,
         userCount: 1,
-        permissions: {
-            dashboard: ALL,
-            bookings: ALL,
-            customers: ALL,
-            staff: ALL,
-            services: ALL,
-            sales: ALL,
-            payments: ALL,
-            marketing: ALL,
-            analytics: ALL,
-            settings: ALL,
-        }
-    },
-    {
-        id: 'admin',
-        name: 'Admin',
-        description: 'Almost full access. Cannot delete critical records.',
-        protected: false,
-        userCount: 2,
-        permissions: {
-            dashboard: ALL,
-            bookings: ALL,
-            customers: ALL,
-            staff: ALL,
-            services: ALL,
-            sales: ALL,
-            payments: ALL,
-            marketing: ALL,
-            analytics: VIEW_ONLY,
-            settings: VIEW_CREATE_EDIT,
-        }
-    },
-    {
-        id: 'manager',
-        name: 'Manager',
-        description: 'Branch-level management. No system settings.',
-        protected: false,
-        userCount: 3,
-        permissions: {
-            dashboard: VIEW_ONLY,
-            bookings: ALL,
-            customers: ALL,
-            staff: VIEW_ONLY,
-            services: VIEW_CREATE_EDIT,
-            sales: ALL,
-            payments: VIEW_ONLY,
-            marketing: VIEW_ONLY,
-            analytics: VIEW_ONLY,
-            settings: NONE,
-        }
+        features: MOCK_SUBSCRIPTION_FEATURES, 
+        sub_features: Object.values(SUB_FEATURES)
     },
     {
         id: 'receptionist',
@@ -94,43 +26,27 @@ let rolesData = [
         description: 'Front desk - can manage bookings and customers.',
         protected: false,
         userCount: 5,
-        permissions: {
-            dashboard: VIEW_ONLY,
-            bookings: VIEW_CREATE_EDIT,
-            customers: VIEW_CREATE,
-            staff: VIEW_ONLY,
-            services: VIEW_ONLY,
-            sales: VIEW_ONLY,
-            payments: VIEW_ONLY,
-            marketing: NONE,
-            analytics: NONE,
-            settings: NONE,
-        }
-    },
-    {
-        id: 'staff',
-        name: 'Staff',
-        description: 'Salon staff. View their own bookings and services only.',
-        protected: false,
-        userCount: 8,
-        permissions: {
-            dashboard: VIEW_ONLY,
-            bookings: VIEW_ONLY,
-            customers: VIEW_ONLY,
-            staff: NONE,
-            services: VIEW_ONLY,
-            sales: NONE,
-            payments: NONE,
-            marketing: NONE,
-            analytics: NONE,
-            settings: NONE,
-        }
-    },
+        features: [
+            FEATURES.DASHBOARD_ACCESS, 
+            FEATURES.BOOKINGS_MANAGEMENT, 
+            FEATURES.CUSTOMERS_MANAGEMENT, 
+            FEATURES.POS_SYSTEM
+        ],
+        sub_features: [
+            SUB_FEATURES.BOOKING_CREATE,
+            SUB_FEATURES.BOOKING_EDIT,
+            SUB_FEATURES.BOOKING_CANCEL,
+            SUB_FEATURES.BOOKING_VIEW_ALL,
+            SUB_FEATURES.POS_CHECKOUT,
+            SUB_FEATURES.CUSTOMER_CREATE,
+            SUB_FEATURES.CUSTOMER_EDIT
+        ]
+    }
 ];
 
 // ─── State ────────────────────────────────────────────────────────────────────
 let activeRoleId = 'owner';
-let editingRoleId = null; // null = adding new role
+let editingRoleId = null;
 
 // ─── DOM refs ─────────────────────────────────────────────────────────────────
 const rolesList           = document.getElementById('rolesList');
@@ -196,7 +112,6 @@ function renderRolesList() {
         `;
 
         li.addEventListener('click', (e) => {
-            // Prevent selecting when an action button was clicked
             if (e.target.closest('[data-action]')) return;
             selectRole(role.id);
         });
@@ -204,7 +119,7 @@ function renderRolesList() {
         rolesList.appendChild(li);
     });
 
-    feather.replace();
+    if(window.feather) feather.replace();
 }
 
 function selectRole(roleId) {
@@ -212,19 +127,14 @@ function selectRole(roleId) {
     const role = rolesData.find(r => r.id === roleId);
     if (!role) return;
 
-    // Highlight sidebar item
     document.querySelectorAll('.role-list-item').forEach(el => {
         el.classList.toggle('active', el.dataset.roleId === roleId);
     });
 
-    // Update header
     selectedRoleTitle.textContent = role.name;
     selectedRoleDesc.textContent = role.description;
-
-    // Every time we switch role, we hide the save button (automatic discard)
     btnSavePerms.style.display = 'none';
 
-    // Show/hide owner badge vs action buttons
     if (role.protected) {
         ownerBadgeWrapper.style.display = 'block';
         roleActionsWrapper.style.display = 'none';
@@ -233,131 +143,118 @@ function selectRole(roleId) {
         roleActionsWrapper.style.display = 'flex';
     }
 
-    renderPermissionsMatrix(role);
+    renderPermissionsMatrix(role, permMatrixBody, false);
 }
 
-function renderPermissionsMatrix(role, isEditable = false) {
-    permMatrixBody.innerHTML = '';
-    const isOwner = role.protected;
+/**
+ * Dynamically draws the table rows by mapping `MODULES_META` -> `SUB_FEATURES_MAP`.
+ * Used for both the main page matrix and the Add/Edit Role modal.
+ */
+function renderPermissionsMatrix(role, containerEl, isModal) {
+    containerEl.innerHTML = '';
+    const isOwner = role && role.protected;
+    
+    // Arrays containing strings exactly as passed from the backend
+    const roleFeatures = role ? role.features || [] : [];
+    const roleSubFeats = role ? role.sub_features || [] : [];
 
-    MODULES.forEach(mod => {
-        const perms = role.permissions[mod.key] || NONE;
+    MODULES_META.forEach(mod => {
+        const featureKey = mod.key;
+        
+        // SECURITY CHECK: Does the business owner actually own this feature?
+        const salonOwnsFeature = MOCK_SUBSCRIPTION_FEATURES.includes(featureKey);
+        
+        // This role has access if checked AND the business owns it
+        const hasFeature = salonOwnsFeature && roleFeatures.includes(featureKey); 
+        const disabledAttr = (isOwner || !salonOwnsFeature) ? 'disabled' : '';
+
+        // Get children sub-features for this module
+        const childSubFeats = SUB_FEATURES_MAP[featureKey] || [];
+        
         const tr = document.createElement('tr');
-
-        // Check if all supported actions are currently enabled
-        const allChecked = mod.actions.every(action => perms[action]);
-
+        
+        // Column 1: Module Label
         let cells = `
             <td>
-                <span class="module-icon">
+                <span class="module-icon ${!salonOwnsFeature ? 'text-muted' : ''}" style="${!salonOwnsFeature ? 'opacity:0.6;' : ''}">
                     <i data-feather="${mod.icon}" style="width:15px;height:15px;"></i>
                     ${escHtml(mod.label)}
+                    ${!salonOwnsFeature ? '<span style="font-size:0.65rem; background:#fee2e2; color:#ef4444; padding:2px 6px; border-radius:10px; margin-left:8px;">Plan Locked</span>' : ''}
                 </span>
             </td>
         `;
         
-        // Add "All" toggle cell
-        cells += `<td class="perm-cell">
-            <input type="checkbox" class="perm-check perm-all-toggle perm-all-glow"
-                data-module="${mod.key}"
-                ${allChecked ? 'checked' : ''}
-                ${isOwner ? 'disabled' : ''}>
-        </td>`;
+        // Column 2: Access Feature/Page Checkbox
+        cells += `
+            <td class="perm-cell" style="vertical-align: top; padding-top: 14px;">
+                <input type="checkbox" class="perm-check feature-check" 
+                    data-feature="${featureKey}" 
+                    ${hasFeature ? 'checked' : ''} 
+                    ${disabledAttr}>
+            </td>
+        `;
 
-        ['view', 'create', 'edit', 'delete'].forEach(action => {
-            const supported = mod.actions.includes(action);
-            const checked = supported && perms[action];
-            const disabled = isOwner || !supported;
+        // Column 3: Granular Sub-Features Tags
+        let subFeaturesHtml = '';
+        if(childSubFeats.length === 0) {
+            subFeaturesHtml = `<span style="font-size:0.8rem; color:#94a3b8; font-style:italic;">No granular actions</span>`;
+        } else {
+            childSubFeats.forEach(subf => {
+                const hasSub = salonOwnsFeature && roleSubFeats.includes(subf.key);
+                subFeaturesHtml += `
+                    <label style="display:flex; align-items:center; gap:6px; font-size:0.8rem; color:#475569; cursor:${disabledAttr ? 'not-allowed':'pointer'}; opacity:${(!salonOwnsFeature) ? '0.5':'1'};">
+                        <input type="checkbox" class="perm-check sub-feature-check" 
+                            data-sub-feature="${subf.key}" 
+                            data-parent="${featureKey}"
+                            ${hasSub ? 'checked' : ''} 
+                            ${disabledAttr} 
+                            style="width:16px; height:16px;">
+                        ${subf.label}
+                    </label>
+                `;
+            });
+        }
 
-            cells += `<td class="perm-cell">
-                <input type="checkbox" class="perm-check perm-action-check"
-                    data-module="${mod.key}" data-action="${action}"
-                    ${checked ? 'checked' : ''}
-                    ${disabled ? 'disabled' : ''}
-                    title="${supported ? '' : 'Not applicable for this module'}">
-            </td>`;
-        });
+        cells += `
+            <td style="vertical-align: top; padding: 14px 16px;">
+                <div style="display:flex; flex-wrap:wrap; gap:16px;">
+                    ${subFeaturesHtml}
+                </div>
+            </td>
+        `;
 
         tr.innerHTML = cells;
-        permMatrixBody.appendChild(tr);
+        containerEl.appendChild(tr);
 
-        // Logic for main matrix interactions (only non-owner)
-        if (!isOwner) {
-            const allToggle = tr.querySelector('.perm-all-toggle');
-            const actionChecks = tr.querySelectorAll('.perm-action-check:not([disabled])');
+        // UI Logic Setup for non-owners: Toggling Feature automatically cascades to Sub-Features
+        if (!isOwner && salonOwnsFeature) {
+            const masterCheck = tr.querySelector('.feature-check');
+            const subChecks = tr.querySelectorAll('.sub-feature-check');
 
-            allToggle.addEventListener('change', () => {
-                const checked = allToggle.checked;
-                actionChecks.forEach(cb => cb.checked = checked);
-                btnSavePerms.style.display = 'flex';
+            masterCheck.addEventListener('change', () => {
+                if(!isModal) btnSavePerms.style.display = 'flex';
+                // Only allow sub-checks to be active if master is active
+                subChecks.forEach(cb => {
+                    cb.checked = masterCheck.checked;
+                });
             });
 
-            actionChecks.forEach(cb => {
+            subChecks.forEach(cb => {
                 cb.addEventListener('change', () => {
-                    const anyUnchecked = Array.from(actionChecks).some(check => !check.checked);
-                    allToggle.checked = !anyUnchecked;
-                    btnSavePerms.style.display = 'flex';
+                    if(!isModal) btnSavePerms.style.display = 'flex';
+                    // If checking a sub-feature, auto-check the parent page so they can actually reach it
+                    if(cb.checked) masterCheck.checked = true;
                 });
             });
         }
     });
 
-    feather.replace();
+    if(window.feather) feather.replace();
 }
 
-function renderModalPermissions(permissions = null) {
-    modalPermBody.innerHTML = '';
-
-    MODULES.forEach(mod => {
-        const perms = permissions ? (permissions[mod.key] || NONE) : NONE;
-        const tr = document.createElement('tr');
-
-        // Check if all supported actions are currently enabled
-        const allChecked = mod.actions.every(action => perms[action]);
-
-        let cells = `<td>${escHtml(mod.label)}</td>`;
-        
-        // Add "All" toggle cell
-        cells += `<td class="perm-cell">
-            <input type="checkbox" class="perm-check perm-all-toggle perm-all-glow" data-module="${mod.key}" ${allChecked ? 'checked' : ''}>
-        </td>`;
-
-        ['view', 'create', 'edit', 'delete'].forEach(action => {
-            const supported = mod.actions.includes(action);
-            const checked = supported && perms[action];
-            cells += `<td class="perm-cell">
-                <input type="checkbox" class="perm-check"
-                    data-module="${mod.key}" data-action="${action}"
-                    ${checked ? 'checked' : ''}
-                    ${!supported ? 'disabled' : ''}>
-            </td>`;
-        });
-
-        tr.innerHTML = cells;
-        modalPermBody.appendChild(tr);
-
-        // Bind logic for "All" toggle
-        const allToggle = tr.querySelector('.perm-all-toggle');
-        const actionChecks = tr.querySelectorAll('.perm-check:not([disabled])');
-
-        allToggle.addEventListener('change', () => {
-            const checked = allToggle.checked;
-            actionChecks.forEach(cb => cb.checked = checked);
-        });
-
-        // Bind logic for action checks to update "All" toggle
-        actionChecks.forEach(cb => {
-            cb.addEventListener('change', () => {
-                const anyUnchecked = Array.from(actionChecks).some(check => !check.checked);
-                allToggle.checked = !anyUnchecked;
-            });
-        });
-    });
-}
 
 // ─── Events ───────────────────────────────────────────────────────────────────
 function bindEvents() {
-    // Roles list: delegated edit / delete via sidebar item action buttons
     rolesList.addEventListener('click', (e) => {
         const btn = e.target.closest('[data-action]');
         if (!btn) return;
@@ -366,40 +263,32 @@ function bindEvents() {
         if (btn.dataset.action === 'delete') openDeleteConfirm(roleId);
     });
 
-    // Header Edit / Delete buttons
     btnEditRole.addEventListener('click', () => openEditRoleModal(activeRoleId));
     btnDeleteRole.addEventListener('click', () => openDeleteConfirm(activeRoleId));
-
-    // Add Role button
     btnAddRole.addEventListener('click', openAddRoleModal);
 
-    // Role Modal close
     btnCloseRoleModal.addEventListener('click', closeRoleModal);
     btnCancelRoleModal.addEventListener('click', closeRoleModal);
     roleModalOverlay.addEventListener('click', (e) => { if (e.target === roleModalOverlay) closeRoleModal(); });
 
-    // Save Role
     btnSaveRole.addEventListener('click', saveRole);
 
-    // Delete Confirm
     btnCloseConfirmDelete.addEventListener('click', closeDeleteConfirm);
     btnCancelDelete.addEventListener('click', closeDeleteConfirm);
     confirmDeleteOverlay.addEventListener('click', (e) => { if (e.target === confirmDeleteOverlay) closeDeleteConfirm(); });
     btnConfirmDelete.addEventListener('click', confirmDelete);
 
-    // Save permissions inline
     btnSavePerms.addEventListener('click', saveInlinePerms);
 }
 
-// ─── Add Role Modal ───────────────────────────────────────────────────────────
+// ─── Add/Edit Role Modal ───────────────────────────────────────────────────────────
 function openAddRoleModal() {
     editingRoleId = null;
     roleModalTitle.textContent = 'Add Role';
     roleNameInput.value = '';
     roleDescInput.value = '';
-    renderModalPermissions(null);
+    renderPermissionsMatrix(null, modalPermBody, true);
     roleModalOverlay.classList.add('active');
-    feather.replace();
 }
 
 function openEditRoleModal(roleId) {
@@ -410,9 +299,8 @@ function openEditRoleModal(roleId) {
     roleModalTitle.textContent = 'Edit Role';
     roleNameInput.value = role.name;
     roleDescInput.value = role.description;
-    renderModalPermissions(role.permissions);
+    renderPermissionsMatrix(role, modalPermBody, true);
     roleModalOverlay.classList.add('active');
-    feather.replace();
 }
 
 function closeRoleModal() {
@@ -427,20 +315,20 @@ function saveRole() {
         return;
     }
     roleNameInput.style.borderColor = '';
-
     const desc = roleDescInput.value.trim() || `${name} role`;
-    const permissions = collectModalPermissions();
+    
+    // Harvest the actual permissions
+    const { features, sub_features } = collectPermissionsFromContainer(modalPermBody);
 
     if (editingRoleId) {
-        // Update existing role
         const role = rolesData.find(r => r.id === editingRoleId);
         if (role) {
             role.name = name;
             role.description = desc;
-            role.permissions = permissions;
+            role.features = features;
+            role.sub_features = sub_features;
         }
     } else {
-        // Create new role
         const newId = name.toLowerCase().replace(/\s+/g, '-') + '-' + Date.now();
         rolesData.push({
             id: newId,
@@ -448,7 +336,8 @@ function saveRole() {
             description: desc,
             protected: false,
             userCount: 0,
-            permissions,
+            features,
+            sub_features
         });
         activeRoleId = newId;
     }
@@ -459,19 +348,40 @@ function saveRole() {
     showToast(`Role "${name}" saved successfully!`);
 }
 
-function collectModalPermissions() {
-    const permissions = {};
-    MODULES.forEach(mod => {
-        permissions[mod.key] = {};
-        ['view', 'create', 'edit', 'delete'].forEach(action => {
-            const cb = modalPermBody.querySelector(`[data-module="${mod.key}"][data-action="${action}"]`);
-            permissions[mod.key][action] = cb ? cb.checked : false;
-        });
-    });
-    return permissions;
+// ─── Scanning Data Logic ────────────────────────────────────────────────────────
+function collectPermissionsFromContainer(containerEl) {
+    const features = [];
+    const sub_features = [];
+
+    // Harvest Checked Main Features
+    const featureChecks = containerEl.querySelectorAll('.feature-check:checked');
+    featureChecks.forEach(cb => features.push(cb.dataset.feature));
+
+    // Harvest Checked Sub-Features
+    const subFeatureChecks = containerEl.querySelectorAll('.sub-feature-check:checked');
+    subFeatureChecks.forEach(cb => sub_features.push(cb.dataset.subFeature));
+
+    return { features, sub_features };
 }
 
-// ─── Delete Confirm ───────────────────────────────────────────────────────────
+// ─── Inline Save ───────────────────────────────────────────────────────────────
+function saveInlinePerms() {
+    const role = rolesData.find(r => r.id === activeRoleId);
+    if (!role) return;
+
+    const { features, sub_features } = collectPermissionsFromContainer(permMatrixBody);
+    
+    role.features = features;
+    role.sub_features = sub_features;
+
+    // Simulate sending API payload
+    console.log(`[API REQUEST] Saving Role Permissions for ${role.name}:`, { features, sub_features });
+
+    btnSavePerms.style.display = 'none';
+    showToast(`Permissions for "${role.name}" saved!`);
+}
+
+// ─── Delete Actions ───────────────────────────────────────────────────────────
 function openDeleteConfirm(roleId) {
     const role = rolesData.find(r => r.id === roleId);
     if (!role || role.protected) return;
@@ -488,29 +398,10 @@ function confirmDelete() {
     const roleId = btnConfirmDelete.dataset.roleId;
     rolesData = rolesData.filter(r => r.id !== roleId);
     closeDeleteConfirm();
-
-    // If the deleted role was the active one, default to Owner
     if (activeRoleId === roleId) activeRoleId = 'owner';
-
     renderRolesList();
     selectRole(activeRoleId);
     showToast('Role deleted successfully.');
-}
-
-// ─── Inline Permissions Save ──────────────────────────────────────────────────
-function saveInlinePerms() {
-    const role = rolesData.find(r => r.id === activeRoleId);
-    if (!role) return;
-
-    MODULES.forEach(mod => {
-        ['view', 'create', 'edit', 'delete'].forEach(action => {
-            const cb = permMatrixBody.querySelector(`[data-module="${mod.key}"][data-action="${action}"]`);
-            if (cb) role.permissions[mod.key][action] = cb.checked;
-        });
-    });
-
-    btnSavePerms.style.display = 'none';
-    showToast(`Permissions for "${role.name}" saved!`);
 }
 
 // ─── Utility ──────────────────────────────────────────────────────────────────
@@ -526,5 +417,4 @@ function showToast(msg) {
     setTimeout(() => toast.classList.remove('show'), 3000);
 }
 
-// ─── Bootstrap ────────────────────────────────────────────────────────────────
 document.addEventListener('DOMContentLoaded', init);

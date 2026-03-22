@@ -5,12 +5,15 @@ export const FEATURES = {
     CUSTOMERS_MANAGEMENT: 'customers_management',
     STAFF_MANAGEMENT: 'staff_management',
     SERVICES_MANAGEMENT: 'services_management',
-    PAYMENTS_TRACKING: 'payments_tracking',
 
     // Sales / POS
     POS_SYSTEM: 'pos_system',
     PRODUCT_MANAGEMENT: 'product_management',
     SALES_HISTORY: 'sales_history',
+
+    // Payments
+    PENDING_PAYMENTS: 'pending_payments',
+    PAYMENTS_HISTORY: 'payments_history',
 
     // Marketing
     MARKETING_OFFERS: 'marketing_offers',
@@ -20,22 +23,39 @@ export const FEATURES = {
 
     // Analytics
     ANALYTICS_OVERVIEW: 'analytics_overview',
-    BASIC_REPORTS: 'basic_reports',
-    ADVANCED_REPORTS: 'advanced_reports',
+    REPORTS_ACCESS: 'reports_access',
 
-    // Administration
+    // Settings
+    COMPANY_SETTINGS: 'company_settings',
     BRANCH_MANAGEMENT: 'branch_management',
-    MULTI_BRANCH: 'multi_branch',
-    CUSTOM_ROLES_PERMISSIONS: 'custom_roles_permissions',
     USER_MANAGEMENT: 'user_management',
-    BILLING_SUBSCRIPTION_MANAGEMENT: 'billing_subscription_management',
-
-    // Staff/Operations
-    VIEW_SCHEDULE: 'view_schedule',
-
-    // Future platform features
-    ONLINE_BOOKING_PAGE: 'online_booking_page',
-    AI_RECEPTIONIST: 'ai_receptionist',
-    WHATSAPP_BOOKING: 'whatsapp_booking',
-    VOICE_BOOKING: 'voice_booking'
+    ROLES_PERMISSIONS: 'roles_permissions',
+    CUSTOM_FIELDS: 'custom_fields',
+    BILLING_SUBSCRIPTION_MANAGEMENT: 'billing_subscription_management'
 };
+
+// UI Metadata used for dynamically rendering the Roles & Permissions tables
+export const MODULES_META = [
+    { key: FEATURES.DASHBOARD_ACCESS, label: 'Dashboard', icon: 'home' },
+    { key: FEATURES.BOOKINGS_MANAGEMENT, label: 'Bookings', icon: 'calendar' },
+    { key: FEATURES.CUSTOMERS_MANAGEMENT, label: 'Customers', icon: 'users' },
+    { key: FEATURES.STAFF_MANAGEMENT, label: 'Staff', icon: 'user-check' },
+    { key: FEATURES.SERVICES_MANAGEMENT, label: 'Services', icon: 'scissors' },
+    { key: FEATURES.POS_SYSTEM, label: 'Point of Sale', icon: 'dollar-sign' },
+    { key: FEATURES.PRODUCT_MANAGEMENT, label: 'Products', icon: 'box' },
+    { key: FEATURES.SALES_HISTORY, label: 'Sales History', icon: 'clipboard' },
+    { key: FEATURES.PENDING_PAYMENTS, label: 'Pending Payments', icon: 'clock' },
+    { key: FEATURES.PAYMENTS_HISTORY, label: 'Payments History', icon: 'credit-card' },
+    { key: FEATURES.MARKETING_OFFERS, label: 'Offers', icon: 'tag' },
+    { key: FEATURES.MARKETING_COUPONS, label: 'Coupons', icon: 'percent' },
+    { key: FEATURES.MARKETING_MEMBERSHIPS, label: 'Memberships', icon: 'award' },
+    { key: FEATURES.MARKETING_CAMPAIGNS, label: 'Ad Campaigns', icon: 'speaker' },
+    { key: FEATURES.ANALYTICS_OVERVIEW, label: 'Overview', icon: 'pie-chart' },
+    { key: FEATURES.REPORTS_ACCESS, label: 'Reports', icon: 'bar-chart-2' },
+    { key: FEATURES.COMPANY_SETTINGS, label: 'Company Settings', icon: 'settings' },
+    { key: FEATURES.BRANCH_MANAGEMENT, label: 'Branches', icon: 'map-pin' },
+    { key: FEATURES.USER_MANAGEMENT, label: 'Users', icon: 'users' },
+    { key: FEATURES.ROLES_PERMISSIONS, label: 'Roles & Permissions', icon: 'shield' },
+    { key: FEATURES.CUSTOM_FIELDS, label: 'Custom Fields', icon: 'edit-3' },
+    { key: FEATURES.BILLING_SUBSCRIPTION_MANAGEMENT, label: 'Billing & Subscriptions', icon: 'credit-card' }
+];
