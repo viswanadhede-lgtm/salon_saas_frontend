@@ -226,16 +226,19 @@
 
             // Frontend validation: new and confirm must match
             if (newPwd !== confirmPwd) {
+                errorEl.style.color = '#ef4444';
                 errorEl.textContent = 'Passwords do not match.';
                 errorEl.style.display = 'block';
                 return;
             }
             errorEl.style.display = 'none';
 
-            // Call the change password API
+            // Loading state
             const token = localStorage.getItem('token');
             submitBtn.disabled = true;
-            submitBtn.textContent = 'Updating...';
+            submitBtn.textContent = 'Updating Password...';
+            submitBtn.style.cursor = 'wait';
+            document.body.style.cursor = 'wait';
 
             fetch('https://dev.bharathbots.com/webhook/auth_change_password', {
                 method: 'POST',
@@ -250,23 +253,34 @@
             })
             .then(res => res.json())
             .then(data => {
-                if (data && data.success) {
+                // Normalise — handle both array [ {...} ] and object { ... }
+                const result = Array.isArray(data) ? data[0] : data;
+                const msg = (result && result.message) ? result.message : null;
+
+                if (result && result.success) {
                     console.log('[change-password] Password updated successfully.');
-                    closeChgPwdModal();
+                    // Show success message in green, then auto-close after 2s
+                    errorEl.style.color = '#16a34a';
+                    errorEl.textContent = msg || 'Password updated successfully.';
+                    errorEl.style.display = 'block';
+                    setTimeout(() => closeChgPwdModal(), 2000);
                 } else {
-                    const msg = (data && data.message) ? data.message : 'Failed to update password. Please try again.';
-                    errorEl.textContent = msg;
+                    errorEl.style.color = '#ef4444';
+                    errorEl.textContent = msg || 'Failed to update password. Please try again.';
                     errorEl.style.display = 'block';
                 }
             })
             .catch(err => {
                 console.error('[change-password] Network error:', err);
+                errorEl.style.color = '#ef4444';
                 errorEl.textContent = 'Network error. Please check your connection and try again.';
                 errorEl.style.display = 'block';
             })
             .finally(() => {
                 submitBtn.disabled = false;
                 submitBtn.textContent = 'Update Password';
+                submitBtn.style.cursor = '';
+                document.body.style.cursor = '';
             });
         });
     }
