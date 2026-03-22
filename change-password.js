@@ -218,19 +218,56 @@
 
         // Submit
         document.getElementById('cpwdSubmitBtn').addEventListener('click', () => {
-            const newPwd = document.getElementById('cpwdNew').value;
-            const confirmPwd = document.getElementById('cpwdConfirm').value;
+            const currentPwd = document.getElementById('cpwdCurrent').value.trim();
+            const newPwd = document.getElementById('cpwdNew').value.trim();
+            const confirmPwd = document.getElementById('cpwdConfirm').value.trim();
             const errorEl = document.getElementById('cpwdMismatchError');
+            const submitBtn = document.getElementById('cpwdSubmitBtn');
 
+            // Frontend validation: new and confirm must match
             if (newPwd !== confirmPwd) {
+                errorEl.textContent = 'Passwords do not match.';
                 errorEl.style.display = 'block';
                 return;
             }
             errorEl.style.display = 'none';
 
-            // TODO: wire to backend API (e.g. auth_change_password)
-            console.log('[change-password] Password update triggered.');
-            closeChgPwdModal();
+            // Call the change password API
+            const token = localStorage.getItem('token');
+            submitBtn.disabled = true;
+            submitBtn.textContent = 'Updating...';
+
+            fetch('https://dev.bharathbots.com/webhook/auth_change_password', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${token}`
+                },
+                body: JSON.stringify({
+                    current_password: currentPwd,
+                    new_password: newPwd
+                })
+            })
+            .then(res => res.json())
+            .then(data => {
+                if (data && data.success) {
+                    console.log('[change-password] Password updated successfully.');
+                    closeChgPwdModal();
+                } else {
+                    const msg = (data && data.message) ? data.message : 'Failed to update password. Please try again.';
+                    errorEl.textContent = msg;
+                    errorEl.style.display = 'block';
+                }
+            })
+            .catch(err => {
+                console.error('[change-password] Network error:', err);
+                errorEl.textContent = 'Network error. Please check your connection and try again.';
+                errorEl.style.display = 'block';
+            })
+            .finally(() => {
+                submitBtn.disabled = false;
+                submitBtn.textContent = 'Update Password';
+            });
         });
     }
 
