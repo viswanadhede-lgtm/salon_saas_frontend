@@ -10,6 +10,7 @@
         '/index.html', 
         '/signin.html',
         '/pricing.html',
+        '/plans.html',
         '/onboarding.html',
         '/payment-result.html',
         '/payments.html'
