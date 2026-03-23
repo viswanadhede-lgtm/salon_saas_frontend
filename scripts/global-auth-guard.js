@@ -163,28 +163,28 @@ function showAuthBlockModal(errorType, messageText, buttonText, buttonLink) {
         : '<circle cx="12" cy="12" r="10"></circle><line x1="12" y1="8" x2="12" y2="12"></line><line x1="12" y1="16" x2="12.01" y2="16"></line>'; // Circle X
 
     const modalHtml = `
-        <div class="modal-overlay auth-guard-overlay" style="display: flex; z-index: 999999; background: rgba(15, 23, 42, 0.7); backdrop-filter: blur(8px); position: fixed; top: 0; left: 0; width: 100%; height: 100%; align-items: center; justify-content: center;">
-            <div class="modal-container" style="max-width: 440px; width: 90%; text-align: center; padding: 2.5rem; border-radius: 16px; background: white; box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25); border: 1px solid #e2e8f0; animation: fadeInUp 0.3s ease-out;">
-                <div class="modal-header" style="justify-content: center; border-bottom: none; padding: 0 0 1rem 0;">
-                    <div style="background: ${iconBg}; color: ${iconColor}; width: 56px; height: 56px; border-radius: 50%; display: flex; align-items: center; justify-content: center; margin: 0 auto 1.5rem auto;">
-                        <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">${iconPath}</svg>
+        <div id="authGuardBlockOverlay" style="display: flex !important; z-index: 2147483647 !important; background: rgba(15, 23, 42, 0.75) !important; backdrop-filter: blur(12px) !important; position: fixed !important; top: 0 !important; left: 0 !important; right: 0 !important; bottom: 0 !important; width: 100vw !important; height: 100vh !important; align-items: center !important; justify-content: center !important; margin: 0 !important; padding: 0 !important; overflow: hidden !important;">
+            <div style="max-width: 440px !important; width: 90% !important; text-align: center !important; padding: 2.5rem !important; border-radius: 16px !important; background: white !important; box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25) !important; border: 1px solid #e2e8f0 !important; animation: fadeInUp 0.4s cubic-bezier(0.16, 1, 0.3, 1) !important; position: relative !important; z-index: 2147483647 !important; display: block !important;">
+                <div style="display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 0 0 1.5rem 0;">
+                    <div style="background: ${iconBg}; color: ${iconColor}; width: 64px; height: 64px; border-radius: 50%; display: flex; align-items: center; justify-content: center; margin: 0 auto 1.5rem auto;">
+                        <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">${iconPath}</svg>
                     </div>
-                    <h2 style="font-size: 1.5rem; font-weight: 700; color: #0f172a; margin: 0;">Access Restricted</h2>
+                    <h2 style="font-size: 1.5rem; font-weight: 700; color: #0f172a; margin: 0; font-family: Inter, sans-serif;">Access Restricted</h2>
                 </div>
-                <div class="modal-body" style="padding: 0 0 2rem 0;">
-                    <p style="font-size: 1.05rem; color: #475569; line-height: 1.6; margin: 0;">${messageText}</p>
+                <div style="padding: 0 0 2rem 0;">
+                    <p style="font-size: 1.05rem; color: #475569; line-height: 1.6; margin: 0; font-family: Inter, sans-serif;">${messageText}</p>
                 </div>
-                <div class="modal-footer" style="justify-content: center; border-top: none; padding: 0;">
-                    <button class="btn-primary" style="width: 100%; padding: 0.875rem; font-size: 1rem; font-weight: 600; cursor: pointer; border-radius: 8px; border: none; background: #0f172a; color: white; transition: background 0.2s;" onmouseover="this.style.background='#1e293b'" onmouseout="this.style.background='#0f172a'" onclick="window.location.href='${buttonLink}'">${buttonText}</button>
+                <div style="display: flex; justify-content: center; padding: 0; width: 100%;">
+                    <button style="width: 100% !important; padding: 1rem !important; font-size: 1rem !important; font-weight: 600 !important; font-family: Inter, sans-serif !important; cursor: pointer !important; border-radius: 8px !important; border: none !important; background: #0f172a !important; color: white !important; transition: background 0.2s !important; display: block !important;" onmouseover="this.style.background='#1e293b'" onmouseout="this.style.background='#0f172a'" onclick="window.location.href='${buttonLink}'">${buttonText}</button>
                 </div>
             </div>
-            <style>
-                @keyframes fadeInUp {
-                    from { opacity: 0; transform: translateY(20px); }
-                    to { opacity: 1; transform: translateY(0); }
-                }
-            </style>
         </div>
+        <style>
+            @keyframes fadeInUp {
+                from { opacity: 0; transform: translateY(24px) scale(0.98); }
+                to { opacity: 1; transform: translateY(0) scale(1); }
+            }
+        </style>
     `;
 
     document.body.insertAdjacentHTML('beforeend', modalHtml);
