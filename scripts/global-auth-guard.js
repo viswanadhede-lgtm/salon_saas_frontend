@@ -10,23 +10,23 @@ const ROUTE_MAP = {
     '/customers.html': FEATURES.CUSTOMERS_MANAGEMENT,
     '/staff.html': FEATURES.STAFF_MANAGEMENT,
     '/services.html': FEATURES.SERVICES_MANAGEMENT,
-    '/sales.html': FEATURES.POS_SYSTEM,
+    '/pos.html': FEATURES.POS_SYSTEM,
     '/products.html': FEATURES.PRODUCT_MANAGEMENT,
     '/sales-history.html': FEATURES.SALES_HISTORY,
     '/pending-payments.html': FEATURES.PENDING_PAYMENTS,
     '/payments-history.html': FEATURES.PAYMENTS_HISTORY,
-    '/marketing-offers.html': FEATURES.MARKETING_OFFERS,
+    '/offers.html': FEATURES.MARKETING_OFFERS,
     '/coupons.html': FEATURES.MARKETING_COUPONS,
     '/memberships.html': FEATURES.MARKETING_MEMBERSHIPS,
     '/ad-campaigns.html': FEATURES.MARKETING_CAMPAIGNS,
     '/overview.html': FEATURES.ANALYTICS_OVERVIEW,
     '/reports.html': FEATURES.REPORTS_ACCESS,
-    '/company-settings.html': FEATURES.COMPANY_SETTINGS,
+    '/company.html': FEATURES.COMPANY_SETTINGS,
     '/branches.html': FEATURES.BRANCH_MANAGEMENT,
     '/users.html': FEATURES.USER_MANAGEMENT,
     '/roles-permissions.html': FEATURES.ROLES_PERMISSIONS,
     '/custom-fields.html': FEATURES.CUSTOM_FIELDS,
-    '/billing.html': FEATURES.BILLING_SUBSCRIPTION_MANAGEMENT
+    '/billing-subscription.html': FEATURES.BILLING_SUBSCRIPTION_MANAGEMENT
 };
 
 export async function runGlobalAuthGuard() {
