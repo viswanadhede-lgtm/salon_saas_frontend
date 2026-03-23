@@ -39,7 +39,7 @@ export async function runGlobalAuthGuard() {
     // 2. If the current page is not linked to an overarching Security Feature, it is considered Public!
     if (!featureKey) {
         console.log(`[Auth Guard] Public Route Detected: ${filename}. Bypassing security checks.`);
-        document.documentElement.style.display = ''; // Reveal if it was hidden by the loader
+        removeAuthSpinner();
         return;
     }
 
@@ -110,7 +110,7 @@ export async function runGlobalAuthGuard() {
         applySubFeatureGates(); // Loops over all locked dom buttons and unleashes allowed ones
         
         // 6. Reveal the securely rendered page to the user
-        document.documentElement.style.display = '';
+        removeAuthSpinner();
         
     } catch (error) {
         console.error('[Auth Guard] Catastrophic network error during secure gateway validation:', error);
@@ -119,6 +119,17 @@ export async function runGlobalAuthGuard() {
 }
 
 document.addEventListener('DOMContentLoaded', runGlobalAuthGuard);
+
+/**
+ * Removes the BharathBots branded loading spinner and reveals the page.
+ */
+function removeAuthSpinner() {
+    document.documentElement.style.display = '';
+    const loader = document.getElementById('bbAuthLoader');
+    const loaderStyle = document.getElementById('bbLoaderStyle');
+    if (loader) loader.remove();
+    if (loaderStyle) loaderStyle.remove();
+}
 
 /**
  * Helper to display an un-closable, full-screen blocking modal
