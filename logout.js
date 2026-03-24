@@ -255,6 +255,7 @@
             localStorage.removeItem('selected_plan');
             localStorage.removeItem('userFeatures');
             localStorage.removeItem('userSubFeatures');
+            localStorage.removeItem('appContext');
             console.log('[logout] Local session cleared. Redirecting to sign-in.');
             document.body.style.cursor = '';
             window.location.href = 'signin.html?loggedout=true';

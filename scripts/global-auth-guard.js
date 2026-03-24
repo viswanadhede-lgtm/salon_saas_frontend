@@ -74,6 +74,7 @@ export async function runGlobalAuthGuard() {
 
         // Proceed Instantly - Zero Wait!
         console.log(`[Auth Guard] Instant Unlock for feature: ${featureKey}`);
+        populateGlobalHeader(); // Hydrate UI from cached context
         initSubFeatures();
         applySubFeatureGates();
         removeAuthSpinner();
@@ -82,18 +83,21 @@ export async function runGlobalAuthGuard() {
 
     // 5. CACHE MISS (Cold Start): Requires blocking API call and UI spinner
     try {
-        console.log(`[Auth Guard] Cache missing. Fetching payload securely from API for feature: ${featureKey || 'Generic Authenticated Route'}`);
+        console.log(`[Auth Guard] Cache missing. Fetching payloads securely from API for feature: ${featureKey || 'Generic Authenticated Route'}`);
         
-        // 3. Make the universal API Call (injects token + custom headers)
-        const response = await fetchWithAuth(API.AUTH_GUARD, { method: 'POST' }, featureKey, 'read');
+        // 3. Make the universal API Calls concurrently (injects token + custom headers)
+        const [authResponse, contextResponse] = await Promise.all([
+            fetchWithAuth(API.AUTH_GUARD, { method: 'POST' }, featureKey, 'read'),
+            fetchWithAuth(API.GET_APP_CONTEXT, { method: 'POST' }, featureKey, 'read')
+        ]);
         
-        if (!response.ok) {
-            console.error('[Auth Guard] API Request failed (HTTP ' + response.status + ').');
+        if (!authResponse.ok) {
+            console.error('[Auth Guard] API Request failed (HTTP ' + authResponse.status + ').');
             showAuthBlockModal('ERROR', 'Unable to verify session with the server. Please try again later.', 'Refresh Page', window.location.href);
             return;
         }
 
-        const data = await response.json();
+        const data = await authResponse.json();
         
         // 1. Handle explicit backend rejection states
         if (data.allowed === false) {
@@ -136,7 +140,21 @@ export async function runGlobalAuthGuard() {
         if (data.permissions) localStorage.setItem('userSubFeatures', JSON.stringify(data.permissions));
         if (data.features)   localStorage.setItem('userFeatures', JSON.stringify(data.features));
 
+        // Process App Context gracefully
+        if (contextResponse && contextResponse.ok) {
+            try {
+                const contextData = await contextResponse.json();
+                const actualContext = Array.isArray(contextData) ? contextData[0] : contextData;
+                localStorage.setItem('appContext', JSON.stringify(actualContext));
+            } catch (e) {
+                console.warn('[Auth Guard] Failed to parse get_app_context response.', e);
+            }
+        }
+
         setupHourlyCheck(); // Start the hourly heartbeat
+
+        // Hydrate header from newly minted cache
+        populateGlobalHeader();
 
         // 7. Trigger the visual UI unlocking sequence mapping
         initSubFeatures(); // Reloads sub-features into the JS runtime state
@@ -214,6 +232,80 @@ function setupHourlyCheck() {
             console.warn('[Auth Guard] Silent hourly heartbeat failed. Will retry next hour.', error);
         }
     }, ONE_HOUR);
+}
+
+/**
+ * Hydrates the global header elements with cached get_app_context data.
+ */
+export function populateGlobalHeader() {
+    const contextStr = localStorage.getItem('appContext');
+    if (!contextStr) return;
+    
+    try {
+        const context = JSON.parse(contextStr);
+        
+        // 1. Get DOM Elements
+        const branchSelect = document.getElementById('branchSelect');
+        const planBadge = document.getElementById('headerPlanBadge');
+        const profileMenu = document.getElementById('profileMenu');
+        const avatarImg = document.querySelector('#avatarBtn img');
+        
+        // 2. Populate Header Plan Badge
+        if (planBadge && context.plan_name) {
+            planBadge.textContent = context.plan_name;
+        }
+        
+        // 3. Populate Profile Dropdown
+        if (profileMenu) {
+            const nameEl = profileMenu.querySelector('.dropdown-name');
+            const roleEl = profileMenu.querySelector('.dropdown-role');
+            if (nameEl && context.user_name) nameEl.textContent = context.user_name;
+            if (roleEl && context.role_name) roleEl.textContent = context.role_name;
+        }
+
+        // 4. Update Avatar Circle
+        if (avatarImg && context.user_name) {
+            const encodedName = encodeURIComponent(context.user_name);
+            avatarImg.src = `https://ui-avatars.com/api/?name=${encodedName}&background=1E3A8A&color=fff`;
+        }
+        
+        // 5. Populate Branch Dropdown & Auto-Select Lowest ID
+        if (branchSelect && context.branches && Array.isArray(context.branches) && context.branches.length > 0) {
+            // Sort branches to automatically find the lowest numeric ID
+            const sortedBranches = [...context.branches].sort((a, b) => {
+                const idA = parseInt(a.branch_id || a.id) || 0;
+                const idB = parseInt(b.branch_id || b.id) || 0;
+                return idA - idB;
+            });
+            
+            // Rebuild the <select> dropdown
+            branchSelect.innerHTML = '';
+            sortedBranches.forEach(b => {
+                const opt = document.createElement('option');
+                opt.value = b.branch_id || b.id;
+                opt.textContent = b.branch_name || b.name;
+                branchSelect.appendChild(opt);
+            });
+            
+            // Auto Select Lowest ID logic
+            const lowestBranchVal = sortedBranches[0].branch_id || sortedBranches[0].id;
+            
+            // Preserve user's selection if they previously manually switched branches
+            if (!localStorage.getItem('active_branch_id')) {
+                localStorage.setItem('active_branch_id', lowestBranchVal);
+            }
+            
+            branchSelect.value = localStorage.getItem('active_branch_id') || lowestBranchVal;
+            
+            // Bind the "change" event if it isn't completely bound externally
+            branchSelect.addEventListener('change', (e) => {
+                localStorage.setItem('active_branch_id', e.target.value);
+            });
+        }
+
+    } catch (e) {
+        console.error('[Auth Guard] Failed to hydrate global header DOM securely', e);
+    }
 }
 
 /**

@@ -16,6 +16,7 @@ export const API = {
   READ_ADDONS: `${BASE_URL}/read_addons`,
   CREATE_ORDER: `${BASE_URL}/create_order`,
   AUTH_GUARD: `${BASE_URL}/auth_guard`,
+  GET_APP_CONTEXT: `${BASE_URL}/get_app_context`,
   PAYMENT_STATUS: `${BASE_URL}/payment_status`
 };
 

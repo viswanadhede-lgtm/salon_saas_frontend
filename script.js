@@ -404,6 +404,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     // Clear any stale feature caches to guarantee a fresh fetch on the dashboard loader
                     localStorage.removeItem('userFeatures');
                     localStorage.removeItem('userSubFeatures');
+                    localStorage.removeItem('appContext');
 
                     console.log('[signin] Session data stored.');
                     btn.textContent = 'Welcome back!';
