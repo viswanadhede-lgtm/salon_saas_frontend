@@ -330,6 +330,11 @@ export function populateGlobalHeader() {
             if (profileEmail && context.user.email) profileEmail.value = context.user.email;
             if (profileRoleInput && context.user.role_name) profileRoleInput.value = context.user.role_name;
             if (profileJoined && context.user.joined_on) profileJoined.value = context.user.joined_on;
+            
+            const profileEmergencyName = document.getElementById('profileEmergencyName');
+            const profileEmergencyPhone = document.getElementById('profileEmergencyPhone');
+            if (profileEmergencyName && context.user.emergency_contact_name) profileEmergencyName.value = context.user.emergency_contact_name;
+            if (profileEmergencyPhone && context.user.emergency_contact_number) profileEmergencyPhone.value = context.user.emergency_contact_number;
         }
         
         // 5. Populate Branch Dropdown
