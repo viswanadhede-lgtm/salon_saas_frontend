@@ -13,22 +13,7 @@ document.addEventListener('DOMContentLoaded', () => {
         console.warn('No token found, redirecting to sign in');
         // window.location.href = 'signin.html'; // In a real environment uncomment this
     } else {
-        // Start sliding session refresh (runs every 60 minutes)
-        setInterval(() => {
-            console.log('[dashboard] Refreshing session token to slide expiration...');
-            fetch('https://dev.bharathbots.com/webhook/auth_refresh_session', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${authToken}`
-                }
-            })
-            .then(res => {
-                if(!res.ok) console.warn('[dashboard] Session refresh failed remotely.');
-                else console.log('[dashboard] Session successfully extended.');
-            })
-            .catch(err => console.error('[dashboard] Session refresh network error:', err));
-        }, 60 * 60 * 1000); // 1 hour in milliseconds
+        // Set interval logic has been centralized to global-auth-guard.js
     }
 
     // Read stored data

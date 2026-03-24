@@ -62,8 +62,9 @@ export async function runGlobalAuthGuard() {
     if (cachedFeatures && Array.isArray(cachedFeatures)) {
         console.log(`[Auth Guard] Instant Cache hit! Validating against ${cachedFeatures.length} features.`);
         
-        // Ensure the hourly heartbeat is running silently
+        // Ensure the hourly & daily heartbeats are running silently
         setupHourlyCheck();
+        setupDailyRefresh();
 
         // Optimistic check: are they allowed?
         if (!cachedFeatures.includes(featureKey)) {
@@ -152,6 +153,7 @@ export async function runGlobalAuthGuard() {
         }
 
         setupHourlyCheck(); // Start the hourly heartbeat
+        setupDailyRefresh(); // Start the 24-hour token slide
 
         // Hydrate header from newly minted cache
         populateGlobalHeader();
@@ -232,6 +234,34 @@ function setupHourlyCheck() {
             console.warn('[Auth Guard] Silent hourly heartbeat failed. Will retry next hour.', error);
         }
     }, ONE_HOUR);
+}
+
+let dailyRefreshInterval = null;
+
+/**
+ * Sets up a background timer to ping the backend every 24 hours 
+ * to slide the session expiration window. The token remains the same.
+ */
+function setupDailyRefresh() {
+    if (dailyRefreshInterval) return; // Prevent multiple intervals
+    
+    // Set for exactly 24 hours
+    const ONE_DAY = 24 * 60 * 60 * 1000;
+    
+    dailyRefreshInterval = setInterval(async () => {
+        try {
+            console.log('[Auth Guard] Pinging auth_refresh_session to slide token expiration (Daily Heartbeat)...');
+            const response = await fetchWithAuth(API.AUTH_REFRESH_SESSION, { method: 'POST' });
+            
+            if (!response.ok) {
+                console.warn('[Auth Guard] Daily session refresh failed remotely. HTTP:', response.status);
+            } else {
+                console.log('[Auth Guard] Daily session effectively sliding forward.');
+            }
+        } catch (error) {
+            console.warn('[Auth Guard] Daily session refresh drop due to network error.', error);
+        }
+    }, ONE_DAY);
 }
 
 /**
