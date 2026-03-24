@@ -295,14 +295,41 @@ export function populateGlobalHeader() {
             if (roleEl && context.user.role_name) roleEl.textContent = context.user.role_name;
         }
 
-        // 4. Update Avatar Circle
+        // 4. Update Avatar Circle (Header)
+        let mainAvatarUrl = '';
         if (avatarImg && context.user) {
             if (context.user.profile_photo && context.user.profile_photo.trim() !== '') {
-                avatarImg.src = context.user.profile_photo;
+                mainAvatarUrl = context.user.profile_photo;
             } else if (context.user.name) {
                 const encodedName = encodeURIComponent(context.user.name);
-                avatarImg.src = `https://ui-avatars.com/api/?name=${encodedName}&background=1E3A8A&color=fff`;
+                mainAvatarUrl = `https://ui-avatars.com/api/?name=${encodedName}&background=1E3A8A&color=fff`;
             }
+            if (mainAvatarUrl) avatarImg.src = mainAvatarUrl;
+        }
+        
+        // 4b. Hydrate the Profile Details Modal (If it exists on the page)
+        if (context.user) {
+            const profileAvatarImg = document.getElementById('profileAvatarImg');
+            const profileNameDisplay = document.querySelector('.profile-name-display');
+            const profileRoleDisplay = document.querySelector('.profile-role-display');
+            
+            const profileFirstName = document.getElementById('profileFirstName');
+            const profileLastName = document.getElementById('profileLastName');
+            const profilePhone = document.getElementById('profilePhone');
+            const profileEmail = document.getElementById('profileEmail');
+            const profileRoleInput = document.getElementById('profileRole');
+            const profileJoined = document.getElementById('profileJoined');
+            
+            if (profileAvatarImg && mainAvatarUrl) profileAvatarImg.src = mainAvatarUrl;
+            if (profileNameDisplay && context.user.name) profileNameDisplay.textContent = context.user.name;
+            if (profileRoleDisplay && context.user.role_name) profileRoleDisplay.textContent = context.user.role_name;
+            
+            if (profileFirstName && context.user.first_name) profileFirstName.value = context.user.first_name;
+            if (profileLastName && context.user.last_name) profileLastName.value = context.user.last_name;
+            if (profilePhone && context.user.phone) profilePhone.value = context.user.phone;
+            if (profileEmail && context.user.email) profileEmail.value = context.user.email;
+            if (profileRoleInput && context.user.role_name) profileRoleInput.value = context.user.role_name;
+            if (profileJoined && context.user.joined_on) profileJoined.value = context.user.joined_on;
         }
         
         // 5. Populate Branch Dropdown
