@@ -281,31 +281,38 @@ export function populateGlobalHeader() {
         const avatarImg = document.querySelector('#avatarBtn img');
         
         // 2. Populate Header Plan Badge
-        if (planBadge && context.plan_name) {
-            planBadge.textContent = context.plan_name;
+        if (planBadge && context.company && context.company.plan) {
+            // Capitalize the first letter (e.g. "advance" -> "Advance")
+            const planString = context.company.plan;
+            planBadge.textContent = planString.charAt(0).toUpperCase() + planString.slice(1);
         }
         
         // 3. Populate Profile Dropdown
-        if (profileMenu) {
+        if (profileMenu && context.user) {
             const nameEl = profileMenu.querySelector('.dropdown-name');
             const roleEl = profileMenu.querySelector('.dropdown-role');
-            if (nameEl && context.user_name) nameEl.textContent = context.user_name;
-            if (roleEl && context.role_name) roleEl.textContent = context.role_name;
+            if (nameEl && context.user.name) nameEl.textContent = context.user.name;
+            if (roleEl && context.user.role_name) roleEl.textContent = context.user.role_name;
         }
 
         // 4. Update Avatar Circle
-        if (avatarImg && context.user_name) {
-            const encodedName = encodeURIComponent(context.user_name);
-            avatarImg.src = `https://ui-avatars.com/api/?name=${encodedName}&background=1E3A8A&color=fff`;
+        if (avatarImg && context.user) {
+            if (context.user.profile_photo && context.user.profile_photo.trim() !== '') {
+                avatarImg.src = context.user.profile_photo;
+            } else if (context.user.name) {
+                const encodedName = encodeURIComponent(context.user.name);
+                avatarImg.src = `https://ui-avatars.com/api/?name=${encodedName}&background=1E3A8A&color=fff`;
+            }
         }
         
-        // 5. Populate Branch Dropdown & Auto-Select Lowest ID
+        // 5. Populate Branch Dropdown
         if (branchSelect && context.branches && Array.isArray(context.branches) && context.branches.length > 0) {
-            // Sort branches to automatically find the lowest numeric ID
+            // Sort branches to automatically find the lowest numeric ID as fallback
             const sortedBranches = [...context.branches].sort((a, b) => {
-                const idA = parseInt(a.branch_id || a.id) || 0;
-                const idB = parseInt(b.branch_id || b.id) || 0;
-                return idA - idB;
+                // Extract numbers from "BR_001" if possible
+                const aNum = parseInt((a.id || '').replace(/\D/g, '')) || 0;
+                const bNum = parseInt((b.id || '').replace(/\D/g, '')) || 0;
+                return aNum - bNum;
             });
             
             // Rebuild the <select> dropdown
@@ -317,12 +324,12 @@ export function populateGlobalHeader() {
                 branchSelect.appendChild(opt);
             });
             
-            // Auto Select Lowest ID logic
-            const lowestBranchVal = sortedBranches[0].branch_id || sortedBranches[0].id;
+            // Select explicit current_branch_id from payload, OR fallback to lowest sorted ID
+            const defaultBranchVal = context.current_branch_id || (sortedBranches[0].id);
             
-            // Preserve user's selection if they previously manually switched branches
-            if (!localStorage.getItem('active_branch_id')) {
-                localStorage.setItem('active_branch_id', lowestBranchVal);
+            // Preserve user's manual selection only if requested, otherwise enforce backend state
+            if (!localStorage.getItem('active_branch_id') || context.current_branch_id) {
+                localStorage.setItem('active_branch_id', defaultBranchVal);
             }
             
             branchSelect.value = localStorage.getItem('active_branch_id') || lowestBranchVal;
@@ -331,6 +338,39 @@ export function populateGlobalHeader() {
             branchSelect.addEventListener('change', (e) => {
                 localStorage.setItem('active_branch_id', e.target.value);
             });
+        }
+        
+        // 6. Populate Schedule Modal
+        if (context.schedule) {
+            const renderScheduleList = (paneId, weekData) => {
+                const pane = document.getElementById(paneId);
+                if (!pane) return;
+                const ul = pane.querySelector('.schedule-list');
+                if (!ul) return;
+                
+                ul.innerHTML = ''; // Clear hardcoded HTML
+                
+                if (!weekData || weekData.length === 0) {
+                    ul.innerHTML = '<li style="padding: 16px; text-align: center; color: #64748b; font-size: 0.9rem;">No schedule available for this week.</li>';
+                    return;
+                }
+                
+                weekData.forEach(shift => {
+                    const li = document.createElement('li');
+                    li.className = 'schedule-item';
+                    li.style.cssText = 'display: grid; grid-template-columns: 100px 120px 1fr 1fr; padding: 12px 16px; background: #f8fafc; border-radius: 8px; align-items: center; margin-bottom: 8px;';
+                    li.innerHTML = `
+                        <div class="schedule-date" style="font-size: 0.85rem; color: #64748b; font-weight: 500;">${shift.date || ''}</div>
+                        <div class="schedule-day" style="font-weight: 600; color: #334155; font-size: 0.9rem;">${shift.day || ''}</div>
+                        <div class="schedule-time" style="color: #0f172a; font-size: 0.9rem; font-weight: 500;">${shift.time || ''}</div>
+                        <div class="schedule-notes" style="color: #64748b; font-size: 0.85rem; text-align: right;">${shift.comments || ''}</div>
+                    `;
+                    ul.appendChild(li);
+                });
+            };
+            
+            renderScheduleList('paneThisWeek', context.schedule.this_week);
+            renderScheduleList('paneNextWeek', context.schedule.next_week);
         }
 
     } catch (e) {
