@@ -253,6 +253,8 @@
             localStorage.removeItem('role_id');
             localStorage.removeItem('signup_data');
             localStorage.removeItem('selected_plan');
+            localStorage.removeItem('userFeatures');
+            localStorage.removeItem('userSubFeatures');
             console.log('[logout] Local session cleared. Redirecting to sign-in.');
             document.body.style.cursor = '';
             window.location.href = 'signin.html?loggedout=true';

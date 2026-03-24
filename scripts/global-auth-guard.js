@@ -51,8 +51,38 @@ export async function runGlobalAuthGuard() {
         return;
     }
 
+    // 4. CHECK LOCAL CACHE FOR INSTANT ROUTING (Optimistic UI)
+    const cachedFeaturesStr = localStorage.getItem('userFeatures');
+    let cachedFeatures = null;
     try {
-        console.log(`[Auth Guard] Validating page access strictly against feature: ${featureKey || 'Generic Authenticated Route'}`);
+        if (cachedFeaturesStr) cachedFeatures = JSON.parse(cachedFeaturesStr);
+    } catch(e) { console.error("Could not parse cached features", e); }
+    
+    // If we have features in cache, unlock instantly and let the background check handle security
+    if (cachedFeatures && Array.isArray(cachedFeatures)) {
+        console.log(`[Auth Guard] Instant Cache hit! Validating against ${cachedFeatures.length} features.`);
+        
+        // Ensure the hourly heartbeat is running silently
+        setupHourlyCheck();
+
+        // Optimistic check: are they allowed?
+        if (!cachedFeatures.includes(featureKey)) {
+            console.error(`[Auth Guard] Cache says restricted. Access Denied dynamically for: ${featureKey}`);
+            showAuthBlockModal('FEATURE_NOT_ALLOWED', "You currently don't have access to this feature. Please upgrade to have access to the features.", "Upgrade", "billing-subscription.html");
+            return;
+        }
+
+        // Proceed Instantly - Zero Wait!
+        console.log(`[Auth Guard] Instant Unlock for feature: ${featureKey}`);
+        initSubFeatures();
+        applySubFeatureGates();
+        removeAuthSpinner();
+        return;
+    }
+
+    // 5. CACHE MISS (Cold Start): Requires blocking API call and UI spinner
+    try {
+        console.log(`[Auth Guard] Cache missing. Fetching payload securely from API for feature: ${featureKey || 'Generic Authenticated Route'}`);
         
         // 3. Make the universal API Call (injects token + custom headers)
         const response = await fetchWithAuth(API.AUTH_GUARD, { method: 'POST' }, featureKey, 'read');
@@ -100,16 +130,19 @@ export async function runGlobalAuthGuard() {
              return;
         }
 
-        console.log('[Auth Guard] Session Validated! Processing payload for allowed UI subsystems: ', data.permissions);
+        console.log('[Auth Guard] Session Validated! Processing payload for allowed UI subsystems...');
 
-        // 3. Temporarily cache granular sub-features memory state 
-        localStorage.setItem('userSubFeatures', JSON.stringify(data.permissions || []));
+        // 6. Temporarily cache granular sub-features and features state 
+        if (data.permissions) localStorage.setItem('userSubFeatures', JSON.stringify(data.permissions));
+        if (data.features)   localStorage.setItem('userFeatures', JSON.stringify(data.features));
 
-        // 5. Trigger the visual UI unlocking sequence mapping
+        setupHourlyCheck(); // Start the hourly heartbeat
+
+        // 7. Trigger the visual UI unlocking sequence mapping
         initSubFeatures(); // Reloads sub-features into the JS runtime state
         applySubFeatureGates(); // Loops over all locked dom buttons and unleashes allowed ones
         
-        // 6. Reveal the securely rendered page to the user
+        // 8. Reveal the securely rendered page to the user
         removeAuthSpinner();
         
     } catch (error) {
@@ -119,6 +152,69 @@ export async function runGlobalAuthGuard() {
 }
 
 document.addEventListener('DOMContentLoaded', runGlobalAuthGuard);
+
+let hourlyCheckInterval = null;
+
+function setupHourlyCheck() {
+    if (hourlyCheckInterval) return; // Prevent multiple intervals
+    
+    // Set for exactly 1 hour
+    const ONE_HOUR = 60 * 60 * 1000;
+    
+    hourlyCheckInterval = setInterval(async () => {
+        try {
+            console.log('[Auth Guard] Initiating silent hourly heartbeat validation...');
+            const path = window.location.pathname;
+            const filename = path.substring(path.lastIndexOf('/')) || '/';
+            const featureKey = ROUTE_MAP[filename] || 'system_core';
+
+            // Silently call auth_guard behind the scenes
+            const response = await fetchWithAuth(API.AUTH_GUARD, { method: 'POST' }, featureKey, 'read');
+            if (!response.ok) throw new Error('Network error on heartbeat');
+            
+            const data = await response.json();
+            
+            if (data.allowed === false) {
+                 if (data.error === 'FEATURE_NOT_ALLOWED') {
+                     showAuthBlockModal('FEATURE_NOT_ALLOWED', "You currently don't have access to this feature. Please upgrade to have access to the features.", "Upgrade", "billing-subscription.html");
+                 } else if (data.error === 'SUBSCRIPTION_INACTIVE') {
+                     showAuthBlockModal('SUBSCRIPTION_INACTIVE', "Your subscription is not active. Please subscribe now to access the features.", "Subscribe Now", "billing-subscription.html");
+                 } else if (data.error === 'INVALID_SESSION') {
+                     localStorage.removeItem('token');
+                     showAuthBlockModal('INVALID_SESSION', "Your session is expired, please login.", "Sign In", "signin.html");
+                 } else {
+                     showAuthBlockModal('ERROR', "Access denied. Please check your permissions.", "Go to Dashboard", "dashboard.html");
+                 }
+                 clearInterval(hourlyCheckInterval);
+                 return;
+            }
+            
+            if (!data.session_valid) {
+                 localStorage.removeItem('token');
+                 showAuthBlockModal('INVALID_SESSION', "Your session is expired, please login.", "Sign In", "signin.html");
+                 clearInterval(hourlyCheckInterval);
+                 return;
+            }
+            if (!data.subscription_active) {
+                 showAuthBlockModal('SUBSCRIPTION_INACTIVE', "Your subscription is not active. Please subscribe now to access the features.", "Subscribe Now", "billing-subscription.html");
+                 clearInterval(hourlyCheckInterval);
+                 return;
+            }
+
+            // Sync cache gracefully
+            if (data.features) localStorage.setItem('userFeatures', JSON.stringify(data.features));
+            if (data.permissions) {
+                localStorage.setItem('userSubFeatures', JSON.stringify(data.permissions));
+                initSubFeatures();
+                applySubFeatureGates();
+            }
+            
+            console.log('[Auth Guard] Silent hourly heartbeat validated successfully.');
+        } catch (error) {
+            console.warn('[Auth Guard] Silent hourly heartbeat failed. Will retry next hour.', error);
+        }
+    }, ONE_HOUR);
+}
 
 /**
  * Removes the BharathBots branded loading spinner and reveals the page.

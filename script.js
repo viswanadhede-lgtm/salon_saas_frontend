@@ -400,6 +400,10 @@ document.addEventListener('DOMContentLoaded', () => {
                     if (responseData.role_id) {
                         localStorage.setItem('role_id', responseData.role_id);
                     }
+                    
+                    // Clear any stale feature caches to guarantee a fresh fetch on the dashboard loader
+                    localStorage.removeItem('userFeatures');
+                    localStorage.removeItem('userSubFeatures');
 
                     console.log('[signin] Session data stored.');
                     btn.textContent = 'Welcome back!';
