@@ -346,6 +346,10 @@ document.addEventListener('DOMContentLoaded', () => {
             
             if (responseObj && responseObj.success) {
                 showMessage('Trial activated! Opening your workspace...', 'success');
+                // Clear all caches to guarantee a fresh cold-start on the dashboard
+                localStorage.removeItem('userFeatures');
+                localStorage.removeItem('userSubFeatures');
+                localStorage.removeItem('appContext');
                 setTimeout(() => {
                     window.location.href = 'dashboard.html';
                 }, 1000);
