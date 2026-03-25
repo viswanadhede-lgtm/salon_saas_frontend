@@ -99,27 +99,24 @@ export async function runGlobalAuthGuard() {
         }
 
         const data = await authResponse.json();
-        
-        // 1. Validate session
-        if (!data.session_valid) {
-             console.error('[Auth Guard] Session invalid.');
-             localStorage.removeItem('token');
-             showAuthBlockModal('INVALID_SESSION', "Your session is expired, please login.", "Sign In", "signin.html");
-             return;
-        }
 
-        // 2. Validate subscription
-        if (!data.subscription_active) {
-             console.error('[Auth Guard] Subscription inactive.');
-             showAuthBlockModal('SUBSCRIPTION_INACTIVE', "Your subscription is not active. Please subscribe now to access the features.", "Subscribe Now", "billing-subscription.html");
-             return;
-        }
-
-        // 3. Validate feature access — check if the current page's feature is in the returned features list
-        if (featureKey && Array.isArray(data.features) && !data.features.includes(featureKey)) {
-             console.error(`[Auth Guard] Feature not in allowed list: ${featureKey}`);
-             showAuthBlockModal('FEATURE_NOT_ALLOWED', "You currently don't have access to this feature. Please upgrade to have access to the features.", "Upgrade", "billing-subscription.html");
-             return;
+        // 1. Check if access is denied and handle by error type
+        if (data.allowed === false) {
+            if (data.error === 'INVALID_SESSION') {
+                console.error('[Auth Guard] Session invalid.');
+                localStorage.removeItem('token');
+                showAuthBlockModal('INVALID_SESSION', "Your session is expired, please login.", "Sign In", "signin.html");
+            } else if (data.error === 'SUBSCRIPTION_INACTIVE') {
+                console.error('[Auth Guard] Subscription inactive.');
+                showAuthBlockModal('SUBSCRIPTION_INACTIVE', "Your subscription is not active. Please subscribe now to access the features.", "Subscribe Now", "billing-subscription.html");
+            } else if (data.error === 'FEATURE_NOT_ALLOWED') {
+                console.error(`[Auth Guard] Feature not allowed: ${featureKey}`);
+                showAuthBlockModal('FEATURE_NOT_ALLOWED', "You currently don't have access to this feature. Please upgrade to have access to the features.", "Upgrade", "billing-subscription.html");
+            } else {
+                console.error('[Auth Guard] Access denied with unknown error:', data.error);
+                showAuthBlockModal('ERROR', 'Access denied. Please contact support.', 'Go to Dashboard', 'dashboard.html');
+            }
+            return;
         }
 
         console.log('[Auth Guard] Session Validated! Processing payload for allowed UI subsystems...');
@@ -181,26 +178,20 @@ function setupHourlyCheck() {
             
             const data = await response.json();
 
-            // 1. Validate session
-            if (!data.session_valid) {
-                 localStorage.removeItem('token');
-                 showAuthBlockModal('INVALID_SESSION', "Your session is expired, please login.", "Sign In", "signin.html");
-                 clearInterval(hourlyCheckInterval);
-                 return;
-            }
-
-            // 2. Validate subscription
-            if (!data.subscription_active) {
-                 showAuthBlockModal('SUBSCRIPTION_INACTIVE', "Your subscription is not active. Please subscribe now to access the features.", "Subscribe Now", "billing-subscription.html");
-                 clearInterval(hourlyCheckInterval);
-                 return;
-            }
-
-            // 3. Validate feature access — if feature not in the returned list, block
-            if (featureKey && Array.isArray(data.features) && !data.features.includes(featureKey)) {
-                 showAuthBlockModal('FEATURE_NOT_ALLOWED', "You currently don't have access to this feature. Please upgrade to have access to the features.", "Upgrade", "billing-subscription.html");
-                 clearInterval(hourlyCheckInterval);
-                 return;
+            // 1. Check if access is denied and handle by error type
+            if (data.allowed === false) {
+                clearInterval(hourlyCheckInterval);
+                if (data.error === 'INVALID_SESSION') {
+                    localStorage.removeItem('token');
+                    showAuthBlockModal('INVALID_SESSION', "Your session is expired, please login.", "Sign In", "signin.html");
+                } else if (data.error === 'SUBSCRIPTION_INACTIVE') {
+                    showAuthBlockModal('SUBSCRIPTION_INACTIVE', "Your subscription is not active. Please subscribe now to access the features.", "Subscribe Now", "billing-subscription.html");
+                } else if (data.error === 'FEATURE_NOT_ALLOWED') {
+                    showAuthBlockModal('FEATURE_NOT_ALLOWED', "You currently don't have access to this feature. Please upgrade to have access to the features.", "Upgrade", "billing-subscription.html");
+                } else {
+                    showAuthBlockModal('ERROR', 'Access denied. Please contact support.', 'Go to Dashboard', 'dashboard.html');
+                }
+                return;
             }
 
             // Sync cache gracefully
