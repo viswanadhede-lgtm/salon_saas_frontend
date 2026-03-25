@@ -69,7 +69,7 @@ export async function runGlobalAuthGuard() {
         // Optimistic check: are they allowed?
         if (!cachedFeatures.includes(featureKey)) {
             console.error(`[Auth Guard] Cache says restricted. Access Denied dynamically for: ${featureKey}`);
-            showAuthBlockModal('FEATURE_NOT_ALLOWED', "You currently don't have access to this feature. Please upgrade to have access to the features.", "Upgrade", "billing-subscription.html");
+            showAuthBlockModal('FEATURE_NOT_ALLOWED', "You currently don't have access to this feature. Please upgrade to have access to the features.", "Upgrade", "plans.html?flow=upgrade");
             return;
         }
 
