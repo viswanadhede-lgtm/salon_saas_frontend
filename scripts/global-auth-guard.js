@@ -408,6 +408,9 @@ function removeAuthSpinner() {
  * Uses existing CSS variables and tailwind-style properties to match the theme.
  */
 function showAuthBlockModal(errorType, messageText, buttonText, buttonLink) {
+    // 0. Prevent duplicate modals — bail out if one is already shown
+    if (document.getElementById('authGuardBlockOverlay')) return;
+
     // 1. Reveal the DOM layout (so the auth-loader doesn't violently redirect us after 10s timeout)
     document.documentElement.style.display = '';
     
