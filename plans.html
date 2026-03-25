@@ -409,16 +409,8 @@
                             // Both `renew` AND `upgrade` flows skip onboarding and go straight to payments
                             if (params.get('flow') === 'renew' || params.get('flow') === 'upgrade') {
                                 // Existing user flow - skip onboarding
-                                const appContextStr = localStorage.getItem('appContext');
-                                let companyId = '';
-                                if (appContextStr) {
-                                    try {
-                                        const context = JSON.parse(appContextStr);
-                                        companyId = context.company?.id || context.company?.company_id || '';
-                                    } catch (e) {
-                                        console.error('Failed to parse appContext for company ID', e);
-                                    }
-                                }
+                                // Safely retrieve company_id stored during login
+                                const companyId = localStorage.getItem('company_id') || '';
                                 window.location.href = `payments.html?company_id=${companyId}`;
                             } else {
                                 // New user flow - route to onboarding (to create salon and branch)
