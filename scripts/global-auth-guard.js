@@ -111,7 +111,7 @@ export async function runGlobalAuthGuard() {
                 showAuthBlockModal('SUBSCRIPTION_INACTIVE', "Your subscription is not active. Please subscribe now to access the features.", "Renew", "plans.html?flow=renew");
             } else if (data.error === 'FEATURE_NOT_ALLOWED') {
                 console.error(`[Auth Guard] Feature not allowed: ${featureKey}`);
-                showAuthBlockModal('FEATURE_NOT_ALLOWED', "You currently don't have access to this feature. Please upgrade to have access to the features.", "Upgrade", "billing-subscription.html");
+                showAuthBlockModal('FEATURE_NOT_ALLOWED', "You currently don't have access to this feature. Please upgrade to have access to the features.", "Upgrade", "plans.html?flow=upgrade");
             } else {
                 console.error('[Auth Guard] Access denied with unknown error:', data.error);
                 showAuthBlockModal('ERROR', 'Access denied. Please contact support.', 'Go to Dashboard', 'dashboard.html');
@@ -187,7 +187,7 @@ function setupHourlyCheck() {
                 } else if (data.error === 'SUBSCRIPTION_INACTIVE') {
                     showAuthBlockModal('SUBSCRIPTION_INACTIVE', "Your subscription is not active. Please subscribe now to access the features.", "Renew", "plans.html?flow=renew");
                 } else if (data.error === 'FEATURE_NOT_ALLOWED') {
-                    showAuthBlockModal('FEATURE_NOT_ALLOWED', "You currently don't have access to this feature. Please upgrade to have access to the features.", "Upgrade", "billing-subscription.html");
+                    showAuthBlockModal('FEATURE_NOT_ALLOWED', "You currently don't have access to this feature. Please upgrade to have access to the features.", "Upgrade", "plans.html?flow=upgrade");
                 } else {
                     showAuthBlockModal('ERROR', 'Access denied. Please contact support.', 'Go to Dashboard', 'dashboard.html');
                 }

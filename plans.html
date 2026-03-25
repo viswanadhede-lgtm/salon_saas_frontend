@@ -246,19 +246,112 @@
         }
 
         document.addEventListener('DOMContentLoaded', () => {
-            // Highlight current plan if coming from billing page
             const params = new URLSearchParams(window.location.search);
-            const currentPlan = params.get('current');
-            if (currentPlan) {
-                const currentCard = document.querySelector(`.plan-card [data-plan="${currentPlan}"]`)?.closest('.plan-card');
+            const flow = params.get('flow');
+            
+            // Check if user is in UPGRADE flow
+            if (flow === 'upgrade') {
+                // Change Header text to remove onboarding feel
+                const headerTitle = document.querySelector('.plans-header h1');
+                const headerSubtitle = document.querySelector('.plans-header p');
+                if (headerTitle) headerTitle.textContent = 'Upgrade Your Plan';
+                if (headerSubtitle) headerSubtitle.textContent = 'Unlock advanced features to grow your salon business.';
+
+                // Add a current plan banner at the top of the grid
+                const grid = document.querySelector('.plans-grid');
+                if (grid) {
+                    const banner = document.createElement('div');
+                    banner.id = 'upgradeCurrentPlanBanner';
+                    banner.style.cssText = 'grid-column: 1 / -1; background: #e0f2fe; color: #0369a1; padding: 12px 16px; border-radius: 8px; text-align: center; font-weight: 600; margin-bottom: 8px; display: none;';
+                    // We will fill the text once we extract their plan
+                    grid.parentNode.insertBefore(banner, grid);
+                }
+
+                // Determine User's current plan level
+                const appContextStr = localStorage.getItem('appContext');
+                let userPlan = 'basic'; // Default fallback
+                if (appContextStr) {
+                    try {
+                        const context = JSON.parse(appContextStr);
+                        if (context.company && context.company.plan) {
+                            userPlan = context.company.plan.toLowerCase();
+                        }
+                    } catch (e) {
+                        console.error('Failed to parse appContext for plan', e);
+                    }
+                }
+
+                // Define plan hierarchy
+                const planHierarchy = { 'basic': 1, 'advance': 2, 'pro': 3, 'enterprise': 4 };
+                const userPlanLevel = planHierarchy[userPlan] || 1;
+
+                // Update the Banner
+                const bannerEl = document.getElementById('upgradeCurrentPlanBanner');
+                if (bannerEl) {
+                    const niceName = userPlan.charAt(0).toUpperCase() + userPlan.slice(1);
+                    bannerEl.innerHTML = `🎯 Your current plan is <strong>${niceName}</strong>`;
+                    bannerEl.style.display = 'block';
+                }
+
+                // Loop over all plan cards to format them for Upgrade
+                document.querySelectorAll('.plan-card').forEach(card => {
+                    const btn = card.querySelector('.btn-plan');
+                    if (!btn) return;
+                    
+                    const cardPlanStr = btn.getAttribute('data-plan') || '';
+                    const cardPlanLevel = planHierarchy[cardPlanStr] || 99; // Unknowns to top
+
+                    if (cardPlanLevel === userPlanLevel) {
+                        // Current Plan
+                        card.classList.add('is-current-plan');
+                        
+                        // Insert badge
+                        if (!card.querySelector('.current-plan-badge')) {
+                            const badge = document.createElement('div');
+                            badge.className = 'current-plan-badge';
+                            badge.textContent = '✓ Current Plan';
+                            card.insertBefore(badge, card.firstChild);
+                        }
+
+                        // Update Button
+                        btn.textContent = 'Current Plan';
+                        btn.classList.add('btn-current-plan');
+                        btn.disabled = true;
+                    } 
+                    else if (cardPlanLevel < userPlanLevel) {
+                        // Lower Tier (Downgrade) - Disable it
+                        card.style.opacity = '0.7';
+                        btn.textContent = 'Included in your plan';
+                        btn.style.background = '#f1f5f9';
+                        btn.style.color = '#94a3b8';
+                        btn.style.border = '1px solid #cbd5e1';
+                        btn.style.cursor = 'not-allowed';
+                        btn.disabled = true;
+                    } 
+                    else {
+                        // Higher Tier (Upgrade)
+                        if (cardPlanStr !== 'enterprise') {
+                            const prettyName = cardPlanStr.charAt(0).toUpperCase() + cardPlanStr.slice(1);
+                            btn.innerHTML = `UPGRADE <span style="display:block; font-size:0.75rem; font-weight:normal; opacity:0.9;">to ${prettyName}</span>`;
+                        } else {
+                            btn.innerHTML = `UPGRADE <span style="display:block; font-size:0.75rem; font-weight:normal; opacity:0.9;">Contact Sales</span>`;
+                        }
+                    }
+                });
+            }
+
+            // Existing logic to highlight current plan if passed in via `?current=` (billing page legacy) 
+            // We keep this to not break other parts of the app
+            const currentPlanParam = params.get('current');
+            if (currentPlanParam && flow !== 'upgrade') {
+                const currentCard = document.querySelector(`.plan-card [data-plan="${currentPlanParam}"]`)?.closest('.plan-card');
                 if (currentCard) {
                     currentCard.classList.add('is-current-plan');
-                    // Insert badge at the top of the card
                     const badge = document.createElement('div');
                     badge.className = 'current-plan-badge';
                     badge.textContent = '✓ Current Plan';
                     currentCard.insertBefore(badge, currentCard.firstChild);
-                    // Update the button
+                    
                     const btn = currentCard.querySelector('.btn-plan');
                     if (btn) {
                         btn.textContent = 'Current Plan';
@@ -269,15 +362,9 @@
             }
 
             // Check auth state (safeguard)
-            const token = localStorage.getItem('auth_token');
+            const token = localStorage.getItem('token');
             if (token) {
-                console.log("Authenticated User Token:", token);
-                // All future API calls would look roughly like this:
-                /*
-                fetch('https://api.bharathbots.com/v1/plans', {
-                    headers: { 'Authorization': `Bearer ${token}` }
-                })
-                */
+                console.log("Authenticated User Token available.");
             } else {
                 console.warn("No auth token found, user might not be logged in properly.");
             }
@@ -287,14 +374,14 @@
             
             planButtons.forEach(btn => {
                 btn.addEventListener('click', (e) => {
-                    const selectedPlan = e.target.getAttribute('data-plan');
-                    const originalText = e.target.textContent;
+                    // Ignored disabled buttons just in case
+                    if (btn.disabled) return;
+
+                    const selectedPlan = e.currentTarget.getAttribute('data-plan');
                     
                     // Small visual feedback loop
-                    e.target.textContent = 'Selecting...';
-                    e.target.style.opacity = '0.8';
+                    e.currentTarget.style.opacity = '0.8';
                     
-                    // In a real scenario we might do an API call here to save it to DB
                     setTimeout(() => {
                         const planMapping = {
                             'basic': { id: 'plan_01', name: 'Basic' },
@@ -311,13 +398,15 @@
                         signupData.plan_name = mappedPlan.name;
                         localStorage.setItem('signup_data', JSON.stringify(signupData));
 
-                        e.target.textContent = 'Selected!';
-                        e.target.style.backgroundColor = '#10b981'; // Success green
+                        e.currentTarget.style.backgroundColor = '#10b981'; // Success green
+                        e.currentTarget.style.color = 'white';
+                        e.currentTarget.textContent = 'Selected!';
                         
                         setTimeout(() => {
                             const params = new URLSearchParams(window.location.search);
-                            if (params.get('flow') === 'renew') {
-                                // Existing user renewal flow - skip onboarding
+                            // Both `renew` AND `upgrade` flows skip onboarding and go straight to payments
+                            if (params.get('flow') === 'renew' || params.get('flow') === 'upgrade') {
+                                // Existing user flow - skip onboarding
                                 const appContextStr = localStorage.getItem('appContext');
                                 let companyId = '';
                                 if (appContextStr) {
