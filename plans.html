@@ -315,8 +315,24 @@
                         e.target.style.backgroundColor = '#10b981'; // Success green
                         
                         setTimeout(() => {
-                            // Redirect to onboarding page (to create salon and branch)
-                            window.location.href = 'onboarding.html';
+                            const params = new URLSearchParams(window.location.search);
+                            if (params.get('flow') === 'renew') {
+                                // Existing user renewal flow - skip onboarding
+                                const appContextStr = localStorage.getItem('appContext');
+                                let companyId = '';
+                                if (appContextStr) {
+                                    try {
+                                        const context = JSON.parse(appContextStr);
+                                        companyId = context.company?.id || context.company?.company_id || '';
+                                    } catch (e) {
+                                        console.error('Failed to parse appContext for company ID', e);
+                                    }
+                                }
+                                window.location.href = `payments.html?company_id=${companyId}`;
+                            } else {
+                                // New user flow - route to onboarding (to create salon and branch)
+                                window.location.href = 'onboarding.html';
+                            }
                         }, 800);
                         
                     }, 600);

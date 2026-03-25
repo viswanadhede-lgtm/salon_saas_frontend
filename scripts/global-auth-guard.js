@@ -108,7 +108,7 @@ export async function runGlobalAuthGuard() {
                 showAuthBlockModal('INVALID_SESSION', "Your session is expired, please login.", "Sign In", "signin.html");
             } else if (data.error === 'SUBSCRIPTION_INACTIVE') {
                 console.error('[Auth Guard] Subscription inactive.');
-                showAuthBlockModal('SUBSCRIPTION_INACTIVE', "Your subscription is not active. Please subscribe now to access the features.", "Subscribe Now", "billing-subscription.html");
+                showAuthBlockModal('SUBSCRIPTION_INACTIVE', "Your subscription is not active. Please subscribe now to access the features.", "Renew", "plans.html?flow=renew");
             } else if (data.error === 'FEATURE_NOT_ALLOWED') {
                 console.error(`[Auth Guard] Feature not allowed: ${featureKey}`);
                 showAuthBlockModal('FEATURE_NOT_ALLOWED', "You currently don't have access to this feature. Please upgrade to have access to the features.", "Upgrade", "billing-subscription.html");
@@ -185,7 +185,7 @@ function setupHourlyCheck() {
                     localStorage.removeItem('token');
                     showAuthBlockModal('INVALID_SESSION', "Your session is expired, please login.", "Sign In", "signin.html");
                 } else if (data.error === 'SUBSCRIPTION_INACTIVE') {
-                    showAuthBlockModal('SUBSCRIPTION_INACTIVE', "Your subscription is not active. Please subscribe now to access the features.", "Subscribe Now", "billing-subscription.html");
+                    showAuthBlockModal('SUBSCRIPTION_INACTIVE', "Your subscription is not active. Please subscribe now to access the features.", "Renew", "plans.html?flow=renew");
                 } else if (data.error === 'FEATURE_NOT_ALLOWED') {
                     showAuthBlockModal('FEATURE_NOT_ALLOWED', "You currently don't have access to this feature. Please upgrade to have access to the features.", "Upgrade", "billing-subscription.html");
                 } else {
