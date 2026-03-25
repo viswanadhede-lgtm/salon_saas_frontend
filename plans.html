@@ -378,8 +378,10 @@
                     if (btn.disabled) return;
 
                     const selectedPlan = e.currentTarget.getAttribute('data-plan');
+                    const originalHtml = e.currentTarget.innerHTML;
                     
                     // Small visual feedback loop
+                    e.currentTarget.textContent = 'Selecting...';
                     e.currentTarget.style.opacity = '0.8';
                     
                     setTimeout(() => {
@@ -398,9 +400,9 @@
                         signupData.plan_name = mappedPlan.name;
                         localStorage.setItem('signup_data', JSON.stringify(signupData));
 
+                        e.currentTarget.textContent = 'Selected!';
                         e.currentTarget.style.backgroundColor = '#10b981'; // Success green
                         e.currentTarget.style.color = 'white';
-                        e.currentTarget.textContent = 'Selected!';
                         
                         setTimeout(() => {
                             const params = new URLSearchParams(window.location.search);
