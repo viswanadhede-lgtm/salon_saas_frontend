@@ -86,7 +86,7 @@ export async function runGlobalAuthGuard() {
     try {
         console.log(`[Auth Guard] Cache missing. Fetching payloads securely from API for feature: ${featureKey || 'Generic Authenticated Route'}`);
         
-        // 3. Make the universal API Calls concurrently (injects token + custom headers)
+        // Make the universal API Calls concurrently (injects token + custom headers)
         const [authResponse, contextResponse] = await Promise.all([
             fetchWithAuth(API.AUTH_GUARD, { method: 'POST' }, featureKey, 'read'),
             fetchWithAuth(API.GET_APP_CONTEXT, { method: 'POST' }, featureKey, 'read')
@@ -100,37 +100,24 @@ export async function runGlobalAuthGuard() {
 
         const data = await authResponse.json();
         
-        // 1. Handle explicit backend rejection states
-        if (data.allowed === false) {
-             console.error(`[Auth Guard] Access Denied. Reason: ${data.error}`);
-             
-             if (data.error === 'FEATURE_NOT_ALLOWED') {
-                 showAuthBlockModal('FEATURE_NOT_ALLOWED', "You currently don't have access to this feature. Please upgrade to have access to the features.", "Upgrade", "billing-subscription.html");
-             } else if (data.error === 'SUBSCRIPTION_INACTIVE') {
-                 showAuthBlockModal('SUBSCRIPTION_INACTIVE', "Your subscription is not active. Please subscribe now to access the features.", "Subscribe Now", "billing-subscription.html");
-             } else if (data.error === 'INVALID_SESSION') {
-                 localStorage.removeItem('token');
-                 showAuthBlockModal('INVALID_SESSION', "Your session is expired, please login.", "Sign In", "signin.html");
-             } else {
-                 showAuthBlockModal('ERROR', "Access denied. Please check your permissions.", "Go to Dashboard", "dashboard.html");
-             }
-             return;
-        }
-        
-        // 2. Double check the success flags just in case (fallback if allowed is strangely true)
+        // 1. Validate session
         if (!data.session_valid) {
-             console.error('[Auth Guard] Backend explicit session invalid.');
+             console.error('[Auth Guard] Session invalid.');
              localStorage.removeItem('token');
              showAuthBlockModal('INVALID_SESSION', "Your session is expired, please login.", "Sign In", "signin.html");
              return;
         }
+
+        // 2. Validate subscription
         if (!data.subscription_active) {
-             console.error('[Auth Guard] Backend explicit subscription inactive.');
+             console.error('[Auth Guard] Subscription inactive.');
              showAuthBlockModal('SUBSCRIPTION_INACTIVE', "Your subscription is not active. Please subscribe now to access the features.", "Subscribe Now", "billing-subscription.html");
              return;
         }
-        if (!data.feature_allowed) {
-             console.error('[Auth Guard] Backend explicit feature not allowed.');
+
+        // 3. Validate feature access — check if the current page's feature is in the returned features list
+        if (featureKey && Array.isArray(data.features) && !data.features.includes(featureKey)) {
+             console.error(`[Auth Guard] Feature not in allowed list: ${featureKey}`);
              showAuthBlockModal('FEATURE_NOT_ALLOWED', "You currently don't have access to this feature. Please upgrade to have access to the features.", "Upgrade", "billing-subscription.html");
              return;
         }
@@ -186,37 +173,32 @@ function setupHourlyCheck() {
             console.log('[Auth Guard] Initiating silent hourly heartbeat validation...');
             const path = window.location.pathname;
             const filename = path.substring(path.lastIndexOf('/')) || '/';
-            const featureKey = ROUTE_MAP[filename] || 'system_core';
+            const featureKey = ROUTE_MAP[filename] || null;
 
             // Silently call auth_guard behind the scenes
             const response = await fetchWithAuth(API.AUTH_GUARD, { method: 'POST' }, featureKey, 'read');
             if (!response.ok) throw new Error('Network error on heartbeat');
             
             const data = await response.json();
-            
-            if (data.allowed === false) {
-                 if (data.error === 'FEATURE_NOT_ALLOWED') {
-                     showAuthBlockModal('FEATURE_NOT_ALLOWED', "You currently don't have access to this feature. Please upgrade to have access to the features.", "Upgrade", "billing-subscription.html");
-                 } else if (data.error === 'SUBSCRIPTION_INACTIVE') {
-                     showAuthBlockModal('SUBSCRIPTION_INACTIVE', "Your subscription is not active. Please subscribe now to access the features.", "Subscribe Now", "billing-subscription.html");
-                 } else if (data.error === 'INVALID_SESSION') {
-                     localStorage.removeItem('token');
-                     showAuthBlockModal('INVALID_SESSION', "Your session is expired, please login.", "Sign In", "signin.html");
-                 } else {
-                     showAuthBlockModal('ERROR', "Access denied. Please check your permissions.", "Go to Dashboard", "dashboard.html");
-                 }
-                 clearInterval(hourlyCheckInterval);
-                 return;
-            }
-            
+
+            // 1. Validate session
             if (!data.session_valid) {
                  localStorage.removeItem('token');
                  showAuthBlockModal('INVALID_SESSION', "Your session is expired, please login.", "Sign In", "signin.html");
                  clearInterval(hourlyCheckInterval);
                  return;
             }
+
+            // 2. Validate subscription
             if (!data.subscription_active) {
                  showAuthBlockModal('SUBSCRIPTION_INACTIVE', "Your subscription is not active. Please subscribe now to access the features.", "Subscribe Now", "billing-subscription.html");
+                 clearInterval(hourlyCheckInterval);
+                 return;
+            }
+
+            // 3. Validate feature access — if feature not in the returned list, block
+            if (featureKey && Array.isArray(data.features) && !data.features.includes(featureKey)) {
+                 showAuthBlockModal('FEATURE_NOT_ALLOWED', "You currently don't have access to this feature. Please upgrade to have access to the features.", "Upgrade", "billing-subscription.html");
                  clearInterval(hourlyCheckInterval);
                  return;
             }
