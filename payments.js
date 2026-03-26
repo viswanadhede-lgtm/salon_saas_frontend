@@ -381,16 +381,19 @@ document.addEventListener('DOMContentLoaded', () => {
                     "description": "7-Day Free Trial (Mandate Setup)",
                     "subscription_id": data.subscription_id || data.order_id,
                     "handler": function (response) {
-                        showMessage('Mandate successful! Opening your workspace...', 'success');
+                        const params = new URLSearchParams({
+                            razorpay_payment_id: response.razorpay_payment_id,
+                            razorpay_subscription_id: response.razorpay_subscription_id,
+                            razorpay_signature:  response.razorpay_signature,
+                            t: localStorage.getItem('token') || ''
+                        });
                         
                         // Clear all caches to guarantee a fresh cold-start on the dashboard
                         localStorage.removeItem('userFeatures');
                         localStorage.removeItem('userSubFeatures');
                         localStorage.removeItem('appContext');
                         
-                        setTimeout(() => {
-                            window.location.href = 'dashboard.html';
-                        }, 1000);
+                        window.location.href = `${RAZORPAY.CALLBACK_URL}?${params.toString()}`;
                     },
                     "modal": {
                         "ondismiss": function() {

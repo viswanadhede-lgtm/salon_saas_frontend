@@ -18,7 +18,11 @@ export const API = {
   AUTH_GUARD: `${BASE_URL}/auth_guard`,
   GET_APP_CONTEXT: `${BASE_URL}/get_app_context`,
   PAYMENT_STATUS: `${BASE_URL}/payment_status`,
-  SUBSCRIPTION_CREATE: `${BASE_URL}/subscription_create`
+  SUBSCRIPTION_CREATE: `${BASE_URL}/subscription_create`,
+  CREATE_CUSTOMER: `${BASE_URL}/create_customer`,
+  READ_CUSTOMERS: `${BASE_URL}/read_customers`,
+  UPDATE_CUSTOMER: `${BASE_URL}/update_customer`,
+  DELETE_CUSTOMER: `${BASE_URL}/delete_customer`
 };
 
 /**

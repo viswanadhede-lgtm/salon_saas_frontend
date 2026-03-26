@@ -17,10 +17,11 @@ document.addEventListener('DOMContentLoaded', () => {
     const params              = new URLSearchParams(window.location.search);
     const razorpay_payment_id = params.get('razorpay_payment_id');
     const razorpay_order_id   = params.get('razorpay_order_id');
+    const razorpay_subscription_id = params.get('razorpay_subscription_id');
     const razorpay_signature  = params.get('razorpay_signature');
 
     // --- Guard: if params are missing, something went wrong ---
-    if (!razorpay_payment_id || !razorpay_order_id) {
+    if (!razorpay_payment_id || (!razorpay_order_id && !razorpay_subscription_id)) {
         showError(
             'Missing Payment Details',
             'We couldn\'t read your payment details from the redirect. Please try again or contact support.'
@@ -60,9 +61,14 @@ document.addEventListener('DOMContentLoaded', () => {
 
         const payload = {
             razorpay_payment_id,
-            razorpay_order_id,
             razorpay_signature
         };
+
+        if (razorpay_order_id) {
+            payload.razorpay_order_id = razorpay_order_id;
+        } else if (razorpay_subscription_id) {
+            payload.razorpay_subscription_id = razorpay_subscription_id;
+        }
 
         const checkStatus = () => {
             if (attempts >= maxAttempts) {
