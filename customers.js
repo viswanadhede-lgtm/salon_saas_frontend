@@ -24,6 +24,16 @@ const inputTag = document.getElementById('newCustTag');
 let customersList = [];
 let editingCustomerId = null;
 
+// Extractor helper
+function getCompanyId() {
+    try {
+        const appContext = JSON.parse(localStorage.getItem('appContext') || '{}');
+        return appContext.company?.id || null;
+    } catch (e) {
+        return null;
+    }
+}
+
 // Initialize
 if (document.readyState === 'loading') {
     document.addEventListener('DOMContentLoaded', fetchCustomers);
@@ -38,7 +48,13 @@ async function fetchCustomers() {
             customersTableBody.innerHTML = '<tr><td colspan="6" class="text-center py-4" style="text-align:center;">Loading customers...</td></tr>';
         }
         
-        const response = await fetchWithAuth(API.READ_CUSTOMERS, { method: 'POST' }, FEATURES.CUSTOMERS_MANAGEMENT, 'read');
+        const payload = { company_id: getCompanyId() };
+        
+        const response = await fetchWithAuth(API.READ_CUSTOMERS, { 
+            method: 'POST',
+            body: JSON.stringify(payload)
+        }, FEATURES.CUSTOMERS_MANAGEMENT, 'read');
+
         if (!response.ok) throw new Error('Failed to fetch customers');
 
         const data = await response.json();
@@ -214,7 +230,14 @@ if (btnSaveCustomer) {
             return;
         }
 
-        const payload = { name, phone, email, dob, tag };
+        const payload = { 
+            company_id: getCompanyId(), 
+            name, 
+            phone, 
+            email, 
+            dob, 
+            tag 
+        };
         const isEditing = !!editingCustomerId;
         
         const apiEndpoint = isEditing ? API.UPDATE_CUSTOMER : API.CREATE_CUSTOMER;
@@ -255,9 +278,13 @@ async function deleteCustomer(id) {
     }
 
     try {
+        const payload = {
+            company_id: getCompanyId(),
+            id: parseInt(id, 10)
+        };
         const response = await fetchWithAuth(API.DELETE_CUSTOMER, {
             method: 'POST',
-            body: JSON.stringify({ id: parseInt(id, 10) })
+            body: JSON.stringify(payload)
         }, FEATURES.CUSTOMERS_MANAGEMENT, 'delete');
 
         if (!response.ok) throw new Error('Failed to delete customer');
