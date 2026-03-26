@@ -398,6 +398,7 @@
                         let signupData = JSON.parse(localStorage.getItem('signup_data') || '{}');
                         signupData.plan_id = mappedPlan.id;
                         signupData.plan_name = mappedPlan.name;
+                        signupData.billing_cycle = currentBilling;
                         localStorage.setItem('signup_data', JSON.stringify(signupData));
 
                         btn.textContent = 'Selected!';

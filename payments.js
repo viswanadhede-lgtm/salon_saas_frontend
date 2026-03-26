@@ -40,6 +40,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const signupData = JSON.parse(localStorage.getItem('signup_data') || '{}');
     const planId = signupData.plan_id;
     const planName = signupData.plan_name;
+    const savedBillingCycle = signupData.billing_cycle || 'monthly';
 
     if (!planId) {
         showMessage('Error: No plan selected. Please go back to select a plan.', 'error');
@@ -70,7 +71,15 @@ document.addEventListener('DOMContentLoaded', () => {
         updatePricingDisplay();
     });
 
-    // Initialize first display
+    // Initialize first display based on saved preference
+    billingCycle = savedBillingCycle;
+    if (billingCycle === 'annual') {
+        btnAnnual.classList.add('active');
+        btnMonthly.classList.remove('active');
+    } else {
+        btnMonthly.classList.add('active');
+        btnAnnual.classList.remove('active');
+    }
     updatePricingDisplay();
 
     // 4. Action Buttons
