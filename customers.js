@@ -262,7 +262,9 @@ if (btnSaveCustomer) {
             const result = await response.json();
 
             // Check for business-logic errors (e.g. duplicate phone)
-            if (result.success === false) {
+            // Handles: success===false, success==="false", success===0, or any error field
+            const hasError = result.error || result.success === false || result.success === 'false' || result.success === 0;
+            if (hasError) {
                 showToast(result.error || 'Failed to save customer.', true);
                 return; // Keep modal open
             }
