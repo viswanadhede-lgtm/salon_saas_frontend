@@ -86,6 +86,22 @@ body.payments-page {
     color: var(--text-main);
 }
 
+.two-col-flow.three-col-layout {
+    grid-template-columns: minmax(300px, 400px) minmax(400px, 600px);
+    justify-content: center;
+    gap: 40px;
+}
+@media (max-width: 1024px) {
+    .two-col-flow.three-col-layout {
+        grid-template-columns: 1fr 1fr;
+    }
+}
+@media (max-width: 768px) {
+    .two-col-flow.three-col-layout {
+        grid-template-columns: 1fr;
+    }
+}
+
 /* Column 1: Plan Summary */
 .summary-card {
     background: var(--card-bg);

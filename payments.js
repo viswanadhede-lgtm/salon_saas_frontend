@@ -6,8 +6,20 @@ document.addEventListener('DOMContentLoaded', () => {
     // Core State
     const params = new URLSearchParams(window.location.search);
     const companyId = params.get('company_id');
+    const flow = params.get('flow');
     const msgDiv = document.getElementById('paymentMessage');
     
+    // Hide Free Trial for existing user flows
+    if (flow === 'upgrade' || flow === 'renew') {
+        const trialBlock = document.querySelector('.trial-block');
+        if (trialBlock) trialBlock.style.display = 'none';
+        
+        const layout = document.querySelector('.three-col-layout');
+        if (layout) {
+            layout.classList.add('two-col-flow');
+        }
+    }
+
     let billingCycle = 'monthly'; 
     let basePlanMonthly = 0;
     let basePlanAnnual = 0;

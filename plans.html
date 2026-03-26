@@ -411,7 +411,8 @@
                                 // Existing user flow - skip onboarding
                                 // Safely retrieve company_id stored during login
                                 const companyId = localStorage.getItem('company_id') || '';
-                                window.location.href = `payments.html?company_id=${companyId}`;
+                                const flowVal = params.get('flow');
+                                window.location.href = `payments.html?company_id=${companyId}&flow=${flowVal}`;
                             } else {
                                 // New user flow - route to onboarding (to create salon and branch)
                                 window.location.href = 'onboarding.html';
