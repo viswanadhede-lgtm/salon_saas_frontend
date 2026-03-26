@@ -94,7 +94,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const btnTrial = document.getElementById('btnStartTrial');
     if (btnTrial) {
         btnTrial.addEventListener('click', () => {
-            triggerFreeTrial(btnTrial, companyId, planId);
+            triggerFreeTrial(btnTrial, companyId, planId, billingCycle);
         });
     }
 
@@ -345,16 +345,17 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
 
-    function triggerFreeTrial(btnElement, companyId, planId) {
+    function triggerFreeTrial(btnElement, companyId, planId, cycle) {
         const originalText = btnElement.textContent;
-        setLoadingState(btnElement, 'Activating Trial...');
+        setLoadingState(btnElement, 'Setting up Mandate...');
 
         const payload = {
             company_id: companyId,
-            plan_id: planId
+            plan_id: planId,
+            billing_cycle: cycle
         };
 
-        fetchWithAuth(API.START_FREE_TRIAL, {
+        fetchWithAuth(API.SUBSCRIPTION_CREATE, {
             method: 'POST',
             body: JSON.stringify(payload)
         })
@@ -362,26 +363,54 @@ document.addEventListener('DOMContentLoaded', () => {
             if (!res.ok) throw new Error("API Exception");
             return res.json();
         })
-        .then(data => {
-            const responseObj = Array.isArray(data) ? data[0] : data;
+        .then(responseData => {
+            const data = Array.isArray(responseData) ? responseData[0] : responseData;
             
-            if (responseObj && responseObj.success) {
-                showMessage('Trial activated! Opening your workspace...', 'success');
-                // Clear all caches to guarantee a fresh cold-start on the dashboard
-                localStorage.removeItem('userFeatures');
-                localStorage.removeItem('userSubFeatures');
-                localStorage.removeItem('appContext');
-                setTimeout(() => {
-                    window.location.href = 'dashboard.html';
-                }, 1000);
+            if (data && (data.subscription_id || data.order_id)) {
+                const options = {
+                    "key": data.key_id,
+                    "name": "BharathBots",
+                    "description": "7-Day Free Trial (Mandate Setup)",
+                    "subscription_id": data.subscription_id || data.order_id,
+                    "handler": function (response) {
+                        showMessage('Mandate successful! Opening your workspace...', 'success');
+                        
+                        // Clear all caches to guarantee a fresh cold-start on the dashboard
+                        localStorage.removeItem('userFeatures');
+                        localStorage.removeItem('userSubFeatures');
+                        localStorage.removeItem('appContext');
+                        
+                        setTimeout(() => {
+                            window.location.href = 'dashboard.html';
+                        }, 1000);
+                    },
+                    "modal": {
+                        "ondismiss": function() {
+                            resetLoadingState(btnElement, originalText);
+                            showMessage('Mandate is not set. Please set the mandate to access the app.', 'error');
+                        }
+                    },
+                    "theme": {
+                        "color": "#6366f1"
+                    }
+                };
+
+                const rzp = new window.Razorpay(options);
+                
+                rzp.on('payment.failed', function (response) {
+                    resetLoadingState(btnElement, originalText);
+                    showMessage('Mandate is not set. Please set the mandate to access the app.', 'error');
+                });
+                
+                rzp.open();
             } else {
-                throw new Error(responseObj.message || "Failed to activate free trial.");
+                throw new Error(data.message || "Failed to initialize mandate setup.");
             }
         })
         .catch(err => {
-            console.error('Trial Error:', err);
+            console.error('Trial Mandate Error:', err);
             resetLoadingState(btnElement, originalText);
-            showMessage('Failed to activate free trial. Please try again.', 'error');
+            showMessage('Failed to setup mandate. Please try again.', 'error');
         });
     }
 
