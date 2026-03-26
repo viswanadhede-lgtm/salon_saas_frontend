@@ -349,10 +349,18 @@ document.addEventListener('DOMContentLoaded', () => {
         const originalText = btnElement.textContent;
         setLoadingState(btnElement, 'Setting up Mandate...');
 
+        const startAtUnix = Math.floor(Date.now() / 1000) + (7 * 24 * 60 * 60);
+        const signupData = JSON.parse(localStorage.getItem('signup_data') || '{}');
+
         const payload = {
             company_id: companyId,
             plan_id: planId,
-            billing_cycle: cycle
+            billing_cycle: cycle,
+            name: signupData.full_name || '',
+            email: signupData.email || '',
+            mobile: signupData.phone || '',
+            plan_name: signupData.plan_name || '',
+            start_at: startAtUnix
         };
 
         fetchWithAuth(API.SUBSCRIPTION_CREATE, {
