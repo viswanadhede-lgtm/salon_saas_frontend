@@ -258,11 +258,14 @@ if (btnSaveCustomer) {
             }, FEATURES.CUSTOMERS_MANAGEMENT, actionType);
 
             // Always parse the JSON body — even on non-2xx responses
-            let result = {};
-            try { result = await response.json(); } catch(e) { /* non-JSON response */ }
+            let raw = {};
+            try { raw = await response.json(); } catch(e) { /* non-JSON response */ }
+
+            // Unwrap array responses: backend may return [{...}] instead of {...}
+            const result = Array.isArray(raw) ? raw[0] : raw;
 
             // Check for any error — from HTTP status OR business logic
-            if (!response.ok || result.error) {
+            if (!response.ok || result.error || result.success === false) {
                 showToast(result.error || 'Failed to save customer. Please try again.', true);
                 return; // Keep modal open
             }
