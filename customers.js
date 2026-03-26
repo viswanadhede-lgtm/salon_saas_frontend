@@ -257,15 +257,13 @@ if (btnSaveCustomer) {
                 body: JSON.stringify(payload)
             }, FEATURES.CUSTOMERS_MANAGEMENT, actionType);
 
-            if (!response.ok) throw new Error('API Request Failed');
+            // Always parse the JSON body — even on non-2xx responses
+            let result = {};
+            try { result = await response.json(); } catch(e) { /* non-JSON response */ }
 
-            const result = await response.json();
-
-            // Check for business-logic errors (e.g. duplicate phone)
-            // Handles: success===false, success==="false", success===0, or any error field
-            const hasError = result.error || result.success === false || result.success === 'false' || result.success === 0;
-            if (hasError) {
-                showToast(result.error || 'Failed to save customer.', true);
+            // Check for any error — from HTTP status OR business logic
+            if (!response.ok || result.error) {
+                showToast(result.error || 'Failed to save customer. Please try again.', true);
                 return; // Keep modal open
             }
 
@@ -274,7 +272,7 @@ if (btnSaveCustomer) {
             await fetchCustomers(); // Refresh the list
         } catch (error) {
             console.error('Error saving customer:', error);
-            showToast('Failed to save customer. Please try again.', true);
+            showToast('A network error occurred. Please try again.', true);
         } finally {
             btnSaveCustomer.textContent = originalText;
             btnSaveCustomer.disabled = false;
