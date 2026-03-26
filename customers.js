@@ -226,7 +226,7 @@ if (btnSaveCustomer) {
         const tag = inputTag ? inputTag.value : '';
 
         if (!name || !phone) {
-            alert("Name and Phone are required.");
+            showToast('Name and Phone are required.', true);
             return;
         }
 
@@ -259,11 +259,20 @@ if (btnSaveCustomer) {
 
             if (!response.ok) throw new Error('API Request Failed');
 
+            const result = await response.json();
+
+            // Check for business-logic errors (e.g. duplicate phone)
+            if (result.success === false) {
+                showToast(result.error || 'Failed to save customer.', true);
+                return; // Keep modal open
+            }
+
             closeModal();
+            showToast(isEditing ? 'Customer updated successfully!' : 'Customer created successfully!');
             await fetchCustomers(); // Refresh the list
         } catch (error) {
             console.error('Error saving customer:', error);
-            alert('Failed to save customer. Please try again.');
+            showToast('Failed to save customer. Please try again.', true);
         } finally {
             btnSaveCustomer.textContent = originalText;
             btnSaveCustomer.disabled = false;
@@ -289,10 +298,24 @@ async function deleteCustomer(id) {
 
         if (!response.ok) throw new Error('Failed to delete customer');
 
+        showToast('Customer deleted successfully.');
         // Refresh the list
         await fetchCustomers();
     } catch (error) {
         console.error('Error deleting customer:', error);
-        alert('Failed to delete customer.');
+        showToast('Failed to delete customer.', true);
     }
+}
+
+// -- TOAST --
+function showToast(msg, isError = false) {
+    const t = document.getElementById('toastNotification');
+    if (!t) return;
+    t.textContent = msg;
+    t.className = 'toast-notification show';
+    t.style.background = isError ? '#ef4444' : '';
+    setTimeout(() => {
+        t.className = 'toast-notification';
+        t.style.background = '';
+    }, 3500);
 }
