@@ -259,11 +259,23 @@ function renderCustomers(listToRender = customersList) {
     }
 
     if (btnConfirmDelete) {
-        btnConfirmDelete.addEventListener('click', () => {
-            if (deleteOverlay) deleteOverlay.classList.remove('active');
+        btnConfirmDelete.addEventListener('click', async () => {
             if (pendingDeleteId) {
-                deleteCustomer(pendingDeleteId);
+                const originalText = btnConfirmDelete.innerHTML;
+                btnConfirmDelete.innerHTML = '<i data-feather="loader" class="spin" style="width: 16px; height: 16px; margin-right: 6px; animation: spin 1s linear infinite;"></i> Deleting...';
+                btnConfirmDelete.disabled = true;
+                
+                // We need to make sure feather replaces the new icon
+                if (window.feather) feather.replace();
+
+                // Wait for the delete to finish
+                await deleteCustomer(pendingDeleteId);
+                
+                // Cleanup and close
+                btnConfirmDelete.innerHTML = originalText;
+                btnConfirmDelete.disabled = false;
                 pendingDeleteId = null;
+                if (deleteOverlay) deleteOverlay.classList.remove('active');
             }
         });
     }
@@ -426,9 +438,11 @@ async function deleteCustomer(id) {
         showToast('Customer deleted successfully.');
         // Refresh the list
         await fetchCustomers();
+        return true;
     } catch (error) {
         console.error('Error deleting customer:', error);
         showToast('Failed to delete customer.', true);
+        return false;
     }
 }
 
