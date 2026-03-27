@@ -12,6 +12,12 @@ export const SUB_FEATURES = {
     BOOKING_CANCEL: 'booking_cancel',
     BOOKING_VIEW_ALL: 'booking_view_all',
 
+    // ---- SERVICES ----
+    SERVICE_CREATE: 'service_create',
+    SERVICE_EDIT: 'service_edit',
+    SERVICE_DELETE: 'service_delete',
+    SERVICE_CATEGORY_MANAGE: 'service_category_manage',
+
     // ---- POS / SALES ----
     POS_CHECKOUT: 'pos_checkout',
     POS_APPLY_DISCOUNT: 'pos_apply_discount',
@@ -60,6 +66,17 @@ export const SUB_FEATURES_MAP = {
         { key: SUB_FEATURES.BOOKING_CANCEL, label: 'Cancel Bookings' },
         { key: SUB_FEATURES.BOOKING_VIEW_ALL, label: 'View All Schedules' }
     ],
+    [FEATURES.STAFF_MANAGEMENT]: [
+        { key: SUB_FEATURES.STAFF_VIEW_ALL_SCHEDULES, label: 'View All Schedules' },
+        { key: SUB_FEATURES.STAFF_EDIT_SCHEDULE, label: 'Edit Schedules' },
+        { key: SUB_FEATURES.STAFF_MANAGE_PROFILES, label: 'Manage Profiles' }
+    ],
+    [FEATURES.SERVICES_MANAGEMENT]: [
+        { key: SUB_FEATURES.SERVICE_CREATE, label: 'Create Services' },
+        { key: SUB_FEATURES.SERVICE_EDIT, label: 'Edit Services' },
+        { key: SUB_FEATURES.SERVICE_DELETE, label: 'Delete Services' },
+        { key: SUB_FEATURES.SERVICE_CATEGORY_MANAGE, label: 'Manage Categories' }
+    ],
     [FEATURES.POS_SYSTEM]: [
         { key: SUB_FEATURES.POS_CHECKOUT, label: 'Process Checkout' },
         { key: SUB_FEATURES.POS_APPLY_DISCOUNT, label: 'Apply Discounts' },
@@ -70,11 +87,6 @@ export const SUB_FEATURES_MAP = {
         { key: SUB_FEATURES.CUSTOMER_EDIT, label: 'Edit Customer' },
         { key: SUB_FEATURES.CUSTOMER_EXPORT, label: 'Export Data' },
         { key: SUB_FEATURES.CUSTOMER_DELETE, label: 'Delete Customer' }
-    ],
-    [FEATURES.STAFF_MANAGEMENT]: [
-        { key: SUB_FEATURES.STAFF_VIEW_ALL_SCHEDULES, label: 'View All Schedules' },
-        { key: SUB_FEATURES.STAFF_EDIT_SCHEDULE, label: 'Edit Schedules' },
-        { key: SUB_FEATURES.STAFF_MANAGE_PROFILES, label: 'Manage Profiles' }
     ],
     [FEATURES.REPORTS_ACCESS]: [
         { key: SUB_FEATURES.REPORT_VIEW_BASIC, label: 'View Basic Reports' },

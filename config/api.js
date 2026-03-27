@@ -22,7 +22,11 @@ export const API = {
   CREATE_CUSTOMER: `${BASE_URL}/create_customer`,
   READ_CUSTOMERS: `${BASE_URL}/read_customers`,
   UPDATE_CUSTOMER: `${BASE_URL}/update_customer`,
-  DELETE_CUSTOMER: `${BASE_URL}/delete_customer`
+  DELETE_CUSTOMER: `${BASE_URL}/delete_customer`,
+  CREATE_SERVICE_CATEGORY: `${BASE_URL}/create_service_category`,
+  READ_SERVICE_CATEGORY: `${BASE_URL}/read_service_category`,
+  UPDATE_SERVICE_CATEGORY: `${BASE_URL}/update_service_category`,
+  DELETE_SERVICE_CATEGORY: `${BASE_URL}/delete_service_category`
 };
 
 /**
