@@ -209,9 +209,14 @@ function renderCustomers(listToRender = customersList) {
             <td>${tagHtml}</td>
             <td class="text-right" style="text-align:right;">
                 <div class="action-buttons" style="display:flex; justify-content:flex-end; gap:0.5rem;">
-                    <button class="icon-btn btn-view-profile" title="View Profile" style="background:none; border:none; cursor:pointer; color:#64748b;"><i data-feather="eye"></i></button>
-                    <button class="icon-btn btn-edit" data-id="${customer.customer_id}" data-sub-feature="${SUB_FEATURES.CUSTOMER_EDIT}" title="Edit Customer" style="background:none; border:none; cursor:pointer; color:#3b82f6;"><i data-feather="edit-2"></i></button>
-                    <button class="icon-btn btn-delete flex-shrink-0" data-id="${customer.customer_id}" data-sub-feature="${SUB_FEATURES.CUSTOMER_DELETE}" title="Delete Customer" style="background:none; border:none; cursor:pointer; color:#ef4444;"><i data-feather="trash-2"></i></button>
+                    <button class="btn-edit hover-lift" data-id="${customer.customer_id}" data-sub-feature="${SUB_FEATURES.CUSTOMER_EDIT}" title="Edit Customer" style="display:flex; flex-direction:column; align-items:center; justify-content:center; padding: 4px 8px; border-radius:8px; border:1px solid #e0e7ff; background:#eff6ff; cursor:pointer; color:#3b82f6; transition:all 0.2s; min-width: 52px;">
+                        <i data-feather="edit-2" style="width:16px; height:16px; margin-bottom:2px;"></i>
+                        <span style="font-size:10px; font-weight:600;">Edit</span>
+                    </button>
+                    <button class="btn-delete flex-shrink-0 hover-lift" data-id="${customer.customer_id}" data-sub-feature="${SUB_FEATURES.CUSTOMER_DELETE}" title="Delete Customer" style="display:flex; flex-direction:column; align-items:center; justify-content:center; padding: 4px 8px; border-radius:8px; border:1px solid #fee2e2; background:#fef2f2; cursor:pointer; color:#ef4444; transition:all 0.2s; min-width: 52px;">
+                        <i data-feather="trash-2" style="width:16px; height:16px; margin-bottom:2px;"></i>
+                        <span style="font-size:10px; font-weight:600;">Delete</span>
+                    </button>
                 </div>
             </td>
         `;
