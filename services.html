@@ -1186,7 +1186,11 @@
         // Expose to window so non-module inline scripts can call them
         window.fetchCategories = fetchCategories;
         window.renderCat = window.renderCat; // already global from inline script
-        document.addEventListener('DOMContentLoaded', () => initCategories());
+        if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', () => initCategories());
+        } else {
+            initCategories();
+        }
     </script>
 </body>
 
