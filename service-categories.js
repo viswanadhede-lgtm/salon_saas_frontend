@@ -115,10 +115,9 @@ function attachEventListeners() {
                 status: document.querySelector('input[name="cfStatus"]:checked').value
             };
             
-            const btn = addCatForm.querySelector('button[type="submit"]');
-            const originalText = btn.textContent;
-            btn.textContent = 'Saving...';
-            btn.disabled = true;
+            const btn = document.querySelector('button[form="addCategoryForm"]');
+            const originalText = btn ? btn.textContent : 'Save Category';
+            if (btn) { btn.textContent = 'Saving...'; btn.disabled = true; }
             
             try {
                 const res = await fetchWithAuth(API.CREATE_SERVICE_CATEGORY, {
@@ -139,8 +138,7 @@ function attachEventListeners() {
                 console.error(err);
                 toast('Network error saving category');
             } finally {
-                btn.textContent = originalText;
-                btn.disabled = false;
+                if (btn) { btn.textContent = originalText; btn.disabled = false; }
             }
         });
     }
@@ -165,10 +163,9 @@ function attachEventListeners() {
             status: document.querySelector('input[name="editCfStatus"]:checked').value
         };
         
-        const btn = editCatForm.querySelector('button[type="submit"]');
-        const originalText = btn.textContent;
-        btn.textContent = 'Updating...';
-        btn.disabled = true;
+        const btn = document.querySelector('button[form="editCategoryForm"]');
+            const originalText = btn ? btn.textContent : 'Update Category';
+            if (btn) { btn.textContent = 'Updating...'; btn.disabled = true; }
         
         try {
             const res = await fetchWithAuth(API.UPDATE_SERVICE_CATEGORY, {
@@ -188,8 +185,7 @@ function attachEventListeners() {
             console.error(err);
             toast('Network error updating category');
         } finally {
-            btn.textContent = originalText;
-            btn.disabled = false;
+            if (btn) { btn.textContent = originalText; btn.disabled = false; }
         }
     });
 
