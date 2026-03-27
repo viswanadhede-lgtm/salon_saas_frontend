@@ -987,6 +987,28 @@
         </div>
     </div>
 
+    <!-- Deleting Customer Full-Screen Overlay (Matches Logout UX) -->
+    <style>
+        #deletingCustomerOverlay {
+            display: none;
+            position: fixed;
+            inset: 0;
+            background: rgba(15, 23, 42, 0.75);
+            backdrop-filter: blur(6px);
+            z-index: 999999;
+            align-items: center;
+            justify-content: center;
+        }
+        #deletingCustomerOverlay.active { display: flex; }
+    </style>
+    <div id="deletingCustomerOverlay">
+        <div style="background: #fff; border-radius: 16px; padding: 2.25rem 2.75rem; display: flex; flex-direction: column; align-items: center; gap: 16px; box-shadow: 0 24px 64px rgba(0,0,0,0.25); animation: louFadeIn 0.2s ease;">
+            <div style="width: 44px; height: 44px; border: 4px solid #e2e8f0; border-top-color: #ef4444; border-radius: 50%; animation: louSpin 0.75s linear infinite;"></div>
+            <p style="font-size: 1rem; font-weight: 600; color: #0f172a; margin: 0;">Deleting customer…</p>
+            <p style="font-size: 0.8rem; color: #64748b; margin: 0;">Please wait a moment.</p>
+        </div>
+    </div>
+
     <!-- Premium New Booking Modal -->
     <div class="modal-overlay" id="bookingModalOverlay">
         <div class="modal-container" id="bookingModal">

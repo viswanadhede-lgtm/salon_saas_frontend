@@ -258,24 +258,23 @@ function renderCustomers(listToRender = customersList) {
         });
     }
 
+    const deletingOverlay = document.getElementById('deletingCustomerOverlay');
+
     if (btnConfirmDelete) {
         btnConfirmDelete.addEventListener('click', async () => {
             if (pendingDeleteId) {
-                const originalText = btnConfirmDelete.innerHTML;
-                btnConfirmDelete.innerHTML = '<i data-feather="loader" class="spin" style="width: 16px; height: 16px; margin-right: 6px; animation: spin 1s linear infinite;"></i> Deleting...';
-                btnConfirmDelete.disabled = true;
+                // Instantly hide the small confirmation modal
+                if (deleteOverlay) deleteOverlay.classList.remove('active');
                 
-                // We need to make sure feather replaces the new icon
-                if (window.feather) feather.replace();
+                // Show the full-screen blurred "Deleting..." overlay
+                if (deletingOverlay) deletingOverlay.classList.add('active');
 
                 // Wait for the delete to finish
                 await deleteCustomer(pendingDeleteId);
                 
-                // Cleanup and close
-                btnConfirmDelete.innerHTML = originalText;
-                btnConfirmDelete.disabled = false;
+                // Cleanup and close overlay
                 pendingDeleteId = null;
-                if (deleteOverlay) deleteOverlay.classList.remove('active');
+                if (deletingOverlay) deletingOverlay.classList.remove('active');
             }
         });
     }
