@@ -289,7 +289,7 @@
             <!-- Tabs -->
             <div style="display:flex;align-items:center;padding:0 32px;background:#fff;border-bottom:1px solid #e2e8f0;">
                 <button id="tabBtnServices" class="svc-tab active" onclick="switchTab('services')">Services <span id="countServices" class="svc-badge">18</span></button>
-                <button id="tabBtnCategories" class="svc-tab" onclick="switchTab('categories')">Categories <span id="countCategories" class="svc-badge">5</span></button>
+                <button id="tabBtnCategories" class="svc-tab" onclick="switchTab('categories')">Service Categories <span id="countCategories" class="svc-badge">5</span></button>
             </div>
 
             <!-- Services Panel -->
@@ -447,7 +447,7 @@
             document.getElementById('btnCancelAddCategory').addEventListener('click',()=>addCatModal.classList.remove('active'));
             addCatModal.addEventListener('click',e=>{if(e.target===addCatModal)addCatModal.classList.remove('active');});
             document.getElementById('addCategoryForm').addEventListener('submit',function(e){e.preventDefault();toast('Category added (demo)');addCatModal.classList.remove('active');this.reset();});
-            document.addEventListener('click',()=>{if(svcMenu){svcMenu.remove();svcMenu=null;}if(catMenu){catMenu.remove();catMenu=null;}});
+            document.addEventListener('click',()=>{if(svcMenu){svcMenu.remove();svcMenu=null;}});
             document.getElementById('countServices').textContent=servicesData.length;
             document.getElementById('countCategories').textContent=categoriesData.length;
             renderSvc(servicesData);renderCat(categoriesData);feather.replace();
