@@ -207,8 +207,8 @@ function renderCustomers(listToRender = customersList) {
                 <p class="text-sm" style="margin:0; font-size:0.875rem;">${lastVisit}</p>
             </td>
             <td>${tagHtml}</td>
-            <td class="text-right" style="text-align:right;">
-                <div class="action-buttons" style="display:flex; justify-content:flex-end; gap:0.5rem;">
+            <td style="vertical-align:middle;">
+                <div class="action-buttons" style="display:flex; justify-content:flex-start; gap:0.5rem;">
                     <button class="btn-edit hover-lift" data-id="${customer.customer_id}" data-sub-feature="${SUB_FEATURES.CUSTOMER_EDIT}" title="Edit Customer" style="display:flex; flex-direction:column; align-items:center; justify-content:center; padding: 4px 8px; border-radius:8px; border:1px solid #e0e7ff; background:#eff6ff; cursor:pointer; color:#3b82f6; transition:all 0.2s; min-width: 52px;">
                         <i data-feather="edit-2" style="width:16px; height:16px; margin-bottom:2px;"></i>
                         <span style="font-size:10px; font-weight:600;">Edit</span>
