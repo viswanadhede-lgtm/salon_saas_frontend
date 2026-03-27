@@ -79,12 +79,52 @@ async function fetchCustomers() {
         if (elVip)      elVip.textContent      = root.vip_customers      ?? '0';
         if (elInactive) elInactive.textContent = root.inactive_90_days   ?? '0';
 
+        // Hydrate stat trends
+        updateTrend('trendTotalCustomers', root.total_customers_change);
+        updateTrend('trendNewThisMonth', root.new_this_month_change);
+        updateTrend('trendVipCustomers', root.vip_customers_change);
+        updateTrend('trendInactiveDays', root.inactive_90_days_change);
+
         renderCustomers();
     } catch (error) {
         console.error('Error fetching customers:', error);
         if (customersTableBody) {
             customersTableBody.innerHTML = '<tr><td colspan="6" class="text-center py-4 text-rose" style="text-align:center; color: #e11d48;">Failed to load customers.</td></tr>';
         }
+    }
+}
+
+function updateTrend(elementId, changeValue) {
+    const el = document.getElementById(elementId);
+    if (!el) return;
+    
+    const val = parseFloat(changeValue);
+    if (isNaN(val)) {
+        el.style.display = 'none';
+        return;
+    }
+    
+    el.style.display = '';
+    
+    let icon = 'minus';
+    let text = '0% from last month';
+    let cn = 'stat-trend neutral';
+    
+    if (val > 0) {
+        icon = 'trending-up';
+        text = `+${val}% from last month`;
+        cn = 'stat-trend positive';
+    } else if (val < 0) {
+        icon = 'trending-down';
+        text = `${val}% from last month`;
+        cn = 'stat-trend negative';
+    }
+    
+    el.className = cn;
+    el.innerHTML = `<i data-feather="${icon}"></i><span>${text}</span>`;
+    
+    if (window.feather) {
+        feather.replace();
     }
 }
 
