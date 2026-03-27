@@ -273,12 +273,15 @@ export async function fetchCategories() {
         if (!response.ok) throw new Error('Failed to fetch from backend');
         
         const data = await response.json();
-        liveCategoriesData = data.categories || data.data || [];
+        const root = Array.isArray(data) ? data[0] : data;
+        liveCategoriesData = root.categories || [];
         
         window.liveCategoriesData = liveCategoriesData;
         window.renderCat(liveCategoriesData);
         const countEl = document.getElementById('countCategories');
-        if (countEl) countEl.textContent = liveCategoriesData.length;
+        if (countEl) {
+            countEl.textContent = root.total_categories !== undefined ? root.total_categories : liveCategoriesData.length;
+        }
         populateCategoryDropdownEx();
     } catch (err) {
         console.error('Network Error:', err);
