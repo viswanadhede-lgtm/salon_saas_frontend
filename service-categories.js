@@ -126,7 +126,8 @@ function attachEventListeners() {
                 }, FEATURES.SERVICES_MANAGEMENT, 'create');
                 
                 const data = await res.json();
-                if (res.ok && data.status === 'success') {
+                const hasError = Array.isArray(data) ? !!data[0]?.error : !!data.error;
+                if (res.ok && !hasError) {
                     toast('Category added successfully!');
                     document.getElementById('addCategoryModal').classList.remove('active');
                     addCatForm.reset();
@@ -175,7 +176,8 @@ function attachEventListeners() {
             }, FEATURES.SERVICES_MANAGEMENT, 'update');
             
             const data = await res.json();
-            if (res.ok && data.status === 'success') {
+            const hasError = Array.isArray(data) ? !!data[0]?.error : !!data.error;
+            if (res.ok && !hasError) {
                 toast('Category updated successfully!');
                 editCatModal.classList.remove('active');
                 await fetchCategories();
@@ -226,7 +228,8 @@ function attachEventListeners() {
             }, FEATURES.SERVICES_MANAGEMENT, 'delete');
             
             const data = await res.json();
-            if (res.ok && data.status === 'success') {
+            const hasError = Array.isArray(data) ? !!data[0]?.error : !!data.error;
+            if (res.ok && !hasError) {
                 toast('Category deleted successfully!');
                 await fetchCategories();
             } else {
