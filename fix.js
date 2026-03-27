@@ -1,66 +1,48 @@
 const fs = require('fs');
-let content = fs.readFileSync('c:/Users/viswa/OneDrive/Desktop/salon-saas-frontend/sales-history.html', 'utf8');
 
-const regex1 = /<i data-feather="user"><\/i>\s*<!-- Section Title Bar \(Sales History\) -->\s*<div class="tb-page-header"/;
+const file = 'customers.html';
+let content = fs.readFileSync(file, 'utf8');
 
-const rep1 = `<i data-feather="user"></i>
-                                    <span>Profile</span>
-                                </a>
-                            </li>
-                            <li>
-                                <a href="#" class="dropdown-item">
-                                    <i data-feather="calendar"></i>
-                                    <span>Schedule</span>
-                                </a>
-                            </li>
-                            <li id="billingMenuItem">
-                                <a href="#" class="dropdown-item">
-                                    <i data-feather="credit-card"></i>
-                                    <span>Billing</span>
-                                </a>
-                            </li>
-                            <li>
-                                <a href="#" class="dropdown-item">
-                                    <i data-feather="settings"></i>
-                                    <span>Settings</span>
-                                </a>
-                            </li>
-                            <li>
-                                <a href="#" class="dropdown-item">
-                                    <i data-feather="help-circle"></i>
-                                    <span>Support</span>
-                                </a>
-                            </li>
-                            <li>
-                                <a href="#" class="dropdown-item text-danger">
-                                    <i data-feather="log-out"></i>
-                                    <span>Logout</span>
-                                </a>
-                            </li>
-                        </ul>
-                    </div>
-                </div>
-            </div>
-        </header>
+// The 4 trend paragraph IDs
+content = content.replace(
+    '<p class="stat-trend positive">',
+    '<p class="stat-trend positive" id="trendTotalCustomers">'
+);
+content = content.replace(
+    '<p class="stat-trend positive">',
+    '<p class="stat-trend positive" id="trendNewThisMonth">'
+);
+content = content.replace(
+    '<p class="stat-trend neutral">',
+    '<p class="stat-trend neutral" id="trendVipCustomers">'
+);
+content = content.replace(
+    '<p class="stat-trend negative">',
+    '<p class="stat-trend negative" id="trendInactiveDays">'
+);
 
-        <!-- Profile Dropdown Backdrop -->
-        <div id="profileBackdrop" class="profile-backdrop"></div>
+// The Search UI removal
+const searchUiOld = `                        <input
+                            type="text"
+                            id="customerSearch"
+                            class="customers-search-input"
+                            placeholder="Search by name or phone"
+                            autocomplete="off"
+                        >
+                        <div class="customers-search-divider"></div>
+                        <button type="button" class="customers-search-btn">Search</button>
+                    </div>`;
 
-        <!-- Page Content -->
-        <main class="content-area">
+const searchUiNew = `                        <input
+                            type="text"
+                            id="customerSearch"
+                            class="customers-search-input"
+                            placeholder="Search by name or phone"
+                            autocomplete="off"
+                        >
+                    </div>`;
 
-              <!-- Section Title Bar (Sales History) -->
-        <div class="tb-page-header"`;
+content = content.replace(searchUiOld, searchUiNew);
 
-content = content.replace(regex1, rep1);
-
-const regex2 = /<script src="sales-history\.js"><\/script>/;
-const rep2 = `</main>
-    </div>
-    
-    <script src="sales-history.js"></script>`;
-
-content = content.replace(regex2, rep2);
-
-fs.writeFileSync('c:/Users/viswa/OneDrive/Desktop/salon-saas-frontend/sales-history.html', content);
-console.log('Fixed structure successfully.');
+fs.writeFileSync(file, content);
+console.log('Fixed customers.html successfully without fuzzy patch destruction.');

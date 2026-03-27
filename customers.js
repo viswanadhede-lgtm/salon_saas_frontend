@@ -5,6 +5,7 @@ import { applySubFeatureGates } from './scripts/sub-features/sub-feature-gate.js
 
 // DOM Elements
 const customersTableBody = document.getElementById('customersTableBody');
+const customerSearchInput = document.getElementById('customerSearch');
 const btnAddCustomer = document.getElementById('btnAddCustomer');
 const btnCancelAddCustomer = document.getElementById('btnCancelAddCustomer');
 const btnSaveCustomer = document.getElementById('btnSaveNewCustomer');
@@ -43,6 +44,24 @@ if (document.readyState === 'loading') {
     document.addEventListener('DOMContentLoaded', fetchCustomers);
 } else {
     fetchCustomers();
+}
+
+if (customerSearchInput) {
+    customerSearchInput.addEventListener('input', (e) => {
+        const query = e.target.value.toLowerCase().trim();
+        if (!query) {
+            renderCustomers(customersList);
+            return;
+        }
+
+        const filtered = customersList.filter(c => {
+            const name = (c.customer_name || '').toLowerCase();
+            const phone = String(c.customer_phone || '').toLowerCase();
+            return name.includes(query) || phone.includes(query);
+        });
+
+        renderCustomers(filtered);
+    });
 }
 
 // -- READ --
@@ -128,21 +147,21 @@ function updateTrend(elementId, changeValue) {
     }
 }
 
-function renderCustomers() {
+function renderCustomers(listToRender = customersList) {
     if (!customersTableBody) return;
     customersTableBody.innerHTML = '';
     
-    if (customersList.length === 0) {
+    if (listToRender.length === 0) {
         customersTableBody.innerHTML = '<tr><td colspan="6" class="text-center py-4" style="text-align:center;">No customers found.</td></tr>';
-        if (paginationText) paginationText.innerHTML = `Showing <span class="fw-600 text-main">0</span> to <span class="fw-600 text-main">0</span> of <span class="fw-600 text-main">0</span> customers`;
+        if (paginationText) paginationText.innerHTML = `Showing <span class="fw-600 text-main">0</span> to <span class="fw-600 text-main">0</span> of <span class="fw-600 text-main">${customersList.length}</span> customers`;
         return;
     }
 
     if (paginationText) {
-        paginationText.innerHTML = `Showing <span class="fw-600 text-main">1</span> to <span class="fw-600 text-main">${customersList.length}</span> of <span class="fw-600 text-main">${customersList.length}</span> customers`;
+        paginationText.innerHTML = `Showing <span class="fw-600 text-main">1</span> to <span class="fw-600 text-main">${listToRender.length}</span> of <span class="fw-600 text-main">${customersList.length}</span> customers`;
     }
 
-    customersList.forEach(customer => {
+    listToRender.forEach(customer => {
         const tr = document.createElement('tr');
         
         // Map API field names → local variables
