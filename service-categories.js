@@ -4,6 +4,17 @@ import { SUB_FEATURES } from './config/sub-feature-registry.js';
 
 let liveCategoriesData = [];
 
+// --- Helpers ---
+function getCompanyId() {
+    try {
+        const appContext = JSON.parse(localStorage.getItem('appContext') || '{}');
+        return appContext.company?.id || null;
+    } catch (e) { return null; }
+}
+function getBranchId() {
+    return localStorage.getItem('active_branch_id') || null;
+}
+
 // Initialize Categories logic
 export async function initCategories() {
     setupModals();
@@ -28,7 +39,7 @@ function setupModals() {
                 </div>
                 <div class="modal-body" style="padding:1.5rem;overflow-y:auto;">
                     <form id="editCategoryForm" style="display:flex;flex-direction:column;gap:16px;">
-                        <input type="hidden" id="editCategoryOldName">
+                        <input type="hidden" id="editCategoryId">
                         <div class="form-group" style="margin:0;">
                             <label class="form-label" for="editCfName">Category Name <span class="text-rose">*</span></label>
                             <input type="text" id="editCfName" class="form-input" required>
@@ -97,6 +108,8 @@ function attachEventListeners() {
         addCatForm.addEventListener('submit', async (e) => {
             e.preventDefault();
             const payload = {
+                company_id: getCompanyId(),
+                branch_id: getBranchId(),
                 category_name: document.getElementById('cfName').value.trim(),
                 description: document.getElementById('cfDescription').value.trim(),
                 status: document.querySelector('input[name="cfStatus"]:checked').value
@@ -142,10 +155,12 @@ function attachEventListeners() {
     
     editCatForm.addEventListener('submit', async (e) => {
         e.preventDefault();
-        const oldName = document.getElementById('editCategoryOldName').value;
+        const categoryId = document.getElementById('editCategoryId').value;
         const payload = {
-            category_name: oldName, // required to identify which one to update
-            new_category_name: document.getElementById('editCfName').value.trim(),
+            company_id: getCompanyId(),
+            branch_id: getBranchId(),
+            category_id: categoryId,
+            category_name: document.getElementById('editCfName').value.trim(),
             description: document.getElementById('editCfDescription').value.trim(),
             status: document.querySelector('input[name="editCfStatus"]:checked').value
         };
@@ -157,7 +172,7 @@ function attachEventListeners() {
         
         try {
             const res = await fetchWithAuth(API.UPDATE_SERVICE_CATEGORY, {
-                method: 'PUT',
+                method: 'POST',
                 body: JSON.stringify(payload)
             }, FEATURES.SERVICES_MANAGEMENT, 'update');
             
@@ -199,12 +214,17 @@ function attachEventListeners() {
         if (!categoryToDelete) return;
         
         deleteOverlay.classList.remove('active');
-        fullScreenLoader.classList.add('active'); // Start full screen loader
+        fullScreenLoader.classList.add('active');
         
         try {
             const res = await fetchWithAuth(API.DELETE_SERVICE_CATEGORY, {
-                method: 'DELETE',
-                body: JSON.stringify({ category_name: categoryToDelete })
+                method: 'POST',
+                body: JSON.stringify({
+                    company_id: getCompanyId(),
+                    branch_id: getBranchId(),
+                    category_id: categoryToDelete.id,
+                    category_name: categoryToDelete.name
+                })
             }, FEATURES.SERVICES_MANAGEMENT, 'delete');
             
             const data = await res.json();
@@ -224,11 +244,11 @@ function attachEventListeners() {
     });
 
     // Global expose so dynamically rendered buttons can call these
-    window.openEditCategoryModal = (catName) => {
-        const cat = liveCategoriesData.find(c => c.category_name === catName);
+    window.openEditCategoryModal = (catId, catName) => {
+        const cat = liveCategoriesData.find(c => (c.id || c.category_id) === catId);
         if (cat) {
-            document.getElementById('editCategoryOldName').value = cat.category_name;
-            document.getElementById('editCfName').value = cat.category_name;
+            document.getElementById('editCategoryId').value = cat.id || cat.category_id || '';
+            document.getElementById('editCfName').value = cat.category_name || cat.name || '';
             document.getElementById('editCfDescription').value = cat.description || '';
             const statusRadios = document.querySelectorAll('input[name="editCfStatus"]');
             statusRadios.forEach(r => r.checked = (r.value === cat.status));
@@ -236,31 +256,34 @@ function attachEventListeners() {
         }
     };
     
-    window.triggerDeleteCategory = (catName) => {
-        categoryToDelete = catName;
+    window.triggerDeleteCategory = (catId, catName) => {
+        categoryToDelete = { id: catId, name: catName };
         document.getElementById('deleteConfirmOverlay').classList.add('active');
     };
 }
 
 export async function fetchCategories() {
     try {
-        const response = await fetchWithAuth(API.READ_SERVICE_CATEGORY, { method: 'GET' }, FEATURES.SERVICES_MANAGEMENT, 'read');
+        const response = await fetchWithAuth(API.READ_SERVICE_CATEGORY, {
+            method: 'POST',
+            body: JSON.stringify({
+                company_id: getCompanyId(),
+                branch_id: getBranchId()
+            })
+        }, FEATURES.SERVICES_MANAGEMENT, 'read');
         if (!response.ok) throw new Error('Failed to fetch from backend');
         
         const data = await response.json();
-        // Assume API returns { status: "success", data: [...] } or { status: "success", categories: [...] }
         liveCategoriesData = data.categories || data.data || [];
         
         window.liveCategoriesData = liveCategoriesData;
         window.renderCat(liveCategoriesData);
-        // Update the badge count in the tab
         const countEl = document.getElementById('countCategories');
         if (countEl) countEl.textContent = liveCategoriesData.length;
         populateCategoryDropdownEx();
     } catch (err) {
         console.error('Network Error:', err);
-        // Fallback for visual rendering if API fails
-        window.renderCat(liveCategoriesData); 
+        window.renderCat(liveCategoriesData);
     }
 }
 
