@@ -409,15 +409,12 @@ if (btnSaveCustomer) {
 
 // -- DELETE --
 async function deleteCustomer(id) {
-    if (!confirm('Are you sure you want to delete this customer? This action cannot be undone.')) {
-        return;
-    }
 
     try {
         const payload = {
             company_id: getCompanyId(),
             branch_id: getBranchId(),
-            id: parseInt(id, 10)
+            id: id
         };
         const response = await fetchWithAuth(API.DELETE_CUSTOMER, {
             method: 'POST',
