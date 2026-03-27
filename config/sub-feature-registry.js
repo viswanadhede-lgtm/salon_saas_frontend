@@ -13,10 +13,10 @@ export const SUB_FEATURES = {
     BOOKING_VIEW_ALL: 'booking_view_all',
 
     // ---- SERVICES ----
-    SERVICE_CATEGORY_CREATE: 'service_category_create',
-    SERVICE_CATEGORY_READ: 'service_category_read',
-    SERVICE_CATEGORY_EDIT: 'service_category_edit',
-    SERVICE_CATEGORY_DELETE: 'service_category_delete',
+    CREATE_SERVICE_CATEGORY: 'create_service_category',
+    READ_SERVICE_CATEGORY: 'read_service_category',
+    UPDATE_SERVICE_CATEGORY: 'update_service_category',
+    DELETE_SERVICE_CATEGORY: 'delete_service_category',
 
     // ---- POS / SALES ----
     POS_CHECKOUT: 'pos_checkout',
@@ -72,10 +72,10 @@ export const SUB_FEATURES_MAP = {
         { key: SUB_FEATURES.STAFF_MANAGE_PROFILES, label: 'Manage Profiles' }
     ],
     [FEATURES.SERVICES_MANAGEMENT]: [
-        { key: SUB_FEATURES.SERVICE_CATEGORY_CREATE, label: 'Create Service Category' },
-        { key: SUB_FEATURES.SERVICE_CATEGORY_READ, label: 'Read Service Categories' },
-        { key: SUB_FEATURES.SERVICE_CATEGORY_EDIT, label: 'Edit Service Category' },
-        { key: SUB_FEATURES.SERVICE_CATEGORY_DELETE, label: 'Delete Service Category' }
+        { key: SUB_FEATURES.CREATE_SERVICE_CATEGORY, label: 'Create Service Category' },
+        { key: SUB_FEATURES.READ_SERVICE_CATEGORY, label: 'Read Service Categories' },
+        { key: SUB_FEATURES.UPDATE_SERVICE_CATEGORY, label: 'Update Service Category' },
+        { key: SUB_FEATURES.DELETE_SERVICE_CATEGORY, label: 'Delete Service Category' }
     ],
     [FEATURES.POS_SYSTEM]: [
         { key: SUB_FEATURES.POS_CHECKOUT, label: 'Process Checkout' },
