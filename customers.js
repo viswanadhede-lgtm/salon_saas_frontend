@@ -236,12 +236,37 @@ function renderCustomers(listToRender = customersList) {
         });
     });
 
+    const deleteOverlay = document.getElementById('deleteConfirmOverlay');
+    const btnConfirmDelete = document.getElementById('btnConfirmDelete');
+    const btnCancelDelete = document.getElementById('btnCancelDelete');
+    let pendingDeleteId = null;
+
     document.querySelectorAll('.btn-delete').forEach(btn => {
         btn.addEventListener('click', (e) => {
-            const customerId = e.currentTarget.getAttribute('data-id');
-            deleteCustomer(customerId);
+            pendingDeleteId = e.currentTarget.getAttribute('data-id');
+            if (deleteOverlay) {
+                deleteOverlay.classList.add('active');
+                if (window.feather) feather.replace();
+            }
         });
     });
+
+    if (btnCancelDelete) {
+        btnCancelDelete.addEventListener('click', () => {
+            pendingDeleteId = null;
+            if (deleteOverlay) deleteOverlay.classList.remove('active');
+        });
+    }
+
+    if (btnConfirmDelete) {
+        btnConfirmDelete.addEventListener('click', () => {
+            if (deleteOverlay) deleteOverlay.classList.remove('active');
+            if (pendingDeleteId) {
+                deleteCustomer(pendingDeleteId);
+                pendingDeleteId = null;
+            }
+        });
+    }
 
     try {
         if (typeof applySubFeatureGates === 'function') {
