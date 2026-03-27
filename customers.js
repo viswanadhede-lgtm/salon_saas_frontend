@@ -268,6 +268,15 @@ function renderCustomers(listToRender = customersList) {
         });
     }
 
+    if (deleteOverlay) {
+        deleteOverlay.addEventListener('click', (e) => {
+            if (e.target === deleteOverlay) {
+                pendingDeleteId = null;
+                deleteOverlay.classList.remove('active');
+            }
+        });
+    }
+
     try {
         if (typeof applySubFeatureGates === 'function') {
             applySubFeatureGates();
