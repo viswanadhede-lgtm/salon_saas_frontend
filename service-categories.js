@@ -132,7 +132,8 @@ function attachEventListeners() {
                     addCatForm.reset();
                     await fetchCategories();
                 } else {
-                    toast('Error adding category: ' + (data.message || 'Unknown error'));
+                    let errorMsg = Array.isArray(data) ? data[0]?.error || 'Unknown error' : data.message || data.error || 'Unknown error';
+                    toast('Error adding category: ' + errorMsg);
                 }
             } catch (err) {
                 console.error(err);
@@ -179,7 +180,8 @@ function attachEventListeners() {
                 editCatModal.classList.remove('active');
                 await fetchCategories();
             } else {
-                toast('Error updating category: ' + (data.message || 'Unknown error'));
+                let errorMsg = Array.isArray(data) ? data[0]?.error || 'Unknown error' : data.message || data.error || 'Unknown error';
+                toast('Error updating category: ' + errorMsg);
             }
         } catch (err) {
             console.error(err);
@@ -228,7 +230,8 @@ function attachEventListeners() {
                 toast('Category deleted successfully!');
                 await fetchCategories();
             } else {
-                toast('Error deleting category: ' + (data.message || 'Unknown error'));
+                let errorMsg = Array.isArray(data) ? data[0]?.error || 'Unknown error' : data.message || data.error || 'Unknown error';
+                toast('Error deleting category: ' + errorMsg);
             }
         } catch (err) {
             console.error(err);
