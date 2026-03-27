@@ -34,6 +34,10 @@ function getCompanyId() {
     }
 }
 
+function getBranchId() {
+    return localStorage.getItem('active_branch_id') || null;
+}
+
 // Initialize
 if (document.readyState === 'loading') {
     document.addEventListener('DOMContentLoaded', fetchCustomers);
@@ -48,7 +52,10 @@ async function fetchCustomers() {
             customersTableBody.innerHTML = '<tr><td colspan="6" class="text-center py-4" style="text-align:center;">Loading customers...</td></tr>';
         }
         
-        const payload = { company_id: getCompanyId() };
+        const payload = { 
+            company_id: getCompanyId(), 
+            branch_id: getBranchId() 
+        };
         
         const response = await fetchWithAuth(API.READ_CUSTOMERS, { 
             method: 'POST',
@@ -58,7 +65,20 @@ async function fetchCustomers() {
         if (!response.ok) throw new Error('Failed to fetch customers');
 
         const data = await response.json();
-        customersList = Array.isArray(data) ? data : (data.customers || []);
+        // API returns [{total_customers, new_this_month, vip_customers, inactive_90_days, customers:[...]}]
+        const root = Array.isArray(data) ? data[0] : data;
+        customersList = root.customers || [];
+
+        // Hydrate stat cards
+        const elTotal    = document.getElementById('statTotalCustomers');
+        const elNew      = document.getElementById('statNewThisMonth');
+        const elVip      = document.getElementById('statVipCustomers');
+        const elInactive = document.getElementById('statInactiveDays');
+        if (elTotal)    elTotal.textContent    = root.total_customers    ?? '0';
+        if (elNew)      elNew.textContent      = root.new_this_month     ?? '0';
+        if (elVip)      elVip.textContent      = root.vip_customers      ?? '0';
+        if (elInactive) elInactive.textContent = root.inactive_90_days   ?? '0';
+
         renderCustomers();
     } catch (error) {
         console.error('Error fetching customers:', error);
@@ -85,12 +105,21 @@ function renderCustomers() {
     customersList.forEach(customer => {
         const tr = document.createElement('tr');
         
+        // Map API field names → local variables
+        const name  = customer.customer_name  || 'Unknown';
+        const phone = customer.customer_phone || 'N/A';
+        const email = customer.customer_email || '-';
+        const tag   = (customer.tags || 'regular').toLowerCase();
+        const joinedDate = customer.created_at || 'Recently';
+        const totalSpent    = customer.total_spent    != null ? customer.total_spent    : 0;
+        const totalBookings = customer.total_bookings != null ? customer.total_bookings : 0;
+        const lastVisit = customer.last_visit || '-';
+
         // Avatar generation
-        const avatarUrl = customer.profile_photo || `https://ui-avatars.com/api/?name=${encodeURIComponent(customer.name || 'Unknown')}&background=c7d2fe&color=3730A3`;
+        const avatarUrl = customer.profile_photo || `https://ui-avatars.com/api/?name=${encodeURIComponent(name)}&background=c7d2fe&color=3730A3`;
         
         // Setup Tag HTML
         let tagHtml = '';
-        const tag = (customer.tag || 'regular').toLowerCase();
         if (tag === 'vip') {
             tagHtml = `<span class="status-badge bg-amber-light text-amber" style="padding: 4px 8px;"><i data-feather="star" style="width:12px; height:12px; margin-right:4px;"></i>VIP</span>`;
         } else if (tag === 'new') {
@@ -98,24 +127,17 @@ function renderCustomers() {
         } else if (tag === 'regular') {
             tagHtml = `<span class="status-badge bg-blue-light text-blue" style="padding: 4px 8px;">Regular</span>`;
         } else {
-            tagHtml = `<span class="status-badge" style="background-color: #f1f5f9; color: #64748b; padding: 4px 8px;">${customer.tag}</span>`;
+            tagHtml = `<span class="status-badge" style="background-color: #f1f5f9; color: #64748b; padding: 4px 8px;">${tag}</span>`;
         }
-
-        const joinedDate = customer.joined_date || customer.created_at || 'Recently';
-        const phone = customer.phone || 'N/A';
-        const email = customer.email || '-';
-        const totalSpent = customer.total_spent != null ? customer.total_spent : 0;
-        const totalBookings = customer.total_bookings != null ? customer.total_bookings : 0;
-        const lastVisit = customer.last_visit || '-';
 
         tr.innerHTML = `
             <td>
                 <div class="customer-info" style="display:flex; align-items:center; gap:1rem;">
                     <div class="avatar-sm" style="width:40px; height:40px; border-radius:50%; overflow:hidden;">
-                        <img src="${avatarUrl}" alt="${customer.name}" style="width:100%; height:100%; object-fit:cover;">
+                        <img src="${avatarUrl}" alt="${name}" style="width:100%; height:100%; object-fit:cover;">
                     </div>
                     <div>
-                        <a href="#" class="text-main fw-600 customer-name-link" style="color:#0f172a; font-weight:600; text-decoration:none;">${customer.name || 'Unknown'}</a>
+                        <a href="#" class="text-main fw-600 customer-name-link" style="color:#0f172a; font-weight:600; text-decoration:none;">${name}</a>
                         <p class="text-sm text-muted" style="margin:0; font-size:0.875rem; color:#64748b;">Joined ${joinedDate}</p>
                     </div>
                 </div>
@@ -135,8 +157,8 @@ function renderCustomers() {
             <td class="text-right" style="text-align:right;">
                 <div class="action-buttons" style="display:flex; justify-content:flex-end; gap:0.5rem;">
                     <button class="icon-btn btn-view-profile" title="View Profile" style="background:none; border:none; cursor:pointer; color:#64748b;"><i data-feather="eye"></i></button>
-                    <button class="icon-btn btn-edit" data-id="${customer.id}" data-sub-feature="${SUB_FEATURES.CUSTOMER_EDIT}" title="Edit Customer" style="background:none; border:none; cursor:pointer; color:#3b82f6;"><i data-feather="edit-2"></i></button>
-                    <button class="icon-btn btn-delete flex-shrink-0" data-id="${customer.id}" data-sub-feature="${SUB_FEATURES.CUSTOMER_DELETE}" title="Delete Customer" style="background:none; border:none; cursor:pointer; color:#ef4444;"><i data-feather="trash-2"></i></button>
+                    <button class="icon-btn btn-edit" data-id="${customer.customer_id}" data-sub-feature="${SUB_FEATURES.CUSTOMER_EDIT}" title="Edit Customer" style="background:none; border:none; cursor:pointer; color:#3b82f6;"><i data-feather="edit-2"></i></button>
+                    <button class="icon-btn btn-delete flex-shrink-0" data-id="${customer.customer_id}" data-sub-feature="${SUB_FEATURES.CUSTOMER_DELETE}" title="Delete Customer" style="background:none; border:none; cursor:pointer; color:#ef4444;"><i data-feather="trash-2"></i></button>
                 </div>
             </td>
         `;
@@ -187,20 +209,20 @@ function openModalForCreate() {
 }
 
 function openEditModal(id) {
-    const customer = customersList.find(c => String(c.id) === String(id));
+    const customer = customersList.find(c => String(c.customer_id) === String(id));
     if (!customer) return;
 
-    editingCustomerId = customer.id;
+    editingCustomerId = customer.customer_id;
     if (modalTitle) modalTitle.textContent = 'Edit Customer';
     if (modalSubtitle) modalSubtitle.textContent = 'Update the client profile details.';
     if (btnSaveCustomer) btnSaveCustomer.textContent = 'Update Customer';
 
-    // Populate inputs
-    if (inputName) inputName.value = customer.name || '';
-    if (inputPhone) inputPhone.value = customer.phone || '';
-    if (inputEmail) inputEmail.value = customer.email || '';
+    // Populate inputs (map API field names)
+    if (inputName) inputName.value = customer.customer_name || '';
+    if (inputPhone) inputPhone.value = customer.customer_phone || '';
+    if (inputEmail) inputEmail.value = customer.customer_email || '';
     if (inputDob) inputDob.value = customer.dob || '';
-    if (inputTag) inputTag.value = (customer.tag || 'regular').toLowerCase();
+    if (inputTag) inputTag.value = (customer.tags || 'regular').toLowerCase();
 
     if (modalOverlay) modalOverlay.classList.add('active');
 }
@@ -232,6 +254,7 @@ if (btnSaveCustomer) {
 
         const payload = { 
             company_id: getCompanyId(), 
+            branch_id: getBranchId(),
             name, 
             phone, 
             email, 
@@ -292,6 +315,7 @@ async function deleteCustomer(id) {
     try {
         const payload = {
             company_id: getCompanyId(),
+            branch_id: getBranchId(),
             id: parseInt(id, 10)
         };
         const response = await fetchWithAuth(API.DELETE_CUSTOMER, {
