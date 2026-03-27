@@ -277,13 +277,16 @@ export async function fetchCategories() {
         
         const data = await response.json();
         const root = Array.isArray(data) ? data[0] : data;
-        liveCategoriesData = root.categories || [];
+        
+        // Ensure "deleted" status items are completely removed from the frontend mapping
+        const rawCategories = root.categories || [];
+        liveCategoriesData = rawCategories.filter(c => (c.status || '').toLowerCase() !== 'deleted');
         
         window.liveCategoriesData = liveCategoriesData;
         window.renderCat(liveCategoriesData);
         const countEl = document.getElementById('countCategories');
         if (countEl) {
-            countEl.textContent = root.total_categories !== undefined ? root.total_categories : liveCategoriesData.length;
+            countEl.textContent = liveCategoriesData.length; // Use exact rendered count to prevent backend soft-delete discrepancies
         }
         populateCategoryDropdownEx();
     } catch (err) {
