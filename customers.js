@@ -13,7 +13,6 @@ const modalOverlay = document.getElementById('addCustomerModalOverlay');
 const addCustomerModalWrapper = document.getElementById('addCustomerModal');
 const modalTitle = addCustomerModalWrapper?.querySelector('.header-titles h2');
 const modalSubtitle = addCustomerModalWrapper?.querySelector('.header-titles .subtitle');
-const paginationText = document.querySelector('.table-pagination .text-muted');
 
 // Form inputs
 const inputName = document.getElementById('newCustName');
@@ -153,12 +152,7 @@ function renderCustomers(listToRender = customersList) {
     
     if (listToRender.length === 0) {
         customersTableBody.innerHTML = '<tr><td colspan="6" class="text-center py-4" style="text-align:center;">No customers found.</td></tr>';
-        if (paginationText) paginationText.innerHTML = `Showing <span class="fw-600 text-main">0</span> to <span class="fw-600 text-main">0</span> of <span class="fw-600 text-main">${customersList.length}</span> customers`;
         return;
-    }
-
-    if (paginationText) {
-        paginationText.innerHTML = `Showing <span class="fw-600 text-main">1</span> to <span class="fw-600 text-main">${listToRender.length}</span> of <span class="fw-600 text-main">${customersList.length}</span> customers`;
     }
 
     listToRender.forEach(customer => {
