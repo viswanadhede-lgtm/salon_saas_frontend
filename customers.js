@@ -312,6 +312,12 @@ if (btnSaveCustomer) {
             return;
         }
 
+        const digitsOnly = phone.replace(/\D/g, '');
+        if (!/^[0-9]{10}$/.test(phone)) {
+            showToast('Phone number must be exactly 10 digits (no spaces or country code).', true);
+            return;
+        }
+
         const payload = { 
             company_id: getCompanyId(), 
             branch_id: getBranchId(),

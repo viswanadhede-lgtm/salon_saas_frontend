@@ -397,7 +397,7 @@
             border-radius: 0.5rem;
             font-size: 0.875rem;
             color: #0f172a;
-            background-color: #f8fafc;
+            background-color: #ffffff;
             transition: all 0.2s ease;
             box-sizing: border-box;
         }
@@ -933,7 +933,7 @@
 
                     <div class="form-group">
                         <label class="form-label" for="newCustPhone">Phone Number <span class="text-rose">*</span></label>
-                        <input type="tel" id="newCustPhone" class="form-input">
+                        <input type="tel" id="newCustPhone" class="form-input" maxlength="10" inputmode="numeric" pattern="[0-9]{10}">
                     </div>
 
                     <div class="form-group">
