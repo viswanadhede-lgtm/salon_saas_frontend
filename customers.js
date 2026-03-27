@@ -20,6 +20,7 @@ const inputPhone = document.getElementById('newCustPhone');
 const inputEmail = document.getElementById('newCustEmail');
 const inputDob = document.getElementById('newCustDob');
 const inputTag = document.getElementById('newCustTag');
+const inputNotes = document.getElementById('newCustNotes');
 
 let customersList = [];
 let editingCustomerId = null;
@@ -281,6 +282,7 @@ function openEditModal(id) {
     if (inputEmail) inputEmail.value = customer.customer_email || '';
     if (inputDob) inputDob.value = customer.dob || '';
     if (inputTag) inputTag.value = (customer.tags || 'regular').toLowerCase();
+    if (inputNotes) inputNotes.value = customer.notes || '';
 
     if (modalOverlay) modalOverlay.classList.add('active');
 }
@@ -317,7 +319,8 @@ if (btnSaveCustomer) {
             phone, 
             email, 
             dob, 
-            tag 
+            tag,
+            notes: inputNotes ? inputNotes.value.trim() : ''
         };
         const isEditing = !!editingCustomerId;
         
