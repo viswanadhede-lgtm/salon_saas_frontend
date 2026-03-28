@@ -339,27 +339,7 @@
 
     <script src="dashboard.js"></script>
     <script>
-        const servicesData = [
-            {id:'SV1',name:'Haircut',category:'Hair',duration:30,price:500,status:'active'},
-            {id:'SV2',name:'Hair Coloring',category:'Hair',duration:90,price:2500,status:'active'},
-            {id:'SV3',name:'Keratin Treatment',category:'Hair',duration:120,price:4000,status:'active'},
-            {id:'SV4',name:'Bridal Hair Styling',category:'Hair',duration:60,price:3500,status:'active'},
-            {id:'SV5',name:'Hair Spa',category:'Hair',duration:45,price:1200,status:'active'},
-            {id:'SV6',name:'Blow Dry',category:'Hair',duration:30,price:600,status:'active'},
-            {id:'SV7',name:'Facial',category:'Skin',duration:60,price:1500,status:'active'},
-            {id:'SV8',name:'Cleanup',category:'Skin',duration:30,price:800,status:'active'},
-            {id:'SV9',name:'Bleaching',category:'Skin',duration:30,price:700,status:'active'},
-            {id:'SV10',name:'Detan',category:'Skin',duration:45,price:900,status:'active'},
-            {id:'SV11',name:'Body Massage',category:'Spa',duration:60,price:2000,status:'active'},
-            {id:'SV12',name:'Back Massage',category:'Spa',duration:30,price:1200,status:'active'},
-            {id:'SV13',name:'Foot Reflexology',category:'Spa',duration:45,price:1500,status:'inactive'},
-            {id:'SV14',name:'Manicure',category:'Nail',duration:30,price:600,status:'active'},
-            {id:'SV15',name:'Pedicure',category:'Nail',duration:45,price:800,status:'active'},
-            {id:'SV16',name:'Gel Nails',category:'Nail',duration:60,price:1500,status:'active'},
-            {id:'SV17',name:'Bridal Makeup',category:'Makeup',duration:90,price:5000,status:'active'},
-            {id:'SV18',name:'Party Makeup',category:'Makeup',duration:60,price:2500,status:'inactive'},
-        ];
-        let svcMenu=null,catMenu=null;
+        window.svcMenu = null;
         function statusBadge(s){return s==='active'?'<span style="display:inline-block;padding:3px 10px;border-radius:20px;font-size:0.78rem;font-weight:600;background:#d1fae5;color:#065f46;">Active</span>':'<span style="display:inline-block;padding:3px 10px;border-radius:20px;font-size:0.78rem;font-weight:600;background:#f1f5f9;color:#64748b;">Inactive</span>';}
         function switchTab(tab){
             const isSvc=tab==='services';
@@ -373,41 +353,47 @@
             document.getElementById('btnAddCategory').style.display=isSvc?'none':'';
             document.getElementById('servicesSearchInput').value='';
             document.getElementById('categoriesSearchInput').value='';
-            renderSvc(servicesData);
+            
+            if(isSvc && window.liveServicesData) window.renderSvc(window.liveServicesData);
             if(!isSvc && window.fetchCategories) window.fetchCategories();
-            else if(!isSvc && window.liveCategoriesData) renderCat(window.liveCategoriesData);
+            else if(!isSvc && window.liveCategoriesData) window.renderCat(window.liveCategoriesData);
         }
-        function renderSvc(data){
+        window.renderSvc = function(data){
             const tb=document.getElementById('servicesTableBody');
-            if(!data.length){tb.innerHTML='<tr><td colspan="6" style="padding:40px;text-align:center;color:#94a3b8;">No services found.</td></tr>';return;}
-            tb.innerHTML=data.map(s=>`<tr class="tb-row">
-                <td style="padding:14px 16px 14px 24px;font-weight:500;color:#1e293b;">${s.name}</td>
-                <td style="padding:14px 16px;"><span style="display:inline-block;padding:3px 10px;border-radius:20px;font-size:0.78rem;font-weight:600;background:#eff6ff;color:#1d4ed8;">${s.category}</span></td>
-                <td style="padding:14px 16px;color:#374151;">${s.duration} min</td>
-                <td style="padding:14px 16px;color:#374151;font-weight:500;">&#8377;${s.price.toLocaleString()}</td>
-                <td style="padding:14px 16px;">${statusBadge(s.status)}</td>
-                <td style="padding:14px 16px;"><button class="tb-action-btn" onclick="openSvcMenu(event,'${s.id}')">Actions <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"/></svg></button></td>
-            </tr>`).join('');
-        }
-        function openSvcMenu(e,id){
-            e.stopPropagation();if(svcMenu){svcMenu.remove();svcMenu=null;}
+            if(!data||!data.length){tb.innerHTML='<tr><td colspan="6" style="padding:40px;text-align:center;color:#94a3b8;">No services found.</td></tr>';return;}
+            tb.innerHTML=data.map(s=>{
+                const sName = s.name || s.service_name || '';
+                const sId = s.id || s.service_id || '';
+                return `<tr class="tb-row">
+                    <td style="padding:14px 16px 14px 24px;font-weight:500;color:#1e293b;">${sName}</td>
+                    <td style="padding:14px 16px;"><span style="display:inline-block;padding:3px 10px;border-radius:20px;font-size:0.78rem;font-weight:600;background:#eff6ff;color:#1d4ed8;">${s.category}</span></td>
+                    <td style="padding:14px 16px;color:#374151;">${s.duration} min</td>
+                    <td style="padding:14px 16px;color:#374151;font-weight:500;">&#8377;${parseFloat(s.price||0).toLocaleString()}</td>
+                    <td style="padding:14px 16px;">${statusBadge(s.status)}</td>
+                    <td style="padding:14px 16px;"><button class="tb-action-btn" onclick="window.openSvcMenu(event,'${sId}', '${sName.replace(/'/g, "\\'")}')">Actions <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"/></svg></button></td>
+                </tr>`;
+            }).join('');
+        };
+        window.openSvcMenu = function(e,id,name){
+            e.stopPropagation();if(window.svcMenu){window.svcMenu.remove();window.svcMenu=null;}
             const btn=e.currentTarget,r=btn.getBoundingClientRect(),m=document.createElement('div');
             m.className='tb-actions-menu';
-            m.innerHTML=`<button class="tb-menu-item" onclick="toast('Edit: ${id}')">Edit Service</button><button class="tb-menu-item" onclick="toast('Deactivate: ${id}')">Deactivate Service</button><button class="tb-menu-item danger" onclick="toast('Delete: ${id}')">Delete Service</button>`;
-            document.body.appendChild(m);svcMenu=m;
+            m.innerHTML=`<button class="tb-menu-item" onclick="window.openEditServiceModal('${id}')">Edit Service</button>
+                         <button class="tb-menu-item" onclick="window.triggerDeactivateService('${id}')">Deactivate Service</button>
+                         <button class="tb-menu-item danger" onclick="window.triggerDeleteService('${id}', '${name}')">Delete Service</button>`;
+            document.body.appendChild(m);window.svcMenu=m;
             let top=r.bottom+6;if(top+110>window.innerHeight-8)top=window.innerHeight-118;
             let left=r.right-192;if(left<8)left=r.left;
             m.style.cssText=`position:fixed;top:${top}px;left:${left}px;`;
-        }
-        function renderCat(data){
+        };
+        window.renderCat = function(data){
             const tb=document.getElementById('categoriesTableBody');
             if(!data||!data.length){tb.innerHTML='<tr><td colspan="4" style="padding:40px;text-align:center;color:#94a3b8;">No categories found.</td></tr>';return;}
             tb.innerHTML=data.map(c=>{
-                // Support both API shape (category_name) and old shape (name)
                 const catName = c.category_name || c.name || '';
                 const catDesc = c.description || '';
                 const catStatus = c.status || 'active';
-                const cnt = servicesData.filter(s=>s.category===catName).length;
+                const cnt = (window.liveServicesData||[]).filter(s=>s.category===catName).length;
                 return `<tr class="tb-row">
                     <td style="padding:14px 16px 14px 24px;"><div style="font-weight:600;color:#1e293b;font-size:0.9rem;">${catName}</div>${catDesc?`<div style="font-size:0.8rem;color:#94a3b8;margin-top:2px;">${catDesc}</div>`:''}</td>
                     <td style="padding:14px 16px;"><span style="display:inline-flex;align-items:center;gap:6px;"><span style="display:inline-flex;align-items:center;justify-content:center;min-width:28px;height:28px;padding:0 8px;background:#eff6ff;color:#1d4ed8;border-radius:20px;font-size:0.82rem;font-weight:700;">${cnt}</span> services</span></td>
@@ -426,34 +412,41 @@
                     </td>
                 </tr>`;
             }).join('');
-        }
-        function toast(msg){const t=document.getElementById('toastNotification');if(t){t.textContent=msg;t.classList.add('show');setTimeout(()=>t.classList.remove('show'),3000);}}
-        function populateCategoryDropdown(){
-            const sel=document.getElementById('sfCategory');
-            sel.innerHTML='<option value="" disabled selected>Select a category</option>';
-            categoriesData.filter(c=>c.status==='active').forEach(c=>{const o=document.createElement('option');o.value=c.id;o.textContent=c.name;sel.appendChild(o);});
-        }
+        };
+        window.toast = function(msg){const t=document.getElementById('toastNotification');if(t){t.textContent=msg;t.classList.add('show');setTimeout(()=>t.classList.remove('show'),3000);}};
+
         document.addEventListener('DOMContentLoaded',function(){
-            document.getElementById('servicesSearchInput').addEventListener('input',function(){const q=this.value.toLowerCase();renderSvc(servicesData.filter(s=>s.name.toLowerCase().includes(q)||s.category.toLowerCase().includes(q)));});
+            document.getElementById('servicesSearchInput').addEventListener('input',function(){const q=this.value.toLowerCase();window.renderSvc((window.liveServicesData||[]).filter(s=>(s.name||s.service_name||'').toLowerCase().includes(q)||(s.category||'').toLowerCase().includes(q)));});
             document.getElementById('categoriesSearchInput').addEventListener('input',function(){
                 const q=this.value.toLowerCase();
                 const filtered=(window.liveCategoriesData||[]).filter(c=>(c.category_name||c.name||'').toLowerCase().includes(q));
-                renderCat(filtered);
+                window.renderCat(filtered);
             });
             const addSvcModal=document.getElementById('addServiceModal');
-            document.getElementById('btnAddService').addEventListener('click',()=>{if(window.fetchCategories) window.fetchCategories().then(()=>addSvcModal.classList.add('active')); else addSvcModal.classList.add('active');});
+            document.getElementById('btnAddService').addEventListener('click',()=>{
+                const sel = document.getElementById('sfCategory');
+                sel.innerHTML = '<option value="" disabled selected>Select a category</option>';
+                (window.liveCategoriesData||[]).filter(c => c.status === 'active').forEach(c => {
+                    const o = document.createElement('option');
+                    o.value = c.category_name || c.name; o.textContent = c.category_name || c.name;
+                    sel.appendChild(o);
+                });
+                
+                if(window.fetchCategories) window.fetchCategories().then(()=>addSvcModal.classList.add('active')); 
+                else addSvcModal.classList.add('active');
+            });
             document.getElementById('btnCloseAddServiceModal').addEventListener('click',()=>addSvcModal.classList.remove('active'));
             document.getElementById('btnCancelAddService').addEventListener('click',()=>addSvcModal.classList.remove('active'));
             addSvcModal.addEventListener('click',e=>{if(e.target===addSvcModal)addSvcModal.classList.remove('active');});
-            document.getElementById('addServiceForm').addEventListener('submit',function(e){e.preventDefault();toast('Service added (demo)');addSvcModal.classList.remove('active');this.reset();});
+
             const addCatModal=document.getElementById('addCategoryModal');
             document.getElementById('btnAddCategory').addEventListener('click',()=>addCatModal.classList.add('active'));
             document.getElementById('btnCloseAddCategoryModal').addEventListener('click',()=>addCatModal.classList.remove('active'));
             document.getElementById('btnCancelAddCategory').addEventListener('click',()=>addCatModal.classList.remove('active'));
             addCatModal.addEventListener('click',e=>{if(e.target===addCatModal)addCatModal.classList.remove('active');});
-            document.addEventListener('click',()=>{if(svcMenu){svcMenu.remove();svcMenu=null;}});
-            document.getElementById('countServices').textContent=servicesData.length;
-            renderSvc(servicesData);
+            
+            document.addEventListener('click',()=>{if(window.svcMenu){window.svcMenu.remove();window.svcMenu=null;}});
+            
             feather.replace();
         });
     </script>
@@ -1183,13 +1176,19 @@
     <script type="module" src="scripts/sub-features/sub-feature-gate.js"></script>
     <script type="module">
         import { initCategories, fetchCategories } from './service-categories.js';
-        // Expose to window so non-module inline scripts can call them
+        import { initServices, fetchServices } from './services.js';
+        
         window.fetchCategories = fetchCategories;
-        window.renderCat = window.renderCat; // already global from inline script
+        window.fetchServices = fetchServices;
+        
         if (document.readyState === 'loading') {
-            document.addEventListener('DOMContentLoaded', () => initCategories());
+            document.addEventListener('DOMContentLoaded', () => {
+                initCategories();
+                initServices();
+            });
         } else {
             initCategories();
+            initServices();
         }
     </script>
 </body>
