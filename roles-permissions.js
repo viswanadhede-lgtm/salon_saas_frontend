@@ -1,54 +1,45 @@
 /**
  * roles-permissions.js
- * Automatically generating the UI based on Feature & Sub-Feature Registries!
+ * Dynamically generates the UI from Feature & Sub-Feature Registries.
+ * All role CRUD operations are wired to live API endpoints.
  */
 
+import { API, fetchWithAuth } from './config/api.js';
 import { FEATURES, MODULES_META } from './config/feature-registry.js';
 import { SUB_FEATURES, SUB_FEATURES_MAP } from './config/sub-feature-registry.js';
 
-// MOCK: The Owner's current Subscription limits (We intentionally omit Ad Campaigns to test the lock UI)
-const MOCK_SUBSCRIPTION_FEATURES = Object.values(FEATURES).filter(f => f !== FEATURES.MARKETING_CAMPAIGNS);
+// ─── Helpers ──────────────────────────────────────────────────────────────────
+function getCompanyId() {
+    try {
+        const ctx = JSON.parse(localStorage.getItem('appContext') || '{}');
+        return ctx.company?.id || null;
+    } catch { return null; }
+}
 
-// Mock role database structure matching actual backend payload pattern
-let rolesData = [
-    {
-        id: 'owner',
-        name: 'Owner',
-        description: 'Full system access. Cannot be modified or deleted.',
-        protected: true,
-        userCount: 1,
-        features: MOCK_SUBSCRIPTION_FEATURES, 
-        sub_features: Object.values(SUB_FEATURES)
-    },
-    {
-        id: 'receptionist',
-        name: 'Receptionist',
-        description: 'Front desk - can manage bookings and customers.',
-        protected: false,
-        userCount: 5,
-        features: [
-            FEATURES.DASHBOARD_ACCESS, 
-            FEATURES.BOOKINGS_MANAGEMENT, 
-            FEATURES.CUSTOMERS_MANAGEMENT, 
-            FEATURES.POS_SYSTEM
-        ],
-        sub_features: [
-            SUB_FEATURES.BOOKING_CREATE,
-            SUB_FEATURES.BOOKING_EDIT,
-            SUB_FEATURES.BOOKING_CANCEL,
-            SUB_FEATURES.BOOKING_VIEW_ALL,
-            SUB_FEATURES.POS_CHECKOUT,
-            SUB_FEATURES.CUSTOMER_CREATE,
-            SUB_FEATURES.CUSTOMER_EDIT
-        ]
-    }
-];
+function getBranchId() {
+    return localStorage.getItem('active_branch_id') || null;
+}
 
-// ─── State ────────────────────────────────────────────────────────────────────
-let activeRoleId = 'owner';
+/**
+ * Returns the list of features the salon's subscription allows.
+ * Reads from appContext if available, otherwise falls back to all features.
+ */
+function getSubscriptionFeatures() {
+    try {
+        const ctx = JSON.parse(localStorage.getItem('appContext') || '{}');
+        const subFeatures = ctx.subscription?.features || ctx.allowed_features || null;
+        if (Array.isArray(subFeatures) && subFeatures.length > 0) return subFeatures;
+    } catch { /* fall through */ }
+    // Fallback: allow all features
+    return Object.values(FEATURES);
+}
+
+// ─── Live State ───────────────────────────────────────────────────────────────
+let rolesData    = [];
+let activeRoleId = null;
 let editingRoleId = null;
 
-// ─── DOM refs ─────────────────────────────────────────────────────────────────
+// ─── DOM Refs ─────────────────────────────────────────────────────────────────
 const rolesList           = document.getElementById('rolesList');
 const roleCountBadge      = document.getElementById('roleCountBadge');
 const selectedRoleTitle   = document.getElementById('selectedRoleTitle');
@@ -70,19 +61,57 @@ const btnCloseRoleModal   = document.getElementById('btnCloseRoleModal');
 const btnCancelRoleModal  = document.getElementById('btnCancelRoleModal');
 const btnSaveRole         = document.getElementById('btnSaveRole');
 
-const confirmDeleteOverlay    = document.getElementById('confirmDeleteOverlay');
-const deleteRoleNameDisplay   = document.getElementById('deleteRoleNameDisplay');
-const btnCloseConfirmDelete   = document.getElementById('btnCloseConfirmDelete');
-const btnCancelDelete         = document.getElementById('btnCancelDelete');
-const btnConfirmDelete        = document.getElementById('btnConfirmDelete');
+const confirmDeleteOverlay  = document.getElementById('confirmDeleteOverlay');
+const deleteRoleNameDisplay = document.getElementById('deleteRoleNameDisplay');
+const btnCloseConfirmDelete = document.getElementById('btnCloseConfirmDelete');
+const btnCancelDelete       = document.getElementById('btnCancelDelete');
+const btnConfirmDelete      = document.getElementById('btnConfirmDelete');
 
-const btnSavePerms    = document.getElementById('btnSavePermsHeader');
+const btnSavePerms = document.getElementById('btnSavePermsHeader');
 
 // ─── Init ─────────────────────────────────────────────────────────────────────
-function init() {
-    renderRolesList();
-    selectRole(activeRoleId);
+async function init() {
     bindEvents();
+    await fetchRoles();
+}
+
+// ─── Fetch Roles (READ) ───────────────────────────────────────────────────────
+async function fetchRoles() {
+    setPageLoading(true);
+    try {
+        const res = await fetchWithAuth(API.READ_ROLES, {
+            method: 'POST',
+            body: JSON.stringify({
+                company_id: getCompanyId(),
+                branch_id:  getBranchId()
+            })
+        }, FEATURES.ROLES_PERMISSIONS, 'read');
+
+        if (!res.ok) throw new Error('Failed to fetch roles');
+
+        const data = await res.json();
+        const root = Array.isArray(data) ? data[0] : data;
+        rolesData  = root.roles || [];
+
+        if (rolesData.length > 0) {
+            // Default: select the first protected (owner) role, or first role
+            const defaultRole = rolesData.find(r => r.protected) || rolesData[0];
+            activeRoleId = defaultRole.id || defaultRole.role_id;
+        }
+
+        renderRolesList();
+        if (activeRoleId) selectRole(activeRoleId);
+
+    } catch (err) {
+        console.error('Error fetching roles:', err);
+        showToast('Failed to load roles. Please refresh.');
+    } finally {
+        setPageLoading(false);
+    }
+}
+
+function setPageLoading(loading) {
+    if (rolesList) rolesList.style.opacity = loading ? '0.5' : '1';
 }
 
 // ─── Rendering ────────────────────────────────────────────────────────────────
@@ -91,21 +120,22 @@ function renderRolesList() {
     roleCountBadge.textContent = rolesData.length;
 
     rolesData.forEach(role => {
+        const roleId = role.id || role.role_id;
         const li = document.createElement('li');
-        li.className = 'role-list-item' + (role.id === activeRoleId ? ' active' : '');
-        li.dataset.roleId = role.id;
+        li.className = 'role-list-item' + (roleId === activeRoleId ? ' active' : '');
+        li.dataset.roleId = roleId;
 
         li.innerHTML = `
             <div style="flex:1; min-width:0;">
                 <div class="role-name">${escHtml(role.name)}</div>
-                <div class="role-meta">${role.userCount} user${role.userCount !== 1 ? 's' : ''}</div>
+                <div class="role-meta">${role.userCount ?? role.user_count ?? 0} user${(role.userCount ?? role.user_count ?? 0) !== 1 ? 's' : ''}</div>
             </div>
             ${!role.protected ? `
             <div class="role-item-actions">
-                <button class="role-item-action-btn" title="Edit role" data-action="edit" data-role="${role.id}">
+                <button class="role-item-action-btn" title="Edit role" data-action="edit" data-role="${roleId}">
                     <i data-feather="edit-2" style="width:14px;height:14px;"></i>
                 </button>
-                <button class="role-item-action-btn danger" title="Delete role" data-action="delete" data-role="${role.id}">
+                <button class="role-item-action-btn danger" title="Delete role" data-action="delete" data-role="${roleId}">
                     <i data-feather="trash-2" style="width:14px;height:14px;"></i>
                 </button>
             </div>` : ''}
@@ -113,18 +143,18 @@ function renderRolesList() {
 
         li.addEventListener('click', (e) => {
             if (e.target.closest('[data-action]')) return;
-            selectRole(role.id);
+            selectRole(roleId);
         });
 
         rolesList.appendChild(li);
     });
 
-    if(window.feather) feather.replace();
+    if (window.feather) feather.replace();
 }
 
 function selectRole(roleId) {
     activeRoleId = roleId;
-    const role = rolesData.find(r => r.id === roleId);
+    const role = rolesData.find(r => (r.id || r.role_id) === roleId);
     if (!role) return;
 
     document.querySelectorAll('.role-list-item').forEach(el => {
@@ -132,14 +162,14 @@ function selectRole(roleId) {
     });
 
     selectedRoleTitle.textContent = role.name;
-    selectedRoleDesc.textContent = role.description;
-    btnSavePerms.style.display = 'none';
+    selectedRoleDesc.textContent  = role.description || '';
+    btnSavePerms.style.display    = 'none';
 
     if (role.protected) {
-        ownerBadgeWrapper.style.display = 'block';
+        ownerBadgeWrapper.style.display  = 'block';
         roleActionsWrapper.style.display = 'none';
     } else {
-        ownerBadgeWrapper.style.display = 'none';
+        ownerBadgeWrapper.style.display  = 'none';
         roleActionsWrapper.style.display = 'flex';
     }
 
@@ -147,68 +177,61 @@ function selectRole(roleId) {
 }
 
 /**
- * Dynamically draws the table rows by mapping `MODULES_META` -> `SUB_FEATURES_MAP`.
+ * Dynamically draws the permissions table rows from MODULES_META → SUB_FEATURES_MAP.
  * Used for both the main page matrix and the Add/Edit Role modal.
  */
 function renderPermissionsMatrix(role, containerEl, isModal) {
     containerEl.innerHTML = '';
-    const isOwner = role && role.protected;
-    
-    // Arrays containing strings exactly as passed from the backend
-    const roleFeatures = role ? role.features || [] : [];
-    const roleSubFeats = role ? role.sub_features || [] : [];
+    const subscriptionFeatures = getSubscriptionFeatures();
+    const isOwner       = role && role.protected;
+    const roleFeatures  = role ? (role.features    || []) : [];
+    const roleSubFeats  = role ? (role.sub_features || []) : [];
 
     MODULES_META.forEach(mod => {
-        const featureKey = mod.key;
-        
-        // SECURITY CHECK: Does the business owner actually own this feature?
-        const salonOwnsFeature = MOCK_SUBSCRIPTION_FEATURES.includes(featureKey);
-        
-        // This role has access if checked AND the business owns it
-        const hasFeature = salonOwnsFeature && roleFeatures.includes(featureKey); 
-        const disabledAttr = (isOwner || !salonOwnsFeature) ? 'disabled' : '';
+        const featureKey      = mod.key;
+        const salonOwns       = subscriptionFeatures.includes(featureKey);
+        const hasFeature      = salonOwns && roleFeatures.includes(featureKey);
+        const disabledAttr    = (isOwner || !salonOwns) ? 'disabled' : '';
+        const childSubFeats   = SUB_FEATURES_MAP[featureKey] || [];
 
-        // Get children sub-features for this module
-        const childSubFeats = SUB_FEATURES_MAP[featureKey] || [];
-        
         const tr = document.createElement('tr');
-        
-        // Column 1: Module Label
+
+        // Column 1 — Module label
         let cells = `
             <td>
-                <span class="module-icon ${!salonOwnsFeature ? 'text-muted' : ''}" style="${!salonOwnsFeature ? 'opacity:0.6;' : ''}">
+                <span class="module-icon ${!salonOwns ? 'text-muted' : ''}" style="${!salonOwns ? 'opacity:0.6;' : ''}">
                     <i data-feather="${mod.icon}" style="width:15px;height:15px;"></i>
                     ${escHtml(mod.label)}
-                    ${!salonOwnsFeature ? '<span style="font-size:0.65rem; background:#fee2e2; color:#ef4444; padding:2px 6px; border-radius:10px; margin-left:8px;">Plan Locked</span>' : ''}
+                    ${!salonOwns ? '<span style="font-size:0.65rem;background:#fee2e2;color:#ef4444;padding:2px 6px;border-radius:10px;margin-left:8px;">Plan Locked</span>' : ''}
                 </span>
             </td>
         `;
-        
-        // Column 2: Access Feature/Page Checkbox
+
+        // Column 2 — Feature access checkbox
         cells += `
-            <td class="perm-cell" style="vertical-align: top; padding-top: 14px;">
-                <input type="checkbox" class="perm-check feature-check" 
-                    data-feature="${featureKey}" 
-                    ${hasFeature ? 'checked' : ''} 
+            <td class="perm-cell" style="vertical-align:top;padding-top:14px;">
+                <input type="checkbox" class="perm-check feature-check"
+                    data-feature="${featureKey}"
+                    ${hasFeature ? 'checked' : ''}
                     ${disabledAttr}>
             </td>
         `;
 
-        // Column 3: Granular Sub-Features Tags
-        let subFeaturesHtml = '';
-        if(childSubFeats.length === 0) {
-            subFeaturesHtml = `<span style="font-size:0.8rem; color:#94a3b8; font-style:italic;">No granular actions</span>`;
+        // Column 3 — Sub-feature checkboxes
+        let subHtml = '';
+        if (childSubFeats.length === 0) {
+            subHtml = `<span style="font-size:0.8rem;color:#94a3b8;font-style:italic;">No granular actions</span>`;
         } else {
             childSubFeats.forEach(subf => {
-                const hasSub = salonOwnsFeature && roleSubFeats.includes(subf.key);
-                subFeaturesHtml += `
-                    <label style="display:flex; align-items:center; gap:6px; font-size:0.8rem; color:#475569; cursor:${disabledAttr ? 'not-allowed':'pointer'}; opacity:${(!salonOwnsFeature) ? '0.5':'1'};">
-                        <input type="checkbox" class="perm-check sub-feature-check" 
-                            data-sub-feature="${subf.key}" 
+                const hasSub = salonOwns && roleSubFeats.includes(subf.key);
+                subHtml += `
+                    <label style="display:flex;align-items:center;gap:6px;font-size:0.8rem;color:#475569;cursor:${disabledAttr ? 'not-allowed' : 'pointer'};opacity:${!salonOwns ? '0.5' : '1'};">
+                        <input type="checkbox" class="perm-check sub-feature-check"
+                            data-sub-feature="${subf.key}"
                             data-parent="${featureKey}"
-                            ${hasSub ? 'checked' : ''} 
-                            ${disabledAttr} 
-                            style="width:16px; height:16px;">
+                            ${hasSub ? 'checked' : ''}
+                            ${disabledAttr}
+                            style="width:16px;height:16px;">
                         ${subf.label}
                     </label>
                 `;
@@ -216,42 +239,35 @@ function renderPermissionsMatrix(role, containerEl, isModal) {
         }
 
         cells += `
-            <td style="vertical-align: top; padding: 14px 16px;">
-                <div style="display:flex; flex-wrap:wrap; gap:16px;">
-                    ${subFeaturesHtml}
-                </div>
+            <td style="vertical-align:top;padding:14px 16px;">
+                <div style="display:flex;flex-wrap:wrap;gap:16px;">${subHtml}</div>
             </td>
         `;
 
         tr.innerHTML = cells;
         containerEl.appendChild(tr);
 
-        // UI Logic Setup for non-owners: Toggling Feature automatically cascades to Sub-Features
-        if (!isOwner && salonOwnsFeature) {
+        // Cascade logic: feature ↔ sub-feature toggling
+        if (!isOwner && salonOwns) {
             const masterCheck = tr.querySelector('.feature-check');
-            const subChecks = tr.querySelectorAll('.sub-feature-check');
+            const subChecks   = tr.querySelectorAll('.sub-feature-check');
 
             masterCheck.addEventListener('change', () => {
-                if(!isModal) btnSavePerms.style.display = 'flex';
-                // Only allow sub-checks to be active if master is active
-                subChecks.forEach(cb => {
-                    cb.checked = masterCheck.checked;
-                });
+                if (!isModal) btnSavePerms.style.display = 'flex';
+                subChecks.forEach(cb => { cb.checked = masterCheck.checked; });
             });
 
             subChecks.forEach(cb => {
                 cb.addEventListener('change', () => {
-                    if(!isModal) btnSavePerms.style.display = 'flex';
-                    // If checking a sub-feature, auto-check the parent page so they can actually reach it
-                    if(cb.checked) masterCheck.checked = true;
+                    if (!isModal) btnSavePerms.style.display = 'flex';
+                    if (cb.checked) masterCheck.checked = true;
                 });
             });
         }
     });
 
-    if(window.feather) feather.replace();
+    if (window.feather) feather.replace();
 }
-
 
 // ─── Events ───────────────────────────────────────────────────────────────────
 function bindEvents() {
@@ -259,29 +275,29 @@ function bindEvents() {
         const btn = e.target.closest('[data-action]');
         if (!btn) return;
         const roleId = btn.dataset.role;
-        if (btn.dataset.action === 'edit') openEditRoleModal(roleId);
+        if (btn.dataset.action === 'edit')   openEditRoleModal(roleId);
         if (btn.dataset.action === 'delete') openDeleteConfirm(roleId);
     });
 
-    btnEditRole.addEventListener('click', () => openEditRoleModal(activeRoleId));
+    btnEditRole.addEventListener('click',   () => openEditRoleModal(activeRoleId));
     btnDeleteRole.addEventListener('click', () => openDeleteConfirm(activeRoleId));
-    btnAddRole.addEventListener('click', openAddRoleModal);
+    btnAddRole.addEventListener('click',    openAddRoleModal);
 
-    btnCloseRoleModal.addEventListener('click', closeRoleModal);
+    btnCloseRoleModal.addEventListener('click',  closeRoleModal);
     btnCancelRoleModal.addEventListener('click', closeRoleModal);
-    roleModalOverlay.addEventListener('click', (e) => { if (e.target === roleModalOverlay) closeRoleModal(); });
+    roleModalOverlay.addEventListener('click',   (e) => { if (e.target === roleModalOverlay) closeRoleModal(); });
 
     btnSaveRole.addEventListener('click', saveRole);
 
     btnCloseConfirmDelete.addEventListener('click', closeDeleteConfirm);
-    btnCancelDelete.addEventListener('click', closeDeleteConfirm);
-    confirmDeleteOverlay.addEventListener('click', (e) => { if (e.target === confirmDeleteOverlay) closeDeleteConfirm(); });
-    btnConfirmDelete.addEventListener('click', confirmDelete);
+    btnCancelDelete.addEventListener('click',       closeDeleteConfirm);
+    confirmDeleteOverlay.addEventListener('click',  (e) => { if (e.target === confirmDeleteOverlay) closeDeleteConfirm(); });
+    btnConfirmDelete.addEventListener('click',      confirmDelete);
 
     btnSavePerms.addEventListener('click', saveInlinePerms);
 }
 
-// ─── Add/Edit Role Modal ───────────────────────────────────────────────────────────
+// ─── Add / Edit Role Modal ─────────────────────────────────────────────────────
 function openAddRoleModal() {
     editingRoleId = null;
     roleModalTitle.textContent = 'Add Role';
@@ -292,13 +308,13 @@ function openAddRoleModal() {
 }
 
 function openEditRoleModal(roleId) {
-    const role = rolesData.find(r => r.id === roleId);
+    const role = rolesData.find(r => (r.id || r.role_id) === roleId);
     if (!role || role.protected) return;
 
     editingRoleId = roleId;
     roleModalTitle.textContent = 'Edit Role';
     roleNameInput.value = role.name;
-    roleDescInput.value = role.description;
+    roleDescInput.value = role.description || '';
     renderPermissionsMatrix(role, modalPermBody, true);
     roleModalOverlay.classList.add('active');
 }
@@ -307,7 +323,8 @@ function closeRoleModal() {
     roleModalOverlay.classList.remove('active');
 }
 
-function saveRole() {
+// ─── Save Role (CREATE / UPDATE) ──────────────────────────────────────────────
+async function saveRole() {
     const name = roleNameInput.value.trim();
     if (!name) {
         roleNameInput.style.borderColor = '#ef4444';
@@ -315,78 +332,107 @@ function saveRole() {
         return;
     }
     roleNameInput.style.borderColor = '';
+
     const desc = roleDescInput.value.trim() || `${name} role`;
-    
-    // Harvest the actual permissions
     const { features, sub_features } = collectPermissionsFromContainer(modalPermBody);
 
-    if (editingRoleId) {
-        const role = rolesData.find(r => r.id === editingRoleId);
-        if (role) {
-            role.name = name;
-            role.description = desc;
-            role.features = features;
-            role.sub_features = sub_features;
+    const isEdit = !!editingRoleId;
+    const payload = {
+        company_id:   getCompanyId(),
+        branch_id:    getBranchId(),
+        name,
+        description:  desc,
+        features,
+        sub_features,
+        ...(isEdit ? { role_id: editingRoleId } : {})
+    };
+
+    const originalText = btnSaveRole.textContent;
+    btnSaveRole.textContent = 'Saving...';
+    btnSaveRole.disabled    = true;
+
+    try {
+        const endpoint = isEdit ? API.UPDATE_ROLE : API.CREATE_ROLE;
+        const res = await fetchWithAuth(endpoint, {
+            method: 'POST',
+            body:   JSON.stringify(payload)
+        }, FEATURES.ROLES_PERMISSIONS, isEdit ? 'update' : 'create');
+
+        const data = await res.json();
+        const root = Array.isArray(data) ? data[0] : data;
+
+        if (res.ok && !root?.error) {
+            showToast(`Role "${name}" ${isEdit ? 'updated' : 'created'} successfully!`);
+            closeRoleModal();
+            await fetchRoles();
+            // Select the newly created or edited role
+            if (!isEdit && root.role_id) activeRoleId = root.role_id;
+            if (activeRoleId) selectRole(activeRoleId);
+        } else {
+            showToast('Error: ' + (root?.error || root?.message || 'Unknown error'));
         }
-    } else {
-        const newId = name.toLowerCase().replace(/\s+/g, '-') + '-' + Date.now();
-        rolesData.push({
-            id: newId,
-            name,
-            description: desc,
-            protected: false,
-            userCount: 0,
-            features,
-            sub_features
-        });
-        activeRoleId = newId;
+    } catch (err) {
+        console.error(err);
+        showToast('Network error saving role.');
+    } finally {
+        btnSaveRole.textContent = originalText;
+        btnSaveRole.disabled    = false;
     }
-
-    closeRoleModal();
-    renderRolesList();
-    selectRole(activeRoleId);
-    showToast(`Role "${name}" saved successfully!`);
 }
 
-// ─── Scanning Data Logic ────────────────────────────────────────────────────────
-function collectPermissionsFromContainer(containerEl) {
-    const features = [];
-    const sub_features = [];
-
-    // Harvest Checked Main Features
-    const featureChecks = containerEl.querySelectorAll('.feature-check:checked');
-    featureChecks.forEach(cb => features.push(cb.dataset.feature));
-
-    // Harvest Checked Sub-Features
-    const subFeatureChecks = containerEl.querySelectorAll('.sub-feature-check:checked');
-    subFeatureChecks.forEach(cb => sub_features.push(cb.dataset.subFeature));
-
-    return { features, sub_features };
-}
-
-// ─── Inline Save ───────────────────────────────────────────────────────────────
-function saveInlinePerms() {
-    const role = rolesData.find(r => r.id === activeRoleId);
+// ─── Inline Permissions Save (UPDATE) ────────────────────────────────────────
+async function saveInlinePerms() {
+    const role = rolesData.find(r => (r.id || r.role_id) === activeRoleId);
     if (!role) return;
 
     const { features, sub_features } = collectPermissionsFromContainer(permMatrixBody);
-    
-    role.features = features;
-    role.sub_features = sub_features;
 
-    // Simulate sending API payload
-    console.log(`[API REQUEST] Saving Role Permissions for ${role.name}:`, { features, sub_features });
+    const payload = {
+        company_id:   getCompanyId(),
+        branch_id:    getBranchId(),
+        role_id:      activeRoleId,
+        name:         role.name,
+        description:  role.description || '',
+        features,
+        sub_features
+    };
 
-    btnSavePerms.style.display = 'none';
-    showToast(`Permissions for "${role.name}" saved!`);
+    const originalText = btnSavePerms.textContent;
+    btnSavePerms.textContent = 'Saving...';
+    btnSavePerms.disabled    = true;
+
+    try {
+        const res = await fetchWithAuth(API.UPDATE_ROLE, {
+            method: 'POST',
+            body:   JSON.stringify(payload)
+        }, FEATURES.ROLES_PERMISSIONS, 'update');
+
+        const data = await res.json();
+        const root = Array.isArray(data) ? data[0] : data;
+
+        if (res.ok && !root?.error) {
+            btnSavePerms.style.display = 'none';
+            showToast(`Permissions for "${role.name}" saved!`);
+            await fetchRoles();
+            selectRole(activeRoleId);
+        } else {
+            showToast('Error: ' + (root?.error || root?.message || 'Unknown error'));
+        }
+    } catch (err) {
+        console.error(err);
+        showToast('Network error saving permissions.');
+    } finally {
+        btnSavePerms.textContent = originalText;
+        btnSavePerms.disabled    = false;
+    }
 }
 
-// ─── Delete Actions ───────────────────────────────────────────────────────────
+// ─── Delete Role ──────────────────────────────────────────────────────────────
 function openDeleteConfirm(roleId) {
-    const role = rolesData.find(r => r.id === roleId);
+    const role = rolesData.find(r => (r.id || r.role_id) === roleId);
     if (!role || role.protected) return;
-    deleteRoleNameDisplay.textContent = role.name;
-    btnConfirmDelete.dataset.roleId = roleId;
+    deleteRoleNameDisplay.textContent  = role.name;
+    btnConfirmDelete.dataset.roleId    = roleId;
     confirmDeleteOverlay.classList.add('active');
 }
 
@@ -394,19 +440,60 @@ function closeDeleteConfirm() {
     confirmDeleteOverlay.classList.remove('active');
 }
 
-function confirmDelete() {
+async function confirmDelete() {
     const roleId = btnConfirmDelete.dataset.roleId;
-    rolesData = rolesData.filter(r => r.id !== roleId);
-    closeDeleteConfirm();
-    if (activeRoleId === roleId) activeRoleId = 'owner';
-    renderRolesList();
-    selectRole(activeRoleId);
-    showToast('Role deleted successfully.');
+    const role   = rolesData.find(r => (r.id || r.role_id) === roleId);
+    if (!role) return;
+
+    const originalText = btnConfirmDelete.textContent;
+    btnConfirmDelete.textContent = 'Deleting...';
+    btnConfirmDelete.disabled    = true;
+
+    try {
+        const res = await fetchWithAuth(API.DELETE_ROLE, {
+            method: 'POST',
+            body:   JSON.stringify({
+                company_id: getCompanyId(),
+                branch_id:  getBranchId(),
+                role_id:    roleId
+            })
+        }, FEATURES.ROLES_PERMISSIONS, 'delete');
+
+        const data = await res.json();
+        const root = Array.isArray(data) ? data[0] : data;
+
+        if (res.ok && !root?.error) {
+            closeDeleteConfirm();
+            showToast('Role deleted successfully.');
+            // Fall back to first protected role after deletion
+            const fallback = rolesData.find(r => r.protected && (r.id || r.role_id) !== roleId);
+            if (fallback) activeRoleId = fallback.id || fallback.role_id;
+            await fetchRoles();
+            if (activeRoleId) selectRole(activeRoleId);
+        } else {
+            showToast('Error: ' + (root?.error || root?.message || 'Unknown error'));
+        }
+    } catch (err) {
+        console.error(err);
+        showToast('Network error deleting role.');
+    } finally {
+        btnConfirmDelete.textContent = originalText;
+        btnConfirmDelete.disabled    = false;
+    }
+}
+
+// ─── Collect Permissions from DOM ─────────────────────────────────────────────
+function collectPermissionsFromContainer(containerEl) {
+    const features     = [];
+    const sub_features = [];
+    containerEl.querySelectorAll('.feature-check:checked').forEach(cb => features.push(cb.dataset.feature));
+    containerEl.querySelectorAll('.sub-feature-check:checked').forEach(cb => sub_features.push(cb.dataset.subFeature));
+    return { features, sub_features };
 }
 
 // ─── Utility ──────────────────────────────────────────────────────────────────
 function escHtml(str) {
-    return str.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+    return str.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
 }
 
 function showToast(msg) {
@@ -417,4 +504,5 @@ function showToast(msg) {
     setTimeout(() => toast.classList.remove('show'), 3000);
 }
 
+// ─── Boot ─────────────────────────────────────────────────────────────────────
 document.addEventListener('DOMContentLoaded', init);

@@ -35,7 +35,11 @@ export const API = {
   UPDATE_BOOKING: `${BASE_URL}/update_booking`,
   READ_BOOKINGS: `${BASE_URL}/read_bookings`,
   CANCEL_BOOKING: `${BASE_URL}/cancel_booking`,
-  READ_STAFF: `${BASE_URL}/read_staff`
+  READ_STAFF: `${BASE_URL}/read_staff`,
+  READ_ROLES: `${BASE_URL}/read_roles`,
+  CREATE_ROLE: `${BASE_URL}/create_role`,
+  UPDATE_ROLE: `${BASE_URL}/update_role`,
+  DELETE_ROLE: `${BASE_URL}/delete_role`
 };
 
 /**

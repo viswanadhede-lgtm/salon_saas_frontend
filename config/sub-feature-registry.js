@@ -55,7 +55,12 @@ export const SUB_FEATURES = {
     // ---- SETTINGS ----
     SETTINGS_MANAGE_COMPANY: 'settings_manage_company',
     SETTINGS_MANAGE_BILLING: 'settings_manage_billing',
-    SETTINGS_MANAGE_ROLES: 'settings_manage_roles'
+
+    // ---- ROLES ----
+    CREATE_ROLE: 'create_role',
+    UPDATE_ROLE: 'update_role',
+    DELETE_ROLE: 'delete_role',
+    READ_ROLES:  'read_roles'
 };
 
 import { FEATURES } from './feature-registry.js';
@@ -120,6 +125,9 @@ export const SUB_FEATURES_MAP = {
         { key: SUB_FEATURES.SETTINGS_MANAGE_BILLING, label: 'Manage Billing' }
     ],
     [FEATURES.ROLES_PERMISSIONS]: [
-        { key: SUB_FEATURES.SETTINGS_MANAGE_ROLES, label: 'Manage Roles' }
+        { key: SUB_FEATURES.CREATE_ROLE, label: 'Create Role' },
+        { key: SUB_FEATURES.UPDATE_ROLE, label: 'Update Role' },
+        { key: SUB_FEATURES.DELETE_ROLE, label: 'Delete Role' },
+        { key: SUB_FEATURES.READ_ROLES,  label: 'Read Roles' }
     ]
 };
