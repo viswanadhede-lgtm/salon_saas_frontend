@@ -424,6 +424,10 @@
             });
             const addSvcModal=document.getElementById('addServiceModal');
             document.getElementById('btnAddService').addEventListener('click',()=>{
+                // 1. Open modal instantly
+                addSvcModal.classList.add('active');
+                
+                // 2. Populate instantly with cached data
                 const sel = document.getElementById('sfCategory');
                 sel.innerHTML = '<option value="" disabled selected>Select a category</option>';
                 (window.liveCategoriesData||[]).filter(c => c.status === 'active').forEach(c => {
@@ -432,8 +436,19 @@
                     sel.appendChild(o);
                 });
                 
-                if(window.fetchCategories) window.fetchCategories().then(()=>addSvcModal.classList.add('active')); 
-                else addSvcModal.classList.add('active');
+                // 3. Fetch fresh data in the background and silently update
+                if(window.fetchCategories) {
+                    window.fetchCategories().then(() => {
+                        const currentSelection = sel.value;
+                        sel.innerHTML = '<option value="" disabled selected>Select a category</option>';
+                        (window.liveCategoriesData||[]).filter(c => c.status === 'active').forEach(c => {
+                            const o = document.createElement('option');
+                            o.value = c.category_name || c.name; o.textContent = c.category_name || c.name;
+                            sel.appendChild(o);
+                        });
+                        if (currentSelection) sel.value = currentSelection;
+                    });
+                }
             });
             document.getElementById('btnCloseAddServiceModal').addEventListener('click',()=>addSvcModal.classList.remove('active'));
             document.getElementById('btnCancelAddService').addEventListener('click',()=>addSvcModal.classList.remove('active'));
