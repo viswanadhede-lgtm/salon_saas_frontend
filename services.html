@@ -354,7 +354,8 @@
             document.getElementById('servicesSearchInput').value='';
             document.getElementById('categoriesSearchInput').value='';
             
-            if(isSvc && window.liveServicesData) window.renderSvc(window.liveServicesData);
+            if(isSvc && window.fetchServices) window.fetchServices();
+            else if(isSvc && window.liveServicesData) window.renderSvc(window.liveServicesData);
             if(!isSvc && window.fetchCategories) window.fetchCategories();
             else if(!isSvc && window.liveCategoriesData) window.renderCat(window.liveCategoriesData);
         }
