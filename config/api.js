@@ -26,11 +26,7 @@ export const API = {
   CREATE_SERVICE_CATEGORY: `${BASE_URL}/create_service_category`,
   READ_SERVICE_CATEGORY: `${BASE_URL}/read_service_category`,
   UPDATE_SERVICE_CATEGORY: `${BASE_URL}/update_service_category`,
-  DELETE_SERVICE_CATEGORY: `${BASE_URL}/delete_service_category`,
-  CREATE_SERVICE: `${BASE_URL}/create_service`,
-  READ_SERVICES: `${BASE_URL}/read_services`,
-  UPDATE_SERVICE: `${BASE_URL}/update_service`,
-  DELETE_SERVICE: `${BASE_URL}/delete_service`
+  DELETE_SERVICE_CATEGORY: `${BASE_URL}/delete_service_category`
 };
 
 /**
