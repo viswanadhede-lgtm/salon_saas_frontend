@@ -18,6 +18,11 @@ export const SUB_FEATURES = {
     UPDATE_SERVICE_CATEGORY: 'update_service_category',
     DELETE_SERVICE_CATEGORY: 'delete_service_category',
 
+    CREATE_SERVICE: 'create_service',
+    READ_SERVICES: 'read_services',
+    UPDATE_SERVICE: 'update_service',
+    DELETE_SERVICE: 'delete_service',
+
     // ---- POS / SALES ----
     POS_CHECKOUT: 'pos_checkout',
     POS_APPLY_DISCOUNT: 'pos_apply_discount',
@@ -75,7 +80,11 @@ export const SUB_FEATURES_MAP = {
         { key: SUB_FEATURES.CREATE_SERVICE_CATEGORY, label: 'Create Service Category' },
         { key: SUB_FEATURES.READ_SERVICE_CATEGORY, label: 'Read Service Categories' },
         { key: SUB_FEATURES.UPDATE_SERVICE_CATEGORY, label: 'Update Service Category' },
-        { key: SUB_FEATURES.DELETE_SERVICE_CATEGORY, label: 'Delete Service Category' }
+        { key: SUB_FEATURES.DELETE_SERVICE_CATEGORY, label: 'Delete Service Category' },
+        { key: SUB_FEATURES.CREATE_SERVICE, label: 'Create Service' },
+        { key: SUB_FEATURES.READ_SERVICES, label: 'Read Services' },
+        { key: SUB_FEATURES.UPDATE_SERVICE, label: 'Update Service' },
+        { key: SUB_FEATURES.DELETE_SERVICE, label: 'Delete Service' }
     ],
     [FEATURES.POS_SYSTEM]: [
         { key: SUB_FEATURES.POS_CHECKOUT, label: 'Process Checkout' },

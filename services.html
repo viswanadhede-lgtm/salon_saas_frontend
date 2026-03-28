@@ -277,7 +277,7 @@
                         <i data-feather="search" class="search-icon" style="left:12px;width:15px;height:15px;"></i>
                         <input type="text" id="categoriesSearchInput" placeholder="Search categories..." class="search-input" style="padding:0.55rem 1rem 0.55rem 2.4rem;font-size:0.875rem;border-radius:6px;">
                     </div>
-                    <button class="qa-btn qa-primary" id="btnAddService">
+                    <button class="qa-btn qa-primary" id="btnAddService" data-sub-feature="create_service">
                         <i data-feather="plus" class="qa-icon"></i><span>Add Service</span>
                     </button>
                     <button class="qa-btn qa-primary" id="btnAddCategory" style="display:none;">
@@ -339,26 +339,6 @@
 
     <script src="dashboard.js"></script>
     <script>
-        const servicesData = [
-            {id:'SV1',name:'Haircut',category:'Hair',duration:30,price:500,status:'active'},
-            {id:'SV2',name:'Hair Coloring',category:'Hair',duration:90,price:2500,status:'active'},
-            {id:'SV3',name:'Keratin Treatment',category:'Hair',duration:120,price:4000,status:'active'},
-            {id:'SV4',name:'Bridal Hair Styling',category:'Hair',duration:60,price:3500,status:'active'},
-            {id:'SV5',name:'Hair Spa',category:'Hair',duration:45,price:1200,status:'active'},
-            {id:'SV6',name:'Blow Dry',category:'Hair',duration:30,price:600,status:'active'},
-            {id:'SV7',name:'Facial',category:'Skin',duration:60,price:1500,status:'active'},
-            {id:'SV8',name:'Cleanup',category:'Skin',duration:30,price:800,status:'active'},
-            {id:'SV9',name:'Bleaching',category:'Skin',duration:30,price:700,status:'active'},
-            {id:'SV10',name:'Detan',category:'Skin',duration:45,price:900,status:'active'},
-            {id:'SV11',name:'Body Massage',category:'Spa',duration:60,price:2000,status:'active'},
-            {id:'SV12',name:'Back Massage',category:'Spa',duration:30,price:1200,status:'active'},
-            {id:'SV13',name:'Foot Reflexology',category:'Spa',duration:45,price:1500,status:'inactive'},
-            {id:'SV14',name:'Manicure',category:'Nail',duration:30,price:600,status:'active'},
-            {id:'SV15',name:'Pedicure',category:'Nail',duration:45,price:800,status:'active'},
-            {id:'SV16',name:'Gel Nails',category:'Nail',duration:60,price:1500,status:'active'},
-            {id:'SV17',name:'Bridal Makeup',category:'Makeup',duration:90,price:5000,status:'active'},
-            {id:'SV18',name:'Party Makeup',category:'Makeup',duration:60,price:2500,status:'inactive'},
-        ];
         let svcMenu=null,catMenu=null;
         function statusBadge(s){return s==='active'?'<span style="display:inline-block;padding:3px 10px;border-radius:20px;font-size:0.78rem;font-weight:600;background:#d1fae5;color:#065f46;">Active</span>':'<span style="display:inline-block;padding:3px 10px;border-radius:20px;font-size:0.78rem;font-weight:600;background:#f1f5f9;color:#64748b;">Inactive</span>';}
         function switchTab(tab){
@@ -373,7 +353,7 @@
             document.getElementById('btnAddCategory').style.display=isSvc?'none':'';
             document.getElementById('servicesSearchInput').value='';
             document.getElementById('categoriesSearchInput').value='';
-            renderSvc(servicesData);
+            if(isSvc && window.liveServicesData) window.renderSvc(window.liveServicesData);
             if(!isSvc && window.fetchCategories) window.fetchCategories();
             else if(!isSvc && window.liveCategoriesData) renderCat(window.liveCategoriesData);
         }
@@ -381,19 +361,19 @@
             const tb=document.getElementById('servicesTableBody');
             if(!data.length){tb.innerHTML='<tr><td colspan="6" style="padding:40px;text-align:center;color:#94a3b8;">No services found.</td></tr>';return;}
             tb.innerHTML=data.map(s=>`<tr class="tb-row">
-                <td style="padding:14px 16px 14px 24px;font-weight:500;color:#1e293b;">${s.name}</td>
-                <td style="padding:14px 16px;"><span style="display:inline-block;padding:3px 10px;border-radius:20px;font-size:0.78rem;font-weight:600;background:#eff6ff;color:#1d4ed8;">${s.category}</span></td>
+                <td style="padding:14px 16px 14px 24px;font-weight:500;color:#1e293b;">${s.service_name || s.name}</td>
+                <td style="padding:14px 16px;"><span style="display:inline-block;padding:3px 10px;border-radius:20px;font-size:0.78rem;font-weight:600;background:#eff6ff;color:#1d4ed8;">${s.category_name || s.category}</span></td>
                 <td style="padding:14px 16px;color:#374151;">${s.duration} min</td>
-                <td style="padding:14px 16px;color:#374151;font-weight:500;">&#8377;${s.price.toLocaleString()}</td>
+                <td style="padding:14px 16px;color:#374151;font-weight:500;">&#8377;${typeof s.price === 'number' ? s.price.toLocaleString() : s.price}</td>
                 <td style="padding:14px 16px;">${statusBadge(s.status)}</td>
-                <td style="padding:14px 16px;"><button class="tb-action-btn" onclick="openSvcMenu(event,'${s.id}')">Actions <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"/></svg></button></td>
+                <td style="padding:14px 16px;"><button class="tb-action-btn" onclick="openSvcMenu(event,'${s.service_id || s.id}')">Actions <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"/></svg></button></td>
             </tr>`).join('');
         }
         function openSvcMenu(e,id){
             e.stopPropagation();if(svcMenu){svcMenu.remove();svcMenu=null;}
             const btn=e.currentTarget,r=btn.getBoundingClientRect(),m=document.createElement('div');
             m.className='tb-actions-menu';
-            m.innerHTML=`<button class="tb-menu-item" onclick="toast('Edit: ${id}')">Edit Service</button><button class="tb-menu-item" onclick="toast('Deactivate: ${id}')">Deactivate Service</button><button class="tb-menu-item danger" onclick="toast('Delete: ${id}')">Delete Service</button>`;
+            m.innerHTML=`<button class="tb-menu-item" onclick="window.openEditServiceModal('${id}')">Edit Service</button><button class="tb-menu-item" onclick="toast('Deactivate: ${id}')">Deactivate Service</button><button class="tb-menu-item danger" onclick="window.triggerDeleteService('${id}')">Delete Service</button>`;
             document.body.appendChild(m);svcMenu=m;
             let top=r.bottom+6;if(top+110>window.innerHeight-8)top=window.innerHeight-118;
             let left=r.right-192;if(left<8)left=r.left;
@@ -434,7 +414,7 @@
             categoriesData.filter(c=>c.status==='active').forEach(c=>{const o=document.createElement('option');o.value=c.id;o.textContent=c.name;sel.appendChild(o);});
         }
         document.addEventListener('DOMContentLoaded',function(){
-            document.getElementById('servicesSearchInput').addEventListener('input',function(){const q=this.value.toLowerCase();renderSvc(servicesData.filter(s=>s.name.toLowerCase().includes(q)||s.category.toLowerCase().includes(q)));});
+            document.getElementById('servicesSearchInput').addEventListener('input',function(){const q=this.value.toLowerCase();const d=window.liveServicesData||[];window.renderSvc(d.filter(s=>(s.service_name||s.name||'').toLowerCase().includes(q)||(s.category_name||s.category||'').toLowerCase().includes(q)));});
             document.getElementById('categoriesSearchInput').addEventListener('input',function(){
                 const q=this.value.toLowerCase();
                 const filtered=(window.liveCategoriesData||[]).filter(c=>(c.category_name||c.name||'').toLowerCase().includes(q));
@@ -445,15 +425,14 @@
             document.getElementById('btnCloseAddServiceModal').addEventListener('click',()=>addSvcModal.classList.remove('active'));
             document.getElementById('btnCancelAddService').addEventListener('click',()=>addSvcModal.classList.remove('active'));
             addSvcModal.addEventListener('click',e=>{if(e.target===addSvcModal)addSvcModal.classList.remove('active');});
-            document.getElementById('addServiceForm').addEventListener('submit',function(e){e.preventDefault();toast('Service added (demo)');addSvcModal.classList.remove('active');this.reset();});
+            // Handled via services.js
             const addCatModal=document.getElementById('addCategoryModal');
             document.getElementById('btnAddCategory').addEventListener('click',()=>addCatModal.classList.add('active'));
             document.getElementById('btnCloseAddCategoryModal').addEventListener('click',()=>addCatModal.classList.remove('active'));
             document.getElementById('btnCancelAddCategory').addEventListener('click',()=>addCatModal.classList.remove('active'));
             addCatModal.addEventListener('click',e=>{if(e.target===addCatModal)addCatModal.classList.remove('active');});
             document.addEventListener('click',()=>{if(svcMenu){svcMenu.remove();svcMenu=null;}});
-            document.getElementById('countServices').textContent=servicesData.length;
-            renderSvc(servicesData);
+            // Services count and render will be done via API
             feather.replace();
         });
     </script>
@@ -1183,13 +1162,17 @@
     <script type="module" src="scripts/sub-features/sub-feature-gate.js"></script>
     <script type="module">
         import { initCategories, fetchCategories } from './service-categories.js';
+        import { initServices, fetchServices } from './services.js';
         // Expose to window so non-module inline scripts can call them
         window.fetchCategories = fetchCategories;
+        window.fetchServices = fetchServices;
         window.renderCat = window.renderCat; // already global from inline script
+        window.renderSvc = window.renderSvc; // already global from inline script
         if (document.readyState === 'loading') {
-            document.addEventListener('DOMContentLoaded', () => initCategories());
+            document.addEventListener('DOMContentLoaded', () => { initCategories(); initServices(); });
         } else {
             initCategories();
+            initServices();
         }
     </script>
 </body>
