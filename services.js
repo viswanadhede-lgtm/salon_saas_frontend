@@ -115,6 +115,24 @@ function setupModals() {
 }
 
 function attachEventListeners() {
+    // Ensure Add Service Button opens modal properly
+    const btnAddService = document.getElementById('btnAddService');
+    const addSvcModal = document.getElementById('addServiceModal');
+    if (btnAddService && addSvcModal) {
+        // Remove any old event listeners attached by inline scripts
+        const newBtn = btnAddService.cloneNode(true);
+        btnAddService.parentNode.replaceChild(newBtn, btnAddService);
+        
+        newBtn.addEventListener('click', async () => {
+            if (window.fetchCategories) {
+                try {
+                    await window.fetchCategories();
+                } catch(e){ console.error(e); }
+            }
+            addSvcModal.classList.add('active');
+        });
+    }
+
     // Add Service Form
     const addSvcForm = document.getElementById('addServiceForm');
     if (addSvcForm) {

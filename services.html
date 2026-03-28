@@ -277,7 +277,7 @@
                         <i data-feather="search" class="search-icon" style="left:12px;width:15px;height:15px;"></i>
                         <input type="text" id="categoriesSearchInput" placeholder="Search categories..." class="search-input" style="padding:0.55rem 1rem 0.55rem 2.4rem;font-size:0.875rem;border-radius:6px;">
                     </div>
-                    <button class="qa-btn qa-primary" id="btnAddService" data-sub-feature="create_service">
+                    <button class="qa-btn qa-primary" id="btnAddService">
                         <i data-feather="plus" class="qa-icon"></i><span>Add Service</span>
                     </button>
                     <button class="qa-btn qa-primary" id="btnAddCategory" style="display:none;">
@@ -421,7 +421,10 @@
                 renderCat(filtered);
             });
             const addSvcModal=document.getElementById('addServiceModal');
-            document.getElementById('btnAddService').addEventListener('click',()=>{if(window.fetchCategories) window.fetchCategories().then(()=>addSvcModal.classList.add('active')); else addSvcModal.classList.add('active');});
+            document.getElementById('btnAddService').addEventListener('click',()=>{
+                addSvcModal.classList.add('active');
+                if(window.fetchCategories) window.fetchCategories();
+            });
             document.getElementById('btnCloseAddServiceModal').addEventListener('click',()=>addSvcModal.classList.remove('active'));
             document.getElementById('btnCancelAddService').addEventListener('click',()=>addSvcModal.classList.remove('active'));
             addSvcModal.addEventListener('click',e=>{if(e.target===addSvcModal)addSvcModal.classList.remove('active');});
