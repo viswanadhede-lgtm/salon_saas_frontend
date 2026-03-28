@@ -106,8 +106,7 @@ async function fetchRoles() {
             description: 'Full system access. Cannot be modified or deleted.',
             protected: true,
             userCount: 1, // Assume 1 owner minimum
-            features: allFeatures,
-            sub_features: allSubFeatures
+            permission_key: [...allFeatures, ...allSubFeatures]
         };
         
         // Prepend it to whatever custom roles the backend sends
@@ -206,13 +205,14 @@ function renderPermissionsMatrix(role, containerEl, isModal) {
     containerEl.innerHTML = '';
     const subscriptionFeatures = getSubscriptionFeatures();
     const isOwner       = role && role.protected;
-    const roleFeatures  = role ? (role.features    || []) : [];
-    const roleSubFeats  = role ? (role.sub_features || []) : [];
+    
+    // Support either the new permission_key array or legacy fallback
+    const roleKeys = role ? (role.permission_key || [...(role.features||[]), ...(role.sub_features||[])]) : [];
 
     MODULES_META.forEach(mod => {
         const featureKey      = mod.key;
         const salonOwns       = subscriptionFeatures.includes(featureKey);
-        const hasFeature      = salonOwns && roleFeatures.includes(featureKey);
+        const hasFeature      = salonOwns && roleKeys.includes(featureKey);
         const disabledAttr    = (isOwner || !salonOwns) ? 'disabled' : '';
         const childSubFeats   = SUB_FEATURES_MAP[featureKey] || [];
 
@@ -245,7 +245,7 @@ function renderPermissionsMatrix(role, containerEl, isModal) {
             subHtml = `<span style="font-size:0.8rem;color:#94a3b8;font-style:italic;">No granular actions</span>`;
         } else {
             childSubFeats.forEach(subf => {
-                const hasSub = salonOwns && roleSubFeats.includes(subf.key);
+                const hasSub = salonOwns && roleKeys.includes(subf.key);
                 subHtml += `
                     <label style="display:flex;align-items:center;gap:6px;font-size:0.8rem;color:#475569;cursor:${disabledAttr ? 'not-allowed' : 'pointer'};opacity:${!salonOwns ? '0.5' : '1'};">
                         <input type="checkbox" class="perm-check sub-feature-check"
@@ -356,16 +356,15 @@ async function saveRole() {
     roleNameInput.style.borderColor = '';
 
     const desc = roleDescInput.value.trim() || `${name} role`;
-    const { features, sub_features } = collectPermissionsFromContainer(modalPermBody);
+    const permission_key = collectPermissionsFromContainer(modalPermBody);
 
     const isEdit = !!editingRoleId;
     const payload = {
-        company_id:   getCompanyId(),
-        branch_id:    getBranchId(),
-        name,
-        description:  desc,
-        features,
-        sub_features,
+        company_id:     getCompanyId(),
+        branch_id:      getBranchId(),
+        role_name:      name,
+        description:    desc,
+        permission_key,
         ...(isEdit ? { role_id: editingRoleId } : {})
     };
 
@@ -407,16 +406,15 @@ async function saveInlinePerms() {
     const role = rolesData.find(r => (r.id || r.role_id) === activeRoleId);
     if (!role) return;
 
-    const { features, sub_features } = collectPermissionsFromContainer(permMatrixBody);
+    const permission_key = collectPermissionsFromContainer(permMatrixBody);
 
     const payload = {
-        company_id:   getCompanyId(),
-        branch_id:    getBranchId(),
-        role_id:      activeRoleId,
-        name:         role.name,
-        description:  role.description || '',
-        features,
-        sub_features
+        company_id:     getCompanyId(),
+        branch_id:      getBranchId(),
+        role_id:        activeRoleId,
+        role_name:      role.name || role.role_name,
+        description:    role.description || '',
+        permission_key
     };
 
     const originalText = btnSavePerms.textContent;
@@ -506,11 +504,10 @@ async function confirmDelete() {
 
 // ─── Collect Permissions from DOM ─────────────────────────────────────────────
 function collectPermissionsFromContainer(containerEl) {
-    const features     = [];
-    const sub_features = [];
-    containerEl.querySelectorAll('.feature-check:checked').forEach(cb => features.push(cb.dataset.feature));
-    containerEl.querySelectorAll('.sub-feature-check:checked').forEach(cb => sub_features.push(cb.dataset.subFeature));
-    return { features, sub_features };
+    const permission_key = [];
+    containerEl.querySelectorAll('.feature-check:checked').forEach(cb => permission_key.push(cb.dataset.feature));
+    containerEl.querySelectorAll('.sub-feature-check:checked').forEach(cb => permission_key.push(cb.dataset.subFeature));
+    return permission_key;
 }
 
 // ─── Utility ──────────────────────────────────────────────────────────────────
@@ -527,4 +524,4 @@ function showToast(msg) {
 }
 
 // ─── Boot ─────────────────────────────────────────────────────────────────────
-document.addEventListener('DOMContentLoaded', init);
+init();
