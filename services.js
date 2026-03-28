@@ -297,35 +297,6 @@ function attachEventListeners() {
         if (window.svcMenu) { window.svcMenu.remove(); window.svcMenu = null; }
     };
     
-    window.triggerDeactivateService = async (svcId) => {
-        const svc = liveServicesData.find(s => s.service_id === svcId);
-        if (!svc) return;
-        if (window.svcMenu) { window.svcMenu.remove(); window.svcMenu = null; }
-        
-        const payload = {
-            company_id: getCompanyId(),
-            branch_id: getBranchId(),
-            service_id: svc.service_id,
-            name: svc.service_name,
-            category_id: svc.category_id,
-            category_name: svc.category_name,
-            duration: parseInt(svc.duration, 10),
-            price: parseFloat(svc.price),
-            status: 'inactive',
-            description: svc.description || ''
-        };
-        
-        try {
-            const res = await fetchWithAuth(API.UPDATE_SERVICE, {
-                method: 'POST',
-                body: JSON.stringify(payload)
-            }, FEATURES.SERVICES_MANAGEMENT, 'update');
-            if (res.ok) {
-                window.toast && window.toast('Service deactivated.');
-                fetchServices();
-            }
-        } catch(e) { console.error(e); }
-    };
 }
 
 // Function to populate edit category dropdown from categories data
@@ -371,6 +342,7 @@ export async function fetchServices() {
         
         window.liveServicesData = liveServicesData;
         window.renderSvc(liveServicesData);
+        if (window.populateServicesCategoryFilter) window.populateServicesCategoryFilter();
         
         const countEl = document.getElementById('countServices');
         if (countEl) {

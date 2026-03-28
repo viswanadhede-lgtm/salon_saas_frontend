@@ -269,11 +269,14 @@
                     <p style="font-size:0.95rem;color:#64748b;margin:2px 0 0 0;">Manage your salon services</p>
                 </div>
                 <div style="display:flex;align-items:center;gap:12px;">
-                    <div class="search-bar" id="servicesSearchWrap" style="width:300px;">
+                    <div class="search-bar" id="servicesSearchWrap" style="width:280px;">
                         <i data-feather="search" class="search-icon" style="left:12px;width:15px;height:15px;"></i>
                         <input type="text" id="servicesSearchInput" placeholder="Search services..." class="search-input" style="padding:0.55rem 1rem 0.55rem 2.4rem;font-size:0.875rem;border-radius:6px;">
                     </div>
-                    <div class="search-bar" id="categoriesSearchWrap" style="width:300px;display:none;">
+                    <select id="servicesCategoryFilter" style="padding:0.55rem 0.75rem;font-size:0.875rem;border-radius:6px;border:1px solid #e2e8f0;background:#fff;color:#374151;cursor:pointer;min-width:160px;outline:none;">
+                        <option value="">All Categories</option>
+                    </select>
+                    <div class="search-bar" id="categoriesSearchWrap" style="width:280px;display:none;">
                         <i data-feather="search" class="search-icon" style="left:12px;width:15px;height:15px;"></i>
                         <input type="text" id="categoriesSearchInput" placeholder="Search categories..." class="search-input" style="padding:0.55rem 1rem 0.55rem 2.4rem;font-size:0.875rem;border-radius:6px;">
                     </div>
@@ -356,6 +359,7 @@
             
             if(isSvc && window.fetchServices) window.fetchServices();
             else if(isSvc && window.liveServicesData) window.renderSvc(window.liveServicesData);
+            document.getElementById('servicesCategoryFilter').style.display = isSvc ? '' : 'none';
             if(!isSvc && window.fetchCategories) window.fetchCategories();
             else if(!isSvc && window.liveCategoriesData) window.renderCat(window.liveCategoriesData);
         }
@@ -429,7 +433,28 @@
         window.toast = function(msg){const t=document.getElementById('toastNotification');if(t){t.textContent=msg;t.classList.add('show');setTimeout(()=>t.classList.remove('show'),3000);}};
 
         document.addEventListener('DOMContentLoaded',function(){
-            document.getElementById('servicesSearchInput').addEventListener('input',function(){const q=this.value.toLowerCase();window.renderSvc((window.liveServicesData||[]).filter(s=>(s.name||s.service_name||'').toLowerCase().includes(q)||(s.category||'').toLowerCase().includes(q)));});
+            // Combined filter helper
+            function applyServiceFilters() {
+                const q = document.getElementById('servicesSearchInput').value.toLowerCase();
+                const cat = document.getElementById('servicesCategoryFilter').value;
+                let filtered = window.liveServicesData || [];
+                if (cat) filtered = filtered.filter(s => (s.category_name || s.category || '') === cat);
+                if (q) filtered = filtered.filter(s => (s.service_name || s.name || '').toLowerCase().includes(q) || (s.category_name || s.category || '').toLowerCase().includes(q));
+                window.renderSvc(filtered);
+            }
+            window.populateServicesCategoryFilter = function() {
+                const sel = document.getElementById('servicesCategoryFilter');
+                const currentVal = sel.value;
+                sel.innerHTML = '<option value="">All Categories</option>';
+                [...new Set((window.liveCategoriesData||[]).filter(c => c.status === 'active').map(c => c.category_name || c.name))].forEach(name => {
+                    const o = document.createElement('option');
+                    o.value = name; o.textContent = name;
+                    sel.appendChild(o);
+                });
+                if (currentVal) sel.value = currentVal;
+            };
+            document.getElementById('servicesSearchInput').addEventListener('input', applyServiceFilters);
+            document.getElementById('servicesCategoryFilter').addEventListener('change', applyServiceFilters);
             document.getElementById('categoriesSearchInput').addEventListener('input',function(){
                 const q=this.value.toLowerCase();
                 const filtered=(window.liveCategoriesData||[]).filter(c=>(c.category_name||c.name||'').toLowerCase().includes(q));
