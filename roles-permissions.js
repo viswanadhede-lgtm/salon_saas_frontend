@@ -75,46 +75,70 @@ async function init() {
     await fetchRoles();
 }
 
-// ─── Fetch Roles (READ) ───────────────────────────────────────────────────────
+// ─── Fetch Roles & Staff (READ) ───────────────────────────────────────────────
 async function fetchRoles() {
     setPageLoading(true);
+
     try {
-        const res = await fetchWithAuth(API.READ_ROLES, {
-            method: 'POST',
-            body: JSON.stringify({
-                company_id: getCompanyId(),
-                branch_id:  getBranchId()
-            })
-        }, FEATURES.ROLES_PERMISSIONS, 'read');
+        // Fetch roles and staff in parallel to calculate users per role dynamically
+        const [rolesRes, staffRes] = await Promise.all([
+            fetchWithAuth(API.READ_ROLES, {
+                method: 'POST',
+                body: JSON.stringify({
+                    company_id: getCompanyId(),
+                    branch_id:  getBranchId()
+                })
+            }, FEATURES.ROLES_PERMISSIONS, 'read'),
+            fetchWithAuth(API.READ_STAFF, {
+                method: 'POST',
+                body: JSON.stringify({
+                    company_id: getCompanyId(),
+                    branch_id:  getBranchId()
+                })
+            }, FEATURES.STAFF_MANAGEMENT, 'read').catch(() => ({ ok: false })) // fail gracefully if no staff permission
+        ]);
 
-        if (!res.ok) throw new Error('Failed to fetch roles');
+        if (rolesRes.ok) {
+            const data = await rolesRes.json();
+            const root = Array.isArray(data) ? data[0] : data;
+            const fetchedRoles = root.roles || [];
 
-        const data = await res.json();
-        const root = Array.isArray(data) ? data[0] : data;
-        let fetchedRoles = root.roles || [];
+            // Attempt to read staff data for dynamic user counts
+            let staffList = [];
+            if (staffRes.ok) {
+                try {
+                    const sData = await staffRes.json();
+                    const sRoot = Array.isArray(sData) ? sData[0] : sData;
+                    staffList = sRoot.staff || [];
+                } catch (e) { console.error('Error parsing staff data', e); }
+            }
 
-        // ─── STATIC OWNER ROLE ──────────────────────────────────────────────
-        // The backend never returns the Owner role. It is purely generated 
-        // and managed by the frontend with 100% of allowed registries.
-        const allFeatures = Object.values(FEATURES);
-        const allSubFeatures = Object.values(SUB_FEATURES);
-        
-        const ownerRole = {
-            id: 'owner',
-            role_id: 'owner',
-            name: 'Owner',
-            description: 'Full system access. Cannot be modified or deleted.',
-            protected: true,
-            userCount: 1, // Assume 1 owner minimum
-            permission_key: [...allFeatures, ...allSubFeatures]
-        };
-        
-        // Prepend it to whatever custom roles the backend sends
-        fetchedRoles.unshift(ownerRole);
+            rolesData = fetchedRoles.map(r => {
+                // Count how many staff members are assigned this specific role_id
+                const userCount = staffList.filter(s => s.role_id === r.role_id).length;
+                
+                return {
+                    id: r.role_id,
+                    role_id: r.role_id,
+                    name: r.role_name,
+                    role_name: r.role_name,
+                    description: r.description,
+                    protected: r.is_default === true, // Lock the role UI if the backend flags it as default!
+                    userCount: userCount,
+                    permission_key: r.permissions || [] // Backend provides it exactly as "permissions"
+                };
+            });
+        } else {
+            console.error('API Error: Backend returned non-200 status for roles.');
+            rolesData = [];
+        }
 
-        rolesData = fetchedRoles;
-
-        if (rolesData.length > 0) {
+    } catch (err) {
+        console.error('Error fetching roles:', err);
+        showToast('Failed to load roles from server.');
+        rolesData = [];
+    } finally {
+        if (rolesData.length > 0 && !activeRoleId) {
             // Default: select the first protected (owner) role
             const defaultRole = rolesData.find(r => r.protected) || rolesData[0];
             activeRoleId = defaultRole.id || defaultRole.role_id;
@@ -122,11 +146,6 @@ async function fetchRoles() {
 
         renderRolesList();
         if (activeRoleId) selectRole(activeRoleId);
-
-    } catch (err) {
-        console.error('Error fetching roles:', err);
-        showToast('Failed to load roles. Please refresh.');
-    } finally {
         setPageLoading(false);
     }
 }
