@@ -7,10 +7,10 @@ export const SUB_FEATURES = {
     DASHBOARD_CREATE_BOOKING: 'dashboard_create_booking',
     
     // ---- BOOKINGS ----
-    BOOKING_CREATE: 'booking_create',
-    BOOKING_EDIT: 'booking_edit',
-    BOOKING_CANCEL: 'booking_cancel',
-    BOOKING_VIEW_ALL: 'booking_view_all',
+    CREATE_BOOKING: 'create_booking',
+    UPDATE_BOOKING: 'update_booking',
+    READ_BOOKINGS: 'read_bookings',
+    CANCEL_BOOKING: 'cancel_booking',
 
     // ---- SERVICES ----
     CREATE_SERVICE_CATEGORY: 'create_service_category',
@@ -66,10 +66,10 @@ export const SUB_FEATURES_MAP = {
         { key: SUB_FEATURES.DASHBOARD_CREATE_BOOKING, label: 'Create Booking (Quick Action)' }
     ],
     [FEATURES.BOOKINGS_MANAGEMENT]: [
-        { key: SUB_FEATURES.BOOKING_CREATE, label: 'Create Bookings' },
-        { key: SUB_FEATURES.BOOKING_EDIT, label: 'Edit Bookings' },
-        { key: SUB_FEATURES.BOOKING_CANCEL, label: 'Cancel Bookings' },
-        { key: SUB_FEATURES.BOOKING_VIEW_ALL, label: 'View All Schedules' }
+        { key: SUB_FEATURES.CREATE_BOOKING, label: 'Create Booking' },
+        { key: SUB_FEATURES.UPDATE_BOOKING, label: 'Update Booking' },
+        { key: SUB_FEATURES.READ_BOOKINGS, label: 'Read Bookings' },
+        { key: SUB_FEATURES.CANCEL_BOOKING, label: 'Cancel Booking' }
     ],
     [FEATURES.STAFF_MANAGEMENT]: [
         { key: SUB_FEATURES.STAFF_VIEW_ALL_SCHEDULES, label: 'View All Schedules' },

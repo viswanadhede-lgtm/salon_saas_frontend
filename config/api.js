@@ -30,7 +30,12 @@ export const API = {
   CREATE_SERVICE: `${BASE_URL}/create_service`,
   READ_SERVICES: `${BASE_URL}/read_services`,
   UPDATE_SERVICE: `${BASE_URL}/update_service`,
-  DELETE_SERVICE: `${BASE_URL}/delete_service`
+  DELETE_SERVICE: `${BASE_URL}/delete_service`,
+  CREATE_BOOKING: `${BASE_URL}/create_booking`,
+  UPDATE_BOOKING: `${BASE_URL}/update_booking`,
+  READ_BOOKINGS: `${BASE_URL}/read_bookings`,
+  CANCEL_BOOKING: `${BASE_URL}/cancel_booking`,
+  READ_STAFF: `${BASE_URL}/read_staff`
 };
 
 /**
