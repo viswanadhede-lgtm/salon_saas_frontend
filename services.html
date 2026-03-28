@@ -432,7 +432,9 @@
                 sel.innerHTML = '<option value="" disabled selected>Select a category</option>';
                 (window.liveCategoriesData||[]).filter(c => c.status === 'active').forEach(c => {
                     const o = document.createElement('option');
-                    o.value = c.category_name || c.name; o.textContent = c.category_name || c.name;
+                    o.value = c.category_name || c.name;
+                    o.textContent = c.category_name || c.name;
+                    o.dataset.id = c.id || c.category_id || '';
                     sel.appendChild(o);
                 });
                 
@@ -443,7 +445,9 @@
                         sel.innerHTML = '<option value="" disabled selected>Select a category</option>';
                         (window.liveCategoriesData||[]).filter(c => c.status === 'active').forEach(c => {
                             const o = document.createElement('option');
-                            o.value = c.category_name || c.name; o.textContent = c.category_name || c.name;
+                            o.value = c.category_name || c.name;
+                            o.textContent = c.category_name || c.name;
+                            o.dataset.id = c.id || c.category_id || '';
                             sel.appendChild(o);
                         });
                         if (currentSelection) sel.value = currentSelection;

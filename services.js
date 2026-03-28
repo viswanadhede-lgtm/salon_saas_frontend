@@ -129,7 +129,8 @@ function attachEventListeners() {
                 company_id: getCompanyId(),
                 branch_id: getBranchId(),
                 name: document.getElementById('sfSvcName').value.trim(),
-                category: document.getElementById('sfCategory').value,
+                category_id: document.getElementById('sfCategory').selectedOptions[0]?.dataset.id || '',
+                category_name: document.getElementById('sfCategory').value,
                 duration: parseInt(document.getElementById('sfDuration').value, 10),
                 price: parseFloat(document.getElementById('sfPrice').value),
                 status: document.querySelector('input[name="sfStatus"]:checked').value,
@@ -182,7 +183,8 @@ function attachEventListeners() {
             branch_id: getBranchId(),
             service_id: serviceId,
             name: document.getElementById('editSfSvcName').value.trim(),
-            category: document.getElementById('editSfCategory').value,
+            category_id: document.getElementById('editSfCategory').selectedOptions[0]?.dataset.id || '',
+            category_name: document.getElementById('editSfCategory').value,
             duration: parseInt(document.getElementById('editSfDuration').value, 10),
             price: parseFloat(document.getElementById('editSfPrice').value),
             status: document.querySelector('input[name="editSfStatus"]:checked').value,
@@ -338,6 +340,7 @@ window.populateCategoryDropdownExForEdit = () => {
         const o = document.createElement('option');
         o.value = c.category_name || c.name;
         o.textContent = c.category_name || c.name;
+        o.dataset.id = c.id || c.category_id || '';
         sel.appendChild(o);
     });
     
