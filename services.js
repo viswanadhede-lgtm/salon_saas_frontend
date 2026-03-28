@@ -273,15 +273,14 @@ function attachEventListeners() {
 
     // Global expose
     window.openEditServiceModal = (svcId) => {
-        const svc = liveServicesData.find(s => (s.id || s.service_id) === svcId);
+        const svc = liveServicesData.find(s => (s.service_id) === svcId);
         if (svc) {
-            document.getElementById('editServiceId').value = svc.id || svc.service_id || '';
-            document.getElementById('editSfSvcName').value = svc.name || svc.service_name || '';
+            document.getElementById('editServiceId').value = svc.service_id || '';
+            document.getElementById('editSfSvcName').value = svc.service_name || '';
             
-            // Populate categories dropdowns again just in case
             window.populateCategoryDropdownExForEdit();
             
-            document.getElementById('editSfCategory').value = svc.category || '';
+            document.getElementById('editSfCategory').value = svc.category_name || '';
             document.getElementById('editSfDuration').value = svc.duration || '';
             document.getElementById('editSfPrice').value = svc.price || '';
             document.getElementById('editSfDescription').value = svc.description || '';
@@ -299,16 +298,17 @@ function attachEventListeners() {
     };
     
     window.triggerDeactivateService = async (svcId) => {
-        const svc = liveServicesData.find(s => (s.id || s.service_id) === svcId);
+        const svc = liveServicesData.find(s => s.service_id === svcId);
         if (!svc) return;
         if (window.svcMenu) { window.svcMenu.remove(); window.svcMenu = null; }
         
         const payload = {
             company_id: getCompanyId(),
             branch_id: getBranchId(),
-            service_id: svc.id || svc.service_id,
-            name: svc.name || svc.service_name,
-            category: svc.category,
+            service_id: svc.service_id,
+            name: svc.service_name,
+            category_id: svc.category_id,
+            category_name: svc.category_name,
             duration: parseInt(svc.duration, 10),
             price: parseFloat(svc.price),
             status: 'inactive',
@@ -364,14 +364,17 @@ export async function fetchServices() {
         const root = Array.isArray(data) ? data[0] : data;
         
         const rawServices = root.services || [];
-        liveServicesData = rawServices.filter(s => (s.status || '').toLowerCase() !== 'deleted');
+        // Note: API returns "status " with a trailing space — normalize it
+        liveServicesData = rawServices
+            .map(s => ({ ...s, status: (s['status '] || s.status || '').trim() }))
+            .filter(s => s.status.toLowerCase() !== 'deleted');
         
         window.liveServicesData = liveServicesData;
         window.renderSvc(liveServicesData);
         
         const countEl = document.getElementById('countServices');
         if (countEl) {
-            countEl.textContent = liveServicesData.length;
+            countEl.textContent = root.total_services ?? liveServicesData.length;
         }
     } catch (err) {
         console.error('Network Error fetching services:', err);
