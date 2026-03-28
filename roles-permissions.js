@@ -93,34 +93,25 @@ async function fetchRoles() {
         const root = Array.isArray(data) ? data[0] : data;
         let fetchedRoles = root.roles || [];
 
-        // ─── ENFORCE OWNER ROLE ─────────────────────────────────────────────
-        // Ensure there is always an "Owner" role that has ALL system permissions
-        // regardless of what the backend sends.
+        // ─── STATIC OWNER ROLE ──────────────────────────────────────────────
+        // The backend never returns the Owner role. It is purely generated 
+        // and managed by the frontend with 100% of allowed registries.
         const allFeatures = Object.values(FEATURES);
         const allSubFeatures = Object.values(SUB_FEATURES);
         
-        let ownerRole = fetchedRoles.find(r => r.protected || r.name?.toLowerCase() === 'owner');
+        const ownerRole = {
+            id: 'owner',
+            role_id: 'owner',
+            name: 'Owner',
+            description: 'Full system access. Cannot be modified or deleted.',
+            protected: true,
+            userCount: 1, // Assume 1 owner minimum
+            features: allFeatures,
+            sub_features: allSubFeatures
+        };
         
-        if (!ownerRole) {
-            // Backend didn't return an Owner role, inject a default one locally
-            ownerRole = {
-                id: 'owner',
-                role_id: 'owner',
-                name: 'Owner',
-                description: 'Full system access. Cannot be modified or deleted.',
-                protected: true,
-                userCount: 1, // Assume at least 1 owner initially
-                features: allFeatures,
-                sub_features: allSubFeatures
-            };
-            fetchedRoles.unshift(ownerRole); // Push to top of list
-        } else {
-            // Backend returned it, but let's strictly enforce it has ALL privileges
-            // and is protected so the UI locks the checkboxes.
-            ownerRole.protected = true;
-            ownerRole.features = allFeatures;
-            ownerRole.sub_features = allSubFeatures;
-        }
+        // Prepend it to whatever custom roles the backend sends
+        fetchedRoles.unshift(ownerRole);
 
         rolesData = fetchedRoles;
 
