@@ -100,23 +100,69 @@ async function fetchRoles() {
 
         if (rolesRes.ok) {
             const data = await rolesRes.json();
-            const root = Array.isArray(data) ? data[0] : data;
-            const fetchedRoles = root.roles || [];
+            
+            let fetchedRoles = [];
+            if (Array.isArray(data)) {
+                if (data.length > 0 && data[0].error) throw new Error(data[0].error);
+                if (data.length > 0 && data[0].roles) fetchedRoles = data[0].roles;
+                else fetchedRoles = data;
+            } else if (data && data.error) {
+                throw new Error(data.error);
+            } else if (data && data.roles) {
+                fetchedRoles = data.roles;
+            }
 
             // Attempt to read staff data for dynamic user counts
             let staffList = [];
             if (staffRes.ok) {
                 try {
                     const sData = await staffRes.json();
-                    const sRoot = Array.isArray(sData) ? sData[0] : sData;
-                    staffList = sRoot.staff || [];
+                    if (Array.isArray(sData)) {
+                        if (sData.length > 0 && sData[0].staff) staffList = sData[0].staff;
+                        else if (sData.length > 0 && !sData[0].error) staffList = sData;
+                    } else if (sData && sData.staff) {
+                        staffList = sData.staff;
+                    }
                 } catch (e) { console.error('Error parsing staff data', e); }
             }
 
-            rolesData = fetchedRoles.map(r => {
+            // Group by role_id in case the API returns a flat list with individual permission keys
+            const roleMap = new Map();
+            fetchedRoles.forEach(r => {
+                const rId = r.role_id || r.id;
+                if (!rId) return;
+
+                if (!roleMap.has(rId)) {
+                    roleMap.set(rId, {
+                        ...r,
+                        permissions: Array.isArray(r.permissions) ? [...r.permissions] : [],
+                        permission_key: Array.isArray(r.permission_key) ? [...r.permission_key] : []
+                    });
+                }
+                const existing = roleMap.get(rId);
+
+                // Add single string permissions from a flat structure
+                if (typeof r.permission_key === 'string' && r.permission_key) {
+                    if (!existing.permission_key.includes(r.permission_key)) {
+                        existing.permission_key.push(r.permission_key);
+                    }
+                }
+                if (typeof r.permissions === 'string' && r.permissions) {
+                    if (!existing.permissions.includes(r.permissions)) {
+                        existing.permissions.push(r.permissions);
+                    }
+                }
+            });
+
+            const uniqueRoles = Array.from(roleMap.values());
+
+            rolesData = uniqueRoles.map(r => {
                 // Count how many staff members are assigned this specific role_id
                 const userCount = staffList.filter(s => s.role_id === r.role_id).length;
                 
+                // Allow fallback if it came as an array
+                const permissionArray = r.permissions?.length > 0 ? r.permissions : r.permission_key;
+
                 return {
                     id: r.role_id,
                     role_id: r.role_id,
@@ -125,7 +171,7 @@ async function fetchRoles() {
                     description: r.description,
                     protected: r.is_default === true, // Lock the role UI if the backend flags it as default!
                     userCount: userCount,
-                    permission_key: r.permissions || [] // Backend provides it exactly as "permissions"
+                    permission_key: permissionArray || []
                 };
             });
         } else {
