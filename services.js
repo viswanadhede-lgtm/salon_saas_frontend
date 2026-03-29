@@ -332,24 +332,33 @@ export async function fetchServices() {
         if (!response.ok) throw new Error('Failed to fetch services from backend');
         
         const data = await response.json();
-        const root = Array.isArray(data) ? data[0] : data;
         
-        const rawServices = root.services || [];
-        // Note: API returns "status " with a trailing space — normalize it
+        let rawServices = [];
+        if (Array.isArray(data)) {
+            if (data.length > 0 && data[0].error) {
+                throw new Error(data[0].error);
+            }
+            rawServices = data;
+        } else if (data && data.error) {
+            throw new Error(data.error);
+        } else if (data && data.services) {
+            rawServices = data.services;
+        }
+        
         liveServicesData = rawServices
             .map(s => ({ ...s, status: (s['status '] || s.status || '').trim() }))
-            .filter(s => s.status.toLowerCase() !== 'deleted');
+            .filter(s => s.status && s.status.toLowerCase() !== 'deleted');
         
         window.liveServicesData = liveServicesData;
-        window.renderSvc(liveServicesData);
+        if (window.renderSvc) window.renderSvc(liveServicesData);
         if (window.populateServicesCategoryFilter) window.populateServicesCategoryFilter();
         
         const countEl = document.getElementById('countServices');
         if (countEl) {
-            countEl.textContent = root.total_services ?? liveServicesData.length;
+            countEl.textContent = liveServicesData.length;
         }
     } catch (err) {
         console.error('Network Error fetching services:', err);
-        window.renderSvc(liveServicesData || []);
+        if (window.renderSvc) window.renderSvc(liveServicesData || []);
     }
 }
