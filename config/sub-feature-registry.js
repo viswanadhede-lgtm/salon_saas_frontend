@@ -40,6 +40,12 @@ export const SUB_FEATURES = {
     UPDATE_STAFF: 'update_staff',
     DELETE_STAFF: 'delete_staff',
 
+    // ---- STAFF SCHEDULES ----
+    CREATE_STAFF_SCHEDULE: 'create_staff_schedule',
+    READ_STAFF_SCHEDULE: 'read_staff_schedule',
+    EDIT_STAFF_SCHEDULE: 'edit_staff_schedule',
+    DELETE_STAFF_SCHEDULE: 'delete_staff_schedule',
+
     // ---- ANALYTICS / REPORTS ----
     REPORT_VIEW_BASIC: 'report_view_basic',
     REPORT_VIEW_ADVANCED: 'report_view_advanced',
@@ -82,6 +88,12 @@ export const SUB_FEATURES_MAP = {
         { key: SUB_FEATURES.READ_STAFF, label: 'Read Staff' },
         { key: SUB_FEATURES.UPDATE_STAFF, label: 'Update Staff' },
         { key: SUB_FEATURES.DELETE_STAFF, label: 'Delete Staff' }
+    ],
+    [FEATURES.STAFF_SCHEDULES]: [
+        { key: SUB_FEATURES.CREATE_STAFF_SCHEDULE, label: 'Create Schedule' },
+        { key: SUB_FEATURES.READ_STAFF_SCHEDULE, label: 'Read Schedules' },
+        { key: SUB_FEATURES.EDIT_STAFF_SCHEDULE, label: 'Edit Schedule' },
+        { key: SUB_FEATURES.DELETE_STAFF_SCHEDULE, label: 'Delete Schedule' }
     ],
     [FEATURES.SERVICES_MANAGEMENT]: [
         { key: SUB_FEATURES.CREATE_SERVICE_CATEGORY, label: 'Create Service Category' },
