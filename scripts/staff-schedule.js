@@ -505,15 +505,17 @@ function renderTable() {
                        title="Off">${d.day}</div>`
         ).join('');
 
-        const [yyyy, mm]   = s.target_month.split('-');
-        const dateObj      = new Date(parseInt(yyyy), parseInt(mm) - 1);
-        const monthLabel   = dateObj.toLocaleString('default', { month: 'short', year: 'numeric' });
+        const todayDayIndex = new Date().getDay();
+        const todayDayStr = WEEK_DAYS_SHORT[todayDayIndex];
+        const todaySchedule = s.days.find(d => d.day === todayDayStr);
 
-        const scopeBadge   = s.apply_full_month
-            ? `<span style="display:inline-block; margin-left:6px; background:#dcfce7; color:#16a34a;
-                            padding:1px 8px; border-radius:4px; font-size:0.7rem; font-weight:600;">Full Month</span>`
-            : `<span style="display:inline-block; margin-left:6px; background:#fef9c3; color:#854d0e;
-                            padding:1px 8px; border-radius:4px; font-size:0.7rem; font-weight:600;">1 Week</span>`;
+        let todayTimingsStr = 'Off';
+        let statusBadge = `<span style="background:#f1f5f9; color:#94a3b8; padding:3px 8px; border-radius:12px; font-size:0.75rem; font-weight:600;">Inactive</span>`;
+
+        if (todaySchedule && todaySchedule.active) {
+            todayTimingsStr = `${todaySchedule.start} - ${todaySchedule.end}`;
+            statusBadge = `<span style="background:#dcfce7; color:#16a34a; padding:3px 8px; border-radius:12px; font-size:0.75rem; font-weight:600;">Active</span>`;
+        }
 
         return `
         <tr class="tb-row" style="border-bottom:1px solid #e2e8f0; transition:background 0.2s;">
@@ -522,17 +524,13 @@ function renderTable() {
                 <div style="font-size:0.75rem; color:#64748b; margin-top:2px;">${s.staff_role}</div>
             </td>
             <td style="padding:14px 16px;">
-                <span style="display:inline-block; background:#f8fafc; border:1px solid #e2e8f0;
-                             padding:3px 8px; border-radius:6px; font-weight:500; font-size:0.8rem; color:#475569;">
-                    <i data-feather="calendar" style="width:12px; height:12px; vertical-align:-2px; margin-right:4px;"></i>${monthLabel}
-                </span>
-                ${scopeBadge}
+                <div style="display:flex; flex-wrap:wrap;">${dayPills}</div>
             </td>
-            <td style="padding:14px 16px; font-weight:600; color:#0f172a;">
-                ${s.total_hours} <span style="font-weight:400; color:#64748b; font-size:0.8rem;">hrs/wk</span>
+            <td style="padding:14px 16px; font-weight:600; color:#0f172a; font-size:0.85rem;">
+                ${todayTimingsStr}
             </td>
             <td style="padding:14px 16px;">
-                <div style="display:flex; flex-wrap:wrap;">${dayPills}</div>
+                ${statusBadge}
             </td>
             <td style="padding:14px 16px; vertical-align:middle;">
                 <div class="action-buttons" style="display:flex; justify-content:flex-start; gap:0.5rem;">
