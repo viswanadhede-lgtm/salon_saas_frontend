@@ -528,11 +528,16 @@
                 </li>
 
                 <!-- Staff -->
-                <li class="nav-item" title="Staff">
-                    <a href="staff.html" class="nav-link" data-feature="staff_management">
+                <li class="nav-item has-submenu" title="Staff">
+                    <div class="nav-link submenu-toggle">
                         <i data-feather="user-check" class="nav-icon"></i>
                         <span class="nav-text">Staff</span>
-                    </a>
+                        <i data-feather="chevron-down" class="submenu-arrow"></i>
+                    </div>
+                    <ul class="submenu">
+                        <li><a href="staff.html" class="submenu-link" data-feature="staff_management"><span class="submenu-bullet">&bull;</span><span class="nav-text">Staff</span></a></li>
+                        <li><a href="staff-schedule.html" class="submenu-link" data-feature="staff_management"><span class="submenu-bullet">&bull;</span><span class="nav-text">Staff Schedules</span></a></li>
+                    </ul>
                 </li>
 
                 <!-- Services -->
