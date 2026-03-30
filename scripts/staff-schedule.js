@@ -716,7 +716,8 @@ async function fetchSchedules() {
             body: JSON.stringify(payload)
         }, FEATURES.STAFF_SCHEDULES, 'read');
         if (response.ok) {
-            rawSchedules = await response.json();
+            const data = await response.json();
+            rawSchedules = transformScheduleResponse(data);
             renderTable();
             return;
         }
@@ -730,18 +731,94 @@ async function fetchSchedules() {
 }
 
 // ─────────────────────────────────────────────────────────────
+// TRANSFORM: backend date-map → UI row objects
+// ─────────────────────────────────────────────────────────────
+
+/**
+ * Backend response format:
+ * [{ success: true, schedule: { '2026-04-01': [{ staff_id, start_time, end_time, is_off, notes, schedule_id }] }, today_schedule }]
+ *
+ * We group entries by staff_id → target_month, picking up the 7-day
+ * recurring pattern from the first occurrence of each weekday.
+ */
+function transformScheduleResponse(data) {
+    if (!Array.isArray(data) || !data[0]?.schedule) return [];
+
+    const scheduleMap  = data[0].schedule;  // { '2026-04-01': [...], ... }
+    const grouped      = {};                 // key: `${staffId}_${targetMonth}`
+
+    const DAY_NAMES    = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
+
+    for (const [dateStr, entries] of Object.entries(scheduleMap)) {
+        const jsDate      = new Date(dateStr + 'T00:00:00');  // local midnight
+        const dayName     = DAY_NAMES[jsDate.getDay()];
+        const targetMonth = dateStr.slice(0, 7);              // '2026-04'
+
+        for (const entry of entries) {
+            const staffId  = entry.staff_id;
+            const key      = `${staffId}_${targetMonth}`;
+
+            if (!grouped[key]) {
+                const staffMember = staffList.find(s => String(s.id) === String(staffId));
+                grouped[key] = {
+                    id:               entry.schedule_id || key,
+                    staff_id:         staffId,
+                    staff_name:       staffMember?.name  || staffId,
+                    staff_role:       staffMember?.role  || 'Staff',
+                    target_month:     targetMonth,
+                    apply_full_month: true,
+                    total_hours:      0,
+                    days:             { Sun: null, Mon: null, Tue: null, Wed: null, Thu: null, Fri: null, Sat: null },
+                    schedule_entries: []
+                };
+            }
+
+            const row = grouped[key];
+
+            // Keep first occurrence of each weekday as the representative pattern
+            if (row.days[dayName] === null) {
+                row.days[dayName] = {
+                    day:    dayName,
+                    active: !entry.is_off,
+                    start:  entry.start_time || null,
+                    end:    entry.end_time   || null
+                };
+
+                // Accumulate weekly hours from first-week entries
+                if (!entry.is_off && entry.start_time && entry.end_time) {
+                    const [sh, sm] = entry.start_time.split(':').map(Number);
+                    const [eh, em] = entry.end_time.split(':').map(Number);
+                    let diff = (eh + em / 60) - (sh + sm / 60);
+                    if (diff < 0) diff += 24;
+                    row.total_hours += diff;
+                }
+            }
+
+            row.schedule_entries.push({
+                schedule_date: dateStr,
+                ...entry
+            });
+        }
+    }
+
+    // Flatten days map → ordered array (Mon→Sun order used in UI)
+    const DAY_ORDER = ['Mon','Tue','Wed','Thu','Fri','Sat','Sun'];
+    return Object.values(grouped).map(row => ({
+        ...row,
+        total_hours: Math.round(row.total_hours * 10) / 10,
+        days: DAY_ORDER.map(d => row.days[d] || { day: d, active: false, start: null, end: null })
+    }));
+}
+
+// ─────────────────────────────────────────────────────────────
 // RENDER TABLE
 // ─────────────────────────────────────────────────────────────
 
 function renderTable() {
     if (!DOM.tableBody) return;
 
-    const filterMonth = DOM.monthFilter?.value || null;
-    let viewData      = [...rawSchedules];
-
-    if (filterMonth) {
-        viewData = viewData.filter(s => s.target_month === filterMonth);
-    }
+    // rawSchedules is already filtered by month from the API
+    const viewData = [...rawSchedules];
 
     if (viewData.length === 0) {
         DOM.tableBody.innerHTML = `
