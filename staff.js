@@ -2,16 +2,62 @@ import { API, fetchWithAuth } from './config/api.js';
 import { FEATURES } from './config/feature-registry.js';
 import { SUB_FEATURES } from './config/sub-feature-registry.js';
 
-let liveStaffData = [
-    { id:'S1', name:'Sarah Johnson',  initials:'SJ', color:'#6366f1', role:'Senior Stylist', services:'Haircut, Color, Styling', phone:'+91 98765 12345', status:'active' },
-    { id:'S2', name:'Michael Lee',    initials:'ML', color:'#0ea5e9', role:'Barber',         services:"Men's Haircut, Beard",      phone:'+91 98765 54321', status:'active' },
-    { id:'S3', name:'Anjali Sharma',  initials:'AS', color:'#f43f5e', role:'Therapist',      services:'Facial, Spa, Massage',     phone:'+91 98765 77777', status:'on-leave' },
-    { id:'S4', name:'Ravi Kumar',     initials:'RK', color:'#10b981', role:'Stylist',        services:'Haircut, Keratin',         phone:'+91 98765 11111', status:'active' },
-    { id:'S5', name:'Deepa Nair',     initials:'DN', color:'#f59e0b', role:'Therapist',      services:'Wax, Facials, Threading',  phone:'+91 98765 22222', status:'active' },
-    { id:'S6', name:'Kiran Mehta',    initials:'KM', color:'#8b5cf6', role:'Stylist',        services:'Bridal, Styling, Color',   phone:'+91 98765 33333', status:'active' },
-    { id:'S7', name:'Priya Reddy',    initials:'PR', color:'#ec4899', role:'Manager',        services:'Scheduling, Operations',   phone:'+91 98765 44444', status:'active' },
-    { id:'S8', name:'Suresh Pillai',  initials:'SP', color:'#64748b', role:'Barber',         services:"Men's Haircut, Beard",     phone:'+91 98765 55555', status:'inactive' },
-];
+let liveStaffData = [];
+
+window.fetchStaff = async function() {
+    try {
+        const company_id = getCompanyId();
+        const branch_id = getBranchId();
+        if (!company_id || !branch_id) return;
+
+        const response = await fetchWithAuth(API.READ_STAFF, { 
+            method: 'POST',
+            body: JSON.stringify({ company_id, branch_id })
+        }, FEATURES.STAFF_MANAGEMENT, 'read');
+        
+        if (!response.ok) throw new Error('Failed to fetch staff data');
+        const data = await response.json();
+        
+        let staffArray = data;
+        if (Array.isArray(data)) {
+            staffArray = Array.isArray(data[0]?.staff) ? data[0].staff : data;
+        } else if (data && typeof data === 'object') {
+            staffArray = data.staff || [];
+        }
+
+        const avatarColors = ['#6366f1', '#0ea5e9', '#f43f5e', '#10b981', '#f59e0b', '#8b5cf6', '#ec4899', '#64748b'];
+
+        liveStaffData = Array.isArray(staffArray) ? staffArray.map((staff, idx) => {
+            const rawName = staff.staff_name || staff.name || 'Unknown Staff';
+            const initialsMatches = rawName.match(/\b\w/g) || [];
+            let initials = 'U';
+            if (initialsMatches.length > 0) {
+                initials = (initialsMatches.shift() + (initialsMatches.pop() || '')).substring(0,2).toUpperCase();
+            }
+            
+            return {
+                id: staff.staff_id || staff.id,
+                name: rawName,
+                role: staff.role_name || staff.role || 'Unassigned',
+                role_id: staff.role_id || '',
+                services: staff.services_offered || staff.services || '-',
+                phone: staff.phone || '-',
+                email: staff.email || '',
+                notes: staff.notes || '',
+                status: staff.status || 'active',
+                initials: initials,
+                color: avatarColors[idx % avatarColors.length]
+            };
+        }) : [];
+        
+        renderStaffTable(liveStaffData);
+    } catch (error) {
+        console.error('Error fetching staff:', error);
+        liveStaffData = [];
+        const tbody = document.getElementById('staffTableBody');
+        if (tbody) tbody.innerHTML = `<tr><td colspan="6" style="padding:40px; text-align:center; color:#ef4444;">Failed to load staff records.</td></tr>`;
+    }
+};
 
 let staffActiveMenu = null;
 let staffToDelete = null;
@@ -31,7 +77,7 @@ export async function initStaff() {
     setupModals();
     attachEventListeners();
     await fetchRolesForDropdown();
-    renderStaffTable(liveStaffData);
+    await window.fetchStaff();
 }
 
 function getStaffStatusBadge(status) {
@@ -309,7 +355,7 @@ function attachEventListeners() {
                 addStaffModal.classList.remove('active');
                 this.reset();
                 
-                // TODO: Re-fetch the staff list when READ_STAFF API is implemented
+                await window.fetchStaff();
             } catch (err) {
                 console.error("Error creating staff:", err);
                 alert(err.message || 'An error occurred while creating the staff member');
