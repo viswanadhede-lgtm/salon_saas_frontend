@@ -73,13 +73,27 @@ function toISODate(date) {
 }
 
 /**
- * Returns a label like "15-03-2026 (Sunday)" for a given Date.
+ * Returns date string like "30-03-2026" for a given Date.
  */
-function formatDayLabel(date) {
+function formatDateOnly(date) {
     const d = String(date.getDate()).padStart(2, '0');
     const m = String(date.getMonth() + 1).padStart(2, '0');
     const y = date.getFullYear();
-    return `${d}-${m}-${y} (${WEEK_DAYS_FULL[date.getDay()]})`;
+    return `${d}-${m}-${y}`;
+}
+
+/**
+ * Returns full day name like "Sunday" for a given Date.
+ */
+function formatDayOnly(date) {
+    return WEEK_DAYS_FULL[date.getDay()];
+}
+
+/**
+ * Returns a label like "30-03-2026 (Sunday)" for a given Date (kept for compatibility).
+ */
+function formatDayLabel(date) {
+    return `${formatDateOnly(date)} (${formatDayOnly(date)})`;
 }
 
 /** Parse year/month (0-indexed) from the modal's month <input> value. */
@@ -148,24 +162,30 @@ function renderDayRows(year, month) {
     today.setHours(0, 0, 0, 0);
 
     DOM.daysContainer.innerHTML = patternDates.map((date, ix) => {
-        const label         = formatDayLabel(date);
         const jsDay         = date.getDay();
         const isPastOrToday = date <= today;
         const isWeekday     = (jsDay !== 0 && jsDay !== 6) && !isPastOrToday;
-        const dateStr       = toISODate(date);               // stored on data-attr
+        const dateStr       = toISODate(date);
+        const dateLabel     = formatDateOnly(date);
+        const dayLabel      = formatDayOnly(date);
 
         return `
             <div class="day-row"
-                 style="display:grid; grid-template-columns:2fr 100px 1.5fr 1.5fr; gap:12px; align-items:center;
+                 style="display:grid; grid-template-columns:1.2fr 1.2fr 80px 1fr 1fr 2.5fr; gap:12px; align-items:center;
                         background:${isPastOrToday ? '#f8fafc' : '#fff'}; padding:12px 16px; border-radius:8px; border:1px solid #e2e8f0;
                         box-shadow:0 1px 2px rgba(0,0,0,0.02); transition:border-color 0.2s; ${isPastOrToday ? 'opacity:0.6;' : ''}"
                  data-date="${dateStr}" data-idx="${ix}">
 
-                <div style="font-weight:600; color:#334155; font-size:0.875rem;">
-                    ${label}
-                    ${isPastOrToday ? '<div style="font-size:0.7rem; color:#ef4444; margin-top:2px;">(Past/Today - Disabled)</div>' : ''}
+                <!-- Date column -->
+                <div style="font-weight:600; color:#334155; font-size:0.82rem;">
+                    ${dateLabel}
+                    ${isPastOrToday ? '<div style="font-size:0.68rem; color:#ef4444; margin-top:2px;">(Disabled)</div>' : ''}
                 </div>
 
+                <!-- Day name column -->
+                <div style="font-weight:500; color:#475569; font-size:0.875rem;">${dayLabel}</div>
+
+                <!-- Active toggle -->
                 <div>
                     <label class="toggle-switch" style="position:relative; display:inline-block; width:44px; height:24px; ${isPastOrToday ? 'cursor:not-allowed;' : ''}">
                         <input type="checkbox" id="chk_${ix}" class="day-active-chk" data-idx="${ix}"
@@ -184,6 +204,7 @@ function renderDayRows(year, month) {
                     </label>
                 </div>
 
+                <!-- Start Time -->
                 <div>
                     <input type="time" id="start_${ix}" class="form-input day-start"
                            value="${isWeekday ? '09:00' : ''}"
@@ -192,12 +213,24 @@ function renderDayRows(year, month) {
                                   border:1px solid #e2e8f0; border-radius:6px; ${isPastOrToday ? 'cursor:not-allowed;' : ''}">
                 </div>
 
+                <!-- End Time -->
                 <div>
                     <input type="time" id="end_${ix}" class="form-input day-end"
                            value="${isWeekday ? '18:00' : ''}"
-                           ${!isWeekday ? 'disabled' : ''}
+                           ${(!isWeekday || isPastOrToday) ? 'disabled' : ''}
                            style="width:100%; height:36px; padding:0 8px; font-size:0.85rem;
-                                  border:1px solid #e2e8f0; border-radius:6px;">
+                                  border:1px solid #e2e8f0; border-radius:6px; ${isPastOrToday ? 'cursor:not-allowed;' : ''}">
+                </div>
+
+                <!-- Notes -->
+                <div>
+                    <textarea id="notes_${ix}" class="form-input day-notes"
+                              placeholder="Notes..."
+                              ${isPastOrToday ? 'disabled' : ''}
+                              style="width:100%; height:36px; padding:6px 8px; font-size:0.82rem;
+                                     border:1px solid #e2e8f0; border-radius:6px; resize:none;
+                                     font-family:inherit; box-sizing:border-box;
+                                     ${isPastOrToday ? 'cursor:not-allowed; background:#f1f5f9;' : ''}"></textarea>
                 </div>
             </div>
         `;
@@ -216,8 +249,10 @@ function renderDayRows(year, month) {
 
             const startEl = document.getElementById(`start_${idx}`);
             const endEl   = document.getElementById(`end_${idx}`);
+            const notesEl = document.getElementById(`notes_${idx}`);
             startEl.disabled = !isChecked;
             endEl.disabled   = !isChecked;
+            if (notesEl) notesEl.disabled = !isChecked;
 
             if (isChecked && !startEl.value) {
                 startEl.value = '09:00';
@@ -460,6 +495,7 @@ async function handleFormSubmit(e) {
         if (isChecked) {
             const start = document.getElementById(`start_${i}`)?.value || '';
             const end   = document.getElementById(`end_${i}`)?.value   || '';
+            const notes = document.getElementById(`notes_${i}`)?.value.trim() || null;
 
             if (!start || !end) {
                 showToast(`Please set start & end time for ${WEEK_DAYS_FULL[jsDay]}`, true);
@@ -469,12 +505,12 @@ async function handleFormSubmit(e) {
             const [sh, sm] = start.split(':').map(Number);
             const [eh, em] = end.split(':').map(Number);
             let diff = (eh + em / 60) - (sh + sm / 60);
-            if (diff < 0) diff += 24; // overnight shift
+            if (diff < 0) diff += 24;
             calculatedHoursPerWeek += diff;
 
-            weekPattern.push({ jsDay, date, start, end, active: true });
+            weekPattern.push({ jsDay, date, start, end, notes, active: true });
         } else {
-            weekPattern.push({ jsDay, date, start: null, end: null, active: false });
+            weekPattern.push({ jsDay, date, start: null, end: null, notes: null, active: false });
         }
     }
 
@@ -496,6 +532,7 @@ async function handleFormSubmit(e) {
                     schedule_date: toISODate(d),
                     start_time:    day.active ? day.start : null,
                     end_time:      day.active ? day.end   : null,
+                    notes:         day.notes  || null,
                     is_off:        !day.active
                 });
             }
@@ -511,6 +548,7 @@ async function handleFormSubmit(e) {
                 schedule_date: toISODate(day.date),
                 start_time:    day.active ? day.start : null,
                 end_time:      day.active ? day.end   : null,
+                notes:         day.notes  || null,
                 is_off:        !day.active
             });
         }
