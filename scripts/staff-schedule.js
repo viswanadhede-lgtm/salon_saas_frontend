@@ -28,16 +28,25 @@ let rawSchedules = [];
 // ─────────────────────────────────────────────────────────────
 
 /**
- * Returns the Mon–Sun week dates for the first week that contains
- * the 1st day of the given month.
- * @param {number} year  - full year (e.g. 2026)
- * @param {number} month - 0-indexed month (0=Jan … 11=Dec)
- * @returns {Date[]} Array of 7 Date objects (Mon … Sun)
+ * Returns up to 7 Date objects for the scheduling pattern.
+ * If the selected month is the current month, starts from today.
+ * Otherwise, starts from the 1st of the month.
  */
-function getFirstWeekDates(year, month) {
-    // Return precisely the 1st through 7th of the selected month
-    return Array.from({ length: 7 }, (_, i) => {
-        return new Date(year, month, i + 1);
+function getPatternDates(year, month) {
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    
+    let startDay = 1;
+    if (year === today.getFullYear() && month === today.getMonth()) {
+        startDay = today.getDate(); // Start from today
+    }
+    
+    const daysInMonth = new Date(year, month + 1, 0).getDate();
+    // max 7 days, bounded to the end of the month
+    const maxDays = Math.min(7, daysInMonth - startDay + 1);
+
+    return Array.from({ length: maxDays }, (_, i) => {
+        return new Date(year, month, startDay + i);
     });
 }
 
@@ -125,11 +134,20 @@ function setupEventListeners() {
 function renderDayRows(year, month) {
     if (!DOM.daysContainer) return;
 
-    const firstWeekDates = getFirstWeekDates(year, month);
+    let patternDates = getPatternDates(year, month);
     const today = new Date();
+    
+    // Dynamically update UI label 
+    const labelSpan = document.getElementById('patternHeaderLabel');
+    if (labelSpan) {
+        labelSpan.textContent = (year === today.getFullYear() && month === today.getMonth()) 
+            ? 'Showing remaining days starting from today' 
+            : 'Showing first 7 days of month';
+    }
+
     today.setHours(0, 0, 0, 0);
 
-    DOM.daysContainer.innerHTML = firstWeekDates.map((date, ix) => {
+    DOM.daysContainer.innerHTML = patternDates.map((date, ix) => {
         const label         = formatDayLabel(date);
         const jsDay         = date.getDay();
         const isPastOrToday = date <= today;
@@ -427,16 +445,16 @@ async function handleFormSubmit(e) {
     const year       = yyyy;
     const month      = mm - 1; // 0-indexed
 
-    const firstWeekDates = getFirstWeekDates(year, month);
+    const patternDates = getPatternDates(year, month);
     const branchId       = document.getElementById('branchSelect')?.value || null;
 
     // ── Read per-day inputs ──────────────────────────────────
     let calculatedHoursPerWeek = 0;
     const weekPattern = [];
 
-    for (let i = 0; i < 7; i++) {
+    for (let i = 0; i < patternDates.length; i++) {
         const isChecked = document.getElementById(`chk_${i}`)?.checked || false;
-        const date      = firstWeekDates[i];
+        const date      = patternDates[i];
         const jsDay     = date.getDay();
 
         if (isChecked) {
