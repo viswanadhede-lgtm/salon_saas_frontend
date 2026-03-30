@@ -136,7 +136,7 @@ function renderStaffTable(data) {
                         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="margin-bottom:2px;"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path></svg>
                         <span style="font-size:10px; font-weight:600;">Edit</span>
                     </button>
-                    <button class="hover-lift" onclick="window.deactivateStaff('${s.id}')" title="Delete Staff" style="display:flex; flex-direction:column; align-items:center; justify-content:center; padding: 4px 8px; border-radius:8px; border:1px solid #fee2e2; background:#fef2f2; cursor:pointer; color:#ef4444; transition:all 0.2s; min-width: 52px;">
+                    <button class="hover-lift" onclick="window.deleteStaff('${s.id}')" title="Delete Staff" style="display:flex; flex-direction:column; align-items:center; justify-content:center; padding: 4px 8px; border-radius:8px; border:1px solid #fee2e2; background:#fef2f2; cursor:pointer; color:#ef4444; transition:all 0.2s; min-width: 52px;">
                         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="margin-bottom:2px;"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path><line x1="10" y1="11" x2="10" y2="17"></line><line x1="14" y1="11" x2="14" y2="17"></line></svg>
                         <span style="font-size:10px; font-weight:600;">Delete</span>
                     </button>
@@ -182,7 +182,7 @@ window.editStaff = function(id) {
     if (modal) modal.classList.add('active');
 };
 
-window.deactivateStaff = function(id) {
+window.deleteStaff = function(id) {
     if (staffActiveMenu) { staffActiveMenu.remove(); staffActiveMenu = null; }
     const staff = liveStaffData.find(s => s.id === id);
     if (!staff) return;
@@ -267,11 +267,11 @@ function setupModals() {
                 <div class="logout-icon-container" style="width: 64px; height: 64px; border-radius: 50%; background: #fee2e2; display: flex; align-items: center; justify-content: center; margin: 0 auto 20px;">
                     <i data-feather="trash-2" style="color: #ef4444; width: 32px; height: 32px;"></i>
                 </div>
-                <h2 style="font-size: 1.5rem; font-weight: 700; color: #0f172a; margin-bottom: 8px;">Delete Staff Membership?</h2>
-                <p style="color: #64748b; font-size: 0.95rem; margin-bottom: 24px; line-height: 1.5;">Are you sure you want to deactivate this staff member? This will disconnect their access and schedules.</p>
+                <h2 style="font-size: 1.5rem; font-weight: 700; color: #0f172a; margin-bottom: 8px;">Delete Staff?</h2>
+                <p style="color: #64748b; font-size: 0.95rem; margin-bottom: 24px; line-height: 1.5;">Are you sure you want to delete this staff member? This action cannot be undone.</p>
                 <div style="display: flex; gap: 12px; justify-content: center;">
                     <button id="btnCancelDeleteStaff" style="flex: 1; padding: 12px 20px; border-radius: 8px; border: 1px solid #e2e8f0; background: white; color: #64748b; font-weight: 600; cursor: pointer; transition: all 0.2s;">Cancel</button>
-                    <button id="btnConfirmDeleteStaff" style="flex: 1; padding: 12px 20px; border-radius: 8px; border: none; background: #ef4444; color: white; font-weight: 600; cursor: pointer; transition: background 0.2s;">Yes, Deactivate</button>
+                    <button id="btnConfirmDeleteStaff" style="flex: 1; padding: 12px 20px; border-radius: 8px; border: none; background: #ef4444; color: white; font-weight: 600; cursor: pointer; transition: background 0.2s;">Yes, Delete</button>
                 </div>
             </div>
         </div>
@@ -279,7 +279,7 @@ function setupModals() {
         <div class="modal-overlay custom-logout-overlay" id="fullScreenDeleteStaffLoader" style="z-index: 10000; backdrop-filter: blur(8px);">
             <div style="display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100%;">
                 <div class="spinner" style="width: 48px; height: 48px; border: 4px solid rgba(255, 255, 255, 0.3); border-radius: 50%; border-top-color: #ffffff; animation: spin 1s ease-in-out infinite; margin-bottom: 16px;"></div>
-                <h2 style="color: #ffffff; font-size: 1.5rem; font-weight: 600; text-shadow: 0 2px 4px rgba(0,0,0,0.1);">Deleting Profile...</h2>
+                <h2 style="color: #ffffff; font-size: 1.5rem; font-weight: 600; text-shadow: 0 2px 4px rgba(0,0,0,0.1);">Deleting Staff...</h2>
             </div>
         </div>
         `;
