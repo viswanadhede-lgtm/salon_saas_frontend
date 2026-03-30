@@ -640,21 +640,46 @@ function showToast(msg, isError = false) {
 
 async function fetchStaff() {
     try {
-        const response = await fetchWithAuth(API.READ_STAFF, { method: 'GET' }, 'staff_management', 'read');
-        if (response.ok) {
-            const data = await response.json();
-            staffList = data.staff || data;
-            populateStaffDropdown();
-            return;
-        }
-    } catch (_) { /* fall through to mock */ }
+        let companyId = null;
+        try {
+            const appContext = JSON.parse(localStorage.getItem('appContext') || '{}');
+            companyId = appContext.company?.id || null;
+        } catch (e) {}
+        const branchId = localStorage.getItem('active_branch_id') || null;
 
-    // Mock fallback
-    staffList = [
-        { id: 'S1', name: 'Sarah Johnson',  role: 'Senior Stylist' },
-        { id: 'S2', name: 'Michael Lee',    role: 'Barber'         },
-        { id: 'S3', name: 'Anjali Sharma',  role: 'Therapist'      }
-    ];
+        if (companyId && branchId) {
+            const response = await fetchWithAuth(API.READ_STAFF, { 
+                method: 'POST',
+                body: JSON.stringify({ company_id: companyId, branch_id: branchId })
+            }, FEATURES.STAFF_MANAGEMENT, 'read');
+
+            if (response.ok) {
+                const data = await response.json();
+                
+                let staffArray = data;
+                if (Array.isArray(data)) {
+                    staffArray = Array.isArray(data[0]?.staff) ? data[0].staff : data;
+                } else if (data && typeof data === 'object') {
+                    staffArray = data.staff || [];
+                }
+
+                if (Array.isArray(staffArray)) {
+                    staffList = staffArray.map(staff => ({
+                        id: staff.staff_id || staff.id,
+                        name: staff.staff_name || staff.name || 'Unknown Staff',
+                        role: staff.role_name || staff.role || 'Unassigned'
+                    }));
+                    populateStaffDropdown();
+                    return;
+                }
+            }
+        }
+    } catch (error) {
+        console.warn('API sync failed for fetchStaff. No local simulation available.', error);
+    }
+
+    // If API failed, leave the array empty to ensure we don't show phantom staff
+    staffList = [];
     populateStaffDropdown();
 }
 
@@ -689,29 +714,12 @@ async function fetchSchedules() {
             renderTable();
             return;
         }
-    } catch (_) { /* fall through to mock */ }
+    } catch (error) {
+        console.warn('API sync failed for fetchSchedules. No local simulation available.', error);
+    }
 
-    // Mock data
-    rawSchedules = [
-        {
-            id:              'SCH_1',
-            staff_id:        'S1',
-            staff_name:      'Sarah Johnson',
-            staff_role:      'Senior Stylist',
-            target_month:    '2026-03',
-            total_hours:     40,
-            apply_full_month: true,
-            days: [
-                { day: 'Mon', active: true,  start: '09:00', end: '18:00' },
-                { day: 'Tue', active: true,  start: '09:00', end: '18:00' },
-                { day: 'Wed', active: true,  start: '09:00', end: '18:00' },
-                { day: 'Thu', active: true,  start: '09:00', end: '18:00' },
-                { day: 'Fri', active: true,  start: '09:00', end: '18:00' },
-                { day: 'Sat', active: false },
-                { day: 'Sun', active: false }
-            ]
-        }
-    ];
+    // Explicitly empty out the table if the API request failed so we don't display dummy data
+    rawSchedules = [];
     renderTable();
 }
 
