@@ -15,9 +15,9 @@ const DOM = {
     toast: document.getElementById('toastNotification')
 };
 
-// Mon=0, Tue=1, ..., Sun=6
-const WEEK_DAYS_FULL  = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
-const WEEK_DAYS_SHORT = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
+// Sun=0, Mon=1, ..., Sat=6 (Native JS getDay)
+const WEEK_DAYS_FULL  = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+const WEEK_DAYS_SHORT = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 const MONTH_NAMES     = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
 
 let staffList    = [];
@@ -35,26 +35,17 @@ let rawSchedules = [];
  * @returns {Date[]} Array of 7 Date objects (Mon … Sun)
  */
 function getFirstWeekDates(year, month) {
-    const firstDay = new Date(year, month, 1);
-    // JS: 0=Sun,1=Mon,…,6=Sat → convert to Mon-based (Mon=0 … Sun=6)
-    const jsDay      = firstDay.getDay();
-    const monOffset  = jsDay === 0 ? 6 : jsDay - 1;
-    const monday     = new Date(firstDay);
-    monday.setDate(firstDay.getDate() - monOffset);
-
+    // Return precisely the 1st through 7th of the selected month
     return Array.from({ length: 7 }, (_, i) => {
-        const d = new Date(monday);
-        d.setDate(monday.getDate() + i);
-        return d;
+        return new Date(year, month, i + 1);
     });
 }
 
 /**
  * Returns all dates in a month whose weekday matches weekdayIdx (Mon=0 … Sun=6).
  */
-function getAllWeekdayDatesInMonth(year, month, weekdayIdx) {
-    // Convert Mon-based idx to JS day: Mon=1…Sat=6, Sun=0
-    const jsDay      = weekdayIdx === 6 ? 0 : weekdayIdx + 1;
+function getAllWeekdayDatesInMonth(year, month, jsDay) {
+    // jsDay is native 0 (Sun) to 6 (Sat)
     const daysInMonth = new Date(year, month + 1, 0).getDate();
     const result     = [];
     for (let d = 1; d <= daysInMonth; d++) {
@@ -136,8 +127,10 @@ function renderDayRows(year, month) {
     const firstWeekDates = getFirstWeekDates(year, month);
 
     DOM.daysContainer.innerHTML = firstWeekDates.map((date, ix) => {
-        const label     = formatDayLabel(date);          // "Mon (Mar 2)"
-        const isWeekday = ix < 5;                        // Mon–Fri default active
+        const label     = formatDayLabel(date);
+        // Default active if not Sunday (0) and not Saturday (6)
+        const jsDay     = date.getDay();
+        const isWeekday = (jsDay !== 0 && jsDay !== 6);
         const dateStr   = toISODate(date);               // stored on data-attr
 
         return `
@@ -437,13 +430,14 @@ async function handleFormSubmit(e) {
     for (let i = 0; i < 7; i++) {
         const isChecked = document.getElementById(`chk_${i}`)?.checked || false;
         const date      = firstWeekDates[i];
+        const jsDay     = date.getDay();
 
         if (isChecked) {
             const start = document.getElementById(`start_${i}`)?.value || '';
             const end   = document.getElementById(`end_${i}`)?.value   || '';
 
             if (!start || !end) {
-                showToast(`Please set start & end time for ${WEEK_DAYS_FULL[i]}`, true);
+                showToast(`Please set start & end time for ${WEEK_DAYS_FULL[jsDay]}`, true);
                 return;
             }
 
@@ -453,9 +447,9 @@ async function handleFormSubmit(e) {
             if (diff < 0) diff += 24; // overnight shift
             calculatedHoursPerWeek += diff;
 
-            weekPattern.push({ idx: i, date, start, end, active: true });
+            weekPattern.push({ jsDay, date, start, end, active: true });
         } else {
-            weekPattern.push({ idx: i, date, start: null, end: null, active: false });
+            weekPattern.push({ jsDay, date, start: null, end: null, active: false });
         }
     }
 
@@ -465,7 +459,7 @@ async function handleFormSubmit(e) {
     if (applyFullMonth) {
         // Repeat pattern across all matching weekdays in the month
         for (const day of weekPattern) {
-            const allDates = getAllWeekdayDatesInMonth(year, month, day.idx);
+            const allDates = getAllWeekdayDatesInMonth(year, month, day.jsDay);
             for (const d of allDates) {
                 scheduleEntries.push({
                     staff_id:      staffId,
@@ -502,8 +496,8 @@ async function handleFormSubmit(e) {
         target_month:     targetMonth,
         apply_full_month: applyFullMonth,
         total_hours:      Math.round(calculatedHoursPerWeek * 10) / 10,
-        days: weekPattern.map((d, i) => ({
-            day:    WEEK_DAYS_SHORT[i],
+        days: weekPattern.map((d) => ({
+            day:    WEEK_DAYS_SHORT[d.jsDay],
             active: d.active,
             start:  d.start,
             end:    d.end
