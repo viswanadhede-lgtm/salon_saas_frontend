@@ -3,8 +3,9 @@ export const FEATURES = {
     DASHBOARD_ACCESS: 'dashboard_access',
     BOOKINGS_MANAGEMENT: 'bookings_management',
     CUSTOMERS_MANAGEMENT: 'customers_management',
+    // Staff
     STAFF_MANAGEMENT: 'staff_management',
-    SERVICES_MANAGEMENT: 'services_management',
+    STAFF_SCHEDULES: 'staff_schedules',
 
     // Sales / POS
     POS_SYSTEM: 'pos_system',
@@ -39,7 +40,8 @@ export const MODULES_META = [
     { key: FEATURES.DASHBOARD_ACCESS, label: 'Dashboard', icon: 'home' },
     { key: FEATURES.BOOKINGS_MANAGEMENT, label: 'Bookings', icon: 'calendar' },
     { key: FEATURES.CUSTOMERS_MANAGEMENT, label: 'Customers', icon: 'users' },
-    { key: FEATURES.STAFF_MANAGEMENT, label: 'Staff', icon: 'user-check' },
+    { key: FEATURES.STAFF_MANAGEMENT, label: 'Staff Providers', icon: 'user-check' },
+    { key: FEATURES.STAFF_SCHEDULES, label: 'Staff Schedules', icon: 'clock' },
     { key: FEATURES.SERVICES_MANAGEMENT, label: 'Services', icon: 'scissors' },
     { key: FEATURES.POS_SYSTEM, label: 'Point of Sale', icon: 'dollar-sign' },
     { key: FEATURES.PRODUCT_MANAGEMENT, label: 'Products', icon: 'box' },

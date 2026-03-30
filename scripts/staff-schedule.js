@@ -26,7 +26,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     
     // Set default month to current month
     const now = new Date();
-    const currentMonthVal = \`\${now.getFullYear()}-\${String(now.getMonth() + 1).padStart(2, '0')}\`;
+    const currentMonthVal = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
     if (DOM.monthFilter) DOM.monthFilter.value = currentMonthVal;
     
     await fetchStaff();
@@ -86,9 +86,9 @@ function renderDayRows() {
                 knob.style.left = '3px';
             }
 
-            const start = document.getElementById(\`start_\${idx}\`);
-            const end = document.getElementById(\`end_\${idx}\`);
-            const notes = document.getElementById(\`notes_\${idx}\`);
+            const start = document.getElementById(`start_${idx}`);
+            const end = document.getElementById(`end_${idx}`);
+            const notes = document.getElementById(`notes_${idx}`);
             
             start.disabled = !isChecked;
             end.disabled = !isChecked;
@@ -113,7 +113,7 @@ function openModal() {
     
     // Default to current month if applicable
     const now = new Date();
-    const currentMonthVal = \`\${now.getFullYear()}-\${String(now.getMonth() + 1).padStart(2, '0')}\`;
+    const currentMonthVal = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
     DOM.monthSelect.value = currentMonthVal;
 }
 
@@ -154,14 +154,14 @@ async function fetchStaff() {
 
 function populateStaffDropdown() {
     if (!DOM.staffSelect) return;
-    const options = staffList.map(s => \`<option value="\${s.id}">\${s.name} (\${s.role || 'Staff'})</option>\`);
-    DOM.staffSelect.innerHTML = \`<option value="" disabled selected>Select staff member</option>\` + options.join('');
+    const options = staffList.map(s => `<option value="${s.id}">${s.name} (${s.role || 'Staff'})</option>`);
+    DOM.staffSelect.innerHTML = `<option value="" disabled selected>Select staff member</option>` + options.join('');
 }
 
 async function fetchSchedules() {
     try {
         // Trying to read schedule. Will likely mock if endpoint doesn't exist yet.
-        const response = await fetchWithAuth(API.READ_SCHEDULE, { method: 'GET' }, 'staff_management', 'read');
+        const response = await fetchWithAuth(API.READ_SCHEDULE, { method: 'GET' }, 'staff_schedules', 'read');
         if (response.ok) {
             rawSchedules = await response.json();
         } else {
@@ -204,7 +204,7 @@ function renderTable() {
     }
 
     if (viewData.length === 0) {
-        DOM.tableBody.innerHTML = \`<tr><td colspan="5" style="padding:40px; text-align:center; color:#94a3b8; font-size: 0.95rem;">No schedules found for this period. Click 'Create Schedule' to assign hours.</td></tr>\`;
+        DOM.tableBody.innerHTML = `<tr><td colspan="5" style="padding:40px; text-align:center; color:#94a3b8; font-size: 0.95rem;">No schedules found for this period. Click 'Create Schedule' to assign hours.</td></tr>`;
         return;
     }
 
@@ -212,9 +212,9 @@ function renderTable() {
         // Build beautiful mini day blocks
         const dayPills = s.days.map(d => {
             if (d.active) {
-                return \`<div style="display:inline-block; margin: 2px 4px 2px 0; background: #e0e7ff; color: #4338ca; padding: 2px 6px; border-radius: 4px; font-size: 0.7rem; font-weight: 600;" title="\${d.start} - \${d.end}">\${d.day}</div>\`;
+                return `<div style="display:inline-block; margin: 2px 4px 2px 0; background: #e0e7ff; color: #4338ca; padding: 2px 6px; border-radius: 4px; font-size: 0.7rem; font-weight: 600;" title="${d.start} - ${d.end}">${d.day}</div>`;
             } else {
-                return \`<div style="display:inline-block; margin: 2px 4px 2px 0; background: #f1f5f9; color: #94a3b8; padding: 2px 6px; border-radius: 4px; font-size: 0.7rem; font-weight: 500;" title="Off">\${d.day}</div>\`;
+                return `<div style="display:inline-block; margin: 2px 4px 2px 0; background: #f1f5f9; color: #94a3b8; padding: 2px 6px; border-radius: 4px; font-size: 0.7rem; font-weight: 500;" title="Off">${d.day}</div>`;
             }
         }).join('');
         
@@ -223,20 +223,20 @@ function renderTable() {
         const dateObj = new Date(yyyy, parseInt(mm) - 1);
         const monthLabel = dateObj.toLocaleString('default', { month: 'short', year: 'numeric' });
 
-        return \`
+        return `
         <tr class="tb-row" style="border-bottom: 1px solid #e2e8f0; transition: background 0.2s;">
             <td style="padding:14px 16px 14px 24px;">
-                <div style="font-weight: 600; color: #1e293b; font-size: 0.9rem;">\${s.staff_name}</div>
-                <div style="font-size: 0.75rem; color: #64748b; margin-top: 2px;">\${s.staff_role}</div>
+                <div style="font-weight: 600; color: #1e293b; font-size: 0.9rem;">${s.staff_name}</div>
+                <div style="font-size: 0.75rem; color: #64748b; margin-top: 2px;">${s.staff_role}</div>
             </td>
             <td style="padding:14px 16px;">
                 <span style="display:inline-block; background: #f8fafc; border: 1px solid #e2e8f0; padding: 3px 8px; border-radius: 6px; font-weight: 500; font-size: 0.8rem; color: #475569;">
-                    <i data-feather="calendar" style="width: 12px; height: 12px; vertical-align: -2px; margin-right: 4px;"></i>\${monthLabel}
+                    <i data-feather="calendar" style="width: 12px; height: 12px; vertical-align: -2px; margin-right: 4px;"></i>${monthLabel}
                 </span>
             </td>
-            <td style="padding:14px 16px; font-weight: 600; color: #0f172a;">\${s.total_hours} <span style="font-weight:400; color:#64748b; font-size:0.8rem;">hrs</span></td>
+            <td style="padding:14px 16px; font-weight: 600; color: #0f172a;">${s.total_hours} <span style="font-weight:400; color:#64748b; font-size:0.8rem;">hrs</span></td>
             <td style="padding:14px 16px;">
-                <div style="display:flex; flex-wrap: wrap;">\${dayPills}</div>
+                <div style="display:flex; flex-wrap: wrap;">${dayPills}</div>
             </td>
             <td style="padding:14px 16px;">
                 <button class="icon-btn" style="color: #6366f1; background: #e0e7ff; margin-right: 8px;" title="Edit" onclick="alert('Edit schedule (concept)')">
@@ -247,7 +247,7 @@ function renderTable() {
                 </button>
             </td>
         </tr>
-    \`}).join('');
+    `}).join('');
     
     // Need to re-init feather icons for dynamically added ones
     if (window.feather) window.feather.replace();
@@ -277,7 +277,7 @@ async function handleFormSubmit(e) {
     let calculatedHours = 0;
 
     for (let i = 0; i < 7; i++) {
-        const isChecked = document.getElementById(\`chk_\${i}\`).checked;
+        const isChecked = document.getElementById(`chk_${i}`).checked;
         const dayLabel = WEEK_DAYS[i].substring(0, 3); // Mon, Tue...
         
         let start = null;
@@ -285,12 +285,12 @@ async function handleFormSubmit(e) {
         let notes = null;
 
         if (isChecked) {
-            start = document.getElementById(\`start_\${i}\`).value;
-            end = document.getElementById(\`end_\${i}\`).value;
-            notes = document.getElementById(\`notes_\${i}\`).value;
+            start = document.getElementById(`start_${i}`).value;
+            end = document.getElementById(`end_${i}`).value;
+            notes = document.getElementById(`notes_${i}`).value;
             
             if (!start || !end) {
-                showToast(\`Please provide start/end times for \${WEEK_DAYS[i]}\`, true);
+                showToast(`Please provide start/end times for ${WEEK_DAYS[i]}`, true);
                 return;
             }
 
@@ -318,7 +318,7 @@ async function handleFormSubmit(e) {
         const response = await fetchWithAuth(API.CREATE_SCHEDULE, {
             method: 'POST',
             body: JSON.stringify(payload)
-        }, 'staff_management', 'create');
+        }, 'staff_schedules', 'create');
 
         if (response.ok) {
             showToast("Schedule created successfully");
