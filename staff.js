@@ -258,10 +258,12 @@ function attachEventListeners() {
         document.getElementById('addStaffForm')?.addEventListener('submit', async function(e) {
             e.preventDefault();
             
-            const submitBtn = this.querySelector('button[type="submit"]');
-            const originalText = submitBtn.innerText;
-            submitBtn.innerText = 'Saving...';
-            submitBtn.disabled = true;
+            const submitBtn = document.querySelector('button[form="addStaffForm"]');
+            const originalText = submitBtn ? submitBtn.innerText : 'Save Staff';
+            if (submitBtn) {
+                submitBtn.innerText = 'Saving...';
+                submitBtn.disabled = true;
+            }
 
             try {
                 const company_id = getCompanyId();
@@ -312,8 +314,10 @@ function attachEventListeners() {
                 console.error("Error creating staff:", err);
                 alert(err.message || 'An error occurred while creating the staff member');
             } finally {
-                submitBtn.innerText = originalText;
-                submitBtn.disabled = false;
+                if (submitBtn) {
+                    submitBtn.innerText = originalText;
+                    submitBtn.disabled = false;
+                }
             }
         });
     }
