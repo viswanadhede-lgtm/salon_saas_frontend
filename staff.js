@@ -60,41 +60,24 @@ function renderStaffTable(data) {
             <td style="padding:14px 16px; color:#64748b;">${s.services}</td>
             <td style="padding:14px 16px; color:#374151;">${s.phone}</td>
             <td style="padding:14px 16px;">${getStaffStatusBadge(s.status)}</td>
-            <td style="padding:14px 16px;">
-                <button class="tb-action-btn" onclick="window.toggleStaffMenu(event, '${s.id}')">
-                    Actions <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
-                </button>
+            <td style="padding:14px 16px; vertical-align:middle;">
+                <div class="action-buttons" style="display:flex; justify-content:flex-start; gap:0.5rem;">
+                    <button class="hover-lift" onclick="window.editStaff('${s.id}')" title="Edit Staff" style="display:flex; flex-direction:column; align-items:center; justify-content:center; padding: 4px 8px; border-radius:8px; border:1px solid #e0e7ff; background:#eff6ff; cursor:pointer; color:#3b82f6; transition:all 0.2s; min-width: 52px;">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="margin-bottom:2px;"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path></svg>
+                        <span style="font-size:10px; font-weight:600;">Edit</span>
+                    </button>
+                    <button class="hover-lift" onclick="window.deactivateStaff('${s.id}')" title="Delete Staff" style="display:flex; flex-direction:column; align-items:center; justify-content:center; padding: 4px 8px; border-radius:8px; border:1px solid #fee2e2; background:#fef2f2; cursor:pointer; color:#ef4444; transition:all 0.2s; min-width: 52px;">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="margin-bottom:2px;"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path><line x1="10" y1="11" x2="10" y2="17"></line><line x1="14" y1="11" x2="14" y2="17"></line></svg>
+                        <span style="font-size:10px; font-weight:600;">Delete</span>
+                    </button>
+                </div>
             </td>
         </tr>
     `).join('');
     if (window.feather) feather.replace();
 }
 
-window.toggleStaffMenu = function(e, id) {
-    e.stopPropagation();
-    if (staffActiveMenu) { staffActiveMenu.remove(); staffActiveMenu = null; }
-    const btn = e.currentTarget;
-    const rect = btn.getBoundingClientRect();
-    const menu = document.createElement('div');
-    menu.className = 'tb-actions-menu';
-    menu.innerHTML = `
-        <button class="tb-menu-item" onclick="window.viewStaffProfile('${id}')"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg> View Profile</button>
-        <button class="tb-menu-item" onclick="window.editStaff('${id}')"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg> Edit Staff</button>
-        <button class="tb-menu-item danger" onclick="window.deactivateStaff('${id}')"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/></svg> Deactivate Staff</button>
-    `;
-    document.body.appendChild(menu);
-    staffActiveMenu = menu;
-
-    let top = rect.bottom + 6;
-    if (top + 140 > window.innerHeight - 8) top = window.innerHeight - 148;
-    let left = rect.right - 192;
-    if (left < 8) left = rect.left;
-    menu.style.cssText = `position:fixed; top:${top}px; left:${left}px; z-index:9999;`;
-};
-
-document.addEventListener('click', () => {
-    if (staffActiveMenu) { staffActiveMenu.remove(); staffActiveMenu = null; }
-});
+// The dropdown menu logic has been removed as we now use inline action buttons.
 
 window.viewStaffProfile = function(id) {
     if (staffActiveMenu) { staffActiveMenu.remove(); staffActiveMenu = null; }
