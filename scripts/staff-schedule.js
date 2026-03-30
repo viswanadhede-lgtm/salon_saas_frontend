@@ -29,6 +29,7 @@ const MONTH_NAMES     = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug',
 
 let staffList    = [];
 let rawSchedules = [];
+let currentEditingScheduleId = null;
 
 // ─────────────────────────────────────────────────────────────
 // DATE HELPERS
@@ -385,6 +386,10 @@ function renderDayRows() {
 // ─────────────────────────────────────────────────────────────
 
 function openModal() {
+    currentEditingScheduleId = null;
+    const titleEl = document.getElementById('createModalTitle');
+    if (titleEl) titleEl.textContent = 'Create Staff Schedule';
+
     DOM.form.reset();
     if (DOM.applyFullMonth) DOM.applyFullMonth.checked = false;
 
@@ -402,6 +407,54 @@ function openModal() {
 function closeModal() {
     DOM.modal.classList.remove('active');
 }
+
+window.editSchedule = function(scheduleId) {
+    const s = rawSchedules.find(x => x.id === scheduleId);
+    if (!s) return;
+
+    currentEditingScheduleId = scheduleId;
+    const titleEl = document.getElementById('createModalTitle');
+    if (titleEl) titleEl.textContent = 'Edit Staff Schedule';
+    
+    // reset form
+    DOM.form.reset();
+    if (DOM.applyFullMonth) DOM.applyFullMonth.checked = !!s.apply_full_month;
+
+    if (DOM.staffSelect) DOM.staffSelect.value = s.staff_id;
+    if (DOM.monthSelect) DOM.monthSelect.value = s.target_month;
+
+    const [yyyy, mm] = s.target_month.split('-').map(Number);
+    initializeMonthBuilder(yyyy, mm - 1);
+
+    const today = new Date();
+    today.setHours(0,0,0,0);
+    for (const [dateStr, data] of Object.entries(monthScheduleData)) {
+        const dDate = new Date(dateStr);
+        if (dDate <= today) continue;
+
+        const jsDay = dDate.getDay();
+        const shortDay = WEEK_DAYS_SHORT[jsDay];
+        const dayMatch = s.days.find(d => d.day === shortDay);
+
+        if (dayMatch && dayMatch.active) {
+            monthScheduleData[dateStr].active = true;
+            monthScheduleData[dateStr].start = dayMatch.start;
+            monthScheduleData[dateStr].end = dayMatch.end;
+            monthScheduleData[dateStr].notes = dayMatch.notes || '';
+        } else {
+            monthScheduleData[dateStr].active = false;
+            monthScheduleData[dateStr].start = '';
+            monthScheduleData[dateStr].end = '';
+            monthScheduleData[dateStr].notes = '';
+        }
+    }
+    
+    currentWeekIndex = 0;
+    renderDayRows();
+    updatePaginationUI();
+
+    DOM.modal.classList.add('active');
+};
 
 // ─────────────────────────────────────────────────────────────
 // VIEW SCHEDULE MODAL
@@ -657,7 +710,7 @@ function renderTable() {
                         <i data-feather="eye" style="width:16px; height:16px; margin-bottom:2px;"></i>
                         <span style="font-size:10px; font-weight:600;">View</span>
                     </button>
-                    <button class="hover-lift" onclick="alert('Edit schedule')" title="Edit Schedule" style="display:flex; flex-direction:column; align-items:center; justify-content:center; padding: 4px 8px; border-radius:8px; border:1px solid #e0e7ff; background:#eff6ff; cursor:pointer; color:#3b82f6; transition:all 0.2s; min-width: 52px;">
+                    <button class="hover-lift" onclick="editSchedule('${s.id}')" title="Edit Schedule" style="display:flex; flex-direction:column; align-items:center; justify-content:center; padding: 4px 8px; border-radius:8px; border:1px solid #e0e7ff; background:#eff6ff; cursor:pointer; color:#3b82f6; transition:all 0.2s; min-width: 52px;">
                         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="margin-bottom:2px;"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path></svg>
                         <span style="font-size:10px; font-weight:600;">Edit</span>
                     </button>
@@ -826,11 +879,17 @@ async function handleFormSubmit(e) {
     }
 
     // Update local state for instant UI feedback
-    payload.id   = 'SCH_' + Math.random().toString(36).substr(2, 5).toUpperCase();
-    rawSchedules = rawSchedules.filter(
-        s => !(String(s.staff_id) === String(payload.staff_id) && s.target_month === payload.target_month)
-    );
-    rawSchedules.push(payload);
+    if (currentEditingScheduleId) {
+        payload.id = currentEditingScheduleId;
+        const index = rawSchedules.findIndex(x => x.id === currentEditingScheduleId);
+        if (index > -1) rawSchedules[index] = payload;
+    } else {
+        payload.id   = 'SCH_' + Math.random().toString(36).substr(2, 5).toUpperCase();
+        rawSchedules = rawSchedules.filter(
+            s => !(String(s.staff_id) === String(payload.staff_id) && s.target_month === payload.target_month)
+        );
+        rawSchedules.push(payload);
+    }
 
     closeModal();
     renderTable();
