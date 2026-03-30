@@ -35,9 +35,10 @@ export const SUB_FEATURES = {
     CUSTOMER_DELETE: 'customer_delete',
 
     // ---- STAFF ----
-    STAFF_VIEW_ALL_SCHEDULES: 'staff_view_all_schedules',
-    STAFF_EDIT_SCHEDULE: 'staff_edit_schedule',
-    STAFF_MANAGE_PROFILES: 'staff_manage_profiles',
+    CREATE_STAFF: 'create_staff',
+    READ_STAFF: 'read_staff',
+    UPDATE_STAFF: 'update_staff',
+    DELETE_STAFF: 'delete_staff',
 
     // ---- ANALYTICS / REPORTS ----
     REPORT_VIEW_BASIC: 'report_view_basic',
@@ -77,9 +78,10 @@ export const SUB_FEATURES_MAP = {
         { key: SUB_FEATURES.CANCEL_BOOKING, label: 'Cancel Booking' }
     ],
     [FEATURES.STAFF_MANAGEMENT]: [
-        { key: SUB_FEATURES.STAFF_VIEW_ALL_SCHEDULES, label: 'View All Schedules' },
-        { key: SUB_FEATURES.STAFF_EDIT_SCHEDULE, label: 'Edit Schedules' },
-        { key: SUB_FEATURES.STAFF_MANAGE_PROFILES, label: 'Manage Profiles' }
+        { key: SUB_FEATURES.CREATE_STAFF, label: 'Create Staff' },
+        { key: SUB_FEATURES.READ_STAFF, label: 'Read Staff' },
+        { key: SUB_FEATURES.UPDATE_STAFF, label: 'Update Staff' },
+        { key: SUB_FEATURES.DELETE_STAFF, label: 'Delete Staff' }
     ],
     [FEATURES.SERVICES_MANAGEMENT]: [
         { key: SUB_FEATURES.CREATE_SERVICE_CATEGORY, label: 'Create Service Category' },
