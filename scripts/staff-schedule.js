@@ -461,7 +461,16 @@ window.editSchedule = function(scheduleId) {
         }
     }
     
-    currentWeekIndex = 0;
+    const todayStr = toISODate(today);
+    let targetWeek = 0;
+    for (let i = 0; i < currentMonthWeeks.length; i++) {
+        if (currentMonthWeeks[i].some(d => d > today)) {
+            targetWeek = i;
+            break;
+        }
+    }
+    currentWeekIndex = targetWeek;
+
     renderDayRows();
     updatePaginationUI();
 
