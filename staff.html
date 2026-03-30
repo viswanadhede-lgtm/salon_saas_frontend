@@ -507,31 +507,32 @@
             // ── FETCH ROLES ────────────────────────────────────────────────
             async function fetchRolesForDropdown() {
                 try {
-                    const response = await fetchWithAuth(API.READ_ROLES, { method: 'GET' }, FEATURES.ROLES_PERMISSIONS, 'read');
+                    // Using POST as requested for all API calls
+                    const response = await fetchWithAuth(API.READ_ROLES, { method: 'POST' }, FEATURES.ROLES_PERMISSIONS, 'read');
                     if (!response.ok) throw new Error('Failed to fetch roles');
                     const data = await response.json();
                     
                     const roleSelect = document.getElementById('sfRole');
                     roleSelect.innerHTML = '<option value="" disabled selected>Select a role</option>';
                     
-                    if (data.status === 'success' && Array.isArray(data.data)) {
-                        data.data.forEach(role => {
+                    // Parse the specific response structure: [ { "roles": [ ... ] } ]
+                    if (Array.isArray(data) && data.length > 0 && Array.isArray(data[0].roles)) {
+                        data[0].roles.forEach(role => {
                             const option = document.createElement('option');
                             option.value = role.role_name;
                             option.textContent = role.role_name;
                             roleSelect.appendChild(option);
                         });
-                    } else if (Array.isArray(data)) {
-                         // Fallback for flat array response
-                         data.forEach(role => {
-                            const option = document.createElement('option');
-                            option.value = role.role_name; // the backend returns `role_name` 
-                            option.textContent = role.role_name;
-                            roleSelect.appendChild(option);
-                        });
+                    } else {
+                        console.warn('Unexpected roles data structure:', data);
+                        roleSelect.innerHTML = '<option value="" disabled>No roles available</option>';
                     }
                 } catch (error) {
                     console.error('Error fetching roles:', error);
+                    const roleSelect = document.getElementById('sfRole');
+                    if (roleSelect) {
+                        roleSelect.innerHTML = '<option value="" disabled>Error loading roles</option>';
+                    }
                 }
             }
 
