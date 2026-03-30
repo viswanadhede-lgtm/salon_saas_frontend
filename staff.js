@@ -144,7 +144,7 @@ function setupModals() {
                         </div>
                         <div class="form-group" style="margin:0;">
                             <label class="form-label" for="editSfPhone">Phone <span class="text-rose">*</span></label>
-                            <input type="tel" id="editSfPhone" class="form-input" required>
+                            <input type="tel" id="editSfPhone" class="form-input" placeholder="9876543210" pattern="[0-9]{10}" maxlength="10" title="Please enter exactly 10 digits" required>
                         </div>
                         <div class="form-group" style="margin:0;">
                             <label class="form-label" for="editSfEmail">Email</label>
