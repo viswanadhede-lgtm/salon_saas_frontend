@@ -6,6 +6,7 @@ export const FEATURES = {
     // Staff
     STAFF_MANAGEMENT: 'staff_management',
     STAFF_SCHEDULES: 'staff_schedules',
+    SERVICES_MANAGEMENT: 'services_management',
 
     // Sales / POS
     POS_SYSTEM: 'pos_system',

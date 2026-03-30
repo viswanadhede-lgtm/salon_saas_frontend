@@ -9,6 +9,7 @@ const ROUTE_MAP = {
     '/bookings.html': FEATURES.BOOKINGS_MANAGEMENT,
     '/customers.html': FEATURES.CUSTOMERS_MANAGEMENT,
     '/staff.html': FEATURES.STAFF_MANAGEMENT,
+    '/staff-schedule.html': FEATURES.STAFF_SCHEDULES,
     '/services.html': FEATURES.SERVICES_MANAGEMENT,
     '/pos.html': FEATURES.POS_SYSTEM,
     '/products.html': FEATURES.PRODUCT_MANAGEMENT,
