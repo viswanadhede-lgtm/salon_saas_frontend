@@ -255,13 +255,66 @@ function attachEventListeners() {
         document.getElementById('btnCloseAddStaffModal')?.addEventListener('click', () => addStaffModal.classList.remove('active'));
         addStaffModal.addEventListener('click', e => { if (e.target === addStaffModal) addStaffModal.classList.remove('active'); });
         
-        document.getElementById('addStaffForm')?.addEventListener('submit', function(e) {
+        document.getElementById('addStaffForm')?.addEventListener('submit', async function(e) {
             e.preventDefault();
-            // TODO: integrate CREATE_STAFF API here
-            const toast = document.getElementById('toastNotification');
-            if (toast) { toast.textContent = 'Staff member added successfully (demo)'; toast.classList.add('show'); setTimeout(() => toast.classList.remove('show'), 3000); }
-            addStaffModal.classList.remove('active');
-            this.reset();
+            
+            const submitBtn = this.querySelector('button[type="submit"]');
+            const originalText = submitBtn.innerText;
+            submitBtn.innerText = 'Saving...';
+            submitBtn.disabled = true;
+
+            try {
+                const company_id = getCompanyId();
+                const branch_id = getBranchId();
+
+                if (!company_id || !branch_id) {
+                    throw new Error("Missing company or branch context. Please reload or log in again.");
+                }
+
+                const roleSelect = document.getElementById('sfRole');
+                const selectedRoleOption = roleSelect.options[roleSelect.selectedIndex];
+
+                const payload = {
+                    company_id,
+                    branch_id,
+                    staff_name: document.getElementById('sfName').value.trim(),
+                    phone: document.getElementById('sfPhone').value.trim(),
+                    email: document.getElementById('sfEmail').value.trim(),
+                    role_id: selectedRoleOption?.dataset?.id || '',
+                    role_name: roleSelect.value,
+                    services_offered: document.getElementById('sfServices').value.trim(),
+                    notes: document.getElementById('sfNotes').value.trim(),
+                    status: document.querySelector('input[name="sfStatus"]:checked')?.value || 'active'
+                };
+
+                const response = await fetchWithAuth(API.CREATE_STAFF, {
+                    method: 'POST',
+                    body: JSON.stringify(payload)
+                }, FEATURES.STAFF_MANAGEMENT, 'create');
+
+                if (!response.ok) {
+                    const errorData = await response.json().catch(()=>({}));
+                    throw new Error(errorData.message || 'Failed to create staff member');
+                }
+
+                const toast = document.getElementById('toastNotification');
+                if (toast) { 
+                    toast.textContent = 'Staff member added successfully'; 
+                    toast.classList.add('show'); 
+                    setTimeout(() => toast.classList.remove('show'), 3000); 
+                }
+                
+                addStaffModal.classList.remove('active');
+                this.reset();
+                
+                // TODO: Re-fetch the staff list when READ_STAFF API is implemented
+            } catch (err) {
+                console.error("Error creating staff:", err);
+                alert(err.message || 'An error occurred while creating the staff member');
+            } finally {
+                submitBtn.innerText = originalText;
+                submitBtn.disabled = false;
+            }
         });
     }
 
@@ -340,12 +393,14 @@ async function fetchRolesForDropdown() {
                 if (roleSelect) {
                     const opt = document.createElement('option');
                     opt.value = role.role_name;
+                    opt.dataset.id = role.role_id || '';
                     opt.textContent = role.role_name;
                     roleSelect.appendChild(opt);
                 }
                 if (editRoleSelect) {
                     const optUrl = document.createElement('option');
                     optUrl.value = role.role_name;
+                    optUrl.dataset.id = role.role_id || '';
                     optUrl.textContent = role.role_name;
                     editRoleSelect.appendChild(optUrl);
                 }
