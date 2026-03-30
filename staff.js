@@ -32,12 +32,14 @@ window.fetchStaff = async function() {
         const statOnDuty = document.getElementById('statOnDuty');
 
         if (statTotal && statActive && statOnLeave && statOnDuty) {
-            if (data && data.stats) {
+            const statsObj = Array.isArray(data) ? data[0]?.stats : data?.stats;
+            
+            if (statsObj) {
                 // Use backend provided stats object if available
-                statTotal.innerText = data.stats.total_staff !== undefined ? data.stats.total_staff : staffArray.length;
-                statActive.innerText = data.stats.active_staff !== undefined ? data.stats.active_staff : staffArray.filter(s => String(s.status).toLowerCase().includes('active')).length;
-                statOnLeave.innerText = data.stats.on_leave !== undefined ? data.stats.on_leave : staffArray.filter(s => String(s.status).toLowerCase().includes('leave')).length;
-                statOnDuty.innerText = data.stats.on_duty_today !== undefined ? data.stats.on_duty_today : staffArray.filter(s => String(s.status).toLowerCase().includes('active')).length;
+                statTotal.innerText = statsObj.total_staff !== undefined ? statsObj.total_staff : staffArray.length;
+                statActive.innerText = statsObj.active_staff !== undefined ? statsObj.active_staff : staffArray.filter(s => String(s.status).toLowerCase().includes('active')).length;
+                statOnLeave.innerText = statsObj.on_leave_today !== undefined ? statsObj.on_leave_today : staffArray.filter(s => String(s.status).toLowerCase().includes('leave')).length;
+                statOnDuty.innerText = statsObj.on_duty_today !== undefined ? statsObj.on_duty_today : staffArray.filter(s => String(s.status).toLowerCase().includes('active')).length;
             } else {
                 // Fallback: derive metrics from the staff array directly
                 statTotal.innerText = staffArray.length;
@@ -399,10 +401,67 @@ function attachEventListeners() {
 
         document.getElementById('editStaffForm')?.addEventListener('submit', async function(e) {
             e.preventDefault();
-            // TODO: integrate UPDATE_STAFF API here
-            const toast = document.getElementById('toastNotification');
-            if (toast) { toast.textContent = 'Staff member updated successfully (demo)'; toast.classList.add('show'); setTimeout(() => toast.classList.remove('show'), 3000); }
-            editStaffModal.classList.remove('active');
+
+            const submitBtn = document.querySelector('button[form="editStaffForm"]');
+            const originalText = submitBtn ? submitBtn.innerText : 'Update Staff';
+            if (submitBtn) {
+                submitBtn.innerText = 'Updating...';
+                submitBtn.disabled = true;
+            }
+
+            try {
+                const company_id = getCompanyId();
+                const branch_id = getBranchId();
+
+                if (!company_id || !branch_id) {
+                    throw new Error('Missing company or branch context. Please reload or log in again.');
+                }
+
+                const editRoleSelect = document.getElementById('editSfRole');
+                const selectedRoleOption = editRoleSelect?.options[editRoleSelect.selectedIndex];
+
+                const payload = {
+                    company_id,
+                    branch_id,
+                    staff_id: document.getElementById('editStaffId').value,
+                    staff_name: document.getElementById('editSfName').value.trim(),
+                    phone: document.getElementById('editSfPhone').value.trim(),
+                    email: document.getElementById('editSfEmail').value.trim(),
+                    role_id: selectedRoleOption?.dataset?.id || '',
+                    role_name: editRoleSelect?.value || '',
+                    services_offered: document.getElementById('editSfServices').value.trim(),
+                    notes: document.getElementById('editSfNotes').value.trim(),
+                    status: document.querySelector('input[name="editSfStatus"]:checked')?.value || 'active'
+                };
+
+                const response = await fetchWithAuth(API.UPDATE_STAFF, {
+                    method: 'POST',
+                    body: JSON.stringify(payload)
+                }, FEATURES.STAFF_MANAGEMENT, 'update');
+
+                if (!response.ok) {
+                    const errorData = await response.json().catch(() => ({}));
+                    throw new Error(errorData.message || 'Failed to update staff member');
+                }
+
+                const toast = document.getElementById('toastNotification');
+                if (toast) {
+                    toast.textContent = 'Staff member updated successfully';
+                    toast.classList.add('show');
+                    setTimeout(() => toast.classList.remove('show'), 3000);
+                }
+
+                editStaffModal.classList.remove('active');
+                await window.fetchStaff();
+            } catch (err) {
+                console.error('Error updating staff:', err);
+                alert(err.message || 'An error occurred while updating the staff member');
+            } finally {
+                if (submitBtn) {
+                    submitBtn.innerText = originalText;
+                    submitBtn.disabled = false;
+                }
+            }
         });
     }
 
@@ -427,13 +486,55 @@ function attachEventListeners() {
             deleteOverlay.classList.remove('active');
             fullScreenLoader.classList.add('active');
 
-            // TODO: wire up DELETE_STAFF API
-            setTimeout(() => {
+            try {
+                const company_id = getCompanyId();
+                const branch_id = getBranchId();
+
+                if (!company_id || !branch_id) {
+                    throw new Error('Missing company or branch context. Please reload or log in again.');
+                }
+
+                const payload = {
+                    company_id,
+                    branch_id,
+                    staff_id: staffToDelete.id,
+                    staff_name: staffToDelete.name,
+                    phone: staffToDelete.phone,
+                    email: staffToDelete.email,
+                    role_id: staffToDelete.role_id || '',
+                    role_name: staffToDelete.role || '',
+                    services_offered: staffToDelete.services || '',
+                    notes: staffToDelete.notes || '',
+                    status: staffToDelete.status
+                };
+
+                const response = await fetchWithAuth(API.DELETE_STAFF, {
+                    method: 'POST',
+                    body: JSON.stringify(payload)
+                }, FEATURES.STAFF_MANAGEMENT, 'delete');
+
+                if (!response.ok) {
+                    const errorData = await response.json().catch(() => ({}));
+                    throw new Error(errorData.message || 'Failed to delete staff member');
+                }
+
                 fullScreenLoader.classList.remove('active');
                 staffToDelete = null;
+
                 const toast = document.getElementById('toastNotification');
-                if (toast) { toast.textContent = 'Staff profile deactivated (demo)'; toast.classList.add('show'); setTimeout(() => toast.classList.remove('show'), 3000); }
-            }, 800); 
+                if (toast) {
+                    toast.textContent = 'Staff member deleted successfully';
+                    toast.classList.add('show');
+                    setTimeout(() => toast.classList.remove('show'), 3000);
+                }
+
+                await window.fetchStaff();
+            } catch (err) {
+                console.error('Error deleting staff:', err);
+                fullScreenLoader.classList.remove('active');
+                staffToDelete = null;
+                alert(err.message || 'An error occurred while deleting the staff member');
+            }
         });
     }
 }
