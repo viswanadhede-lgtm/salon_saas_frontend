@@ -423,9 +423,23 @@
                         <input type="text" id="sfServices" class="form-input" placeholder="e.g. Haircut, Color, Styling">
                     </div>
 
-                    <div class="form-group" style="margin:0; grid-column: 1 / -1;">
+                    <div class="form-group" style="margin:0;">
                         <label class="form-label" for="sfNotes">Notes <span style="font-weight:400; color:#94a3b8;">(Optional)</span></label>
-                        <textarea id="sfNotes" class="form-input form-textarea" placeholder="Any additional notes..." style="min-height:80px;"></textarea>
+                        <textarea id="sfNotes" class="form-input form-textarea" placeholder="Any additional notes..." style="min-height:50px;"></textarea>
+                    </div>
+                    <div class="form-group" style="margin:0;">
+                        <label class="form-label">Status</label>
+                        <div style="display:flex; gap:12px; flex-wrap:wrap; padding-top:8px;">
+                            <label style="display:flex;align-items:center;gap:6px;cursor:pointer;font-size:0.9rem;">
+                                <input type="radio" name="sfStatus" value="active" checked style="accent-color:#1e3a8a;"> Active
+                            </label>
+                            <label style="display:flex;align-items:center;gap:6px;cursor:pointer;font-size:0.9rem;">
+                                <input type="radio" name="sfStatus" value="on-leave" style="accent-color:#1e3a8a;"> On Leave
+                            </label>
+                            <label style="display:flex;align-items:center;gap:6px;cursor:pointer;font-size:0.9rem;">
+                                <input type="radio" name="sfStatus" value="inactive" style="accent-color:#1e3a8a;"> Inactive
+                            </label>
+                        </div>
                     </div>
                 </form>
             </div>

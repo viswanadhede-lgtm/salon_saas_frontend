@@ -96,6 +96,10 @@ window.editStaff = function(id) {
     document.getElementById('editSfServices').value = staff.services || '';
     document.getElementById('editSfNotes').value = staff.notes || '';
     
+    // Status radios
+    const statusRadios = document.querySelectorAll('input[name="editSfStatus"]');
+    statusRadios.forEach(r => r.checked = (r.value === staff.status));
+    
     // Ensure dropdown options match live available data (we copy it from add staff dropdown)
     const addRoleSelect = document.getElementById('sfRole');
     const editRoleSelect = document.getElementById('editSfRole');
@@ -156,9 +160,23 @@ function setupModals() {
                             <label class="form-label" for="editSfServices">Services Offered</label>
                             <input type="text" id="editSfServices" class="form-input">
                         </div>
-                        <div class="form-group" style="margin:0; grid-column: 1 / -1;">
+                        <div class="form-group" style="margin:0;">
                             <label class="form-label" for="editSfNotes">Notes <span style="font-weight:400; color:#94a3b8;">(Optional)</span></label>
-                            <textarea id="editSfNotes" class="form-input form-textarea" style="min-height:80px;"></textarea>
+                            <textarea id="editSfNotes" class="form-input form-textarea" style="min-height:50px;"></textarea>
+                        </div>
+                        <div class="form-group" style="margin:0;">
+                            <label class="form-label">Status</label>
+                            <div style="display:flex; gap:12px; flex-wrap:wrap; padding-top:8px;">
+                                <label style="display:flex;align-items:center;gap:6px;cursor:pointer;font-size:0.9rem;">
+                                    <input type="radio" name="editSfStatus" value="active" style="accent-color:#1e3a8a;"> Active
+                                </label>
+                                <label style="display:flex;align-items:center;gap:6px;cursor:pointer;font-size:0.9rem;">
+                                    <input type="radio" name="editSfStatus" value="on-leave" style="accent-color:#1e3a8a;"> On Leave
+                                </label>
+                                <label style="display:flex;align-items:center;gap:6px;cursor:pointer;font-size:0.9rem;">
+                                    <input type="radio" name="editSfStatus" value="inactive" style="accent-color:#1e3a8a;"> Inactive
+                                </label>
+                            </div>
                         </div>
                     </form>
                 </div>
