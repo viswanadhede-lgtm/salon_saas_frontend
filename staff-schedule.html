@@ -395,6 +395,59 @@
         </div>
     </div>
 
+    <!-- View Schedule Modal -->
+    <div class="modal-overlay" id="viewScheduleModal">
+        <div class="modal-container" style="width: 85%; max-width: 900px; height: 80vh; max-height: 85vh; background: #fff; border-radius: 16px; display: flex; flex-direction: column;">
+            <div class="modal-header" style="border-bottom: 1px solid #e2e8f0; padding: 20px 24px;">
+                <div class="header-titles">
+                    <h2 style="font-size: 1.25rem; font-weight: 700; color: #1e293b; margin: 0;">View Schedule: <span id="viewStaffName" style="color:#6366f1;"></span></h2>
+                    <p class="subtitle" style="font-size: 0.875rem; color: #64748b; margin-top: 4px;">Target Month: <span id="viewTargetMonth" style="font-weight:600; color:#475569;"></span></p>
+                </div>
+                <button class="modal-close" id="btnCloseViewModal" type="button" style="background: none; border: none; cursor: pointer; color: #94a3b8;"><i data-feather="x"></i></button>
+            </div>
+            
+            <div class="modal-body" style="padding: 24px; overflow-y: auto; flex: 1; display:flex; flex-direction:column;">
+                <!-- Tab Headers -->
+                <div style="display:flex; border-bottom:1px solid #e2e8f0; margin-bottom:20px; gap:16px;">
+                    <button type="button" class="view-tab-btn active" id="tabThisWeekBtn" style="background:none; border:none; border-bottom:3px solid #6366f1; color:#1e293b; font-weight:600; font-size:0.95rem; padding:8px 16px; cursor:pointer; transition:all 0.2s;">This Week's Timings</button>
+                    <button type="button" class="view-tab-btn" id="tabMonthBtn" style="background:none; border:none; border-bottom:3px solid transparent; color:#64748b; font-weight:500; font-size:0.95rem; padding:8px 16px; cursor:pointer; transition:all 0.2s;">Month's Timings</button>
+                </div>
+
+                <!-- Tab Content 1: This Week -->
+                <div id="tabThisWeekContent" class="view-tab-content" style="display:block; flex:1;">
+                    <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 12px; padding: 16px;">
+                        <div style="display: grid; grid-template-columns: 100px 100px 150px 1fr; gap: 12px; padding-bottom: 8px; border-bottom: 1px solid #e2e8f0; margin-bottom: 12px; font-size: 0.8rem; font-weight: 600; color: #64748b; text-transform:uppercase;">
+                            <div>Day</div>
+                            <div>Status</div>
+                            <div>Shift</div>
+                            <div>Notes</div>
+                        </div>
+                        <div id="viewWeekContainer" style="display:flex; flex-direction:column; gap:10px;">
+                            <!-- Populated by JS -->
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Tab Content 2: Month -->
+                <div id="tabMonthContent" class="view-tab-content" style="display:none; flex:1;">
+                    <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 12px; padding: 16px;">
+                        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:16px;">
+                            <p style="font-size:0.875rem; color:#475569; margin:0;">Staff works <strong><span id="viewHoursBdg"></span> hours/week</strong> based on the pattern below.</p>
+                            <span id="viewMonthScopeBdg" style="display:inline-block; background:#dcfce7; color:#16a34a; padding:4px 10px; border-radius:6px; font-size:0.75rem; font-weight:600;">Full Month</span>
+                        </div>
+                        <div id="viewMonthContainer" style="display:flex; flex-direction:column; gap:16px;">
+                            <!-- Populated by JS -->
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="modal-footer" style="padding: 16px 24px; border-top: 1px solid #e2e8f0; display: flex; justify-content: flex-end; background: #fafafa; border-radius: 0 0 16px 16px;">
+                <button type="button" class="btn btn-secondary" id="btnOverlayCloseView" style="padding: 8px 16px; border: 1px solid #cbd5e1; background: #fff; border-radius: 6px; font-weight: 500; cursor: pointer;">Close</button>
+            </div>
+        </div>
+    </div>
+
     <!-- Toast Notification -->
     <div id="toastNotification" class="toast-notification">Schedule saved successfully</div>
 

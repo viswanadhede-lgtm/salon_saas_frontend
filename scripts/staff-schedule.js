@@ -12,7 +12,14 @@ const DOM = {
     monthSelect: document.getElementById('modalMonthSelect'),
     daysContainer: document.getElementById('scheduleDaysContainer'),
     applyFullMonth: document.getElementById('applyFullMonthChk'),
-    toast: document.getElementById('toastNotification')
+    toast: document.getElementById('toastNotification'),
+    viewModal: document.getElementById('viewScheduleModal'),
+    btnCloseView: document.getElementById('btnCloseViewModal'),
+    btnOverlayCloseView: document.getElementById('btnOverlayCloseView'),
+    tabThisWeekBtn: document.getElementById('tabThisWeekBtn'),
+    tabMonthBtn: document.getElementById('tabMonthBtn'),
+    tabThisWeekContent: document.getElementById('tabThisWeekContent'),
+    tabMonthContent: document.getElementById('tabMonthContent')
 };
 
 // Sun=0, Mon=1, ..., Sat=6 (Native JS getDay)
@@ -177,6 +184,12 @@ function setupEventListeners() {
 
     DOM.form?.addEventListener('submit', handleFormSubmit);
     DOM.monthFilter?.addEventListener('change', renderTable);
+
+    DOM.btnCloseView?.addEventListener('click', closeViewModal);
+    DOM.btnOverlayCloseView?.addEventListener('click', closeViewModal);
+    DOM.viewModal?.addEventListener('click', e => { if (e.target === DOM.viewModal) closeViewModal(); });
+    DOM.tabThisWeekBtn?.addEventListener('click', () => switchViewTab('week'));
+    DOM.tabMonthBtn?.addEventListener('click', () => switchViewTab('month'));
 
     // Re-render day rows whenever the modal month changes
     DOM.monthSelect?.addEventListener('change', () => {
@@ -391,6 +404,112 @@ function closeModal() {
 }
 
 // ─────────────────────────────────────────────────────────────
+// VIEW SCHEDULE MODAL
+// ─────────────────────────────────────────────────────────────
+
+function closeViewModal() {
+    DOM.viewModal?.classList.remove('active');
+}
+
+function switchViewTab(tab) {
+    if (tab === 'week') {
+        DOM.tabThisWeekBtn.classList.add('active');
+        DOM.tabThisWeekBtn.style.borderBottomColor = '#6366f1';
+        DOM.tabThisWeekBtn.style.color = '#1e293b';
+        
+        DOM.tabMonthBtn.classList.remove('active');
+        DOM.tabMonthBtn.style.borderBottomColor = 'transparent';
+        DOM.tabMonthBtn.style.color = '#64748b';
+
+        DOM.tabThisWeekContent.style.display = 'block';
+        DOM.tabMonthContent.style.display = 'none';
+    } else {
+        DOM.tabMonthBtn.classList.add('active');
+        DOM.tabMonthBtn.style.borderBottomColor = '#6366f1';
+        DOM.tabMonthBtn.style.color = '#1e293b';
+        
+        DOM.tabThisWeekBtn.classList.remove('active');
+        DOM.tabThisWeekBtn.style.borderBottomColor = 'transparent';
+        DOM.tabThisWeekBtn.style.color = '#64748b';
+
+        DOM.tabMonthContent.style.display = 'block';
+        DOM.tabThisWeekContent.style.display = 'none';
+    }
+}
+
+window.viewSchedule = function(scheduleId) {
+    const s = rawSchedules.find(x => x.id === scheduleId);
+    if (!s) return;
+
+    document.getElementById('viewStaffName').textContent = s.staff_name;
+    const [yyyy, mm] = s.target_month.split('-');
+    const dateObj = new Date(parseInt(yyyy), parseInt(mm) - 1);
+    document.getElementById('viewTargetMonth').textContent = dateObj.toLocaleString('default', { month: 'long', year: 'numeric' });
+
+    document.getElementById('viewHoursBdg').textContent = s.total_hours;
+    
+    const scopeBdg = document.getElementById('viewMonthScopeBdg');
+    if (s.apply_full_month) {
+        scopeBdg.textContent = 'Full Month';
+        scopeBdg.style.background = '#dcfce7'; scopeBdg.style.color = '#16a34a';
+    } else {
+        scopeBdg.textContent = 'Partial / Custom';
+        scopeBdg.style.background = '#fef9c3'; scopeBdg.style.color = '#854d0e';
+    }
+
+    // Populate This Week
+    const weekHtml = s.days.map(d => {
+        if (d.active) {
+            return `
+                <div style="display:grid; grid-template-columns:100px 100px 150px 1fr; gap:12px; align-items:center; background:#fff; padding:12px 16px; border-radius:8px; border:1px solid #e2e8f0;">
+                    <div style="font-weight:600; color:#334155; font-size:0.875rem;">${d.day}</div>
+                    <div><span style="background:#dcfce7; color:#16a34a; padding:3px 8px; border-radius:12px; font-size:0.75rem; font-weight:600;">Active</span></div>
+                    <div style="font-size:0.85rem; color:#475569;">${d.start} - ${d.end}</div>
+                    <div style="font-size:0.85rem; color:#64748b; font-style:italic;">${d.notes || '-'}</div>
+                </div>`;
+        } else {
+            return `
+                <div style="display:grid; grid-template-columns:100px 100px 150px 1fr; gap:12px; align-items:center; background:#f8fafc; padding:12px 16px; border-radius:8px; border:1px dashed #cbd5e1; opacity:0.8;">
+                    <div style="font-weight:600; color:#64748b; font-size:0.875rem;">${d.day}</div>
+                    <div><span style="background:#f1f5f9; color:#94a3b8; padding:3px 8px; border-radius:12px; font-size:0.75rem; font-weight:600;">Inactive</span></div>
+                    <div style="font-size:0.85rem; color:#94a3b8;">Off</div>
+                    <div style="font-size:0.85rem; color:#cbd5e1;">-</div>
+                </div>`;
+        }
+    }).join('');
+    document.getElementById('viewWeekContainer').innerHTML = weekHtml;
+
+    // Populate Month View (mini timeline/summary of repeating pattern)
+    const monthHtmlArray = [];
+    for(let w=1; w<=4; w++) {
+        const miniPills = s.days.map(d => 
+            d.active 
+            ? `<div style="display:flex; flex-direction:column; background:#e0e7ff; padding:6px; border-radius:6px; flex:1; text-align:center; border:1px solid #c7d2fe;">
+                 <span style="font-size:0.7rem; font-weight:700; color:#4338ca; text-transform:uppercase;">${d.day}</span>
+                 <span style="font-size:0.75rem; font-weight:600; color:#312e81; margin-top:2px;">${d.start}</span>
+               </div>`
+            : `<div style="display:flex; flex-direction:column; background:#f1f5f9; padding:6px; border-radius:6px; flex:1; text-align:center; border:1px dashed #cbd5e1; opacity:0.6;">
+                 <span style="font-size:0.7rem; font-weight:600; color:#94a3b8; text-transform:uppercase;">${d.day}</span>
+                 <span style="font-size:0.75rem; font-weight:500; color:#cbd5e1; margin-top:2px;">Off</span>
+               </div>`
+        ).join('');
+
+        monthHtmlArray.push(`
+            <div style="background:#fff; border:1px solid #e2e8f0; border-radius:8px; padding:16px;">
+                <h4 style="margin:0 0 12px 0; font-size:0.85rem; font-weight:600; color:#475569;">Week ${w}</h4>
+                <div style="display:flex; gap:8px;">${miniPills}</div>
+            </div>
+        `);
+    }
+    
+    document.getElementById('viewMonthContainer').innerHTML = monthHtmlArray.join('');
+
+    switchViewTab('week');
+    DOM.viewModal?.classList.add('active');
+    if(window.feather) window.feather.replace();
+}
+
+// ─────────────────────────────────────────────────────────────
 // TOAST
 // ─────────────────────────────────────────────────────────────
 
@@ -534,6 +653,10 @@ function renderTable() {
             </td>
             <td style="padding:14px 16px; vertical-align:middle;">
                 <div class="action-buttons" style="display:flex; justify-content:flex-start; gap:0.5rem;">
+                    <button class="hover-lift" onclick="viewSchedule('${s.id}')" title="View Schedule" style="display:flex; flex-direction:column; align-items:center; justify-content:center; padding: 4px 8px; border-radius:8px; border:1px solid #f3e8ff; background:#faf5ff; cursor:pointer; color:#a855f7; transition:all 0.2s; min-width: 52px;">
+                        <i data-feather="eye" style="width:16px; height:16px; margin-bottom:2px;"></i>
+                        <span style="font-size:10px; font-weight:600;">View</span>
+                    </button>
                     <button class="hover-lift" onclick="alert('Edit schedule')" title="Edit Schedule" style="display:flex; flex-direction:column; align-items:center; justify-content:center; padding: 4px 8px; border-radius:8px; border:1px solid #e0e7ff; background:#eff6ff; cursor:pointer; color:#3b82f6; transition:all 0.2s; min-width: 52px;">
                         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="margin-bottom:2px;"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path></svg>
                         <span style="font-size:10px; font-weight:600;">Edit</span>
