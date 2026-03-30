@@ -156,7 +156,7 @@ function renderDayRows(year, month) {
 
         return `
             <div class="day-row"
-                 style="display:grid; grid-template-columns:190px 80px 110px 110px; gap:12px; align-items:center;
+                 style="display:grid; grid-template-columns:2fr 100px 1.5fr 1.5fr; gap:12px; align-items:center;
                         background:${isPastOrToday ? '#f8fafc' : '#fff'}; padding:12px 16px; border-radius:8px; border:1px solid #e2e8f0;
                         box-shadow:0 1px 2px rgba(0,0,0,0.02); transition:border-color 0.2s; ${isPastOrToday ? 'opacity:0.6;' : ''}"
                  data-date="${dateStr}" data-idx="${ix}">
