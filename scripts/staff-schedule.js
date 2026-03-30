@@ -36,17 +36,9 @@ let currentWeekIndex  = 0;
 let monthScheduleData = {}; // 'YYYY-MM-DD' -> { active, start, end, notes }
 
 function generateMonthWeeks(year, month) {
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
-    
-    let startDay = 1;
-    if (year === today.getFullYear() && month === today.getMonth()) {
-        startDay = today.getDate(); // Option B: Start from today
-    }
-    
     const daysInMonth = new Date(year, month + 1, 0).getDate();
     const dates = [];
-    for (let i = startDay; i <= daysInMonth; i++) {
+    for (let i = 1; i <= daysInMonth; i++) {
         dates.push(new Date(year, month, i));
     }
     
@@ -55,6 +47,29 @@ function generateMonthWeeks(year, month) {
         weeks.push(dates.slice(i, i + 7));
     }
     return weeks;
+}
+
+function initializeMonthBuilder(year, month) {
+    currentMonthWeeks = generateMonthWeeks(year, month);
+    initMonthScheduleData();
+    currentWeekIndex = 0;
+
+    // Fast-forward to the week containing today if viewing the current month
+    const today = new Date();
+    if (year === today.getFullYear() && month === today.getMonth()) {
+        const todayStr = toISODate(today);
+        let foundWeek = 0;
+        for (let i = 0; i < currentMonthWeeks.length; i++) {
+            if (currentMonthWeeks[i].some(d => toISODate(d) === todayStr)) {
+                foundWeek = i;
+                break;
+            }
+        }
+        currentWeekIndex = foundWeek;
+    }
+    
+    renderDayRows();
+    updatePaginationUI();
 }
 
 function initMonthScheduleData() {
@@ -166,11 +181,7 @@ function setupEventListeners() {
     // Re-render day rows whenever the modal month changes
     DOM.monthSelect?.addEventListener('change', () => {
         const { year, month } = parseModalMonth();
-        currentMonthWeeks = generateMonthWeeks(year, month);
-        currentWeekIndex = 0;
-        initMonthScheduleData();
-        renderDayRows();
-        updatePaginationUI();
+        initializeMonthBuilder(year, month);
     });
 
     document.getElementById('btnNextWeek')?.addEventListener('click', () => {
@@ -370,7 +381,7 @@ function openModal() {
     if (DOM.monthSelect) DOM.monthSelect.value = currentMonthVal;
 
     const { year, month } = parseModalMonth();
-    renderDayRows(year, month);
+    initializeMonthBuilder(year, month);
 
     DOM.modal.classList.add('active');
 }
