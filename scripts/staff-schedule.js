@@ -64,12 +64,13 @@ function toISODate(date) {
 }
 
 /**
- * Returns a label like "Mon (Mar 2)" for a given Date.
- * JS day names: 0=Sun, shifted to Mon-first ordering.
+ * Returns a label like "15-03-2026 (Sunday)" for a given Date.
  */
 function formatDayLabel(date) {
-    const jsDayNames = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
-    return `${jsDayNames[date.getDay()]} (${MONTH_NAMES[date.getMonth()]} ${date.getDate()})`;
+    const d = String(date.getDate()).padStart(2, '0');
+    const m = String(date.getMonth() + 1).padStart(2, '0');
+    const y = date.getFullYear();
+    return `${d}-${m}-${y} (${WEEK_DAYS_FULL[date.getDay()]})`;
 }
 
 /** Parse year/month (0-indexed) from the modal's month <input> value. */
@@ -125,32 +126,38 @@ function renderDayRows(year, month) {
     if (!DOM.daysContainer) return;
 
     const firstWeekDates = getFirstWeekDates(year, month);
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
 
     DOM.daysContainer.innerHTML = firstWeekDates.map((date, ix) => {
-        const label     = formatDayLabel(date);
-        // Default active if not Sunday (0) and not Saturday (6)
-        const jsDay     = date.getDay();
-        const isWeekday = (jsDay !== 0 && jsDay !== 6);
-        const dateStr   = toISODate(date);               // stored on data-attr
+        const label         = formatDayLabel(date);
+        const jsDay         = date.getDay();
+        const isPastOrToday = date <= today;
+        const isWeekday     = (jsDay !== 0 && jsDay !== 6) && !isPastOrToday;
+        const dateStr       = toISODate(date);               // stored on data-attr
 
         return `
             <div class="day-row"
-                 style="display:grid; grid-template-columns:150px 80px 110px 110px; gap:12px; align-items:center;
-                        background:#fff; padding:12px 16px; border-radius:8px; border:1px solid #e2e8f0;
-                        box-shadow:0 1px 2px rgba(0,0,0,0.02); transition:border-color 0.2s;"
+                 style="display:grid; grid-template-columns:190px 80px 110px 110px; gap:12px; align-items:center;
+                        background:${isPastOrToday ? '#f8fafc' : '#fff'}; padding:12px 16px; border-radius:8px; border:1px solid #e2e8f0;
+                        box-shadow:0 1px 2px rgba(0,0,0,0.02); transition:border-color 0.2s; ${isPastOrToday ? 'opacity:0.6;' : ''}"
                  data-date="${dateStr}" data-idx="${ix}">
 
-                <div style="font-weight:600; color:#334155; font-size:0.875rem;">${label}</div>
+                <div style="font-weight:600; color:#334155; font-size:0.875rem;">
+                    ${label}
+                    ${isPastOrToday ? '<div style="font-size:0.7rem; color:#ef4444; margin-top:2px;">(Past/Today - Disabled)</div>' : ''}
+                </div>
 
                 <div>
-                    <label class="toggle-switch" style="position:relative; display:inline-block; width:44px; height:24px;">
+                    <label class="toggle-switch" style="position:relative; display:inline-block; width:44px; height:24px; ${isPastOrToday ? 'cursor:not-allowed;' : ''}">
                         <input type="checkbox" id="chk_${ix}" class="day-active-chk" data-idx="${ix}"
                                ${isWeekday ? 'checked' : ''}
+                               ${isPastOrToday ? 'disabled' : ''}
                                style="opacity:0; width:0; height:0; position:absolute;">
                         <span class="slider round"
-                              style="position:absolute; cursor:pointer; top:0; left:0; right:0; bottom:0;
-                                     background-color:${isWeekday ? '#10b981' : '#cbd5e1'};
-                                     border-radius:24px; transition:.4s;">
+                               style="position:absolute; cursor:${isPastOrToday ? 'not-allowed' : 'pointer'}; top:0; left:0; right:0; bottom:0;
+                                      background-color:${isWeekday ? '#10b981' : '#cbd5e1'};
+                                      border-radius:24px; transition:.4s;">
                             <span style="position:absolute; height:18px; width:18px;
                                          left:${isWeekday ? '22px' : '3px'}; bottom:3px;
                                          background-color:#fff; border-radius:50%; transition:.4s;
@@ -162,9 +169,9 @@ function renderDayRows(year, month) {
                 <div>
                     <input type="time" id="start_${ix}" class="form-input day-start"
                            value="${isWeekday ? '09:00' : ''}"
-                           ${!isWeekday ? 'disabled' : ''}
+                           ${(!isWeekday || isPastOrToday) ? 'disabled' : ''}
                            style="width:100%; height:36px; padding:0 8px; font-size:0.85rem;
-                                  border:1px solid #e2e8f0; border-radius:6px;">
+                                  border:1px solid #e2e8f0; border-radius:6px; ${isPastOrToday ? 'cursor:not-allowed;' : ''}">
                 </div>
 
                 <div>
@@ -455,12 +462,16 @@ async function handleFormSubmit(e) {
 
     // ── Expand to date-based entries ─────────────────────────
     const scheduleEntries = [];
+    const today           = new Date();
+    today.setHours(0, 0, 0, 0);
 
     if (applyFullMonth) {
         // Repeat pattern across all matching weekdays in the month
         for (const day of weekPattern) {
             const allDates = getAllWeekdayDatesInMonth(year, month, day.jsDay);
             for (const d of allDates) {
+                if (d <= today) continue; // enforce past-date bypass
+
                 scheduleEntries.push({
                     staff_id:      staffId,
                     branch_id:     branchId,
@@ -474,6 +485,8 @@ async function handleFormSubmit(e) {
     } else {
         // Only first week
         for (const day of weekPattern) {
+            if (day.date <= today) continue; // enforce past-date bypass
+
             scheduleEntries.push({
                 staff_id:      staffId,
                 branch_id:     branchId,
