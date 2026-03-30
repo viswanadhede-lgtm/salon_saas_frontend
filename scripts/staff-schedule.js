@@ -186,7 +186,7 @@ function setupEventListeners() {
     DOM.modal?.addEventListener('click', e => { if (e.target === DOM.modal) closeModal(); });
 
     DOM.form?.addEventListener('submit', handleFormSubmit);
-    DOM.monthFilter?.addEventListener('change', renderTable);
+    DOM.monthFilter?.addEventListener('change', fetchSchedules);
 
     DOM.btnCloseView?.addEventListener('click', closeViewModal);
     DOM.btnOverlayCloseView?.addEventListener('click', closeViewModal);
@@ -705,9 +705,15 @@ async function fetchSchedules() {
         } catch (e) {}
         const branchId = localStorage.getItem('active_branch_id') || null;
 
+        const payload = { company_id: companyId, branch_id: branchId };
+        const filterMonth = DOM.monthFilter?.value;
+        if (filterMonth) {
+            payload.target_month = filterMonth;
+        }
+
         const response = await fetchWithAuth(API.READ_STAFF_SCHEDULE, { 
             method: 'POST',
-            body: JSON.stringify({ company_id: companyId, branch_id: branchId })
+            body: JSON.stringify(payload)
         }, FEATURES.STAFF_SCHEDULES, 'read');
         if (response.ok) {
             rawSchedules = await response.json();
