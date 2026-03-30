@@ -29,6 +29,8 @@ document.addEventListener('DOMContentLoaded', async () => {
     const currentMonthVal = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
     if (DOM.monthFilter) DOM.monthFilter.value = currentMonthVal;
     
+    if (window.feather) window.feather.replace();
+    
     await fetchStaff();
     await fetchSchedules();
 });
