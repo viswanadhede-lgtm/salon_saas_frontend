@@ -28,26 +28,55 @@ let rawSchedules = [];
 // ─────────────────────────────────────────────────────────────
 
 /**
- * Returns up to 7 Date objects for the scheduling pattern.
- * If the selected month is the current month, starts from today.
- * Otherwise, starts from the 1st of the month.
+ * Splits the selected month into arrays of up to 7 Date objects.
+ * If current month, starts from today. Else starts from 1st.
  */
-function getPatternDates(year, month) {
+let currentMonthWeeks = [];
+let currentWeekIndex  = 0;
+let monthScheduleData = {}; // 'YYYY-MM-DD' -> { active, start, end, notes }
+
+function generateMonthWeeks(year, month) {
     const today = new Date();
     today.setHours(0, 0, 0, 0);
     
     let startDay = 1;
     if (year === today.getFullYear() && month === today.getMonth()) {
-        startDay = today.getDate(); // Start from today
+        startDay = today.getDate(); // Option B: Start from today
     }
     
     const daysInMonth = new Date(year, month + 1, 0).getDate();
-    // max 7 days, bounded to the end of the month
-    const maxDays = Math.min(7, daysInMonth - startDay + 1);
+    const dates = [];
+    for (let i = startDay; i <= daysInMonth; i++) {
+        dates.push(new Date(year, month, i));
+    }
+    
+    const weeks = [];
+    for (let i = 0; i < dates.length; i += 7) {
+        weeks.push(dates.slice(i, i + 7));
+    }
+    return weeks;
+}
 
-    return Array.from({ length: maxDays }, (_, i) => {
-        return new Date(year, month, startDay + i);
-    });
+function initMonthScheduleData() {
+    monthScheduleData = {};
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+
+    for (const week of currentMonthWeeks) {
+        for (const date of week) {
+            const dateStr       = toISODate(date);
+            const jsDay         = date.getDay();
+            const isPastOrToday = date <= today;
+            const isWeekday     = (jsDay !== 0 && jsDay !== 6) && !isPastOrToday;
+            
+            monthScheduleData[dateStr] = {
+                active: isWeekday,
+                start: isWeekday ? '09:00' : '',
+                end: isWeekday ? '18:00' : '',
+                notes: ''
+            };
+        }
+    }
 }
 
 /**
@@ -137,37 +166,81 @@ function setupEventListeners() {
     // Re-render day rows whenever the modal month changes
     DOM.monthSelect?.addEventListener('change', () => {
         const { year, month } = parseModalMonth();
-        renderDayRows(year, month);
+        currentMonthWeeks = generateMonthWeeks(year, month);
+        currentWeekIndex = 0;
+        initMonthScheduleData();
+        renderDayRows();
+        updatePaginationUI();
     });
+
+    document.getElementById('btnNextWeek')?.addEventListener('click', () => {
+        if (currentWeekIndex < currentMonthWeeks.length - 1) {
+            currentWeekIndex++;
+            renderDayRows();
+            updatePaginationUI();
+        }
+    });
+
+    document.getElementById('btnPrevWeek')?.addEventListener('click', () => {
+        if (currentWeekIndex > 0) {
+            currentWeekIndex--;
+            renderDayRows();
+            updatePaginationUI();
+        }
+    });
+
+    DOM.applyFullMonth?.addEventListener('change', () => {
+        if (DOM.applyFullMonth.checked) {
+            currentWeekIndex = 0;
+            renderDayRows();
+        }
+        updatePaginationUI();
+    });
+}
+
+function updatePaginationUI() {
+    const btnNext = document.getElementById('btnNextWeek');
+    const btnPrev = document.getElementById('btnPrevWeek');
+    const label   = document.getElementById('patternHeaderLabel');
+    
+    if (label && currentMonthWeeks.length > 0) {
+        label.textContent = `Week ${currentWeekIndex + 1} of ${currentMonthWeeks.length}`;
+    }
+    
+    if (btnPrev) {
+        btnPrev.disabled = currentWeekIndex === 0;
+        btnPrev.style.opacity = currentWeekIndex === 0 ? '0.3' : '1';
+        btnPrev.style.cursor  = currentWeekIndex === 0 ? 'not-allowed' : 'pointer';
+    }
+    
+    if (btnNext) {
+        const isApplyAllChecked = DOM.applyFullMonth?.checked;
+        const reachedEnd = currentWeekIndex >= currentMonthWeeks.length - 1;
+        
+        btnNext.disabled = reachedEnd || isApplyAllChecked;
+        btnNext.style.opacity = (reachedEnd || isApplyAllChecked) ? '0.3' : '1';
+        btnNext.style.cursor  = (reachedEnd || isApplyAllChecked) ? 'not-allowed' : 'pointer';
+    }
 }
 
 // ─────────────────────────────────────────────────────────────
 // RENDER DAY ROWS IN MODAL  (date-aware)
 // ─────────────────────────────────────────────────────────────
 
-function renderDayRows(year, month) {
+function renderDayRows() {
     if (!DOM.daysContainer) return;
 
-    let patternDates = getPatternDates(year, month);
+    const patternDates = currentMonthWeeks[currentWeekIndex] || [];
     const today = new Date();
-    
-    // Dynamically update UI label 
-    const labelSpan = document.getElementById('patternHeaderLabel');
-    if (labelSpan) {
-        labelSpan.textContent = (year === today.getFullYear() && month === today.getMonth()) 
-            ? 'Showing remaining days starting from today' 
-            : 'Showing first 7 days of month';
-    }
-
     today.setHours(0, 0, 0, 0);
 
     DOM.daysContainer.innerHTML = patternDates.map((date, ix) => {
         const jsDay         = date.getDay();
         const isPastOrToday = date <= today;
-        const isWeekday     = (jsDay !== 0 && jsDay !== 6) && !isPastOrToday;
         const dateStr       = toISODate(date);
         const dateLabel     = formatDateOnly(date);
         const dayLabel      = formatDayOnly(date);
+        const state         = monthScheduleData[dateStr] || { active:false, start:'', end:'', notes:'' };
 
         return `
             <div class="day-row"
@@ -188,16 +261,16 @@ function renderDayRows(year, month) {
                 <!-- Active toggle -->
                 <div>
                     <label class="toggle-switch" style="position:relative; display:inline-block; width:44px; height:24px; ${isPastOrToday ? 'cursor:not-allowed;' : ''}">
-                        <input type="checkbox" id="chk_${ix}" class="day-active-chk" data-idx="${ix}"
-                               ${isWeekday ? 'checked' : ''}
+                        <input type="checkbox" id="chk_${ix}" class="day-active-chk" data-idx="${ix}" data-date="${dateStr}"
+                               ${state.active && !isPastOrToday ? 'checked' : ''}
                                ${isPastOrToday ? 'disabled' : ''}
                                style="opacity:0; width:0; height:0; position:absolute;">
                         <span class="slider round"
                                style="position:absolute; cursor:${isPastOrToday ? 'not-allowed' : 'pointer'}; top:0; left:0; right:0; bottom:0;
-                                      background-color:${isWeekday ? '#10b981' : '#cbd5e1'};
+                                      background-color:${(state.active && !isPastOrToday) ? '#10b981' : '#cbd5e1'};
                                       border-radius:24px; transition:.4s;">
                             <span style="position:absolute; height:18px; width:18px;
-                                         left:${isWeekday ? '22px' : '3px'}; bottom:3px;
+                                         left:${(state.active && !isPastOrToday) ? '22px' : '3px'}; bottom:3px;
                                          background-color:#fff; border-radius:50%; transition:.4s;
                                          box-shadow:0 1px 2px rgba(0,0,0,0.1);"></span>
                         </span>
@@ -206,31 +279,31 @@ function renderDayRows(year, month) {
 
                 <!-- Start Time -->
                 <div>
-                    <input type="time" id="start_${ix}" class="form-input day-start"
-                           value="${isWeekday ? '09:00' : ''}"
-                           ${(!isWeekday || isPastOrToday) ? 'disabled' : ''}
+                    <input type="time" id="start_${ix}" class="form-input day-start" data-date="${dateStr}"
+                           value="${state.start}"
+                           ${(!state.active || isPastOrToday) ? 'disabled' : ''}
                            style="width:100%; height:36px; padding:0 8px; font-size:0.85rem;
                                   border:1px solid #e2e8f0; border-radius:6px; ${isPastOrToday ? 'cursor:not-allowed;' : ''}">
                 </div>
 
                 <!-- End Time -->
                 <div>
-                    <input type="time" id="end_${ix}" class="form-input day-end"
-                           value="${isWeekday ? '18:00' : ''}"
-                           ${(!isWeekday || isPastOrToday) ? 'disabled' : ''}
+                    <input type="time" id="end_${ix}" class="form-input day-end" data-date="${dateStr}"
+                           value="${state.end}"
+                           ${(!state.active || isPastOrToday) ? 'disabled' : ''}
                            style="width:100%; height:36px; padding:0 8px; font-size:0.85rem;
                                   border:1px solid #e2e8f0; border-radius:6px; ${isPastOrToday ? 'cursor:not-allowed;' : ''}">
                 </div>
 
                 <!-- Notes -->
                 <div>
-                    <textarea id="notes_${ix}" class="form-input day-notes"
+                    <textarea id="notes_${ix}" class="form-input day-notes" data-date="${dateStr}"
                               placeholder="Notes..."
-                              ${isPastOrToday ? 'disabled' : ''}
+                              ${(!state.active || isPastOrToday) ? 'disabled' : ''}
                               style="width:100%; height:36px; padding:6px 8px; font-size:0.82rem;
                                      border:1px solid #e2e8f0; border-radius:6px; resize:none;
                                      font-family:inherit; box-sizing:border-box;
-                                     ${isPastOrToday ? 'cursor:not-allowed; background:#f1f5f9;' : ''}"></textarea>
+                                     ${isPastOrToday ? 'cursor:not-allowed; background:#f1f5f9;' : ''}">${state.notes}</textarea>
                 </div>
             </div>
         `;
@@ -240,6 +313,7 @@ function renderDayRows(year, month) {
     DOM.daysContainer.querySelectorAll('.day-active-chk').forEach(chk => {
         chk.addEventListener('change', e => {
             const idx       = e.target.dataset.idx;
+            const dateStr   = e.target.dataset.date;
             const isChecked = e.target.checked;
             const slider    = e.target.nextElementSibling;
             const knob      = slider.firstElementChild;
@@ -250,17 +324,34 @@ function renderDayRows(year, month) {
             const startEl = document.getElementById(`start_${idx}`);
             const endEl   = document.getElementById(`end_${idx}`);
             const notesEl = document.getElementById(`notes_${idx}`);
+            
             startEl.disabled = !isChecked;
             endEl.disabled   = !isChecked;
             if (notesEl) notesEl.disabled = !isChecked;
 
+            monthScheduleData[dateStr].active = isChecked;
+
             if (isChecked && !startEl.value) {
                 startEl.value = '09:00';
                 endEl.value   = '18:00';
+                monthScheduleData[dateStr].start = '09:00';
+                monthScheduleData[dateStr].end = '18:00';
             } else if (!isChecked) {
                 startEl.value = '';
                 endEl.value   = '';
+                monthScheduleData[dateStr].start = '';
+                monthScheduleData[dateStr].end = '';
             }
+        });
+    });
+
+    // Wire up inputs to save into state immediately
+    ['start', 'end', 'notes'].forEach(cat => {
+        DOM.daysContainer.querySelectorAll(`.day-${cat}`).forEach(input => {
+            input.addEventListener('input', e => {
+                const dateStr = e.target.dataset.date;
+                monthScheduleData[dateStr][cat] = e.target.value;
+            });
         });
     });
 }
@@ -480,35 +571,32 @@ async function handleFormSubmit(e) {
     const year       = yyyy;
     const month      = mm - 1; // 0-indexed
 
-    const patternDates = getPatternDates(year, month);
-    const branchId       = document.getElementById('branchSelect')?.value || null;
+    const baseWeekDates = currentMonthWeeks[0] || [];
+    const branchId      = document.getElementById('branchSelect')?.value || null;
 
     // ── Read per-day inputs ──────────────────────────────────
     let calculatedHoursPerWeek = 0;
     const weekPattern = [];
 
-    for (let i = 0; i < patternDates.length; i++) {
-        const isChecked = document.getElementById(`chk_${i}`)?.checked || false;
-        const date      = patternDates[i];
-        const jsDay     = date.getDay();
+    // Analyze Week 1 only to generate UI `payload.days` display pills and calculate base hours
+    for (const date of baseWeekDates) {
+        const dateStr = toISODate(date);
+        const data    = monthScheduleData[dateStr] || { active: false, start: '', end: '', notes: '' };
+        const jsDay   = date.getDay();
 
-        if (isChecked) {
-            const start = document.getElementById(`start_${i}`)?.value || '';
-            const end   = document.getElementById(`end_${i}`)?.value   || '';
-            const notes = document.getElementById(`notes_${i}`)?.value.trim() || null;
-
-            if (!start || !end) {
-                showToast(`Please set start & end time for ${WEEK_DAYS_FULL[jsDay]}`, true);
+        if (data.active) {
+            if (!data.start || !data.end) {
+                showToast(`Please set start & end time for ${WEEK_DAYS_FULL[jsDay]} in Week 1`, true);
                 return;
             }
 
-            const [sh, sm] = start.split(':').map(Number);
-            const [eh, em] = end.split(':').map(Number);
+            const [sh, sm] = data.start.split(':').map(Number);
+            const [eh, em] = data.end.split(':').map(Number);
             let diff = (eh + em / 60) - (sh + sm / 60);
             if (diff < 0) diff += 24;
             calculatedHoursPerWeek += diff;
 
-            weekPattern.push({ jsDay, date, start, end, notes, active: true });
+            weekPattern.push({ jsDay, date, start: data.start, end: data.end, notes: data.notes, active: true });
         } else {
             weekPattern.push({ jsDay, date, start: null, end: null, notes: null, active: false });
         }
@@ -520,7 +608,7 @@ async function handleFormSubmit(e) {
     today.setHours(0, 0, 0, 0);
 
     if (applyFullMonth) {
-        // Repeat pattern across all matching weekdays in the month
+        // Repeat Week 1's pattern across all matching weekdays in the month
         for (const day of weekPattern) {
             const allDates = getAllWeekdayDatesInMonth(year, month, day.jsDay);
             for (const d of allDates) {
@@ -538,18 +626,25 @@ async function handleFormSubmit(e) {
             }
         }
     } else {
-        // Only first week
-        for (const day of weekPattern) {
-            if (day.date <= today) continue; // enforce past-date bypass
+        // Serialize explicitly typed month Schedule Data accurately
+        for (const [dateStr, data] of Object.entries(monthScheduleData)) {
+            const dDate = new Date(dateStr);
+            if (dDate <= today) continue; // enforce past-date bypass
+            
+            // Validate any active blocks typed out into future weeks
+            if (data.active && (!data.start || !data.end)) {
+                showToast(`Please set start & end time for ${dateStr}`, true);
+                return;
+            }
 
             scheduleEntries.push({
                 staff_id:      staffId,
                 branch_id:     branchId,
-                schedule_date: toISODate(day.date),
-                start_time:    day.active ? day.start : null,
-                end_time:      day.active ? day.end   : null,
-                notes:         day.notes  || null,
-                is_off:        !day.active
+                schedule_date: dateStr,
+                start_time:    data.active ? data.start : null,
+                end_time:      data.active ? data.end   : null,
+                notes:         data.notes || null,
+                is_off:        !data.active
             });
         }
     }
