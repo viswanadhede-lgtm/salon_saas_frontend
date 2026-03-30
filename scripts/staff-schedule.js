@@ -259,9 +259,11 @@ function renderDayRows() {
     const today = new Date();
     today.setHours(0, 0, 0, 0);
 
-    DOM.daysContainer.innerHTML = patternDates.map((date, ix) => {
-        const jsDay         = date.getDay();
+    const htmlRows = patternDates.map((date, ix) => {
         const isPastOrToday = date <= today;
+        if (isPastOrToday) return ''; // Hide past dates completely
+
+        const jsDay         = date.getDay();
         const dateStr       = toISODate(date);
         const dateLabel     = formatDateOnly(date);
         const dayLabel      = formatDayOnly(date);
@@ -333,6 +335,16 @@ function renderDayRows() {
             </div>
         `;
     }).join('');
+
+    if (htmlRows === '') {
+        DOM.daysContainer.innerHTML = `
+            <div style="padding:24px; text-align:center; background:#f8fafc; border:1px dashed #cbd5e1; border-radius:8px; color:#64748b; font-size:0.9rem;">
+                All dates in this week are in the past and cannot be edited. Please select a future week or month.
+            </div>
+        `;
+    } else {
+        DOM.daysContainer.innerHTML = htmlRows;
+    }
 
     // Wire up toggle switches
     DOM.daysContainer.querySelectorAll('.day-active-chk').forEach(chk => {
