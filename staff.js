@@ -25,6 +25,28 @@ window.fetchStaff = async function() {
             staffArray = data.staff || [];
         }
 
+        // Update Stat Cards dynamically
+        const statTotal = document.getElementById('statTotalStaff');
+        const statActive = document.getElementById('statActiveStaff');
+        const statOnLeave = document.getElementById('statOnLeave');
+        const statOnDuty = document.getElementById('statOnDuty');
+
+        if (statTotal && statActive && statOnLeave && statOnDuty) {
+            if (data && data.stats) {
+                // Use backend provided stats object if available
+                statTotal.innerText = data.stats.total_staff !== undefined ? data.stats.total_staff : staffArray.length;
+                statActive.innerText = data.stats.active_staff !== undefined ? data.stats.active_staff : staffArray.filter(s => String(s.status).toLowerCase().includes('active')).length;
+                statOnLeave.innerText = data.stats.on_leave !== undefined ? data.stats.on_leave : staffArray.filter(s => String(s.status).toLowerCase().includes('leave')).length;
+                statOnDuty.innerText = data.stats.on_duty_today !== undefined ? data.stats.on_duty_today : staffArray.filter(s => String(s.status).toLowerCase().includes('active')).length;
+            } else {
+                // Fallback: derive metrics from the staff array directly
+                statTotal.innerText = staffArray.length;
+                statActive.innerText = staffArray.filter(s => String(s.status).toLowerCase().includes('active')).length;
+                statOnLeave.innerText = staffArray.filter(s => String(s.status).toLowerCase().includes('leave')).length;
+                statOnDuty.innerText = staffArray.filter(s => String(s.status).toLowerCase().includes('active')).length;
+            }
+        }
+
         const avatarColors = ['#6366f1', '#0ea5e9', '#f43f5e', '#10b981', '#f59e0b', '#8b5cf6', '#ec4899', '#64748b'];
 
         liveStaffData = Array.isArray(staffArray) ? staffArray.map((staff, idx) => {
