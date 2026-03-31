@@ -85,6 +85,7 @@ function buildRow(b, includeDate = false) {
     const phone        = String(b.customer_phone || b.phone || '');
     const serviceName  = b.service_name || b.service || '—';
     const staffName    = b.staff_name   || b.staff_id || '—';
+    const bookingType  = b.booking_type || b.type || '—';
     // Support both combined booking_datetime AND split booking_date + start_time
     const dateOnly     = b.booking_date || (b.booking_datetime || '').slice(0, 10) || '';
     const timeOnly     = b.start_time   || (b.booking_datetime || '').slice(11, 16) || '';
@@ -129,6 +130,7 @@ function buildRow(b, includeDate = false) {
         <td style="padding:10px 8px;font-size:0.85rem;color:#334155;${cellStyle}">${timeDisplay}</td>
         <td style="padding:10px 8px;font-size:0.85rem;color:#334155;${cellStyle}">${serviceName}</td>
         <td style="padding:10px 8px;font-size:0.85rem;color:#334155;${cellStyle}">${staffName}</td>
+        <td style="padding:10px 8px;font-size:0.85rem;color:#334155;${cellStyle}">${bookingType}</td>
         <td style="padding:10px 8px;">${statusBadge(status)}</td>
         <td style="padding:10px 8px;font-size:0.85rem;font-weight:600;color:#0f172a;${cellStyle}">${amount}</td>
         <td style="padding:10px 8px;">${paymentBadge(payment)}</td>
