@@ -438,10 +438,11 @@ export function initGlobalBookingModal() {
         try {
             // 1. Check Staff Availability
             const availPayload = {
-                company_id: getCompanyId(),
-                branch_id: getBranchId(),
-                staff_id: staffSelect.value,
-                booking_datetime: bookingDatetime
+                company_id:       getCompanyId(),
+                branch_id:        getBranchId(),
+                staff_id:         staffSelect.value,
+                booking_datetime: bookingDatetime,
+                duration:         meta ? meta.duration : 0
             };
 
             const availRes = await fetchWithAuth(API.CHECK_STAFF_AVAILABILITY, {
