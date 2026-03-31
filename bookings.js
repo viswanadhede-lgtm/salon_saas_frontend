@@ -121,7 +121,7 @@ function buildRow(b, includeDate = false) {
     <tr style="border-bottom:1px solid #f1f5f9;transition:background 0.15s;" 
         onmouseover="this.style.background='#f8fafc'" 
         onmouseout="this.style.background=''">
-        <td style="padding:10px 8px 10px 14px;font-size:0.78rem;color:#64748b;font-family:monospace;${cellStyle}">${bookingId.slice(-8) || '—'}</td>
+        <td title="${bookingId}" style="padding:10px 8px 10px 14px;font-size:0.75rem;color:#64748b;font-family:monospace;word-break:break-all;line-height:1.4;">${bookingId || '—'}</td>
         <td style="padding:10px 8px;${cellStyle}">
             <div style="font-weight:600;font-size:0.87rem;color:#0f172a;${cellStyle}">${customerName}</div>
             ${phone ? `<div style="font-size:0.75rem;color:#94a3b8;${cellStyle}">${phone}</div>` : ''}
