@@ -363,57 +363,75 @@
 
             <!-- Tabs -->
             <div class="bookings-tabs">
-                <button class="bookings-tab-btn active" data-target="paneToday">Today</button>
+                <button class="bookings-tab-btn active" data-target="paneAllBookings">All Bookings</button>
+                <button class="bookings-tab-btn" data-target="paneToday">Today</button>
                 <button class="bookings-tab-btn" data-target="paneCalendar">Calendar</button>
-                <button class="bookings-tab-btn" data-target="paneAllBookings">All Bookings</button>
             </div>
 
             <!-- Tab Content Area -->
             <div style="flex: 1; overflow-y: auto;">
 
+                <!-- PANE: All Bookings (default active) -->
+                <div class="bookings-tab-pane active" id="paneAllBookings">
+                    <div class="tb-table-area">
+                        <table id="tbTableAll"
+                            style="width:100%; border-collapse:collapse; font-size:0.875rem; table-layout:fixed;">
+                            <colgroup>
+                                <col style="width:10%">  <!-- Booking ID -->
+                                <col style="width:15%"> <!-- Customer -->
+                                <col style="width:14%"> <!-- Date & Time -->
+                                <col style="width:18%"> <!-- Service -->
+                                <col style="width:12%"> <!-- Staff -->
+                                <col style="width:10%"> <!-- Status -->
+                                <col style="width:8%">  <!-- Amount -->
+                                <col style="width:8%">  <!-- Payment -->
+                                <col style="width:5%">  <!-- Actions -->
+                            </colgroup>
+                            <thead>
+                                <tr style="background:#fff; border-bottom:2px solid #e2e8f0; position:sticky; top:0; z-index:10;">
+                                    <th style="padding:10px 8px 10px 14px; text-align:left; font-size:0.7rem; font-weight:600; color:#64748b; text-transform:uppercase; letter-spacing:0.04em;">Booking ID</th>
+                                    <th style="padding:10px 8px; text-align:left; font-size:0.7rem; font-weight:600; color:#64748b; text-transform:uppercase; letter-spacing:0.04em;">Customer</th>
+                                    <th style="padding:10px 8px; text-align:left; font-size:0.7rem; font-weight:600; color:#64748b; text-transform:uppercase; letter-spacing:0.04em;">Date &amp; Time</th>
+                                    <th style="padding:10px 8px; text-align:left; font-size:0.7rem; font-weight:600; color:#64748b; text-transform:uppercase; letter-spacing:0.04em;">Service</th>
+                                    <th style="padding:10px 8px; text-align:left; font-size:0.7rem; font-weight:600; color:#64748b; text-transform:uppercase; letter-spacing:0.04em;">Staff</th>
+                                    <th style="padding:10px 8px; text-align:left; font-size:0.7rem; font-weight:600; color:#64748b; text-transform:uppercase; letter-spacing:0.04em;">Status</th>
+                                    <th style="padding:10px 8px; text-align:left; font-size:0.7rem; font-weight:600; color:#64748b; text-transform:uppercase; letter-spacing:0.04em;">Amount</th>
+                                    <th style="padding:10px 8px; text-align:left; font-size:0.7rem; font-weight:600; color:#64748b; text-transform:uppercase; letter-spacing:0.04em;">Payment</th>
+                                    <th style="padding:10px 8px; text-align:left; font-size:0.7rem; font-weight:600; color:#64748b; text-transform:uppercase; letter-spacing:0.04em;">Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody id="tbTableBodyAll"></tbody>
+                        </table>
+                    </div>
+                </div>
+
                 <!-- PANE: Today -->
-                <div class="bookings-tab-pane active" id="paneToday">
+                <div class="bookings-tab-pane" id="paneToday">
                     <div class="tb-table-area">
                         <table id="tbTableToday"
                             style="width:100%; border-collapse:collapse; font-size:0.875rem; table-layout:fixed;">
                             <colgroup>
-                                <col style="width:9%">
-                                <col style="width:13%">
-                                <col style="width:8%">
-                                <col style="width:17%">
-                                <col style="width:8%">
-                                <col style="width:9%">
-                                <col style="width:9%">
-                                <col style="width:9%">
-                                <col style="width:8%">
+                                <col style="width:10%">  <!-- Booking ID -->
+                                <col style="width:18%"> <!-- Customer -->
+                                <col style="width:9%">  <!-- Time -->
+                                <col style="width:20%"> <!-- Service -->
+                                <col style="width:12%"> <!-- Staff -->
+                                <col style="width:10%"> <!-- Status -->
+                                <col style="width:8%">  <!-- Amount -->
+                                <col style="width:8%">  <!-- Payment -->
+                                <col style="width:5%">  <!-- Actions -->
                             </colgroup>
                             <thead>
-                                <tr
-                                    style="background:#fff; border-bottom:2px solid #e2e8f0; position:sticky; top:0; z-index:10;">
-                                    <th style="padding:10px 8px 10px 14px; text-align:left; font-size:0.7rem; font-weight:600; color:#64748b; text-transform:uppercase; letter-spacing:0.04em;">
-                                        Booking ID</th>
-                                    <th style="padding:10px 8px; text-align:left; font-size:0.7rem; font-weight:600; color:#64748b; text-transform:uppercase; letter-spacing:0.04em;">
-                                        Customer</th>
-                                    <th style="padding:10px 8px; text-align:left; font-size:0.7rem; font-weight:600; color:#64748b; text-transform:uppercase; letter-spacing:0.04em;">
-                                        Time</th>
-                                    <th
-                                        style="padding:10px 8px; text-align:left; font-size:0.7rem; font-weight:600; color:#64748b; text-transform:uppercase; letter-spacing:0.04em;">
-                                        Service</th>
-                                    <th
-                                        style="padding:10px 8px; text-align:left; font-size:0.7rem; font-weight:600; color:#64748b; text-transform:uppercase; letter-spacing:0.04em;">
-                                        Staff</th>
-                                    <th
-                                        style="padding:10px 8px; text-align:left; font-size:0.7rem; font-weight:600; color:#64748b; text-transform:uppercase; letter-spacing:0.04em;">
-                                        Status</th>
-                                    <th
-                                        style="padding:10px 8px; text-align:left; font-size:0.7rem; font-weight:600; color:#64748b; text-transform:uppercase; letter-spacing:0.04em;">
-                                        Amount</th>
-                                    <th
-                                        style="padding:10px 8px; text-align:left; font-size:0.7rem; font-weight:600; color:#64748b; text-transform:uppercase; letter-spacing:0.04em;">
-                                        Payment</th>
-                                    <th
-                                        style="padding:10px 8px; text-align:left; font-size:0.7rem; font-weight:600; color:#64748b; text-transform:uppercase; letter-spacing:0.04em;">
-                                        Actions</th>
+                                <tr style="background:#fff; border-bottom:2px solid #e2e8f0; position:sticky; top:0; z-index:10;">
+                                    <th style="padding:10px 8px 10px 14px; text-align:left; font-size:0.7rem; font-weight:600; color:#64748b; text-transform:uppercase; letter-spacing:0.04em;">Booking ID</th>
+                                    <th style="padding:10px 8px; text-align:left; font-size:0.7rem; font-weight:600; color:#64748b; text-transform:uppercase; letter-spacing:0.04em;">Customer</th>
+                                    <th style="padding:10px 8px; text-align:left; font-size:0.7rem; font-weight:600; color:#64748b; text-transform:uppercase; letter-spacing:0.04em;">Time</th>
+                                    <th style="padding:10px 8px; text-align:left; font-size:0.7rem; font-weight:600; color:#64748b; text-transform:uppercase; letter-spacing:0.04em;">Service</th>
+                                    <th style="padding:10px 8px; text-align:left; font-size:0.7rem; font-weight:600; color:#64748b; text-transform:uppercase; letter-spacing:0.04em;">Staff</th>
+                                    <th style="padding:10px 8px; text-align:left; font-size:0.7rem; font-weight:600; color:#64748b; text-transform:uppercase; letter-spacing:0.04em;">Status</th>
+                                    <th style="padding:10px 8px; text-align:left; font-size:0.7rem; font-weight:600; color:#64748b; text-transform:uppercase; letter-spacing:0.04em;">Amount</th>
+                                    <th style="padding:10px 8px; text-align:left; font-size:0.7rem; font-weight:600; color:#64748b; text-transform:uppercase; letter-spacing:0.04em;">Payment</th>
+                                    <th style="padding:10px 8px; text-align:left; font-size:0.7rem; font-weight:600; color:#64748b; text-transform:uppercase; letter-spacing:0.04em;">Actions</th>
                                 </tr>
                             </thead>
                             <tbody id="tbTableBodyToday"></tbody>
@@ -427,12 +445,9 @@
                         <div class="calendar-header">
                             <h2 class="calendar-title" id="calendarMonthTitle">October 2024</h2>
                             <div style="display: flex; gap: 8px;">
-                                <button class="calendar-nav-btn"><i data-feather="chevron-left"
-                                        style="width: 16px; height: 16px;"></i></button>
-                                <button class="btn btn-secondary"
-                                    style="height: 30px; font-size: 0.8rem; padding: 0 10px;">Today</button>
-                                <button class="calendar-nav-btn"><i data-feather="chevron-right"
-                                        style="width: 16px; height: 16px;"></i></button>
+                                <button class="calendar-nav-btn"><i data-feather="chevron-left" style="width: 16px; height: 16px;"></i></button>
+                                <button class="btn btn-secondary" style="height: 30px; font-size: 0.8rem; padding: 0 10px;">Today</button>
+                                <button class="calendar-nav-btn"><i data-feather="chevron-right" style="width: 16px; height: 16px;"></i></button>
                             </div>
                         </div>
                         <div class="calendar-grid" id="calendarGrid">
@@ -448,57 +463,7 @@
                     </div>
                 </div>
 
-                <!-- PANE: All Bookings -->
-                <div class="bookings-tab-pane" id="paneAllBookings">
-                    <div class="tb-table-area">
-                        <table id="tbTableAll"
-                            style="width:100%; border-collapse:collapse; font-size:0.875rem; table-layout:fixed;">
-                            <colgroup>
-                                <col style="width:9%">
-                                <col style="width:13%">
-                                <col style="width:12%">
-                                <col style="width:17%">
-                                <col style="width:8%">
-                                <col style="width:9%">
-                                <col style="width:9%">
-                                <col style="width:9%">
-                                <col style="width:8%">
-                            </colgroup>
-                            <thead>
-                                <tr
-                                    style="background:#fff; border-bottom:2px solid #e2e8f0; position:sticky; top:0; z-index:10;">
-                                    <th style="padding:10px 8px 10px 14px; text-align:left; font-size:0.7rem; font-weight:600; color:#64748b; text-transform:uppercase; letter-spacing:0.04em;">
-                                        Booking ID</th>
-                                    <th style="padding:10px 8px; text-align:left; font-size:0.7rem; font-weight:600; color:#64748b; text-transform:uppercase; letter-spacing:0.04em;">
-                                        Customer</th>
-                                    <th style="padding:10px 8px; text-align:left; font-size:0.7rem; font-weight:600; color:#64748b; text-transform:uppercase; letter-spacing:0.04em;">
-                                        Date & Time</th>
-                                    <th
-                                        style="padding:10px 8px; text-align:left; font-size:0.7rem; font-weight:600; color:#64748b; text-transform:uppercase; letter-spacing:0.04em;">
-                                        Service</th>
-                                    <th
-                                        style="padding:10px 8px; text-align:left; font-size:0.7rem; font-weight:600; color:#64748b; text-transform:uppercase; letter-spacing:0.04em;">
-                                        Staff</th>
-                                    <th
-                                        style="padding:10px 8px; text-align:left; font-size:0.7rem; font-weight:600; color:#64748b; text-transform:uppercase; letter-spacing:0.04em;">
-                                        Status</th>
-                                    <th
-                                        style="padding:10px 8px; text-align:left; font-size:0.7rem; font-weight:600; color:#64748b; text-transform:uppercase; letter-spacing:0.04em;">
-                                        Amount</th>
-                                    <th
-                                        style="padding:10px 8px; text-align:left; font-size:0.7rem; font-weight:600; color:#64748b; text-transform:uppercase; letter-spacing:0.04em;">
-                                        Payment</th>
-                                    <th
-                                        style="padding:10px 8px; text-align:left; font-size:0.7rem; font-weight:600; color:#64748b; text-transform:uppercase; letter-spacing:0.04em;">
-                                        Actions</th>
-                                </tr>
-                            </thead>
-                            <tbody id="tbTableBodyAll"></tbody>
-                        </table>
-                    </div>
-                </div>
-
-            </div>
+            </div></div>
         </main>
     </div>
 

@@ -115,30 +115,32 @@ function buildRow(b, includeDate = false) {
         } catch { timeDisplay = timeOnly; }
     }
 
+    const cellStyle = 'overflow:hidden;text-overflow:ellipsis;white-space:nowrap;';
+
     return `
     <tr style="border-bottom:1px solid #f1f5f9;transition:background 0.15s;" 
         onmouseover="this.style.background='#f8fafc'" 
         onmouseout="this.style.background=''">
-        <td style="padding:10px 8px 10px 14px;font-size:0.78rem;color:#64748b;font-family:monospace;">${bookingId.slice(-8) || '—'}</td>
-        <td style="padding:10px 8px;">
-            <div style="font-weight:600;font-size:0.87rem;color:#0f172a;">${customerName}</div>
-            ${phone ? `<div style="font-size:0.75rem;color:#94a3b8;">${phone}</div>` : ''}
+        <td style="padding:10px 8px 10px 14px;font-size:0.78rem;color:#64748b;font-family:monospace;${cellStyle}">${bookingId.slice(-8) || '—'}</td>
+        <td style="padding:10px 8px;${cellStyle}">
+            <div style="font-weight:600;font-size:0.87rem;color:#0f172a;${cellStyle}">${customerName}</div>
+            ${phone ? `<div style="font-size:0.75rem;color:#94a3b8;${cellStyle}">${phone}</div>` : ''}
         </td>
-        <td style="padding:10px 8px;font-size:0.85rem;color:#334155;">${timeDisplay}</td>
-        <td style="padding:10px 8px;font-size:0.85rem;color:#334155;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${serviceName}</td>
-        <td style="padding:10px 8px;font-size:0.85rem;color:#334155;">${staffName}</td>
+        <td style="padding:10px 8px;font-size:0.85rem;color:#334155;${cellStyle}">${timeDisplay}</td>
+        <td style="padding:10px 8px;font-size:0.85rem;color:#334155;${cellStyle}">${serviceName}</td>
+        <td style="padding:10px 8px;font-size:0.85rem;color:#334155;${cellStyle}">${staffName}</td>
         <td style="padding:10px 8px;">${statusBadge(status)}</td>
-        <td style="padding:10px 8px;font-size:0.85rem;font-weight:600;color:#0f172a;">${amount}</td>
+        <td style="padding:10px 8px;font-size:0.85rem;font-weight:600;color:#0f172a;${cellStyle}">${amount}</td>
         <td style="padding:10px 8px;">${paymentBadge(payment)}</td>
         <td style="padding:10px 8px;">
-            <div style="display:flex;gap:6px;">
+            <div style="display:flex;gap:6px;flex-wrap:nowrap;">
                 ${isEditable ? `<button onclick="window.openEditBookingModal('${bookingId}')" 
-                    style="padding:4px 10px;border-radius:6px;border:1px solid #e2e8f0;background:#fff;color:#475569;font-size:0.75rem;font-weight:600;cursor:pointer;transition:all 0.2s;"
+                    style="padding:4px 10px;border-radius:6px;border:1px solid #e2e8f0;background:#fff;color:#475569;font-size:0.75rem;font-weight:600;cursor:pointer;white-space:nowrap;transition:all 0.2s;"
                     onmouseover="this.style.borderColor='#94a3b8'" onmouseout="this.style.borderColor='#e2e8f0'">
                     Edit
                 </button>` : ''}
                 ${isCancellable ? `<button onclick="window.triggerCancelBooking('${bookingId}')" 
-                    style="padding:4px 10px;border-radius:6px;border:1px solid #fecdd3;background:#fff5f5;color:#e11d48;font-size:0.75rem;font-weight:600;cursor:pointer;transition:all 0.2s;"
+                    style="padding:4px 10px;border-radius:6px;border:1px solid #fecdd3;background:#fff5f5;color:#e11d48;font-size:0.75rem;font-weight:600;cursor:pointer;white-space:nowrap;transition:all 0.2s;"
                     onmouseover="this.style.background='#fee2e2'" onmouseout="this.style.background='#fff5f5'">
                     Cancel
                 </button>` : ''}
