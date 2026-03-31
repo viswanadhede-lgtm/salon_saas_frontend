@@ -236,12 +236,15 @@ export function initGlobalBookingModal() {
             return;
         }
 
-        const matches = liveCustomersDB.filter(c => (c.phone || c.customer_phone || '').includes(val));
+        const matches = liveCustomersDB.filter(c => {
+            const p = String(c.phone || c.customer_phone || '');
+            return p.includes(val);
+        });
         
         if (matches.length > 0) {
             searchSuggestions.innerHTML = '';
             matches.forEach(m => {
-                const phoneStr = m.phone || m.customer_phone || '';
+                const phoneStr = String(m.phone || m.customer_phone || '');
                 const nameStr = m.name || m.customer_name || '';
                 const emailStr = m.email || m.customer_email || '';
 
