@@ -229,7 +229,7 @@ export function initGlobalBookingModal() {
         if (newCustomerBadgeContainer) newCustomerBadgeContainer.style.display = 'none';
         selectedCustomerId = null;
 
-        if (val.length < 3) {
+        if (val.length === 0) {
             searchSuggestions.style.display = 'none';
             setNewCustomerState();
             validateForm();
