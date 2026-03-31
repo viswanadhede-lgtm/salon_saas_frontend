@@ -410,7 +410,13 @@ function openModal() {
     // Default modal month to current month
     const now           = new Date();
     const currentMonthVal = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
-    if (DOM.monthSelect) DOM.monthSelect.value = currentMonthVal;
+    if (DOM.monthSelect) {
+        DOM.monthSelect.value = currentMonthVal;
+        DOM.monthSelect.disabled = false;
+    }
+    if (DOM.staffSelect) {
+        DOM.staffSelect.disabled = false;
+    }
 
     const { year, month } = parseModalMonth();
     initializeMonthBuilder(year, month);
@@ -434,8 +440,14 @@ window.editSchedule = function(scheduleId) {
     DOM.form.reset();
     if (DOM.applyFullMonth) DOM.applyFullMonth.checked = !!s.apply_full_month;
 
-    if (DOM.staffSelect) DOM.staffSelect.value = s.staff_id;
-    if (DOM.monthSelect) DOM.monthSelect.value = s.target_month;
+    if (DOM.staffSelect) {
+        DOM.staffSelect.value = s.staff_id;
+        DOM.staffSelect.disabled = true;
+    }
+    if (DOM.monthSelect) {
+        DOM.monthSelect.value = s.target_month;
+        DOM.monthSelect.disabled = true;
+    }
 
     const [yyyy, mm] = s.target_month.split('-').map(Number);
     initializeMonthBuilder(yyyy, mm - 1);
