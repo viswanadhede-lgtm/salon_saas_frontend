@@ -43,6 +43,7 @@ export const API = {
   CREATE_STAFF_SCHEDULE: `${BASE_URL}/create_staff_schedule`,
   EDIT_STAFF_SCHEDULE: `${BASE_URL}/edit_staff_schedule`,
   DELETE_STAFF_SCHEDULE: `${BASE_URL}/delete_staff_schedule`,
+  CHECK_STAFF_AVAILABILITY: `${BASE_URL}/check_staff_availability`,
   READ_ROLES: `${BASE_URL}/read_roles`,
   CREATE_ROLE: `${BASE_URL}/create_role`,
   UPDATE_ROLE: `${BASE_URL}/update_role`,

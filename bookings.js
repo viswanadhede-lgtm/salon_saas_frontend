@@ -292,10 +292,37 @@ function attachEventListeners() {
             };
 
             const originalText = btnConfirm.textContent;
-            btnConfirm.textContent = 'Saving...';
+            btnConfirm.textContent = 'Checking availability...';
             btnConfirm.disabled = true;
 
             try {
+                // 1. Check Staff Availability
+                const availPayload = {
+                    company_id: getCompanyId(),
+                    branch_id: getBranchId(),
+                    staff_id: staffId,
+                    booking_datetime: bookingDatetime
+                };
+
+                const availRes = await fetchWithAuth(API.CHECK_STAFF_AVAILABILITY, {
+                    method: 'POST',
+                    body: JSON.stringify(availPayload)
+                }, FEATURES.BOOKINGS_MANAGEMENT, 'read');
+
+                const availData = await availRes.json();
+                const availRoot = Array.isArray(availData) ? availData[0] : availData;
+
+                // Stop execution if staff is not available or if the API returns an error
+                if (!availRes.ok || availRoot?.error || availRoot?.is_available === false || availRoot?.available === false) {
+                    window.toast && window.toast(availRoot?.error || availRoot?.message || 'Staff member is not available at this time.');
+                    btnConfirm.textContent = originalText;
+                    btnConfirm.disabled = false;
+                    return;
+                }
+
+                // 2. Proceed to Create Booking
+                btnConfirm.textContent = 'Saving...';
+
                 const res  = await fetchWithAuth(API.CREATE_BOOKING, {
                     method: 'POST',
                     body:   JSON.stringify(payload)
@@ -530,9 +557,25 @@ async function populateBookingDropdowns() {
             svcSel.innerHTML = '<option value="" disabled selected>Select a service</option>';
             if (svcRes.ok) {
                 const svcData = await svcRes.json();
-                const svcRoot = Array.isArray(svcData) ? svcData[0] : svcData;
-                const services = (svcRoot.services || [])
-                    .filter(s => (s['status '] || s.status || '').trim().toLowerCase() === 'active');
+                
+                let rawServices = [];
+                if (Array.isArray(svcData)) {
+                    // Check if the array itself is wrapped in an error
+                    if (svcData.length > 0 && svcData[0].error) {
+                        console.error(svcData[0].error);
+                    } else if (svcData.length > 0 && svcData[0].services) {
+                        // Sometimes it's [{ services: [...] }]
+                        rawServices = svcData[0].services;
+                    } else {
+                        // Direct array of service objects
+                        rawServices = svcData;
+                    }
+                } else if (svcData && svcData.services) {
+                    // Object with 'services' key
+                    rawServices = svcData.services;
+                }
+
+                const services = rawServices.filter(s => (s['status '] || s.status || '').trim().toLowerCase() === 'active');
 
                 cachedServices = services;
                 services.forEach(s => {
