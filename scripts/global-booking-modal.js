@@ -211,6 +211,43 @@ export function initGlobalBookingModal() {
         modalOverlay.classList.remove('active');
     }
 
+    // ── Override Confirmation Modal ───────────────────────────────────────────
+    if (!document.getElementById('staffOverrideConfirmOverlay')) {
+        document.body.insertAdjacentHTML('beforeend', `
+        <div class="modal-overlay custom-logout-overlay" id="staffOverrideConfirmOverlay" style="z-index:9999;backdrop-filter:blur(8px);">
+            <div class="logout-modal" style="background:#fff;border-radius:16px;padding:32px;width:420px;max-width:90vw;text-align:center;box-shadow:0 20px 25px -5px rgba(0,0,0,.1),0 10px 10px -5px rgba(0,0,0,.04);">
+                <div style="width:64px;height:64px;border-radius:50%;background:#fef3c7;display:flex;align-items:center;justify-content:center;margin:0 auto 20px;">
+                    <i data-feather="alert-triangle" style="color:#f59e0b;width:32px;height:32px;"></i>
+                </div>
+                <h2 style="font-size:1.35rem;font-weight:700;color:#0f172a;margin-bottom:8px;">Override Booking?</h2>
+                <p id="staffOverrideReason" style="color:#64748b;font-size:0.95rem;margin-bottom:24px;line-height:1.6;"></p>
+                <div style="display:flex;gap:12px;justify-content:center;">
+                    <button id="btnCancelOverride" style="flex:1;padding:12px 20px;border-radius:8px;border:1px solid #e2e8f0;background:#fff;color:#64748b;font-weight:600;cursor:pointer;font-size:0.95rem;">Go Back</button>
+                    <button id="btnConfirmOverride" style="flex:1;padding:12px 20px;border-radius:8px;border:none;background:#f59e0b;color:#fff;font-weight:600;cursor:pointer;font-size:0.95rem;">Yes, Confirm</button>
+                </div>
+            </div>
+        </div>`);
+    }
+
+    const overrideOverlay  = document.getElementById('staffOverrideConfirmOverlay');
+    const overrideReasonEl = document.getElementById('staffOverrideReason');
+    const btnCancelOverride  = document.getElementById('btnCancelOverride');
+    const btnConfirmOverride = document.getElementById('btnConfirmOverride');
+
+    // Cancel override → go back to new booking modal
+    btnCancelOverride?.addEventListener('click', () => {
+        overrideOverlay.classList.remove('active');
+        modalOverlay.classList.add('active');
+    });
+    overrideOverlay?.addEventListener('click', (e) => {
+        if (e.target === overrideOverlay) {
+            overrideOverlay.classList.remove('active');
+            modalOverlay.classList.add('active');
+        }
+    });
+
+    if (window.feather) feather.replace();
+
     // Bind Modals Trigger
     if(btnNewBooking) btnNewBooking.addEventListener('click', openModal);
     if(btnNewBookingPage) btnNewBookingPage.addEventListener('click', openModal);
@@ -405,6 +442,31 @@ export function initGlobalBookingModal() {
         });
     }
 
+    // ── Reusable Create Booking ───────────────────────────────────────────────
+    async function createBooking(payload) {
+        try {
+            const res  = await fetchWithAuth(API.CREATE_BOOKING, {
+                method: 'POST',
+                body:   JSON.stringify(payload)
+            }, FEATURES.BOOKINGS_MANAGEMENT, 'create');
+
+            const data = await res.json();
+            const root = Array.isArray(data) ? data[0] : data;
+
+            if (res.ok && !root?.error) {
+                window.toast && window.toast('Booking created successfully!');
+                overrideOverlay?.classList.remove('active');
+                closeModal();
+                if (window.fetchBookings) await window.fetchBookings();
+            } else {
+                window.toast && window.toast('Error: ' + (root?.error || root?.message || 'Unknown error'));
+            }
+        } catch (err) {
+            console.error(err);
+            window.toast && window.toast('Network error creating booking.');
+        }
+    }
+
     // Submit API Integration
     btnConfirmBooking.addEventListener('click', async () => {
         const meta = getSelectedServiceMeta();
@@ -425,6 +487,8 @@ export function initGlobalBookingModal() {
             customer_email:   customerEmail.value.trim(),
             service_id:       serviceSelect.value,
             service_name:     meta ? meta.name : '',
+            duration:         meta ? meta.duration : 0,
+            price:            meta ? meta.price : 0,
             staff_id:         staffSelect.value,
             staff_name:       staffSelect.options[staffSelect.selectedIndex]?.text || '',
             booking_datetime: bookingDatetime,
@@ -452,40 +516,47 @@ export function initGlobalBookingModal() {
 
             const availData = await availRes.json();
             const availRoot = Array.isArray(availData) ? availData[0] : availData;
+            // Handle nested { json: { ... } } wrapper if present
+            const innerData = availRoot?.json || availRoot;
 
-            // Stop execution if staff is not available
-            if (!availRes.ok || availRoot?.error || availRoot?.is_available === false || availRoot?.available === false) {
-                window.toast && window.toast(availRoot?.error || availRoot?.message || 'Staff member is not available at this time.');
-                btnConfirmBooking.textContent = originalText;
-                btnConfirmBooking.disabled = false;
+            // ── Case 1: Staff is available ──────────────────────────────────────
+            if (innerData?.available === true) {
+                btnConfirmBooking.textContent = 'Saving...';
+                await createBooking(payload);
                 return;
             }
 
-            // 2. Proceed to Create Booking
-            btnConfirmBooking.textContent = 'Saving...';
-
-            const res  = await fetchWithAuth(API.CREATE_BOOKING, {
-                method: 'POST',
-                body:   JSON.stringify(payload)
-            }, FEATURES.BOOKINGS_MANAGEMENT, 'create');
-
-            const data = await res.json();
-            const root = Array.isArray(data) ? data[0] : data;
-            
-            if (res.ok && !root?.error) {
-                window.toast && window.toast('Booking created successfully!');
-                closeModal();
-                
-                // If we are currently on the Bookings page, intelligently refresh the table
-                if (window.fetchBookings) {
-                    await window.fetchBookings();
+            // ── Case 2 & 3: Not available but override is allowed ───────────────
+            if (innerData?.available === false && innerData?.allow_override === true) {
+                // Hide new booking modal, show override confirmation
+                modalOverlay.classList.remove('active');
+                if (overrideReasonEl) {
+                    overrideReasonEl.textContent = (innerData.reason || 'The staff member is not available at this time.') + ' Do you want to override and confirm the booking anyway?';
                 }
-            } else {
-                window.toast && window.toast('Error: ' + (root?.error || root?.message || 'Unknown error'));
+                overrideOverlay?.classList.add('active');
+                if (window.feather) feather.replace();
+
+                // Wire override confirm button (replace node to avoid duplicate listeners)
+                const oldBtn = document.getElementById('btnConfirmOverride');
+                const freshConfirm = oldBtn?.cloneNode(true);
+                oldBtn?.parentNode.replaceChild(freshConfirm, oldBtn);
+                freshConfirm?.addEventListener('click', async () => {
+                    overrideOverlay.classList.remove('active');
+                    freshConfirm.textContent = 'Saving...';
+                    freshConfirm.disabled = true;
+                    await createBooking(payload);
+                    freshConfirm.textContent = 'Yes, Confirm';
+                    freshConfirm.disabled = false;
+                });
+                return;
             }
+
+            // ── Fallback: Hard block (allow_override is false or missing) ────────
+            window.toast && window.toast(innerData?.reason || innerData?.message || 'Staff member is not available at this time.');
+
         } catch (err) {
             console.error(err);
-            window.toast && window.toast('Network error creating booking.');
+            window.toast && window.toast('Network error checking availability.');
         } finally {
             btnConfirmBooking.textContent = originalText;
             btnConfirmBooking.disabled = false;
