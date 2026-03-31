@@ -645,9 +645,10 @@ async function performDelete(scheduleId) {
     } catch (e) {}
     const branchId = localStorage.getItem('active_branch_id') || null;
 
-    // Find the schedule to extract its target_month
+    // Find the schedule to extract its target_month and staff_id
     const scheduleToDelete = rawSchedules.find(s => s.id === scheduleId);
     const targetMonth = scheduleToDelete ? scheduleToDelete.target_month : null;
+    const staffId = scheduleToDelete ? scheduleToDelete.staff_id : null;
 
     try {
         const payload = { 
@@ -658,6 +659,9 @@ async function performDelete(scheduleId) {
         
         if (targetMonth) {
             payload.target_month = targetMonth;
+        }
+        if (staffId) {
+            payload.staff_id = staffId;
         }
 
         const response = await fetchWithAuth(API.DELETE_STAFF_SCHEDULE, {
