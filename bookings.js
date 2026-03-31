@@ -80,20 +80,40 @@ function paymentBadge(status) {
 
 // ─── Row Renderer ─────────────────────────────────────────────────────────────
 function buildRow(b, includeDate = false) {
-    const bookingId   = b.booking_id   || b.id  || '';
+    const bookingId    = b.booking_id   || b.id  || '';
     const customerName = b.customer_name || b.customer || '—';
-    const phone       = b.phone        || b.customer_phone || '';
-    const serviceName = b.service_name || b.service || '—';
-    const staffName   = b.staff_name   || b.staff  || '—';
-    const amount      = b.amount != null ? `₹${Number(b.amount).toLocaleString('en-IN')}` : '—';
-    const status      = b.status || '';
-    const payment     = b.payment_status || b.payment || '';
-    const dateTime    = b.booking_datetime || b.appointment_time || b.date || '';
+    const phone        = String(b.customer_phone || b.phone || '');
+    const serviceName  = b.service_name || b.service || '—';
+    const staffName    = b.staff_name   || b.staff_id || '—';
+    // Support both combined booking_datetime AND split booking_date + start_time
+    const dateOnly     = b.booking_date || (b.booking_datetime || '').slice(0, 10) || '';
+    const timeOnly     = b.start_time   || (b.booking_datetime || '').slice(11, 16) || '';
+    const amount       = b.price != null ? `₹${Number(b.price).toLocaleString('en-IN')}` 
+                       : b.amount != null ? `₹${Number(b.amount).toLocaleString('en-IN')}` : '—';
+    const status       = b.status || '';
+    const payment      = b.payment_status || b.payment || '';
 
     const isCancellable = !['cancelled', 'completed', 'no-show', 'no_show'].includes(status.toLowerCase());
     const isEditable    = !['cancelled', 'completed'].includes(status.toLowerCase());
 
-    const timeDisplay = includeDate ? formatDateTime(dateTime) : formatTime(dateTime);
+    // Build human-readable date/time display
+    let timeDisplay = '—';
+    if (includeDate && dateOnly) {
+        try {
+            const d = new Date(`${dateOnly}T${timeOnly || '00:00'}`);
+            timeDisplay = d.toLocaleString('en-IN', {
+                day: '2-digit', month: 'short', year: 'numeric',
+                hour: '2-digit', minute: '2-digit', hour12: true
+            });
+        } catch { timeDisplay = `${dateOnly} ${timeOnly}`; }
+    } else if (timeOnly) {
+        try {
+            const [hh, mm] = timeOnly.split(':').map(Number);
+            const ampm = hh >= 12 ? 'PM' : 'AM';
+            const displayH = hh > 12 ? hh - 12 : (hh === 0 ? 12 : hh);
+            timeDisplay = `${String(displayH).padStart(2,'0')}:${String(mm).padStart(2,'0')} ${ampm}`;
+        } catch { timeDisplay = timeOnly; }
+    }
 
     return `
     <tr style="border-bottom:1px solid #f1f5f9;transition:background 0.15s;" 
@@ -133,7 +153,11 @@ function emptyRow(colspan, msg) {
 
 // ─── Render Tables ────────────────────────────────────────────────────────────
 function renderBookings(data) {
-    const today    = data.filter(b => isToday(b.booking_datetime || b.appointment_time || b.date || ''));
+    // Support both booking_date (split) and booking_datetime (combined)
+    const today = data.filter(b => {
+        const d = b.booking_date || (b.booking_datetime || '').slice(0, 10) || '';
+        return d === todayISO();
+    });
     const allBooks = data;
 
     const bodyToday = document.getElementById('tbTableBodyToday');
@@ -400,9 +424,21 @@ export async function fetchBookings() {
         if (!res.ok) throw new Error('Failed to fetch bookings');
 
         const data = await res.json();
-        const root = Array.isArray(data) ? data[0] : data;
 
-        liveBookingsData = root.bookings || [];
+        // Handle both flat array response and wrapped { bookings: [...] } format
+        let bookingsList = [];
+        if (Array.isArray(data)) {
+            // Check if it's a flat array of booking objects or a wrapped array
+            if (data.length > 0 && data[0].bookings) {
+                bookingsList = data[0].bookings;
+            } else {
+                bookingsList = data; // flat array — use directly
+            }
+        } else if (data && data.bookings) {
+            bookingsList = data.bookings;
+        }
+
+        liveBookingsData = bookingsList;
         window.liveBookingsData = liveBookingsData;
 
         renderBookings(liveBookingsData);
