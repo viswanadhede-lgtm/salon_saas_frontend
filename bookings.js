@@ -97,17 +97,16 @@ function buildRow(b, includeDate = false) {
     const isCancellable = !['cancelled', 'completed', 'no-show', 'no_show'].includes(status.toLowerCase());
     const isEditable    = !['cancelled', 'completed'].includes(status.toLowerCase());
 
-    // Build human-readable date/time display
+    // Build human-readable date/time display (split into two lines for includeDate)
+    let dateDisplay = '—';
     let timeDisplay = '—';
-    if (includeDate && dateOnly) {
+    if (dateOnly) {
         try {
-            const d = new Date(`${dateOnly}T${timeOnly || '00:00'}`);
-            timeDisplay = d.toLocaleString('en-IN', {
-                day: '2-digit', month: 'short', year: 'numeric',
-                hour: '2-digit', minute: '2-digit', hour12: true
-            });
-        } catch { timeDisplay = `${dateOnly} ${timeOnly}`; }
-    } else if (timeOnly) {
+            const d = new Date(`${dateOnly}T00:00`);
+            dateDisplay = d.toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' });
+        } catch { dateDisplay = dateOnly; }
+    }
+    if (timeOnly) {
         try {
             const [hh, mm] = timeOnly.split(':').map(Number);
             const ampm = hh >= 12 ? 'PM' : 'AM';
@@ -127,7 +126,10 @@ function buildRow(b, includeDate = false) {
             <div style="font-weight:600;font-size:0.87rem;color:#0f172a;${cellStyle}">${customerName}</div>
             ${phone ? `<div style="font-size:0.75rem;color:#94a3b8;${cellStyle}">${phone}</div>` : ''}
         </td>
-        <td style="padding:10px 8px;font-size:0.85rem;color:#334155;${cellStyle}">${timeDisplay}</td>
+        <td style="padding:10px 8px;">
+            <div style="font-weight:600;font-size:0.87rem;color:#0f172a;${cellStyle}">${includeDate ? dateDisplay : timeDisplay}</div>
+            ${includeDate ? `<div style="font-size:0.75rem;color:#94a3b8;${cellStyle}">${timeDisplay}</div>` : ''}
+        </td>
         <td style="padding:10px 8px;font-size:0.85rem;color:#334155;${cellStyle}">${serviceName}</td>
         <td style="padding:10px 8px;font-size:0.85rem;color:#334155;${cellStyle}">${staffName}</td>
         <td style="padding:10px 8px;font-size:0.85rem;color:#334155;${cellStyle}">${bookingType}</td>
