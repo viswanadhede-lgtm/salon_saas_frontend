@@ -2,6 +2,7 @@ import { API, fetchWithAuth } from '../config/api.js';
 import { FEATURES } from '../config/feature-registry.js';
 import { initSubFeatures } from './sub-features/sub-feature-manager.js';
 import { applySubFeatureGates } from './sub-features/sub-feature-gate.js';
+import { initGlobalBookingModal } from './global-booking-modal.js';
 
 // Dictionary mapping the raw HTML browser routes to exact backend Feature strings
 const ROUTE_MAP = {
@@ -77,6 +78,7 @@ export async function runGlobalAuthGuard() {
         // Proceed Instantly - Zero Wait!
         console.log(`[Auth Guard] Instant Unlock for feature: ${featureKey}`);
         populateGlobalHeader(); // Hydrate UI from cached context
+        initGlobalBookingModal(); // Attach global modal listeners
         initSubFeatures();
         applySubFeatureGates();
         removeAuthSpinner();
@@ -142,6 +144,7 @@ export async function runGlobalAuthGuard() {
 
         // Hydrate header from newly minted cache
         populateGlobalHeader();
+        initGlobalBookingModal(); // Attach global modal listeners
 
         // 7. Trigger the visual UI unlocking sequence mapping
         initSubFeatures(); // Reloads sub-features into the JS runtime state
