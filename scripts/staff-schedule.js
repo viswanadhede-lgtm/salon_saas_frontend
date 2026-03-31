@@ -203,6 +203,7 @@ function setupEventListeners() {
     document.getElementById('btnNextWeek')?.addEventListener('click', () => {
         if (currentWeekIndex < currentMonthWeeks.length - 1) {
             currentWeekIndex++;
+            if (DOM.applyFullMonth) DOM.applyFullMonth.checked = false;
             renderDayRows();
             updatePaginationUI();
         }
@@ -211,6 +212,7 @@ function setupEventListeners() {
     document.getElementById('btnPrevWeek')?.addEventListener('click', () => {
         if (currentWeekIndex > 0) {
             currentWeekIndex--;
+            if (DOM.applyFullMonth) DOM.applyFullMonth.checked = false;
             renderDayRows();
             updatePaginationUI();
         }
@@ -241,12 +243,11 @@ function updatePaginationUI() {
     }
     
     if (btnNext) {
-        const isApplyAllChecked = DOM.applyFullMonth?.checked;
         const reachedEnd = currentWeekIndex >= currentMonthWeeks.length - 1;
         
-        btnNext.disabled = reachedEnd || isApplyAllChecked;
-        btnNext.style.opacity = (reachedEnd || isApplyAllChecked) ? '0.3' : '1';
-        btnNext.style.cursor  = (reachedEnd || isApplyAllChecked) ? 'not-allowed' : 'pointer';
+        btnNext.disabled = reachedEnd;
+        btnNext.style.opacity = reachedEnd ? '0.3' : '1';
+        btnNext.style.cursor  = reachedEnd ? 'not-allowed' : 'pointer';
     }
 }
 
@@ -432,7 +433,7 @@ window.editSchedule = function(scheduleId) {
     
     // reset form
     DOM.form.reset();
-    if (DOM.applyFullMonth) DOM.applyFullMonth.checked = !!s.apply_full_month;
+    if (DOM.applyFullMonth) DOM.applyFullMonth.checked = false;
 
     if (DOM.staffSelect) DOM.staffSelect.value = s.staff_id;
     if (DOM.monthSelect) DOM.monthSelect.value = s.target_month;
@@ -442,24 +443,32 @@ window.editSchedule = function(scheduleId) {
 
     const today = new Date();
     today.setHours(0,0,0,0);
+
+    // Reset all future dates to inactive initially
     for (const [dateStr, data] of Object.entries(monthScheduleData)) {
         const dDate = new Date(dateStr);
         if (dDate <= today) continue;
+        
+        monthScheduleData[dateStr].active = false;
+        monthScheduleData[dateStr].start = '';
+        monthScheduleData[dateStr].end = '';
+        monthScheduleData[dateStr].notes = '';
+    }
 
-        const jsDay = dDate.getDay();
-        const shortDay = WEEK_DAYS_SHORT[jsDay];
-        const dayMatch = s.days.find(d => d.day === shortDay);
+    // Populate actual date entries
+    if (s.schedule_entries) {
+        for (const entry of s.schedule_entries) {
+            const dDate = new Date(entry.schedule_date + 'T00:00:00');
+            if (dDate <= today) continue;
 
-        if (dayMatch && dayMatch.active) {
-            monthScheduleData[dateStr].active = true;
-            monthScheduleData[dateStr].start = dayMatch.start;
-            monthScheduleData[dateStr].end = dayMatch.end;
-            monthScheduleData[dateStr].notes = dayMatch.notes || '';
-        } else {
-            monthScheduleData[dateStr].active = false;
-            monthScheduleData[dateStr].start = '';
-            monthScheduleData[dateStr].end = '';
-            monthScheduleData[dateStr].notes = '';
+            if (monthScheduleData[entry.schedule_date]) {
+                monthScheduleData[entry.schedule_date].active = !entry.is_off;
+                if (!entry.is_off) {
+                    monthScheduleData[entry.schedule_date].start = entry.start_time || '';
+                    monthScheduleData[entry.schedule_date].end = entry.end_time || '';
+                    monthScheduleData[entry.schedule_date].notes = entry.notes || '';
+                }
+            }
         }
     }
     
@@ -766,7 +775,7 @@ function transformScheduleResponse(data) {
                     staff_name:       staffMember?.name  || staffId,
                     staff_role:       staffMember?.role  || 'Staff',
                     target_month:     targetMonth,
-                    apply_full_month: true,
+                    apply_full_month: false,
                     total_hours:      0,
                     days:             { Sun: null, Mon: null, Tue: null, Wed: null, Thu: null, Fri: null, Sat: null },
                     schedule_entries: []
