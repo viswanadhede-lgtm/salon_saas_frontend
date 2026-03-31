@@ -482,6 +482,7 @@ export function initGlobalBookingModal() {
         const payload = {
             company_id:       getCompanyId(),
             branch_id:        getBranchId(),
+            customer_id:      selectedCustomerId || null,
             customer_phone:   phoneSearch.value.trim(),
             customer_name:    targetName,
             customer_email:   customerEmail.value.trim(),
