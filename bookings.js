@@ -376,10 +376,19 @@ async function populateEditDropdowns(currentServiceName, currentStaffName, curre
         if (currentPrice != null || currentDuration != null) {
             if (priceGroup)    priceGroup.style.display    = '';
             if (durationGroup) durationGroup.style.display = '';
-            if (priceInput    && currentPrice    != null) priceInput.value    = currentPrice;
-            if (durationInput && currentDuration != null) durationInput.value = currentDuration;
+            if (priceInput    && currentPrice != null) priceInput.value = currentPrice;
+            if (durationInput) {
+                if (currentDuration != null) {
+                    // Use the duration from the booking record
+                    durationInput.value = currentDuration;
+                } else {
+                    // Booking record has no duration → fall back to the selected service's dataset
+                    const selOpt = serviceSelect.options[serviceSelect.selectedIndex];
+                    durationInput.value = selOpt?.dataset.duration || '';
+                }
+            }
         } else {
-            // Fall back to the selected service's dataset values
+            // Neither price nor duration in booking record → use service dataset
             const selOpt = serviceSelect.options[serviceSelect.selectedIndex];
             if (selOpt && selOpt.value && (selOpt.dataset.duration || selOpt.dataset.price)) {
                 if (priceGroup)    priceGroup.style.display    = '';
