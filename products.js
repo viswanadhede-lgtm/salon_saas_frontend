@@ -643,11 +643,15 @@ function attachGlobalEventListeners() {
             
             if(!name || !cat || price==='' || stock==='') return showToast('Please fill all required fields', true);
 
+            const categoryObj = liveProductCategoriesData.find(c => c.category_name === cat);
+            const catId = categoryObj ? (categoryObj.id || categoryObj.category_id) : '';
+
             const payload = {
                 company_id: getCompanyId(),
                 branch_id: getBranchId(),
                 name: name,
                 category_name: cat,
+                category_id: catId,
                 price: Number(price),
                 stock_quantity: Number(stock),
                 status: document.querySelector('input[name="productStatus"]:checked')?.value || 'Active',
@@ -697,12 +701,16 @@ function attachGlobalEventListeners() {
             
             if(!name || !cat || price==='' || stock==='') return showToast('Please fill all required fields', true);
 
+            const categoryObj = liveProductCategoriesData.find(c => c.category_name === cat);
+            const catId = categoryObj ? (categoryObj.id || categoryObj.category_id) : '';
+
             const payload = {
                 company_id: getCompanyId(),
                 branch_id: getBranchId(),
                 product_id: document.getElementById('editProductId').value,
                 name: name,
                 category_name: cat,
+                category_id: catId,
                 price: Number(price),
                 stock_quantity: Number(stock),
                 status: document.querySelector('input[name="editProductStatus"]:checked')?.value || 'Active',
@@ -754,8 +762,13 @@ function attachGlobalEventListeners() {
             const isProd = deleteTarget.type === 'product';
             const apiEndpoint = isProd ? API.DELETE_PRODUCT : API.DELETE_PRODUCT_CATEGORY;
             const payload = { company_id: getCompanyId(), branch_id: getBranchId() };
-            if (isProd) payload.product_id = deleteTarget.id;
-            else payload.category_id = deleteTarget.id;
+            if (isProd) {
+                payload.product_id = deleteTarget.id;
+                payload.category_id = deleteTarget.category_id;
+                payload.category_name = deleteTarget.category_name;
+            } else {
+                payload.category_id = deleteTarget.id;
+            }
 
             const res = await fetchWithAuth(apiEndpoint, {
                 method: 'POST', body: JSON.stringify(payload)
@@ -783,7 +796,12 @@ function attachGlobalEventListeners() {
     });
 
     window.triggerDeleteProduct = function(id, name) {
-        deleteTarget = { type: 'product', id, name };
+        const p = liveProductsData.find(x => (x.id || x.product_id) == id);
+        const catName = p ? p.category_name : '';
+        const c = liveProductCategoriesData.find(x => x.category_name === catName);
+        const catId = c ? (c.id || c.category_id) : '';
+        
+        deleteTarget = { type: 'product', id, name, category_name: catName, category_id: catId };
         document.getElementById('deleteConfirmTitle').textContent = 'Delete Product?';
         document.getElementById('deleteConfirmText').textContent = `Are you sure you want to delete ${name}?`;
         document.getElementById('deleteConfirmOverlay').classList.add('active');
