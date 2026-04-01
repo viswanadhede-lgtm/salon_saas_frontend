@@ -404,32 +404,63 @@ function setupEventListeners() {
         });
     });
 
-    // Complete Sale
+    // Complete Sale Logic & Cash Confirmation
     const btnComplete = document.getElementById('btnCompleteSale');
+    const cashConfirmOverlay = document.getElementById('cashConfirmOverlay');
+    const btnCancelCashConfirm = document.getElementById('btnCancelCashConfirm');
+    const btnProceedCashConfirm = document.getElementById('btnProceedCashConfirm');
+
+    const finalizeSale = () => {
+        const toast = document.createElement('div');
+        toast.className = 'toast-notification show';
+        toast.textContent = 'Sale completed successfully!';
+        document.body.appendChild(toast);
+
+        setTimeout(() => {
+            toast.classList.remove('show');
+            setTimeout(() => toast.remove(), 300);
+        }, 3000);
+
+        // Reset state
+        cart = [];
+        selectedCustomer = null;
+        updateCartUI();
+
+        // Clear Customer Fields
+        if (custSearch) custSearch.value = '';
+        if (custNameField) custNameField.value = '';
+        if (custPhoneField) custPhoneField.value = '';
+    };
+
     if (btnComplete) {
         btnComplete.addEventListener('click', () => {
             if (cart.length === 0) return;
 
-            const toast = document.createElement('div');
-            toast.className = 'toast-notification show';
-            toast.textContent = 'Sale completed successfully!';
-            document.body.appendChild(toast);
-
-            setTimeout(() => {
-                toast.classList.remove('show');
-                setTimeout(() => toast.remove(), 300);
-            }, 3000);
-
-            // Reset state
-            cart = [];
-            selectedCustomer = null;
-            updateCartUI();
-
-            // Clear Customer Fields
-            if (custSearch) custSearch.value = '';
-            if (custNameField) custNameField.value = '';
-            if (custPhoneField) custPhoneField.value = '';
+            if (currentPaymentMethod === 'cash' && cashConfirmOverlay) {
+                // Intercept and show confirmation modal for Cash
+                cashConfirmOverlay.classList.add('active');
+            } else {
+                // Proceed immediately for Card / UPI
+                finalizeSale();
+            }
         });
+    }
+
+    if (cashConfirmOverlay) {
+        // Cancel Confirmation
+        const closeCashModal = () => cashConfirmOverlay.classList.remove('active');
+        if (btnCancelCashConfirm) btnCancelCashConfirm.addEventListener('click', closeCashModal);
+        cashConfirmOverlay.addEventListener('click', (e) => {
+            if (e.target === cashConfirmOverlay) closeCashModal();
+        });
+
+        // Proceed Confirmation
+        if (btnProceedCashConfirm) {
+            btnProceedCashConfirm.addEventListener('click', () => {
+                closeCashModal();
+                finalizeSale();
+            });
+        }
     }
 }
 

@@ -417,6 +417,23 @@
         </div>
     </div>
 
+    <!-- Confirm Cash Payment Modal -->
+    <div class="modal-overlay" id="cashConfirmOverlay" style="z-index: 9999;">
+        <div class="modal-container" style="max-width: 420px; text-align: center; padding: 2.5rem 2rem;">
+            <div style="margin-bottom: 1.5rem;">
+                <div style="width: 56px; height: 56px; border-radius: 50%; background: #dcfce7; display: flex; align-items: center; justify-content: center; margin: 0 auto 1.25rem;">
+                    <i data-feather="dollar-sign" style="color: #16a34a; width: 28px; height: 28px;"></i>
+                </div>
+                <h3 style="font-size: 1.25rem; font-weight: 700; color: #0f172a; margin: 0 0 0.5rem;">Confirm Cash Payment</h3>
+                <p style="color: #475569; font-size: 0.95rem; margin: 0; line-height: 1.5;">Have you received the cash from the customer and want to complete this sale?</p>
+            </div>
+            <div style="display: flex; gap: 0.75rem; justify-content: center;">
+                <button id="btnCancelCashConfirm" class="btn btn-secondary" style="flex: 1; padding: 0.75rem 1rem; font-size: 0.95rem;">Cancel</button>
+                <button id="btnProceedCashConfirm" class="btn btn-primary" style="flex: 1; padding: 0.75rem 1rem; background: #16a34a; border-color: #16a34a; font-size: 0.95rem;">Yes, Complete Sale</button>
+            </div>
+        </div>
+    </div>
+
     <!-- Premium New Booking Modal -->
     <div class="modal-overlay" id="bookingModalOverlay">
         <div class="modal-container" id="bookingModal">
