@@ -228,8 +228,22 @@ async function loadCoupons() {
         });
         
         if (res.ok) {
-            const data = await res.json();
-            currentCoupons = data.coupons || [];
+            const rawData = await res.json();
+            const rows = Array.isArray(rawData) ? rawData : (rawData.coupons || []);
+            // Group flat rows by coupon_id, aggregating services
+            const couponMap = {};
+            rows.forEach(row => {
+                if (!couponMap[row.coupon_id]) {
+                    couponMap[row.coupon_id] = { ...row, applicable_services: [] };
+                }
+                if (row.service_id) {
+                    couponMap[row.coupon_id].applicable_services.push({
+                        service_id: row.service_id,
+                        service_name: row.service_name
+                    });
+                }
+            });
+            currentCoupons = Object.values(couponMap);
             renderCoupons();
         } else {
             throw new Error("Failed to load");
@@ -256,32 +270,31 @@ function renderCoupons() {
         const badgeColor = isFlat ? 'color:#15803d;background:#dcfce7;' : 'color:#0284c7;background:#e0f2fe;';
         
         // Services Display
-        let svcDisplay = "All Services";
-        if (coupon.applicable_services && !coupon.applicable_services.includes("all")) {
-            svcDisplay = `${coupon.applicable_services.length} selected`;
-        }
+        const svcDisplay = coupon.applicable_services?.length > 0
+            ? `${coupon.applicable_services.length} service(s)`
+            : 'All Services';
 
         // Validity Logic
         let validityText = "Always Active";
-        if (coupon.start_date || coupon.end_date) {
-            const startStr = coupon.start_date ? new Date(coupon.start_date).toLocaleDateString() : "Now";
-            const endStr = coupon.end_date ? new Date(coupon.end_date).toLocaleDateString() : "No Expiry";
+        if (coupon.valid_from || coupon.valid_to) {
+            const startStr = coupon.valid_from ? new Date(coupon.valid_from).toLocaleDateString() : "Now";
+            const endStr = coupon.valid_to ? new Date(coupon.valid_to).toLocaleDateString() : "No Expiry";
             validityText = `${startStr} – ${endStr}`;
         }
 
         // Status Logic
-        const isActive = coupon.is_active !== false; // Defaults to true
+        const isActive = coupon.status === 'active';
         const statusBadge = isActive 
             ? `<span style="background:#dcfce7;color:#166534;font-size:0.75rem;padding:4px 10px;border-radius:999px;font-weight:600;display:inline-flex;align-items:center;gap:4px;"><span style="width:6px;height:6px;border-radius:50%;background:#22c55e;"></span>Active</span>`
             : `<span style="background:#f1f5f9;color:#475569;font-size:0.75rem;padding:4px 10px;border-radius:999px;font-weight:600;display:inline-flex;align-items:center;gap:4px;"><span style="width:6px;height:6px;border-radius:50%;background:#94a3b8;"></span>Inactive</span>`;
 
         // Usage counts
-        const usageLimit = coupon.usage_limit ? coupon.usage_limit : '∞';
-        const usedCount = coupon.used_count || 0;
+        const usageLimit = coupon.total_usage_limit ? coupon.total_usage_limit : '∞';
+        const usedCount = coupon.current_usage_count || 0;
 
         return `
             <tr style="border-bottom:1px solid #e2e8f0;">
-                <td style="padding:16px 20px;"><span class="cpn-code-badge">${coupon.coupon_code || coupon.code || 'N/A'}</span></td>
+                <td style="padding:16px 20px;"><span class="cpn-code-badge">${coupon.coupon_code || 'N/A'}</span></td>
                 <td style="padding:16px 20px;"><span style="font-weight:700;${badgeColor}padding:4px 8px;border-radius:6px;font-size:0.85rem;">${discountDisplay}</span></td>
                 <td style="padding:16px 20px;font-size:0.9rem;color:#334155;text-transform:capitalize;">${coupon.discount_type || '-'}</td>
                 <td style="padding:16px 20px;font-size:0.9rem;color:#334155;">${svcDisplay}</td>
@@ -292,10 +305,10 @@ function renderCoupons() {
                     <div class="dropdown" style="position:relative;display:inline-block;">
                         <button class="icon-btn dropbtn" onclick="window.toggleActionMenu(this)" style="display:flex;align-items:center;gap:6px;padding:6px 12px;border-radius:6px;border:1px solid #e2e8f0;background:#fff;font-size:0.85rem;font-weight:500;color:#334155;cursor:pointer;">Actions <i data-feather="chevron-down" style="width:14px;height:14px;"></i></button>
                         <div class="cpn-dd" style="display:none;position:absolute;right:0;top:100%;min-width:150px;background:#fff;box-shadow:0 4px 6px -1px rgba(0,0,0,0.1);border-radius:8px;border:1px solid #e2e8f0;z-index:10;padding:4px 0;text-align:left;">
-                            <a href="#" onclick="window.editCoupon('${coupon._id}'); return false;" style="display:flex;align-items:center;gap:8px;padding:8px 16px;color:#334155;text-decoration:none;font-size:0.9rem;"><i data-feather="edit-2" style="width:14px;height:14px;"></i> Edit</a>
-                            <a href="#" onclick="window.toggleSoftDelete('${coupon._id}', ${isActive}); return false;" style="display:flex;align-items:center;gap:8px;padding:8px 16px;color:#334155;text-decoration:none;font-size:0.9rem;"><i data-feather="slash" style="width:14px;height:14px;"></i> ${isActive ? 'Disable' : 'Enable'}</a>
+                            <a href="#" onclick="window.editCoupon('${coupon.coupon_id}'); return false;" style="display:flex;align-items:center;gap:8px;padding:8px 16px;color:#334155;text-decoration:none;font-size:0.9rem;"><i data-feather="edit-2" style="width:14px;height:14px;"></i> Edit</a>
+                            <a href="#" onclick="window.toggleSoftDelete('${coupon.coupon_id}', ${isActive}); return false;" style="display:flex;align-items:center;gap:8px;padding:8px 16px;color:#334155;text-decoration:none;font-size:0.9rem;"><i data-feather="slash" style="width:14px;height:14px;"></i> ${isActive ? 'Disable' : 'Enable'}</a>
                             <div style="height:1px;background:#e2e8f0;margin:4px 0;"></div>
-                            <a href="#" onclick="window.deleteCoupon('${coupon._id}'); return false;" style="display:flex;align-items:center;gap:8px;padding:8px 16px;color:#ef4444;text-decoration:none;font-size:0.9rem;"><i data-feather="trash-2" style="width:14px;height:14px;"></i> Delete</a>
+                            <a href="#" onclick="window.deleteCoupon('${coupon.coupon_id}'); return false;" style="display:flex;align-items:center;gap:8px;padding:8px 16px;color:#ef4444;text-decoration:none;font-size:0.9rem;"><i data-feather="trash-2" style="width:14px;height:14px;"></i> Delete</a>
                         </div>
                     </div>
                 </td>
@@ -324,20 +337,20 @@ function showToast(message) {
 }
 
 window.editCoupon = function(id) {
-    const coupon = currentCoupons.find(c => c._id === id);
+    const coupon = currentCoupons.find(c => c.coupon_id === id);
     if (!coupon) return;
     
     isEditing = true;
     currentEditId = id;
     
     // Populate form
-    document.getElementById('cpnCode').value = coupon.coupon_code || coupon.code || '';
+    document.getElementById('cpnCode').value = coupon.coupon_code || '';
     document.getElementById('cpnDiscountType').value = coupon.discount_type || 'percentage';
     document.getElementById('cpnDiscountValue').value = coupon.discount_value || '';
     
     // Services
     const svcCheckboxes = document.querySelectorAll('#cpnServicesCheckboxList input[type="checkbox"]');
-    const isAll = coupon.applicable_services && (coupon.applicable_services.includes('all') || coupon.applicable_services.length === availableServices.length);
+    const isAll = coupon.applicable_services && coupon.applicable_services.length >= availableServices.length;
     svcCheckboxes.forEach(c => {
         if (isAll) {
             c.checked = true;
@@ -354,22 +367,22 @@ window.editCoupon = function(id) {
     });
     applyServiceSelection();
 
-    document.getElementById('cpnMinBooking').value = coupon.min_booking_amount || '';
-    document.getElementById('cpnUsageLimit').value = coupon.usage_limit || '';
+    document.getElementById('cpnMinBooking').value = coupon.min_bill_amount || '';
+    document.getElementById('cpnUsageLimit').value = coupon.total_usage_limit || '';
     document.getElementById('cpnUsagePerCustomer').value = coupon.usage_per_customer || '';
     
     const tog = document.getElementById('cpnStatusToggle');
-    tog.checked = coupon.is_active !== false;
+    tog.checked = coupon.status === 'active';
     document.getElementById('cpnStatusLabel').textContent = tog.checked ? 'Active' : 'Inactive';
 
-    if (coupon.start_date) {
-        document.getElementById('cpnStartDate').value = new Date(coupon.start_date).toISOString().split('T')[0];
+    if (coupon.valid_from) {
+        document.getElementById('cpnStartDate').value = new Date(coupon.valid_from).toISOString().split('T')[0];
     } else {
         document.getElementById('cpnStartDate').value = '';
     }
 
-    if (coupon.end_date) {
-        document.getElementById('cpnEndDate').value = new Date(coupon.end_date).toISOString().split('T')[0];
+    if (coupon.valid_to) {
+        document.getElementById('cpnEndDate').value = new Date(coupon.valid_to).toISOString().split('T')[0];
     } else {
         document.getElementById('cpnEndDate').value = '';
     }
@@ -502,7 +515,7 @@ async function handleSaveCoupon() {
     };
 
     const minAmount = document.getElementById('cpnMinBooking').value;
-    if(minAmount) payload.min_booking_amount = parseFloat(minAmount);
+    if(minAmount) payload.min_bill_amount = parseFloat(minAmount);
     
     const usgLimit = document.getElementById('cpnUsageLimit').value;
     if(usgLimit) payload.usage_limit = parseInt(usgLimit, 10);
@@ -511,10 +524,10 @@ async function handleSaveCoupon() {
     if(usgPerCust) payload.usage_per_customer = parseInt(usgPerCust, 10);
 
     const sd = document.getElementById('cpnStartDate').value;
-    if(sd) payload.start_date = sd;
+    if(sd) payload.valid_from = sd;
 
     const ed = document.getElementById('cpnEndDate').value;
-    if(ed) payload.end_date = ed;
+    if(ed) payload.valid_to = ed;
 
     if (isEditing && currentEditId) {
         payload.coupon_id = currentEditId;
