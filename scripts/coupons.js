@@ -388,7 +388,7 @@ window.toggleSoftDelete = async function(id, currentlyActive) {
             company_id: getCompanyId(),
             branch_id: getBranchId(),
             coupon_id: id,
-            status: !currentlyActive
+            status: !currentlyActive ? 'active' : 'inactive'
         };
         const res = await fetchWithAuth(API.UPDATE_COUPON, {
             method: 'POST',
@@ -498,7 +498,7 @@ async function handleSaveCoupon() {
         discount_type,
         discount_value: parseFloat(discount_value),
         applicable_services,
-        status: document.getElementById('cpnStatusToggle').checked
+        status: document.getElementById('cpnStatusToggle').checked ? 'active' : 'inactive'
     };
 
     const minAmount = document.getElementById('cpnMinBooking').value;
