@@ -215,13 +215,13 @@ function renderProductsTable() {
         const tr = document.createElement('tr');
         tr.className = 'tb-row';
         tr.innerHTML = `
-            <td style="padding:16px 16px 16px 32px;"><p style="font-weight:600;color:#1e293b;margin:0;font-size:0.9rem;">${p.product_name || '-'}</p></td>
+            <td style="padding:16px;"><p style="font-weight:600;color:#1e293b;margin:0;font-size:0.9rem;">${p.product_name || '-'}</p></td>
             <td style="padding:16px;"><span style="background:#f1f5f9;padding:3px 8px;border-radius:6px;font-size:0.8rem;color:#475569;">${p.category_name || 'Uncategorized'}</span></td>
             <td style="padding:16px;color:#334155;font-weight:600;font-size:0.9rem;">&#8377;${p.price || 0}</td>
             <td style="padding:16px;">${stockBadge(p.stock_quantity || 0)}</td>
             <td style="padding:16px;">${statusBadge(p.status)}</td>
-            <td style="padding:14px 16px; vertical-align:middle;">
-                <div class="action-buttons" style="display:flex; justify-content:flex-start; gap:0.5rem;">
+            <td style="padding:16px; vertical-align:middle;">
+                <div class="action-buttons" style="display:flex; justify-content:flex-end; gap:0.5rem;">
                     <button class="hover-lift" onclick="window.openEditProductModal('${p.id || p.product_id}')" title="Edit Product" style="display:flex; flex-direction:column; align-items:center; justify-content:center; padding: 4px 8px; border-radius:8px; border:1px solid #e0e7ff; background:#eff6ff; cursor:pointer; color:#3b82f6; transition:all 0.2s; min-width: 52px;">
                         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="margin-bottom:2px;"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path></svg>
                         <span style="font-size:10px; font-weight:600;">Edit</span>
@@ -275,7 +275,7 @@ function renderCategoriesTable() {
         const char = (c.category_name || '?').charAt(0).toUpperCase();
         tr.className = 'tb-row';
         tr.innerHTML = `
-            <td style="padding:16px 16px 16px 32px;">
+            <td style="padding:16px;">
                 <div style="display:flex;align-items:center;gap:12px;">
                     <div style="width:36px;height:36px;border-radius:8px;background:#e0e7ff;color:#4338ca;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:1rem;">${char}</div>
                     <div><p style="font-weight:600;color:#1e293b;margin:0;font-size:0.9rem;">${c.category_name || '-'}</p></div>
@@ -283,8 +283,8 @@ function renderCategoriesTable() {
             </td>
             <td style="padding:16px;"><span style="font-size:0.9rem;font-weight:700;color:#334155;">${pCount}</span><span style="font-size:0.8rem;color:#94a3b8;margin-left:5px;">items</span></td>
             <td style="padding:16px;">${statusBadge(c.status)}</td>
-            <td style="padding:14px 16px; vertical-align:middle;">
-                <div class="action-buttons" style="display:flex; justify-content:flex-start; gap:0.5rem;">
+            <td style="padding:16px; vertical-align:middle;">
+                <div class="action-buttons" style="display:flex; justify-content:flex-end; gap:0.5rem;">
                     <button class="hover-lift" onclick="window.openEditCategoryModal('${c.id || c.category_id}')" title="Edit Category" style="display:flex; flex-direction:column; align-items:center; justify-content:center; padding: 4px 8px; border-radius:8px; border:1px solid #e0e7ff; background:#eff6ff; cursor:pointer; color:#3b82f6; transition:all 0.2s; min-width: 52px;">
                         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="margin-bottom:2px;"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path></svg>
                         <span style="font-size:10px; font-weight:600;">Edit</span>
