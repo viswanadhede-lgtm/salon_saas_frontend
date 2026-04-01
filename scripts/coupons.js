@@ -306,7 +306,6 @@ function renderCoupons() {
                         <button class="icon-btn dropbtn" onclick="window.toggleActionMenu(this)" style="display:flex;align-items:center;gap:6px;padding:6px 12px;border-radius:6px;border:1px solid #e2e8f0;background:#fff;font-size:0.85rem;font-weight:500;color:#334155;cursor:pointer;">Actions <i data-feather="chevron-down" style="width:14px;height:14px;"></i></button>
                         <div class="cpn-dd" style="display:none;position:absolute;right:0;top:100%;min-width:150px;background:#fff;box-shadow:0 4px 6px -1px rgba(0,0,0,0.1);border-radius:8px;border:1px solid #e2e8f0;z-index:10;padding:4px 0;text-align:left;">
                             <a href="#" onclick="window.editCoupon('${coupon.coupon_id}'); return false;" style="display:flex;align-items:center;gap:8px;padding:8px 16px;color:#334155;text-decoration:none;font-size:0.9rem;"><i data-feather="edit-2" style="width:14px;height:14px;"></i> Edit</a>
-                            <a href="#" onclick="window.toggleSoftDelete('${coupon.coupon_id}', ${isActive}); return false;" style="display:flex;align-items:center;gap:8px;padding:8px 16px;color:#334155;text-decoration:none;font-size:0.9rem;"><i data-feather="slash" style="width:14px;height:14px;"></i> ${isActive ? 'Disable' : 'Enable'}</a>
                             <div style="height:1px;background:#e2e8f0;margin:4px 0;"></div>
                             <a href="#" onclick="window.deleteCoupon('${coupon.coupon_id}'); return false;" style="display:flex;align-items:center;gap:8px;padding:8px 16px;color:#ef4444;text-decoration:none;font-size:0.9rem;"><i data-feather="trash-2" style="width:14px;height:14px;"></i> Delete</a>
                         </div>
@@ -393,31 +392,6 @@ window.editCoupon = function(id) {
     btnSave.textContent = "Save Changes";
     
     document.getElementById('couponModalOverlay').classList.add('active');
-};
-
-window.toggleSoftDelete = async function(id, currentlyActive) {
-    try {
-        const payload = {
-            company_id: getCompanyId(),
-            branch_id: getBranchId(),
-            coupon_id: id,
-            status: !currentlyActive ? 'active' : 'inactive'
-        };
-        const res = await fetchWithAuth(API.UPDATE_COUPON, {
-            method: 'POST',
-            body: JSON.stringify(payload)
-        });
-        
-        if (res.ok) {
-            showToast(`Coupon ${currentlyActive ? 'disabled' : 'enabled'} successfully`);
-            await loadCoupons();
-        } else {
-            showToast("Failed to update coupon status.");
-        }
-    } catch (err) {
-        console.error(err);
-        showToast("Error updating status.");
-    }
 };
 
 window.deleteCoupon = async function(id) {
