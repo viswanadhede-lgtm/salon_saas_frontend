@@ -7,7 +7,7 @@ let currentEditId = null;
 
 // Global context getters
 const getCompanyId = () => localStorage.getItem('company_id') || 'C1';
-const getBranchId = () => document.getElementById('branchSelect')?.value || 'B1';
+const getBranchId = () => localStorage.getItem('active_branch_id') || document.getElementById('branchSelect')?.value || null;
 
 document.addEventListener('DOMContentLoaded', async () => {
     feather.replace();
