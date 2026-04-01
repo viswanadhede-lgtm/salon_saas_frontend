@@ -205,7 +205,7 @@ function setupEventListeners() {
         });
     }
 
-    // Customer Selection Logic
+    // Customer Selection Logic (Phone-number driven, like New Booking modal)
     const custSearch = document.getElementById('posCustomerSearch');
     const custSuggestions = document.getElementById('posCustomerSuggestions');
     const custNameField = document.getElementById('posCustomerName');
@@ -213,26 +213,55 @@ function setupEventListeners() {
 
     if (custSearch) {
         custSearch.addEventListener('input', (e) => {
-            const term = e.target.value.toLowerCase().trim();
-            if (!term) {
+            // Strip non-digit chars for clean progressive phone matching
+            const raw = e.target.value.trim();
+            const digits = raw.replace(/\D/g, '');
+
+            if (!digits) {
                 custSuggestions.style.display = 'none';
                 return;
             }
 
-            const filtered = allCustomers.filter(c => 
-                ((c.first_name || '') + ' ' + (c.last_name || '')).toLowerCase().includes(term) ||
-                (c.phone_number || '').includes(term)
+            const filtered = allCustomers.filter(c =>
+                (c.phone_number || '').replace(/\D/g, '').includes(digits)
             );
 
             if (filtered.length === 0) {
-                custSuggestions.innerHTML = `<div style="padding: 12px; color: #64748b; font-size: 0.85rem; text-align: center;">No customers found</div>`;
+                custSuggestions.innerHTML = `
+                    <div style="padding: 14px 12px; color: #64748b; font-size: 0.85rem; text-align: center; display: flex; flex-direction: column; align-items: center; gap: 4px;">
+                        <span style="font-size: 1.2rem;">🔍</span>
+                        <span>No customer found with this number</span>
+                    </div>`;
             } else {
-                custSuggestions.innerHTML = filtered.map(c => `
-                    <div class="cust-suggestion-item" data-id="${c.id || c.customer_id}" style="padding: 10px 12px; cursor: pointer; border-bottom: 1px solid #f1f5f9; display: flex; flex-direction: column; gap: 2px;">
-                        <span style="font-size: 0.9rem; font-weight: 600; color: #1e293b;">${c.first_name} ${c.last_name}</span>
-                        <span style="font-size: 0.75rem; color: #64748b;">${c.phone_number || 'N/A'}</span>
-                    </div>
-                `).join('');
+                custSuggestions.innerHTML = filtered.slice(0, 8).map(c => {
+                    const phone = c.phone_number || '';
+                    const fullName = `${c.first_name || ''} ${c.last_name || ''}`.trim() || c.full_name || 'Unknown';
+                    const custId = c.id || c.customer_id;
+
+                    // Highlight matched digits in the phone number
+                    const highlightedPhone = phone.replace(
+                        new RegExp(digits.split('').join('\\D*'), 'g'),
+                        match => `<strong style="color: #4f46e5;">${match}</strong>`
+                    );
+
+                    // Build initials avatar
+                    const initials = fullName.split(' ').slice(0, 2).map(w => w[0] || '').join('').toUpperCase();
+                    const colors = ['#e0e7ff', '#d1fae5', '#fef3c7', '#ede9fe', '#dbeafe'];
+                    const textColors = ['#4338ca', '#059669', '#d97706', '#7c3aed', '#1d4ed8'];
+                    const ci = (initials.charCodeAt(0) || 0) % colors.length;
+
+                    return `
+                        <div class="cust-suggestion-item" data-id="${custId}"
+                            style="padding: 10px 14px; cursor: pointer; border-bottom: 1px solid #f1f5f9; display: flex; align-items: center; gap: 10px; transition: background 0.15s;"
+                            onmouseenter="this.style.background='#f8fafc'" onmouseleave="this.style.background='transparent'">
+                            <div style="width: 34px; height: 34px; border-radius: 50%; background: ${colors[ci]}; color: ${textColors[ci]}; display: flex; align-items: center; justify-content: center; font-size: 0.75rem; font-weight: 700; flex-shrink: 0;">${initials}</div>
+                            <div style="flex: 1; min-width: 0;">
+                                <div style="font-size: 0.88rem; font-weight: 600; color: #1e293b; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${fullName}</div>
+                                <div style="font-size: 0.75rem; color: #64748b; margin-top: 1px;">${highlightedPhone}</div>
+                            </div>
+                        </div>
+                    `;
+                }).join('');
             }
             custSuggestions.style.display = 'block';
         });
@@ -253,9 +282,12 @@ function setupEventListeners() {
                     const customer = allCustomers.find(c => (c.id || c.customer_id) == id);
                     if (customer) {
                         selectedCustomer = customer;
-                        custSearch.value = `${customer.first_name} ${customer.last_name}`;
-                        custNameField.value = `${customer.first_name} ${customer.last_name}`;
-                        custPhoneField.value = customer.phone_number || 'N/A';
+                        const fullName = `${customer.first_name || ''} ${customer.last_name || ''}`.trim() || customer.full_name || '';
+                        const phone = customer.phone_number || '';
+
+                        custSearch.value = phone;
+                        if (custNameField) custNameField.value = fullName;
+                        if (custPhoneField) custPhoneField.value = phone;
                         custSuggestions.style.display = 'none';
                     }
                 }
