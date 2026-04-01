@@ -213,11 +213,24 @@ function setupModals() {
 
                         <div class="form-group" style="margin:0;">
                             <label class="form-label" for="editBkService">Service</label>
-                            <input type="text" id="editBkService" class="form-input" placeholder="Service name">
+                            <select id="editBkService" class="form-select">
+                                <option value="">Loading services...</option>
+                            </select>
                         </div>
                         <div class="form-group" style="margin:0;">
                             <label class="form-label" for="editBkStaff">Staff</label>
-                            <input type="text" id="editBkStaff" class="form-input" placeholder="Staff name">
+                            <select id="editBkStaff" class="form-select">
+                                <option value="">Loading staff...</option>
+                            </select>
+                        </div>
+
+                        <div class="form-group" id="editDurationGroup" style="margin:0;display:none;">
+                            <label class="form-label" for="editBkDuration">Duration <span style="font-weight:400;color:#94a3b8;">(min)</span></label>
+                            <input type="number" id="editBkDuration" class="form-input" placeholder="e.g. 60" min="1">
+                        </div>
+                        <div class="form-group" id="editPriceGroup" style="margin:0;display:none;">
+                            <label class="form-label" for="editBkPrice">Price <span style="font-weight:400;color:#94a3b8;">(₹)</span></label>
+                            <input type="number" id="editBkPrice" class="form-input" placeholder="e.g. 500" min="0" step="0.01">
                         </div>
 
                         <div class="form-group" style="margin:0;">
@@ -280,8 +293,130 @@ function setupModals() {
     if (window.feather) feather.replace();
 }
 
+// ─── Populate Edit Booking Dropdowns ────────────────────────────────────────
+async function populateEditDropdowns(currentServiceName, currentStaffName, currentPrice, currentDuration) {
+    const serviceSelect = document.getElementById('editBkService');
+    const staffSelect   = document.getElementById('editBkStaff');
+    if (!serviceSelect || !staffSelect) return;
+
+    serviceSelect.innerHTML = '<option value="">Loading services...</option>';
+    staffSelect.innerHTML   = '<option value="">Loading staff...</option>';
+    serviceSelect.disabled  = true;
+    staffSelect.disabled    = true;
+
+    const body = JSON.stringify({ company_id: getCompanyId(), branch_id: getBranchId() });
+
+    try {
+        const [svcRes, staffRes] = await Promise.all([
+            fetchWithAuth(API.READ_SERVICES, { method: 'POST', body }, FEATURES.BOOKINGS_MANAGEMENT, 'read'),
+            fetchWithAuth(API.READ_STAFF,    { method: 'POST', body }, FEATURES.BOOKINGS_MANAGEMENT, 'read')
+        ]);
+
+        // ── Services ──────────────────────────────────────────────────────────
+        serviceSelect.innerHTML = '<option value="">Select a service</option>';
+        if (svcRes.ok) {
+            const svcData = await svcRes.json();
+            let rawServices = [];
+            if (Array.isArray(svcData)) {
+                if (svcData.length > 0 && svcData[0].services) rawServices = svcData[0].services;
+                else rawServices = svcData;
+            } else if (svcData?.services) {
+                rawServices = svcData.services;
+            }
+            const services = rawServices.filter(s => (s['status '] || s.status || '').trim().toLowerCase() === 'active');
+            services.forEach(s => {
+                const opt = document.createElement('option');
+                opt.value            = s.service_id || s.id || '';
+                opt.textContent      = s.service_name || s.name;
+                opt.dataset.duration = s.duration || '';
+                opt.dataset.price    = s.price    || '';
+                serviceSelect.appendChild(opt);
+            });
+            // Pre-select by name match
+            if (currentServiceName) {
+                const match = Array.from(serviceSelect.options).find(
+                    o => o.textContent.trim().toLowerCase() === currentServiceName.trim().toLowerCase()
+                );
+                if (match) serviceSelect.value = match.value;
+            }
+        }
+        serviceSelect.disabled = false;
+
+        // ── Staff ─────────────────────────────────────────────────────────────
+        staffSelect.innerHTML = '<option value="">Select staff member</option>';
+        if (staffRes.ok) {
+            const staffData = await staffRes.json();
+            const staffRoot = Array.isArray(staffData) ? staffData[0] : staffData;
+            const staffList = staffRoot.staff || staffRoot.staff_members || staffRoot.members || [];
+            staffList.forEach(m => {
+                const opt = document.createElement('option');
+                opt.value       = m.staff_id || m.id || '';
+                opt.textContent = m.name || m.staff_name || m.full_name;
+                staffSelect.appendChild(opt);
+            });
+            // Pre-select by name match
+            if (currentStaffName) {
+                const match = Array.from(staffSelect.options).find(
+                    o => o.textContent.trim().toLowerCase() === currentStaffName.trim().toLowerCase()
+                );
+                if (match) staffSelect.value = match.value;
+            }
+        }
+        staffSelect.disabled = false;
+
+        // ── Populate price/duration ───────────────────────────────────────────
+        const priceInput    = document.getElementById('editBkPrice');
+        const durationInput = document.getElementById('editBkDuration');
+        const priceGroup    = document.getElementById('editPriceGroup');
+        const durationGroup = document.getElementById('editDurationGroup');
+
+        if (currentPrice != null || currentDuration != null) {
+            if (priceGroup)    priceGroup.style.display    = '';
+            if (durationGroup) durationGroup.style.display = '';
+            if (priceInput    && currentPrice    != null) priceInput.value    = currentPrice;
+            if (durationInput && currentDuration != null) durationInput.value = currentDuration;
+        } else {
+            // Fall back to the selected service's dataset values
+            const selOpt = serviceSelect.options[serviceSelect.selectedIndex];
+            if (selOpt && selOpt.value && (selOpt.dataset.duration || selOpt.dataset.price)) {
+                if (priceGroup)    priceGroup.style.display    = '';
+                if (durationGroup) durationGroup.style.display = '';
+                if (priceInput)    priceInput.value    = selOpt.dataset.price    || '';
+                if (durationInput) durationInput.value = selOpt.dataset.duration || '';
+            }
+        }
+
+    } catch (err) {
+        console.error('Error populating edit dropdowns:', err);
+        serviceSelect.innerHTML = '<option value="">Error loading</option>';
+        staffSelect.innerHTML   = '<option value="">Error loading</option>';
+        serviceSelect.disabled  = false;
+        staffSelect.disabled    = false;
+    }
+}
+
 // ─── Attach Event Listeners ───────────────────────────────────────────────────
 function attachEventListeners() {
+
+    // ── Edit Service dropdown → auto-fill price/duration ─────────────────────
+    document.getElementById('editBkService')?.addEventListener('change', () => {
+        const sel = document.getElementById('editBkService');
+        const opt = sel?.options[sel.selectedIndex];
+        const priceGroup    = document.getElementById('editPriceGroup');
+        const durationGroup = document.getElementById('editDurationGroup');
+        const priceInput    = document.getElementById('editBkPrice');
+        const durationInput = document.getElementById('editBkDuration');
+
+        if (opt && opt.value) {
+            if (priceGroup)    priceGroup.style.display    = '';
+            if (durationGroup) durationGroup.style.display = '';
+            if (priceInput)    priceInput.value    = opt.dataset.price    || '';
+            if (durationInput) durationInput.value = opt.dataset.duration || '';
+        } else {
+            if (priceGroup)    priceGroup.style.display    = 'none';
+            if (durationGroup) durationGroup.style.display = 'none';
+        }
+    });
 
     // ── Create booking logic moved to global-booking-modal.js ────────────────
 
@@ -299,12 +434,18 @@ function attachEventListeners() {
         const date      = document.getElementById('editBkDate').value;
         const time      = document.getElementById('editBkTime').value;
 
+        const svcSel   = document.getElementById('editBkService');
+        const staffSel = document.getElementById('editBkStaff');
         const payload = {
             company_id:       getCompanyId(),
             branch_id:        getBranchId(),
             booking_id:       bookingId,
-            service_name:     document.getElementById('editBkService').value.trim(),
-            staff_name:       document.getElementById('editBkStaff').value.trim(),
+            service_id:       svcSel?.value || '',
+            service_name:     svcSel?.options[svcSel.selectedIndex]?.text || '',
+            staff_id:         staffSel?.value || '',
+            staff_name:       staffSel?.options[staffSel.selectedIndex]?.text || '',
+            duration:         Number(document.getElementById('editBkDuration')?.value || 0),
+            price:            Number(document.getElementById('editBkPrice')?.value    || 0),
             booking_datetime: `${date}T${time}:00`,
             status:           document.getElementById('editBkStatus').value,
             payment_status:   document.getElementById('editBkPayment').value,
@@ -391,20 +532,32 @@ function attachEventListeners() {
         const b = liveBookingsData.find(x => (x.booking_id || x.id) === bookingId);
         if (!b) return;
 
-        const dt = b.booking_datetime || b.appointment_time || '';
-        const [datePart, timePart] = dt.split('T');
+        const dt       = b.booking_datetime || b.appointment_time || '';
+        const datePart = b.booking_date || (dt.split('T')[0] || '');
+        const timePart = b.start_time   || ((dt.split('T')[1] || '').slice(0, 5));
 
-        document.getElementById('editBookingId').value  = bookingId;
-        document.getElementById('editBkDate').value     = datePart || '';
-        document.getElementById('editBkTime').value     = (timePart || '').slice(0, 5);
-        document.getElementById('editBkService').value  = b.service_name || b.service || '';
-        document.getElementById('editBkStaff').value    = b.staff_name   || b.staff   || '';
-        document.getElementById('editBkNotes').value    = b.notes        || '';
-        document.getElementById('editBkStatus').value   = (b.status || 'booked').toLowerCase();
-        document.getElementById('editBkPayment').value  = (b.payment_status || b.payment || 'unpaid').toLowerCase();
+        document.getElementById('editBookingId').value = bookingId;
+        document.getElementById('editBkDate').value    = datePart || '';
+        document.getElementById('editBkTime').value    = timePart || '';
+        document.getElementById('editBkNotes').value   = b.notes || '';
+        document.getElementById('editBkStatus').value  = (b.status || 'booked').toLowerCase();
+        document.getElementById('editBkPayment').value = (b.payment_status || b.payment || 'unpaid').toLowerCase();
+
+        // Reset price/duration visibility (populateEditDropdowns will show them)
+        const priceGroup    = document.getElementById('editPriceGroup');
+        const durationGroup = document.getElementById('editDurationGroup');
+        if (priceGroup)    priceGroup.style.display    = 'none';
+        if (durationGroup) durationGroup.style.display = 'none';
 
         document.getElementById('editBookingModal')?.classList.add('active');
         if (window.feather) feather.replace();
+
+        // Populate dropdowns and pre-select current service + staff
+        const currentServiceName = b.service_name || b.service    || '';
+        const currentStaffName   = b.staff_name   || b.staff      || '';
+        const currentPrice       = b.price    != null ? b.price    : (b.amount != null ? b.amount : null);
+        const currentDuration    = b.duration != null ? b.duration : null;
+        populateEditDropdowns(currentServiceName, currentStaffName, currentPrice, currentDuration);
     };
 
     window.triggerCancelBooking = (bookingId) => {
