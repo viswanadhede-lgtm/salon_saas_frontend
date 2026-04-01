@@ -1,97 +1,23 @@
+import { API, fetchWithAuth } from './config/api.js';
+import { FEATURES } from './config/feature-registry.js';
+
+function getCompanyId() {
+    try {
+        const appContext = JSON.parse(localStorage.getItem('appContext') || '{}');
+        return appContext.company?.id || null;
+    } catch (e) { return null; }
+}
+
+function getBranchId() {
+    return localStorage.getItem('active_branch_id') || null;
+}
+
 document.addEventListener('DOMContentLoaded', () => {
     // ----------------------------------------------------------------------
-    // 1. MOCK DATA
+    // 1. DATA STATE
     // ----------------------------------------------------------------------
-    const initialSalesData = [
-        { 
-            id: 'SAL-1023', 
-            customer: 'Emma Watson', 
-            date: '2023-10-25 10:30 AM', 
-            products: [
-                { name: 'Argan Oil Serum', qty: 1, price: 1200, category: 'Hair care' },
-                { name: 'Color Protect Shampoo', qty: 1, price: 850, category: 'Hair care' }
-            ], 
-            total: '₹2,050', 
-            payment: 'card', 
-            staff: 'Sarah',
-            status: 'completed' 
-        },
-        { 
-            id: 'SAL-1024', 
-            customer: 'David Rodriguez', 
-            date: '2023-10-25 11:45 AM', 
-            products: [
-                { name: 'Matte Clay Pomade', qty: 2, price: 550, category: 'Style products' }
-            ], 
-            total: '₹1,100', 
-            payment: 'cash', 
-            staff: 'Michael',
-            status: 'completed' 
-        },
-        { 
-            id: 'SAL-1025', 
-            customer: 'Meera Patel', 
-            date: '2023-10-25 12:30 PM', 
-            products: [
-                { name: 'Keratin Hair Mask', qty: 1, price: 1500, category: 'Hair care' }
-            ], 
-            total: '₹1,500', 
-            payment: 'upi', 
-            staff: 'Sarah',
-            status: 'completed'  
-        },
-        { 
-            id: 'SAL-1026', 
-            customer: 'Amit Singh', 
-            date: '2023-10-26 01:00 PM', 
-            products: [
-                { name: 'Tea Tree Face Wash', qty: 1, price: 350, category: 'Skin care' },
-                { name: 'Vitamin C Serum', qty: 1, price: 900, category: 'Skin care' }
-            ], 
-            total: '₹1,250', 
-            payment: 'card', 
-            staff: 'Anjali',
-            status: 'refunded'
-        },
-        { 
-            id: 'SAL-1027', 
-            customer: 'Priya Kapoor', 
-            date: '2023-10-26 02:20 PM', 
-            products: [
-                { name: 'Heat Protection Spray', qty: 1, price: 650, category: 'Style products' }
-            ], 
-            total: '₹650', 
-            payment: 'upi', 
-            staff: 'Anjali',
-            status: 'completed' 
-        },
-        { 
-            id: 'SAL-1028', 
-            customer: 'Rahul Mehta', 
-            date: '2023-10-27 09:15 AM', 
-            products: [
-                { name: 'Beard Trimming Oil', qty: 1, price: 450, category: 'Style products' }
-            ], 
-            total: '₹450', 
-            payment: 'cash', 
-            staff: 'Michael',
-            status: 'completed' 
-        },
-        { 
-            id: 'SAL-1029', 
-            customer: 'Nisha Reddy', 
-            date: '2023-10-27 04:30 PM', 
-            products: [
-                { name: 'Bridal Glow Kit', qty: 1, price: 4500, category: 'Skin care' }
-            ], 
-            total: '₹4,500', 
-            payment: 'card', 
-            staff: 'Sarah',
-            status: 'completed' 
-        }
-    ];
-
-    let currentSalesData = [...initialSalesData];
+    let initialSalesData = [];
+    let currentSalesData = [];
     let activeMenuEl = null;
     let currentActionData = null; // { action, idx, sale }
 
@@ -144,10 +70,90 @@ document.addEventListener('DOMContentLoaded', () => {
     // ----------------------------------------------------------------------
     initPage();
 
-    function initPage() {
+    async function initPage() {
         if (typeof feather !== 'undefined') feather.replace();
-        renderTable();
         setupEventListeners();
+        await fetchSalesHistory();
+    }
+
+    async function fetchSalesHistory() {
+        if (!tableBody) return;
+        
+        tableBody.innerHTML = `
+            <tr>
+                <td colspan="8" style="text-align:center; padding: 40px; color: #64748b;">
+                    <i data-feather="loader" style="width: 32px; height: 32px; margin-bottom: 12px; animation: spin 1s linear infinite;"></i>
+                    <p>Loading sales history...</p>
+                </td>
+            </tr>
+            <style>@keyframes spin { 100% { transform: rotate(360deg); } }</style>
+        `;
+        if (typeof feather !== 'undefined') feather.replace();
+
+        try {
+            const response = await fetchWithAuth(API.READ_SALES, {
+                method: 'POST',
+                body: JSON.stringify({ company_id: getCompanyId(), branch_id: getBranchId() })
+            }, FEATURES.SALES_HISTORY, 'read');
+
+            if (!response.ok) throw new Error('Failed to fetch sales');
+            
+            const rawData = await response.json();
+            
+            // Group flat line items into sales orders by sale_id
+            const grouped = rawData.reduce((acc, item) => {
+                if (!acc[item.sale_id]) {
+                    const d = new Date(item.created_at);
+                    const formattedDate = d.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) + ' ' + d.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' });
+                    acc[item.sale_id] = {
+                        id: item.sale_id,
+                        customer: item.customer_name || 'Walk-in',
+                        date: formattedDate,
+                        products: [],
+                        totalAmountNum: 0,
+                        payment: (item.payment_method || 'other').toLowerCase(),
+                        staff: 'System', 
+                        status: (item.status || 'completed').toLowerCase(),
+                        raw_created_at: d.getTime()
+                    };
+                }
+                const qty = Number(item.quantity) || 1;
+                const price = Number(item.price) || 0;
+                
+                acc[item.sale_id].products.push({
+                    name: item.product_name || 'Unknown Product',
+                    qty: qty,
+                    price: price,
+                    category: item.category_name || ''
+                });
+                
+                // Add to total
+                acc[item.sale_id].totalAmountNum += Number(item.total_amount) || (price * qty);
+                
+                return acc;
+            }, {});
+
+            initialSalesData = Object.values(grouped).sort((a,b) => b.raw_created_at - a.raw_created_at).map(s => {
+                s.total = `₹${s.totalAmountNum.toLocaleString()}`;
+                return s;
+            });
+
+            currentSalesData = [...initialSalesData];
+            renderTable();
+
+        } catch (err) {
+            console.error('Error fetching sales history:', err);
+            tableBody.innerHTML = `
+                <tr>
+                    <td colspan="8" style="text-align:center; padding: 40px; color: #64748b;">
+                        <i data-feather="alert-circle" style="width: 32px; height: 32px; margin-bottom: 12px; opacity: 0.5;"></i>
+                        <p>Could not load sales history. Please try again.</p>
+                        <button onclick="window.location.reload()" style="margin-top: 10px; padding: 6px 16px; border-radius: 6px; border: 1px solid #e2e8f0; background: #fff; cursor: pointer;">Retry</button>
+                    </td>
+                </tr>
+            `;
+            if (typeof feather !== 'undefined') feather.replace();
+        }
     }
 
     // ----------------------------------------------------------------------
