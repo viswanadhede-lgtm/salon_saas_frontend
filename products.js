@@ -130,6 +130,7 @@ function initTabs() {
                 filterBtn.style.display  = 'flex';
                 primaryActionText.textContent = 'Add Product';
                 primaryActionBtn.onclick = window.openAddProductModal;
+                fetchProductCategories();
                 renderProductsTable();
             } else {
                 document.getElementById('tabCategories').style.display = 'block';
