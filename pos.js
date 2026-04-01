@@ -3,6 +3,8 @@ import { FEATURES } from './config/feature-registry.js';
 
 // --- Live Data ---
 let liveProducts = [];
+let liveCustomers = [];
+let selectedPosCustomer = null;
 let cart = [];
 let currentPaymentMethod = 'cash';
 
@@ -23,8 +25,26 @@ document.addEventListener('DOMContentLoaded', () => {
     if (window.location.pathname.includes('pos.html')) {
         setupEventListeners();
         fetchProducts();
+        fetchCustomers();
     }
 });
+
+// --- API: Fetch Customers (for POS customer search) ---
+async function fetchCustomers() {
+    try {
+        const response = await fetchWithAuth(API.READ_CUSTOMERS, {
+            method: 'POST',
+            body: JSON.stringify({ company_id: getCompanyId(), branch_id: getBranchId() })
+        }, FEATURES.CUSTOMERS_MANAGEMENT, 'read');
+
+        if (!response.ok) return;
+        const data = await response.json();
+        const root = Array.isArray(data) ? data[0] : data;
+        liveCustomers = root.customers || (Array.isArray(data) ? data : []);
+    } catch (err) {
+        console.error('POS: Error fetching customers:', err);
+    }
+}
 
 // --- API: Fetch Products ---
 async function fetchProducts() {
@@ -168,8 +188,95 @@ function renderProducts(products) {
 
 // --- Event Listeners ---
 function setupEventListeners() {
-    // Search products
-    const searchInput = document.getElementById('posSearchProduct');
+    // --- Customer Search ---
+    const customerSearchInput = document.getElementById('posCustomerSearch');
+    const customerSuggestions = document.getElementById('posCustomerSuggestions');
+    const customerSearchBox   = document.getElementById('posCustomerSearchBox');
+    const selectedCustomerDiv = document.getElementById('posSelectedCustomer');
+    const selectedNameInput   = document.getElementById('posSelectedCustomerName');
+    const selectedPhoneInput  = document.getElementById('posSelectedCustomerPhone');
+    const clearCustomerBtn    = document.getElementById('posClearCustomer');
+
+    function showCustomerSelected(customer) {
+        selectedPosCustomer = customer;
+        const name  = customer.customer_name || customer.name || '';
+        const phone = customer.customer_phone || customer.phone || '';
+        if (selectedNameInput)  selectedNameInput.value  = name;
+        if (selectedPhoneInput) selectedPhoneInput.value = phone;
+        // Hide search, show selected card
+        if (customerSearchBox)   customerSearchBox.style.display   = 'none';
+        if (customerSuggestions) customerSuggestions.style.display = 'none';
+        if (selectedCustomerDiv) selectedCustomerDiv.style.display = 'flex';
+        if (window.feather) feather.replace();
+    }
+
+    function clearCustomerSelection() {
+        selectedPosCustomer = null;
+        if (customerSearchInput)  customerSearchInput.value = '';
+        if (selectedNameInput)    selectedNameInput.value   = '';
+        if (selectedPhoneInput)   selectedPhoneInput.value  = '';
+        if (customerSearchBox)    customerSearchBox.style.display   = 'flex';
+        if (selectedCustomerDiv)  selectedCustomerDiv.style.display = 'none';
+        if (customerSuggestions)  customerSuggestions.style.display = 'none';
+        if (customerSearchInput)  customerSearchInput.focus();
+    }
+
+    if (customerSearchInput) {
+        customerSearchInput.addEventListener('input', (e) => {
+            const val = e.target.value.trim();
+            if (!val) {
+                customerSuggestions.style.display = 'none';
+                return;
+            }
+            const matches = liveCustomers.filter(c => {
+                const phone = String(c.customer_phone || c.phone || '');
+                const name  = String(c.customer_name  || c.name  || '').toLowerCase();
+                return phone.includes(val) || name.includes(val.toLowerCase());
+            }).slice(0, 8);
+
+            customerSuggestions.innerHTML = '';
+            if (matches.length === 0) {
+                customerSuggestions.innerHTML = `<div style="padding:12px 16px; font-size:0.875rem; color:#94a3b8;">No customers found</div>`;
+            } else {
+                matches.forEach(m => {
+                    const name  = m.customer_name || m.name || 'Unknown';
+                    const phone = m.customer_phone || m.phone || '';
+                    const item = document.createElement('div');
+                    item.style.cssText = `padding:10px 16px; cursor:pointer; display:flex; justify-content:space-between; align-items:center; border-bottom:1px solid #f1f5f9; font-size:0.875rem; transition:background 0.15s;`;
+                    item.innerHTML = `
+                        <span style="font-weight:600; color:#334155;">${name}</span>
+                        <span style="color:#64748b; font-size:0.8rem;">${phone}</span>
+                    `;
+                    item.addEventListener('mouseenter', () => item.style.background = '#f8fafc');
+                    item.addEventListener('mouseleave', () => item.style.background = 'transparent');
+                    item.addEventListener('mousedown', (ev) => {
+                        ev.preventDefault(); // prevent blur before click fires
+                        showCustomerSelected(m);
+                    });
+                    customerSuggestions.appendChild(item);
+                });
+            }
+            customerSuggestions.style.display = 'block';
+        });
+
+        customerSearchInput.addEventListener('blur', () => {
+            setTimeout(() => { if (customerSuggestions) customerSuggestions.style.display = 'none'; }, 150);
+        });
+    }
+
+    if (clearCustomerBtn) {
+        clearCustomerBtn.addEventListener('click', clearCustomerSelection);
+    }
+
+    // Click outside to close suggestions
+    document.addEventListener('click', (e) => {
+        if (customerSuggestions && customerSearchInput &&
+            !customerSearchInput.contains(e.target) &&
+            !customerSuggestions.contains(e.target)) {
+            customerSuggestions.style.display = 'none';
+        }
+    });
+
     if (searchInput) {
         searchInput.addEventListener('input', (e) => {
             const term = e.target.value.toLowerCase().trim();
