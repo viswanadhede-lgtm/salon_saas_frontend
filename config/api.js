@@ -47,7 +47,15 @@ export const API = {
   READ_ROLES: `${BASE_URL}/read_roles`,
   CREATE_ROLE: `${BASE_URL}/create_role`,
   UPDATE_ROLE: `${BASE_URL}/update_role`,
-  DELETE_ROLE: `${BASE_URL}/delete_role`
+  DELETE_ROLE: `${BASE_URL}/delete_role`,
+  CREATE_PRODUCT: `${BASE_URL}/create_product`,
+  READ_PRODUCTS: `${BASE_URL}/read_products`,
+  UPDATE_PRODUCT: `${BASE_URL}/update_product`,
+  DELETE_PRODUCT: `${BASE_URL}/delete_product`,
+  CREATE_PRODUCT_CATEGORY: `${BASE_URL}/create_product_category`,
+  READ_PRODUCT_CATEGORIES: `${BASE_URL}/read_product_categories`,
+  UPDATE_PRODUCT_CATEGORY: `${BASE_URL}/update_product_category`,
+  DELETE_PRODUCT_CATEGORY: `${BASE_URL}/delete_product_category`
 };
 
 /**

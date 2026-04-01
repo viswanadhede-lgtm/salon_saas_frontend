@@ -56,8 +56,15 @@ export const SUB_FEATURES = {
     MARKETING_MANAGE_COUPONS: 'marketing_manage_coupons',
 
     // ---- INVENTORY / PRODUCTS ----
-    PRODUCT_EDIT_INVENTORY: 'product_edit_inventory',
-    PRODUCT_EDIT_PRICING: 'product_edit_pricing',
+    CREATE_PRODUCT_CATEGORY: 'create_product_category',
+    READ_PRODUCT_CATEGORIES: 'read_product_categories',
+    UPDATE_PRODUCT_CATEGORY: 'update_product_category',
+    DELETE_PRODUCT_CATEGORY: 'delete_product_category',
+
+    CREATE_PRODUCT: 'create_product',
+    READ_PRODUCTS: 'read_products',
+    UPDATE_PRODUCT: 'update_product',
+    DELETE_PRODUCT: 'delete_product',
 
     // ---- SETTINGS ----
     SETTINGS_MANAGE_COMPANY: 'settings_manage_company',
@@ -129,8 +136,15 @@ export const SUB_FEATURES_MAP = {
         { key: SUB_FEATURES.MARKETING_MANAGE_COUPONS, label: 'Manage Coupons' }
     ],
     [FEATURES.PRODUCT_MANAGEMENT]: [
-        { key: SUB_FEATURES.PRODUCT_EDIT_INVENTORY, label: 'Edit Inventory' },
-        { key: SUB_FEATURES.PRODUCT_EDIT_PRICING, label: 'Edit Pricing' }
+        { key: SUB_FEATURES.CREATE_PRODUCT_CATEGORY, label: 'Create Product Category' },
+        { key: SUB_FEATURES.READ_PRODUCT_CATEGORIES, label: 'Read Product Categories' },
+        { key: SUB_FEATURES.UPDATE_PRODUCT_CATEGORY, label: 'Update Product Category' },
+        { key: SUB_FEATURES.DELETE_PRODUCT_CATEGORY, label: 'Delete Product Category' },
+
+        { key: SUB_FEATURES.CREATE_PRODUCT, label: 'Create Product' },
+        { key: SUB_FEATURES.READ_PRODUCTS, label: 'Read Products' },
+        { key: SUB_FEATURES.UPDATE_PRODUCT, label: 'Update Product' },
+        { key: SUB_FEATURES.DELETE_PRODUCT, label: 'Delete Product' }
     ],
     [FEATURES.COMPANY_SETTINGS]: [
         { key: SUB_FEATURES.SETTINGS_MANAGE_COMPANY, label: 'Manage Settings' }
