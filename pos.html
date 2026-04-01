@@ -358,39 +358,61 @@
         feather.replace();
     </script>
 
-    <!-- Add Customer Modal for POS -->
-    <div class="modal-overlay" id="posAddCustomerOverlay">
-        <div class="modal-container" id="posAddCustomerModal" style="width: 500px; max-width: 95%;">
+    <!-- Add Customer Modal (shared with Customers page) -->
+    <div class="modal-overlay" id="addCustomerModalOverlay">
+        <div class="modal-container" id="addCustomerModal" style="max-width: 845px;">
+            <!-- Header -->
             <div class="modal-header">
                 <div class="header-titles">
-                    <h2>Add Customer</h2>
-                    <p class="subtitle">Create a new customer profile</p>
+                    <h2>Add New Customer</h2>
+                    <p class="subtitle">Enter the details to create a new client profile.</p>
                 </div>
-                <button class="modal-close" id="closePosAddCustomer"><i data-feather="x"></i></button>
+                <button class="modal-close" id="closeAddCustomerModal"><i data-feather="x"></i></button>
             </div>
-            <div class="modal-body" style="padding: 1.5rem; overflow-y: auto;">
-                <div class="form-grid" style="gap: 16px; margin-bottom: 16px;">
-                    <div class="form-group" style="margin-bottom: 0;">
-                        <label class="form-label">First Name <span class="text-rose">*</span></label>
-                        <input type="text" id="newCustomerFirstName" class="form-input" placeholder="e.g. John">
+
+            <!-- Body -->
+            <div class="modal-body" style="padding: 1.5rem;">
+                <div class="form-grid">
+                    <div class="form-group">
+                        <label class="form-label" for="newCustName">Full Name <span class="text-rose">*</span></label>
+                        <input type="text" id="newCustName" class="form-input">
                     </div>
-                    <div class="form-group" style="margin-bottom: 0;">
-                        <label class="form-label">Last Name <span class="text-rose">*</span></label>
-                        <input type="text" id="newCustomerLastName" class="form-input" placeholder="e.g. Doe">
+
+                    <div class="form-group">
+                        <label class="form-label" for="newCustPhone">Phone Number <span class="text-rose">*</span></label>
+                        <input type="tel" id="newCustPhone" class="form-input" maxlength="10" inputmode="numeric" pattern="[0-9]{10}">
                     </div>
-                </div>
-                <div class="form-group" style="margin-bottom: 16px;">
-                    <label class="form-label">Phone Number <span class="text-rose">*</span></label>
-                    <input type="tel" id="newCustomerPhone" class="form-input" placeholder="e.g. +91 98765 43210">
-                </div>
-                <div class="form-group" style="margin-bottom: 0;">
-                    <label class="form-label">Email <span class="text-muted">(Optional)</span></label>
-                    <input type="email" id="newCustomerEmail" class="form-input" placeholder="e.g. john@example.com">
+
+                    <div class="form-group">
+                        <label class="form-label" for="newCustEmail">Email Address <span class="text-muted" style="font-weight: 400; font-size: 0.8rem;">(Optional)</span></label>
+                        <input type="email" id="newCustEmail" class="form-input">
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label" for="newCustDob">Birthday <span class="text-muted" style="font-weight: 400; font-size: 0.8rem;">(Optional)</span></label>
+                        <input type="date" id="newCustDob" class="form-input">
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label" for="newCustTag">Customer Tag</label>
+                        <select id="newCustTag" class="form-select">
+                            <option value="new" selected>New</option>
+                            <option value="regular">Regular</option>
+                            <option value="vip">VIP</option>
+                        </select>
+                    </div>
+
+                    <div class="form-group" style="grid-column: 1 / -1;">
+                        <label class="form-label" for="newCustNotes">Notes <span class="text-muted" style="font-weight: 400; font-size: 0.8rem;">(Optional)</span></label>
+                        <textarea id="newCustNotes" class="form-input" style="min-height: 105px; resize: vertical;"></textarea>
+                    </div>
                 </div>
             </div>
-            <div class="modal-footer" style="padding: 16px 1.5rem; border-top: 1px solid #f1f5f9; display: flex; justify-content: flex-end; gap: 12px;">
-                <button type="button" class="btn btn-secondary" id="cancelPosAddCustomer">Cancel</button>
-                <button type="button" class="btn btn-primary" id="savePosCustomerBtn">Save Customer</button>
+
+            <!-- Footer -->
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" id="btnCancelAddCustomer">Cancel</button>
+                <button type="button" class="btn btn-primary" id="btnSaveNewCustomer" style="background: #10b981; border-color: #10b981;">Save Customer</button>
             </div>
         </div>
     </div>

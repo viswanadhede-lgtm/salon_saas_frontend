@@ -265,36 +265,47 @@ function setupEventListeners() {
 
     // Add Customer Modal Logic
     const btnOpenAddCustomer = document.getElementById('btnOpenAddCustomer');
-    const addCustOverlay = document.getElementById('posAddCustomerOverlay');
-    const btnCloseAddCustomer = document.getElementById('closePosAddCustomer');
-    const btnCancelAddCustomer = document.getElementById('cancelPosAddCustomer');
-    const btnSaveCustomer = document.getElementById('savePosCustomerBtn');
+    const addCustOverlay = document.getElementById('addCustomerModalOverlay');
+    const btnCloseAddCustomer = document.getElementById('closeAddCustomerModal');
+    const btnCancelAddCustomer = document.getElementById('btnCancelAddCustomer');
+    const btnSaveCustomer = document.getElementById('btnSaveNewCustomer');
 
     if (btnOpenAddCustomer && addCustOverlay) {
         btnOpenAddCustomer.addEventListener('click', () => {
-            addCustOverlay.classList.add('show');
+            addCustOverlay.classList.add('active');
+            if (typeof feather !== 'undefined') feather.replace();
         });
 
         const closeAddModal = () => {
-            addCustOverlay.classList.remove('show');
-            document.getElementById('newCustomerFirstName').value = '';
-            document.getElementById('newCustomerLastName').value = '';
-            document.getElementById('newCustomerPhone').value = '';
-            document.getElementById('newCustomerEmail').value = '';
+            addCustOverlay.classList.remove('active');
+            const n = document.getElementById('newCustName');
+            const p = document.getElementById('newCustPhone');
+            const e = document.getElementById('newCustEmail');
+            const d = document.getElementById('newCustDob');
+            const nt = document.getElementById('newCustNotes');
+            if (n) n.value = '';
+            if (p) p.value = '';
+            if (e) e.value = '';
+            if (d) d.value = '';
+            if (nt) nt.value = '';
         };
 
-        if(btnCloseAddCustomer) btnCloseAddCustomer.addEventListener('click', closeAddModal);
-        if(btnCancelAddCustomer) btnCancelAddCustomer.addEventListener('click', closeAddModal);
+        if (btnCloseAddCustomer) btnCloseAddCustomer.addEventListener('click', closeAddModal);
+        if (btnCancelAddCustomer) btnCancelAddCustomer.addEventListener('click', closeAddModal);
 
-        if(btnSaveCustomer) {
+        // Close on backdrop click
+        addCustOverlay.addEventListener('click', (e) => {
+            if (e.target === addCustOverlay) closeAddModal();
+        });
+
+        if (btnSaveCustomer) {
             btnSaveCustomer.addEventListener('click', async () => {
-                const fName = document.getElementById('newCustomerFirstName').value.trim();
-                const lName = document.getElementById('newCustomerLastName').value.trim();
-                const phone = document.getElementById('newCustomerPhone').value.trim();
-                const email = document.getElementById('newCustomerEmail').value.trim();
+                const fullName = (document.getElementById('newCustName')?.value || '').trim();
+                const phone = (document.getElementById('newCustPhone')?.value || '').trim();
+                const email = (document.getElementById('newCustEmail')?.value || '').trim();
 
-                if (!fName || !lName || !phone) {
-                    alert('Please fill in First Name, Last Name, and Phone Number');
+                if (!fullName || !phone) {
+                    alert('Please fill in Full Name and Phone Number');
                     return;
                 }
 
@@ -305,11 +316,9 @@ function setupEventListeners() {
                     const payload = {
                         company_id: getCompanyId(),
                         branch_id: getBranchId(),
-                        first_name: fName,
-                        last_name: lName,
+                        full_name: fullName,
                         phone_number: phone,
                         email: email,
-                        address: '',
                         notes: 'Added from POS'
                     };
 
@@ -320,13 +329,13 @@ function setupEventListeners() {
 
                     if (!res.ok) throw new Error('Failed to create customer');
 
-                    // Refresh customers list background
+                    // Refresh customers list in background
                     await fetchCustomers();
 
-                    // Instantly select the fake newly created context for immediate UI feedback
-                    custSearch.value = `${fName} ${lName}`;
-                    custNameField.value = `${fName} ${lName}`;
-                    custPhoneField.value = phone;
+                    // Immediately populate the POS fields
+                    if (custSearch) custSearch.value = fullName;
+                    if (custNameField) custNameField.value = fullName;
+                    if (custPhoneField) custPhoneField.value = phone;
 
                     closeAddModal();
                 } catch (err) {
