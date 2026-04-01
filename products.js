@@ -203,7 +203,7 @@ function renderProductsTable() {
     const searchInput = document.getElementById('searchInput');
     const searchStr = (searchInput ? searchInput.value : '').toLowerCase().trim();
     if (searchStr) {
-        filtered = filtered.filter(p => (p.name || '').toLowerCase().includes(searchStr) || (p.category_name || '').toLowerCase().includes(searchStr));
+        filtered = filtered.filter(p => (p.product_name || '').toLowerCase().includes(searchStr) || (p.category_name || '').toLowerCase().includes(searchStr));
     }
     
     const selectedCategory = document.querySelector('input[name="filterCategory"]:checked');
@@ -215,7 +215,7 @@ function renderProductsTable() {
         const tr = document.createElement('tr');
         tr.className = 'tb-row';
         tr.innerHTML = `
-            <td style="padding:16px 16px 16px 32px;"><p style="font-weight:600;color:#1e293b;margin:0;font-size:0.9rem;">${p.name || '-'}</p></td>
+            <td style="padding:16px 16px 16px 32px;"><p style="font-weight:600;color:#1e293b;margin:0;font-size:0.9rem;">${p.product_name || '-'}</p></td>
             <td style="padding:16px;"><span style="background:#f1f5f9;padding:3px 8px;border-radius:6px;font-size:0.8rem;color:#475569;">${p.category_name || 'Uncategorized'}</span></td>
             <td style="padding:16px;color:#334155;font-weight:600;font-size:0.9rem;">&#8377;${p.price || 0}</td>
             <td style="padding:16px;">${stockBadge(p.stock_quantity || 0)}</td>
@@ -226,7 +226,7 @@ function renderProductsTable() {
                         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="margin-bottom:2px;"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path></svg>
                         <span style="font-size:10px; font-weight:600;">Edit</span>
                     </button>
-                    <button class="hover-lift" onclick="window.triggerDeleteProduct('${p.id || p.product_id}', '${(p.name || '').replace(/'/g, "\\'")}')" title="Delete Product" style="display:flex; flex-direction:column; align-items:center; justify-content:center; padding: 4px 8px; border-radius:8px; border:1px solid #fee2e2; background:#fef2f2; cursor:pointer; color:#ef4444; transition:all 0.2s; min-width: 52px;">
+                    <button class="hover-lift" onclick="window.triggerDeleteProduct('${p.id || p.product_id}', '${(p.product_name || '').replace(/'/g, "\\'")}')" title="Delete Product" style="display:flex; flex-direction:column; align-items:center; justify-content:center; padding: 4px 8px; border-radius:8px; border:1px solid #fee2e2; background:#fef2f2; cursor:pointer; color:#ef4444; transition:all 0.2s; min-width: 52px;">
                         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="margin-bottom:2px;"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2-2v2"></path><line x1="10" y1="11" x2="10" y2="17"></line><line x1="14" y1="11" x2="14" y2="17"></line></svg>
                         <span style="font-size:10px; font-weight:600;">Delete</span>
                     </button>
@@ -649,7 +649,7 @@ function attachGlobalEventListeners() {
             const payload = {
                 company_id: getCompanyId(),
                 branch_id: getBranchId(),
-                name: name,
+                product_name: name,
                 category_name: cat,
                 category_id: catId,
                 price: Number(price),
@@ -708,7 +708,7 @@ function attachGlobalEventListeners() {
                 company_id: getCompanyId(),
                 branch_id: getBranchId(),
                 product_id: document.getElementById('editProductId').value,
-                name: name,
+                product_name: name,
                 category_name: cat,
                 category_id: catId,
                 price: Number(price),
@@ -831,7 +831,7 @@ window.openEditProductModal = function (id) {
     const p = liveProductsData.find(x => (x.id || x.product_id) == id);
     if(p) {
         document.getElementById('editProductId').value = p.id || p.product_id;
-        document.getElementById('editProductName').value = p.name || '';
+        document.getElementById('editProductName').value = p.product_name || '';
         document.getElementById('editProductCategory').value = p.category_name || '';
         document.getElementById('editProductPrice').value = p.price || 0;
         document.getElementById('editProductStock').value = p.stock_quantity || 0;
