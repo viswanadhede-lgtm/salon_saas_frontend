@@ -42,8 +42,8 @@ async function fetchProductCategories() {
         if (!response.ok) throw new Error('Failed to fetch categories');
         
         const data = await response.json();
-        const root = Array.isArray(data) ? data[0] : data;
-        liveProductCategoriesData = (root.categories || []).filter(c => (c.status || '').toLowerCase() !== 'deleted');
+        let rawData = Array.isArray(data) ? data : (data.categories || []);
+        liveProductCategoriesData = rawData.filter(c => (c.status || '').toLowerCase() !== 'deleted');
         
         // Update Add Product Dropdown
         populateCategoryDropdown('productCategory');
@@ -72,8 +72,8 @@ async function fetchProducts() {
         if (!response.ok) throw new Error('Failed to fetch products');
         
         const data = await response.json();
-        const root = Array.isArray(data) ? data[0] : data;
-        liveProductsData = (root.products || []).filter(p => (p.status || '').toLowerCase() !== 'deleted');
+        let rawData = Array.isArray(data) ? data : (data.products || []);
+        liveProductsData = rawData.filter(p => (p.status || '').toLowerCase() !== 'deleted');
         
         renderProductsTable();
         const tabEl = document.getElementById('productsCountBadge');
@@ -270,7 +270,7 @@ function renderCategoriesTable() {
 
     filtered.forEach(c => {
         const tr = document.createElement('tr');
-        const pCount = c.product_count || 0; 
+        const pCount = liveProductsData.filter(p => p.category_name === c.category_name).length;
         const char = (c.category_name || '?').charAt(0).toUpperCase();
         tr.className = 'tb-row';
         tr.innerHTML = `
