@@ -324,12 +324,15 @@ async function populateEditDropdowns(currentServiceName, currentStaffName, curre
                 rawServices = svcData.services;
             }
             const services = rawServices.filter(s => (s['status '] || s.status || '').trim().toLowerCase() === 'active');
+            // Log first service to inspect exact field names from API
+            if (services.length > 0) console.log('[EditDropdown] Sample service object:', services[0]);
             services.forEach(s => {
                 const opt = document.createElement('option');
                 opt.value            = s.service_id || s.id || '';
                 opt.textContent      = s.service_name || s.name;
-                opt.dataset.duration = s.duration || '';
-                opt.dataset.price    = s.price    || '';
+                // Handle trailing-space variants and alternate field names
+                opt.dataset.duration = (s['duration '] || s.duration || s.duration_minutes || '').toString();
+                opt.dataset.price    = (s['price ']    || s.price    || '').toString();
                 serviceSelect.appendChild(opt);
             });
             // Pre-select by name match
