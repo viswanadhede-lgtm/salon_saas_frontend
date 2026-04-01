@@ -5,6 +5,8 @@ import { FEATURES } from './config/feature-registry.js';
 let liveProducts = [];
 let cart = [];
 let currentPaymentMethod = 'cash';
+let allCustomers = [];
+let selectedCustomer = null;
 
 // --- Helpers ---
 function getCompanyId() {
@@ -23,6 +25,7 @@ document.addEventListener('DOMContentLoaded', () => {
     if (window.location.pathname.includes('pos.html')) {
         setupEventListeners();
         fetchProducts();
+        fetchCustomers();
     }
 });
 
@@ -80,6 +83,23 @@ async function fetchProducts() {
 }
 
 window.posRetryFetch = function () { fetchProducts(); };
+
+// --- API: Fetch Customers ---
+async function fetchCustomers() {
+    try {
+        const response = await fetchWithAuth(API.READ_CUSTOMERS, {
+            method: 'POST',
+            body: JSON.stringify({ company_id: getCompanyId(), branch_id: getBranchId() })
+        }, FEATURES.CUSTOMERS_MANAGEMENT, 'read');
+
+        if (response.ok) {
+            const data = await response.json();
+            allCustomers = Array.isArray(data) ? data : (data.customers || []);
+        }
+    } catch (err) {
+        console.error('POS: Error fetching customers:', err);
+    }
+}
 
 // --- Render Products Grid ---
 function renderProducts(products) {
@@ -185,6 +205,141 @@ function setupEventListeners() {
         });
     }
 
+    // Customer Selection Logic
+    const custSearch = document.getElementById('posCustomerSearch');
+    const custSuggestions = document.getElementById('posCustomerSuggestions');
+    const custNameField = document.getElementById('posCustomerName');
+    const custPhoneField = document.getElementById('posCustomerPhone');
+
+    if (custSearch) {
+        custSearch.addEventListener('input', (e) => {
+            const term = e.target.value.toLowerCase().trim();
+            if (!term) {
+                custSuggestions.style.display = 'none';
+                return;
+            }
+
+            const filtered = allCustomers.filter(c => 
+                ((c.first_name || '') + ' ' + (c.last_name || '')).toLowerCase().includes(term) ||
+                (c.phone_number || '').includes(term)
+            );
+
+            if (filtered.length === 0) {
+                custSuggestions.innerHTML = `<div style="padding: 12px; color: #64748b; font-size: 0.85rem; text-align: center;">No customers found</div>`;
+            } else {
+                custSuggestions.innerHTML = filtered.map(c => `
+                    <div class="cust-suggestion-item" data-id="${c.id || c.customer_id}" style="padding: 10px 12px; cursor: pointer; border-bottom: 1px solid #f1f5f9; display: flex; flex-direction: column; gap: 2px;">
+                        <span style="font-size: 0.9rem; font-weight: 600; color: #1e293b;">${c.first_name} ${c.last_name}</span>
+                        <span style="font-size: 0.75rem; color: #64748b;">${c.phone_number || 'N/A'}</span>
+                    </div>
+                `).join('');
+            }
+            custSuggestions.style.display = 'block';
+        });
+
+        // Hide suggestions on click outside
+        document.addEventListener('click', (e) => {
+            if (custSearch && custSuggestions && !custSearch.contains(e.target) && !custSuggestions.contains(e.target)) {
+                custSuggestions.style.display = 'none';
+            }
+        });
+
+        // Handle suggestion selection
+        if (custSuggestions) {
+            custSuggestions.addEventListener('click', (e) => {
+                const item = e.target.closest('.cust-suggestion-item');
+                if (item) {
+                    const id = item.dataset.id;
+                    const customer = allCustomers.find(c => (c.id || c.customer_id) == id);
+                    if (customer) {
+                        selectedCustomer = customer;
+                        custSearch.value = `${customer.first_name} ${customer.last_name}`;
+                        custNameField.value = `${customer.first_name} ${customer.last_name}`;
+                        custPhoneField.value = customer.phone_number || 'N/A';
+                        custSuggestions.style.display = 'none';
+                    }
+                }
+            });
+        }
+    }
+
+    // Add Customer Modal Logic
+    const btnOpenAddCustomer = document.getElementById('btnOpenAddCustomer');
+    const addCustOverlay = document.getElementById('posAddCustomerOverlay');
+    const btnCloseAddCustomer = document.getElementById('closePosAddCustomer');
+    const btnCancelAddCustomer = document.getElementById('cancelPosAddCustomer');
+    const btnSaveCustomer = document.getElementById('savePosCustomerBtn');
+
+    if (btnOpenAddCustomer && addCustOverlay) {
+        btnOpenAddCustomer.addEventListener('click', () => {
+            addCustOverlay.classList.add('show');
+        });
+
+        const closeAddModal = () => {
+            addCustOverlay.classList.remove('show');
+            document.getElementById('newCustomerFirstName').value = '';
+            document.getElementById('newCustomerLastName').value = '';
+            document.getElementById('newCustomerPhone').value = '';
+            document.getElementById('newCustomerEmail').value = '';
+        };
+
+        if(btnCloseAddCustomer) btnCloseAddCustomer.addEventListener('click', closeAddModal);
+        if(btnCancelAddCustomer) btnCancelAddCustomer.addEventListener('click', closeAddModal);
+
+        if(btnSaveCustomer) {
+            btnSaveCustomer.addEventListener('click', async () => {
+                const fName = document.getElementById('newCustomerFirstName').value.trim();
+                const lName = document.getElementById('newCustomerLastName').value.trim();
+                const phone = document.getElementById('newCustomerPhone').value.trim();
+                const email = document.getElementById('newCustomerEmail').value.trim();
+
+                if (!fName || !lName || !phone) {
+                    alert('Please fill in First Name, Last Name, and Phone Number');
+                    return;
+                }
+
+                btnSaveCustomer.disabled = true;
+                btnSaveCustomer.textContent = 'Saving...';
+
+                try {
+                    const payload = {
+                        company_id: getCompanyId(),
+                        branch_id: getBranchId(),
+                        first_name: fName,
+                        last_name: lName,
+                        phone_number: phone,
+                        email: email,
+                        address: '',
+                        notes: 'Added from POS'
+                    };
+
+                    const res = await fetchWithAuth(API.CREATE_CUSTOMER, {
+                        method: 'POST',
+                        body: JSON.stringify(payload)
+                    }, FEATURES.CUSTOMERS_MANAGEMENT, 'create');
+
+                    if (!res.ok) throw new Error('Failed to create customer');
+
+                    // Refresh customers list background
+                    await fetchCustomers();
+
+                    // Instantly select the fake newly created context for immediate UI feedback
+                    custSearch.value = `${fName} ${lName}`;
+                    custNameField.value = `${fName} ${lName}`;
+                    custPhoneField.value = phone;
+
+                    closeAddModal();
+                } catch (err) {
+                    console.error(err);
+                    alert('Failed to save customer. Please try again.');
+                } finally {
+                    btnSaveCustomer.disabled = false;
+                    btnSaveCustomer.textContent = 'Save Customer';
+                }
+            });
+        }
+    }
+
     // Payment Methods
     const payBtns = document.querySelectorAll('.pay-method-btn');
     payBtns.forEach(btn => {
@@ -219,11 +374,15 @@ function setupEventListeners() {
                 setTimeout(() => toast.remove(), 300);
             }, 3000);
 
+            // Reset state
             cart = [];
+            selectedCustomer = null;
             updateCartUI();
 
-            const custInput = document.getElementById('posCustomerSearch');
-            if (custInput) custInput.value = '';
+            // Clear Customer Fields
+            if (custSearch) custSearch.value = '';
+            if (custNameField) custNameField.value = '';
+            if (custPhoneField) custPhoneField.value = '';
         });
     }
 }

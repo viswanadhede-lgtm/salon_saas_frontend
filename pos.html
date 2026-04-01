@@ -293,11 +293,22 @@
                         <h2 style="font-size: 1.15rem; font-weight: 600; color: #1e293b; margin: 0;">Current Sale</h2>
                         <span id="cartItemCount" style="background: #e0e7ff; color: #4338ca; font-size: 0.75rem; font-weight: 600; padding: 4px 10px; border-radius: 12px;">0 items</span>
                     </div>
-                    <!-- Optional Customer -->
-                    <div class="customer-select-wrapper" style="position: relative;">
-                        <div style="display: flex; align-items: center; background: #ffffff; border: 1px solid #e2e8f0; border-radius: 8px; padding: 0 12px; transition: all 0.2s;">
-                            <i data-feather="user" style="color: #94a3b8; width: 16px; height: 16px;"></i>
-                            <input type="text" id="posCustomerSearch" placeholder="Select customer (optional)" style="flex: 1; border: none; background: transparent; padding: 10px; font-size: 0.9rem; outline: none; color: #334155;">
+                    <!-- Customer Selection Area -->
+                    <div class="customer-select-wrapper" style="position: relative; margin-bottom: 8px;">
+                        <div style="display: flex; gap: 8px; margin-bottom: 8px;">
+                            <div style="flex: 1; display: flex; align-items: center; background: #ffffff; border: 1.5px solid #cbd5e1; border-radius: 8px; padding: 0 12px; transition: all 0.2s; position: relative;">
+                                <i data-feather="user" style="color: #64748b; width: 16px; height: 16px;"></i>
+                                <input type="text" id="posCustomerSearch" placeholder="Search customer (optional)" style="flex: 1; border: none; background: transparent; padding: 10px; font-size: 0.9rem; outline: none; color: #1e293b; font-weight: 500;" autocomplete="off">
+                                <div id="posCustomerSuggestions" style="display:none; position:absolute; top:100%; left:0; right:0; background:#fff; border:1px solid #e2e8f0; border-radius:8px; box-shadow:0 10px 15px -3px rgba(0,0,0,0.1); margin-top:4px; z-index:50; max-height:220px; overflow-y:auto;"></div>
+                            </div>
+                            <button id="btnOpenAddCustomer" style="width: 46px; height: 46px; flex-shrink: 0; border-radius: 8px; border: 1.5px solid #1e293b; background: #ffffff; color: #1e293b; display: flex; flex-direction: column; align-items: center; justify-content: center; cursor: pointer; transition: all 0.2s; box-shadow: 0 2px 4px rgba(0,0,0,0.05); gap: 1px;" title="Add Customer">
+                                <i data-feather="plus" style="width: 20px; height: 20px; stroke-width: 3;"></i>
+                                <span style="font-size: 0.5rem; font-weight: 700; text-transform: uppercase;">Add</span>
+                            </button>
+                        </div>
+                        <div style="display: flex; gap: 8px;">
+                            <input type="text" id="posCustomerName" placeholder="Customer Name" class="read-only-input" style="flex: 1; height: 38px; padding: 0 12px; border: 1.5px solid #e2e8f0; border-radius: 6px; font-size: 0.85rem; font-weight: 600; color: #475569; background: #f8fafc; outline: none;" readonly>
+                            <input type="text" id="posCustomerPhone" placeholder="Phone Number" class="read-only-input" style="flex: 1; height: 38px; padding: 0 12px; border: 1.5px solid #e2e8f0; border-radius: 6px; font-size: 0.85rem; font-weight: 600; color: #475569; background: #f8fafc; outline: none;" readonly>
                         </div>
                     </div>
                 </div>
@@ -346,6 +357,43 @@
         // Init Feather Icons
         feather.replace();
     </script>
+
+    <!-- Add Customer Modal for POS -->
+    <div class="modal-overlay" id="posAddCustomerOverlay">
+        <div class="modal-container" id="posAddCustomerModal" style="width: 500px; max-width: 95%;">
+            <div class="modal-header">
+                <div class="header-titles">
+                    <h2>Add Customer</h2>
+                    <p class="subtitle">Create a new customer profile</p>
+                </div>
+                <button class="modal-close" id="closePosAddCustomer"><i data-feather="x"></i></button>
+            </div>
+            <div class="modal-body" style="padding: 1.5rem; overflow-y: auto;">
+                <div class="form-grid" style="gap: 16px; margin-bottom: 16px;">
+                    <div class="form-group" style="margin-bottom: 0;">
+                        <label class="form-label">First Name <span class="text-rose">*</span></label>
+                        <input type="text" id="newCustomerFirstName" class="form-input" placeholder="e.g. John">
+                    </div>
+                    <div class="form-group" style="margin-bottom: 0;">
+                        <label class="form-label">Last Name <span class="text-rose">*</span></label>
+                        <input type="text" id="newCustomerLastName" class="form-input" placeholder="e.g. Doe">
+                    </div>
+                </div>
+                <div class="form-group" style="margin-bottom: 16px;">
+                    <label class="form-label">Phone Number <span class="text-rose">*</span></label>
+                    <input type="tel" id="newCustomerPhone" class="form-input" placeholder="e.g. +91 98765 43210">
+                </div>
+                <div class="form-group" style="margin-bottom: 0;">
+                    <label class="form-label">Email <span class="text-muted">(Optional)</span></label>
+                    <input type="email" id="newCustomerEmail" class="form-input" placeholder="e.g. john@example.com">
+                </div>
+            </div>
+            <div class="modal-footer" style="padding: 16px 1.5rem; border-top: 1px solid #f1f5f9; display: flex; justify-content: flex-end; gap: 12px;">
+                <button type="button" class="btn btn-secondary" id="cancelPosAddCustomer">Cancel</button>
+                <button type="button" class="btn btn-primary" id="savePosCustomerBtn">Save Customer</button>
+            </div>
+        </div>
+    </div>
 
     <!-- Premium New Booking Modal -->
     <div class="modal-overlay" id="bookingModalOverlay">
