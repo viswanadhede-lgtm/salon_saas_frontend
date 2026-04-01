@@ -337,12 +337,17 @@ window.editCoupon = function(id) {
     
     // Services
     const svcCheckboxes = document.querySelectorAll('#cpnServicesCheckboxList input[type="checkbox"]');
-    const isAll = coupon.applicable_services && coupon.applicable_services.includes('all');
+    const isAll = coupon.applicable_services && (coupon.applicable_services.includes('all') || coupon.applicable_services.length === availableServices.length);
     svcCheckboxes.forEach(c => {
         if (isAll) {
             c.checked = true;
-        } else if (coupon.applicable_services && coupon.applicable_services.includes(c.value)) {
-            c.checked = true;
+        } else if (coupon.applicable_services) {
+            // Support both array of strings and array of objects
+            const isMatch = coupon.applicable_services.some(svc => {
+                const id = typeof svc === 'object' ? (svc.service_id || svc._id) : svc;
+                return id === c.value;
+            });
+            c.checked = isMatch;
         } else {
             c.checked = false;
         }
@@ -471,11 +476,19 @@ async function handleSaveCoupon() {
 
     // Services
     const checkboxes = document.querySelectorAll('#cpnServicesCheckboxList input[type="checkbox"]');
-    const selectedSvc = Array.from(checkboxes).filter(c => c.checked).map(c => c.value);
+    let applicable_services = Array.from(checkboxes)
+        .filter(c => c.checked && c.value !== 'all')
+        .map(c => ({
+            service_id: c.value,
+            service_name: c.nextSibling.textContent.trim()
+        }));
     
-    let applicable_services = selectedSvc;
-    if (selectedSvc.includes('all') || selectedSvc.length === 0) {
-        applicable_services = ["all"]; // fallback
+    // Fallback if none checked but 'all' was somehow intended, or literally nothing checked
+    if (applicable_services.length === 0) {
+        applicable_services = availableServices.map(svc => ({
+            service_id: svc.service_id || svc._id,
+            service_name: svc.service_name || svc.name
+        }));
     }
 
     const payload = {
