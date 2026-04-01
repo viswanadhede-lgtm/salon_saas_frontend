@@ -160,6 +160,7 @@ function populateServicesCheckboxes() {
             <label style="display:flex;align-items:center;gap:10px;padding:8px 14px;cursor:pointer;font-size:0.88rem;color:#334155;"><input type="checkbox" value="all" style="accent-color:#6366f1;"> All Services</label>
             ${dynamicHtml}
         `;
+        bindAllServicesToggle(modalContainer);
     }
 
     if (filterContainer) {
@@ -167,6 +168,37 @@ function populateServicesCheckboxes() {
             <label class="cpn-filter-chk"><input type="checkbox" value="all"> All Services</label>
             ${availableServices.map(svc => `<label class="cpn-filter-chk"><input type="checkbox" value="${svc.service_id || svc._id}"> ${svc.service_name || svc.name}</label>`).join('')}
         `;
+        bindAllServicesToggle(filterContainer);
+    }
+}
+
+function bindAllServicesToggle(container) {
+    const allCheckbox = container.querySelector('input[value="all"]');
+    const otherCheckboxes = container.querySelectorAll('input:not([value="all"])');
+
+    if (allCheckbox) {
+        allCheckbox.addEventListener('change', (e) => {
+            const isChecked = e.target.checked;
+            otherCheckboxes.forEach(cb => { cb.checked = isChecked; });
+            // For the modal container specifically, updating UI label:
+            if (container.id === 'cpnServicesCheckboxList' && typeof applyServiceSelection === 'function') {
+                applyServiceSelection();
+            }
+        });
+
+        otherCheckboxes.forEach(cb => {
+            cb.addEventListener('change', () => {
+                if (!cb.checked) {
+                    allCheckbox.checked = false;
+                } else {
+                    const allChecked = Array.from(otherCheckboxes).every(c => c.checked);
+                    allCheckbox.checked = allChecked;
+                }
+                if (container.id === 'cpnServicesCheckboxList' && typeof applyServiceSelection === 'function') {
+                    applyServiceSelection();
+                }
+            });
+        });
     }
 }
 
@@ -305,8 +337,11 @@ window.editCoupon = function(id) {
     
     // Services
     const svcCheckboxes = document.querySelectorAll('#cpnServicesCheckboxList input[type="checkbox"]');
+    const isAll = coupon.applicable_services && coupon.applicable_services.includes('all');
     svcCheckboxes.forEach(c => {
-        if (coupon.applicable_services && coupon.applicable_services.includes(c.value)) {
+        if (isAll) {
+            c.checked = true;
+        } else if (coupon.applicable_services && coupon.applicable_services.includes(c.value)) {
             c.checked = true;
         } else {
             c.checked = false;
