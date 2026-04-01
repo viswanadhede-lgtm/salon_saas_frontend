@@ -420,12 +420,15 @@ function setupEventListeners() {
             const customerPhone = (selectedCustomer?.customer_phone || selectedCustomer?.phone_number || '').toString();
             const customerId = selectedCustomer?.customer_id || selectedCustomer?.id || '';
 
+            const totalAmount = cart.reduce((sum, item) => sum + (item.price * item.quantity), 0);
+
             const payload = {
                 company_id: getCompanyId(),
                 branch_id: getBranchId(),
                 customer_id: customerId,
                 customer_name: customerName,
                 customer_phone: customerPhone,
+                total_amount: totalAmount,
                 payment_method: currentPaymentMethod.charAt(0).toUpperCase() + currentPaymentMethod.slice(1),
                 items: cart.map(item => ({
                     product_id: item.id,
