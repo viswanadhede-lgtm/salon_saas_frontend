@@ -482,6 +482,12 @@ function setupEventListeners() {
         btnComplete.addEventListener('click', () => {
             if (cart.length === 0) return;
 
+            // Mandatory Customer Validation
+            if (!selectedCustomer) {
+                alert('Please select a customer or add a new one before completing the sale.');
+                return;
+            }
+
             if (currentPaymentMethod === 'cash' && cashConfirmOverlay) {
                 // Intercept and show confirmation modal for Cash
                 cashConfirmOverlay.classList.add('active');
