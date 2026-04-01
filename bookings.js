@@ -184,9 +184,8 @@ function renderBookings(data) {
 
 // ─── Inject Modals ───────────────────────────────────────────────────────────
 function setupModals() {
-    // Remove stale modal if it exists, so changes always take effect
-    const staleModal = document.getElementById('editBookingModal');
-    if (staleModal) staleModal.remove();
+    // Remove ALL stale modals if they exist to prevent ghost ID conflicts
+    document.querySelectorAll('#editBookingModal').forEach(m => m.remove());
 
     // Edit Booking Modal
     if (!document.getElementById('editBookingModal')) {
@@ -557,23 +556,23 @@ function attachEventListeners() {
         document.getElementById('editBkTime').value    = timePart || '';
         document.getElementById('editBkNotes').value   = b.notes || '';
         let statusVal = (b.status || '').toLowerCase().trim();
-        if (!statusVal || statusVal === 'null' || statusVal === 'undefined') statusVal = 'booked';
+        if (!statusVal || statusVal === 'null' || statusVal === 'undefined') statusVal = 'confirmed';
         if (statusVal === 'no_show') statusVal = 'no-show';
 
         let paymentVal = (b.payment_status || b.payment || '').toLowerCase().trim();
-        if (!paymentVal || paymentVal === 'null' || paymentVal === 'undefined') paymentVal = 'unpaid';
+        if (!paymentVal || paymentVal === 'null' || paymentVal === 'undefined') paymentVal = 'pending';
 
         // Foolproof selection logic to prevent blank dropdowns
         const statusEl = document.getElementById('editBkStatus');
         if (statusEl) {
             let matchIndex = Array.from(statusEl.options).findIndex(o => o.value === statusVal);
-            statusEl.selectedIndex = matchIndex >= 0 ? matchIndex : 0;
+            statusEl.selectedIndex = matchIndex >= 0 ? matchIndex : 1; // 1 is 'confirmed'
         }
 
         const paymentEl = document.getElementById('editBkPayment');
         if (paymentEl) {
             let matchIndex = Array.from(paymentEl.options).findIndex(o => o.value === paymentVal);
-            paymentEl.selectedIndex = matchIndex >= 0 ? matchIndex : 0;
+            paymentEl.selectedIndex = matchIndex >= 0 ? matchIndex : 2; // 2 is 'pending'
         }
 
         // Reset price/duration visibility (populateEditDropdowns will show them)
