@@ -138,7 +138,7 @@ async function fetchServices() {
         
         if (res.ok) {
             const data = await res.json();
-            availableServices = data.services || [];
+            availableServices = Array.isArray(data) ? data : (data.services || []);
             populateServicesCheckboxes();
         }
     } catch (err) {
@@ -152,7 +152,7 @@ function populateServicesCheckboxes() {
 
     let dynamicHtml = '';
     availableServices.forEach(svc => {
-        dynamicHtml += `<label style="display:flex;align-items:center;gap:10px;padding:8px 14px;cursor:pointer;font-size:0.88rem;color:#334155;"><input type="checkbox" value="${svc._id}" style="accent-color:#6366f1;"> ${svc.name || svc.service_name}</label>`;
+        dynamicHtml += `<label style="display:flex;align-items:center;gap:10px;padding:8px 14px;cursor:pointer;font-size:0.88rem;color:#334155;"><input type="checkbox" value="${svc.service_id || svc._id}" style="accent-color:#6366f1;"> ${svc.service_name || svc.name}</label>`;
     });
 
     if (modalContainer) {
@@ -165,7 +165,7 @@ function populateServicesCheckboxes() {
     if (filterContainer) {
         filterContainer.innerHTML = `
             <label class="cpn-filter-chk"><input type="checkbox" value="all"> All Services</label>
-            ${availableServices.map(svc => `<label class="cpn-filter-chk"><input type="checkbox" value="${svc._id}"> ${svc.name || svc.service_name}</label>`).join('')}
+            ${availableServices.map(svc => `<label class="cpn-filter-chk"><input type="checkbox" value="${svc.service_id || svc._id}"> ${svc.service_name || svc.name}</label>`).join('')}
         `;
     }
 }
