@@ -94,7 +94,11 @@ async function fetchCustomers() {
 
         if (response.ok) {
             const data = await response.json();
-            allCustomers = Array.isArray(data) ? data : (data.customers || []);
+            if (Array.isArray(data) && data.length > 0 && data[0].customers) {
+                allCustomers = data[0].customers;
+            } else {
+                allCustomers = Array.isArray(data) ? data : (data.customers || []);
+            }
         }
     } catch (err) {
         console.error('POS: Error fetching customers:', err);
@@ -222,9 +226,10 @@ function setupEventListeners() {
                 return;
             }
 
-            const filtered = allCustomers.filter(c =>
-                (c.phone_number || '').replace(/\D/g, '').includes(digits)
-            );
+            const filtered = allCustomers.filter(c => {
+                const phoneStr = (c.customer_phone || c.phone_number || '').toString();
+                return phoneStr.replace(/\D/g, '').includes(digits);
+            });
 
             if (filtered.length === 0) {
                 custSuggestions.innerHTML = `
@@ -234,8 +239,8 @@ function setupEventListeners() {
                     </div>`;
             } else {
                 custSuggestions.innerHTML = filtered.slice(0, 8).map(c => {
-                    const phone = c.phone_number || '';
-                    const fullName = `${c.first_name || ''} ${c.last_name || ''}`.trim() || c.full_name || 'Unknown';
+                    const phone = (c.customer_phone || c.phone_number || '').toString();
+                    const fullName = (c.customer_name || `${c.first_name || ''} ${c.last_name || ''}`).trim() || 'Unknown';
                     const custId = c.id || c.customer_id;
 
                     // Highlight matched digits in the phone number
@@ -282,8 +287,8 @@ function setupEventListeners() {
                     const customer = allCustomers.find(c => (c.id || c.customer_id) == id);
                     if (customer) {
                         selectedCustomer = customer;
-                        const fullName = `${customer.first_name || ''} ${customer.last_name || ''}`.trim() || customer.full_name || '';
-                        const phone = customer.phone_number || '';
+                        const fullName = (customer.customer_name || `${customer.first_name || ''} ${customer.last_name || ''}`).trim() || '';
+                        const phone = (customer.customer_phone || customer.phone_number || '').toString();
 
                         custSearch.value = phone;
                         if (custNameField) custNameField.value = fullName;
