@@ -410,26 +410,69 @@ function setupEventListeners() {
     const btnCancelCashConfirm = document.getElementById('btnCancelCashConfirm');
     const btnProceedCashConfirm = document.getElementById('btnProceedCashConfirm');
 
-    const finalizeSale = () => {
-        const toast = document.createElement('div');
-        toast.className = 'toast-notification show';
-        toast.textContent = 'Sale completed successfully!';
-        document.body.appendChild(toast);
+    const finalizeSale = async () => {
+        const originalBtnText = btnComplete.textContent;
+        btnComplete.textContent = 'Processing...';
+        btnComplete.disabled = true;
 
-        setTimeout(() => {
-            toast.classList.remove('show');
-            setTimeout(() => toast.remove(), 300);
-        }, 3000);
+        try {
+            const customerName = (selectedCustomer?.customer_name || `${selectedCustomer?.first_name || ''} ${selectedCustomer?.last_name || ''}`).trim() || '';
+            const customerPhone = (selectedCustomer?.customer_phone || selectedCustomer?.phone_number || '').toString();
+            const customerId = selectedCustomer?.customer_id || selectedCustomer?.id || '';
 
-        // Reset state
-        cart = [];
-        selectedCustomer = null;
-        updateCartUI();
+            const payload = {
+                company_id: getCompanyId(),
+                branch_id: getBranchId(),
+                customer_id: customerId,
+                customer_name: customerName,
+                customer_phone: customerPhone,
+                payment_method: currentPaymentMethod.charAt(0).toUpperCase() + currentPaymentMethod.slice(1),
+                items: cart.map(item => ({
+                    product_id: item.id,
+                    product_name: item.name,
+                    category_id: item.category_id || '',
+                    price: item.price,
+                    quantity: item.quantity
+                }))
+            };
 
-        // Clear Customer Fields
-        if (custSearch) custSearch.value = '';
-        if (custNameField) custNameField.value = '';
-        if (custPhoneField) custPhoneField.value = '';
+            const res = await fetchWithAuth(API.CREATE_SALE, {
+                method: 'POST',
+                body: JSON.stringify(payload)
+            }, FEATURES.POS_SYSTEM, 'create');
+
+            if (!res.ok) throw new Error('Failed to complete sale');
+
+            const toast = document.createElement('div');
+            toast.className = 'toast-notification show';
+            toast.textContent = 'Sale completed successfully!';
+            document.body.appendChild(toast);
+
+            setTimeout(() => {
+                toast.classList.remove('show');
+                setTimeout(() => toast.remove(), 300);
+            }, 3000);
+
+            // Reset state
+            cart = [];
+            selectedCustomer = null;
+            updateCartUI();
+
+            // Clear Customer Fields
+            if (custSearch) custSearch.value = '';
+            if (custNameField) custNameField.value = '';
+            if (custPhoneField) custPhoneField.value = '';
+
+            // Optional: refresh products to get new stock counts
+            fetchProducts();
+
+        } catch (err) {
+            console.error('POS: Error completing sale:', err);
+            alert('Failed to complete sale. Please try again.');
+        } finally {
+            btnComplete.textContent = originalBtnText;
+            btnComplete.disabled = false;
+        }
     };
 
     if (btnComplete) {
@@ -480,7 +523,9 @@ window.addToCart = function (productId) {
             name: product.product_name || product.name,
             price: Number(product.price) || 0,
             stock: Number(product.stock_quantity) || 0,
-            quantity: 1
+            quantity: 1,
+            category_id: product.category_id || '',
+            category_name: product.category_name || ''
         });
     }
 
