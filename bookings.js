@@ -556,13 +556,25 @@ function attachEventListeners() {
         document.getElementById('editBkDate').value    = datePart || '';
         document.getElementById('editBkTime').value    = timePart || '';
         document.getElementById('editBkNotes').value   = b.notes || '';
-        let statusVal = (b.status || 'booked').toLowerCase().trim();
-        if (statusVal === 'no_show') statusVal = 'no-show'; // normalize variant
+        let statusVal = (b.status || '').toLowerCase().trim();
+        if (!statusVal || statusVal === 'null' || statusVal === 'undefined') statusVal = 'booked';
+        if (statusVal === 'no_show') statusVal = 'no-show';
 
-        let paymentVal = (b.payment_status || b.payment || 'unpaid').toLowerCase().trim();
+        let paymentVal = (b.payment_status || b.payment || '').toLowerCase().trim();
+        if (!paymentVal || paymentVal === 'null' || paymentVal === 'undefined') paymentVal = 'unpaid';
 
-        document.getElementById('editBkStatus').value  = statusVal;
-        document.getElementById('editBkPayment').value = paymentVal;
+        // Foolproof selection logic to prevent blank dropdowns
+        const statusEl = document.getElementById('editBkStatus');
+        if (statusEl) {
+            let matchIndex = Array.from(statusEl.options).findIndex(o => o.value === statusVal);
+            statusEl.selectedIndex = matchIndex >= 0 ? matchIndex : 0;
+        }
+
+        const paymentEl = document.getElementById('editBkPayment');
+        if (paymentEl) {
+            let matchIndex = Array.from(paymentEl.options).findIndex(o => o.value === paymentVal);
+            paymentEl.selectedIndex = matchIndex >= 0 ? matchIndex : 0;
+        }
 
         // Reset price/duration visibility (populateEditDropdowns will show them)
         const priceGroup    = document.getElementById('editPriceGroup');
