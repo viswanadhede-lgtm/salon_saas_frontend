@@ -184,6 +184,10 @@ function renderBookings(data) {
 
 // ─── Inject Modals ───────────────────────────────────────────────────────────
 function setupModals() {
+    // Remove stale modal if it exists, so changes always take effect
+    const staleModal = document.getElementById('editBookingModal');
+    if (staleModal) staleModal.remove();
+
     // Edit Booking Modal
     if (!document.getElementById('editBookingModal')) {
         document.body.insertAdjacentHTML('beforeend', `
@@ -552,8 +556,13 @@ function attachEventListeners() {
         document.getElementById('editBkDate').value    = datePart || '';
         document.getElementById('editBkTime').value    = timePart || '';
         document.getElementById('editBkNotes').value   = b.notes || '';
-        document.getElementById('editBkStatus').value  = (b.status || 'booked').toLowerCase();
-        document.getElementById('editBkPayment').value = (b.payment_status || b.payment || 'unpaid').toLowerCase();
+        let statusVal = (b.status || 'booked').toLowerCase().trim();
+        if (statusVal === 'no_show') statusVal = 'no-show'; // normalize variant
+
+        let paymentVal = (b.payment_status || b.payment || 'unpaid').toLowerCase().trim();
+
+        document.getElementById('editBkStatus').value  = statusVal;
+        document.getElementById('editBkPayment').value = paymentVal;
 
         // Reset price/duration visibility (populateEditDropdowns will show them)
         const priceGroup    = document.getElementById('editPriceGroup');
