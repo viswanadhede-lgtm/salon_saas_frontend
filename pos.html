@@ -295,30 +295,9 @@
                     </div>
                     <!-- Optional Customer -->
                     <div class="customer-select-wrapper" style="position: relative;">
-                        <!-- Search Input -->
-                        <div id="posCustomerSearchBox" style="display: flex; align-items: center; background: #ffffff; border: 1px solid #e2e8f0; border-radius: 8px; padding: 0 12px; transition: all 0.2s;">
-                            <i data-feather="user" style="color: #94a3b8; width: 16px; height: 16px; flex-shrink: 0;"></i>
-                            <input type="text" id="posCustomerSearch" placeholder="Search by phone number..." style="flex: 1; border: none; background: transparent; padding: 10px; font-size: 0.9rem; outline: none; color: #334155;" autocomplete="off">
-                        </div>
-                        <!-- Suggestions Dropdown -->
-                        <div id="posCustomerSuggestions" style="display:none; position:absolute; top:calc(100% + 4px); left:0; right:0; background:#fff; border:1px solid #e2e8f0; border-radius:8px; box-shadow:0 8px 24px rgba(0,0,0,0.1); z-index:100; max-height:200px; overflow-y:auto;"></div>
-                        <!-- Selected Customer Card -->
-                        <div id="posSelectedCustomer" style="display:none; margin-top:10px; display:none; flex-direction:column; gap:8px;">
-                            <div style="display:flex; gap:8px;">
-                                <div style="flex:1;">
-                                    <label style="font-size:0.72rem; font-weight:600; color:#64748b; text-transform:uppercase; letter-spacing:0.04em; display:block; margin-bottom:4px;">Customer Name</label>
-                                    <input type="text" id="posSelectedCustomerName" readonly style="width:100%; border:1px solid #e0e7ff; background:#f8fafc; border-radius:7px; padding:8px 10px; font-size:0.88rem; color:#334155; font-weight:600; outline:none; box-sizing:border-box;">
-                                </div>
-                                <div style="flex:1;">
-                                    <label style="font-size:0.72rem; font-weight:600; color:#64748b; text-transform:uppercase; letter-spacing:0.04em; display:block; margin-bottom:4px;">Phone</label>
-                                    <input type="text" id="posSelectedCustomerPhone" readonly style="width:100%; border:1px solid #e0e7ff; background:#f8fafc; border-radius:7px; padding:8px 10px; font-size:0.88rem; color:#334155; font-weight:600; outline:none; box-sizing:border-box;">
-                                </div>
-                                <div style="display:flex; align-items:flex-end; padding-bottom:1px;">
-                                    <button id="posClearCustomer" title="Remove customer" style="width:34px; height:34px; border-radius:7px; border:1px solid #fee2e2; background:#fef2f2; color:#ef4444; cursor:pointer; display:flex; align-items:center; justify-content:center; flex-shrink:0; transition:all 0.2s;">
-                                        <i data-feather="x" style="width:15px; height:15px;"></i>
-                                    </button>
-                                </div>
-                            </div>
+                        <div style="display: flex; align-items: center; background: #ffffff; border: 1px solid #e2e8f0; border-radius: 8px; padding: 0 12px; transition: all 0.2s;">
+                            <i data-feather="user" style="color: #94a3b8; width: 16px; height: 16px;"></i>
+                            <input type="text" id="posCustomerSearch" placeholder="Select customer (optional)" style="flex: 1; border: none; background: transparent; padding: 10px; font-size: 0.9rem; outline: none; color: #334155;">
                         </div>
                     </div>
                 </div>
