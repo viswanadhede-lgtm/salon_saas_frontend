@@ -57,7 +57,11 @@ export const API = {
   UPDATE_PRODUCT_CATEGORY: `${BASE_URL}/update_product_category`,
   DELETE_PRODUCT_CATEGORY: `${BASE_URL}/delete_product_category`,
   CREATE_SALE: `${BASE_URL}/create_sale`,
-  READ_SALES: `${BASE_URL}/read_sales`
+  READ_SALES: `${BASE_URL}/read_sales`,
+  CREATE_COUPON: `${BASE_URL}/create_coupon`,
+  READ_COUPONS: `${BASE_URL}/read_coupons`,
+  UPDATE_COUPON: `${BASE_URL}/update_coupon`,
+  DELETE_COUPON: `${BASE_URL}/delete_coupon`
 };
 
 /**

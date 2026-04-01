@@ -231,11 +231,10 @@
                                 <div style="padding:16px 18px;">
                                     <div style="margin-bottom:18px;">
                                         <p style="font-size:0.75rem; font-weight:700; color:#64748b; text-transform:uppercase; letter-spacing:0.06em; margin:0 0 8px;">Applicable Service</p>
-                                        <label class="cpn-filter-chk"><input type="checkbox" value="all"> All Services</label>
-                                        <label class="cpn-filter-chk"><input type="checkbox" value="haircut"> Haircut</label>
-                                        <label class="cpn-filter-chk"><input type="checkbox" value="facial"> Facial</label>
-                                        <label class="cpn-filter-chk"><input type="checkbox" value="massage"> Massage</label>
-                                        <label class="cpn-filter-chk"><input type="checkbox" value="beard_trim"> Beard Trim</label>
+                                        <div id="filterServicesContainer" style="display:flex; flex-direction:column;">
+                                            <label class="cpn-filter-chk"><input type="checkbox" value="all"> All Services</label>
+                                            <!-- Dynamic services here -->
+                                        </div>
                                     </div>
                                     <div>
                                         <p style="font-size:0.75rem; font-weight:700; color:#64748b; text-transform:uppercase; letter-spacing:0.06em; margin:0 0 8px;">Validity</p>
@@ -274,95 +273,12 @@
                                 <th style="padding:14px 20px; font-weight:600; color:#475569; font-size:0.85rem; text-transform:uppercase; letter-spacing:0.05em; text-align:center;">Actions</th>
                             </tr>
                         </thead>
-                        <tbody>
-                            <!-- Row 1 -->
-                            <tr style="border-bottom:1px solid #e2e8f0;">
-                                <td style="padding:16px 20px;"><span class="cpn-code-badge">WELCOME10</span></td>
-                                <td style="padding:16px 20px;"><span style="font-weight:700;color:#0284c7;background:#e0f2fe;padding:4px 8px;border-radius:6px;font-size:0.85rem;">10% OFF</span></td>
-                                <td style="padding:16px 20px;font-size:0.9rem;color:#334155;">Percentage</td>
-                                <td style="padding:16px 20px;font-size:0.9rem;color:#334155;">All Services</td>
-                                <td style="padding:16px 20px;font-size:0.9rem;color:#64748b;font-style:italic;">Always Active</td>
-                                <td style="padding:16px 20px;"><span style="font-weight:600;color:#334155;">45</span><span style="color:#64748b;font-size:0.9rem;"> / 200</span></td>
-                                <td style="padding:16px 20px;"><span style="background:#dcfce7;color:#166534;font-size:0.75rem;padding:4px 10px;border-radius:999px;font-weight:600;display:inline-flex;align-items:center;gap:4px;"><span style="width:6px;height:6px;border-radius:50%;background:#22c55e;"></span>Active</span></td>
-                                <td style="padding:16px 20px;text-align:center;">
-                                    <div class="dropdown" style="position:relative;display:inline-block;">
-                                        <button class="icon-btn dropbtn" onclick="toggleCpnDropdown(this)" style="display:flex;align-items:center;gap:6px;padding:6px 12px;border-radius:6px;border:1px solid #e2e8f0;background:#fff;font-size:0.85rem;font-weight:500;color:#334155;cursor:pointer;">Actions <i data-feather="chevron-down" style="width:14px;height:14px;"></i></button>
-                                        <div class="cpn-dd" style="display:none;position:absolute;right:0;top:100%;min-width:150px;background:#fff;box-shadow:0 4px 6px -1px rgba(0,0,0,0.1);border-radius:8px;border:1px solid #e2e8f0;z-index:10;padding:4px 0;text-align:left;">
-                                            <a href="#" style="display:flex;align-items:center;gap:8px;padding:8px 16px;color:#334155;text-decoration:none;font-size:0.9rem;"><i data-feather="edit-2" style="width:14px;height:14px;"></i> Edit</a>
-                                            <a href="#" style="display:flex;align-items:center;gap:8px;padding:8px 16px;color:#334155;text-decoration:none;font-size:0.9rem;"><i data-feather="slash" style="width:14px;height:14px;"></i> Disable</a>
-                                            <a href="#" style="display:flex;align-items:center;gap:8px;padding:8px 16px;color:#334155;text-decoration:none;font-size:0.9rem;"><i data-feather="copy" style="width:14px;height:14px;"></i> Duplicate</a>
-                                            <a href="#" style="display:flex;align-items:center;gap:8px;padding:8px 16px;color:#334155;text-decoration:none;font-size:0.9rem;"><i data-feather="bar-chart-2" style="width:14px;height:14px;"></i> View Usage</a>
-                                            <div style="height:1px;background:#e2e8f0;margin:4px 0;"></div>
-                                            <a href="#" style="display:flex;align-items:center;gap:8px;padding:8px 16px;color:#ef4444;text-decoration:none;font-size:0.9rem;"><i data-feather="trash-2" style="width:14px;height:14px;"></i> Delete</a>
-                                        </div>
-                                    </div>
-                                </td>
-                            </tr>
-                            <!-- Row 2 -->
-                            <tr style="border-bottom:1px solid #e2e8f0;">
-                                <td style="padding:16px 20px;"><span class="cpn-code-badge">HAIRCUT100</span></td>
-                                <td style="padding:16px 20px;"><span style="font-weight:700;color:#15803d;background:#dcfce7;padding:4px 8px;border-radius:6px;font-size:0.85rem;">₹100 OFF</span></td>
-                                <td style="padding:16px 20px;font-size:0.9rem;color:#334155;">Flat</td>
-                                <td style="padding:16px 20px;font-size:0.9rem;color:#334155;">Haircut</td>
-                                <td style="padding:16px 20px;font-size:0.9rem;color:#334155;">Jun 1 – Jun 30</td>
-                                <td style="padding:16px 20px;"><span style="font-weight:600;color:#334155;">12</span><span style="color:#64748b;font-size:0.9rem;"> / 50</span></td>
-                                <td style="padding:16px 20px;"><span style="background:#dcfce7;color:#166534;font-size:0.75rem;padding:4px 10px;border-radius:999px;font-weight:600;display:inline-flex;align-items:center;gap:4px;"><span style="width:6px;height:6px;border-radius:50%;background:#22c55e;"></span>Active</span></td>
-                                <td style="padding:16px 20px;text-align:center;">
-                                    <div class="dropdown" style="position:relative;display:inline-block;">
-                                        <button class="icon-btn dropbtn" onclick="toggleCpnDropdown(this)" style="display:flex;align-items:center;gap:6px;padding:6px 12px;border-radius:6px;border:1px solid #e2e8f0;background:#fff;font-size:0.85rem;font-weight:500;color:#334155;cursor:pointer;">Actions <i data-feather="chevron-down" style="width:14px;height:14px;"></i></button>
-                                        <div class="cpn-dd" style="display:none;position:absolute;right:0;top:100%;min-width:150px;background:#fff;box-shadow:0 4px 6px -1px rgba(0,0,0,0.1);border-radius:8px;border:1px solid #e2e8f0;z-index:10;padding:4px 0;text-align:left;">
-                                            <a href="#" style="display:flex;align-items:center;gap:8px;padding:8px 16px;color:#334155;text-decoration:none;font-size:0.9rem;"><i data-feather="edit-2" style="width:14px;height:14px;"></i> Edit</a>
-                                            <a href="#" style="display:flex;align-items:center;gap:8px;padding:8px 16px;color:#334155;text-decoration:none;font-size:0.9rem;"><i data-feather="slash" style="width:14px;height:14px;"></i> Disable</a>
-                                            <a href="#" style="display:flex;align-items:center;gap:8px;padding:8px 16px;color:#334155;text-decoration:none;font-size:0.9rem;"><i data-feather="copy" style="width:14px;height:14px;"></i> Duplicate</a>
-                                            <a href="#" style="display:flex;align-items:center;gap:8px;padding:8px 16px;color:#334155;text-decoration:none;font-size:0.9rem;"><i data-feather="bar-chart-2" style="width:14px;height:14px;"></i> View Usage</a>
-                                            <div style="height:1px;background:#e2e8f0;margin:4px 0;"></div>
-                                            <a href="#" style="display:flex;align-items:center;gap:8px;padding:8px 16px;color:#ef4444;text-decoration:none;font-size:0.9rem;"><i data-feather="trash-2" style="width:14px;height:14px;"></i> Delete</a>
-                                        </div>
-                                    </div>
-                                </td>
-                            </tr>
-                            <!-- Row 3 -->
-                            <tr style="border-bottom:1px solid #e2e8f0;">
-                                <td style="padding:16px 20px;"><span class="cpn-code-badge">DIWALI20</span></td>
-                                <td style="padding:16px 20px;"><span style="font-weight:700;color:#0284c7;background:#e0f2fe;padding:4px 8px;border-radius:6px;font-size:0.85rem;">20% OFF</span></td>
-                                <td style="padding:16px 20px;font-size:0.9rem;color:#334155;">Percentage</td>
-                                <td style="padding:16px 20px;font-size:0.9rem;color:#334155;">All Services</td>
-                                <td style="padding:16px 20px;font-size:0.9rem;color:#334155;">Oct 20 – Nov 5</td>
-                                <td style="padding:16px 20px;font-size:0.9rem;color:#94a3b8;">Not started</td>
-                                <td style="padding:16px 20px;"><span style="background:#e0f2fe;color:#0369a1;font-size:0.75rem;padding:4px 10px;border-radius:999px;font-weight:600;display:inline-flex;align-items:center;gap:4px;"><span style="width:6px;height:6px;border-radius:50%;background:#0ea5e9;"></span>Scheduled</span></td>
-                                <td style="padding:16px 20px;text-align:center;">
-                                    <div class="dropdown" style="position:relative;display:inline-block;">
-                                        <button class="icon-btn dropbtn" onclick="toggleCpnDropdown(this)" style="display:flex;align-items:center;gap:6px;padding:6px 12px;border-radius:6px;border:1px solid #e2e8f0;background:#fff;font-size:0.85rem;font-weight:500;color:#334155;cursor:pointer;">Actions <i data-feather="chevron-down" style="width:14px;height:14px;"></i></button>
-                                        <div class="cpn-dd" style="display:none;position:absolute;right:0;top:100%;min-width:150px;background:#fff;box-shadow:0 4px 6px -1px rgba(0,0,0,0.1);border-radius:8px;border:1px solid #e2e8f0;z-index:10;padding:4px 0;text-align:left;">
-                                            <a href="#" style="display:flex;align-items:center;gap:8px;padding:8px 16px;color:#334155;text-decoration:none;font-size:0.9rem;"><i data-feather="edit-2" style="width:14px;height:14px;"></i> Edit</a>
-                                            <a href="#" style="display:flex;align-items:center;gap:8px;padding:8px 16px;color:#334155;text-decoration:none;font-size:0.9rem;"><i data-feather="copy" style="width:14px;height:14px;"></i> Duplicate</a>
-                                            <a href="#" style="display:flex;align-items:center;gap:8px;padding:8px 16px;color:#334155;text-decoration:none;font-size:0.9rem;"><i data-feather="bar-chart-2" style="width:14px;height:14px;"></i> View Usage</a>
-                                            <div style="height:1px;background:#e2e8f0;margin:4px 0;"></div>
-                                            <a href="#" style="display:flex;align-items:center;gap:8px;padding:8px 16px;color:#ef4444;text-decoration:none;font-size:0.9rem;"><i data-feather="trash-2" style="width:14px;height:14px;"></i> Delete</a>
-                                        </div>
-                                    </div>
-                                </td>
-                            </tr>
-                            <!-- Row 4 -->
-                            <tr style="border-bottom:1px solid #e2e8f0;">
-                                <td style="padding:16px 20px;"><span class="cpn-code-badge">VIP500</span></td>
-                                <td style="padding:16px 20px;"><span style="font-weight:700;color:#b91c1c;background:#fee2e2;padding:4px 8px;border-radius:6px;font-size:0.85rem;">₹500 OFF</span></td>
-                                <td style="padding:16px 20px;font-size:0.9rem;color:#334155;">Flat</td>
-                                <td style="padding:16px 20px;font-size:0.9rem;color:#334155;">Premium Services</td>
-                                <td style="padding:16px 20px;font-size:0.9rem;color:#64748b;font-style:italic;">No expiry</td>
-                                <td style="padding:16px 20px;"><span style="font-weight:600;color:#334155;">8</span><span style="color:#64748b;font-size:0.9rem;"> / 20</span></td>
-                                <td style="padding:16px 20px;"><span style="background:#dcfce7;color:#166534;font-size:0.75rem;padding:4px 10px;border-radius:999px;font-weight:600;display:inline-flex;align-items:center;gap:4px;"><span style="width:6px;height:6px;border-radius:50%;background:#22c55e;"></span>Active</span></td>
-                                <td style="padding:16px 20px;text-align:center;">
-                                    <div class="dropdown" style="position:relative;display:inline-block;">
-                                        <button class="icon-btn dropbtn" onclick="toggleCpnDropdown(this)" style="display:flex;align-items:center;gap:6px;padding:6px 12px;border-radius:6px;border:1px solid #e2e8f0;background:#fff;font-size:0.85rem;font-weight:500;color:#334155;cursor:pointer;">Actions <i data-feather="chevron-down" style="width:14px;height:14px;"></i></button>
-                                        <div class="cpn-dd" style="display:none;position:absolute;right:0;top:100%;min-width:150px;background:#fff;box-shadow:0 4px 6px -1px rgba(0,0,0,0.1);border-radius:8px;border:1px solid #e2e8f0;z-index:10;padding:4px 0;text-align:left;">
-                                            <a href="#" style="display:flex;align-items:center;gap:8px;padding:8px 16px;color:#334155;text-decoration:none;font-size:0.9rem;"><i data-feather="edit-2" style="width:14px;height:14px;"></i> Edit</a>
-                                            <a href="#" style="display:flex;align-items:center;gap:8px;padding:8px 16px;color:#334155;text-decoration:none;font-size:0.9rem;"><i data-feather="slash" style="width:14px;height:14px;"></i> Disable</a>
-                                            <a href="#" style="display:flex;align-items:center;gap:8px;padding:8px 16px;color:#334155;text-decoration:none;font-size:0.9rem;"><i data-feather="copy" style="width:14px;height:14px;"></i> Duplicate</a>
-                                            <a href="#" style="display:flex;align-items:center;gap:8px;padding:8px 16px;color:#334155;text-decoration:none;font-size:0.9rem;"><i data-feather="bar-chart-2" style="width:14px;height:14px;"></i> View Usage</a>
-                                            <div style="height:1px;background:#e2e8f0;margin:4px 0;"></div>
-                                            <a href="#" style="display:flex;align-items:center;gap:8px;padding:8px 16px;color:#ef4444;text-decoration:none;font-size:0.9rem;"><i data-feather="trash-2" style="width:14px;height:14px;"></i> Delete</a>
-                                        </div>
+                        <tbody id="couponsTableBody">
+                            <tr>
+                                <td colspan="8" style="padding:24px 20px; text-align:center; color:#64748b;">
+                                    <div style="display:flex;flex-direction:column;align-items:center;gap:12px;">
+                                        <i data-feather="loader" class="spin" style="width:24px;height:24px;"></i>
+                                        <span style="font-size:0.9rem;">Loading coupons...</span>
                                     </div>
                                 </td>
                             </tr>
@@ -415,11 +331,7 @@
                         </button>
                         <div id="cpnServicesMenu" style="display:none;position:absolute;top:calc(100% + 4px);left:0;right:0;background:#fff;border:1px solid #e2e8f0;border-radius:8px;z-index:100;box-shadow:0 4px 12px rgba(0,0,0,0.08);overflow:hidden;">
                             <div id="cpnServicesCheckboxList" style="padding:8px 0;max-height:200px;overflow-y:auto;">
-                                <label style="display:flex;align-items:center;gap:10px;padding:8px 14px;cursor:pointer;font-size:0.88rem;color:#334155;"><input type="checkbox" value="All Services" style="accent-color:#6366f1;"> All Services</label>
-                                <label style="display:flex;align-items:center;gap:10px;padding:8px 14px;cursor:pointer;font-size:0.88rem;color:#334155;"><input type="checkbox" value="Haircut" style="accent-color:#6366f1;"> Haircut</label>
-                                <label style="display:flex;align-items:center;gap:10px;padding:8px 14px;cursor:pointer;font-size:0.88rem;color:#334155;"><input type="checkbox" value="Facial" style="accent-color:#6366f1;"> Facial</label>
-                                <label style="display:flex;align-items:center;gap:10px;padding:8px 14px;cursor:pointer;font-size:0.88rem;color:#334155;"><input type="checkbox" value="Massage" style="accent-color:#6366f1;"> Massage</label>
-                                <label style="display:flex;align-items:center;gap:10px;padding:8px 14px;cursor:pointer;font-size:0.88rem;color:#334155;"><input type="checkbox" value="Beard Trim" style="accent-color:#6366f1;"> Beard Trim</label>
+                                <label style="display:flex;align-items:center;gap:10px;padding:8px 14px;cursor:pointer;font-size:0.88rem;color:#334155;"><input type="checkbox" value="all" style="accent-color:#6366f1;"> All Services</label>
                             </div>
                             <div style="border-top:1px solid #e2e8f0;padding:8px 10px;display:flex;gap:8px;">
                                 <button id="cpnSvcReset" type="button" style="flex:1;padding:6px;border:1px solid #e2e8f0;border-radius:6px;background:#fff;font-size:0.8rem;color:#64748b;cursor:pointer;">Reset</button>
@@ -1164,81 +1076,7 @@
     </div>
 
 <script src="dashboard.js"></script>
-<script>
-
-        document.addEventListener('DOMContentLoaded', () => {
-            feather.replace();
-
-            // Modal
-            const overlay = document.getElementById('couponModalOverlay');
-            const openModal = () => { overlay.classList.add('active'); feather.replace(); };
-            const closeModal = () => overlay.classList.remove('active');
-            document.getElementById('btnCreateCoupon').addEventListener('click', openModal);
-            document.getElementById('closeCouponModal').addEventListener('click', closeModal);
-            document.getElementById('btnCancelCoupon').addEventListener('click', closeModal);
-            overlay.addEventListener('click', e => { if (e.target === overlay) closeModal(); });
-
-            // Discount type placeholder
-            const discType = document.getElementById('cpnDiscountType');
-            const discVal = document.getElementById('cpnDiscountValue');
-            discType.addEventListener('change', () => { discVal.placeholder = discType.value === 'percentage' ? 'e.g. 10' : 'e.g. 100'; });
-
-            // Status toggle
-            const toggle = document.getElementById('cpnStatusToggle');
-            const statusLabel = document.getElementById('cpnStatusLabel');
-            toggle.addEventListener('change', () => { statusLabel.textContent = toggle.checked ? 'Active' : 'Inactive'; });
-
-            // Coupon code uppercase
-            const codeInput = document.getElementById('cpnCode');
-            codeInput.addEventListener('input', () => { codeInput.value = codeInput.value.toUpperCase(); });
-
-            // Services dropdown
-            const svcBtn = document.getElementById('cpnServicesBtn');
-            const svcMenu = document.getElementById('cpnServicesMenu');
-            const svcText = document.getElementById('cpnServicesText');
-            const svcCheckboxes = document.querySelectorAll('#cpnServicesCheckboxList input[type="checkbox"]');
-            svcBtn.addEventListener('click', e => { e.stopPropagation(); svcMenu.style.display = svcMenu.style.display === 'block' ? 'none' : 'block'; });
-            document.addEventListener('click', e => { if (!svcBtn.contains(e.target) && !svcMenu.contains(e.target)) svcMenu.style.display = 'none'; });
-            document.getElementById('cpnSvcApply').addEventListener('click', () => {
-                const sel = Array.from(svcCheckboxes).filter(c => c.checked).map(c => c.value);
-                if (!sel.length) { svcText.textContent = 'Select services...'; svcText.style.color = '#94a3b8'; }
-                else if (sel.includes('All Services')) { svcText.textContent = 'All Services'; svcText.style.color = '#1e293b'; }
-                else if (sel.length === 1) { svcText.textContent = sel[0]; svcText.style.color = '#1e293b'; }
-                else { svcText.textContent = `${sel[0]} +${sel.length - 1} more`; svcText.style.color = '#1e293b'; }
-                svcMenu.style.display = 'none';
-            });
-            document.getElementById('cpnSvcReset').addEventListener('click', () => { svcCheckboxes.forEach(c => c.checked = false); svcText.textContent = 'Select services...'; svcText.style.color = '#94a3b8'; });
-
-            // Save
-            document.getElementById('btnSaveCoupon').addEventListener('click', () => {
-                closeModal();
-                const toast = document.getElementById('toastNotification');
-                if (toast) { toast.classList.add('show'); setTimeout(() => toast.classList.remove('show'), 3000); }
-            });
-
-            // Filter panel
-            const filterPanel = document.getElementById('cpnFilterPanel');
-            document.getElementById('btnFilterCoupons').addEventListener('click', e => { e.stopPropagation(); filterPanel.style.display = filterPanel.style.display === 'block' ? 'none' : 'block'; feather.replace(); });
-            document.getElementById('btnCloseCpnFilter').addEventListener('click', () => { filterPanel.style.display = 'none'; });
-            document.getElementById('btnCpnFilterReset').addEventListener('click', () => { filterPanel.querySelectorAll('input').forEach(i => { if(i.type==='checkbox'||i.type==='radio') i.checked=false; }); });
-            document.getElementById('btnCpnFilterApply').addEventListener('click', () => { filterPanel.style.display = 'none'; });
-            filterPanel.addEventListener('click', e => e.stopPropagation());
-        });
-
-        // Table dropdowns
-        function toggleCpnDropdown(btn) {
-            const menu = btn.nextElementSibling;
-            document.querySelectorAll('.cpn-dd').forEach(d => { if (d !== menu) d.style.display = 'none'; });
-            menu.style.display = menu.style.display === 'block' ? 'none' : 'block';
-        }
-
-        window.addEventListener('click', e => {
-            if (!e.target.closest('.dropbtn')) document.querySelectorAll('.cpn-dd').forEach(d => d.style.display = 'none');
-            const fc = document.getElementById('cpnFilterContainer');
-            const fp = document.getElementById('cpnFilterPanel');
-            if (fp && fc && !fc.contains(e.target)) fp.style.display = 'none';
-        });
-    </script>
+    <script type="module" src="scripts/coupons.js"></script>
 <script src="logout.js"></script><script src="change-password.js"></script>    <script type="module" src="scripts/global-auth-guard.js"></script>
     <script type="module" src="scripts/sub-features/sub-feature-gate.js"></script>
 </body></html>
