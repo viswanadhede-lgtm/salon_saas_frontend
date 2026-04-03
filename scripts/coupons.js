@@ -380,6 +380,13 @@ window.editCoupon = function(id) {
     document.querySelector('#couponModalOverlay h2').textContent = "Edit Coupon";
     const btnSave = document.getElementById('btnSaveCoupon');
     btnSave.textContent = "Save Changes";
+
+    // Make coupon code read-only in edit mode
+    const cpnCodeInput = document.getElementById('cpnCode');
+    cpnCodeInput.readOnly = true;
+    cpnCodeInput.style.background = '#f1f5f9';
+    cpnCodeInput.style.color = '#94a3b8';
+    cpnCodeInput.style.cursor = 'not-allowed';
     
     document.getElementById('couponModalOverlay').classList.add('active');
 };
@@ -432,6 +439,13 @@ function openCreateModal() {
     document.querySelector('#couponModalOverlay h2').textContent = "Create Coupon";
     const btnSave = document.getElementById('btnSaveCoupon');
     btnSave.textContent = "Create Coupon";
+
+    // Restore coupon code to editable in create mode
+    const cpnCodeInput = document.getElementById('cpnCode');
+    cpnCodeInput.readOnly = false;
+    cpnCodeInput.style.background = '';
+    cpnCodeInput.style.color = '';
+    cpnCodeInput.style.cursor = '';
 
     document.getElementById('couponModalOverlay').classList.add('active');
 }
