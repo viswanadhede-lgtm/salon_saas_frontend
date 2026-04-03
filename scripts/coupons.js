@@ -4,6 +4,7 @@ let currentCoupons = [];
 let availableServices = [];
 let isEditing = false;
 let currentEditId = null;
+let couponToDelete = null;
 
 // Global context getters
 const getCompanyId = () => localStorage.getItem('company_id') || 'C1';
@@ -42,6 +43,19 @@ document.addEventListener('DOMContentLoaded', async () => {
     document.getElementById('closeCouponModal')?.addEventListener('click', closeModal);
     document.getElementById('btnCancelCoupon')?.addEventListener('click', closeModal);
     overlay?.addEventListener('click', e => { if (e.target === overlay) closeModal(); });
+
+    // Delete Modal Events
+    const deleteConfirmOverlay = document.getElementById('deleteCouponConfirmOverlay');
+    document.getElementById('btnCancelDeleteCoupon')?.addEventListener('click', () => {
+        if(deleteConfirmOverlay) deleteConfirmOverlay.classList.remove('active');
+        couponToDelete = null;
+    });
+    document.getElementById('btnConfirmDeleteCoupon')?.addEventListener('click', async () => {
+        if(!couponToDelete) return;
+        if(deleteConfirmOverlay) deleteConfirmOverlay.classList.remove('active');
+        await executeDeleteCoupon(couponToDelete);
+        couponToDelete = null;
+    });
 
     // UI Interactive helpers inside modal
     const discType = document.getElementById('cpnDiscountType');
@@ -398,8 +412,16 @@ window.editCoupon = function(id) {
     document.getElementById('couponModalOverlay').classList.add('active');
 };
 
-window.deleteCoupon = async function(id) {
-    if (!confirm("Are you sure you want to permanently delete this coupon?")) return;
+window.deleteCoupon = function(id) {
+    couponToDelete = id;
+    const overlay = document.getElementById('deleteCouponConfirmOverlay');
+    if (overlay) overlay.classList.add('active');
+};
+
+async function executeDeleteCoupon(id) {
+    const deletingOverlay = document.getElementById('deletingCouponOverlay');
+    if(deletingOverlay) deletingOverlay.classList.add('active');
+
     try {
         const payload = {
             company_id: getCompanyId(),
@@ -420,8 +442,10 @@ window.deleteCoupon = async function(id) {
     } catch (err) {
         console.error(err);
         showToast("Error deleting coupon.");
+    } finally {
+        if(deletingOverlay) deletingOverlay.classList.remove('active');
     }
-};
+}
 
 function openCreateModal() {
     isEditing = false;
