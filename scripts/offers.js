@@ -7,9 +7,9 @@ document.addEventListener('DOMContentLoaded', () => {
     let editingOfferId = null;
     let offerToDeleteId = null;
 
-    // Retrieve company and branch details from localStorage
-    const companyId = localStorage.getItem('company_id');
-    const branchId = localStorage.getItem('branch_id');
+    // Global context getters
+    const getCompanyId = () => localStorage.getItem('company_id') || 'C1';
+    const getBranchId = () => localStorage.getItem('active_branch_id') || document.getElementById('branchSelect')?.value || null;
 
     // DOM Elements - Table & Overlays
     const tbody = document.getElementById('offersTableBody');
@@ -45,7 +45,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // 1. Initial Data Fetch
     async function initOffers() {
-        if (!companyId || !branchId) {
+        if (!getCompanyId() || !getBranchId()) {
             console.error('Company ID or Branch ID missing from localStorage');
             tbody.innerHTML = `<tr><td colspan="8" style="text-align: center; padding: 2rem;">Configuration missing. Please re-login.</td></tr>`;
             return;
@@ -66,7 +66,7 @@ document.addEventListener('DOMContentLoaded', () => {
             try {
                 const srvResp = await fetchWithAuth(API.READ_SERVICES, {
                     method: 'POST',
-                    body: JSON.stringify({ company_id: companyId, branch_id: branchId })
+                    body: JSON.stringify({ company_id: getCompanyId(), branch_id: getBranchId() })
                 });
                 if (srvResp.ok) {
                     const data = await srvResp.json();
@@ -153,7 +153,7 @@ document.addEventListener('DOMContentLoaded', () => {
         try {
             const response = await fetchWithAuth(API.READ_OFFERS, {
                 method: 'POST',
-                body: JSON.stringify({ company_id: companyId, branch_id: branchId })
+                body: JSON.stringify({ company_id: getCompanyId(), branch_id: getBranchId() })
             });
             if (!response.ok) throw new Error('API fetch failed');
             
@@ -417,8 +417,8 @@ document.addEventListener('DOMContentLoaded', () => {
             }
 
             const payload = {
-                company_id: companyId,
-                branch_id: branchId,
+                company_id: getCompanyId(),
+                branch_id: getBranchId(),
                 offer_name: offerNameEl.value,
                 discount_type: offerDiscountTypeEl.value,
                 discount_value: parseFloat(offerDiscountValueEl.value) || 0,
@@ -466,8 +466,8 @@ document.addEventListener('DOMContentLoaded', () => {
 
         try {
             const payload = {
-                company_id: companyId,
-                branch_id: branchId,
+                company_id: getCompanyId(),
+                branch_id: getBranchId(),
                 offer_id: offerToDeleteId
             };
             const res = await fetchWithAuth(API.DELETE_OFFER, {
