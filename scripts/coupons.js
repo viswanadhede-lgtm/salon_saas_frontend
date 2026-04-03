@@ -489,14 +489,15 @@ async function handleSaveCoupon() {
         discount_type,
         discount_value: parseFloat(discount_value),
         applicable_services,
-        status: document.getElementById('cpnStatusToggle').checked ? 'active' : 'inactive'
+        status: document.getElementById('cpnStatusToggle').checked ? 'active' : 'inactive',
+        current_usage_count: 0 // Will be overridden if editing
     };
 
     const minAmount = document.getElementById('cpnMinBooking').value;
     if(minAmount) payload.min_bill_amount = parseFloat(minAmount);
     
     const usgLimit = document.getElementById('cpnUsageLimit').value;
-    if(usgLimit) payload.usage_limit = parseInt(usgLimit, 10);
+    if(usgLimit) payload.total_usage_limit = parseInt(usgLimit, 10);
     
     const usgPerCust = document.getElementById('cpnUsagePerCustomer').value;
     if(usgPerCust) payload.usage_per_customer = parseInt(usgPerCust, 10);
@@ -509,6 +510,11 @@ async function handleSaveCoupon() {
 
     if (isEditing && currentEditId) {
         payload.coupon_id = currentEditId;
+        // Include current usage count from the in-memory coupon data
+        const existingCoupon = currentCoupons.find(c => c.coupon_id === currentEditId);
+        if (existingCoupon && existingCoupon.current_usage_count !== undefined) {
+            payload.current_usage_count = existingCoupon.current_usage_count;
+        }
     }
 
     const btnSave = document.getElementById('btnSaveCoupon');
