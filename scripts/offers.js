@@ -1,4 +1,4 @@
-import { API_CONFIG } from '../config/api.js';
+import { API, fetchWithAuth } from '../config/api.js';
 
 document.addEventListener('DOMContentLoaded', () => {
     let offers = [];
@@ -64,9 +64,13 @@ document.addEventListener('DOMContentLoaded', () => {
 
             // Fetch Services to populate the UI
             try {
-                const srvResp = await fetch(API_CONFIG.endpoints.services.READ_SERVICES(companyId, branchId));
+                const srvResp = await fetchWithAuth(API.READ_SERVICES, {
+                    method: 'POST',
+                    body: JSON.stringify({ company_id: companyId, branch_id: branchId })
+                });
                 if (srvResp.ok) {
-                    services = await srvResp.json();
+                    const data = await srvResp.json();
+                    services = Array.isArray(data) ? data : (data.services || []);
                 } else {
                     console.error('Failed to fetch services');
                 }
@@ -147,11 +151,15 @@ document.addEventListener('DOMContentLoaded', () => {
     // 2. Load and Render Offers
     async function loadOffers() {
         try {
-            const response = await fetch(API_CONFIG.endpoints.offers.READ_OFFERS(companyId, branchId));
+            const response = await fetchWithAuth(API.READ_OFFERS, {
+                method: 'POST',
+                body: JSON.stringify({ company_id: companyId, branch_id: branchId })
+            });
             if (!response.ok) throw new Error('API fetch failed');
             
             const rawData = await response.json();
-            offers = formatOffersData(rawData);
+            const rows = Array.isArray(rawData) ? rawData : (rawData.offers || []);
+            offers = formatOffersData(rows);
             renderOffersTable();
         } catch (error) {
             console.error('Error loading offers:', error);
@@ -424,17 +432,16 @@ document.addEventListener('DOMContentLoaded', () => {
             };
 
             const endpoint = isEditMode 
-                ? API_CONFIG.endpoints.offers.UPDATE_OFFER(editingOfferId)
-                : API_CONFIG.endpoints.offers.CREATE_OFFER();
+                ? API.UPDATE_OFFER
+                : API.CREATE_OFFER;
 
-            const method = isEditMode ? 'PUT' : 'POST';
+            if (isEditMode) payload.offer_id = editingOfferId;
 
             btnSaveOffer.textContent = isEditMode ? 'Saving...' : 'Creating...';
             btnSaveOffer.disabled = true;
 
-            const res = await fetch(endpoint, {
-                method,
-                headers: { 'Content-Type': 'application/json' },
+            const res = await fetchWithAuth(endpoint, {
+                method: 'POST',
                 body: JSON.stringify(payload)
             });
 
@@ -458,7 +465,15 @@ document.addEventListener('DOMContentLoaded', () => {
         deletingLoader.classList.add('active');
 
         try {
-            const res = await fetch(API_CONFIG.endpoints.offers.DELETE_OFFER(offerToDeleteId), { method: 'DELETE' });
+            const payload = {
+                company_id: companyId,
+                branch_id: branchId,
+                offer_id: offerToDeleteId
+            };
+            const res = await fetchWithAuth(API.DELETE_OFFER, {
+                method: 'POST',
+                body: JSON.stringify(payload)
+            });
             if (!res.ok) throw new Error('Delete failed');
             await loadOffers();
         } catch (err) {
