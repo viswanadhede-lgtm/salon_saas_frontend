@@ -40,6 +40,7 @@ document.addEventListener('DOMContentLoaded', () => {
     // DOM Elements - Multi-select Dropdown (Custom implementation from offers.html)
     const offerServicesText = document.getElementById('offerServicesText');
     const offerServicesMenu = document.getElementById('offerServicesMenu');
+    const offerServicesBtn = document.getElementById('offerServicesBtn');
     // We will render checkboxes into this menu dynamically.
 
     // 1. Initial Data Fetch
@@ -84,11 +85,8 @@ document.addEventListener('DOMContentLoaded', () => {
 
     function populateServiceDropdown() {
         // Find where the checkboxes live
-        const checkboxContainer = offerServicesMenu.querySelector('div[style*="max-height: 220px"]');
+        const checkboxContainer = document.getElementById('servicesCheckboxList');
         if (!checkboxContainer) return;
-
-        // Clear existing, keep Apply/Reset container
-        const actionButtonsHtml = offerServicesMenu.querySelector('div[style*="border-top"]').outerHTML;
         
         let servicesHtml = `
             <label class="service-lbl" style="margin-bottom: 12px;">
@@ -108,7 +106,6 @@ document.addEventListener('DOMContentLoaded', () => {
         });
 
         checkboxContainer.innerHTML = servicesHtml;
-        offerServicesMenu.innerHTML = checkboxContainer.outerHTML + actionButtonsHtml;
         
         // Re-attach multi-select listeners for the new elements inside offerServicesMenu
         const newApplyBtn = document.getElementById('applyServicesBtn');
@@ -503,6 +500,21 @@ document.addEventListener('DOMContentLoaded', () => {
     // Click outside modal
     modalOverlay.addEventListener('click', (e) => {
         if (e.target === modalOverlay) closeModal();
+    });
+
+    // Sub-menu toggles
+    if (offerServicesBtn) {
+        offerServicesBtn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            offerServicesMenu.style.display = offerServicesMenu.style.display === 'block' ? 'none' : 'block';
+        });
+    }
+
+    // Close dropdown when clicking outside of it
+    document.addEventListener('click', (e) => {
+        if (offerServicesMenu && offerServicesBtn && !offerServicesBtn.contains(e.target) && !offerServicesMenu.contains(e.target)) {
+            offerServicesMenu.style.display = 'none';
+        }
     });
 
     initOffers();
