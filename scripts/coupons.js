@@ -233,7 +233,8 @@ async function loadCoupons() {
                 if (row.service_id) {
                     couponMap[row.coupon_id].applicable_services.push({
                         service_id: row.service_id,
-                        service_name: row.service_name
+                        service_name: row.service_name,
+                        current_usage_count: row.current_usage_count || 0
                     });
                 }
             });
@@ -466,20 +467,46 @@ async function handleSaveCoupon() {
     }
 
     // Services
+    let existingCoupon = null;
+    if (isEditing && currentEditId) {
+        existingCoupon = currentCoupons.find(c => c.coupon_id === currentEditId);
+    }
+
     const checkboxes = document.querySelectorAll('#cpnServicesCheckboxList input[type="checkbox"]');
     let applicable_services = Array.from(checkboxes)
         .filter(c => c.checked && c.value !== 'all')
-        .map(c => ({
-            service_id: c.value,
-            service_name: c.nextSibling.textContent.trim()
-        }));
+        .map(c => {
+            let usageCount = 0;
+            if (existingCoupon && existingCoupon.applicable_services) {
+                const oldSvc = existingCoupon.applicable_services.find(s => s.service_id === c.value);
+                if (oldSvc && oldSvc.current_usage_count !== undefined) {
+                    usageCount = oldSvc.current_usage_count;
+                }
+            }
+            return {
+                service_id: c.value,
+                service_name: c.nextSibling.textContent.trim(),
+                current_usage_count: usageCount
+            };
+        });
     
     // Fallback if none checked but 'all' was somehow intended, or literally nothing checked
     if (applicable_services.length === 0) {
-        applicable_services = availableServices.map(svc => ({
-            service_id: svc.service_id || svc._id,
-            service_name: svc.service_name || svc.name
-        }));
+        applicable_services = availableServices.map(svc => {
+            const svcId = svc.service_id || svc._id;
+            let usageCount = 0;
+            if (existingCoupon && existingCoupon.applicable_services) {
+                const oldSvc = existingCoupon.applicable_services.find(s => s.service_id === svcId);
+                if (oldSvc && oldSvc.current_usage_count !== undefined) {
+                    usageCount = oldSvc.current_usage_count;
+                }
+            }
+            return {
+                service_id: svcId,
+                service_name: svc.service_name || svc.name,
+                current_usage_count: usageCount
+            };
+        });
     }
 
     const payload = {
@@ -489,8 +516,7 @@ async function handleSaveCoupon() {
         discount_type,
         discount_value: parseFloat(discount_value),
         applicable_services,
-        status: document.getElementById('cpnStatusToggle').checked ? 'active' : 'inactive',
-        current_usage_count: 0 // Will be overridden if editing
+        status: document.getElementById('cpnStatusToggle').checked ? 'active' : 'inactive'
     };
 
     const minAmount = document.getElementById('cpnMinBooking').value;
@@ -510,11 +536,6 @@ async function handleSaveCoupon() {
 
     if (isEditing && currentEditId) {
         payload.coupon_id = currentEditId;
-        // Include current usage count from the in-memory coupon data
-        const existingCoupon = currentCoupons.find(c => c.coupon_id === currentEditId);
-        if (existingCoupon && existingCoupon.current_usage_count !== undefined) {
-            payload.current_usage_count = existingCoupon.current_usage_count;
-        }
     }
 
     const btnSave = document.getElementById('btnSaveCoupon');
