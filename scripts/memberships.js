@@ -184,10 +184,10 @@ async function loadPlans() {
             const rawData = await res.json();
             const rows = Array.isArray(rawData) ? rawData : (rawData.plans || rawData.membership_plans || []);
 
-            // Group flat rows by plan_id, aggregating applicable_services
+            // Group flat rows by membership_id, aggregating applicable_services
             const planMap = {};
             rows.forEach(row => {
-                const id = row.plan_id || row.membership_plan_id || row._id;
+                const id = row.membership_id || row.plan_id || row.membership_plan_id || row._id;
                 if (!planMap[id]) {
                     planMap[id] = { ...row, applicable_services: [] };
                 }
@@ -202,6 +202,7 @@ async function loadPlans() {
             currentPlans = Object.values(planMap);
             renderPlans();
         } else {
+
             throw new Error('API error');
         }
     } catch (err) {
@@ -237,7 +238,7 @@ function renderPlans() {
             ? `${plan.duration_months} Month${plan.duration_months > 1 ? 's' : ''}`
             : (plan.duration || '-');
 
-        const planId = plan.plan_id || plan.membership_plan_id || plan._id;
+        const planId = plan.membership_id || plan.plan_id || plan.membership_plan_id || plan._id;
 
         return `
             <tr style="border-bottom:1px solid #e2e8f0;">
@@ -320,7 +321,7 @@ function resetPlanForm() {
 
 // ── EDIT ───────────────────────────────────────────────────────────────────
 window.editPlan = function(id) {
-    const plan = currentPlans.find(p => (p.plan_id || p.membership_plan_id || p._id) === id);
+    const plan = currentPlans.find(p => (p.membership_id || p.plan_id || p.membership_plan_id || p._id) === id);
     if (!plan) {
         console.warn('editPlan: plan not found for id', id, currentPlans);
         return;
@@ -396,9 +397,9 @@ async function executeDeletePlan(id) {
         const res = await fetchWithAuth(API.DELETE_MEMBERSHIP_PLAN, {
             method: 'POST',
             body: JSON.stringify({
-                company_id: getCompanyId(),
-                branch_id:  getBranchId(),
-                plan_id:    id
+                company_id:    getCompanyId(),
+                branch_id:     getBranchId(),
+                membership_id: id
             })
         });
 
@@ -454,7 +455,7 @@ async function handleSavePlan() {
     if (applicable_services.length > 0) payload.applicable_services = applicable_services;
 
     if (isEditing && currentEditId) {
-        payload.plan_id = currentEditId;
+        payload.membership_id = currentEditId;
     }
 
     const btn = document.getElementById('btnSavePlan');
