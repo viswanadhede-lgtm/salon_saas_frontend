@@ -766,15 +766,13 @@
                                     </span>
                                 </td>
                                 <td style="text-align: right;">
-                                    <div class="dropdown-container">
-                                        <button class="dropdown-toggle" onclick="toggleDropdown(this)" style="padding: 6px 14px; background: #fff; border: 1px solid #e2e8f0; border-radius: 8px; font-size: 0.85rem; font-weight: 600; color: #475569; cursor: pointer; display: flex; align-items: center; gap: 6px; display: inline-flex; transition: all 0.2s;">
-                                            Actions
-                                            <i data-feather="chevron-down" style="width: 15px; height: 15px; color: #94a3b8;"></i>
+                                    <div style="display: flex; gap: 8px; justify-content: flex-end;">
+                                        <button class="action-btn edit-btn" style="padding: 6px; border-radius: 6px; border: 1px solid #e2e8f0; background: #fff; cursor: pointer; color: #3b82f6;" title="Edit">
+                                            <i data-feather="edit-2" style="width: 16px; height: 16px;"></i>
                                         </button>
-                                        <div class="dropdown-content">
-                                            <a href="#" class="dropdown-item-link"><i data-feather="edit-2"></i> Edit</a>
-                                            <a href="#" class="dropdown-item-link text-danger"><i data-feather="trash-2"></i> Delete</a>
-                                        </div>
+                                        <button class="action-btn delete-btn" style="padding: 6px; border-radius: 6px; border: 1px solid #e2e8f0; background: #fff; cursor: pointer; color: #ef4444;" title="Delete">
+                                            <i data-feather="trash-2" style="width: 16px; height: 16px;"></i>
+                                        </button>
                                     </div>
                                 </td>
                             </tr>
@@ -800,15 +798,13 @@
                                     </span>
                                 </td>
                                 <td style="text-align: right;">
-                                    <div class="dropdown-container">
-                                        <button class="dropdown-toggle" onclick="toggleDropdown(this)" style="padding: 6px 14px; background: #fff; border: 1px solid #e2e8f0; border-radius: 8px; font-size: 0.85rem; font-weight: 600; color: #475569; cursor: pointer; display: flex; align-items: center; gap: 6px; display: inline-flex; transition: all 0.2s;">
-                                            Actions
-                                            <i data-feather="chevron-down" style="width: 15px; height: 15px; color: #94a3b8;"></i>
+                                    <div style="display: flex; gap: 8px; justify-content: flex-end;">
+                                        <button class="action-btn edit-btn" style="padding: 6px; border-radius: 6px; border: 1px solid #e2e8f0; background: #fff; cursor: pointer; color: #3b82f6;" title="Edit">
+                                            <i data-feather="edit-2" style="width: 16px; height: 16px;"></i>
                                         </button>
-                                        <div class="dropdown-content" style="display:none; position: absolute; right: 0; background: #fff; min-width: 160px; box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1); border-radius: 10px; z-index: 100; border: 1px solid #e2e8f0; margin-top: 5px;">
-                                            <a href="#" style="padding: 10px 16px; text-decoration: none; display: block; color: #475569; font-size: 0.9rem; transition: background-color 0.2s;"><i data-feather="edit-2" style="width: 14px; height: 14px; margin-right: 8px;"></i> Edit</a>
-                                            <a href="#" style="padding: 10px 16px; text-decoration: none; display: block; color: #ef4444; font-size: 0.9rem; transition: background-color 0.2s;"><i data-feather="trash-2" style="width: 14px; height: 14px; margin-right: 8px;"></i> Delete</a>
-                                        </div>
+                                        <button class="action-btn delete-btn" style="padding: 6px; border-radius: 6px; border: 1px solid #e2e8f0; background: #fff; cursor: pointer; color: #ef4444;" title="Delete">
+                                            <i data-feather="trash-2" style="width: 16px; height: 16px;"></i>
+                                        </button>
                                     </div>
                                 </td>
                             </tr>
@@ -835,15 +831,13 @@
                                     </span>
                                 </td>
                                 <td style="text-align: right;">
-                                    <div class="dropdown-container">
-                                        <button class="dropdown-toggle" onclick="toggleDropdown(this)" style="padding: 6px 14px; background: #fff; border: 1px solid #e2e8f0; border-radius: 8px; font-size: 0.85rem; font-weight: 600; color: #475569; cursor: pointer; display: flex; align-items: center; gap: 6px; display: inline-flex; transition: all 0.2s;">
-                                            Actions
-                                            <i data-feather="chevron-down" style="width: 15px; height: 15px; color: #94a3b8;"></i>
+                                    <div style="display: flex; gap: 8px; justify-content: flex-end;">
+                                        <button class="action-btn edit-btn" style="padding: 6px; border-radius: 6px; border: 1px solid #e2e8f0; background: #fff; cursor: pointer; color: #3b82f6;" title="Edit">
+                                            <i data-feather="edit-2" style="width: 16px; height: 16px;"></i>
                                         </button>
-                                        <div class="dropdown-content" style="display:none; position: absolute; right: 0; background: #fff; min-width: 160px; box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1); border-radius: 10px; z-index: 100; border: 1px solid #e2e8f0; margin-top: 5px;">
-                                            <a href="#" style="padding: 10px 16px; text-decoration: none; display: block; color: #475569; font-size: 0.9rem; transition: background-color 0.2s;"><i data-feather="edit-2" style="width: 14px; height: 14px; margin-right: 8px;"></i> Edit</a>
-                                            <a href="#" style="padding: 10px 16px; text-decoration: none; display: block; color: #ef4444; font-size: 0.9rem; transition: background-color 0.2s;"><i data-feather="trash-2" style="width: 14px; height: 14px; margin-right: 8px;"></i> Delete</a>
-                                        </div>
+                                        <button class="action-btn delete-btn" style="padding: 6px; border-radius: 6px; border: 1px solid #e2e8f0; background: #fff; cursor: pointer; color: #ef4444;" title="Delete">
+                                            <i data-feather="trash-2" style="width: 16px; height: 16px;"></i>
+                                        </button>
                                     </div>
                                 </td>
                             </tr>
@@ -870,15 +864,13 @@
                                     </span>
                                 </td>
                                 <td style="text-align: right;">
-                                    <div class="dropdown-container">
-                                        <button class="dropdown-toggle" onclick="toggleDropdown(this)" style="padding: 6px 14px; background: #fff; border: 1px solid #e2e8f0; border-radius: 8px; font-size: 0.85rem; font-weight: 600; color: #475569; cursor: pointer; display: flex; align-items: center; gap: 6px; display: inline-flex; transition: all 0.2s;">
-                                            Actions
-                                            <i data-feather="chevron-down" style="width: 15px; height: 15px; color: #94a3b8;"></i>
+                                    <div style="display: flex; gap: 8px; justify-content: flex-end;">
+                                        <button class="action-btn edit-btn" style="padding: 6px; border-radius: 6px; border: 1px solid #e2e8f0; background: #fff; cursor: pointer; color: #3b82f6;" title="Edit">
+                                            <i data-feather="edit-2" style="width: 16px; height: 16px;"></i>
                                         </button>
-                                        <div class="dropdown-content">
-                                            <a href="#" class="dropdown-item-link"><i data-feather="play"></i> Enable</a>
-                                            <a href="#" class="dropdown-item-link text-danger"><i data-feather="trash-2"></i> Delete</a>
-                                        </div>
+                                        <button class="action-btn delete-btn" style="padding: 6px; border-radius: 6px; border: 1px solid #e2e8f0; background: #fff; cursor: pointer; color: #ef4444;" title="Delete">
+                                            <i data-feather="trash-2" style="width: 16px; height: 16px;"></i>
+                                        </button>
                                     </div>
                                 </td>
                             </tr>
@@ -927,16 +919,16 @@
                                     </span>
                                 </td>
                                 <td style="text-align: right;">
-                                    <div class="dropdown-container">
-                                        <button class="dropdown-toggle" onclick="toggleDropdown(this)" style="padding: 6px 14px; background: #fff; border: 1px solid #e2e8f0; border-radius: 8px; font-size: 0.85rem; font-weight: 600; color: #475569; cursor: pointer; display: flex; align-items: center; gap: 6px; display: inline-flex; transition: all 0.2s;">
-                                            Actions
-                                            <i data-feather="chevron-down" style="width: 15px; height: 15px; color: #94a3b8;"></i>
+                                    <div style="display: flex; gap: 8px; justify-content: flex-end;">
+                                        <button style="padding: 6px; border-radius: 6px; border: 1px solid #e2e8f0; background: #fff; cursor: pointer; color: #3b82f6;" title="View Details">
+                                            <i data-feather="eye" style="width: 16px; height: 16px;"></i>
                                         </button>
-                                        <div class="dropdown-content">
-                                            <a href="#" class="dropdown-item-link"><i data-feather="eye"></i> View Details</a>
-                                            <a href="#" class="dropdown-item-link"><i data-feather="file-text"></i> History</a>
-                                            <a href="#" class="dropdown-item-link text-danger"><i data-feather="x-circle"></i> Terminate</a>
-                                        </div>
+                                        <button style="padding: 6px; border-radius: 6px; border: 1px solid #e2e8f0; background: #fff; cursor: pointer; color: #8b5cf6;" title="History">
+                                            <i data-feather="file-text" style="width: 16px; height: 16px;"></i>
+                                        </button>
+                                        <button style="padding: 6px; border-radius: 6px; border: 1px solid #e2e8f0; background: #fff; cursor: pointer; color: #ef4444;" title="Terminate">
+                                            <i data-feather="x-circle" style="width: 16px; height: 16px;"></i>
+                                        </button>
                                     </div>
                                 </td>
                             </tr>
