@@ -413,27 +413,36 @@ document.addEventListener('DOMContentLoaded', () => {
             }
 
             let applyServices = [];
-            const isAll = offerCheckboxes.some(chk => chk.dataset.id === 'all');
-            
-            // Map usage count correctly depending on edit mode. Since we don't track service-level edits individually on frontend easily, we reuse the general usage logic or existing mapping if present.
             let currentO = editingOfferId ? offers.find(o => o.offer_id === editingOfferId) : null;
 
-            if (isAll) {
-                applyServices.push({ service_id: 'all', service_name: "All Categories", current_usage_count: (currentO?.applicable_services.find(s=>s.service_id==='all')?.current_usage_count || 0) });
-            } else {
-                offerCheckboxes.forEach(chk => {
-                    if (chk.dataset.id !== 'all') {
-                        let scnt = 0;
-                        if(currentO) {
-                            let currSrv = currentO.applicable_services.find(s=>s.service_id === chk.dataset.id);
-                            if(currSrv) scnt = currSrv.current_usage_count;
-                        }
-                        applyServices.push({
-                            service_id: chk.dataset.id,
-                            service_name: chk.value,
-                            current_usage_count: scnt
-                        });
+            offerCheckboxes.forEach(chk => {
+                if (chk.dataset.id !== 'all') {
+                    let scnt = 0;
+                    if(currentO) {
+                        let currSrv = currentO.applicable_services.find(s=>s.service_id === chk.dataset.id);
+                        if(currSrv) scnt = currSrv.current_usage_count;
                     }
+                    applyServices.push({
+                        service_id: chk.dataset.id,
+                        service_name: chk.value,
+                        current_usage_count: scnt
+                    });
+                }
+            });
+
+            // Edge Case Fallback: If no valid services were mapped, but a payload must be returned
+            if (applyServices.length === 0) {
+                applyServices = services.map(svc => {
+                    let scnt = 0;
+                    if(currentO) {
+                        let currSrv = currentO.applicable_services.find(s=>s.service_id === svc.service_id);
+                        if(currSrv) scnt = currSrv.current_usage_count;
+                    }
+                    return {
+                        service_id: svc.service_id,
+                        service_name: svc.service_name,
+                        current_usage_count: scnt
+                    };
                 });
             }
 
