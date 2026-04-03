@@ -2,6 +2,7 @@ import { API, fetchWithAuth } from '../config/api.js';
 
 // ── State ──────────────────────────────────────────────────────────────────
 let currentPlans = [];
+let availableServices = [];
 let isEditing = false;
 let currentEditId = null;
 let planToDelete = null;
@@ -12,6 +13,7 @@ const getBranchId  = () => localStorage.getItem('active_branch_id') || document.
 
 // ── Boot ───────────────────────────────────────────────────────────────────
 document.addEventListener('DOMContentLoaded', async () => {
+    await fetchServices();
     await loadPlans();
 
     // Reload when branch changes
@@ -104,6 +106,53 @@ function applyPlanSvcSelection() {
         svcText.textContent = `${selected[0].parentElement.textContent.trim()} +${selected.length - 1} more`;
         svcText.style.color = '#1e293b';
     }
+}
+
+// ── Services Fetch ────────────────────────────────────────────────────────
+async function fetchServices() {
+    try {
+        const res = await fetchWithAuth(API.READ_SERVICES, {
+            method: 'POST',
+            body: JSON.stringify({
+                company_id: getCompanyId(),
+                branch_id:  getBranchId()
+            })
+        });
+        if (res.ok) {
+            const data = await res.json();
+            availableServices = Array.isArray(data) ? data : (data.services || []);
+            populatePlanSvcCheckboxes();
+        }
+    } catch (err) {
+        console.error('fetchServices (memberships):', err);
+    }
+}
+
+function populatePlanSvcCheckboxes() {
+    const container = document.getElementById('planSvcCheckboxList');
+    if (!container) return;
+
+    const allLabel = `<label class="svc-dropdown-label"><input type="checkbox" value="all" style="accent-color:#7c3aed;"> All Services</label>`;
+    const serviceLabels = availableServices.map(svc =>
+        `<label class="svc-dropdown-label"><input type="checkbox" value="${svc.service_id || svc._id}" style="accent-color:#7c3aed;"> ${svc.service_name || svc.name}</label>`
+    ).join('');
+
+    container.innerHTML = allLabel + serviceLabels;
+
+    // Bind "All Services" toggle
+    const allCb = container.querySelector('input[value="all"]');
+    const otherCbs = () => container.querySelectorAll('input:not([value="all"])');
+    allCb?.addEventListener('change', () => {
+        otherCbs().forEach(c => c.checked = allCb.checked);
+        applyPlanSvcSelection();
+    });
+    container.addEventListener('change', e => {
+        if (e.target.value !== 'all') {
+            const all = Array.from(otherCbs()).every(c => c.checked);
+            if (allCb) allCb.checked = all;
+        }
+        applyPlanSvcSelection();
+    });
 }
 
 // ── READ ───────────────────────────────────────────────────────────────────
