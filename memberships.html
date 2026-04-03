@@ -1946,8 +1946,8 @@
 
                 <div class="benefit-row">
                     <div class="form-group">
-                        <label class="form-label">Description <span class="text-muted">(Optional)</span></label>
-                        <textarea id="planDescInput" class="form-input" placeholder="Summarize the plan..." style="min-height: 80px;"></textarea>
+                        <label class="form-label">Valid From <span class="text-rose">*</span></label>
+                        <input type="date" id="planValidFromInput" class="form-input">
                     </div>
                     <div class="form-group" style="display: flex; flex-direction: column; justify-content: center;">
                         <label class="form-label">Status</label>
@@ -1959,6 +1959,11 @@
                             <span id="planStatusLabel" style="font-size: 0.9rem; font-weight: 500; color: #1e293b;">Active</span>
                         </div>
                     </div>
+                </div>
+
+                <div class="form-group" style="margin-bottom: 1.25rem;">
+                    <label class="form-label">Description <span class="text-muted">(Optional)</span></label>
+                    <textarea id="planDescInput" class="form-input" placeholder="Summarize the plan..." style="min-height: 80px;"></textarea>
                 </div>
 
                 <!-- Section 2: Benefits -->
@@ -2001,44 +2006,6 @@
                     </div>
                 </div>
 
-                <div class="form-group" style="margin-bottom: 1.5rem;">
-                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
-                        <label class="form-label" style="margin: 0;">Free Services <span class="text-muted">(Optional)</span></label>
-                        <button type="button" id="btnAddFreeSvc" style="background: none; border: none; color: #7c3aed; font-size: 0.85rem; font-weight: 600; cursor: pointer; display: flex; align-items: center; gap: 4px;">
-                            <i data-feather="plus-circle" style="width: 14px; height: 14px;"></i> Add Service
-                        </button>
-                    </div>
-                    <div id="freeSvcList">
-                        <!-- Dynamic rows here -->
-                    </div>
-                    <div id="noFreeSvcMsg" style="text-align: center; padding: 20px; background: #f8fafc; border: 1px dashed #e2e8f0; border-radius: 10px; color: #94a3b8; font-size: 0.85rem;">
-                        No free services added yet.
-                    </div>
-                </div>
-
-                <div class="benefit-row">
-                    <div class="form-group">
-                        <label class="form-label">Max Uses Per Month</label>
-                        <input type="number" id="planMaxUsesMonth" class="form-input" placeholder="e.g., 4" min="0">
-                    </div>
-                    <div class="form-group">
-                        <label class="form-label">Max Uses Per Customer</label>
-                        <input type="number" id="planMaxUsesCustomer" class="form-input" placeholder="e.g., 20" min="0">
-                    </div>
-                </div>
-
-                <div style="padding: 1rem; background: #faf5ff; border: 1px solid #f3e8ff; border-radius: 12px; margin-top: 0.5rem;">
-                    <div style="display: flex; align-items: center; justify-content: space-between;">
-                        <div>
-                            <p style="font-size: 0.9rem; font-weight: 700; color: #581c87; margin: 0;">Auto Apply Benefits</p>
-                            <p style="font-size: 0.8rem; color: #7e22ce; margin: 2px 0 0;">Automatically apply discounts during checkout for members.</p>
-                        </div>
-                        <label class="toggle-switch">
-                            <input type="checkbox" id="planAutoApplyToggle" checked>
-                            <span class="toggle-slider"></span>
-                        </label>
-                    </div>
-                </div>
 
             </div>
             
@@ -2247,39 +2214,6 @@
             svcText.style.color = '#94a3b8';
         });
 
-        // Free Services Dynamic List
-        const freeSvcList = document.getElementById('freeSvcList');
-        const noFreeSvcMsg = document.getElementById('noFreeSvcMsg');
-        const btnAddFreeSvc = document.getElementById('btnAddFreeSvc');
-
-        btnAddFreeSvc.addEventListener('click', () => {
-            noFreeSvcMsg.style.display = 'none';
-            const row = document.createElement('div');
-            row.className = 'free-svc-item';
-            row.innerHTML = `
-                <select class="form-select" style="padding: 6px 10px;">
-                    <option value="Haircut">Haircut</option>
-                    <option value="Facial">Facial</option>
-                    <option value="Massage">Massage</option>
-                    <option value="Manicure">Manicure</option>
-                </select>
-                <input type="number" class="form-input" value="1" min="1" style="padding: 6px 10px; text-align: center;">
-                <select class="form-select" style="padding: 6px 10px;">
-                    <option value="per month">Per Month</option>
-                    <option value="per membership">Per Membership</option>
-                </select>
-                <button type="button" class="btn-remove" style="background: none; border: none; color: #ef4444; cursor: pointer; display: flex; align-items: center; justify-content: center;">
-                    <i data-feather="trash-2" style="width: 16px; height: 16px;"></i>
-                </button>
-            `;
-            freeSvcList.appendChild(row);
-            feather.replace();
-            
-            row.querySelector('.btn-remove').onclick = () => {
-                row.remove();
-                if (freeSvcList.children.length === 0) noFreeSvcMsg.style.display = 'block';
-            };
-        });
 
         function showToast(msg) {
             const toast = document.getElementById('toastNotification');
