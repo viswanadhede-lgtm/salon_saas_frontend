@@ -73,7 +73,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 console.error('Error fetching services:', err);
             }
 
-            this.populateServiceDropdown();
+            populateServiceDropdown();
             await loadOffers();
 
         } catch (error) {
@@ -82,7 +82,7 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
-    this.populateServiceDropdown = function() {
+    function populateServiceDropdown() {
         // Find where the checkboxes live
         const checkboxContainer = offerServicesMenu.querySelector('div[style*="max-height: 220px"]');
         if (!checkboxContainer) return;
@@ -131,7 +131,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     offerServicesText.textContent = selected[0];
                     offerServicesText.style.color = "#1e293b";
                 } else {
-                    offerServicesText.textContent = \`\${selected[0]} +\${selected.length - 1} more\`;
+                    offerServicesText.textContent = `${selected[0]} +${selected.length - 1} more`;
                     offerServicesText.style.color = "#1e293b";
                 }
                 offerServicesMenu.style.display = 'none';
@@ -208,19 +208,19 @@ document.addEventListener('DOMContentLoaded', () => {
             let topServiceText = hasAllServicesMap ? 'All Services' : (offer.applicable_services[0]?.service_name || 'None');
             let additionalCount = hasAllServicesMap ? 0 : Math.max(0, offer.applicable_services.length - 1);
 
-            let serviceHtml = `<span style="font-size: 0.9rem; color: #334155;">\${topServiceText}</span>`;
+            let serviceHtml = `<span style="font-size: 0.9rem; color: #334155;">${topServiceText}</span>`;
             if (additionalCount > 0) {
-                serviceHtml = `<div class="service-tooltip-wrapper" style="position: relative; display: inline-block; cursor: help;" title="\${tooltipServices}">
-                                  <span style="font-size: 0.9rem; color: #334155;">\${topServiceText} <span style="color: #64748b; font-size: 0.8rem; background: #f1f5f9; padding: 2px 6px; border-radius: 4px; margin-left: 4px;">+\${additionalCount}</span></span>
+                serviceHtml = `<div class="service-tooltip-wrapper" style="position: relative; display: inline-block; cursor: help;" title="${tooltipServices}">
+                                  <span style="font-size: 0.9rem; color: #334155;">${topServiceText} <span style="color: #64748b; font-size: 0.8rem; background: #f1f5f9; padding: 2px 6px; border-radius: 4px; margin-left: 4px;">+${additionalCount}</span></span>
                                </div>`;
             } else if (!hasAllServicesMap) {
-                serviceHtml = `<div class="service-tooltip-wrapper" style="position: relative; display: inline-block; cursor: help;" title="\${tooltipServices}">\${serviceHtml}</div>`;
+                serviceHtml = `<div class="service-tooltip-wrapper" style="position: relative; display: inline-block; cursor: help;" title="${tooltipServices}">${serviceHtml}</div>`;
             }
 
             // Default valid date logic
             let fromText = offer.valid_from ? new Date(offer.valid_from).toLocaleDateString('en-GB') : '-';
             let toText = offer.valid_to ? new Date(offer.valid_to).toLocaleDateString('en-GB') : 'No Expiry';
-            let validDatesHtml = `<div style="font-size: 0.9rem; color: #334155;">\${fromText} – \${toText}</div>`;
+            let validDatesHtml = `<div style="font-size: 0.9rem; color: #334155;">${fromText} – ${toText}</div>`;
             if (!offer.valid_from && !offer.valid_to) {
                 validDatesHtml = `<div style="font-size: 0.9rem; color: #64748b; font-style: italic;">Always Active</div>`;
             }
@@ -231,45 +231,45 @@ document.addEventListener('DOMContentLoaded', () => {
             if (offer.applicable_services.length > 0) {
                  maxCurrentCount = Math.max(...offer.applicable_services.map(s => s.current_usage_count || 0));
             }
-            let counterDisplay = `\${maxCurrentCount} / \${totalMaxLimitStr}`;
+            let counterDisplay = `${maxCurrentCount} / ${totalMaxLimitStr}`;
 
             let statusBadge = offer.status === 'active' 
                 ? `<span class="badge-pill" style="background: #dcfce7; color: #166534; font-size: 0.75rem; padding: 4px 10px; border-radius: 999px; font-weight: 600; display: inline-flex; align-items: center; gap: 4px;"><span style="width: 6px; height: 6px; border-radius: 50%; background: #22c55e;"></span>Active</span>`
                 : `<span class="badge-pill" style="background: #fee2e2; color: #b91c1c; font-size: 0.75rem; padding: 4px 10px; border-radius: 999px; font-weight: 600; display: inline-flex; align-items: center; gap: 4px;"><span style="width: 6px; height: 6px; border-radius: 50%; background: #ef4444;"></span>Inactive</span>`;
 
             let valueBadge = offer.discount_type === 'percentage' 
-                ? `<span style="font-weight: 700; color: #0284c7; background: #e0f2fe; padding: 4px 8px; border-radius: 6px; font-size: 0.85rem;">\${offer.discount_value}% OFF</span>`
-                : `<span style="font-weight: 700; color: #15803d; background: #dcfce7; padding: 4px 8px; border-radius: 6px; font-size: 0.85rem;">₹\${offer.discount_value} OFF</span>`;
+                ? `<span style="font-weight: 700; color: #0284c7; background: #e0f2fe; padding: 4px 8px; border-radius: 6px; font-size: 0.85rem;">${offer.discount_value}% OFF</span>`
+                : `<span style="font-weight: 700; color: #15803d; background: #dcfce7; padding: 4px 8px; border-radius: 6px; font-size: 0.85rem;">₹${offer.discount_value} OFF</span>`;
 
             return `
                 <tr style="border-bottom: 1px solid #e2e8f0; transition: background 0.2s;">
                     <td style="padding: 16px 20px;">
-                        <div style="font-weight: 600; color: #1e293b; font-size: 0.95rem;">\${offer.offer_name || 'N/A'}</div>
+                        <div style="font-weight: 600; color: #1e293b; font-size: 0.95rem;">${offer.offer_name || 'N/A'}</div>
                     </td>
                     <td style="padding: 16px 20px;">
-                        \${valueBadge}
+                        ${valueBadge}
                     </td>
                     <td style="padding: 16px 20px;">
-                        <div style="font-size: 0.9rem; color: #334155; text-transform: capitalize;">\${offer.discount_type || 'N/A'}</div>
+                        <div style="font-size: 0.9rem; color: #334155; text-transform: capitalize;">${offer.discount_type || 'N/A'}</div>
                     </td>
                     <td style="padding: 16px 20px;">
-                        \${serviceHtml}
+                        ${serviceHtml}
                     </td>
                     <td style="padding: 16px 20px;">
-                        \${validDatesHtml}
+                        ${validDatesHtml}
                     </td>
                     <td style="padding: 16px 20px;">
-                        \${statusBadge}
+                        ${statusBadge}
                     </td>
                     <td style="padding: 16px 20px;">
-                        <div style="font-size: 0.9rem; color: #334155;"><span style="font-weight: 600;">\${counterDisplay}</span></div>
+                        <div style="font-size: 0.9rem; color: #334155;"><span style="font-weight: 600;">${counterDisplay}</span></div>
                     </td>
                     <td style="padding: 16px 20px; text-align: center;">
                         <div style="display: flex; gap: 6px; justify-content: center;">
-                            <button class="icon-btn edit-btn" data-id="\${offer.offer_id}" style="padding: 6px; border-radius: 6px; border: 1px solid #e2e8f0; background: #fff; cursor: pointer; color: #3b82f6;" title="Edit">
+                            <button class="icon-btn edit-btn" data-id="${offer.offer_id}" style="padding: 6px; border-radius: 6px; border: 1px solid #e2e8f0; background: #fff; cursor: pointer; color: #3b82f6;" title="Edit">
                                 <i data-feather="edit-2" style="width: 16px; height: 16px;"></i>
                             </button>
-                            <button class="icon-btn delete-btn" data-id="\${offer.offer_id}" style="padding: 6px; border-radius: 6px; border: 1px solid #e2e8f0; background: #fff; cursor: pointer; color: #ef4444;" title="Delete">
+                            <button class="icon-btn delete-btn" data-id="${offer.offer_id}" style="padding: 6px; border-radius: 6px; border: 1px solid #e2e8f0; background: #fff; cursor: pointer; color: #ef4444;" title="Delete">
                                 <i data-feather="trash-2" style="width: 16px; height: 16px;"></i>
                             </button>
                         </div>
@@ -346,7 +346,7 @@ document.addEventListener('DOMContentLoaded', () => {
             if (allChk) { allChk.checked = true; selectedCount = 1; pName = "All Categories"; }
         } else {
             o.applicable_services.forEach(srv => {
-                const sChk = document.querySelector(\`.serviceCheckboxes[data-id="\${srv.service_id}"]\`);
+                const sChk = document.querySelector(`.serviceCheckboxes[data-id="${srv.service_id}"]`);
                 if (sChk) { sChk.checked = true; selectedCount++; if(!pName) pName = srv.service_name; }
             });
         }
@@ -361,7 +361,7 @@ document.addEventListener('DOMContentLoaded', () => {
             offerServicesText.textContent = pName;
             offerServicesText.style.color = "#1e293b";
         } else {
-            offerServicesText.textContent = \`\${pName} +\${selectedCount - 1} more\`;
+            offerServicesText.textContent = `${pName} +${selectedCount - 1} more`;
             offerServicesText.style.color = "#1e293b";
         }
 
@@ -441,7 +441,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 body: JSON.stringify(payload)
             });
 
-            if (!res.ok) throw new Error(\`Failed to \${isEditMode ? 'update' : 'create'} offer\`);
+            if (!res.ok) throw new Error(`Failed to ${isEditMode ? 'update' : 'create'} offer`);
 
             closeModal();
             await loadOffers();
