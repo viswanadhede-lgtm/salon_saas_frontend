@@ -285,7 +285,13 @@ function renderCoupons() {
 
         // Usage counts
         const usageLimit = coupon.total_usage_limit ? coupon.total_usage_limit : '∞';
-        const usedCount = coupon.current_usage_count || 0;
+        
+        let usedCount = 0;
+        if (coupon.applicable_services && coupon.applicable_services.length > 0) {
+            usedCount = coupon.applicable_services.reduce((sum, svc) => sum + (Number(svc.current_usage_count) || 0), 0);
+        } else {
+            usedCount = Number(coupon.current_usage_count) || 0;
+        }
 
         return `
             <tr style="border-bottom:1px solid #e2e8f0;">
