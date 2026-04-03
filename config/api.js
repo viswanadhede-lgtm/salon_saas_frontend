@@ -65,7 +65,11 @@ export const API = {
   CREATE_OFFER: `${BASE_URL}/create_offer`,
   READ_OFFERS: `${BASE_URL}/read_offers`,
   UPDATE_OFFER: `${BASE_URL}/update_offer`,
-  DELETE_OFFER: `${BASE_URL}/delete_offer`
+  DELETE_OFFER: `${BASE_URL}/delete_offer`,
+  CREATE_MEMBERSHIP_PLAN: `${BASE_URL}/create_membership_plan`,
+  READ_MEMBERSHIP_PLANS: `${BASE_URL}/read_membership_plans`,
+  UPDATE_MEMBERSHIP_PLAN: `${BASE_URL}/update_membership_plan`,
+  DELETE_MEMBERSHIP_PLAN: `${BASE_URL}/delete_membership_plan`
 };
 
 /**

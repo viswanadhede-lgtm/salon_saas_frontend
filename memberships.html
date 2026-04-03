@@ -2008,6 +2008,28 @@
         </div>
     </div>
 
+    <!-- Delete Plan Confirm Modal -->
+    <div class="modal-overlay" id="deletePlanConfirmOverlay" style="z-index:2000;">
+        <div class="modal-container" style="width:420px;max-width:95%;min-height:unset;padding:0;">
+            <div style="padding:1.5rem 1.5rem 0;">
+                <div style="display:flex;align-items:center;gap:12px;margin-bottom:12px;">
+                    <div style="width:40px;height:40px;border-radius:50%;background:#fef2f2;display:flex;align-items:center;justify-content:center;flex-shrink:0;">
+                        <i data-feather="trash-2" style="width:20px;height:20px;color:#ef4444;"></i>
+                    </div>
+                    <div>
+                        <h3 style="font-size:1rem;font-weight:700;color:#1e293b;margin:0;">Delete Membership Plan</h3>
+                        <p style="font-size:0.85rem;color:#64748b;margin:2px 0 0;">This action cannot be undone.</p>
+                    </div>
+                </div>
+                <p style="font-size:0.9rem;color:#475569;margin:0 0 1.5rem;">Are you sure you want to delete this membership plan? All associated data will be permanently removed.</p>
+            </div>
+            <div style="padding:1rem 1.5rem 1.5rem;display:flex;gap:10px;justify-content:flex-end;border-top:1px solid #f1f5f9;">
+                <button id="btnCancelDeletePlan" class="btn btn-secondary" style="min-width:90px;">Cancel</button>
+                <button id="btnConfirmDeletePlan" class="btn btn-primary" style="min-width:110px;background:#ef4444;border-color:#ef4444;">Yes, Delete</button>
+            </div>
+        </div>
+    </div>
+
     <!-- Assign Membership Modal -->
     <div class="modal-overlay" id="assignModalOverlay">
         <div class="modal-container" id="assignModal" style="width: 850px; max-width: 95%;">
@@ -2268,6 +2290,7 @@
     </script>
 <script src="logout.js"></script><script src="change-password.js"></script>    <script type="module" src="scripts/global-auth-guard.js"></script>
     <script type="module" src="scripts/sub-features/sub-feature-gate.js"></script>
+    <script type="module" src="scripts/memberships.js"></script>
 </body>
 
 </html>
