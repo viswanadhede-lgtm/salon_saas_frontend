@@ -115,6 +115,27 @@ document.addEventListener('DOMContentLoaded', () => {
         const newApplyBtn = document.getElementById('applyServicesBtn');
         const newResetBtn = document.getElementById('resetServicesBtn');
         const newCheckboxes = document.querySelectorAll('.serviceCheckboxes');
+        const allCheckbox = document.querySelector('.serviceCheckboxes[data-id="all"]');
+        const otherCheckboxes = document.querySelectorAll('.serviceCheckboxes:not([data-id="all"])');
+
+        // Bind cascading "Select All" logic
+        if (allCheckbox) {
+            allCheckbox.addEventListener('change', (e) => {
+                const isChecked = e.target.checked;
+                otherCheckboxes.forEach(cb => { cb.checked = isChecked; });
+            });
+
+            otherCheckboxes.forEach(cb => {
+                cb.addEventListener('change', () => {
+                    if (!cb.checked) {
+                        allCheckbox.checked = false;
+                    } else {
+                        const allChecked = Array.from(otherCheckboxes).every(c => c.checked);
+                        allCheckbox.checked = allChecked;
+                    }
+                });
+            });
+        }
 
         if (newApplyBtn) {
             newApplyBtn.addEventListener('click', () => {
