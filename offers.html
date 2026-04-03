@@ -1445,53 +1445,6 @@
                 });
             }
 
-            // Custom Services Dropdown Logic
-            const offerServicesBtn = document.getElementById('offerServicesBtn');
-            const offerServicesMenu = document.getElementById('offerServicesMenu');
-            const offerServicesText = document.getElementById('offerServicesText');
-            const resetServicesBtn = document.getElementById('resetServicesBtn');
-            const applyServicesBtn = document.getElementById('applyServicesBtn');
-            const serviceCheckboxes = document.querySelectorAll('#servicesCheckboxList input[type="checkbox"]');
-
-            if (offerServicesBtn && offerServicesMenu) {
-                offerServicesBtn.addEventListener('click', (e) => {
-                    e.stopPropagation();
-                    offerServicesMenu.style.display = offerServicesMenu.style.display === 'block' ? 'none' : 'block';
-                });
-
-                document.addEventListener('click', (e) => {
-                    if (!offerServicesBtn.contains(e.target) && !offerServicesMenu.contains(e.target)) {
-                        offerServicesMenu.style.display = 'none';
-                    }
-                });
-
-                applyServicesBtn.addEventListener('click', () => {
-                    const selected = Array.from(serviceCheckboxes)
-                        .filter(chk => chk.checked)
-                        .map(chk => chk.value);
-
-                    if (selected.length === 0) {
-                        offerServicesText.textContent = "Select services...";
-                        offerServicesText.style.color = "#94a3b8";
-                    } else if (selected.includes("All Categories")) {
-                        offerServicesText.textContent = "All Categories";
-                        offerServicesText.style.color = "#1e293b";
-                    } else if (selected.length === 1) {
-                        offerServicesText.textContent = selected[0];
-                        offerServicesText.style.color = "#1e293b";
-                    } else {
-                        offerServicesText.textContent = `${selected[0]} +${selected.length - 1} more`;
-                        offerServicesText.style.color = "#1e293b";
-                    }
-                    offerServicesMenu.style.display = 'none';
-                });
-
-                resetServicesBtn.addEventListener('click', () => {
-                    serviceCheckboxes.forEach(chk => chk.checked = false);
-                    offerServicesText.textContent = "Select services...";
-                    offerServicesText.style.color = "#94a3b8";
-                });
-            }
         });
 
         // Toggle dropdown for table action buttons
