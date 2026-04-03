@@ -181,8 +181,25 @@ async function loadPlans() {
         });
 
         if (res.ok) {
-            const data = await res.json();
-            currentPlans = Array.isArray(data) ? data : (data.plans || data.membership_plans || []);
+            const rawData = await res.json();
+            const rows = Array.isArray(rawData) ? rawData : (rawData.plans || rawData.membership_plans || []);
+
+            // Group flat rows by plan_id, aggregating applicable_services
+            const planMap = {};
+            rows.forEach(row => {
+                const id = row.plan_id || row.membership_plan_id || row._id;
+                if (!planMap[id]) {
+                    planMap[id] = { ...row, applicable_services: [] };
+                }
+                if (row.service_id) {
+                    planMap[id].applicable_services.push({
+                        service_id:   row.service_id,
+                        service_name: row.service_name
+                    });
+                }
+            });
+
+            currentPlans = Object.values(planMap);
             renderPlans();
         } else {
             throw new Error('API error');
