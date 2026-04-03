@@ -295,13 +295,19 @@ function closePlanModal() {
 }
 
 function resetPlanForm() {
-    document.getElementById('planNameInput').value   = '';
-    document.getElementById('planPriceInput').value  = '';
-    document.getElementById('planDurationInput').value = '12';
-    document.getElementById('planValidFromInput').value = '';
-    document.getElementById('planDescInput').value   = '';
-    document.getElementById('planDiscountType').value  = 'percentage';
-    document.getElementById('planDiscountValue').value = '';
+    const nameInput = document.getElementById('planNameInput');
+    nameInput.value       = '';
+    nameInput.readOnly    = false;
+    nameInput.style.background = '';
+    nameInput.style.color      = '';
+    nameInput.style.cursor     = '';
+
+    document.getElementById('planPriceInput').value         = '';
+    document.getElementById('planDurationInput').value      = '12';
+    document.getElementById('planValidFromInput').value     = '';
+    document.getElementById('planDescInput').value          = '';
+    document.getElementById('planDiscountType').value       = 'percentage';
+    document.getElementById('planDiscountValue').value      = '';
 
     const tog = document.getElementById('planStatusToggle');
     tog.checked = true;
@@ -315,17 +321,27 @@ function resetPlanForm() {
 // ── EDIT ───────────────────────────────────────────────────────────────────
 window.editPlan = function(id) {
     const plan = currentPlans.find(p => (p.plan_id || p.membership_plan_id || p._id) === id);
-    if (!plan) return;
+    if (!plan) {
+        console.warn('editPlan: plan not found for id', id, currentPlans);
+        return;
+    }
 
     isEditing     = true;
     currentEditId = id;
 
-    document.getElementById('planNameInput').value    = plan.plan_name || plan.name || '';
-    document.getElementById('planPriceInput').value   = plan.price || '';
-    document.getElementById('planDurationInput').value = plan.duration_months || plan.duration || '12';
-    document.getElementById('planDescInput').value    = plan.description || '';
-    document.getElementById('planDiscountType').value  = plan.discount_type || 'percentage';
-    document.getElementById('planDiscountValue').value = plan.discount_value || '';
+    // Plan Name — read-only in edit mode
+    const nameInput = document.getElementById('planNameInput');
+    nameInput.value          = plan.plan_name || plan.name || '';
+    nameInput.readOnly       = true;
+    nameInput.style.background = '#f1f5f9';
+    nameInput.style.color      = '#94a3b8';
+    nameInput.style.cursor     = 'not-allowed';
+
+    document.getElementById('planPriceInput').value         = plan.price || '';
+    document.getElementById('planDurationInput').value      = plan.duration_months || plan.duration || '12';
+    document.getElementById('planDescInput').value          = plan.description || '';
+    document.getElementById('planDiscountType').value       = plan.discount_type || 'percentage';
+    document.getElementById('planDiscountValue').value      = plan.discount_value || '';
 
     if (plan.valid_from) {
         document.getElementById('planValidFromInput').value = new Date(plan.valid_from).toISOString().split('T')[0];
@@ -337,21 +353,25 @@ window.editPlan = function(id) {
     tog.checked = plan.status === 'active';
     document.getElementById('planStatusLabel').textContent = tog.checked ? 'Active' : 'Inactive';
 
-    // Services — pre-check matching
+    // Services — pre-check matching (fix: don't auto-check 'all')
     const checkboxes = document.querySelectorAll('#planSvcCheckboxList input[type="checkbox"]');
+    const svcIds = (plan.applicable_services || []).map(s =>
+        typeof s === 'object' ? (s.service_id || s._id) : s
+    );
+    const allMatch = svcIds.length > 0 && svcIds.length >= availableServices.length;
+
     checkboxes.forEach(c => {
-        if (plan.applicable_services && Array.isArray(plan.applicable_services)) {
-            c.checked = plan.applicable_services.some(s => {
-                const sid = typeof s === 'object' ? (s.service_id || s._id) : s;
-                return sid === c.value || c.value === 'all';
-            });
+        if (c.value === 'all') {
+            c.checked = allMatch;
+        } else {
+            c.checked = svcIds.includes(c.value);
         }
     });
     applyPlanSvcSelection();
 
-    document.querySelector('#planModal h2').textContent         = 'Edit Membership Plan';
-    document.querySelector('#planModal .subtitle').textContent  = 'Update the details for this membership plan.';
-    document.getElementById('btnSavePlan').textContent          = 'Save Changes';
+    document.querySelector('#planModal h2').textContent        = 'Edit Membership Plan';
+    document.querySelector('#planModal .subtitle').textContent = 'Update the details for this membership plan.';
+    document.getElementById('btnSavePlan').textContent         = 'Save Changes';
 
     document.getElementById('planModalOverlay').classList.add('active');
     if (window.feather) feather.replace();

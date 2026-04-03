@@ -1996,18 +1996,15 @@
 
     <script>
         // Modal logic
-        const planModal = document.getElementById('planModalOverlay');
         const assignModal = document.getElementById('assignModalOverlay');
         const primaryBtn = document.getElementById('primaryActionBtn');
 
         // Handle Primary Action Button (Create/Assign)
         if (primaryBtn) {
             primaryBtn.addEventListener('click', () => {
-                const currentTab = document.querySelector('.nav-tab.active').getAttribute('data-tab');
-                if (currentTab === 'plans') {
-                    planModal.classList.add('active');
-                    if (window.feather) feather.replace();
-                } else if (currentTab === 'purchases') {
+                const currentTab = document.querySelector('.nav-tab.active')?.getAttribute('data-tab');
+                // The 'plans' tab logic is handled by scripts/memberships.js module
+                if (currentTab === 'purchases') {
                     assignModal.classList.add('active');
                     if (window.feather) feather.replace();
                 }
@@ -2015,13 +2012,10 @@
         }
 
         // Close Modals
-        const closePlan = document.getElementById('closePlanModal');
-        const cancelPlan = document.getElementById('btnCancelPlan');
+        // Plan modal is closed by handlers in scripts/memberships.js
         const closeAssign = document.getElementById('closeAssignModal');
         const cancelAssign = document.getElementById('btnCancelAssign');
 
-        if (closePlan) closePlan.onclick = () => planModal.classList.remove('active');
-        if (cancelPlan) cancelPlan.onclick = () => planModal.classList.remove('active');
         if (closeAssign) closeAssign.onclick = () => assignModal.classList.remove('active');
         if (cancelAssign) cancelAssign.onclick = () => assignModal.classList.remove('active');
 
@@ -2078,7 +2072,6 @@
 
         // Close on clicking anywhere else
         window.addEventListener('click', (e) => {
-            if (e.target === planModal) planModal.classList.remove('active');
             if (e.target === assignModal) assignModal.classList.remove('active');
             
             // Close filter panel on outside click
