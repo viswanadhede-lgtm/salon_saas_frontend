@@ -331,6 +331,11 @@ document.addEventListener('DOMContentLoaded', () => {
         offerServicesText.textContent = "Select services...";
         offerServicesText.style.color = "#94a3b8";
 
+        // Ensure name is editable in create mode
+        offerNameEl.removeAttribute('readonly');
+        offerNameEl.style.background = '';
+        offerNameEl.style.cursor = '';
+
         modalOverlay.classList.add('active');
     }
 
@@ -390,6 +395,11 @@ document.addEventListener('DOMContentLoaded', () => {
             offerServicesText.textContent = `${pName} +${selectedCount - 1} more`;
             offerServicesText.style.color = "#1e293b";
         }
+
+        // Make name readonly in edit mode
+        offerNameEl.setAttribute('readonly', true);
+        offerNameEl.style.background = '#f8fafc';
+        offerNameEl.style.cursor = 'not-allowed';
 
         modalOverlay.classList.add('active');
     }
