@@ -1,11 +1,10 @@
 import { API, fetchWithAuth } from '../config/api.js';
 import { FEATURES } from '../config/feature-registry.js';
-import { showToast } from './toast.js'; // Assuming you have a toast.js based on other files
-
+// Removed invalid toast.js import
 let allExpenses = []; 
 const appContext = JSON.parse(localStorage.getItem('appContext')) || {};
 
-document.addEventListener('DOMContentLoaded', () => {
+console.log('Expenses module loaded');
     // Basic setup
     feather.replace();
 
@@ -117,7 +116,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // Load initial data
     fetchExpenses();
-});
+
 
 async function fetchExpenses() {
     try {
