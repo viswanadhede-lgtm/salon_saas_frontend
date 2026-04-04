@@ -8,6 +8,7 @@ let currentEditId = null;
 let planToDelete = null;
 let allCustomers = [];
 let selectedCustomer = null;
+let currentPurchases = [];
 
 // ── Context helpers ────────────────────────────────────────────────────────
 const getCompanyId = () => localStorage.getItem('company_id') || '';
@@ -18,9 +19,13 @@ document.addEventListener('DOMContentLoaded', async () => {
     await fetchServices();
     await loadPlans();
     await fetchCustomers();
+    await loadPurchases();
 
     // Reload when branch changes
-    document.getElementById('branchSelect')?.addEventListener('change', loadPlans);
+    document.getElementById('branchSelect')?.addEventListener('change', async () => {
+        await loadPlans();
+        await loadPurchases();
+    });
 
     // ── Plan Modal wiring ──
     const overlay = document.getElementById('planModalOverlay');
@@ -145,6 +150,11 @@ document.addEventListener('DOMContentLoaded', async () => {
                 }
             });
         }
+    }
+
+    const confirmAssignBtn = document.getElementById('btnConfirmAssign');
+    if (confirmAssignBtn) {
+        confirmAssignBtn.addEventListener('click', handleAssignMembership);
     }
 });
 
@@ -597,3 +607,219 @@ async function handleSavePlan() {
         btn.disabled = false;
     }
 }
+
+// ── Purchases Workflow ──────────────────────────────────────────────────────
+
+async function loadPurchases() {
+    const tbody = document.querySelector('#purchasesTableContent tbody');
+    if (!tbody) return;
+
+    tbody.innerHTML = `
+        <tr>
+            <td colspan="8" style="padding:32px; text-align:center; color:#64748b;">
+                <div style="display:flex;flex-direction:column;align-items:center;gap:12px;">
+                    <i data-feather="loader" class="spin" style="width:24px;height:24px;"></i>
+                    <span style="font-size:0.9rem;">Loading membership purchases...</span>
+                </div>
+            </td>
+        </tr>`;
+    if (window.feather) feather.replace();
+
+    try {
+        const res = await fetchWithAuth(API.READ_MEMBERSHIP_PURCHASES, {
+            method: 'POST',
+            body: JSON.stringify({
+                company_id: getCompanyId(),
+                branch_id:  getBranchId()
+            })
+        });
+
+        if (res.ok) {
+            const data = await res.json();
+            currentPurchases = Array.isArray(data) ? data : (data.purchases || data.membership_purchases || []);
+            renderPurchases();
+        } else {
+            throw new Error('API error');
+        }
+    } catch (err) {
+        console.error('loadPurchases:', err);
+        tbody.innerHTML = `<tr><td colspan="8" style="text-align:center;padding:32px;color:#ef4444;">Failed to load membership purchases.</td></tr>`;
+    }
+}
+
+function renderPurchases() {
+    const tbody = document.querySelector('#purchasesTableContent tbody');
+    if (!tbody) return;
+
+    if (currentPurchases.length === 0) {
+        tbody.innerHTML = `<tr><td colspan="8" style="text-align:center;padding:32px;color:#64748b;">No memberships assigned yet.</td></tr>`;
+        return;
+    }
+
+    tbody.innerHTML = currentPurchases.map(purchase => {
+        const isActive = purchase.status === 'active';
+        const isCancelled = purchase.status === 'cancelled';
+        
+        let statusBadge = '';
+        if (isActive) {
+            statusBadge = `<span style="display:inline-flex;align-items:center;gap:6px;padding:4px 10px;border-radius:20px;font-size:0.75rem;font-weight:600;background:#ecfdf5;color:#059669;">Active</span>`;
+        } else if (isCancelled) {
+            statusBadge = `<span style="display:inline-flex;align-items:center;gap:6px;padding:4px 10px;border-radius:20px;font-size:0.75rem;font-weight:600;background:#fef2f2;color:#ef4444;">Cancelled</span>`;
+        } else {
+            statusBadge = `<span style="display:inline-flex;align-items:center;gap:6px;padding:4px 10px;border-radius:20px;font-size:0.75rem;font-weight:600;background:#f1f5f9;color:#64748b;">Expired</span>`;
+        }
+
+        const fullName = purchase.customer_name || `${purchase.first_name || ''} ${purchase.last_name || ''}`.trim() || 'Unknown Customer';
+        const initials = fullName.split(' ').slice(0, 2).map(w => w[0] || '').join('').toUpperCase();
+        
+        const purchaseDateStr = purchase.purchase_date ? new Date(purchase.purchase_date).toLocaleDateString() : '-';
+        const validUntilStr = purchase.valid_until ? new Date(purchase.valid_until).toLocaleDateString() : '-';
+        
+        const purchaseId = purchase.id || purchase.purchase_id;
+
+        return `
+            <tr style="border-bottom:1px solid #e2e8f0;">
+                <td>
+                    <div style="display: flex; align-items: center; gap: 12px;">
+                        <div style="width: 32px; height: 32px; border-radius: 50%; background-color: #f1f5f9; display: flex; align-items: center; justify-content: center; color: #1e3a8a; font-weight: 700; font-size: 0.75rem; border: 1px solid #e2e8f0;">${initials}</div>
+                        <div>
+                            <span style="font-weight: 600; color: #1e3a8a; display: block;">${fullName}</span>
+                        </div>
+                    </div>
+                </td>
+                <td>
+                    <span style="font-weight: 600; color: #475569;">${purchase.plan_name || purchase.membership_name || purchase.name || '-'}</span>
+                </td>
+                <td>
+                    <span style="background-color: #ecfdf5; color: #059669; border: 1px solid #d1fae5; padding: 0.25rem 0.6rem; border-radius: 1rem; font-size: 0.75rem; font-weight: 600;">₹${Number(purchase.price || purchase.amount_paid || purchase.amount || 0).toLocaleString('en-IN')}</span>
+                </td>
+                <td style="color: #64748b; font-size: 0.9rem;">${purchase.duration_months ? purchase.duration_months + ' Months' : '-'}</td>
+                <td style="color: #64748b;">${purchaseDateStr}</td>
+                <td style="color: #64748b;">${validUntilStr}</td>
+                <td>${statusBadge}</td>
+                <td style="text-align: right;">
+                    <div style="display: flex; gap: 8px; justify-content: flex-end;">
+                        <button class="action-btn" style="padding: 6px; border-radius: 6px; border: 1px solid #e2e8f0; background: #fff; cursor: pointer; color: #3b82f6;" title="View">
+                            <i data-feather="eye" style="width: 16px; height: 16px;"></i>
+                        </button>
+                        ${isActive ? `
+                        <button class="action-btn" onclick="window.cancelMembershipPurchase('${purchaseId}')" style="padding: 6px; border-radius: 6px; border: 1px solid #e2e8f0; background: #fff; cursor: pointer; color: #ef4444;" title="Cancel">
+                            <i data-feather="x-circle" style="width: 16px; height: 16px;"></i>
+                        </button>
+                        ` : ''}
+                    </div>
+                </td>
+            </tr>`;
+    }).join('');
+
+    if (window.feather) feather.replace();
+}
+
+async function handleAssignMembership() {
+    const planValue = document.getElementById('assignPlanInput').value;
+    const custSearchValue = document.getElementById('custSearchInput').value;
+    const assignDate = document.getElementById('assignDateInput').value;
+    
+    let payMethod = 'cash';
+    const activePayMethod = document.querySelector('input[name="payMethod"]:checked');
+    if (activePayMethod) payMethod = activePayMethod.value;
+
+    const discountValue = document.getElementById('assignDiscount').value;
+    const notesValue = document.getElementById('assignNotes').value;
+
+    if (!selectedCustomer || !custSearchValue) {
+        showToast('Please search and select a valid customer.');
+        return;
+    }
+    
+    if (!planValue) {
+        showToast('Please select a membership plan.');
+        return;
+    }
+    
+    // Extract sold_by_user_id
+    const contextStr = localStorage.getItem('appContext');
+    let userId = null;
+    if (contextStr) {
+        try {
+            const context = JSON.parse(contextStr);
+            userId = context.user?.id || context.user?.user_id;
+        } catch (e) {}
+    }
+
+    const payload = {
+        company_id: getCompanyId(),
+        branch_id: getBranchId(),
+        sold_by_user_id: userId,
+        customer_id: selectedCustomer.id || selectedCustomer.customer_id,
+        membership_id: planValue,
+        pay_method: payMethod,
+        purchase_date: assignDate || new Date().toISOString().split('T')[0],
+        status: 'active'
+    };
+
+    if (discountValue) payload.discount_applied = parseFloat(discountValue);
+    if (notesValue) payload.notes = notesValue;
+
+    const btn = document.getElementById('btnConfirmAssign');
+    const origText = btn.textContent;
+    btn.textContent = 'Processing...';
+    btn.disabled = true;
+
+    try {
+        const res = await fetchWithAuth(API.CREATE_MEMBERSHIP_PURCHASE, {
+            method: 'POST',
+            body: JSON.stringify(payload)
+        });
+
+        if (res.ok) {
+            showToast('Membership assigned successfully!');
+            document.getElementById('assignModalOverlay')?.classList.remove('active');
+            
+            // Reset form
+            document.getElementById('custSearchInput').value = '';
+            document.getElementById('assignPlanInput').value = '';
+            document.getElementById('assignDiscount').value = '';
+            document.getElementById('assignNotes').value = '';
+            selectedCustomer = null;
+            
+            // Reload purchases list
+            await loadPurchases();
+        } else {
+            showToast('Failed to assign membership.');
+        }
+    } catch (err) {
+        console.error('handleAssignMembership error:', err);
+        showToast('An error occurred during assignment.');
+    } finally {
+        btn.textContent = origText;
+        btn.disabled = false;
+    }
+}
+
+window.cancelMembershipPurchase = async function(purchaseId) {
+    if (!confirm('Are you sure you want to cancel this membership? This cannot be undone.')) {
+        return;
+    }
+
+    try {
+        const res = await fetchWithAuth(API.CANCEL_MEMBERSHIP_PURCHASE, {
+            method: 'POST',
+            body: JSON.stringify({
+                company_id: getCompanyId(),
+                branch_id: getBranchId(),
+                purchase_id: purchaseId
+            })
+        });
+
+        if (res.ok) {
+            showToast('Membership has been cancelled.');
+            await loadPurchases();
+        } else {
+            showToast('Failed to cancel membership.');
+        }
+    } catch (err) {
+        console.error('cancelMembershipPurchase error:', err);
+        showToast('Error cancelling membership.');
+    }
+};

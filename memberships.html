@@ -798,13 +798,10 @@
                                 </td>
                                 <td style="text-align: right;">
                                     <div style="display: flex; gap: 8px; justify-content: flex-end;">
-                                        <button style="padding: 6px; border-radius: 6px; border: 1px solid #e2e8f0; background: #fff; cursor: pointer; color: #3b82f6;" title="View Details">
+                                        <button class="action-btn" style="padding: 6px; border-radius: 6px; border: 1px solid #e2e8f0; background: #fff; cursor: pointer; color: #3b82f6;" title="View">
                                             <i data-feather="eye" style="width: 16px; height: 16px;"></i>
                                         </button>
-                                        <button style="padding: 6px; border-radius: 6px; border: 1px solid #e2e8f0; background: #fff; cursor: pointer; color: #8b5cf6;" title="History">
-                                            <i data-feather="file-text" style="width: 16px; height: 16px;"></i>
-                                        </button>
-                                        <button style="padding: 6px; border-radius: 6px; border: 1px solid #e2e8f0; background: #fff; cursor: pointer; color: #ef4444;" title="Terminate">
+                                        <button class="action-btn" style="padding: 6px; border-radius: 6px; border: 1px solid #e2e8f0; background: #fff; cursor: pointer; color: #ef4444;" title="Cancel">
                                             <i data-feather="x-circle" style="width: 16px; height: 16px;"></i>
                                         </button>
                                     </div>
@@ -835,16 +832,13 @@
                                     </span>
                                 </td>
                                 <td style="text-align: right;">
-                                    <div class="dropdown-container">
-                                        <button class="dropdown-toggle" onclick="toggleDropdown(this)" style="padding: 6px 14px; background: #fff; border: 1px solid #e2e8f0; border-radius: 8px; font-size: 0.85rem; font-weight: 600; color: #475569; cursor: pointer; display: flex; align-items: center; gap: 6px; display: inline-flex; transition: all 0.2s;">
-                                            Actions
-                                            <i data-feather="chevron-down" style="width: 15px; height: 15px; color: #94a3b8;"></i>
+                                    <div style="display: flex; gap: 8px; justify-content: flex-end;">
+                                        <button class="action-btn" style="padding: 6px; border-radius: 6px; border: 1px solid #e2e8f0; background: #fff; cursor: pointer; color: #3b82f6;" title="View">
+                                            <i data-feather="eye" style="width: 16px; height: 16px;"></i>
                                         </button>
-                                        <div class="dropdown-content">
-                                            <a href="#" class="dropdown-item-link"><i data-feather="eye"></i> View Details</a>
-                                            <a href="#" class="dropdown-item-link"><i data-feather="file-text"></i> History</a>
-                                            <a href="#" class="dropdown-item-link text-danger"><i data-feather="x-circle"></i> Terminate</a>
-                                        </div>
+                                        <button class="action-btn" style="padding: 6px; border-radius: 6px; border: 1px solid #e2e8f0; background: #fff; cursor: pointer; color: #ef4444;" title="Cancel">
+                                            <i data-feather="x-circle" style="width: 16px; height: 16px;"></i>
+                                        </button>
                                     </div>
                                 </td>
                             </tr>
@@ -2007,27 +2001,7 @@
 
         // btnSavePlan is handled by scripts/memberships.js (module)
 
-        const confirmAssignBtn = document.getElementById('btnConfirmAssign');
-        if (confirmAssignBtn) {
-            confirmAssignBtn.onclick = () => {
-                const planValue = document.getElementById('assignPlanInput').value;
-                const custName = document.getElementById('custSearchInput').value;
-                
-                if (!custName || !planValue) {
-                    showToast('Please fill in all required fields');
-                    return;
-                }
 
-                assignModal.classList.remove('active');
-                showToast('Membership assigned and payment recorded successfully');
-                
-                // Optional: Reset form
-                document.getElementById('custSearchInput').value = '';
-                document.getElementById('assignPlanInput').value = '';
-                document.getElementById('assignDiscount').value = '';
-                document.getElementById('assignNotes').value = '';
-            };
-        }
 
         // Payment Method Card Selection
         const paymentCards = document.querySelectorAll('.payment-method-card');
