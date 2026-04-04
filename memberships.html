@@ -1073,18 +1073,7 @@
 
         searchInput.addEventListener('input', applySearch);
 
-        // Assign Membership Customer Search Logic
-        const custSearchInput = document.getElementById('custSearchInput');
-        if (custSearchInput) {
-            custSearchInput.addEventListener('input', (e) => {
-                const query = e.target.value.toLowerCase();
-                // Simulated real-time lookup
-                if (query.length > 2) {
-                    console.log(`Searching for customer: ${query}`);
-                    // Here you would typically show a dropdown of results
-                }
-            });
-        }
+
     </script>
 
     <!-- Premium New Booking Modal -->
@@ -1923,21 +1912,18 @@
                     <!-- Left Column: Assignment Details -->
                     <div class="modal-left-col">
                         <div class="modal-section-title" style="margin-top: 0 !important; font-size: 0.7rem !important;">Membership Details</div>
-                        <div class="form-group">
+                        <div class="form-group" style="position: relative;">
                             <label class="form-label">Search Customer <span class="text-rose">*</span></label>
                             <div style="position: relative;">
                                 <i data-feather="search" style="position: absolute; left: 12px; top: 50%; transform: translateY(-50%); width: 16px; height: 16px; color: #94a3b8;"></i>
-                                <input type="text" id="custSearchInput" class="form-input" placeholder="Search by name or phone..." style="padding-left: 40px;">
+                                <input type="text" id="custSearchInput" class="form-input" placeholder="Search by name or phone..." style="padding-left: 40px;" autocomplete="off">
                             </div>
+                            <div id="membershipCustomerSuggestions" style="display:none; position:absolute; top: 100%; left: 0; right: 0; background: #fff; border: 1px solid #e2e8f0; border-radius: 8px; z-index: 100; max-height: 240px; overflow-y: auto; box-shadow: 0 10px 15px -3px rgba(0,0,0,0.1); margin-top: 4px;"></div>
                         </div>
                         <div class="form-group">
                             <label class="form-label">Select Plan <span class="text-rose">*</span></label>
                             <select id="assignPlanInput" class="form-select">
                                 <option value="" disabled selected>Choose a plan</option>
-                                <option value="gold">Gold Membership (₹2,999)</option>
-                                <option value="silver">Silver Membership (₹1,499)</option>
-                                <option value="vip">VIP Premium (₹5,000)</option>
-                                <option value="trial">Trial Plan (₹499)</option>
                             </select>
                         </div>
                         <div class="form-group" style="margin-bottom: 0 !important;">

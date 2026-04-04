@@ -6,6 +6,8 @@ let availableServices = [];
 let isEditing = false;
 let currentEditId = null;
 let planToDelete = null;
+let allCustomers = [];
+let selectedCustomer = null;
 
 // ── Context helpers ────────────────────────────────────────────────────────
 const getCompanyId = () => localStorage.getItem('company_id') || '';
@@ -15,6 +17,7 @@ const getBranchId  = () => localStorage.getItem('active_branch_id') || document.
 document.addEventListener('DOMContentLoaded', async () => {
     await fetchServices();
     await loadPlans();
+    await fetchCustomers();
 
     // Reload when branch changes
     document.getElementById('branchSelect')?.addEventListener('change', loadPlans);
@@ -75,6 +78,74 @@ document.addEventListener('DOMContentLoaded', async () => {
         await executeDeletePlan(planToDelete);
         planToDelete = null;
     });
+
+    // ── Progressive Customer Search wiring ──
+    const custSearch = document.getElementById('custSearchInput');
+    const custSuggestions = document.getElementById('membershipCustomerSuggestions');
+
+    if (custSearch) {
+        custSearch.addEventListener('input', (e) => {
+            selectedCustomer = null; // reset on type
+            const raw = e.target.value.trim();
+            const digits = raw.replace(/\\D/g, '');
+
+            if (!digits) {
+                if(custSuggestions) custSuggestions.style.display = 'none';
+                return;
+            }
+
+            const filtered = allCustomers.filter(c => {
+                const phoneStr = (c.customer_phone || c.phone_number || '').toString();
+                return phoneStr.replace(/\\D/g, '').includes(digits);
+            });
+
+            if (filtered.length === 0) {
+                custSuggestions.innerHTML = `<div style="padding: 14px 12px; color: #64748b; font-size: 0.85rem; text-align: center; display: flex; flex-direction: column; align-items: center; gap: 4px;"><span style="font-size: 1.2rem;">🔍</span><span>No customer found with this number</span></div>`;
+            } else {
+                custSuggestions.innerHTML = filtered.slice(0, 8).map(c => {
+                    const phone = (c.customer_phone || c.phone_number || '').toString();
+                    const fullName = (c.customer_name || `${c.first_name || ''} ${c.last_name || ''}`).trim() || 'Unknown';
+                    const custId = c.id || c.customer_id;
+
+                    const highlightedPhone = phone.replace(
+                        new RegExp(digits.split('').join('\\\\D*'), 'g'),
+                        match => `<strong style="color: #4f46e5;">${match}</strong>`
+                    );
+
+                    const initials = fullName.split(' ').slice(0, 2).map(w => w[0] || '').join('').toUpperCase();
+                    const colors = ['#e0e7ff', '#d1fae5', '#fef3c7', '#ede9fe', '#dbeafe'];
+                    const textColors = ['#4338ca', '#059669', '#d97706', '#7c3aed', '#1d4ed8'];
+                    const ci = (initials.charCodeAt(0) || 0) % colors.length;
+
+                    return `<div class="cust-suggestion-item" data-id="${custId}" style="padding: 10px 14px; cursor: pointer; border-bottom: 1px solid #f1f5f9; display: flex; align-items: center; gap: 10px; transition: background 0.15s;" onmouseenter="this.style.background='#f8fafc'" onmouseleave="this.style.background='transparent'"><div style="width: 34px; height: 34px; border-radius: 50%; background: ${colors[ci]}; color: ${textColors[ci]}; display: flex; align-items: center; justify-content: center; font-size: 0.75rem; font-weight: 700; flex-shrink: 0;">${initials}</div><div style="flex: 1; min-width: 0;"><div style="font-size: 0.88rem; font-weight: 600; color: #1e293b; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${fullName}</div><div style="font-size: 0.75rem; color: #64748b; margin-top: 1px;">${highlightedPhone}</div></div></div>`;
+                }).join('');
+            }
+            custSuggestions.style.display = 'block';
+        });
+
+        // Hide suggestions on click outside
+        document.addEventListener('click', (e) => {
+             if (custSearch && custSuggestions && !custSearch.contains(e.target) && !custSuggestions.contains(e.target)) {
+                 custSuggestions.style.display = 'none';
+             }
+        });
+
+        if (custSuggestions) {
+            custSuggestions.addEventListener('click', (e) => {
+                const item = e.target.closest('.cust-suggestion-item');
+                if (item) {
+                     const id = item.dataset.id;
+                     const customer = allCustomers.find(c => (c.id || c.customer_id) == id);
+                     if (customer) {
+                         selectedCustomer = customer;
+                         const fullName = (customer.customer_name || `${customer.first_name || ''} ${customer.last_name || ''}`).trim() || '';
+                         custSearch.value = fullName + ' (' + (customer.customer_phone || customer.phone_number || '') + ')';
+                         custSuggestions.style.display = 'none';
+                     }
+                }
+            });
+        }
+    }
 });
 
 // ── Helpers ────────────────────────────────────────────────────────────────
@@ -105,6 +176,26 @@ function applyPlanSvcSelection() {
     } else {
         svcText.textContent = `${selected[0].parentElement.textContent.trim()} +${selected.length - 1} more`;
         svcText.style.color = '#1e293b';
+    }
+}
+
+// ── Customers Fetch ───────────────────────────────────────────────────────
+async function fetchCustomers() {
+    try {
+        const response = await fetchWithAuth(API.READ_CUSTOMERS, {
+            method: 'POST',
+            body: JSON.stringify({ company_id: getCompanyId(), branch_id: getBranchId() })
+        });
+        if (response.ok) {
+            const data = await response.json();
+            if (Array.isArray(data) && data.length > 0 && data[0].customers) {
+                allCustomers = data[0].customers;
+            } else {
+                allCustomers = Array.isArray(data) ? data : (data.customers || []);
+            }
+        }
+    } catch (err) {
+        console.error('fetchCustomers (memberships):', err);
     }
 }
 
@@ -201,6 +292,7 @@ async function loadPlans() {
 
             currentPlans = Object.values(planMap);
             renderPlans();
+            populateAssignPlanDropdown();
         } else {
 
             throw new Error('API error');
@@ -275,6 +367,26 @@ function renderPlans() {
     }).join('');
 
     if (window.feather) feather.replace();
+}
+
+function populateAssignPlanDropdown() {
+    const planSelect = document.getElementById('assignPlanInput');
+    if (!planSelect) return;
+
+    // Reset options
+    planSelect.innerHTML = '<option value="" disabled selected>Choose a plan</option>';
+
+    // Filter only active plans
+    const activePlans = currentPlans.filter(p => p.status === 'active');
+    
+    activePlans.forEach(plan => {
+        const option = document.createElement('option');
+        const planId = plan.membership_id || plan.plan_id || plan.membership_plan_id || plan._id;
+        option.value = planId;
+        const price = Number(plan.price || 0).toLocaleString('en-IN');
+        option.textContent = `${plan.plan_name || plan.name} (₹${price})`;
+        planSelect.appendChild(option);
+    });
 }
 
 // ── Modal open / close ─────────────────────────────────────────────────────
