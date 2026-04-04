@@ -653,6 +653,413 @@
     </div>
 
     <script src="dashboard.js"></script>
+    <script>
+                // Analytics Overview Charts
+        document.addEventListener('DOMContentLoaded', function() {
+            // Init Feather Icons
+            feather.replace();
+
+            // Shared Chart Config
+            const chartOptions = {
+                responsive: true,
+                maintainAspectRatio: false,
+                animation: false,
+                plugins: {
+                    legend: {
+                        display: false
+                    },
+                    tooltip: {
+                        backgroundColor: '#1e293b',
+                        padding: 12,
+                        titleFont: { size: 13, weight: 'bold', family: "'Inter', sans-serif" },
+                        bodyFont: { size: 12, family: "'Inter', sans-serif" },
+                        cornerRadius: 8,
+                        displayColors: false
+                    }
+                },
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        grid: {
+                            display: true,
+                            color: '#f1f5f9'
+                        },
+                        ticks: {
+                            color: '#94a3b8',
+                            font: { size: 10, family: "'Inter', sans-serif" }
+                        }
+                    },
+                    x: {
+                        grid: { display: false },
+                        ticks: {
+                            color: '#94a3b8',
+                            font: { size: 10, family: "'Inter', sans-serif" }
+                        }
+                    }
+                }
+            };
+
+            // Plugin to draw icons on segments
+            const segmentIconsPlugin = {
+                id: 'segmentIcons',
+                afterDraw(chart) {
+                    if (chart.config.type === 'polarArea') {
+                        const { ctx } = chart;
+                        const meta = chart.getDatasetMeta(0);
+                        const centerX = chart.scales.r.xCenter;
+                        const centerY = chart.scales.r.yCenter;
+                        const icons = ['✂️', '📦', '👥', '📑'];
+                        
+                        meta.data.forEach((element, index) => {
+                            const { startAngle, endAngle, outerRadius } = element;
+                            const midAngle = startAngle + (endAngle - startAngle) / 2;
+                            const iconRadius = outerRadius * 0.7; // Position icon deeper in segment
+                            
+                            const x = centerX + Math.cos(midAngle) * iconRadius;
+                            const y = centerY + Math.sin(midAngle) * iconRadius;
+                            
+                            ctx.save();
+                            ctx.translate(x, y);
+                            ctx.font = '16px serif';
+                            ctx.textAlign = 'center';
+                            ctx.textBaseline = 'middle';
+                            ctx.fillText(icons[index], 0, 0);
+                            ctx.restore();
+                        });
+                    }
+                }
+            };
+
+            // Revenue Trend Chart - Advanced Pro Hybrid
+            new Chart(document.getElementById('revenueTrendChart'), {
+                type: 'bar',
+                data: {
+                    labels: ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'],
+                    datasets: [
+                        {
+                            type: 'bar',
+                            label: 'Daily Revenue',
+                            data: [18500, 22400, 19800, 25600, 31200, 48500, 42300],
+                            backgroundColor: 'rgba(99, 102, 241, 0.7)',
+                            borderRadius: 6,
+                            yAxisID: 'y',
+                            order: 2,
+                            datalabels: {
+                                display: true,
+                                align: 'top',
+                                anchor: 'end',
+                                color: '#4f46e5',
+                                font: { weight: 'bold', size: 10 },
+                                formatter: (value) => '₹' + (value/1000).toFixed(1) + 'k'
+                            }
+                        },
+                        {
+                            type: 'line',
+                            label: 'Trend Curve',
+                            data: [19500, 21000, 23000, 26000, 32000, 45000, 44000],
+                            borderColor: '#8b5cf6',
+                            borderWidth: 3,
+                            fill: false,
+                            tension: 0.4,
+                            pointRadius: 4,
+                            pointBackgroundColor: '#fff',
+                            pointBorderColor: '#8b5cf6',
+                            pointBorderWidth: 2,
+                            yAxisID: 'y',
+                            order: 1,
+                            datalabels: { display: false }
+                        }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    interaction: {
+                        mode: 'index',
+                        intersect: false,
+                    },
+                    plugins: {
+                        legend: { display: false },
+                        tooltip: {
+                            backgroundColor: '#1e293b',
+                            padding: 12,
+                            cornerRadius: 8,
+                            callbacks: {
+                                label: function(context) {
+                                    if (context.dataset.label === 'Growth %') return context.dataset.label + ': ' + context.raw + '%';
+                                    return context.dataset.label + ': ₹' + context.raw.toLocaleString();
+                                }
+                            }
+                        },
+                        datalabels: {
+                            clip: false,
+                            clamp: false
+                        }
+                    },
+                    scales: {
+                        y: {
+                            type: 'linear',
+                            display: true,
+                            position: 'left',
+                            beginAtZero: true,
+                            grid: { color: '#f1f5f9' },
+                            ticks: {
+                                color: '#94a3b8',
+                                callback: (val) => '₹' + (val/1000) + 'k'
+                            }
+                        },
+                        x: {
+                            grid: { display: false },
+                            ticks: { color: '#94a3b8' }
+                        }
+                    }
+                },
+                plugins: [ChartDataLabels]
+            });
+
+            // Booking Trend Chart - Advanced Pro Hybrid
+            new Chart(document.getElementById('bookingTrendChart'), {
+                type: 'bar',
+                data: {
+                    labels: ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'],
+                    datasets: [
+                        {
+                            type: 'bar',
+                            label: 'Total Bookings',
+                            data: [42, 38, 55, 62, 75, 94, 88],
+                            backgroundColor: 'rgba(16, 185, 129, 0.7)',
+                            borderRadius: 6,
+                            yAxisID: 'y',
+                            order: 2,
+                            datalabels: {
+                                display: true,
+                                align: 'top',
+                                anchor: 'end',
+                                color: '#059669',
+                                font: { weight: 'bold', size: 10 }
+                            }
+                        },
+                        {
+                            type: 'line',
+                            label: 'Booking Curve',
+                            data: [45, 40, 50, 65, 80, 90, 85],
+                            borderColor: '#10b981',
+                            borderWidth: 3,
+                            fill: false,
+                            tension: 0.4,
+                            pointRadius: 4,
+                            pointBackgroundColor: '#fff',
+                            pointBorderColor: '#10b981',
+                            pointBorderWidth: 2,
+                            yAxisID: 'y',
+                            order: 1,
+                            datalabels: { display: false }
+                        }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    interaction: {
+                        mode: 'index',
+                        intersect: false,
+                    },
+                    plugins: {
+                        legend: { display: false },
+                        tooltip: {
+                            backgroundColor: '#1e293b',
+                            padding: 12,
+                            cornerRadius: 8,
+                            callbacks: {
+                                label: function(context) {
+                                    if (context.dataset.label === 'Conversion %') return context.dataset.label + ': ' + context.raw + '%';
+                                    return context.dataset.label + ': ' + context.raw;
+                                }
+                            }
+                        },
+                        datalabels: {
+                            clip: false,
+                            clamp: false
+                        }
+                    },
+                    scales: {
+                        y: {
+                            type: 'linear',
+                            display: true,
+                            position: 'left',
+                            beginAtZero: true,
+                            grid: { color: '#f1f5f9' },
+                            ticks: { color: '#94a3b8' }
+                        },
+                        x: {
+                            grid: { display: false },
+                            ticks: { color: '#94a3b8' }
+                        }
+                    }
+                },
+                plugins: [ChartDataLabels]
+            });
+
+            // Staff Performance Chart
+            new Chart(document.getElementById('staffPerformanceChart'), {
+                type: 'bar',
+                data: {
+                    labels: ['Rahul', 'Anita', 'Sneha', 'Vikram', 'Priya'],
+                    datasets: [{
+                        data: [82000, 76000, 91000, 64000, 58000],
+                        backgroundColor: '#6366f1',
+                        borderRadius: 6,
+                        hoverBackgroundColor: '#4f46e5'
+                    }]
+                },
+                options: {
+                    ...chartOptions,
+                    indexAxis: 'y'
+                }
+            });
+
+            // Revenue Split Chart (Infographic Style - Polar Area)
+            const revenueCanvas = document.getElementById('revenueSplitChart');
+            const customTooltip = document.getElementById('customChartTooltip');
+            
+            const revenueChart = new Chart(revenueCanvas, {
+                type: 'polarArea',
+                data: {
+                    labels: ['Services', 'Products', 'Memberships', 'Other'],
+                    datasets: [{
+                        data: [100, 85, 75, 65],
+                        backgroundColor: [
+                            'rgba(99, 102, 241, 0.85)',
+                            'rgba(245, 158, 11, 0.85)',
+                            'rgba(16, 185, 129, 0.85)',
+                            'rgba(236, 72, 153, 0.85)'
+                        ],
+                        borderWidth: 2,
+                        borderColor: '#ffffff',
+                        hoverOffset: 15, // Provide a slight expansion for visual feedback
+                        hoverBackgroundColor: [
+                            '#4f46e5',
+                            '#d97706',
+                            '#059669',
+                            '#db2777'
+                        ]
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    animation: {
+                        duration: 400,
+                        easing: 'easeOutQuart'
+                    },
+                    layout: { padding: 10 },
+                    scales: {
+                        r: {
+                            display: false,
+                            grid: { display: false },
+                            ticks: { display: false },
+                            startAngle: -90
+                        }
+                    },
+                    plugins: {
+                        legend: { display: false },
+                        tooltip: { enabled: false }
+                    },
+                    onHover: (event, activeElements) => {
+                        const isEnabled = document.getElementById('hoverToggle').checked;
+                        const path = document.getElementById('connectorPath');
+                        const anchor = document.getElementById('connectorAnchor');
+                        const tooltip = document.querySelector('#chartHub #customChartTooltip');
+                        
+                        if (activeElements.length > 0 && isEnabled) {
+                            const index = activeElements[0].index;
+                            const label = revenueChart.data.labels[index];
+                            const value = [282900, 41200, 12400, 8500][index];
+                            const icons = ['✂️', '📦', '👥', '📑'];
+                            const colors = ['#6366f1', '#f59e0b', '#10b981', '#ec4899'];
+                            
+                            tooltip.querySelector('#tooltipIcon').innerText = icons[index];
+                            tooltip.querySelector('#tooltipTitle').innerText = label;
+                            tooltip.querySelector('#tooltipValue').innerText = '₹' + value.toLocaleString();
+                            
+                            tooltip.style.opacity = '1';
+
+                            // Logic for Connector Line
+                            const chartMeta = revenueChart.getDatasetMeta(0);
+                            const element = chartMeta.data[index];
+                            const { startAngle, endAngle, outerRadius } = element;
+                            const midAngle = startAngle + (endAngle - startAngle) / 2;
+                            
+                            // Center coordinates relative to the chart-hub container
+                            const hub = document.getElementById('chartHub');
+                            const hubRect = hub.getBoundingClientRect();
+                            const centerX = hubRect.width / 2;
+                            const centerY = hubRect.height / 2;
+                            
+                            // Segment origin point (Middle of the chunk)
+                            const midRadius = outerRadius * 0.7; 
+                            const x1 = centerX + Math.cos(midAngle) * midRadius;
+                            const y1 = centerY + Math.sin(midAngle) * midRadius;
+                            
+                            // Tooltip anchor point (left edge midpoint)
+                            const x2 = tooltip.offsetLeft;
+                            const y2 = tooltip.offsetTop + (tooltip.offsetHeight / 2);
+                            
+                            // Sophisticated Bezier curve
+                            // Control point based on angle to make it look natural
+                            const cpX = (x1 + x2) / 2;
+                            const cpY = y1; 
+                            
+                            const d = `M ${x1} ${y1} Q ${cpX} ${cpY} ${x2} ${y2}`;
+                            
+                            path.setAttribute('d', d);
+                            path.setAttribute('stroke', colors[index]);
+                            path.style.opacity = '1';
+                            
+                            anchor.setAttribute('cx', x1);
+                            anchor.setAttribute('cy', y1);
+                            anchor.setAttribute('fill', colors[index]);
+                            anchor.style.opacity = '1';
+                        } else {
+                            tooltip.style.opacity = '0';
+                            path.style.opacity = '0';
+                            anchor.style.opacity = '0';
+                        }
+                    }
+                }
+            });
+
+            // Ensure tooltip hides when mouse leaves canvas entirely
+            revenueCanvas.addEventListener('mouseleave', () => {
+                customTooltip.style.opacity = '0';
+            });
+
+            // Branch Performance Chart
+            new Chart(document.getElementById('branchPerformanceChart'), {
+                type: 'bar',
+                data: {
+                    labels: ['Downtown', 'Indiranagar', 'Whitefield'],
+                    datasets: [{
+                        data: [145000, 112000, 88000],
+                        backgroundColor: '#8b5cf6',
+                        borderRadius: 6,
+                        hoverBackgroundColor: '#7c3aed'
+                    }]
+                },
+                options: {
+                    ...chartOptions,
+                    scales: {
+                        ...chartOptions.scales,
+                        y: { display: false },
+                        x: { display: true }
+                    }
+                }
+            });
+        });
+    </script>
+
+    
+    <script src="dashboard.js"></script>
     <script src="config/feature-registry.js" type="module"></script>
     <script src="config/api.js" type="module"></script>
     <script src="scripts/global-auth-guard.js" type="module"></script>
