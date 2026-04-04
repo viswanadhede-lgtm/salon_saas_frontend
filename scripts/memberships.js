@@ -9,6 +9,7 @@ let planToDelete = null;
 let allCustomers = [];
 let selectedCustomer = null;
 let currentPurchases = [];
+let purchaseToCancel = null;
 
 // ── Context helpers ────────────────────────────────────────────────────────
 const getCompanyId = () => localStorage.getItem('company_id') || '';
@@ -856,11 +857,56 @@ async function handleAssignMembership() {
     }
 }
 
-window.cancelMembershipPurchase = async function(purchaseId) {
-    if (!confirm('Are you sure you want to cancel this membership? This cannot be undone.')) {
-        return;
-    }
+function setupCancelPurchaseModal() {
+    if (!document.getElementById('cancelPurchaseConfirmOverlay')) {
+        const modalHtml = `
+        <div class="modal-overlay custom-logout-overlay" id="cancelPurchaseConfirmOverlay" style="z-index: 9999; backdrop-filter: blur(8px);">
+            <div class="logout-modal" style="background: white; border-radius: 16px; padding: 32px; width: 400px; max-width: 90vw; text-align: center; box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);">
+                <div class="logout-icon-container" style="width: 64px; height: 64px; border-radius: 50%; background: #fee2e2; display: flex; align-items: center; justify-content: center; margin: 0 auto 20px;">
+                    <i data-feather="x-circle" style="color: #ef4444; width: 32px; height: 32px;"></i>
+                </div>
+                <h2 style="font-size: 1.5rem; font-weight: 700; color: #0f172a; margin-bottom: 8px;">Cancel Membership?</h2>
+                <p style="color: #64748b; font-size: 0.95rem; margin-bottom: 24px; line-height: 1.5;">Are you sure you want to cancel this membership? This action cannot be undone.</p>
+                <div style="display: flex; gap: 12px; justify-content: center;">
+                    <button id="btnCancelCancelPurchase" style="flex: 1; padding: 12px 20px; border-radius: 8px; border: 1px solid #e2e8f0; background: white; color: #64748b; font-weight: 600; cursor: pointer; transition: all 0.2s;">Keep It</button>
+                    <button id="btnConfirmCancelPurchase" style="flex: 1; padding: 12px 20px; border-radius: 8px; border: none; background: #ef4444; color: white; font-weight: 600; cursor: pointer; transition: background 0.2s;">Yes, Cancel</button>
+                </div>
+            </div>
+        </div>
+        `;
+        document.body.insertAdjacentHTML('beforeend', modalHtml);
+        if (window.feather) feather.replace();
 
+        const overlay = document.getElementById('cancelPurchaseConfirmOverlay');
+
+        document.getElementById('btnCancelCancelPurchase').addEventListener('click', () => {
+            overlay.classList.remove('active');
+            purchaseToCancel = null;
+        });
+        
+        overlay.addEventListener('click', (e) => {
+            if (e.target === overlay) {
+                overlay.classList.remove('active');
+                purchaseToCancel = null;
+            }
+        });
+
+        document.getElementById('btnConfirmCancelPurchase').addEventListener('click', async () => {
+            if (!purchaseToCancel) return;
+            overlay.classList.remove('active');
+            await executeCancelMembershipPurchase(purchaseToCancel);
+            purchaseToCancel = null;
+        });
+    }
+}
+
+window.cancelMembershipPurchase = function(purchaseId) {
+    setupCancelPurchaseModal();
+    purchaseToCancel = purchaseId;
+    document.getElementById('cancelPurchaseConfirmOverlay').classList.add('active');
+};
+
+async function executeCancelMembershipPurchase(purchaseId) {
     try {
         const res = await fetchWithAuth(API.CANCEL_MEMBERSHIP_PURCHASE, {
             method: 'POST',
@@ -881,4 +927,5 @@ window.cancelMembershipPurchase = async function(purchaseId) {
         console.error('cancelMembershipPurchase error:', err);
         showToast('Error cancelling membership.');
     }
-};
+}
+
