@@ -722,9 +722,9 @@ function renderPurchases() {
         const initials = fullName.split(' ').slice(0, 2).map(w => w[0] || '').join('').toUpperCase();
         
         const purchaseDateStr = purchase.purchase_date ? new Date(purchase.purchase_date).toLocaleDateString() : '-';
-        const validUntilStr = purchase.valid_until ? new Date(purchase.valid_until).toLocaleDateString() : '-';
+        const validUntilStr = purchase.expiry_date ? new Date(purchase.expiry_date).toLocaleDateString() : '-';
         
-        const purchaseId = purchase.id || purchase.purchase_id;
+        const purchaseId = purchase.purchase_id || purchase.id;
 
         return `
             <tr style="border-bottom:1px solid #e2e8f0;">
@@ -740,9 +740,9 @@ function renderPurchases() {
                     <span style="font-weight: 600; color: #475569;">${purchase.plan_name || purchase.membership_name || purchase.name || '-'}</span>
                 </td>
                 <td>
-                    <span style="background-color: #ecfdf5; color: #059669; border: 1px solid #d1fae5; padding: 0.25rem 0.6rem; border-radius: 1rem; font-size: 0.75rem; font-weight: 600;">₹${Number(purchase.price || purchase.amount_paid || purchase.amount || 0).toLocaleString('en-IN')}</span>
+                    <span style="background-color: #ecfdf5; color: #059669; border: 1px solid #d1fae5; padding: 0.25rem 0.6rem; border-radius: 1rem; font-size: 0.75rem; font-weight: 600;">₹${Number(purchase.price || 0).toLocaleString('en-IN')}</span>
                 </td>
-                <td style="color: #64748b; font-size: 0.9rem;">${purchase.duration_months ? purchase.duration_months + ' Months' : '-'}</td>
+                <td style="color: #64748b; font-size: 0.9rem;">${purchase.duration ? purchase.duration + ' Months' : '-'}</td>
                 <td style="color: #64748b;">${purchaseDateStr}</td>
                 <td style="color: #64748b;">${validUntilStr}</td>
                 <td>${statusBadge}</td>
