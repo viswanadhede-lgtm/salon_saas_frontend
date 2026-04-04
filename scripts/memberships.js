@@ -181,12 +181,28 @@ document.addEventListener('DOMContentLoaded', async () => {
 
 // ── Helpers ────────────────────────────────────────────────────────────────
 function showToast(msg) {
-    const toast = document.getElementById('toastNotification');
-    if (toast) {
-        toast.textContent = msg;
-        toast.classList.add('show');
-        setTimeout(() => toast.classList.remove('show'), 3000);
+    let toast = document.getElementById('toastNotification');
+    if (!toast) {
+        toast = document.createElement('div');
+        toast.id = 'toastNotification';
+        toast.className = 'toast-notification';
+        toast.style.cssText = 'position: fixed; bottom: 20px; right: 20px; background: #1e293b; color: white; padding: 12px 24px; border-radius: 8px; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1); z-index: 9999; font-size: 0.9rem; transition: opacity 0.3s ease-in-out, transform 0.3s ease-in-out; opacity: 0; transform: translateY(20px); pointer-events: none;';
+        document.body.appendChild(toast);
+        
+        // Add minimal CSS for the 'show' class if it wasn't there
+        const style = document.createElement('style');
+        style.innerHTML = `
+            #toastNotification.show {
+                opacity: 1 !important;
+                transform: translateY(0) !important;
+            }
+        `;
+        document.head.appendChild(style);
     }
+    
+    toast.textContent = msg;
+    toast.classList.add('show');
+    setTimeout(() => toast.classList.remove('show'), 3000);
 }
 
 function applyPlanSvcSelection() {
