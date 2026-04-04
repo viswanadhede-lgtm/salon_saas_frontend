@@ -154,7 +154,28 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     const confirmAssignBtn = document.getElementById('btnConfirmAssign');
     if (confirmAssignBtn) {
-        confirmAssignBtn.addEventListener('click', handleAssignMembership);
+        confirmAssignBtn.addEventListener('click', () => {
+            const planValue = document.getElementById('assignPlanInput').value;
+            const custSearchValue = document.getElementById('custSearchInput').value;
+            
+            if (!selectedCustomer || !custSearchValue) {
+                showToast('Please search and select a valid customer.');
+                return;
+            }
+            if (!planValue) {
+                showToast('Please select a membership plan.');
+                return;
+            }
+            document.getElementById('confirmPaymentOverlay')?.classList.add('active');
+        });
+    }
+
+    const btnProceedPayment = document.getElementById('btnProceedPayment');
+    if (btnProceedPayment) {
+        btnProceedPayment.addEventListener('click', async () => {
+            document.getElementById('confirmPaymentOverlay')?.classList.remove('active');
+            await handleAssignMembership();
+        });
     }
 });
 
@@ -737,22 +758,32 @@ async function handleAssignMembership() {
         return;
     }
     
-    // Extract sold_by_user_id
+    // Extract user details
     const contextStr = localStorage.getItem('appContext');
     let userId = null;
+    let userName = null;
     if (contextStr) {
         try {
             const context = JSON.parse(contextStr);
             userId = context.user?.id || context.user?.user_id;
+            userName = context.user?.name || (context.user?.first_name ? `${context.user.first_name} ${context.user.last_name || ''}`.trim() : null);
         } catch (e) {}
     }
+
+    const customerName = (selectedCustomer.customer_name || `${selectedCustomer.first_name || ''} ${selectedCustomer.last_name || ''}`).trim();
+    const selectedPlan = currentPlans.find(p => (p.membership_id || p.plan_id || p.membership_plan_id || p._id) === planValue);
 
     const payload = {
         company_id: getCompanyId(),
         branch_id: getBranchId(),
         sold_by_user_id: userId,
+        user_name: userName,
         customer_id: selectedCustomer.id || selectedCustomer.customer_id,
+        customer_name: customerName,
         membership_id: planValue,
+        plan_name: selectedPlan ? (selectedPlan.plan_name || selectedPlan.name) : null,
+        price: selectedPlan ? Number(selectedPlan.price || 0) : null,
+        duration: selectedPlan ? (selectedPlan.duration_months || selectedPlan.duration) : null,
         pay_method: payMethod,
         purchase_date: assignDate || new Date().toISOString().split('T')[0],
         status: 'active'

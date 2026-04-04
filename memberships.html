@@ -1891,6 +1891,28 @@
         </div>
     </div>
 
+    <!-- Confirm Payment Modal -->
+    <div class="modal-overlay" id="confirmPaymentOverlay" style="z-index:2000;">
+        <div class="modal-container" style="width:420px;max-width:95%;min-height:unset;padding:0;">
+            <div style="padding:1.5rem 1.5rem 0;">
+                <div style="display:flex;align-items:center;gap:12px;margin-bottom:12px;">
+                    <div style="width:40px;height:40px;border-radius:50%;background:#ecfdf5;display:flex;align-items:center;justify-content:center;flex-shrink:0;">
+                        <i data-feather="check-circle" style="width:20px;height:20px;color:#059669;"></i>
+                    </div>
+                    <div>
+                        <h3 style="font-size:1rem;font-weight:700;color:#1e293b;margin:0;">Confirm Payment</h3>
+                        <p style="font-size:0.85rem;color:#64748b;margin:2px 0 0;">Review and complete the purchase.</p>
+                    </div>
+                </div>
+                <p style="font-size:0.9rem;color:#475569;margin:0 0 1.5rem;">Are you sure you want to process this payment and assign the membership?</p>
+            </div>
+            <div style="padding:1rem 1.5rem 1.5rem;display:flex;gap:10px;justify-content:flex-end;border-top:1px solid #f1f5f9;">
+                <button id="btnCancelPaymentConfirm" class="btn btn-secondary" style="min-width:90px;" onclick="document.getElementById('confirmPaymentOverlay').classList.remove('active')">Cancel</button>
+                <button id="btnProceedPayment" class="btn btn-primary" style="min-width:110px;">Proceed</button>
+            </div>
+        </div>
+    </div>
+
     <!-- Assign Membership Modal -->
     <div class="modal-overlay" id="assignModalOverlay">
         <div class="modal-container" id="assignModal" style="width: 850px; max-width: 95%;">
