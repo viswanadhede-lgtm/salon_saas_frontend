@@ -18,6 +18,13 @@ console.log('Expenses module loaded');
         window.submitExpense();
     });
 
+    // Close modal when clicking outside
+    document.getElementById('addExpenseModal').addEventListener('click', (e) => {
+        if (e.target.id === 'addExpenseModal') {
+            window.closeAddExpenseModal();
+        }
+    });
+
     // Make modals globally accessible
     window.openAddExpenseModal = () => {
         document.getElementById('expenseDate').value = new Date().toISOString().split('T')[0];
