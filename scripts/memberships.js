@@ -166,7 +166,19 @@ document.addEventListener('DOMContentLoaded', async () => {
                 showToast('Please select a membership plan.');
                 return;
             }
+            
+            // Hide the assign modal and show the confirm modal
+            document.getElementById('assignModalOverlay')?.classList.remove('active');
             document.getElementById('confirmPaymentOverlay')?.classList.add('active');
+        });
+    }
+
+    const btnCancelPaymentConfirm = document.getElementById('btnCancelPaymentConfirm');
+    if (btnCancelPaymentConfirm) {
+        btnCancelPaymentConfirm.addEventListener('click', () => {
+            // Close confirm modal and restore the assign modal
+            document.getElementById('confirmPaymentOverlay')?.classList.remove('active');
+            document.getElementById('assignModalOverlay')?.classList.add('active');
         });
     }
 
