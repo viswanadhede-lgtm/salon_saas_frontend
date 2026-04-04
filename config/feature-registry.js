@@ -26,6 +26,7 @@ export const FEATURES = {
     // Analytics
     ANALYTICS_OVERVIEW: 'analytics_overview',
     REPORTS_ACCESS: 'reports_access',
+    ANALYTICS_EXPENSES: 'analytics_expenses',
 
     // Settings
     COMPANY_SETTINGS: 'company_settings',
@@ -55,6 +56,7 @@ export const MODULES_META = [
     { key: FEATURES.MARKETING_CAMPAIGNS, label: 'Ad Campaigns', icon: 'speaker' },
     { key: FEATURES.ANALYTICS_OVERVIEW, label: 'Overview', icon: 'pie-chart' },
     { key: FEATURES.REPORTS_ACCESS, label: 'Reports', icon: 'bar-chart-2' },
+    { key: FEATURES.ANALYTICS_EXPENSES, label: 'Expenses', icon: 'dollar-sign' },
     { key: FEATURES.COMPANY_SETTINGS, label: 'Company Settings', icon: 'settings' },
     { key: FEATURES.BRANCH_MANAGEMENT, label: 'Branches', icon: 'map-pin' },
     { key: FEATURES.USER_MANAGEMENT, label: 'Users', icon: 'users' },

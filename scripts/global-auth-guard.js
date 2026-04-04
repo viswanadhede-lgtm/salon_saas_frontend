@@ -23,6 +23,7 @@ const ROUTE_MAP = {
     '/ad-campaigns.html': FEATURES.MARKETING_CAMPAIGNS,
     '/overview.html': FEATURES.ANALYTICS_OVERVIEW,
     '/reports.html': FEATURES.REPORTS_ACCESS,
+    '/expenses.html': FEATURES.ANALYTICS_EXPENSES,
     '/company.html': FEATURES.COMPANY_SETTINGS,
     '/branches.html': FEATURES.BRANCH_MANAGEMENT,
     '/users.html': FEATURES.USER_MANAGEMENT,

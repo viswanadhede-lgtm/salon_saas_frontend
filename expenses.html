@@ -1,0 +1,664 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <script src="scripts/auth-loader.js"></script>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Dashboard for BharathBots Salon SaaS.">
+    <title>Analytics Overview - BharathBots</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="styles.css">
+    <link rel="stylesheet" href="dashboard.css">
+    <link rel="stylesheet" href="submenu.css">
+    <!-- Feather Icons for a clean SaaS look -->
+    <script src="https://unpkg.com/feather-icons"></script>
+    <!-- Chart.js for beautiful analytics -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2.0.0"></script>
+    <style>
+        /* Advanced Infographic Styles */
+        .infographic-container {
+            display: grid;
+            grid-template-columns: 180px 1fr 200px;
+            gap: 20px;
+            align-items: center;
+            height: 300px;
+            padding: 10px 0;
+        }
+
+        .primary-insight {
+            text-align: left;
+            padding: 20px;
+            border-right: 1px solid #f1f5f9;
+        }
+
+        .primary-value {
+            font-size: 3rem;
+            font-weight: 800;
+            color: #1e293b;
+            line-height: 1;
+            margin-bottom: 8px;
+        }
+
+        .primary-label {
+            font-size: 0.875rem;
+            color: #64748b;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.025em;
+        }
+
+        .chart-hub {
+            position: relative;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .result-center {
+            position: absolute;
+            width: 70px;
+            height: 70px;
+            background: #ffffff;
+            border-radius: 50%;
+            box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.15), 0 4px 8px rgba(0, 0, 0, 0.05);
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            z-index: 10;
+            border: 4px solid #f8fafc;
+            transform: translateZ(20px);
+        }
+
+        .result-title {
+            font-size: 0.65rem;
+            font-weight: 800;
+            color: #1e293b;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            margin-bottom: 1px;
+        }
+
+        .result-subtitle {
+            font-size: 0.5rem;
+            color: #64748b;
+            font-weight: 700;
+            letter-spacing: 0.02em;
+        }
+
+        .metric-list {
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+        }
+
+        .metric-item {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .metric-icon-wrap {
+            width: 32px;
+            height: 32px;
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .metric-info h4 {
+            font-size: 0.85rem;
+            font-weight: 600;
+            margin: 0;
+            color: #1e293b;
+        }
+
+        .metric-info p {
+            font-size: 0.75rem;
+            color: #64748b;
+            margin: 0;
+        }
+
+        .connector-line {
+            height: 1px;
+            background: #e2e8f0;
+            flex: 1;
+            margin: 0 8px;
+        }
+
+        /* Modern Glassmorphism Hover Card */
+        #customChartTooltip {
+            position: absolute;
+            pointer-events: none;
+            opacity: 0;
+            background: rgba(255, 255, 255, 0.82);
+            backdrop-filter: blur(8px) saturate(160%);
+            -webkit-backdrop-filter: blur(8px) saturate(160%);
+            border: 1px solid rgba(255, 255, 255, 0.4);
+            border-radius: 12px;
+            box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1), 0 0 0 1px rgba(0, 0, 0, 0.02);
+            padding: 10px 14px;
+            z-index: 9999;
+            transition: opacity 0.15s ease;
+            min-width: 130px;
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+            /* Static position anchor - far RHS and all the way up */
+            right: -110px;
+            top: -100px;
+        }
+
+        #connectorLineSvg {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            z-index: 9998;
+            overflow: visible; /* Ensure line can reach outside hub bounds */
+        }
+
+        .tooltip-header {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .tooltip-icon {
+            width: 28px;
+            height: 28px;
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1rem;
+            background: #fff;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.05);
+        }
+
+        .tooltip-title {
+            font-size: 0.8rem;
+            font-weight: 700;
+            color: #1e293b;
+            margin: 0;
+        }
+
+        .tooltip-body {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .tooltip-value {
+            font-size: 1rem;
+            font-weight: 800;
+            color: #1e293b;
+        }
+
+        .tooltip-trend {
+            display: flex;
+            align-items: center;
+            gap: 3px;
+            font-size: 0.65rem;
+            font-weight: 600;
+            color: #10b981;
+            margin-top: 1px;
+        }
+
+        /* Toggle Switch Styles */
+        .toggle-container {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            cursor: pointer;
+        }
+
+        .toggle-label {
+            font-size: 0.75rem;
+            font-weight: 600;
+            color: #64748b;
+        }
+
+        .switch {
+            position: relative;
+            display: inline-block;
+            width: 28px;
+            height: 16px;
+        }
+
+        .switch input {
+            opacity: 0;
+            width: 0;
+            height: 0;
+        }
+
+        .slider {
+            position: absolute;
+            cursor: pointer;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: #e2e8f0;
+            transition: .3s;
+            border-radius: 16px;
+        }
+
+        .slider:before {
+            position: absolute;
+            content: "";
+            height: 12px;
+            width: 12px;
+            left: 2px;
+            bottom: 2px;
+            background-color: white;
+            transition: .3s;
+            border-radius: 50%;
+        }
+
+        input:checked + .slider {
+            background-color: #6366f1;
+        }
+
+        input:checked + .slider:before {
+            transform: translateX(12px);
+        }
+    </style>
+
+</head>
+
+<body class="dashboard-body" style="min-height: calc(100vh / 0.93);">
+
+    <!-- Collapsible Sidebar -->
+    <aside class="sidebar" id="sidebar">
+        <div class="sidebar-header">
+            <div class="logo">
+                <svg width="24" height="24" viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <rect x="2" y="6" width="28" height="20" rx="4" stroke="currentColor" stroke-width="2" />
+                    <path d="M8 12C8 12 11 16 16 16C21 16 24 12 24 12" stroke="currentColor" stroke-width="2"
+                        stroke-linecap="round" />
+                    <circle cx="16" cy="16" r="2" fill="currentColor" />
+                </svg>
+                <span class="logo-text">BharathBots</span>
+            </div>
+            <button class="toggle-btn" id="sidebarToggle" title="Close sidebar">
+                <i data-feather="sidebar" class="toggle-icon"></i>
+            </button>
+        </div>
+
+        <nav class="sidebar-nav">
+            <ul class="nav-list">
+                <!-- Dashboard -->
+                <li class="nav-item" title="Dashboard">
+                    <a href="dashboard.html" class="nav-link" data-feature="dashboard_access">
+                        <i data-feather="home" class="nav-icon"></i>
+                        <span class="nav-text">Dashboard</span>
+                    </a>
+                </li>
+
+                <!-- Bookings -->
+                <li class="nav-item" title="Bookings">
+                    <a href="bookings.html" class="nav-link" data-feature="bookings_management">
+                        <i data-feather="calendar" class="nav-icon"></i>
+                        <span class="nav-text">Bookings</span>
+                    </a>
+                </li>
+
+                <!-- Customers -->
+                <li class="nav-item" title="Customers">
+                    <a href="customers.html" class="nav-link" data-feature="customers_management">
+                        <i data-feather="users" class="nav-icon"></i>
+                        <span class="nav-text">Customers</span>
+                    </a>
+                </li>
+
+                <!-- Staff -->
+                <li class="nav-item has-submenu" title="Staff">
+                    <div class="nav-link submenu-toggle">
+                        <i data-feather="user-check" class="nav-icon"></i>
+                        <span class="nav-text">Staff</span>
+                        <i data-feather="chevron-down" class="submenu-arrow"></i>
+                    </div>
+                    <ul class="submenu">
+                        <li><a href="staff.html" class="submenu-link" data-feature="staff_management"><span class="submenu-bullet">&bull;</span><span class="nav-text">Staff</span></a></li>
+                        <li><a href="staff-schedule.html" class="submenu-link" data-feature="staff_schedules"><span class="submenu-bullet">&bull;</span><span class="nav-text">Staff Schedules</span></a></li>
+                    </ul>
+                </li>
+
+                <!-- Services -->
+                <li class="nav-item" title="Services">
+                <a href="services.html" class="nav-link" data-feature="services_management">
+                    <i data-feather="scissors" class="nav-icon"></i>
+                    <span class="nav-text">Services</span>
+                </a>
+            </li>
+
+                <!-- Sales -->
+                <li class="nav-item has-submenu" title="Sales">
+                    <div class="nav-link submenu-toggle">
+                        <i data-feather="dollar-sign" class="nav-icon"></i>
+                        <span class="nav-text">Sales</span>
+                        <i data-feather="chevron-down" class="submenu-arrow"></i>
+                    </div>
+                    <ul class="submenu">
+                        <li><a href="pos.html" class="submenu-link" data-feature="pos_system"><span class="submenu-bullet">&bull;</span><span
+                                    class="nav-text">Point of Sale</span></a></li>
+                        <li><a href="products.html" class="submenu-link" data-feature="product_management"><span class="submenu-bullet">&bull;</span><span
+                                    class="nav-text">Products</span></a></li>
+                        <li><a href="sales-history.html" class="submenu-link" data-feature="sales_history"><span class="submenu-bullet">&bull;</span><span class="nav-text">Sales History</span></a></li>
+                    </ul>
+                </li>
+
+                <!-- Payments -->
+                <li class="nav-item has-submenu" title="Payments">
+                    <div class="nav-link submenu-toggle">
+                        <i data-feather="credit-card" class="nav-icon"></i>
+                        <span class="nav-text">Payments</span>
+                        <i data-feather="chevron-down" class="submenu-arrow"></i>
+                    </div>
+                    <ul class="submenu">
+                        <li><a href="pending-payments.html" class="submenu-link" data-feature="pending_payments"><span class="submenu-bullet">&bull;</span><span
+                                    class="nav-text">Pending Payments</span></a></li>
+                        <li><a href="payments-history.html" class="submenu-link" data-feature="payments_history"><span class="submenu-bullet">&bull;</span><span
+                                    class="nav-text">Payments History</span></a></li>
+                    </ul>
+                </li>
+
+                <!-- Marketing -->
+                <li class="nav-item has-submenu" title="Marketing">
+                    <div class="nav-link submenu-toggle">
+                        <i data-feather="gift" class="nav-icon"></i>
+                        <span class="nav-text">Marketing</span>
+                        <i data-feather="chevron-down" class="submenu-arrow"></i>
+                    </div>
+                    <ul class="submenu">
+                        <li><a href="offers.html" class="submenu-link" data-feature="marketing_offers"><span class="submenu-bullet">&bull;</span><span
+                                    class="nav-text">Offers</span></a></li>
+                        <li><a href="coupons.html" class="submenu-link" data-feature="marketing_coupons"><span class="submenu-bullet">&bull;</span><span
+                                    class="nav-text">Coupons</span></a></li>
+                        <li><a href="memberships.html" class="submenu-link" data-feature="marketing_memberships"><span class="submenu-bullet">&bull;</span><span
+                                    class="nav-text">Memberships</span></a></li>
+                        <li><a href="ad-campaigns.html" class="submenu-link" data-feature="marketing_campaigns"><span class="submenu-bullet">&bull;</span><span
+                                    class="nav-text">Ad Campaigns</span></a></li>
+                    </ul>
+                </li>
+
+                <!-- Analytics -->
+                <li class="nav-item has-submenu active" title="Analytics">
+                    <div class="nav-link submenu-toggle">
+                        <i data-feather="bar-chart-2" class="nav-icon"></i>
+                        <span class="nav-text">Analytics</span>
+                        <i data-feather="chevron-down" class="submenu-arrow"></i>
+                    </div>
+                    <ul class="submenu">
+                        <li><a href="overview.html" class="submenu-link"><span class="submenu-bullet">&bull;</span><span
+                                    class="nav-text">Overview</span></a></li>
+                        <li><a href="reports.html" class="submenu-link" data-feature="reports_access"><span class="submenu-bullet">&bull;</span><span
+                                    class="nav-text">Reports</span></a></li>
+                        <li><a href="expenses.html" class="submenu-link active" data-feature="analytics_expenses"><span class="submenu-bullet">&bull;</span><span class="nav-text">Expenses</span></a></li>
+                    </ul>
+                </li>
+
+                <!-- Settings -->
+                <li class="nav-item has-submenu" title="Settings">
+                    <div class="nav-link submenu-toggle">
+                        <i data-feather="settings" class="nav-icon"></i>
+                        <span class="nav-text">Settings</span>
+                        <i data-feather="chevron-down" class="submenu-arrow"></i>
+                    </div>
+                    <ul class="submenu">
+                        <li><a href="company.html" class="submenu-link" data-feature="company_settings"><span class="submenu-bullet">&bull;</span><span
+                                    class="nav-text">Company</span></a></li>
+                        <li><a href="branches.html" class="submenu-link" data-feature="branch_management"><span class="submenu-bullet">&bull;</span><span
+                                    class="nav-text">Branches</span></a></li>
+                        <li><a href="users.html" class="submenu-link" data-feature="user_management"><span class="submenu-bullet">&bull;</span><span
+                                    class="nav-text">Users</span></a></li>
+                        <li><a href="roles-permissions.html" class="submenu-link" data-feature="roles_permissions"><span class="submenu-bullet">&bull;</span><span
+                                    class="nav-text">Roles & Permissions</span></a></li>
+                        <li><a href="custom-fields.html" class="submenu-link" data-feature="custom_fields"><span class="submenu-bullet">&bull;</span><span
+                                    class="nav-text">Custom Fields</span></a></li>
+                        <li><a href="billing-subscription.html" class="submenu-link" data-feature="billing_subscription_management"><span class="submenu-bullet">&bull;</span><span
+                                    class="nav-text">Billing & Subscription</span></a></li>
+                    </ul>
+                </li>
+            </ul>
+        </nav>
+
+    </aside>
+
+    <!-- Main Content Wrapper -->
+    <div class="main-wrapper" id="mainWrapper">
+
+        <!-- Top Header Bar -->
+        <header class="top-header">
+            <div class="header-left">
+                <!-- Branch Switcher -->
+                <div class="branch-switcher">
+                    <i data-feather="map-pin" class="branch-icon"></i>
+                    <select id="branchSelect" class="branch-select">
+                        <option value="branch_1">Downtown Branch</option>
+                        <option value="branch_2">Uptown Spa</option>
+                    </select>
+                </div>
+            </div>
+
+            <div class="header-center">
+                <div class="search-bar">
+                    <i data-feather="search" class="search-icon"></i>
+                    <input type="text" placeholder="Search bookings, customers..." class="search-input">
+                </div>
+            </div>
+
+            <div class="header-right">
+                <!-- Quick Actions -->
+                <div class="quick-actions">
+                    <button class="qa-btn qa-primary" id="btnNewBooking">
+                        <i data-feather="calendar" class="qa-icon"></i>
+                        <span>New Booking</span>
+                    </button>
+                </div>
+                <div class="header-divider"></div>
+                <div class="plan-badge" id="headerPlanBadge">Growth</div>
+                <button class="icon-btn" title="Notifications">
+                    <i data-feather="bell"></i>
+                    <span class="notification-dot"></span>
+                </button>
+                <div class="user-profile" id="userProfileDropdown">
+                    <div class="avatar" id="avatarBtn">
+                        <img src="https://ui-avatars.com/api/?name=Admin+User&background=1E3A8A&color=fff" alt="User">
+                    </div>
+
+                    <!-- Profile Dropdown Menu -->
+                    <div class="profile-dropdown" id="profileMenu">
+                        <div class="dropdown-header">
+                            <p class="dropdown-name">Admin User</p>
+                            <p class="dropdown-role">Owner</p>
+                        </div>
+                        <div class="dropdown-divider"></div>
+                        <ul class="dropdown-list">
+                            <li>
+                                <a href="#" class="dropdown-item">
+                                    <i data-feather="user"></i>
+                                    <span>Profile</span>
+                                </a>
+                            </li>
+                            <li>
+                                <a href="#" class="dropdown-item">
+                                    <i data-feather="calendar"></i>
+                                    <span>Schedule</span>
+                                </a>
+                            </li>
+                            <li>
+                                <a href="#" class="dropdown-item">
+                                    <i data-feather="settings"></i>
+                                    <span>Settings</span>
+                                </a>
+                            </li>
+                            <li>
+                                <a href="#" class="dropdown-item">
+                                    <i data-feather="help-circle"></i>
+                                    <span>Support</span>
+                                </a>
+                            </li>
+                            <li>
+                                <a href="#" class="dropdown-item text-danger">
+                                    <i data-feather="log-out"></i>
+                                    <span>Logout</span>
+                                </a>
+                            </li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </header>
+
+        <!-- Profile Dropdown Backdrop -->
+        <div id="profileBackdrop" class="profile-backdrop"></div>
+
+        <!-- Page Content -->
+                <main class="content-area">
+            <div class="content-header" style="display: flex; justify-content: space-between; align-items: flex-end; margin-bottom: 2rem;">
+                <div>
+                    <h1>Expenses</h1>
+                    <p class="text-muted">Manage and track your business expenses</p>
+                </div>
+                <div class="content-actions" style="display: flex; gap: 12px; align-items: center;">
+                    <div class="date-filter-wrap" style="position: relative;">
+                        <i data-feather="calendar" style="position: absolute; left: 12px; top: 50%; transform: translateY(-50%); width: 14px; color: #64748b;"></i>
+                        <select id="expensesDateRange" class="form-select" style="padding: 0 12px 0 36px; height: 40px; border-radius: 8px; font-size: 0.875rem; border: 1px solid #e2e8f0; background: #fff; cursor: pointer;">
+                            <option value="this_month">This Month</option>
+                            <option value="last_month">Last Month</option>
+                            <option value="3months">Last 3 Months</option>
+                            <option value="6months">Last 6 Months</option>
+                            <option value="12months">Last 12 Months</option>
+                            <option value="all">All Time</option>
+                        </select>
+                    </div>
+                    <button class="btn btn-primary" onclick="window.openAddExpenseModal()" style="display: flex; align-items: center; gap: 8px;">
+                        <i data-feather="plus"></i>
+                        Add Expense
+                    </button>
+                </div>
+            </div>
+
+            <!-- Summary Cards -->
+            <div class="summary-cards" style="margin-bottom: 1.5rem; display: grid; grid-template-columns: repeat(2, 1fr); gap: 1.5rem;">
+                <div class="card stat-card">
+                    <div class="stat-icon bg-indigo-light">
+                        <i data-feather="dollar-sign" class="text-indigo"></i>
+                    </div>
+                    <div class="stat-details">
+                        <p class="stat-label">Total Expenses (Selected Range)</p>
+                        <h3 class="stat-value" id="cardTotalExpenses">₹0</h3>
+                    </div>
+                </div>
+                <div class="card stat-card">
+                    <div class="stat-icon bg-amber-light">
+                        <i data-feather="calendar" class="text-amber"></i>
+                    </div>
+                    <div class="stat-details">
+                        <p class="stat-label">This Month Expenses</p>
+                        <h3 class="stat-value" id="cardThisMonthExpenses">₹0</h3>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Filters & Table -->
+            <div class="card" style="padding: 1.5rem;">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem;">
+                    <div style="display: flex; gap: 1rem;">
+                        <select id="filterCategory" class="form-select" style="width: 200px;">
+                            <option value="All">All Categories</option>
+                            <option value="Rent">Rent</option>
+                            <option value="Salary">Salary</option>
+                            <option value="Products">Products</option>
+                            <option value="Utilities">Utilities</option>
+                            <option value="Maintenance">Maintenance</option>
+                            <option value="Marketing">Marketing</option>
+                            <option value="Other">Other</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="table-container">
+                    <table class="data-table" id="expensesTable">
+                        <thead>
+                            <tr>
+                                <th>Date</th>
+                                <th>Category</th>
+                                <th>Amount</th>
+                                <th>Notes</th>
+                                <th>Added By</th>
+                                <th class="text-right">Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody id="expensesTableBody">
+                            <!-- Populated via JS -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <!-- Add Expense Modal -->
+    <div class="modal-overlay" id="addExpenseModal">
+        <div class="modal" style="max-width: 500px;">
+            <div class="modal-header">
+                <h2>Add New Expense</h2>
+                <button class="icon-btn" onclick="window.closeAddExpenseModal()"><i data-feather="x"></i></button>
+            </div>
+            <div class="modal-body">
+                <form id="addExpenseForm">
+                    <div class="form-group row">
+                        <div class="col" style="flex: 1;">
+                            <label class="form-label">Date <span class="required">*</span></label>
+                            <input type="date" class="form-input" id="expenseDate" required>
+                        </div>
+                        <div class="col" style="flex: 1;">
+                            <label class="form-label">Category <span class="required">*</span></label>
+                            <select class="form-select" id="expenseCategory" required>
+                                <option value="" disabled selected>Select Category</option>
+                                <option value="Rent">Rent</option>
+                                <option value="Salary">Salary</option>
+                                <option value="Products">Products</option>
+                                <option value="Utilities">Utilities</option>
+                                <option value="Maintenance">Maintenance</option>
+                                <option value="Marketing">Marketing</option>
+                                <option value="Other">Other</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Amount (₹) <span class="required">*</span></label>
+                        <input type="number" class="form-input" id="expenseAmount" min="0" step="0.01" required>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Notes</label>
+                        <textarea class="form-textarea" id="expenseNotes" rows="3" placeholder="Optional details..."></textarea>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-secondary" onclick="window.closeAddExpenseModal()">Cancel</button>
+                <button class="btn btn-primary" onclick="window.submitExpense()">Save Expense</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="config/feature-registry.js" type="module"></script>
+    <script src="config/api.js" type="module"></script>
+    <script src="scripts/global-auth-guard.js" type="module"></script>
+    <script src="scripts/logout.js" type="module"></script>
+    <script src="scripts/expenses.js" type="module"></script>
+    <script>
+        feather.replace();
+    </script>
+</body>
+</html>

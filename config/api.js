@@ -72,7 +72,11 @@ export const API = {
   DELETE_MEMBERSHIP_PLAN: `${BASE_URL}/delete_membership_plan`,
   CREATE_MEMBERSHIP_PURCHASE: `${BASE_URL}/create_membership_purchase`,
   READ_MEMBERSHIP_PURCHASES: `${BASE_URL}/read_membership_purchases`,
-  CANCEL_MEMBERSHIP_PURCHASE: `${BASE_URL}/cancel_membership_purchase`
+  CANCEL_MEMBERSHIP_PURCHASE: `${BASE_URL}/cancel_membership_purchase`,
+  CREATE_EXPENSE: `${BASE_URL}/create_expense`,
+  READ_EXPENSES: `${BASE_URL}/read_expenses`,
+  UPDATE_EXPENSE: `${BASE_URL}/update_expense`,
+  DELETE_EXPENSE: `${BASE_URL}/delete_expense`
 };
 
 /**
