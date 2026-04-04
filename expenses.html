@@ -687,7 +687,7 @@
     </div>
 
     <!-- Add Expense Modal -->
-    <div class="modal-overlay" id="addExpenseModal">
+    <div class="modal-overlay" id="addExpenseModal" onclick="if(event.target === this) window.closeAddExpenseModal();">
         <div class="modal-container" style="max-width: 500px;">
             <div class="modal-header">
                 <h2>Add New Expense</h2>
