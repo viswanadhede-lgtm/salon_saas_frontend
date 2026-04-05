@@ -1,12 +1,7 @@
 import { API, fetchWithAuth } from './config/api.js';
 import { FEATURES } from './config/feature-registry.js';
 
-function getCompanyId() {
-    try {
-        const appContext = JSON.parse(localStorage.getItem('appContext') || '{}');
-        return appContext.company?.id || null;
-    } catch (e) { return null; }
-}
+function getCompanyId() { return localStorage.getItem('company_id') || null; }
 
 function getBranchId() {
     return localStorage.getItem('active_branch_id') || null;
@@ -589,3 +584,4 @@ function hsExportData(format) {
         URL.revokeObjectURL(url);
     }
 }
+

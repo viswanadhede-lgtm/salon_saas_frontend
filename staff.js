@@ -84,12 +84,7 @@ window.fetchStaff = async function() {
 let staffActiveMenu = null;
 let staffToDelete = null;
 
-function getCompanyId() {
-    try {
-        const appContext = JSON.parse(localStorage.getItem('appContext') || '{}');
-        return appContext.company?.id || null;
-    } catch (e) { return null; }
-}
+function getCompanyId() { return localStorage.getItem('company_id') || null; }
 
 function getBranchId() {
     return localStorage.getItem('active_branch_id') || null;
@@ -601,3 +596,4 @@ async function fetchRolesForDropdown() {
 document.addEventListener('DOMContentLoaded', () => {
     initStaff();
 });
+
