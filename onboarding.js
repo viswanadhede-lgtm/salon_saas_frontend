@@ -232,7 +232,7 @@ async function submitOnboarding() {
 
         if (!plErr && planLimits && planLimits.length) {
             for (const limit of planLimits) {
-                const resourceKey = limit.resource_key;
+                const resourceKey = limit.limit_key;  // column is named limit_key in plan_limits table
                 // max_branches starts at 1 (first branch just created), everything else 0
                 const currentCount = resourceKey === 'max_branches' ? 1 : 0;
 
@@ -242,7 +242,7 @@ async function submitOnboarding() {
                     plan_id: planId,
                     resource_key: resourceKey,
                     current_count: currentCount,
-                    max_count: limit.max_value ?? limit.limit_value ?? limit.value ?? null
+                    max_limit: limit.limit_value
                 });
             }
         } else {
