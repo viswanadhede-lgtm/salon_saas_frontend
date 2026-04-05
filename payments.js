@@ -101,18 +101,18 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // --- Logic Functions ---
 
-    function fetchAddons() {
-        fetchWithAuth(API.READ_ADDONS, {
-            method: 'POST',
-            body: JSON.stringify({ company_id: companyId })
-        }, FEATURES.BILLING_SUBSCRIPTION_MANAGEMENT, 'read')
-        .then(res => res.json())
-        .then(addonsArray => {
-            const container = document.getElementById('addonsListContainer');
-            
-            // Expected format: array of { addon_id, name, price, description, status }
-            const activeAddons = (addonsArray || []).filter(a => a.status === 'active');
-            
+    async function fetchAddons() {
+        const container = document.getElementById('addonsListContainer');
+        try {
+            const { data: addonsArray, error } = await supabase
+                .from('add_ons')
+                .select('*')
+                .eq('status', 'active');
+
+            if (error) throw error;
+
+            const activeAddons = addonsArray || [];
+
             if (activeAddons.length === 0) {
                 container.innerHTML = '<h3 class="subsection-title">Supercharge your plan</h3><p style="color: var(--text-muted); font-size: 0.9rem;">No add-ons currently available.</p>';
                 return;
@@ -122,7 +122,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
             activeAddons.forEach(addon => {
                 const monPrice = parseFloat(addon.price) || 0;
-                const annPrice = monPrice * 10; // Nominal annual discount assumption
+                const annPrice = monPrice * 10; // Annual = 10x monthly (nominal discount)
 
                 dynamicAddonsPricing[addon.addon_id] = {
                     name: addon.name,
@@ -148,19 +148,17 @@ document.addEventListener('DOMContentLoaded', () => {
             container.innerHTML = addonsHtml;
 
             // Bind events for dynamically injected checkboxes
-            const newCheckboxes = document.querySelectorAll('.addon-checkbox');
-            newCheckboxes.forEach(chk => {
+            container.querySelectorAll('.addon-checkbox').forEach(chk => {
                 chk.addEventListener('change', updatePricingDisplay);
             });
 
-            // Re-render display to apply active billing cycle prices
+            // Re-render to apply active billing cycle prices
             updatePricingDisplay();
-        })
-        .catch(err => {
-            console.error('Error fetching addons:', err);
-            const container = document.getElementById('addonsListContainer');
+
+        } catch (err) {
+            console.error('[fetchAddons] Error fetching from add_ons table:', err);
             container.innerHTML = '<h3 class="subsection-title">Supercharge your plan</h3><p style="color: var(--text-muted); font-size: 0.9rem;">Failed to load add-ons.</p>';
-        });
+        }
     }
 
     function renderPlanSummary(id, fallbackName) {
