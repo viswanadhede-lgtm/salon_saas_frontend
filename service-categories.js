@@ -1,3 +1,4 @@
+import { supabase } from './lib/supabase.js';
 import { API, fetchWithAuth } from './config/api.js';
 import { FEATURES } from './config/feature-registry.js';
 import { SUB_FEATURES } from './config/sub-feature-registry.js';
@@ -102,15 +103,24 @@ function setupModals() {
 }
 
 function attachEventListeners() {
-    // Add Category
     const addCatForm = document.getElementById('addCategoryForm');
     if (addCatForm) {
         addCatForm.addEventListener('submit', async (e) => {
             e.preventDefault();
+            const categoryName = document.getElementById('cfName').value.trim();
+            const nameLower = categoryName.toLowerCase();
+            
+            // Check for duplicates
+            const exists = liveCategoriesData.find(c => (c.category_name || '').toLowerCase() === nameLower);
+            if (exists) {
+                window.toast && window.toast('A category with this name already exists.');
+                return;
+            }
+
             const payload = {
                 company_id: getCompanyId(),
                 branch_id: getBranchId(),
-                category_name: document.getElementById('cfName').value.trim(),
+                category_name: categoryName,
                 description: document.getElementById('cfDescription').value.trim(),
                 status: document.querySelector('input[name="cfStatus"]:checked').value
             };
@@ -120,25 +130,21 @@ function attachEventListeners() {
             if (btn) { btn.textContent = 'Saving...'; btn.disabled = true; }
             
             try {
-                const res = await fetchWithAuth(API.CREATE_SERVICE_CATEGORY, {
-                    method: 'POST',
-                    body: JSON.stringify(payload)
-                }, FEATURES.SERVICES_MANAGEMENT, 'create');
+                const { error } = await supabase
+                    .from('service_categories')
+                    .insert(payload);
                 
-                const data = await res.json();
-                const hasError = Array.isArray(data) ? !!data[0]?.error : !!data.error;
-                if (res.ok && !hasError) {
-                    toast('Category added successfully!');
+                if (!error) {
+                    window.toast && window.toast('Category added successfully!');
                     document.getElementById('addCategoryModal').classList.remove('active');
                     addCatForm.reset();
                     await fetchCategories();
                 } else {
-                    let errorMsg = Array.isArray(data) ? data[0]?.error || 'Unknown error' : data.message || data.error || 'Unknown error';
-                    toast('Error adding category: ' + errorMsg);
+                    window.toast && window.toast('Error adding category: ' + error.message);
                 }
             } catch (err) {
                 console.error(err);
-                toast('Network error saving category');
+                window.toast && window.toast('Network error saving category');
             } finally {
                 if (btn) { btn.textContent = originalText; btn.disabled = false; }
             }
@@ -156,38 +162,54 @@ function attachEventListeners() {
     editCatForm.addEventListener('submit', async (e) => {
         e.preventDefault();
         const categoryId = document.getElementById('editCategoryId').value;
+        const newCategoryName = document.getElementById('editCfName').value.trim();
+        const nameLower = newCategoryName.toLowerCase();
+
+        // Check for duplicates
+        const exists = liveCategoriesData.find(c => 
+            (c.category_name || '').toLowerCase() === nameLower && 
+            String(c.category_id || c.id) !== String(categoryId)
+        );
+        if (exists) {
+            window.toast && window.toast('A category with this name already exists.');
+            return;
+        }
+
         const payload = {
-            company_id: getCompanyId(),
-            branch_id: getBranchId(),
-            category_id: categoryId,
-            category_name: document.getElementById('editCfName').value.trim(),
+            category_name: newCategoryName,
             description: document.getElementById('editCfDescription').value.trim(),
             status: document.querySelector('input[name="editCfStatus"]:checked').value
         };
         
         const btn = document.querySelector('button[form="editCategoryForm"]');
-            const originalText = btn ? btn.textContent : 'Update Category';
-            if (btn) { btn.textContent = 'Updating...'; btn.disabled = true; }
+        const originalText = btn ? btn.textContent : 'Update Category';
+        if (btn) { btn.textContent = 'Updating...'; btn.disabled = true; }
         
         try {
-            const res = await fetchWithAuth(API.UPDATE_SERVICE_CATEGORY, {
-                method: 'POST',
-                body: JSON.stringify(payload)
-            }, FEATURES.SERVICES_MANAGEMENT, 'update');
+            const { error } = await supabase
+                .from('service_categories')
+                .eq('category_id', categoryId)
+                .update(payload);
             
-            const data = await res.json();
-            const hasError = Array.isArray(data) ? !!data[0]?.error : !!data.error;
-            if (res.ok && !hasError) {
-                toast('Category updated successfully!');
+            if (!error) {
+                // If name changed, update corresponding services table
+                const origCategory = liveCategoriesData.find(c => String(c.category_id || c.id) === String(categoryId));
+                if (origCategory && origCategory.category_name !== newCategoryName) {
+                    await supabase
+                        .from('services')
+                        .eq('category_id', categoryId)
+                        .update({ category_name: newCategoryName });
+                }
+
+                window.toast && window.toast('Category updated successfully!');
                 editCatModal.classList.remove('active');
                 await fetchCategories();
             } else {
-                let errorMsg = Array.isArray(data) ? data[0]?.error || 'Unknown error' : data.message || data.error || 'Unknown error';
-                toast('Error updating category: ' + errorMsg);
+                window.toast && window.toast('Error updating category: ' + error.message);
             }
         } catch (err) {
             console.error(err);
-            toast('Network error updating category');
+            window.toast && window.toast('Network error updating category');
         } finally {
             if (btn) { btn.textContent = originalText; btn.disabled = false; }
         }
@@ -217,28 +239,20 @@ function attachEventListeners() {
         fullScreenLoader.classList.add('active');
         
         try {
-            const res = await fetchWithAuth(API.DELETE_SERVICE_CATEGORY, {
-                method: 'POST',
-                body: JSON.stringify({
-                    company_id: getCompanyId(),
-                    branch_id: getBranchId(),
-                    category_id: categoryToDelete.id,
-                    category_name: categoryToDelete.name
-                })
-            }, FEATURES.SERVICES_MANAGEMENT, 'delete');
+            const { error } = await supabase
+                .from('service_categories')
+                .eq('category_id', categoryToDelete.id)
+                .update({ status: 'deleted' });
             
-            const data = await res.json();
-            const hasError = Array.isArray(data) ? !!data[0]?.error : !!data.error;
-            if (res.ok && !hasError) {
-                toast('Category deleted successfully!');
+            if (!error) {
+                window.toast && window.toast('Category deleted successfully!');
                 await fetchCategories();
             } else {
-                let errorMsg = Array.isArray(data) ? data[0]?.error || 'Unknown error' : data.message || data.error || 'Unknown error';
-                toast('Error deleting category: ' + errorMsg);
+                window.toast && window.toast('Error deleting category: ' + error.message);
             }
         } catch (err) {
             console.error(err);
-            toast('Network error deleting category');
+            window.toast && window.toast('Network error deleting category');
         } finally {
             fullScreenLoader.classList.remove('active');
             categoryToDelete = null;
@@ -266,32 +280,34 @@ function attachEventListeners() {
 
 export async function fetchCategories() {
     try {
-        const response = await fetchWithAuth(API.READ_SERVICE_CATEGORY, {
-            method: 'POST',
-            body: JSON.stringify({
-                company_id: getCompanyId(),
-                branch_id: getBranchId()
-            })
-        }, FEATURES.SERVICES_MANAGEMENT, 'read');
-        if (!response.ok) throw new Error('Failed to fetch from backend');
+        const companyId = getCompanyId();
+        const branchId = getBranchId();
+
+        let query = supabase
+            .from('service_categories')
+            .select('*')
+            .order('category_name', { ascending: true });
         
-        const data = await response.json();
-        const root = Array.isArray(data) ? data[0] : data;
+        if (companyId) query = query.eq('company_id', companyId);
+        if (branchId) query = query.eq('branch_id', branchId);
+
+        const { data, error } = await query;
+        if (error) throw new Error(error.message);
         
         // Ensure "deleted" status items are completely removed from the frontend mapping
-        const rawCategories = root.categories || [];
+        const rawCategories = data || [];
         liveCategoriesData = rawCategories.filter(c => (c.status || '').toLowerCase() !== 'deleted');
         
         window.liveCategoriesData = liveCategoriesData;
-        window.renderCat(liveCategoriesData);
+        if (window.renderCat) window.renderCat(liveCategoriesData);
         const countEl = document.getElementById('countCategories');
         if (countEl) {
-            countEl.textContent = liveCategoriesData.length; // Use exact rendered count to prevent backend soft-delete discrepancies
+            countEl.textContent = liveCategoriesData.length;
         }
         populateCategoryDropdownEx();
     } catch (err) {
         console.error('Network Error:', err);
-        window.renderCat(liveCategoriesData);
+        if (window.renderCat) window.renderCat(liveCategoriesData);
     }
 }
 

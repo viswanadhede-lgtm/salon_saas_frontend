@@ -1,3 +1,4 @@
+import { supabase } from './lib/supabase.js';
 import { API, fetchWithAuth } from './config/api.js';
 import { FEATURES } from './config/feature-registry.js';
 import { SUB_FEATURES } from './config/sub-feature-registry.js';
@@ -120,15 +121,24 @@ function setupModals() {
 }
 
 function attachEventListeners() {
-    // Add Service
     const addSvcForm = document.getElementById('addServiceForm');
     if (addSvcForm) {
         addSvcForm.addEventListener('submit', async (e) => {
             e.preventDefault();
+            const serviceName = document.getElementById('sfSvcName').value.trim();
+            const nameLower = serviceName.toLowerCase();
+
+            // Duplicate Check
+            const exists = liveServicesData.find(s => (s.service_name || s.name || '').toLowerCase() === nameLower);
+            if (exists) {
+                window.toast && window.toast('A service with this name already exists.');
+                return;
+            }
+
             const payload = {
                 company_id: getCompanyId(),
                 branch_id: getBranchId(),
-                name: document.getElementById('sfSvcName').value.trim(),
+                service_name: serviceName,
                 category_id: document.getElementById('sfCategory').selectedOptions[0]?.dataset.id || '',
                 category_name: document.getElementById('sfCategory').value,
                 duration: parseInt(document.getElementById('sfDuration').value, 10),
@@ -142,21 +152,17 @@ function attachEventListeners() {
             if (btn) { btn.textContent = 'Saving...'; btn.disabled = true; }
             
             try {
-                const res = await fetchWithAuth(API.CREATE_SERVICE, {
-                    method: 'POST',
-                    body: JSON.stringify(payload)
-                }, FEATURES.SERVICES_MANAGEMENT, 'create');
+                const { error } = await supabase
+                    .from('services')
+                    .insert(payload);
                 
-                const data = await res.json();
-                const hasError = Array.isArray(data) ? !!data[0]?.error : !!data.error;
-                if (res.ok && !hasError) {
+                if (!error) {
                     window.toast && window.toast('Service added successfully!');
                     document.getElementById('addServiceModal').classList.remove('active');
                     addSvcForm.reset();
                     await fetchServices();
                 } else {
-                    let errorMsg = Array.isArray(data) ? data[0]?.error || 'Unknown error' : data.message || data.error || 'Unknown error';
-                    window.toast && window.toast('Error adding service: ' + errorMsg);
+                    window.toast && window.toast('Error adding service: ' + error.message);
                 }
             } catch (err) {
                 console.error(err);
@@ -178,11 +184,21 @@ function attachEventListeners() {
     editSvcForm.addEventListener('submit', async (e) => {
         e.preventDefault();
         const serviceId = document.getElementById('editServiceId').value;
+        const newServiceName = document.getElementById('editSfSvcName').value.trim();
+        const nameLower = newServiceName.toLowerCase();
+
+        // Duplicate Check
+        const exists = liveServicesData.find(s => 
+            (s.service_name || s.name || '').toLowerCase() === nameLower && 
+            String(s.service_id || s.id) !== String(serviceId)
+        );
+        if (exists) {
+            window.toast && window.toast('A service with this name already exists.');
+            return;
+        }
+
         const payload = {
-            company_id: getCompanyId(),
-            branch_id: getBranchId(),
-            service_id: serviceId,
-            name: document.getElementById('editSfSvcName').value.trim(),
+            service_name: newServiceName,
             category_id: document.getElementById('editSfCategory').selectedOptions[0]?.dataset.id || '',
             category_name: document.getElementById('editSfCategory').value,
             duration: parseInt(document.getElementById('editSfDuration').value, 10),
@@ -196,20 +212,17 @@ function attachEventListeners() {
         if (btn) { btn.textContent = 'Updating...'; btn.disabled = true; }
         
         try {
-            const res = await fetchWithAuth(API.UPDATE_SERVICE, {
-                method: 'POST',
-                body: JSON.stringify(payload)
-            }, FEATURES.SERVICES_MANAGEMENT, 'update');
+            const { error } = await supabase
+                .from('services')
+                .eq('service_id', serviceId)
+                .update(payload);
             
-            const data = await res.json();
-            const hasError = Array.isArray(data) ? !!data[0]?.error : !!data.error;
-            if (res.ok && !hasError) {
+            if (!error) {
                 window.toast && window.toast('Service updated successfully!');
                 editSvcModal.classList.remove('active');
                 await fetchServices();
             } else {
-                let errorMsg = Array.isArray(data) ? data[0]?.error || 'Unknown error' : data.message || data.error || 'Unknown error';
-                window.toast && window.toast('Error updating service: ' + errorMsg);
+                window.toast && window.toast('Error updating service: ' + error.message);
             }
         } catch (err) {
             console.error(err);
@@ -243,24 +256,16 @@ function attachEventListeners() {
         fullScreenLoader.classList.add('active');
         
         try {
-            const res = await fetchWithAuth(API.DELETE_SERVICE, {
-                method: 'POST',
-                body: JSON.stringify({
-                    company_id: getCompanyId(),
-                    branch_id: getBranchId(),
-                    service_id: serviceToDelete.id,
-                    name: serviceToDelete.name
-                })
-            }, FEATURES.SERVICES_MANAGEMENT, 'delete');
+            const { error } = await supabase
+                .from('services')
+                .eq('service_id', serviceToDelete.id)
+                .update({ status: 'deleted' });
             
-            const data = await res.json();
-            const hasError = Array.isArray(data) ? !!data[0]?.error : !!data.error;
-            if (res.ok && !hasError) {
+            if (!error) {
                 window.toast && window.toast('Service deleted successfully!');
                 await fetchServices();
             } else {
-                let errorMsg = Array.isArray(data) ? data[0]?.error || 'Unknown error' : data.message || data.error || 'Unknown error';
-                window.toast && window.toast('Error deleting service: ' + errorMsg);
+                window.toast && window.toast('Error deleting service: ' + error.message);
             }
         } catch (err) {
             console.error(err);
@@ -276,7 +281,7 @@ function attachEventListeners() {
         const svc = liveServicesData.find(s => (s.service_id) === svcId);
         if (svc) {
             document.getElementById('editServiceId').value = svc.service_id || '';
-            document.getElementById('editSfSvcName').value = svc.service_name || '';
+            document.getElementById('editSfSvcName').value = svc.service_name || svc.name || '';
             
             window.populateCategoryDropdownExForEdit();
             
@@ -322,31 +327,22 @@ window.populateCategoryDropdownExForEdit = () => {
 
 export async function fetchServices() {
     try {
-        const response = await fetchWithAuth(API.READ_SERVICES, {
-            method: 'POST',
-            body: JSON.stringify({
-                company_id: getCompanyId(),
-                branch_id: getBranchId()
-            })
-        }, FEATURES.SERVICES_MANAGEMENT, 'read');
-        if (!response.ok) throw new Error('Failed to fetch services from backend');
+        const companyId = getCompanyId();
+        const branchId = getBranchId();
+
+        let query = supabase
+            .from('services')
+            .select('*')
+            .order('service_name', { ascending: true });
         
-        const data = await response.json();
+        if (companyId) query = query.eq('company_id', companyId);
+        if (branchId) query = query.eq('branch_id', branchId);
+
+        const { data, error } = await query;
+        if (error) throw new Error(error.message);
         
-        let rawServices = [];
-        if (Array.isArray(data)) {
-            if (data.length > 0 && data[0].error) {
-                throw new Error(data[0].error);
-            }
-            rawServices = data;
-        } else if (data && data.error) {
-            throw new Error(data.error);
-        } else if (data && data.services) {
-            rawServices = data.services;
-        }
-        
-        liveServicesData = rawServices
-            .map(s => ({ ...s, status: (s['status '] || s.status || '').trim() }))
+        liveServicesData = (data || [])
+            .map(s => ({ ...s, status: (s.status || '').trim() }))
             .filter(s => s.status && s.status.toLowerCase() !== 'deleted');
         
         window.liveServicesData = liveServicesData;
