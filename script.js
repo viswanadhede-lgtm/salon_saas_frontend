@@ -343,17 +343,35 @@ document.addEventListener('DOMContentLoaded', () => {
                 };
                 localStorage.setItem('signup_data', JSON.stringify(signupData));
                 
-                // Store the access token for immediate onboarding
+                // Check if session exists (no email confirmation) or if OTP verification is required
                 if (data.session?.access_token) {
                     localStorage.setItem('token', data.session.access_token);
-                }
+                    
+                    btn.textContent = 'Welcome to BharathBots!';
+                    btn.style.backgroundColor = '#10b981'; 
+                    
+                    setTimeout(() => {
+                        window.location.href = 'plans.html';
+                    }, 1500);
+                } else {
+                    // OTP is required (Email confirmations are ON)
+                    document.getElementById('signup-form').style.display = 'none';
+                    
+                    const divider = document.querySelector('.divider');
+                    if (divider) divider.style.display = 'none';
+                    
+                    const loginLink = document.querySelector('.login-link');
+                    if (loginLink) loginLink.style.display = 'none';
 
-                btn.textContent = 'Welcome to BharathBots!';
-                btn.style.backgroundColor = '#10b981'; 
-                
-                setTimeout(() => {
-                    window.location.href = 'plans.html';
-                }, 1500);
+                    const otpForm = document.getElementById('otp-form');
+                    otpForm.style.display = 'block';
+                    otpForm.dataset.email = email; // Store for the verify step
+
+                    btn.textContent = originalText;
+                    btn.style.opacity = '1';
+                    btn.style.cursor = 'pointer';
+                    btn.disabled = false;
+                }
 
             } catch (err) {
                 console.error('[signup] Error:', err);
@@ -362,6 +380,73 @@ document.addEventListener('DOMContentLoaded', () => {
                 btn.style.cursor = 'pointer';
                 btn.disabled = false;
                 alert(err.message || 'An error occurred. Please try again.');
+            }
+        });
+    }
+
+    // OTP Verification Form
+    const otpForm = document.getElementById('otp-form');
+    if (otpForm) {
+        // Handle "Change Email" 
+        document.getElementById('btn-back-signup').addEventListener('click', () => {
+            otpForm.style.display = 'none';
+            document.getElementById('signup-form').style.display = 'block';
+            document.querySelector('.divider').style.display = '';
+            document.querySelector('.login-link').style.display = '';
+        });
+
+        // Handle OTP Submit
+        otpForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const btn = document.getElementById('btn-verify-otp');
+            const errDiv = document.getElementById('otp-error');
+            const originalText = btn.textContent;
+            
+            errDiv.style.display = 'none';
+            btn.textContent = 'Verifying...';
+            btn.style.opacity = '0.8';
+            btn.style.cursor = 'wait';
+            btn.disabled = true;
+
+            const email = otpForm.dataset.email;
+            const token = document.getElementById('otp').value.trim();
+
+            try {
+                const { data, error } = await supabase.auth.verifyOtp({
+                    email: email,
+                    token: token,
+                    type: 'signup'
+                });
+
+                if (error || !data?.session) {
+                    const errorMsg = error?.message || error?.msg || error?.error_description || 'Invalid OTP code.';
+                    throw new Error(errorMsg);
+                }
+
+                // Verification Success! Store token and route to plans.
+                localStorage.setItem('token', data.session.access_token);
+                
+                // Keep signup data perfectly in sync with the resolved ID
+                let signupData = JSON.parse(localStorage.getItem('signup_data') || '{}');
+                signupData.user_id = data.user.id;
+                localStorage.setItem('signup_data', JSON.stringify(signupData));
+
+                btn.textContent = 'Verified!';
+                btn.style.backgroundColor = '#10b981'; 
+                
+                setTimeout(() => {
+                    window.location.href = 'plans.html';
+                }, 1000);
+
+            } catch (err) {
+                console.error('[verifyOtp] Error:', err);
+                errDiv.textContent = err.message || 'Invalid code. Please try again.';
+                errDiv.style.display = 'block';
+                
+                btn.textContent = originalText;
+                btn.style.opacity = '1';
+                btn.style.cursor = 'pointer';
+                btn.disabled = false;
             }
         });
     }
