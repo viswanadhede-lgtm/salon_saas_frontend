@@ -154,7 +154,7 @@ async function submitOnboarding() {
             plan_name: planName,
             status: 'active',
             subscription_status: 'trial'
-        }).select();
+        });
 
         if (compErr || !compData || !compData.length) throw new Error("Failed to create Company: " + (compErr?.message || "Unknown db error"));
         const company_id = compData[0].company_id || compData[0].id;
@@ -167,7 +167,7 @@ async function submitOnboarding() {
             branch_address: branchAddress,
             manager_user_id: user_id,
             status: 'active'
-        }).select();
+        });
 
         if (bErr || !bData || !bData.length) throw new Error("Failed to create Branch: " + (bErr?.message || "Unknown db error"));
         
@@ -182,7 +182,7 @@ async function submitOnboarding() {
             is_default: true,
             description: 'System Owner Role',
             status: 'active'
-        }).select();
+        });
 
         let role_id = null;
         if (!rErr && roleData && roleData.length) {
