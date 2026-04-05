@@ -223,33 +223,28 @@
 
     // ─── Actual Logout Logic ───────────────────────────────────────────────────
     function handleLogout() {
-        // Show the "Logging you out..." overlay
         showLoggingOutOverlay();
 
         const token = localStorage.getItem('token');
 
-        fetch('https://dev.bharathbots.com/webhook/auth_logout', {
+        // Sign out from Supabase (invalidates the server-side session)
+        fetch('https://qxmgyxjwpxkdbgldpdil.supabase.co/auth/v1/logout', {
             method: 'POST',
             headers: {
-                'Content-Type': 'application/json',
-                'Authorization': `Bearer ${token}`
-            }
-        })
-        .then(res => res.json())
-        .then(data => {
-            if (data && data.success) {
-                console.log('[logout] Session destroyed successfully.');
-            } else {
-                console.warn('[logout] Server returned unsuccessful logout, clearing locally anyway.');
+                'apikey':        'sb_publishable_aqCSbMiVxH5cSZxgssdNqw_jQZvzmA0',
+                'Authorization': `Bearer ${token}`,
+                'Content-Type':  'application/json'
             }
         })
         .catch(err => {
-            console.error('[logout] Network error during logout:', err);
+            console.warn('[logout] Supabase signout request failed (clearing locally anyway):', err);
         })
         .finally(() => {
-            // Always clear localStorage and redirect
+            // Always clear all local session data and redirect
             localStorage.removeItem('token');
+            localStorage.removeItem('refresh_token');
             localStorage.removeItem('company_id');
+            localStorage.removeItem('active_branch_id');
             localStorage.removeItem('role_id');
             localStorage.removeItem('signup_data');
             localStorage.removeItem('selected_plan');

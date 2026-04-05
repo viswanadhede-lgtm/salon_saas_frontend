@@ -489,6 +489,9 @@ document.addEventListener('DOMContentLoaded', () => {
                 const user_id = data.user.id;
 
                 localStorage.setItem('token', token);
+                if (data.session.refresh_token) {
+                    localStorage.setItem('refresh_token', data.session.refresh_token);
+                }
 
                 // Step 2: Grab the user mapping from our actual users table
                 const { data: userData, error: userError } = await supabase.from('users')
