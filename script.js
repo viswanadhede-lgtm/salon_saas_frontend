@@ -327,10 +327,11 @@ document.addEventListener('DOMContentLoaded', () => {
                 });
 
                 if (error || !data?.user) {
-                    if (error?.message?.includes('already registered')) {
+                    const errorMsg = error?.message || error?.msg || error?.error_description || 'Sign up failed.';
+                    if (errorMsg.includes('already registered')) {
                          throw new Error('Account already exists. Please sign in.');
                     }
-                    throw new Error(error?.message || 'Sign up failed.');
+                    throw new Error(errorMsg);
                 }
 
                 // If successful, save partial signup data locally
@@ -389,7 +390,8 @@ document.addEventListener('DOMContentLoaded', () => {
                 });
 
                 if (error || !data?.session) {
-                    throw new Error(error?.message || 'Invalid credentials');
+                    const errorMsg = error?.message || error?.msg || error?.error_description || 'Invalid credentials';
+                    throw new Error(errorMsg);
                 }
 
                 const token = data.session.access_token;
