@@ -347,82 +347,17 @@ document.addEventListener('DOMContentLoaded', () => {
 
     function triggerFreeTrial(btnElement, companyId, planId, cycle) {
         const originalText = btnElement.textContent;
-        setLoadingState(btnElement, 'Setting up Mandate...');
+        setLoadingState(btnElement, 'Activating Trial...');
 
-        const startAtUnix = Math.floor(Date.now() / 1000) + (7 * 24 * 60 * 60);
-        const signupData = JSON.parse(localStorage.getItem('signup_data') || '{}');
+        // Clear any stale caches
+        localStorage.removeItem('userFeatures');
+        localStorage.removeItem('userSubFeatures');
+        localStorage.removeItem('appContext');
 
-        const payload = {
-            company_id: companyId,
-            plan_id: planId,
-            billing_cycle: cycle,
-            name: signupData.full_name || '',
-            email: signupData.email || '',
-            mobile: signupData.phone || '',
-            plan_name: signupData.plan_name || '',
-            start_at: startAtUnix
-        };
-
-        fetchWithAuth(API.SUBSCRIPTION_CREATE, {
-            method: 'POST',
-            body: JSON.stringify(payload)
-        })
-        .then(res => {
-            if (!res.ok) throw new Error("API Exception");
-            return res.json();
-        })
-        .then(responseData => {
-            const data = Array.isArray(responseData) ? responseData[0] : responseData;
-            
-            if (data && (data.subscription_id || data.order_id)) {
-                const options = {
-                    "key": data.key_id,
-                    "name": "BharathBots",
-                    "description": "7-Day Free Trial (Mandate Setup)",
-                    "subscription_id": data.subscription_id || data.order_id,
-                    "handler": function (response) {
-                        const params = new URLSearchParams({
-                            razorpay_payment_id: response.razorpay_payment_id,
-                            razorpay_subscription_id: response.razorpay_subscription_id,
-                            razorpay_signature:  response.razorpay_signature,
-                            t: localStorage.getItem('token') || ''
-                        });
-                        
-                        // Clear all caches to guarantee a fresh cold-start on the dashboard
-                        localStorage.removeItem('userFeatures');
-                        localStorage.removeItem('userSubFeatures');
-                        localStorage.removeItem('appContext');
-                        
-                        window.location.href = `${RAZORPAY.CALLBACK_URL}?${params.toString()}`;
-                    },
-                    "modal": {
-                        "ondismiss": function() {
-                            resetLoadingState(btnElement, originalText);
-                            showMessage('Mandate is not set. Please set the mandate to access the app.', 'error');
-                        }
-                    },
-                    "theme": {
-                        "color": "#6366f1"
-                    }
-                };
-
-                const rzp = new window.Razorpay(options);
-                
-                rzp.on('payment.failed', function (response) {
-                    resetLoadingState(btnElement, originalText);
-                    showMessage('Mandate is not set. Please set the mandate to access the app.', 'error');
-                });
-                
-                rzp.open();
-            } else {
-                throw new Error(data.message || "Failed to initialize mandate setup.");
-            }
-        })
-        .catch(err => {
-            console.error('Trial Mandate Error:', err);
-            resetLoadingState(btnElement, originalText);
-            showMessage('Failed to setup mandate. Please try again.', 'error');
-        });
+        // Go straight to dashboard — no mandate required for free trial
+        setTimeout(() => {
+            window.location.href = 'dashboard.html';
+        }, 800);
     }
 
     // --- UI Helpers ---
