@@ -143,7 +143,16 @@ async function submitOnboarding() {
         const branchPincode = document.getElementById('pincode').value;
         const branchPhone = document.getElementById('locationPhone').value;
 
-        const planId = data.plan_id || 'trial';
+        // Map legacy string ids to correct Supabase UUIDs
+        let planIdMapping = {
+            'plan_01': 'd0d4cc8f-3498-4da1-b5e5-2887b9b39dce',
+            'plan_02': 'b42bcd41-217a-4ddb-9451-20e040984277',
+            'plan_03': 'b32fe38d-a715-4166-acf1-b970bd845c21',
+            'trial': '7e0af07f-b57b-40e7-a23a-6e8104c8033c'
+        };
+
+        let activePlanId = data.plan_id || 'trial';
+        const planId = planIdMapping[activePlanId] || activePlanId;
         const planName = data.plan_name || 'Free Trial';
 
         // 1. Insert Company
