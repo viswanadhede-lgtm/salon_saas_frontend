@@ -122,7 +122,7 @@ async function submitOnboarding() {
 
     try {
         const data = JSON.parse(localStorage.getItem("signup_data") || '{}');
-        const token = localStorage.getItem('token');
+        const token = localStorage.getItem('auth_token') || localStorage.getItem('token');
         const user_id = data.user_id;
 
         if (!token || !user_id) {
@@ -154,22 +154,14 @@ async function submitOnboarding() {
         const planId = planIdMapping[activePlanId] || activePlanId;
         const planName = data.plan_name || 'Free Trial';
 
-        // Subscription dates
-        const now = new Date();
-        const subscriptionStart = now.toISOString();
-        const subscriptionEnd = new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000).toISOString();
-
-        // 1. Insert Company
+        // 1. Insert Company — subscription details set later (on Free Trial / Pay & Activate)
         const { data: compData, error: compErr } = await supabase.from('companies').insert({
             company_name: companyName,
             owner_user_id: user_id,
             plan_id: planId,
             plan_name: planName,
             status: 'active',
-            subscription_status: 'trial',
-            subscription_type: 'Free Trial',
-            subscription_start_date: subscriptionStart,
-            subscription_end_date: subscriptionEnd
+            subscription_status: 'pending'
         });
 
         if (compErr || !compData || !compData.length) throw new Error("Failed to create Company: " + (compErr?.message || "Unknown db error"));
@@ -225,32 +217,45 @@ async function submitOnboarding() {
         });
 
         // 6. Fetch plan_limits and insert one usage_counter row per resource
+        console.log('[usage_counters] Fetching plan_limits for plan_id:', planId);
+
+        // Default limits used as fallback when plan_limits has no rows for this plan
+        const DEFAULT_LIMITS = [
+            { limit_key: 'max_branches', limit_value: 1 },
+            { limit_key: 'max_users',    limit_value: 5 },
+            { limit_key: 'max_staff',    limit_value: 10 },
+            { limit_key: 'max_services', limit_value: 20 }
+        ];
+
         const { data: planLimits, error: plErr } = await supabase
             .from('plan_limits')
             .select('*')
             .eq('plan_id', planId);
 
-        if (!plErr && planLimits && planLimits.length) {
-            for (const limit of planLimits) {
-                const resourceKey = limit.limit_key;  // column is named limit_key in plan_limits table
-                // max_branches starts at 1 (first branch just created), everything else 0
-                const currentCount = resourceKey === 'max_branches' ? 1 : 0;
+        console.log('[usage_counters] plan_limits result:', planLimits, plErr);
 
-                await supabase.from('usage_counters').insert({
-                    company_id,
-                    branch_id,
-                    plan_id: planId,
-                    resource_key: resourceKey,
-                    current_count: currentCount,
-                    max_limit: limit.limit_value
-                });
-            }
-        } else {
-            // Fallback: insert a single generic row if plan_limits not found
-            console.warn('plan_limits fetch failed or empty, inserting generic counter:', plErr);
-            await supabase.from('usage_counters').insert({
-                company_id, branch_id, plan_id: planId, resource_key: 'general', current_count: 0
+        const limitsToUse = (Array.isArray(planLimits) && planLimits.length > 0)
+            ? planLimits
+            : DEFAULT_LIMITS;
+
+        if (!Array.isArray(planLimits) || planLimits.length === 0) {
+            console.warn('[usage_counters] plan_limits empty or missing for plan_id:', planId, '— using defaults:', DEFAULT_LIMITS);
+        }
+
+        for (const limit of limitsToUse) {
+            const resourceKey = limit.limit_key;
+            const currentCount = resourceKey === 'max_branches' ? 1 : 0;
+            console.log(`[usage_counters] Inserting: resource_key=${resourceKey}, current=${currentCount}, max=${limit.limit_value}`);
+
+            const { error: ucErr } = await supabase.from('usage_counters').insert({
+                company_id,
+                branch_id,
+                plan_id: planId,
+                resource_key: resourceKey,
+                current_count: currentCount,
+                max_limit: limit.limit_value
             });
+            if (ucErr) console.error('[usage_counters] Insert error:', ucErr);
         }
 
         // 7. Insert Profile

@@ -1,5 +1,6 @@
 import { API, RAZORPAY, fetchWithAuth } from './config/api.js';
 import { FEATURES } from './config/feature-registry.js';
+import { supabase } from './lib/supabase.js';
 
 document.addEventListener('DOMContentLoaded', () => {
     
@@ -303,9 +304,25 @@ document.addEventListener('DOMContentLoaded', () => {
                     "name": "BharathBots",
                     "description": "Subscription Activation",
                     "order_id": data.order_id,
-                    "handler": function (response) {
-                        // Payment successful — redirect to result page with all proofs as query params
-                        // Also carry the token forward to handle cross-origin localStorage
+                    "handler": async function (response) {
+                        // Update company subscription to paid/active
+                        const now = new Date();
+                        const endDate = new Date(
+                            cycle === 'annual'
+                                ? now.getTime() + 365 * 24 * 60 * 60 * 1000
+                                : now.getTime() + 30  * 24 * 60 * 60 * 1000
+                        );
+                        await supabase
+                            .from('companies')
+                            .eq('company_id', companyId)
+                            .update({
+                                subscription_type: 'paid',
+                                subscription_status: 'active',
+                                subscription_start_date: now.toISOString(),
+                                subscription_end_date: endDate.toISOString()
+                            });
+
+                        // Redirect to result page with payment proofs
                         const params = new URLSearchParams({
                             razorpay_payment_id: response.razorpay_payment_id,
                             razorpay_order_id:   response.razorpay_order_id,
@@ -345,19 +362,47 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
 
-    function triggerFreeTrial(btnElement, companyId, planId, cycle) {
+    async function triggerFreeTrial(btnElement, companyId, planId, cycle) {
         const originalText = btnElement.textContent;
         setLoadingState(btnElement, 'Activating Trial...');
 
-        // Clear any stale caches
-        localStorage.removeItem('userFeatures');
-        localStorage.removeItem('userSubFeatures');
-        localStorage.removeItem('appContext');
+        try {
+            const now = new Date();
+            const trialEnd = new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000);
 
-        // Go straight to dashboard — no mandate required for free trial
-        setTimeout(() => {
-            window.location.href = 'dashboard.html';
-        }, 800);
+            const { error } = await supabase
+                .from('companies')
+                .eq('company_id', companyId)
+                .update({
+                    subscription_type: 'trial',
+                    subscription_status: 'active',
+                    subscription_start_date: now.toISOString(),
+                    subscription_end_date: trialEnd.toISOString()
+                });
+
+            if (error) {
+                console.error('[triggerFreeTrial] Failed to update company:', error);
+                showMessage('Failed to activate trial. Please try again.', 'error');
+                resetLoadingState(btnElement, originalText);
+                return;
+            }
+
+            console.log('[triggerFreeTrial] Subscription updated to trial/active for company:', companyId);
+
+            // Clear any stale caches
+            localStorage.removeItem('userFeatures');
+            localStorage.removeItem('userSubFeatures');
+            localStorage.removeItem('appContext');
+
+            setTimeout(() => {
+                window.location.href = 'dashboard.html';
+            }, 800);
+
+        } catch (err) {
+            console.error('[triggerFreeTrial] Unexpected error:', err);
+            showMessage('An unexpected error occurred. Please try again.', 'error');
+            resetLoadingState(btnElement, originalText);
+        }
     }
 
     // --- UI Helpers ---
