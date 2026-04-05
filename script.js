@@ -1,3 +1,5 @@
+import { supabase } from './lib/supabase.js';
+
 // ─── Show "Logged out successfully" toast if redirected from logout ────────────
 (function () {
     const params = new URLSearchParams(window.location.search);
@@ -300,21 +302,13 @@ document.addEventListener('DOMContentLoaded', () => {
     // Signup form submission
     const signupForm = document.getElementById('signup-form');
     if (signupForm) {
-        signupForm.addEventListener('submit', (e) => {
+        signupForm.addEventListener('submit', async (e) => {
             e.preventDefault();
             
             const fullname = document.getElementById('fullname').value;
             const email = document.getElementById('email').value;
             const phone = document.getElementById('phone').value;
             const password = document.getElementById('password').value;
-            
-            const signupData = {
-                full_name: fullname,
-                email: email,
-                phone: phone,
-                password: password
-            };
-            localStorage.setItem('signup_data', JSON.stringify(signupData));
             
             const btn = signupForm.querySelector('.btn-primary');
             const originalText = btn.textContent;
@@ -324,48 +318,57 @@ document.addEventListener('DOMContentLoaded', () => {
             btn.style.cursor = 'wait';
             btn.disabled = true;
 
-            // Fetch to check email existence
-            fetch('https://dev.bharathbots.com/webhook/auth_check_email_exists', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ email: email })
-            })
-            .then(res => res.json())
-            .then(data => {
-                // Backend returns an array like [ { "email_exists": true } ]
-                const responseObj = Array.isArray(data) ? data[0] : data;
-                
-                if (responseObj && responseObj.email_exists === true) {
-                    btn.textContent = originalText;
-                    btn.style.opacity = '1';
-                    btn.style.cursor = 'pointer';
-                    btn.disabled = false;
-                    alert('Account already exists. Please login.');
-                } else {
-                    // Email is free, proceed to plans 
-                    btn.textContent = 'Welcome to BharathBots!';
-                    btn.style.backgroundColor = '#10b981'; 
-                    
-                    setTimeout(() => {
-                        window.location.href = 'plans.html';
-                    }, 1500);
+            try {
+                // Perform native Supabase signUp
+                const { data, error } = await supabase.auth.signUp({
+                    email, 
+                    password,
+                    data: { full_name: fullname, phone: phone }
+                });
+
+                if (error || !data?.user) {
+                    if (error?.message?.includes('already registered')) {
+                         throw new Error('Account already exists. Please sign in.');
+                    }
+                    throw new Error(error?.message || 'Sign up failed.');
                 }
-            })
-            .catch(err => {
-                console.error('[signup] Check email error:', err);
+
+                // If successful, save partial signup data locally
+                const signupData = {
+                    full_name: fullname,
+                    email: email,
+                    phone: phone,
+                    user_id: data.user.id
+                };
+                localStorage.setItem('signup_data', JSON.stringify(signupData));
+                
+                // Store the access token for immediate onboarding
+                if (data.session?.access_token) {
+                    localStorage.setItem('token', data.session.access_token);
+                }
+
+                btn.textContent = 'Welcome to BharathBots!';
+                btn.style.backgroundColor = '#10b981'; 
+                
+                setTimeout(() => {
+                    window.location.href = 'plans.html';
+                }, 1500);
+
+            } catch (err) {
+                console.error('[signup] Error:', err);
                 btn.textContent = originalText;
                 btn.style.opacity = '1';
                 btn.style.cursor = 'pointer';
                 btn.disabled = false;
-                alert('An error occurred checking the email. Please try again.');
-            });
+                alert(err.message || 'An error occurred. Please try again.');
+            }
         });
     }
 
     // Signin form submission
     const signinForm = document.getElementById('signin-form');
     if (signinForm) {
-        signinForm.addEventListener('submit', (e) => {
+        signinForm.addEventListener('submit', async (e) => {
             e.preventDefault();
 
             const email = document.getElementById('email').value;
@@ -379,51 +382,52 @@ document.addEventListener('DOMContentLoaded', () => {
             btn.style.cursor = 'wait';
             btn.disabled = true;
 
-            fetch('https://dev.bharathbots.com/webhook/auth_login', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ email, password })
-            })
-            .then(res => res.json())
-            .then(data => {
-                const responseData = Array.isArray(data) ? data[0] : data;
-                console.log('[signin] Login response:', responseData);
-                
-                const token = responseData.session_token || responseData.token || (responseData.data && responseData.data.token) || '';
-                if (token) {
-                    // Store critical auth data
-                    localStorage.setItem('token', token);
-                    
-                    if (responseData.company_id) {
-                        localStorage.setItem('company_id', responseData.company_id);
-                    }
-                    if (responseData.role_id) {
-                        localStorage.setItem('role_id', responseData.role_id);
-                    }
-                    
-                    // Clear any stale feature caches to guarantee a fresh fetch on the dashboard loader
-                    localStorage.removeItem('userFeatures');
-                    localStorage.removeItem('userSubFeatures');
-                    localStorage.removeItem('appContext');
+            try {
+                // Step 1: Login via Supabase Auth
+                const { data, error } = await supabase.auth.signInWithPassword({
+                    email, password
+                });
 
-                    console.log('[signin] Session data stored.');
-                    btn.textContent = 'Welcome back!';
-                    btn.style.backgroundColor = '#10b981';
-                    setTimeout(() => {
-                        window.location.href = 'dashboard.html';
-                    }, 1500);
-                } else {
-                    throw new Error('No token in login response.');
+                if (error || !data?.session) {
+                    throw new Error(error?.message || 'Invalid credentials');
                 }
-            })
-            .catch(err => {
+
+                const token = data.session.access_token;
+                const user_id = data.user.id;
+
+                localStorage.setItem('token', token);
+
+                // Step 2: Grab the user mapping from our actual users table
+                const { data: userData, error: userError } = await supabase.from('users')
+                    .select('company_id, branch_id, role_id')
+                    .eq('user_id', user_id);
+
+                if (!userError && userData && userData.length > 0) {
+                    const profile = userData[0];
+                    if (profile.company_id) localStorage.setItem('company_id', profile.company_id);
+                    if (profile.branch_id) localStorage.setItem('active_branch_id', profile.branch_id); // Ensures app pulls correctly
+                    if (profile.role_id) localStorage.setItem('role_id', profile.role_id);
+                }
+
+                // Clear any stale feature caches to guarantee a fresh fetch on the dashboard loader
+                localStorage.removeItem('userFeatures');
+                localStorage.removeItem('userSubFeatures');
+                localStorage.removeItem('appContext');
+
+                btn.textContent = 'Welcome back!';
+                btn.style.backgroundColor = '#10b981';
+                setTimeout(() => {
+                    window.location.href = 'dashboard.html';
+                }, 1500);
+
+            } catch (err) {
                 console.error('[signin] Login error:', err);
                 btn.textContent = originalText;
                 btn.style.opacity = '1';
                 btn.style.cursor = 'pointer';
                 btn.disabled = false;
-                alert('Sign in failed. Please check your credentials and try again.');
-            });
+                alert('Sign in failed. ' + err.message);
+            }
         });
     }
 

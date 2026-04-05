@@ -1,6 +1,5 @@
 import { API } from '../config/api.js';
-
-document.addEventListener('DOMContentLoaded', () => {
+import { supabase } from './lib/supabase.js';document.addEventListener('DOMContentLoaded', () => {
     
     // Auth Check
     const token = localStorage.getItem('auth_token');
@@ -110,7 +109,7 @@ window.submitOnboarding = submitOnboarding;
 // API LOGIC
 // ----------------------------------------------------------------
 
-function submitOnboarding() {
+async function submitOnboarding() {
     const btn = document.getElementById('btnSubmit');
     const errDiv = document.getElementById('apiError');
     const originalText = btn.textContent;
@@ -124,6 +123,13 @@ function submitOnboarding() {
 
     try {
         const data = JSON.parse(localStorage.getItem("signup_data") || '{}');
+        const token = localStorage.getItem('token');
+        const user_id = data.user_id;
+
+        if (!token || !user_id) {
+            throw new Error("Authentication missing! Please sign up again.");
+        }
+
         const companyName = document.getElementById('salonName').value;
         const businessType = document.getElementById('businessType').value;
         const businessPhone = document.getElementById('salonPhone').value;
@@ -137,79 +143,110 @@ function submitOnboarding() {
         const branchPincode = document.getElementById('pincode').value;
         const branchPhone = document.getElementById('locationPhone').value;
 
-        const payload = {
-            full_name: data.full_name,
+        const planId = data.plan_id || 'trial';
+        const planName = data.plan_name || 'Free Trial';
+
+        // 1. Insert Company
+        const { data: compData, error: compErr } = await supabase.from('companies').insert({
+            company_name: companyName,
+            owner_user_id: user_id,
+            plan_id: planId,
+            plan_name: planName,
+            status: 'active',
+            subscription_status: 'trial'
+        }).select();
+
+        if (compErr || !compData || !compData.length) throw new Error("Failed to create Company: " + (compErr?.message || "Unknown db error"));
+        const company_id = compData[0].company_id || compData[0].id;
+
+        // 2. Insert Branch
+        const { data: bData, error: bErr } = await supabase.from('branches').insert({
+            company_id: company_id,
+            branch_name: branchName,
+            branch_phone: branchPhone,
+            branch_address: branchAddress,
+            manager_user_id: user_id,
+            status: 'active'
+        }).select();
+
+        if (bErr || !bData || !bData.length) throw new Error("Failed to create Branch: " + (bErr?.message || "Unknown db error"));
+        
+        // Use either the standard 'id' or explicit 'branch_id' depending on exactly how it returns
+        const branch_id = bData[0].branch_id || bData[0].id; 
+
+        // 3. Insert Role
+        const { data: roleData, error: rErr } = await supabase.from('roles').insert({
+            company_id,
+            branch_id,
+            role_name: 'Owner',
+            is_default: true,
+            description: 'System Owner Role',
+            status: 'active'
+        }).select();
+
+        let role_id = null;
+        if (!rErr && roleData && roleData.length) {
+            role_id = roleData[0].role_id || roleData[0].id;
+            
+            // 4. Role Permissions
+            await supabase.from('role_permissions').insert({
+                company_id, branch_id, role_id, role_name: 'Owner', permission_key: 'ALL', status: 'active'
+            });
+        }
+
+        // 5. Insert explicit mapped User
+        await supabase.from('users').insert({
+            user_id: user_id,
+            company_id,
+            branch_id,
+            name: data.full_name,
             email: data.email,
             phone: data.phone,
-            password: data.password,
-            plan_id: data.plan_id,
-            plan_name: data.plan_name,
-
-            company: {
-                name: companyName,
-                business_type: businessType,
-                phone: businessPhone,
-                country: country,
-                timezone: timezone
-            },
-
-            branch: {
-                name: branchName,
-                address: branchAddress,
-                city: branchCity,
-                state: branchState,
-                pincode: branchPincode,
-                phone: branchPhone
-            }
-        };
-
-        fetch(API.AUTH_REGISTER_COMPANY, {
-            method: "POST",
-            headers: {
-                "Content-Type": "application/json"
-            },
-            body: JSON.stringify(payload)
-        })
-        .then(res => res.json())
-        .then(respData => {
-            console.log("Register response:", respData);
-
-            // Unwrap array response if needed
-            const resp = Array.isArray(respData) ? respData[0] : respData;
-
-            // Store session token — key is "session_token" from backend
-            const token = resp.session_token || resp.token || '';
-            if (token) {
-                localStorage.setItem('token', token);
-                console.log('[onboarding] Session token stored:', token.substring(0, 10) + '...');
-            } else {
-                console.warn('[onboarding] No token in registration response.', resp);
-            }
-
-            btn.textContent = 'Success! Redirecting to setup payments...';
-            btn.style.backgroundColor = '#10b981';
-            
-            setTimeout(() => {
-                const companyId = resp.company_id || (resp.data && resp.data.company_id) || '';
-                window.location.href = `payments.html?company_id=${companyId}`;
-            }, 1000);
-        })
-        .catch(err => {
-            console.error("Error:", err);
-            btn.textContent = originalText;
-            btn.style.opacity = '1';
-            btn.style.cursor = 'pointer';
-            btn.disabled = false;
-            errDiv.textContent = err.message || 'An error occurred during setup.';
-            errDiv.style.display = 'block';
+            role_id,
+            role_name: 'Owner',
+            status: 'active'
         });
-    } catch (e) {
-        console.error(e);
-        errDiv.textContent = 'Failed to parse signup data or missing fields.';
-        errDiv.style.display = 'block';
+
+        // 6. Init Usage Counters
+        await supabase.from('usage_counters').insert({
+            company_id, branch_id, plan_id: planId, resource_key: 'services', current_count: 0
+        });
+
+        // 7. Init Profile
+        const nameParts = (data.full_name || '').split(' ');
+        const first_name = nameParts[0];
+        const last_name = nameParts.length > 1 ? nameParts.slice(1).join(' ') : '';
+        await supabase.from('profiles').insert({
+            user_id: user_id,
+            company_id,
+            branch_id,
+            first_name,
+            last_name,
+            phone: data.phone,
+            email: data.email,
+            role_id,
+            role_name: 'Owner'
+        });
+
+        // Mapping is complete! Keep important context in localStorage.
+        localStorage.setItem('company_id', company_id);
+        localStorage.setItem('active_branch_id', branch_id);
+        if (role_id) localStorage.setItem('role_id', role_id);
+
+        btn.textContent = 'Success! Redirecting to setup payments...';
+        btn.style.backgroundColor = '#10b981';
+        
+        setTimeout(() => {
+            window.location.href = `payments.html?company_id=${company_id}`;
+        }, 1000);
+
+    } catch (err) {
+        console.error("Onboarding Error:", err);
         btn.textContent = originalText;
-        btn.disabled = false;
         btn.style.opacity = '1';
         btn.style.cursor = 'pointer';
+        btn.disabled = false;
+        errDiv.textContent = err.message || 'An error occurred during database setup.';
+        errDiv.style.display = 'block';
     }
 }
