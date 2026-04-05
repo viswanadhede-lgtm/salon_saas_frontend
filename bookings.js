@@ -251,7 +251,7 @@ function setupModals() {
     if (window.feather) feather.replace();
 }
 
-// ─── Populate Edit Dropdowns (still uses n8n — services/staff not in Supabase yet) ──
+// ─── Populate Edit Dropdowns (Supabase) ───────────────────────────────────────
 async function populateEditDropdowns(currentServiceName, currentStaffName, currentPrice) {
     const serviceSelect = document.getElementById('editBkService');
     const staffSelect   = document.getElementById('editBkStaff');
@@ -262,60 +262,49 @@ async function populateEditDropdowns(currentServiceName, currentStaffName, curre
     serviceSelect.disabled  = true;
     staffSelect.disabled    = true;
 
-    const body = JSON.stringify({ company_id: getCompanyId(), branch_id: getBranchId() });
-
     try {
+        const company_id = getCompanyId();
+        const branch_id = getBranchId();
+
         const [svcRes, staffRes] = await Promise.all([
-            fetchWithAuth(API.READ_SERVICES, { method: 'POST', body }, FEATURES.BOOKINGS_MANAGEMENT, 'read'),
-            fetchWithAuth(API.READ_STAFF,    { method: 'POST', body }, FEATURES.BOOKINGS_MANAGEMENT, 'read')
+            supabase.from('services').select('*').eq('company_id', company_id).eq('branch_id', branch_id),
+            supabase.from('staff').select('*').eq('company_id', company_id).eq('branch_id', branch_id)
         ]);
 
         // Services
         serviceSelect.innerHTML = '<option value="">Select a service</option>';
-        if (svcRes.ok) {
-            const svcData = await svcRes.json();
-            let rawServices = [];
-            if (Array.isArray(svcData)) {
-                rawServices = svcData[0]?.services || svcData;
-            } else {
-                rawServices = svcData.services || [];
-            }
-            rawServices
-                .filter(s => (s['status '] || s.status || '').trim().toLowerCase() === 'active')
-                .forEach(s => {
-                    const opt = document.createElement('option');
-                    opt.value       = s.service_id || s.id || '';
-                    opt.textContent = s.service_name || s.name;
-                    opt.dataset.price = (s['price '] || s.price || '').toString();
-                    serviceSelect.appendChild(opt);
-                });
-            if (currentServiceName) {
-                const match = Array.from(serviceSelect.options).find(
-                    o => o.textContent.trim().toLowerCase() === currentServiceName.trim().toLowerCase()
-                );
-                if (match) serviceSelect.value = match.value;
-            }
+        const services = (svcRes.data || []).filter(s => (s.status || '').trim().toLowerCase() === 'active');
+        services.forEach(s => {
+            const opt = document.createElement('option');
+            opt.value       = s.service_id;
+            opt.textContent = s.service_name;
+            opt.dataset.price = (s.price || '').toString();
+            serviceSelect.appendChild(opt);
+        });
+        
+        if (currentServiceName) {
+            const match = Array.from(serviceSelect.options).find(
+                o => o.textContent.trim().toLowerCase() === currentServiceName.trim().toLowerCase()
+            );
+            if (match) serviceSelect.value = match.value;
         }
         serviceSelect.disabled = false;
 
         // Staff
         staffSelect.innerHTML = '<option value="">Select staff member</option>';
-        if (staffRes.ok) {
-            const staffData = await staffRes.json();
-            const staffRoot = Array.isArray(staffData) ? staffData[0] : staffData;
-            const staffList = staffRoot.staff || staffRoot.staff_members || staffRoot.members || [];
-            staffList.forEach(m => {
-                const opt = document.createElement('option');
-                opt.value       = m.staff_id || m.id || '';
-                opt.textContent = m.name || m.staff_name || m.full_name;
-                staffSelect.appendChild(opt);
-            });
-            if (currentStaffName) {
-                const match = Array.from(staffSelect.options).find(
-                    o => o.textContent.trim().toLowerCase() === currentStaffName.trim().toLowerCase()
-                );
-                if (match) staffSelect.value = match.value;
-            }
+        const staffList = (staffRes.data || []).filter(s => s.status !== 'deleted');
+        staffList.forEach(m => {
+            const opt = document.createElement('option');
+            opt.value       = m.staff_id;
+            opt.textContent = m.staff_name || m.name;
+            staffSelect.appendChild(opt);
+        });
+        
+        if (currentStaffName) {
+            const match = Array.from(staffSelect.options).find(
+                o => o.textContent.trim().toLowerCase() === currentStaffName.trim().toLowerCase()
+            );
+            if (match) staffSelect.value = match.value;
         }
         staffSelect.disabled = false;
 

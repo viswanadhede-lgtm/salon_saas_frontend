@@ -514,8 +514,7 @@ function attachEventListeners() {
 
                 const { error } = await supabase
                     .from('staff')
-                    .eq('staff_id', staffToDelete.id)
-                    .update({ status: 'deleted' });
+                    .update({ status: 'deleted' }).eq('', staffToDelete.id);
 
                 if (error) {
                     throw new Error(error.message || 'Failed to delete staff member');
@@ -544,12 +543,8 @@ function attachEventListeners() {
 
 async function fetchRolesForDropdown() {
     try {
-        let companyId = null;
-        try {
-            const appContext = JSON.parse(localStorage.getItem('appContext') || '{}');
-            companyId = appContext.company?.id || null;
-        } catch (e) {}
-        const branchId = localStorage.getItem('active_branch_id') || null;
+        const companyId = getCompanyId();
+        const branchId = getBranchId();
 
         const { data, error } = await supabase
             .from('roles')
@@ -596,4 +591,5 @@ async function fetchRolesForDropdown() {
 document.addEventListener('DOMContentLoaded', () => {
     initStaff();
 });
+
 

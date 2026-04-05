@@ -1,4 +1,4 @@
-import { API, fetchWithAuth } from '../config/api.js';
+import { supabase } from '../lib/supabase.js';
 import { FEATURES } from '../config/feature-registry.js';
 import { SUB_FEATURES } from '../config/sub-feature-registry.js';
 
@@ -638,11 +638,6 @@ function closeDeleteScheduleModal() {
 }
 
 async function performDelete(scheduleId) {
-    let companyId = null;
-    try {
-        const appContext = JSON.parse(localStorage.getItem('appContext') || '{}');
-        companyId = appContext.company?.id || null;
-    } catch (e) {}
     const branchId = localStorage.getItem('active_branch_id') || null;
 
     // Find the schedule to extract its target_month and staff_id
@@ -650,26 +645,20 @@ async function performDelete(scheduleId) {
     const targetMonth = scheduleToDelete ? scheduleToDelete.target_month : null;
     const staffId = scheduleToDelete ? scheduleToDelete.staff_id : null;
 
-    try {
-        const payload = { 
-            company_id: companyId, 
-            branch_id: branchId, 
-            schedule_id: scheduleId 
-        };
-        
-        if (targetMonth) {
-            payload.target_month = targetMonth;
-        }
-        if (staffId) {
-            payload.staff_id = staffId;
-        }
+    if (!staffId || !targetMonth) {
+        showToast('Unable to determine schedule details', true);
+        return;
+    }
 
-        const response = await fetchWithAuth(API.DELETE_STAFF_SCHEDULE, {
-            method: 'POST',
-            body: JSON.stringify(payload)
-        }, FEATURES.STAFF_SCHEDULES, 'delete');
+    try {
+        const { error } = await supabase
+            .from('staff_schedule')
+            .delete()
+            .eq('staff_id', staffId)
+            .gte('schedule_date', `${targetMonth}-01`)
+            .lte('schedule_date', `${targetMonth}-31`);
         
-        if (!response.ok) throw new Error('Failed to delete schedule');
+        if (error) throw error;
         
         rawSchedules = rawSchedules.filter(s => s.id !== scheduleId);
         renderTable();
@@ -681,9 +670,7 @@ async function performDelete(scheduleId) {
         }
     } catch (error) {
         console.error('Error deleting schedule:', error);
-        // Fallback for mock/local testing
-        rawSchedules = rawSchedules.filter(s => s.id !== scheduleId);
-        renderTable();
+        showToast('Failed to delete schedule', true);
     }
 }
 
@@ -818,37 +805,27 @@ async function fetchStaff() {
         const branchId = localStorage.getItem('active_branch_id') || null;
 
         if (companyId && branchId) {
-            const response = await fetchWithAuth(API.READ_STAFF, { 
-                method: 'POST',
-                body: JSON.stringify({ company_id: companyId, branch_id: branchId })
-            }, FEATURES.STAFF_MANAGEMENT, 'read');
+            const { data, error } = await supabase
+                .from('staff')
+                .select('*')
+                .eq('company_id', companyId)
+                .eq('branch_id', branchId)
+                .neq('status', 'deleted');
 
-            if (response.ok) {
-                const data = await response.json();
-                
-                let staffArray = data;
-                if (Array.isArray(data)) {
-                    staffArray = Array.isArray(data[0]?.staff) ? data[0].staff : data;
-                } else if (data && typeof data === 'object') {
-                    staffArray = data.staff || [];
-                }
-
-                if (Array.isArray(staffArray)) {
-                    staffList = staffArray.map(staff => ({
-                        id: staff.staff_id || staff.id,
-                        name: staff.staff_name || staff.name || 'Unknown Staff',
-                        role: staff.role_name || staff.role || 'Unassigned'
-                    }));
-                    populateStaffDropdown();
-                    return;
-                }
+            if (!error && data) {
+                staffList = data.map(staff => ({
+                    id: staff.staff_id || staff.id,
+                    name: staff.staff_name || staff.name || 'Unknown Staff',
+                    role: staff.role_name || staff.role || 'Unassigned'
+                }));
+                populateStaffDropdown();
+                return;
             }
         }
     } catch (error) {
-        console.warn('API sync failed for fetchStaff. No local simulation available.', error);
+        console.warn('API sync failed for fetchStaff.', error);
     }
 
-    // If API failed, leave the array empty to ensure we don't show phantom staff
     staffList = [];
     populateStaffDropdown();
 }
@@ -875,27 +852,26 @@ async function fetchSchedules() {
         } catch (e) {}
         const branchId = localStorage.getItem('active_branch_id') || null;
 
-        const payload = { company_id: companyId, branch_id: branchId };
-        const filterMonth = DOM.monthFilter?.value;
+        if (!companyId || !branchId) return;
+
+        const filterMonth = DOM.monthFilter?.value; // 'YYYY-MM'
+        let query = supabase.from('staff_schedule').select('*').eq('company_id', companyId).eq('branch_id', branchId);
+        
         if (filterMonth) {
-            payload.target_month = filterMonth;
+            query = query.gte('schedule_date', `${filterMonth}-01`).lte('schedule_date', `${filterMonth}-31`);
         }
 
-        const response = await fetchWithAuth(API.READ_STAFF_SCHEDULE, { 
-            method: 'POST',
-            body: JSON.stringify(payload)
-        }, FEATURES.STAFF_SCHEDULES, 'read');
-        if (response.ok) {
-            const data = await response.json();
+        const { data, error } = await query;
+        
+        if (!error && data) {
             rawSchedules = transformScheduleResponse(data);
             renderTable();
             return;
         }
     } catch (error) {
-        console.warn('API sync failed for fetchSchedules. No local simulation available.', error);
+        console.warn('API sync failed for fetchSchedules.', error);
     }
 
-    // Explicitly empty out the table if the API request failed so we don't display dummy data
     rawSchedules = [];
     renderTable();
 }
@@ -904,74 +880,63 @@ async function fetchSchedules() {
 // TRANSFORM: backend date-map → UI row objects
 // ─────────────────────────────────────────────────────────────
 
-/**
- * Backend response format:
- * [{ success: true, schedule: { '2026-04-01': [{ staff_id, start_time, end_time, is_off, notes, schedule_id }] }, today_schedule }]
- *
- * We group entries by staff_id → target_month, picking up the 7-day
- * recurring pattern from the first occurrence of each weekday.
- */
-function transformScheduleResponse(data) {
-    if (!Array.isArray(data) || !data[0]?.schedule) return [];
+function transformScheduleResponse(flatData) {
+    if (!Array.isArray(flatData)) return [];
 
-    const scheduleMap  = data[0].schedule;  // { '2026-04-01': [...], ... }
-    const grouped      = {};                 // key: `${staffId}_${targetMonth}`
+    const grouped = {}; // key: `${staffId}_${targetMonth}`
+    const DAY_NAMES = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
 
-    const DAY_NAMES    = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
+    for (const entry of flatData) {
+        const staffId = entry.staff_id;
+        const dateStr = entry.schedule_date; // '2026-04-01'
+        const jsDate = new Date(dateStr + 'T00:00:00'); 
+        const dayName = DAY_NAMES[jsDate.getDay()];
+        const targetMonth = dateStr.slice(0, 7); // 'YYYY-MM'
+        
+        const key = `${staffId}_${targetMonth}`;
 
-    for (const [dateStr, entries] of Object.entries(scheduleMap)) {
-        const jsDate      = new Date(dateStr + 'T00:00:00');  // local midnight
-        const dayName     = DAY_NAMES[jsDate.getDay()];
-        const targetMonth = dateStr.slice(0, 7);              // '2026-04'
-
-        for (const entry of entries) {
-            const staffId  = entry.staff_id;
-            const key      = `${staffId}_${targetMonth}`;
-
-            if (!grouped[key]) {
-                const staffMember = staffList.find(s => String(s.id) === String(staffId));
-                grouped[key] = {
-                    id:               entry.schedule_id || key,
-                    staff_id:         staffId,
-                    staff_name:       staffMember?.name  || staffId,
-                    staff_role:       staffMember?.role  || 'Staff',
-                    target_month:     targetMonth,
-                    apply_full_month: true,
-                    total_hours:      0,
-                    days:             { Sun: null, Mon: null, Tue: null, Wed: null, Thu: null, Fri: null, Sat: null },
-                    schedule_entries: []
-                };
-            }
-
-            const row = grouped[key];
-
-            // Keep first occurrence of each weekday as the representative pattern
-            if (row.days[dayName] === null) {
-                row.days[dayName] = {
-                    day:    dayName,
-                    active: !entry.is_off,
-                    start:  entry.start_time || null,
-                    end:    entry.end_time   || null
-                };
-
-                // Accumulate weekly hours from first-week entries
-                if (!entry.is_off && entry.start_time && entry.end_time) {
-                    const [sh, sm] = entry.start_time.split(':').map(Number);
-                    const [eh, em] = entry.end_time.split(':').map(Number);
-                    let diff = (eh + em / 60) - (sh + sm / 60);
-                    if (diff < 0) diff += 24;
-                    row.total_hours += diff;
-                }
-            }
-
-            row.schedule_entries.push({
-                schedule_date: dateStr,
-                ...entry
-            });
+        if (!grouped[key]) {
+            const staffMember = staffList.find(s => String(s.id) === String(staffId));
+            grouped[key] = {
+                id:               key, // Using logical grouping as our UI pseudo-id
+                staff_id:         staffId,
+                staff_name:       staffMember?.name  || 'Unknown Staff',
+                staff_role:       staffMember?.role  || 'Staff',
+                target_month:     targetMonth,
+                apply_full_month: true,
+                total_hours:      0,
+                days:             { Sun: null, Mon: null, Tue: null, Wed: null, Thu: null, Fri: null, Sat: null },
+                schedule_entries: []
+            };
         }
+
+        const row = grouped[key];
+
+        // Keep first occurrence of each weekday as the representative pattern
+        if (row.days[dayName] === null) {
+            row.days[dayName] = {
+                day:    dayName,
+                active: !entry.is_off,
+                start:  entry.start_time || null,
+                end:    entry.end_time   || null
+            };
+
+            // Accumulate weekly hours from first-week entries
+            if (!entry.is_off && entry.start_time && entry.end_time) {
+                const [sh, sm] = entry.start_time.split(':').map(Number);
+                const [eh, em] = entry.end_time.split(':').map(Number);
+                let diff = (eh + em / 60) - (sh + sm / 60);
+                if (diff < 0) diff += 24;
+                row.total_hours += diff;
+            }
+        }
+
+        row.schedule_entries.push({
+            schedule_date: dateStr,
+            ...entry
+        });
     }
 
-    // Flatten days map → ordered array (Mon→Sun order used in UI)
     const DAY_ORDER = ['Mon','Tue','Wed','Thu','Fri','Sat','Sun'];
     return Object.values(grouped).map(row => ({
         ...row,
@@ -1202,66 +1167,45 @@ async function handleFormSubmit(e) {
         companyId = appContext.company?.id || null;
     } catch (e) {}
 
-    try {
-        // Build Base Payload
-        const apiPayload = {
-            company_id: companyId,
-            branch_id: branchId,
-            staff_id: payload.staff_id,
-            staff_name: payload.staff_name,
-            staff_role: payload.staff_role,
-            target_month: payload.target_month,
-            total_hours: payload.total_hours,
-            apply_full_month: payload.apply_full_month,
-            days: payload.days,
-            schedule_entries: payload.schedule_entries
-        };
+    // Add company_id and branch_id to local schedule Entries for direct DB insert
+    const insertPayload = scheduleEntries.map(entry => ({
+        ...entry,
+        company_id: companyId,
+        branch_id: branchId
+    }));
 
-        if (currentEditingScheduleId) {
-            apiPayload.schedule_id = currentEditingScheduleId;
-            const res = await fetchWithAuth(API.EDIT_STAFF_SCHEDULE, {
-                method: 'POST',
-                body: JSON.stringify(apiPayload)
-            }, FEATURES.STAFF_SCHEDULES, 'update');
-            if (res.ok) {
-                payload.id = currentEditingScheduleId;
-                const index = rawSchedules.findIndex(x => x.id === currentEditingScheduleId);
-                if (index > -1) rawSchedules[index] = payload;
-            } else {
-                throw new Error('Update failed');
-            }
-        } else {
-            const res = await fetchWithAuth(API.CREATE_STAFF_SCHEDULE, {
-                method: 'POST',
-                body: JSON.stringify(apiPayload)
-            }, FEATURES.STAFF_SCHEDULES, 'create');
-            if (res.ok) {
-                const respData = await res.json().catch(()=>({}));
-                payload.id = respData.id || 'SCH_' + Math.random().toString(36).substr(2, 5).toUpperCase();
-                rawSchedules = rawSchedules.filter(s => !(String(s.staff_id) === String(payload.staff_id) && s.target_month === payload.target_month));
-                rawSchedules.push(payload);
-            } else {
-                throw new Error('Create failed');
-            }
+    try {
+        // ALWAYS Purge existing data for this staff_id and month, and overwrite directly
+        const { error: delError } = await supabase
+            .from('staff_schedule')
+            .delete()
+            .eq('staff_id', payload.staff_id)
+            .gte('schedule_date', `${month < 9 ? '0' : ''}${month + 1}` === payload.target_month ? `${payload.target_month}-01` : `${year}-${String(month + 1).padStart(2, '0')}-01`)
+            .lte('schedule_date', `${month < 9 ? '0' : ''}${month + 1}` === payload.target_month ? `${payload.target_month}-31` : `${year}-${String(month + 1).padStart(2, '0')}-31`);
+
+        if (delError) {
+            throw new Error('Failed to overwrite existing schedule');
         }
+
+        // Insert new schedules
+        if (insertPayload.length > 0) {
+            const { error: insError } = await supabase.from('staff_schedule').insert(insertPayload);
+            if (insError) throw insError;
+        }
+
+        // Update local state without fetching again
+        payload.id = `${payload.staff_id}_${payload.target_month}`;
+        
+        // Remove old and push new
+        rawSchedules = rawSchedules.filter(s => !(String(s.staff_id) === String(payload.staff_id) && s.target_month === payload.target_month));
+        rawSchedules.push(payload);
 
         if (DOM.toast) {
-            DOM.toast.textContent = 'Schedule saved successfully';
-            DOM.toast.classList.add('show');
-            setTimeout(() => DOM.toast.classList.remove('show'), 3000);
+            showToast('Schedule saved successfully');
         }
     } catch (err) {
-        console.warn('API sync failed, falling back to local simulation:', err);
-        // Fallback for local mock environment execution
-        if (currentEditingScheduleId) {
-            payload.id = currentEditingScheduleId;
-            const index = rawSchedules.findIndex(x => x.id === currentEditingScheduleId);
-            if (index > -1) rawSchedules[index] = payload;
-        } else {
-            payload.id = 'SCH_' + Math.random().toString(36).substr(2, 5).toUpperCase();
-            rawSchedules = rawSchedules.filter(s => !(String(s.staff_id) === String(payload.staff_id) && s.target_month === payload.target_month));
-            rawSchedules.push(payload);
-        }
+        console.error('API sync failed:', err);
+        showToast(err.message || 'Error saving the schedule', true);
     } finally {
         if (btnSubmit) { btnSubmit.disabled = false; btnSubmit.textContent = 'Save Schedule'; }
         closeModal();

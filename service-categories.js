@@ -236,8 +236,7 @@ function attachEventListeners() {
         try {
             const { error } = await supabase
                 .from('service_categories')
-                .eq('category_id', categoryToDelete.id)
-                .update({ status: 'deleted' });
+                .update({ status: 'deleted' }).eq('', categoryToDelete.id);
             
             if (!error) {
                 window.toast && window.toast('Category deleted successfully!');
@@ -317,4 +316,5 @@ function populateCategoryDropdownEx() {
         sel.appendChild(o);
     });
 }
+
 

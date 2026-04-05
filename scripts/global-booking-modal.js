@@ -1,5 +1,4 @@
-import { API, fetchWithAuth } from '../config/api.js';
-import { FEATURES } from '../config/feature-registry.js';
+import { supabase } from '../lib/supabase.js';
 
 function getCompanyId() {
     try {
@@ -88,82 +87,53 @@ export function initGlobalBookingModal() {
     }
 
     async function populateBookingDropdowns() {
-        // Show loading placeholders
         if (serviceSelect) { serviceSelect.innerHTML = '<option value="">Loading services...</option>'; serviceSelect.disabled = true; }
         if (staffSelect)   { staffSelect.innerHTML = '<option value="">Loading staff...</option>'; staffSelect.disabled = true; }
 
         try {
-            const body = JSON.stringify({ company_id: getCompanyId(), branch_id: getBranchId() });
+            const company_id = getCompanyId();
+            const branch_id = getBranchId();
 
-            // Fetch Services, Staff, and Customers dynamically
             const [svcRes, staffRes, custRes] = await Promise.all([
-                fetchWithAuth(API.READ_SERVICES, { method: 'POST', body }, FEATURES.BOOKINGS_MANAGEMENT, 'read'),
-                fetchWithAuth(API.READ_STAFF,    { method: 'POST', body }, FEATURES.BOOKINGS_MANAGEMENT, 'read'),
-                fetchWithAuth(API.READ_CUSTOMERS, { method: 'POST', body }, FEATURES.CUSTOMERS_MANAGEMENT, 'read')
+                supabase.from('services').select('*').eq('company_id', company_id).eq('branch_id', branch_id),
+                supabase.from('staff').select('*').eq('company_id', company_id).eq('branch_id', branch_id),
+                supabase.from('customers').select('*').eq('company_id', company_id).eq('branch_id', branch_id)
             ]);
 
-            // ── Services ────────────────────────────────────────────────────────────
+            // ── Services ──────────────────────────────────────────────────────────── //
             if (serviceSelect) {
                 serviceSelect.innerHTML = '<option value="" disabled selected>Select a service</option>';
-                if (svcRes.ok) {
-                    const svcData = await svcRes.json();
-                    let rawServices = [];
-                    if (Array.isArray(svcData)) {
-                        if (svcData.length > 0 && svcData[0].error) {
-                            console.error(svcData[0].error);
-                        } else if (svcData.length > 0 && svcData[0].services) {
-                            rawServices = svcData[0].services;
-                        } else {
-                            rawServices = svcData;
-                        }
-                    } else if (svcData && svcData.services) {
-                        rawServices = svcData.services;
-                    }
-                    const services = rawServices.filter(s => (s['status '] || s.status || '').trim().toLowerCase() === 'active');
-                    services.forEach(s => {
-                        const opt = document.createElement('option');
-                        opt.value          = s.service_id || s.id || s.service_name || s.name;
-                        opt.textContent    = s.service_name || s.name;
-                        opt.dataset.id     = s.service_id || s.id || '';
-                        opt.dataset.duration = s.duration || '';
-                        opt.dataset.price    = s.price    || '';
-                        serviceSelect.appendChild(opt);
-                    });
-                    if (!services.length) serviceSelect.innerHTML = '<option value="">No active services found</option>';
-                } else {
-                    serviceSelect.innerHTML = '<option value="">Failed to load services</option>';
-                }
+                const services = (svcRes.data || []).filter(s => (s.status || '').trim().toLowerCase() === 'active');
+                services.forEach(s => {
+                    const opt = document.createElement('option');
+                    opt.value          = s.service_id;
+                    opt.textContent    = s.service_name;
+                    opt.dataset.id     = s.service_id;
+                    opt.dataset.duration = s.duration || '';
+                    opt.dataset.price    = s.price    || '';
+                    serviceSelect.appendChild(opt);
+                });
+                if (!services.length) serviceSelect.innerHTML = '<option value="">No active services found</option>';
                 serviceSelect.disabled = false;
             }
 
-            // ── Staff ───────────────────────────────────────────────────────────────
+            // ── Staff ─────────────────────────────────────────────────────────────── //
             if (staffSelect) {
                 staffSelect.innerHTML = '<option value="" disabled selected>Select staff member</option>';
-                if (staffRes.ok) {
-                    const staffData = await staffRes.json();
-                    const staffRoot = Array.isArray(staffData) ? staffData[0] : staffData;
-                    const staffList = staffRoot.staff || staffRoot.staff_members || staffRoot.members || [];
-
-                    staffList.forEach(m => {
-                        const opt = document.createElement('option');
-                        opt.value       = m.staff_id || m.id || m.name;
-                        opt.textContent = m.name || m.staff_name || m.full_name;
-                        opt.dataset.id  = m.staff_id || m.id || '';
-                        staffSelect.appendChild(opt);
-                    });
-                    if (!staffList.length) staffSelect.innerHTML = '<option value="">No staff found</option>';
-                } else {
-                    staffSelect.innerHTML = '<option value="">Failed to load staff</option>';
-                }
+                const staffList = (staffRes.data || []).filter(s => s.status !== 'deleted');
+                staffList.forEach(m => {
+                    const opt = document.createElement('option');
+                    opt.value       = m.staff_id;
+                    opt.textContent = m.staff_name || m.name;
+                    opt.dataset.id  = m.staff_id;
+                    staffSelect.appendChild(opt);
+                });
+                if (!staffList.length) staffSelect.innerHTML = '<option value="">No staff found</option>';
                 staffSelect.disabled = false;
             }
 
-            // ── Customers ───────────────────────────────────────────────────────────
-            if (custRes && custRes.ok) {
-                const custData = await custRes.json();
-                const custRoot = Array.isArray(custData) ? custData[0] : custData;
-                liveCustomersDB = custRoot.customers || [];
-            }
+            // ── Customers ─────────────────────────────────────────────────────────── //
+            liveCustomersDB = custRes.data || [];
 
         } catch (err) {
             console.error('Error loading booking dropdowns:', err);
@@ -442,24 +412,16 @@ export function initGlobalBookingModal() {
         });
     }
 
-    // ── Reusable Create Booking ───────────────────────────────────────────────
     async function createBooking(payload) {
         try {
-            const res  = await fetchWithAuth(API.CREATE_BOOKING, {
-                method: 'POST',
-                body:   JSON.stringify(payload)
-            }, FEATURES.BOOKINGS_MANAGEMENT, 'create');
-
-            const data = await res.json();
-            const root = Array.isArray(data) ? data[0] : data;
-
-            if (res.ok && !root?.error) {
+            const { data, error } = await supabase.from('bookings').insert(payload).select();
+            if (!error) {
                 window.toast && window.toast('Booking created successfully!');
                 overrideOverlay?.classList.remove('active');
                 closeModal();
                 if (window.fetchBookings) await window.fetchBookings();
             } else {
-                window.toast && window.toast('Error: ' + (root?.error || root?.message || 'Unknown error'));
+                window.toast && window.toast('Error: ' + error.message);
             }
         } catch (err) {
             console.error(err);
@@ -467,80 +429,127 @@ export function initGlobalBookingModal() {
         }
     }
 
-    // Submit API Integration
+    // Submit Action
     btnConfirmBooking.addEventListener('click', async () => {
         const meta = getSelectedServiceMeta();
         
         let targetName = customerName.value.trim();
-        if(!targetName && selectedCustomerId) {
-            const foundCust = liveCustomersDB.find(c => c.id === selectedCustomerId || c.customer_id === selectedCustomerId);
-            if(foundCust) targetName = foundCust.name || foundCust.customer_name || '';
-        }
+        let targetId = selectedCustomerId;
 
-        const bookingDatetime = `${bookingDate.value}T${bookingTime.value}:00`;
+        const originalText = btnConfirmBooking.textContent;
+        btnConfirmBooking.textContent = 'Saving...';
+        btnConfirmBooking.disabled = true;
+
+        // If it's a completely new customer, create them in the DB first!
+        if (!targetId && phoneSearch.value.trim().length >= 10) {
+            try {
+                const { data: newCust, error: custErr } = await supabase.from('customers').insert({
+                    company_id: getCompanyId(),
+                    branch_id: getBranchId(),
+                    customer_name: targetName || 'Unknown Customer',
+                    customer_phone: phoneSearch.value.trim(),
+                    customer_email: customerEmail.value.trim()
+                }).select();
+                
+                if (custErr) throw custErr;
+                if (newCust && newCust.length > 0) {
+                    targetId = newCust[0].customer_id;
+                    liveCustomersDB.push(newCust[0]);
+                }
+            } catch (err) {
+                console.error("Error creating new customer:", err);
+                window.toast && window.toast("Failed to create customer record!");
+                btnConfirmBooking.textContent = originalText;
+                btnConfirmBooking.disabled = false;
+                return;
+            }
+        }
 
         const payload = {
             company_id:       getCompanyId(),
             branch_id:        getBranchId(),
-            customer_id:      selectedCustomerId || null,
+            customer_id:      targetId || null,
             customer_phone:   phoneSearch.value.trim(),
             customer_name:    targetName,
-            customer_email:   customerEmail.value.trim(),
+            customer_email:   customerEmail.value.trim() || null,
             service_id:       serviceSelect.value,
             service_name:     meta ? meta.name : '',
             duration:         meta ? meta.duration : 0,
             price:            meta ? meta.price : 0,
             staff_id:         staffSelect.value,
             staff_name:       staffSelect.options[staffSelect.selectedIndex]?.text || '',
-            booking_datetime: bookingDatetime,
-            notes:            bookingNotes.value.trim()
+            booking_date:     bookingDate.value,
+            start_time:       bookingTime.value,
+            notes:            bookingNotes.value.trim(),
+            status:           'booked',
+            payment:          'pending',
+            booking_type:     'walk-in'
         };
         
-        const originalText = btnConfirmBooking.textContent;
-        btnConfirmBooking.textContent = 'Checking availability...';
-        btnConfirmBooking.disabled = true;
-
         try {
-            // 1. Check Staff Availability
-            const availPayload = {
-                company_id:       getCompanyId(),
-                branch_id:        getBranchId(),
-                staff_id:         staffSelect.value,
-                booking_datetime: bookingDatetime,
-                duration:         meta ? meta.duration : 0
-            };
+            // Local overlap check for Staff Availability
+            const staffId = staffSelect.value;
+            const bDate = bookingDate.value;
+            
+            const { data: existingBookings, error: bErr } = await supabase
+                .from('bookings')
+                .select('start_time, duration, status')
+                .eq('staff_id', staffId)
+                .eq('booking_date', bDate)
+                .not('status', 'in', '("cancelled", "completed")');
+                
+            let isAvailable = true;
+            let overlapReason = "";
+            
+            if (!bErr && existingBookings && existingBookings.length > 0) {
+                const newStartMins = timeToMins(bookingTime.value);
+                const newEndMins = newStartMins + payload.duration;
 
-            const availRes = await fetchWithAuth(API.CHECK_STAFF_AVAILABILITY, {
-                method: 'POST',
-                body: JSON.stringify(availPayload)
-            }, FEATURES.BOOKINGS_MANAGEMENT, 'read');
+                for (let eb of existingBookings) {
+                    const ebStartMins = timeToMins(eb.start_time);
+                    const ebEndMins = ebStartMins + (eb.duration || 0);
 
-            const availData = await availRes.json();
-            const availRoot = Array.isArray(availData) ? availData[0] : availData;
-            // Handle nested { json: { ... } } wrapper if present
-            const innerData = availRoot?.json || availRoot;
-
-            // ── Case 1: Staff is available ──────────────────────────────────────
-            if (innerData?.available === true) {
-                btnConfirmBooking.textContent = 'Saving...';
-                await createBooking(payload);
-                return;
+                    // Check if timescales cross each other
+                    if (newStartMins < ebEndMins && newEndMins > ebStartMins) {
+                        isAvailable = false;
+                        overlapReason = `Staff is already booked from ${minsToTime(ebStartMins)} to ${minsToTime(ebEndMins)}.`;
+                        break;
+                    }
+                }
+            }
+            
+            function timeToMins(tStr) {
+                if (!tStr) return 0;
+                const [h,m] = tStr.split(':').map(Number);
+                return (h * 60) + m;
+            }
+            
+            function minsToTime(mins) {
+                const ampm = Math.floor(mins / 60) >= 12 ? 'PM' : 'AM';
+                let h = Math.floor(mins / 60) % 12;
+                if (h === 0) h = 12;
+                return `${String(h).padStart(2,'0')}:${String(mins % 60).padStart(2,'0')} ${ampm}`;
             }
 
-            // ── Case 2 & 3: Not available but override is allowed ───────────────
-            if (innerData?.available === false && innerData?.allow_override === true) {
-                // Hide new booking modal, show override confirmation
+            if (isAvailable) {
+                await createBooking(payload);
+                btnConfirmBooking.textContent = originalText;
+                btnConfirmBooking.disabled = false;
+                return;
+            } else {
+                // Warning Flow!
                 modalOverlay.classList.remove('active');
                 if (overrideReasonEl) {
-                    overrideReasonEl.textContent = (innerData.reason || 'The staff member is not available at this time.') + ' Do you want to override and confirm the booking anyway?';
+                    overrideReasonEl.textContent = overlapReason + ' Do you want to override and double-book?';
                 }
                 overrideOverlay?.classList.add('active');
                 if (window.feather) feather.replace();
 
-                // Wire override confirm button (replace node to avoid duplicate listeners)
+                // Re-wire override confirm to clear memory leaks
                 const oldBtn = document.getElementById('btnConfirmOverride');
                 const freshConfirm = oldBtn?.cloneNode(true);
                 oldBtn?.parentNode.replaceChild(freshConfirm, oldBtn);
+                
                 freshConfirm?.addEventListener('click', async () => {
                     overrideOverlay.classList.remove('active');
                     freshConfirm.textContent = 'Saving...';
@@ -548,17 +557,13 @@ export function initGlobalBookingModal() {
                     await createBooking(payload);
                     freshConfirm.textContent = 'Yes, Confirm';
                     freshConfirm.disabled = false;
+                    btnConfirmBooking.textContent = originalText;
+                    btnConfirmBooking.disabled = false;
                 });
-                return;
+                return; // exit standard flow
             }
-
-            // ── Fallback: Hard block (allow_override is false or missing) ────────
-            window.toast && window.toast(innerData?.reason || innerData?.message || 'Staff member is not available at this time.');
-
         } catch (err) {
-            console.error(err);
-            window.toast && window.toast('Network error checking availability.');
-        } finally {
+            console.error('Validation error:', err);
             btnConfirmBooking.textContent = originalText;
             btnConfirmBooking.disabled = false;
         }

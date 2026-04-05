@@ -253,8 +253,7 @@ function attachEventListeners() {
         try {
             const { error } = await supabase
                 .from('services')
-                .eq('service_id', serviceToDelete.id)
-                .update({ status: 'deleted' });
+                .update({ status: 'deleted' }).eq('', serviceToDelete.id);
             
             if (!error) {
                 window.toast && window.toast('Service deleted successfully!');
@@ -353,4 +352,5 @@ export async function fetchServices() {
         if (window.renderSvc) window.renderSvc(liveServicesData || []);
     }
 }
+
 

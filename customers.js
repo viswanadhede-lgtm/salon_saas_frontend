@@ -1,4 +1,4 @@
-import { API, fetchWithAuth } from './config/api.js';
+import { supabase } from './lib/supabase.js';
 import { FEATURES } from './config/feature-registry.js';
 import { SUB_FEATURES } from './config/sub-feature-registry.js';
 import { applySubFeatureGates } from './scripts/sub-features/sub-feature-gate.js';
@@ -25,15 +25,7 @@ const inputNotes = document.getElementById('newCustNotes');
 let customersList = [];
 let editingCustomerId = null;
 
-// Extractor helper
-function getCompanyId() {
-    try {
-        const appContext = JSON.parse(localStorage.getItem('appContext') || '{}');
-        return appContext.company?.id || null;
-    } catch (e) {
-        return null;
-    }
-}
+function getCompanyId() { return localStorage.getItem('company_id') || null; }
 
 function getBranchId() {
     return localStorage.getItem('active_branch_id') || null;
@@ -71,38 +63,53 @@ async function fetchCustomers() {
             customersTableBody.innerHTML = '<tr><td colspan="6" class="text-center py-4" style="text-align:center;">Loading customers...</td></tr>';
         }
         
-        const payload = { 
-            company_id: getCompanyId(), 
-            branch_id: getBranchId() 
-        };
+        const companyId = getCompanyId();
+        const branchId = getBranchId();
+
+        if (!companyId || !branchId) return;
+
+        const { data, error } = await supabase
+            .from('customers')
+            .select('*')
+            .eq('company_id', companyId)
+            .eq('branch_id', branchId)
+            .neq('status', 'deleted')
+            .order('customer_name', { ascending: true });
+
+        if (error) throw error;
+
+        customersList = (data || []).map(c => ({
+            ...c, 
+            customer_name: c.customer_name || c.name,
+            customer_phone: c.customer_phone || c.phone,
+            customer_email: c.customer_email || c.email
+        }));
+
+        // Calculate simple stats
+        const now = new Date();
+        const thirtyDaysAgo = new Date();
+        thirtyDaysAgo.setDate(now.getDate() - 30);
         
-        const response = await fetchWithAuth(API.READ_CUSTOMERS, { 
-            method: 'POST',
-            body: JSON.stringify(payload)
-        }, FEATURES.CUSTOMERS_MANAGEMENT, 'read');
-
-        if (!response.ok) throw new Error('Failed to fetch customers');
-
-        const data = await response.json();
-        // API returns [{total_customers, new_this_month, vip_customers, inactive_90_days, customers:[...]}]
-        const root = Array.isArray(data) ? data[0] : data;
-        customersList = root.customers || [];
+        const total = customersList.length;
+        const newThisMonth = customersList.filter(c => c.created_at && new Date(c.created_at) >= thirtyDaysAgo).length;
+        const vip = customersList.filter(c => (c.tags || '').toLowerCase() === 'vip').length;
 
         // Hydrate stat cards
         const elTotal    = document.getElementById('statTotalCustomers');
         const elNew      = document.getElementById('statNewThisMonth');
         const elVip      = document.getElementById('statVipCustomers');
         const elInactive = document.getElementById('statInactiveDays');
-        if (elTotal)    elTotal.textContent    = root.total_customers    ?? '0';
-        if (elNew)      elNew.textContent      = root.new_this_month     ?? '0';
-        if (elVip)      elVip.textContent      = root.vip_customers      ?? '0';
-        if (elInactive) elInactive.textContent = root.inactive_90_days   ?? '0';
+        
+        if (elTotal)    elTotal.textContent    = total;
+        if (elNew)      elNew.textContent      = newThisMonth;
+        if (elVip)      elVip.textContent      = vip;
+        if (elInactive) elInactive.textContent = '0';
 
-        // Hydrate stat trends
-        updateTrend('trendTotalCustomers', root.total_customers_change);
-        updateTrend('trendNewThisMonth', root.new_this_month_change);
-        updateTrend('trendVipCustomers', root.vip_customers_change);
-        updateTrend('trendInactiveDays', root.inactive_90_days_change);
+        // Hide trends temporarily as they rely on advanced analytics
+        updateTrend('trendTotalCustomers', null);
+        updateTrend('trendNewThisMonth', null);
+        updateTrend('trendVipCustomers', null);
+        updateTrend('trendInactiveDays', null);
 
         renderCustomers();
     } catch (error) {
@@ -117,34 +124,14 @@ function updateTrend(elementId, changeValue) {
     const el = document.getElementById(elementId);
     if (!el) return;
     
-    const val = parseFloat(changeValue);
-    if (isNaN(val)) {
+    // Hide if no change value is passed
+    if (changeValue === null || changeValue === undefined) {
         el.style.display = 'none';
         return;
     }
     
-    el.style.display = '';
-    
-    let icon = 'minus';
-    let text = '0% from last month';
-    let cn = 'stat-trend neutral';
-    
-    if (val > 0) {
-        icon = 'trending-up';
-        text = `+${val}% from last month`;
-        cn = 'stat-trend positive';
-    } else if (val < 0) {
-        icon = 'trending-down';
-        text = `${val}% from last month`;
-        cn = 'stat-trend negative';
-    }
-    
-    el.className = cn;
-    el.innerHTML = `<i data-feather="${icon}"></i><span>${text}</span>`;
-    
-    if (window.feather) {
-        feather.replace();
-    }
+    // Fallback logic
+    el.style.display = 'none';
 }
 
 function renderCustomers(listToRender = customersList) {
@@ -159,12 +146,17 @@ function renderCustomers(listToRender = customersList) {
     listToRender.forEach(customer => {
         const tr = document.createElement('tr');
         
-        // Map API field names → local variables
         const name  = customer.customer_name  || 'Unknown';
         const phone = customer.customer_phone || 'N/A';
         const email = customer.customer_email || '-';
         const tag   = (customer.tags || 'regular').toLowerCase();
-        const joinedDate = customer.created_at || 'Recently';
+        
+        let joinedDate = 'Recently';
+        if (customer.created_at) {
+            const d = new Date(customer.created_at);
+            joinedDate = d.toLocaleDateString();
+        }
+        
         const totalSpent    = customer.total_spent    != null ? customer.total_spent    : 0;
         const totalBookings = customer.total_bookings != null ? customer.total_bookings : 0;
         const lastVisit = customer.last_visit || '-';
@@ -261,7 +253,11 @@ function renderCustomers(listToRender = customersList) {
     const deletingOverlay = document.getElementById('deletingCustomerOverlay');
 
     if (btnConfirmDelete) {
-        btnConfirmDelete.addEventListener('click', async () => {
+        // Remove existing listeners by cloning
+        const newConfirmBtn = btnConfirmDelete.cloneNode(true);
+        btnConfirmDelete.parentNode.replaceChild(newConfirmBtn, btnConfirmDelete);
+
+        newConfirmBtn.addEventListener('click', async () => {
             if (pendingDeleteId) {
                 // Instantly hide the small confirmation modal
                 if (deleteOverlay) deleteOverlay.classList.remove('active');
@@ -308,6 +304,7 @@ function openModalForCreate() {
     if (inputEmail) inputEmail.value = '';
     if (inputDob) inputDob.value = '';
     if (inputTag) inputTag.value = 'new';
+    if (inputNotes) inputNotes.value = '';
     
     if (modalOverlay) modalOverlay.classList.add('active');
 }
@@ -336,7 +333,6 @@ function closeModal() {
     if (modalOverlay) modalOverlay.classList.remove('active');
 }
 
-// Prevent the inline inline script from running cleanly without state
 if (btnAddCustomer) {
     btnAddCustomer.addEventListener('click', () => {
         openModalForCreate();
@@ -349,7 +345,7 @@ if (btnSaveCustomer) {
         const name = inputName ? inputName.value.trim() : '';
         const phone = inputPhone ? inputPhone.value.trim() : '';
         const email = inputEmail ? inputEmail.value.trim() : '';
-        const dob = inputDob ? inputDob.value : '';
+        const dob = inputDob && inputDob.value ? inputDob.value : null;
         const tag = inputTag ? inputTag.value : '';
 
         if (!name || !phone) {
@@ -358,28 +354,36 @@ if (btnSaveCustomer) {
         }
 
         const digitsOnly = phone.replace(/\D/g, '');
-        if (!/^[0-9]{10}$/.test(phone)) {
-            showToast('Phone number must be exactly 10 digits (no spaces or country code).', true);
+        if (!/^[0-9]{10}$/.test(digitsOnly)) {
+            showToast('Phone number must be exactly 10 digits.', true);
+            return;
+        }
+
+        const isEditing = !!editingCustomerId;
+        
+        let existingDupe = false;
+        if (isEditing) {
+            existingDupe = customersList.find(c => c.customer_phone === digitsOnly && String(c.customer_id) !== String(editingCustomerId));
+        } else {
+            existingDupe = customersList.find(c => c.customer_phone === digitsOnly);
+        }
+
+        if (existingDupe) {
+            showToast('A customer with this phone number already exists.', true);
             return;
         }
 
         const payload = { 
             company_id: getCompanyId(), 
             branch_id: getBranchId(),
-            name, 
-            phone, 
-            email, 
-            dob, 
-            tag,
+            customer_name: name, 
+            customer_phone: digitsOnly, 
+            customer_email: email, 
+            tags: tag,
             notes: inputNotes ? inputNotes.value.trim() : ''
         };
-        const isEditing = !!editingCustomerId;
-        
-        const apiEndpoint = isEditing ? API.UPDATE_CUSTOMER : API.CREATE_CUSTOMER;
-        const actionType = isEditing ? 'update' : 'create';
-        
-        if (isEditing) {
-            payload.id = editingCustomerId;
+        if (dob) {
+            payload.dob = dob;
         }
 
         const originalText = btnSaveCustomer.textContent;
@@ -387,30 +391,25 @@ if (btnSaveCustomer) {
         btnSaveCustomer.disabled = true;
 
         try {
-            const response = await fetchWithAuth(apiEndpoint, {
-                method: 'POST',
-                body: JSON.stringify(payload)
-            }, FEATURES.CUSTOMERS_MANAGEMENT, actionType);
+            let error;
+            if (isEditing) {
+                const { error: updateErr } = await supabase.from('customers').update(payload).eq('customer_id', editingCustomerId);
+                error = updateErr;
+            } else {
+                const { error: insertErr } = await supabase.from('customers').insert(payload);
+                error = insertErr;
+            }
 
-            // Always parse the JSON body — even on non-2xx responses
-            let raw = {};
-            try { raw = await response.json(); } catch(e) { /* non-JSON response */ }
-
-            // Unwrap array responses: backend may return [{...}] instead of {...}
-            const result = Array.isArray(raw) ? raw[0] : raw;
-
-            // Check for any error — from HTTP status OR business logic
-            if (!response.ok || result.error || result.success === false) {
-                showToast(result.error || 'Failed to save customer. Please try again.', true);
-                return; // Keep modal open
+            if (error) {
+                throw error;
             }
 
             closeModal();
             showToast(isEditing ? 'Customer updated successfully!' : 'Customer created successfully!');
             await fetchCustomers(); // Refresh the list
-        } catch (error) {
-            console.error('Error saving customer:', error);
-            showToast('A network error occurred. Please try again.', true);
+        } catch (err) {
+            console.error('Error saving customer:', err);
+            showToast(err.message || 'Failed to save customer. Please try again.', true);
         } finally {
             btnSaveCustomer.textContent = originalText;
             btnSaveCustomer.disabled = false;
@@ -418,40 +417,45 @@ if (btnSaveCustomer) {
     });
 }
 
+if (btnCancelAddCustomer) {
+    btnCancelAddCustomer.addEventListener('click', closeModal);
+}
+if (addCustomerModalWrapper) {
+    addCustomerModalWrapper.querySelector('.modal-close')?.addEventListener('click', closeModal);
+}
+if (modalOverlay) {
+    modalOverlay.addEventListener('click', (e) => {
+        if (e.target === modalOverlay) closeModal();
+    });
+}
+
 // -- DELETE --
 async function deleteCustomer(id) {
-
     try {
-        const payload = {
-            company_id: getCompanyId(),
-            branch_id: getBranchId(),
-            id: id
-        };
-        const response = await fetchWithAuth(API.DELETE_CUSTOMER, {
-            method: 'POST',
-            body: JSON.stringify(payload)
-        }, FEATURES.CUSTOMERS_MANAGEMENT, 'delete');
+        const { error } = await supabase.from('customers').update({ status: 'deleted' }).eq('customer_id', id);
 
-        if (!response.ok) throw new Error('Failed to delete customer');
+        if (error) throw error;
 
         showToast('Customer deleted successfully.');
-        // Refresh the list
         await fetchCustomers();
         return true;
-    } catch (error) {
-        console.error('Error deleting customer:', error);
-        showToast('Failed to delete customer.', true);
+    } catch (err) {
+        console.error('Error deleting customer:', err);
+        showToast('Failed to delete customer. Ensure they have no active bookings.', true);
         return false;
     }
 }
 
 // -- TOAST --
 function showToast(msg, isError = false) {
-    const t = document.getElementById('toastNotification');
-    if (!t) return;
+    let t = document.getElementById('toastNotification');
+    if (!t) {
+        document.body.insertAdjacentHTML('beforeend', '<div id="toastNotification" class="toast-notification"></div>');
+        t = document.getElementById('toastNotification');
+    }
     t.textContent = msg;
     t.className = 'toast-notification show';
-    t.style.background = isError ? '#ef4444' : '';
+    t.style.background = isError ? '#ef4444' : '#10b981';
     setTimeout(() => {
         t.className = 'toast-notification';
         t.style.background = '';
