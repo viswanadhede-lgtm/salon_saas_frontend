@@ -114,7 +114,6 @@ async function submitOnboarding() {
     const errDiv = document.getElementById('apiError');
     const originalText = btn.textContent;
     
-    // UI Loading state
     btn.textContent = 'Creating Salon...';
     btn.style.opacity = '0.8';
     btn.style.cursor = 'wait';
@@ -144,16 +143,21 @@ async function submitOnboarding() {
         const branchPhone = document.getElementById('locationPhone').value;
 
         // Map legacy string ids to correct Supabase UUIDs
-        let planIdMapping = {
+        const planIdMapping = {
             'plan_01': 'd0d4cc8f-3498-4da1-b5e5-2887b9b39dce',
             'plan_02': 'b42bcd41-217a-4ddb-9451-20e040984277',
             'plan_03': 'b32fe38d-a715-4166-acf1-b970bd845c21',
-            'trial': '7e0af07f-b57b-40e7-a23a-6e8104c8033c'
+            'trial':   '7e0af07f-b57b-40e7-a23a-6e8104c8033c'
         };
 
-        let activePlanId = data.plan_id || 'trial';
+        const activePlanId = data.plan_id || 'trial';
         const planId = planIdMapping[activePlanId] || activePlanId;
         const planName = data.plan_name || 'Free Trial';
+
+        // Subscription dates
+        const now = new Date();
+        const subscriptionStart = now.toISOString();
+        const subscriptionEnd = new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000).toISOString();
 
         // 1. Insert Company
         const { data: compData, error: compErr } = await supabase.from('companies').insert({
@@ -162,26 +166,29 @@ async function submitOnboarding() {
             plan_id: planId,
             plan_name: planName,
             status: 'active',
-            subscription_status: 'trial'
+            subscription_status: 'trial',
+            subscription_type: 'Free Trial',
+            subscription_start_date: subscriptionStart,
+            subscription_end_date: subscriptionEnd
         });
 
         if (compErr || !compData || !compData.length) throw new Error("Failed to create Company: " + (compErr?.message || "Unknown db error"));
         const company_id = compData[0].company_id || compData[0].id;
+        const company_created_at = compData[0].created_at || subscriptionStart;
 
         // 2. Insert Branch
         const { data: bData, error: bErr } = await supabase.from('branches').insert({
-            company_id: company_id,
+            company_id,
             branch_name: branchName,
             branch_phone: branchPhone,
             branch_address: branchAddress,
+            branch_email: data.email,
             manager_user_id: user_id,
             status: 'active'
         });
 
         if (bErr || !bData || !bData.length) throw new Error("Failed to create Branch: " + (bErr?.message || "Unknown db error"));
-        
-        // Use either the standard 'id' or explicit 'branch_id' depending on exactly how it returns
-        const branch_id = bData[0].branch_id || bData[0].id; 
+        const branch_id = bData[0].branch_id || bData[0].id;
 
         // 3. Insert Role
         const { data: roleData, error: rErr } = await supabase.from('roles').insert({
@@ -196,37 +203,62 @@ async function submitOnboarding() {
         let role_id = null;
         if (!rErr && roleData && roleData.length) {
             role_id = roleData[0].role_id || roleData[0].id;
-            
+
             // 4. Role Permissions
             await supabase.from('role_permissions').insert({
                 company_id, branch_id, role_id, role_name: 'Owner', permission_key: 'ALL', status: 'active'
             });
         }
 
-        // 5. Insert explicit mapped User
+        // 5. Insert User with SHA-256 password hash
         await supabase.from('users').insert({
-            user_id: user_id,
+            user_id,
             company_id,
             branch_id,
             name: data.full_name,
             email: data.email,
             phone: data.phone,
+            password_hash: data.password_hash || '',
             role_id,
             role_name: 'Owner',
             status: 'active'
         });
 
-        // 6. Init Usage Counters
-        await supabase.from('usage_counters').insert({
-            company_id, branch_id, plan_id: planId, resource_key: 'services', current_count: 0
-        });
+        // 6. Fetch plan_limits and insert one usage_counter row per resource
+        const { data: planLimits, error: plErr } = await supabase
+            .from('plan_limits')
+            .select('*')
+            .eq('plan_id', planId);
 
-        // 7. Init Profile
+        if (!plErr && planLimits && planLimits.length) {
+            for (const limit of planLimits) {
+                const resourceKey = limit.resource_key;
+                // max_branches starts at 1 (first branch just created), everything else 0
+                const currentCount = resourceKey === 'max_branches' ? 1 : 0;
+
+                await supabase.from('usage_counters').insert({
+                    company_id,
+                    branch_id,
+                    plan_id: planId,
+                    resource_key: resourceKey,
+                    current_count: currentCount,
+                    max_count: limit.max_value ?? limit.limit_value ?? limit.value ?? null
+                });
+            }
+        } else {
+            // Fallback: insert a single generic row if plan_limits not found
+            console.warn('plan_limits fetch failed or empty, inserting generic counter:', plErr);
+            await supabase.from('usage_counters').insert({
+                company_id, branch_id, plan_id: planId, resource_key: 'general', current_count: 0
+            });
+        }
+
+        // 7. Insert Profile
         const nameParts = (data.full_name || '').split(' ');
         const first_name = nameParts[0];
         const last_name = nameParts.length > 1 ? nameParts.slice(1).join(' ') : '';
         await supabase.from('profiles').insert({
-            user_id: user_id,
+            user_id,
             company_id,
             branch_id,
             first_name,
@@ -234,17 +266,18 @@ async function submitOnboarding() {
             phone: data.phone,
             email: data.email,
             role_id,
-            role_name: 'Owner'
+            role_name: 'Owner',
+            joined_on: company_created_at
         });
 
-        // Mapping is complete! Keep important context in localStorage.
+        // Save context to localStorage
         localStorage.setItem('company_id', company_id);
         localStorage.setItem('active_branch_id', branch_id);
         if (role_id) localStorage.setItem('role_id', role_id);
 
-        btn.textContent = 'Success! Redirecting to setup payments...';
+        btn.textContent = 'Success! Setting up payments...';
         btn.style.backgroundColor = '#10b981';
-        
+
         setTimeout(() => {
             window.location.href = `payments.html?company_id=${company_id}`;
         }, 1000);

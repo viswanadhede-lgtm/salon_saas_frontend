@@ -334,12 +334,18 @@ document.addEventListener('DOMContentLoaded', () => {
                     throw new Error(errorMsg);
                 }
 
+                // SHA-256 hash the password for safe storage
+                const pwEncoder = new TextEncoder();
+                const pwBuffer = await crypto.subtle.digest('SHA-256', pwEncoder.encode(password));
+                const password_hash = Array.from(new Uint8Array(pwBuffer)).map(b => b.toString(16).padStart(2, '0')).join('');
+
                 // If successful, save partial signup data locally
                 const signupData = {
                     full_name: fullname,
                     email: email,
                     phone: phone,
-                    user_id: data.user.id
+                    user_id: data.user.id,
+                    password_hash: password_hash
                 };
                 localStorage.setItem('signup_data', JSON.stringify(signupData));
                 
