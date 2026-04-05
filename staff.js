@@ -1,3 +1,4 @@
+import { supabase } from './lib/supabase.js';
 import { API, fetchWithAuth } from './config/api.js';
 import { FEATURES } from './config/feature-registry.js';
 import { SUB_FEATURES } from './config/sub-feature-registry.js';
@@ -10,20 +11,19 @@ window.fetchStaff = async function() {
         const branch_id = getBranchId();
         if (!company_id || !branch_id) return;
 
-        const response = await fetchWithAuth(API.READ_STAFF, { 
-            method: 'POST',
-            body: JSON.stringify({ company_id, branch_id })
-        }, FEATURES.STAFF_MANAGEMENT, 'read');
+        const { data, error } = await supabase
+            .from('staff')
+            .select('*')
+            .eq('company_id', company_id)
+            .eq('branch_id', branch_id)
+            .order('staff_name', { ascending: true });
         
-        if (!response.ok) throw new Error('Failed to fetch staff data');
-        const data = await response.json();
+        if (error) throw new Error(error.message);
         
-        let staffArray = data;
-        if (Array.isArray(data)) {
-            staffArray = Array.isArray(data[0]?.staff) ? data[0].staff : data;
-        } else if (data && typeof data === 'object') {
-            staffArray = data.staff || [];
-        }
+        let staffArray = data || [];
+
+        // Filter out soft-deleted staff
+        staffArray = staffArray.filter(s => (s.status || '').toLowerCase() !== 'deleted');
 
         // Update Stat Cards dynamically
         const statTotal = document.getElementById('statTotalStaff');
@@ -35,13 +35,11 @@ window.fetchStaff = async function() {
             const statsObj = Array.isArray(data) ? data[0]?.stats : data?.stats;
             
             if (statsObj) {
-                // Use backend provided stats object if available
                 statTotal.innerText = statsObj.total_staff !== undefined ? statsObj.total_staff : staffArray.length;
                 statActive.innerText = statsObj.active_staff !== undefined ? statsObj.active_staff : staffArray.filter(s => String(s.status).toLowerCase().includes('active')).length;
                 statOnLeave.innerText = statsObj.on_leave_today !== undefined ? statsObj.on_leave_today : staffArray.filter(s => String(s.status).toLowerCase().includes('leave')).length;
                 statOnDuty.innerText = statsObj.on_duty_today !== undefined ? statsObj.on_duty_today : staffArray.filter(s => String(s.status).toLowerCase().includes('active')).length;
             } else {
-                // Fallback: derive metrics from the staff array directly
                 statTotal.innerText = staffArray.length;
                 statActive.innerText = staffArray.filter(s => String(s.status).toLowerCase().includes('active')).length;
                 statOnLeave.innerText = staffArray.filter(s => String(s.status).toLowerCase().includes('leave')).length;
@@ -328,6 +326,15 @@ function attachEventListeners() {
         document.getElementById('addStaffForm')?.addEventListener('submit', async function(e) {
             e.preventDefault();
             
+            const phoneVal = document.getElementById('sfPhone').value.trim();
+            // Duplicate Check
+            const exists = liveStaffData.find(s => s.phone === phoneVal);
+            if (exists) {
+                const toast = document.getElementById('toastNotification');
+                if (toast) { toast.textContent = 'A staff member with this phone number already exists.'; toast.classList.add('show'); setTimeout(() => toast.classList.remove('show'), 3000); }
+                return;
+            }
+
             const submitBtn = document.querySelector('button[form="addStaffForm"]');
             const originalText = submitBtn ? submitBtn.innerText : 'Save Staff';
             if (submitBtn) {
@@ -350,7 +357,7 @@ function attachEventListeners() {
                     company_id,
                     branch_id,
                     staff_name: document.getElementById('sfName').value.trim(),
-                    phone: document.getElementById('sfPhone').value.trim(),
+                    phone: phoneVal,
                     email: document.getElementById('sfEmail').value.trim(),
                     role_id: selectedRoleOption?.dataset?.id || '',
                     role_name: roleSelect.value,
@@ -359,14 +366,23 @@ function attachEventListeners() {
                     status: document.querySelector('input[name="sfStatus"]:checked')?.value || 'active'
                 };
 
-                const response = await fetchWithAuth(API.CREATE_STAFF, {
-                    method: 'POST',
-                    body: JSON.stringify(payload)
-                }, FEATURES.STAFF_MANAGEMENT, 'create');
+                const { error } = await supabase
+                    .from('staff')
+                    .insert({
+                        company_id,
+                        branch_id,
+                        staff_name: payload.staff_name,
+                        phone: payload.phone,
+                        email: payload.email,
+                        role_id: payload.role_id,
+                        role_name: payload.role_name,
+                        services_offered: payload.services_offered,
+                        notes: payload.notes,
+                        status: payload.status
+                    });
 
-                if (!response.ok) {
-                    const errorData = await response.json().catch(()=>({}));
-                    throw new Error(errorData.message || 'Failed to create staff member');
+                if (error) {
+                    throw new Error(error.message || 'Failed to create staff member');
                 }
 
                 const toast = document.getElementById('toastNotification');
@@ -402,6 +418,17 @@ function attachEventListeners() {
         document.getElementById('editStaffForm')?.addEventListener('submit', async function(e) {
             e.preventDefault();
 
+            const staffId = document.getElementById('editStaffId').value;
+            const phoneVal = document.getElementById('editSfPhone').value.trim();
+            
+            // Duplicate Check
+            const exists = liveStaffData.find(s => s.phone === phoneVal && String(s.id) !== String(staffId));
+            if (exists) {
+                const toast = document.getElementById('toastNotification');
+                if (toast) { toast.textContent = 'Another staff member already uses this phone number.'; toast.classList.add('show'); setTimeout(() => toast.classList.remove('show'), 3000); }
+                return;
+            }
+
             const submitBtn = document.querySelector('button[form="editStaffForm"]');
             const originalText = submitBtn ? submitBtn.innerText : 'Update Staff';
             if (submitBtn) {
@@ -421,11 +448,8 @@ function attachEventListeners() {
                 const selectedRoleOption = editRoleSelect?.options[editRoleSelect.selectedIndex];
 
                 const payload = {
-                    company_id,
-                    branch_id,
-                    staff_id: document.getElementById('editStaffId').value,
                     staff_name: document.getElementById('editSfName').value.trim(),
-                    phone: document.getElementById('editSfPhone').value.trim(),
+                    phone: phoneVal,
                     email: document.getElementById('editSfEmail').value.trim(),
                     role_id: selectedRoleOption?.dataset?.id || '',
                     role_name: editRoleSelect?.value || '',
@@ -434,14 +458,13 @@ function attachEventListeners() {
                     status: document.querySelector('input[name="editSfStatus"]:checked')?.value || 'active'
                 };
 
-                const response = await fetchWithAuth(API.UPDATE_STAFF, {
-                    method: 'POST',
-                    body: JSON.stringify(payload)
-                }, FEATURES.STAFF_MANAGEMENT, 'update');
+                const { error } = await supabase
+                    .from('staff')
+                    .eq('staff_id', staffId)
+                    .update(payload);
 
-                if (!response.ok) {
-                    const errorData = await response.json().catch(() => ({}));
-                    throw new Error(errorData.message || 'Failed to update staff member');
+                if (error) {
+                    throw new Error(error.message || 'Failed to update staff member');
                 }
 
                 const toast = document.getElementById('toastNotification');
@@ -494,28 +517,13 @@ function attachEventListeners() {
                     throw new Error('Missing company or branch context. Please reload or log in again.');
                 }
 
-                const payload = {
-                    company_id,
-                    branch_id,
-                    staff_id: staffToDelete.id,
-                    staff_name: staffToDelete.name,
-                    phone: staffToDelete.phone,
-                    email: staffToDelete.email,
-                    role_id: staffToDelete.role_id || '',
-                    role_name: staffToDelete.role || '',
-                    services_offered: staffToDelete.services || '',
-                    notes: staffToDelete.notes || '',
-                    status: staffToDelete.status
-                };
+                const { error } = await supabase
+                    .from('staff')
+                    .eq('staff_id', staffToDelete.id)
+                    .update({ status: 'deleted' });
 
-                const response = await fetchWithAuth(API.DELETE_STAFF, {
-                    method: 'POST',
-                    body: JSON.stringify(payload)
-                }, FEATURES.STAFF_MANAGEMENT, 'delete');
-
-                if (!response.ok) {
-                    const errorData = await response.json().catch(() => ({}));
-                    throw new Error(errorData.message || 'Failed to delete staff member');
+                if (error) {
+                    throw new Error(error.message || 'Failed to delete staff member');
                 }
 
                 fullScreenLoader.classList.remove('active');
@@ -548,21 +556,22 @@ async function fetchRolesForDropdown() {
         } catch (e) {}
         const branchId = localStorage.getItem('active_branch_id') || null;
 
-        const response = await fetchWithAuth(API.READ_ROLES, { 
-            method: 'POST',
-            body: JSON.stringify({ company_id: companyId, branch_id: branchId })
-        }, FEATURES.ROLES_PERMISSIONS, 'read');
-        if (!response.ok) throw new Error('Failed to fetch roles');
-        const data = await response.json();
+        const { data, error } = await supabase
+            .from('roles')
+            .select('role_id, role_name')
+            .eq('company_id', companyId)
+            .eq('branch_id', branchId);
+            
+        if (error) throw new Error(error.message);
         
         const roleSelect = document.getElementById('sfRole');
-        const editRoleSelect = document.getElementById('editSfRole'); // optional sync
+        const editRoleSelect = document.getElementById('editSfRole'); 
         
         if (roleSelect) roleSelect.innerHTML = '<option value="" disabled selected>Select a role</option>';
         if (editRoleSelect) editRoleSelect.innerHTML = '<option value="" disabled selected>Select a role</option>';
         
-        if (Array.isArray(data) && data.length > 0 && Array.isArray(data[0].roles)) {
-            data[0].roles.forEach(role => {
+        if (Array.isArray(data)) {
+            data.forEach(role => {
                 if (roleSelect) {
                     const opt = document.createElement('option');
                     opt.value = role.role_name;
