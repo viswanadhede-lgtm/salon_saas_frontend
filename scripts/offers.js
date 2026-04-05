@@ -1,4 +1,4 @@
-import { API, fetchWithAuth } from '../config/api.js';
+import { supabase } from '../lib/supabase.js';
 
 document.addEventListener('DOMContentLoaded', () => {
     let offers = [];
@@ -8,7 +8,12 @@ document.addEventListener('DOMContentLoaded', () => {
     let offerToDeleteId = null;
 
     // Global context getters
-    const getCompanyId = () => localStorage.getItem('company_id') || 'C1';
+    const getCompanyId = () => {
+        try {
+            const ctx = JSON.parse(localStorage.getItem('appContext') || '{}');
+            return ctx.company?.id || localStorage.getItem('company_id') || null;
+        } catch { return localStorage.getItem('company_id') || null; }
+    };
     const getBranchId = () => localStorage.getItem('active_branch_id') || document.getElementById('branchSelect')?.value || null;
 
     // DOM Elements - Table & Overlays
@@ -17,7 +22,6 @@ document.addEventListener('DOMContentLoaded', () => {
     const deletingLoader = document.getElementById('deletingOfferOverlay');
     const btnCancelDelete = document.getElementById('btnCancelDeleteOffer');
     const btnConfirmDelete = document.getElementById('btnConfirmDeleteOffer');
-    const btnFilterOffers = document.getElementById('btnFilterOffers');
 
     // DOM Elements - Modal & Form
     const modalOverlay = document.getElementById('offerModalOverlay');
@@ -37,13 +41,14 @@ document.addEventListener('DOMContentLoaded', () => {
     const offerCurrentUsageCountEl = document.getElementById('offerCurrentUsageCount');
     const offerStatusEl = document.getElementById('offerStatus');
 
-    // DOM Elements - Multi-select Dropdown (Custom implementation from offers.html)
+    // Multi-select dropdown elements
     const offerServicesText = document.getElementById('offerServicesText');
     const offerServicesMenu = document.getElementById('offerServicesMenu');
     const offerServicesBtn = document.getElementById('offerServicesBtn');
-    // We will render checkboxes into this menu dynamically.
 
-    // 1. Initial Data Fetch
+    // ─────────────────────────────────────────────────────────────────────────
+    // SUPABASE: Initialise — fetch services then offers
+    // ─────────────────────────────────────────────────────────────────────────
     async function initOffers() {
         if (!getCompanyId() || !getBranchId()) {
             console.error('Company ID or Branch ID missing from localStorage');
@@ -51,36 +56,34 @@ document.addEventListener('DOMContentLoaded', () => {
             return;
         }
 
-        try {
-            tbody.innerHTML = `<tr><td colspan="8" style="text-align: center; padding: 2rem;"><div style="display:flex; justify-content:center; align-items:center; gap:8px;"><div class="spinner" style="width: 20px; height: 20px; border: 3px solid rgba(79, 70, 229, 0.2); border-top-color: #4f46e5; border-radius: 50%; animation: louSpin 1s linear infinite;"></div> Loading Offers...</div></td></tr>`;
-            
-            // Render basic CSS for loader
-            if (!document.getElementById('louSpinKeyframes')) {
-                const style = document.createElement('style');
-                style.id = 'louSpinKeyframes';
-                style.innerHTML = `@keyframes louSpin { to { transform: rotate(360deg); } }`;
-                document.head.appendChild(style);
-            }
+        tbody.innerHTML = `
+            <tr><td colspan="8" style="text-align: center; padding: 2rem;">
+                <div style="display:flex; justify-content:center; align-items:center; gap:8px;">
+                    <div class="spinner" style="width:20px;height:20px;border:3px solid rgba(79,70,229,0.2);border-top-color:#4f46e5;border-radius:50%;animation:louSpin 1s linear infinite;"></div>
+                    Loading Offers...
+                </div>
+            </td></tr>`;
 
-            // Fetch Services to populate the UI
-            try {
-                const srvResp = await fetchWithAuth(API.READ_SERVICES, {
-                    method: 'POST',
-                    body: JSON.stringify({ company_id: getCompanyId(), branch_id: getBranchId() })
-                });
-                if (srvResp.ok) {
-                    const data = await srvResp.json();
-                    services = Array.isArray(data) ? data : (data.services || []);
-                } else {
-                    console.error('Failed to fetch services');
-                }
-            } catch (err) {
-                console.error('Error fetching services:', err);
-            }
+        if (!document.getElementById('louSpinKeyframes')) {
+            const style = document.createElement('style');
+            style.id = 'louSpinKeyframes';
+            style.innerHTML = `@keyframes louSpin { to { transform: rotate(360deg); } }`;
+            document.head.appendChild(style);
+        }
+
+        try {
+            // Fetch services from Supabase
+            const { data: svcData, error: svcErr } = await supabase
+                .from('services')
+                .select('service_id, service_name, status')
+                .eq('company_id', getCompanyId())
+                .eq('branch_id', getBranchId());
+
+            if (svcErr) console.warn('Could not load services:', svcErr.message);
+            services = (svcData || []).filter(s => (s.status || '').toLowerCase() === 'active');
 
             populateServiceDropdown();
             await loadOffers();
-
         } catch (error) {
             console.error('Initialization error:', error);
             tbody.innerHTML = `<tr><td colspan="8" style="text-align: center; padding: 2rem; color: #ef4444;">Failed to load offers.</td></tr>`;
@@ -88,11 +91,10 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     function populateServiceDropdown() {
-        // Find where the checkboxes live
         const checkboxContainer = document.getElementById('servicesCheckboxList');
         if (!checkboxContainer) return;
-        
-        let servicesHtml = `
+
+        let html = `
             <label class="service-lbl" style="margin-bottom: 12px;">
                 <input type="checkbox" class="custom-chk-circle serviceCheckboxes" value="All Categories" data-id="all">
                 <span style="font-size: 0.95rem; color: #1e293b; font-weight: 500;">All Categories</span>
@@ -101,7 +103,7 @@ document.addEventListener('DOMContentLoaded', () => {
         `;
 
         services.forEach(srv => {
-            servicesHtml += `
+            html += `
                 <label class="service-lbl" style="margin-bottom: 8px;">
                     <input type="checkbox" class="custom-chk-circle serviceCheckboxes" value="${srv.service_name}" data-id="${srv.service_id}">
                     <span style="font-size: 0.9rem; color: #475569;">${srv.service_name}</span>
@@ -109,52 +111,40 @@ document.addEventListener('DOMContentLoaded', () => {
             `;
         });
 
-        checkboxContainer.innerHTML = servicesHtml;
-        
-        // Re-attach multi-select listeners for the new elements inside offerServicesMenu
+        checkboxContainer.innerHTML = html;
+
         const newApplyBtn = document.getElementById('applyServicesBtn');
         const newResetBtn = document.getElementById('resetServicesBtn');
         const newCheckboxes = document.querySelectorAll('.serviceCheckboxes');
         const allCheckbox = document.querySelector('.serviceCheckboxes[data-id="all"]');
         const otherCheckboxes = document.querySelectorAll('.serviceCheckboxes:not([data-id="all"])');
 
-        // Bind cascading "Select All" logic
         if (allCheckbox) {
             allCheckbox.addEventListener('change', (e) => {
-                const isChecked = e.target.checked;
-                otherCheckboxes.forEach(cb => { cb.checked = isChecked; });
+                otherCheckboxes.forEach(cb => { cb.checked = e.target.checked; });
             });
-
             otherCheckboxes.forEach(cb => {
                 cb.addEventListener('change', () => {
-                    if (!cb.checked) {
-                        allCheckbox.checked = false;
-                    } else {
-                        const allChecked = Array.from(otherCheckboxes).every(c => c.checked);
-                        allCheckbox.checked = allChecked;
-                    }
+                    allCheckbox.checked = Array.from(otherCheckboxes).every(c => c.checked);
                 });
             });
         }
 
         if (newApplyBtn) {
             newApplyBtn.addEventListener('click', () => {
-                const selected = Array.from(newCheckboxes)
-                    .filter(chk => chk.checked)
-                    .map(chk => chk.value);
-
+                const selected = Array.from(newCheckboxes).filter(c => c.checked).map(c => c.value);
                 if (selected.length === 0) {
-                    offerServicesText.textContent = "Select services...";
-                    offerServicesText.style.color = "#94a3b8";
-                } else if (selected.includes("All Categories")) {
-                    offerServicesText.textContent = "All Categories";
-                    offerServicesText.style.color = "#1e293b";
+                    offerServicesText.textContent = 'Select services...';
+                    offerServicesText.style.color = '#94a3b8';
+                } else if (selected.includes('All Categories')) {
+                    offerServicesText.textContent = 'All Categories';
+                    offerServicesText.style.color = '#1e293b';
                 } else if (selected.length === 1) {
                     offerServicesText.textContent = selected[0];
-                    offerServicesText.style.color = "#1e293b";
+                    offerServicesText.style.color = '#1e293b';
                 } else {
                     offerServicesText.textContent = `${selected[0]} +${selected.length - 1} more`;
-                    offerServicesText.style.color = "#1e293b";
+                    offerServicesText.style.color = '#1e293b';
                 }
                 offerServicesMenu.style.display = 'none';
             });
@@ -163,65 +153,67 @@ document.addEventListener('DOMContentLoaded', () => {
         if (newResetBtn) {
             newResetBtn.addEventListener('click', () => {
                 newCheckboxes.forEach(chk => chk.checked = false);
-                offerServicesText.textContent = "Select services...";
-                offerServicesText.style.color = "#94a3b8";
+                offerServicesText.textContent = 'Select services...';
+                offerServicesText.style.color = '#94a3b8';
             });
         }
-    };
+    }
 
-    // 2. Load and Render Offers
+    // ─────────────────────────────────────────────────────────────────────────
+    // SUPABASE: Load Offers (+ offer_services join)
+    // ─────────────────────────────────────────────────────────────────────────
     async function loadOffers() {
         try {
-            const response = await fetchWithAuth(API.READ_OFFERS, {
-                method: 'POST',
-                body: JSON.stringify({ company_id: getCompanyId(), branch_id: getBranchId() })
+            const companyId = getCompanyId();
+            const branchId = getBranchId();
+
+            // Fetch offers
+            const { data: offersData, error: offersErr } = await supabase
+                .from('offers')
+                .select('*')
+                .eq('company_id', companyId)
+                .eq('branch_id', branchId)
+                .neq('status', 'deleted')
+                .order('created_at', { ascending: false });
+
+            if (offersErr) throw offersErr;
+
+            // Fetch offer_services (junction table linking offers to services)
+            const { data: offerServicesData, error: osErr } = await supabase
+                .from('offer_services')
+                .select('*')
+                .eq('company_id', companyId)
+                .eq('branch_id', branchId);
+
+            if (osErr) console.warn('offer_services fetch warning:', osErr.message);
+
+            // Group offer_services by offer_id
+            const servicesByOfferId = {};
+            (offerServicesData || []).forEach(row => {
+                if (!servicesByOfferId[row.offer_id]) servicesByOfferId[row.offer_id] = [];
+                servicesByOfferId[row.offer_id].push({
+                    service_id: row.service_id,
+                    service_name: row.service_name || '',
+                    current_usage_count: row.current_usage_count || 0
+                });
             });
-            if (!response.ok) throw new Error('API fetch failed');
-            
-            const rawData = await response.json();
-            const rows = Array.isArray(rawData) ? rawData : (rawData.offers || []);
-            offers = formatOffersData(rows);
+
+            // Merge
+            offers = (offersData || []).map(o => ({
+                ...o,
+                applicable_services: servicesByOfferId[o.offer_id || o.id] || []
+            }));
+
             renderOffersTable();
         } catch (error) {
             console.error('Error loading offers:', error);
-            tbody.innerHTML = `<tr><td colspan="8" style="text-align: center; padding: 2rem; color: #ef4444;">Error fetching data. Check console.</td></tr>`;
+            tbody.innerHTML = `<tr><td colspan="8" style="text-align: center; padding: 2rem; color: #ef4444;">Error fetching data: ${error.message}</td></tr>`;
         }
     }
 
-    function formatOffersData(rawData) {
-        if (!rawData || !Array.isArray(rawData)) return [];
-        // Group flat row data into logical offers based on offer_id
-        const map = new Map();
-        
-        rawData.forEach(row => {
-            if (!map.has(row.offer_id)) {
-                map.set(row.offer_id, {
-                    offer_id: row.offer_id,
-                    offer_name: row.offer_name,
-                    discount_type: row.discount_type,
-                    discount_value: row.discount_value,
-                    min_bill_amount: row.min_bill_amount,
-                    valid_from: row.valid_from,
-                    valid_to: row.valid_to,
-                    status: row.status,
-                    total_usage_limit: row.total_usage_limit,
-                    usage_per_customer: row.usage_per_customer,
-                    created_at: row.created_at,
-                    updated_at: row.updated_at,
-                    applicable_services: []
-                });
-            }
-            if (row.service_id) {
-                map.get(row.offer_id).applicable_services.push({
-                    service_id: row.service_id,
-                    service_name: row.service_name,
-                    current_usage_count: row.current_usage_count || 0
-                });
-            }
-        });
-        return Array.from(map.values());
-    }
-
+    // ─────────────────────────────────────────────────────────────────────────
+    // RENDER TABLE
+    // ─────────────────────────────────────────────────────────────────────────
     function renderOffersTable() {
         if (offers.length === 0) {
             tbody.innerHTML = `<tr><td colspan="8" style="text-align: center; padding: 2rem; color: #64748b;">No offers found. Create one.</td></tr>`;
@@ -229,73 +221,63 @@ document.addEventListener('DOMContentLoaded', () => {
         }
 
         tbody.innerHTML = offers.map(offer => {
-            const hasAllServicesMap = offer.applicable_services.some(s => s.service_id === 'all');
-            const tooltipServices = hasAllServicesMap ? 'All Services' : offer.applicable_services.map(s => s.service_name).join('&#10;');
-            let topServiceText = hasAllServicesMap ? 'All Services' : (offer.applicable_services[0]?.service_name || 'None');
-            let additionalCount = hasAllServicesMap ? 0 : Math.max(0, offer.applicable_services.length - 1);
+            const offerId = offer.offer_id || offer.id;
+            const hasAllServices = offer.applicable_services.some(s => s.service_id === 'all');
+            const tooltipServices = hasAllServices ? 'All Services' : offer.applicable_services.map(s => s.service_name).join('&#10;');
+            const topServiceText = hasAllServices ? 'All Services' : (offer.applicable_services[0]?.service_name || 'None');
+            const additionalCount = hasAllServices ? 0 : Math.max(0, offer.applicable_services.length - 1);
 
             let serviceHtml = `<span style="font-size: 0.9rem; color: #334155;">${topServiceText}</span>`;
             if (additionalCount > 0) {
                 serviceHtml = `<div class="service-tooltip-wrapper" style="position: relative; display: inline-block; cursor: help;" title="${tooltipServices}">
-                                  <span style="font-size: 0.9rem; color: #334155;">${topServiceText} <span style="color: #64748b; font-size: 0.8rem; background: #f1f5f9; padding: 2px 6px; border-radius: 4px; margin-left: 4px;">+${additionalCount}</span></span>
-                               </div>`;
-            } else if (!hasAllServicesMap) {
+                    <span style="font-size: 0.9rem; color: #334155;">${topServiceText} <span style="color: #64748b; font-size: 0.8rem; background: #f1f5f9; padding: 2px 6px; border-radius: 4px; margin-left: 4px;">+${additionalCount}</span></span>
+                </div>`;
+            } else if (!hasAllServices) {
                 serviceHtml = `<div class="service-tooltip-wrapper" style="position: relative; display: inline-block; cursor: help;" title="${tooltipServices}">${serviceHtml}</div>`;
             }
 
-            // Default valid date logic
-            let fromText = offer.valid_from ? new Date(offer.valid_from).toLocaleDateString('en-GB') : '-';
-            let toText = offer.valid_to ? new Date(offer.valid_to).toLocaleDateString('en-GB') : 'No Expiry';
+            const fromText = offer.valid_from ? new Date(offer.valid_from).toLocaleDateString('en-GB') : '-';
+            const toText = offer.valid_to ? new Date(offer.valid_to).toLocaleDateString('en-GB') : 'No Expiry';
             let validDatesHtml = `<div style="font-size: 0.9rem; color: #334155;">${fromText} – ${toText}</div>`;
             if (!offer.valid_from && !offer.valid_to) {
                 validDatesHtml = `<div style="font-size: 0.9rem; color: #64748b; font-style: italic;">Always Active</div>`;
             }
 
-            // Determine aggregate tracking
-            let totalMaxLimitStr = offer.total_usage_limit || '∞';
-            let maxCurrentCount = 0;
-            if (offer.applicable_services.length > 0) {
-                 maxCurrentCount = Math.max(...offer.applicable_services.map(s => s.current_usage_count || 0));
-            }
-            let counterDisplay = `${maxCurrentCount} / ${totalMaxLimitStr}`;
+            const totalMaxLimitStr = offer.total_usage_limit || '∞';
+            const maxCurrentCount = offer.applicable_services.length > 0
+                ? Math.max(...offer.applicable_services.map(s => s.current_usage_count || 0))
+                : (offer.current_usage_count || 0);
+            const counterDisplay = `${maxCurrentCount} / ${totalMaxLimitStr}`;
 
-            let statusBadge = offer.status === 'active' 
-                ? `<span class="badge-pill" style="background: #dcfce7; color: #166534; font-size: 0.75rem; padding: 4px 10px; border-radius: 999px; font-weight: 600; display: inline-flex; align-items: center; gap: 4px;"><span style="width: 6px; height: 6px; border-radius: 50%; background: #22c55e;"></span>Active</span>`
-                : `<span class="badge-pill" style="background: #fee2e2; color: #b91c1c; font-size: 0.75rem; padding: 4px 10px; border-radius: 999px; font-weight: 600; display: inline-flex; align-items: center; gap: 4px;"><span style="width: 6px; height: 6px; border-radius: 50%; background: #ef4444;"></span>Inactive</span>`;
+            const statusBadge = offer.status === 'active'
+                ? `<span class="badge-pill" style="background:#dcfce7;color:#166534;font-size:0.75rem;padding:4px 10px;border-radius:999px;font-weight:600;display:inline-flex;align-items:center;gap:4px;"><span style="width:6px;height:6px;border-radius:50%;background:#22c55e;"></span>Active</span>`
+                : `<span class="badge-pill" style="background:#fee2e2;color:#b91c1c;font-size:0.75rem;padding:4px 10px;border-radius:999px;font-weight:600;display:inline-flex;align-items:center;gap:4px;"><span style="width:6px;height:6px;border-radius:50%;background:#ef4444;"></span>Inactive</span>`;
 
-            let valueBadge = offer.discount_type === 'percentage' 
-                ? `<span style="font-weight: 700; color: #0284c7; background: #e0f2fe; padding: 4px 8px; border-radius: 6px; font-size: 0.85rem;">${offer.discount_value}% OFF</span>`
-                : `<span style="font-weight: 700; color: #15803d; background: #dcfce7; padding: 4px 8px; border-radius: 6px; font-size: 0.85rem;">₹${offer.discount_value} OFF</span>`;
+            const valueBadge = offer.discount_type === 'percentage'
+                ? `<span style="font-weight:700;color:#0284c7;background:#e0f2fe;padding:4px 8px;border-radius:6px;font-size:0.85rem;">${offer.discount_value}% OFF</span>`
+                : `<span style="font-weight:700;color:#15803d;background:#dcfce7;padding:4px 8px;border-radius:6px;font-size:0.85rem;">₹${offer.discount_value} OFF</span>`;
 
             return `
                 <tr style="border-bottom: 1px solid #e2e8f0; transition: background 0.2s;">
                     <td style="padding: 16px 20px;">
                         <div style="font-weight: 600; color: #1e293b; font-size: 0.95rem;">${offer.offer_name || 'N/A'}</div>
                     </td>
-                    <td style="padding: 16px 20px;">
-                        ${valueBadge}
-                    </td>
+                    <td style="padding: 16px 20px;">${valueBadge}</td>
                     <td style="padding: 16px 20px;">
                         <div style="font-size: 0.9rem; color: #334155; text-transform: capitalize;">${offer.discount_type || 'N/A'}</div>
                     </td>
-                    <td style="padding: 16px 20px;">
-                        ${serviceHtml}
-                    </td>
-                    <td style="padding: 16px 20px;">
-                        ${validDatesHtml}
-                    </td>
-                    <td style="padding: 16px 20px;">
-                        ${statusBadge}
-                    </td>
+                    <td style="padding: 16px 20px;">${serviceHtml}</td>
+                    <td style="padding: 16px 20px;">${validDatesHtml}</td>
+                    <td style="padding: 16px 20px;">${statusBadge}</td>
                     <td style="padding: 16px 20px;">
                         <div style="font-size: 0.9rem; color: #334155;"><span style="font-weight: 600;">${counterDisplay}</span></div>
                     </td>
                     <td style="padding: 16px 20px; text-align: center;">
                         <div style="display: flex; gap: 6px; justify-content: center;">
-                            <button class="icon-btn edit-btn" data-id="${offer.offer_id}" style="padding: 6px; border-radius: 6px; border: 1px solid #e2e8f0; background: #fff; cursor: pointer; color: #3b82f6;" title="Edit">
+                            <button class="icon-btn edit-btn" data-id="${offerId}" style="padding: 6px; border-radius: 6px; border: 1px solid #e2e8f0; background: #fff; cursor: pointer; color: #3b82f6;" title="Edit">
                                 <i data-feather="edit-2" style="width: 16px; height: 16px;"></i>
                             </button>
-                            <button class="icon-btn delete-btn" data-id="${offer.offer_id}" style="padding: 6px; border-radius: 6px; border: 1px solid #e2e8f0; background: #fff; cursor: pointer; color: #ef4444;" title="Delete">
+                            <button class="icon-btn delete-btn" data-id="${offerId}" style="padding: 6px; border-radius: 6px; border: 1px solid #e2e8f0; background: #fff; cursor: pointer; color: #ef4444;" title="Delete">
                                 <i data-feather="trash-2" style="width: 16px; height: 16px;"></i>
                             </button>
                         </div>
@@ -303,17 +285,19 @@ document.addEventListener('DOMContentLoaded', () => {
                 </tr>
             `;
         }).join('');
+
         if (window.feather) window.feather.replace();
     }
 
-    // 3. Modal Actions
+    // ─────────────────────────────────────────────────────────────────────────
+    // MODAL: Open for Create / Edit
+    // ─────────────────────────────────────────────────────────────────────────
     function openModalForCreate() {
         isEditMode = false;
         editingOfferId = null;
         document.querySelector('.modal-header h2').textContent = 'Create Offer';
         document.getElementById('btnSaveOffer').textContent = 'Create Offer';
-        
-        // Reset inputs
+
         offerNameEl.value = '';
         offerDiscountTypeEl.value = 'percentage';
         offerDiscountValueEl.value = '';
@@ -322,16 +306,13 @@ document.addEventListener('DOMContentLoaded', () => {
         offerMinBillAmountEl.value = '';
         offerUsageLimitEl.value = '';
         offerUsagePerCustomerEl.value = '';
-        offerCurrentUsageCountEl.value = '0';
+        if (offerCurrentUsageCountEl) offerCurrentUsageCountEl.value = '0';
         offerStatusEl.value = 'active';
 
-        // Reset multiselect
-        const offerCheckboxes = document.querySelectorAll('.serviceCheckboxes');
-        offerCheckboxes.forEach(chk => chk.checked = false);
-        offerServicesText.textContent = "Select services...";
-        offerServicesText.style.color = "#94a3b8";
+        document.querySelectorAll('.serviceCheckboxes').forEach(chk => chk.checked = false);
+        offerServicesText.textContent = 'Select services...';
+        offerServicesText.style.color = '#94a3b8';
 
-        // Ensure name is editable in create mode
         offerNameEl.removeAttribute('readonly');
         offerNameEl.style.background = '';
         offerNameEl.style.cursor = '';
@@ -342,7 +323,7 @@ document.addEventListener('DOMContentLoaded', () => {
     function openModalForEdit(id) {
         isEditMode = true;
         editingOfferId = id;
-        const o = offers.find(c => c.offer_id === id);
+        const o = offers.find(c => (c.offer_id || c.id) === id);
         if (!o) return;
 
         document.querySelector('.modal-header h2').textContent = 'Edit Offer';
@@ -351,52 +332,48 @@ document.addEventListener('DOMContentLoaded', () => {
         offerNameEl.value = o.offer_name || '';
         offerDiscountTypeEl.value = o.discount_type || 'percentage';
         offerDiscountValueEl.value = o.discount_value || '';
-        offerStartDateEl.value = o.valid_from || '';
-        offerEndDateEl.value = o.valid_to || '';
+        offerStartDateEl.value = o.valid_from ? o.valid_from.split('T')[0] : '';
+        offerEndDateEl.value = o.valid_to ? o.valid_to.split('T')[0] : '';
         offerMinBillAmountEl.value = o.min_bill_amount || '';
         offerUsageLimitEl.value = o.total_usage_limit || '';
         offerUsagePerCustomerEl.value = o.usage_per_customer || '';
-        
-        let maxCurrentCount = 0;
-        if (o.applicable_services.length > 0) {
-             maxCurrentCount = Math.max(...o.applicable_services.map(s => s.current_usage_count || 0));
-        }
-        offerCurrentUsageCountEl.value = maxCurrentCount;
-        
+
+        const maxCurrentCount = o.applicable_services.length > 0
+            ? Math.max(...o.applicable_services.map(s => s.current_usage_count || 0))
+            : (o.current_usage_count || 0);
+        if (offerCurrentUsageCountEl) offerCurrentUsageCountEl.value = maxCurrentCount;
         offerStatusEl.value = o.status || 'active';
 
         // Populate multi-select
-        const offerCheckboxes = document.querySelectorAll('.serviceCheckboxes');
-        offerCheckboxes.forEach(chk => chk.checked = false);
+        document.querySelectorAll('.serviceCheckboxes').forEach(chk => chk.checked = false);
         let selectedCount = 0;
-        let pName = "";
-        
+        let firstName = '';
+
         const isAll = o.applicable_services.some(s => s.service_id === 'all');
         if (isAll) {
             const allChk = document.querySelector('.serviceCheckboxes[data-id="all"]');
-            if (allChk) { allChk.checked = true; selectedCount = 1; pName = "All Categories"; }
+            if (allChk) { allChk.checked = true; selectedCount = 1; firstName = 'All Categories'; }
         } else {
             o.applicable_services.forEach(srv => {
                 const sChk = document.querySelector(`.serviceCheckboxes[data-id="${srv.service_id}"]`);
-                if (sChk) { sChk.checked = true; selectedCount++; if(!pName) pName = srv.service_name; }
+                if (sChk) { sChk.checked = true; selectedCount++; if (!firstName) firstName = srv.service_name; }
             });
         }
 
         if (selectedCount === 0) {
-            offerServicesText.textContent = "Select services...";
-            offerServicesText.style.color = "#94a3b8";
-        } else if (pName === 'All Categories') {
-             offerServicesText.textContent = "All Categories";
-             offerServicesText.style.color = "#1e293b";
+            offerServicesText.textContent = 'Select services...';
+            offerServicesText.style.color = '#94a3b8';
+        } else if (firstName === 'All Categories') {
+            offerServicesText.textContent = 'All Categories';
+            offerServicesText.style.color = '#1e293b';
         } else if (selectedCount === 1) {
-            offerServicesText.textContent = pName;
-            offerServicesText.style.color = "#1e293b";
+            offerServicesText.textContent = firstName;
+            offerServicesText.style.color = '#1e293b';
         } else {
-            offerServicesText.textContent = `${pName} +${selectedCount - 1} more`;
-            offerServicesText.style.color = "#1e293b";
+            offerServicesText.textContent = `${firstName} +${selectedCount - 1} more`;
+            offerServicesText.style.color = '#1e293b';
         }
 
-        // Make name readonly in edit mode
         offerNameEl.setAttribute('readonly', true);
         offerNameEl.style.background = '#f8fafc';
         offerNameEl.style.cursor = 'not-allowed';
@@ -404,134 +381,156 @@ document.addEventListener('DOMContentLoaded', () => {
         modalOverlay.classList.add('active');
     }
 
-    function closeModal() {
-        modalOverlay.classList.remove('active');
-    }
+    function closeModal() { modalOverlay.classList.remove('active'); }
 
-    // 4. Save Logic
+    // ─────────────────────────────────────────────────────────────────────────
+    // SUPABASE: Save (Create or Update) Offer
+    // ─────────────────────────────────────────────────────────────────────────
     async function handleSaveOffer() {
-        try {
-            if (!offerNameEl.value || !offerDiscountValueEl.value || !offerStartDateEl.value) {
-                alert('Please fill all required fields (*)');
-                return;
-            }
+        if (!offerNameEl.value || !offerDiscountValueEl.value || !offerStartDateEl.value) {
+            alert('Please fill all required fields (*)');
+            return;
+        }
 
-            const offerCheckboxes = Array.from(document.querySelectorAll('.serviceCheckboxes')).filter(c => c.checked);
-            if (offerCheckboxes.length === 0) {
-                alert('Please select at least one applicable service.');
-                return;
-            }
+        const checkedBoxes = Array.from(document.querySelectorAll('.serviceCheckboxes')).filter(c => c.checked);
+        if (checkedBoxes.length === 0) {
+            alert('Please select at least one applicable service.');
+            return;
+        }
 
-            let applyServices = [];
-            let currentO = editingOfferId ? offers.find(o => o.offer_id === editingOfferId) : null;
+        const hasAllSelected = checkedBoxes.some(c => c.dataset.id === 'all');
 
-            offerCheckboxes.forEach(chk => {
+        // Build the services list for offer_services table
+        let applyServices = [];
+        const currentO = editingOfferId ? offers.find(o => (o.offer_id || o.id) === editingOfferId) : null;
+
+        if (hasAllSelected) {
+            // All services — map every service
+            applyServices = services.map(svc => {
+                const existing = currentO?.applicable_services.find(s => s.service_id === svc.service_id);
+                return {
+                    service_id: svc.service_id,
+                    service_name: svc.service_name,
+                    current_usage_count: existing?.current_usage_count || 0
+                };
+            });
+        } else {
+            checkedBoxes.forEach(chk => {
                 if (chk.dataset.id !== 'all') {
-                    let scnt = 0;
-                    if(currentO) {
-                        let currSrv = currentO.applicable_services.find(s=>s.service_id === chk.dataset.id);
-                        if(currSrv) scnt = currSrv.current_usage_count;
-                    }
+                    const existing = currentO?.applicable_services.find(s => s.service_id === chk.dataset.id);
                     applyServices.push({
                         service_id: chk.dataset.id,
                         service_name: chk.value,
-                        current_usage_count: scnt
+                        current_usage_count: existing?.current_usage_count || 0
                     });
                 }
             });
+        }
 
-            // Edge Case Fallback: If no valid services were mapped, but a payload must be returned
-            if (applyServices.length === 0) {
-                applyServices = services.map(svc => {
-                    let scnt = 0;
-                    if(currentO) {
-                        let currSrv = currentO.applicable_services.find(s=>s.service_id === svc.service_id);
-                        if(currSrv) scnt = currSrv.current_usage_count;
-                    }
-                    return {
-                        service_id: svc.service_id,
-                        service_name: svc.service_name,
-                        current_usage_count: scnt
-                    };
-                });
+        const offerPayload = {
+            company_id: getCompanyId(),
+            branch_id: getBranchId(),
+            offer_name: offerNameEl.value.trim(),
+            discount_type: offerDiscountTypeEl.value,
+            discount_value: parseFloat(offerDiscountValueEl.value) || 0,
+            status: offerStatusEl.value,
+            valid_from: offerStartDateEl.value || null,
+            valid_to: offerEndDateEl.value || null,
+            min_bill_amount: offerMinBillAmountEl.value ? parseFloat(offerMinBillAmountEl.value) : null,
+            total_usage_limit: offerUsageLimitEl.value ? parseInt(offerUsageLimitEl.value, 10) : null,
+            usage_per_customer: offerUsagePerCustomerEl.value ? parseInt(offerUsagePerCustomerEl.value, 10) : null
+        };
+
+        btnSaveOffer.textContent = isEditMode ? 'Saving...' : 'Creating...';
+        btnSaveOffer.disabled = true;
+
+        try {
+            let offerId = editingOfferId;
+
+            if (isEditMode) {
+                // UPDATE the offer row
+                const { error } = await supabase
+                    .from('offers')
+                    .update(offerPayload)
+                    .eq('offer_id', offerId);
+                if (error) throw error;
+
+                // DELETE old service links then re-insert
+                const { error: delErr } = await supabase
+                    .from('offer_services')
+                    .delete()
+                    .eq('offer_id', offerId);
+                if (delErr) console.warn('offer_services delete warning:', delErr.message);
+
+            } else {
+                // INSERT new offer row
+                const { data: newOffer, error } = await supabase
+                    .from('offers')
+                    .insert(offerPayload)
+                    .select();
+                if (error) throw error;
+                offerId = newOffer[0]?.offer_id || newOffer[0]?.id;
             }
 
-            const payload = {
-                company_id: getCompanyId(),
-                branch_id: getBranchId(),
-                offer_name: offerNameEl.value,
-                discount_type: offerDiscountTypeEl.value,
-                discount_value: parseFloat(offerDiscountValueEl.value) || 0,
-                status: offerStatusEl.value,
-                valid_from: offerStartDateEl.value || null,
-                valid_to: offerEndDateEl.value || null,
-                min_bill_amount: offerMinBillAmountEl.value ? parseFloat(offerMinBillAmountEl.value) : null,
-                total_usage_limit: offerUsageLimitEl.value ? parseInt(offerUsageLimitEl.value, 10) : null,
-                usage_per_customer: offerUsagePerCustomerEl.value ? parseInt(offerUsagePerCustomerEl.value, 10) : null,
-                applicable_services: applyServices
-            };
+            // INSERT offer_services rows
+            if (offerId && applyServices.length > 0) {
+                const serviceRows = applyServices.map(srv => ({
+                    offer_id: offerId,
+                    company_id: getCompanyId(),
+                    branch_id: getBranchId(),
+                    service_id: srv.service_id,
+                    service_name: srv.service_name,
+                    current_usage_count: srv.current_usage_count
+                }));
 
-            const endpoint = isEditMode 
-                ? API.UPDATE_OFFER
-                : API.CREATE_OFFER;
-
-            if (isEditMode) payload.offer_id = editingOfferId;
-
-            btnSaveOffer.textContent = isEditMode ? 'Saving...' : 'Creating...';
-            btnSaveOffer.disabled = true;
-
-            const res = await fetchWithAuth(endpoint, {
-                method: 'POST',
-                body: JSON.stringify(payload)
-            });
-
-            if (!res.ok) throw new Error(`Failed to ${isEditMode ? 'update' : 'create'} offer`);
+                const { error: insErr } = await supabase
+                    .from('offer_services')
+                    .insert(serviceRows);
+                if (insErr) console.warn('offer_services insert warning:', insErr.message);
+            }
 
             closeModal();
             await loadOffers();
         } catch (error) {
             console.error('Save Offer Error:', error);
-            alert('Failed to save offer. Please try again.');
+            alert('Failed to save offer: ' + (error.message || 'Unknown error'));
         } finally {
             btnSaveOffer.textContent = isEditMode ? 'Save Changes' : 'Create Offer';
             btnSaveOffer.disabled = false;
         }
     }
 
-    // 5. Delete Logic
+    // ─────────────────────────────────────────────────────────────────────────
+    // SUPABASE: Delete Offer (soft delete via status = 'deleted')
+    // ─────────────────────────────────────────────────────────────────────────
     async function confirmDelete() {
         if (!offerToDeleteId) return;
         deleteOverlay.classList.remove('active');
-        deletingLoader.classList.add('active');
+        if (deletingLoader) deletingLoader.classList.add('active');
 
         try {
-            const payload = {
-                company_id: getCompanyId(),
-                branch_id: getBranchId(),
-                offer_id: offerToDeleteId
-            };
-            const res = await fetchWithAuth(API.DELETE_OFFER, {
-                method: 'POST',
-                body: JSON.stringify(payload)
-            });
-            if (!res.ok) throw new Error('Delete failed');
+            const { error } = await supabase
+                .from('offers')
+                .update({ status: 'deleted' })
+                .eq('offer_id', offerToDeleteId);
+
+            if (error) throw error;
             await loadOffers();
         } catch (err) {
             console.error('Delete error:', err);
-            alert('Failed to delete offer.');
+            alert('Failed to delete offer: ' + (err.message || 'Unknown error'));
         } finally {
-            deletingLoader.classList.remove('active');
+            if (deletingLoader) deletingLoader.classList.remove('active');
             offerToDeleteId = null;
         }
     }
 
-    // Event Delegation for Table Actions
+    // ─────────────────────────────────────────────────────────────────────────
+    // EVENT LISTENERS
+    // ─────────────────────────────────────────────────────────────────────────
     tbody.addEventListener('click', (e) => {
         const editBtn = e.target.closest('.edit-btn');
-        if (editBtn) {
-            const id = editBtn.dataset.id;
-            openModalForEdit(id);
-        }
+        if (editBtn) { openModalForEdit(editBtn.dataset.id); return; }
 
         const deleteBtn = e.target.closest('.delete-btn');
         if (deleteBtn) {
@@ -540,24 +539,21 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     });
 
-    // Listeners
     if (btnCreateOffer) btnCreateOffer.addEventListener('click', openModalForCreate);
     if (btnCancelOffer) btnCancelOffer.addEventListener('click', closeModal);
     if (closeOfferModalBtn) closeOfferModalBtn.addEventListener('click', closeModal);
     if (btnSaveOffer) btnSaveOffer.addEventListener('click', handleSaveOffer);
-    
+
     if (btnCancelDelete) btnCancelDelete.addEventListener('click', () => {
         deleteOverlay.classList.remove('active');
         offerToDeleteId = null;
     });
     if (btnConfirmDelete) btnConfirmDelete.addEventListener('click', confirmDelete);
 
-    // Click outside modal
     modalOverlay.addEventListener('click', (e) => {
         if (e.target === modalOverlay) closeModal();
     });
 
-    // Sub-menu toggles
     if (offerServicesBtn) {
         offerServicesBtn.addEventListener('click', (e) => {
             e.stopPropagation();
@@ -565,9 +561,10 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
-    // Close dropdown when clicking outside of it
     document.addEventListener('click', (e) => {
-        if (offerServicesMenu && offerServicesBtn && !offerServicesBtn.contains(e.target) && !offerServicesMenu.contains(e.target)) {
+        if (offerServicesMenu && offerServicesBtn &&
+            !offerServicesBtn.contains(e.target) &&
+            !offerServicesMenu.contains(e.target)) {
             offerServicesMenu.style.display = 'none';
         }
     });

@@ -1,4 +1,4 @@
-import { API, fetchWithAuth } from '../config/api.js';
+import { supabase } from '../lib/supabase.js';
 
 // ── State ──────────────────────────────────────────────────────────────────
 let currentPlans = [];
@@ -12,14 +12,19 @@ let currentPurchases = [];
 let purchaseToCancel = null;
 
 // ── Context helpers ────────────────────────────────────────────────────────
-const getCompanyId = () => localStorage.getItem('company_id') || '';
-const getBranchId  = () => localStorage.getItem('active_branch_id') || document.getElementById('branchSelect')?.value || null;
+const getCompanyId = () => {
+    try {
+        const ctx = JSON.parse(localStorage.getItem('appContext') || '{}');
+        return ctx.company?.id || localStorage.getItem('company_id') || null;
+    } catch { return localStorage.getItem('company_id') || null; }
+};
+const getBranchId = () => localStorage.getItem('active_branch_id') || document.getElementById('branchSelect')?.value || null;
 
 // ── Boot ───────────────────────────────────────────────────────────────────
 document.addEventListener('DOMContentLoaded', async () => {
     await fetchServices();
-    await loadPlans();
     await fetchCustomers();
+    await loadPlans();
     await loadPurchases();
 
     // Reload when branch changes
@@ -37,19 +42,19 @@ document.addEventListener('DOMContentLoaded', async () => {
         if (activeTab === 'plans') openCreateModal();
     });
 
-    document.getElementById('closePlanModal')?.addEventListener('click',  closePlanModal);
-    document.getElementById('btnCancelPlan')?.addEventListener('click',   closePlanModal);
+    document.getElementById('closePlanModal')?.addEventListener('click', closePlanModal);
+    document.getElementById('btnCancelPlan')?.addEventListener('click', closePlanModal);
     overlay?.addEventListener('click', e => { if (e.target === overlay) closePlanModal(); });
 
     // Status toggle label
     const statusToggle = document.getElementById('planStatusToggle');
-    const statusLabel  = document.getElementById('planStatusLabel');
+    const statusLabel = document.getElementById('planStatusLabel');
     statusToggle?.addEventListener('change', () => {
         statusLabel.textContent = statusToggle.checked ? 'Active' : 'Inactive';
     });
 
     // Services dropdown
-    const svcBtn  = document.getElementById('planSvcBtn');
+    const svcBtn = document.getElementById('planSvcBtn');
     const svcMenu = document.getElementById('planSvcMenu');
     svcBtn?.addEventListener('click', e => {
         e.stopPropagation();
@@ -93,30 +98,31 @@ document.addEventListener('DOMContentLoaded', async () => {
         custSearch.addEventListener('input', (e) => {
             selectedCustomer = null; // reset on type
             const raw = e.target.value.trim();
-            const digits = raw.replace(/\\D/g, '');
+            const digits = raw.replace(/\D/g, '');
 
-            if (!digits) {
+            if (!digits && raw.length < 2) {
                 if(custSuggestions) custSuggestions.style.display = 'none';
                 return;
             }
 
             const filtered = allCustomers.filter(c => {
                 const phoneStr = (c.customer_phone || c.phone_number || '').toString();
-                return phoneStr.replace(/\\D/g, '').includes(digits);
+                const nameStr = (c.customer_name || `${c.first_name || ''} ${c.last_name || ''}`).toLowerCase();
+                return phoneStr.replace(/\D/g, '').includes(digits) || (raw && nameStr.includes(raw.toLowerCase()));
             });
 
             if (filtered.length === 0) {
-                custSuggestions.innerHTML = `<div style="padding: 14px 12px; color: #64748b; font-size: 0.85rem; text-align: center; display: flex; flex-direction: column; align-items: center; gap: 4px;"><span style="font-size: 1.2rem;">🔍</span><span>No customer found with this number</span></div>`;
+                custSuggestions.innerHTML = `<div style="padding: 14px 12px; color: #64748b; font-size: 0.85rem; text-align: center; display: flex; flex-direction: column; align-items: center; gap: 4px;"><span style="font-size: 1.2rem;">🔍</span><span>No customer found</span></div>`;
             } else {
                 custSuggestions.innerHTML = filtered.slice(0, 8).map(c => {
                     const phone = (c.customer_phone || c.phone_number || '').toString();
                     const fullName = (c.customer_name || `${c.first_name || ''} ${c.last_name || ''}`).trim() || 'Unknown';
                     const custId = c.id || c.customer_id;
 
-                    const highlightedPhone = phone.replace(
-                        new RegExp(digits.split('').join('\\\\D*'), 'g'),
+                    const highlightedPhone = digits ? phone.replace(
+                        new RegExp(digits.split('').join('\\D*'), 'g'),
                         match => `<strong style="color: #4f46e5;">${match}</strong>`
-                    );
+                    ) : phone;
 
                     const initials = fullName.split(' ').slice(0, 2).map(w => w[0] || '').join('').toUpperCase();
                     const colors = ['#e0e7ff', '#d1fae5', '#fef3c7', '#ede9fe', '#dbeafe'];
@@ -220,7 +226,7 @@ function showToast(msg) {
 
 function applyPlanSvcSelection() {
     const checkboxes = document.querySelectorAll('#planSvcCheckboxList input[type="checkbox"]');
-    const svcText    = document.getElementById('planSvcText');
+    const svcText = document.getElementById('planSvcText');
     if (!svcText) return;
 
     const selected = Array.from(checkboxes).filter(c => c.checked);
@@ -239,43 +245,36 @@ function applyPlanSvcSelection() {
     }
 }
 
-// ── Customers Fetch ───────────────────────────────────────────────────────
+// ── Customers Fetch (SUPABASE) ──────────────────────────────────────────
 async function fetchCustomers() {
     try {
-        const response = await fetchWithAuth(API.READ_CUSTOMERS, {
-            method: 'POST',
-            body: JSON.stringify({ company_id: getCompanyId(), branch_id: getBranchId() })
-        });
-        if (response.ok) {
-            const data = await response.json();
-            if (Array.isArray(data) && data.length > 0 && data[0].customers) {
-                allCustomers = data[0].customers;
-            } else {
-                allCustomers = Array.isArray(data) ? data : (data.customers || []);
-            }
-        }
+        const { data, error } = await supabase
+            .from('customers')
+            .select('id, customer_id, customer_name, first_name, last_name, customer_phone, phone_number')
+            .eq('company_id', getCompanyId())
+            .eq('branch_id', getBranchId());
+
+        if (error) throw error;
+        allCustomers = data || [];
     } catch (err) {
-        console.error('fetchCustomers (memberships):', err);
+        console.error('Failed to load customers (Supabase):', err);
     }
 }
 
-// ── Services Fetch ────────────────────────────────────────────────────────
+// ── Services Fetch (SUPABASE) ───────────────────────────────────────────
 async function fetchServices() {
     try {
-        const res = await fetchWithAuth(API.READ_SERVICES, {
-            method: 'POST',
-            body: JSON.stringify({
-                company_id: getCompanyId(),
-                branch_id:  getBranchId()
-            })
-        });
-        if (res.ok) {
-            const data = await res.json();
-            availableServices = Array.isArray(data) ? data : (data.services || []);
-            populatePlanSvcCheckboxes();
-        }
+        const { data, error } = await supabase
+            .from('services')
+            .select('service_id, service_name, status')
+            .eq('company_id', getCompanyId())
+            .eq('branch_id', getBranchId());
+
+        if (error) throw error;
+        availableServices = (data || []).filter(s => (s.status || '').toLowerCase() === 'active');
+        populatePlanSvcCheckboxes();
     } catch (err) {
-        console.error('fetchServices (memberships):', err);
+        console.error('Failed to load services (Supabase):', err);
     }
 }
 
@@ -306,7 +305,7 @@ function populatePlanSvcCheckboxes() {
     });
 }
 
-// ── READ ───────────────────────────────────────────────────────────────────
+// ── READ PLANS (SUPABASE) ───────────────────────────────────────────────
 async function loadPlans() {
     const tbody = document.querySelector('#plansTableContent tbody');
     if (!tbody) return;
@@ -323,43 +322,43 @@ async function loadPlans() {
     if (window.feather) feather.replace();
 
     try {
-        const res = await fetchWithAuth(API.READ_MEMBERSHIP_PLANS, {
-            method: 'POST',
-            body: JSON.stringify({
-                company_id: getCompanyId(),
-                branch_id:  getBranchId()
-            })
+        const companyId = getCompanyId();
+        const branchId = getBranchId();
+
+        const [plansRes, linksRes] = await Promise.all([
+            supabase
+                .from('membership_plans')
+                .select('*')
+                .eq('company_id', companyId)
+                .eq('branch_id', branchId)
+                .neq('status', 'deleted')
+                .order('created_at', { ascending: false }),
+            supabase
+                .from('membership_plan_services')
+                .select('*')
+                .eq('company_id', companyId)
+                .eq('branch_id', branchId)
+        ]);
+
+        if (plansRes.error) throw plansRes.error;
+
+        const svcMap = {};
+        (linksRes.data || []).forEach(row => {
+            const id = row.membership_id;
+            if (!svcMap[id]) svcMap[id] = [];
+            svcMap[id].push({ service_id: row.service_id, service_name: row.service_name });
         });
 
-        if (res.ok) {
-            const rawData = await res.json();
-            const rows = Array.isArray(rawData) ? rawData : (rawData.plans || rawData.membership_plans || []);
+        currentPlans = (plansRes.data || []).map(p => ({
+            ...p,
+            applicable_services: svcMap[p.membership_id || p.id] || []
+        }));
 
-            // Group flat rows by membership_id, aggregating applicable_services
-            const planMap = {};
-            rows.forEach(row => {
-                const id = row.membership_id || row.plan_id || row.membership_plan_id || row._id;
-                if (!planMap[id]) {
-                    planMap[id] = { ...row, applicable_services: [] };
-                }
-                if (row.service_id) {
-                    planMap[id].applicable_services.push({
-                        service_id:   row.service_id,
-                        service_name: row.service_name
-                    });
-                }
-            });
-
-            currentPlans = Object.values(planMap);
-            renderPlans();
-            populateAssignPlanDropdown();
-        } else {
-
-            throw new Error('API error');
-        }
+        renderPlans();
+        populateAssignPlanDropdown();
     } catch (err) {
         console.error('loadPlans:', err);
-        tbody.innerHTML = `<tr><td colspan="7" style="text-align:center;padding:32px;color:#ef4444;">Failed to load membership plans.</td></tr>`;
+        tbody.innerHTML = `<tr><td colspan="7" style="text-align:center;padding:32px;color:#ef4444;">Failed to load membership plans: ${err.message || ''}</td></tr>`;
     }
 }
 
@@ -373,7 +372,7 @@ function renderPlans() {
     }
 
     tbody.innerHTML = currentPlans.map(plan => {
-        const isActive   = plan.status === 'active';
+        const isActive = plan.status === 'active';
         const statusBadge = isActive
             ? `<span style="display:inline-flex;align-items:center;gap:6px;padding:4px 10px;border-radius:20px;font-size:0.75rem;font-weight:600;background:#ecfdf5;color:#059669;">
                    <span style="width:6px;height:6px;border-radius:50%;background:#10b981;"></span>Active
@@ -390,7 +389,7 @@ function renderPlans() {
             ? `${plan.duration_months} Month${plan.duration_months > 1 ? 's' : ''}`
             : (plan.duration || '-');
 
-        const planId = plan.membership_id || plan.plan_id || plan.membership_plan_id || plan._id;
+        const planId = plan.membership_id || plan.id;
 
         return `
             <tr style="border-bottom:1px solid #e2e8f0;">
@@ -441,7 +440,7 @@ function populateAssignPlanDropdown() {
     
     activePlans.forEach(plan => {
         const option = document.createElement('option');
-        const planId = plan.membership_id || plan.plan_id || plan.membership_plan_id || plan._id;
+        const planId = plan.membership_id || plan.id;
         option.value = planId;
         const price = Number(plan.price || 0).toLocaleString('en-IN');
         option.textContent = `${plan.plan_name || plan.name} (₹${price})`;
@@ -451,13 +450,13 @@ function populateAssignPlanDropdown() {
 
 // ── Modal open / close ─────────────────────────────────────────────────────
 function openCreateModal() {
-    isEditing     = false;
+    isEditing = false;
     currentEditId = null;
     resetPlanForm();
 
-    document.querySelector('#planModal h2').textContent         = 'Create Membership Plan';
-    document.querySelector('#planModal .subtitle').textContent  = 'Define a new membership product and its benefits.';
-    document.getElementById('btnSavePlan').textContent          = 'Create Plan';
+    document.querySelector('#planModal h2').textContent = 'Create Membership Plan';
+    document.querySelector('#planModal .subtitle').textContent = 'Define a new membership product and its benefits.';
+    document.getElementById('btnSavePlan').textContent = 'Create Plan';
 
     document.getElementById('planModalOverlay').classList.add('active');
     if (window.feather) feather.replace();
@@ -469,18 +468,18 @@ function closePlanModal() {
 
 function resetPlanForm() {
     const nameInput = document.getElementById('planNameInput');
-    nameInput.value       = '';
-    nameInput.readOnly    = false;
+    nameInput.value = '';
+    nameInput.readOnly = false;
     nameInput.style.background = '';
-    nameInput.style.color      = '';
-    nameInput.style.cursor     = '';
+    nameInput.style.color = '';
+    nameInput.style.cursor = '';
 
-    document.getElementById('planPriceInput').value         = '';
-    document.getElementById('planDurationInput').value      = '12';
-    document.getElementById('planValidFromInput').value     = '';
-    document.getElementById('planDescInput').value          = '';
-    document.getElementById('planDiscountType').value       = 'percentage';
-    document.getElementById('planDiscountValue').value      = '';
+    document.getElementById('planPriceInput').value = '';
+    document.getElementById('planDurationInput').value = '12';
+    document.getElementById('planValidFromInput').value = '';
+    document.getElementById('planDescInput').value = '';
+    document.getElementById('planDiscountType').value = 'percentage';
+    document.getElementById('planDiscountValue').value = '';
 
     const tog = document.getElementById('planStatusToggle');
     tog.checked = true;
@@ -493,31 +492,28 @@ function resetPlanForm() {
 
 // ── EDIT ───────────────────────────────────────────────────────────────────
 window.editPlan = function(id) {
-    const plan = currentPlans.find(p => (p.membership_id || p.plan_id || p.membership_plan_id || p._id) === id);
-    if (!plan) {
-        console.warn('editPlan: plan not found for id', id, currentPlans);
-        return;
-    }
+    const plan = currentPlans.find(p => (p.membership_id || p.id) === id);
+    if (!plan) return;
 
-    isEditing     = true;
+    isEditing = true;
     currentEditId = id;
 
     // Plan Name — read-only in edit mode
     const nameInput = document.getElementById('planNameInput');
-    nameInput.value          = plan.plan_name || plan.name || '';
-    nameInput.readOnly       = true;
+    nameInput.value = plan.plan_name || plan.name || '';
+    nameInput.readOnly = true;
     nameInput.style.background = '#f1f5f9';
-    nameInput.style.color      = '#94a3b8';
-    nameInput.style.cursor     = 'not-allowed';
+    nameInput.style.color = '#94a3b8';
+    nameInput.style.cursor = 'not-allowed';
 
-    document.getElementById('planPriceInput').value         = plan.price || '';
-    document.getElementById('planDurationInput').value      = plan.duration_months || plan.duration || '12';
-    document.getElementById('planDescInput').value          = plan.description || '';
-    document.getElementById('planDiscountType').value       = plan.discount_type || 'percentage';
-    document.getElementById('planDiscountValue').value      = plan.discount_value || '';
+    document.getElementById('planPriceInput').value = plan.price || '';
+    document.getElementById('planDurationInput').value = plan.duration_months || plan.duration || '12';
+    document.getElementById('planDescInput').value = plan.description || '';
+    document.getElementById('planDiscountType').value = plan.discount_type || 'percentage';
+    document.getElementById('planDiscountValue').value = plan.discount_value || '';
 
     if (plan.valid_from) {
-        document.getElementById('planValidFromInput').value = new Date(plan.valid_from).toISOString().split('T')[0];
+        document.getElementById('planValidFromInput').value = plan.valid_from.split('T')[0];
     } else {
         document.getElementById('planValidFromInput').value = '';
     }
@@ -526,38 +522,32 @@ window.editPlan = function(id) {
     tog.checked = plan.status === 'active';
     document.getElementById('planStatusLabel').textContent = tog.checked ? 'Active' : 'Inactive';
 
-    // Services — pre-check matching (fix: don't auto-check 'all')
+    // Services matches
     const checkboxes = document.querySelectorAll('#planSvcCheckboxList input[type="checkbox"]');
-    const svcIds = (plan.applicable_services || []).map(s =>
-        typeof s === 'object' ? (s.service_id || s._id) : s
-    );
+    const svcIds = (plan.applicable_services || []).map(s => s.service_id);
     const allMatch = svcIds.length > 0 && svcIds.length >= availableServices.length;
 
     checkboxes.forEach(c => {
-        if (c.value === 'all') {
-            c.checked = allMatch;
-        } else {
-            c.checked = svcIds.includes(c.value);
-        }
+        if (c.value === 'all') c.checked = allMatch;
+        else c.checked = svcIds.includes(c.value);
     });
     applyPlanSvcSelection();
 
-    document.querySelector('#planModal h2').textContent        = 'Edit Membership Plan';
+    document.querySelector('#planModal h2').textContent = 'Edit Membership Plan';
     document.querySelector('#planModal .subtitle').textContent = 'Update the details for this membership plan.';
-    document.getElementById('btnSavePlan').textContent         = 'Save Changes';
+    document.getElementById('btnSavePlan').textContent = 'Save Changes';
 
     document.getElementById('planModalOverlay').classList.add('active');
     if (window.feather) feather.replace();
 };
 
-// ── DELETE ─────────────────────────────────────────────────────────────────
+// ── DELETE (SUPABASE) ───────────────────────────────────────────────────
 window.deletePlan = function(id) {
     planToDelete = id;
     const overlay = document.getElementById('deletePlanConfirmOverlay');
     if (overlay) {
         overlay.classList.add('active');
     } else {
-        // Fallback if confirm modal doesn't exist yet — use native confirm
         if (confirm('Are you sure you want to delete this membership plan?')) {
             executeDeletePlan(id);
         }
@@ -566,69 +556,62 @@ window.deletePlan = function(id) {
 
 async function executeDeletePlan(id) {
     try {
-        const res = await fetchWithAuth(API.DELETE_MEMBERSHIP_PLAN, {
-            method: 'POST',
-            body: JSON.stringify({
-                company_id:    getCompanyId(),
-                branch_id:     getBranchId(),
-                membership_id: id
-            })
-        });
+        const { error } = await supabase
+            .from('membership_plans')
+            .update({ status: 'deleted' })
+            .eq('membership_id', id);
 
-        if (res.ok) {
-            showToast('Membership plan deleted successfully.');
-            await loadPlans();
-        } else {
-            showToast('Failed to delete plan.');
-        }
+        if (error) throw error;
+        showToast('Membership plan deleted successfully.');
+        await loadPlans();
     } catch (err) {
         console.error('executeDeletePlan:', err);
-        showToast('Error deleting plan.');
+        showToast('Error deleting plan: ' + (err.message || ''));
     }
 }
 
 // ── SAVE (Create / Update) ─────────────────────────────────────────────────
 async function handleSavePlan() {
-    const plan_name      = document.getElementById('planNameInput').value.trim();
-    const price          = document.getElementById('planPriceInput').value;
-    const duration       = document.getElementById('planDurationInput').value;
-    const valid_from     = document.getElementById('planValidFromInput').value;
-    const discount_type  = document.getElementById('planDiscountType').value;
+    const plan_name = document.getElementById('planNameInput').value.trim();
+    const price = document.getElementById('planPriceInput').value;
+    const duration = document.getElementById('planDurationInput').value;
+    const valid_from = document.getElementById('planValidFromInput').value;
+    const discount_type = document.getElementById('planDiscountType').value;
     const discount_value = document.getElementById('planDiscountValue').value;
+    const description = document.getElementById('planDescInput').value.trim();
 
     if (!plan_name || !price || !valid_from || !discount_value) {
         showToast('Please fill all required fields (Name, Price, Valid From, Discount Value).');
         return;
     }
 
-    // Collect selected services
+    // Collect checked services
     const checkboxes = document.querySelectorAll('#planSvcCheckboxList input[type="checkbox"]');
-    let applicable_services = Array.from(checkboxes)
-        .filter(c => c.checked && c.value !== 'all')
-        .map(c => ({
-            service_id:   c.value,
-            service_name: c.parentElement.textContent.trim()
-        }));
+    const hasAllSelected = Array.from(checkboxes).some(c => c.value === 'all' && c.checked);
+
+    let applyServices = [];
+    if (hasAllSelected) {
+        applyServices = availableServices.map(svc => ({ service_id: svc.service_id, service_name: svc.service_name }));
+    } else {
+        Array.from(checkboxes)
+            .filter(c => c.checked && c.value !== 'all')
+            .forEach(c => {
+                applyServices.push({ service_id: c.value, service_name: c.parentElement.textContent.trim() });
+            });
+    }
 
     const payload = {
-        company_id:        getCompanyId(),
-        branch_id:         getBranchId(),
+        company_id: getCompanyId(),
+        branch_id: getBranchId(),
         plan_name,
-        price:             parseFloat(price),
-        duration_months:   parseInt(duration, 10),
-        valid_from,
+        price: parseFloat(price),
+        duration_months: parseInt(duration, 10),
+        valid_from: valid_from || null,
         discount_type,
-        discount_value:    parseFloat(discount_value),
-        status:            document.getElementById('planStatusToggle').checked ? 'active' : 'inactive',
+        discount_value: parseFloat(discount_value),
+        status: document.getElementById('planStatusToggle').checked ? 'active' : 'inactive',
+        description: description || null
     };
-
-    const description = document.getElementById('planDescInput').value.trim();
-    if (description) payload.description = description;
-    if (applicable_services.length > 0) payload.applicable_services = applicable_services;
-
-    if (isEditing && currentEditId) {
-        payload.membership_id = currentEditId;
-    }
 
     const btn = document.getElementById('btnSavePlan');
     const origText = btn.textContent;
@@ -636,29 +619,58 @@ async function handleSavePlan() {
     btn.disabled = true;
 
     try {
-        const url = isEditing ? API.UPDATE_MEMBERSHIP_PLAN : API.CREATE_MEMBERSHIP_PLAN;
-        const res = await fetchWithAuth(url, {
-            method: 'POST',
-            body: JSON.stringify(payload)
-        });
+        let planId = currentEditId;
 
-        if (res.ok) {
-            showToast(isEditing ? 'Plan updated successfully.' : 'Plan created successfully.');
-            closePlanModal();
-            await loadPlans();
+        if (isEditing) {
+            // UPDATE plan
+            const { error: updErr } = await supabase
+                .from('membership_plans')
+                .update(payload)
+                .eq('membership_id', planId);
+            if (updErr) throw updErr;
+
+            // Delete old links
+            const { error: delErr } = await supabase
+                .from('membership_plan_services')
+                .delete()
+                .eq('membership_id', planId);
+            if (delErr) console.warn('Delete links warning:', delErr);
         } else {
-            showToast('Failed to save plan.');
+            // INSERT plan
+            const { data: newPlan, error: insErr } = await supabase
+                .from('membership_plans')
+                .insert(payload)
+                .select();
+            if (insErr) throw insErr;
+            planId = newPlan[0]?.membership_id || newPlan[0]?.id;
         }
+
+        // Re-insert links
+        if (planId && applyServices.length > 0) {
+            const linkRows = applyServices.map(s => ({
+                membership_id: planId,
+                company_id: getCompanyId(),
+                branch_id: getBranchId(),
+                service_id: s.service_id,
+                service_name: s.service_name
+            }));
+            const { error: svcErr } = await supabase.from('membership_plan_services').insert(linkRows);
+            if (svcErr) console.warn('Services insert warning:', svcErr);
+        }
+
+        showToast(isEditing ? 'Plan updated successfully.' : 'Plan created successfully.');
+        closePlanModal();
+        await loadPlans();
     } catch (err) {
         console.error('handleSavePlan:', err);
-        showToast('Error saving plan.');
+        showToast('Error saving plan: ' + (err.message || 'Unknown error'));
     } finally {
         btn.textContent = origText;
         btn.disabled = false;
     }
 }
 
-// ── Purchases Workflow ──────────────────────────────────────────────────────
+// ── Purchases Workflow (SUPABASE) ──────────────────────────────────────────
 
 async function loadPurchases() {
     const tbody = document.querySelector('#purchasesTableContent tbody');
@@ -676,24 +688,19 @@ async function loadPurchases() {
     if (window.feather) feather.replace();
 
     try {
-        const res = await fetchWithAuth(API.READ_MEMBERSHIP_PURCHASES, {
-            method: 'POST',
-            body: JSON.stringify({
-                company_id: getCompanyId(),
-                branch_id:  getBranchId()
-            })
-        });
+        const { data, error } = await supabase
+            .from('membership_purchases')
+            .select('*')
+            .eq('company_id', getCompanyId())
+            .eq('branch_id', getBranchId())
+            .order('purchase_date', { ascending: false });
 
-        if (res.ok) {
-            const data = await res.json();
-            currentPurchases = Array.isArray(data) ? data : (data.purchases || data.membership_purchases || []);
-            renderPurchases();
-        } else {
-            throw new Error('API error');
-        }
+        if (error) throw error;
+        currentPurchases = data || [];
+        renderPurchases();
     } catch (err) {
         console.error('loadPurchases:', err);
-        tbody.innerHTML = `<tr><td colspan="8" style="text-align:center;padding:32px;color:#ef4444;">Failed to load membership purchases.</td></tr>`;
+        tbody.innerHTML = `<tr><td colspan="8" style="text-align:center;padding:32px;color:#ef4444;">Failed to load membership purchases: ${err.message || ''}</td></tr>`;
     }
 }
 
@@ -781,7 +788,6 @@ async function handleAssignMembership() {
         showToast('Please search and select a valid customer.');
         return;
     }
-    
     if (!planValue) {
         showToast('Please select a membership plan.');
         return;
@@ -800,7 +806,18 @@ async function handleAssignMembership() {
     }
 
     const customerName = (selectedCustomer.customer_name || `${selectedCustomer.first_name || ''} ${selectedCustomer.last_name || ''}`).trim();
-    const selectedPlan = currentPlans.find(p => (p.membership_id || p.plan_id || p.membership_plan_id || p._id) === planValue);
+    const selectedPlan = currentPlans.find(p => (p.membership_id || p.id) === planValue);
+
+    const duration = selectedPlan ? (selectedPlan.duration_months || selectedPlan.duration) : null;
+    const purchaseDate = assignDate || new Date().toISOString().split('T')[0];
+    
+    // Javascript calculated Expiry Date
+    let expiryDate = null;
+    if (purchaseDate && duration) {
+        const d = new Date(purchaseDate);
+        d.setMonth(d.getMonth() + parseInt(duration, 10));
+        expiryDate = d.toISOString().split('T')[0];
+    }
 
     const payload = {
         company_id: getCompanyId(),
@@ -812,9 +829,10 @@ async function handleAssignMembership() {
         membership_id: planValue,
         plan_name: selectedPlan ? (selectedPlan.plan_name || selectedPlan.name) : null,
         price: selectedPlan ? Number(selectedPlan.price || 0) : null,
-        duration: selectedPlan ? (selectedPlan.duration_months || selectedPlan.duration) : null,
+        duration: duration,
         pay_method: payMethod,
-        purchase_date: assignDate || new Date().toISOString().split('T')[0],
+        purchase_date: purchaseDate,
+        expiry_date: expiryDate,
         status: 'active'
     };
 
@@ -827,30 +845,26 @@ async function handleAssignMembership() {
     btn.disabled = true;
 
     try {
-        const res = await fetchWithAuth(API.CREATE_MEMBERSHIP_PURCHASE, {
-            method: 'POST',
-            body: JSON.stringify(payload)
-        });
+        const { error } = await supabase
+            .from('membership_purchases')
+            .insert(payload);
 
-        if (res.ok) {
-            showToast('Membership assigned successfully!');
-            document.getElementById('assignModalOverlay')?.classList.remove('active');
-            
-            // Reset form
-            document.getElementById('custSearchInput').value = '';
-            document.getElementById('assignPlanInput').value = '';
-            document.getElementById('assignDiscount').value = '';
-            document.getElementById('assignNotes').value = '';
-            selectedCustomer = null;
-            
-            // Reload purchases list
-            await loadPurchases();
-        } else {
-            showToast('Failed to assign membership.');
-        }
+        if (error) throw error;
+
+        showToast('Membership assigned successfully!');
+        document.getElementById('assignModalOverlay')?.classList.remove('active');
+        
+        // Reset form
+        document.getElementById('custSearchInput').value = '';
+        document.getElementById('assignPlanInput').value = '';
+        document.getElementById('assignDiscount').value = '';
+        document.getElementById('assignNotes').value = '';
+        selectedCustomer = null;
+        
+        await loadPurchases();
     } catch (err) {
         console.error('handleAssignMembership error:', err);
-        showToast('An error occurred during assignment.');
+        showToast('An error occurred during assignment: ' + (err.message || ''));
     } finally {
         btn.textContent = origText;
         btn.disabled = false;
@@ -908,24 +922,21 @@ window.cancelMembershipPurchase = function(purchaseId) {
 
 async function executeCancelMembershipPurchase(purchaseId) {
     try {
-        const res = await fetchWithAuth(API.CANCEL_MEMBERSHIP_PURCHASE, {
-            method: 'POST',
-            body: JSON.stringify({
-                company_id: getCompanyId(),
-                branch_id: getBranchId(),
-                purchase_id: purchaseId
-            })
-        });
+        const { error } = await supabase
+            .from('membership_purchases')
+            .update({ status: 'cancelled' })
+            .eq('purchase_id', purchaseId);
 
-        if (res.ok) {
-            showToast('Membership has been cancelled.');
-            await loadPurchases();
-        } else {
-            showToast('Failed to cancel membership.');
+        if (error) {
+            // fallback if pk is id
+            const { error: err2 } = await supabase.from('membership_purchases').update({ status: 'cancelled' }).eq('id', purchaseId);
+            if (err2) throw err2;
         }
+
+        showToast('Membership has been cancelled.');
+        await loadPurchases();
     } catch (err) {
         console.error('cancelMembershipPurchase error:', err);
-        showToast('Error cancelling membership.');
+        showToast('Error cancelling membership: ' + (err.message || ''));
     }
 }
-

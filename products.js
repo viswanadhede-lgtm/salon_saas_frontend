@@ -1,12 +1,15 @@
-import { API, fetchWithAuth } from './config/api.js';
-import { FEATURES } from './config/feature-registry.js';
-import { SUB_FEATURES } from './config/sub-feature-registry.js';
+import { supabase } from './lib/supabase.js';
 
 let liveProductsData = [];
 let liveProductCategoriesData = [];
 
 // --- Helpers ---
-function getCompanyId() { return localStorage.getItem('company_id') || null; }
+function getCompanyId() {
+    try {
+        const ctx = JSON.parse(localStorage.getItem('appContext') || '{}');
+        return ctx.company?.id || localStorage.getItem('company_id') || null;
+    } catch { return localStorage.getItem('company_id') || null; }
+}
 
 function getBranchId() {
     return localStorage.getItem('active_branch_id') || null;
@@ -14,7 +17,6 @@ function getBranchId() {
 
 // --- Boot ---
 document.addEventListener('DOMContentLoaded', function () {
-    // Nuke the mock init logic
     initTabs();
     setupInjectedModals();
     attachGlobalEventListeners();
@@ -25,56 +27,59 @@ document.addEventListener('DOMContentLoaded', function () {
     });
 });
 
-// --- API Integrations ---
-
+// ─────────────────────────────────────────────────────────────────────────────
+// SUPABASE: Fetch Product Categories
+// ─────────────────────────────────────────────────────────────────────────────
 async function fetchProductCategories() {
     try {
-        const response = await fetchWithAuth(API.READ_PRODUCT_CATEGORIES, {
-            method: 'POST',
-            body: JSON.stringify({ company_id: getCompanyId(), branch_id: getBranchId() })
-        }, FEATURES.PRODUCT_MANAGEMENT, 'read');
-        
-        if (!response.ok) throw new Error('Failed to fetch categories');
-        
-        const data = await response.json();
-        let rawData = Array.isArray(data) ? data : (data.categories || []);
-        liveProductCategoriesData = rawData.filter(c => (c.status || '').toLowerCase() !== 'deleted');
-        
-        // Update Add Product Dropdown
+        const { data, error } = await supabase
+            .from('product_categories')
+            .select('*')
+            .eq('company_id', getCompanyId())
+            .eq('branch_id', getBranchId());
+
+        if (error) throw error;
+
+        liveProductCategoriesData = (data || []).filter(c =>
+            (c.status || '').toLowerCase() !== 'deleted'
+        );
+
         populateCategoryDropdown('productCategory');
-        // Update Edit Product Dropdown 
         populateCategoryDropdown('editProductCategory');
-        // Update Filter Dropdown
         renderFilterOptions();
-        
-        // Render table
         renderCategoriesTable();
-        // Update Badge
+
         const tabEl = document.getElementById('categoriesCountBadge');
         if (tabEl) tabEl.textContent = liveProductCategoriesData.length;
     } catch (err) {
         console.error('Error fetching product categories:', err);
+        showToast('Could not load categories: ' + (err.message || ''), true);
     }
 }
 
+// ─────────────────────────────────────────────────────────────────────────────
+// SUPABASE: Fetch Products
+// ─────────────────────────────────────────────────────────────────────────────
 async function fetchProducts() {
     try {
-        const response = await fetchWithAuth(API.READ_PRODUCTS, {
-            method: 'POST',
-            body: JSON.stringify({ company_id: getCompanyId(), branch_id: getBranchId() })
-        }, FEATURES.PRODUCT_MANAGEMENT, 'read');
-        
-        if (!response.ok) throw new Error('Failed to fetch products');
-        
-        const data = await response.json();
-        let rawData = Array.isArray(data) ? data : (data.products || []);
-        liveProductsData = rawData.filter(p => (p.status || '').toLowerCase() !== 'deleted');
-        
+        const { data, error } = await supabase
+            .from('products')
+            .select('*')
+            .eq('company_id', getCompanyId())
+            .eq('branch_id', getBranchId());
+
+        if (error) throw error;
+
+        liveProductsData = (data || []).filter(p =>
+            (p.status || '').toLowerCase() !== 'deleted'
+        );
+
         renderProductsTable();
         const tabEl = document.getElementById('productsCountBadge');
         if (tabEl) tabEl.textContent = liveProductsData.length;
     } catch (err) {
         console.error('Error fetching products:', err);
+        showToast('Could not load products: ' + (err.message || ''), true);
     }
 }
 
@@ -82,12 +87,14 @@ function populateCategoryDropdown(dropdownId) {
     const sel = document.getElementById(dropdownId);
     if (!sel) return;
     sel.innerHTML = '<option value="" disabled selected>Select a category</option>';
-    liveProductCategoriesData.filter(c => (c.status || '').toLowerCase() === 'active').forEach(c => {
-        const o = document.createElement('option');
-        o.value = c.category_name; 
-        o.textContent = c.category_name;
-        sel.appendChild(o);
-    });
+    liveProductCategoriesData
+        .filter(c => (c.status || '').toLowerCase() === 'active')
+        .forEach(c => {
+            const o = document.createElement('option');
+            o.value = c.category_name;
+            o.textContent = c.category_name;
+            sel.appendChild(o);
+        });
 }
 
 // --- Tabs & Layout ---
@@ -125,15 +132,14 @@ function initTabs() {
                 filterBtn.style.display  = 'flex';
                 primaryActionText.textContent = 'Add Product';
                 primaryActionBtn.onclick = window.openAddProductModal;
-                fetchProductCategories();
-                renderProductsTable();
+                fetchProductCategories().then(() => fetchProducts());
             } else {
                 document.getElementById('tabCategories').style.display = 'block';
                 searchInput.placeholder  = 'Search categories...';
                 filterBtn.style.display  = 'none';
                 primaryActionText.textContent = 'Add Category';
                 primaryActionBtn.onclick = window.openAddCategoryModal;
-                renderCategoriesTable();
+                fetchProductCategories();
             }
         });
     });
@@ -143,7 +149,7 @@ function initTabs() {
     if (searchInput) {
         searchInput.addEventListener('input', () => {
              const activeTab = document.querySelector('.tab-btn.active');
-             if(!activeTab) return;
+             if (!activeTab) return;
              const target = activeTab.getAttribute('data-target');
              if (target === 'products') renderProductsTable();
              else renderCategoriesTable();
@@ -217,11 +223,11 @@ function renderProductsTable() {
             <td style="padding:16px;">${statusBadge(p.status)}</td>
             <td style="padding:16px; vertical-align:middle;">
                 <div class="action-buttons" style="display:flex; justify-content:flex-end; gap:0.5rem;">
-                    <button class="hover-lift" onclick="window.openEditProductModal('${p.id || p.product_id}')" title="Edit Product" style="display:flex; flex-direction:column; align-items:center; justify-content:center; padding: 4px 8px; border-radius:8px; border:1px solid #e0e7ff; background:#eff6ff; cursor:pointer; color:#3b82f6; transition:all 0.2s; min-width: 52px;">
+                    <button class="hover-lift" onclick="window.openEditProductModal('${p.product_id || p.id}')" title="Edit Product" style="display:flex; flex-direction:column; align-items:center; justify-content:center; padding: 4px 8px; border-radius:8px; border:1px solid #e0e7ff; background:#eff6ff; cursor:pointer; color:#3b82f6; transition:all 0.2s; min-width: 52px;">
                         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="margin-bottom:2px;"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path></svg>
                         <span style="font-size:10px; font-weight:600;">Edit</span>
                     </button>
-                    <button class="hover-lift" onclick="window.triggerDeleteProduct('${p.id || p.product_id}', '${(p.product_name || '').replace(/'/g, "\\'")}')" title="Delete Product" style="display:flex; flex-direction:column; align-items:center; justify-content:center; padding: 4px 8px; border-radius:8px; border:1px solid #fee2e2; background:#fef2f2; cursor:pointer; color:#ef4444; transition:all 0.2s; min-width: 52px;">
+                    <button class="hover-lift" onclick="window.triggerDeleteProduct('${p.product_id || p.id}', '${(p.product_name || '').replace(/'/g, "\\'")}')" title="Delete Product" style="display:flex; flex-direction:column; align-items:center; justify-content:center; padding: 4px 8px; border-radius:8px; border:1px solid #fee2e2; background:#fef2f2; cursor:pointer; color:#ef4444; transition:all 0.2s; min-width: 52px;">
                         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="margin-bottom:2px;"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2-2v2"></path><line x1="10" y1="11" x2="10" y2="17"></line><line x1="14" y1="11" x2="14" y2="17"></line></svg>
                         <span style="font-size:10px; font-weight:600;">Delete</span>
                     </button>
@@ -280,11 +286,11 @@ function renderCategoriesTable() {
             <td style="padding:16px;">${statusBadge(c.status)}</td>
             <td style="padding:16px; vertical-align:middle;">
                 <div class="action-buttons" style="display:flex; justify-content:flex-end; gap:0.5rem;">
-                    <button class="hover-lift" onclick="window.openEditCategoryModal('${c.id || c.category_id}')" title="Edit Category" style="display:flex; flex-direction:column; align-items:center; justify-content:center; padding: 4px 8px; border-radius:8px; border:1px solid #e0e7ff; background:#eff6ff; cursor:pointer; color:#3b82f6; transition:all 0.2s; min-width: 52px;">
+                    <button class="hover-lift" onclick="window.openEditCategoryModal('${c.category_id || c.id}')" title="Edit Category" style="display:flex; flex-direction:column; align-items:center; justify-content:center; padding: 4px 8px; border-radius:8px; border:1px solid #e0e7ff; background:#eff6ff; cursor:pointer; color:#3b82f6; transition:all 0.2s; min-width: 52px;">
                         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="margin-bottom:2px;"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path></svg>
                         <span style="font-size:10px; font-weight:600;">Edit</span>
                     </button>
-                    <button class="flex-shrink-0 hover-lift" ${pCount > 0 ? 'disabled' : ''} onclick="${pCount > 0 ? '' : `window.triggerDeleteCategory('${c.id || c.category_id}', '${(c.category_name || '').replace(/'/g, "\\'")}')`}" title="${pCount > 0 ? 'Cannot delete the category because there are active products under this category' : 'Delete Category'}" style="display:flex; flex-direction:column; align-items:center; justify-content:center; padding: 4px 8px; border-radius:8px; border:1px solid #fee2e2; background:#fef2f2; cursor:${pCount > 0 ? 'not-allowed' : 'pointer'}; color:#ef4444; transition:all 0.2s; min-width: 52px; opacity: ${pCount > 0 ? '0.45' : '1'};">
+                    <button class="flex-shrink-0 hover-lift" ${pCount > 0 ? 'disabled' : ''} onclick="${pCount > 0 ? '' : `window.triggerDeleteCategory('${c.category_id || c.id}', '${(c.category_name || '').replace(/'/g, "\\'")}')`}" title="${pCount > 0 ? 'Cannot delete: products exist under this category' : 'Delete Category'}" style="display:flex; flex-direction:column; align-items:center; justify-content:center; padding: 4px 8px; border-radius:8px; border:1px solid #fee2e2; background:#fef2f2; cursor:${pCount > 0 ? 'not-allowed' : 'pointer'}; color:#ef4444; transition:all 0.2s; min-width: 52px; opacity: ${pCount > 0 ? '0.45' : '1'};">
                         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="margin-bottom:2px;"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path><line x1="10" y1="11" x2="10" y2="17"></line><line x1="14" y1="11" x2="14" y2="17"></line></svg>
                         <span style="font-size:10px; font-weight:600;">Delete</span>
                     </button>
@@ -319,7 +325,7 @@ document.addEventListener('click', function (e) {
 function setupInjectedModals() {
     // Delete Overlay
     if (!document.getElementById('deleteConfirmOverlay')) {
-        const deleteOverlayHtml = `
+        document.body.insertAdjacentHTML('beforeend', `
         <div class="modal-overlay custom-logout-overlay" id="deleteConfirmOverlay" style="z-index: 9999; backdrop-filter: blur(8px);">
             <div class="logout-modal" style="background: white; border-radius: 16px; padding: 32px; width: 400px; max-width: 90vw; text-align: center; box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1);">
                 <div class="logout-icon-container" style="width: 64px; height: 64px; border-radius: 50%; background: #fee2e2; display: flex; align-items: center; justify-content: center; margin: 0 auto 20px;">
@@ -332,14 +338,12 @@ function setupInjectedModals() {
                     <button id="btnConfirmDelete" style="flex: 1; padding: 12px 20px; border-radius: 8px; border: none; background: #ef4444; color: white; font-weight: 600; cursor: pointer;">Yes, Delete</button>
                 </div>
             </div>
-        </div>
-        `;
-        document.body.insertAdjacentHTML('beforeend', deleteOverlayHtml);
+        </div>`);
     }
 
     // Edit Product Modal
     if (!document.getElementById('editProductModalOverlay')) {
-        const editProductHtml = `
+        document.body.insertAdjacentHTML('beforeend', `
         <div class="modal-overlay" id="editProductModalOverlay">
             <div class="modal-container" id="editProductModal" style="width: 760px; max-width: 95%;">
                 <div class="modal-header">
@@ -403,13 +407,12 @@ function setupInjectedModals() {
                     <button type="button" class="btn btn-primary" id="updateProductBtn" style="display:inline-flex;align-items:center;justify-content:center;gap:6px;padding: 8px 16px;width: auto; flex: 0 0 auto; max-width: max-content;">Update Product</button>
                 </div>
             </div>
-        </div>`;
-        document.body.insertAdjacentHTML('beforeend', editProductHtml);
+        </div>`);
     }
 
     // Edit Category Modal
     if (!document.getElementById('editCategoryModalOverlay')) {
-        const editCatHtml = `
+        document.body.insertAdjacentHTML('beforeend', `
         <div class="modal-overlay" id="editCategoryModalOverlay">
             <div class="modal-container" id="editCategoryModal" style="width: 420px; max-width: 95%;">
                 <div class="modal-header">
@@ -448,8 +451,7 @@ function setupInjectedModals() {
                     <button type="button" class="btn btn-primary" id="updateCategoryBtn" style="display:inline-flex;align-items:center;justify-content:center;gap:6px;padding: 8px 16px;width: auto; flex: 0 0 auto; max-width: max-content;">Update Category</button>
                 </div>
             </div>
-        </div>`;
-        document.body.insertAdjacentHTML('beforeend', editCatHtml);
+        </div>`);
     }
 }
 
@@ -457,17 +459,15 @@ function setupInjectedModals() {
 window.selectStatus = function (val) {
     const act = document.getElementById('statusActiveBtn');
     const inact = document.getElementById('statusInactiveBtn');
-    if(act && inact){
+    if (act && inact) {
         if (val === 'Active') {
             act.style.borderColor = '#1e3a8a'; act.style.background = '#eff6ff'; act.style.color = '#1e3a8a';
             inact.style.borderColor = '#e2e8f0'; inact.style.background = '#f8fafc'; inact.style.color = '#64748b';
-            const el = document.getElementById('statusActive');
-            if(el) el.checked = true;
+            const el = document.getElementById('statusActive'); if (el) el.checked = true;
         } else {
             inact.style.borderColor = '#1e3a8a'; inact.style.background = '#eff6ff'; inact.style.color = '#1e3a8a';
             act.style.borderColor = '#e2e8f0'; act.style.background = '#f8fafc'; act.style.color = '#64748b';
-            const el = document.getElementById('statusInactive');
-            if(el) el.checked = true;
+            const el = document.getElementById('statusInactive'); if (el) el.checked = true;
         }
     }
 };
@@ -477,15 +477,15 @@ window.selectCatStatus = function (val) {
     const inact = document.getElementById('catStatusInactiveBtn');
     const activeRadio = document.querySelector('input[name="categoryStatus"][value="Active"]');
     const inactiveRadio = document.querySelector('input[name="categoryStatus"][value="Inactive"]');
-    if(act && inact){
+    if (act && inact) {
         if (val === 'Active') {
             act.style.borderColor = '#1e3a8a'; act.style.background = '#eff6ff'; act.style.color = '#1e3a8a';
             inact.style.borderColor = '#e2e8f0'; inact.style.background = '#f8fafc'; inact.style.color = '#64748b';
-            if(activeRadio) activeRadio.checked = true;
+            if (activeRadio) activeRadio.checked = true;
         } else {
             inact.style.borderColor = '#1e3a8a'; inact.style.background = '#eff6ff'; inact.style.color = '#1e3a8a';
             act.style.borderColor = '#e2e8f0'; act.style.background = '#f8fafc'; act.style.color = '#64748b';
-            if(inactiveRadio) inactiveRadio.checked = true;
+            if (inactiveRadio) inactiveRadio.checked = true;
         }
     }
 };
@@ -493,17 +493,15 @@ window.selectCatStatus = function (val) {
 window.selectEditStatus = function (val) {
     const act = document.getElementById('editPStatusActiveBtn');
     const inact = document.getElementById('editPStatusInactiveBtn');
-    if(act && inact){
+    if (act && inact) {
         if (val === 'Active') {
             act.style.borderColor = '#1e3a8a'; act.style.background = '#eff6ff'; act.style.color = '#1e3a8a';
             inact.style.borderColor = '#e2e8f0'; inact.style.background = '#f8fafc'; inact.style.color = '#64748b';
-            const el = document.getElementById('editPStatusActive');
-            if(el) el.checked = true;
+            const el = document.getElementById('editPStatusActive'); if (el) el.checked = true;
         } else {
             inact.style.borderColor = '#1e3a8a'; inact.style.background = '#eff6ff'; inact.style.color = '#1e3a8a';
             act.style.borderColor = '#e2e8f0'; act.style.background = '#f8fafc'; act.style.color = '#64748b';
-            const el = document.getElementById('editPStatusInactive');
-            if(el) el.checked = true;
+            const el = document.getElementById('editPStatusInactive'); if (el) el.checked = true;
         }
     }
 };
@@ -511,25 +509,23 @@ window.selectEditStatus = function (val) {
 window.selectEditCatStatus = function (val) {
     const act = document.getElementById('editCStatusActiveBtn');
     const inact = document.getElementById('editCStatusInactiveBtn');
-    if(act && inact){
+    if (act && inact) {
         if (val === 'Active') {
             act.style.borderColor = '#1e3a8a'; act.style.background = '#eff6ff'; act.style.color = '#1e3a8a';
             inact.style.borderColor = '#e2e8f0'; inact.style.background = '#f8fafc'; inact.style.color = '#64748b';
-            const el = document.getElementById('editCStatusActive');
-            if(el) el.checked = true;
+            const el = document.getElementById('editCStatusActive'); if (el) el.checked = true;
         } else {
             inact.style.borderColor = '#1e3a8a'; inact.style.background = '#eff6ff'; inact.style.color = '#1e3a8a';
             act.style.borderColor = '#e2e8f0'; act.style.background = '#f8fafc'; act.style.color = '#64748b';
-            const el = document.getElementById('editCStatusInactive');
-            if(el) el.checked = true;
+            const el = document.getElementById('editCStatusInactive'); if (el) el.checked = true;
         }
     }
 };
 
-
-// --- Event Listeners & Modals ---
+// ─────────────────────────────────────────────────────────────────────────────
+// SUPABASE: All CRUD Event Listeners
+// ─────────────────────────────────────────────────────────────────────────────
 function attachGlobalEventListeners() {
-    // Add Product Modals close triggers
     ['addProductModalOverlay', 'addCategoryModalOverlay', 'editProductModalOverlay', 'editCategoryModalOverlay'].forEach(oid => {
         const overlay = document.getElementById(oid);
         if (overlay) overlay.addEventListener('click', (e) => { if (e.target === overlay) closeAllModals(); });
@@ -541,7 +537,7 @@ function attachGlobalEventListeners() {
         if (btn) btn.addEventListener('click', closeAllModals);
     });
 
-    // --- Create Category ---
+    // ── CREATE CATEGORY ───────────────────────────────────────────────────────
     const saveCatBtn = document.getElementById('saveCategoryBtn');
     if (saveCatBtn) {
         saveCatBtn.addEventListener('click', async () => {
@@ -552,74 +548,59 @@ function attachGlobalEventListeners() {
                 company_id: getCompanyId(),
                 branch_id: getBranchId(),
                 category_name: name,
-                description: document.getElementById('categoryDescription').value.trim(),
+                description: document.getElementById('categoryDescription').value.trim() || null,
                 status: document.querySelector('input[name="categoryStatus"]:checked')?.value || 'Active'
             };
             
             saveCatBtn.disabled = true;
             saveCatBtn.textContent = 'Saving...';
             try {
-                const res = await fetchWithAuth(API.CREATE_PRODUCT_CATEGORY, {
-                    method: 'POST', body: JSON.stringify(payload)
-                }, FEATURES.PRODUCT_MANAGEMENT, 'create');
-                const data = await res.json();
-                const hasError = Array.isArray(data) ? !!data[0]?.error : !!data.error;
+                const { error } = await supabase.from('product_categories').insert(payload);
+                if (error) throw error;
 
-                if (res.ok && !hasError) {
-                    showToast('Category created successfully');
-                    closeAllModals();
-                    document.getElementById('categoryName').value = '';
-                    document.getElementById('categoryDescription').value = '';
-                    fetchProductCategories();
-                } else {
-                    let errorMsg = Array.isArray(data) ? data[0]?.error || 'Unknown error' : data.message || data.error || 'Failed to create category';
-                    showToast(errorMsg, true);
-                }
+                showToast('Category created successfully');
+                closeAllModals();
+                document.getElementById('categoryName').value = '';
+                document.getElementById('categoryDescription').value = '';
+                fetchProductCategories();
             } catch (err) {
-                showToast('Network error', true);
+                showToast(err.message || 'Failed to create category', true);
             } finally {
                 saveCatBtn.disabled = false;
                 saveCatBtn.innerHTML = '<i data-feather="save" style="width:15px;height:15px;margin-right:6px"></i> Save Category';
-                if(window.feather) feather.replace();
+                if (window.feather) feather.replace();
             }
         });
     }
 
-    // --- Update Category ---
+    // ── UPDATE CATEGORY ───────────────────────────────────────────────────────
     const updateCatBtn = document.getElementById('updateCategoryBtn');
     if (updateCatBtn) {
         updateCatBtn.addEventListener('click', async () => {
             const name = document.getElementById('editCategoryName').value.trim();
-            if(!name) return showToast('Please enter category name', true);
-            
-            const payload = {
-                company_id: getCompanyId(),
-                branch_id: getBranchId(),
-                category_id: document.getElementById('editCategoryId').value,
-                category_name: name,
-                description: document.getElementById('editCategoryDescription').value.trim(),
-                status: document.querySelector('input[name="editCategoryStatus"]:checked')?.value || 'Active'
-            };
+            if (!name) return showToast('Please enter category name', true);
+
+            const catId = document.getElementById('editCategoryId').value;
 
             updateCatBtn.disabled = true;
             updateCatBtn.textContent = 'Updating...';
             try {
-                const res = await fetchWithAuth(API.UPDATE_PRODUCT_CATEGORY, {
-                    method: 'POST', body: JSON.stringify(payload)
-                }, FEATURES.PRODUCT_MANAGEMENT, 'update');
-                const data = await res.json();
-                const hasError = Array.isArray(data) ? !!data[0]?.error : !!data.error;
+                const { error } = await supabase
+                    .from('product_categories')
+                    .update({
+                        category_name: name,
+                        description: document.getElementById('editCategoryDescription').value.trim() || null,
+                        status: document.querySelector('input[name="editCategoryStatus"]:checked')?.value || 'Active'
+                    })
+                    .eq('category_id', catId);
 
-                if (res.ok && !hasError) {
-                    showToast('Category updated');
-                    closeAllModals();
-                    fetchProductCategories();
-                } else {
-                    let errorMsg = Array.isArray(data) ? data[0]?.error || 'Unknown error' : data.message || data.error || 'Failed to update';
-                    showToast(errorMsg, true);
-                }
+                if (error) throw error;
+
+                showToast('Category updated');
+                closeAllModals();
+                fetchProductCategories();
             } catch (err) {
-                showToast('Network error', true);
+                showToast(err.message || 'Failed to update category', true);
             } finally {
                 updateCatBtn.disabled = false;
                 updateCatBtn.textContent = 'Update Category';
@@ -627,7 +608,7 @@ function attachGlobalEventListeners() {
         });
     }
 
-    // --- Create Product ---
+    // ── CREATE PRODUCT ────────────────────────────────────────────────────────
     const saveProdBtn = document.getElementById('saveProductBtn');
     if (saveProdBtn) {
         saveProdBtn.addEventListener('click', async () => {
@@ -636,56 +617,46 @@ function attachGlobalEventListeners() {
             const price = document.getElementById('productPrice').value;
             const stock = document.getElementById('productStock').value;
             
-            if(!name || !cat || price==='' || stock==='') return showToast('Please fill all required fields', true);
+            if (!name || !cat || price === '' || stock === '') return showToast('Please fill all required fields', true);
 
             const categoryObj = liveProductCategoriesData.find(c => c.category_name === cat);
-            const catId = categoryObj ? (categoryObj.id || categoryObj.category_id) : '';
-
-            const payload = {
-                company_id: getCompanyId(),
-                branch_id: getBranchId(),
-                product_name: name,
-                category_name: cat,
-                category_id: catId,
-                price: Number(price),
-                stock_quantity: Number(stock),
-                status: document.querySelector('input[name="productStatus"]:checked')?.value || 'Active',
-                description: document.getElementById('productDescription').value.trim()
-            };
+            const catId = categoryObj ? (categoryObj.category_id || categoryObj.id) : null;
 
             saveProdBtn.disabled = true;
             saveProdBtn.textContent = 'Saving...';
             try {
-                const res = await fetchWithAuth(API.CREATE_PRODUCT, {
-                    method: 'POST', body: JSON.stringify(payload)
-                }, FEATURES.PRODUCT_MANAGEMENT, 'create');
-                const data = await res.json();
-                const hasError = Array.isArray(data) ? !!data[0]?.error : !!data.error;
+                const { error } = await supabase.from('products').insert({
+                    company_id: getCompanyId(),
+                    branch_id: getBranchId(),
+                    product_name: name,
+                    category_name: cat,
+                    category_id: catId,
+                    price: Number(price),
+                    stock_quantity: Number(stock),
+                    status: document.querySelector('input[name="productStatus"]:checked')?.value || 'Active',
+                    description: document.getElementById('productDescription').value.trim() || null
+                });
 
-                if (res.ok && !hasError) {
-                    showToast('Product created');
-                    document.getElementById('productName').value = '';
-                    document.getElementById('productPrice').value = '';
-                    document.getElementById('productStock').value = '';
-                    document.getElementById('productCategory').value = '';
-                    document.getElementById('productDescription').value = '';
-                    closeAllModals();
-                    fetchProducts();
-                } else {
-                    let errorMsg = Array.isArray(data) ? data[0]?.error || 'Unknown error' : data.message || data.error || 'Failed to create product';
-                    showToast(errorMsg, true);
-                }
+                if (error) throw error;
+
+                showToast('Product created');
+                ['productName','productPrice','productStock','productDescription'].forEach(id => {
+                    const el = document.getElementById(id); if (el) el.value = '';
+                });
+                document.getElementById('productCategory').value = '';
+                closeAllModals();
+                fetchProducts();
             } catch (err) {
-                showToast('Network error', true);
+                showToast(err.message || 'Failed to create product', true);
             } finally {
                 saveProdBtn.disabled = false;
                 saveProdBtn.innerHTML = '<i data-feather="save" style="width:15px;height:15px;margin-right:6px"></i> Save Product';
-                if(window.feather) feather.replace();
+                if (window.feather) feather.replace();
             }
         });
     }
 
-    // --- Update Product ---
+    // ── UPDATE PRODUCT ────────────────────────────────────────────────────────
     const updateProdBtn = document.getElementById('updateProductBtn');
     if (updateProdBtn) {
         updateProdBtn.addEventListener('click', async () => {
@@ -694,43 +665,35 @@ function attachGlobalEventListeners() {
             const price = document.getElementById('editProductPrice').value;
             const stock = document.getElementById('editProductStock').value;
             
-            if(!name || !cat || price==='' || stock==='') return showToast('Please fill all required fields', true);
+            if (!name || !cat || price === '' || stock === '') return showToast('Please fill all required fields', true);
 
+            const productId = document.getElementById('editProductId').value;
             const categoryObj = liveProductCategoriesData.find(c => c.category_name === cat);
-            const catId = categoryObj ? (categoryObj.id || categoryObj.category_id) : '';
-
-            const payload = {
-                company_id: getCompanyId(),
-                branch_id: getBranchId(),
-                product_id: document.getElementById('editProductId').value,
-                product_name: name,
-                category_name: cat,
-                category_id: catId,
-                price: Number(price),
-                stock_quantity: Number(stock),
-                status: document.querySelector('input[name="editProductStatus"]:checked')?.value || 'Active',
-                description: document.getElementById('editProductDescription').value.trim()
-            };
+            const catId = categoryObj ? (categoryObj.category_id || categoryObj.id) : null;
 
             updateProdBtn.disabled = true;
             updateProdBtn.textContent = 'Updating...';
             try {
-                const res = await fetchWithAuth(API.UPDATE_PRODUCT, {
-                    method: 'POST', body: JSON.stringify(payload)
-                }, FEATURES.PRODUCT_MANAGEMENT, 'update');
-                const data = await res.json();
-                const hasError = Array.isArray(data) ? !!data[0]?.error : !!data.error;
+                const { error } = await supabase
+                    .from('products')
+                    .update({
+                        product_name: name,
+                        category_name: cat,
+                        category_id: catId,
+                        price: Number(price),
+                        stock_quantity: Number(stock),
+                        status: document.querySelector('input[name="editProductStatus"]:checked')?.value || 'Active',
+                        description: document.getElementById('editProductDescription').value.trim() || null
+                    })
+                    .eq('product_id', productId);
 
-                if (res.ok && !hasError) {
-                    showToast('Product updated');
-                    closeAllModals();
-                    fetchProducts();
-                } else {
-                    let errorMsg = Array.isArray(data) ? data[0]?.error || 'Unknown error' : data.message || data.error || 'Failed to update';
-                    showToast(errorMsg, true);
-                }
+                if (error) throw error;
+
+                showToast('Product updated');
+                closeAllModals();
+                fetchProducts();
             } catch (err) {
-                showToast('Network error', true);
+                showToast(err.message || 'Failed to update product', true);
             } finally {
                 updateProdBtn.disabled = false;
                 updateProdBtn.textContent = 'Update Product';
@@ -738,8 +701,9 @@ function attachGlobalEventListeners() {
         });
     }
 
-    // --- Deletion Flow ---
-    let deleteTarget = null; // { type: 'product'|'category', id: '', name: '' }
+    // ── DELETE (Product or Category) ──────────────────────────────────────────
+    let deleteTarget = null;
+
     document.getElementById('btnCancelDelete')?.addEventListener('click', () => {
         document.getElementById('deleteConfirmOverlay').classList.remove('active');
         deleteTarget = null;
@@ -755,33 +719,29 @@ function attachGlobalEventListeners() {
 
         try {
             const isProd = deleteTarget.type === 'product';
-            const apiEndpoint = isProd ? API.DELETE_PRODUCT : API.DELETE_PRODUCT_CATEGORY;
-            const payload = { company_id: getCompanyId(), branch_id: getBranchId() };
+            let error;
+
             if (isProd) {
-                payload.product_id = deleteTarget.id;
-                payload.category_id = deleteTarget.category_id;
-                payload.category_name = deleteTarget.category_name;
+                // Soft delete — set status to 'deleted'
+                ({ error } = await supabase
+                    .from('products')
+                    .update({ status: 'deleted' })
+                    .eq('product_id', deleteTarget.id));
             } else {
-                payload.category_id = deleteTarget.id;
+                ({ error } = await supabase
+                    .from('product_categories')
+                    .update({ status: 'deleted' })
+                    .eq('category_id', deleteTarget.id));
             }
 
-            const res = await fetchWithAuth(apiEndpoint, {
-                method: 'POST', body: JSON.stringify(payload)
-            }, FEATURES.PRODUCT_MANAGEMENT, 'delete');
-            const data = await res.json();
-            const hasError = Array.isArray(data) ? !!data[0]?.error : !!data.error;
-            
-            if (res.ok && !hasError) {
-                showToast(`${isProd ? 'Product' : 'Category'} deleted successfully`);
-                if (isProd) fetchProducts();
-                else fetchProductCategories();
-                document.getElementById('deleteConfirmOverlay').classList.remove('active');
-            } else {
-                let errorMsg = Array.isArray(data) ? data[0]?.error || 'Unknown error' : data.message || data.error || 'Failed to delete';
-                showToast(errorMsg, true);
-            }
+            if (error) throw error;
+
+            showToast(`${isProd ? 'Product' : 'Category'} deleted successfully`);
+            document.getElementById('deleteConfirmOverlay').classList.remove('active');
+            if (isProd) fetchProducts();
+            else fetchProductCategories();
         } catch (err) {
-            showToast('Network error deleting', true);
+            showToast(err.message || 'Failed to delete', true);
         } finally {
             btn.textContent = origTxt;
             btn.disabled = false;
@@ -791,41 +751,39 @@ function attachGlobalEventListeners() {
     });
 
     window.triggerDeleteProduct = function(id, name) {
-        const p = liveProductsData.find(x => (x.id || x.product_id) == id);
-        const catName = p ? p.category_name : '';
-        const c = liveProductCategoriesData.find(x => x.category_name === catName);
-        const catId = c ? (c.id || c.category_id) : '';
-        
-        deleteTarget = { type: 'product', id, name, category_name: catName, category_id: catId };
+        deleteTarget = { type: 'product', id, name };
         document.getElementById('deleteConfirmTitle').textContent = 'Delete Product?';
-        document.getElementById('deleteConfirmText').textContent = `Are you sure you want to delete ${name}?`;
+        document.getElementById('deleteConfirmText').textContent = `Are you sure you want to delete "${name}"? This cannot be undone.`;
         document.getElementById('deleteConfirmOverlay').classList.add('active');
+        if (window.feather) feather.replace();
     };
 
     window.triggerDeleteCategory = function(id, name) {
         deleteTarget = { type: 'category', id, name };
         document.getElementById('deleteConfirmTitle').textContent = 'Delete Category?';
-        document.getElementById('deleteConfirmText').textContent = `Are you sure you want to delete ${name}? This may impact products using it.`;
+        document.getElementById('deleteConfirmText').textContent = `Are you sure you want to delete "${name}"? This may impact products using it.`;
         document.getElementById('deleteConfirmOverlay').classList.add('active');
+        if (window.feather) feather.replace();
     };
 }
 
+// --- Open Modals ---
 window.openAddProductModal = function () {
     window.selectStatus('Active');
     document.getElementById('addProductModalOverlay').classList.add('active');
-    if(window.feather) feather.replace();
+    if (window.feather) feather.replace();
 };
 
 window.openAddCategoryModal = function () {
     window.selectCatStatus('Active');
     document.getElementById('addCategoryModalOverlay').classList.add('active');
-    if(window.feather) feather.replace();
+    if (window.feather) feather.replace();
 };
 
 window.openEditProductModal = function (id) {
-    const p = liveProductsData.find(x => (x.id || x.product_id) == id);
-    if(p) {
-        document.getElementById('editProductId').value = p.id || p.product_id;
+    const p = liveProductsData.find(x => (x.product_id || x.id) == id);
+    if (p) {
+        document.getElementById('editProductId').value = p.product_id || p.id;
         document.getElementById('editProductName').value = p.product_name || '';
         document.getElementById('editProductCategory').value = p.category_name || '';
         document.getElementById('editProductPrice').value = p.price || 0;
@@ -834,20 +792,20 @@ window.openEditProductModal = function (id) {
         window.selectEditStatus((p.status || 'Active').charAt(0).toUpperCase() + (p.status || 'Active').slice(1).toLowerCase());
         
         document.getElementById('editProductModalOverlay').classList.add('active');
-        if(window.feather) feather.replace();
+        if (window.feather) feather.replace();
     }
 };
 
 window.openEditCategoryModal = function (id) {
-    const c = liveProductCategoriesData.find(x => (x.id || x.category_id) == id);
-    if(c) {
-        document.getElementById('editCategoryId').value = c.id || c.category_id;
+    const c = liveProductCategoriesData.find(x => (x.category_id || x.id) == id);
+    if (c) {
+        document.getElementById('editCategoryId').value = c.category_id || c.id;
         document.getElementById('editCategoryName').value = c.category_name || '';
         document.getElementById('editCategoryDescription').value = c.description || '';
         window.selectEditCatStatus((c.status || 'Active').charAt(0).toUpperCase() + (c.status || 'Active').slice(1).toLowerCase());
         
         document.getElementById('editCategoryModalOverlay').classList.add('active');
-        if(window.feather) feather.replace();
+        if (window.feather) feather.replace();
     }
 };
 
@@ -870,5 +828,6 @@ window.showToast = function(msg, isError) {
         toast.style.opacity = '0';
         setTimeout(() => toast.remove(), 350);
     }, 3000);
-}
+};
 
+function showToast(msg, isError) { window.showToast(msg, isError); }

@@ -1,5 +1,4 @@
-import { API, fetchWithAuth } from './config/api.js';
-import { FEATURES } from './config/feature-registry.js';
+import { supabase } from './lib/supabase.js';
 
 // --- Live Data ---
 let liveProducts = [];
@@ -9,10 +8,32 @@ let allCustomers = [];
 let selectedCustomer = null;
 
 // --- Helpers ---
-function getCompanyId() { return localStorage.getItem('company_id') || null; }
+function getCompanyId() {
+    try {
+        const ctx = JSON.parse(localStorage.getItem('appContext') || '{}');
+        return ctx.company?.id || localStorage.getItem('company_id') || null;
+    } catch { return localStorage.getItem('company_id') || null; }
+}
 
 function getBranchId() {
     return localStorage.getItem('active_branch_id') || null;
+}
+
+function showToast(msg, isError = false) {
+    let toast = document.getElementById('toastNotification');
+    if (!toast) {
+        toast = document.createElement('div');
+        toast.id = 'toastNotification';
+        toast.className = 'toast-notification';
+        document.body.appendChild(toast);
+    }
+    toast.textContent = msg;
+    toast.style.background = isError ? '#dc2626' : '#10b981';
+    toast.classList.add('show');
+    setTimeout(() => {
+        toast.classList.remove('show');
+        setTimeout(() => toast.remove && toast.parentNode && toast.remove(), 300);
+    }, 3000);
 }
 
 // --- Boot ---
@@ -24,7 +45,7 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 });
 
-// --- API: Fetch Products ---
+// --- Supabase: Fetch Products ---
 async function fetchProducts() {
     const grid = document.getElementById('posProductGrid');
     if (!grid) return;
@@ -48,19 +69,19 @@ async function fetchProducts() {
     `;
 
     try {
-        const response = await fetchWithAuth(API.READ_PRODUCTS, {
-            method: 'POST',
-            body: JSON.stringify({ company_id: getCompanyId(), branch_id: getBranchId() })
-        }, FEATURES.PRODUCT_MANAGEMENT, 'read');
+        const companyId = getCompanyId();
+        const branchId = getBranchId();
 
-        if (!response.ok) throw new Error('Failed to fetch products');
+        const { data, error } = await supabase
+            .from('products')
+            .select('*')
+            .eq('company_id', companyId)
+            .eq('branch_id', branchId);
 
-        const data = await response.json();
-        let rawData = Array.isArray(data) ? data : (data.products || []);
+        if (error) throw error;
 
-        // Only show Active products with stock
-        liveProducts = rawData.filter(p =>
-            (p.status || '').toLowerCase() !== 'deleted' &&
+        // Only show Active products
+        liveProducts = (data || []).filter(p =>
             (p.status || '').toLowerCase() === 'active'
         );
 
@@ -79,22 +100,20 @@ async function fetchProducts() {
 
 window.posRetryFetch = function () { fetchProducts(); };
 
-// --- API: Fetch Customers ---
+// --- Supabase: Fetch Customers ---
 async function fetchCustomers() {
     try {
-        const response = await fetchWithAuth(API.READ_CUSTOMERS, {
-            method: 'POST',
-            body: JSON.stringify({ company_id: getCompanyId(), branch_id: getBranchId() })
-        }, FEATURES.CUSTOMERS_MANAGEMENT, 'read');
+        const companyId = getCompanyId();
+        const branchId = getBranchId();
 
-        if (response.ok) {
-            const data = await response.json();
-            if (Array.isArray(data) && data.length > 0 && data[0].customers) {
-                allCustomers = data[0].customers;
-            } else {
-                allCustomers = Array.isArray(data) ? data : (data.customers || []);
-            }
-        }
+        const { data, error } = await supabase
+            .from('customers')
+            .select('*')
+            .eq('company_id', companyId)
+            .eq('branch_id', branchId);
+
+        if (error) throw error;
+        allCustomers = data || [];
     } catch (err) {
         console.error('POS: Error fetching customers:', err);
     }
@@ -117,7 +136,7 @@ function renderProducts(products) {
     }
 
     products.forEach(product => {
-        const id = product.id || product.product_id;
+        const id = product.product_id || product.id;
         const name = product.product_name || product.name || 'Unnamed Product';
         const price = Number(product.price) || 0;
         const stock = Number(product.stock_quantity) || 0;
@@ -137,7 +156,6 @@ function renderProducts(products) {
             opacity: ${isOutOfStock ? '0.65' : '1'};
         `;
 
-        // Generate a consistent color from a palette for the product avatar
         const colors = ['#e0e7ff', '#d1fae5', '#fef3c7', '#fee2e2', '#ede9fe', '#dbeafe'];
         const textColors = ['#4338ca', '#059669', '#d97706', '#dc2626', '#7c3aed', '#1d4ed8'];
         const colorIdx = name.charCodeAt(0) % colors.length;
@@ -204,7 +222,7 @@ function setupEventListeners() {
         });
     }
 
-    // Customer Selection Logic (Phone-number driven, like New Booking modal)
+    // Customer Selection Logic (Phone-number driven)
     const custSearch = document.getElementById('posCustomerSearch');
     const custSuggestions = document.getElementById('posCustomerSuggestions');
     const custNameField = document.getElementById('posCustomerName');
@@ -212,7 +230,6 @@ function setupEventListeners() {
 
     if (custSearch) {
         custSearch.addEventListener('input', (e) => {
-            // Strip non-digit chars for clean progressive phone matching
             const raw = e.target.value.trim();
             const digits = raw.replace(/\D/g, '');
 
@@ -222,7 +239,7 @@ function setupEventListeners() {
             }
 
             const filtered = allCustomers.filter(c => {
-                const phoneStr = (c.customer_phone || c.phone_number || '').toString();
+                const phoneStr = (c.customer_phone || c.phone || '').toString();
                 return phoneStr.replace(/\D/g, '').includes(digits);
             });
 
@@ -234,17 +251,15 @@ function setupEventListeners() {
                     </div>`;
             } else {
                 custSuggestions.innerHTML = filtered.slice(0, 8).map(c => {
-                    const phone = (c.customer_phone || c.phone_number || '').toString();
+                    const phone = (c.customer_phone || c.phone || '').toString();
                     const fullName = (c.customer_name || `${c.first_name || ''} ${c.last_name || ''}`).trim() || 'Unknown';
-                    const custId = c.id || c.customer_id;
+                    const custId = c.customer_id || c.id;
 
-                    // Highlight matched digits in the phone number
                     const highlightedPhone = phone.replace(
                         new RegExp(digits.split('').join('\\D*'), 'g'),
                         match => `<strong style="color: #4f46e5;">${match}</strong>`
                     );
 
-                    // Build initials avatar
                     const initials = fullName.split(' ').slice(0, 2).map(w => w[0] || '').join('').toUpperCase();
                     const colors = ['#e0e7ff', '#d1fae5', '#fef3c7', '#ede9fe', '#dbeafe'];
                     const textColors = ['#4338ca', '#059669', '#d97706', '#7c3aed', '#1d4ed8'];
@@ -266,24 +281,22 @@ function setupEventListeners() {
             custSuggestions.style.display = 'block';
         });
 
-        // Hide suggestions on click outside
         document.addEventListener('click', (e) => {
             if (custSearch && custSuggestions && !custSearch.contains(e.target) && !custSuggestions.contains(e.target)) {
                 custSuggestions.style.display = 'none';
             }
         });
 
-        // Handle suggestion selection
         if (custSuggestions) {
             custSuggestions.addEventListener('click', (e) => {
                 const item = e.target.closest('.cust-suggestion-item');
                 if (item) {
                     const id = item.dataset.id;
-                    const customer = allCustomers.find(c => (c.id || c.customer_id) == id);
+                    const customer = allCustomers.find(c => (c.customer_id || c.id) == id);
                     if (customer) {
                         selectedCustomer = customer;
                         const fullName = (customer.customer_name || `${customer.first_name || ''} ${customer.last_name || ''}`).trim() || '';
-                        const phone = (customer.customer_phone || customer.phone_number || '').toString();
+                        const phone = (customer.customer_phone || customer.phone || '').toString();
 
                         custSearch.value = phone;
                         if (custNameField) custNameField.value = fullName;
@@ -310,22 +323,14 @@ function setupEventListeners() {
 
         const closeAddModal = () => {
             addCustOverlay.classList.remove('active');
-            const n = document.getElementById('newCustName');
-            const p = document.getElementById('newCustPhone');
-            const e = document.getElementById('newCustEmail');
-            const d = document.getElementById('newCustDob');
-            const nt = document.getElementById('newCustNotes');
-            if (n) n.value = '';
-            if (p) p.value = '';
-            if (e) e.value = '';
-            if (d) d.value = '';
-            if (nt) nt.value = '';
+            ['newCustName','newCustPhone','newCustEmail','newCustDob','newCustNotes'].forEach(id => {
+                const el = document.getElementById(id);
+                if (el) el.value = '';
+            });
         };
 
         if (btnCloseAddCustomer) btnCloseAddCustomer.addEventListener('click', closeAddModal);
         if (btnCancelAddCustomer) btnCancelAddCustomer.addEventListener('click', closeAddModal);
-
-        // Close on backdrop click
         addCustOverlay.addEventListener('click', (e) => {
             if (e.target === addCustOverlay) closeAddModal();
         });
@@ -335,6 +340,9 @@ function setupEventListeners() {
                 const fullName = (document.getElementById('newCustName')?.value || '').trim();
                 const phone = (document.getElementById('newCustPhone')?.value || '').trim();
                 const email = (document.getElementById('newCustEmail')?.value || '').trim();
+                const dob = (document.getElementById('newCustDob')?.value || '').trim();
+                const tag = (document.getElementById('newCustTag')?.value || 'new').trim();
+                const notes = (document.getElementById('newCustNotes')?.value || '').trim();
 
                 if (!fullName || !phone) {
                     alert('Please fill in Full Name and Phone Number');
@@ -345,34 +353,39 @@ function setupEventListeners() {
                 btnSaveCustomer.textContent = 'Saving...';
 
                 try {
-                    const payload = {
-                        company_id: getCompanyId(),
-                        branch_id: getBranchId(),
-                        full_name: fullName,
-                        phone_number: phone,
-                        email: email,
-                        notes: 'Added from POS'
-                    };
+                    const { data: newCust, error } = await supabase
+                        .from('customers')
+                        .insert({
+                            company_id: getCompanyId(),
+                            branch_id: getBranchId(),
+                            customer_name: fullName,
+                            customer_phone: phone,
+                            customer_email: email || null,
+                            date_of_birth: dob || null,
+                            customer_tag: tag,
+                            notes: notes || 'Added from POS'
+                        })
+                        .select();
 
-                    const res = await fetchWithAuth(API.CREATE_CUSTOMER, {
-                        method: 'POST',
-                        body: JSON.stringify(payload)
-                    }, FEATURES.CUSTOMERS_MANAGEMENT, 'create');
+                    if (error) throw error;
 
-                    if (!res.ok) throw new Error('Failed to create customer');
-
-                    // Refresh customers list in background
+                    // Refresh customers list
                     await fetchCustomers();
 
-                    // Immediately populate the POS fields
-                    if (custSearch) custSearch.value = fullName;
-                    if (custNameField) custNameField.value = fullName;
-                    if (custPhoneField) custPhoneField.value = phone;
+                    // If the new record was returned, auto-select it
+                    const created = newCust && newCust.length > 0 ? newCust[0] : null;
+                    if (created) {
+                        selectedCustomer = created;
+                        if (custSearch) custSearch.value = phone;
+                        if (custNameField) custNameField.value = fullName;
+                        if (custPhoneField) custPhoneField.value = phone;
+                    }
 
+                    showToast('Customer saved successfully!');
                     closeAddModal();
                 } catch (err) {
                     console.error(err);
-                    alert('Failed to save customer. Please try again.');
+                    showToast('Failed to save customer: ' + (err.message || 'Unknown error'), true);
                 } finally {
                     btnSaveCustomer.disabled = false;
                     btnSaveCustomer.textContent = 'Save Customer';
@@ -406,70 +419,83 @@ function setupEventListeners() {
     const btnProceedCashConfirm = document.getElementById('btnProceedCashConfirm');
 
     const finalizeSale = async () => {
-        const originalBtnText = btnComplete.textContent;
-        btnComplete.textContent = 'Processing...';
+        const originalBtnHTML = btnComplete.innerHTML;
+        btnComplete.innerHTML = '<i data-feather="loader" style="width:16px;height:16px;animation:spin 1s linear infinite;"></i> Processing...';
         btnComplete.disabled = true;
 
         try {
             const customerName = (selectedCustomer?.customer_name || `${selectedCustomer?.first_name || ''} ${selectedCustomer?.last_name || ''}`).trim() || '';
-            const customerPhone = (selectedCustomer?.customer_phone || selectedCustomer?.phone_number || '').toString();
-            const customerId = selectedCustomer?.customer_id || selectedCustomer?.id || '';
+            const customerPhone = (selectedCustomer?.customer_phone || selectedCustomer?.phone || '').toString();
+            const customerId = selectedCustomer?.customer_id || selectedCustomer?.id || null;
 
             const totalAmount = cart.reduce((sum, item) => sum + (item.price * item.quantity), 0);
+            const paymentMethod = currentPaymentMethod.charAt(0).toUpperCase() + currentPaymentMethod.slice(1);
 
-            const payload = {
-                company_id: getCompanyId(),
-                branch_id: getBranchId(),
-                customer_id: customerId,
-                customer_name: customerName,
-                customer_phone: customerPhone,
-                total_amount: totalAmount,
-                payment_method: currentPaymentMethod.charAt(0).toUpperCase() + currentPaymentMethod.slice(1),
-                items: cart.map(item => ({
+            // Step 1: Insert into 'sales' table
+            const { data: saleData, error: saleError } = await supabase
+                .from('sales')
+                .insert({
+                    company_id: getCompanyId(),
+                    branch_id: getBranchId(),
+                    customer_id: customerId,
+                    customer_name: customerName,
+                    customer_phone: customerPhone,
+                    total_amount: totalAmount,
+                    payment_method: paymentMethod,
+                    status: 'completed'
+                })
+                .select();
+
+            if (saleError) throw saleError;
+
+            const saleId = saleData && saleData.length > 0 ? (saleData[0].sale_id || saleData[0].id) : null;
+
+            // Step 2: Insert line items into 'sale_items' table
+            if (saleId) {
+                const lineItems = cart.map(item => ({
+                    sale_id: saleId,
+                    company_id: getCompanyId(),
+                    branch_id: getBranchId(),
                     product_id: item.id,
                     product_name: item.name,
-                    category_id: item.category_id || '',
+                    category_id: item.category_id || null,
+                    category_name: item.category_name || null,
+                    quantity: item.quantity,
                     price: item.price,
-                    quantity: item.quantity
-                }))
-            };
+                    total_amount: item.price * item.quantity
+                }));
 
-            const res = await fetchWithAuth(API.CREATE_SALE, {
-                method: 'POST',
-                body: JSON.stringify(payload)
-            }, FEATURES.POS_SYSTEM, 'create');
+                const { error: itemsError } = await supabase
+                    .from('sale_items')
+                    .insert(lineItems);
 
-            if (!res.ok) throw new Error('Failed to complete sale');
+                if (itemsError) {
+                    console.warn('POS: sale_items insert error (sale was still created):', itemsError);
+                }
+            }
 
-            const toast = document.createElement('div');
-            toast.className = 'toast-notification show';
-            toast.textContent = 'Sale completed successfully!';
-            document.body.appendChild(toast);
-
-            setTimeout(() => {
-                toast.classList.remove('show');
-                setTimeout(() => toast.remove(), 300);
-            }, 3000);
+            showToast('✓ Sale completed successfully!');
 
             // Reset state
             cart = [];
             selectedCustomer = null;
             updateCartUI();
 
-            // Clear Customer Fields
+            // Clear customer fields
             if (custSearch) custSearch.value = '';
             if (custNameField) custNameField.value = '';
             if (custPhoneField) custPhoneField.value = '';
 
-            // Optional: refresh products to get new stock counts
+            // Refresh products to get updated stock counts
             fetchProducts();
 
         } catch (err) {
             console.error('POS: Error completing sale:', err);
-            alert('Failed to complete sale. Please try again.');
+            showToast('Failed to complete sale: ' + (err.message || 'Unknown error'), true);
         } finally {
-            btnComplete.textContent = originalBtnText;
+            btnComplete.innerHTML = originalBtnHTML;
             btnComplete.disabled = false;
+            if (typeof feather !== 'undefined') feather.replace();
         }
     };
 
@@ -477,31 +503,26 @@ function setupEventListeners() {
         btnComplete.addEventListener('click', () => {
             if (cart.length === 0) return;
 
-            // Mandatory Customer Validation
             if (!selectedCustomer) {
-                alert('Please select a customer or add a new one before completing the sale.');
+                showToast('Please select a customer or add a new one before completing the sale.', true);
                 return;
             }
 
             if (currentPaymentMethod === 'cash' && cashConfirmOverlay) {
-                // Intercept and show confirmation modal for Cash
                 cashConfirmOverlay.classList.add('active');
             } else {
-                // Proceed immediately for Card / UPI
                 finalizeSale();
             }
         });
     }
 
     if (cashConfirmOverlay) {
-        // Cancel Confirmation
         const closeCashModal = () => cashConfirmOverlay.classList.remove('active');
         if (btnCancelCashConfirm) btnCancelCashConfirm.addEventListener('click', closeCashModal);
         cashConfirmOverlay.addEventListener('click', (e) => {
             if (e.target === cashConfirmOverlay) closeCashModal();
         });
 
-        // Proceed Confirmation
         if (btnProceedCashConfirm) {
             btnProceedCashConfirm.addEventListener('click', () => {
                 closeCashModal();
@@ -513,10 +534,10 @@ function setupEventListeners() {
 
 // --- Cart Logic ---
 window.addToCart = function (productId) {
-    const product = liveProducts.find(p => (p.id || p.product_id) == productId);
+    const product = liveProducts.find(p => (p.product_id || p.id) == productId);
     if (!product) return;
 
-    const id = product.id || product.product_id;
+    const id = product.product_id || product.id;
     const existingItem = cart.find(item => item.id == id);
 
     if (existingItem) {
@@ -528,7 +549,7 @@ window.addToCart = function (productId) {
             price: Number(product.price) || 0,
             stock: Number(product.stock_quantity) || 0,
             quantity: 1,
-            category_id: product.category_id || '',
+            category_id: product.category_id || null,
             category_name: product.category_name || ''
         });
     }
@@ -563,19 +584,17 @@ function updateCartUI() {
 
     if (!cartList) return;
 
-    // Remove all children except empty state
     Array.from(cartList.children).forEach(child => {
         if (child.id !== 'cartEmptyState') child.remove();
     });
 
     if (cart.length === 0) {
         if (emptyState) emptyState.style.display = 'flex';
-        itemCount.textContent = '0 items';
-        subtotalEl.textContent = '₹0';
-        taxEl.textContent = '₹0';
-        totalEl.textContent = '₹0';
-        btnComplete.style.opacity = '0.5';
-        btnComplete.style.cursor = 'not-allowed';
+        if (itemCount) itemCount.textContent = '0 items';
+        if (subtotalEl) subtotalEl.textContent = '₹0';
+        if (taxEl) taxEl.textContent = '₹0';
+        if (totalEl) totalEl.textContent = '₹0';
+        if (btnComplete) { btnComplete.style.opacity = '0.5'; btnComplete.style.cursor = 'not-allowed'; }
         return;
     }
 
@@ -618,12 +637,10 @@ function updateCartUI() {
         cartList.appendChild(itemEl);
     });
 
-    itemCount.textContent = `${totalItems} item${totalItems !== 1 ? 's' : ''}`;
-    subtotalEl.textContent = `₹${subtotal}`;
-    taxEl.textContent = `₹0`;
-    totalEl.textContent = `₹${subtotal}`;
+    if (itemCount) itemCount.textContent = `${totalItems} item${totalItems !== 1 ? 's' : ''}`;
+    if (subtotalEl) subtotalEl.textContent = `₹${subtotal}`;
+    if (taxEl) taxEl.textContent = `₹0`;
+    if (totalEl) totalEl.textContent = `₹${subtotal}`;
 
-    btnComplete.style.opacity = '1';
-    btnComplete.style.cursor = 'pointer';
+    if (btnComplete) { btnComplete.style.opacity = '1'; btnComplete.style.cursor = 'pointer'; }
 }
-

@@ -1,7 +1,11 @@
-import { API, fetchWithAuth } from './config/api.js';
-import { FEATURES } from './config/feature-registry.js';
+import { supabase } from './lib/supabase.js';
 
-function getCompanyId() { return localStorage.getItem('company_id') || null; }
+function getCompanyId() {
+    try {
+        const ctx = JSON.parse(localStorage.getItem('appContext') || '{}');
+        return ctx.company?.id || localStorage.getItem('company_id') || null;
+    } catch { return localStorage.getItem('company_id') || null; }
+}
 
 function getBranchId() {
     return localStorage.getItem('active_branch_id') || null;
@@ -71,6 +75,9 @@ document.addEventListener('DOMContentLoaded', () => {
         await fetchSalesHistory();
     }
 
+    // ----------------------------------------------------------------------
+    // SUPABASE: Fetch Sales History
+    // ----------------------------------------------------------------------
     async function fetchSalesHistory() {
         if (!tableBody) return;
         
@@ -86,51 +93,67 @@ document.addEventListener('DOMContentLoaded', () => {
         if (typeof feather !== 'undefined') feather.replace();
 
         try {
-            const response = await fetchWithAuth(API.READ_SALES, {
-                method: 'POST',
-                body: JSON.stringify({ company_id: getCompanyId(), branch_id: getBranchId() })
-            }, FEATURES.SALES_HISTORY, 'read');
+            const companyId = getCompanyId();
+            const branchId = getBranchId();
 
-            if (!response.ok) throw new Error('Failed to fetch sales');
-            
-            const rawData = await response.json();
-            
-            // Group flat line items into sales orders by sale_id
-            const grouped = rawData.reduce((acc, item) => {
-                if (!acc[item.sale_id]) {
-                    const d = new Date(item.created_at);
-                    const formattedDate = d.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) + ' ' + d.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' });
-                    acc[item.sale_id] = {
-                        id: item.sale_id,
-                        customer: item.customer_name || 'Walk-in',
-                        date: formattedDate,
-                        products: [],
-                        totalAmountNum: 0,
-                        payment: (item.payment_method || 'other').toLowerCase(),
-                        staff: 'System', 
-                        status: (item.status || 'completed').toLowerCase(),
-                        raw_created_at: d.getTime()
-                    };
-                }
-                const qty = Number(item.quantity) || 1;
-                const price = Number(item.price) || 0;
-                
-                acc[item.sale_id].products.push({
-                    name: item.product_name || 'Unknown Product',
-                    qty: qty,
-                    price: price,
-                    category: item.category_name || ''
-                });
-                
-                // Add to total
-                acc[item.sale_id].totalAmountNum += Number(item.total_amount) || (price * qty);
-                
-                return acc;
-            }, {});
+            // Fetch sales and sale_items in parallel
+            const [salesRes, itemsRes] = await Promise.all([
+                supabase
+                    .from('sales')
+                    .select('*')
+                    .eq('company_id', companyId)
+                    .eq('branch_id', branchId)
+                    .order('created_at', { ascending: false }),
+                supabase
+                    .from('sale_items')
+                    .select('*')
+                    .eq('company_id', companyId)
+                    .eq('branch_id', branchId)
+            ]);
 
-            initialSalesData = Object.values(grouped).sort((a,b) => b.raw_created_at - a.raw_created_at).map(s => {
-                s.total = `₹${s.totalAmountNum.toLocaleString()}`;
-                return s;
+            if (salesRes.error) throw salesRes.error;
+
+            const salesList = salesRes.data || [];
+            const itemsList = itemsRes.data || [];
+
+            // Group items by sale_id for fast lookup
+            const itemsBySaleId = {};
+            itemsList.forEach(item => {
+                const sid = item.sale_id;
+                if (!itemsBySaleId[sid]) itemsBySaleId[sid] = [];
+                itemsBySaleId[sid].push(item);
+            });
+
+            // Build the unified data model
+            initialSalesData = salesList.map(sale => {
+                const saleId = sale.sale_id || sale.id;
+                const d = new Date(sale.created_at);
+                const formattedDate = d.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
+                    + ' ' + d.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' });
+
+                const items = (itemsBySaleId[saleId] || []).map(it => ({
+                    name: it.product_name || 'Unknown Product',
+                    qty: Number(it.quantity) || 1,
+                    price: Number(it.price) || 0,
+                    category: it.category_name || ''
+                }));
+
+                const totalAmountNum = Number(sale.total_amount) || 
+                    items.reduce((sum, it) => sum + (it.qty * it.price), 0);
+
+                return {
+                    id: saleId,
+                    customer: sale.customer_name || 'Walk-in',
+                    customer_id: sale.customer_id || null,
+                    date: formattedDate,
+                    products: items,
+                    totalAmountNum,
+                    total: `₹${totalAmountNum.toLocaleString()}`,
+                    payment: (sale.payment_method || 'other').toLowerCase(),
+                    staff: sale.staff_name || 'System',
+                    status: (sale.status || 'completed').toLowerCase(),
+                    raw_created_at: d.getTime()
+                };
             });
 
             currentSalesData = [...initialSalesData];
@@ -143,6 +166,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     <td colspan="8" style="text-align:center; padding: 40px; color: #64748b;">
                         <i data-feather="alert-circle" style="width: 32px; height: 32px; margin-bottom: 12px; opacity: 0.5;"></i>
                         <p>Could not load sales history. Please try again.</p>
+                        <p style="font-size: 0.8rem; color: #94a3b8; margin-top: 4px;">${err.message || ''}</p>
                         <button onclick="window.location.reload()" style="margin-top: 10px; padding: 6px 16px; border-radius: 6px; border: 1px solid #e2e8f0; background: #fff; cursor: pointer;">Retry</button>
                     </td>
                 </tr>
@@ -176,19 +200,17 @@ document.addEventListener('DOMContentLoaded', () => {
             tr.className = 'tb-row';
             tr.style.cursor = 'pointer';
 
-            // Payment styling
+            // Payment pill styling — all paid methods get green
             let paymentClass = 'tb-payment-pending';
-            if (sale.payment === 'card') paymentClass = 'tb-payment-paid';
-            if (sale.payment === 'upi') paymentClass = 'tb-payment-paid';
-            if (sale.payment === 'cash') paymentClass = 'tb-payment-paid';
+            if (['card', 'upi', 'cash'].includes(sale.payment)) paymentClass = 'tb-payment-paid';
 
-            // Handle refunded UI
-            let isRefunded = sale.status === 'refunded';
-            let saleTotalDisplay = isRefunded ? `<del style="color:#94a3b8; font-weight:400;">${sale.total}</del> <span style="color:#dc2626; font-size: 0.8rem; display:block;">Refunded</span>` : sale.total;
+            const isRefunded = sale.status === 'refunded';
+            let saleTotalDisplay = isRefunded
+                ? `<del style="color:#94a3b8; font-weight:400;">${sale.total}</del> <span style="color:#dc2626; font-size: 0.8rem; display:block;">Refunded</span>`
+                : sale.total;
 
             const prodCountStr = sale.products.length === 1 ? '1 item' : `${sale.products.length} items`;
             
-            // Allow row click to open details
             tr.onclick = (e) => {
                 if (!e.target.closest('.tb-action-btn') && !e.target.closest('.tb-actions-menu')) {
                     openSaleDetails(sale);
@@ -223,12 +245,11 @@ document.addEventListener('DOMContentLoaded', () => {
     // 5. EVENT LISTENERS & FILTERING
     // ----------------------------------------------------------------------
     function setupEventListeners() {
-        // --- Search ---
         if (searchInput) {
             searchInput.addEventListener('input', (e) => {
                 const term = e.target.value.toLowerCase();
                 currentSalesData = initialSalesData.filter(s => 
-                    s.id.toLowerCase().includes(term) || 
+                    String(s.id).toLowerCase().includes(term) || 
                     s.customer.toLowerCase().includes(term) ||
                     s.products.some(p => p.name.toLowerCase().includes(term))
                 );
@@ -236,9 +257,6 @@ document.addEventListener('DOMContentLoaded', () => {
             });
         }
 
-        // Dropdown toggles are handled by inline onclick="hsToggleMenu(...)" on the buttons.
-        // This document listener only handles closing menus on outside-click.
-        // Close dropdowns when clicking outside
         document.addEventListener('click', (e) => {
             if (activeMenuEl && !activeMenuEl.contains(e.target)) closeOpenActionMenu();
             
@@ -253,29 +271,18 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         });
 
-        function closeAllDropdowns() {
-            if (filterMenu) filterMenu.style.display = 'none';
-            if (dateMenu) dateMenu.style.display = 'none';
-            if (exportMenu) exportMenu.style.display = 'none';
-            closeOpenActionMenu();
-        }
-
-        // --- Filter Apply logic (demo) ---
         if (applyFiltersBtn) {
             applyFiltersBtn.addEventListener('click', () => {
-                showToast('Filters applied. (Demo)', '#3b82f6');
+                showToast('Filters applied.', '#3b82f6');
                 filterMenu.style.display = 'none';
-                // In a real app we would read checkboxes here
             });
         }
         
-        // --- Export logic ---
         const exportCsvBtn = document.getElementById('exportCsvBtn');
         const exportExcelBtn = document.getElementById('exportExcelBtn');
-        if (exportCsvBtn) exportCsvBtn.addEventListener('click', () => { showToast('Exporting as CSV...', '#10b981'); });
-        if (exportExcelBtn) exportExcelBtn.addEventListener('click', () => { showToast('Exporting as Excel...', '#10b981'); });
+        if (exportCsvBtn) exportCsvBtn.addEventListener('click', () => { hsExportData('csv'); });
+        if (exportExcelBtn) exportExcelBtn.addEventListener('click', () => { hsExportData('excel'); });
 
-        // --- Modal Close Listeners ---
         function closeSaleModal() {
             if (saleDetailsModalOverlay) saleDetailsModalOverlay.style.display = 'none';
             currentActionData = null;
@@ -289,7 +296,6 @@ document.addEventListener('DOMContentLoaded', () => {
             });
         }
 
-        // --- Refund Overlay Listeners ---
         function closeRefundModal() {
             if (refundSummaryOverlay) refundSummaryOverlay.style.display = 'none';
         }
@@ -390,7 +396,7 @@ document.addEventListener('DOMContentLoaded', () => {
             openSaleDetails(sale);
         } else if (action === 'print') {
             openSaleDetails(sale);
-            setTimeout(() => window.print(), 300); // Demo open modal then trigger print
+            setTimeout(() => window.print(), 300);
         } else if (action === 'refund') {
             openSaleDetails(sale);
             refundSummaryOverlay.style.display = 'flex';
@@ -403,9 +409,8 @@ document.addEventListener('DOMContentLoaded', () => {
     window.hsApplyFilter = function() {
         document.getElementById('hsFilterMenu').style.display = 'none';
 
-        // Read checked values per group
         const allCbs = document.querySelectorAll('.hs-filter-cb');
-        const payments  = [], staff = [], categories = [];
+        const payments = [], staff = [], categories = [];
         allCbs.forEach(cb => {
             if (!cb.checked) return;
             const val = cb.value;
@@ -414,7 +419,6 @@ document.addEventListener('DOMContentLoaded', () => {
             if (['Hair care','Skin care','Style products'].includes(val)) categories.push(val);
         });
 
-        // If a group has nothing checked, treat it as "show all" for that group
         currentSalesData = initialSalesData.filter(sale => {
             const paymentOk  = payments.length === 0   || payments.includes(sale.payment);
             const staffOk    = staff.length === 0      || staff.includes(sale.staff);
@@ -440,74 +444,100 @@ document.addEventListener('DOMContentLoaded', () => {
         if (!sale) return;
         currentActionData = { action: 'view', idx: currentSalesData.indexOf(sale), sale };
 
-        sdSubtitle.textContent = `Transaction ID: ${sale.id}`;
-        sdCustomer.textContent = sale.customer;
-        sdStaff.textContent = sale.staff;
-        sdDate.textContent = sale.date;
-        sdPayment.textContent = sale.payment.charAt(0).toUpperCase() + sale.payment.slice(1);
+        if (sdSubtitle) sdSubtitle.textContent = `Transaction ID: ${sale.id}`;
+        if (sdCustomer) sdCustomer.textContent = sale.customer;
+        if (sdStaff) sdStaff.textContent = sale.staff;
+        if (sdDate) sdDate.textContent = sale.date;
+        if (sdPayment) sdPayment.textContent = sale.payment.charAt(0).toUpperCase() + sale.payment.slice(1);
 
-        // Populate items
-        sdItemsList.innerHTML = '';
-        let calcSubtotal = 0;
+        if (sdItemsList) {
+            sdItemsList.innerHTML = '';
+            let calcSubtotal = 0;
 
-        sale.products.forEach(item => {
-            const itemRowTotal = item.qty * item.price;
-            calcSubtotal += itemRowTotal;
-            const tr = document.createElement('tr');
-            tr.innerHTML = `
-                <td style="padding: 12px 16px; border-bottom: 1px solid #e2e8f0; font-size: 0.9rem; color: #1e293b;">${item.name}</td>
-                <td style="padding: 12px 16px; border-bottom: 1px solid #e2e8f0; font-size: 0.9rem; color: #475569; text-align: center;">${item.qty}</td>
-                <td style="padding: 12px 16px; border-bottom: 1px solid #e2e8f0; font-size: 0.9rem; color: #475569; text-align: right;">₹${item.price.toLocaleString()}</td>
-                <td style="padding: 12px 16px; border-bottom: 1px solid #e2e8f0; font-size: 0.9rem; font-weight: 600; color: #1e293b; text-align: right;">₹${itemRowTotal.toLocaleString()}</td>
-            `;
-            sdItemsList.appendChild(tr);
-        });
+            sale.products.forEach(item => {
+                const itemRowTotal = item.qty * item.price;
+                calcSubtotal += itemRowTotal;
+                const tr = document.createElement('tr');
+                tr.innerHTML = `
+                    <td style="padding: 12px 16px; border-bottom: 1px solid #e2e8f0; font-size: 0.9rem; color: #1e293b;">${item.name}</td>
+                    <td style="padding: 12px 16px; border-bottom: 1px solid #e2e8f0; font-size: 0.9rem; color: #475569; text-align: center;">${item.qty}</td>
+                    <td style="padding: 12px 16px; border-bottom: 1px solid #e2e8f0; font-size: 0.9rem; color: #475569; text-align: right;">₹${item.price.toLocaleString()}</td>
+                    <td style="padding: 12px 16px; border-bottom: 1px solid #e2e8f0; font-size: 0.9rem; font-weight: 600; color: #1e293b; text-align: right;">₹${itemRowTotal.toLocaleString()}</td>
+                `;
+                sdItemsList.appendChild(tr);
+            });
 
-        // Calculate Totals (Mocking tax & discount logic simple)
-        let tax = calcSubtotal * 0.18; // Example 18% GST mock
-        let discount = 0; 
-        let finalTotal = calcSubtotal + tax - discount;
-
-        // Note: For simplicity, checking if the hardcoded display matches rough math, 
-        // in a real app these strings come from the DB. We'll reuse the exact sale.total string.
-        sdSubtotal.textContent = `₹${calcSubtotal.toLocaleString()}`;
-        sdTax.textContent = `~ ₹${Math.round(tax).toLocaleString()} std tax inc.`;
-        sdDiscount.textContent = '₹0';
+            if (sdSubtotal) sdSubtotal.textContent = `₹${calcSubtotal.toLocaleString()}`;
+            if (sdTax) sdTax.textContent = `₹0`;
+            if (sdDiscount) sdDiscount.textContent = '₹0';
+        }
         
-        let isRefunded = sale.status === 'refunded';
+        const isRefunded = sale.status === 'refunded';
         
         if (isRefunded) {
-            sdTotal.innerHTML = `<del style="color:#94a3b8; font-weight:400; margin-right: 8px;">${sale.total}</del> <span style="color:#dc2626;">Refunded</span>`;
-            sdRefundBtn.style.display = 'none'; // hide refund button if already refunded
+            if (sdTotal) sdTotal.innerHTML = `<del style="color:#94a3b8; font-weight:400; margin-right: 8px;">${sale.total}</del> <span style="color:#dc2626;">Refunded</span>`;
+            if (sdRefundBtn) sdRefundBtn.style.display = 'none';
         } else {
-            sdTotal.textContent = sale.total;
-            sdRefundBtn.style.display = 'inline-flex';
+            if (sdTotal) sdTotal.textContent = sale.total;
+            if (sdRefundBtn) sdRefundBtn.style.display = 'inline-flex';
         }
 
-        saleDetailsModalOverlay.style.display = 'flex';
+        if (saleDetailsModalOverlay) saleDetailsModalOverlay.style.display = 'flex';
     }
 
 
     // ----------------------------------------------------------------------
-    // 9. PROCESS REFUND
+    // 9. PROCESS REFUND (via Supabase update)
     // ----------------------------------------------------------------------
-    function processRefund() {
+    async function processRefund() {
         if (!currentActionData || !currentActionData.sale) return;
         
-        const { idx, sale } = currentActionData;
-        
-        // Update data
-        initialSalesData.find(s => s.id === sale.id).status = 'refunded';
+        const { sale } = currentActionData;
+        const saleId = sale.id;
 
-        // Re-render
-        renderTable();
-        closeRefundOverlayOnly();
-        
-        // Update modal logic UI immediately
-        sdTotal.innerHTML = `<del style="color:#94a3b8; font-weight:400; margin-right: 8px;">${sale.total}</del> <span style="color:#dc2626;">Refunded</span>`;
-        sdRefundBtn.style.display = 'none';
+        if (confirmRefundBtn) {
+            confirmRefundBtn.textContent = 'Processing...';
+            confirmRefundBtn.disabled = true;
+        }
 
-        showToast(`${sale.customer}'s purchase (${sale.id}) has been refunded.`, '#dc2626');
+        try {
+            // Determine primary key column (sale_id or id)
+            const { data: existing } = await supabase
+                .from('sales')
+                .select('sale_id, id')
+                .eq('company_id', getCompanyId())
+                .limit(1);
+
+            const pkCol = existing && existing.length > 0 && existing[0].sale_id ? 'sale_id' : 'id';
+
+            const { error } = await supabase
+                .from('sales')
+                .update({ status: 'refunded' })
+                .eq(pkCol, saleId);
+
+            if (error) throw error;
+
+            // Update local state
+            const localSale = initialSalesData.find(s => s.id === saleId);
+            if (localSale) localSale.status = 'refunded';
+            currentSalesData = [...initialSalesData];
+
+            renderTable();
+            closeRefundOverlayOnly();
+            
+            if (sdTotal) sdTotal.innerHTML = `<del style="color:#94a3b8; font-weight:400; margin-right: 8px;">${sale.total}</del> <span style="color:#dc2626;">Refunded</span>`;
+            if (sdRefundBtn) sdRefundBtn.style.display = 'none';
+
+            showToast(`${sale.customer}'s purchase has been refunded.`, '#dc2626');
+        } catch (err) {
+            console.error('Refund error:', err);
+            showToast('Failed to process refund: ' + (err.message || 'Unknown error'), '#dc2626');
+        } finally {
+            if (confirmRefundBtn) {
+                confirmRefundBtn.textContent = 'Confirm Refund';
+                confirmRefundBtn.disabled = false;
+            }
+        }
     }
 
     function closeRefundOverlayOnly() {
@@ -532,7 +562,6 @@ document.addEventListener('DOMContentLoaded', () => {
 
 // ─── EXPORT FUNCTION (global so onclick can call it) ────────────────────────
 function hsExportData(format) {
-    // Gather rows from the table body
     const rows = [];
     const headers = ['Sale ID', 'Customer', 'Date', 'Products', 'Total', 'Payment', 'Staff'];
     rows.push(headers);
@@ -565,7 +594,6 @@ function hsExportData(format) {
         a.click();
         URL.revokeObjectURL(url);
     } else {
-        // Excel-compatible HTML table export
         let xls = '<table border="1">';
         rows.forEach((r, i) => {
             xls += '<tr>';
@@ -585,3 +613,4 @@ function hsExportData(format) {
     }
 }
 
+window.hsExportData = hsExportData;
