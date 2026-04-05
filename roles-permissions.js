@@ -1,10 +1,10 @@
 /**
  * roles-permissions.js
  * Dynamically generates the UI from Feature & Sub-Feature Registries.
- * All role CRUD operations are wired to live API endpoints.
+ * All role CRUD operations use direct Supabase queries.
  */
 
-import { API, fetchWithAuth } from './config/api.js';
+import { supabase } from './lib/supabase.js';
 import { FEATURES, MODULES_META } from './config/feature-registry.js';
 import { SUB_FEATURES, SUB_FEATURES_MAP } from './config/sub-feature-registry.js';
 
@@ -12,8 +12,8 @@ import { SUB_FEATURES, SUB_FEATURES_MAP } from './config/sub-feature-registry.js
 function getCompanyId() {
     try {
         const ctx = JSON.parse(localStorage.getItem('appContext') || '{}');
-        return ctx.company?.id || null;
-    } catch { return null; }
+        return ctx.company?.id || localStorage.getItem('company_id') || null;
+    } catch { return localStorage.getItem('company_id') || null; }
 }
 
 function getBranchId() {
@@ -75,121 +75,70 @@ async function init() {
     await fetchRoles();
 }
 
-// ─── Fetch Roles & Staff (READ) ───────────────────────────────────────────────
+// ─── Fetch Roles & Staff (READ via Supabase) ──────────────────────────────────
 async function fetchRoles() {
     setPageLoading(true);
 
     try {
-        // Fetch roles and staff in parallel to calculate users per role dynamically
-        const [rolesRes, staffRes] = await Promise.all([
-            fetchWithAuth(API.READ_ROLES, {
-                method: 'POST',
-                body: JSON.stringify({
-                    company_id: getCompanyId(),
-                    branch_id:  getBranchId()
-                })
-            }, FEATURES.ROLES_PERMISSIONS, 'read'),
-            fetchWithAuth(API.READ_STAFF, {
-                method: 'POST',
-                body: JSON.stringify({
-                    company_id: getCompanyId(),
-                    branch_id:  getBranchId()
-                })
-            }, FEATURES.STAFF_MANAGEMENT, 'read').catch(() => ({ ok: false })) // fail gracefully if no staff permission
+        const companyId = getCompanyId();
+        const branchId  = getBranchId();
+
+        // Fetch roles, their permissions, and staff in parallel
+        const [rolesRes, permsRes, staffRes] = await Promise.all([
+            supabase
+                .from('roles')
+                .select('*')
+                .eq('company_id', companyId)
+                .neq('status', 'deleted')
+                .order('created_at', { ascending: true }),
+            supabase
+                .from('role_permissions')
+                .select('role_id, permission_key')
+                .eq('company_id', companyId)
+                .eq('status', 'active'),
+            supabase
+                .from('staff')
+                .select('id, role_id')
+                .eq('company_id', companyId)
         ]);
 
-        if (rolesRes.ok) {
-            const data = await rolesRes.json();
-            
-            let fetchedRoles = [];
-            if (Array.isArray(data)) {
-                if (data.length > 0 && data[0].error) throw new Error(data[0].error);
-                if (data.length > 0 && data[0].roles) fetchedRoles = data[0].roles;
-                else fetchedRoles = data;
-            } else if (data && data.error) {
-                throw new Error(data.error);
-            } else if (data && data.roles) {
-                fetchedRoles = data.roles;
-            }
+        if (rolesRes.error) throw rolesRes.error;
 
-            // Attempt to read staff data for dynamic user counts
-            let staffList = [];
-            if (staffRes.ok) {
-                try {
-                    const sData = await staffRes.json();
-                    if (Array.isArray(sData)) {
-                        if (sData.length > 0 && sData[0].staff) staffList = sData[0].staff;
-                        else if (sData.length > 0 && !sData[0].error) staffList = sData;
-                    } else if (sData && sData.staff) {
-                        staffList = sData.staff;
-                    }
-                } catch (e) { console.error('Error parsing staff data', e); }
-            }
+        // Build permission_key map: { role_id -> [permission_key, ...] }
+        const permMap = {};
+        (permsRes.data || []).forEach(row => {
+            if (!permMap[row.role_id]) permMap[row.role_id] = [];
+            if (row.permission_key) permMap[row.role_id].push(row.permission_key);
+        });
 
-            // Group by role_id in case the API returns a flat list with individual permission keys
-            const roleMap = new Map();
-            fetchedRoles.forEach(r => {
-                const rId = r.role_id || r.id;
-                if (!rId) return;
+        // Build staff count map: { role_id -> count }
+        const staffCountMap = {};
+        (staffRes.data || []).forEach(s => {
+            if (!s.role_id) return;
+            staffCountMap[s.role_id] = (staffCountMap[s.role_id] || 0) + 1;
+        });
 
-                if (!roleMap.has(rId)) {
-                    roleMap.set(rId, {
-                        ...r,
-                        permissions: Array.isArray(r.permissions) ? [...r.permissions] : [],
-                        permission_key: Array.isArray(r.permission_key) ? [...r.permission_key] : []
-                    });
-                }
-                const existing = roleMap.get(rId);
-
-                // Add single string permissions from a flat structure
-                if (typeof r.permission_key === 'string' && r.permission_key) {
-                    if (!existing.permission_key.includes(r.permission_key)) {
-                        existing.permission_key.push(r.permission_key);
-                    }
-                }
-                if (typeof r.permissions === 'string' && r.permissions) {
-                    if (!existing.permissions.includes(r.permissions)) {
-                        existing.permissions.push(r.permissions);
-                    }
-                }
-            });
-
-            const uniqueRoles = Array.from(roleMap.values());
-
-            rolesData = uniqueRoles.map(r => {
-                // Count how many staff members are assigned this specific role_id
-                const userCount = staffList.filter(s => s.role_id === r.role_id).length;
-                
-                // Allow fallback if it came as an array
-                const permissionArray = r.permissions?.length > 0 ? r.permissions : r.permission_key;
-
-                return {
-                    id: r.role_id,
-                    role_id: r.role_id,
-                    name: r.role_name,
-                    role_name: r.role_name,
-                    description: r.description,
-                    protected: r.is_default === true, // Lock the role UI if the backend flags it as default!
-                    userCount: userCount,
-                    permission_key: permissionArray || []
-                };
-            });
-        } else {
-            console.error('API Error: Backend returned non-200 status for roles.');
-            rolesData = [];
-        }
+        // Map to the internal rolesData shape
+        rolesData = (rolesRes.data || []).map(r => ({
+            id:           r.role_id,
+            role_id:      r.role_id,
+            name:         r.role_name,
+            role_name:    r.role_name,
+            description:  r.description || '',
+            protected:    r.is_default === true,
+            userCount:    staffCountMap[r.role_id] || 0,
+            permission_key: permMap[r.role_id] || []
+        }));
 
     } catch (err) {
-        console.error('Error fetching roles:', err);
-        showToast('Failed to load roles from server.');
+        console.error('Error fetching roles (Supabase):', err);
+        showToast('Failed to load roles from server: ' + (err.message || ''));
         rolesData = [];
     } finally {
         if (rolesData.length > 0 && !activeRoleId) {
-            // Default: select the first protected (owner) role
             const defaultRole = rolesData.find(r => r.protected) || rolesData[0];
-            activeRoleId = defaultRole.id || defaultRole.role_id;
+            activeRoleId = defaultRole.role_id;
         }
-
         renderRolesList();
         if (activeRoleId) selectRole(activeRoleId);
         setPageLoading(false);
@@ -206,7 +155,7 @@ function renderRolesList() {
     roleCountBadge.textContent = rolesData.length;
 
     rolesData.forEach(role => {
-        const roleId = role.id || role.role_id;
+        const roleId = role.role_id;
         const li = document.createElement('li');
         li.className = 'role-list-item' + (roleId === activeRoleId ? ' active' : '');
         li.dataset.roleId = roleId;
@@ -214,7 +163,7 @@ function renderRolesList() {
         li.innerHTML = `
             <div style="flex:1; min-width:0;">
                 <div class="role-name">${escHtml(role.name)}</div>
-                <div class="role-meta">${role.userCount ?? role.user_count ?? 0} user${(role.userCount ?? role.user_count ?? 0) !== 1 ? 's' : ''}</div>
+                <div class="role-meta">${role.userCount} user${role.userCount !== 1 ? 's' : ''}</div>
             </div>
             ${!role.protected ? `
             <div class="role-item-actions">
@@ -240,7 +189,7 @@ function renderRolesList() {
 
 function selectRole(roleId) {
     activeRoleId = roleId;
-    const role = rolesData.find(r => (r.id || r.role_id) === roleId);
+    const role = rolesData.find(r => r.role_id === roleId);
     if (!role) return;
 
     document.querySelectorAll('.role-list-item').forEach(el => {
@@ -269,17 +218,15 @@ function selectRole(roleId) {
 function renderPermissionsMatrix(role, containerEl, isModal) {
     containerEl.innerHTML = '';
     const subscriptionFeatures = getSubscriptionFeatures();
-    const isOwner       = role && role.protected;
-    
-    // Support either the new permission_key array or legacy fallback
-    const roleKeys = role ? (role.permission_key || [...(role.features||[]), ...(role.sub_features||[])]) : [];
+    const isOwner  = role && role.protected;
+    const roleKeys = role ? (role.permission_key || []) : [];
 
     MODULES_META.forEach(mod => {
-        const featureKey      = mod.key;
-        const salonOwns       = subscriptionFeatures.includes(featureKey);
-        const hasFeature      = salonOwns && roleKeys.includes(featureKey);
-        const disabledAttr    = (isOwner || !salonOwns) ? 'disabled' : '';
-        const childSubFeats   = SUB_FEATURES_MAP[featureKey] || [];
+        const featureKey   = mod.key;
+        const salonOwns    = subscriptionFeatures.includes(featureKey);
+        const hasFeature   = salonOwns && roleKeys.includes(featureKey);
+        const disabledAttr = (isOwner || !salonOwns) ? 'disabled' : '';
+        const childSubFeats = SUB_FEATURES_MAP[featureKey] || [];
 
         const tr = document.createElement('tr');
 
@@ -395,7 +342,7 @@ function openAddRoleModal() {
 }
 
 function openEditRoleModal(roleId) {
-    const role = rolesData.find(r => (r.id || r.role_id) === roleId);
+    const role = rolesData.find(r => r.role_id === roleId);
     if (!role || role.protected) return;
 
     editingRoleId = roleId;
@@ -410,7 +357,7 @@ function closeRoleModal() {
     roleModalOverlay.classList.remove('active');
 }
 
-// ─── Save Role (CREATE / UPDATE) ──────────────────────────────────────────────
+// ─── Save Role (CREATE / UPDATE) via Supabase ─────────────────────────────────
 async function saveRole() {
     const name = roleNameInput.value.trim();
     if (!name) {
@@ -420,104 +367,149 @@ async function saveRole() {
     }
     roleNameInput.style.borderColor = '';
 
-    const desc = roleDescInput.value.trim() || `${name} role`;
+    const desc           = roleDescInput.value.trim() || `${name} role`;
     const permission_key = collectPermissionsFromContainer(modalPermBody);
-
-    const isEdit = !!editingRoleId;
-    const payload = {
-        company_id:     getCompanyId(),
-        branch_id:      getBranchId(),
-        role_name:      name,
-        description:    desc,
-        permission_key,
-        ...(isEdit ? { role_id: editingRoleId } : {})
-    };
+    const isEdit         = !!editingRoleId;
+    const companyId      = getCompanyId();
+    const branchId       = getBranchId();
+    const now            = new Date().toISOString();
 
     const originalText = btnSaveRole.textContent;
     btnSaveRole.textContent = 'Saving...';
     btnSaveRole.disabled    = true;
 
     try {
-        const endpoint = isEdit ? API.UPDATE_ROLE : API.CREATE_ROLE;
-        const res = await fetchWithAuth(endpoint, {
-            method: 'POST',
-            body:   JSON.stringify(payload)
-        }, FEATURES.ROLES_PERMISSIONS, isEdit ? 'update' : 'create');
+        let roleId = editingRoleId;
 
-        const data = await res.json();
-        const root = Array.isArray(data) ? data[0] : data;
+        if (isEdit) {
+            // ── UPDATE the role row ──
+            const { error: roleErr } = await supabase
+                .from('roles')
+                .update({
+                    role_name:   name,
+                    description: desc,
+                    updated_at:  now,
+                    status:      'active'
+                })
+                .eq('role_id', roleId)
+                .eq('company_id', companyId);
 
-        if (res.ok && !root?.error) {
-            showToast(`Role "${name}" ${isEdit ? 'updated' : 'created'} successfully!`);
-            closeRoleModal();
-            await fetchRoles();
-            // Select the newly created or edited role
-            if (!isEdit && root.role_id) activeRoleId = root.role_id;
-            if (activeRoleId) selectRole(activeRoleId);
+            if (roleErr) throw roleErr;
         } else {
-            showToast('Error: ' + (root?.error || root?.message || 'Unknown error'));
+            // ── INSERT new role row ──
+            const { data: newRole, error: roleErr } = await supabase
+                .from('roles')
+                .insert({
+                    company_id:  companyId,
+                    branch_id:   branchId,
+                    role_name:   name,
+                    description: desc,
+                    is_default:  false,
+                    status:      'active',
+                    created_at:  now,
+                    updated_at:  now
+                })
+                .select();
+
+            if (roleErr) throw roleErr;
+            roleId = newRole[0]?.role_id;
         }
+
+        // ── Sync role_permissions: delete + reinsert ──
+        await syncRolePermissions(roleId, companyId, branchId, name, permission_key, now);
+
+        showToast(`Role "${name}" ${isEdit ? 'updated' : 'created'} successfully!`);
+        closeRoleModal();
+        if (!isEdit && roleId) activeRoleId = roleId;
+        await fetchRoles();
+        if (activeRoleId) selectRole(activeRoleId);
+
     } catch (err) {
-        console.error(err);
-        showToast('Network error saving role.');
+        console.error('saveRole error:', err);
+        showToast('Error saving role: ' + (err.message || 'Unknown error'));
     } finally {
         btnSaveRole.textContent = originalText;
         btnSaveRole.disabled    = false;
     }
 }
 
-// ─── Inline Permissions Save (UPDATE) ────────────────────────────────────────
+// ─── Inline Permissions Save (UPDATE) via Supabase ───────────────────────────
 async function saveInlinePerms() {
-    const role = rolesData.find(r => (r.id || r.role_id) === activeRoleId);
+    const role = rolesData.find(r => r.role_id === activeRoleId);
     if (!role) return;
 
     const permission_key = collectPermissionsFromContainer(permMatrixBody);
-
-    const payload = {
-        company_id:     getCompanyId(),
-        branch_id:      getBranchId(),
-        role_id:        activeRoleId,
-        role_name:      role.name || role.role_name,
-        description:    role.description || '',
-        permission_key
-    };
+    const companyId      = getCompanyId();
+    const branchId       = getBranchId();
+    const now            = new Date().toISOString();
 
     const originalText = btnSavePerms.textContent;
     btnSavePerms.textContent = 'Saving...';
     btnSavePerms.disabled    = true;
 
     try {
-        const res = await fetchWithAuth(API.UPDATE_ROLE, {
-            method: 'POST',
-            body:   JSON.stringify(payload)
-        }, FEATURES.ROLES_PERMISSIONS, 'update');
+        // Also bump the role's updated_at timestamp
+        await supabase
+            .from('roles')
+            .update({ updated_at: now })
+            .eq('role_id', activeRoleId)
+            .eq('company_id', companyId);
 
-        const data = await res.json();
-        const root = Array.isArray(data) ? data[0] : data;
+        // ── Sync role_permissions: delete + reinsert ──
+        await syncRolePermissions(activeRoleId, companyId, branchId, role.role_name, permission_key, now);
 
-        if (res.ok && !root?.error) {
-            btnSavePerms.style.display = 'none';
-            showToast(`Permissions for "${role.name}" saved!`);
-            await fetchRoles();
-            selectRole(activeRoleId);
-        } else {
-            showToast('Error: ' + (root?.error || root?.message || 'Unknown error'));
-        }
+        btnSavePerms.style.display = 'none';
+        showToast(`Permissions for "${role.name}" saved!`);
+        await fetchRoles();
+        selectRole(activeRoleId);
+
     } catch (err) {
-        console.error(err);
-        showToast('Network error saving permissions.');
+        console.error('saveInlinePerms error:', err);
+        showToast('Error saving permissions: ' + (err.message || ''));
     } finally {
         btnSavePerms.textContent = originalText;
         btnSavePerms.disabled    = false;
     }
 }
 
-// ─── Delete Role ──────────────────────────────────────────────────────────────
+/**
+ * Core helper: wipe all existing permission rows for a role_id, then reinsert.
+ * Mirrors the original n8n "delete-all, reinsert" update strategy.
+ */
+async function syncRolePermissions(roleId, companyId, branchId, roleName, permissionKeys, now) {
+    // Step 1: Delete all existing perm rows for this role
+    const { error: delErr } = await supabase
+        .from('role_permissions')
+        .delete()
+        .eq('role_id', roleId)
+        .eq('company_id', companyId);
+
+    if (delErr) console.warn('syncRolePermissions: delete warning:', delErr);
+
+    // Step 2: Reinsert — one row per permission key
+    if (permissionKeys.length > 0) {
+        const rows = permissionKeys.map(key => ({
+            company_id:     companyId,
+            branch_id:      branchId,
+            role_id:        roleId,
+            role_name:      roleName,
+            permission_key: key,
+            status:         'active',
+            created_at:     now,
+            updated_at:     now
+        }));
+
+        const { error: insErr } = await supabase.from('role_permissions').insert(rows);
+        if (insErr) throw insErr;
+    }
+}
+
+// ─── Delete Role via Supabase ──────────────────────────────────────────────────
 function openDeleteConfirm(roleId) {
-    const role = rolesData.find(r => (r.id || r.role_id) === roleId);
+    const role = rolesData.find(r => r.role_id === roleId);
     if (!role || role.protected) return;
-    deleteRoleNameDisplay.textContent  = role.name;
-    btnConfirmDelete.dataset.roleId    = roleId;
+    deleteRoleNameDisplay.textContent = role.name;
+    btnConfirmDelete.dataset.roleId   = roleId;
     confirmDeleteOverlay.classList.add('active');
 }
 
@@ -527,7 +519,7 @@ function closeDeleteConfirm() {
 
 async function confirmDelete() {
     const roleId = btnConfirmDelete.dataset.roleId;
-    const role   = rolesData.find(r => (r.id || r.role_id) === roleId);
+    const role   = rolesData.find(r => r.role_id === roleId);
     if (!role) return;
 
     const originalText = btnConfirmDelete.textContent;
@@ -535,32 +527,37 @@ async function confirmDelete() {
     btnConfirmDelete.disabled    = true;
 
     try {
-        const res = await fetchWithAuth(API.DELETE_ROLE, {
-            method: 'POST',
-            body:   JSON.stringify({
-                company_id: getCompanyId(),
-                branch_id:  getBranchId(),
-                role_id:    roleId
-            })
-        }, FEATURES.ROLES_PERMISSIONS, 'delete');
+        const companyId = getCompanyId();
+        const now       = new Date().toISOString();
 
-        const data = await res.json();
-        const root = Array.isArray(data) ? data[0] : data;
+        // Soft-delete the role row
+        const { error: delRoleErr } = await supabase
+            .from('roles')
+            .update({ status: 'deleted', updated_at: now })
+            .eq('role_id', roleId)
+            .eq('company_id', companyId);
 
-        if (res.ok && !root?.error) {
-            closeDeleteConfirm();
-            showToast('Role deleted successfully.');
-            // Fall back to first protected role after deletion
-            const fallback = rolesData.find(r => r.protected && (r.id || r.role_id) !== roleId);
-            if (fallback) activeRoleId = fallback.id || fallback.role_id;
-            await fetchRoles();
-            if (activeRoleId) selectRole(activeRoleId);
-        } else {
-            showToast('Error: ' + (root?.error || root?.message || 'Unknown error'));
-        }
+        if (delRoleErr) throw delRoleErr;
+
+        // Also remove all its permission rows
+        await supabase
+            .from('role_permissions')
+            .delete()
+            .eq('role_id', roleId)
+            .eq('company_id', companyId);
+
+        closeDeleteConfirm();
+        showToast('Role deleted successfully.');
+
+        // Fallback to first protected role
+        const fallback = rolesData.find(r => r.protected && r.role_id !== roleId);
+        if (fallback) activeRoleId = fallback.role_id;
+        await fetchRoles();
+        if (activeRoleId) selectRole(activeRoleId);
+
     } catch (err) {
-        console.error(err);
-        showToast('Network error deleting role.');
+        console.error('confirmDelete error:', err);
+        showToast('Error deleting role: ' + (err.message || ''));
     } finally {
         btnConfirmDelete.textContent = originalText;
         btnConfirmDelete.disabled    = false;
@@ -577,7 +574,7 @@ function collectPermissionsFromContainer(containerEl) {
 
 // ─── Utility ──────────────────────────────────────────────────────────────────
 function escHtml(str) {
-    return str.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+    return String(str).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
 }
 
 function showToast(msg) {
