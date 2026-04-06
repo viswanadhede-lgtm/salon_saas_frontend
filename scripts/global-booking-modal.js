@@ -479,24 +479,24 @@ export function initGlobalBookingModal() {
         }
 
         const payload = {
-            company_id:       getCompanyId(),
-            branch_id:        getBranchId(),
-            customer_id:      targetId || null,
-            customer_phone:   phoneSearch.value.trim(),
-            customer_name:    targetName,
-            customer_mail:    customerEmail.value.trim() || null,
-            service_id:       serviceSelect.value,
-            service_name:     meta ? meta.name : '',
-            duration:         meta ? meta.duration : 0,
-            price:            meta ? meta.price : 0,
-            staff_id:         staffSelect.value,
-            staff_name:       staffSelect.options[staffSelect.selectedIndex]?.text || '',
-            booking_date:     bookingDate.value,
-            start_time:       bookingTime.value,
-            notes:            bookingNotes.value.trim(),
-            status:           'booked',
-            payment_status:   'pending',
-            booking_type:     'walk-in'
+            company_id:     getCompanyId(),
+            branch_id:      getBranchId(),
+            customer_id:    targetId || null,
+            customer_name:  targetName,
+            customer_mail:  customerEmail.value.trim() || null,
+            customer_phone: phoneSearch.value.trim(),
+            service_id:     serviceSelect.value,
+            service_name:   meta ? meta.name : '',
+            staff_id:       staffSelect.value,
+            staff_name:     staffSelect.options[staffSelect.selectedIndex]?.text || '',
+            booking_date:   bookingDate.value,
+            start_time:     bookingTime.value,
+            end_time:       computedEndTime || null,
+            notes:          bookingNotes.value.trim(),
+            price:          meta ? meta.price : 0,
+            status:         'booked',
+            payment:        'pending',
+            booking_type:   'walk-in'
         };
         
         try {
