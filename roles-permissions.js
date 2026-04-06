@@ -546,9 +546,9 @@ async function confirmDelete() {
         // Also remove all its permission rows
         await supabase
             .from('role_permissions')
-            .delete()
             .eq('role_id', roleId)
-            .eq('company_id', companyId);
+            .eq('company_id', companyId)
+            .delete();
 
         closeDeleteConfirm();
         showToast('Role deleted successfully.');
