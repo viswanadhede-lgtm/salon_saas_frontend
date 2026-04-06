@@ -430,8 +430,8 @@ function setupEventListeners() {
             const totalAmount = cart.reduce((sum, item) => sum + (item.price * item.quantity), 0);
             const paymentMethod = currentPaymentMethod.charAt(0).toUpperCase() + currentPaymentMethod.slice(1);
 
-            // Form Flat Sales Data (One row per cart item, sharing the same sale_id)
-            const saleGroupId = `POS-${Date.now()}`; // Unique transation identifier
+            // Form Flat Sales Data (One row per cart item, sharing the same UUID)
+            const saleGroupId = crypto.randomUUID(); // Requires a valid UUID for sale_id
             const salesBatch = cart.map(item => ({
                 sale_id: saleGroupId,
                 company_id: getCompanyId(),
