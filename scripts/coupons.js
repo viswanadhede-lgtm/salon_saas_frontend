@@ -205,38 +205,41 @@ async function loadCoupons() {
         const companyId = getCompanyId();
         const branchId = getBranchId();
 
-        const [couponsRes, svcLinksRes] = await Promise.all([
-            supabase
-                .from('coupons')
-                .select('*')
-                .eq('company_id', companyId)
-                .eq('branch_id', branchId)
-                .neq('status', 'deleted')
-                .order('created_at', { ascending: false }),
-            supabase
-                .from('coupon_services')
-                .select('*')
-                .eq('company_id', companyId)
-                .eq('branch_id', branchId)
-        ]);
+        // Fetch coupons directly
+        const { data: couponsData, error: couponsErr } = await supabase
+            .from('coupons')
+            .select('*')
+            .eq('company_id', companyId)
+            .eq('branch_id', branchId)
+            .neq('status', 'deleted')
+            .order('created_at', { ascending: false });
 
-        if (couponsRes.error) throw couponsRes.error;
+        if (couponsErr) throw couponsErr;
 
-        // Group service links by coupon_id
-        const svcByCouponId = {};
-        (svcLinksRes.data || []).forEach(row => {
-            if (!svcByCouponId[row.coupon_id]) svcByCouponId[row.coupon_id] = [];
-            svcByCouponId[row.coupon_id].push({
-                service_id: row.service_id,
-                service_name: row.service_name || '',
-                current_usage_count: row.current_usage_count || 0
-            });
+        // Group flattened rows by coupon_id
+        const groupedCoupons = {};
+        (couponsData || []).forEach(row => {
+            const cId = row.coupon_id;
+            if (!groupedCoupons[cId]) {
+                // Initialize the top-level coupon aggregate object
+                groupedCoupons[cId] = { ...row, applicable_services: [] };
+            }
+            
+            // Keep pushing distinct services onto it
+            if (row.service_id) {
+                groupedCoupons[cId].applicable_services.push({
+                    service_id: row.service_id,
+                    service_name: row.service_name || '',
+                    current_usage_count: row.current_usage_count || 0,
+                    rowId: row.id
+                });
+            }
         });
 
-        currentCoupons = (couponsRes.data || []).map(c => ({
-            ...c,
-            applicable_services: svcByCouponId[c.coupon_id || c.id] || []
-        }));
+        currentCoupons = Object.values(groupedCoupons);
+        
+        // Re-sort based on created_at since Object.values dumps order
+        currentCoupons.sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
 
         renderCoupons();
     } catch (err) {
@@ -486,69 +489,42 @@ async function handleSaveCoupon() {
         }));
     }
 
-    const couponPayload = {
-        company_id: getCompanyId(),
-        branch_id: getBranchId(),
-        coupon_code,
-        discount_type,
-        discount_value: parseFloat(discount_value),
-        status: document.getElementById('cpnStatusToggle').checked ? 'active' : 'inactive',
-        min_bill_amount: document.getElementById('cpnMinBooking').value ? parseFloat(document.getElementById('cpnMinBooking').value) : null,
-        total_usage_limit: document.getElementById('cpnUsageLimit').value ? parseInt(document.getElementById('cpnUsageLimit').value, 10) : null,
-        usage_per_customer: document.getElementById('cpnUsagePerCustomer').value ? parseInt(document.getElementById('cpnUsagePerCustomer').value, 10) : null,
-        valid_from: document.getElementById('cpnStartDate').value || null,
-        valid_to: document.getElementById('cpnEndDate').value || null
-    };
-
-    const btnSave = document.getElementById('btnSaveCoupon');
-    const origText = btnSave.textContent;
-    btnSave.textContent = 'Saving...';
-    btnSave.disabled = true;
-
     try {
-        let couponId = currentEditId;
+        let couponId = isEditing ? currentEditId : crypto.randomUUID();
+
+        const rowsToInsert = applicableServices.map(svc => ({
+            coupon_id: couponId,
+            company_id: getCompanyId(),
+            branch_id: getBranchId(),
+            coupon_code: coupon_code,
+            discount_type: discount_type,
+            discount_value: parseFloat(discount_value),
+            status: document.getElementById('cpnStatusToggle').checked ? 'active' : 'inactive',
+            min_bill_amount: document.getElementById('cpnMinBooking').value ? parseFloat(document.getElementById('cpnMinBooking').value) : null,
+            total_usage_limit: document.getElementById('cpnUsageLimit').value ? parseInt(document.getElementById('cpnUsageLimit').value, 10) : null,
+            usage_per_customer: document.getElementById('cpnUsagePerCustomer').value ? parseInt(document.getElementById('cpnUsagePerCustomer').value, 10) : null,
+            valid_from: document.getElementById('cpnStartDate').value || null,
+            valid_to: document.getElementById('cpnEndDate').value || null,
+            service_id: svc.service_id,
+            service_name: svc.service_name,
+            current_usage_count: svc.current_usage_count || 0
+        }));
 
         if (isEditing) {
-            // UPDATE coupon row
-            const { error } = await supabase
+            // DELETE old rows
+            const { error: delErr } = await supabase
                 .from('coupons')
                 .eq('coupon_id', couponId)
-                .update(couponPayload);
-            if (error) throw error;
-
-            // DELETE old service links then re-insert
-            const { error: delErr } = await supabase
-                .from('coupon_services')
-                .delete()
-                .eq('coupon_id', couponId);
-            if (delErr) console.warn('coupon_services delete warning:', delErr.message);
-
-        } else {
-            // INSERT new coupon
-            couponId = crypto.randomUUID();
-            couponPayload.coupon_id = couponId;
-
-            const { error } = await supabase
-                .from('coupons')
-                .insert(couponPayload);
-            if (error) throw error;
+                .delete();
+            if (delErr) throw delErr;
         }
 
-        // INSERT coupon_services links
-        if (couponId && applicableServices.length > 0) {
-            const svcRows = applicableServices.map(svc => ({
-                coupon_id: couponId,
-                company_id: getCompanyId(),
-                branch_id: getBranchId(),
-                service_id: svc.service_id,
-                service_name: svc.service_name,
-                current_usage_count: svc.current_usage_count
-            }));
-
-            const { error: insErr } = await supabase
-                .from('coupon_services')
-                .insert(svcRows);
-            if (insErr) console.warn('coupon_services insert warning:', insErr.message);
+        // INSERT all new mapped rows directly to flattened coupons table
+        if (rowsToInsert.length > 0) {
+            const { error } = await supabase
+                .from('coupons')
+                .insert(rowsToInsert);
+            if (error) throw error;
         }
 
         showToast(isEditing ? 'Coupon updated successfully' : 'Coupon created successfully');
