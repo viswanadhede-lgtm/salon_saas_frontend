@@ -653,10 +653,10 @@ async function performDelete(scheduleId) {
     try {
         const { error } = await supabase
             .from('staff_schedule')
-            .delete()
             .eq('staff_id', staffId)
             .gte('schedule_date', `${targetMonth}-01`)
-            .lte('schedule_date', `${targetMonth}-31`);
+            .lte('schedule_date', `${targetMonth}-31`)
+            .delete();
         
         if (error) throw error;
         
@@ -1164,8 +1164,10 @@ async function handleFormSubmit(e) {
     let companyId = null;
     try {
         const appContext = JSON.parse(localStorage.getItem('appContext') || '{}');
-        companyId = appContext.company?.id || null;
-    } catch (e) {}
+        companyId = appContext.company?.id || localStorage.getItem('company_id') || null;
+    } catch (e) {
+        companyId = localStorage.getItem('company_id') || null;
+    }
 
     // Add company_id and branch_id to local schedule Entries for direct DB insert
     const insertPayload = scheduleEntries.map(entry => ({
@@ -1178,10 +1180,10 @@ async function handleFormSubmit(e) {
         // ALWAYS Purge existing data for this staff_id and month, and overwrite directly
         const { error: delError } = await supabase
             .from('staff_schedule')
-            .delete()
             .eq('staff_id', payload.staff_id)
             .gte('schedule_date', `${month < 9 ? '0' : ''}${month + 1}` === payload.target_month ? `${payload.target_month}-01` : `${year}-${String(month + 1).padStart(2, '0')}-01`)
-            .lte('schedule_date', `${month < 9 ? '0' : ''}${month + 1}` === payload.target_month ? `${payload.target_month}-31` : `${year}-${String(month + 1).padStart(2, '0')}-31`);
+            .lte('schedule_date', `${month < 9 ? '0' : ''}${month + 1}` === payload.target_month ? `${payload.target_month}-31` : `${year}-${String(month + 1).padStart(2, '0')}-31`)
+            .delete();
 
         if (delError) {
             throw new Error('Failed to overwrite existing schedule');
