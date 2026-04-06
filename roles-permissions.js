@@ -84,7 +84,7 @@ async function fetchRoles() {
         const branchId  = getBranchId();
 
         // Fetch roles, their permissions, and staff in parallel
-        const [rolesRes, permsRes, staffRes] = await Promise.all([
+        const [rolesRes, permsRes, staffRes, usersRes] = await Promise.all([
             supabase
                 .from('roles')
                 .select('*')
@@ -99,6 +99,10 @@ async function fetchRoles() {
             supabase
                 .from('staff')
                 .select('id, role_id')
+                .eq('company_id', companyId),
+            supabase
+                .from('users')
+                .select('user_id, role_id')
                 .eq('company_id', companyId)
         ]);
 
@@ -113,7 +117,8 @@ async function fetchRoles() {
 
         // Build staff count map: { role_id -> count }
         const staffCountMap = {};
-        (staffRes.data || []).forEach(s => {
+        const combinedUsers = [...(staffRes.data || []), ...(usersRes.data || [])];
+        combinedUsers.forEach(s => {
             if (!s.role_id) return;
             staffCountMap[s.role_id] = (staffCountMap[s.role_id] || 0) + 1;
         });
@@ -224,7 +229,10 @@ function renderPermissionsMatrix(role, containerEl, isModal) {
     MODULES_META.forEach(mod => {
         const featureKey   = mod.key;
         const salonOwns    = subscriptionFeatures.includes(featureKey);
-        const hasFeature   = salonOwns && roleKeys.includes(featureKey);
+        
+        // Treat protected Owner role or the 'ALL' key as having universal access
+        const hasUniversal = roleKeys.includes('ALL') || isOwner;
+        const hasFeature   = salonOwns && (hasUniversal || roleKeys.includes(featureKey));
         const disabledAttr = (isOwner || !salonOwns) ? 'disabled' : '';
         const childSubFeats = SUB_FEATURES_MAP[featureKey] || [];
 
@@ -257,7 +265,7 @@ function renderPermissionsMatrix(role, containerEl, isModal) {
             subHtml = `<span style="font-size:0.8rem;color:#94a3b8;font-style:italic;">No granular actions</span>`;
         } else {
             childSubFeats.forEach(subf => {
-                const hasSub = salonOwns && roleKeys.includes(subf.key);
+                const hasSub = salonOwns && (hasUniversal || roleKeys.includes(subf.key));
                 subHtml += `
                     <label style="display:flex;align-items:center;gap:6px;font-size:0.8rem;color:#475569;cursor:${disabledAttr ? 'not-allowed' : 'pointer'};opacity:${!salonOwns ? '0.5' : '1'};">
                         <input type="checkbox" class="perm-check sub-feature-check"
