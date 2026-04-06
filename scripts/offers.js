@@ -463,13 +463,15 @@ document.addEventListener('DOMContentLoaded', () => {
                 if (delErr) console.warn('offer_services delete warning:', delErr.message);
 
             } else {
+                // Pre-generate UUID to avoid .select() chaining
+                offerId = crypto.randomUUID();
+                offerPayload.offer_id = offerId;
+
                 // INSERT new offer row
-                const { data: newOffer, error } = await supabase
+                const { error } = await supabase
                     .from('offers')
-                    .insert(offerPayload)
-                    .select();
+                    .insert(offerPayload);
                 if (error) throw error;
-                offerId = newOffer[0]?.offer_id || newOffer[0]?.id;
             }
 
             // INSERT offer_services rows
