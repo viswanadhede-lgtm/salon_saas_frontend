@@ -364,8 +364,7 @@ function setupEventListeners() {
                             date_of_birth: dob || null,
                             customer_tag: tag,
                             notes: notes || 'Added from POS'
-                        })
-                        .select();
+                        });
 
                     if (error) throw error;
 
@@ -431,48 +430,31 @@ function setupEventListeners() {
             const totalAmount = cart.reduce((sum, item) => sum + (item.price * item.quantity), 0);
             const paymentMethod = currentPaymentMethod.charAt(0).toUpperCase() + currentPaymentMethod.slice(1);
 
-            // Step 1: Insert into 'sales' table
-            const { data: saleData, error: saleError } = await supabase
+            // Form Flat Sales Data (One row per cart item, sharing the same sale_id)
+            const saleGroupId = `POS-${Date.now()}`; // Unique transation identifier
+            const salesBatch = cart.map(item => ({
+                sale_id: saleGroupId,
+                company_id: getCompanyId(),
+                branch_id: getBranchId(),
+                customer_id: customerId,
+                customer_name: customerName,
+                customer_phone: customerPhone,
+                payment_method: paymentMethod,
+                status: 'completed',
+                product_id: item.id,
+                product_name: item.name,
+                category_id: item.category_id || null,
+                quantity: item.quantity,
+                price: item.price,
+                total_amount: item.price * item.quantity
+            }));
+
+            // Insert Batch into 'sales' table
+            const { error: saleError } = await supabase
                 .from('sales')
-                .insert({
-                    company_id: getCompanyId(),
-                    branch_id: getBranchId(),
-                    customer_id: customerId,
-                    customer_name: customerName,
-                    customer_phone: customerPhone,
-                    total_amount: totalAmount,
-                    payment_method: paymentMethod,
-                    status: 'completed'
-                })
-                .select();
+                .insert(salesBatch);
 
             if (saleError) throw saleError;
-
-            const saleId = saleData && saleData.length > 0 ? (saleData[0].sale_id || saleData[0].id) : null;
-
-            // Step 2: Insert line items into 'sale_items' table
-            if (saleId) {
-                const lineItems = cart.map(item => ({
-                    sale_id: saleId,
-                    company_id: getCompanyId(),
-                    branch_id: getBranchId(),
-                    product_id: item.id,
-                    product_name: item.name,
-                    category_id: item.category_id || null,
-                    category_name: item.category_name || null,
-                    quantity: item.quantity,
-                    price: item.price,
-                    total_amount: item.price * item.quantity
-                }));
-
-                const { error: itemsError } = await supabase
-                    .from('sale_items')
-                    .insert(lineItems);
-
-                if (itemsError) {
-                    console.warn('POS: sale_items insert error (sale was still created):', itemsError);
-                }
-            }
 
             showToast('✓ Sale completed successfully!');
 

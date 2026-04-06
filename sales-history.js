@@ -96,65 +96,62 @@ document.addEventListener('DOMContentLoaded', () => {
             const companyId = getCompanyId();
             const branchId = getBranchId();
 
-            // Fetch sales and sale_items in parallel
-            const [salesRes, itemsRes] = await Promise.all([
-                supabase
-                    .from('sales')
-                    .select('*')
-                    .eq('company_id', companyId)
-                    .eq('branch_id', branchId)
-                    .order('created_at', { ascending: false }),
-                supabase
-                    .from('sale_items')
-                    .select('*')
-                    .eq('company_id', companyId)
-                    .eq('branch_id', branchId)
-            ]);
+            // Fetch flat sales data
+            const { data: salesList, error: salesError } = await supabase
+                .from('sales')
+                .select('*')
+                .eq('company_id', companyId)
+                .eq('branch_id', branchId)
+                .order('created_at', { ascending: false });
 
-            if (salesRes.error) throw salesRes.error;
+            if (salesError) throw salesError;
 
-            const salesList = salesRes.data || [];
-            const itemsList = itemsRes.data || [];
-
-            // Group items by sale_id for fast lookup
-            const itemsBySaleId = {};
-            itemsList.forEach(item => {
-                const sid = item.sale_id;
-                if (!itemsBySaleId[sid]) itemsBySaleId[sid] = [];
-                itemsBySaleId[sid].push(item);
+            // Group the flat sales records by sale_id
+            const groupedSales = {};
+            (salesList || []).forEach(row => {
+                const saleId = row.sale_id; // The shared grouping ID
+                if (!groupedSales[saleId]) {
+                    groupedSales[saleId] = {
+                        id: saleId,
+                        customer: row.customer_name || 'Walk-in',
+                        customer_id: row.customer_id || null,
+                        date: new Date(row.created_at),
+                        payment: (row.payment_method || 'other').toLowerCase(),
+                        staff: row.staff_name || 'System',
+                        status: (row.status || 'completed').toLowerCase(),
+                        raw_created_at: new Date(row.created_at).getTime(),
+                        products: [],
+                        totalAmountNum: 0
+                    };
+                }
+                
+                // Add this row as a line item
+                groupedSales[saleId].products.push({
+                    name: row.product_name || 'Unknown Product',
+                    qty: Number(row.quantity) || 1,
+                    price: Number(row.price) || 0,
+                    category: row.category_id || ''
+                });
+                
+                // Add to the total sum
+                groupedSales[saleId].totalAmountNum += Number(row.total_amount) || 0;
             });
 
-            // Build the unified data model
-            initialSalesData = salesList.map(sale => {
-                const saleId = sale.sale_id || sale.id;
-                const d = new Date(sale.created_at);
+            // Convert the grouped object back into an array for rendering
+            initialSalesData = Object.values(groupedSales).map(sale => {
+                const d = sale.date;
                 const formattedDate = d.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
                     + ' ' + d.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' });
 
-                const items = (itemsBySaleId[saleId] || []).map(it => ({
-                    name: it.product_name || 'Unknown Product',
-                    qty: Number(it.quantity) || 1,
-                    price: Number(it.price) || 0,
-                    category: it.category_name || ''
-                }));
-
-                const totalAmountNum = Number(sale.total_amount) || 
-                    items.reduce((sum, it) => sum + (it.qty * it.price), 0);
-
                 return {
-                    id: saleId,
-                    customer: sale.customer_name || 'Walk-in',
-                    customer_id: sale.customer_id || null,
+                    ...sale,
                     date: formattedDate,
-                    products: items,
-                    totalAmountNum,
-                    total: `₹${totalAmountNum.toLocaleString()}`,
-                    payment: (sale.payment_method || 'other').toLowerCase(),
-                    staff: sale.staff_name || 'System',
-                    status: (sale.status || 'completed').toLowerCase(),
-                    raw_created_at: d.getTime()
+                    total: `₹${sale.totalAmountNum.toLocaleString()}`
                 };
             });
+
+            // Sort by raw_created_at descending
+            initialSalesData.sort((a, b) => b.raw_created_at - a.raw_created_at);
 
             currentSalesData = [...initialSalesData];
             renderTable();
