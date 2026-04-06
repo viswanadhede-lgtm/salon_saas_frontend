@@ -635,6 +635,13 @@ function attachGlobalEventListeners() {
             const categoryObj = liveProductCategoriesData.find(c => c.category_name === cat);
             const catId = categoryObj ? (categoryObj.category_id || categoryObj.id) : null;
 
+            // Duplicate check (case-insensitive, under the same category)
+            const isDuplicate = liveProductsData.some(
+                p => (p.product_name || '').trim().toLowerCase() === name.toLowerCase() &&
+                     (p.category_name || '').trim().toLowerCase() === cat.toLowerCase()
+            );
+            if (isDuplicate) return showToast(`A product named "${name}" already exists in this category.`, true);
+
             saveProdBtn.disabled = true;
             saveProdBtn.textContent = 'Saving...';
             try {
@@ -683,6 +690,14 @@ function attachGlobalEventListeners() {
             const productId = document.getElementById('editProductId').value;
             const categoryObj = liveProductCategoriesData.find(c => c.category_name === cat);
             const catId = categoryObj ? (categoryObj.category_id || categoryObj.id) : null;
+
+            // Duplicate check (case-insensitive, under the same category, excluding self)
+            const isDuplicate = liveProductsData.some(
+                p => (p.product_name || '').trim().toLowerCase() === name.toLowerCase() &&
+                     (p.category_name || '').trim().toLowerCase() === cat.toLowerCase() &&
+                     String(p.product_id || p.id) !== String(productId)
+            );
+            if (isDuplicate) return showToast(`A product named "${name}" already exists in this category.`, true);
 
             updateProdBtn.disabled = true;
             updateProdBtn.textContent = 'Updating...';
