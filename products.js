@@ -543,7 +543,13 @@ function attachGlobalEventListeners() {
         saveCatBtn.addEventListener('click', async () => {
             const name = document.getElementById('categoryName').value.trim();
             if (!name) return showToast('Please enter category name', true);
-            
+
+            // Duplicate check (case-insensitive)
+            const isDuplicate = liveProductCategoriesData.some(
+                c => c.category_name.trim().toLowerCase() === name.toLowerCase()
+            );
+            if (isDuplicate) return showToast(`A category named "${name}" already exists.`, true);
+
             const payload = {
                 company_id: getCompanyId(),
                 branch_id: getBranchId(),
@@ -581,6 +587,13 @@ function attachGlobalEventListeners() {
             if (!name) return showToast('Please enter category name', true);
 
             const catId = document.getElementById('editCategoryId').value;
+
+            // Duplicate check (case-insensitive, exclude self)
+            const isDuplicate = liveProductCategoriesData.some(
+                c => c.category_name.trim().toLowerCase() === name.toLowerCase() &&
+                     String(c.category_id || c.id) !== String(catId)
+            );
+            if (isDuplicate) return showToast(`A category named "${name}" already exists.`, true);
 
             updateCatBtn.disabled = true;
             updateCatBtn.textContent = 'Updating...';
