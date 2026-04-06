@@ -83,7 +83,7 @@ document.addEventListener('DOMContentLoaded', () => {
         
         tableBody.innerHTML = `
             <tr>
-                <td colspan="8" style="text-align:center; padding: 40px; color: #64748b;">
+                <td colspan="7" style="text-align:center; padding: 40px; color: #64748b;">
                     <i data-feather="loader" style="width: 32px; height: 32px; margin-bottom: 12px; animation: spin 1s linear infinite;"></i>
                     <p>Loading sales history...</p>
                 </td>
@@ -182,7 +182,7 @@ document.addEventListener('DOMContentLoaded', () => {
         if (currentSalesData.length === 0) {
             tableBody.innerHTML = `
                 <tr>
-                    <td colspan="8" style="text-align:center; padding: 40px; color: #64748b;">
+                    <td colspan="7" style="text-align:center; padding: 40px; color: #64748b;">
                         <i data-feather="inbox" style="width: 32px; height: 32px; margin-bottom: 12px; opacity: 0.5;"></i>
                         <p>No sales records found matching your filters.</p>
                     </td>
@@ -215,8 +215,7 @@ document.addEventListener('DOMContentLoaded', () => {
             };
 
             tr.innerHTML = `
-                <td style="padding:12px 12px 12px 24px; color:#3b82f6; font-weight:500;">${sale.id}</td>
-                <td style="padding:12px 12px; color:#1e293b; font-weight:500; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">${sale.customer}</td>
+                <td style="padding:12px 12px 12px 24px; color:#1e293b; font-weight:500; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">${sale.customer}</td>
                 <td style="padding:12px 12px; color:#475569; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">${sale.date}</td>
                 <td style="padding:12px 12px; color:#475569;">${prodCountStr}</td>
                 <td style="padding:12px 12px; font-weight:600; color:#1e293b;">${saleTotalDisplay}</td>
