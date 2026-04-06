@@ -183,8 +183,8 @@ function attachEventListeners() {
         try {
             const { error } = await supabase
                 .from('service_categories')
-                .eq('category_id', categoryId)
-                .update(payload);
+                .update(payload)
+                .eq('category_id', categoryId);
             
             if (!error) {
                 // If name changed, update corresponding services table
@@ -192,8 +192,8 @@ function attachEventListeners() {
                 if (origCategory && origCategory.category_name !== newCategoryName) {
                     await supabase
                         .from('services')
-                        .eq('category_id', categoryId)
-                        .update({ category_name: newCategoryName });
+                        .update({ category_name: newCategoryName })
+                        .eq('category_id', categoryId);
                 }
 
                 window.toast && window.toast('Category updated successfully!');
@@ -236,7 +236,8 @@ function attachEventListeners() {
         try {
             const { error } = await supabase
                 .from('service_categories')
-                .update({ status: 'deleted' }).eq('', categoryToDelete.id);
+                .update({ status: 'deleted' })
+                .eq('category_id', categoryToDelete.id);
             
             if (!error) {
                 window.toast && window.toast('Category deleted successfully!');
