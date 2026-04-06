@@ -181,15 +181,30 @@ function attachEventListeners() {
         if (btn) { btn.textContent = 'Updating...'; btn.disabled = true; }
         
         try {
+            const categoryId = document.getElementById('editCategoryId').value;
             const { error } = await supabase
                 .from('service_categories')
                 .update(payload)
-                .eq('category_id', categoryId);
+                .eq('id', categoryId);
+
+            if (error) {
+                // fallback: try category_id column
+                const { error: err2 } = await supabase
+                    .from('service_categories')
+                    .update(payload)
+                    .eq('category_id', categoryId);
+                if (err2) throw err2;
+            }
             
             if (!error) {
                 // If name changed, update corresponding services table
                 const origCategory = liveCategoriesData.find(c => String(c.category_id || c.id) === String(categoryId));
                 if (origCategory && origCategory.category_name !== newCategoryName) {
+                    await supabase
+                        .from('services')
+                        .update({ category_name: newCategoryName })
+                        .eq('category_id', categoryId);
+                    // also try id-based fallback silently
                     await supabase
                         .from('services')
                         .update({ category_name: newCategoryName })
@@ -234,20 +249,31 @@ function attachEventListeners() {
         fullScreenLoader.classList.add('active');
         
         try {
-            const { error } = await supabase
+            // Try Supabase auto-PK 'id' first, then fallback to 'category_id'
+            let deleteError;
+            ({ error: deleteError } = await supabase
                 .from('service_categories')
                 .update({ status: 'deleted' })
-                .eq('category_id', categoryToDelete.id);
-            
-            if (!error) {
+                .eq('id', categoryToDelete.id));
+
+            if (deleteError) {
+                console.warn('id-based delete failed, trying category_id:', deleteError.message);
+                ({ error: deleteError } = await supabase
+                    .from('service_categories')
+                    .update({ status: 'deleted' })
+                    .eq('category_id', categoryToDelete.id));
+            }
+
+            if (!deleteError) {
                 window.toast && window.toast('Category deleted successfully!');
                 await fetchCategories();
             } else {
-                window.toast && window.toast('Error deleting category: ' + error.message);
+                console.error('Delete failed:', deleteError);
+                window.toast && window.toast('Error deleting category: ' + deleteError.message);
             }
         } catch (err) {
-            console.error(err);
-            window.toast && window.toast('Network error deleting category');
+            console.error('Network error deleting category:', err);
+            window.toast && window.toast('Error: ' + (err.message || 'Unknown error deleting category'));
         } finally {
             fullScreenLoader.classList.remove('active');
             categoryToDelete = null;

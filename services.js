@@ -207,21 +207,29 @@ function attachEventListeners() {
         if (btn) { btn.textContent = 'Updating...'; btn.disabled = true; }
         
         try {
-            const { error } = await supabase
+            let updateError;
+            ({ error: updateError } = await supabase
                 .from('services')
                 .update(payload)
-                .eq('service_id', serviceId);
-            
-            if (!error) {
+                .eq('id', serviceId));
+
+            if (updateError) {
+                ({ error: updateError } = await supabase
+                    .from('services')
+                    .update(payload)
+                    .eq('service_id', serviceId));
+            }
+
+            if (!updateError) {
                 window.toast && window.toast('Service updated successfully!');
                 editSvcModal.classList.remove('active');
                 await fetchServices();
             } else {
-                window.toast && window.toast('Error updating service: ' + error.message);
+                window.toast && window.toast('Error updating service: ' + updateError.message);
             }
         } catch (err) {
-            console.error(err);
-            window.toast && window.toast('Network error updating service');
+            console.error('Error updating service:', err);
+            window.toast && window.toast('Error: ' + (err.message || 'Unknown error updating service'));
         } finally {
             if (btn) { btn.textContent = originalText; btn.disabled = false; }
         }
@@ -251,20 +259,31 @@ function attachEventListeners() {
         fullScreenLoader.classList.add('active');
         
         try {
-            const { error } = await supabase
+            // Try Supabase auto-PK 'id' first, then fallback to 'service_id'
+            let deleteError;
+            ({ error: deleteError } = await supabase
                 .from('services')
                 .update({ status: 'deleted' })
-                .eq('service_id', serviceToDelete.id);
-            
-            if (!error) {
+                .eq('id', serviceToDelete.id));
+
+            if (deleteError) {
+                console.warn('id-based delete failed, trying service_id:', deleteError.message);
+                ({ error: deleteError } = await supabase
+                    .from('services')
+                    .update({ status: 'deleted' })
+                    .eq('service_id', serviceToDelete.id));
+            }
+
+            if (!deleteError) {
                 window.toast && window.toast('Service deleted successfully!');
                 await fetchServices();
             } else {
-                window.toast && window.toast('Error deleting service: ' + error.message);
+                console.error('Delete failed:', deleteError);
+                window.toast && window.toast('Error deleting service: ' + deleteError.message);
             }
         } catch (err) {
-            console.error(err);
-            window.toast && window.toast('Network error deleting service');
+            console.error('Error deleting service:', err);
+            window.toast && window.toast('Error: ' + (err.message || 'Unknown error deleting service'));
         } finally {
             fullScreenLoader.classList.remove('active');
             serviceToDelete = null;
