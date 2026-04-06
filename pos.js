@@ -432,6 +432,22 @@ function setupEventListeners() {
 
             // Form Flat Sales Data (One row per cart item, sharing the same UUID)
             const saleGroupId = crypto.randomUUID(); // Requires a valid UUID for sale_id
+            
+            // Resolve the logged-in user's name
+            let staffName = localStorage.getItem('staff_name');
+            if (!staffName) {
+                const token = localStorage.getItem('token');
+                if (token && supabase.auth && supabase.auth.getUser) {
+                    try {
+                        const { data: uData } = await supabase.auth.getUser(token);
+                        if (uData && uData.user) {
+                            staffName = uData.user.user_metadata?.full_name || uData.user.raw_user_meta_data?.full_name || 'Admin';
+                            localStorage.setItem('staff_name', staffName);
+                        }
+                    } catch (e) { console.warn('Could not fetch user name:', e); }
+                }
+                if (!staffName) staffName = 'System';
+            }
             const salesBatch = cart.map(item => ({
                 sale_id: saleGroupId,
                 company_id: getCompanyId(),
@@ -441,6 +457,7 @@ function setupEventListeners() {
                 customer_phone: customerPhone,
                 payment_method: paymentMethod,
                 status: 'completed',
+                staff_name: staffName,
                 product_id: item.id,
                 product_name: item.name,
                 category_id: item.category_id || null,
