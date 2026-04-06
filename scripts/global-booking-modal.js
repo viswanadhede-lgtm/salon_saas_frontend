@@ -414,7 +414,7 @@ export function initGlobalBookingModal() {
 
     async function createBooking(payload) {
         try {
-            const { data, error } = await supabase.from('bookings').insert(payload).select();
+            const { data, error } = await supabase.from('bookings').select().insert(payload);
             if (!error) {
                 window.toast && window.toast('Booking created successfully!');
                 overrideOverlay?.classList.remove('active');
@@ -443,13 +443,13 @@ export function initGlobalBookingModal() {
         // If it's a completely new customer, create them in the DB first!
         if (!targetId && phoneSearch.value.trim().length >= 10) {
             try {
-                const { data: newCust, error: custErr } = await supabase.from('customers').insert({
+                const { data: newCust, error: custErr } = await supabase.from('customers').select().insert({
                     company_id: getCompanyId(),
                     branch_id: getBranchId(),
                     customer_name: targetName || 'Unknown Customer',
                     customer_phone: phoneSearch.value.trim(),
                     customer_email: customerEmail.value.trim()
-                }).select();
+                });
                 
                 if (custErr) throw custErr;
                 if (newCust && newCust.length > 0) {
