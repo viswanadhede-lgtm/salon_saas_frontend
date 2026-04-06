@@ -93,10 +93,10 @@ document.addEventListener('DOMContentLoaded', async () => {
     // ── Progressive Customer Search wiring ──
     const custSearch = document.getElementById('custSearchInput');
     const custSuggestions = document.getElementById('membershipCustomerSuggestions');
-    const custName = document.getElementById('customerName');
-    const custEmail = document.getElementById('customerEmail');
-    const custBadgeContainer = document.getElementById('customerBadgeContainer');
-    const newCustBadgeContainer = document.getElementById('newCustomerBadgeContainer');
+    const custName = document.getElementById('assignCustomerName');
+    const custEmail = document.getElementById('assignCustomerEmail');
+    const custBadgeContainer = document.getElementById('assignCustomerBadgeContainer');
+    const newCustBadgeContainer = document.getElementById('assignNewCustomerBadgeContainer');
 
     function setCustFormState(isNew, name = '', email = '') {
         if (custName) {
@@ -183,7 +183,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         confirmAssignBtn.addEventListener('click', () => {
             const planValue = document.getElementById('assignPlanInput').value;
             const custSearchValue = document.getElementById('custSearchInput').value.trim();
-            const custNameValue = document.getElementById('customerName')?.value.trim();
+            const custNameValue = document.getElementById('assignCustomerName')?.value.trim();
             
             if (!custSearchValue || custSearchValue.length < 10) {
                 showToast('Please enter a valid 10-digit phone number.');
@@ -274,7 +274,7 @@ async function fetchCustomers() {
     try {
         const { data, error } = await supabase
             .from('customers')
-            .select('id, customer_id, customer_name, first_name, last_name, customer_phone, phone_number')
+            .select('*')
             .eq('company_id', getCompanyId())
             .eq('branch_id', getBranchId());
 
@@ -812,8 +812,8 @@ function renderPurchases() {
 async function handleAssignMembership() {
     const planValue = document.getElementById('assignPlanInput').value;
     const custSearchValue = document.getElementById('custSearchInput').value.trim();
-    const custNameValue = document.getElementById('customerName')?.value.trim();
-    const custEmailValue = document.getElementById('customerEmail')?.value.trim();
+    const custNameValue = document.getElementById('assignCustomerName')?.value.trim();
+    const custEmailValue = document.getElementById('assignCustomerEmail')?.value.trim();
     const assignDate = document.getElementById('assignDateInput').value;
     
     let payMethod = 'cash';
