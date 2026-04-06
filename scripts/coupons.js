@@ -442,6 +442,14 @@ async function handleSaveCoupon() {
         return;
     }
 
+    if (!isEditing) {
+        const isDuplicate = currentCoupons.some(c => c.coupon_code && c.coupon_code.toUpperCase() === coupon_code.toUpperCase());
+        if (isDuplicate) {
+            showToast('Coupon name already exists.');
+            return;
+        }
+    }
+
     // Build service list
     const existingCoupon = isEditing && currentEditId
         ? currentCoupons.find(c => (c.coupon_id || c.id) === currentEditId)

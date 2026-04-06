@@ -222,7 +222,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
         tbody.innerHTML = offers.map(offer => {
             const offerId = offer.offer_id || offer.id;
-            const hasAllServices = offer.applicable_services.some(s => s.service_id === 'all');
+            const hasAllServices = offer.applicable_services.some(s => s.service_id === 'all') || (services.length > 0 && offer.applicable_services.length >= services.length);
             const tooltipServices = hasAllServices ? 'All Services' : offer.applicable_services.map(s => s.service_name).join('&#10;');
             const topServiceText = hasAllServices ? 'All Services' : (offer.applicable_services[0]?.service_name || 'None');
             const additionalCount = hasAllServices ? 0 : Math.max(0, offer.applicable_services.length - 1);
@@ -349,14 +349,25 @@ document.addEventListener('DOMContentLoaded', () => {
         let selectedCount = 0;
         let firstName = '';
 
-        const isAll = o.applicable_services.some(s => s.service_id === 'all');
+        const hasExplicitAll = o.applicable_services.some(s => s.service_id === 'all');
+        const hasAllIndividual = services.length > 0 && o.applicable_services.length >= services.length;
+        const isAll = hasExplicitAll || hasAllIndividual;
+
         if (isAll) {
             const allChk = document.querySelector('.serviceCheckboxes[data-id="all"]');
-            if (allChk) { allChk.checked = true; selectedCount = 1; firstName = 'All Categories'; }
+            if (allChk) { allChk.checked = true; }
+            document.querySelectorAll('.serviceCheckboxes:not([data-id="all"])').forEach(chk => chk.checked = true);
+            selectedCount = 1; // Treated as 1 conceptually to show 'All Categories' in display logic
+            firstName = 'All Categories';
         } else {
             o.applicable_services.forEach(srv => {
-                const sChk = document.querySelector(`.serviceCheckboxes[data-id="${srv.service_id}"]`);
-                if (sChk) { sChk.checked = true; selectedCount++; if (!firstName) firstName = srv.service_name; }
+                document.querySelectorAll('.serviceCheckboxes').forEach(chk => {
+                    if (chk.dataset.id === srv.service_id) {
+                        chk.checked = true;
+                        selectedCount++;
+                        if (!firstName) firstName = srv.service_name;
+                    }
+                });
             });
         }
 
