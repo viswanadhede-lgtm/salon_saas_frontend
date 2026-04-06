@@ -414,7 +414,7 @@ export function initGlobalBookingModal() {
 
     async function createBooking(payload) {
         try {
-            const { data, error } = await supabase.from('bookings').select().insert(payload);
+            const { data, error } = await supabase.from('bookings').insert(payload);
             if (!error) {
                 window.toast && window.toast('Booking created successfully!');
                 overrideOverlay?.classList.remove('active');
@@ -495,8 +495,7 @@ export function initGlobalBookingModal() {
                 .from('bookings')
                 .select('start_time, duration, status')
                 .eq('staff_id', staffId)
-                .eq('booking_date', bDate)
-                .not('status', 'in', '("cancelled", "completed")');
+                .eq('booking_date', bDate);
                 
             let isAvailable = true;
             let overlapReason = "";
