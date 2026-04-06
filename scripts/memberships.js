@@ -327,7 +327,7 @@ async function loadPlans() {
 
         // Fetch plans directly
         const { data: plansData, error: plansErr } = await supabase
-            .from('membership_plans')
+            .from('memberships')
             .select('*')
             .eq('company_id', companyId)
             .eq('branch_id', branchId)
@@ -562,7 +562,7 @@ window.deletePlan = function(id) {
 async function executeDeletePlan(id) {
     try {
         const { error } = await supabase
-            .from('membership_plans')
+            .from('memberships')
             .eq('membership_id', id)
             .update({ status: 'deleted' });
 
@@ -645,7 +645,7 @@ async function handleSavePlan() {
         if (isEditing) {
             // DELETE old rows
             const { error: delErr } = await supabase
-                .from('membership_plans')
+                .from('memberships')
                 .eq('membership_id', planId)
                 .delete();
             if (delErr) throw delErr;
@@ -654,7 +654,7 @@ async function handleSavePlan() {
         // INSERT all mapped rows safely
         if (rowsToInsert.length > 0) {
             const { error: insErr } = await supabase
-                .from('membership_plans')
+                .from('memberships')
                 .insert(rowsToInsert);
             if (insErr) throw insErr;
         }
