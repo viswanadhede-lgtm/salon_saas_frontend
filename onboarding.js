@@ -196,10 +196,38 @@ async function submitOnboarding() {
         if (!rErr && roleData && roleData.length) {
             role_id = roleData[0].role_id || roleData[0].id;
 
-            // 4. Role Permissions
-            await supabase.from('role_permissions').insert({
-                company_id, branch_id, role_id, role_name: 'Owner', permission_key: 'ALL', status: 'active'
-            });
+            // 4. Role Permissions (Granular based on Plan Features)
+            try {
+                const [planFeatsRes, planSubFeatsRes] = await Promise.all([
+                    supabase.from('plan_features').select('feature_key').eq('plan_id', planId),
+                    supabase.from('plan_sub_features').select('sub_feature_key').eq('plan_id', planId)
+                ]);
+                
+                const featureKeys = (planFeatsRes.data || []).map(f => f.feature_key).filter(Boolean);
+                const subFeatureKeys = (planSubFeatsRes.data || []).map(s => s.sub_feature_key).filter(Boolean);
+                const allAllowedKeys = [...new Set([...featureKeys, ...subFeatureKeys])];
+
+                if (allAllowedKeys.length > 0) {
+                    const permissionRows = allAllowedKeys.map(key => ({
+                        company_id,
+                        branch_id,
+                        role_id,
+                        role_name: 'Owner',
+                        permission_key: key,
+                        status: 'active'
+                    }));
+                    const { error: permErr } = await supabase.from('role_permissions').insert(permissionRows);
+                    if (permErr) console.warn("Failed to insert granular owner permissions:", permErr.message);
+                } else {
+                    // Fallback just in case plan has no features assigned yet (prevent lockout)
+                    console.warn("No plan features found. Inserting fallback 'ALL' key.");
+                    await supabase.from('role_permissions').insert({
+                        company_id, branch_id, role_id, role_name: 'Owner', permission_key: 'ALL', status: 'active'
+                    });
+                }
+            } catch (permException) {
+                console.error("Error setting up role permissions:", permException);
+            }
         }
 
         // 5. Insert User with SHA-256 password hash

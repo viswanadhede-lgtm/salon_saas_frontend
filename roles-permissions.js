@@ -230,8 +230,8 @@ function renderPermissionsMatrix(role, containerEl, isModal) {
         const featureKey   = mod.key;
         const salonOwns    = subscriptionFeatures.includes(featureKey);
         
-        // Treat protected Owner role or the 'ALL' key as having universal access
-        const hasUniversal = roleKeys.includes('ALL') || isOwner;
+        // Treat the 'ALL' key as having universal access (fallback scenario)
+        const hasUniversal = roleKeys.includes('ALL');
         const hasFeature   = salonOwns && (hasUniversal || roleKeys.includes(featureKey));
         const disabledAttr = (isOwner || !salonOwns) ? 'disabled' : '';
         const childSubFeats = SUB_FEATURES_MAP[featureKey] || [];
