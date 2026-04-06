@@ -385,6 +385,9 @@ if (btnSaveCustomer) {
         if (dob) {
             payload.dob = dob;
         }
+        if (!isEditing) {
+            payload.status = 'active';
+        }
 
         const originalText = btnSaveCustomer.textContent;
         btnSaveCustomer.textContent = isEditing ? 'Updating...' : 'Saving...';
