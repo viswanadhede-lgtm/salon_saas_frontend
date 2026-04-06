@@ -435,7 +435,7 @@ if (modalOverlay) {
 // -- DELETE --
 async function deleteCustomer(id) {
     try {
-        const { error } = await supabase.from('customers').update({ status: 'deleted' }).eq('customer_id', id);
+        const { error } = await supabase.from('customers').eq('customer_id', id).update({ status: 'deleted' });
 
         if (error) throw error;
 
