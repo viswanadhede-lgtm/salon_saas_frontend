@@ -203,6 +203,10 @@ function setupModals() {
                             <label class="form-label" for="editSfEmail">Email</label>
                             <input type="email" id="editSfEmail" class="form-input">
                         </div>
+                        <div class="form-group" style="margin:0;">
+                            <label class="form-label">Role</label>
+                            <input type="text" class="form-input read-only-input" value="Staff" readonly style="background-color: #f8fafc; color: #64748b; cursor: not-allowed; border-color: #e2e8f0;">
+                        </div>
                         <div class="form-group" style="margin:0; grid-column: 1 / -1;">
                             <label class="form-label" for="editSfServices">Services Offered</label>
                             <input type="text" id="editSfServices" class="form-input">
