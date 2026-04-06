@@ -893,22 +893,20 @@ async function handleAssignMembership() {
     const payload = {
         company_id: getCompanyId(),
         branch_id: getBranchId(),
-        sold_by_user_id: userId,
-        user_name: userName,
+        assigned_by_user_id: userId,
+        assigned_by_user_name: userName,
         customer_id: finalCustomerId,
         customer_name: finalCustomerName,
         membership_id: planValue,
         plan_name: selectedPlan ? (selectedPlan.plan_name || selectedPlan.name) : null,
         price: selectedPlan ? Number(selectedPlan.price || 0) : null,
         duration: duration,
-        pay_method: payMethod,
+        payment_method: payMethod,
+        payment_status: 'completed',
         purchase_date: purchaseDate,
         expiry_date: expiryDate,
         status: 'active'
     };
-
-    if (discountValue) payload.discount_applied = parseFloat(discountValue);
-    if (notesValue) payload.notes = notesValue;
 
     try {
         const { error } = await supabase
