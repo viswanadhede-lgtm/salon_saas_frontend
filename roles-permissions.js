@@ -399,6 +399,7 @@ async function saveRole() {
             // ── INSERT new role row ──
             const { data: newRole, error: roleErr } = await supabase
                 .from('roles')
+                .select()
                 .insert({
                     company_id:  companyId,
                     branch_id:   branchId,
@@ -408,8 +409,7 @@ async function saveRole() {
                     status:      'active',
                     created_at:  now,
                     updated_at:  now
-                })
-                .select();
+                });
 
             if (roleErr) throw roleErr;
             roleId = newRole[0]?.role_id;
