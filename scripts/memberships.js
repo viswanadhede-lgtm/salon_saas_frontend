@@ -325,34 +325,39 @@ async function loadPlans() {
         const companyId = getCompanyId();
         const branchId = getBranchId();
 
-        const [plansRes, linksRes] = await Promise.all([
-            supabase
-                .from('membership_plans')
-                .select('*')
-                .eq('company_id', companyId)
-                .eq('branch_id', branchId)
-                .neq('status', 'deleted')
-                .order('created_at', { ascending: false }),
-            supabase
-                .from('membership_plan_services')
-                .select('*')
-                .eq('company_id', companyId)
-                .eq('branch_id', branchId)
-        ]);
+        // Fetch plans directly
+        const { data: plansData, error: plansErr } = await supabase
+            .from('membership_plans')
+            .select('*')
+            .eq('company_id', companyId)
+            .eq('branch_id', branchId)
+            .neq('status', 'deleted')
+            .order('created_at', { ascending: false });
 
-        if (plansRes.error) throw plansRes.error;
+        if (plansErr) throw plansErr;
 
-        const svcMap = {};
-        (linksRes.data || []).forEach(row => {
-            const id = row.membership_id;
-            if (!svcMap[id]) svcMap[id] = [];
-            svcMap[id].push({ service_id: row.service_id, service_name: row.service_name });
+        // Group flattened rows by membership_id
+        const groupedPlans = {};
+        (plansData || []).forEach(row => {
+            const mId = row.membership_id;
+            if (!groupedPlans[mId]) {
+                // Initialize the top-level aggregate object
+                groupedPlans[mId] = { ...row, applicable_services: [] };
+            }
+            
+            // Push distinct services
+            if (row.service_id) {
+                groupedPlans[mId].applicable_services.push({
+                    service_id: row.service_id,
+                    service_name: row.service_name || '',
+                    rowId: row.id
+                });
+            }
         });
 
-        currentPlans = (plansRes.data || []).map(p => ({
-            ...p,
-            applicable_services: svcMap[p.membership_id || p.id] || []
-        }));
+        currentPlans = Object.values(groupedPlans);
+        // Re-sort based on created_at 
+        currentPlans.sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
 
         renderPlans();
         populateAssignPlanDropdown();
@@ -619,43 +624,39 @@ async function handleSavePlan() {
     btn.disabled = true;
 
     try {
-        let planId = currentEditId;
+        let planId = isEditing ? currentEditId : crypto.randomUUID();
+
+        const rowsToInsert = applyServices.map(svc => ({
+            membership_id: planId,
+            company_id: getCompanyId(),
+            branch_id: getBranchId(),
+            plan_name,
+            price: parseFloat(price),
+            duration: parseInt(duration, 10),
+            valid_from: valid_from || null,
+            discount_type,
+            discount_value: parseFloat(discount_value),
+            status: document.getElementById('planStatusToggle').checked ? 'active' : 'inactive',
+            description: description || null,
+            service_id: svc.service_id,
+            service_name: svc.service_name
+        }));
 
         if (isEditing) {
-            // UPDATE plan
-            const { error: updErr } = await supabase
+            // DELETE old rows
+            const { error: delErr } = await supabase
                 .from('membership_plans')
                 .eq('membership_id', planId)
-                .update(payload);
-            if (updErr) throw updErr;
-
-            // Delete old links
-            const { error: delErr } = await supabase
-                .from('membership_plan_services')
-                .delete()
-                .eq('membership_id', planId);
-            if (delErr) console.warn('Delete links warning:', delErr);
-        } else {
-            // INSERT plan
-            const { data: newPlan, error: insErr } = await supabase
-                .from('membership_plans')
-                .insert(payload)
-                .select();
-            if (insErr) throw insErr;
-            planId = newPlan[0]?.membership_id || newPlan[0]?.id;
+                .delete();
+            if (delErr) throw delErr;
         }
 
-        // Re-insert links
-        if (planId && applyServices.length > 0) {
-            const linkRows = applyServices.map(s => ({
-                membership_id: planId,
-                company_id: getCompanyId(),
-                branch_id: getBranchId(),
-                service_id: s.service_id,
-                service_name: s.service_name
-            }));
-            const { error: svcErr } = await supabase.from('membership_plan_services').insert(linkRows);
-            if (svcErr) console.warn('Services insert warning:', svcErr);
+        // INSERT all mapped rows safely
+        if (rowsToInsert.length > 0) {
+            const { error: insErr } = await supabase
+                .from('membership_plans')
+                .insert(rowsToInsert);
+            if (insErr) throw insErr;
         }
 
         showToast(isEditing ? 'Plan updated successfully.' : 'Plan created successfully.');
