@@ -124,9 +124,13 @@ function attachEventListeners() {
             const nameLower = serviceName.toLowerCase();
 
             // Duplicate Check
-            const exists = liveServicesData.find(s => (s.service_name || s.name || '').toLowerCase() === nameLower);
+            const categoryName = document.getElementById('sfCategory').value.toLowerCase();
+            const exists = liveServicesData.find(s => 
+                (s.service_name || s.name || '').toLowerCase() === nameLower &&
+                (s.category_name || s.category || '').toLowerCase() === categoryName
+            );
             if (exists) {
-                window.toast && window.toast('A service with this name already exists.');
+                window.toast && window.toast('A service with this name already exists in this category.');
                 return;
             }
 
@@ -183,12 +187,14 @@ function attachEventListeners() {
         const nameLower = newServiceName.toLowerCase();
 
         // Duplicate Check
+        const categoryName = document.getElementById('editSfCategory').value.toLowerCase();
         const exists = liveServicesData.find(s => 
             (s.service_name || s.name || '').toLowerCase() === nameLower && 
+            (s.category_name || s.category || '').toLowerCase() === categoryName &&
             String(s.service_id || s.id) !== String(serviceId)
         );
         if (exists) {
-            window.toast && window.toast('A service with this name already exists.');
+            window.toast && window.toast('A service with this name already exists in this category.');
             return;
         }
 
