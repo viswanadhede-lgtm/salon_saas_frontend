@@ -3,8 +3,8 @@ import { supabase } from '../lib/supabase.js';
 function getCompanyId() {
     try {
         const ctx = JSON.parse(localStorage.getItem('appContext') || '{}');
-        return ctx.company?.id || null;
-    } catch { return null; }
+        return ctx.company?.id || localStorage.getItem('company_id') || null;
+    } catch { return localStorage.getItem('company_id') || null; }
 }
 
 function getBranchId() {
