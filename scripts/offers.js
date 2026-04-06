@@ -392,6 +392,17 @@ document.addEventListener('DOMContentLoaded', () => {
             return;
         }
 
+        const checkName = offerNameEl.value.trim().toLowerCase();
+        const isDuplicate = offers.some(o => 
+            (o.offer_name || '').toLowerCase() === checkName && 
+            (!isEditMode || (o.offer_id || o.id) !== editingOfferId)
+        );
+
+        if (isDuplicate) {
+            alert('An offer with this name already exists. Please choose a different name.');
+            return;
+        }
+
         const checkedBoxes = Array.from(document.querySelectorAll('.serviceCheckboxes')).filter(c => c.checked);
         if (checkedBoxes.length === 0) {
             alert('Please select at least one applicable service.');
