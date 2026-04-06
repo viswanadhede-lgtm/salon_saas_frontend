@@ -614,6 +614,18 @@ async function handleSavePlan() {
         return;
     }
 
+    // Name uniqueness validation
+    const exists = currentPlans.find(p => 
+        (p.plan_name || p.name || '').toLowerCase() === plan_name.toLowerCase() &&
+        (p.membership_id || p.id) !== currentEditId &&
+        p.status !== 'deleted'
+    );
+
+    if (exists) {
+        showToast('A membership plan with this name already exists.');
+        return;
+    }
+
     // Collect checked services
     const checkboxes = document.querySelectorAll('#planSvcCheckboxList input[type="checkbox"]');
     const hasAllSelected = Array.from(checkboxes).some(c => c.value === 'all' && c.checked);
