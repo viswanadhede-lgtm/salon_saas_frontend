@@ -689,6 +689,7 @@ function attachGlobalEventListeners() {
             try {
                 const { error } = await supabase
                     .from('products')
+                    .eq('product_id', productId)
                     .update({
                         product_name: name,
                         category_name: cat,
@@ -697,8 +698,7 @@ function attachGlobalEventListeners() {
                         stock_quantity: Number(stock),
                         status: document.querySelector('input[name="editProductStatus"]:checked')?.value || 'Active',
                         description: document.getElementById('editProductDescription').value.trim() || null
-                    })
-                    .eq('product_id', productId);
+                    });
 
                 if (error) throw error;
 
@@ -738,13 +738,13 @@ function attachGlobalEventListeners() {
                 // Soft delete — set status to 'deleted'
                 ({ error } = await supabase
                     .from('products')
-                    .update({ status: 'deleted' })
-                    .eq('product_id', deleteTarget.id));
+                    .eq('product_id', deleteTarget.id)
+                    .update({ status: 'deleted' }));
             } else {
                 ({ error } = await supabase
                     .from('product_categories')
-                    .update({ status: 'deleted' })
-                    .eq('category_id', deleteTarget.id));
+                    .eq('category_id', deleteTarget.id)
+                    .update({ status: 'deleted' }));
             }
 
             if (error) throw error;

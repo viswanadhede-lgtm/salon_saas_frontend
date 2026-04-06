@@ -512,8 +512,8 @@ document.addEventListener('DOMContentLoaded', () => {
 
             const { error } = await supabase
                 .from('sales')
-                .update({ status: 'refunded' })
-                .eq(pkCol, saleId);
+                .eq(pkCol, saleId)
+                .update({ status: 'refunded' });
 
             if (error) throw error;
 

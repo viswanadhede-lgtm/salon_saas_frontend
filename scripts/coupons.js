@@ -414,8 +414,8 @@ async function executeDeleteCoupon(id) {
     try {
         const { error } = await supabase
             .from('coupons')
-            .update({ status: 'deleted' })
-            .eq('coupon_id', id);
+            .eq('coupon_id', id)
+            .update({ status: 'deleted' });
 
         if (error) throw error;
 
@@ -504,8 +504,8 @@ async function handleSaveCoupon() {
             // UPDATE coupon row
             const { error } = await supabase
                 .from('coupons')
-                .update(couponPayload)
-                .eq('coupon_id', couponId);
+                .eq('coupon_id', couponId)
+                .update(couponPayload);
             if (error) throw error;
 
             // DELETE old service links then re-insert

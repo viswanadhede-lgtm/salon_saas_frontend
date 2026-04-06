@@ -396,7 +396,7 @@ if (btnSaveCustomer) {
         try {
             let error;
             if (isEditing) {
-                const { error: updateErr } = await supabase.from('customers').update(payload).eq('customer_id', editingCustomerId);
+                const { error: updateErr } = await supabase.from('customers').eq('customer_id', editingCustomerId).update(payload);
                 error = updateErr;
             } else {
                 const { error: insertErr } = await supabase.from('customers').insert(payload);
