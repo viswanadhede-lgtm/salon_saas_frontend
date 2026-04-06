@@ -512,12 +512,21 @@ function attachEventListeners() {
                     throw new Error('Missing company or branch context. Please reload or log in again.');
                 }
 
-                const { error } = await supabase
+                let deleteError;
+                ({ error: deleteError } = await supabase
                     .from('staff')
-                    .update({ status: 'deleted' }).eq('', staffToDelete.id);
+                    .eq('id', staffToDelete.id)
+                    .update({ status: 'deleted' }));
 
-                if (error) {
-                    throw new Error(error.message || 'Failed to delete staff member');
+                if (deleteError) {
+                    ({ error: deleteError } = await supabase
+                        .from('staff')
+                        .eq('staff_id', staffToDelete.id)
+                        .update({ status: 'deleted' }));
+                }
+
+                if (deleteError) {
+                    throw new Error(deleteError.message || 'Failed to delete staff member');
                 }
 
                 fullScreenLoader.classList.remove('active');

@@ -480,9 +480,9 @@ async function syncRolePermissions(roleId, companyId, branchId, roleName, permis
     // Step 1: Delete all existing perm rows for this role
     const { error: delErr } = await supabase
         .from('role_permissions')
-        .delete()
         .eq('role_id', roleId)
-        .eq('company_id', companyId);
+        .eq('company_id', companyId)
+        .delete();
 
     if (delErr) console.warn('syncRolePermissions: delete warning:', delErr);
 
