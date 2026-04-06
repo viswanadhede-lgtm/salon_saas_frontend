@@ -861,7 +861,9 @@ async function fetchSchedules() {
         let query = supabase.from('staff_schedule').select('*').eq('company_id', companyId).eq('branch_id', branchId);
         
         if (filterMonth) {
-            query = query.gte('schedule_date', `${filterMonth}-01`).lte('schedule_date', `${filterMonth}-31`);
+            const [yyyy, mm] = filterMonth.split('-').map(Number);
+            const lastDay = new Date(yyyy, mm, 0).getDate();
+            query = query.gte('schedule_date', `${filterMonth}-01`).lte('schedule_date', `${filterMonth}-${String(lastDay).padStart(2, '0')}`);
         }
 
         const { data, error } = await query;
