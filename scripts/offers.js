@@ -451,8 +451,8 @@ document.addEventListener('DOMContentLoaded', () => {
                 // UPDATE the offer row
                 const { error } = await supabase
                     .from('offers')
-                    .update(offerPayload)
-                    .eq('offer_id', offerId);
+                    .eq('offer_id', offerId)
+                    .update(offerPayload);
                 if (error) throw error;
 
                 // DELETE old service links then re-insert
@@ -511,8 +511,8 @@ document.addEventListener('DOMContentLoaded', () => {
         try {
             const { error } = await supabase
                 .from('offers')
-                .update({ status: 'deleted' })
-                .eq('offer_id', offerToDeleteId);
+                .eq('offer_id', offerToDeleteId)
+                .update({ status: 'deleted' });
 
             if (error) throw error;
             await loadOffers();

@@ -108,16 +108,32 @@ window.submitExpense = async () => {
     try {
         if (editingExpenseId) {
             // ── UPDATE ──
-            const { error } = await supabase
+            // Try id first, fallback to expense_id
+            let updateError;
+            ({ error: updateError } = await supabase
                 .from('expenses')
+                .eq('id', editingExpenseId)
                 .update({
                     date,
                     category,
                     amount,
                     notes:      notes || null,
                     updated_at: new Date().toISOString()
-                })
-                .or(`id.eq.${editingExpenseId},expense_id.eq.${editingExpenseId}`);
+                }));
+
+            if (updateError) {
+                ({ error: updateError } = await supabase
+                    .from('expenses')
+                    .eq('expense_id', editingExpenseId)
+                    .update({
+                        date,
+                        category,
+                        amount,
+                        notes:      notes || null,
+                        updated_at: new Date().toISOString()
+                    }));
+            }
+            const error = updateError;
 
             if (error) throw error;
             showToast('Expense updated successfully!');
@@ -164,14 +180,14 @@ window.deleteExpense = async (expenseId) => {
         let error;
         ({ error } = await supabase
             .from('expenses')
-            .update({ status: 'deleted', updated_at: new Date().toISOString() })
-            .eq('id', expenseId));
+            .eq('id', expenseId)
+            .update({ status: 'deleted', updated_at: new Date().toISOString() }));
 
         if (error) {
             ({ error } = await supabase
                 .from('expenses')
-                .update({ status: 'deleted', updated_at: new Date().toISOString() })
-                .eq('expense_id', expenseId));
+                .eq('expense_id', expenseId)
+                .update({ status: 'deleted', updated_at: new Date().toISOString() }));
         }
 
         if (error) throw error;

@@ -558,8 +558,8 @@ async function executeDeletePlan(id) {
     try {
         const { error } = await supabase
             .from('membership_plans')
-            .update({ status: 'deleted' })
-            .eq('membership_id', id);
+            .eq('membership_id', id)
+            .update({ status: 'deleted' });
 
         if (error) throw error;
         showToast('Membership plan deleted successfully.');
@@ -625,8 +625,8 @@ async function handleSavePlan() {
             // UPDATE plan
             const { error: updErr } = await supabase
                 .from('membership_plans')
-                .update(payload)
-                .eq('membership_id', planId);
+                .eq('membership_id', planId)
+                .update(payload);
             if (updErr) throw updErr;
 
             // Delete old links
@@ -924,12 +924,12 @@ async function executeCancelMembershipPurchase(purchaseId) {
     try {
         const { error } = await supabase
             .from('membership_purchases')
-            .update({ status: 'cancelled' })
-            .eq('purchase_id', purchaseId);
+            .eq('purchase_id', purchaseId)
+            .update({ status: 'cancelled' });
 
         if (error) {
             // fallback if pk is id
-            const { error: err2 } = await supabase.from('membership_purchases').update({ status: 'cancelled' }).eq('id', purchaseId);
+            const { error: err2 } = await supabase.from('membership_purchases').eq('id', purchaseId).update({ status: 'cancelled' });
             if (err2) throw err2;
         }
 
