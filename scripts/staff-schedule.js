@@ -650,12 +650,15 @@ async function performDelete(scheduleId) {
         return;
     }
 
+    const [yyyy, mm] = targetMonth.split('-').map(Number);
+    const lastDay = new Date(yyyy, mm, 0).getDate();
+
     try {
         const { error } = await supabase
             .from('staff_schedule')
             .eq('staff_id', staffId)
             .gte('schedule_date', `${targetMonth}-01`)
-            .lte('schedule_date', `${targetMonth}-31`)
+            .lte('schedule_date', `${targetMonth}-${String(lastDay).padStart(2, '0')}`)
             .delete();
         
         if (error) throw error;
@@ -1178,11 +1181,12 @@ async function handleFormSubmit(e) {
 
     try {
         // ALWAYS Purge existing data for this staff_id and month, and overwrite directly
+        const lastDay = new Date(year, month + 1, 0).getDate();
         const { error: delError } = await supabase
             .from('staff_schedule')
             .eq('staff_id', payload.staff_id)
-            .gte('schedule_date', `${month < 9 ? '0' : ''}${month + 1}` === payload.target_month ? `${payload.target_month}-01` : `${year}-${String(month + 1).padStart(2, '0')}-01`)
-            .lte('schedule_date', `${month < 9 ? '0' : ''}${month + 1}` === payload.target_month ? `${payload.target_month}-31` : `${year}-${String(month + 1).padStart(2, '0')}-31`)
+            .gte('schedule_date', `${year}-${String(month + 1).padStart(2, '0')}-01`)
+            .lte('schedule_date', `${year}-${String(month + 1).padStart(2, '0')}-${String(lastDay).padStart(2, '0')}`)
             .delete();
 
         if (delError) {
