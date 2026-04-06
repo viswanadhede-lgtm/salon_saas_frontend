@@ -93,46 +93,81 @@ document.addEventListener('DOMContentLoaded', async () => {
     // ── Progressive Customer Search wiring ──
     const custSearch = document.getElementById('custSearchInput');
     const custSuggestions = document.getElementById('membershipCustomerSuggestions');
+    const custName = document.getElementById('customerName');
+    const custEmail = document.getElementById('customerEmail');
+    const custBadgeContainer = document.getElementById('customerBadgeContainer');
+    const newCustBadgeContainer = document.getElementById('newCustomerBadgeContainer');
+
+    function setCustFormState(isNew, name = '', email = '') {
+        if (custName) {
+            custName.value = name;
+            custName.readOnly = !isNew;
+            custName.classList.toggle('read-only-input', !isNew);
+        }
+        if (custEmail) {
+            custEmail.value = email;
+            custEmail.readOnly = !isNew;
+            custEmail.classList.toggle('read-only-input', !isNew);
+        }
+    }
 
     if (custSearch) {
         custSearch.addEventListener('input', (e) => {
-            selectedCustomer = null; // reset on type
-            const raw = e.target.value.trim();
-            const digits = raw.replace(/\D/g, '');
+            selectedCustomer = null; 
+            if(custBadgeContainer) custBadgeContainer.style.display = 'none';
+            if(newCustBadgeContainer) newCustBadgeContainer.style.display = 'none';
+            
+            const val = e.target.value.trim();
 
-            if (!digits && raw.length < 2) {
+            if (val.length === 0) {
                 if(custSuggestions) custSuggestions.style.display = 'none';
+                setCustFormState(true);
                 return;
             }
 
-            const filtered = allCustomers.filter(c => {
-                const phoneStr = (c.customer_phone || c.phone_number || '').toString();
-                const nameStr = (c.customer_name || `${c.first_name || ''} ${c.last_name || ''}`).toLowerCase();
-                return phoneStr.replace(/\D/g, '').includes(digits) || (raw && nameStr.includes(raw.toLowerCase()));
+            const matches = allCustomers.filter(c => {
+                const p = String(c.customer_phone || c.phone_number || '');
+                return p.includes(val);
             });
 
-            if (filtered.length === 0) {
-                custSuggestions.innerHTML = `<div style="padding: 14px 12px; color: #64748b; font-size: 0.85rem; text-align: center; display: flex; flex-direction: column; align-items: center; gap: 4px;"><span style="font-size: 1.2rem;">🔍</span><span>No customer found</span></div>`;
+            if (matches.length > 0) {
+                custSuggestions.innerHTML = '';
+                matches.slice(0, 8).forEach(m => {
+                    const phoneStr = String(m.customer_phone || m.phone_number || '');
+                    const nameStr = m.customer_name || `${m.first_name || ''} ${m.last_name || ''}`.trim() || 'Unknown';
+                    const emailStr = m.customer_mail || m.email || '';
+                    const custId = m.id || m.customer_id;
+
+                    const div = document.createElement('div');
+                    div.className = 'cust-suggestion-item';
+                    div.setAttribute('data-id', custId);
+                    div.style.cssText = 'padding:10px 14px;cursor:pointer;border-bottom:1px solid #f1f5f9;display:flex;justify-content:space-between;align-items:center;';
+                    div.onmouseenter = () => div.style.background = '#f8fafc';
+                    div.onmouseleave = () => div.style.background = 'transparent';
+                    
+                    div.innerHTML = `<span style="font-weight:600;color:#1e293b;font-size:0.88rem;">${nameStr}</span><span style="font-size:0.75rem;color:#64748b;">${phoneStr}</span>`;
+                    
+                    div.addEventListener('click', () => {
+                        custSearch.value = phoneStr;
+                        selectedCustomer = m;
+                        
+                        setCustFormState(false, nameStr, emailStr);
+
+                        custSuggestions.style.display = 'none';
+                        if (newCustBadgeContainer) newCustBadgeContainer.style.display = 'none';
+                        if (custBadgeContainer) custBadgeContainer.style.display = 'block';
+                    });
+                    custSuggestions.appendChild(div);
+                });
+                custSuggestions.style.display = 'block';
             } else {
-                custSuggestions.innerHTML = filtered.slice(0, 8).map(c => {
-                    const phone = (c.customer_phone || c.phone_number || '').toString();
-                    const fullName = (c.customer_name || `${c.first_name || ''} ${c.last_name || ''}`).trim() || 'Unknown';
-                    const custId = c.id || c.customer_id;
-
-                    const highlightedPhone = digits ? phone.replace(
-                        new RegExp(digits.split('').join('\\D*'), 'g'),
-                        match => `<strong style="color: #4f46e5;">${match}</strong>`
-                    ) : phone;
-
-                    const initials = fullName.split(' ').slice(0, 2).map(w => w[0] || '').join('').toUpperCase();
-                    const colors = ['#e0e7ff', '#d1fae5', '#fef3c7', '#ede9fe', '#dbeafe'];
-                    const textColors = ['#4338ca', '#059669', '#d97706', '#7c3aed', '#1d4ed8'];
-                    const ci = (initials.charCodeAt(0) || 0) % colors.length;
-
-                    return `<div class="cust-suggestion-item" data-id="${custId}" style="padding: 10px 14px; cursor: pointer; border-bottom: 1px solid #f1f5f9; display: flex; align-items: center; gap: 10px; transition: background 0.15s;" onmouseenter="this.style.background='#f8fafc'" onmouseleave="this.style.background='transparent'"><div style="width: 34px; height: 34px; border-radius: 50%; background: ${colors[ci]}; color: ${textColors[ci]}; display: flex; align-items: center; justify-content: center; font-size: 0.75rem; font-weight: 700; flex-shrink: 0;">${initials}</div><div style="flex: 1; min-width: 0;"><div style="font-size: 0.88rem; font-weight: 600; color: #1e293b; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${fullName}</div><div style="font-size: 0.75rem; color: #64748b; margin-top: 1px;">${highlightedPhone}</div></div></div>`;
-                }).join('');
+                custSuggestions.style.display = 'none';
+                if (val.length >= 10) {
+                    if (newCustBadgeContainer) newCustBadgeContainer.style.display = 'block';
+                    setCustFormState(true);
+                    selectedCustomer = null;
+                }
             }
-            custSuggestions.style.display = 'block';
         });
 
         // Hide suggestions on click outside
@@ -141,32 +176,21 @@ document.addEventListener('DOMContentLoaded', async () => {
                  custSuggestions.style.display = 'none';
              }
         });
-
-        if (custSuggestions) {
-            custSuggestions.addEventListener('click', (e) => {
-                const item = e.target.closest('.cust-suggestion-item');
-                if (item) {
-                     const id = item.dataset.id;
-                     const customer = allCustomers.find(c => (c.id || c.customer_id) == id);
-                     if (customer) {
-                         selectedCustomer = customer;
-                         const fullName = (customer.customer_name || `${customer.first_name || ''} ${customer.last_name || ''}`).trim() || '';
-                         custSearch.value = fullName + ' (' + (customer.customer_phone || customer.phone_number || '') + ')';
-                         custSuggestions.style.display = 'none';
-                     }
-                }
-            });
-        }
     }
 
     const confirmAssignBtn = document.getElementById('btnConfirmAssign');
     if (confirmAssignBtn) {
         confirmAssignBtn.addEventListener('click', () => {
             const planValue = document.getElementById('assignPlanInput').value;
-            const custSearchValue = document.getElementById('custSearchInput').value;
+            const custSearchValue = document.getElementById('custSearchInput').value.trim();
+            const custNameValue = document.getElementById('customerName')?.value.trim();
             
-            if (!selectedCustomer || !custSearchValue) {
-                showToast('Please search and select a valid customer.');
+            if (!custSearchValue || custSearchValue.length < 10) {
+                showToast('Please enter a valid 10-digit phone number.');
+                return;
+            }
+            if (!selectedCustomer && !custNameValue) {
+                showToast('Please enter the customer name.');
                 return;
             }
             if (!planValue) {
@@ -775,7 +799,9 @@ function renderPurchases() {
 
 async function handleAssignMembership() {
     const planValue = document.getElementById('assignPlanInput').value;
-    const custSearchValue = document.getElementById('custSearchInput').value;
+    const custSearchValue = document.getElementById('custSearchInput').value.trim();
+    const custNameValue = document.getElementById('customerName')?.value.trim();
+    const custEmailValue = document.getElementById('customerEmail')?.value.trim();
     const assignDate = document.getElementById('assignDateInput').value;
     
     let payMethod = 'cash';
@@ -785,13 +811,46 @@ async function handleAssignMembership() {
     const discountValue = document.getElementById('assignDiscount').value;
     const notesValue = document.getElementById('assignNotes').value;
 
-    if (!selectedCustomer || !custSearchValue) {
-        showToast('Please search and select a valid customer.');
+    if (!custSearchValue || custSearchValue.length < 10) {
+        showToast('Please enter a valid phone number.');
         return;
     }
     if (!planValue) {
         showToast('Please select a membership plan.');
         return;
+    }
+
+    const btn = document.getElementById('btnConfirmAssign');
+    const origText = btn.textContent;
+    btn.textContent = 'Processing...';
+    btn.disabled = true;
+
+    // Create new customer if not selected
+    let finalCustomerId = selectedCustomer ? (selectedCustomer.id || selectedCustomer.customer_id) : null;
+    let finalCustomerName = selectedCustomer ? (selectedCustomer.customer_name || `${selectedCustomer.first_name || ''} ${selectedCustomer.last_name || ''}`).trim() : custNameValue;
+    
+    if (!finalCustomerId) {
+        try {
+            const { data: newCust, error: custErr } = await supabase.from('customers').insert({
+                company_id: getCompanyId(),
+                branch_id: getBranchId(),
+                customer_name: finalCustomerName || 'Unknown Customer',
+                customer_phone: custSearchValue,
+                customer_mail: custEmailValue || null,
+                status: 'active'
+            });
+            if (custErr) throw custErr;
+            if (newCust && newCust.length > 0) {
+                finalCustomerId = newCust[0].customer_id;
+                allCustomers.push(newCust[0]);
+            }
+        } catch (err) {
+            console.error('Failed to create new customer:', err);
+            showToast('Failed to create customer: ' + (err.message || ''));
+            btn.textContent = origText;
+            btn.disabled = false;
+            return;
+        }
     }
     
     // Extract user details
@@ -806,7 +865,6 @@ async function handleAssignMembership() {
         } catch (e) {}
     }
 
-    const customerName = (selectedCustomer.customer_name || `${selectedCustomer.first_name || ''} ${selectedCustomer.last_name || ''}`).trim();
     const selectedPlan = currentPlans.find(p => (p.membership_id || p.id) === planValue);
 
     const duration = selectedPlan ? (selectedPlan.duration_months || selectedPlan.duration) : null;
@@ -825,8 +883,8 @@ async function handleAssignMembership() {
         branch_id: getBranchId(),
         sold_by_user_id: userId,
         user_name: userName,
-        customer_id: selectedCustomer.id || selectedCustomer.customer_id,
-        customer_name: customerName,
+        customer_id: finalCustomerId,
+        customer_name: finalCustomerName,
         membership_id: planValue,
         plan_name: selectedPlan ? (selectedPlan.plan_name || selectedPlan.name) : null,
         price: selectedPlan ? Number(selectedPlan.price || 0) : null,
@@ -839,11 +897,6 @@ async function handleAssignMembership() {
 
     if (discountValue) payload.discount_applied = parseFloat(discountValue);
     if (notesValue) payload.notes = notesValue;
-
-    const btn = document.getElementById('btnConfirmAssign');
-    const origText = btn.textContent;
-    btn.textContent = 'Processing...';
-    btn.disabled = true;
 
     try {
         const { error } = await supabase
