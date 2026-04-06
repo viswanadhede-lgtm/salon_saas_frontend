@@ -755,22 +755,46 @@ window.viewSchedule = function(scheduleId) {
 
     // Populate Month View (mini timeline/summary of repeating pattern)
     const monthHtmlArray = [];
-    for(let w=1; w<=4; w++) {
-        const miniPills = s.days.map(d => 
-            d.active 
-            ? `<div style="display:flex; flex-direction:column; background:#e0e7ff; padding:6px; border-radius:6px; flex:1; text-align:center; border:1px solid #c7d2fe;">
-                 <span style="font-size:0.7rem; font-weight:700; color:#4338ca; text-transform:uppercase;">${d.day}</span>
-                 <span style="font-size:0.75rem; font-weight:600; color:#312e81; margin-top:2px;">${d.start}</span>
-               </div>`
-            : `<div style="display:flex; flex-direction:column; background:#f1f5f9; padding:6px; border-radius:6px; flex:1; text-align:center; border:1px dashed #cbd5e1; opacity:0.6;">
-                 <span style="font-size:0.7rem; font-weight:600; color:#94a3b8; text-transform:uppercase;">${d.day}</span>
+    const targetWeeks = generateMonthWeeks(parseInt(yyyy), parseInt(mm) - 1);
+    
+    const DAY_ORDER = ['Mon','Tue','Wed','Thu','Fri','Sat','Sun'];
+    const jsDayMap = { 'Mon': 1, 'Tue': 2, 'Wed': 3, 'Thu': 4, 'Fri': 5, 'Sat': 6, 'Sun': 0 };
+
+    for(let w = 0; w < targetWeeks.length; w++) {
+        const weekDates = targetWeeks[w];
+        
+        const miniPills = DAY_ORDER.map(dayCode => {
+            const jsDay = jsDayMap[dayCode];
+            const dateObj = weekDates.find(d => d.getDay() === jsDay);
+            
+            if (!dateObj) {
+                return `<div style="display:flex; flex-direction:column; background:#f8fafc; padding:6px; border-radius:6px; flex:1; text-align:center; border:1px dashed #e2e8f0; opacity:0.4;">
+                 <span style="font-size:0.7rem; font-weight:600; color:#cbd5e1; text-transform:uppercase;">${dayCode}</span>
+                 <span style="font-size:0.75rem; font-weight:500; color:#cbd5e1; margin-top:2px;">-</span>
+               </div>`;
+            }
+
+            const dateStr = toISODate(dateObj);
+            const entry = s.schedule_entries.find(e => e.schedule_date === dateStr);
+            const isActive = entry && !entry.is_off;
+            const start = isActive ? entry.start_time : 'Off';
+
+            if (isActive) {
+                return `<div style="display:flex; flex-direction:column; background:#e0e7ff; padding:6px; border-radius:6px; flex:1; text-align:center; border:1px solid #c7d2fe;">
+                 <span style="font-size:0.7rem; font-weight:700; color:#4338ca; text-transform:uppercase;">${dayCode}</span>
+                 <span style="font-size:0.75rem; font-weight:600; color:#312e81; margin-top:2px;">${start}</span>
+               </div>`;
+            } else {
+                return `<div style="display:flex; flex-direction:column; background:#f1f5f9; padding:6px; border-radius:6px; flex:1; text-align:center; border:1px dashed #cbd5e1; opacity:0.6;">
+                 <span style="font-size:0.7rem; font-weight:600; color:#94a3b8; text-transform:uppercase;">${dayCode}</span>
                  <span style="font-size:0.75rem; font-weight:500; color:#cbd5e1; margin-top:2px;">Off</span>
-               </div>`
-        ).join('');
+               </div>`;
+            }
+        }).join('');
 
         monthHtmlArray.push(`
             <div style="background:#fff; border:1px solid #e2e8f0; border-radius:8px; padding:16px;">
-                <h4 style="margin:0 0 12px 0; font-size:0.85rem; font-weight:600; color:#475569;">Week ${w}</h4>
+                <h4 style="margin:0 0 12px 0; font-size:0.85rem; font-weight:600; color:#475569;">Week ${w + 1}</h4>
                 <div style="display:flex; gap:8px;">${miniPills}</div>
             </div>
         `);
