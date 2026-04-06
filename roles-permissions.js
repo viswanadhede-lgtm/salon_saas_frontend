@@ -84,8 +84,8 @@ async function fetchRoles() {
         const companyId = getCompanyId();
         const branchId  = getBranchId();
 
-        // Fetch roles, their permissions, and staff in parallel
-        const [rolesRes, permsRes, staffRes, usersRes] = await Promise.all([
+        // Fetch roles, their permissions, and users in parallel
+        const [rolesRes, permsRes, usersRes] = await Promise.all([
             supabase
                 .from('roles')
                 .select('*')
@@ -97,10 +97,6 @@ async function fetchRoles() {
                 .select('role_id, permission_key')
                 .eq('company_id', companyId)
                 .eq('status', 'active'),
-            supabase
-                .from('staff')
-                .select('id, role_id')
-                .eq('company_id', companyId),
             supabase
                 .from('users')
                 .select('user_id, role_id')
@@ -116,12 +112,11 @@ async function fetchRoles() {
             if (row.permission_key) permMap[row.role_id].push(row.permission_key);
         });
 
-        // Build staff count map: { role_id -> count }
-        const staffCountMap = {};
-        const combinedUsers = [...(staffRes.data || []), ...(usersRes.data || [])];
-        combinedUsers.forEach(s => {
-            if (!s.role_id) return;
-            staffCountMap[s.role_id] = (staffCountMap[s.role_id] || 0) + 1;
+        // Build user count map: { role_id -> count }
+        const userCountMap = {};
+        (usersRes.data || []).forEach(u => {
+            if (!u.role_id) return;
+            userCountMap[u.role_id] = (userCountMap[u.role_id] || 0) + 1;
         });
 
         // Map to the internal rolesData shape
@@ -132,7 +127,7 @@ async function fetchRoles() {
             role_name:    r.role_name,
             description:  r.description || '',
             protected:    r.is_default === true,
-            userCount:    staffCountMap[r.role_id] || 0,
+            userCount:    userCountMap[r.role_id] || 0,
             permission_key: permMap[r.role_id] || []
         }));
 

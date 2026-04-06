@@ -93,7 +93,6 @@ function getBranchId() {
 export async function initStaff() {
     setupModals();
     attachEventListeners();
-    await fetchRolesForDropdown();
     await window.fetchStaff();
 }
 
@@ -163,14 +162,6 @@ window.editStaff = function(id) {
     const statusRadios = document.querySelectorAll('input[name="editSfStatus"]');
     statusRadios.forEach(r => r.checked = (r.value === staff.status));
     
-    // Ensure dropdown options match live available data (we copy it from add staff dropdown)
-    const addRoleSelect = document.getElementById('sfRole');
-    const editRoleSelect = document.getElementById('editSfRole');
-    if (addRoleSelect && editRoleSelect) {
-        editRoleSelect.innerHTML = addRoleSelect.innerHTML;
-        editRoleSelect.value = staff.role || '';
-    }
-
     const modal = document.getElementById('editStaffModal');
     if (modal) modal.classList.add('active');
 };
@@ -212,12 +203,6 @@ function setupModals() {
                         <div class="form-group" style="margin:0;">
                             <label class="form-label" for="editSfEmail">Email</label>
                             <input type="email" id="editSfEmail" class="form-input">
-                        </div>
-                        <div class="form-group" style="margin:0;">
-                            <label class="form-label" for="editSfRole">Role <span class="text-rose">*</span></label>
-                            <select id="editSfRole" class="form-select" required>
-                                <option value="" disabled selected>Loading roles...</option>
-                            </select>
                         </div>
                         <div class="form-group" style="margin:0; grid-column: 1 / -1;">
                             <label class="form-label" for="editSfServices">Services Offered</label>
@@ -345,17 +330,14 @@ function attachEventListeners() {
                     throw new Error("Missing company or branch context. Please reload or log in again.");
                 }
 
-                const roleSelect = document.getElementById('sfRole');
-                const selectedRoleOption = roleSelect.options[roleSelect.selectedIndex];
-
                 const payload = {
                     company_id,
                     branch_id,
                     staff_name: document.getElementById('sfName').value.trim(),
                     phone: phoneVal,
                     email: document.getElementById('sfEmail').value.trim(),
-                    role_id: selectedRoleOption?.dataset?.id || '',
-                    role_name: roleSelect.value,
+                    role_id: null,
+                    role_name: 'Staff',
                     services_offered: document.getElementById('sfServices').value.trim(),
                     notes: document.getElementById('sfNotes').value.trim(),
                     status: document.querySelector('input[name="sfStatus"]:checked')?.value || 'active'
@@ -439,15 +421,11 @@ function attachEventListeners() {
                     throw new Error('Missing company or branch context. Please reload or log in again.');
                 }
 
-                const editRoleSelect = document.getElementById('editSfRole');
-                const selectedRoleOption = editRoleSelect?.options[editRoleSelect.selectedIndex];
-
                 const payload = {
                     staff_name: document.getElementById('editSfName').value.trim(),
                     phone: phoneVal,
                     email: document.getElementById('editSfEmail').value.trim(),
-                    role_id: selectedRoleOption?.dataset?.id || '',
-                    role_name: editRoleSelect?.value || '',
+                    role_name: 'Staff',
                     services_offered: document.getElementById('editSfServices').value.trim(),
                     notes: document.getElementById('editSfNotes').value.trim(),
                     status: document.querySelector('input[name="editSfStatus"]:checked')?.value || 'active'
@@ -550,52 +528,7 @@ function attachEventListeners() {
     }
 }
 
-async function fetchRolesForDropdown() {
-    try {
-        const companyId = getCompanyId();
-        const branchId = getBranchId();
-
-        const { data, error } = await supabase
-            .from('roles')
-            .select('role_id, role_name')
-            .eq('company_id', companyId)
-            .eq('branch_id', branchId);
-            
-        if (error) throw new Error(error.message);
-        
-        const roleSelect = document.getElementById('sfRole');
-        const editRoleSelect = document.getElementById('editSfRole'); 
-        
-        if (roleSelect) roleSelect.innerHTML = '<option value="" disabled selected>Select a role</option>';
-        if (editRoleSelect) editRoleSelect.innerHTML = '<option value="" disabled selected>Select a role</option>';
-        
-        if (Array.isArray(data)) {
-            data.forEach(role => {
-                if (roleSelect) {
-                    const opt = document.createElement('option');
-                    opt.value = role.role_name;
-                    opt.dataset.id = role.role_id || '';
-                    opt.textContent = role.role_name;
-                    roleSelect.appendChild(opt);
-                }
-                if (editRoleSelect) {
-                    const optUrl = document.createElement('option');
-                    optUrl.value = role.role_name;
-                    optUrl.dataset.id = role.role_id || '';
-                    optUrl.textContent = role.role_name;
-                    editRoleSelect.appendChild(optUrl);
-                }
-            });
-        } else {
-            console.warn('Unexpected roles data structure:', data);
-            if(roleSelect) roleSelect.innerHTML = '<option value="" disabled>No roles available</option>';
-        }
-    } catch (error) {
-        console.error('Error fetching roles:', error);
-        const roleSelect = document.getElementById('sfRole');
-        if (roleSelect) roleSelect.innerHTML = '<option value="" disabled>Error loading roles</option>';
-    }
-}
+ 
 
 document.addEventListener('DOMContentLoaded', () => {
     initStaff();
