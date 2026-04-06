@@ -394,14 +394,14 @@ async function saveRole() {
             // ── UPDATE the role row ──
             const { error: roleErr } = await supabase
                 .from('roles')
+                .eq('role_id', roleId)
+                .eq('company_id', companyId)
                 .update({
                     role_name:   name,
                     description: desc,
                     updated_at:  now,
                     status:      'active'
-                })
-                .eq('role_id', roleId)
-                .eq('company_id', companyId);
+                });
 
             if (roleErr) throw roleErr;
         } else {
@@ -460,9 +460,9 @@ async function saveInlinePerms() {
         // Also bump the role's updated_at timestamp
         await supabase
             .from('roles')
-            .update({ updated_at: now })
             .eq('role_id', activeRoleId)
-            .eq('company_id', companyId);
+            .eq('company_id', companyId)
+            .update({ updated_at: now });
 
         // ── Sync role_permissions: delete + reinsert ──
         await syncRolePermissions(activeRoleId, companyId, branchId, role.role_name, permission_key, now);
@@ -542,9 +542,9 @@ async function confirmDelete() {
         // Soft-delete the role row
         const { error: delRoleErr } = await supabase
             .from('roles')
-            .update({ status: 'deleted', updated_at: now })
             .eq('role_id', roleId)
-            .eq('company_id', companyId);
+            .eq('company_id', companyId)
+            .update({ status: 'deleted', updated_at: now });
 
         if (delRoleErr) throw delRoleErr;
 
