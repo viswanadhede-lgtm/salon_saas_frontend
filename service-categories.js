@@ -181,10 +181,12 @@ function attachEventListeners() {
         if (btn) { btn.textContent = 'Updating...'; btn.disabled = true; }
         
         try {
+            let requestError = null;
             const { error } = await supabase
                 .from('service_categories')
                 .eq('id', categoryId)
                 .update(payload);
+            requestError = error;
 
             if (error) {
                 // fallback: try category_id column
@@ -193,9 +195,10 @@ function attachEventListeners() {
                     .eq('category_id', categoryId)
                     .update(payload);
                 if (err2) throw err2;
+                requestError = null; // Clear error since fallback succeeded
             }
             
-            if (!error) {
+            if (!requestError) {
                 // If name changed, update corresponding services table
                 const origCategory = liveCategoriesData.find(c => String(c.category_id || c.id) === String(categoryId));
                 if (origCategory && origCategory.category_name !== newCategoryName) {
@@ -203,10 +206,10 @@ function attachEventListeners() {
                         .from('services')
                         .eq('category_id', categoryId)
                         .update({ category_name: newCategoryName });
-                    // also try id-based fallback silently
+                    // also try id-based fallback silently for services table
                     await supabase
                         .from('services')
-                        .eq('category_id', categoryId)
+                        .eq('id', categoryId)
                         .update({ category_name: newCategoryName });
                 }
 
@@ -214,7 +217,7 @@ function attachEventListeners() {
                 editCatModal.classList.remove('active');
                 await fetchCategories();
             } else {
-                window.toast && window.toast('Error updating category: ' + error.message);
+                window.toast && window.toast('Error updating category: ' + requestError.message);
             }
         } catch (err) {
             console.error(err);
