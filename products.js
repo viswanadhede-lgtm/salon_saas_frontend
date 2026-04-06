@@ -600,12 +600,12 @@ function attachGlobalEventListeners() {
             try {
                 const { error } = await supabase
                     .from('product_categories')
+                    .eq('category_id', catId)
                     .update({
                         category_name: name,
                         description: document.getElementById('editCategoryDescription').value.trim() || null,
                         status: document.querySelector('input[name="editCategoryStatus"]:checked')?.value || 'Active'
-                    })
-                    .eq('category_id', catId);
+                    });
 
                 if (error) throw error;
 
