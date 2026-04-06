@@ -800,8 +800,8 @@ async function fetchStaff() {
         let companyId = null;
         try {
             const appContext = JSON.parse(localStorage.getItem('appContext') || '{}');
-            companyId = appContext.company?.id || null;
-        } catch (e) {}
+            companyId = appContext.company?.id || localStorage.getItem('company_id') || null;
+        } catch (e) { companyId = localStorage.getItem('company_id') || null; }
         const branchId = localStorage.getItem('active_branch_id') || null;
 
         if (companyId && branchId) {
@@ -848,8 +848,8 @@ async function fetchSchedules() {
         let companyId = null;
         try {
             const appContext = JSON.parse(localStorage.getItem('appContext') || '{}');
-            companyId = appContext.company?.id || null;
-        } catch (e) {}
+            companyId = appContext.company?.id || localStorage.getItem('company_id') || null;
+        } catch (e) { companyId = localStorage.getItem('company_id') || null; }
         const branchId = localStorage.getItem('active_branch_id') || null;
 
         if (!companyId || !branchId) return;
