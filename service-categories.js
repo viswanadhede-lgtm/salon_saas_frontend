@@ -181,18 +181,17 @@ function attachEventListeners() {
         if (btn) { btn.textContent = 'Updating...'; btn.disabled = true; }
         
         try {
-            const categoryId = document.getElementById('editCategoryId').value;
             const { error } = await supabase
                 .from('service_categories')
-                .update(payload)
-                .eq('id', categoryId);
+                .eq('id', categoryId)
+                .update(payload);
 
             if (error) {
                 // fallback: try category_id column
                 const { error: err2 } = await supabase
                     .from('service_categories')
-                    .update(payload)
-                    .eq('category_id', categoryId);
+                    .eq('category_id', categoryId)
+                    .update(payload);
                 if (err2) throw err2;
             }
             
@@ -202,13 +201,13 @@ function attachEventListeners() {
                 if (origCategory && origCategory.category_name !== newCategoryName) {
                     await supabase
                         .from('services')
-                        .update({ category_name: newCategoryName })
-                        .eq('category_id', categoryId);
+                        .eq('category_id', categoryId)
+                        .update({ category_name: newCategoryName });
                     // also try id-based fallback silently
                     await supabase
                         .from('services')
-                        .update({ category_name: newCategoryName })
-                        .eq('category_id', categoryId);
+                        .eq('category_id', categoryId)
+                        .update({ category_name: newCategoryName });
                 }
 
                 window.toast && window.toast('Category updated successfully!');
@@ -253,15 +252,15 @@ function attachEventListeners() {
             let deleteError;
             ({ error: deleteError } = await supabase
                 .from('service_categories')
-                .update({ status: 'deleted' })
-                .eq('id', categoryToDelete.id));
+                .eq('id', categoryToDelete.id)
+                .update({ status: 'deleted' }));
 
             if (deleteError) {
                 console.warn('id-based delete failed, trying category_id:', deleteError.message);
                 ({ error: deleteError } = await supabase
                     .from('service_categories')
-                    .update({ status: 'deleted' })
-                    .eq('category_id', categoryToDelete.id));
+                    .eq('category_id', categoryToDelete.id)
+                    .update({ status: 'deleted' }));
             }
 
             if (!deleteError) {

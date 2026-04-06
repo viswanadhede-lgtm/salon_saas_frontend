@@ -210,14 +210,14 @@ function attachEventListeners() {
             let updateError;
             ({ error: updateError } = await supabase
                 .from('services')
-                .update(payload)
-                .eq('id', serviceId));
+                .eq('id', serviceId)
+                .update(payload));
 
             if (updateError) {
                 ({ error: updateError } = await supabase
                     .from('services')
-                    .update(payload)
-                    .eq('service_id', serviceId));
+                    .eq('service_id', serviceId)
+                    .update(payload));
             }
 
             if (!updateError) {
@@ -263,15 +263,15 @@ function attachEventListeners() {
             let deleteError;
             ({ error: deleteError } = await supabase
                 .from('services')
-                .update({ status: 'deleted' })
-                .eq('id', serviceToDelete.id));
+                .eq('id', serviceToDelete.id)
+                .update({ status: 'deleted' }));
 
             if (deleteError) {
                 console.warn('id-based delete failed, trying service_id:', deleteError.message);
                 ({ error: deleteError } = await supabase
                     .from('services')
-                    .update({ status: 'deleted' })
-                    .eq('service_id', serviceToDelete.id));
+                    .eq('service_id', serviceToDelete.id)
+                    .update({ status: 'deleted' }));
             }
 
             if (!deleteError) {
