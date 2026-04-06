@@ -412,20 +412,31 @@ export function initGlobalBookingModal() {
         });
     }
 
+    function showMsg(msg, isError = false) {
+        if (typeof window.toast === 'function') {
+            window.toast(msg);
+        } else {
+            console[isError ? 'error' : 'log']('[Booking Modal]', msg);
+            if (isError) alert(msg);
+        }
+    }
+
     async function createBooking(payload) {
         try {
+            console.log('[createBooking] payload:', payload);
             const { data, error } = await supabase.from('bookings').insert(payload);
+            console.log('[createBooking] result:', { data, error });
             if (!error) {
-                window.toast && window.toast('Booking created successfully!');
+                showMsg('Booking created successfully!');
                 overrideOverlay?.classList.remove('active');
                 closeModal();
                 if (window.fetchBookings) await window.fetchBookings();
             } else {
-                window.toast && window.toast('Error: ' + error.message);
+                showMsg('Error saving booking: ' + error.message, true);
             }
         } catch (err) {
-            console.error(err);
-            window.toast && window.toast('Network error creating booking.');
+            console.error('[createBooking] exception:', err);
+            showMsg('Network error creating booking: ' + err.message, true);
         }
     }
 
@@ -443,22 +454,24 @@ export function initGlobalBookingModal() {
         // If it's a completely new customer, create them in the DB first!
         if (!targetId && phoneSearch.value.trim().length >= 10) {
             try {
-                const { data: newCust, error: custErr } = await supabase.from('customers').select().insert({
+                console.log('[Booking] Creating new customer first...');
+                const { data: newCust, error: custErr } = await supabase.from('customers').insert({
                     company_id: getCompanyId(),
                     branch_id: getBranchId(),
                     customer_name: targetName || 'Unknown Customer',
                     customer_phone: phoneSearch.value.trim(),
-                    customer_email: customerEmail.value.trim()
+                    customer_email: customerEmail.value.trim(),
+                    status: 'active'
                 });
-                
+                console.log('[Booking] New customer result:', { newCust, custErr });
                 if (custErr) throw custErr;
                 if (newCust && newCust.length > 0) {
                     targetId = newCust[0].customer_id;
                     liveCustomersDB.push(newCust[0]);
                 }
             } catch (err) {
-                console.error("Error creating new customer:", err);
-                window.toast && window.toast("Failed to create customer record!");
+                console.error('[Booking] Error creating new customer:', err);
+                showMsg('Failed to create customer record: ' + err.message, true);
                 btnConfirmBooking.textContent = originalText;
                 btnConfirmBooking.disabled = false;
                 return;
@@ -562,7 +575,8 @@ export function initGlobalBookingModal() {
                 return; // exit standard flow
             }
         } catch (err) {
-            console.error('Validation error:', err);
+            console.error('[Booking] Submit error:', err);
+            showMsg('Booking failed: ' + (err.message || 'Unknown error'), true);
             btnConfirmBooking.textContent = originalText;
             btnConfirmBooking.disabled = false;
         }
