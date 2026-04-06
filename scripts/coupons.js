@@ -517,12 +517,13 @@ async function handleSaveCoupon() {
 
         } else {
             // INSERT new coupon
-            const { data: newCoupon, error } = await supabase
+            couponId = crypto.randomUUID();
+            couponPayload.coupon_id = couponId;
+
+            const { error } = await supabase
                 .from('coupons')
-                .insert(couponPayload)
-                .select();
+                .insert(couponPayload);
             if (error) throw error;
-            couponId = newCoupon[0]?.coupon_id || newCoupon[0]?.id;
         }
 
         // INSERT coupon_services links
