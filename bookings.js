@@ -9,8 +9,8 @@ let liveBookingsData = [];
 function getCompanyId() {
     try {
         const ctx = JSON.parse(localStorage.getItem('appContext') || '{}');
-        return ctx.company?.id || null;
-    } catch { return null; }
+        return ctx.company?.id || localStorage.getItem('company_id') || null;
+    } catch { return localStorage.getItem('company_id') || null; }
 }
 
 function getBranchId() {
@@ -88,15 +88,12 @@ function buildRow(b, includeDate = false) {
     <tr style="border-bottom:1px solid #f1f5f9;transition:background 0.15s;"
         onmouseover="this.style.background='#f8fafc'"
         onmouseout="this.style.background=''">
-        <td title="${bookingId}" style="padding:10px 8px 10px 14px;font-size:0.75rem;color:#64748b;font-family:monospace;word-break:break-all;line-height:1.4;">${bookingId || '—'}</td>
         <td style="padding:10px 8px;${cellStyle}">
             <div style="font-weight:600;font-size:0.87rem;color:#0f172a;${cellStyle}">${customerName}</div>
             ${phone ? `<div style="font-size:0.75rem;color:#94a3b8;${cellStyle}">${phone}</div>` : ''}
         </td>
-        <td style="padding:10px 8px;">
-            <div style="font-weight:600;font-size:0.87rem;color:#0f172a;${cellStyle}">${includeDate ? dateDisplay : timeDisplay}</div>
-            ${includeDate ? `<div style="font-size:0.75rem;color:#94a3b8;${cellStyle}">${timeDisplay}</div>` : ''}
-        </td>
+        <td style="padding:10px 8px;font-size:0.85rem;color:#334155;${cellStyle}">${dateDisplay}</td>
+        <td style="padding:10px 8px;font-size:0.85rem;color:#334155;${cellStyle}">${timeDisplay}</td>
         <td style="padding:10px 8px;font-size:0.85rem;color:#334155;${cellStyle}">${serviceName}</td>
         <td style="padding:10px 8px;font-size:0.85rem;color:#334155;${cellStyle}">${staffName}</td>
         <td style="padding:10px 8px;font-size:0.85rem;color:#334155;${cellStyle}">${bookingType}</td>
@@ -121,7 +118,7 @@ function buildRow(b, includeDate = false) {
 }
 
 function emptyRow(colspan, msg) {
-    return `<tr><td colspan="${colspan}" style="padding:48px 24px;text-align:center;color:#94a3b8;font-size:0.9rem;">${msg}</td></tr>`;
+    return `<tr><td colspan="10" style="padding:48px 24px;text-align:center;color:#94a3b8;font-size:0.9rem;">${msg}</td></tr>`;
 }
 
 // ─── Render Tables ────────────────────────────────────────────────────────────
@@ -135,12 +132,12 @@ function renderBookings(data) {
     if (bodyToday) {
         bodyToday.innerHTML = today.length
             ? today.map(b => buildRow(b, false)).join('')
-            : emptyRow(9, 'No bookings for today.');
+            : emptyRow(8, 'No bookings for today.');
     }
     if (bodyAll) {
         bodyAll.innerHTML = allBooks.length
             ? allBooks.map(b => buildRow(b, true)).join('')
-            : emptyRow(9, 'No bookings found.');
+            : emptyRow(8, 'No bookings found.');
     }
 }
 
