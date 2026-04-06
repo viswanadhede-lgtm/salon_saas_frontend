@@ -490,8 +490,8 @@ document.addEventListener('DOMContentLoaded', () => {
                 // DELETE old rows
                 const { error: delErr } = await supabase
                     .from('offers')
-                    .delete()
-                    .eq('offer_id', offerId);
+                    .eq('offer_id', offerId)
+                    .delete();
                 if (delErr) throw delErr;
             }
 
