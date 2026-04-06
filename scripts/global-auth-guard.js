@@ -169,7 +169,7 @@ function setupHourlyHeartbeat() {
             const cachedContext = JSON.parse(localStorage.getItem('appContext') || '{}');
             const role_id = localStorage.getItem('role_id');
 
-            let userFeatures = planFeatures; // fallback: full plan features
+            let userFeatures = [];
             let userSubFeatures = [];
 
             if (role_id) {
@@ -178,17 +178,28 @@ function setupHourlyHeartbeat() {
                     .eq('role_id', role_id)
                     .eq('company_id', company_id);
 
-                const hasAllPerms = permRows?.some(p => p.permission_key === 'ALL');
-                userFeatures = hasAllPerms
-                    ? planFeatures
-                    : planFeatures.filter(f => permRows?.some(p => p.permission_key === f));
-            }
+                const keys = permRows?.map(p => p.permission_key) || [];
+                const hasAllPerms = keys.includes('ALL');
+                const allMainFeatures = Object.values(FEATURES);
 
-            // 4. Re-derive sub-features
-            userFeatures.forEach(feat => {
-                const children = SUB_FEATURES_MAP[feat] || [];
-                children.forEach(sf => userSubFeatures.push(sf.key));
-            });
+                if (hasAllPerms) {
+                    const planFeatures = PLAN_FEATURES[company.plan_id] || DEFAULT_FEATURES;
+                    userFeatures = planFeatures;
+                    userFeatures.forEach(feat => {
+                        const children = SUB_FEATURES_MAP[feat] || [];
+                        children.forEach(sf => userSubFeatures.push(sf.key));
+                    });
+                } else {
+                    userFeatures = keys.filter(k => allMainFeatures.includes(k));
+                    userSubFeatures = keys.filter(k => !allMainFeatures.includes(k));
+                }
+            } else {
+                userFeatures = PLAN_FEATURES[company.plan_id] || DEFAULT_FEATURES;
+                userFeatures.forEach(feat => {
+                    const children = SUB_FEATURES_MAP[feat] || [];
+                    children.forEach(sf => userSubFeatures.push(sf.key));
+                });
+            }
 
             // 5. Update cache
             localStorage.setItem('userFeatures',    JSON.stringify(userFeatures));
@@ -335,29 +346,33 @@ export async function runGlobalAuthGuard() {
             return;
         }
 
-        // 5. Derive features from plan
-        const planFeatures = PLAN_FEATURES[company.plan_id] || DEFAULT_FEATURES;
-
-        // 6. Role permissions — if user has permission_key='ALL', they get everything
+        // 5. Role permissions — Read directly from the database table
         const { data: permRows } = await supabase.from('role_permissions')
             .select('permission_key')
             .eq('role_id', userRow.role_id)
             .eq('company_id', resolvedCompanyId);
 
-        const hasAllPerms = permRows?.some(p => p.permission_key === 'ALL');
+        const keys = permRows?.map(p => p.permission_key) || [];
+        const hasAllPerms = keys.includes('ALL');
+        const allMainFeatures = Object.values(FEATURES);
 
-        // Final feature list: plan features filtered by role permissions
-        // Owners (ALL) get the full plan feature set
-        const userFeatures = hasAllPerms
-            ? planFeatures
-            : planFeatures.filter(f => permRows?.some(p => p.permission_key === f));
-
-        // 7. Derive sub-features (ALL role → every sub-feature for allowed features)
+        let userFeatures = [];
         let userSubFeatures = [];
-        userFeatures.forEach(feat => {
-            const children = SUB_FEATURES_MAP[feat] || [];
-            children.forEach(sf => userSubFeatures.push(sf.key));
-        });
+
+        if (hasAllPerms) {
+            // For roles with 'ALL' (e.g., Owners), fall back to checking the subscription plan
+            const planFeatures = PLAN_FEATURES[company.plan_id] || DEFAULT_FEATURES;
+            userFeatures = planFeatures;
+            
+            userFeatures.forEach(feat => {
+                const children = SUB_FEATURES_MAP[feat] || [];
+                children.forEach(sf => userSubFeatures.push(sf.key));
+            });
+        } else {
+            // Split raw database permission keys into main vs sub-features
+            userFeatures = keys.filter(k => allMainFeatures.includes(k));
+            userSubFeatures = keys.filter(k => !allMainFeatures.includes(k));
+        }
 
         // 8. Check if current page's feature is allowed
         if (!userFeatures.includes(featureKey)) {

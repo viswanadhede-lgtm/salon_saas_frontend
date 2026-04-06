@@ -26,9 +26,10 @@ function getBranchId() {
  */
 function getSubscriptionFeatures() {
     try {
-        const ctx = JSON.parse(localStorage.getItem('appContext') || '{}');
-        const subFeatures = ctx.subscription?.features || ctx.allowed_features || null;
-        if (Array.isArray(subFeatures) && subFeatures.length > 0) return subFeatures;
+        const userFeatures = JSON.parse(localStorage.getItem('userFeatures') || '[]');
+        if (Array.isArray(userFeatures) && userFeatures.length > 0) {
+            return userFeatures;
+        }
     } catch { /* fall through */ }
     // Fallback: allow all features
     return Object.values(FEATURES);
