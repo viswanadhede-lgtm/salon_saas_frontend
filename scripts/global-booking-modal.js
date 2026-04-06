@@ -484,7 +484,7 @@ export function initGlobalBookingModal() {
             customer_id:      targetId || null,
             customer_phone:   phoneSearch.value.trim(),
             customer_name:    targetName,
-            customer_email:   customerEmail.value.trim() || null,
+            customer_mail:    customerEmail.value.trim() || null,
             service_id:       serviceSelect.value,
             service_name:     meta ? meta.name : '',
             duration:         meta ? meta.duration : 0,
@@ -495,7 +495,7 @@ export function initGlobalBookingModal() {
             start_time:       bookingTime.value,
             notes:            bookingNotes.value.trim(),
             status:           'booked',
-            payment:          'pending',
+            payment_status:   'pending',
             booking_type:     'walk-in'
         };
         
