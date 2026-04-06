@@ -1199,12 +1199,8 @@ async function handleFormSubmit(e) {
             if (insError) throw insError;
         }
 
-        // Update local state without fetching again
-        payload.id = `${payload.staff_id}_${payload.target_month}`;
-        
-        // Remove old and push new
-        rawSchedules = rawSchedules.filter(s => !(String(s.staff_id) === String(payload.staff_id) && s.target_month === payload.target_month));
-        rawSchedules.push(payload);
+        // Re-fetch schedules to ensure days are mapped and ordered correctly
+        await fetchSchedules();
 
         if (DOM.toast) {
             showToast('Schedule saved successfully');
