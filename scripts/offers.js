@@ -160,14 +160,14 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     // ─────────────────────────────────────────────────────────────────────────
-    // SUPABASE: Load Offers (+ offer_services join)
+    // SUPABASE: Load Offers (from flattened table grouped by offer_id)
     // ─────────────────────────────────────────────────────────────────────────
     async function loadOffers() {
         try {
             const companyId = getCompanyId();
             const branchId = getBranchId();
 
-            // Fetch offers
+            // Fetch offers directly
             const { data: offersData, error: offersErr } = await supabase
                 .from('offers')
                 .select('*')
@@ -178,31 +178,30 @@ document.addEventListener('DOMContentLoaded', () => {
 
             if (offersErr) throw offersErr;
 
-            // Fetch offer_services (junction table linking offers to services)
-            const { data: offerServicesData, error: osErr } = await supabase
-                .from('offer_services')
-                .select('*')
-                .eq('company_id', companyId)
-                .eq('branch_id', branchId);
-
-            if (osErr) console.warn('offer_services fetch warning:', osErr.message);
-
-            // Group offer_services by offer_id
-            const servicesByOfferId = {};
-            (offerServicesData || []).forEach(row => {
-                if (!servicesByOfferId[row.offer_id]) servicesByOfferId[row.offer_id] = [];
-                servicesByOfferId[row.offer_id].push({
-                    service_id: row.service_id,
-                    service_name: row.service_name || '',
-                    current_usage_count: row.current_usage_count || 0
-                });
+            // Group flattened rows by offer_id
+            const groupedOffers = {};
+            (offersData || []).forEach(row => {
+                const oId = row.offer_id;
+                if (!groupedOffers[oId]) {
+                    // Initialize the top-level offer aggregate object
+                    groupedOffers[oId] = { ...row, applicable_services: [] };
+                }
+                
+                // Keep pushing distinct services onto it
+                if (row.service_id) {
+                    groupedOffers[oId].applicable_services.push({
+                        service_id: row.service_id,
+                        service_name: row.service_name || '',
+                        current_usage_count: row.current_usage_count || 0,
+                        rowId: row.id // if there's a primary key we need to track, store it just in case
+                    });
+                }
             });
 
-            // Merge
-            offers = (offersData || []).map(o => ({
-                ...o,
-                applicable_services: servicesByOfferId[o.offer_id || o.id] || []
-            }));
+            offers = Object.values(groupedOffers);
+            
+            // Re-sort based on created_at since Object.values dumps order
+            offers.sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
 
             renderOffersTable();
         } catch (error) {
@@ -467,50 +466,41 @@ document.addEventListener('DOMContentLoaded', () => {
         btnSaveOffer.disabled = true;
 
         try {
-            let offerId = editingOfferId;
+            let offerId = isEditMode ? editingOfferId : crypto.randomUUID();
+
+            const rowsToInsert = applyServices.map(srv => ({
+                offer_id: offerId,
+                company_id: getCompanyId(),
+                branch_id: getBranchId(),
+                offer_name: offerNameEl.value.trim(),
+                discount_type: offerDiscountTypeEl.value,
+                discount_value: parseFloat(offerDiscountValueEl.value) || 0,
+                status: offerStatusEl.value,
+                valid_from: offerStartDateEl.value || null,
+                valid_to: offerEndDateEl.value || null,
+                min_bill_amount: offerMinBillAmountEl.value ? parseFloat(offerMinBillAmountEl.value) : null,
+                total_usage_limit: offerUsageLimitEl.value ? parseInt(offerUsageLimitEl.value, 10) : null,
+                usage_per_customer: offerUsagePerCustomerEl.value ? parseInt(offerUsagePerCustomerEl.value, 10) : null,
+                service_id: srv.service_id,
+                service_name: srv.service_name,
+                current_usage_count: srv.current_usage_count
+            }));
 
             if (isEditMode) {
-                // UPDATE the offer row
-                const { error } = await supabase
-                    .from('offers')
-                    .eq('offer_id', offerId)
-                    .update(offerPayload);
-                if (error) throw error;
-
-                // DELETE old service links then re-insert
+                // DELETE old rows
                 const { error: delErr } = await supabase
-                    .from('offer_services')
+                    .from('offers')
                     .delete()
                     .eq('offer_id', offerId);
-                if (delErr) console.warn('offer_services delete warning:', delErr.message);
-
-            } else {
-                // Pre-generate UUID to avoid .select() chaining
-                offerId = crypto.randomUUID();
-                offerPayload.offer_id = offerId;
-
-                // INSERT new offer row
-                const { error } = await supabase
-                    .from('offers')
-                    .insert(offerPayload);
-                if (error) throw error;
+                if (delErr) throw delErr;
             }
 
-            // INSERT offer_services rows
-            if (offerId && applyServices.length > 0) {
-                const serviceRows = applyServices.map(srv => ({
-                    offer_id: offerId,
-                    company_id: getCompanyId(),
-                    branch_id: getBranchId(),
-                    service_id: srv.service_id,
-                    service_name: srv.service_name,
-                    current_usage_count: srv.current_usage_count
-                }));
-
-                const { error: insErr } = await supabase
-                    .from('offer_services')
-                    .insert(serviceRows);
-                if (insErr) console.warn('offer_services insert warning:', insErr.message);
+            // INSERT all new mapped rows directly to flattened offers table
+            if (rowsToInsert.length > 0) {
+                const { error } = await supabase
+                    .from('offers')
+                    .insert(rowsToInsert);
+                if (error) throw error;
             }
 
             closeModal();
