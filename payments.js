@@ -87,9 +87,9 @@ document.addEventListener('DOMContentLoaded', () => {
     const btnPayNow = document.getElementById('btnPayNow');
     if (btnPayNow) {
         btnPayNow.addEventListener('click', () => {
-            // isTrial = false uses stable Orders API to bypass Razorpay Subscription 500 constraint
-            const addons = getSelectedAddons();
-            triggerOrderCreation(btnPayNow, planId, companyId, addons, billingCycle);
+            // Pass planId so triggerOrderCreation can fetch the Razorpay Plan ID
+            // from the plans table and send it to the edge function for a recurring subscription.
+            triggerOrderCreation(btnPayNow, planId, companyId, billingCycle);
         });
     }
 
@@ -247,22 +247,22 @@ document.addEventListener('DOMContentLoaded', () => {
         return Array.from(checkboxes).map(cb => cb.value);
     }
 
-    async function triggerOrderCreation(btnElement, planId, companyId, addons, cycle) {
+    async function triggerOrderCreation(btnElement, planId, companyId, cycle) {
         const originalText = btnElement.innerHTML;
         setLoadingState(btnElement, 'Initiating Payment...');
 
         try {
-            const signupData     = JSON.parse(localStorage.getItem('signup_data') || '{}');
-            const customerEmail  = signupData.email       || '';
-            const customerName   = signupData.full_name   || '';
-            const customerPhone  = signupData.phone       || '';
+            const signupData      = JSON.parse(localStorage.getItem('signup_data') || '{}');
+            const customerEmail   = signupData.email       || '';
+            const customerName    = signupData.full_name   || '';
+            const customerPhone   = signupData.phone       || '';
             const storedCompanyId = localStorage.getItem('company_id') || companyId;
 
-            // Fetch plan from DB to get correct amount
+            // Fetch plan from DB — we need both the amount AND the Razorpay Plan ID
             const { data: dbPlans, error: planErr } = await supabase
                 .from('plans')
-                .eq('plan_id', planId)
-                .select('*');
+                .select('*')
+                .eq('plan_id', planId);
 
             if (planErr || !dbPlans || dbPlans.length === 0) {
                 showMessage('Could not verify your plan. Please try again.', 'error');
@@ -270,67 +270,88 @@ document.addEventListener('DOMContentLoaded', () => {
                 return;
             }
 
-            const dbPlan   = dbPlans[0];
-            const amount   = cycle === 'annual' ? basePlanAnnual : basePlanMonthly;
+            const dbPlan = dbPlans[0];
+            const amount = cycle === 'annual' ? basePlanAnnual : basePlanMonthly;
+
+            // Pick the Razorpay Plan ID for the selected billing cycle
+            const rzpPlanId = cycle === 'annual'
+                ? dbPlan.razorpay_plan_id_yearly
+                : dbPlan.razorpay_plan_id_monthly;
+
+            if (!rzpPlanId) {
+                showMessage(
+                    `Razorpay Plan ID is not configured for the ${dbPlan.plan_name} plan (${cycle}). Please contact support.`,
+                    'error'
+                );
+                resetLoadingState(btnElement, originalText);
+                return;
+            }
+
+            console.log('[triggerOrderCreation] Using Razorpay Plan ID:', rzpPlanId);
 
             const SUPABASE_URL      = 'https://qxmgyxjwpxkdbgldpdil.supabase.co';
             const SUPABASE_ANON_KEY = 'sb_publishable_aqCSbMiVxH5cSZxgssdNqw_jQZvzmA0';
 
-            // Call NEW Supabase Edge Function (replaces broken n8n webhook)
+            // Call the create-razorpay-order Edge Function.
+            // We send razorpay_plan_id so the backend creates a recurring Subscription,
+            // not a one-time Order.
             const res = await fetch(`${SUPABASE_URL}/functions/v1/create-razorpay-order`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json', 'apikey': SUPABASE_ANON_KEY },
                 body: JSON.stringify({
-                    company_id:     storedCompanyId,
-                    plan_id:        dbPlan.plan_id,
-                    amount:         amount,
-                    billing_cycle:  cycle,
-                    customer_email: customerEmail,
-                    customer_name:  customerName,
-                    customer_phone: customerPhone
+                    company_id:       storedCompanyId,
+                    plan_id:          dbPlan.plan_id,
+                    razorpay_plan_id: rzpPlanId,   // ← Razorpay Plan ID for subscription
+                    amount:           amount,
+                    billing_cycle:    cycle,
+                    customer_email:   customerEmail,
+                    customer_name:    customerName,
+                    customer_phone:   customerPhone
                 })
             });
 
             const data = await res.json();
+            console.log('[triggerOrderCreation] Edge function response:', data);
 
-            if (!data.order_id && !data.id) {
+            // Edge function returns subscription_id when using plan-based flow
+            const subscriptionId = data.subscription_id || data.id;
+
+            if (!subscriptionId) {
                 console.error('[triggerOrderCreation] Edge function error:', data);
-                throw new Error('Failed to create payment order.');
+                throw new Error(data.error || 'Failed to create subscription. Please try again.');
             }
 
-            const orderId = data.order_id || data.id;
-
+            // Open Razorpay Checkout with subscription_id (recurring billing)
             const options = {
-                "key":         data.key_id,
-                "amount":      data.amount || (amount * 100),
-                "currency":    "INR",
-                "name":        "BharathBots",
-                "description": `${dbPlan.plan_name} - ${cycle === 'annual' ? 'Annual' : 'Monthly'} Plan`,
-                "order_id":    orderId,
-                "prefill": {
-                    "name":    customerName,
-                    "email":   customerEmail,
-                    "contact": customerPhone
+                key:             data.key_id || 'rzp_live_STT1YqefvnMX7O',
+                subscription_id: subscriptionId,
+                name:            'BharathBots',
+                description:     `${dbPlan.plan_name} - ${cycle === 'annual' ? 'Annual' : 'Monthly'} Subscription`,
+                image:           'https://www.bharathbots.com/favicon.ico',
+                prefill: {
+                    name:    customerName,
+                    email:   customerEmail,
+                    contact: customerPhone
                 },
-                "handler": async function (response) {
+                handler: async function (response) {
                     setLoadingState(btnElement, 'Verifying payment...');
                     showMessage('Payment authorized! Redirecting...', 'success');
                     const params = new URLSearchParams({
-                        razorpay_payment_id: response.razorpay_payment_id || '',
-                        razorpay_order_id:   response.razorpay_order_id   || orderId,
-                        razorpay_signature:  response.razorpay_signature  || '',
-                        flow_type:           'paid',
+                        razorpay_payment_id:      response.razorpay_payment_id      || '',
+                        razorpay_subscription_id: response.razorpay_subscription_id || subscriptionId,
+                        razorpay_signature:       response.razorpay_signature       || '',
+                        flow_type:                'paid',
                         t: localStorage.getItem('token') || ''
                     });
                     window.location.href = `payment-result.html?${params.toString()}`;
                 },
-                "modal": {
-                    "ondismiss": function() {
+                modal: {
+                    ondismiss: function() {
                         resetLoadingState(btnElement, originalText);
                         showMessage('Payment was cancelled.', 'error');
                     }
                 },
-                "theme": { "color": "#6366f1" }
+                theme: { color: '#6366f1' }
             };
 
             const rzp = new window.Razorpay(options);

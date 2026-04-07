@@ -206,8 +206,13 @@ document.addEventListener('DOMContentLoaded', async () => {
             <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="#10b981" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
                 <polyline points="20 6 9 17 4 12"></polyline>
             </svg>`;
-        heading.textContent = 'Trial Activated!';
-        subtext.textContent = 'Your 7-day free trial is now active. Redirecting you to your dashboard...';
+        if (flowType === 'paid') {
+            heading.textContent = 'Subscription Activated!';
+            subtext.textContent = 'Your paid subscription is now active. Redirecting you to your dashboard...';
+        } else {
+            heading.textContent = 'Trial Activated!';
+            subtext.textContent = 'Your 7-day free trial is now active. Redirecting you to your dashboard...';
+        }
         markDone(step3);
     }
 
