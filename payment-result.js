@@ -17,7 +17,9 @@ document.addEventListener('DOMContentLoaded', async () => {
     const params                   = new URLSearchParams(window.location.search);
     const razorpay_payment_id      = params.get('razorpay_payment_id');
     const razorpay_subscription_id = params.get('razorpay_subscription_id');
+    const razorpay_order_id        = params.get('razorpay_order_id');
     const flowType                 = params.get('flow_type') || 'trial'; // 'trial' or 'paid'
+    const reference_id             = razorpay_subscription_id || razorpay_order_id; // Unifies both flows
 
     // Dynamically adjust text if paid
     if (flowType === 'paid') {
@@ -28,15 +30,15 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     console.log('[payment-result] URL params:', {
         razorpay_payment_id,
-        razorpay_subscription_id,
+        reference_id,
         flowType
     });
 
-    // --- Guard: subscription_id is minimum required ---
-    if (!razorpay_subscription_id) {
+    // --- Guard: reference_id is minimum required ---
+    if (!reference_id) {
         showError(
-            'Missing Subscription Details',
-            'We couldn\'t read your subscription details. Please try again or contact support.'
+            'Missing Payment Details',
+            'We couldn\'t read your checkout details. Please try again or contact support.'
         );
         return;
     }
@@ -91,10 +93,10 @@ document.addEventListener('DOMContentLoaded', async () => {
             const nextCharge = periodEnd; 
 
             // ── 1. Insert into payments table ────────────────────────────
-            // ── 1. Update the existing payments row (Created by Edge Function) ──
+            // ── 1. Update the existing payments row (Created by Edge Function or Webhook) ──
             const { error: payError } = await supabase
                 .from('payments')
-                .eq('order_id', razorpay_subscription_id)
+                .eq('order_id', reference_id)
                 .update({
                     name:           userName,
                     phone:          userPhone,
@@ -112,7 +114,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             const { error: subError } = await supabase
                 .from('subscriptions')
                 .insert({
-                    subscription_id:      razorpay_subscription_id,
+                    subscription_id:      reference_id, // Store order_id as subscription pseudo-ID for Paid
                     company_id:           companyId,
                     plan_id:              planId,
                     user_id:              userId,

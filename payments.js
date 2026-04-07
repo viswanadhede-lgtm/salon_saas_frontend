@@ -87,15 +87,16 @@ document.addEventListener('DOMContentLoaded', () => {
     const btnPayNow = document.getElementById('btnPayNow');
     if (btnPayNow) {
         btnPayNow.addEventListener('click', () => {
-            // isTrial = false
-            triggerSubscriptionCheckout(btnPayNow, companyId, planId, billingCycle, false);
+            // isTrial = false uses stable Orders API to bypass Razorpay Subscription 500 constraint
+            const addons = getSelectedAddons();
+            triggerOrderCreation(btnPayNow, planId, companyId, addons, billingCycle);
         });
     }
 
     const btnTrial = document.getElementById('btnStartTrial');
     if (btnTrial) {
         btnTrial.addEventListener('click', () => {
-            // isTrial = true
+            // isTrial = true uses Subscriptions API (Future delayed charge)
             triggerSubscriptionCheckout(btnTrial, companyId, planId, billingCycle, true);
         });
     }
@@ -244,6 +245,74 @@ document.addEventListener('DOMContentLoaded', () => {
     function getSelectedAddons() {
         const checkboxes = document.querySelectorAll('.addon-checkbox:checked');
         return Array.from(checkboxes).map(cb => cb.value);
+    }
+
+    function triggerOrderCreation(btnElement, planId, companyId, addons, cycle) {
+        const originalText = btnElement.innerHTML;
+        setLoadingState(btnElement, 'Initiating Payment...');
+
+        const payload = {
+            company_id: companyId,
+            plan_id: planId,
+            addons: addons,
+            billing_cycle: cycle
+        };
+
+        fetchWithAuth(API.CREATE_ORDER, {
+            method: 'POST',
+            body: JSON.stringify(payload)
+        }, FEATURES.BILLING_SUBSCRIPTION_MANAGEMENT, 'create')
+        .then(res => res.json())
+        .then(responseData => {
+            const data = Array.isArray(responseData) ? responseData[0] : responseData;
+            if (data && data.order_id) {
+                const options = {
+                    "key": data.key_id,
+                    "amount": data.amount || 0, 
+                    "currency": data.currency || "INR",
+                    "name": "BharathBots",
+                    "description": "Plan Activation",
+                    "order_id": data.order_id,
+                    "handler": async function (response) {
+                        setLoadingState(btnElement, 'Verifying payment...');
+                        showMessage('Payment authorized! Redirecting...', 'success');
+                        const params = new URLSearchParams({
+                            razorpay_payment_id: response.razorpay_payment_id || '',
+                            razorpay_order_id:   response.razorpay_order_id || data.order_id,
+                            razorpay_signature:  response.razorpay_signature || '',
+                            flow_type: 'paid', // Trigger Paid Database logic gracefully!
+                            t: localStorage.getItem('token') || ''
+                        });
+                        window.location.href = `payment-result.html?${params.toString()}`;
+                    },
+                    "modal": {
+                        "ondismiss": function() {
+                            resetLoadingState(btnElement, originalText);
+                            showMessage('Payment was cancelled.', 'error');
+                        }
+                    },
+                    "theme": {
+                        "color": "#6366f1"
+                    }
+                };
+
+                const rzp = new window.Razorpay(options);
+                
+                rzp.on('payment.failed', function (response) {
+                    resetLoadingState(btnElement, originalText);
+                    showMessage(`Payment failed: ${response.error.description}`, 'error');
+                });
+                
+                rzp.open();
+            } else {
+                throw new Error("Invalid response: missing order_id");
+            }
+        })
+        .catch(err => {
+            console.error('Order Creation Error:', err);
+            resetLoadingState(btnElement, originalText);
+            showMessage('Failed to initialize payment gateway. Please try again.', 'error');
+        });
     }
 
     async function triggerSubscriptionCheckout(btnElement, companyId, planId, cycle, isTrial) {
