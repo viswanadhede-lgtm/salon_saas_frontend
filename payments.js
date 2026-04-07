@@ -454,66 +454,19 @@ document.addEventListener('DOMContentLoaded', () => {
                 },
                 theme: { color: '#6366f1' },
 
-                // Step 3: Success handler — runs on this page, no redirect needed
+                // Step 3: Success handler — redirects to callback URL for visual processing
                 handler: async function(razorpayResponse) {
-                    setLoadingState(btnElement, 'Activating trial...');
-                    showMessage('Payment authorized! Activating your trial...', 'success');
-
-                    try {
-                        const now      = new Date();
-                        const trialEnd = new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000);
-
-                        // Write to payments table (Using DB UUID for referential integrity)
-                        await supabase.from('payments').insert({
-                            company_id: storedCompanyId,
-                            plan_id:    dbPlanId, // Use Supabase UUID
-                            amount:     0,
-                            name:       customerName,
-                            email:      customerEmail,
-                            phone:      customerPhone,
-                            payment_id: razorpayResponse.razorpay_payment_id || null,
-                            status:     'trial'
-                        });
-
-                        // Write to subscriptions table
-                        await supabase.from('subscriptions').insert({
-                            company_id:           storedCompanyId,
-                            plan_id:              dbPlanId, // Use Supabase UUID
-                            user_id:              storedUserId,
-                            name:                 customerName,
-                            email:                customerEmail,
-                            phone:                customerPhone,
-                            billing_cycle:        cycle || 'monthly',
-                            status:               'active',
-                            current_period_start: now.toISOString(),
-                            current_period_end:   trialEnd.toISOString(),
-                            next_charge_at:       trialEnd.toISOString()
-                        });
-
-                        // Update companies table
-                        await supabase
-                            .from('companies')
-                            .eq('company_id', storedCompanyId)
-                            .update({
-                                subscription_type:       'trial',
-                                subscription_status:     'active',
-                                subscription_start_date: now.toISOString(),
-                                subscription_end_date:   trialEnd.toISOString()
-                            });
-
-                        // Clear stale caches
-                        localStorage.removeItem('userFeatures');
-                        localStorage.removeItem('userSubFeatures');
-                        localStorage.removeItem('appContext');
-
-                        showMessage('Trial activated! Redirecting to your dashboard...', 'success');
-                        setTimeout(() => { window.location.href = 'dashboard.html'; }, 1500);
-
-                    } catch (saveErr) {
-                        console.error('[triggerFreeTrial] Save error after payment:', saveErr);
-                        showMessage('Payment authorized but setup failed. Please contact support.', 'error');
-                        resetLoadingState(btnElement, originalText);
-                    }
+                    setLoadingState(btnElement, 'Verifying payment...');
+                    showMessage('Payment authorized! Redirecting...', 'success');
+                    
+                    const params = new URLSearchParams({
+                        razorpay_payment_id: razorpayResponse.razorpay_payment_id || '',
+                        razorpay_subscription_id: subscriptionId,
+                        razorpay_signature: razorpayResponse.razorpay_signature || '',
+                        t: localStorage.getItem('token') || ''
+                    });
+                    
+                    window.location.href = `payment-result.html?${params.toString()}`;
                 },
 
                 modal: {
