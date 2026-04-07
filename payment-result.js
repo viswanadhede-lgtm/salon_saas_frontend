@@ -71,20 +71,16 @@ document.addEventListener('DOMContentLoaded', async () => {
             const nextCharge = trialEnd; // auto-charges the day trial ends
 
             // ── 1. Insert into payments table ────────────────────────────
+            // ── 1. Update the existing payments row (Created by Edge Function) ──
             const { error: payError } = await supabase
                 .from('payments')
-                .insert({
-                    order_id:       razorpay_subscription_id,
-                    company_id:     companyId,
-                    plan_id:        planId,
-                    amount:         0,
+                .update({
                     name:           userName,
-                    email:          userEmail,
                     phone:          userPhone,
                     payment_id:     razorpay_payment_id || null,
-                    status:         'trial',
-                    payment_method: 'subscription_mandate'
-                });
+                    status:         'trial'
+                })
+                .eq('order_id', razorpay_subscription_id);
 
             if (payError) {
                 console.warn('[payment-result] payments insert warning (non-critical):', payError);
