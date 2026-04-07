@@ -163,11 +163,11 @@ document.addEventListener('DOMContentLoaded', () => {
 
     function renderPlanSummary(id, fallbackName) {
         const PLANS = {
-            'plan_01': { name: 'Basic', monthly: 1999, annual: 19999, benefits: ['1 Branch', 'Up to 5 staff accounts', 'Bookings & Customers CRM', 'Basic dashboard analytics', 'Payment tracking'] },
-            'plan_02': { name: 'Advance', monthly: 4999, annual: 49999, benefits: ['Up to 3 branches', 'Up to 12 staff accounts', 'POS & Product sales', 'Offers & coupons', 'Advanced reports'] },
-            'plan_03': { name: 'Pro', monthly: 9999, annual: 99999, benefits: ['Up to 10 branches', 'Unlimited staff accounts', 'Membership programs', 'Online booking page', 'Deep analytics dashboard'] },
-            'plan_04': { name: 'Enterprise', monthly: 19999, annual: 199999, benefits: ['Unlimited branches', 'AI receptionist included', 'WhatsApp booking automation', 'Custom integrations', 'Dedicated support & SLA'] },
-            'plan_trial': { name: 'Free Trial', monthly: 0, annual: 0, benefits: ['7 days unrestricted access'] }
+            'd0d4cc8f-3498-4da1-b5e5-2887b9b39dce': { name: 'Basic', monthly: 1999, annual: 19999, benefits: ['1 Branch', 'Up to 5 staff accounts', 'Bookings & Customers CRM', 'Basic dashboard analytics', 'Payment tracking'] },
+            'b42bcd41-217a-4ddb-9451-20e040984277': { name: 'Advance', monthly: 4999, annual: 49999, benefits: ['Up to 3 branches', 'Up to 12 staff accounts', 'POS & Product sales', 'Offers & coupons', 'Advanced reports'] },
+            'b32fe38d-a715-4166-acf1-b970bd845c21': { name: 'Pro', monthly: 9999, annual: 99999, benefits: ['Up to 10 branches', 'Unlimited staff accounts', 'Membership programs', 'Online booking page', 'Deep analytics dashboard'] },
+            '2e86d143-72aa-4ae4-a925-ded2b8475dc8': { name: 'Enterprise', monthly: 19999, annual: 199999, benefits: ['Unlimited branches', 'AI receptionist included', 'WhatsApp booking automation', 'Custom integrations', 'Dedicated support & SLA'] },
+            '7e0af07f-b57b-40e7-a23a-6e8104c8033c': { name: 'Free Trial', monthly: 0, annual: 0, benefits: ['7 days unrestricted access'] }
         };
 
         const plan = PLANS[id] || { name: fallbackName || 'Unknown Plan', monthly: 0, annual: 0, benefits: ['Standard features'] };
@@ -365,8 +365,12 @@ document.addEventListener('DOMContentLoaded', () => {
         setLoadingState(btnElement, 'Setting up trial...');
 
         try {
-            const signupData = JSON.parse(localStorage.getItem('signup_data') || '{}');
-            const customerEmail = signupData.email;
+            const signupData      = JSON.parse(localStorage.getItem('signup_data') || '{}');
+            const customerEmail   = signupData.email;
+            const customerName    = signupData.full_name || '';
+            const customerPhone   = signupData.phone     || '';
+            const storedUserId    = signupData.user_id   || null;
+            const storedCompanyId = localStorage.getItem('company_id');
 
             if (!customerEmail) {
                 showMessage('Could not find your email. Please sign up again.', 'error');
@@ -374,22 +378,46 @@ document.addEventListener('DOMContentLoaded', () => {
                 return;
             }
 
-            // Call Supabase Edge Function to create Razorpay subscription
-            const SUPABASE_URL = 'https://qxmgyxjwpxkdbgldpdil.supabase.co';
+            // --- Fetch Dynamic Plan DB ID and Razorpay Plan ID ---
+            const { data: dbPlans, error: planErr } = await supabase
+                .from('plans')
+                .select('*')
+                .eq('plan_id', planId);
+
+            if (planErr || !dbPlans || dbPlans.length === 0) {
+                console.error('[triggerFreeTrial] DB Plan fetch error:', planErr);
+                showMessage('Could not verify your plan configuration. Please contact support.', 'error');
+                resetLoadingState(btnElement, originalText);
+                return;
+            }
+
+            const dbPlan = dbPlans[0];
+            const dbPlanId = dbPlan.plan_id; // Supabase UUID
+            const rzpPlanId = cycle === 'annual' ? dbPlan.razorpay_plan_id_yearly : dbPlan.razorpay_plan_id_monthly;
+
+            if (!rzpPlanId) {
+                showMessage(`Razorpay subscription ID is missing for the ${dbPlan.plan_name} plan. Please configure it in the database.`, 'error');
+                resetLoadingState(btnElement, originalText);
+                return;
+            }
+
+            const SUPABASE_URL      = 'https://qxmgyxjwpxkdbgldpdil.supabase.co';
             const SUPABASE_ANON_KEY = 'sb_publishable_aqCSbMiVxH5cSZxgssdNqw_jQZvzmA0';
 
+            // Step 1: Call Edge Function to create Razorpay subscription
             const response = await fetch(
                 `${SUPABASE_URL}/functions/v1/create-razorpay-subscription`,
                 {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
-                        'apikey': SUPABASE_ANON_KEY,
-                        'Authorization': `Bearer ${SUPABASE_ANON_KEY}`
+                        'apikey': SUPABASE_ANON_KEY
                     },
                     body: JSON.stringify({
-                        plan_id: planId,
-                        customer_email: customerEmail
+                        plan_id:        rzpPlanId,        // Dynamic Razorpay ID
+                        db_plan_id:     dbPlanId,         // DB Internal UUID
+                        customer_email: customerEmail,
+                        company_id:     storedCompanyId
                     })
                 }
             );
@@ -403,20 +431,105 @@ document.addEventListener('DOMContentLoaded', () => {
             const data = await response.json();
             console.log('[triggerFreeTrial] Edge function response:', data);
 
-            // Extract short_url from Razorpay subscription response
-            const shortUrl = data?.short_url || data?.subscription?.short_url;
+            const subscriptionId = data?.id || data?.subscription?.id;
 
-            if (!shortUrl) {
-                console.error('[triggerFreeTrial] No short_url in response:', data);
-                throw new Error('Invalid response from payment service. Missing short_url.');
+            if (!subscriptionId) {
+                console.error('[triggerFreeTrial] No subscription ID in response:', data);
+                throw new Error('Invalid response from payment service.');
             }
 
-            showMessage('Redirecting to Razorpay for payment setup...', 'success');
+            resetLoadingState(btnElement, originalText);
 
-            // Redirect user to Razorpay hosted checkout page
-            setTimeout(() => {
-                window.location.href = shortUrl;
-            }, 800);
+            // Step 2: Open Razorpay Checkout inline (stays on bharathbots.com)
+            const options = {
+                key:             'rzp_live_STT1YqefvnMX7O',
+                subscription_id: subscriptionId,
+                name:            'BharathBots',
+                description:     '7-Day Free Trial — No charge today',
+                image:           'https://www.bharathbots.com/favicon.ico',
+                prefill: {
+                    email:   customerEmail,
+                    name:    customerName,
+                    contact: customerPhone
+                },
+                theme: { color: '#6366f1' },
+
+                // Step 3: Success handler — runs on this page, no redirect needed
+                handler: async function(razorpayResponse) {
+                    setLoadingState(btnElement, 'Activating trial...');
+                    showMessage('Payment authorized! Activating your trial...', 'success');
+
+                    try {
+                        const now      = new Date();
+                        const trialEnd = new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000);
+
+                        // Write to payments table (Using DB UUID for referential integrity)
+                        await supabase.from('payments').insert({
+                            company_id: storedCompanyId,
+                            plan_id:    dbPlanId, // Use Supabase UUID
+                            amount:     0,
+                            name:       customerName,
+                            email:      customerEmail,
+                            phone:      customerPhone,
+                            payment_id: razorpayResponse.razorpay_payment_id || null,
+                            status:     'trial'
+                        });
+
+                        // Write to subscriptions table
+                        await supabase.from('subscriptions').insert({
+                            company_id:           storedCompanyId,
+                            plan_id:              dbPlanId, // Use Supabase UUID
+                            user_id:              storedUserId,
+                            name:                 customerName,
+                            email:                customerEmail,
+                            phone:                customerPhone,
+                            billing_cycle:        cycle || 'monthly',
+                            status:               'active',
+                            current_period_start: now.toISOString(),
+                            current_period_end:   trialEnd.toISOString(),
+                            next_charge_at:       trialEnd.toISOString()
+                        });
+
+                        // Update companies table
+                        await supabase
+                            .from('companies')
+                            .eq('company_id', storedCompanyId)
+                            .update({
+                                subscription_type:       'trial',
+                                subscription_status:     'active',
+                                subscription_start_date: now.toISOString(),
+                                subscription_end_date:   trialEnd.toISOString()
+                            });
+
+                        // Clear stale caches
+                        localStorage.removeItem('userFeatures');
+                        localStorage.removeItem('userSubFeatures');
+                        localStorage.removeItem('appContext');
+
+                        showMessage('Trial activated! Redirecting to your dashboard...', 'success');
+                        setTimeout(() => { window.location.href = 'dashboard.html'; }, 1500);
+
+                    } catch (saveErr) {
+                        console.error('[triggerFreeTrial] Save error after payment:', saveErr);
+                        showMessage('Payment authorized but setup failed. Please contact support.', 'error');
+                        resetLoadingState(btnElement, originalText);
+                    }
+                },
+
+                modal: {
+                    ondismiss: function() {
+                        showMessage('Payment was cancelled. Try again when ready.', 'error');
+                        resetLoadingState(btnElement, originalText);
+                    }
+                }
+            };
+
+            const rzp = new window.Razorpay(options);
+            rzp.on('payment.failed', function(response) {
+                showMessage(`Payment failed: ${response.error.description}`, 'error');
+                resetLoadingState(btnElement, originalText);
+            });
+            rzp.open();
 
         } catch (err) {
             console.error('[triggerFreeTrial] Error:', err);
