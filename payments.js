@@ -279,7 +279,11 @@ document.addEventListener('DOMContentLoaded', () => {
             // Call NEW Supabase Edge Function (replaces broken n8n webhook)
             const res = await fetch(`${SUPABASE_URL}/functions/v1/create-razorpay-order`, {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json', 'apikey': SUPABASE_ANON_KEY },
+                headers: {
+                    'Content-Type':  'application/json',
+                    'apikey':        SUPABASE_ANON_KEY,
+                    'Authorization': `Bearer ${SUPABASE_ANON_KEY}` // 🔥 Required to pass JWT verification
+                },
                 body: JSON.stringify({
                     company_id:     storedCompanyId,
                     plan_id:        dbPlan.plan_id,
