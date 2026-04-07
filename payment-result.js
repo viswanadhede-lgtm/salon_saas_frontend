@@ -74,13 +74,13 @@ document.addEventListener('DOMContentLoaded', async () => {
             // ── 1. Update the existing payments row (Created by Edge Function) ──
             const { error: payError } = await supabase
                 .from('payments')
+                .eq('order_id', razorpay_subscription_id)
                 .update({
                     name:           userName,
                     phone:          userPhone,
                     payment_id:     razorpay_payment_id || null,
                     status:         'trial'
-                })
-                .eq('order_id', razorpay_subscription_id);
+                });
 
             if (payError) {
                 console.warn('[payment-result] payments insert warning (non-critical):', payError);
