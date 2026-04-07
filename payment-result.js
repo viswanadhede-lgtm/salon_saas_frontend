@@ -17,10 +17,19 @@ document.addEventListener('DOMContentLoaded', async () => {
     const params                   = new URLSearchParams(window.location.search);
     const razorpay_payment_id      = params.get('razorpay_payment_id');
     const razorpay_subscription_id = params.get('razorpay_subscription_id');
+    const flowType                 = params.get('flow_type') || 'trial'; // 'trial' or 'paid'
+
+    // Dynamically adjust text if paid
+    if (flowType === 'paid') {
+        heading.textContent = 'Activating your subscription';
+        const step2Span = step2.querySelector('span');
+        if (step2Span) step2Span.textContent = 'Activating your subscription';
+    }
 
     console.log('[payment-result] URL params:', {
         razorpay_payment_id,
-        razorpay_subscription_id
+        razorpay_subscription_id,
+        flowType
     });
 
     // --- Guard: subscription_id is minimum required ---
@@ -79,7 +88,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                     name:           userName,
                     phone:          userPhone,
                     payment_id:     razorpay_payment_id || null,
-                    status:         'trial'
+                    status:         flowType === 'paid' ? 'active' : 'trial'
                 });
 
             if (payError) {
@@ -102,7 +111,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                     billing_cycle:        billingCycle,
                     status:               'active',
                     current_period_start: now.toISOString(),
-                    current_period_end:   trialEnd.toISOString(),
+                    current_period_end:   trialEnd.toISOString(), // Edge function delays charge by 7d if trial
                     next_charge_at:       nextCharge.toISOString()
                 });
 
@@ -112,12 +121,12 @@ document.addEventListener('DOMContentLoaded', async () => {
             }
             console.log('[payment-result] subscriptions row inserted.');
 
-            // ── 3. Update companies table with trial status ──────────────
+            // ── 3. Update companies table with trial/paid status ─────────
             const { error: compError } = await supabase
                 .from('companies')
                 .eq('company_id', companyId)
                 .update({
-                    subscription_type:       'trial',
+                    subscription_type:       flowType, // 'trial' or 'paid'
                     subscription_status:     'active',
                     subscription_start_date: now.toISOString(),
                     subscription_end_date:   trialEnd.toISOString()

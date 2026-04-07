@@ -87,15 +87,16 @@ document.addEventListener('DOMContentLoaded', () => {
     const btnPayNow = document.getElementById('btnPayNow');
     if (btnPayNow) {
         btnPayNow.addEventListener('click', () => {
-            const addons = getSelectedAddons();
-            triggerOrderCreation(btnPayNow, planId, companyId, addons, billingCycle);
+            // isTrial = false
+            triggerSubscriptionCheckout(btnPayNow, companyId, planId, billingCycle, false);
         });
     }
 
     const btnTrial = document.getElementById('btnStartTrial');
     if (btnTrial) {
         btnTrial.addEventListener('click', () => {
-            triggerFreeTrial(btnTrial, companyId, planId, billingCycle);
+            // isTrial = true
+            triggerSubscriptionCheckout(btnTrial, companyId, planId, billingCycle, true);
         });
     }
 
@@ -245,124 +246,9 @@ document.addEventListener('DOMContentLoaded', () => {
         return Array.from(checkboxes).map(cb => cb.value);
     }
 
-    function triggerPaymentLinkCreation(btnElement, planId, companyId, addons, cycle) {
-        const originalText = btnElement.innerHTML;
-        setLoadingState(btnElement, 'Processing...');
-
-        const payload = {
-            company_id: companyId,
-            plan_id: planId,
-            addons: addons,
-            billing_cycle: cycle
-        };
-
-        fetchWithAuth(API.CREATE_PAYMENT_LINK, {
-            method: 'POST',
-            body: JSON.stringify(payload)
-        }, FEATURES.BILLING_SUBSCRIPTION_MANAGEMENT, 'create')
-        .then(res => res.json())
-        .then(data => {
-            if (data && data.payment_link) {
-                showMessage('Redirecting to secure gateway...', 'success');
-                window.location.href = data.payment_link;
-            } else {
-                throw new Error("Invalid response from payment service.");
-            }
-        })
-        .catch(err => {
-            console.error('Payment Error:', err);
-            resetLoadingState(btnElement, originalText);
-            showMessage('Failed to create payment link. Please try again.', 'error');
-        });
-    }
-
-    function triggerOrderCreation(btnElement, planId, companyId, addons, cycle) {
-        const originalText = btnElement.innerHTML;
-        setLoadingState(btnElement, 'Initiating Payment...');
-
-        const payload = {
-            company_id: companyId,
-            plan_id: planId,
-            addons: addons,
-            billing_cycle: cycle
-        };
-
-        fetchWithAuth(API.CREATE_ORDER, {
-            method: 'POST',
-            body: JSON.stringify(payload)
-        }, FEATURES.BILLING_SUBSCRIPTION_MANAGEMENT, 'create')
-        .then(res => res.json())
-        .then(responseData => {
-            const data = Array.isArray(responseData) ? responseData[0] : responseData;
-            if (data && data.order_id) {
-                const options = {
-                    "key": data.key_id,
-                    "amount": data.amount || 0, 
-                    "currency": data.currency || "INR",
-                    "name": "BharathBots",
-                    "description": "Subscription Activation",
-                    "order_id": data.order_id,
-                    "handler": async function (response) {
-                        // Update company subscription to paid/active
-                        const now = new Date();
-                        const endDate = new Date(
-                            cycle === 'annual'
-                                ? now.getTime() + 365 * 24 * 60 * 60 * 1000
-                                : now.getTime() + 30  * 24 * 60 * 60 * 1000
-                        );
-                        await supabase
-                            .from('companies')
-                            .eq('company_id', companyId)
-                            .update({
-                                subscription_type: 'paid',
-                                subscription_status: 'active',
-                                subscription_start_date: now.toISOString(),
-                                subscription_end_date: endDate.toISOString()
-                            });
-
-                        // Redirect to result page with payment proofs
-                        const params = new URLSearchParams({
-                            razorpay_payment_id: response.razorpay_payment_id,
-                            razorpay_order_id:   response.razorpay_order_id,
-                            razorpay_signature:  response.razorpay_signature,
-                            t: localStorage.getItem('token') || ''
-                        });
-                        window.location.href = `${RAZORPAY.CALLBACK_URL}?${params.toString()}`;
-                    },
-                    "modal": {
-                        "ondismiss": function() {
-                            resetLoadingState(btnElement, originalText);
-                            showMessage('Payment was cancelled.', 'error');
-                        }
-                    },
-                    "theme": {
-                        "color": "#6366f1"
-                    }
-                };
-
-                const rzp = new window.Razorpay(options);
-                
-                rzp.on('payment.failed', function (response) {
-                    resetLoadingState(btnElement, originalText);
-                    showMessage(`Payment failed: ${response.error.description}`, 'error');
-                });
-                
-                rzp.open();
-            } else {
-                throw new Error("Invalid response: missing order_id");
-            }
-        })
-        .catch(err => {
-            console.error('Order Creation Error:', err);
-            resetLoadingState(btnElement, originalText);
-            showMessage('Failed to initialize payment gateway. Please try again.', 'error');
-        });
-    }
-
-
-    async function triggerFreeTrial(btnElement, companyId, planId, cycle) {
+    async function triggerSubscriptionCheckout(btnElement, companyId, planId, cycle, isTrial) {
         const originalText = btnElement.textContent;
-        setLoadingState(btnElement, 'Setting up trial...');
+        setLoadingState(btnElement, isTrial ? 'Setting up trial...' : 'Initiating payment...');
 
         try {
             const signupData      = JSON.parse(localStorage.getItem('signup_data') || '{}');
@@ -370,7 +256,7 @@ document.addEventListener('DOMContentLoaded', () => {
             const customerName    = signupData.full_name || '';
             const customerPhone   = signupData.phone     || '';
             const storedUserId    = signupData.user_id   || null;
-            const storedCompanyId = localStorage.getItem('company_id');
+            const storedCompanyId = localStorage.getItem('company_id') || companyId;
 
             if (!customerEmail) {
                 showMessage('Could not find your email. Please sign up again.', 'error');
@@ -385,7 +271,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 .eq('plan_id', planId);
 
             if (planErr || !dbPlans || dbPlans.length === 0) {
-                console.error('[triggerFreeTrial] DB Plan fetch error:', planErr);
+                console.error('[triggerSubscriptionCheckout] DB Plan fetch error:', planErr);
                 showMessage('Could not verify your plan configuration. Please contact support.', 'error');
                 resetLoadingState(btnElement, originalText);
                 return;
@@ -414,38 +300,37 @@ document.addEventListener('DOMContentLoaded', () => {
                         'apikey': SUPABASE_ANON_KEY
                     },
                     body: JSON.stringify({
-                        plan_id:        rzpPlanId,        // Dynamic Razorpay ID
-                        db_plan_id:     dbPlanId,         // DB Internal UUID
+                        plan_id:        rzpPlanId,        
+                        db_plan_id:     dbPlanId,         
                         customer_email: customerEmail,
-                        company_id:     storedCompanyId
+                        company_id:     storedCompanyId,
+                        is_trial:       isTrial           // Pass trial flag to Edge Function!
                     })
                 }
             );
 
             if (!response.ok) {
                 const errText = await response.text();
-                console.error('[triggerFreeTrial] Edge function error:', errText);
-                throw new Error('Failed to initialize trial. Please try again.');
+                console.error('[triggerSubscriptionCheckout] Edge function error:', errText);
+                throw new Error('Failed to initialize subscription. Please try again.');
             }
 
             const data = await response.json();
-            console.log('[triggerFreeTrial] Edge function response:', data);
-
             const subscriptionId = data?.id || data?.subscription?.id;
 
             if (!subscriptionId) {
-                console.error('[triggerFreeTrial] No subscription ID in response:', data);
+                console.error('[triggerSubscriptionCheckout] No subscription ID in response:', data);
                 throw new Error('Invalid response from payment service.');
             }
 
             resetLoadingState(btnElement, originalText);
 
-            // Step 2: Open Razorpay Checkout inline (stays on bharathbots.com)
+            // Step 2: Open Razorpay Checkout inline
             const options = {
                 key:             'rzp_live_STT1YqefvnMX7O',
                 subscription_id: subscriptionId,
                 name:            'BharathBots',
-                description:     '7-Day Free Trial — No charge today',
+                description:     isTrial ? '7-Day Free Trial — No charge today' : 'Plan Activation',
                 image:           'https://www.bharathbots.com/favicon.ico',
                 prefill: {
                     email:   customerEmail,
@@ -454,7 +339,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 },
                 theme: { color: '#6366f1' },
 
-                // Step 3: Success handler — redirects to callback URL for visual processing
+                // Step 3: Success handler
                 handler: async function(razorpayResponse) {
                     setLoadingState(btnElement, 'Verifying payment...');
                     showMessage('Payment authorized! Redirecting...', 'success');
@@ -463,6 +348,7 @@ document.addEventListener('DOMContentLoaded', () => {
                         razorpay_payment_id: razorpayResponse.razorpay_payment_id || '',
                         razorpay_subscription_id: subscriptionId,
                         razorpay_signature: razorpayResponse.razorpay_signature || '',
+                        flow_type: isTrial ? 'trial' : 'paid',    // Pass flow type to callback
                         t: localStorage.getItem('token') || ''
                     });
                     
@@ -485,7 +371,7 @@ document.addEventListener('DOMContentLoaded', () => {
             rzp.open();
 
         } catch (err) {
-            console.error('[triggerFreeTrial] Error:', err);
+            console.error('[triggerSubscriptionCheckout] Error:', err);
             showMessage(err.message || 'An unexpected error occurred. Please try again.', 'error');
             resetLoadingState(btnElement, originalText);
         }
