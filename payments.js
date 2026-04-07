@@ -261,8 +261,8 @@ document.addEventListener('DOMContentLoaded', () => {
             // Fetch plan from DB to get correct amount
             const { data: dbPlans, error: planErr } = await supabase
                 .from('plans')
-                .select('*')
-                .eq('plan_id', planId);
+                .eq('plan_id', planId)
+                .select('*');
 
             if (planErr || !dbPlans || dbPlans.length === 0) {
                 showMessage('Could not verify your plan. Please try again.', 'error');
@@ -368,8 +368,8 @@ document.addEventListener('DOMContentLoaded', () => {
             // --- Fetch Dynamic Plan DB ID and Razorpay Plan ID ---
             const { data: dbPlans, error: planErr } = await supabase
                 .from('plans')
-                .select('*')
-                .eq('plan_id', planId);
+                .eq('plan_id', planId)
+                .select('*');
 
             if (planErr || !dbPlans || dbPlans.length === 0) {
                 console.error('[triggerSubscriptionCheckout] DB Plan fetch error:', planErr);
