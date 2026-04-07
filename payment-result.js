@@ -74,14 +74,16 @@ document.addEventListener('DOMContentLoaded', async () => {
             const { error: payError } = await supabase
                 .from('payments')
                 .insert({
-                    company_id: companyId,
-                    plan_id:    planId,
-                    amount:     0,
-                    name:       userName,
-                    email:      userEmail,
-                    phone:      userPhone,
-                    payment_id: razorpay_payment_id || null,
-                    status:     'trial'
+                    order_id:       razorpay_subscription_id,
+                    company_id:     companyId,
+                    plan_id:        planId,
+                    amount:         0,
+                    name:           userName,
+                    email:          userEmail,
+                    phone:          userPhone,
+                    payment_id:     razorpay_payment_id || null,
+                    status:         'trial',
+                    payment_method: 'subscription_mandate'
                 });
 
             if (payError) {
@@ -94,6 +96,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             const { error: subError } = await supabase
                 .from('subscriptions')
                 .insert({
+                    subscription_id:      razorpay_subscription_id,
                     company_id:           companyId,
                     plan_id:              planId,
                     user_id:              userId,
