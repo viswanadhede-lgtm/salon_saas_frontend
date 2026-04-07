@@ -247,72 +247,104 @@ document.addEventListener('DOMContentLoaded', () => {
         return Array.from(checkboxes).map(cb => cb.value);
     }
 
-    function triggerOrderCreation(btnElement, planId, companyId, addons, cycle) {
+    async function triggerOrderCreation(btnElement, planId, companyId, addons, cycle) {
         const originalText = btnElement.innerHTML;
         setLoadingState(btnElement, 'Initiating Payment...');
 
-        const payload = {
-            company_id: companyId,
-            plan_id: planId,
-            addons: addons,
-            billing_cycle: cycle
-        };
+        try {
+            const signupData     = JSON.parse(localStorage.getItem('signup_data') || '{}');
+            const customerEmail  = signupData.email       || '';
+            const customerName   = signupData.full_name   || '';
+            const customerPhone  = signupData.phone       || '';
+            const storedCompanyId = localStorage.getItem('company_id') || companyId;
 
-        fetchWithAuth(API.CREATE_ORDER, {
-            method: 'POST',
-            body: JSON.stringify(payload)
-        }, FEATURES.BILLING_SUBSCRIPTION_MANAGEMENT, 'create')
-        .then(res => res.json())
-        .then(responseData => {
-            const data = Array.isArray(responseData) ? responseData[0] : responseData;
-            if (data && data.order_id) {
-                const options = {
-                    "key": data.key_id,
-                    "amount": data.amount || 0, 
-                    "currency": data.currency || "INR",
-                    "name": "BharathBots",
-                    "description": "Plan Activation",
-                    "order_id": data.order_id,
-                    "handler": async function (response) {
-                        setLoadingState(btnElement, 'Verifying payment...');
-                        showMessage('Payment authorized! Redirecting...', 'success');
-                        const params = new URLSearchParams({
-                            razorpay_payment_id: response.razorpay_payment_id || '',
-                            razorpay_order_id:   response.razorpay_order_id || data.order_id,
-                            razorpay_signature:  response.razorpay_signature || '',
-                            flow_type: 'paid', // Trigger Paid Database logic gracefully!
-                            t: localStorage.getItem('token') || ''
-                        });
-                        window.location.href = `payment-result.html?${params.toString()}`;
-                    },
-                    "modal": {
-                        "ondismiss": function() {
-                            resetLoadingState(btnElement, originalText);
-                            showMessage('Payment was cancelled.', 'error');
-                        }
-                    },
-                    "theme": {
-                        "color": "#6366f1"
-                    }
-                };
+            // Fetch plan from DB to get correct amount
+            const { data: dbPlans, error: planErr } = await supabase
+                .from('plans')
+                .select('*')
+                .eq('plan_id', planId);
 
-                const rzp = new window.Razorpay(options);
-                
-                rzp.on('payment.failed', function (response) {
-                    resetLoadingState(btnElement, originalText);
-                    showMessage(`Payment failed: ${response.error.description}`, 'error');
-                });
-                
-                rzp.open();
-            } else {
-                throw new Error("Invalid response: missing order_id");
+            if (planErr || !dbPlans || dbPlans.length === 0) {
+                showMessage('Could not verify your plan. Please try again.', 'error');
+                resetLoadingState(btnElement, originalText);
+                return;
             }
-        })
-        .catch(err => {
-            console.error('Order Creation Error:', err);
+
+            const dbPlan   = dbPlans[0];
+            const amount   = cycle === 'annual' ? basePlanAnnual : basePlanMonthly;
+
+            const SUPABASE_URL      = 'https://qxmgyxjwpxkdbgldpdil.supabase.co';
+            const SUPABASE_ANON_KEY = 'sb_publishable_aqCSbMiVxH5cSZxgssdNqw_jQZvzmA0';
+
+            // Call NEW Supabase Edge Function (replaces broken n8n webhook)
+            const res = await fetch(`${SUPABASE_URL}/functions/v1/create-razorpay-order`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', 'apikey': SUPABASE_ANON_KEY },
+                body: JSON.stringify({
+                    company_id:     storedCompanyId,
+                    plan_id:        dbPlan.plan_id,
+                    amount:         amount,
+                    billing_cycle:  cycle,
+                    customer_email: customerEmail,
+                    customer_name:  customerName,
+                    customer_phone: customerPhone
+                })
+            });
+
+            const data = await res.json();
+
+            if (!data.order_id && !data.id) {
+                console.error('[triggerOrderCreation] Edge function error:', data);
+                throw new Error('Failed to create payment order.');
+            }
+
+            const orderId = data.order_id || data.id;
+
+            const options = {
+                "key":         data.key_id,
+                "amount":      data.amount || (amount * 100),
+                "currency":    "INR",
+                "name":        "BharathBots",
+                "description": `${dbPlan.plan_name} - ${cycle === 'annual' ? 'Annual' : 'Monthly'} Plan`,
+                "order_id":    orderId,
+                "prefill": {
+                    "name":    customerName,
+                    "email":   customerEmail,
+                    "contact": customerPhone
+                },
+                "handler": async function (response) {
+                    setLoadingState(btnElement, 'Verifying payment...');
+                    showMessage('Payment authorized! Redirecting...', 'success');
+                    const params = new URLSearchParams({
+                        razorpay_payment_id: response.razorpay_payment_id || '',
+                        razorpay_order_id:   response.razorpay_order_id   || orderId,
+                        razorpay_signature:  response.razorpay_signature  || '',
+                        flow_type:           'paid',
+                        t: localStorage.getItem('token') || ''
+                    });
+                    window.location.href = `payment-result.html?${params.toString()}`;
+                },
+                "modal": {
+                    "ondismiss": function() {
+                        resetLoadingState(btnElement, originalText);
+                        showMessage('Payment was cancelled.', 'error');
+                    }
+                },
+                "theme": { "color": "#6366f1" }
+            };
+
+            const rzp = new window.Razorpay(options);
+            rzp.on('payment.failed', function (response) {
+                resetLoadingState(btnElement, originalText);
+                showMessage(`Payment failed: ${response.error.description}`, 'error');
+            });
+            rzp.open();
+
+        } catch (err) {
+            console.error('[triggerOrderCreation] Error:', err);
             resetLoadingState(btnElement, originalText);
-            showMessage('Failed to initialize payment gateway. Please try again.', 'error');
-        });
+            showMessage('Failed to initialize payment. Please try again.', 'error');
+        }
     }
 
     async function triggerSubscriptionCheckout(btnElement, companyId, planId, cycle, isTrial) {
@@ -369,14 +401,13 @@ document.addEventListener('DOMContentLoaded', () => {
                         'apikey': SUPABASE_ANON_KEY
                     },
                     body: JSON.stringify({
-                        plan_id:        rzpPlanId,        
-                        db_plan_id:     dbPlanId,         
+                        plan_id:        rzpPlanId,
+                        db_plan_id:     dbPlanId,
                         customer_email: customerEmail,
                         customer_name:  customerName,
                         customer_phone: customerPhone,
-                        company_id:     storedCompanyId,
-                        is_trial:       isTrial,          
-                        expected_amount: isTrial ? 0 : (cycle === 'annual' ? basePlanAnnual : basePlanMonthly)
+                        company_id:     storedCompanyId
+                        // is_trial & expected_amount removed — edge function is trial-only
                     })
                 }
             );
