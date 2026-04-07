@@ -303,9 +303,11 @@ document.addEventListener('DOMContentLoaded', () => {
                         plan_id:        rzpPlanId,        
                         db_plan_id:     dbPlanId,         
                         customer_email: customerEmail,
+                        customer_name:  customerName,
+                        customer_phone: customerPhone,
                         company_id:     storedCompanyId,
-                        is_trial:       isTrial,          // Pass trial flag to Edge Function!
-                        expected_amount: isTrial ? 0 : (cycle === 'annual' ? basePlanAnnual : basePlanMonthly) // Send pricing for paid flow
+                        is_trial:       isTrial,          
+                        expected_amount: isTrial ? 0 : (cycle === 'annual' ? basePlanAnnual : basePlanMonthly)
                     })
                 }
             );
