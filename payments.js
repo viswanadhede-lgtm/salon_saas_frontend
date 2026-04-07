@@ -305,7 +305,7 @@ document.addEventListener('DOMContentLoaded', () => {
                         customer_email: customerEmail,
                         company_id:     storedCompanyId,
                         is_trial:       isTrial,          // Pass trial flag to Edge Function!
-                        expected_amount: isTrial ? 0 : (cycle === 'annual' ? dbPlan.yearly_price : dbPlan.monthly_price) // Send pricing for paid flow
+                        expected_amount: isTrial ? 0 : (cycle === 'annual' ? basePlanAnnual : basePlanMonthly) // Send pricing for paid flow
                     })
                 }
             );
