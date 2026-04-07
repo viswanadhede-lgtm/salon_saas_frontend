@@ -75,9 +75,20 @@ document.addEventListener('DOMContentLoaded', async () => {
             markDone(step1);
             markActive(step2);
 
-            const now        = new Date();
-            const trialEnd   = new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000); // +7 days
-            const nextCharge = trialEnd; // auto-charges the day trial ends
+            const now = new Date();
+            let periodEnd;
+
+            if (flowType === 'paid') {
+                periodEnd = new Date(
+                    billingCycle === 'annual'
+                        ? now.getTime() + 365 * 24 * 60 * 60 * 1000
+                        : now.getTime() + 30 * 24 * 60 * 60 * 1000
+                );
+            } else {
+                periodEnd = new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000); // 7 days
+            }
+
+            const nextCharge = periodEnd; 
 
             // ── 1. Insert into payments table ────────────────────────────
             // ── 1. Update the existing payments row (Created by Edge Function) ──
@@ -111,7 +122,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                     billing_cycle:        billingCycle,
                     status:               'active',
                     current_period_start: now.toISOString(),
-                    current_period_end:   trialEnd.toISOString(), // Edge function delays charge by 7d if trial
+                    current_period_end:   periodEnd.toISOString(), // Edge function delays charge by 7d if trial
                     next_charge_at:       nextCharge.toISOString()
                 });
 
@@ -129,7 +140,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                     subscription_type:       flowType, // 'trial' or 'paid'
                     subscription_status:     'active',
                     subscription_start_date: now.toISOString(),
-                    subscription_end_date:   trialEnd.toISOString()
+                    subscription_end_date:   periodEnd.toISOString()
                 });
 
             if (compError) {
