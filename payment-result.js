@@ -1,145 +1,156 @@
-import { API, fetchWithAuth } from './config/api.js';
-import { FEATURES } from './config/feature-registry.js';
+import { supabase } from './lib/supabase.js';
 
-document.addEventListener('DOMContentLoaded', () => {
+document.addEventListener('DOMContentLoaded', async () => {
 
     // --- UI Element References ---
-    const iconArea  = document.getElementById('iconArea');
+    const iconArea   = document.getElementById('iconArea');
     const resultIcon = document.getElementById('resultIcon');
-    const heading   = document.getElementById('heading');
-    const subtext   = document.getElementById('subtext');
-    const step1     = document.getElementById('step1');
-    const step2     = document.getElementById('step2');
-    const step3     = document.getElementById('step3');
-    const retryBtn  = document.getElementById('retryBtn');
+    const heading    = document.getElementById('heading');
+    const subtext    = document.getElementById('subtext');
+    const step1      = document.getElementById('step1');
+    const step2      = document.getElementById('step2');
+    const step3      = document.getElementById('step3');
+    const retryBtn   = document.getElementById('retryBtn');
 
-    // --- Read Razorpay callback params from URL ---
-    const params              = new URLSearchParams(window.location.search);
-    const razorpay_payment_id = params.get('razorpay_payment_id');
-    const razorpay_order_id   = params.get('razorpay_order_id');
+    // --- Read Razorpay subscription callback params from URL ---
+    // Razorpay sends back: razorpay_payment_id, razorpay_subscription_id, razorpay_signature
+    const params                   = new URLSearchParams(window.location.search);
+    const razorpay_payment_id      = params.get('razorpay_payment_id');
     const razorpay_subscription_id = params.get('razorpay_subscription_id');
-    const razorpay_signature  = params.get('razorpay_signature');
 
-    // --- Guard: if params are missing, something went wrong ---
-    if (!razorpay_payment_id || (!razorpay_order_id && !razorpay_subscription_id)) {
+    console.log('[payment-result] URL params:', {
+        razorpay_payment_id,
+        razorpay_subscription_id
+    });
+
+    // --- Guard: subscription_id is minimum required ---
+    if (!razorpay_subscription_id) {
         showError(
-            'Missing Payment Details',
-            'We couldn\'t read your payment details from the redirect. Please try again or contact support.'
+            'Missing Subscription Details',
+            'We couldn\'t read your subscription details. Please try again or contact support.'
         );
         return;
     }
 
-    // --- Read & validate session token ---
-    // First try URL param (handles cross-origin localStorage — token passed from payments page)
-    // Then fall back to localStorage on this domain
-    const tokenFromUrl = params.get('t');
-    if (tokenFromUrl) {
-        localStorage.setItem('token', tokenFromUrl);
-        console.log('[payment-result] Token received from URL param and stored in localStorage.');
-    }
-    const token = tokenFromUrl || localStorage.getItem('token');
-    console.log('[payment-result] Token present:', !!token, token ? `(${token.substring(0, 10)}...)` : '(missing)');
+    // --- Read stored session data ---
+    const companyId  = localStorage.getItem('company_id');
+    const signupData = JSON.parse(localStorage.getItem('signup_data') || '{}');
 
-    if (!token) {
-        console.error('[payment-result] No session token found. Stopping execution.');
+    if (!companyId) {
         showError(
-            'Session Expired',
-            'Your session could not be verified. Please sign in again and retry the payment.'
+            'Session Not Found',
+            'We couldn\'t find your workspace session. Please sign in again and retry.'
         );
         return;
     }
 
-    // --- Step 1 is already "active" in HTML, start the flow ---
-    verifyPayment();
+    // Extract user details from signup_data
+    const planId       = signupData.plan_id       || null;
+    const userId       = signupData.user_id        || null;
+    const userName     = signupData.full_name      || null;
+    const userEmail    = signupData.email          || null;
+    const userPhone    = signupData.phone          || null;
+    const billingCycle = signupData.billing_cycle  || 'monthly'; // 'monthly' or 'yearly'
+
+    // --- Begin activation ---
+    await activateTrial();
 
     // ---------------------------------------------------------------
-    // PHASE 1: Call /payment_status with Razorpay proofs
+    // STEP 1: Verify (subscription_id present)
+    // STEP 2: Insert into payments + subscriptions + update companies
+    // STEP 3: Clear caches & redirect to dashboard
     // ---------------------------------------------------------------
-    function verifyPayment() {
-        let attempts = 0;
-        const maxAttempts = 3;
+    async function activateTrial() {
+        try {
+            // STEP 1 — subscription_id verified ✅
+            markDone(step1);
+            markActive(step2);
 
-        const payload = {
-            razorpay_payment_id,
-            razorpay_signature
-        };
+            const now        = new Date();
+            const trialEnd   = new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000); // +7 days
+            const nextCharge = trialEnd; // auto-charges the day trial ends
 
-        if (razorpay_order_id) {
-            payload.razorpay_order_id = razorpay_order_id;
-        } else if (razorpay_subscription_id) {
-            payload.razorpay_subscription_id = razorpay_subscription_id;
-        }
+            // ── 1. Insert into payments table ────────────────────────────
+            const { error: payError } = await supabase
+                .from('payments')
+                .insert({
+                    company_id: companyId,
+                    plan_id:    planId,
+                    amount:     0,
+                    name:       userName,
+                    email:      userEmail,
+                    phone:      userPhone,
+                    payment_id: razorpay_payment_id || null,
+                    status:     'trial'
+                });
 
-        const checkStatus = () => {
-            if (attempts >= maxAttempts) {
-                showPending();
-                return;
+            if (payError) {
+                console.warn('[payment-result] payments insert warning (non-critical):', payError);
+            } else {
+                console.log('[payment-result] payments row inserted.');
             }
 
-            attempts++;
+            // ── 2. Insert into subscriptions table ───────────────────────
+            const { error: subError } = await supabase
+                .from('subscriptions')
+                .insert({
+                    company_id:           companyId,
+                    plan_id:              planId,
+                    user_id:              userId,
+                    name:                 userName,
+                    email:                userEmail,
+                    phone:                userPhone,
+                    billing_cycle:        billingCycle,
+                    status:               'active',
+                    current_period_start: now.toISOString(),
+                    current_period_end:   trialEnd.toISOString(),
+                    next_charge_at:       nextCharge.toISOString()
+                });
 
-            fetchWithAuth(API.PAYMENT_STATUS, {
-                method: 'POST',
-                body: JSON.stringify(payload)
-            })
-            .then(res => res.json())
-            .then(result => {
-                // Unwrap array response: [{ "status": "paid" }]
-                const data = Array.isArray(result) ? result[0] : result;
-                const status = (data.status || '').toLowerCase();
+            if (subError) {
+                console.error('[payment-result] subscriptions insert error:', subError);
+                throw new Error('Failed to create subscription record. Please contact support.');
+            }
+            console.log('[payment-result] subscriptions row inserted.');
 
-                if (status === 'paid') {
-                    // ✅ Payment confirmed — move to auth_guard
-                    markDone(step1);
-                    markActive(step2);
-                    requestDashboardAccess();
-                } else if (status === 'pending') {
-                    // ⏳ Not confirmed yet — retry
-                    setTimeout(checkStatus, 3000);
-                } else {
-                    // Unknown — retry as caution
-                    setTimeout(checkStatus, 3000);
-                }
-            })
-            .catch(err => {
-                console.error('Payment Status Error:', err);
-                setTimeout(checkStatus, 3000);
-            });
-        };
+            // ── 3. Update companies table with trial status ──────────────
+            const { error: compError } = await supabase
+                .from('companies')
+                .eq('company_id', companyId)
+                .update({
+                    subscription_type:       'trial',
+                    subscription_status:     'active',
+                    subscription_start_date: now.toISOString(),
+                    subscription_end_date:   trialEnd.toISOString()
+                });
 
-        checkStatus();
-    }
+            if (compError) {
+                console.warn('[payment-result] companies update warning (non-critical):', compError);
+            } else {
+                console.log('[payment-result] companies subscription status updated.');
+            }
 
-    // ---------------------------------------------------------------
-    // PHASE 2: Request Dashboard Access via /auth_guard
-    // ---------------------------------------------------------------
-    function requestDashboardAccess() {
-        console.log('[payment-result] Verifying Dashboard Access with auth_guard...');
-
-        // Make a single call passing the DASHBOARD_ACCESS feature key and 'read' action
-        fetchWithAuth(API.AUTH_GUARD, {
-            method: 'POST'
-        }, FEATURES.DASHBOARD_ACCESS, 'read')
-        .then(res => {
-            if (!res.ok) throw new Error("Unauthorized");
-            return res.json();
-        })
-        .then(data => {
-            console.log('[payment-result] auth_guard feature access response:', data);
-            
-            // Assume success if the backend didn't reject the specific feature request
             markDone(step2);
             markActive(step3);
+
+            // STEP 3 — Clear stale caches & redirect
+            localStorage.removeItem('userFeatures');
+            localStorage.removeItem('userSubFeatures');
+            localStorage.removeItem('appContext');
+
             showSuccess();
-            
+
             setTimeout(() => {
                 window.location.href = 'dashboard.html';
-            }, 2000);
-        })
-        .catch(err => {
-            console.error('Auth Guard Feature Access Error:', err);
-            showError('Dashboard Access Denied', 'Your payment succeeded, but dashboard access could not be granted right now. Please try refreshing or contact support.');
-        });
+            }, 2500);
+
+        } catch (err) {
+            console.error('[payment-result] activateTrial error:', err);
+            showError(
+                'Activation Failed',
+                err.message || 'Something went wrong while activating your trial. Your payment was received — please contact support.'
+            );
+        }
     }
 
     // ---------------------------------------------------------------
@@ -155,27 +166,15 @@ document.addEventListener('DOMContentLoaded', () => {
         el.classList.add('active');
     }
 
-    function markFailed(el) {
-        el.classList.remove('active');
-        el.classList.add('failed');
-    }
-
     function showSuccess() {
         iconArea.classList.add('success');
         resultIcon.innerHTML = `
             <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="#10b981" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
                 <polyline points="20 6 9 17 4 12"></polyline>
             </svg>`;
-        heading.textContent = 'Payment Confirmed!';
-        subtext.textContent = 'Your subscription is active. Redirecting you to the dashboard...';
+        heading.textContent = 'Trial Activated!';
+        subtext.textContent = 'Your 7-day free trial is now active. Redirecting you to your dashboard...';
         markDone(step3);
-    }
-
-    function showPending() {
-        heading.textContent = 'Payment Under Review';
-        subtext.textContent = 'Your payment is being processed. This can take a few minutes. You can safely close this page and check your dashboard later.';
-        step1.classList.remove('active');
-        step2.classList.remove('active');
     }
 
     function showError(title, message) {

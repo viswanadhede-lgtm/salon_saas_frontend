@@ -362,43 +362,65 @@ document.addEventListener('DOMContentLoaded', () => {
 
     async function triggerFreeTrial(btnElement, companyId, planId, cycle) {
         const originalText = btnElement.textContent;
-        setLoadingState(btnElement, 'Activating Trial...');
+        setLoadingState(btnElement, 'Setting up trial...');
 
         try {
-            const now = new Date();
-            const trialEnd = new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000);
+            const signupData = JSON.parse(localStorage.getItem('signup_data') || '{}');
+            const customerEmail = signupData.email;
 
-            const { error } = await supabase
-                .from('companies')
-                .eq('company_id', companyId)
-                .update({
-                    subscription_type: 'trial',
-                    subscription_status: 'active',
-                    subscription_start_date: now.toISOString(),
-                    subscription_end_date: trialEnd.toISOString()
-                });
-
-            if (error) {
-                console.error('[triggerFreeTrial] Failed to update company:', error);
-                showMessage('Failed to activate trial. Please try again.', 'error');
+            if (!customerEmail) {
+                showMessage('Could not find your email. Please sign up again.', 'error');
                 resetLoadingState(btnElement, originalText);
                 return;
             }
 
-            console.log('[triggerFreeTrial] Subscription updated to trial/active for company:', companyId);
+            // Call Supabase Edge Function to create Razorpay subscription
+            const SUPABASE_URL = 'https://qxmgyxjwpxkdbgldpdil.supabase.co';
+            const SUPABASE_ANON_KEY = 'sb_publishable_aqCSbMiVxH5cSZxgssdNqw_jQZvzmA0';
 
-            // Clear any stale caches
-            localStorage.removeItem('userFeatures');
-            localStorage.removeItem('userSubFeatures');
-            localStorage.removeItem('appContext');
+            const response = await fetch(
+                `${SUPABASE_URL}/functions/v1/create-razorpay-subscription`,
+                {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'apikey': SUPABASE_ANON_KEY,
+                        'Authorization': `Bearer ${SUPABASE_ANON_KEY}`
+                    },
+                    body: JSON.stringify({
+                        plan_id: planId,
+                        customer_email: customerEmail
+                    })
+                }
+            );
 
+            if (!response.ok) {
+                const errText = await response.text();
+                console.error('[triggerFreeTrial] Edge function error:', errText);
+                throw new Error('Failed to initialize trial. Please try again.');
+            }
+
+            const data = await response.json();
+            console.log('[triggerFreeTrial] Edge function response:', data);
+
+            // Extract short_url from Razorpay subscription response
+            const shortUrl = data?.short_url || data?.subscription?.short_url;
+
+            if (!shortUrl) {
+                console.error('[triggerFreeTrial] No short_url in response:', data);
+                throw new Error('Invalid response from payment service. Missing short_url.');
+            }
+
+            showMessage('Redirecting to Razorpay for payment setup...', 'success');
+
+            // Redirect user to Razorpay hosted checkout page
             setTimeout(() => {
-                window.location.href = 'dashboard.html';
+                window.location.href = shortUrl;
             }, 800);
 
         } catch (err) {
-            console.error('[triggerFreeTrial] Unexpected error:', err);
-            showMessage('An unexpected error occurred. Please try again.', 'error');
+            console.error('[triggerFreeTrial] Error:', err);
+            showMessage(err.message || 'An unexpected error occurred. Please try again.', 'error');
             resetLoadingState(btnElement, originalText);
         }
     }
