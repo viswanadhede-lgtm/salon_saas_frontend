@@ -101,7 +101,9 @@ document.addEventListener('DOMContentLoaded', async () => {
                     name:           userName,
                     phone:          userPhone,
                     payment_id:     razorpay_payment_id || null,
-                    status:         flowType === 'paid' ? 'active' : 'trial'
+                    status:         flowType === 'paid' ? 'active' : 'authenticated'
+                    // 'authenticated' = mandate set up, billing starts after 7 days
+                    // Webhook will update this to 'charged' when first charge fires
                 });
 
             if (payError) {
@@ -110,11 +112,21 @@ document.addEventListener('DOMContentLoaded', async () => {
                 console.log('[payment-result] payments row inserted.');
             }
 
+            // Lookup billing amount (amount charged after trial / on renewal)
+            const PLAN_PRICING = {
+                'd0d4cc8f-3498-4da1-b5e5-2887b9b39dce': { monthly: 1999,  annual: 19999  },
+                'b42bcd41-217a-4ddb-9451-20e040984277': { monthly: 4999,  annual: 49999  },
+                'b32fe38d-a715-4166-acf1-b970bd845c21': { monthly: 9999,  annual: 99999  },
+                '2e86d143-72aa-4ae4-a925-ded2b8475dc8': { monthly: 19999, annual: 199999 }
+            };
+            const planPricing  = PLAN_PRICING[planId] || { monthly: 0, annual: 0 };
+            const billingAmount = billingCycle === 'annual' ? planPricing.annual : planPricing.monthly;
+
             // ── 2. Insert into subscriptions table ───────────────────────
             const { error: subError } = await supabase
                 .from('subscriptions')
                 .insert({
-                    subscription_id:      reference_id, // Store order_id as subscription pseudo-ID for Paid
+                    subscription_id:      reference_id,
                     company_id:           companyId,
                     plan_id:              planId,
                     user_id:              userId,
@@ -122,9 +134,10 @@ document.addEventListener('DOMContentLoaded', async () => {
                     email:                userEmail,
                     phone:                userPhone,
                     billing_cycle:        billingCycle,
+                    billing_amount:       billingAmount, // Amount charged at next renewal
                     status:               'active',
                     current_period_start: now.toISOString(),
-                    current_period_end:   periodEnd.toISOString(), // Edge function delays charge by 7d if trial
+                    current_period_end:   periodEnd.toISOString(),
                     next_charge_at:       nextCharge.toISOString()
                 });
 
