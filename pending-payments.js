@@ -26,7 +26,7 @@ document.addEventListener('DOMContentLoaded', () => {
         if (currentData.length === 0) {
             tbody.innerHTML = `
                 <tr>
-                    <td colspan="9" style="text-align:center; padding:52px 24px; color:#94a3b8;">
+                    <td colspan="8" style="text-align:center; padding:52px 24px; color:#94a3b8;">
                         <div style="display:flex; flex-direction:column; align-items:center; gap:8px;">
                             <i data-feather="check-circle" style="width:36px; height:36px; color:#c7d2fe;"></i>
                             <p style="font-weight:600; color:#64748b; margin:0;">No pending payments</p>
@@ -52,8 +52,7 @@ document.addEventListener('DOMContentLoaded', () => {
             tr.onmouseout  = () => tr.style.background = '';
 
             tr.innerHTML = `
-                <td style="padding:14px 16px 14px 24px; font-weight:600; color:#3b82f6; font-size:0.85rem;">${row.id}</td>
-                <td style="padding:14px 16px; color:#1e293b; font-weight:500; font-size:0.875rem; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">${row.customer}</td>
+                <td style="padding:14px 16px 14px 24px; color:#1e293b; font-weight:500; font-size:0.875rem; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">${row.customer}</td>
                 <td style="padding:14px 16px; color:#475569; font-size:0.875rem; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">${row.service}</td>
                 <td style="padding:14px 16px; color:#475569; font-size:0.83rem;">${row.datetime}</td>
                 <td style="padding:14px 16px; color:#1e293b; font-weight:600;">&#8377;${row.total.toLocaleString('en-IN')}</td>
