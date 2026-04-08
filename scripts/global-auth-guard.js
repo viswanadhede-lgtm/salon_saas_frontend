@@ -311,12 +311,18 @@ export async function runGlobalAuthGuard() {
         const branch_id   = localStorage.getItem('active_branch_id');
 
         const { data: userRows } = await supabase.from('users')
-            .select('company_id, branch_id, role_id, role_name, name, email, phone')
+            .select('company_id, branch_id, role_id, role_name, name, email, phone, status')
             .eq('user_id', user_id);
 
         const userRow = userRows?.[0];
         if (!userRow) {
             showAuthBlockModal('ERROR', 'User profile not found. Please contact support.', 'Sign In', 'signin.html');
+            return;
+        }
+
+        if (userRow.status === 'deleted' || userRow.status === 'inactive') {
+            showAuthBlockModal('ERROR', 'Your account has been deactivated. Please contact your administrator.', 'Sign In', 'signin.html');
+            localStorage.removeItem('token');
             return;
         }
 

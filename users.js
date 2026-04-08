@@ -336,11 +336,29 @@ import { supabase } from './lib/supabase.js';
                 if (error) throw error;
                 showToast('User updated successfully!');
             } else {
-                // Generate a UUID for user_id manually
-                payload.user_id = crypto.randomUUID();
+                // 1. Create the user in actual Supabase Auth first so they can log in
+                const authRes = await supabase.auth.signUp({
+                    email: payload.email,
+                    password: password,
+                    data: { full_name: payload.name, phone: payload.phone }
+                });
+
+                if (authRes.error) {
+                    const msg = authRes.error.message || authRes.error;
+                    throw new Error(`Auth Server Error: ${msg}`);
+                }
+
+                if (!authRes.data?.user?.id) {
+                    throw new Error("Failed to receive valid Auth ID from Supabase.");
+                }
+
+                // 2. Use the real Auth ID for our public users table
+                payload.user_id = authRes.data.user.id;
+                
+                // 3. Write row mapping
                 const { error } = await supabase.from('users').insert([payload]);
                 if (error) throw error;
-                showToast('User created successfully!');
+                showToast('User created successfully. They can now log in!');
             }
 
             closeModal();

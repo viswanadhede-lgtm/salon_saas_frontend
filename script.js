@@ -495,11 +495,15 @@ document.addEventListener('DOMContentLoaded', () => {
 
                 // Step 2: Grab the user mapping from our actual users table
                 const { data: userData, error: userError } = await supabase.from('users')
-                    .select('company_id, branch_id, role_id')
+                    .select('company_id, branch_id, role_id, status')
                     .eq('user_id', user_id);
 
                 if (!userError && userData && userData.length > 0) {
                     const profile = userData[0];
+                    if (profile.status === 'deleted' || profile.status === 'inactive') {
+                        localStorage.removeItem('token');
+                        throw new Error('Your account has been deactivated. Please contact your administrator.');
+                    }
                     if (profile.company_id) localStorage.setItem('company_id', profile.company_id);
                     if (profile.branch_id) localStorage.setItem('active_branch_id', profile.branch_id); // Ensures app pulls correctly
                     if (profile.role_id) localStorage.setItem('role_id', profile.role_id);
