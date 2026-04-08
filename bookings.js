@@ -195,11 +195,8 @@ function setupModals() {
                         </div>
                         <div class="form-group" style="margin:0;">
                             <label class="form-label">Payment</label>
-                            <select id="editBkPayment" class="form-select">
-                                <option value="unpaid">Unpaid</option>
-                                <option value="paid">Paid</option>
-                                <option value="pending">Pending</option>
-                            </select>
+                            <input type="text" id="editBkPayment" class="form-input" readonly 
+                                style="background:#f8fafc; cursor:not-allowed; color:#64748b; font-weight:600; text-transform:capitalize;">
                         </div>
 
                         <div class="form-group" style="margin:0;">
@@ -346,7 +343,6 @@ function attachEventListeners() {
             staff_name:     staffSel?.options[staffSel.selectedIndex]?.text || '',
             price:          Number(document.getElementById('editBkPrice')?.value || 0),
             status:         document.getElementById('editBkStatus').value,
-            payment:        document.getElementById('editBkPayment').value,
             notes:          document.getElementById('editBkNotes').value.trim()
         };
 
@@ -442,8 +438,7 @@ function attachEventListeners() {
 
         const paymentEl = document.getElementById('editBkPayment');
         if (paymentEl) {
-            let matchIndex = Array.from(paymentEl.options).findIndex(o => o.value === paymentVal);
-            paymentEl.selectedIndex = matchIndex >= 0 ? matchIndex : 2;
+            paymentEl.value = paymentVal;
         }
 
         document.getElementById('editBookingModal')?.classList.add('active');
