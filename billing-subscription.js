@@ -63,26 +63,14 @@ import { supabase } from './lib/supabase.js';
     const sub = subs?.[0]; // Most recent active subscription
 
     if (sub) {
-        // ── Fetch plan name from plans table ──────────────────────────
-        let plan = { name: 'Unknown', icon: 'zap', monthly: 0, annual: 0 };
+        // ── Read plan_name directly from subscriptions row ─────────────
+        const rawPlanName = sub.plan_name || 'Unknown';
+        const featureKey  = Object.keys(PLAN_FEATURES).find(k => rawPlanName.toLowerCase().includes(k.toLowerCase())) || rawPlanName;
+        const plan = {
+            name: rawPlanName,
+            icon: (PLAN_FEATURES[featureKey] || {}).icon || 'zap'
+        };
 
-        if (sub.plan_id) {
-            const { data: planRows } = await supabase
-                .from('plans')
-                .select('plan_id, plan_name, price_monthly, price_annual')
-                .eq('plan_id', sub.plan_id);
-
-            if (planRows && planRows.length > 0) {
-                const p = planRows[0];
-                const featureKey = Object.keys(PLAN_FEATURES).find(k => p.plan_name?.toLowerCase().includes(k.toLowerCase())) || p.plan_name;
-                plan = {
-                    name:    p.plan_name || 'Unknown',
-                    icon:    (PLAN_FEATURES[featureKey] || {}).icon || 'zap',
-                    monthly: parseFloat(p.price_monthly) || 0,
-                    annual:  parseFloat(p.price_annual)  || 0
-                };
-            }
-        }
         const isAnnual = sub.billing_cycle === 'annual';
         const price = sub.billing_amount || (isAnnual ? plan.annual : plan.monthly);
         const period = isAnnual ? '/ year' : '/ month';
@@ -126,7 +114,6 @@ import { supabase } from './lib/supabase.js';
 
         // ── Plan Features ──────────────────────────────────────────
         // Match plan name loosely (e.g. "Advance" matches "Advance")
-        const featureKey = Object.keys(PLAN_FEATURES).find(k => plan.name?.toLowerCase().includes(k.toLowerCase())) || plan.name;
         const features = PLAN_FEATURES[featureKey] || { included: ['Standard features included'], excluded: [] };
         if (featureCardTitle) featureCardTitle.textContent = `Everything included in your ${plan.name} plan`;
         if (featuresCountBadge) featuresCountBadge.textContent = `${features.included.length} included`;
