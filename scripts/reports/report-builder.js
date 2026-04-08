@@ -135,6 +135,18 @@ const REPORT_TYPES = {
             ['Arjun Reddy', 'Gold Tier', '2023-08-01', '2024-08-01', '₹999', '₹8,000', '<span class="status-pill active">Active</span>'],
             ['Neha Gupta', 'Silver Tier', '2024-01-10', '2024-07-10', '₹499', '₹1,500', '<span class="status-pill active">Active</span>']
         ]
+    },
+    expenses: {
+        title: 'Expenses Report',
+        subtitle: 'Track and analyse all business expenditures',
+        icon: 'credit-card',
+        kpi1: { label: 'Total Expenses', value: 'Loading...' },
+        kpi2: { label: 'This Month', value: 'Loading...' },
+        kpi3: { label: 'Top Category', value: 'Loading...' },
+        kpi4: { label: 'Avg per Entry', value: 'Loading...' },
+        tableTitle: 'Expense Records',
+        headers: ['Date', 'Category', 'Amount', 'Notes', 'Added By'],
+        rows: []
     }
 };
 
@@ -876,6 +888,82 @@ document.addEventListener('DOMContentLoaded', async () => {
 
         } catch (err) {
             console.error('Error loading products report data:', err);
+            updateTable(data.headers, []);
+        }
+    } else if (type === 'expenses') {
+        // --- LIVE SUPABASE INTEGRATION FOR EXPENSES ---
+        const companyId = localStorage.getItem('company_id');
+        const branchId  = localStorage.getItem('active_branch_id');
+
+        if (!companyId) {
+            updateTable(data.headers, []);
+            return;
+        }
+
+        try {
+            let query = supabase
+                .from('expenses')
+                .select('*')
+                .eq('company_id', companyId)
+                .neq('status', 'deleted')
+                .order('date', { ascending: false });
+
+            // Filter by branch if available
+            if (branchId) query = query.eq('branch_id', branchId);
+
+            const { data: dbExpenses, error } = await query;
+            if (error) throw error;
+
+            const expensesList = dbExpenses || [];
+
+            // KPI calculations
+            const now = new Date();
+            const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+
+            const totalAmount = expensesList.reduce((sum, e) => sum + Number(e.amount || 0), 0);
+            const thisMonthTotal = expensesList
+                .filter(e => e.date && new Date(e.date) >= startOfMonth)
+                .reduce((sum, e) => sum + Number(e.amount || 0), 0);
+            const avgPerEntry = expensesList.length > 0
+                ? totalAmount / expensesList.length
+                : 0;
+
+            // Find top category by total spend
+            const categoryTotals = {};
+            expensesList.forEach(e => {
+                const cat = e.category || 'Other';
+                categoryTotals[cat] = (categoryTotals[cat] || 0) + Number(e.amount || 0);
+            });
+            const topCategory = Object.entries(categoryTotals)
+                .sort((a, b) => b[1] - a[1])[0]?.[0] || '—';
+
+            // Build table rows
+            const formattedRows = expensesList.map(e => {
+                const date     = e.date ? new Date(e.date).toLocaleDateString() : '—';
+                const category = e.category || 'Other';
+                const amount   = formatCurrency(Number(e.amount || 0));
+                const notes    = e.notes || '—';
+                const addedBy  = e.added_by || 'Admin';
+                return [date, category, amount, notes, addedBy];
+            });
+
+            // Override KPIs
+            data.kpi1.label = 'Total Expenses';
+            data.kpi1.value = formatCurrency(totalAmount);
+            data.kpi2.label = 'This Month';
+            data.kpi2.value = formatCurrency(thisMonthTotal);
+            data.kpi3.label = 'Top Category';
+            data.kpi3.value = topCategory;
+            data.kpi4.label = 'Avg per Entry';
+            data.kpi4.value = formatCurrency(Math.round(avgPerEntry));
+
+            data.headers = ['Date', 'Category', 'Amount', 'Notes', 'Added By'];
+
+            updateKPIs(data.kpi1, data.kpi2, data.kpi3, data.kpi4);
+            updateTable(data.headers, formattedRows);
+
+        } catch (err) {
+            console.error('Error loading expenses report data:', err);
             updateTable(data.headers, []);
         }
     } else {
