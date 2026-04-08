@@ -191,6 +191,77 @@ document.addEventListener('DOMContentLoaded', async () => {
         const lbl4 = document.getElementById('kpiLabel4'); const val4 = document.getElementById('kpiValue4');
         if (lbl4 && val4) { lbl4.textContent = k4.label; val4.textContent = k4.value; }
     };
+
+    let trendChartInstance = null;
+
+    /**
+     * Renders a bar chart with grey bars and a highlighted purple bar for the most recent data point.
+     * Matches the design aesthetic provided: rounded corners and premium color palette.
+     */
+    const renderTrendChart = (labels, values) => {
+        const ctx = document.getElementById('trendChart');
+        if (!ctx) return;
+
+        if (trendChartInstance) {
+            trendChartInstance.destroy();
+        }
+
+        // Highlight the last bar (most recent day) with purple
+        const backgroundColors = values.map((_, i) => 
+            i === values.length - 1 ? '#d946ef' : '#e2e8f0'
+        );
+
+        trendChartInstance = new Chart(ctx, {
+            type: 'bar',
+            data: {
+                labels: labels,
+                datasets: [{
+                    data: values,
+                    backgroundColor: backgroundColors,
+                    borderRadius: 8,
+                    borderSkipped: false,
+                    barThickness: 32
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: { display: false },
+                    tooltip: {
+                        backgroundColor: '#1e293b',
+                        padding: 12,
+                        titleFont: { size: 14, weight: 'bold' },
+                        bodyFont: { size: 13 },
+                        cornerRadius: 8,
+                        displayColors: false
+                    }
+                },
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        grid: {
+                            display: true,
+                            drawBorder: false,
+                            color: '#f1f5f9'
+                        },
+                        ticks: {
+                            precision: 0,
+                            color: '#94a3b8',
+                            font: { size: 11 }
+                        }
+                    },
+                    x: {
+                        grid: { display: false },
+                        ticks: {
+                            color: '#94a3b8',
+                            font: { size: 11 }
+                        }
+                    }
+                }
+            }
+        });
+    };
     
     const updateTable = (headers, rows) => {
         const tableContainer = document.querySelector('.data-table-container');
@@ -398,6 +469,25 @@ document.addEventListener('DOMContentLoaded', async () => {
                 return [dateDisplay, timeDisplay, customer, service, staff, duration, statusHtml];
             });
             
+            // --- Trends Aggregation for Chart ---
+            const last7Days = [];
+            for (let i = 6; i >= 0; i--) {
+                const d = new Date();
+                d.setDate(d.getDate() - i);
+                last7Days.push(d.toISOString().split('T')[0]);
+            }
+
+            const dailyCounts = last7Days.map(dateStr => {
+                return bookingsList.filter(b => b.booking_date === dateStr).length;
+            });
+
+            const labels = last7Days.map(dateStr => {
+                const d = new Date(dateStr);
+                return d.toLocaleDateString('en-US', { weekday: 'short' });
+            });
+
+            renderTrendChart(labels, dailyCounts);
+
             // Override KPIs
             data.kpi1.value = totalBookings.toString();
             data.kpi2.value = completed.toString();
