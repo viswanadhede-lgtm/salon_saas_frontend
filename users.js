@@ -1,6 +1,14 @@
 // users.js — Users page logic
+import { supabase } from './lib/supabase.js';
 
-(function () {
+(async function () {
+    const getCompanyId = () => {
+        try {
+            const ctx = JSON.parse(localStorage.getItem('appContext') || '{}');
+            return ctx.company?.id || localStorage.getItem('company_id') || null;
+        } catch { return localStorage.getItem('company_id') || null; }
+    };
+
     // ── Role Configs ──────────────────────────────────────────────
     const ROLES = {
         Owner:        { bg: '#fef2f2', color: '#991b1b', dot: '#ef4444' },
@@ -175,6 +183,7 @@
         document.getElementById('uFullName').value = '';
         document.getElementById('uEmail').value    = '';
         document.getElementById('uPhone').value    = '';
+        document.getElementById('uPassword').value = '';
         document.getElementById('uRole').value     = '';
         document.getElementById('uBranch').value   = '';
         document.getElementById('uStatus').checked = true;
@@ -209,14 +218,20 @@
     overlay.addEventListener('click', (e) => { if (e.target === overlay) closeModal(); });
 
     saveBtn.addEventListener('click', () => {
-        const name   = document.getElementById('uFullName').value.trim();
-        const email  = document.getElementById('uEmail').value.trim();
-        const role   = document.getElementById('uRole').value;
-        const branch = document.getElementById('uBranch').value;
-        const active = document.getElementById('uStatus').checked;
+        const name     = document.getElementById('uFullName').value.trim();
+        const email    = document.getElementById('uEmail').value.trim();
+        const password = document.getElementById('uPassword').value;
+        const role     = document.getElementById('uRole').value;
+        const branch   = document.getElementById('uBranch').value;
+        const active   = document.getElementById('uStatus').checked;
 
         if (!name || !email || !role || !branch) {
             showToast('Please fill in all required fields.', true);
+            return;
+        }
+
+        if (editingId === null && !password) {
+            showToast('Password is required for new users.', true);
             return;
         }
 
@@ -244,5 +259,41 @@
     }
 
     // ── Init ──────────────────────────────────────────────────────
+    async function loadDropdowns() {
+        const cid = getCompanyId();
+        if (!cid) return;
+
+        try {
+            // Load Branches
+            const { data: bData } = await supabase.from('branches').select('branch_id, branch_name').eq('company_id', cid).eq('status', 'active');
+            const uBranch = document.getElementById('uBranch');
+            if (uBranch && bData) {
+                uBranch.innerHTML = '<option value="" disabled selected>Select a branch</option><option value="All Branches">All Branches / Remote</option>';
+                bData.forEach(b => {
+                    const opt = document.createElement('option');
+                    opt.value = b.branch_id;
+                    opt.textContent = b.branch_name;
+                    uBranch.appendChild(opt);
+                });
+            }
+
+            // Load Roles
+            const { data: rData } = await supabase.from('roles').select('role_id, role_name').eq('company_id', cid);
+            const uRole = document.getElementById('uRole');
+            if (uRole && rData) {
+                uRole.innerHTML = '<option value="" disabled selected>Select a role</option>';
+                rData.forEach(r => {
+                    const opt = document.createElement('option');
+                    opt.value = r.role_id;
+                    opt.textContent = r.role_name;
+                    uRole.appendChild(opt);
+                });
+            }
+        } catch (err) {
+            console.error('Error loading dropdowns:', err);
+        }
+    }
+
+    await loadDropdowns();
     renderTable();
 })();
