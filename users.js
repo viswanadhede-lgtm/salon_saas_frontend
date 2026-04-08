@@ -85,7 +85,14 @@ import { supabase } from './lib/supabase.js';
 
     async function loadUsers() {
         const cid = getCompanyId();
-        if (!cid) return;
+        const tbody = document.getElementById('usersTableBody');
+        
+        if (!cid) {
+            if (tbody) tbody.innerHTML = '<tr><td colspan="7" style="text-align:center;padding:24px;color:#ef4444;">Company Authentication missing. Please log out and back in.</td></tr>';
+            return;
+        }
+        
+        if (tbody) tbody.innerHTML = '<tr><td colspan="7" style="text-align:center;padding:24px;color:#64748b;">Loading users...</td></tr>';
         
         try {
             const { data, error } = await supabase
@@ -101,6 +108,7 @@ import { supabase } from './lib/supabase.js';
         } catch (err) {
             console.error('Error loading users:', err);
             showToast('Failed to load users from database', true);
+            if (tbody) tbody.innerHTML = `<tr><td colspan="7" style="text-align:center;padding:24px;color:#ef4444;">Database logic error: ${err.message || 'Check console'}</td></tr>`;
         }
     }
 
