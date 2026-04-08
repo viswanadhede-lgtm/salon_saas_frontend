@@ -169,34 +169,91 @@ window.submitExpense = async () => {
     }
 };
 
-// ─── HARD DELETE Expense (Supabase) ───────────────────────────────────────────
-window.deleteExpense = async (expenseId) => {
-    if (!confirm('Are you sure you want to delete this expense?')) return;
+// ── Confirm Delete Modal Logic ──────────────────────────────────────────
+let expenseToDeleteId = null;
 
+function injectDeleteModal() {
+    const style = document.createElement('style');
+    style.textContent = `
+        #deleteExpenseBackdrop { display: none; position: fixed; inset: 0; background: rgba(15, 23, 42, 0.55); backdrop-filter: blur(4px); z-index: 99999; align-items: center; justify-content: center; }
+        #deleteExpenseBackdrop.active { display: flex; }
+        #deleteExpenseBox { background: #fff; border-radius: 16px; padding: 2rem 2rem 1.5rem; width: 100%; max-width: 380px; box-shadow: 0 20px 60px rgba(0,0,0,0.2); text-align: center; animation: logoutFadeIn 0.2s ease; }
+        #deleteExpenseBox .delete-icon { width: 52px; height: 52px; background: #fef2f2; border-radius: 50%; display: flex; align-items: center; justify-content: center; margin: 0 auto 1rem; }
+        #deleteExpenseBox .delete-icon svg { color: #ef4444; width: 24px; height: 24px; }
+        #deleteExpenseBox h3 { font-size: 1.1rem; font-weight: 700; color: #0f172a; margin: 0 0 0.4rem; }
+        #deleteExpenseBox p { font-size: 0.875rem; color: #64748b; margin: 0 0 1.5rem; line-height: 1.4; }
+        #deleteExpenseBox .delete-actions { display: flex; gap: 0.75rem; }
+        #deleteExpenseBox .btn-cancel-delete { flex: 1; padding: 0.65rem 1rem; border-radius: 8px; border: 1.5px solid #e2e8f0; background: #fff; font-size: 0.875rem; font-weight: 600; color: #475569; cursor: pointer; transition: background 0.15s; }
+        #deleteExpenseBox .btn-cancel-delete:hover { background: #f8fafc; }
+        #deleteExpenseBox .btn-confirm-delete { flex: 1; padding: 0.65rem 1rem; border-radius: 8px; border: none; background: #ef4444; font-size: 0.875rem; font-weight: 600; color: #fff; cursor: pointer; transition: background 0.15s; }
+        #deleteExpenseBox .btn-confirm-delete:hover { background: #dc2626; }
+    `;
+    document.head.appendChild(style);
+
+    const backdrop = document.createElement('div');
+    backdrop.id = 'deleteExpenseBackdrop';
+    backdrop.innerHTML = `
+        <div id="deleteExpenseBox">
+            <div class="delete-icon">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M3 6h18"></path><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path><line x1="10" y1="11" x2="10" y2="17"></line><line x1="14" y1="11" x2="14" y2="17"></line>
+                </svg>
+            </div>
+            <h3>Delete Expense</h3>
+            <p>Are you sure you want to delete this expense?<br>This action cannot be undone.</p>
+            <div class="delete-actions">
+                <button class="btn-cancel-delete" id="delExpCancelBtn">Cancel</button>
+                <button class="btn-confirm-delete" id="delExpConfirmBtn">Yes, Delete</button>
+            </div>
+        </div>
+    `;
+    document.body.appendChild(backdrop);
+
+    document.getElementById('delExpCancelBtn').addEventListener('click', closeDeleteModal);
+    document.getElementById('delExpConfirmBtn').addEventListener('click', performDeleteExpense);
+    backdrop.addEventListener('click', (e) => { if (e.target === backdrop) closeDeleteModal(); });
+}
+
+function closeDeleteModal() {
+    document.getElementById('deleteExpenseBackdrop').classList.remove('active');
+    expenseToDeleteId = null;
+}
+
+window.deleteExpense = function (id) {
+    if (!document.getElementById('deleteExpenseBackdrop')) injectDeleteModal();
+    expenseToDeleteId = id;
+    document.getElementById('deleteExpenseBackdrop').classList.add('active');
+};
+
+async function performDeleteExpense() {
+    const id = expenseToDeleteId;
+    if (!id) return;
+    closeDeleteModal();
+    
     try {
         let error;
         ({ error } = await supabase
             .from('expenses')
-            .eq('expense_id', expenseId)
-            .delete());
+            .eq('expense_id', id)
+            .update({ status: 'deleted', updated_at: new Date().toISOString() }));
 
         if (error) {
             // Fallback for ID if standard expense_id fails
             ({ error } = await supabase
                 .from('expenses')
-                .eq('id', expenseId)
-                .delete());
+                .eq('id', id)
+                .update({ status: 'deleted', updated_at: new Date().toISOString() }));
         }
 
         if (error) throw error;
 
-        showToast('Expense deleted.');
+        showToast('Expense has been removed.');
         await fetchExpenses();
     } catch (err) {
-        console.error('deleteExpense error:', err);
-        showToast('Failed to delete expense: ' + (err.message || ''));
+        console.error("Error deleting expense:", err);
+        showToast("Failed to delete expense", 'error');
     }
-};
+}
 
 // ─── READ Expenses (Supabase) — excludes soft-deleted rows ───────────────────
 async function fetchExpenses() {
@@ -205,6 +262,7 @@ async function fetchExpenses() {
             .from('expenses')
             .select('*')
             .eq('company_id', getCompanyId())
+            .neq('status', 'deleted')
             .order('date', { ascending: false });
 
         if (error) throw error;
