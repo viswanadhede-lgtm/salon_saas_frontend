@@ -150,6 +150,7 @@ window.submitExpense = async () => {
                     amount,
                     notes:      notes || null,
                     added_by:   user.id,
+                    status:     'active',
                     created_at: new Date().toISOString(),
                     updated_at: new Date().toISOString()
                 });
