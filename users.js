@@ -139,7 +139,7 @@ import { supabase } from './lib/supabase.js';
             const isOwner   = roleDisplay.toLowerCase() === 'owner';
             
             // Safe fallback for UI missing timestamps
-            const lastLoginText = u.last_sign_in_at ? new Date(u.last_sign_in_at).toLocaleDateString() : 'Never';
+            const lastLoginText = u.last_login_at ? new Date(u.last_login_at).toLocaleDateString() : 'Never';
 
             const tr = document.createElement('tr');
             tr.style.cssText = `background:${rowBg};border-bottom:1px solid #f1f5f9;transition:background .15s;`;
@@ -178,9 +178,9 @@ import { supabase } from './lib/supabase.js';
                         
                         <button class="icon-btn" onclick="window.userAction('toggle', '${u.user_id || u.id}')" title="${isActive ? 'Deactivate' : 'Activate'}" style="width:32px;height:32px;border-radius:8px;border:1px solid #e2e8f0;background:#f8fafc;display:inline-flex;align-items:center;justify-content:center;cursor:pointer;color:${isActive ? '#22c55e' : '#94a3b8'};transition:all .2s;" onmouseover="this.style.background='#f1f5f9';" onmouseout="this.style.background='#f8fafc';"><i data-feather="power" style="width:14px;height:14px;"></i></button>
                         
-                        ${!isOwner ? \`<button class="icon-btn" onclick="window.userAction('delete', '\${u.user_id || u.id}')" title="Delete User" style="width:32px;height:32px;border-radius:8px;border:1px solid #fee2e2;background:#fef2f2;display:inline-flex;align-items:center;justify-content:center;cursor:pointer;color:#ef4444;transition:all .2s;" onmouseover="this.style.background='#fee2e2';" onmouseout="this.style.background='#fef2f2';"><i data-feather="trash-2" style="width:14px;height:14px;"></i></button>\` : ''}
+                        ${!isOwner ? `<button class="icon-btn" onclick="window.userAction('delete', '${u.user_id || u.id}')" title="Delete User" style="width:32px;height:32px;border-radius:8px;border:1px solid #fee2e2;background:#fef2f2;display:inline-flex;align-items:center;justify-content:center;cursor:pointer;color:#ef4444;transition:all .2s;" onmouseover="this.style.background='#fee2e2';" onmouseout="this.style.background='#fef2f2';"><i data-feather="trash-2" style="width:14px;height:14px;"></i></button>` : ''}
                     </div>
-                </td>\`;
+                </td>`;
             tbody.appendChild(tr);
         });
 
@@ -310,7 +310,7 @@ import { supabase } from './lib/supabase.js';
                 name: name,
                 email: email,
                 phone: phone,
-                role_id: parseInt(role_id, 10),
+                role_id: role_id,
                 role_name: role_name,
                 branch_id: branch_id,
                 status: status
