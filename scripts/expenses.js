@@ -149,9 +149,7 @@ window.submitExpense = async () => {
                     category,
                     amount,
                     notes:      notes || null,
-                    staff_id:   user.id,
-                    staff_name: user.name,
-                    status:     'active',
+                    added_by:   user.name,
                     created_at: new Date().toISOString(),
                     updated_at: new Date().toISOString()
                 });
@@ -171,23 +169,23 @@ window.submitExpense = async () => {
     }
 };
 
-// ─── SOFT DELETE Expense (Supabase) ───────────────────────────────────────────
+// ─── HARD DELETE Expense (Supabase) ───────────────────────────────────────────
 window.deleteExpense = async (expenseId) => {
     if (!confirm('Are you sure you want to delete this expense?')) return;
 
     try {
-        // Try id first, fallback to expense_id
         let error;
         ({ error } = await supabase
             .from('expenses')
-            .eq('id', expenseId)
-            .update({ status: 'deleted', updated_at: new Date().toISOString() }));
+            .eq('expense_id', expenseId)
+            .delete());
 
         if (error) {
+            // Fallback for ID if standard expense_id fails
             ({ error } = await supabase
                 .from('expenses')
-                .eq('expense_id', expenseId)
-                .update({ status: 'deleted', updated_at: new Date().toISOString() }));
+                .eq('id', expenseId)
+                .delete());
         }
 
         if (error) throw error;
@@ -207,7 +205,6 @@ async function fetchExpenses() {
             .from('expenses')
             .select('*')
             .eq('company_id', getCompanyId())
-            .neq('status', 'deleted')
             .order('date', { ascending: false });
 
         if (error) throw error;
@@ -298,7 +295,7 @@ function renderExpenses() {
                     <td><span class="status-badge ${badgeClass}">${exp.category || 'Other'}</span></td>
                     <td style="font-weight: 600;">₹${amt.toLocaleString('en-IN', { minimumFractionDigits: 2 })}</td>
                     <td class="text-muted" style="max-width:200px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;" title="${exp.notes || ''}">${exp.notes || '-'}</td>
-                    <td>${exp.staff_name || 'Admin'}</td>
+                    <td>${exp.added_by || 'Admin'}</td>
                     <td class="text-right">
                         <div style="display:flex; gap:6px; justify-content:flex-end; align-items:center;">
                             <button class="icon-btn" title="Edit Expense"
