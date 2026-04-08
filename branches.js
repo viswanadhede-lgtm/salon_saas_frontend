@@ -174,8 +174,66 @@ document.addEventListener('DOMContentLoaded', async () => {
         }
     };
 
-    window.deleteBranch = async function (id) {
-        if (!confirm('Are you sure you want to delete this branch?')) return;
+    // ── Confirm Delete Modal Logic ──────────────────────────────────────────
+    let branchToDeleteId = null;
+
+    function injectDeleteModal() {
+        const style = document.createElement('style');
+        style.textContent = `
+            #deleteBranchBackdrop { display: none; position: fixed; inset: 0; background: rgba(15, 23, 42, 0.55); backdrop-filter: blur(4px); z-index: 99999; align-items: center; justify-content: center; }
+            #deleteBranchBackdrop.active { display: flex; }
+            #deleteBranchBox { background: #fff; border-radius: 16px; padding: 2rem 2rem 1.5rem; width: 100%; max-width: 380px; box-shadow: 0 20px 60px rgba(0,0,0,0.2); text-align: center; animation: logoutFadeIn 0.2s ease; }
+            #deleteBranchBox .delete-icon { width: 52px; height: 52px; background: #fef2f2; border-radius: 50%; display: flex; align-items: center; justify-content: center; margin: 0 auto 1rem; }
+            #deleteBranchBox .delete-icon svg { color: #ef4444; width: 24px; height: 24px; }
+            #deleteBranchBox h3 { font-size: 1.1rem; font-weight: 700; color: #0f172a; margin: 0 0 0.4rem; }
+            #deleteBranchBox p { font-size: 0.875rem; color: #64748b; margin: 0 0 1.5rem; line-height: 1.4; }
+            #deleteBranchBox .delete-actions { display: flex; gap: 0.75rem; }
+            #deleteBranchBox .btn-cancel-delete { flex: 1; padding: 0.65rem 1rem; border-radius: 8px; border: 1.5px solid #e2e8f0; background: #fff; font-size: 0.875rem; font-weight: 600; color: #475569; cursor: pointer; transition: background 0.15s; }
+            #deleteBranchBox .btn-cancel-delete:hover { background: #f8fafc; }
+            #deleteBranchBox .btn-confirm-delete { flex: 1; padding: 0.65rem 1rem; border-radius: 8px; border: none; background: #ef4444; font-size: 0.875rem; font-weight: 600; color: #fff; cursor: pointer; transition: background 0.15s; }
+            #deleteBranchBox .btn-confirm-delete:hover { background: #dc2626; }
+        `;
+        document.head.appendChild(style);
+
+        const backdrop = document.createElement('div');
+        backdrop.id = 'deleteBranchBackdrop';
+        backdrop.innerHTML = `
+            <div id="deleteBranchBox">
+                <div class="delete-icon">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M3 6h18"></path><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path><line x1="10" y1="11" x2="10" y2="17"></line><line x1="14" y1="11" x2="14" y2="17"></line>
+                    </svg>
+                </div>
+                <h3>Delete Branch</h3>
+                <p>Are you sure you want to delete this branch?<br>This action cannot be undone.</p>
+                <div class="delete-actions">
+                    <button class="btn-cancel-delete" id="delBranchCancelBtn">Cancel</button>
+                    <button class="btn-confirm-delete" id="delBranchConfirmBtn">Yes, Delete</button>
+                </div>
+            </div>
+        `;
+        document.body.appendChild(backdrop);
+
+        document.getElementById('delBranchCancelBtn').addEventListener('click', closeDeleteModal);
+        document.getElementById('delBranchConfirmBtn').addEventListener('click', performDeleteBranch);
+        backdrop.addEventListener('click', (e) => { if (e.target === backdrop) closeDeleteModal(); });
+    }
+
+    function closeDeleteModal() {
+        document.getElementById('deleteBranchBackdrop').classList.remove('active');
+        branchToDeleteId = null;
+    }
+
+    window.deleteBranch = function (id) {
+        if (!document.getElementById('deleteBranchBackdrop')) injectDeleteModal();
+        branchToDeleteId = id;
+        document.getElementById('deleteBranchBackdrop').classList.add('active');
+    };
+
+    async function performDeleteBranch() {
+        const id = branchToDeleteId;
+        if (!id) return;
+        closeDeleteModal();
         
         try {
             const { error } = await supabase
@@ -187,12 +245,13 @@ document.addEventListener('DOMContentLoaded', async () => {
             
             branchesData = branchesData.filter(b => b.branch_id !== id);
             renderTable();
-            showToast(`Branch has been deleted.`, 'success');
+            updateGlobalContext();
+            showToast('Branch has been deleted.', 'success');
         } catch (err) {
             console.error("Error deleting branch:", err);
             showToast("Failed to delete branch", 'error');
         }
-    };
+    }
 
     function closePanel() {
         overlay.classList.remove('active');
