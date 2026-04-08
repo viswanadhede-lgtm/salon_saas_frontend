@@ -267,10 +267,13 @@
 
         <!-- Page Content -->
                 <main class="content-area" style="padding-bottom: 100px;"> <!-- Extra padding for sticky footer -->
-            <div class="content-header">
+            <div class="content-header" style="display: flex; justify-content: space-between; align-items: center;">
                 <div class="header-title">
                     <h1 id="pageTitle">Company Settings</h1>
                     <p class="subtitle">Manage your business identity and global company information</p>
+                </div>
+                <div class="header-actions">
+                    <button class="btn btn-primary" onclick="saveSettings()">Save Changes</button>
                 </div>
             </div>
 
@@ -471,6 +474,13 @@
                             <textarea id="invoiceFooter" class="form-input form-textarea" placeholder="e.g., Thank you for your business!" style="min-height: 80px;">Thank you for visiting Shubha Salon!</textarea>
                             <p class="form-hint" style="font-size: 0.8rem; color: #64748b; margin-top: 6px;">You can include return policies, terms, or a simple thank-you note.</p>
                         </div>
+                    </div>
+                </div>
+
+                <!-- Static Footer Action -->
+                <div class="settings-section" style="border-top: none; padding-top: 0; justify-content: flex-end;">
+                    <div class="settings-form" style="display: flex; justify-content: flex-end; width: 100%; max-width: 720px; background: transparent; border: none; box-shadow: none;">
+                        <button class="btn btn-primary" style="padding: 12px 24px;" onclick="saveSettings()">Save Changes</button>
                     </div>
                 </div>
 
