@@ -331,6 +331,178 @@ document.addEventListener('DOMContentLoaded', async () => {
             console.error('Error loading staff report data:', err);
             updateTable(data.headers, []);
         }
+    } else if (type === 'bookings') {
+        // --- LIVE SUPABASE INTEGRATION FOR BOOKINGS ---
+        const companyId = localStorage.getItem('company_id');
+        const branchId = localStorage.getItem('active_branch_id');
+        
+        if (!companyId || !branchId) {
+            updateTable(data.headers, []);
+            return;
+        }
+
+        try {
+            const { data: dbBookings, error } = await supabase
+                .from('bookings')
+                .select('*')
+                .eq('company_id', companyId)
+                .eq('branch_id', branchId)
+                .order('booking_date', { ascending: false });
+            
+            if (error) throw error;
+            
+            const bookingsList = dbBookings || [];
+            
+            // Calculate KPIs
+            const totalBookings = bookingsList.length;
+            const completed = bookingsList.filter(b => b.status === 'completed').length;
+            const cancelled = bookingsList.filter(b => b.status === 'cancelled').length;
+            const noShows = bookingsList.filter(b => ['no-show', 'no_show'].includes(b.status)).length;
+            
+            const formattedRows = bookingsList.map(b => {
+                const dateDisplay = b.booking_date ? new Date(b.booking_date).toLocaleDateString() : 'Unknown';
+                let timeDisplay = b.start_time || '—';
+                if (timeDisplay !== '—') {
+                    try {
+                        const [hh, mm] = timeDisplay.split(':').map(Number);
+                        const ampm = hh >= 12 ? 'PM' : 'AM';
+                        const displayH = hh > 12 ? hh - 12 : (hh === 0 ? 12 : hh);
+                        timeDisplay = `${String(displayH).padStart(2,'0')}:${String(mm).padStart(2,'0')} ${ampm}`;
+                    } catch {}
+                }
+                
+                const customer = b.customer_name || '—';
+                const service = b.service_name || '—';
+                const staff = b.staff_name || '—';
+                // Mock duration if not available natively
+                const duration = b.duration || '45m';
+                
+                let statusHtml = '<span class="status-pill pending">Pending</span>';
+                if (b.status === 'completed') statusHtml = '<span class="status-pill completed">Completed</span>';
+                if (b.status === 'cancelled') statusHtml = '<span class="status-pill cancelled">Cancelled</span>';
+                if (b.status === 'confirmed' || b.status === 'booked') statusHtml = '<span class="status-pill active">Confirmed</span>';
+                if (b.status === 'no-show' || b.status === 'no_show') statusHtml = '<span class="status-pill cancelled" style="background:#fef3c7; color:#92400e;">No-Show</span>';
+
+                return [dateDisplay, timeDisplay, customer, service, staff, duration, statusHtml];
+            });
+            
+            // Override KPIs
+            data.kpi1.value = totalBookings.toString();
+            data.kpi2.value = completed.toString();
+            data.kpi3.value = cancelled.toString();
+            data.kpi4.value = noShows.toString();
+
+            updateKPIs(data.kpi1, data.kpi2, data.kpi3, data.kpi4);
+            updateTable(data.headers, formattedRows);
+
+        } catch (err) {
+            console.error('Error loading bookings report data:', err);
+            updateTable(data.headers, []);
+        }
+    } else if (type === 'services') {
+        // --- LIVE SUPABASE INTEGRATION FOR SERVICE PERFORMANCE ---
+        const companyId = localStorage.getItem('company_id');
+        const branchId = localStorage.getItem('active_branch_id');
+
+        if (!companyId || !branchId) {
+            updateTable(data.headers, []);
+            return;
+        }
+
+        try {
+            // Fetch both services and bookings in parallel
+            const [svcRes, bkRes] = await Promise.all([
+                supabase
+                    .from('services')
+                    .select('*')
+                    .eq('company_id', companyId)
+                    .eq('branch_id', branchId)
+                    .order('service_name', { ascending: true }),
+                supabase
+                    .from('bookings')
+                    .select('service_name, price, status')
+                    .eq('company_id', companyId)
+                    .eq('branch_id', branchId)
+            ]);
+
+            if (svcRes.error) throw svcRes.error;
+
+            const servicesList = (svcRes.data || []).filter(s =>
+                s.status && s.status.toLowerCase() !== 'deleted'
+            );
+            const bookingsList = bkRes.data || [];
+
+            // Build a lookup: service_name -> { timesBooked, revenue }
+            const bookingStats = {};
+            bookingsList.forEach(b => {
+                const key = (b.service_name || '').toLowerCase();
+                if (!key) return;
+                if (!bookingStats[key]) bookingStats[key] = { timesBooked: 0, revenue: 0 };
+                bookingStats[key].timesBooked++;
+                if (b.status === 'completed') {
+                    bookingStats[key].revenue += Number(b.price || 0);
+                }
+            });
+
+            // KPI calculations
+            const activeServices = servicesList.filter(s => s.status === 'active').length;
+            let totalRevenue = 0;
+            let totalBookingsCount = 0;
+            let topService = { name: '—', count: 0 };
+
+            servicesList.forEach(s => {
+                const key = (s.service_name || '').toLowerCase();
+                const stats = bookingStats[key] || { timesBooked: 0, revenue: 0 };
+                totalRevenue += stats.revenue;
+                totalBookingsCount += stats.timesBooked;
+                if (stats.timesBooked > topService.count) {
+                    topService = { name: s.service_name, count: stats.timesBooked };
+                }
+            });
+
+            // Calculate avg duration in minutes
+            const avgDuration = servicesList.length > 0
+                ? Math.round(servicesList.reduce((sum, s) => sum + (Number(s.duration) || 0), 0) / servicesList.length)
+                : 0;
+
+            const formattedRows = servicesList.map(s => {
+                const key = (s.service_name || '').toLowerCase();
+                const stats = bookingStats[key] || { timesBooked: 0, revenue: 0 };
+
+                const name = s.service_name || '—';
+                const category = s.category_name || '—';
+                const duration = s.duration ? `${s.duration}m` : '—';
+                const price = s.price != null ? formatCurrency(s.price) : '—';
+                const timesBooked = stats.timesBooked;
+                const revenue = formatCurrency(stats.revenue);
+
+                const statusHtml = s.status === 'active'
+                    ? '<span class="status-pill active">Active</span>'
+                    : '<span class="status-pill cancelled">Inactive</span>';
+
+                return [name, category, duration, price, timesBooked, revenue, statusHtml];
+            });
+
+            // Update headers to match columns we are rendering
+            data.headers = ['Service Name', 'Category', 'Duration', 'Price', 'Times Booked', 'Revenue Generated', 'Status'];
+
+            // Override KPIs
+            data.kpi1.label = 'Active Services';
+            data.kpi1.value = activeServices.toString();
+            data.kpi2.label = 'Total Bookings';
+            data.kpi2.value = totalBookingsCount.toString();
+            data.kpi3.label = 'Top Service';
+            data.kpi3.value = topService.name;
+            data.kpi4.label = 'Avg Duration';
+            data.kpi4.value = avgDuration ? `${avgDuration}m` : '—';
+
+            updateKPIs(data.kpi1, data.kpi2, data.kpi3, data.kpi4);
+            updateTable(data.headers, formattedRows);
+
+        } catch (err) {
+            console.error('Error loading services report data:', err);
+            updateTable(data.headers, []);
+        }
     } else {
         // Render hardcoded mock data for the rest of the reports
         updateTable(data.headers, data.rows);
