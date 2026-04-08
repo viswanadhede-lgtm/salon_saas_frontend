@@ -126,56 +126,60 @@ document.addEventListener('DOMContentLoaded', () => {
     // ----------------------------------------------------------------
     // 5. PROFILE DROPDOWN LOGIC
     // ----------------------------------------------------------------
-    const userProfileDropdown = document.getElementById('userProfileDropdown');
-    const avatarBtn = document.getElementById('avatarBtn');
-    const profileMenu = document.getElementById('profileMenu');
-    const billingMenuItem = document.getElementById('billingMenuItem');
 
-    if (avatarBtn && profileMenu) {
+    // Use event delegation for robust dropdown toggling across all pages
+    document.addEventListener('click', (e) => {
+        const avatarBtn = document.getElementById('avatarBtn');
+        const profileMenu = document.getElementById('profileMenu');
         const profileBackdrop = document.getElementById('profileBackdrop');
+        const userProfileDropdown = document.getElementById('userProfileDropdown');
+        
+        if (!avatarBtn || !profileMenu) return;
 
-        // Mock user role (in a real app, this comes from an API or JWT)
+        // Ensure roles/billing options are initialized when needed
         const currentUserRole = localStorage.getItem('user_role') || 'Owner'; 
-
-        // Update role text in the dropdown
         const roleTextEl = profileMenu.querySelector('.dropdown-role');
-        if (roleTextEl) {
+        const billingMenuItem = document.getElementById('billingMenuItem');
+        if (roleTextEl && roleTextEl.textContent !== currentUserRole) {
             roleTextEl.textContent = currentUserRole;
         }
-
-        // Hide billing if staff
         if (currentUserRole.toLowerCase() === 'staff' && billingMenuItem) {
             billingMenuItem.style.display = 'none';
         }
 
-        function openProfileMenu() {
-            profileMenu.classList.add('show');
-            if (profileBackdrop) profileBackdrop.classList.add('active');
-        }
-
-        function closeProfileMenu() {
+        const closeProfileMenu = () => {
             profileMenu.classList.remove('show');
             if (profileBackdrop) profileBackdrop.classList.remove('active');
-        }
+        };
 
-        // Toggle dropdown on avatar click
-        avatarBtn.addEventListener('click', (e) => {
+        const openProfileMenu = () => {
+            profileMenu.classList.add('show');
+            if (profileBackdrop) profileBackdrop.classList.add('active');
+        };
+
+        // 1. Clicked on the Avatar button
+        const avatarClick = e.target.closest('#avatarBtn');
+        if (avatarClick) {
+            e.preventDefault();
             e.stopPropagation();
             profileMenu.classList.contains('show') ? closeProfileMenu() : openProfileMenu();
-        });
-
-        // Close when clicking the backdrop
-        if (profileBackdrop) {
-            profileBackdrop.addEventListener('click', closeProfileMenu);
+            return;
         }
 
-        // Close dropdown when clicking outside
-        document.addEventListener('click', (e) => {
-            if (profileMenu.classList.contains('show') && !userProfileDropdown.contains(e.target)) {
-                closeProfileMenu();
-            }
-        });
-    }
+        // 2. Clicked on the Backdrop
+        const backdropClick = e.target === profileBackdrop;
+        if (backdropClick) {
+            e.preventDefault();
+            e.stopPropagation();
+            closeProfileMenu();
+            return;
+        }
+
+        // 3. Clicked Outside (while menu is open)
+        if (profileMenu.classList.contains('show') && userProfileDropdown && !userProfileDropdown.contains(e.target)) {
+            closeProfileMenu();
+        }
+    });
 
     // ----------------------------------------------------------------
     // 6. GENERIC PROFILE SECTION MODAL LOGIC
