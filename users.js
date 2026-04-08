@@ -207,7 +207,7 @@ import { supabase } from './lib/supabase.js';
         } else if (action === 'toggle') {
             const newStatus = user.status === 'active' ? 'inactive' : 'active';
             try {
-                const { error } = await supabase.from('users').update({ status: newStatus }).eq(user.user_id ? 'user_id' : 'id', id);
+                const { error } = await supabase.from('users').eq(user.user_id ? 'user_id' : 'id', id).update({ status: newStatus });
                 if (error) throw error;
                 await loadUsers();
                 showToast(`\${user.name} is now \${newStatus}.`);
@@ -218,7 +218,7 @@ import { supabase } from './lib/supabase.js';
         } else if (action === 'delete') {
             if (!confirm(`Are you sure you want to delete \${user.name}? This will mark their account as deleted but keep history.`)) return;
             try {
-                const { error } = await supabase.from('users').update({ status: 'deleted' }).eq(user.user_id ? 'user_id' : 'id', id);
+                const { error } = await supabase.from('users').eq(user.user_id ? 'user_id' : 'id', id).update({ status: 'deleted' });
                 if (error) throw error;
                 await loadUsers();
                 showToast(`User "\${user.name}" has been deleted.`);
@@ -332,7 +332,7 @@ import { supabase } from './lib/supabase.js';
             }
 
             if (editingId !== null) {
-                const { error } = await supabase.from('users').update(payload).eq(String(editingId).length > 10 ? 'user_id' : 'id', editingId);
+                const { error } = await supabase.from('users').eq(String(editingId).length > 10 ? 'user_id' : 'id', editingId).update(payload);
                 if (error) throw error;
                 showToast('User updated successfully!');
             } else {
