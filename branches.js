@@ -1,4 +1,5 @@
 import { supabase } from './lib/supabase.js';
+import { populateGlobalHeader } from './scripts/global-auth-guard.js';
 
 document.addEventListener('DOMContentLoaded', async () => {
 
@@ -23,9 +24,33 @@ document.addEventListener('DOMContentLoaded', async () => {
             if (error) throw error;
             branchesData = data || [];
             renderTable();
+            updateGlobalContext();
         } catch (err) {
             console.error('Error fetching branches:', err);
             showToast('Failed to load branches.', 'error');
+        }
+    }
+
+    // ── Sync Global Context ───────────────────────────────────────────────
+    function updateGlobalContext() {
+        try {
+            const contextStr = localStorage.getItem('appContext');
+            if (!contextStr) return;
+            const context = JSON.parse(contextStr);
+
+            // Keep only active branches for the global switcher
+            const activeBranches = branchesData.filter(b => b.status === 'active');
+            
+            context.branches = activeBranches.map(b => ({
+                id: b.branch_id,
+                branch_id: b.branch_id,
+                branch_name: b.branch_name
+            }));
+
+            localStorage.setItem('appContext', JSON.stringify(context));
+            populateGlobalHeader(); // Instantly update header dropdown
+        } catch (e) {
+            console.error('Failed to sync global context:', e);
         }
     }
 
