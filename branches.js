@@ -19,7 +19,8 @@ document.addEventListener('DOMContentLoaded', async () => {
             const { data, error } = await supabase
                 .from('branches')
                 .select('branch_id, branch_name, branch_address, branch_phone, status')
-                .eq('company_id', companyId);
+                .eq('company_id', companyId)
+                .neq('status', 'deleted');
 
             if (error) throw error;
             branchesData = data || [];
@@ -239,7 +240,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             const { error } = await supabase
                 .from('branches')
                 .eq('branch_id', id)
-                .delete();
+                .update({ status: 'deleted' });
                 
             if (error) throw error;
             
