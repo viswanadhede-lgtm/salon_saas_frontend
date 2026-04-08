@@ -21,20 +21,12 @@ import { supabase } from './lib/supabase.js';
         return '₹' + Number(n).toLocaleString('en-IN');
     };
 
-    // ── Plan display map ────────────────────────────────────────────
-    const PLAN_MAP = {
-        'd0d4cc8f-3498-4da1-b5e5-2887b9b39dce': { name: 'Starter',    icon: 'zap',    monthly: 1999,  annual: 19999  },
-        'b42bcd41-217a-4ddb-9451-20e040984277': { name: 'Growth',     icon: 'trending-up', monthly: 4999,  annual: 49999  },
-        'b32fe38d-a715-4166-acf1-b970bd845c21': { name: 'Pro',        icon: 'award',  monthly: 9999,  annual: 99999  },
-        '2e86d143-72aa-4ae4-a925-ded2b8475dc8': { name: 'Enterprise', icon: 'briefcase', monthly: 19999, annual: 199999 }
-    };
-
     // ── Plan features map ───────────────────────────────────────────
     const PLAN_FEATURES = {
-        'Starter':    { included: ['Up to 3 staff members', 'Basic bookings', 'Customer database', 'Sales reports'], excluded: ['Multi-branch support', 'Marketing tools', 'Priority support', 'Dedicated account manager'] },
-        'Growth':     { included: ['Unlimited bookings', 'Staff management (up to 20)', 'Customer database', 'Sales reports & analytics', 'Marketing tools', 'Multi-branch support', 'Priority email support'], excluded: ['Dedicated account manager', 'Custom API integrations'] },
-        'Pro':        { included: ['Everything in Growth', 'Unlimited staff', 'Advanced analytics', 'Dedicated account manager', 'Custom API integrations', 'White-label support'], excluded: [] },
-        'Enterprise': { included: ['Everything in Pro', 'Custom SLA', 'On-premise option', 'Custom integrations', 'Dedicated team'], excluded: [] }
+        'Basic':      { icon: 'zap',         included: ['1 Branch', 'Up to 5 staff members', 'Basic bookings', 'Customer database', 'Payment tracking'], excluded: ['Multi-branch support', 'Marketing tools', 'Priority support', 'Dedicated account manager'] },
+        'Advance':    { icon: 'trending-up', included: ['Up to 3 branches', 'Up to 12 staff accounts', 'POS & Product sales', 'Offers & coupons', 'Advanced reports'], excluded: ['Unlimited staff', 'Dedicated account manager', 'Custom API integrations'] },
+        'Pro':        { icon: 'award',       included: ['Up to 10 branches', 'Unlimited staff accounts', 'Membership programs', 'Online booking page', 'Deep analytics dashboard'], excluded: [] },
+        'Enterprise': { icon: 'briefcase',   included: ['Unlimited branches', 'AI receptionist included', 'WhatsApp booking automation', 'Custom integrations', 'Dedicated support & SLA'], excluded: [] }
     };
 
     // ── DOM refs ───────────────────────────────────────────────────
@@ -71,7 +63,26 @@ import { supabase } from './lib/supabase.js';
     const sub = subs?.[0]; // Most recent active subscription
 
     if (sub) {
-        const plan = PLAN_MAP[sub.plan_id] || { name: sub.plan_id || 'Unknown', icon: 'zap', monthly: 0, annual: 0 };
+        // ── Fetch plan name from plans table ──────────────────────────
+        let plan = { name: 'Unknown', icon: 'zap', monthly: 0, annual: 0 };
+
+        if (sub.plan_id) {
+            const { data: planRows } = await supabase
+                .from('plans')
+                .select('plan_id, plan_name, price_monthly, price_annual')
+                .eq('plan_id', sub.plan_id);
+
+            if (planRows && planRows.length > 0) {
+                const p = planRows[0];
+                const featureKey = Object.keys(PLAN_FEATURES).find(k => p.plan_name?.toLowerCase().includes(k.toLowerCase())) || p.plan_name;
+                plan = {
+                    name:    p.plan_name || 'Unknown',
+                    icon:    (PLAN_FEATURES[featureKey] || {}).icon || 'zap',
+                    monthly: parseFloat(p.price_monthly) || 0,
+                    annual:  parseFloat(p.price_annual)  || 0
+                };
+            }
+        }
         const isAnnual = sub.billing_cycle === 'annual';
         const price = sub.billing_amount || (isAnnual ? plan.annual : plan.monthly);
         const period = isAnnual ? '/ year' : '/ month';
@@ -114,7 +125,9 @@ import { supabase } from './lib/supabase.js';
         if (changeBtn)  changeBtn.onclick  = () => window.location.href = `plans.html?current=${plan.name.toLowerCase()}`;
 
         // ── Plan Features ──────────────────────────────────────────
-        const features = PLAN_FEATURES[plan.name] || { included: [], excluded: [] };
+        // Match plan name loosely (e.g. "Advance" matches "Advance")
+        const featureKey = Object.keys(PLAN_FEATURES).find(k => plan.name?.toLowerCase().includes(k.toLowerCase())) || plan.name;
+        const features = PLAN_FEATURES[featureKey] || { included: ['Standard features included'], excluded: [] };
         if (featureCardTitle) featureCardTitle.textContent = `Everything included in your ${plan.name} plan`;
         if (featuresCountBadge) featuresCountBadge.textContent = `${features.included.length} included`;
 
@@ -183,8 +196,7 @@ import { supabase } from './lib/supabase.js';
                             <i data-feather="download" style="width:14px;height:14px;"></i> Download
                        </button>`;
 
-                const planName = PLAN_MAP[p.plan_id]?.name || 'Subscription';
-                const desc = `${planName} Plan${p.billing_cycle === 'annual' ? ' (Annual)' : ''}`;
+                const desc = `${p.plan_name || 'Subscription'} Plan${p.billing_cycle === 'annual' ? ' (Annual)' : ''}`;
 
                 return `
                     <tr>
