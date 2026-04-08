@@ -291,10 +291,8 @@
                                 <label style="display:flex; align-items:center; gap:8px; font-size:0.85rem; color:#374151; cursor:pointer;"><input type="checkbox" class="pp-filter-status" value="Partial"> Partial</label>
                             </div>
                             <p style="font-size:0.72rem; font-weight:700; color:#94a3b8; text-transform:uppercase; letter-spacing:0.06em; margin:0 0 8px;">Staff</p>
-                            <div style="display:flex; flex-direction:column; gap:6px; margin-bottom:14px;">
-                                <label style="display:flex; align-items:center; gap:8px; font-size:0.85rem; color:#374151; cursor:pointer;"><input type="checkbox" class="pp-filter-staff" value="Sarah"> Sarah</label>
-                                <label style="display:flex; align-items:center; gap:8px; font-size:0.85rem; color:#374151; cursor:pointer;"><input type="checkbox" class="pp-filter-staff" value="Michael"> Michael</label>
-                                <label style="display:flex; align-items:center; gap:8px; font-size:0.85rem; color:#374151; cursor:pointer;"><input type="checkbox" class="pp-filter-staff" value="Anjali"> Anjali</label>
+                            <div id="ppStaffFilters" style="display:flex; flex-direction:column; gap:6px; margin-bottom:14px;">
+                                <!-- To be populated dynamically -->
                             </div>
                             <div style="display:flex; gap:8px;">
                                 <button onclick="event.stopPropagation(); ppClearFilter();" style="flex:1; padding:7px 0; border:1px solid #e2e8f0; background:#fff; border-radius:7px; font-size:0.83rem; color:#64748b; cursor:pointer;">Clear</button>
