@@ -503,6 +503,108 @@ document.addEventListener('DOMContentLoaded', async () => {
             console.error('Error loading services report data:', err);
             updateTable(data.headers, []);
         }
+    } else if (type === 'branch') {
+        // --- LIVE SUPABASE INTEGRATION FOR BRANCH PERFORMANCE ---
+        const companyId = localStorage.getItem('company_id');
+
+        if (!companyId) {
+            updateTable(data.headers, []);
+            return;
+        }
+
+        try {
+            // Fetch all branches, bookings, and staff in parallel (company-wide, not filtered by branch)
+            const [branchRes, bookingRes, staffRes] = await Promise.all([
+                supabase
+                    .from('branches')
+                    .select('branch_id, branch_name, branch_address, branch_phone, status')
+                    .eq('company_id', companyId)
+                    .neq('status', 'deleted'),
+                supabase
+                    .from('bookings')
+                    .select('branch_id, price, status')
+                    .eq('company_id', companyId),
+                supabase
+                    .from('staff')
+                    .select('branch_id, status')
+                    .eq('company_id', companyId)
+                    .neq('status', 'deleted')
+            ]);
+
+            if (branchRes.error) throw branchRes.error;
+
+            const branchesList = branchRes.data || [];
+            const bookingsList = bookingRes.data || [];
+            const staffList    = staffRes.data || [];
+
+            // Build per-branch stats
+            const branchStats = {};
+            branchesList.forEach(b => {
+                branchStats[b.branch_id] = { bookings: 0, revenue: 0, staff: 0 };
+            });
+
+            bookingsList.forEach(b => {
+                if (!branchStats[b.branch_id]) return;
+                branchStats[b.branch_id].bookings++;
+                if (b.status === 'completed') {
+                    branchStats[b.branch_id].revenue += Number(b.price || 0);
+                }
+            });
+
+            staffList.forEach(s => {
+                if (!branchStats[s.branch_id]) return;
+                branchStats[s.branch_id].staff++;
+            });
+
+            // KPIs
+            const activeBranches = branchesList.filter(b => b.status === 'active').length;
+            const totalVisits = bookingsList.length;
+            let totalRevenue = 0;
+            let topBranch = { name: '—', bookings: 0 };
+
+            branchesList.forEach(b => {
+                const stats = branchStats[b.branch_id];
+                totalRevenue += stats.revenue;
+                if (stats.bookings > topBranch.bookings) {
+                    topBranch = { name: b.branch_name, bookings: stats.bookings };
+                }
+            });
+
+            const formattedRows = branchesList.map(b => {
+                const stats = branchStats[b.branch_id];
+                const name    = b.branch_name || '—';
+                const address = b.branch_address || '—';
+                const phone   = b.branch_phone || '—';
+                const staff   = stats.staff;
+                const visits  = stats.bookings;
+                const revenue = formatCurrency(stats.revenue);
+                const statusHtml = b.status === 'active'
+                    ? '<span class="status-pill active">Active</span>'
+                    : '<span class="status-pill cancelled">Inactive</span>';
+
+                return [name, address, phone, staff, visits, revenue, statusHtml];
+            });
+
+            // Update headers
+            data.headers = ['Branch Name', 'Address', 'Phone', 'Staff Count', 'Total Visits', 'Revenue', 'Status'];
+
+            // Override KPIs
+            data.kpi1.label = 'Active Branches';
+            data.kpi1.value = activeBranches.toString();
+            data.kpi2.label = 'Total Visits';
+            data.kpi2.value = totalVisits.toString();
+            data.kpi3.label = 'Top Branch';
+            data.kpi3.value = topBranch.name;
+            data.kpi4.label = 'Total Revenue';
+            data.kpi4.value = formatCurrency(totalRevenue);
+
+            updateKPIs(data.kpi1, data.kpi2, data.kpi3, data.kpi4);
+            updateTable(data.headers, formattedRows);
+
+        } catch (err) {
+            console.error('Error loading branch report data:', err);
+            updateTable(data.headers, []);
+        }
     } else {
         // Render hardcoded mock data for the rest of the reports
         updateTable(data.headers, data.rows);
