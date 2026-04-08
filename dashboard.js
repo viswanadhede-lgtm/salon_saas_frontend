@@ -74,6 +74,13 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     });
 
+    // Auto-open any submenu that contains the currently active page link
+    document.querySelectorAll('.nav-item.has-submenu').forEach(item => {
+        if (item.querySelector('.submenu-link.active')) {
+            item.classList.add('submenu-open');
+        }
+    });
+
     // Handle tooltips logic...
     // When sidebar is NOT collapsed, we want to disable default title tooltips 
     // to prevent double-text annoyance. 
