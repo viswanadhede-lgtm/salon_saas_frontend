@@ -88,68 +88,25 @@ import { supabase } from './lib/supabase.js';
                 </td>
                 <td style="padding:13px 16px;color:#94a3b8;font-size:0.875rem;">${u.lastLogin}</td>
                 <td style="padding:13px 24px 13px 16px;text-align:right;">
-                    <button data-uid="${u.id}" class="ua-trigger" style="background:none;border:1px solid #e2e8f0;color:#64748b;width:32px;height:32px;border-radius:6px;display:inline-flex;align-items:center;justify-content:center;cursor:pointer;font-size:1.1rem;font-weight:700;letter-spacing:0.02em;transition:all .2s;"
-                        onmouseover="this.style.background='#f8fafc';this.style.color='#1e293b';"
-                        onmouseout="this.style.background='none';this.style.color='#64748b';">···</button>
+                    <div style="display:flex; justify-content:flex-end; gap:6px;">
+                        <button class="icon-btn" onclick="window.userAction('edit', ${u.id})" title="Edit User" style="width:32px;height:32px;border-radius:8px;border:1px solid #e2e8f0;background:#f8fafc;display:inline-flex;align-items:center;justify-content:center;cursor:pointer;color:#64748b;transition:all .2s;" onmouseover="this.style.background='#f1f5f9';this.style.color='#1e293b';" onmouseout="this.style.background='#f8fafc';this.style.color='#64748b';"><i data-feather="edit-2" style="width:14px;height:14px;"></i></button>
+                        
+                        <button class="icon-btn" onclick="window.userAction('reset', ${u.id})" title="Reset Password" style="width:32px;height:32px;border-radius:8px;border:1px solid #e2e8f0;background:#f8fafc;display:inline-flex;align-items:center;justify-content:center;cursor:pointer;color:#64748b;transition:all .2s;" onmouseover="this.style.background='#f1f5f9';this.style.color='#1e293b';" onmouseout="this.style.background='#f8fafc';this.style.color='#64748b';"><i data-feather="key" style="width:14px;height:14px;"></i></button>
+                        
+                        <button class="icon-btn" onclick="window.userAction('toggle', ${u.id})" title="${isActive ? 'Deactivate' : 'Activate'}" style="width:32px;height:32px;border-radius:8px;border:1px solid #e2e8f0;background:#f8fafc;display:inline-flex;align-items:center;justify-content:center;cursor:pointer;color:${isActive ? '#22c55e' : '#94a3b8'};transition:all .2s;" onmouseover="this.style.background='#f1f5f9';" onmouseout="this.style.background='#f8fafc';"><i data-feather="power" style="width:14px;height:14px;"></i></button>
+                        
+                        ${!u.isOwner ? `<button class="icon-btn" onclick="window.userAction('delete', ${u.id})" title="Delete User" style="width:32px;height:32px;border-radius:8px;border:1px solid #fee2e2;background:#fef2f2;display:inline-flex;align-items:center;justify-content:center;cursor:pointer;color:#ef4444;transition:all .2s;" onmouseover="this.style.background='#fee2e2';" onmouseout="this.style.background='#fef2f2';"><i data-feather="trash-2" style="width:14px;height:14px;"></i></button>` : ''}
+                    </div>
                 </td>`;
             tbody.appendChild(tr);
         });
 
-        // Bind trigger buttons
-        document.querySelectorAll('.ua-trigger').forEach(btn => {
-            btn.addEventListener('click', (e) => {
-                e.stopPropagation();
-                const uid = parseInt(btn.dataset.uid);
-                openActionsDropdown(uid, btn);
-            });
-        });
-
         if (window.feather) feather.replace();
     }
-
-    // ── Actions Dropdown ──────────────────────────────────────────
-    const dropdown = document.getElementById('userActionsDropdown');
-
-    function openActionsDropdown(uid, btn) {
-        activeUserId = uid;
-        const user = users.find(u => u.id === uid);
-        const rect = btn.getBoundingClientRect();
-
-        // Build items
-        const isActive = user.status === 'Active';
-        dropdown.innerHTML = `
-            <style>
-                .ua-dd-item { display:flex;align-items:center;gap:9px;width:100%;padding:9px 12px;border:none;background:none;cursor:pointer;font-size:0.875rem;color:#1e293b;border-radius:6px;text-align:left;transition:background .15s; }
-                .ua-dd-item:hover { background:#f1f5f9; }
-                .ua-dd-item.danger { color:#ef4444; }
-                .ua-dd-item.danger:hover { background:#fef2f2; }
-                .ua-dd-item svg { width:15px;height:15px;stroke-width:2; }
-            </style>
-            <button class="ua-dd-item" onclick="window.userAction('edit')"><i data-feather="edit-2"></i> Edit User</button>
-            <button class="ua-dd-item" onclick="window.userAction('reset')"><i data-feather="key"></i> Reset Password</button>
-            <button class="ua-dd-item" onclick="window.userAction('toggle')"><i data-feather="power"></i> ${isActive ? 'Deactivate' : 'Activate'}</button>
-            ${!user.isOwner ? '<div style="height:1px;background:#f1f5f9;margin:4px 0;"></div><button class="ua-dd-item danger" onclick="window.userAction(\'delete\')"><i data-feather="trash-2"></i> Delete</button>' : ''}
-        `;
-
-        dropdown.style.display = 'block';
-        dropdown.style.top = (rect.bottom + 4) + 'px';
-        dropdown.style.left = (rect.left - 130) + 'px';
-        if (window.feather) feather.replace();
-    }
-
-    function closeDropdown() {
-        dropdown.style.display = 'none';
-        activeUserId = null;
-    }
-
-    document.addEventListener('click', (e) => {
-        if (!dropdown.contains(e.target)) closeDropdown();
-    });
 
     // ── User Actions ──────────────────────────────────────────────
-    window.userAction = function (action) {
-        closeDropdown();
-        const user = users.find(u => u.id === activeUserId || u.id === (activeUserId));
+    window.userAction = function (action, id) {
+        const user = users.find(u => u.id === id);
         if (!user) return; // guard
 
         if (action === 'edit') {
@@ -161,7 +118,8 @@ import { supabase } from './lib/supabase.js';
             renderTable();
             showToast(`${user.name} is now ${user.status}.`);
         } else if (action === 'delete') {
-            const idx = users.findIndex(u => u.id === (activeUserId));
+            if (!confirm(`Are you sure you want to delete ${user.name}?`)) return;
+            const idx = users.findIndex(u => u.id === id);
             if (idx > -1) {
                 const name = users[idx].name;
                 users.splice(idx, 1);
