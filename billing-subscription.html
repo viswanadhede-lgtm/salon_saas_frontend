@@ -285,10 +285,10 @@
                         <div class="plan-info">
                             <div class="plan-badge">
                                 <i data-feather="zap"></i>
-                                Growth Plan
+                                <span id="planNameBadge">Loading...</span>
                             </div>
                             <div class="plan-price-row">
-                                <span class="plan-price">₹4,999</span>
+                                <span class="plan-price">—</span>
                                 <span class="plan-period">/ month</span>
                             </div>
                             <div class="plan-meta-grid">
@@ -300,15 +300,15 @@
                                 </div>
                                 <div class="plan-meta-item">
                                     <span class="meta-label">Start Date</span>
-                                    <span class="meta-value">Jan 15, 2026</span>
+                                    <span class="meta-value">—</span>
                                 </div>
                                 <div class="plan-meta-item">
                                     <span class="meta-label">Next Renewal</span>
-                                    <span class="meta-value">Apr 15, 2026</span>
+                                    <span class="meta-value">—</span>
                                 </div>
                                 <div class="plan-meta-item">
                                     <span class="meta-label">Next Billing</span>
-                                    <span class="meta-value">₹6,497</span>
+                                    <span class="meta-value">—</span>
                                 </div>
                             </div>
                         </div>
@@ -556,63 +556,8 @@
                         </thead>
                         <tbody>
                             <tr>
-                                <td class="td-date">Mar 15, 2026</td>
-                                <td class="td-desc">Growth Plan + Add-ons</td>
-                                <td class="td-amount">₹6,497</td>
-                                <td><span class="status-pill status-pill--paid">Paid</span></td>
-                                <td>
-                                    <button class="btn-invoice">
-                                        <i data-feather="download" style="width:14px;height:14px;"></i>
-                                        Download
-                                    </button>
-                                </td>
-                            </tr>
-                            <tr>
-                                <td class="td-date">Feb 15, 2026</td>
-                                <td class="td-desc">Growth Plan + Add-ons</td>
-                                <td class="td-amount">₹6,497</td>
-                                <td><span class="status-pill status-pill--paid">Paid</span></td>
-                                <td>
-                                    <button class="btn-invoice">
-                                        <i data-feather="download" style="width:14px;height:14px;"></i>
-                                        Download
-                                    </button>
-                                </td>
-                            </tr>
-                            <tr>
-                                <td class="td-date">Jan 15, 2026</td>
-                                <td class="td-desc">Growth Plan + WhatsApp Reminders</td>
-                                <td class="td-amount">₹5,498</td>
-                                <td><span class="status-pill status-pill--paid">Paid</span></td>
-                                <td>
-                                    <button class="btn-invoice">
-                                        <i data-feather="download" style="width:14px;height:14px;"></i>
-                                        Download
-                                    </button>
-                                </td>
-                            </tr>
-                            <tr>
-                                <td class="td-date">Dec 15, 2025</td>
-                                <td class="td-desc">Growth Plan</td>
-                                <td class="td-amount">₹4,999</td>
-                                <td><span class="status-pill status-pill--paid">Paid</span></td>
-                                <td>
-                                    <button class="btn-invoice">
-                                        <i data-feather="download" style="width:14px;height:14px;"></i>
-                                        Download
-                                    </button>
-                                </td>
-                            </tr>
-                            <tr>
-                                <td class="td-date">Nov 15, 2025</td>
-                                <td class="td-desc">Growth Plan</td>
-                                <td class="td-amount">₹4,999</td>
-                                <td><span class="status-pill status-pill--due">Payment Due</span></td>
-                                <td>
-                                    <button class="btn-invoice btn-pay-now">
-                                        <i data-feather="alert-circle" style="width:14px;height:14px;"></i>
-                                        Pay Now
-                                    </button>
+                                <td colspan="5" style="text-align:center;padding:2.5rem;color:#94a3b8;font-size:0.875rem;">
+                                    Loading payment history...
                                 </td>
                             </tr>
                         </tbody>
@@ -626,6 +571,7 @@
     </div>
 
     <script src="dashboard.js"></script>
+    <script type="module" src="billing-subscription.js"></script>
     <script>
         // Init Feather Icons
         feather.replace();

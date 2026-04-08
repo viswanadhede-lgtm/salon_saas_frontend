@@ -1,0 +1,204 @@
+// billing-subscription.js — Live data loader for Billing & Subscription page
+import { supabase } from './lib/supabase.js';
+
+(async function () {
+
+    // ── Helpers ────────────────────────────────────────────────────
+    const getCompanyId = () => {
+        try {
+            const ctx = JSON.parse(localStorage.getItem('appContext') || '{}');
+            return ctx.company?.id || localStorage.getItem('company_id') || null;
+        } catch { return localStorage.getItem('company_id') || null; }
+    };
+
+    const fmt = (iso) => {
+        if (!iso) return '—';
+        return new Date(iso).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' });
+    };
+
+    const fmtAmount = (n) => {
+        if (n == null) return '—';
+        return '₹' + Number(n).toLocaleString('en-IN');
+    };
+
+    // ── Plan display map ────────────────────────────────────────────
+    const PLAN_MAP = {
+        'd0d4cc8f-3498-4da1-b5e5-2887b9b39dce': { name: 'Starter',    icon: 'zap',    monthly: 1999,  annual: 19999  },
+        'b42bcd41-217a-4ddb-9451-20e040984277': { name: 'Growth',     icon: 'trending-up', monthly: 4999,  annual: 49999  },
+        'b32fe38d-a715-4166-acf1-b970bd845c21': { name: 'Pro',        icon: 'award',  monthly: 9999,  annual: 99999  },
+        '2e86d143-72aa-4ae4-a925-ded2b8475dc8': { name: 'Enterprise', icon: 'briefcase', monthly: 19999, annual: 199999 }
+    };
+
+    // ── Plan features map ───────────────────────────────────────────
+    const PLAN_FEATURES = {
+        'Starter':    { included: ['Up to 3 staff members', 'Basic bookings', 'Customer database', 'Sales reports'], excluded: ['Multi-branch support', 'Marketing tools', 'Priority support', 'Dedicated account manager'] },
+        'Growth':     { included: ['Unlimited bookings', 'Staff management (up to 20)', 'Customer database', 'Sales reports & analytics', 'Marketing tools', 'Multi-branch support', 'Priority email support'], excluded: ['Dedicated account manager', 'Custom API integrations'] },
+        'Pro':        { included: ['Everything in Growth', 'Unlimited staff', 'Advanced analytics', 'Dedicated account manager', 'Custom API integrations', 'White-label support'], excluded: [] },
+        'Enterprise': { included: ['Everything in Pro', 'Custom SLA', 'On-premise option', 'Custom integrations', 'Dedicated team'], excluded: [] }
+    };
+
+    // ── DOM refs ───────────────────────────────────────────────────
+    const planBadgeEl      = document.querySelector('.billing-plan-card--compact .plan-badge');
+    const planPriceEl      = document.querySelector('.plan-price');
+    const planPeriodEl     = document.querySelector('.plan-period');
+    const planStatusEl     = document.querySelector('.meta-value.status-active');
+    const planMetaItems    = document.querySelectorAll('.plan-meta-item .meta-value');
+    const payHistoryBody   = document.querySelector('.payment-table tbody');
+    const featureCardTitle = document.querySelector('.billing-card--features .section-sub');
+    const featuresGrid     = document.querySelector('.features-grid');
+    const featuresCountBadge = document.querySelector('.features-count-badge');
+    const featuresExGrid   = document.querySelector('.features-grid--excluded');
+    const headerPlanBadge  = document.getElementById('headerPlanBadge');
+
+    // ── Fetch subscription ─────────────────────────────────────────
+    const cid = getCompanyId();
+    if (!cid) {
+        console.warn('[billing] No company_id found.');
+        return;
+    }
+
+    const { data: subs, error: subErr } = await supabase
+        .from('subscriptions')
+        .select('*')
+        .eq('company_id', cid)
+        .order('created_at', { ascending: false });
+
+    if (subErr) {
+        console.error('[billing] subscriptions fetch error:', subErr);
+        return;
+    }
+
+    const sub = subs?.[0]; // Most recent active subscription
+
+    if (sub) {
+        const plan = PLAN_MAP[sub.plan_id] || { name: sub.plan_id || 'Unknown', icon: 'zap', monthly: 0, annual: 0 };
+        const isAnnual = sub.billing_cycle === 'annual';
+        const price = sub.billing_amount || (isAnnual ? plan.annual : plan.monthly);
+        const period = isAnnual ? '/ year' : '/ month';
+
+        // ── Plan card ──────────────────────────────────────────────
+        if (planBadgeEl) {
+            planBadgeEl.innerHTML = `<i data-feather="${plan.icon}"></i> ${plan.name} Plan`;
+        }
+        if (planPriceEl) planPriceEl.textContent = fmtAmount(price);
+        if (planPeriodEl) planPeriodEl.textContent = period;
+        if (headerPlanBadge) headerPlanBadge.textContent = plan.name;
+
+        // Status
+        const isActive = sub.status === 'active';
+        const isTrial  = sub.status === 'trialing' || sub.subscription_type === 'trial';
+        let statusLabel = isActive ? (isTrial ? 'Trial Active' : 'Active') : (sub.status || 'Unknown');
+        let statusColor = isActive ? '#166534' : '#92400e';
+        let statusBg    = isActive ? '#dcfce7' : '#fef3c7';
+        let dotColor    = isActive ? '#22c55e' : '#f59e0b';
+
+        if (planStatusEl) {
+            planStatusEl.style.background = statusBg;
+            planStatusEl.style.color = statusColor;
+            planStatusEl.querySelector('.status-dot').style.background = dotColor;
+            planStatusEl.lastChild.textContent = statusLabel;
+        }
+
+        // Meta grid: Status | Start Date | Next Renewal | Next Billing
+        if (planMetaItems && planMetaItems.length >= 4) {
+            // planMetaItems[0] is status — already handled above
+            planMetaItems[1].textContent = fmt(sub.current_period_start);
+            planMetaItems[2].textContent = fmt(sub.current_period_end);
+            planMetaItems[3].textContent = fmtAmount(price);
+        }
+
+        // Upgrade button link
+        const upgradeBtn = document.querySelector('.btn-billing-primary');
+        const changeBtn  = document.querySelector('.btn-billing-secondary');
+        if (upgradeBtn) upgradeBtn.onclick = () => window.location.href = `plans.html?current=${plan.name.toLowerCase()}`;
+        if (changeBtn)  changeBtn.onclick  = () => window.location.href = `plans.html?current=${plan.name.toLowerCase()}`;
+
+        // ── Plan Features ──────────────────────────────────────────
+        const features = PLAN_FEATURES[plan.name] || { included: [], excluded: [] };
+        if (featureCardTitle) featureCardTitle.textContent = `Everything included in your ${plan.name} plan`;
+        if (featuresCountBadge) featuresCountBadge.textContent = `${features.included.length} included`;
+
+        if (featuresGrid) {
+            featuresGrid.innerHTML = features.included.map(f => `
+                <div class="feature-row feature-row--included">
+                    <span class="feature-check"><i data-feather="check"></i></span>
+                    <span class="feature-label">${f}</span>
+                </div>`).join('');
+        }
+        if (featuresExGrid) {
+            featuresExGrid.innerHTML = features.excluded.length
+                ? features.excluded.map(f => `
+                    <div class="feature-row feature-row--excluded">
+                        <span class="feature-check feature-check--no"><i data-feather="x"></i></span>
+                        <span class="feature-label">${f}</span>
+                    </div>`).join('')
+                : '<p style="color:#64748b;font-size:0.85rem;padding:0.5rem 0;">All features included! 🎉</p>';
+
+            // Hide the "Not included" divider if nothing excluded
+            const divider = document.querySelector('.features-divider');
+            if (divider) divider.style.display = features.excluded.length ? '' : 'none';
+        }
+    } else {
+        // No subscription found
+        if (planBadgeEl) planBadgeEl.innerHTML = `<i data-feather="alert-circle"></i> No Active Plan`;
+        if (planPriceEl) planPriceEl.textContent = '—';
+        if (headerPlanBadge) headerPlanBadge.textContent = 'No Plan';
+    }
+
+    // ── Fetch payment history ──────────────────────────────────────
+    const { data: payments, error: payErr } = await supabase
+        .from('payments')
+        .select('*')
+        .eq('company_id', cid)
+        .order('created_at', { ascending: false });
+
+    if (payErr) {
+        console.error('[billing] payments fetch error:', payErr);
+    }
+
+    if (payHistoryBody) {
+        if (!payments || payments.length === 0) {
+            payHistoryBody.innerHTML = `
+                <tr>
+                    <td colspan="5" style="text-align:center;padding:2.5rem;color:#94a3b8;font-size:0.875rem;">
+                        <i data-feather="inbox" style="display:block;margin:0 auto 8px;width:28px;height:28px;"></i>
+                        No payment history yet.
+                    </td>
+                </tr>`;
+        } else {
+            payHistoryBody.innerHTML = payments.map(p => {
+                const isPaid = p.status === 'active' || p.status === 'charged' || p.status === 'captured';
+                const isDue  = p.status === 'pending' || p.status === 'due';
+                const statusHtml = isPaid
+                    ? `<span class="status-pill status-pill--paid">Paid</span>`
+                    : isDue
+                    ? `<span class="status-pill status-pill--due">Payment Due</span>`
+                    : `<span class="status-pill" style="background:#f1f5f9;color:#475569;">${p.status || 'Unknown'}</span>`;
+
+                const actionHtml = isDue
+                    ? `<button class="btn-invoice btn-pay-now" onclick="alert('Redirecting to payment...')">
+                            <i data-feather="alert-circle" style="width:14px;height:14px;"></i> Pay Now
+                       </button>`
+                    : `<button class="btn-invoice" title="Invoice ${p.payment_id || ''}">
+                            <i data-feather="download" style="width:14px;height:14px;"></i> Download
+                       </button>`;
+
+                const planName = PLAN_MAP[p.plan_id]?.name || 'Subscription';
+                const desc = `${planName} Plan${p.billing_cycle === 'annual' ? ' (Annual)' : ''}`;
+
+                return `
+                    <tr>
+                        <td class="td-date">${fmt(p.created_at)}</td>
+                        <td class="td-desc">${desc}</td>
+                        <td class="td-amount">${fmtAmount(p.amount)}</td>
+                        <td>${statusHtml}</td>
+                        <td>${actionHtml}</td>
+                    </tr>`;
+            }).join('');
+        }
+    }
+
+    // ── Re-render Feather icons ────────────────────────────────────
+    if (window.feather) feather.replace();
+
+})();
