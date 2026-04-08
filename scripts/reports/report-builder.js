@@ -205,9 +205,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     // 4. Initial layout render
     updateKPIs(data.kpi1, data.kpi2, data.kpi3, data.kpi4);
     
-    if (type !== 'customers') {
-        updateTable(data.headers, data.rows);
-    } else {
+    if (type === 'customers') {
         // --- LIVE SUPABASE INTEGRATION FOR CUSTOMERS ---
         const companyId = localStorage.getItem('company_id');
         const branchId = localStorage.getItem('active_branch_id');
@@ -277,5 +275,64 @@ document.addEventListener('DOMContentLoaded', async () => {
             console.error('Error loading customer report data:', err);
             updateTable(data.headers, []);
         }
+    } else if (type === 'staff') {
+        // --- LIVE SUPABASE INTEGRATION FOR STAFF ---
+        const companyId = localStorage.getItem('company_id');
+        const branchId = localStorage.getItem('active_branch_id');
+        
+        if (!companyId || !branchId) {
+            updateTable(data.headers, []);
+            return;
+        }
+
+        try {
+            const { data: dbStaff, error } = await supabase
+                .from('staff')
+                .select('*')
+                .eq('company_id', companyId)
+                .eq('branch_id', branchId)
+                .neq('status', 'deleted');
+            
+            if (error) throw error;
+            
+            const staffList = dbStaff || [];
+            
+            // Calculate KPIs
+            const activeStaff = staffList.filter(s => s.status === 'active').length;
+            
+            const formattedRows = staffList.map(s => {
+                const name = s.staff_name || s.name || 'Unknown';
+                const role = s.role_name || s.role || 'Unassigned';
+                const statusHtml = s.status === 'active' ? '<span class="status-pill active">Active</span>' :
+                                   s.status === 'on-leave' ? '<span class="status-pill pending">On Leave</span>' :
+                                   '<span class="status-pill cancelled">Inactive</span>';
+                
+                // Mocks for analytical data not stored in the core staff schema
+                // In a production app, these would come from an SQL aggregation view or join query.
+                const appointments = s.appointments || Math.floor(Math.random() * 50) + 10;
+                const hours = s.total_hours || (Math.floor(Math.random() * 40) + 40) + 'h';
+                const rev = s.revenue ? formatCurrency(s.revenue) : formatCurrency(Math.floor(Math.random() * 40000) + 10000);
+                const rating = s.rating || (4 + Math.random()).toFixed(1) + '/5';
+
+                return [name, role, statusHtml, appointments, hours, rev, rating];
+            });
+            
+            // Override KPI 1
+            data.kpi1.value = activeStaff.toString();
+            // Top Performer logic mockup
+            if (staffList.length > 0) {
+                data.kpi3.value = staffList[0].staff_name || staffList[0].name || 'Sarah M.';
+            }
+
+            updateKPIs(data.kpi1, data.kpi2, data.kpi3, data.kpi4);
+            updateTable(data.headers, formattedRows);
+
+        } catch (err) {
+            console.error('Error loading staff report data:', err);
+            updateTable(data.headers, []);
+        }
+    } else {
+        // Render hardcoded mock data for the rest of the reports
+        updateTable(data.headers, data.rows);
     }
 });
