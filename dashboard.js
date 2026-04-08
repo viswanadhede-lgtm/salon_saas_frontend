@@ -547,7 +547,9 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     // 4. Populate Tables and Calendar (Mock Data)
-    if (document.getElementById('tbTableBodyToday')) {
+    // Skip mock data population if on the bookings page (bookings.js handles it)
+    const isBookingsPage = window.location.pathname.includes('bookings.html');
+    if (document.getElementById('tbTableBodyToday') && !isBookingsPage) {
         populateTodayTable();
         populateAllBookingsTable();
         populateCalendarGrid();

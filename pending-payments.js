@@ -337,6 +337,17 @@ document.addEventListener('DOMContentLoaded', async () => {
             
             // Re-fetch data to update the view
             await fetchPayments();
+            
+            // Dispatch custom event for other modules
+            document.dispatchEvent(new CustomEvent('payment-recorded', {
+                detail: { bookingId: activeBookingId, amount: amount }
+            }));
+
+            // Force refetch on Bookings if it exists in the current session
+            if (typeof window.fetchBookings === 'function') {
+                console.log('[PP] Triggering global fetchBookings...');
+                await window.fetchBookings();
+            }
 
         } catch (err) {
             console.error('[PP] Error recording payment:', err);

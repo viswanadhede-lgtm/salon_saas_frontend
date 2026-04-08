@@ -42,6 +42,7 @@ function paymentBadge(status) {
         paid:    { color: '#065f46', bg: '#d1fae5', label: 'Paid' },
         unpaid:  { color: '#991b1b', bg: '#fee2e2', label: 'Unpaid' },
         pending: { color: '#92400e', bg: '#fef3c7', label: 'Pending' },
+        partial: { color: '#86198f', bg: '#f5d0fe', label: 'Partial' },
     };
     const s = (status || '').toLowerCase().trim();
     const cfg = map[s] || { color: '#475569', bg: '#f1f5f9', label: status || '—' };
@@ -60,7 +61,7 @@ function buildRow(b, includeDate = false) {
     const timeOnly     = b.start_time   || '';
     const amount       = b.price != null ? `₹${Number(b.price).toLocaleString('en-IN')}` : '—';
     const status       = b.status || '';
-    const payment      = b.payment || b.payment_status || '';
+    const payment      = b.payment_status || '';
 
     const isCancellable = !['cancelled', 'completed', 'no-show', 'no_show'].includes(status.toLowerCase());
     const isEditable    = !['cancelled', 'completed'].includes(status.toLowerCase());
@@ -427,7 +428,7 @@ function attachEventListeners() {
         if (!statusVal || statusVal === 'null') statusVal = 'confirmed';
         if (statusVal === 'no_show') statusVal = 'no-show';
 
-        let paymentVal = (b.payment || b.payment_status || '').toLowerCase().trim();
+        let paymentVal = (b.payment_status || '').toLowerCase().trim();
         if (!paymentVal || paymentVal === 'null') paymentVal = 'pending';
 
         const statusEl = document.getElementById('editBkStatus');
@@ -461,7 +462,7 @@ export async function fetchBookings() {
         const branchId  = getBranchId();
 
         let query = supabase
-            .from('bookings')
+            .from('bookings_with_payment_status')
             .select('*')
             .order('booking_date', { ascending: false });
 
@@ -491,5 +492,12 @@ export async function initBookings() {
     window.fetchBookings = fetchBookings;
     setupModals();
     attachEventListeners();
+    
+    // Listen for global payment recording event
+    document.addEventListener('payment-recorded', async () => {
+        console.log('[Bookings] Payment recorded event detected, refreshing...');
+        await fetchBookings();
+    });
+
     await fetchBookings();
 }
