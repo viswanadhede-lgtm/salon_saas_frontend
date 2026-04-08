@@ -10,11 +10,22 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     // --- Helpers ---
     function getCompanyId() {
-        return localStorage.getItem('company_id');
+        try {
+            const ctx = JSON.parse(localStorage.getItem('appContext') || '{}');
+            const id = ctx.company?.id || localStorage.getItem('company_id');
+            console.log('[PP] Detected Company ID:', id);
+            return id;
+        } catch (e) { 
+            const id = localStorage.getItem('company_id');
+            console.log('[PP] Detected Company ID (fallback):', id);
+            return id; 
+        }
     }
 
     function getBranchId() {
-        return localStorage.getItem('active_branch_id');
+        const id = localStorage.getItem('active_branch_id');
+        console.log('[PP] Detected Branch ID:', id);
+        return id;
     }
 
     function showLoading(isLoading) {
@@ -56,13 +67,19 @@ document.addEventListener('DOMContentLoaded', async () => {
             }
 
             const { data, error } = await query;
-            if (error) throw error;
+            if (error) {
+                console.error('[PP] Supabase Error:', error);
+                throw error;
+            }
+
+            console.log('[PP] Data fetched successfully. Row count:', data ? data.length : 0);
+            console.log('[PP] Raw Data Sample:', data ? data[0] : 'None');
 
             allPayments = data || [];
             applyAllFilters();
 
         } catch (err) {
-            console.error('Error fetching payments:', err);
+            console.error('[PP] Critical Fetch Error:', err);
             ppShowToast('Failed to load payments', true);
         }
     }
@@ -132,6 +149,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     // ─── APPLY ALL FILTERS ──────────────────────────────────────────────────
     function applyAllFilters() {
         const term = (searchInput?.value || '').trim().toLowerCase();
+        console.log('[PP] Applying filters. Search Term:', term, 'Active Status Filter:', currentFilter.status);
         
         filteredPayments = allPayments.filter(r => {
             // Search
@@ -140,7 +158,8 @@ document.addEventListener('DOMContentLoaded', async () => {
                 (r.customer_name || '').toLowerCase().includes(term);
             
             // Status
-            const matchesStatus = currentFilter.status.length === 0 || currentFilter.status.some(fs => (r.status || '').toLowerCase() === fs.toLowerCase());
+            const matchesStatus = currentFilter.status.length === 0 || 
+                                 currentFilter.status.some(fs => (r.status || '').toLowerCase() === fs.toLowerCase());
             
             // Date Range
             let matchesDate = true;
@@ -164,6 +183,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             return matchesSearch && matchesStatus && matchesDate;
         });
         
+        console.log('[PP] Filtering complete. Showing', filteredPayments.length, 'of', allPayments.length, 'records.');
         renderTable();
     }
 
