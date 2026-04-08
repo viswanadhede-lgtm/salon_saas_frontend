@@ -118,6 +118,7 @@ window.submitExpense = async () => {
                     category,
                     amount,
                     notes:      notes || null,
+                    status:     'active',
                     updated_at: new Date().toISOString()
                 }));
 
@@ -130,6 +131,7 @@ window.submitExpense = async () => {
                         category,
                         amount,
                         notes:      notes || null,
+                        status:     'active',
                         updated_at: new Date().toISOString()
                     }));
             }
