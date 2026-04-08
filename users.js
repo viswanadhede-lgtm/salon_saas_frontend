@@ -45,6 +45,120 @@ import { supabase } from './lib/supabase.js';
         return palettes[hash % palettes.length];
     }
 
+    // ── Delete Confirmation Modal ─────────────────────────────────
+    function showDeleteConfirmModal(userName, onConfirm) {
+        // Remove any existing modal
+        const existing = document.getElementById('deleteConfirmBackdrop');
+        if (existing) existing.remove();
+
+        const style = document.createElement('style');
+        style.id = 'deleteConfirmStyles';
+        style.textContent = `
+            #deleteConfirmBackdrop {
+                position: fixed;
+                inset: 0;
+                background: rgba(15,23,42,0.6);
+                backdrop-filter: blur(6px);
+                z-index: 999999;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                animation: dcFadeIn 0.2s ease;
+            }
+            @keyframes dcFadeIn { from { opacity:0; } to { opacity:1; } }
+            #deleteConfirmBox {
+                background: #fff;
+                border-radius: 20px;
+                padding: 2rem;
+                width: 100%;
+                max-width: 400px;
+                box-shadow: 0 24px 64px rgba(0,0,0,0.2);
+                animation: dcSlideIn 0.25s ease;
+                text-align: center;
+            }
+            @keyframes dcSlideIn {
+                from { opacity:0; transform: scale(0.94) translateY(12px); }
+                to   { opacity:1; transform: scale(1) translateY(0); }
+            }
+            #deleteConfirmBox .dc-icon {
+                width: 60px; height: 60px;
+                background: #fef2f2;
+                border-radius: 50%;
+                display: flex; align-items: center; justify-content: center;
+                margin: 0 auto 1.25rem;
+            }
+            #deleteConfirmBox .dc-icon svg {
+                width: 28px; height: 28px;
+                stroke: #ef4444; fill: none;
+                stroke-width: 2; stroke-linecap: round; stroke-linejoin: round;
+            }
+            #deleteConfirmBox h3 {
+                font-size: 1.1rem; font-weight: 700;
+                color: #0f172a; margin: 0 0 0.5rem;
+            }
+            #deleteConfirmBox p {
+                font-size: 0.875rem; color: #64748b;
+                margin: 0 0 1.75rem; line-height: 1.6;
+            }
+            #deleteConfirmBox p strong { color: #0f172a; }
+            #deleteConfirmBox .dc-actions {
+                display: flex; gap: 0.75rem;
+            }
+            #deleteConfirmBox .dc-cancel {
+                flex: 1; padding: 0.7rem;
+                border-radius: 10px;
+                border: 1.5px solid #e2e8f0;
+                background: #fff;
+                font-size: 0.875rem; font-weight: 600;
+                color: #475569; cursor: pointer;
+                transition: background 0.15s;
+            }
+            #deleteConfirmBox .dc-cancel:hover { background: #f8fafc; }
+            #deleteConfirmBox .dc-delete {
+                flex: 1; padding: 0.7rem;
+                border-radius: 10px;
+                border: none;
+                background: linear-gradient(135deg, #ef4444, #dc2626);
+                font-size: 0.875rem; font-weight: 600;
+                color: #fff; cursor: pointer;
+                transition: opacity 0.15s;
+                box-shadow: 0 4px 12px rgba(239,68,68,0.35);
+            }
+            #deleteConfirmBox .dc-delete:hover { opacity: 0.88; }
+        `;
+        if (!document.getElementById('deleteConfirmStyles')) {
+            document.head.appendChild(style);
+        }
+
+        const backdrop = document.createElement('div');
+        backdrop.id = 'deleteConfirmBackdrop';
+        backdrop.innerHTML = `
+            <div id="deleteConfirmBox">
+                <div class="dc-icon">
+                    <svg viewBox="0 0 24 24"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4h6v2"/></svg>
+                </div>
+                <h3>Delete User?</h3>
+                <p>This will deactivate <strong>${userName}</strong>'s account and revoke their access. Their history will be preserved.</p>
+                <div class="dc-actions">
+                    <button class="dc-cancel" id="dcCancelBtn">Cancel</button>
+                    <button class="dc-delete" id="dcDeleteBtn">Yes, Delete</button>
+                </div>
+            </div>
+        `;
+        document.body.appendChild(backdrop);
+
+        const close = () => backdrop.remove();
+        document.getElementById('dcCancelBtn').addEventListener('click', close);
+        backdrop.addEventListener('click', e => { if (e.target === backdrop) close(); });
+        document.getElementById('dcDeleteBtn').addEventListener('click', async () => {
+            const btn = document.getElementById('dcDeleteBtn');
+            btn.textContent = 'Deleting...';
+            btn.disabled = true;
+            await onConfirm();
+            close();
+        });
+    }
+
     // ── Loaders ───────────────────────────────────────────────────
     async function loadDropdowns() {
         const cid = getCompanyId();
@@ -216,16 +330,17 @@ import { supabase } from './lib/supabase.js';
                 showToast("Failed to update status", true);
             }
         } else if (action === 'delete') {
-            if (!confirm(`Are you sure you want to delete \${user.name}? This will mark their account as deleted but keep history.`)) return;
-            try {
-                const { error } = await supabase.from('users').eq(user.user_id ? 'user_id' : 'id', id).update({ status: 'deleted' });
-                if (error) throw error;
-                await loadUsers();
-                showToast(`User "\${user.name}" has been deleted.`);
-            } catch (err) {
-                console.error("Error deleting user:", err);
-                showToast("Failed to delete user", true);
-            }
+            showDeleteConfirmModal(user.name, async () => {
+                try {
+                    const { error } = await supabase.from('users').eq(user.user_id ? 'user_id' : 'id', id).update({ status: 'deleted' });
+                    if (error) throw error;
+                    await loadUsers();
+                    showToast(`User "${user.name}" has been deleted.`);
+                } catch (err) {
+                    console.error('Error deleting user:', err);
+                    showToast('Failed to delete user', true);
+                }
+            });
         }
     };
 
