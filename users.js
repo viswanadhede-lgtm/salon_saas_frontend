@@ -310,7 +310,7 @@ import { supabase } from './lib/supabase.js';
             const rObj = availableRoles.find(r => String(r.role_id) === String(role_id));
             const role_name = rObj ? rObj.role_name : null;
             
-            const branch_id = branch_v === 'all' ? null : parseInt(branch_v, 10);
+            const branch_id = branch_v === 'all' ? null : branch_v;
             const status = active ? 'active' : 'inactive';
 
             const payload = {
@@ -325,8 +325,10 @@ import { supabase } from './lib/supabase.js';
             };
 
             if (password) {
-                // we treat this as a simple string since mock hash, but in prod we'd call an auth endpoint
-                payload.password_hash = password; 
+                const msgBuffer = new TextEncoder().encode(password);
+                const hashBuffer = await crypto.subtle.digest('SHA-256', msgBuffer);
+                const hashArray = Array.from(new Uint8Array(hashBuffer));
+                payload.password_hash = hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
             }
 
             if (editingId !== null) {
