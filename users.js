@@ -203,25 +203,25 @@ import { supabase } from './lib/supabase.js';
         if (action === 'edit') {
             openModal('edit', user);
         } else if (action === 'reset') {
-            showToast(\`Password reset link feature pending implementation for \${user.email}\`);
+            showToast(`Password reset link feature pending implementation for \${user.email}`);
         } else if (action === 'toggle') {
             const newStatus = user.status === 'active' ? 'inactive' : 'active';
             try {
                 const { error } = await supabase.from('users').update({ status: newStatus }).eq(user.user_id ? 'user_id' : 'id', id);
                 if (error) throw error;
                 await loadUsers();
-                showToast(\`\${user.name} is now \${newStatus}.\`);
+                showToast(`\${user.name} is now \${newStatus}.`);
             } catch (err) {
                 console.error("Error toggling status:", err);
                 showToast("Failed to update status", true);
             }
         } else if (action === 'delete') {
-            if (!confirm(\`Are you sure you want to delete \${user.name}? This will mark their account as deleted but keep history.\`)) return;
+            if (!confirm(`Are you sure you want to delete \${user.name}? This will mark their account as deleted but keep history.`)) return;
             try {
                 const { error } = await supabase.from('users').update({ status: 'deleted' }).eq(user.user_id ? 'user_id' : 'id', id);
                 if (error) throw error;
                 await loadUsers();
-                showToast(\`User "\${user.name}" has been deleted.\`);
+                showToast(`User "\${user.name}" has been deleted.`);
             } catch (err) {
                 console.error("Error deleting user:", err);
                 showToast("Failed to delete user", true);
@@ -248,7 +248,7 @@ import { supabase } from './lib/supabase.js';
         if (mode === 'edit' && user) {
             editingId = user.user_id || user.id;
             modalTitle.textContent = 'Edit User';
-            modalSub.textContent   = \`Update account details for \${user.name}\`;
+            modalSub.textContent   = `Update account details for \${user.name}`;
             saveBtn.textContent    = 'Save Changes';
             
             document.getElementById('uFullName').value = user.name || '';
