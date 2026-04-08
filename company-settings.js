@@ -124,6 +124,7 @@ window.saveSettings = async function () {
         // ── 1. Update companies table ────────────────────────────────────────
         const { error: compErr } = await supabase
             .from('companies')
+            .eq('company_id', companyId)
             .update({
                 company_name:                  getVal('companyName'),
                 display_name:                  getVal('displayName'),
@@ -132,25 +133,43 @@ window.saveSettings = async function () {
                 tax_id:                        getVal('taxId'),
                 business_registration_number:  getVal('regNumber'),
                 updated_at:                    new Date().toISOString(),
-            })
-            .eq('company_id', companyId);
+            });
 
         if (compErr) throw new Error('Failed to save company info: ' + compErr.message);
 
-        // ── 2. Upsert company_settings table (creates row if not exists) ─────
-        const { error: setErr } = await supabase
+        // ── 2. Save company_settings table ──────────────────────────────────
+        // Custom wrapper doesn't have .upsert(), so we check if it exists first
+        const { data: existingSettings } = await supabase
             .from('company_settings')
-            .upsert({
-                company_id:          companyId,
-                currency:            getVal('currency'),
-                timezone:            getVal('timezone'),
-                language:            getVal('language'),
-                date_format:         getVal('dateFormat'),
-                time_format:         getVal('timeFormat'),
-                invoice_footer_note: getVal('invoiceFooter'),
-            }, { onConflict: 'company_id' });
+            .select('company_id')
+            .eq('company_id', companyId);
 
-        if (setErr) throw new Error('Failed to save settings: ' + setErr.message);
+        const settingsData = {
+            currency:            getVal('currency'),
+            timezone:            getVal('timezone'),
+            language:            getVal('language'),
+            date_format:         getVal('dateFormat'),
+            time_format:         getVal('timeFormat'),
+            invoice_footer_note: getVal('invoiceFooter'),
+        };
+
+        if (existingSettings && existingSettings.length > 0) {
+            // Row exists, so Update (remember .eq() comes BEFORE .update() in this custom wrapper)
+            const { error: updateErr } = await supabase
+                .from('company_settings')
+                .eq('company_id', companyId)
+                .update(settingsData);
+            if (updateErr) throw new Error('Failed to update settings: ' + updateErr.message);
+        } else {
+            // Row missing, so Insert
+            const { error: insertErr } = await supabase
+                .from('company_settings')
+                .insert({
+                    company_id: companyId,
+                    ...settingsData
+                });
+            if (insertErr) throw new Error('Failed to insert settings: ' + insertErr.message);
+        }
 
         // ── Success ──────────────────────────────────────────────────────────
         showToast('Company settings saved successfully!', 'success');
