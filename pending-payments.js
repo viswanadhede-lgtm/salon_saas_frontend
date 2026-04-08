@@ -309,19 +309,23 @@ document.addEventListener('DOMContentLoaded', async () => {
             const companyId = getCompanyId();
             const branchId = getBranchId();
             const payMethod = methodRadio.value;
+            const userId    = localStorage.getItem('user_id'); // Try to get the user ID for created_by
 
-            // Insert into business_transactions
+            // Insert into business_transactions matching your exact schema
             const { error: txError } = await supabase
                 .from('business_transactions')
                 .insert({
-                    company_id: companyId,
-                    branch_id: branchId,
-                    reference_id: activeBookingId,
+                    company_id:     companyId,
+                    branch_id:      branchId,
+                    reference_id:   activeBookingId,
                     reference_type: 'booking',
-                    amount: amount,
+                    amount:         amount,
+                    currency:       'INR',
                     payment_method: payMethod,
-                    status: 'paid', // Or 'completed' depending on your schema
-                    description: `Payment for booking ${activeBookingId.substring(0,8)}`
+                    status:         'paid', 
+                    notes:          `Payment for booking ${activeBookingId.substring(0,8)}`,
+                    created_by:     userId,
+                    paid_at:        new Date().toISOString()
                 });
 
             if (txError) throw txError;
@@ -335,7 +339,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             await fetchPayments();
 
         } catch (err) {
-            console.error('Error recording payment:', err);
+            console.error('[PP] Error recording payment:', err);
             ppShowToast('Failed to record payment', true);
         } finally {
             recordBtn.disabled = false;
