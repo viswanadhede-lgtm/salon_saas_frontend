@@ -1,6 +1,8 @@
 // scripts/reports/report-builder.js
 // Handles dynamic UI loading for report-detail.html based on the '?type=' query string
 
+import { supabase } from '../../lib/supabase.js';
+
 const REPORT_TYPES = {
     financial: {
         title: 'Financial Reports',
@@ -36,16 +38,13 @@ const REPORT_TYPES = {
         title: 'Customer Analytics',
         subtitle: 'Retention, acquisition, and feedback',
         icon: 'users',
-        kpi1: { label: 'Total Customers', value: '8,420' },
-        kpi2: { label: 'New This Month', value: '342' },
-        kpi3: { label: 'Retention Rate', value: '68%' },
-        kpi4: { label: 'Avg Feedback', value: '4.8/5' },
+        kpi1: { label: 'Total Customers', value: 'Loading...' },
+        kpi2: { label: 'New This Month', value: 'Loading...' },
+        kpi3: { label: 'Total Value', value: 'Loading...' },
+        kpi4: { label: 'Avg Bookings', value: 'Loading...' },
         tableTitle: 'Customer Registry',
         headers: ['Joined Date', 'Customer Name', 'Phone', 'Total Visits', 'Total Spend', 'Last Visit', 'Status'],
-        rows: [
-            ['2023-01-15', 'Priya Singh', '+91 9876543210', '14', '₹12,450', '2024-03-20', '<span class="status-pill active">Active</span>'],
-            ['2023-05-22', 'Vikram Rao', '+91 9876543211', '6', '₹4,200', '2023-11-10', '<span class="status-pill cancelled">Inactive</span>']
-        ]
+        rows: [] // Will map dynamically via supabase
     },
     services: {
         title: 'Service Performance',
@@ -139,7 +138,12 @@ const REPORT_TYPES = {
     }
 };
 
-document.addEventListener('DOMContentLoaded', () => {
+function formatCurrency(num) {
+    if (isNaN(num)) return '₹0';
+    return new Intl.NumberFormat('en-IN', { style: 'currency', currency: 'INR', maximumFractionDigits: 0 }).format(num);
+}
+
+document.addEventListener('DOMContentLoaded', async () => {
     // 1. Get current tracking parameters
     const urlParams = new URLSearchParams(window.location.search);
     let type = urlParams.get('type') || 'financial';
@@ -150,7 +154,6 @@ document.addEventListener('DOMContentLoaded', () => {
     }
     
     const data = REPORT_TYPES[type];
-    
     console.log(`[report-builder] Initializing ${type} report views.`);
     
     // 2. Update page header elements dynamically
@@ -162,27 +165,25 @@ document.addEventListener('DOMContentLoaded', () => {
     if (subtitleEl) subtitleEl.textContent = data.subtitle;
     if (rightChartTitleEl) rightChartTitleEl.textContent = 'Distribution';
     
-    // 3. Update KPI Card Labels and Values (using DOM IDs)
-    const lbl1 = document.getElementById('kpiLabel1');
-    const val1 = document.getElementById('kpiValue1');
-    if (lbl1 && val1) { lbl1.textContent = data.kpi1.label; val1.textContent = data.kpi1.value; }
+    // 3. Prepare to update DOM
+    const updateKPIs = (k1, k2, k3, k4) => {
+        const lbl1 = document.getElementById('kpiLabel1'); const val1 = document.getElementById('kpiValue1');
+        if (lbl1 && val1) { lbl1.textContent = k1.label; val1.textContent = k1.value; }
 
-    const lbl2 = document.getElementById('kpiLabel2');
-    const val2 = document.getElementById('kpiValue2');
-    if (lbl2 && val2) { lbl2.textContent = data.kpi2.label; val2.textContent = data.kpi2.value; }
+        const lbl2 = document.getElementById('kpiLabel2'); const val2 = document.getElementById('kpiValue2');
+        if (lbl2 && val2) { lbl2.textContent = k2.label; val2.textContent = k2.value; }
 
-    const lbl3 = document.getElementById('kpiLabel3');
-    const val3 = document.getElementById('kpiValue3');
-    if (lbl3 && val3) { lbl3.textContent = data.kpi3.label; val3.textContent = data.kpi3.value; }
+        const lbl3 = document.getElementById('kpiLabel3'); const val3 = document.getElementById('kpiValue3');
+        if (lbl3 && val3) { lbl3.textContent = k3.label; val3.textContent = k3.value; }
 
-    const lbl4 = document.getElementById('kpiLabel4');
-    const val4 = document.getElementById('kpiValue4');
-    if (lbl4 && val4) { lbl4.textContent = data.kpi4.label; val4.textContent = data.kpi4.value; }
-
-    // 4. Update the Table Headers and Body
-    const tableContainer = document.querySelector('.data-table-container');
-    if (tableContainer && data.headers) {
-        // Update Title
+        const lbl4 = document.getElementById('kpiLabel4'); const val4 = document.getElementById('kpiValue4');
+        if (lbl4 && val4) { lbl4.textContent = k4.label; val4.textContent = k4.value; }
+    };
+    
+    const updateTable = (headers, rows) => {
+        const tableContainer = document.querySelector('.data-table-container');
+        if (!tableContainer) return;
+        
         const tableHeaderTitle = tableContainer.querySelector('.table-header h2');
         if (tableHeaderTitle) tableHeaderTitle.textContent = data.tableTitle || 'Detailed Records';
 
@@ -190,17 +191,91 @@ document.addEventListener('DOMContentLoaded', () => {
         const tbody = document.getElementById('tableBody');
 
         if (theadRow && tbody) {
-            // Render Headers
-            theadRow.innerHTML = data.headers.map(h => `<th>${h}</th>`).join('');
-
-            // Render Rows
-            if (data.rows && data.rows.length > 0) {
-                tbody.innerHTML = data.rows.map(row => 
+            theadRow.innerHTML = headers.map(h => `<th>${h}</th>`).join('');
+            if (rows && rows.length > 0) {
+                tbody.innerHTML = rows.map(row => 
                     `<tr>${row.map(cell => `<td>${cell}</td>`).join('')}</tr>`
                 ).join('');
             } else {
-                tbody.innerHTML = `<tr><td colspan="${data.headers.length}" style="text-align: center; padding: 2rem;">No data available for this report type.</td></tr>`;
+                tbody.innerHTML = `<tr><td colspan="${headers.length}" style="text-align: center; padding: 2rem;">No data available for this report.</td></tr>`;
             }
+        }
+    };
+
+    // 4. Initial layout render
+    updateKPIs(data.kpi1, data.kpi2, data.kpi3, data.kpi4);
+    
+    if (type !== 'customers') {
+        updateTable(data.headers, data.rows);
+    } else {
+        // --- LIVE SUPABASE INTEGRATION FOR CUSTOMERS ---
+        const companyId = localStorage.getItem('company_id');
+        const branchId = localStorage.getItem('active_branch_id');
+        
+        if (!companyId || !branchId) {
+            updateTable(data.headers, []);
+            return;
+        }
+
+        try {
+            const { data: dbCustomers, error } = await supabase
+                .from('customers')
+                .select('*')
+                .eq('company_id', companyId)
+                .eq('branch_id', branchId)
+                .neq('status', 'deleted')
+                .order('created_at', { ascending: false });
+            
+            if (error) throw error;
+            
+            const customersList = dbCustomers || [];
+            
+            // Calculate KPIs
+            const now = new Date();
+            const thirtyDaysAgo = new Date();
+            thirtyDaysAgo.setDate(now.getDate() - 30);
+            
+            const totalCust = customersList.length;
+            const newCust = customersList.filter(c => c.created_at && new Date(c.created_at) >= thirtyDaysAgo).length;
+            
+            let totalValue = 0;
+            let totalBookingsAcrossAll = 0;
+            
+            const formattedRows = customersList.map(c => {
+                totalValue += (c.total_spent || 0);
+                totalBookingsAcrossAll += (c.total_bookings || 0);
+                
+                const joinedDate = c.created_at ? new Date(c.created_at).toLocaleDateString() : 'Unknown';
+                const name = c.customer_name || 'N/A';
+                const phone = c.customer_phone || 'N/A';
+                const visits = c.total_bookings || 0;
+                const spend = formatCurrency(c.total_spent || 0);
+                const lastVisit = c.last_visit ? new Date(c.last_visit).toLocaleDateString() : 'Never';
+                
+                // compute status based on last visit
+                let statusHtml = '<span class="status-pill active">Active</span>';
+                if (c.last_visit) {
+                    const daysSince = (now - new Date(c.last_visit)) / (1000 * 60 * 60 * 24);
+                    if (daysSince > 90) statusHtml = '<span class="status-pill cancelled">Inactive</span>';
+                } else {
+                     statusHtml = '<span class="status-pill pending">New</span>';
+                }
+
+                return [joinedDate, name, phone, visits, spend, lastVisit, statusHtml];
+            });
+            
+            // Override KPIs
+            data.kpi1.value = totalCust.toString();
+            data.kpi2.value = newCust.toString();
+            data.kpi3.value = formatCurrency(totalValue);
+            data.kpi4.value = totalCust > 0 ? (totalBookingsAcrossAll / totalCust).toFixed(1) : '0';
+            
+            updateKPIs(data.kpi1, data.kpi2, data.kpi3, data.kpi4);
+            updateTable(data.headers, formattedRows);
+
+        } catch (err) {
+            console.error('Error loading customer report data:', err);
+            updateTable(data.headers, []);
         }
     }
 });
