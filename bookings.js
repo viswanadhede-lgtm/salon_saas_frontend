@@ -381,13 +381,12 @@ window.openRefundModal = async function(bookingId) {
     modal.classList.add('active');
 
     try {
-        // Fetch total paid amount from transactions
+        // Fetch transactions for this booking
         const { data, error } = await supabase
             .from('business_transactions')
-            .select('amount, payment_method')
+            .select('amount, payment_method, status')
             .eq('reference_id', bookingId)
-            .eq('reference_type', 'booking')
-            .in('status', ['paid', 'refunded']);
+            .eq('reference_type', 'booking');
 
         if (error) throw error;
 
