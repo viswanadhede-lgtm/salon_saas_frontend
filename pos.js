@@ -472,8 +472,32 @@ function setupEventListeners() {
                 .insert(salesBatch);
 
             if (saleError) throw saleError;
+            
+            // ─── Record Payment Transaction in Ledger ─────────────────────────────
+            // Rule: Frontend only records money ('paid'). Backend trigger handles the 'pending' invoice.
+            const prodCountStr = cart.length === 1 ? '1 item' : `${cart.length} items`;
+            const { error: txError } = await supabase
+                .from('business_transactions')
+                .insert({
+                    company_id: getCompanyId(),
+                    branch_id: getBranchId(),
+                    reference_id: saleGroupId,
+                    reference_type: 'product',
+                    amount: totalAmount,
+                    currency: 'INR',
+                    payment_method: paymentMethod,
+                    status: 'paid',
+                    notes: `POS Sale - ${prodCountStr}`,
+                    paid_at: new Date().toISOString()
+                });
 
-            showToast('✓ Sale completed successfully!');
+            if (txError) {
+                console.error('POS: Ledger recording failed:', txError);
+                // We show a warning but don't stop the user since the sale was saved
+                showToast('Sale saved, but ledger record failed. Please check history.', true);
+            } else {
+                showToast('✓ Sale completed successfully!');
+            }
 
             // Reset state
             cart = [];

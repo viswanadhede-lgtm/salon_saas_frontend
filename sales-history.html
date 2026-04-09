@@ -356,18 +356,89 @@
             </div>
         </div>
 
-        <!-- Refund Confirmation Overlay -->
-        <div class="action-summary-overlay" id="refundSummaryOverlay" style="display:none;">
-            <div class="modal-container" style="width: 440px; border-radius: 12px; padding: 0.5rem; text-align: center;">
-                <div class="modal-body" style="padding: 2rem 1.5rem 1.5rem 1.5rem; display: flex; flex-direction: column; align-items: center;">
-                    <div style="width: 56px; height: 56px; border-radius: 50%; background: #fff1f2; display: flex; align-items: center; justify-content: center; margin-bottom: 16px;">
-                        <i data-feather="alert-triangle" style="color: #dc2626; width: 28px; height: 28px;"></i>
+        <!-- Collect Payment Modal -->
+        <div class="modal-overlay" id="collectPaymentModalOverlay">
+            <div class="modal-container" style="width: 480px; max-width: 95%;">
+                <div class="modal-header">
+                    <div class="header-titles">
+                        <h2>Collect Payment</h2>
+                        <p class="subtitle">Complete the payment for this sale.</p>
                     </div>
-                    <h3 style="font-size: 1.25rem; font-weight: 700; color: #1e293b; margin-bottom: 8px;">Confirm Refund</h3>
-                    <p style="font-size: 0.95rem; color: #475569; margin-bottom: 24px; line-height: 1.5;">Are you sure you want to refund this sale? This action will reverse the revenue and cannot be undone.</p>
+                    <button class="modal-close" id="closeCollectPaymentModal"><i data-feather="x"></i></button>
+                </div>
+                <div class="modal-body" style="padding: 1.5rem;">
+                    <div style="background: #f8fafc; border-radius: 10px; padding: 20px; margin-bottom: 24px;">
+                        <div style="display: flex; justify-content: space-between; margin-bottom: 8px;">
+                            <span style="color: #64748b; font-size: 0.9rem;">Total Amount</span>
+                            <span style="color: #1e293b; font-weight: 700; font-size: 1rem;" id="cpTotal">₹0</span>
+                        </div>
+                        <div style="display: flex; justify-content: space-between; margin-bottom: 12px;">
+                            <span style="color: #64748b; font-size: 0.9rem;">Paid So Far</span>
+                            <span style="color: #10b981; font-weight: 600; font-size: 1rem;" id="cpPaid">₹0</span>
+                        </div>
+                        <div style="height: 1px; background: #e2e8f0; margin-bottom: 12px;"></div>
+                        <div style="display: flex; justify-content: space-between;">
+                            <span style="color: #1e293b; font-weight: 600; font-size: 1rem;">Balance Due</span>
+                            <span style="color: #ef4444; font-weight: 800; font-size: 1.25rem;" id="cpBalance">₹0</span>
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label">Payment Amount</label>
+                        <div style="position: relative;">
+                            <span style="position: absolute; left: 12px; top: 12px; color: #94a3b8; font-weight: 600;">₹</span>
+                            <input type="number" id="cpAmountInput" class="form-input" style="padding-left: 28px;" placeholder="0.00">
+                        </div>
+                    </div>
+
+                    <div class="form-group" style="margin-top: 20px;">
+                        <label class="form-label">Payment Method</label>
+                        <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px;">
+                            <button class="pay-method-btn active" data-method="cash" style="display: flex; flex-direction: column; align-items: center; gap: 6px; padding: 10px; border: 1px solid #e2e8f0; border-radius: 8px; background: #fff; cursor: pointer;">
+                                <i data-feather="dollar-sign" style="width: 18px; height: 18px;"></i>
+                                <span style="font-size: 0.75rem; font-weight: 600;">Cash</span>
+                            </button>
+                            <button class="pay-method-btn" data-method="upi" style="display: flex; flex-direction: column; align-items: center; gap: 6px; padding: 10px; border: 1px solid #e2e8f0; border-radius: 8px; background: #fff; cursor: pointer;">
+                                <i data-feather="smartphone" style="width: 18px; height: 18px;"></i>
+                                <span style="font-size: 0.75rem; font-weight: 600;">UPI</span>
+                            </button>
+                            <button class="pay-method-btn" data-method="card" style="display: flex; flex-direction: column; align-items: center; gap: 6px; padding: 10px; border: 1px solid #e2e8f0; border-radius: 8px; background: #fff; cursor: pointer;">
+                                <i data-feather="credit-card" style="width: 18px; height: 18px;"></i>
+                                <span style="font-size: 0.75rem; font-weight: 600;">Card</span>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button class="btn btn-secondary" id="cancelCollectBtn">Cancel</button>
+                    <button class="btn btn-primary" id="confirmCollectBtn" style="background: #10b981; border: none;">Record Payment</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Refund Confirmation Overlay -->
+        <div class="action-summary-overlay" id="refundSummaryOverlay" style="display:none; padding: 20px;">
+            <div class="modal-container" style="width: 460px; border-radius: 12px; padding: 0;">
+                <div class="modal-header" style="border-bottom: 1px solid #fee2e2; background: #fff1f2; border-radius: 12px 12px 0 0;">
+                    <div class="header-titles">
+                        <h2 style="color: #991b1b;">Process Refund</h2>
+                        <p class="subtitle" style="color: #b91c1c;">Reversing payment for this sale.</p>
+                    </div>
+                    <button class="modal-close" id="cancelRefundBtn"><i data-feather="x" style="color: #991b1b;"></i></button>
+                </div>
+                <div class="modal-body" style="padding: 24px;">
+                    <div style="background: #fff; border: 2px dashed #fecdd3; border-radius: 10px; padding: 20px; margin-bottom: 24px; text-align: center;">
+                        <p style="font-size: 0.85rem; color: #64748b; font-weight: 600; text-transform: uppercase; margin-bottom: 6px;">Available for Refund</p>
+                        <p style="font-size: 2rem; font-weight: 800; color: #dc2626;" id="rfAmountDisplay">₹0</p>
+                    </div>
+                    
+                    <p style="font-size: 0.9rem; color: #475569; margin-bottom: 24px; line-height: 1.5; text-align: center;">
+                        This will record a <strong style="color: #dc2626;">Refund</strong> entry in the ledger and update the sale status.
+                    </p>
+
                     <div style="display: flex; gap: 12px; width: 100%;">
-                        <button class="btn btn-secondary" id="cancelRefundBtn" style="flex: 1; justify-content: center; height: 44px;">Never mind</button>
-                        <button class="btn" id="confirmRefundBtn" style="flex: 1; justify-content: center; height: 44px; background: #dc2626; color: white; border: none;">Yes, Refund</button>
+                        <button class="btn btn-secondary" id="closeRefundBtn" style="flex: 1; justify-content: center; height: 44px;">Cancel</button>
+                        <button class="btn" id="confirmRefundBtn" style="flex: 1; justify-content: center; height: 44px; background: #dc2626; color: white; border: none;">Issue Refund</button>
                     </div>
                 </div>
             </div>

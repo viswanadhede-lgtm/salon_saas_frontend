@@ -137,16 +137,51 @@ document.addEventListener('DOMContentLoaded', () => {
                 groupedSales[saleId].totalAmountNum += Number(row.total_amount) || 0;
             });
 
-            // Convert the grouped object back into an array for rendering
+            // --- 2. Fetch Relevant Transactions from Ledger ---
+            const saleIds = Object.keys(groupedSales);
+            let txMap = {};
+            
+            if (saleIds.length > 0) {
+                const { data: txList, error: txError } = await supabase
+                    .from('business_transactions')
+                    .select('reference_id, amount, status')
+                    .eq('reference_type', 'product')
+                    .in('reference_id', saleIds);
+
+                if (!txError && txList) {
+                    txList.forEach(tx => {
+                        const sid = tx.reference_id;
+                        if (!txMap[sid]) txMap[sid] = 0;
+                        
+                        const status = (tx.status || '').toLowerCase().trim();
+                        const val = Number(tx.amount || 0);
+                        
+                        if (status === 'paid') txMap[sid] += val;
+                        else if (status === 'refunded') txMap[sid] -= val;
+                    });
+                }
+            }
+
+            // --- 3. Finalize Sales Data with Payment Status ---
             initialSalesData = Object.values(groupedSales).map(sale => {
                 const d = sale.date;
-                const formattedDate = d.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
-                    + ' ' + d.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' });
+                const formattedDate = d.toLocaleDateString('en-IN', { month: 'short', day: 'numeric', year: 'numeric' })
+                    + ' ' + d.toLocaleTimeString('en-IN', { hour: 'numeric', minute: '2-digit' });
+
+                const total = sale.totalAmountNum;
+                const paid = txMap[sale.id] || 0;
+                
+                let payStatus = 'unpaid';
+                if (paid >= total && total > 0) payStatus = 'paid';
+                else if (paid > 0) payStatus = 'partial';
+                else if (sale.status === 'refunded') payStatus = 'refunded';
 
                 return {
                     ...sale,
                     date: formattedDate,
-                    total: `₹${sale.totalAmountNum.toLocaleString()}`
+                    amount_paid: paid,
+                    payment_status: payStatus,
+                    total: `₹${total.toLocaleString('en-IN')}`
                 };
             });
 
@@ -197,11 +232,19 @@ document.addEventListener('DOMContentLoaded', () => {
             tr.className = 'tb-row';
             tr.style.cursor = 'pointer';
 
-            // Payment pill styling — all paid methods get green
-            let paymentClass = 'tb-payment-pending';
-            if (['card', 'upi', 'cash'].includes(sale.payment)) paymentClass = 'tb-payment-paid';
+            // Dynamic payment status logic
+            const payStatus = sale.payment_status || 'unpaid';
+            let statusPillClass = 'tb-payment-pending'; // default for unpaid
+            let statusLabel = payStatus.toUpperCase();
 
-            const isRefunded = sale.status === 'refunded';
+            if (payStatus === 'paid') statusPillClass = 'tb-payment-paid';
+            else if (payStatus === 'partial') statusPillClass = 'tb-payment-partial';
+            else if (payStatus === 'refunded') {
+                statusPillClass = 'tb-payment-unpaid'; // use red for refund
+                statusLabel = 'REFUNDED';
+            }
+
+            const isRefunded = payStatus === 'refunded';
             let saleTotalDisplay = isRefunded
                 ? `<del style="color:#94a3b8; font-weight:400;">${sale.total}</del> <span style="color:#dc2626; font-size: 0.8rem; display:block;">Refunded</span>`
                 : sale.total;
@@ -220,7 +263,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 <td style="padding:12px 12px; color:#475569;">${prodCountStr}</td>
                 <td style="padding:12px 12px; font-weight:600; color:#1e293b;">${saleTotalDisplay}</td>
                 <td style="padding:12px 12px;">
-                    <span class="tb-status-pill ${paymentClass}" style="text-transform: uppercase; font-size: 0.7rem;">${sale.payment}</span>
+                    <span class="tb-status-pill ${statusPillClass}" style="text-transform: uppercase; font-size: 0.7rem;">${statusLabel}</span>
                 </td>
                 <td style="padding:12px 12px; color:#475569;">${sale.staff}</td>
                 <td style="padding:12px 24px 12px 12px;">
@@ -232,6 +275,10 @@ document.addEventListener('DOMContentLoaded', () => {
                         <button onclick="event.stopPropagation(); handleSaleAction('print', ${idx})" style="width:32px; height:32px; border-radius:8px; border:1px solid #e2e8f0; background:#fff; color:#64748b; display:flex; align-items:center; justify-content:center; cursor:pointer;" title="Print Receipt" onmouseover="this.style.background='#f8fafc'; this.style.color='#10b981'" onmouseout="this.style.background='#fff'; this.style.color='#64748b'">
                             <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg>
                         </button>
+                        ${payStatus === 'unpaid' || payStatus === 'partial' ? `
+                        <button onclick="event.stopPropagation(); handleSaleAction('collect', ${idx})" style="width:32px; height:32px; border-radius:8px; border:1px solid #dcfce7; background:#f0fdf4; color:#16a34a; display:flex; align-items:center; justify-content:center; cursor:pointer;" title="Record Payment" onmouseover="this.style.background='#dcfce7'" onmouseout="this.style.background='#f0fdf4'">
+                            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="4" width="20" height="16" rx="2"/><line x1="12" y1="8" x2="12" y2="16"/><line x1="8" y1="12" x2="16" y2="12"/></svg>
+                        </button>` : ''}
                         <button onclick="event.stopPropagation(); handleSaleAction('refund', ${idx})" style="width:32px; height:32px; border-radius:8px; border:1px solid #fecdd3; background:#fff1f2; color:#ef4444; display:flex; align-items:center; justify-content:center; cursor:pointer;" title="Refund Sale" onmouseover="this.style.background='#fecdd3'" onmouseout="this.style.background='#fff1f2'">
                             <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 14 4 9 9 4"/><path d="M20 20v-7a4 4 0 0 0-4-4H4"/></svg>
                         </button>
@@ -327,6 +374,42 @@ document.addEventListener('DOMContentLoaded', () => {
                 window.print();
             });
         }
+
+        // --- Collect Payment Modal Listeners ---
+        const closeCollectBtn = document.getElementById('closeCollectPaymentModal');
+        const cancelCollectBtn = document.getElementById('cancelCollectBtn');
+        const confirmCollectBtn = document.getElementById('confirmCollectBtn');
+        const collectOverlay = document.getElementById('collectPaymentModalOverlay');
+
+        const closeCollectModal = () => { if (collectOverlay) collectOverlay.style.display = 'none'; };
+        if (closeCollectBtn) closeCollectBtn.addEventListener('click', closeCollectModal);
+        if (cancelCollectBtn) cancelCollectBtn.addEventListener('click', closeCollectModal);
+        if (collectOverlay) {
+            collectOverlay.addEventListener('click', (e) => {
+                if (e.target === collectOverlay) closeCollectModal();
+            });
+        }
+        if (confirmCollectBtn) confirmCollectBtn.addEventListener('click', processProductPayment);
+
+        // Payment Method selection for Collect Modal
+        const cpPayBtns = document.querySelectorAll('#collectPaymentModalOverlay .pay-method-btn');
+        cpPayBtns.forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                cpPayBtns.forEach(b => {
+                    b.classList.remove('active');
+                    b.style.background = '#fff';
+                    b.style.borderColor = '#e2e8f0';
+                });
+                const target = e.currentTarget;
+                target.classList.add('active');
+                target.style.background = '#f0fdf4';
+                target.style.borderColor = '#bbf7d0';
+            });
+        });
+
+        // --- Refund Modal Listeners (updated) ---
+        const closeRefundBtn = document.getElementById('closeRefundBtn');
+        if (closeRefundBtn) closeRefundBtn.addEventListener('click', closeRefundModal);
     }
 
 
@@ -399,14 +482,100 @@ document.addEventListener('DOMContentLoaded', () => {
 
         if (action === 'view') {
             openSaleDetails(sale);
-        } else if (action === 'print') {
-            openSaleDetails(sale);
-            setTimeout(() => window.print(), 300);
+        } else if (action === 'collect') {
+            openCollectPaymentModal(sale);
         } else if (action === 'refund') {
-            openSaleDetails(sale);
-            refundSummaryOverlay.style.display = 'flex';
+            openRefundModal(sale);
         }
     };
+    
+    // ----------------------------------------------------------------------
+    // 7.1. COLLECT PAYMENT MODAL
+    // ----------------------------------------------------------------------
+    async function openCollectPaymentModal(sale) {
+        if (!sale) return;
+        
+        const modal = document.getElementById('collectPaymentModalOverlay');
+        const cpTotal = document.getElementById('cpTotal');
+        const cpPaid = document.getElementById('cpPaid');
+        const cpBalance = document.getElementById('cpBalance');
+        const cpInput = document.getElementById('cpAmountInput');
+        
+        if (!modal) return;
+        
+        const total = sale.totalAmountNum || 0;
+        const paid = sale.amount_paid || 0;
+        const balance = Math.max(0, total - paid);
+        
+        if (cpTotal) cpTotal.textContent = `₹${total.toLocaleString('en-IN')}`;
+        if (cpPaid) cpPaid.textContent = `₹${paid.toLocaleString('en-IN')}`;
+        if (cpBalance) cpBalance.textContent = `₹${balance.toLocaleString('en-IN')}`;
+        if (cpInput) cpInput.value = balance;
+        
+        modal.style.display = 'flex';
+        if (typeof feather !== 'undefined') feather.replace();
+    }
+
+    async function processProductPayment() {
+        if (!currentActionData || !currentActionData.sale) return;
+        const sale = currentActionData.sale;
+        const amount = Number(document.getElementById('cpAmountInput')?.value || 0);
+        const methodEl = document.querySelector('#collectPaymentModalOverlay .pay-method-btn.active');
+        const method = methodEl ? methodEl.dataset.method : 'cash';
+        
+        if (amount <= 0) {
+            showToast('Please enter a valid amount.', '#ef4444');
+            return;
+        }
+
+        const btn = document.getElementById('confirmCollectBtn');
+        if (btn) { btn.disabled = true; btn.textContent = 'Recording...'; }
+
+        try {
+            const { error } = await supabase
+                .from('business_transactions')
+                .insert({
+                    company_id: getCompanyId(),
+                    branch_id: getBranchId(),
+                    reference_id: sale.id,
+                    reference_type: 'product',
+                    amount: amount,
+                    status: 'paid',
+                    payment_method: method.charAt(0).toUpperCase() + method.slice(1),
+                    notes: `Partial payment for sale ${sale.id}`,
+                    paid_at: new Date().toISOString()
+                });
+
+            if (error) throw error;
+
+            showToast('Payment recorded successfully!', '#10b981');
+            document.getElementById('collectPaymentModalOverlay').style.display = 'none';
+            await fetchSalesHistory(); // Refresh to update badges
+        } catch (err) {
+            console.error('Error recording payment:', err);
+            showToast('Failed to record payment.', '#ef4444');
+        } finally {
+            if (btn) { btn.disabled = false; btn.textContent = 'Record Payment'; }
+        }
+    }
+
+    // ----------------------------------------------------------------------
+    // 7.2. REFUND MODAL
+    // ----------------------------------------------------------------------
+    function openRefundModal(sale) {
+        if (!sale) return;
+        const modal = document.getElementById('refundSummaryOverlay');
+        const amountDisplay = document.getElementById('rfAmountDisplay');
+        if (!modal) return;
+
+        // Refundable amount = Sum of payments - Sum of previous refunds
+        // Since we already calculated 'amount_paid' in fetchSalesHistory, we use it directly.
+        const refundable = sale.amount_paid || 0;
+        
+        if (amountDisplay) amountDisplay.textContent = `₹${refundable.toLocaleString('en-IN')}`;
+        modal.style.display = 'flex';
+        if (typeof feather !== 'undefined') feather.replace();
+    }
 
     // ----------------------------------------------------------------------
     // FILTER: Apply & Clear (called from HTML onclick)
@@ -515,6 +684,25 @@ document.addEventListener('DOMContentLoaded', () => {
 
             const pkCol = existing && existing.length > 0 && existing[0].sale_id ? 'sale_id' : 'id';
 
+            // 1. Record the Refund in the Ledger
+            // Rule: positive amount, status 'refunded', reference_type 'product'
+            const { error: txError } = await supabase
+                .from('business_transactions')
+                .insert({
+                    company_id: getCompanyId(),
+                    branch_id: getBranchId(),
+                    reference_id: saleId,
+                    reference_type: 'product',
+                    amount: sale.amount_paid || 0,
+                    status: 'refunded',
+                    payment_method: (sale.payment || 'cash').charAt(0).toUpperCase() + (sale.payment || 'cash').slice(1),
+                    notes: `Refund for sale ${saleId}`,
+                    paid_at: new Date().toISOString()
+                });
+
+            if (txError) throw txError;
+
+            // 2. Update the sale status in the sales table
             const { error } = await supabase
                 .from('sales')
                 .eq(pkCol, saleId)
@@ -528,6 +716,7 @@ document.addEventListener('DOMContentLoaded', () => {
             currentSalesData = [...initialSalesData];
 
             renderTable();
+            await fetchSalesHistory(); // Full refresh to sync with ledger
             closeRefundOverlayOnly();
             
             if (sdTotal) sdTotal.innerHTML = `<del style="color:#94a3b8; font-weight:400; margin-right: 8px;">${sale.total}</del> <span style="color:#dc2626;">Refunded</span>`;
