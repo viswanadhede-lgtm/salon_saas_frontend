@@ -386,7 +386,8 @@ window.openRefundModal = async function(bookingId) {
             .from('business_transactions')
             .select('amount, payment_method')
             .eq('reference_id', bookingId)
-            .eq('reference_type', 'booking');
+            .eq('reference_type', 'booking')
+            .in('status', ['paid', 'refunded']);
 
         if (error) throw error;
 
