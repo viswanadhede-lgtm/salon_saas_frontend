@@ -391,12 +391,14 @@ window.openRefundModal = async function(bookingId) {
 
         if (error) throw error;
 
-        // Sum up all transactions (payments - previous refunds)
-        // Since refunds are now stored as positive values, we must subtract records with status 'refunded'
+        // Sum up only actual payments and subtract refunds
         refundableAmount = (data || []).reduce((sum, tx) => {
             const val = Number(tx.amount || 0);
             const status = (tx.status || '').toLowerCase().trim();
-            return status === 'refunded' ? sum - val : sum + val;
+            
+            if (status === 'paid') return sum + val;
+            if (status === 'refunded') return sum - val;
+            return sum; // Ignore 'pending' or other statuses
         }, 0);
         
         if (refundableAmount < 0) refundableAmount = 0; // Safeguard
