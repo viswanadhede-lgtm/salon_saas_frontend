@@ -395,7 +395,8 @@ window.openRefundModal = async function(bookingId) {
         // Since refunds are now stored as positive values, we must subtract records with status 'refunded'
         refundableAmount = (data || []).reduce((sum, tx) => {
             const val = Number(tx.amount || 0);
-            return tx.status === 'refunded' ? sum - val : sum + val;
+            const status = (tx.status || '').toLowerCase().trim();
+            return status === 'refunded' ? sum - val : sum + val;
         }, 0);
         
         if (refundableAmount < 0) refundableAmount = 0; // Safeguard
