@@ -97,13 +97,15 @@ function phRenderTable(data) {
         const displayPaymentId = item.payment_id ? item.payment_id.substring(0,8).toUpperCase() : '-';
         const displayBookingId = item.booking_id ? item.booking_id.substring(0,8).toUpperCase() : '-';
 
+        const amountColor = status === 'refunded' ? '#ef4444' : '#10b981';
+
         tr.innerHTML = `
             <td style="padding:16px 16px 16px 24px; font-weight:600; color:#1e293b;">${displayPaymentId}</td>
             <td style="padding:16px; font-weight:500; color:#3b82f6; cursor:pointer;" onclick="window.phOpenBooking('${item.booking_id}')">${displayBookingId}</td>
             <td style="padding:16px; font-weight:500; color:#334155;">${item.customer_name || 'Guest'}</td>
             <td style="padding:16px; color:#64748b;">${item.service_name || '-'}</td>
             <td style="padding:16px; font-weight:500; color:#334155;">${displayDate}</td>
-            <td style="padding:16px; font-weight:600; color:#10b981;">${formatINR(item.amount)}</td>
+            <td style="padding:16px; font-weight:600; color:${amountColor};">${formatINR(item.amount)}</td>
             <td style="padding:16px;">${methodBadge}</td>
             <td style="padding:16px;">${statusBadge}</td>
             <td style="padding:16px; font-weight:500; color:#475569;">${item.staff_name || '-'}</td>
@@ -135,7 +137,11 @@ window.phOpenDrawer = function(paymentId) {
     document.getElementById('drawerCustomer').textContent = p.customer_name || 'Guest';
     document.getElementById('drawerService').textContent = p.service_name || '-';
     
-    document.getElementById('drawerAmount').textContent = formatINR(p.amount);
+    const drawerAmountEl = document.getElementById('drawerAmount');
+    if (drawerAmountEl) {
+        drawerAmountEl.textContent = formatINR(p.amount);
+        drawerAmountEl.style.color = status === 'refunded' ? '#ef4444' : '#10b981';
+    }
     
     const method = (p.payment_method || 'Cash').toLowerCase();
     let methodHTML = '';
@@ -144,7 +150,10 @@ window.phOpenDrawer = function(paymentId) {
     else methodHTML = '<span style="color:#475569"><i data-feather="dollar-sign" style="width:14px;height:14px;vertical-align:middle;margin-right:4px;"></i> Cash</span>';
     
     document.getElementById('drawerMethod').innerHTML = methodHTML;
-    document.getElementById('drawerStatus').innerHTML = `<span style="color:#166534; background:#dcfce7; padding:2px 8px; border-radius:4px; font-size:0.75rem;">${p.status || 'Paid'}</span>`;
+    
+    const statusBg = status === 'refunded' ? '#fee2e2' : '#dcfce7';
+    const statusColor = status === 'refunded' ? '#991b1b' : '#166534';
+    document.getElementById('drawerStatus').innerHTML = `<span style="color:${statusColor}; background:${statusBg}; padding:2px 8px; border-radius:4px; font-size:0.75rem;">${p.status || 'Paid'}</span>`;
 
     // Simple display for totals (can be enhanced if view has these)
     document.getElementById('drawerBookTotal').textContent = formatINR(p.booking_total);
