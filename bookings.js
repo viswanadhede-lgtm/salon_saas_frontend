@@ -392,7 +392,11 @@ window.openRefundModal = async function(bookingId) {
         if (error) throw error;
 
         // Sum up all transactions (payments - previous refunds)
-        refundableAmount = (data || []).reduce((sum, tx) => sum + Number(tx.amount || 0), 0);
+        // Since refunds are now stored as positive values, we must subtract records with status 'refunded'
+        refundableAmount = (data || []).reduce((sum, tx) => {
+            const val = Number(tx.amount || 0);
+            return tx.status === 'refunded' ? sum - val : sum + val;
+        }, 0);
         
         if (refundableAmount < 0) refundableAmount = 0; // Safeguard
 
@@ -444,7 +448,7 @@ window.processRefund = async function() {
                 branch_id: branchId,
                 reference_id: activeRefundBookingId,
                 reference_type: 'booking',
-                amount: -Math.abs(refundableAmount), // Negative amount for refund
+                amount: Math.abs(refundableAmount), // Positive amount for refund as requested by user
                 currency: 'INR',
                 payment_method: document.getElementById('refundMethodDisplay').value || 'Refund',
                 status: 'refunded',
