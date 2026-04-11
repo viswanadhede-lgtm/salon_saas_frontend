@@ -832,10 +832,12 @@ async function handleAssignMembership() {
         return;
     }
 
-    const btn = document.getElementById('btnConfirmAssign');
-    const origText = btn.textContent;
-    btn.textContent = 'Processing...';
-    btn.disabled = true;
+    const btn = document.getElementById('btnProceedPayment');
+    const origText = btn ? btn.textContent : 'Proceed';
+    if (btn) {
+        btn.textContent = 'Processing...';
+        btn.disabled = true;
+    }
 
     // Create new customer if not selected
     let finalCustomerId = selectedCustomer ? (selectedCustomer.id || selectedCustomer.customer_id) : null;
@@ -863,6 +865,36 @@ async function handleAssignMembership() {
             btn.disabled = false;
             return;
         }
+    }
+    
+    // ── Duplicate Check ──
+    try {
+        const planName = selectedPlan ? (selectedPlan.plan_name || selectedPlan.name) : null;
+        if (finalCustomerId && planName) {
+            const { data: existing, error: checkErr } = await supabase
+                .from('membership_purchases')
+                .select('id, purchase_id')
+                .eq('company_id', getCompanyId())
+                .eq('branch_id', getBranchId())
+                .eq('customer_id', finalCustomerId)
+                .eq('plan_name', planName)
+                .eq('status', 'active');
+
+            if (checkErr) throw checkErr;
+
+            if (existing && existing.length > 0) {
+                showToast(`Customer already has an active "${planName}" membership.`);
+                if (btn) {
+                    btn.textContent = origText;
+                    btn.disabled = false;
+                }
+                return;
+            }
+        }
+    } catch (err) {
+        console.error('Duplicate check error:', err);
+        // We continue anyway but log it, or decide to block. Standard is to log and proceed if critical, 
+        // but here we want to be safe.
     }
     
     // Extract user details
