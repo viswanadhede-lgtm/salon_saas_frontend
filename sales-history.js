@@ -96,73 +96,41 @@ document.addEventListener('DOMContentLoaded', () => {
             const companyId = getCompanyId();
             const branchId = getBranchId();
 
-            // Fetch sales data from the optimized view
+            if (!companyId) return;
+
+            // Fetch pre-grouped data from the optimized view
             const { data: salesList, error: salesError } = await supabase
                 .from('sales_with_payment_status')
                 .select('*')
                 .eq('company_id', companyId)
                 .eq('branch_id', branchId)
-                .order('created_at', { ascending: false });
+                .order('sale_date', { ascending: false });
 
             if (salesError) throw salesError;
 
-            // Group the flat sales records by sale_id
-            // Note: Even if the view is "grouped", selecting '*' from a view based on 'sales' 
-            // usually returns one row per line item if not explicitly aggregated in SQL.
-            const groupedSales = {};
-            (salesList || []).forEach(row => {
-                const saleId = row.sale_id; 
-                if (!groupedSales[saleId]) {
-                    groupedSales[saleId] = {
-                        id: saleId,
-                        customer: row.customer_name || 'Walk-in',
-                        customer_id: row.customer_id || null,
-                        date: new Date(row.created_at),
-                        payment: (row.payment_method || 'other').toLowerCase(),
-                        staff: row.staff_name || 'System',
-                        status: (row.status || 'completed').toLowerCase(),
-                        raw_created_at: new Date(row.created_at).getTime(),
-                        products: [],
-                        totalAmountNum: 0,
-                        // Use view-provided fields
-                        paidAmount: Number(row.paid_amount || 0),
-                        payStatus: (row.payment_status || 'unpaid').toLowerCase()
-                    };
-                }
-                
-                // Add this row as a line item
-                groupedSales[saleId].products.push({
-                    name: row.product_name || 'Unknown Product',
-                    qty: Number(row.quantity) || 1,
-                    price: Number(row.price) || 0,
-                    category: row.category_id || ''
-                });
-                
-                // Add to the total sum
-                groupedSales[saleId].totalAmountNum += Number(row.total_amount) || 0;
-            });
-
-            // --- Finalize Sales Data ---
-            initialSalesData = Object.values(groupedSales).map(sale => {
-                const d = sale.date;
+            // Map the view rows directly to our state
+            initialSalesData = (salesList || []).map(row => {
+                const d = new Date(row.sale_date);
                 const formattedDate = d.toLocaleDateString('en-IN', { month: 'short', day: 'numeric', year: 'numeric' })
                     + ' ' + d.toLocaleTimeString('en-IN', { hour: 'numeric', minute: '2-digit' });
 
-                const total = sale.totalAmountNum;
-                const paid = sale.paidAmount;
-                const payStatus = sale.payStatus;
-
                 return {
-                    ...sale,
+                    id: row.sale_id,
+                    customer: row.customer_name || 'Walk-in',
+                    customer_id: row.customer_id || null,
+                    customer_phone: row.customer_phone || '',
                     date: formattedDate,
-                    amount_paid: paid,
-                    payment_status: payStatus,
-                    total: `₹${total.toLocaleString('en-IN')}`
+                    raw_date: d,
+                    payment: (row.payment_method || 'other').toLowerCase(),
+                    staff: row.staff_name || 'System',
+                    status: (row.status || 'completed').toLowerCase(),
+                    amount_paid: Number(row.amount_paid || 0),
+                    payment_status: (row.payment_status || 'unpaid').toLowerCase(),
+                    totalAmountNum: Number(row.total_amount || 0),
+                    total: `₹${Number(row.total_amount || 0).toLocaleString('en-IN')}`,
+                    is_view_grouped: true // Flag for detail loader
                 };
             });
-
-            // Sort by raw_created_at descending
-            initialSalesData.sort((a, b) => b.raw_created_at - a.raw_created_at);
 
             currentSalesData = [...initialSalesData];
             renderTable();
@@ -225,10 +193,8 @@ document.addEventListener('DOMContentLoaded', () => {
                 ? `<del style="color:#94a3b8; font-weight:400;">${sale.total}</del> <span style="color:#dc2626; font-size: 0.8rem; display:block;">Refunded</span>`
                 : sale.total;
 
-            const prodCountStr = sale.products.length === 1 ? '1 item' : `${sale.products.length} items`;
-            
             tr.onclick = (e) => {
-                if (!e.target.closest('.tb-action-btn') && !e.target.closest('.tb-actions-menu')) {
+                if (!e.target.closest('button')) {
                     openSaleDetails(sale);
                 }
             };
@@ -236,7 +202,7 @@ document.addEventListener('DOMContentLoaded', () => {
             tr.innerHTML = `
                 <td style="padding:12px 12px 12px 24px; color:#1e293b; font-weight:500; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">${sale.customer}</td>
                 <td style="padding:12px 12px; color:#475569; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">${sale.date}</td>
-                <td style="padding:12px 12px; color:#475569;">${prodCountStr}</td>
+                <td style="padding:12px 12px; color:#475569;">${sale.id.substring(0,8).toUpperCase()}</td>
                 <td style="padding:12px 12px; font-weight:600; color:#1e293b;">${saleTotalDisplay}</td>
                 <td style="padding:12px 12px;">
                     <span class="tb-status-pill ${statusPillClass}" style="text-transform: uppercase; font-size: 0.7rem;">${statusLabel}</span>
@@ -279,7 +245,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 currentSalesData = initialSalesData.filter(s => 
                     String(s.id).toLowerCase().includes(term) || 
                     s.customer.toLowerCase().includes(term) ||
-                    s.products.some(p => p.name.toLowerCase().includes(term))
+                    s.staff.toLowerCase().includes(term)
                 );
                 renderTable();
             });
@@ -572,8 +538,9 @@ document.addEventListener('DOMContentLoaded', () => {
         currentSalesData = initialSalesData.filter(sale => {
             const paymentOk  = payments.length === 0   || payments.includes(sale.payment);
             const staffOk    = staff.length === 0      || staff.includes(sale.staff);
-            const categoryOk = categories.length === 0 || sale.products.some(p => categories.includes(p.category));
-            return paymentOk && staffOk && categoryOk;
+            // Category filter can only be applied to line items.
+            // Since the main list is grouped, category filtering is disabled here.
+            return paymentOk && staffOk;
         });
 
         renderTable();
@@ -590,49 +557,73 @@ document.addEventListener('DOMContentLoaded', () => {
     // ----------------------------------------------------------------------
     // 8. POPULATE SALE DETAILS MODAL
     // ----------------------------------------------------------------------
-    function openSaleDetails(sale) {
+    async function openSaleDetails(sale) {
         if (!sale) return;
         currentActionData = { action: 'view', idx: currentSalesData.indexOf(sale), sale };
 
-        if (sdSubtitle) sdSubtitle.textContent = `Transaction ID: ${sale.id}`;
+        if (sdSubtitle) sdSubtitle.textContent = `Transaction ID: ${sale.id.substring(0,8).toUpperCase()}`;
         if (sdCustomer) sdCustomer.textContent = sale.customer;
         if (sdStaff) sdStaff.textContent = sale.staff;
         if (sdDate) sdDate.textContent = sale.date;
-        if (sdPayment) sdPayment.textContent = sale.payment.charAt(0).toUpperCase() + sale.payment.slice(1);
+        if (sdPayment) sdPayment.textContent = sale.payment.toUpperCase();
 
         if (sdItemsList) {
-            sdItemsList.innerHTML = '';
-            let calcSubtotal = 0;
-
-            sale.products.forEach(item => {
-                const itemRowTotal = item.qty * item.price;
-                calcSubtotal += itemRowTotal;
-                const tr = document.createElement('tr');
-                tr.innerHTML = `
-                    <td style="padding: 12px 16px; border-bottom: 1px solid #e2e8f0; font-size: 0.9rem; color: #1e293b;">${item.name}</td>
-                    <td style="padding: 12px 16px; border-bottom: 1px solid #e2e8f0; font-size: 0.9rem; color: #475569; text-align: center;">${item.qty}</td>
-                    <td style="padding: 12px 16px; border-bottom: 1px solid #e2e8f0; font-size: 0.9rem; color: #475569; text-align: right;">₹${item.price.toLocaleString()}</td>
-                    <td style="padding: 12px 16px; border-bottom: 1px solid #e2e8f0; font-size: 0.9rem; font-weight: 600; color: #1e293b; text-align: right;">₹${itemRowTotal.toLocaleString()}</td>
-                `;
-                sdItemsList.appendChild(tr);
-            });
-
-            if (sdSubtotal) sdSubtotal.textContent = `₹${calcSubtotal.toLocaleString()}`;
-            if (sdTax) sdTax.textContent = `₹0`;
-            if (sdDiscount) sdDiscount.textContent = '₹0';
+            sdItemsList.innerHTML = `<tr><td colspan="4" style="text-align:center; padding:20px; color:#64748b;">Loading items...</td></tr>`;
         }
         
-        const isRefunded = sale.status === 'refunded';
-        
-        if (isRefunded) {
-            if (sdTotal) sdTotal.innerHTML = `<del style="color:#94a3b8; font-weight:400; margin-right: 8px;">${sale.total}</del> <span style="color:#dc2626;">Refunded</span>`;
-            if (sdRefundBtn) sdRefundBtn.style.display = 'none';
-        } else {
-            if (sdTotal) sdTotal.textContent = sale.total;
-            if (sdRefundBtn) sdRefundBtn.style.display = 'inline-flex';
-        }
-
         if (saleDetailsModalOverlay) saleDetailsModalOverlay.style.display = 'flex';
+        if (typeof feather !== 'undefined') feather.replace();
+
+        try {
+            // Fetch actual line items from 'sales' table for this sale_id
+            const { data: items, error } = await supabase
+                .from('sales')
+                .select('*')
+                .eq('sale_id', sale.id);
+
+            if (error) throw error;
+
+            if (sdItemsList) {
+                sdItemsList.innerHTML = '';
+                let subtotal = 0;
+
+                (items || []).forEach(item => {
+                    const lineTotal = Number(item.total_amount || 0);
+                    subtotal += lineTotal;
+
+                    const row = document.createElement('tr');
+                    row.style.borderBottom = '1px solid #f1f5f9';
+                    row.innerHTML = `
+                        <td style="padding:12px 16px; font-size:0.875rem; color:#334155;">${item.product_name || 'Product'}</td>
+                        <td style="padding:12px 16px; font-size:0.875rem; color:#475569; text-align:center;">${item.quantity || 1}</td>
+                        <td style="padding:12px 16px; font-size:0.875rem; color:#475569; text-align:right;">₹${Number(item.price || 0).toLocaleString('en-IN')}</td>
+                        <td style="padding:12px 16px; font-size:0.875rem; color:#1e293b; font-weight:600; text-align:right;">₹${lineTotal.toLocaleString('en-IN')}</td>
+                    `;
+                    sdItemsList.appendChild(row);
+                });
+
+                if (sdSubtotal) sdSubtotal.textContent = `₹${subtotal.toLocaleString('en-IN')}`;
+                if (sdTax)      sdTax.textContent      = `₹0`; // Placeholder
+                if (sdDiscount) sdDiscount.textContent = `₹0`; // Placeholder
+                if (sdTotal) {
+                    const isRefunded = sale.status === 'refunded';
+                    if (isRefunded) {
+                        sdTotal.innerHTML = `<del style="color:#94a3b8; font-weight:400; margin-right: 8px;">₹${subtotal.toLocaleString('en-IN')}</del> <span style="color:#dc2626;">Refunded</span>`;
+                    } else {
+                        sdTotal.textContent = `₹${subtotal.toLocaleString('en-IN')}`;
+                    }
+                }
+            }
+
+            if (sdRefundBtn) {
+                const isRefunded = sale.status === 'refunded';
+                sdRefundBtn.style.display = isRefunded ? 'none' : 'inline-flex';
+            }
+
+        } catch (err) {
+            console.error('Error fetching sale details:', err);
+            if (sdItemsList) sdItemsList.innerHTML = `<tr><td colspan="4" style="text-align:center; padding:20px; color:#ef4444;">Failed to load items.</td></tr>`;
+        }
     }
 
 
