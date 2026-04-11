@@ -96,9 +96,9 @@ document.addEventListener('DOMContentLoaded', () => {
             const companyId = getCompanyId();
             const branchId = getBranchId();
 
-            // Fetch flat sales data
+            // Fetch sales data from the optimized view
             const { data: salesList, error: salesError } = await supabase
-                .from('sales')
+                .from('sales_with_payment_status')
                 .select('*')
                 .eq('company_id', companyId)
                 .eq('branch_id', branchId)
@@ -107,9 +107,11 @@ document.addEventListener('DOMContentLoaded', () => {
             if (salesError) throw salesError;
 
             // Group the flat sales records by sale_id
+            // Note: Even if the view is "grouped", selecting '*' from a view based on 'sales' 
+            // usually returns one row per line item if not explicitly aggregated in SQL.
             const groupedSales = {};
             (salesList || []).forEach(row => {
-                const saleId = row.sale_id; // The shared grouping ID
+                const saleId = row.sale_id; 
                 if (!groupedSales[saleId]) {
                     groupedSales[saleId] = {
                         id: saleId,
@@ -121,7 +123,10 @@ document.addEventListener('DOMContentLoaded', () => {
                         status: (row.status || 'completed').toLowerCase(),
                         raw_created_at: new Date(row.created_at).getTime(),
                         products: [],
-                        totalAmountNum: 0
+                        totalAmountNum: 0,
+                        // Use view-provided fields
+                        paidAmount: Number(row.paid_amount || 0),
+                        payStatus: (row.payment_status || 'unpaid').toLowerCase()
                     };
                 }
                 
@@ -137,44 +142,15 @@ document.addEventListener('DOMContentLoaded', () => {
                 groupedSales[saleId].totalAmountNum += Number(row.total_amount) || 0;
             });
 
-            // --- 2. Fetch Relevant Transactions from Ledger ---
-            const saleIds = Object.keys(groupedSales);
-            let txMap = {};
-            
-            if (saleIds.length > 0) {
-                const { data: txList, error: txError } = await supabase
-                    .from('business_transactions')
-                    .select('reference_id, amount, status')
-                    .eq('reference_type', 'product')
-                    .in('reference_id', saleIds);
-
-                if (!txError && txList) {
-                    txList.forEach(tx => {
-                        const sid = tx.reference_id;
-                        if (!txMap[sid]) txMap[sid] = 0;
-                        
-                        const status = (tx.status || '').toLowerCase().trim();
-                        const val = Number(tx.amount || 0);
-                        
-                        if (status === 'paid') txMap[sid] += val;
-                        else if (status === 'refunded') txMap[sid] -= val;
-                    });
-                }
-            }
-
-            // --- 3. Finalize Sales Data with Payment Status ---
+            // --- Finalize Sales Data ---
             initialSalesData = Object.values(groupedSales).map(sale => {
                 const d = sale.date;
                 const formattedDate = d.toLocaleDateString('en-IN', { month: 'short', day: 'numeric', year: 'numeric' })
                     + ' ' + d.toLocaleTimeString('en-IN', { hour: 'numeric', minute: '2-digit' });
 
                 const total = sale.totalAmountNum;
-                const paid = txMap[sale.id] || 0;
-                
-                let payStatus = 'unpaid';
-                if (paid >= total && total > 0) payStatus = 'paid';
-                else if (paid > 0) payStatus = 'partial';
-                else if (sale.status === 'refunded') payStatus = 'refunded';
+                const paid = sale.paidAmount;
+                const payStatus = sale.payStatus;
 
                 return {
                     ...sale,
