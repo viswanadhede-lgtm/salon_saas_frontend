@@ -433,6 +433,22 @@ function setupEventListeners() {
             return;
         }
 
+        // Validate Customer selection
+        const customerName = (selectedCustomer?.customer_name || document.getElementById('posCustomerName')?.value || '').trim();
+        const customerPhone = (selectedCustomer?.customer_phone || document.getElementById('posCustomerPhone')?.value || '').trim();
+
+        if (!customerName || !customerPhone) {
+            showToast('Please select or add a customer first.', true);
+            // Highlight the search field to guide the user
+            const searchField = document.getElementById('posCustomerSearch');
+            if (searchField) {
+                searchField.style.borderColor = '#ef4444';
+                searchField.focus();
+                setTimeout(() => { searchField.style.borderColor = ''; }, 2000);
+            }
+            return;
+        }
+
         if (confirmTotalEl) {
             confirmTotalEl.textContent = `₹${total.toLocaleString('en-IN')}`;
         }
