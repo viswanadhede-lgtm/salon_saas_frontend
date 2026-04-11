@@ -216,6 +216,10 @@ document.addEventListener('DOMContentLoaded', () => {
                 <td style="padding:12px 12px; color:#475569;">${sale.staff}</td>
                 <td style="padding:12px 24px 12px 12px;">
                     <div style="display:flex; gap:8px;">
+                        <button onclick="event.stopPropagation(); handleSaleAction('view', ${idx})" style="width:32px; height:32px; border-radius:8px; border:1px solid #e2e8f0; background:#fff; color:#64748b; display:flex; align-items:center; justify-content:center; cursor:pointer;" title="View Sale Details" onmouseover="this.style.background='#f8fafc'; this.style.color='#3b82f6'" onmouseout="this.style.background='#fff'; this.style.color='#64748b'">
+                            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+                        </button>
+
                         <button onclick="event.stopPropagation(); handleSaleAction('print', ${idx})" style="width:32px; height:32px; border-radius:8px; border:1px solid #e2e8f0; background:#fff; color:#64748b; display:flex; align-items:center; justify-content:center; cursor:pointer;" title="Print Receipt" onmouseover="this.style.background='#f8fafc'; this.style.color='#10b981'" onmouseout="this.style.background='#fff'; this.style.color='#64748b'">
                             <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg>
                         </button>
@@ -298,7 +302,9 @@ document.addEventListener('DOMContentLoaded', () => {
             if (refundSummaryOverlay) refundSummaryOverlay.style.display = 'none';
         }
         
+        const closeRefundBtnFooter = document.getElementById('closeRefundBtn');
         if (cancelRefundBtn) cancelRefundBtn.addEventListener('click', closeRefundModal);
+        if (closeRefundBtnFooter) closeRefundBtnFooter.addEventListener('click', closeRefundModal);
         if (refundSummaryOverlay) {
             refundSummaryOverlay.addEventListener('click', (e) => {
                 if (e.target === refundSummaryOverlay) closeRefundModal();
@@ -619,7 +625,7 @@ document.addEventListener('DOMContentLoaded', () => {
         if (!sale) return;
         currentActionData = { action: 'view', idx: currentSalesData.indexOf(sale), sale };
 
-        if (sdSubtitle) sdSubtitle.textContent = `Transaction ID: ${sale.id.substring(0,8).toUpperCase()}`;
+        if (sdSubtitle && sale.id) sdSubtitle.textContent = `Transaction ID: ${String(sale.id).substring(0,8).toUpperCase()}`;
         if (sdCustomer) sdCustomer.textContent = sale.customer;
         if (sdStaff) sdStaff.textContent = sale.staff;
         if (sdDate) sdDate.textContent = sale.date;
