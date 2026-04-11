@@ -57,58 +57,27 @@ document.addEventListener('DOMContentLoaded', async () => {
                 return;
             }
 
-            // Fetch Bookings
-            const bookingQuery = supabase
+            let query = supabase
                 .from('pending_payments_view')
                 .select('*')
                 .eq('company_id', companyId);
 
-            // Fetch Products
-            const productQuery = supabase
-                .from('product_pending_payments_view')
-                .select('*')
-                .eq('company_id', companyId);
-
             if (branchId) {
-                bookingQuery.eq('branch_id', branchId);
-                productQuery.eq('branch_id', branchId);
+                query = query.eq('branch_id', branchId);
             }
 
-            const [bookingRes, productRes] = await Promise.all([bookingQuery, productQuery]);
+            const { data, error } = await query;
+            if (error) {
+                console.error('[PP] Supabase Error:', error);
+                throw error;
+            }
 
-            if (bookingRes.error) throw bookingRes.error;
-            if (productRes.error) throw productRes.error;
-
-            // Normalize and Combine
-            const bookings = (bookingRes.data || []).map(b => ({
-                ...b,
-                ref_id: b.booking_id,
-                ref_type: 'booking',
-                display_name: b.service_name || 'Booking',
-                display_date: b.booking_date,
-                display_time: b.start_time
-            }));
-
-            const products = (productRes.data || []).map(p => ({
-                ...p,
-                ref_id: p.sale_id,
-                ref_type: 'product',
-                display_name: p.product_name || 'Product Sale',
-                display_date: p.sale_date,
-                display_time: ''
-            }));
-
-            allPayments = [...bookings, ...products];
-            
-            // Sort by date descending
-            allPayments.sort((a,b) => new Date(b.display_date) - new Date(a.display_date));
-
-            console.log('[PP] Data unified. Total count:', allPayments.length);
+            allPayments = data || [];
             applyAllFilters();
 
         } catch (err) {
             console.error('[PP] Critical Fetch Error:', err);
-            ppShowToast('Failed to load payments: ' + (err.message || ''), true);
+            ppShowToast('Failed to load payments', true);
         }
     }
 
@@ -146,32 +115,25 @@ document.addEventListener('DOMContentLoaded', async () => {
                 statusBadge = `<span style="display:inline-flex; align-items:center; gap:4px; background:#fef2f2; color:#dc2626; border:1px solid #fecaca; border-radius:20px; padding:3px 10px; font-size:0.73rem; font-weight:600;">Unpaid</span>`;
             }
 
-            // Type Badge
-            const typeColor = row.ref_type === 'booking' ? '#6366f1' : '#10b981';
-            const typeLabel = row.ref_type === 'booking' ? 'Booking' : 'Product';
-            const typeBadge = `<span style="font-size: 0.65rem; font-weight: 700; text-transform: uppercase; color: ${typeColor}; background: ${typeColor}15; padding: 2px 6px; border-radius: 4px; margin-right: 6px;">${typeLabel}</span>`;
-
             const tr = document.createElement('tr');
             tr.className = 'tb-row';
             tr.style.cssText = 'border-bottom:1px solid #f1f5f9; transition:background 0.12s;';
             tr.onmouseover = () => tr.style.background = '#f8fafc';
             tr.onmouseout  = () => tr.style.background = '';
 
-            const dateStr = row.display_date ? new Date(row.display_date).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' }) : '-';
-            const timeStr = row.display_time || '';
+            const dateStr = row.booking_date ? new Date(row.booking_date).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' }) : '-';
+            const timeStr = row.start_time || '';
 
             tr.innerHTML = `
-                <td style="padding:14px 16px 14px 24px; color:#1e293b; font-weight:500; font-size:0.875rem; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">${row.customer_name || 'Walk-in'}</td>
-                <td style="padding:14px 16px; color:#475569; font-size:0.875rem; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">
-                    ${typeBadge}${row.display_name || '-'}
-                </td>
+                <td style="padding:14px 16px 14px 24px; color:#1e293b; font-weight:500; font-size:0.875rem; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">${row.customer_name || 'Guest'}</td>
+                <td style="padding:14px 16px; color:#475569; font-size:0.875rem; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">${row.service_name || '-'}</td>
                 <td style="padding:14px 16px; color:#475569; font-size:0.83rem;">${dateStr} <span style="opacity:0.6; margin-left:4px;">${timeStr}</span></td>
                 <td style="padding:14px 16px; color:#1e293b; font-weight:600;">₹${total.toLocaleString('en-IN')}</td>
                 <td style="padding:14px 16px; color:#10b981; font-weight:500;">₹${paid.toLocaleString('en-IN')}</td>
                 <td style="padding:14px 16px; color:#dc2626; font-weight:600;">₹${due.toLocaleString('en-IN')}</td>
                 <td style="padding:14px 16px;">${statusBadge}</td>
                 <td style="padding:14px 16px;">
-                    <button onclick="ppOpenCollect('${row.ref_id}')" style="height:32px; padding:0 14px; background:#eff6ff; color:#1e40af; border:1px solid #bfdbfe; border-radius:7px; font-size:0.8rem; font-weight:600; cursor:pointer; display:inline-flex; align-items:center; gap:5px; white-space:nowrap;" onmouseover="this.style.background='#dbeafe'" onmouseout="this.style.background='#eff6ff'">
+                    <button onclick="ppOpenCollect('${row.booking_id}')" style="height:32px; padding:0 14px; background:#eff6ff; color:#1e40af; border:1px solid #bfdbfe; border-radius:7px; font-size:0.8rem; font-weight:600; cursor:pointer; display:inline-flex; align-items:center; gap:5px; white-space:nowrap;" onmouseover="this.style.background='#dbeafe'" onmouseout="this.style.background='#eff6ff'">
                         <i data-feather="credit-card" style="width:13px; height:13px;"></i> Collect
                     </button>
                 </td>`;
@@ -188,9 +150,8 @@ document.addEventListener('DOMContentLoaded', async () => {
         filteredPayments = allPayments.filter(r => {
             // Search
             const matchesSearch = !term || 
-                (r.ref_id || '').toLowerCase().includes(term) ||
-                (r.customer_name || '').toLowerCase().includes(term) ||
-                (r.display_name || '').toLowerCase().includes(term);
+                (r.booking_id || '').toLowerCase().includes(term) ||
+                (r.customer_name || '').toLowerCase().includes(term);
             
             // Status
             const matchesStatus = currentFilter.status.length === 0 || 
@@ -198,9 +159,9 @@ document.addEventListener('DOMContentLoaded', async () => {
             
             // Date Range
             let matchesDate = true;
-            if (currentFilter.dateRange !== 'All' && r.display_date) {
+            if (currentFilter.dateRange !== 'All' && r.booking_date) {
                 const today = new Date();
-                const rowDate = new Date(r.display_date);
+                const rowDate = new Date(r.booking_date);
                 const diffTime = Math.abs(today - rowDate);
                 const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
                 
@@ -260,16 +221,16 @@ document.addEventListener('DOMContentLoaded', async () => {
     });
 
     // ─── COLLECT PAYMENT MODAL ─────────────────────────────────────────────
-    window.ppOpenCollect = function(refId) {
-        activeBookingId = refId; // We reuse this variable name but it now stores refId (booking or sale)
-        const row = allPayments.find(p => p.ref_id === refId);
+    window.ppOpenCollect = function(bookingId) {
+        activeBookingId = bookingId;
+        const row = allPayments.find(p => p.booking_id === bookingId);
         if (!row) return;
 
         const total = Number(row.total) || 0;
         const paid = Number(row.paid) || 0;
         const due = Number(row.due) || (total - paid);
 
-        document.getElementById('ppModalSubtitle').textContent  = `${row.ref_id.substring(0,8)} · ${row.customer_name || 'Walk-in'} · ${row.display_name}`;
+        document.getElementById('ppModalSubtitle').textContent  = `${row.booking_id.substring(0,8)} · ${row.customer_name} · ${row.service_name}`;
         document.getElementById('ppSummaryTotal').textContent   = '₹' + total.toLocaleString('en-IN');
         document.getElementById('ppSummaryPaid').textContent    = '₹' + paid.toLocaleString('en-IN');
         document.getElementById('ppSummaryDue').textContent     = '₹' + due.toLocaleString('en-IN');
@@ -311,7 +272,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         const recordBtn    = document.getElementById('ppRecordBtn');
         const amount       = parseFloat(amountInput.value);
         
-        const row = allPayments.find(p => p.ref_id === activeBookingId);
+        const row = allPayments.find(p => p.booking_id === activeBookingId);
         if (!row) return;
 
         const total = Number(row.total) || 0;
@@ -352,12 +313,12 @@ document.addEventListener('DOMContentLoaded', async () => {
                     company_id:     companyId,
                     branch_id:      branchId,
                     reference_id:   activeBookingId,
-                    reference_type: row.ref_type, // Use the detected type
+                    reference_type: 'booking',
                     amount:         amount,
                     currency:       'INR',
                     payment_method: payMethod,
                     status:         'paid', 
-                    notes:          `Payment for ${row.ref_type} ${activeBookingId.substring(0,8)}`,
+                    notes:          `Payment for booking ${activeBookingId.substring(0,8)}`,
                     created_by:     userId,
                     paid_at:        new Date().toISOString()
                 });
@@ -374,11 +335,11 @@ document.addEventListener('DOMContentLoaded', async () => {
             
             // Dispatch custom event for other modules
             document.dispatchEvent(new CustomEvent('payment-recorded', {
-                detail: { referenceId: activeBookingId, amount: amount, type: row.ref_type }
+                detail: { bookingId: activeBookingId, amount: amount }
             }));
 
             // Force refetch on Bookings if it exists in the current session
-            if (row.ref_type === 'booking' && typeof window.fetchBookings === 'function') {
+            if (typeof window.fetchBookings === 'function') {
                 await window.fetchBookings();
             }
 
