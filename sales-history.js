@@ -748,15 +748,6 @@ document.addEventListener('DOMContentLoaded', () => {
         }
 
         try {
-            // Determine primary key column
-            const { data: existing } = await supabase
-                .from('sales')
-                .select('sale_id, id')
-                .eq('company_id', getCompanyId())
-                .limit(1);
-
-            const pkCol = existing && existing.length > 0 && existing[0].sale_id ? 'sale_id' : 'id';
-
             // 1. Record the Refund in the Ledger
             const { error: txError } = await supabase
                 .from('business_transactions')
@@ -775,10 +766,11 @@ document.addEventListener('DOMContentLoaded', () => {
             if (txError) throw txError;
 
             // 2. Update the sale status in the sales table
+            // The sales table always uses 'sale_id' as the primary key column
             const { error } = await supabase
                 .from('sales')
-                .eq(pkCol, saleId)
-                .update({ status: 'refunded' });
+                .update({ status: 'refunded' })
+                .eq('sale_id', saleId);
 
             if (error) throw error;
 
