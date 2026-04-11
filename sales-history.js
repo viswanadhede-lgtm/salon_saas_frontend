@@ -296,7 +296,7 @@ document.addEventListener('DOMContentLoaded', () => {
         if (exportExcelBtn) exportExcelBtn.addEventListener('click', () => { hsExportData('excel'); });
 
         function closeSaleModal() {
-            if (saleDetailsModalOverlay) saleDetailsModalOverlay.style.display = 'none';
+            if (saleDetailsModalOverlay) saleDetailsModalOverlay.classList.remove('active');
             currentActionData = null;
         }
 
@@ -309,7 +309,7 @@ document.addEventListener('DOMContentLoaded', () => {
         }
 
         function closeRefundModal() {
-            if (refundSummaryOverlay) refundSummaryOverlay.style.display = 'none';
+            if (refundSummaryOverlay) refundSummaryOverlay.classList.remove('active');
         }
         
         const closeRefundBtnFooter = document.getElementById('closeRefundBtn');
@@ -323,7 +323,11 @@ document.addEventListener('DOMContentLoaded', () => {
 
         if (sdRefundBtn) {
             sdRefundBtn.addEventListener('click', () => {
-                refundSummaryOverlay.style.display = 'flex';
+                if (currentActionData && currentActionData.sale) {
+                    openRefundModal(currentActionData.sale);
+                } else {
+                    refundSummaryOverlay.classList.add('active');
+                }
             });
         }
 
@@ -343,7 +347,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const confirmCollectBtn = document.getElementById('confirmCollectBtn');
         const collectOverlay = document.getElementById('collectPaymentModalOverlay');
 
-        const closeCollectModal = () => { if (collectOverlay) collectOverlay.style.display = 'none'; };
+        const closeCollectModal = () => { if (collectOverlay) collectOverlay.classList.remove('active'); };
         if (closeCollectBtn) closeCollectBtn.addEventListener('click', closeCollectModal);
         if (cancelCollectBtn) cancelCollectBtn.addEventListener('click', closeCollectModal);
         if (collectOverlay) {
@@ -489,7 +493,7 @@ document.addEventListener('DOMContentLoaded', () => {
         if (cpBalance) cpBalance.textContent = `₹${balance.toLocaleString('en-IN')}`;
         if (cpInput) cpInput.value = balance;
         
-        modal.style.display = 'flex';
+        modal.classList.add('active');
         if (typeof feather !== 'undefined') feather.replace();
     }
 
@@ -526,7 +530,7 @@ document.addEventListener('DOMContentLoaded', () => {
             if (error) throw error;
 
             showToast('Payment recorded successfully!', '#10b981');
-            document.getElementById('collectPaymentModalOverlay').style.display = 'none';
+            document.getElementById('collectPaymentModalOverlay').classList.remove('active');
             await fetchSalesHistory(); // Refresh to update badges
         } catch (err) {
             console.error('Error recording payment:', err);
@@ -546,7 +550,7 @@ document.addEventListener('DOMContentLoaded', () => {
         if (!modal) return;
 
         // 1. Show modal immediately for instant feedback
-        modal.style.display = 'flex';
+        modal.classList.add('active');
 
         const subtitle = document.getElementById('rfModalSubtitle');
         const amountDisplay = document.getElementById('rfAmountDisplay');
@@ -672,7 +676,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 sdItemsList.innerHTML = `<tr><td colspan="4" style="text-align:center; padding:20px; color:#64748b;">Loading items...</td></tr>`;
             }
             
-            if (saleDetailsModalOverlay) saleDetailsModalOverlay.style.display = 'flex';
+            if (saleDetailsModalOverlay) saleDetailsModalOverlay.classList.add('active');
             if (typeof feather !== 'undefined') feather.replace();
 
             // Fetch actual line items from 'sales' table for this sale_id
@@ -780,7 +784,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
             // Success!
             showToast(`${sale.customer}'s purchase has been refunded.`, '#dc2626');
-            document.getElementById('refundSummaryOverlay').style.display = 'none';
+            document.getElementById('refundSummaryOverlay').classList.remove('active');
             
             // Re-fetch to sync everything
             await fetchSalesHistory();
@@ -800,7 +804,7 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     function closeRefundOverlayOnly() {
-        if (refundSummaryOverlay) refundSummaryOverlay.style.display = 'none';
+        if (refundSummaryOverlay) refundSummaryOverlay.classList.remove('active');
     }
 
 
