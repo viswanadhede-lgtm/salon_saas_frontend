@@ -575,15 +575,31 @@ document.addEventListener('DOMContentLoaded', () => {
 
             if (error) throw error;
 
-            // Sum up only actual payments and subtract refunds
-            refundableAmount = (data || []).reduce((sum, tx) => {
-                const val = Number(tx.amount || 0);
+            // Sum up transactions from ledger
+            let ledgerPaid = 0;
+            let ledgerRefunded = 0;
+
+            (data || []).forEach(tx => {
+                const val = Math.abs(Number(tx.amount || 0));
                 const status = (tx.status || '').toLowerCase().trim();
-                
-                if (status === 'paid') return sum + val;
-                if (status === 'refunded') return sum - val;
-                return sum;
-            }, 0);
+                if (status === 'paid') ledgerPaid += val;
+                if (status === 'refunded') ledgerRefunded += val;
+            });
+
+            const ledgerNet = ledgerPaid - ledgerRefunded;
+
+            // Robust amount logic:
+            // 1. If we have a net positive in the ledger, use it.
+            // 2. If ledger is empty but sale is marked as 'paid' or 'completed', use the sale total.
+            // 3. Otherwise, use 0.
+            if (ledgerNet > 0) {
+                refundableAmount = ledgerNet;
+            } else if (data && data.length === 0 && (sale.payment_status === 'paid' || sale.status === 'completed')) {
+                // Fallback for legacy data or missing ledger records
+                refundableAmount = (sale.totalAmountNum || 0) - ledgerRefunded;
+            } else {
+                refundableAmount = Math.max(0, ledgerNet);
+            }
             
             if (refundableAmount < 0) refundableAmount = 0;
 
@@ -593,7 +609,7 @@ document.addEventListener('DOMContentLoaded', () => {
             }
             
             // Use the last payment method as a hint
-            const lastMethod = data && data.length > 0 ? data[data.length - 1].payment_method : 'Multiple';
+            const lastMethod = data && data.length > 0 ? data[data.length - 1].payment_method : (sale.payment || 'Cash');
             if (methodDisplay) {
                 methodDisplay.value = lastMethod ? (lastMethod.charAt(0).toUpperCase() + lastMethod.slice(1)) : 'N/A';
             }
@@ -769,8 +785,8 @@ document.addEventListener('DOMContentLoaded', () => {
             // The sales table always uses 'sale_id' as the primary key column
             const { error } = await supabase
                 .from('sales')
-                .update({ status: 'refunded' })
-                .eq('sale_id', saleId);
+                .eq('sale_id', saleId)
+                .update({ status: 'refunded' });
 
             if (error) throw error;
 
