@@ -875,7 +875,7 @@ async function handleAssignMembership() {
         if (finalCustomerId && planName) {
             const { data: existing, error: checkErr } = await supabase
                 .from('membership_purchases')
-                .select('id, purchase_id')
+                .select('id, purchase_id, expiry_date')
                 .eq('company_id', getCompanyId())
                 .eq('branch_id', getBranchId())
                 .eq('customer_id', finalCustomerId)
@@ -885,12 +885,23 @@ async function handleAssignMembership() {
             if (checkErr) throw checkErr;
 
             if (existing && existing.length > 0) {
-                showToast(`Customer already has an active "${planName}" membership.`);
-                if (btn) {
-                    btn.textContent = origText;
-                    btn.disabled = false;
+                const today = new Date();
+                today.setHours(0, 0, 0, 0);
+                
+                const hasActiveAndNotExpired = existing.some(record => {
+                    if (!record.expiry_date) return true; // If no expiry date, assume it's active indefinitely
+                    const expDate = new Date(record.expiry_date);
+                    return expDate >= today;
+                });
+
+                if (hasActiveAndNotExpired) {
+                    showToast(`Customer already has an active "${planName}" membership.`);
+                    if (btn) {
+                        btn.textContent = origText;
+                        btn.disabled = false;
+                    }
+                    return;
                 }
-                return;
             }
         }
     } catch (err) {
