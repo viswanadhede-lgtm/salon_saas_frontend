@@ -811,6 +811,9 @@ function renderPurchases() {
 
 async function handleAssignMembership() {
     const planValue = document.getElementById('assignPlanInput').value;
+    const selectedPlan = currentPlans.find(p => (p.membership_id || p.id) === planValue);
+    const planName = selectedPlan ? (selectedPlan.plan_name || selectedPlan.name) : null;
+
     const custSearchValue = document.getElementById('custSearchInput').value.trim();
     const custNameValue = document.getElementById('assignCustomerName')?.value.trim();
     const custEmailValue = document.getElementById('assignCustomerEmail')?.value.trim();
@@ -852,10 +855,10 @@ async function handleAssignMembership() {
                 customer_phone: custSearchValue,
                 customer_mail: custEmailValue || null,
                 status: 'active'
-            });
+            }).select();
             if (custErr) throw custErr;
             if (newCust && newCust.length > 0) {
-                finalCustomerId = newCust[0].customer_id;
+                finalCustomerId = newCust[0].id || newCust[0].customer_id;
                 allCustomers.push(newCust[0]);
             }
         } catch (err) {
@@ -869,7 +872,6 @@ async function handleAssignMembership() {
     
     // ── Duplicate Check ──
     try {
-        const planName = selectedPlan ? (selectedPlan.plan_name || selectedPlan.name) : null;
         if (finalCustomerId && planName) {
             const { data: existing, error: checkErr } = await supabase
                 .from('membership_purchases')
@@ -908,8 +910,6 @@ async function handleAssignMembership() {
             userName = context.user?.name || (context.user?.first_name ? `${context.user.first_name} ${context.user.last_name || ''}`.trim() : null);
         } catch (e) {}
     }
-
-    const selectedPlan = currentPlans.find(p => (p.membership_id || p.id) === planValue);
 
     const duration = selectedPlan ? (selectedPlan.duration_months || selectedPlan.duration) : null;
     const purchaseDate = assignDate || new Date().toISOString().split('T')[0];
