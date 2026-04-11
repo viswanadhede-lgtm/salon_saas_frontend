@@ -57,22 +57,47 @@ document.addEventListener('DOMContentLoaded', async () => {
                 return;
             }
 
-            let query = supabase
-                .from('pending_payments_view')
-                .select('*')
-                .eq('company_id', companyId);
-
-            if (branchId) {
-                query = query.eq('branch_id', branchId);
-            }
-
-            const { data, error } = await query;
-            if (error) {
-                console.error('[PP] Supabase Error:', error);
-                throw error;
-            }
-
-            allPayments = data || [];
+            // Parallel fetch for Bookings and Products
+            const [bookingRes, productRes] = await Promise.all([
+                supabase
+                    .from('pending_payments_view')
+                    .select('*')
+                    .eq('company_id', companyId)
+                    .eq('branch_id', branchId),
+                supabase
+                    .from('product_pending_payments_view')
+                    .select('*')
+                    .eq('company_id', companyId)
+                    .eq('branch_id', branchId)
+            ]);
+    
+            if (bookingRes.error) throw bookingRes.error;
+            if (productRes.error) throw productRes.error;
+    
+            // Map Bookings
+            const bookings = (bookingRes.data || []).map(b => ({
+                ...b,
+                ref_type: 'booking'
+            }));
+    
+            // Map Products (standardize columns to match table)
+            const products = (productRes.data || []).map(p => ({
+                booking_id: p.sale_id,
+                customer_name: p.customer_name,
+                service_name: p.product_list || 'Product Sale',
+                booking_date: p.created_at,
+                start_time: '', 
+                total: p.total,
+                paid: p.paid,
+                due: p.due,
+                status: p.status,
+                ref_type: 'product',
+                company_id: p.company_id,
+                branch_id: p.branch_id
+            }));
+    
+            allPayments = [...bookings, ...products];
+            allPayments.sort((a, b) => new Date(b.booking_date) - new Date(a.booking_date));
             applyAllFilters();
 
         } catch (err) {
@@ -313,12 +338,12 @@ document.addEventListener('DOMContentLoaded', async () => {
                     company_id:     companyId,
                     branch_id:      branchId,
                     reference_id:   activeBookingId,
-                    reference_type: 'booking',
+                    reference_type: row.ref_type || 'booking',
                     amount:         amount,
                     currency:       'INR',
                     payment_method: payMethod.toLowerCase(),
                     status:         'paid', 
-                    notes:          `Payment for booking ${activeBookingId.substring(0,8)}`,
+                    notes:          `Payment for ${row.ref_type || 'booking'} ${activeBookingId.substring(0,8)}`,
                     created_by:     userId,
                     paid_at:        new Date().toISOString()
                 });
