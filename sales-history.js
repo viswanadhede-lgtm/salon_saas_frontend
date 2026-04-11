@@ -216,15 +216,15 @@ document.addEventListener('DOMContentLoaded', () => {
                 <td style="padding:12px 12px; color:#475569;">${sale.staff}</td>
                 <td style="padding:12px 24px 12px 12px;">
                     <div style="display:flex; gap:8px;">
-                        <button onclick="event.stopPropagation(); handleSaleAction('view', ${idx})" style="width:32px; height:32px; border-radius:8px; border:1px solid #e2e8f0; background:#fff; color:#64748b; display:flex; align-items:center; justify-content:center; cursor:pointer;" title="View Sale Details" onmouseover="this.style.background='#f8fafc'; this.style.color='#3b82f6'" onmouseout="this.style.background='#fff'; this.style.color='#64748b'">
+                        <button class="act-view" style="width:32px; height:32px; border-radius:8px; border:1px solid #e2e8f0; background:#fff; color:#64748b; display:flex; align-items:center; justify-content:center; cursor:pointer;" title="View Sale Details" onmouseover="this.style.background='#f8fafc'; this.style.color='#3b82f6'" onmouseout="this.style.background='#fff'; this.style.color='#64748b'">
                             <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
                         </button>
 
-                        <button onclick="event.stopPropagation(); handleSaleAction('print', ${idx})" style="width:32px; height:32px; border-radius:8px; border:1px solid #e2e8f0; background:#fff; color:#64748b; display:flex; align-items:center; justify-content:center; cursor:pointer;" title="Print Receipt" onmouseover="this.style.background='#f8fafc'; this.style.color='#10b981'" onmouseout="this.style.background='#fff'; this.style.color='#64748b'">
+                        <button class="act-print" style="width:32px; height:32px; border-radius:8px; border:1px solid #e2e8f0; background:#fff; color:#64748b; display:flex; align-items:center; justify-content:center; cursor:pointer;" title="Print Receipt" onmouseover="this.style.background='#f8fafc'; this.style.color='#10b981'" onmouseout="this.style.background='#fff'; this.style.color='#64748b'">
                             <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg>
                         </button>
                         
-                        <button onclick="event.stopPropagation(); handleSaleAction('refund', ${idx})" 
+                        <button class="act-refund" 
                             style="width:32px; height:32px; border-radius:8px; border:1px solid ${payStatus === 'unpaid' ? '#f1f5f9' : '#fecdd3'}; background:${payStatus === 'unpaid' ? '#f8fafc' : '#fff1f2'}; color:${payStatus === 'unpaid' ? '#cbd5e1' : '#ef4444'}; display:flex; align-items:center; justify-content:center; cursor:${payStatus === 'unpaid' ? 'not-allowed' : 'pointer'};" 
                             title="${payStatus === 'unpaid' ? 'Cannot refund pending sale' : 'Refund Sale'}" 
                             ${payStatus === 'unpaid' ? 'disabled' : ''}
@@ -235,9 +235,15 @@ document.addEventListener('DOMContentLoaded', () => {
                     </div>
                 </td>
             `;
+
+            // Setup listeners programmatically (safest approach for module scopes)
+            tr.querySelector('.act-view')?.addEventListener('click', (e) => { e.stopPropagation(); handleSaleAction('view', idx); });
+            tr.querySelector('.act-print')?.addEventListener('click', (e) => { e.stopPropagation(); handleSaleAction('print', idx); });
+            tr.querySelector('.act-refund')?.addEventListener('click', (e) => { e.stopPropagation(); handleSaleAction('refund', idx); });
+
             tableBody.appendChild(tr);
         });
-        
+
         if (typeof feather !== 'undefined') feather.replace();
     }
 
@@ -427,19 +433,29 @@ document.addEventListener('DOMContentLoaded', () => {
     // ----------------------------------------------------------------------
     // 7. HANDLE SALE ACTIONS
     // ----------------------------------------------------------------------
-    window.handleSaleAction = function(action, idx) {
-        closeOpenActionMenu();
-        const sale = currentSalesData[idx];
-        currentActionData = { action, idx, sale };
+    function handleSaleAction(action, idx) {
+        try {
+            closeOpenActionMenu();
+            const sale = currentSalesData[idx];
+            if (!sale) return;
+            currentActionData = { action, idx, sale };
 
-        if (action === 'view') {
-            openSaleDetails(sale);
-        } else if (action === 'collect') {
-            openCollectPaymentModal(sale);
-        } else if (action === 'refund') {
-            openRefundModal(sale);
+            if (action === 'view') {
+                openSaleDetails(sale);
+            } else if (action === 'collect') {
+                openCollectPaymentModal(sale);
+            } else if (action === 'refund') {
+                openRefundModal(sale);
+            } else if (action === 'print') {
+                showToast('Preparing receipt printer...', '#10b981');
+                window.print();
+            }
+        } catch (err) {
+            console.error('[Action Error]', err);
+            showToast('Unable to process action.', '#ef4444');
         }
-    };
+    }
+    window.handleSaleAction = handleSaleAction;
     
     // ----------------------------------------------------------------------
     // 7.1. COLLECT PAYMENT MODAL
