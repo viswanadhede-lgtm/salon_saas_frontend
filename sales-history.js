@@ -216,21 +216,18 @@ document.addEventListener('DOMContentLoaded', () => {
                 <td style="padding:12px 12px; color:#475569;">${sale.staff}</td>
                 <td style="padding:12px 24px 12px 12px;">
                     <div style="display:flex; gap:8px;">
-                        <button onclick="event.stopPropagation(); handleSaleAction('view', ${idx})" style="width:32px; height:32px; border-radius:8px; border:1px solid #e2e8f0; background:#fff; color:#64748b; display:flex; align-items:center; justify-content:center; cursor:pointer;" title="View Details" onmouseover="this.style.background='#f8fafc'; this.style.color='#3b82f6'" onmouseout="this.style.background='#fff'; this.style.color='#64748b'">
-                            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
-                        </button>
-                        ${isRefunded ? '' : `
                         <button onclick="event.stopPropagation(); handleSaleAction('print', ${idx})" style="width:32px; height:32px; border-radius:8px; border:1px solid #e2e8f0; background:#fff; color:#64748b; display:flex; align-items:center; justify-content:center; cursor:pointer;" title="Print Receipt" onmouseover="this.style.background='#f8fafc'; this.style.color='#10b981'" onmouseout="this.style.background='#fff'; this.style.color='#64748b'">
                             <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg>
                         </button>
-                        ${payStatus === 'unpaid' || payStatus === 'partial' ? `
-                        <button onclick="event.stopPropagation(); handleSaleAction('collect', ${idx})" style="width:32px; height:32px; border-radius:8px; border:1px solid #dcfce7; background:#f0fdf4; color:#16a34a; display:flex; align-items:center; justify-content:center; cursor:pointer;" title="Record Payment" onmouseover="this.style.background='#dcfce7'" onmouseout="this.style.background='#f0fdf4'">
-                            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="4" width="20" height="16" rx="2"/><line x1="12" y1="8" x2="12" y2="16"/><line x1="8" y1="12" x2="16" y2="12"/></svg>
-                        </button>` : ''}
-                        <button onclick="event.stopPropagation(); handleSaleAction('refund', ${idx})" style="width:32px; height:32px; border-radius:8px; border:1px solid #fecdd3; background:#fff1f2; color:#ef4444; display:flex; align-items:center; justify-content:center; cursor:pointer;" title="Refund Sale" onmouseover="this.style.background='#fecdd3'" onmouseout="this.style.background='#fff1f2'">
+                        
+                        <button onclick="event.stopPropagation(); handleSaleAction('refund', ${idx})" 
+                            style="width:32px; height:32px; border-radius:8px; border:1px solid ${payStatus === 'unpaid' ? '#f1f5f9' : '#fecdd3'}; background:${payStatus === 'unpaid' ? '#f8fafc' : '#fff1f2'}; color:${payStatus === 'unpaid' ? '#cbd5e1' : '#ef4444'}; display:flex; align-items:center; justify-content:center; cursor:${payStatus === 'unpaid' ? 'not-allowed' : 'pointer'};" 
+                            title="${payStatus === 'unpaid' ? 'Cannot refund pending sale' : 'Refund Sale'}" 
+                            ${payStatus === 'unpaid' ? 'disabled' : ''}
+                            onmouseover="${payStatus !== 'unpaid' ? "this.style.background='#fecdd3'" : ""}" 
+                            onmouseout="${payStatus !== 'unpaid' ? "this.style.background='#fff1f2'" : ""}">
                             <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 14 4 9 9 4"/><path d="M20 20v-7a4 4 0 0 0-4-4H4"/></svg>
                         </button>
-                        `}
                     </div>
                 </td>
             `;
@@ -511,18 +508,72 @@ document.addEventListener('DOMContentLoaded', () => {
     // ----------------------------------------------------------------------
     // 7.2. REFUND MODAL
     // ----------------------------------------------------------------------
-    function openRefundModal(sale) {
+    let refundableAmount = 0;
+    async function openRefundModal(sale) {
         if (!sale) return;
         const modal = document.getElementById('refundSummaryOverlay');
+        const subtitle = document.getElementById('rfModalSubtitle');
         const amountDisplay = document.getElementById('rfAmountDisplay');
+        const methodDisplay = document.getElementById('rfMethodDisplay');
+        const noteField = document.getElementById('rfNote');
+        const confirmBtn = document.getElementById('confirmRefundBtn');
+
         if (!modal) return;
 
-        // Refundable amount = Sum of payments - Sum of previous refunds
-        // Since we already calculated 'amount_paid' in fetchSalesHistory, we use it directly.
-        const refundable = sale.amount_paid || 0;
-        
-        if (amountDisplay) amountDisplay.textContent = `₹${refundable.toLocaleString('en-IN')}`;
+        subtitle.textContent = `${sale.customer || 'Customer'} • ${sale.products_summary || 'Sale'}`;
+        amountDisplay.textContent = 'Calculating...';
+        methodDisplay.value = 'Loading...';
+        noteField.value = '';
+
         modal.style.display = 'flex';
+
+        try {
+            // Fetch transactions for this sale from ledger
+            const { data, error } = await supabase
+                .from('business_transactions')
+                .select('amount, payment_method, status')
+                .eq('reference_id', sale.id)
+                .eq('reference_type', 'product');
+
+            if (error) throw error;
+
+            // Sum up only actual payments and subtract refunds
+            refundableAmount = (data || []).reduce((sum, tx) => {
+                const val = Number(tx.amount || 0);
+                const status = (tx.status || '').toLowerCase().trim();
+                
+                if (status === 'paid') return sum + val;
+                if (status === 'refunded') return sum - val;
+                return sum;
+            }, 0);
+            
+            if (refundableAmount < 0) refundableAmount = 0;
+
+            amountDisplay.textContent = `₹${refundableAmount.toLocaleString('en-IN')}`;
+            
+            // Use the last payment method as a hint
+            const lastMethod = data && data.length > 0 ? data[data.length - 1].payment_method : 'Multiple';
+            methodDisplay.value = lastMethod ? (lastMethod.charAt(0).toUpperCase() + lastMethod.slice(1)) : 'N/A';
+
+            if (refundableAmount <= 0) {
+                amountDisplay.style.color = '#94a3b8';
+                if (confirmBtn) {
+                    confirmBtn.disabled = true;
+                    confirmBtn.textContent = 'Nothing to Refund';
+                }
+            } else {
+                amountDisplay.style.color = '#dc2626';
+                if (confirmBtn) {
+                    confirmBtn.disabled = false;
+                    confirmBtn.textContent = 'Issue Refund';
+                }
+            }
+        } catch (err) {
+            console.error('[PP Refund] Error calculating balance:', err);
+            amountDisplay.textContent = 'Error';
+            amountDisplay.style.color = '#ef4444';
+        }
+        
         if (typeof feather !== 'undefined') feather.replace();
     }
 
@@ -641,18 +692,20 @@ document.addEventListener('DOMContentLoaded', () => {
     // 9. PROCESS REFUND (via Supabase update)
     // ----------------------------------------------------------------------
     async function processRefund() {
-        if (!currentActionData || !currentActionData.sale) return;
+        if (!currentActionData || !currentActionData.sale || refundableAmount <= 0) return;
         
         const { sale } = currentActionData;
         const saleId = sale.id;
+        const confirmBtn = document.getElementById('confirmRefundBtn');
+        const note = document.getElementById('rfNote')?.value.trim();
 
-        if (confirmRefundBtn) {
-            confirmRefundBtn.textContent = 'Processing...';
-            confirmRefundBtn.disabled = true;
+        if (confirmBtn) {
+            confirmBtn.textContent = 'Processing...';
+            confirmBtn.disabled = true;
         }
 
         try {
-            // Determine primary key column (sale_id or id)
+            // Determine primary key column
             const { data: existing } = await supabase
                 .from('sales')
                 .select('sale_id, id')
@@ -662,7 +715,6 @@ document.addEventListener('DOMContentLoaded', () => {
             const pkCol = existing && existing.length > 0 && existing[0].sale_id ? 'sale_id' : 'id';
 
             // 1. Record the Refund in the Ledger
-            // Rule: positive amount, status 'refunded', reference_type 'product'
             const { error: txError } = await supabase
                 .from('business_transactions')
                 .insert({
@@ -670,10 +722,10 @@ document.addEventListener('DOMContentLoaded', () => {
                     branch_id: getBranchId(),
                     reference_id: saleId,
                     reference_type: 'product',
-                    amount: sale.amount_paid || 0,
+                    amount: Math.abs(refundableAmount),
                     status: 'refunded',
-                    payment_method: (sale.payment || 'cash').toLowerCase(),
-                    notes: `Refund for sale ${saleId}`,
+                    payment_method: (document.getElementById('rfMethodDisplay')?.value || 'cash').toLowerCase(),
+                    notes: note || `Refund processed for sale ${saleId}`,
                     paid_at: new Date().toISOString()
                 });
 
@@ -687,26 +739,23 @@ document.addEventListener('DOMContentLoaded', () => {
 
             if (error) throw error;
 
-            // Update local state
-            const localSale = initialSalesData.find(s => s.id === saleId);
-            if (localSale) localSale.status = 'refunded';
-            currentSalesData = [...initialSalesData];
-
-            renderTable();
-            await fetchSalesHistory(); // Full refresh to sync with ledger
-            closeRefundOverlayOnly();
+            // Success!
+            showToast(`${sale.customer}'s purchase has been refunded.`, '#dc2626');
+            document.getElementById('refundSummaryOverlay').style.display = 'none';
             
+            // Re-fetch to sync everything
+            await fetchSalesHistory();
+            
+            // Update local Detail view if open
             if (sdTotal) sdTotal.innerHTML = `<del style="color:#94a3b8; font-weight:400; margin-right: 8px;">${sale.total}</del> <span style="color:#dc2626;">Refunded</span>`;
             if (sdRefundBtn) sdRefundBtn.style.display = 'none';
 
-            showToast(`${sale.customer}'s purchase has been refunded.`, '#dc2626');
         } catch (err) {
             console.error('Refund error:', err);
             showToast('Failed to process refund: ' + (err.message || 'Unknown error'), '#dc2626');
-        } finally {
-            if (confirmRefundBtn) {
-                confirmRefundBtn.textContent = 'Confirm Refund';
-                confirmRefundBtn.disabled = false;
+            if (confirmBtn) {
+                confirmBtn.textContent = 'Issue Refund';
+                confirmBtn.disabled = false;
             }
         }
     }
