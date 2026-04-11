@@ -452,7 +452,7 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         } catch (err) {
             console.error('[Action Error]', err);
-            showToast('Unable to process action.', '#ef4444');
+            showToast('Unable to process action. See console for details.', '#ef4444');
         }
     }
     window.handleSaleAction = handleSaleAction;
@@ -534,20 +534,23 @@ document.addEventListener('DOMContentLoaded', () => {
     async function openRefundModal(sale) {
         if (!sale) return;
         const modal = document.getElementById('refundSummaryOverlay');
+        if (!modal) return;
+
+        // 1. Show modal immediately for instant feedback
+        modal.style.display = 'flex';
+
         const subtitle = document.getElementById('rfModalSubtitle');
         const amountDisplay = document.getElementById('rfAmountDisplay');
         const methodDisplay = document.getElementById('rfMethodDisplay');
         const noteField = document.getElementById('rfNote');
         const confirmBtn = document.getElementById('confirmRefundBtn');
 
-        if (!modal) return;
-
-        subtitle.textContent = `${sale.customer || 'Customer'} • ${sale.products_summary || 'Sale'}`;
-        amountDisplay.textContent = 'Calculating...';
-        methodDisplay.value = 'Loading...';
-        noteField.value = '';
-
-        modal.style.display = 'flex';
+        // 2. Clear previous state/set loading
+        if (subtitle) subtitle.textContent = `${sale.customer || 'Customer'} • ${sale.products_summary || 'Sale'}`;
+        if (amountDisplay) amountDisplay.textContent = 'Calculating...';
+        if (methodDisplay) methodDisplay.value = 'Loading...';
+        if (noteField) noteField.value = '';
+        if (confirmBtn) { confirmBtn.disabled = true; confirmBtn.textContent = 'Issue Refund'; }
 
         try {
             // Fetch transactions for this sale from ledger
@@ -571,33 +574,38 @@ document.addEventListener('DOMContentLoaded', () => {
             
             if (refundableAmount < 0) refundableAmount = 0;
 
-            amountDisplay.textContent = `₹${refundableAmount.toLocaleString('en-IN')}`;
+            if (amountDisplay) {
+                amountDisplay.textContent = `₹${refundableAmount.toLocaleString('en-IN')}`;
+                amountDisplay.style.color = (refundableAmount <= 0) ? '#94a3b8' : '#dc2626';
+            }
             
             // Use the last payment method as a hint
             const lastMethod = data && data.length > 0 ? data[data.length - 1].payment_method : 'Multiple';
-            methodDisplay.value = lastMethod ? (lastMethod.charAt(0).toUpperCase() + lastMethod.slice(1)) : 'N/A';
+            if (methodDisplay) {
+                methodDisplay.value = lastMethod ? (lastMethod.charAt(0).toUpperCase() + lastMethod.slice(1)) : 'N/A';
+            }
 
             if (refundableAmount <= 0) {
-                amountDisplay.style.color = '#94a3b8';
                 if (confirmBtn) {
                     confirmBtn.disabled = true;
                     confirmBtn.textContent = 'Nothing to Refund';
                 }
             } else {
-                amountDisplay.style.color = '#dc2626';
                 if (confirmBtn) {
                     confirmBtn.disabled = false;
                     confirmBtn.textContent = 'Issue Refund';
                 }
             }
         } catch (err) {
-            console.error('[PP Refund] Error calculating balance:', err);
-            amountDisplay.textContent = 'Error';
-            amountDisplay.style.color = '#ef4444';
+            console.error('[Refund Check Error]', err);
+            if (amountDisplay) amountDisplay.textContent = 'Error';
+            if (confirmBtn) { confirmBtn.disabled = true; confirmBtn.textContent = 'Refund Error'; }
         }
         
         if (typeof feather !== 'undefined') feather.replace();
     }
+    window.openRefundModal = openRefundModal;
+
 
     // ----------------------------------------------------------------------
     // FILTER: Apply & Clear (called from HTML onclick)
