@@ -177,6 +177,7 @@ document.addEventListener('DOMContentLoaded', () => {
             const tr = document.createElement('tr');
             tr.className = 'tb-row';
             tr.style.cursor = 'pointer';
+            tr.setAttribute('data-idx', idx);
 
             // Dynamic payment status logic
             const payStatus = sale.payment_status || 'unpaid';
@@ -197,12 +198,6 @@ document.addEventListener('DOMContentLoaded', () => {
 
             const itemCount = sale.item_count || 1;
             const productDisplay = sale.products_summary || 'Product';
-
-            tr.onclick = (e) => {
-                if (!e.target.closest('button')) {
-                    openSaleDetails(sale);
-                }
-            };
 
             tr.innerHTML = `
                 <td style="padding:12px 12px 12px 24px; color:#1e293b; font-weight:500; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">${sale.customer}</td>
@@ -236,11 +231,6 @@ document.addEventListener('DOMContentLoaded', () => {
                 </td>
             `;
 
-            // Setup listeners programmatically (safest approach for module scopes)
-            tr.querySelector('.act-view')?.addEventListener('click', (e) => { e.stopPropagation(); handleSaleAction('view', idx); });
-            tr.querySelector('.act-print')?.addEventListener('click', (e) => { e.stopPropagation(); handleSaleAction('print', idx); });
-            tr.querySelector('.act-refund')?.addEventListener('click', (e) => { e.stopPropagation(); handleSaleAction('refund', idx); });
-
             tableBody.appendChild(tr);
         });
 
@@ -252,6 +242,34 @@ document.addEventListener('DOMContentLoaded', () => {
     // 5. EVENT LISTENERS & FILTERING
     // ----------------------------------------------------------------------
     function setupEventListeners() {
+        if (tableBody) {
+            tableBody.addEventListener('click', (e) => {
+                const tr = e.target.closest('tr.tb-row');
+                if (!tr) return;
+                
+                const idxStr = tr.getAttribute('data-idx');
+                if (idxStr === null) return;
+                const idx = parseInt(idxStr, 10);
+                
+                const btnView = e.target.closest('.act-view');
+                const btnPrint = e.target.closest('.act-print');
+                const btnRefund = e.target.closest('.act-refund');
+                
+                if (btnView) {
+                    e.stopPropagation();
+                    handleSaleAction('view', idx);
+                } else if (btnPrint) {
+                    e.stopPropagation();
+                    handleSaleAction('print', idx);
+                } else if (btnRefund && !btnRefund.disabled && btnRefund.style.cursor !== 'not-allowed') {
+                    e.stopPropagation();
+                    handleSaleAction('refund', idx);
+                } else if (!e.target.closest('button')) {
+                    handleSaleAction('view', idx);
+                }
+            });
+        }
+
         if (searchInput) {
             searchInput.addEventListener('input', (e) => {
                 const term = e.target.value.toLowerCase();
@@ -646,26 +664,26 @@ document.addEventListener('DOMContentLoaded', () => {
     // 8. POPULATE SALE DETAILS MODAL
     // ----------------------------------------------------------------------
     async function openSaleDetails(sale) {
-        if (!sale) return;
-        currentActionData = { action: 'view', idx: currentSalesData.indexOf(sale), sale };
-
-        if (sdSubtitle && sale.id) sdSubtitle.textContent = `Transaction ID: ${String(sale.id).substring(0,8).toUpperCase()}`;
-        if (sdCustomer) sdCustomer.textContent = sale.customer;
-        if (sdStaff) sdStaff.textContent = sale.staff;
-        if (sdDate) sdDate.textContent = sale.date;
-        if (sdPayment) sdPayment.textContent = sale.payment.toUpperCase();
-
-        const sdItemCountEl = document.getElementById('sdItemCount');
-        if (sdItemCountEl) sdItemCountEl.textContent = sale.item_count || 1;
-
-        if (sdItemsList) {
-            sdItemsList.innerHTML = `<tr><td colspan="4" style="text-align:center; padding:20px; color:#64748b;">Loading items...</td></tr>`;
-        }
-        
-        if (saleDetailsModalOverlay) saleDetailsModalOverlay.style.display = 'flex';
-        if (typeof feather !== 'undefined') feather.replace();
-
         try {
+            if (!sale) return;
+            currentActionData = { action: 'view', idx: currentSalesData.indexOf(sale), sale };
+
+            if (sdSubtitle && sale.id) sdSubtitle.textContent = `Transaction ID: ${String(sale.id).substring(0,8).toUpperCase()}`;
+            if (sdCustomer) sdCustomer.textContent = sale.customer || '-';
+            if (sdStaff) sdStaff.textContent = sale.staff || '-';
+            if (sdDate) sdDate.textContent = sale.date || '-';
+            if (sdPayment && sale.payment) sdPayment.textContent = String(sale.payment).toUpperCase();
+
+            const sdItemCountEl = document.getElementById('sdItemCount');
+            if (sdItemCountEl) sdItemCountEl.textContent = sale.item_count || 1;
+
+            if (sdItemsList) {
+                sdItemsList.innerHTML = `<tr><td colspan="4" style="text-align:center; padding:20px; color:#64748b;">Loading items...</td></tr>`;
+            }
+            
+            if (saleDetailsModalOverlay) saleDetailsModalOverlay.style.display = 'flex';
+            if (typeof feather !== 'undefined') feather.replace();
+
             // Fetch actual line items from 'sales' table for this sale_id
             const { data: items, error } = await supabase
                 .from('sales')
