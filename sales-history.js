@@ -178,12 +178,6 @@ document.addEventListener('DOMContentLoaded', () => {
             tr.className = 'tb-row';
             tr.style.cursor = 'pointer';
             tr.setAttribute('data-idx', idx);
-            // Fallback: Bind the row click directly
-            tr.onclick = function(e) {
-                if (!e.target.closest('button')) {
-                    window.runSaleView(idx);
-                }
-            };
 
             // Dynamic payment status logic
             const payStatus = sale.payment_status || 'unpaid';
@@ -215,17 +209,41 @@ document.addEventListener('DOMContentLoaded', () => {
                     <span class="tb-status-pill ${statusPillClass}" style="text-transform: uppercase; font-size: 0.7rem;">${statusLabel}</span>
                 </td>
                 <td style="padding:12px 12px; color:#475569;">${sale.staff}</td>
-                <td style="padding:12px 24px 12px 12px;">
-                    <button onclick="event.stopPropagation(); window.runSaleRefund(${idx})" 
-                        style="padding:4px 10px; border-radius:6px; border:1px solid ${payStatus === 'unpaid' ? '#f1f5f9' : '#fecdd3'}; background:${payStatus === 'unpaid' ? '#f8fafc' : '#fff1f2'}; color:${payStatus === 'unpaid' ? '#cbd5e1' : '#e11d48'}; font-size:0.75rem; font-weight:600; cursor:${payStatus === 'unpaid' ? 'not-allowed' : 'pointer'}; white-space:nowrap; transition:all 0.2s;" 
-                        title="${payStatus === 'unpaid' ? 'Cannot refund pending sale' : 'Refund Sale'}" 
-                        ${payStatus === 'unpaid' ? 'disabled' : ''}
-                        onmouseover="${payStatus !== 'unpaid' ? "this.style.background='#ffe4e6'" : ""}" 
-                        onmouseout="${payStatus !== 'unpaid' ? "this.style.background='#fff1f2'" : ""}">
-                        Refund
-                    </button>
-                </td>
+                <td style="padding:12px 24px 12px 12px;" class="action-cell"></td>
             `;
+
+            const actionCell = tr.querySelector('.action-cell');
+            const refundBtn = document.createElement('button');
+            refundBtn.textContent = 'Refund';
+            refundBtn.title = payStatus === 'unpaid' ? 'Cannot refund pending sale' : 'Refund Sale';
+            refundBtn.style.padding = '4px 10px';
+            refundBtn.style.borderRadius = '6px';
+            refundBtn.style.border = `1px solid ${payStatus === 'unpaid' ? '#f1f5f9' : '#fecdd3'}`;
+            refundBtn.style.background = payStatus === 'unpaid' ? '#f8fafc' : '#fff1f2';
+            refundBtn.style.color = payStatus === 'unpaid' ? '#cbd5e1' : '#e11d48';
+            refundBtn.style.fontSize = '0.75rem';
+            refundBtn.style.fontWeight = '600';
+            refundBtn.style.cursor = payStatus === 'unpaid' ? 'not-allowed' : 'pointer';
+            refundBtn.style.whiteSpace = 'nowrap';
+            refundBtn.style.transition = 'all 0.2s';
+            
+            if (payStatus === 'unpaid') {
+                refundBtn.disabled = true;
+            } else {
+                refundBtn.onmouseover = () => refundBtn.style.background = '#ffe4e6';
+                refundBtn.onmouseout = () => refundBtn.style.background = '#fff1f2';
+                refundBtn.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    handleSaleAction('refund', idx);
+                });
+            }
+            actionCell.appendChild(refundBtn);
+            
+            tr.addEventListener('click', (e) => {
+                if (!e.target.closest('button')) {
+                    handleSaleAction('view', idx);
+                }
+            });
 
             tableBody.appendChild(tr);
         });
