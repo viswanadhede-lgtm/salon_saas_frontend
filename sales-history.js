@@ -196,9 +196,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 : sale.total;
 
             const itemCount = sale.item_count || 1;
-            const productDisplay = itemCount === 1 
-                ? (sale.products_summary || '1 Product') 
-                : `${itemCount} Items`;
+            const productDisplay = sale.products_summary || 'Product';
 
             tr.onclick = (e) => {
                 if (!e.target.closest('button')) {
@@ -209,7 +207,8 @@ document.addEventListener('DOMContentLoaded', () => {
             tr.innerHTML = `
                 <td style="padding:12px 12px 12px 24px; color:#1e293b; font-weight:500; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">${sale.customer}</td>
                 <td style="padding:12px 12px; color:#475569; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">${sale.date}</td>
-                <td style="padding:12px 12px; color:#475569;">${productDisplay}</td>
+                <td style="padding:12px 12px; color:#475569; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">${productDisplay}</td>
+                <td style="padding:12px 12px; color:#475569;">${itemCount}</td>
                 <td style="padding:12px 12px; font-weight:600; color:#1e293b;">${saleTotalDisplay}</td>
                 <td style="padding:12px 12px;">
                     <span class="tb-status-pill ${statusPillClass}" style="text-transform: uppercase; font-size: 0.7rem;">${statusLabel}</span>
@@ -574,6 +573,9 @@ document.addEventListener('DOMContentLoaded', () => {
         if (sdStaff) sdStaff.textContent = sale.staff;
         if (sdDate) sdDate.textContent = sale.date;
         if (sdPayment) sdPayment.textContent = sale.payment.toUpperCase();
+
+        const sdItemCountEl = document.getElementById('sdItemCount');
+        if (sdItemCountEl) sdItemCountEl.textContent = sale.item_count || 1;
 
         if (sdItemsList) {
             sdItemsList.innerHTML = `<tr><td colspan="4" style="text-align:center; padding:20px; color:#64748b;">Loading items...</td></tr>`;
