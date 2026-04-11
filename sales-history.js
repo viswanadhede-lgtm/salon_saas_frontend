@@ -216,24 +216,14 @@ document.addEventListener('DOMContentLoaded', () => {
                 </td>
                 <td style="padding:12px 12px; color:#475569;">${sale.staff}</td>
                 <td style="padding:12px 24px 12px 12px;">
-                    <div style="display:flex; gap:8px;">
-                        <button onclick="event.stopPropagation(); window.runSaleView(${idx})" style="width:32px; height:32px; border-radius:8px; border:1px solid #e2e8f0; background:#fff; color:#64748b; display:flex; align-items:center; justify-content:center; cursor:pointer;" title="View Sale Details" onmouseover="this.style.background='#f8fafc'; this.style.color='#3b82f6'" onmouseout="this.style.background='#fff'; this.style.color='#64748b'">
-                            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
-                        </button>
-
-                        <button onclick="event.stopPropagation(); window.runSalePrint(${idx})" style="width:32px; height:32px; border-radius:8px; border:1px solid #e2e8f0; background:#fff; color:#64748b; display:flex; align-items:center; justify-content:center; cursor:pointer;" title="Print Receipt" onmouseover="this.style.background='#f8fafc'; this.style.color='#10b981'" onmouseout="this.style.background='#fff'; this.style.color='#64748b'">
-                            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg>
-                        </button>
-                        
-                        <button onclick="event.stopPropagation(); window.runSaleRefund(${idx})" 
-                            style="width:32px; height:32px; border-radius:8px; border:1px solid ${payStatus === 'unpaid' ? '#f1f5f9' : '#fecdd3'}; background:${payStatus === 'unpaid' ? '#f8fafc' : '#fff1f2'}; color:${payStatus === 'unpaid' ? '#cbd5e1' : '#ef4444'}; display:flex; align-items:center; justify-content:center; cursor:${payStatus === 'unpaid' ? 'not-allowed' : 'pointer'};" 
-                            title="${payStatus === 'unpaid' ? 'Cannot refund pending sale' : 'Refund Sale'}" 
-                            ${payStatus === 'unpaid' ? 'disabled' : ''}
-                            onmouseover="${payStatus !== 'unpaid' ? "this.style.background='#fecdd3'" : ""}" 
-                            onmouseout="${payStatus !== 'unpaid' ? "this.style.background='#fff1f2'" : ""}">
-                            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 14 4 9 9 4"/><path d="M20 20v-7a4 4 0 0 0-4-4H4"/></svg>
-                        </button>
-                    </div>
+                    <button onclick="event.stopPropagation(); window.runSaleRefund(${idx})" 
+                        style="padding:4px 10px; border-radius:6px; border:1px solid ${payStatus === 'unpaid' ? '#f1f5f9' : '#fecdd3'}; background:${payStatus === 'unpaid' ? '#f8fafc' : '#fff1f2'}; color:${payStatus === 'unpaid' ? '#cbd5e1' : '#e11d48'}; font-size:0.75rem; font-weight:600; cursor:${payStatus === 'unpaid' ? 'not-allowed' : 'pointer'}; white-space:nowrap; transition:all 0.2s;" 
+                        title="${payStatus === 'unpaid' ? 'Cannot refund pending sale' : 'Refund Sale'}" 
+                        ${payStatus === 'unpaid' ? 'disabled' : ''}
+                        onmouseover="${payStatus !== 'unpaid' ? "this.style.background='#ffe4e6'" : ""}" 
+                        onmouseout="${payStatus !== 'unpaid' ? "this.style.background='#fff1f2'" : ""}">
+                        Refund
+                    </button>
                 </td>
             `;
 
