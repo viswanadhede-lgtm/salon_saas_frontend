@@ -38,7 +38,8 @@ function showToast(msg, isError = false) {
 
 // --- Boot ---
 document.addEventListener('DOMContentLoaded', () => {
-    if (window.location.pathname.includes('pos.html')) {
+    // Standardize initialization - if POS grid exists, we are on POS page
+    if (document.getElementById('posProductGrid')) {
         setupEventListeners();
         fetchProducts();
         fetchCustomers();
@@ -424,10 +425,23 @@ function setupEventListeners() {
     const confirmTotalEl = document.getElementById('confirmTotal');
 
     const openCollectModal = () => {
-        if (cart.length === 0) return;
         const total = cart.reduce((sum, item) => sum + (item.price * item.quantity), 0);
-        if (confirmTotalEl) confirmTotalEl.textContent = `₹${total.toLocaleString('en-IN', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}`;
-        if (collectModalOverlay) collectModalOverlay.style.display = 'flex';
+        console.log('POS: Open Collect Modal - Items:', cart.length, 'Total:', total);
+        
+        if (cart.length === 0) {
+            showToast('Please add items to your cart first.', true);
+            return;
+        }
+
+        if (confirmTotalEl) {
+            confirmTotalEl.textContent = `₹${total.toLocaleString('en-IN')}`;
+        }
+        
+        if (collectModalOverlay) {
+            collectModalOverlay.classList.add('active');
+            collectModalOverlay.style.display = 'flex'; // Backup for some CSS setups
+        }
+        
         if (window.feather) feather.replace();
     };
 
@@ -661,5 +675,10 @@ function updateCartUI() {
     if (taxEl) taxEl.textContent = `₹0`;
     if (totalEl) totalEl.textContent = `₹${subtotal}`;
 
-    if (btnComplete) { btnComplete.style.opacity = '1'; btnComplete.style.cursor = 'pointer'; }
+    if (btnComplete) { 
+        btnComplete.style.opacity = '1'; 
+        btnComplete.style.cursor = 'pointer'; 
+        btnComplete.style.pointerEvents = 'auto';
+        btnComplete.disabled = false;
+    }
 }
