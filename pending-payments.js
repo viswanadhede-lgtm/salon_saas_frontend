@@ -316,7 +316,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                     reference_type: 'booking',
                     amount:         amount,
                     currency:       'INR',
-                    payment_method: payMethod,
+                    payment_method: payMethod.toLowerCase(),
                     status:         'paid', 
                     notes:          `Payment for booking ${activeBookingId.substring(0,8)}`,
                     created_by:     userId,

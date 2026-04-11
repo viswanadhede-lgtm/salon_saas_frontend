@@ -393,34 +393,59 @@ function setupEventListeners() {
         }
     }
 
-    // Payment Methods
-    const payBtns = document.querySelectorAll('.pay-method-btn');
-    payBtns.forEach(btn => {
-        btn.addEventListener('click', (e) => {
-            payBtns.forEach(b => {
-                b.classList.remove('active');
-                b.style.background = '#ffffff';
-                b.style.borderColor = '#e2e8f0';
-                b.style.color = '#475569';
+    // Payment Methods Selection (Inside Modal)
+    function setupPaymentMethodListeners() {
+        const payBtns = document.querySelectorAll('.pay-method-btn');
+        payBtns.forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                const target = e.currentTarget;
+                payBtns.forEach(b => {
+                    b.classList.remove('active');
+                    b.style.background = '#ffffff';
+                    b.style.borderColor = '#f1f5f9';
+                    b.style.color = '#64748b';
+                });
+                target.classList.add('active');
+                target.style.background = '#eef2ff';
+                target.style.borderColor = '#e0e7ff';
+                target.style.color = '#4338ca';
+                currentPaymentMethod = target.dataset.method;
             });
-            e.target.classList.add('active');
-            e.target.style.background = '#eef2ff';
-            e.target.style.borderColor = '#e0e7ff';
-            e.target.style.color = '#4338ca';
-            currentPaymentMethod = e.target.dataset.method;
         });
+    }
+    setupPaymentMethodListeners();
+
+    // Complete Sale Logic (Modal Driven)
+    const btnCollect = document.getElementById('btnCompleteSale');
+    const collectModalOverlay = document.getElementById('cashConfirmOverlay');
+    const btnCancelCollect = document.getElementById('btnCancelCashConfirm');
+    const btnCancelCollect2 = document.getElementById('btnCancelCashConfirm2');
+    const btnConfirmCollect = document.getElementById('btnProceedCashConfirm');
+    const confirmTotalEl = document.getElementById('confirmTotal');
+
+    const openCollectModal = () => {
+        if (cart.length === 0) return;
+        const total = cart.reduce((sum, item) => sum + (item.price * item.quantity), 0);
+        if (confirmTotalEl) confirmTotalEl.textContent = `₹${total.toLocaleString('en-IN', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}`;
+        if (collectModalOverlay) collectModalOverlay.style.display = 'flex';
+        if (window.feather) feather.replace();
+    };
+
+    const closeCollectModal = () => {
+        if (collectModalOverlay) collectModalOverlay.style.display = 'none';
+    };
+
+    if (btnCollect) btnCollect.addEventListener('click', openCollectModal);
+    if (btnCancelCollect) btnCancelCollect.addEventListener('click', closeCollectModal);
+    if (btnCancelCollect2) btnCancelCollect2.addEventListener('click', closeCollectModal);
+    if (btnConfirmCollect) btnConfirmCollect.addEventListener('click', () => {
+        finalizeSale();
     });
 
-    // Complete Sale Logic & Cash Confirmation
-    const btnComplete = document.getElementById('btnCompleteSale');
-    const cashConfirmOverlay = document.getElementById('cashConfirmOverlay');
-    const btnCancelCashConfirm = document.getElementById('btnCancelCashConfirm');
-    const btnProceedCashConfirm = document.getElementById('btnProceedCashConfirm');
-
     const finalizeSale = async () => {
-        const originalBtnHTML = btnComplete.innerHTML;
-        btnComplete.innerHTML = '<i data-feather="loader" style="width:16px;height:16px;animation:spin 1s linear infinite;"></i> Processing...';
-        btnComplete.disabled = true;
+        const originalBtnHTML = btnConfirmCollect.innerHTML;
+        btnConfirmCollect.innerHTML = '<i data-feather="loader" style="width:16px;height:16px;animation:spin 1s linear infinite;"></i> Processing...';
+        btnConfirmCollect.disabled = true;
 
         try {
             const customerName = (selectedCustomer?.customer_name || `${selectedCustomer?.first_name || ''} ${selectedCustomer?.last_name || ''}`).trim() || '';
@@ -428,7 +453,7 @@ function setupEventListeners() {
             const customerId = selectedCustomer?.customer_id || selectedCustomer?.id || null;
 
             const totalAmount = cart.reduce((sum, item) => sum + (item.price * item.quantity), 0);
-            const paymentMethod = currentPaymentMethod.charAt(0).toUpperCase() + currentPaymentMethod.slice(1);
+            const paymentMethod = currentPaymentMethod.toLowerCase();
 
             // Form Flat Sales Data (One row per cart item, sharing the same UUID)
             const saleGroupId = crypto.randomUUID(); // Requires a valid UUID for sale_id
@@ -497,6 +522,7 @@ function setupEventListeners() {
                 showToast('Sale saved, but ledger record failed. Please check history.', true);
             } else {
                 showToast('✓ Sale completed successfully!');
+                closeCollectModal();
             }
 
             // Reset state
@@ -516,43 +542,13 @@ function setupEventListeners() {
             console.error('POS: Error completing sale:', err);
             showToast('Failed to complete sale: ' + (err.message || 'Unknown error'), true);
         } finally {
-            btnComplete.innerHTML = originalBtnHTML;
-            btnComplete.disabled = false;
+            if (btnConfirmCollect) {
+                btnConfirmCollect.innerHTML = originalBtnHTML;
+                btnConfirmCollect.disabled = false;
+            }
             if (typeof feather !== 'undefined') feather.replace();
         }
     };
-
-    if (btnComplete) {
-        btnComplete.addEventListener('click', () => {
-            if (cart.length === 0) return;
-
-            if (!selectedCustomer) {
-                showToast('Please select a customer or add a new one before completing the sale.', true);
-                return;
-            }
-
-            if (currentPaymentMethod === 'cash' && cashConfirmOverlay) {
-                cashConfirmOverlay.classList.add('active');
-            } else {
-                finalizeSale();
-            }
-        });
-    }
-
-    if (cashConfirmOverlay) {
-        const closeCashModal = () => cashConfirmOverlay.classList.remove('active');
-        if (btnCancelCashConfirm) btnCancelCashConfirm.addEventListener('click', closeCashModal);
-        cashConfirmOverlay.addEventListener('click', (e) => {
-            if (e.target === cashConfirmOverlay) closeCashModal();
-        });
-
-        if (btnProceedCashConfirm) {
-            btnProceedCashConfirm.addEventListener('click', () => {
-                closeCashModal();
-                finalizeSale();
-            });
-        }
-    }
 }
 
 // --- Cart Logic ---

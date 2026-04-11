@@ -490,7 +490,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     reference_type: 'product',
                     amount: amount,
                     status: 'paid',
-                    payment_method: method.charAt(0).toUpperCase() + method.slice(1),
+                    payment_method: method.toLowerCase(),
                     notes: `Partial payment for sale ${sale.id}`,
                     paid_at: new Date().toISOString()
                 });
@@ -672,7 +672,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     reference_type: 'product',
                     amount: sale.amount_paid || 0,
                     status: 'refunded',
-                    payment_method: (sale.payment || 'cash').charAt(0).toUpperCase() + (sale.payment || 'cash').slice(1),
+                    payment_method: (sale.payment || 'cash').toLowerCase(),
                     notes: `Refund for sale ${saleId}`,
                     paid_at: new Date().toISOString()
                 });

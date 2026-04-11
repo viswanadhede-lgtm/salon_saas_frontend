@@ -452,7 +452,7 @@ window.processRefund = async function() {
                 reference_type: 'booking',
                 amount: Math.abs(refundableAmount), // Positive amount for refund as requested by user
                 currency: 'INR',
-                payment_method: document.getElementById('refundMethodDisplay').value || 'Refund',
+                payment_method: (document.getElementById('refundMethodDisplay')?.value || 'cash').toLowerCase(),
                 status: 'refunded',
                 notes: note || 'Refund processed for cancelled booking',
                 paid_at: new Date().toISOString()

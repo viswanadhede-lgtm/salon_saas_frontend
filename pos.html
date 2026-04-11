@@ -334,17 +334,9 @@
                             <span>Total</span><span id="cartTotal" style="color: #4f46e5;">₹0</span>
                         </div>
                     </div>
-                    <div class="payment-methods" style="margin-bottom: 20px;">
-                        <label style="display: block; font-size: 0.8rem; font-weight: 600; color: #64748b; margin-bottom: 8px; text-transform: uppercase;">Payment Method</label>
-                        <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px;">
-                            <button class="pay-method-btn active" data-method="cash" style="padding: 10px; border: 1px solid #e0e7ff; background: #eef2ff; color: #4338ca; border-radius: 8px; font-weight: 500; font-size: 0.875rem; cursor: pointer;">Cash</button>
-                            <button class="pay-method-btn" data-method="card" style="padding: 10px; border: 1px solid #e2e8f0; background: #ffffff; color: #475569; border-radius: 8px; font-weight: 500; font-size: 0.875rem; cursor: pointer;">Card</button>
-                            <button class="pay-method-btn" data-method="upi" style="padding: 10px; border: 1px solid #e2e8f0; background: #ffffff; color: #475569; border-radius: 8px; font-weight: 500; font-size: 0.875rem; cursor: pointer;">UPI</button>
-                        </div>
-                    </div>
                     <!-- Sale Action -->
                     <button id="btnCompleteSale" class="btn btn-primary" style="width: 100%; height: 50px; font-size: 1rem; font-weight: 600; border-radius: 10px; display: flex; justify-content: center; align-items: center; gap: 8px; opacity: 0.6; cursor: not-allowed; outline: none; border: none; background-color: #4f46e5; color: white;">
-                        <i data-feather="check-circle" style="width: 18px; height: 18px;"></i> Complete Sale
+                        <i data-feather="dollar-sign" style="width: 18px; height: 18px;"></i> Collect
                     </button>
                 </div>
             </div>
@@ -418,19 +410,40 @@
         </div>
     </div>
 
-    <!-- Confirm Cash Payment Modal -->
+    <!-- Collect Payment Modal -->
     <div class="modal-overlay" id="cashConfirmOverlay" style="z-index: 9999;">
-        <div class="modal-container" style="max-width: 420px; text-align: center; padding: 2.5rem 2rem;">
-            <div style="margin-bottom: 1.5rem;">
-                <div style="width: 56px; height: 56px; border-radius: 50%; background: #dcfce7; display: flex; align-items: center; justify-content: center; margin: 0 auto 1.25rem;">
-                    <i data-feather="dollar-sign" style="color: #16a34a; width: 28px; height: 28px;"></i>
-                </div>
-                <h3 style="font-size: 1.25rem; font-weight: 700; color: #0f172a; margin: 0 0 0.5rem;">Confirm Cash Payment</h3>
-                <p style="color: #475569; font-size: 0.95rem; margin: 0; line-height: 1.5;">Have you received the cash from the customer and want to complete this sale?</p>
+        <div class="modal-content" style="max-width: 420px; width: 90%; border-radius: 20px; overflow: hidden; box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);">
+            <div class="modal-header" style="padding: 24px; background: #fff; border-bottom: 1px solid #f1f5f9; display: flex; justify-content: space-between; align-items: center;">
+                <h2 class="modal-title" style="font-size: 1.25rem; font-weight: 700; color: #1e293b; margin: 0;">Collect Payment</h2>
+                <button class="modal-close" id="btnCancelCashConfirm" style="background: none; border: none; color: #94a3b8; cursor: pointer; padding: 4px; border-radius: 6px; display: flex; align-items: center; justify-content: center; transition: all 0.2s;"><i data-feather="x" style="width: 20px; height: 20px;"></i></button>
             </div>
-            <div style="display: flex; gap: 0.75rem; justify-content: center;">
-                <button id="btnCancelCashConfirm" class="btn btn-secondary" style="flex: 1; padding: 0.75rem 1rem; font-size: 0.95rem;">Cancel</button>
-                <button id="btnProceedCashConfirm" class="btn btn-primary" style="flex: 1; padding: 0.75rem 1rem; background: #16a34a; border-color: #16a34a; font-size: 0.95rem;">Yes, Complete Sale</button>
+            <div class="modal-body" style="padding: 32px 24px; text-align: center; background: #fff;">
+                <p style="font-size: 0.75rem; color: #64748b; margin-bottom: 8px; text-transform: uppercase; font-weight: 700; letter-spacing: 0.1em;">Grand Total</p>
+                <h1 id="confirmTotal" style="font-size: 3rem; font-weight: 800; color: #4f46e5; margin: 0 0 32px 0; letter-spacing: -0.025em;">₹0</h1>
+                
+                <div style="text-align: left; margin-bottom: 32px;">
+                    <label style="display: block; font-size: 0.75rem; font-weight: 700; color: #475569; margin-bottom: 12px; text-transform: uppercase; letter-spacing: 0.05em;">Payment Method</label>
+                    <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 12px;" id="posPaymentMethods">
+                        <button class="pay-method-btn active" data-method="cash" style="padding: 16px 8px; border: 2px solid #e0e7ff; background: #eef2ff; color: #4338ca; border-radius: 12px; font-weight: 700; font-size: 0.875rem; cursor: pointer; transition: all 0.2s; display: flex; flex-direction: column; align-items: center; gap: 8px;">
+                            <i data-feather="dollar-sign" style="width:18px; height:18px;"></i> Cash
+                        </button>
+                        <button class="pay-method-btn" data-method="card" style="padding: 16px 8px; border: 2px solid #f1f5f9; background: #ffffff; color: #64748b; border-radius: 12px; font-weight: 700; font-size: 0.875rem; cursor: pointer; transition: all 0.2s; display: flex; flex-direction: column; align-items: center; gap: 8px;">
+                            <i data-feather="credit-card" style="width:18px; height:18px;"></i> Card
+                        </button>
+                        <button class="pay-method-btn" data-method="upi" style="padding: 16px 8px; border: 2px solid #f1f5f9; background: #ffffff; color: #64748b; border-radius: 12px; font-weight: 700; font-size: 0.875rem; cursor: pointer; transition: all 0.2s; display: flex; flex-direction: column; align-items: center; gap: 8px;">
+                            <i data-feather="smartphone" style="width:18px; height:18px;"></i> UPI
+                        </button>
+                    </div>
+                </div>
+
+                <div style="background: #f8fafc; border-radius: 16px; padding: 20px; margin-bottom: 32px; border: 1px solid #f1f5f9;">
+                    <p style="font-size: 0.875rem; color: #64748b; line-height: 1.6; margin: 0; font-weight: 500;">Please verify the amount and method before completing the sale.</p>
+                </div>
+
+                <div style="display: flex; gap: 12px;">
+                    <button class="btn btn-secondary" id="btnCancelCashConfirm2" style="flex: 1; height: 52px; border-radius: 12px; font-weight: 600; font-size: 0.95rem; border: 2px solid #e2e8f0;">Cancel</button>
+                    <button class="btn btn-primary" id="btnProceedCashConfirm" style="flex: 2; height: 52px; border-radius: 12px; font-weight: 700; font-size: 1rem; background: #4f46e5; box-shadow: 0 4px 6px -1px rgba(79, 70, 229, 0.2); border: none;">Complete Sale</button>
+                </div>
             </div>
         </div>
     </div>
