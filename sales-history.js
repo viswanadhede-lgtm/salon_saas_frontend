@@ -128,7 +128,9 @@ document.addEventListener('DOMContentLoaded', () => {
                     payment_status: (row.payment_status || 'unpaid').toLowerCase(),
                     totalAmountNum: Number(row.total_amount || 0),
                     total: `₹${Number(row.total_amount || 0).toLocaleString('en-IN')}`,
-                    is_view_grouped: true // Flag for detail loader
+                    item_count: Number(row.item_count || 1),
+                    products_summary: row.products || '',
+                    is_view_grouped: true 
                 };
             });
 
@@ -193,6 +195,11 @@ document.addEventListener('DOMContentLoaded', () => {
                 ? `<del style="color:#94a3b8; font-weight:400;">${sale.total}</del> <span style="color:#dc2626; font-size: 0.8rem; display:block;">Refunded</span>`
                 : sale.total;
 
+            const itemCount = sale.item_count || 1;
+            const productDisplay = itemCount === 1 
+                ? (sale.products_summary || '1 Product') 
+                : `${itemCount} Items`;
+
             tr.onclick = (e) => {
                 if (!e.target.closest('button')) {
                     openSaleDetails(sale);
@@ -202,7 +209,7 @@ document.addEventListener('DOMContentLoaded', () => {
             tr.innerHTML = `
                 <td style="padding:12px 12px 12px 24px; color:#1e293b; font-weight:500; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">${sale.customer}</td>
                 <td style="padding:12px 12px; color:#475569; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">${sale.date}</td>
-                <td style="padding:12px 12px; color:#475569;">${sale.id.substring(0,8).toUpperCase()}</td>
+                <td style="padding:12px 12px; color:#475569;">${productDisplay}</td>
                 <td style="padding:12px 12px; font-weight:600; color:#1e293b;">${saleTotalDisplay}</td>
                 <td style="padding:12px 12px;">
                     <span class="tb-status-pill ${statusPillClass}" style="text-transform: uppercase; font-size: 0.7rem;">${statusLabel}</span>
@@ -245,7 +252,8 @@ document.addEventListener('DOMContentLoaded', () => {
                 currentSalesData = initialSalesData.filter(s => 
                     String(s.id).toLowerCase().includes(term) || 
                     s.customer.toLowerCase().includes(term) ||
-                    s.staff.toLowerCase().includes(term)
+                    s.staff.toLowerCase().includes(term) ||
+                    (s.products_summary || '').toLowerCase().includes(term)
                 );
                 renderTable();
             });
