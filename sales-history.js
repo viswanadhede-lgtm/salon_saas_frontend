@@ -129,7 +129,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     totalAmountNum: Number(row.total_amount || 0),
                     total: `₹${Number(row.total_amount || 0).toLocaleString('en-IN')}`,
                     item_count: Number(row.item_count || 1),
-                    products_summary: row.products || '',
+                    products_summary: row.product_list || '',
                     is_view_grouped: true 
                 };
             });
