@@ -439,7 +439,6 @@ function setupEventListeners() {
 
         if (!customerName || !customerPhone) {
             showToast('Please select or add a customer first.', true);
-            // Highlight the search field to guide the user
             const searchField = document.getElementById('posCustomerSearch');
             if (searchField) {
                 searchField.style.borderColor = '#ef4444';
@@ -449,13 +448,25 @@ function setupEventListeners() {
             return;
         }
 
-        if (confirmTotalEl) {
-            confirmTotalEl.textContent = `₹${total.toLocaleString('en-IN')}`;
+        // Populate Redesigned Modal Fields
+        const subtitleEl = document.getElementById('confirmSubtitle');
+        const cardTotalEl = document.getElementById('cardTotal');
+        const cardDueEl = document.getElementById('cardDue');
+        const amountInput = document.getElementById('confirmAmountInput');
+
+        if (subtitleEl) {
+            const shortID = Math.random().toString(36).substring(2, 10);
+            const itemSummary = cart.length > 1 ? `${cart[0].name} + ${cart.length - 1} more` : cart[0].name;
+            subtitleEl.textContent = `${shortID} · ${customerName} · ${itemSummary}`;
         }
-        
+
+        if (cardTotalEl) cardTotalEl.textContent = `₹${total.toLocaleString('en-IN')}`;
+        if (cardDueEl) cardDueEl.textContent = `₹${total.toLocaleString('en-IN')}`;
+        if (amountInput) amountInput.value = total;
+
         if (collectModalOverlay) {
             collectModalOverlay.classList.add('active');
-            collectModalOverlay.style.display = 'flex'; // Backup for some CSS setups
+            collectModalOverlay.style.display = 'flex';
         }
         
         if (window.feather) feather.replace();
@@ -483,6 +494,7 @@ function setupEventListeners() {
             const customerId = selectedCustomer?.customer_id || selectedCustomer?.id || null;
 
             const totalAmount = cart.reduce((sum, item) => sum + (item.price * item.quantity), 0);
+            const amountCollected = parseFloat(document.getElementById('confirmAmountInput')?.value || totalAmount);
             const paymentMethod = currentPaymentMethod.toLowerCase();
 
             // Form Flat Sales Data (One row per cart item, sharing the same UUID)
@@ -538,7 +550,7 @@ function setupEventListeners() {
                     branch_id: getBranchId(),
                     reference_id: saleGroupId,
                     reference_type: 'product',
-                    amount: totalAmount,
+                    amount: amountCollected,
                     currency: 'INR',
                     payment_method: paymentMethod,
                     status: 'paid',
