@@ -872,14 +872,14 @@ async function handleAssignMembership() {
     
     // ── Duplicate Check ──
     try {
-        if (finalCustomerId && planName) {
+        if (finalCustomerId && planValue) {
             const { data: existing, error: checkErr } = await supabase
                 .from('membership_purchases')
                 .select('id, purchase_id, expiry_date')
                 .eq('company_id', getCompanyId())
                 .eq('branch_id', getBranchId())
                 .eq('customer_id', finalCustomerId)
-                .eq('plan_name', planName)
+                .eq('membership_id', planValue)
                 .eq('status', 'active');
 
             if (checkErr) throw checkErr;
