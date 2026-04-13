@@ -374,6 +374,9 @@ document.addEventListener('DOMContentLoaded', async () => {
                 userId = ctx.user?.user_id || ctx.user?.id || null;
             } catch (e) {}
 
+            // Strip 'Z' suffix — business_transactions.paid_at is 'timestamp without time zone'
+            const paidAt = new Date().toISOString().replace('Z', '');
+
             // For memberships: update membership_purchases AND record in business_transactions
             if (row.ref_type === 'membership') {
                 const newPaid = (Number(row.paid) || 0) + amount;
@@ -385,9 +388,6 @@ document.addEventListener('DOMContentLoaded', async () => {
                     .update({ payment_status: newStatus })
                     .or(`purchase_id.eq.${activeBookingId},id.eq.${activeBookingId}`);
                 if (memErr) throw memErr;
-
-                // Strip 'Z' suffix — business_transactions.paid_at is 'timestamp without time zone'
-                const paidAt = new Date().toISOString().replace('Z', '');
 
                 // 2. Also record in business_transactions (for Sales History / Revenue reports)
                 const { error: txError } = await supabase
