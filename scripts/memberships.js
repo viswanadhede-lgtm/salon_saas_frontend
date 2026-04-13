@@ -885,23 +885,12 @@ async function handleAssignMembership() {
             if (checkErr) throw checkErr;
 
             if (existing && existing.length > 0) {
-                const today = new Date();
-                today.setHours(0, 0, 0, 0);
-                
-                const hasActiveAndNotExpired = existing.some(record => {
-                    if (!record.expiry_date) return true; // If no expiry date, assume it's active indefinitely
-                    const expDate = new Date(record.expiry_date);
-                    return expDate >= today;
-                });
-
-                if (hasActiveAndNotExpired) {
-                    showToast(`Customer already has an active "${planName}" membership.`);
-                    if (btn) {
-                        btn.textContent = origText;
-                        btn.disabled = false;
-                    }
-                    return;
+                showToast('membership is already assigned to this customer');
+                if (btn) {
+                    btn.textContent = origText;
+                    btn.disabled = false;
                 }
+                return;
             }
         }
     } catch (err) {
