@@ -69,9 +69,10 @@ document.addEventListener('DOMContentLoaded', async () => {
                     .select('*')
                     .eq('company_id', companyId)
                     .eq('branch_id', branchId),
+                // Query membership_purchases directly to get accurate price/amount_paid columns
                 supabase
-                    .from('memberships_with_payment_status')
-                    .select('*')
+                    .from('membership_purchases')
+                    .select('purchase_id, id, customer_name, plan_name, membership_name, purchase_date, price, amount_paid, payment_status, company_id, branch_id')
                     .eq('company_id', companyId)
                     .eq('branch_id', branchId)
                     .in('payment_status', ['pending', 'partial'])
@@ -80,7 +81,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             if (bookingRes.error) throw bookingRes.error;
             if (productRes.error) throw productRes.error;
             if (membershipRes.error) {
-                console.warn('[PP] memberships_with_payment_status error:', membershipRes.error.message);
+                console.warn('[PP] membership_purchases fetch error:', membershipRes.error.message);
             }
 
             // Map Bookings
@@ -105,21 +106,26 @@ document.addEventListener('DOMContentLoaded', async () => {
                 branch_id: p.branch_id
             }));
 
-            // Map Memberships
-            const memberships = (membershipRes.data || []).map(m => ({
-                booking_id: m.purchase_id || m.id,
-                customer_name: m.customer_name || 'Unknown Customer',
-                service_name: m.plan_name || m.membership_name || 'Membership',
-                booking_date: m.purchase_date,
-                start_time: '',
-                total: Number(m.price || 0),
-                paid: Number(m.amount_paid || 0),
-                due: Number(m.balance_due || m.price || 0),
-                status: m.payment_status || 'pending',
-                ref_type: 'membership',
-                company_id: m.company_id,
-                branch_id: m.branch_id
-            }));
+            // Map Memberships — price, amount_paid come directly from membership_purchases table
+            const memberships = (membershipRes.data || []).map(m => {
+                const total = Number(m.price || 0);
+                const paid  = Number(m.amount_paid || 0);
+                const due   = total - paid;
+                return {
+                    booking_id:    m.purchase_id || m.id,
+                    customer_name: m.customer_name || 'Unknown Customer',
+                    service_name:  m.plan_name || m.membership_name || 'Membership',
+                    booking_date:  m.purchase_date,
+                    start_time:    '',
+                    total,
+                    paid,
+                    due,
+                    status:        m.payment_status || 'pending',
+                    ref_type:      'membership',
+                    company_id:    m.company_id,
+                    branch_id:     m.branch_id
+                };
+            });
     
             allPayments = [...bookings, ...products, ...memberships];
             allPayments.sort((a, b) => new Date(b.booking_date) - new Date(a.booking_date));
