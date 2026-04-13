@@ -57,8 +57,8 @@ document.addEventListener('DOMContentLoaded', async () => {
                 return;
             }
 
-            // Parallel fetch for Bookings and Products
-            const [bookingRes, productRes] = await Promise.all([
+            // Parallel fetch for Bookings, Products and Memberships
+            const [bookingRes, productRes, membershipRes] = await Promise.all([
                 supabase
                     .from('pending_payments_view')
                     .select('*')
@@ -68,12 +68,21 @@ document.addEventListener('DOMContentLoaded', async () => {
                     .from('product_pending_payments_view')
                     .select('*')
                     .eq('company_id', companyId)
+                    .eq('branch_id', branchId),
+                supabase
+                    .from('memberships_with_payment_status')
+                    .select('*')
+                    .eq('company_id', companyId)
                     .eq('branch_id', branchId)
+                    .in('payment_status', ['pending', 'partial'])
             ]);
     
             if (bookingRes.error) throw bookingRes.error;
             if (productRes.error) throw productRes.error;
-    
+            if (membershipRes.error) {
+                console.warn('[PP] memberships_with_payment_status error:', membershipRes.error.message);
+            }
+
             // Map Bookings
             const bookings = (bookingRes.data || []).map(b => ({
                 ...b,
@@ -95,8 +104,24 @@ document.addEventListener('DOMContentLoaded', async () => {
                 company_id: p.company_id,
                 branch_id: p.branch_id
             }));
+
+            // Map Memberships
+            const memberships = (membershipRes.data || []).map(m => ({
+                booking_id: m.purchase_id || m.id,
+                customer_name: m.customer_name || 'Unknown Customer',
+                service_name: m.plan_name || m.membership_name || 'Membership',
+                booking_date: m.purchase_date,
+                start_time: '',
+                total: Number(m.price || 0),
+                paid: Number(m.amount_paid || 0),
+                due: Number(m.balance_due || m.price || 0),
+                status: m.payment_status || 'pending',
+                ref_type: 'membership',
+                company_id: m.company_id,
+                branch_id: m.branch_id
+            }));
     
-            allPayments = [...bookings, ...products];
+            allPayments = [...bookings, ...products, ...memberships];
             allPayments.sort((a, b) => new Date(b.booking_date) - new Date(a.booking_date));
             applyAllFilters();
 
@@ -149,9 +174,16 @@ document.addEventListener('DOMContentLoaded', async () => {
             const dateStr = row.booking_date ? new Date(row.booking_date).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' }) : '-';
             const timeStr = row.start_time || '';
 
+            let typePill = '';
+            if (row.ref_type === 'membership') {
+                typePill = `<span style="display:inline-block;margin-left:6px;background:#f0fdf4;color:#16a34a;border:1px solid #bbf7d0;border-radius:10px;padding:1px 7px;font-size:0.68rem;font-weight:600;vertical-align:middle;">Membership</span>`;
+            } else if (row.ref_type === 'product') {
+                typePill = `<span style="display:inline-block;margin-left:6px;background:#eff6ff;color:#1d4ed8;border:1px solid #bfdbfe;border-radius:10px;padding:1px 7px;font-size:0.68rem;font-weight:600;vertical-align:middle;">Product</span>`;
+            }
+
             tr.innerHTML = `
                 <td style="padding:14px 16px 14px 24px; color:#1e293b; font-weight:500; font-size:0.875rem; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">${row.customer_name || 'Guest'}</td>
-                <td style="padding:14px 16px; color:#475569; font-size:0.875rem; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">${row.service_name || '-'}</td>
+                <td style="padding:14px 16px; color:#475569; font-size:0.875rem; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">${row.service_name || '-'}${typePill}</td>
                 <td style="padding:14px 16px; color:#475569; font-size:0.83rem;">${dateStr} <span style="opacity:0.6; margin-left:4px;">${timeStr}</span></td>
                 <td style="padding:14px 16px; color:#1e293b; font-weight:600;">₹${total.toLocaleString('en-IN')}</td>
                 <td style="padding:14px 16px; color:#10b981; font-weight:500;">₹${paid.toLocaleString('en-IN')}</td>
@@ -331,24 +363,34 @@ document.addEventListener('DOMContentLoaded', async () => {
             const payMethod = methodRadio.value;
             const userId    = localStorage.getItem('user_id'); 
 
-            // Insert into business_transactions
-            const { error: txError } = await supabase
-                .from('business_transactions')
-                .insert({
-                    company_id:     companyId,
-                    branch_id:      branchId,
-                    reference_id:   activeBookingId,
-                    reference_type: row.ref_type || 'booking',
-                    amount:         amount,
-                    currency:       'INR',
-                    payment_method: payMethod.toLowerCase(),
-                    status:         'paid', 
-                    notes:          `Payment for ${row.ref_type || 'booking'} ${activeBookingId.substring(0,8)}`,
-                    created_by:     userId,
-                    paid_at:        new Date().toISOString()
-                });
-
-            if (txError) throw txError;
+            // For memberships: update membership_purchases payment_status directly
+            if (row.ref_type === 'membership') {
+                const newPaid = (Number(row.paid) || 0) + amount;
+                const newStatus = newPaid >= (Number(row.total) || 0) ? 'completed' : 'partial';
+                const { error: memErr } = await supabase
+                    .from('membership_purchases')
+                    .update({ payment_status: newStatus, amount_paid: newPaid })
+                    .or(`purchase_id.eq.${activeBookingId},id.eq.${activeBookingId}`);
+                if (memErr) throw memErr;
+            } else {
+                // Insert into business_transactions for bookings/products
+                const { error: txError } = await supabase
+                    .from('business_transactions')
+                    .insert({
+                        company_id:     companyId,
+                        branch_id:      branchId,
+                        reference_id:   activeBookingId,
+                        reference_type: row.ref_type || 'booking',
+                        amount:         amount,
+                        currency:       'INR',
+                        payment_method: payMethod.toLowerCase(),
+                        status:         'paid', 
+                        notes:          `Payment for ${row.ref_type || 'booking'} ${activeBookingId.substring(0,8)}`,
+                        created_by:     userId,
+                        paid_at:        new Date().toISOString()
+                    });
+                if (txError) throw txError;
+            }
 
             // Close modal & Refresh
             document.getElementById('ppCollectOverlay').style.display = 'none';
