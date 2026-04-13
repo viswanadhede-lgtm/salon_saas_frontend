@@ -242,6 +242,41 @@ document.addEventListener('DOMContentLoaded', async () => {
 });
 
 // ── Helpers ────────────────────────────────────────────────────────────────
+
+window.resetAssignMembershipForm = function() {
+    selectedCustomer = null;
+    const searchInput = document.getElementById('custSearchInput');
+    const nameInput = document.getElementById('assignCustomerName');
+    const emailInput = document.getElementById('assignCustomerEmail');
+    const planInput = document.getElementById('assignPlanInput');
+    const notesInput = document.getElementById('assignNotes');
+    
+    if (searchInput) searchInput.value = '';
+    if (nameInput) {
+        nameInput.value = '';
+        nameInput.readOnly = false;
+        nameInput.classList.remove('read-only-input');
+    }
+    if (emailInput) {
+        emailInput.value = '';
+        emailInput.readOnly = false;
+        emailInput.classList.remove('read-only-input');
+    }
+    if (planInput) planInput.value = '';
+    if (notesInput) notesInput.value = '';
+
+    const custBadge = document.getElementById('assignCustomerBadgeContainer');
+    const newCustBadge = document.getElementById('assignNewCustomerBadgeContainer');
+    if (custBadge) custBadge.style.display = 'none';
+    if (newCustBadge) newCustBadge.style.display = 'none';
+
+    const subtotal = document.getElementById('assignSubtotal');
+    const tax = document.getElementById('assignTax');
+    const total = document.getElementById('assignTotal');
+    if (subtotal) subtotal.textContent = '₹0';
+    if (tax) tax.textContent = '₹0';
+    if (total) total.textContent = '₹0';
+};
 function showToast(msg) {
     let toast = document.getElementById('toastNotification');
     if (!toast) {
@@ -1026,10 +1061,7 @@ async function executeMembershipAssignment() {
         document.getElementById('cashConfirmOverlay')?.classList.remove('active');
         
         // Reset form
-        document.getElementById('custSearchInput').value = '';
-        document.getElementById('assignPlanInput').value = '';
-        document.getElementById('assignNotes').value = '';
-        selectedCustomer = null;
+        if (window.resetAssignMembershipForm) window.resetAssignMembershipForm();
         
         await loadPurchases();
     } catch (err) {

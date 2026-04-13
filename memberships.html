@@ -2050,6 +2050,7 @@
                 const currentTab = document.querySelector('.nav-tab.active')?.getAttribute('data-tab');
                 // The 'plans' tab logic is handled by scripts/memberships.js module
                 if (currentTab === 'purchases') {
+                    if (window.resetAssignMembershipForm) window.resetAssignMembershipForm();
                     assignModal.classList.add('active');
                     if (window.feather) feather.replace();
                 }
@@ -2061,8 +2062,8 @@
         const closeAssign = document.getElementById('closeAssignModal');
         const cancelAssign = document.getElementById('btnCancelAssign');
 
-        if (closeAssign) closeAssign.onclick = () => assignModal.classList.remove('active');
-        if (cancelAssign) cancelAssign.onclick = () => assignModal.classList.remove('active');
+        if (closeAssign) closeAssign.onclick = () => { assignModal.classList.remove('active'); if (window.resetAssignMembershipForm) window.resetAssignMembershipForm(); };
+        if (cancelAssign) cancelAssign.onclick = () => { assignModal.classList.remove('active'); if (window.resetAssignMembershipForm) window.resetAssignMembershipForm(); };
 
         // btnSavePlan is handled by scripts/memberships.js (module)
 
