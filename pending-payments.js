@@ -369,15 +369,38 @@ document.addEventListener('DOMContentLoaded', async () => {
             const payMethod = methodRadio.value;
             const userId    = localStorage.getItem('user_id'); 
 
-            // For memberships: update membership_purchases payment_status directly
+            // For memberships: update membership_purchases AND record in business_transactions
             if (row.ref_type === 'membership') {
                 const newPaid = (Number(row.paid) || 0) + amount;
                 const newStatus = newPaid >= (Number(row.total) || 0) ? 'completed' : 'partial';
+
+                // 1. Update membership_purchases
                 const { error: memErr } = await supabase
                     .from('membership_purchases')
                     .update({ payment_status: newStatus, amount_paid: newPaid })
                     .or(`purchase_id.eq.${activeBookingId},id.eq.${activeBookingId}`);
                 if (memErr) throw memErr;
+
+                // 2. Also record in business_transactions (for Sales History / Revenue reports)
+                const { error: txError } = await supabase
+                    .from('business_transactions')
+                    .insert({
+                        company_id:     companyId,
+                        branch_id:      branchId,
+                        reference_id:   activeBookingId,
+                        reference_type: 'membership',
+                        amount:         amount,
+                        currency:       'INR',
+                        payment_method: payMethod.toLowerCase(),
+                        status:         'paid',
+                        notes:          `Membership payment — ${row.service_name || 'Plan'} (${row.customer_name || ''})`,
+                        created_by:     userId,
+                        paid_at:        new Date().toISOString()
+                    });
+                if (txError) {
+                    // Non-fatal: membership_purchases was already updated, log but don't rollback
+                    console.warn('[PP] business_transactions insert failed for membership:', txError.message);
+                }
             } else {
                 // Insert into business_transactions for bookings/products
                 const { error: txError } = await supabase
