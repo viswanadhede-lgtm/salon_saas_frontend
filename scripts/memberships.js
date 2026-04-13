@@ -883,7 +883,7 @@ async function handleAssignMembership() {
         if (finalCustomerId && planValue) {
             const { data: existing, error: checkErr } = await supabase
                 .from('membership_purchases')
-                .select('id')
+                .select('*')
                 .eq('company_id', getCompanyId())
                 .eq('branch_id', getBranchId())
                 .eq('customer_id', finalCustomerId)
@@ -903,7 +903,7 @@ async function handleAssignMembership() {
         }
     } catch (err) {
         console.error('Duplicate check error:', err);
-        showToast('Error verifying membership status. Assignment aborted.');
+        showToast('DB Error: ' + (err.message || 'Verification failed. Assignment aborted.'));
         if (btn) {
             btn.textContent = origText;
             btn.disabled = false;
