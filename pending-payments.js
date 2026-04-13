@@ -367,7 +367,13 @@ document.addEventListener('DOMContentLoaded', async () => {
             const companyId = getCompanyId();
             const branchId = getBranchId();
             const payMethod = methodRadio.value;
-            const userId    = localStorage.getItem('user_id'); 
+
+            // Read user ID from appContext (correct source — user_id is NOT stored separately)
+            let userId = null;
+            try {
+                const ctx = JSON.parse(localStorage.getItem('appContext') || '{}');
+                userId = ctx.user?.user_id || ctx.user?.id || null;
+            } catch (e) {}
 
             // For memberships: update membership_purchases AND record in business_transactions
             if (row.ref_type === 'membership') {
