@@ -386,7 +386,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                 const { error: memErr } = await supabase
                     .from('membership_purchases')
                     .update({ payment_status: newStatus })
-                    .or(`purchase_id.eq.${activeBookingId},id.eq.${activeBookingId}`);
+                    .eq('purchase_id', activeBookingId);
                 if (memErr) throw memErr;
 
                 // 2. Also record in business_transactions (for Sales History / Revenue reports)
