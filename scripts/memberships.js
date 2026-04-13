@@ -180,44 +180,43 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     const confirmAssignBtn = document.getElementById('btnConfirmAssign');
     if (confirmAssignBtn) {
-        confirmAssignBtn.addEventListener('click', () => {
-            const planValue = document.getElementById('assignPlanInput').value;
-            const custSearchValue = document.getElementById('custSearchInput').value.trim();
-            const custNameValue = document.getElementById('assignCustomerName')?.value.trim();
-            
-            if (!custSearchValue || custSearchValue.length < 10) {
-                showToast('Please enter a valid 10-digit phone number.');
-                return;
-            }
-            if (!selectedCustomer && !custNameValue) {
-                showToast('Please enter the customer name.');
-                return;
-            }
-            if (!planValue) {
-                showToast('Please select a membership plan.');
-                return;
-            }
-            
-            // Hide the assign modal and show the confirm modal
-            document.getElementById('assignModalOverlay')?.classList.remove('active');
-            document.getElementById('confirmPaymentOverlay')?.classList.add('active');
+        confirmAssignBtn.addEventListener('click', async () => {
+            await preValidateAndShowCollect();
         });
     }
 
-    const btnCancelPaymentConfirm = document.getElementById('btnCancelPaymentConfirm');
-    if (btnCancelPaymentConfirm) {
-        btnCancelPaymentConfirm.addEventListener('click', () => {
-            // Close confirm modal and restore the assign modal
-            document.getElementById('confirmPaymentOverlay')?.classList.remove('active');
+    const btnCancelCashConfirm2 = document.getElementById('btnCancelCashConfirm2');
+    const btnCancelCashConfirm = document.getElementById('btnCancelCashConfirm');
+    const cashConfirmOverlay = document.getElementById('cashConfirmOverlay');
+
+    if (btnCancelCashConfirm2) {
+        btnCancelCashConfirm2.addEventListener('click', () => {
+            cashConfirmOverlay?.classList.remove('active');
+            document.getElementById('assignModalOverlay')?.classList.add('active');
+        });
+    }
+    if (btnCancelCashConfirm) {
+        btnCancelCashConfirm.addEventListener('click', () => {
+            cashConfirmOverlay?.classList.remove('active');
             document.getElementById('assignModalOverlay')?.classList.add('active');
         });
     }
 
-    const btnProceedPayment = document.getElementById('btnProceedPayment');
-    if (btnProceedPayment) {
-        btnProceedPayment.addEventListener('click', async () => {
-            document.getElementById('confirmPaymentOverlay')?.classList.remove('active');
-            await handleAssignMembership();
+    const btnProceedCashConfirm = document.getElementById('btnProceedCashConfirm');
+    if (btnProceedCashConfirm) {
+        btnProceedCashConfirm.addEventListener('click', async () => {
+            await executeMembershipAssignment();
+        });
+    }
+
+    const posPaymentMethods = document.getElementById('posPaymentMethods');
+    if (posPaymentMethods) {
+        const methods = posPaymentMethods.querySelectorAll('.pay-method-btn');
+        methods.forEach(btn => {
+            btn.addEventListener('click', () => {
+                methods.forEach(b => b.classList.remove('active'));
+                btn.classList.add('active');
+            });
         });
     }
 });
@@ -809,25 +808,19 @@ function renderPurchases() {
     if (window.feather) feather.replace();
 }
 
-async function handleAssignMembership() {
+async function preValidateAndShowCollect() {
     const planValue = document.getElementById('assignPlanInput').value;
     const selectedPlan = currentPlans.find(p => (p.membership_id || p.id) === planValue);
-    const planName = selectedPlan ? (selectedPlan.plan_name || selectedPlan.name) : null;
 
     const custSearchValue = document.getElementById('custSearchInput').value.trim();
     const custNameValue = document.getElementById('assignCustomerName')?.value.trim();
-    const custEmailValue = document.getElementById('assignCustomerEmail')?.value.trim();
-    const assignDate = document.getElementById('assignDateInput').value;
-    
-    let payMethod = 'cash';
-    const activePayMethod = document.querySelector('input[name="payMethod"]:checked');
-    if (activePayMethod) payMethod = activePayMethod.value;
-
-    const discountValue = document.getElementById('assignDiscount').value;
-    const notesValue = document.getElementById('assignNotes').value;
 
     if (!custSearchValue || custSearchValue.length < 10) {
-        showToast('Please enter a valid phone number.');
+        showToast('Please enter a valid 10-digit phone number.');
+        return;
+    }
+    if (!selectedCustomer && !custNameValue) {
+        showToast('Please enter the customer name.');
         return;
     }
     if (!planValue) {
@@ -835,8 +828,93 @@ async function handleAssignMembership() {
         return;
     }
 
-    const btn = document.getElementById('btnProceedPayment');
-    const origText = btn ? btn.textContent : 'Proceed';
+    const btn = document.getElementById('btnConfirmAssign');
+    const origText = btn ? btn.innerHTML : 'Collect';
+    if (btn) {
+        btn.innerHTML = '<i data-feather="loader" class="spin" style="width: 18px; height: 18px;"></i> Processing...';
+        btn.disabled = true;
+        if (window.feather) feather.replace();
+    }
+
+    // ── Duplicate Check BEFORE creating DB records ──
+    const finalCustomerId = selectedCustomer ? (selectedCustomer.id || selectedCustomer.customer_id) : null;
+    try {
+        if (finalCustomerId && planValue) {
+            const { data: existing, error: checkErr } = await supabase
+                .from('membership_purchases')
+                .select('*')
+                .eq('company_id', getCompanyId())
+                .eq('branch_id', getBranchId())
+                .eq('customer_id', finalCustomerId)
+                .eq('membership_id', planValue)
+                .eq('status', 'active');
+
+            if (checkErr) throw checkErr;
+
+            if (existing && existing.length > 0) {
+                showToast('membership is already assigned to this customer');
+                if (btn) {
+                    btn.innerHTML = origText;
+                    btn.disabled = false;
+                    if (window.feather) feather.replace();
+                }
+                return;
+            }
+        }
+    } catch (err) {
+        console.error('Duplicate check error:', err);
+        showToast('DB Error: ' + (err.message || 'Verification failed. Assignment aborted.'));
+        if (btn) {
+            btn.innerHTML = origText;
+            btn.disabled = false;
+            if (window.feather) feather.replace();
+        }
+        return;
+    }
+
+    // If validations pass, show Collect Payment Modal
+    if (btn) {
+        btn.innerHTML = origText;
+        btn.disabled = false;
+        if (window.feather) feather.replace();
+    }
+
+    document.getElementById('assignModalOverlay')?.classList.remove('active');
+
+    const price = selectedPlan ? Number(selectedPlan.price || 0) : 0;
+    const discountVal = Number(document.getElementById('assignDiscount').value || 0);
+    const finalPrice = Math.max(0, price - discountVal);
+
+    const cashConfirmOverlay = document.getElementById('cashConfirmOverlay');
+    if (cashConfirmOverlay) {
+        document.getElementById('cardTotal').textContent = `₹${finalPrice.toLocaleString('en-IN')}`;
+        document.getElementById('cardDue').textContent = `₹${finalPrice.toLocaleString('en-IN')}`;
+        document.getElementById('confirmAmountInput').value = finalPrice;
+        cashConfirmOverlay.classList.add('active');
+    }
+}
+
+async function executeMembershipAssignment() {
+    const planValue = document.getElementById('assignPlanInput').value;
+    const selectedPlan = currentPlans.find(p => (p.membership_id || p.id) === planValue);
+
+    const custSearchValue = document.getElementById('custSearchInput').value.trim();
+    const custNameValue = document.getElementById('assignCustomerName')?.value.trim();
+    const custEmailValue = document.getElementById('assignCustomerEmail')?.value.trim();
+    const assignDate = document.getElementById('assignDateInput').value;
+    
+    // Get active payment method from the Collect modal
+    let payMethod = 'cash';
+    const activeMethodBtn = document.querySelector('#posPaymentMethods .pay-method-btn.active');
+    if (activeMethodBtn) {
+        payMethod = activeMethodBtn.dataset.method;
+    }
+    
+    // Get final collected amount
+    const finalPrice = Number(document.getElementById('confirmAmountInput').value || 0);
+
+    const btn = document.getElementById('btnProceedCashConfirm');
+    const origText = btn ? btn.textContent : 'Record Payment';
     if (btn) {
         btn.textContent = 'Processing...';
         btn.disabled = true;
@@ -878,39 +956,6 @@ async function handleAssignMembership() {
         }
     }
     
-    // ── Duplicate Check ──
-    try {
-        if (finalCustomerId && planValue) {
-            const { data: existing, error: checkErr } = await supabase
-                .from('membership_purchases')
-                .select('*')
-                .eq('company_id', getCompanyId())
-                .eq('branch_id', getBranchId())
-                .eq('customer_id', finalCustomerId)
-                .eq('membership_id', planValue)
-                .eq('status', 'active');
-
-            if (checkErr) throw checkErr;
-
-            if (existing && existing.length > 0) {
-                showToast('membership is already assigned to this customer');
-                if (btn) {
-                    btn.textContent = origText;
-                    btn.disabled = false;
-                }
-                return;
-            }
-        }
-    } catch (err) {
-        console.error('Duplicate check error:', err);
-        showToast('DB Error: ' + (err.message || 'Verification failed. Assignment aborted.'));
-        if (btn) {
-            btn.textContent = origText;
-            btn.disabled = false;
-        }
-        return;
-    }
-    
     // Extract user details
     const contextStr = localStorage.getItem('appContext');
     let userId = null;
@@ -943,7 +988,7 @@ async function handleAssignMembership() {
         customer_name: finalCustomerName,
         membership_id: planValue,
         plan_name: selectedPlan ? (selectedPlan.plan_name || selectedPlan.name) : null,
-        price: selectedPlan ? Number(selectedPlan.price || 0) : null,
+        price: finalPrice, 
         duration: duration,
         payment_method: payMethod,
         payment_status: 'completed',
@@ -960,7 +1005,7 @@ async function handleAssignMembership() {
         if (error) throw error;
 
         showToast('Membership assigned successfully!');
-        document.getElementById('assignModalOverlay')?.classList.remove('active');
+        document.getElementById('cashConfirmOverlay')?.classList.remove('active');
         
         // Reset form
         document.getElementById('custSearchInput').value = '';
@@ -971,11 +1016,13 @@ async function handleAssignMembership() {
         
         await loadPurchases();
     } catch (err) {
-        console.error('handleAssignMembership error:', err);
+        console.error('executeMembershipAssignment error:', err);
         showToast('An error occurred during assignment: ' + (err.message || ''));
     } finally {
-        btn.textContent = origText;
-        btn.disabled = false;
+        if (btn) {
+            btn.textContent = origText;
+            btn.disabled = false;
+        }
     }
 }
 
