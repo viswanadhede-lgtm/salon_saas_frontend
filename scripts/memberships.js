@@ -1261,67 +1261,20 @@ window.refundMembershipPurchase = function(purchaseId) {
 
 async function executeRefundMembershipPurchase(purchaseId) {
     try {
-        // 1. Calculate the actual refundable amount from the ledger
-        const { data: txData, error: txFetchErr } = await supabase
-            .from('business_transactions')
-            .select('amount, status, payment_method')
-            .eq('reference_id', purchaseId)
-            .eq('reference_type', 'membership');
-
-        if (txFetchErr) throw txFetchErr;
-
-        let totalPaid = 0;
-        let totalRefunded = 0;
-        let lastMethod = 'cash';
-
-        (txData || []).forEach(tx => {
-            const val = Math.abs(Number(tx.amount || 0));
-            const status = (tx.status || '').toLowerCase().trim();
-            if (status === 'paid') totalPaid += val;
-            if (status === 'refunded') totalRefunded += val;
-            if (tx.payment_method) lastMethod = tx.payment_method;
-        });
-
-        const refundableAmount = totalPaid - totalRefunded;
-
-        // 2. If there is a net positive amount in the ledger, issue a refund transaction
-        if (refundableAmount > 0) {
-            const paidAt = new Date().toISOString().replace('Z', '');
-            
-            const { error: txInsertErr } = await supabase
-                .from('business_transactions')
-                .insert({
-                    company_id: getCompanyId(),
-                    branch_id: getBranchId(),
-                    reference_id: purchaseId,
-                    reference_type: 'membership',
-                    amount: refundableAmount,
-                    status: 'refunded',
-                    payment_method: lastMethod,
-                    notes: \`Refund processed for membership purchase\`,
-                    paid_at: paidAt
-                });
-
-            if (txInsertErr) {
-                console.error('[Memberships] Error inserting refund transaction:', txInsertErr);
-                throw txInsertErr;
-            }
-        }
-
-        // 3. Update the purchase record status to fully refunded
         const { error } = await supabase
             .from('membership_purchases')
             .eq('purchase_id', purchaseId)
-            .update({ status: 'refunded', payment_status: 'refunded' });
+            .update({ status: 'refunded' });
 
         if (error) {
-            throw error;
+            const { error: err2 } = await supabase.from('membership_purchases').eq('id', purchaseId).update({ status: 'refunded' });
+            if (err2) throw err2;
         }
 
-        showToast('Membership has been successfully refunded.');
+        showToast('Membership has been refunded.');
         await loadPurchases();
     } catch (err) {
         console.error('refundMembershipPurchase error:', err);
-        showToast('Error refunding membership: ' + (err.message || 'Unknown error'));
+        showToast('Error refunding membership: ' + (err.message || ''));
     }
 }
