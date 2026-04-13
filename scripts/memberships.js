@@ -828,6 +828,13 @@ function renderPurchases() {
         const validUntilStr = purchase.expiry_date ? new Date(purchase.expiry_date).toLocaleDateString() : '-';
         
         const purchaseId = purchase.purchase_id || purchase.id;
+        
+        let priceDisplay = `₹${Number(purchase.price || 0).toLocaleString('en-IN')}`;
+        if (isRefunded) {
+             priceDisplay = `<del style="color:#94a3b8; font-weight:400; margin-right: 4px;">${priceDisplay}</del><br><span style="color:#dc2626; font-size:0.75rem; font-weight:600;">Refunded</span>`;
+        } else {
+             priceDisplay = `<span style="background-color: #ecfdf5; color: #059669; border: 1px solid #d1fae5; padding: 0.25rem 0.6rem; border-radius: 1rem; font-size: 0.75rem; font-weight: 600;">${priceDisplay}</span>`;
+        }
 
         return `
             <tr style="border-bottom:1px solid #e2e8f0;">
@@ -843,7 +850,7 @@ function renderPurchases() {
                     <span style="font-weight: 600; color: #475569;">${purchase.plan_name || purchase.membership_name || purchase.name || '-'}</span>
                 </td>
                 <td>
-                    <span style="background-color: #ecfdf5; color: #059669; border: 1px solid #d1fae5; padding: 0.25rem 0.6rem; border-radius: 1rem; font-size: 0.75rem; font-weight: 600;">₹${Number(purchase.price || 0).toLocaleString('en-IN')}</span>
+                    ${priceDisplay}
                 </td>
                 <td style="color: #64748b; font-size: 0.9rem;">${purchase.duration ? purchase.duration + ' Months' : '-'}</td>
                 <td style="color: #64748b;">${purchaseDateStr}</td>
@@ -1208,21 +1215,45 @@ async function executeCancelMembershipPurchase(purchaseId) {
     }
 }
 
-let purchaseToRefund = null;
+let refundableMembershipAmount = 0;
+let purchaseToRefundObj = null;
 
 function setupRefundPurchaseModal() {
-    if (!document.getElementById('refundPurchaseConfirmOverlay')) {
+    if (!document.getElementById('refundMembershipAdvancedOverlay')) {
         const modalHtml = `
-        <div class="modal-overlay custom-logout-overlay" id="refundPurchaseConfirmOverlay" style="z-index: 9999; backdrop-filter: blur(8px);">
-            <div class="logout-modal" style="background: white; border-radius: 16px; padding: 32px; width: 400px; max-width: 90vw; text-align: center; box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);">
-                <div class="logout-icon-container" style="width: 64px; height: 64px; border-radius: 50%; background: #fffbeb; display: flex; align-items: center; justify-content: center; margin: 0 auto 20px;">
-                    <i data-feather="corner-up-left" style="color: #f59e0b; width: 32px; height: 32px;"></i>
+        <div class="modal-overlay" id="refundMembershipAdvancedOverlay" style="z-index:9999;">
+            <div class="modal-container" style="width: 480px; border-radius: 16px; padding: 0; overflow: hidden; box-shadow: 0 20px 25px -5px rgba(0,0,0,0.1);">
+                <div class="modal-header" style="border-bottom: 1px solid #fee2e2; background: #fff1f2; padding: 20px 24px;">
+                    <div class="header-titles">
+                        <h2 style="color: #991b1b; font-size: 1.25rem; margin:0;">Process Refund</h2>
+                        <p class="subtitle" id="rfMemModalSubtitle" style="color: #b91c1c; font-size: 0.85rem; margin:4px 0 0 0;">Customer Name • Plan Name</p>
+                    </div>
+                    <button class="modal-close" id="cancelMemRefundBtn"><i data-feather="x" style="color: #991b1b;"></i></button>
                 </div>
-                <h2 style="font-size: 1.5rem; font-weight: 700; color: #0f172a; margin-bottom: 8px;">Refund Membership?</h2>
-                <p style="color: #64748b; font-size: 0.95rem; margin-bottom: 24px; line-height: 1.5;">Are you sure you want to refund this membership? This will mark it as refunded.</p>
-                <div style="display: flex; gap: 12px; justify-content: center;">
-                    <button id="btnCancelRefundPurchase" style="flex: 1; padding: 12px 20px; border-radius: 8px; border: 1px solid #e2e8f0; background: white; color: #64748b; font-weight: 600; cursor: pointer; transition: all 0.2s;">Keep It</button>
-                    <button id="btnConfirmRefundPurchase" style="flex: 1; padding: 12px 20px; border-radius: 8px; border: none; background: #f59e0b; color: white; font-weight: 600; cursor: pointer; transition: background 0.2s;">Yes, Refund</button>
+                <div class="modal-body" style="padding: 24px; background: #fff;">
+                    <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 12px; padding: 20px; margin-bottom: 24px; text-align: center;">
+                        <p style="font-size: 0.75rem; color: #64748b; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 8px;">Refundable Amount</p>
+                        <p style="font-size: 2.25rem; font-weight: 800; color: #dc2626; margin: 0;" id="rfMemAmountDisplay">₹0</p>
+                    </div>
+
+                    <div class="form-group" style="margin-bottom: 20px;">
+                        <label class="form-label" style="font-size: 0.85rem; font-weight: 600; color: #475569;">Refund Method</label>
+                        <input type="text" id="rfMemMethodDisplay" class="form-input read-only-input" style="background: #f1f5f9; color: #64748b;" readonly value="Loading...">
+                    </div>
+
+                    <div class="form-group" style="margin-bottom: 24px;">
+                        <label class="form-label" style="font-size: 0.85rem; font-weight: 600; color: #475569;">Reason for Refund <span style="color: #94a3b8; font-weight: 400; font-size: 0.8rem;">(Optional)</span></label>
+                        <textarea id="rfMemNote" class="form-input" style="height: 100px; padding: 12px; resize: none;" placeholder="Enter details about this refund..."></textarea>
+                    </div>
+                    
+                    <p style="font-size: 0.825rem; color: #64748b; line-height: 1.5; margin-bottom: 24px;">
+                        This will record a <strong style="color: #dc2626;">Refund</strong> transaction in the financial ledger and update the membership status.
+                    </p>
+
+                    <div style="display: flex; gap: 12px;">
+                        <button class="btn btn-secondary" id="closeMemRefundBtn" style="flex: 1; height: 48px; font-weight: 600; border-radius: 10px;">Cancel</button>
+                        <button class="btn" id="confirmMemRefundBtn" style="flex: 1.5; height: 48px; background: #dc2626; color: white; border: none; font-weight: 700; border-radius: 10px; box-shadow: 0 4px 6px -1px rgba(220, 38, 38, 0.2);">Issue Refund</button>
+                    </div>
                 </div>
             </div>
         </div>
@@ -1230,51 +1261,154 @@ function setupRefundPurchaseModal() {
         document.body.insertAdjacentHTML('beforeend', modalHtml);
         if (window.feather) feather.replace();
 
-        const overlay = document.getElementById('refundPurchaseConfirmOverlay');
+        const overlay = document.getElementById('refundMembershipAdvancedOverlay');
+        const close = () => { overlay.classList.remove('active'); purchaseToRefundObj = null; };
 
-        document.getElementById('btnCancelRefundPurchase').addEventListener('click', () => {
-            overlay.classList.remove('active');
-            purchaseToRefund = null;
-        });
+        document.getElementById('cancelMemRefundBtn').addEventListener('click', close);
+        document.getElementById('closeMemRefundBtn').addEventListener('click', close);
         
         overlay.addEventListener('click', (e) => {
-            if (e.target === overlay) {
-                overlay.classList.remove('active');
-                purchaseToRefund = null;
-            }
+            if (e.target === overlay) close();
         });
 
-        document.getElementById('btnConfirmRefundPurchase').addEventListener('click', async () => {
-            if (!purchaseToRefund) return;
-            overlay.classList.remove('active');
-            await executeRefundMembershipPurchase(purchaseToRefund);
-            purchaseToRefund = null;
-        });
+        document.getElementById('confirmMemRefundBtn').addEventListener('click', processMembershipRefund);
     }
 }
 
-window.refundMembershipPurchase = function(purchaseId) {
+window.refundMembershipPurchase = async function(purchaseId) {
     setupRefundPurchaseModal();
-    purchaseToRefund = purchaseId;
-    document.getElementById('refundPurchaseConfirmOverlay').classList.add('active');
-};
+    
+    // Find the purchase object
+    purchaseToRefundObj = (typeof currentPurchases !== 'undefined' ? currentPurchases : [])
+                          .find(p => (p.purchase_id || p.id) === purchaseId);
+                          
+    if (!purchaseToRefundObj) {
+        showToast('Could not find purchase details.', '#ef4444');
+        return;
+    }
 
-async function executeRefundMembershipPurchase(purchaseId) {
+    const overlay = document.getElementById('refundMembershipAdvancedOverlay');
+    overlay.classList.add('active');
+
+    const subtitle = document.getElementById('rfMemModalSubtitle');
+    const amountDisplay = document.getElementById('rfMemAmountDisplay');
+    const methodDisplay = document.getElementById('rfMemMethodDisplay');
+    const noteField = document.getElementById('rfMemNote');
+    const confirmBtn = document.getElementById('confirmMemRefundBtn');
+
+    // Reset UI
+    const custName = purchaseToRefundObj.customer_name || `${purchaseToRefundObj.first_name || ''} ${purchaseToRefundObj.last_name || ''}`.trim() || 'Customer';
+    const planName = purchaseToRefundObj.plan_name || purchaseToRefundObj.membership_name || purchaseToRefundObj.name || 'Plan';
+    subtitle.textContent = `${custName} • ${planName}`;
+    amountDisplay.textContent = 'Calculating...';
+    methodDisplay.value = 'Loading...';
+    if (noteField) noteField.value = '';
+    if (confirmBtn) { confirmBtn.disabled = true; confirmBtn.textContent = 'Issue Refund'; }
+
+    // Fetch ledger data from business_transactions
     try {
-        const { error } = await supabase
-            .from('membership_purchases')
-            .eq('purchase_id', purchaseId)
-            .update({ status: 'refunded' });
+        const { data, error } = await supabase
+            .from('business_transactions')
+            .select('amount, payment_method, status')
+            .eq('reference_id', purchaseId)
+            .eq('reference_type', 'membership');
 
-        if (error) {
-            const { error: err2 } = await supabase.from('membership_purchases').eq('id', purchaseId).update({ status: 'refunded' });
-            if (err2) throw err2;
+        if (error) throw error;
+
+        let ledgerPaid = 0;
+        let ledgerRefunded = 0;
+
+        (data || []).forEach(tx => {
+            const val = Math.abs(Number(tx.amount || 0));
+            const stat = (tx.status || '').toLowerCase().trim();
+            if (stat === 'paid') ledgerPaid += val;
+            if (stat === 'refunded') ledgerRefunded += val;
+        });
+
+        const ledgerNet = ledgerPaid - ledgerRefunded;
+        
+        if (ledgerNet > 0) {
+            refundableMembershipAmount = ledgerNet;
+        } else if (data && data.length === 0) {
+             // Fallback for legacy items without ledger
+            refundableMembershipAmount = Number(purchaseToRefundObj.price || 0) - ledgerRefunded;
+        } else {
+            refundableMembershipAmount = Math.max(0, ledgerNet);
         }
 
-        showToast('Membership has been refunded.');
-        await loadPurchases();
+        if (refundableMembershipAmount < 0) refundableMembershipAmount = 0;
+
+        amountDisplay.textContent = `₹${refundableMembershipAmount.toLocaleString('en-IN')}`;
+        amountDisplay.style.color = (refundableMembershipAmount <= 0) ? '#94a3b8' : '#dc2626';
+
+        const lastMethod = data && data.length > 0 ? data[data.length - 1].payment_method : 'cash';
+        methodDisplay.value = lastMethod ? (lastMethod.charAt(0).toUpperCase() + lastMethod.slice(1)) : 'Cash';
+
+        if (refundableMembershipAmount <= 0) {
+            confirmBtn.disabled = true;
+            confirmBtn.textContent = 'Nothing to Refund';
+        } else {
+            confirmBtn.disabled = false;
+            confirmBtn.textContent = 'Issue Refund';
+        }
+
     } catch (err) {
-        console.error('refundMembershipPurchase error:', err);
-        showToast('Error refunding membership: ' + (err.message || ''));
+        console.error('Error fetching ledger for refund:', err);
+        amountDisplay.textContent = 'Error';
+    }
+};
+
+async function processMembershipRefund() {
+    if (!purchaseToRefundObj || refundableMembershipAmount <= 0) return;
+    
+    const confirmBtn = document.getElementById('confirmMemRefundBtn');
+    const note = document.getElementById('rfMemNote')?.value.trim();
+    const purchaseId = purchaseToRefundObj.purchase_id || purchaseToRefundObj.id;
+
+    if (confirmBtn) {
+        confirmBtn.textContent = 'Processing...';
+        confirmBtn.disabled = true;
+    }
+
+    try {
+        // 1. Insert Refund into Ledger
+        const { error: txError } = await supabase
+            .from('business_transactions')
+            .insert({
+                company_id: getCompanyId(),
+                branch_id: getBranchId(),
+                reference_id: purchaseId,
+                reference_type: 'membership',
+                amount: Math.abs(refundableMembershipAmount),
+                status: 'refunded',
+                payment_method: (document.getElementById('rfMemMethodDisplay')?.value || 'cash').toLowerCase(),
+                notes: note || `Refund processed for membership ${purchaseId}`,
+                paid_at: new Date().toISOString()
+            });
+
+        if (txError) {
+             console.warn('business_transactions insert failed, but updating membership record anyway:', txError);
+        }
+
+        // 2. Update membership_purchases status
+        const { error: memError } = await supabase
+            .from('membership_purchases')
+            .update({ status: 'refunded', payment_status: 'refunded' })
+            .eq('purchase_id', purchaseId);
+
+        if (memError) throw memError;
+
+        showToast('Membership has been refunded.', '#dc2626');
+        document.getElementById('refundMembershipAdvancedOverlay').classList.remove('active');
+        
+        await loadPurchases();
+
+    } catch (err) {
+        console.error('Membership Refund error:', err);
+        showToast('Failed to process refund: ' + (err.message || 'Unknown error'), '#dc2626');
+        if (confirmBtn) {
+            confirmBtn.textContent = 'Issue Refund';
+            confirmBtn.disabled = false;
+        }
     }
 }
