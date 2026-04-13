@@ -807,12 +807,15 @@ function renderPurchases() {
     tbody.innerHTML = currentPurchases.map(purchase => {
         const isActive = purchase.status === 'active';
         const isCancelled = purchase.status === 'cancelled';
+        const isRefunded = purchase.status === 'refunded';
         
         let statusBadge = '';
         if (isActive) {
             statusBadge = `<span style="display:inline-flex;align-items:center;gap:6px;padding:4px 10px;border-radius:20px;font-size:0.75rem;font-weight:600;background:#ecfdf5;color:#059669;">Active</span>`;
         } else if (isCancelled) {
             statusBadge = `<span style="display:inline-flex;align-items:center;gap:6px;padding:4px 10px;border-radius:20px;font-size:0.75rem;font-weight:600;background:#fef2f2;color:#ef4444;">Cancelled</span>`;
+        } else if (isRefunded) {
+            statusBadge = `<span style="display:inline-flex;align-items:center;gap:6px;padding:4px 10px;border-radius:20px;font-size:0.75rem;font-weight:600;background:#fffbeb;color:#d97706;">Refunded</span>`;
         } else {
             statusBadge = `<span style="display:inline-flex;align-items:center;gap:6px;padding:4px 10px;border-radius:20px;font-size:0.75rem;font-weight:600;background:#f1f5f9;color:#64748b;">Expired</span>`;
         }
@@ -851,6 +854,9 @@ function renderPurchases() {
                             <i data-feather="eye" style="width: 16px; height: 16px;"></i>
                         </button>
                         ${isActive ? `
+                        <button class="action-btn" onclick="window.refundMembershipPurchase('${purchaseId}')" style="padding: 6px; border-radius: 6px; border: 1px solid #e2e8f0; background: #fff; cursor: pointer; color: #f59e0b;" title="Refund">
+                            <i data-feather="corner-up-left" style="width: 16px; height: 16px;"></i>
+                        </button>
                         <button class="action-btn" onclick="window.cancelMembershipPurchase('${purchaseId}')" style="padding: 6px; border-radius: 6px; border: 1px solid #e2e8f0; background: #fff; cursor: pointer; color: #ef4444;" title="Cancel">
                             <i data-feather="x-circle" style="width: 16px; height: 16px;"></i>
                         </button>
@@ -1142,5 +1148,76 @@ async function executeCancelMembershipPurchase(purchaseId) {
     } catch (err) {
         console.error('cancelMembershipPurchase error:', err);
         showToast('Error cancelling membership: ' + (err.message || ''));
+    }
+}
+
+let purchaseToRefund = null;
+
+function setupRefundPurchaseModal() {
+    if (!document.getElementById('refundPurchaseConfirmOverlay')) {
+        const modalHtml = `
+        <div class="modal-overlay custom-logout-overlay" id="refundPurchaseConfirmOverlay" style="z-index: 9999; backdrop-filter: blur(8px);">
+            <div class="logout-modal" style="background: white; border-radius: 16px; padding: 32px; width: 400px; max-width: 90vw; text-align: center; box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);">
+                <div class="logout-icon-container" style="width: 64px; height: 64px; border-radius: 50%; background: #fffbeb; display: flex; align-items: center; justify-content: center; margin: 0 auto 20px;">
+                    <i data-feather="corner-up-left" style="color: #f59e0b; width: 32px; height: 32px;"></i>
+                </div>
+                <h2 style="font-size: 1.5rem; font-weight: 700; color: #0f172a; margin-bottom: 8px;">Refund Membership?</h2>
+                <p style="color: #64748b; font-size: 0.95rem; margin-bottom: 24px; line-height: 1.5;">Are you sure you want to refund this membership? This will mark it as refunded.</p>
+                <div style="display: flex; gap: 12px; justify-content: center;">
+                    <button id="btnCancelRefundPurchase" style="flex: 1; padding: 12px 20px; border-radius: 8px; border: 1px solid #e2e8f0; background: white; color: #64748b; font-weight: 600; cursor: pointer; transition: all 0.2s;">Keep It</button>
+                    <button id="btnConfirmRefundPurchase" style="flex: 1; padding: 12px 20px; border-radius: 8px; border: none; background: #f59e0b; color: white; font-weight: 600; cursor: pointer; transition: background 0.2s;">Yes, Refund</button>
+                </div>
+            </div>
+        </div>
+        `;
+        document.body.insertAdjacentHTML('beforeend', modalHtml);
+        if (window.feather) feather.replace();
+
+        const overlay = document.getElementById('refundPurchaseConfirmOverlay');
+
+        document.getElementById('btnCancelRefundPurchase').addEventListener('click', () => {
+            overlay.classList.remove('active');
+            purchaseToRefund = null;
+        });
+        
+        overlay.addEventListener('click', (e) => {
+            if (e.target === overlay) {
+                overlay.classList.remove('active');
+                purchaseToRefund = null;
+            }
+        });
+
+        document.getElementById('btnConfirmRefundPurchase').addEventListener('click', async () => {
+            if (!purchaseToRefund) return;
+            overlay.classList.remove('active');
+            await executeRefundMembershipPurchase(purchaseToRefund);
+            purchaseToRefund = null;
+        });
+    }
+}
+
+window.refundMembershipPurchase = function(purchaseId) {
+    setupRefundPurchaseModal();
+    purchaseToRefund = purchaseId;
+    document.getElementById('refundPurchaseConfirmOverlay').classList.add('active');
+};
+
+async function executeRefundMembershipPurchase(purchaseId) {
+    try {
+        const { error } = await supabase
+            .from('membership_purchases')
+            .eq('purchase_id', purchaseId)
+            .update({ status: 'refunded' });
+
+        if (error) {
+            const { error: err2 } = await supabase.from('membership_purchases').eq('id', purchaseId).update({ status: 'refunded' });
+            if (err2) throw err2;
+        }
+
+        showToast('Membership has been refunded.');
+        await loadPurchases();
+    } catch (err) {
+        console.error('refundMembershipPurchase error:', err);
+        showToast('Error refunding membership: ' + (err.message || ''));
     }
 }
