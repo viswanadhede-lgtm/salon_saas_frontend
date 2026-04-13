@@ -1067,7 +1067,6 @@ async function executeMembershipAssignment() {
         membership_id: planValue,
         plan_name: selectedPlan ? (selectedPlan.plan_name || selectedPlan.name) : null,
         price: planPrice,               // The true total price of the membership
-        amount_paid: finalPrice,        // The amount collected today
         duration: duration,
         payment_method: payMethod,
         payment_status: paymentStatus,  // Dynamically set based on amount
