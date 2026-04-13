@@ -847,26 +847,34 @@ async function handleAssignMembership() {
     let finalCustomerName = selectedCustomer ? (selectedCustomer.customer_name || `${selectedCustomer.first_name || ''} ${selectedCustomer.last_name || ''}`).trim() : custNameValue;
     
     if (!finalCustomerId) {
-        try {
-            const { data: newCust, error: custErr } = await supabase.from('customers').insert({
-                company_id: getCompanyId(),
-                branch_id: getBranchId(),
-                customer_name: finalCustomerName || 'Unknown Customer',
-                customer_phone: custSearchValue,
-                customer_mail: custEmailValue || null,
-                status: 'active'
-            }).select();
-            if (custErr) throw custErr;
-            if (newCust && newCust.length > 0) {
-                finalCustomerId = newCust[0].id || newCust[0].customer_id;
-                allCustomers.push(newCust[0]);
+        const existingCust = allCustomers.find(c => String(c.customer_phone || c.phone_number || '') === custSearchValue);
+        if (existingCust) {
+            finalCustomerId = existingCust.id || existingCust.customer_id;
+            finalCustomerName = existingCust.customer_name || `${existingCust.first_name || ''} ${existingCust.last_name || ''}`.trim() || 'Unknown Customer';
+        } else {
+            try {
+                const { data: newCust, error: custErr } = await supabase.from('customers').insert({
+                    company_id: getCompanyId(),
+                    branch_id: getBranchId(),
+                    customer_name: finalCustomerName || 'Unknown Customer',
+                    customer_phone: custSearchValue,
+                    customer_mail: custEmailValue || null,
+                    status: 'active'
+                }).select();
+                if (custErr) throw custErr;
+                if (newCust && newCust.length > 0) {
+                    finalCustomerId = newCust[0].id || newCust[0].customer_id;
+                    allCustomers.push(newCust[0]);
+                }
+            } catch (err) {
+                console.error('Failed to create new customer:', err);
+                showToast('Failed to create customer: ' + (err.message || ''));
+                if (btn) {
+                    btn.textContent = origText;
+                    btn.disabled = false;
+                }
+                return;
             }
-        } catch (err) {
-            console.error('Failed to create new customer:', err);
-            showToast('Failed to create customer: ' + (err.message || ''));
-            btn.textContent = origText;
-            btn.disabled = false;
-            return;
         }
     }
     
@@ -875,7 +883,7 @@ async function handleAssignMembership() {
         if (finalCustomerId && planValue) {
             const { data: existing, error: checkErr } = await supabase
                 .from('membership_purchases')
-                .select('id, purchase_id, expiry_date')
+                .select('id')
                 .eq('company_id', getCompanyId())
                 .eq('branch_id', getBranchId())
                 .eq('customer_id', finalCustomerId)
@@ -895,8 +903,12 @@ async function handleAssignMembership() {
         }
     } catch (err) {
         console.error('Duplicate check error:', err);
-        // We continue anyway but log it, or decide to block. Standard is to log and proceed if critical, 
-        // but here we want to be safe.
+        showToast('Error verifying membership status. Assignment aborted.');
+        if (btn) {
+            btn.textContent = origText;
+            btn.disabled = false;
+        }
+        return;
     }
     
     // Extract user details
