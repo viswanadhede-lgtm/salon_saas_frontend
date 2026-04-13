@@ -1043,6 +1043,19 @@ async function executeMembershipAssignment() {
     // without needing .select() after .insert() (not supported in Supabase v1)
     const newPurchaseId = crypto.randomUUID();
 
+    // Determine the actual total price of the plan
+    const planPrice = selectedPlan ? Number(selectedPlan.price || 0) : 0;
+
+    // Calculate payment status based on how much was collected today
+    let paymentStatus = 'pending';
+    if (finalPrice >= planPrice && planPrice > 0) {
+        paymentStatus = 'paid';
+    } else if (finalPrice >= planPrice && planPrice === 0) {
+        paymentStatus = 'paid'; // Free plans
+    } else if (finalPrice > 0) {
+        paymentStatus = 'partial';
+    }
+
     const payload = {
         purchase_id: newPurchaseId,
         company_id: getCompanyId(),
@@ -1053,10 +1066,11 @@ async function executeMembershipAssignment() {
         customer_name: finalCustomerName,
         membership_id: planValue,
         plan_name: selectedPlan ? (selectedPlan.plan_name || selectedPlan.name) : null,
-        price: finalPrice,
+        price: planPrice,               // The true total price of the membership
+        amount_paid: finalPrice,        // The amount collected today
         duration: duration,
         payment_method: payMethod,
-        payment_status: 'completed',
+        payment_status: paymentStatus,  // Dynamically set based on amount
         purchase_date: purchaseDate,
         expiry_date: expiryDate,
         status: 'active'
