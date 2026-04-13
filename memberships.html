@@ -2008,28 +2008,6 @@
                     <div class="modal-right-col" style="border-left: 1px solid #f1f5f9; padding-left: 2rem;">
                         <div class="modal-section-title" style="margin-top: 0 !important; font-size: 0.7rem !important;">Payment Information</div>
                         
-                        <div class="form-group" style="margin-bottom: 1.5rem !important;">
-                            <label class="form-label">Payment Method <span class="text-rose">*</span></label>
-                            <div class="payment-method-group">
-                                <label class="payment-method-card active">
-                                    <input type="radio" name="payMethod" value="cash" checked>
-                                    <i data-feather="dollar-sign" style="width: 14px; height: 14px;"></i> Cash
-                                </label>
-                                <label class="payment-method-card">
-                                    <input type="radio" name="payMethod" value="card">
-                                    <i data-feather="credit-card" style="width: 14px; height: 14px;"></i> Card
-                                </label>
-                                <label class="payment-method-card">
-                                    <input type="radio" name="payMethod" value="upi">
-                                    <i data-feather="smartphone" style="width: 14px; height: 14px;"></i> UPI
-                                </label>
-                                <label class="payment-method-card">
-                                    <input type="radio" name="payMethod" value="online">
-                                    <i data-feather="globe" style="width: 14px; height: 14px;"></i> Online
-                                </label>
-                            </div>
-                        </div>
-
                         <div class="form-group">
                             <label class="form-label">Discount (Optional)</label>
                             <div style="position: relative;">
@@ -2038,18 +2016,33 @@
                             </div>
                         </div>
 
-                        <div class="form-group" style="margin-bottom: 0 !important;">
+                        <div class="form-group" style="margin-bottom: 1.5rem !important;">
                             <label class="form-label">Notes (Optional)</label>
                             <textarea id="assignNotes" class="form-input" placeholder="Add payment notes..." style="height: 80px; resize: none;"></textarea>
+                        </div>
+
+                        <!-- POS Style Cart Summary -->
+                        <div class="cart-footer" style="padding: 1.5rem; background: #fafbfc; border-radius: 12px; border: 1px solid #f1f5f9; margin-top: auto;">
+                            <div class="summary-rows" style="display: flex; flex-direction: column; gap: 8px; margin-bottom: 20px;">
+                                <div style="display: flex; justify-content: space-between; font-size: 0.9rem; color: #64748b;">
+                                    <span>Subtotal</span><span id="assignSubtotal" style="font-weight: 500; color: #334155;">₹0</span>
+                                </div>
+                                <div style="display: flex; justify-content: space-between; font-size: 0.9rem; color: #64748b;">
+                                    <span>Tax (0%)</span><span id="assignTax" style="font-weight: 500; color: #334155;">₹0</span>
+                                </div>
+                                <div style="display: flex; justify-content: space-between; font-size: 1.25rem; font-weight: 600; color: #1e293b; margin-top: 8px; padding-top: 8px; border-top: 1px dashed #e2e8f0;">
+                                    <span>Total</span><span id="assignTotal" style="color: #4f46e5;">₹0</span>
+                                </div>
+                            </div>
+                            <button type="button" class="btn btn-primary" id="btnConfirmAssign" style="width: 100%; height: 50px; font-size: 1rem; font-weight: 600; border-radius: 10px; display: flex; justify-content: center; align-items: center; gap: 8px; outline: none; border: none; background-color: #4f46e5; color: white;">
+                                <i data-feather="dollar-sign" style="width: 18px; height: 18px;"></i> Collect
+                            </button>
                         </div>
                     </div>
                 </div>
             </div>
             <div class="modal-footer">
                 <button type="button" class="btn btn-secondary" id="btnCancelAssign">Cancel</button>
-                <button type="button" class="btn btn-primary" id="btnConfirmAssign" style="min-width: 160px; display: flex; justify-content: center; align-items: center; gap: 8px;">
-                    <i data-feather="dollar-sign" style="width: 18px; height: 18px;"></i> Collect
-                </button>
             </div>
         </div>
     </div>
