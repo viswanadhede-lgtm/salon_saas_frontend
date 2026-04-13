@@ -15,7 +15,8 @@ let purchaseToCancel = null;
 const getCompanyId = () => {
     try {
         const ctx = JSON.parse(localStorage.getItem('appContext') || '{}');
-        return ctx.company?.id || localStorage.getItem('company_id') || null;
+        // appContext stores company as { company_id: '...' } not { id: '...' }
+        return ctx.company?.company_id || ctx.company?.id || localStorage.getItem('company_id') || null;
     } catch { return localStorage.getItem('company_id') || null; }
 };
 const getBranchId = () => localStorage.getItem('active_branch_id') || document.getElementById('branchSelect')?.value || null;
@@ -1057,11 +1058,50 @@ async function executeMembershipAssignment() {
     };
 
     try {
-        const { error } = await supabase
+        // 1. Insert into membership_purchases
+        const { data: insertedRows, error } = await supabase
             .from('membership_purchases')
-            .insert(payload);
+            .insert(payload)
+            .select('purchase_id, id');
 
         if (error) throw error;
+
+        // 2. Record in business_transactions (for Sales History / Revenue reports)
+        if (finalPrice > 0) {
+            const purchaseId = insertedRows?.[0]?.purchase_id || insertedRows?.[0]?.id || null;
+            const companyId  = getCompanyId();
+            const branchId   = getBranchId();
+            // Strip 'Z' suffix — business_transactions.paid_at is 'timestamp without time zone'
+            const paidAt = new Date().toISOString().replace('Z', '');
+
+            console.log('[Memberships] Inserting business_transaction:', {
+                company_id: companyId, branch_id: branchId,
+                reference_id: purchaseId, payment_method: payMethod,
+                amount: finalPrice, created_by: userId
+            });
+
+            const { error: txError } = await supabase
+                .from('business_transactions')
+                .insert({
+                    company_id:     companyId,
+                    branch_id:      branchId,
+                    reference_id:   purchaseId,
+                    reference_type: 'membership',
+                    amount:         finalPrice,
+                    currency:       'INR',
+                    payment_method: payMethod,   // 'cash' | 'upi' | 'card'
+                    status:         'paid',
+                    notes:          `Membership — ${selectedPlan ? (selectedPlan.plan_name || selectedPlan.name) : 'Plan'} (${finalCustomerName})`,
+                    created_by:     userId,
+                    paid_at:        paidAt
+                });
+            if (txError) {
+                // Log full error object so we can diagnose DB constraint issues
+                console.error('[Memberships] business_transactions insert failed:', txError);
+            } else {
+                console.log('[Memberships] business_transactions row inserted ✓');
+            }
+        }
 
         showToast('Membership assigned successfully!');
         document.getElementById('cashConfirmOverlay')?.classList.remove('active');
