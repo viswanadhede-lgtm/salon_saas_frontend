@@ -1209,20 +1209,40 @@ async function executeCancelMembershipPurchase(purchaseId) {
 }
 
 let purchaseToRefund = null;
+let refundableAmount = 0;
 
 function setupRefundPurchaseModal() {
-    if (!document.getElementById('refundPurchaseConfirmOverlay')) {
+    if (!document.getElementById('refundSummaryOverlay')) {
         const modalHtml = `
-        <div class="modal-overlay custom-logout-overlay" id="refundPurchaseConfirmOverlay" style="z-index: 9999; backdrop-filter: blur(8px);">
-            <div class="logout-modal" style="background: white; border-radius: 16px; padding: 32px; width: 400px; max-width: 90vw; text-align: center; box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);">
-                <div class="logout-icon-container" style="width: 64px; height: 64px; border-radius: 50%; background: #fffbeb; display: flex; align-items: center; justify-content: center; margin: 0 auto 20px;">
-                    <i data-feather="corner-up-left" style="color: #f59e0b; width: 32px; height: 32px;"></i>
+        <div class="modal-overlay" id="refundSummaryOverlay" style="z-index:9999;">
+            <div class="modal-container" style="width: 480px; border-radius: 16px; padding: 0; overflow: hidden; box-shadow: 0 20px 25px -5px rgba(0,0,0,0.1);">
+                <div class="modal-header" style="border-bottom: 1px solid #fee2e2; background: #fff1f2; padding: 20px 24px;">
+                    <div class="header-titles">
+                        <h2 style="color: #991b1b; font-size: 1.25rem; margin:0;">Process Refund</h2>
+                        <p class="subtitle" id="rfModalSubtitle" style="color: #b91c1c; font-size: 0.85rem; margin:4px 0 0 0;">Membership Refund</p>
+                    </div>
+                    <button class="modal-close" id="cancelRefundBtn"><i data-feather="x" style="color: #991b1b;"></i></button>
                 </div>
-                <h2 style="font-size: 1.5rem; font-weight: 700; color: #0f172a; margin-bottom: 8px;">Refund Membership?</h2>
-                <p style="color: #64748b; font-size: 0.95rem; margin-bottom: 24px; line-height: 1.5;">Are you sure you want to refund this membership? This will mark it as refunded.</p>
-                <div style="display: flex; gap: 12px; justify-content: center;">
-                    <button id="btnCancelRefundPurchase" style="flex: 1; padding: 12px 20px; border-radius: 8px; border: 1px solid #e2e8f0; background: white; color: #64748b; font-weight: 600; cursor: pointer; transition: all 0.2s;">Keep It</button>
-                    <button id="btnConfirmRefundPurchase" style="flex: 1; padding: 12px 20px; border-radius: 8px; border: none; background: #f59e0b; color: white; font-weight: 600; cursor: pointer; transition: background 0.2s;">Yes, Refund</button>
+                <div class="modal-body" style="padding: 24px; background: #fff;">
+                    <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 12px; padding: 20px; margin-bottom: 24px; text-align: center;">
+                        <p style="font-size: 0.75rem; color: #64748b; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 8px;">Refundable Amount</p>
+                        <p style="font-size: 2.25rem; font-weight: 800; color: #dc2626; margin: 0;" id="rfAmountDisplay">₹0</p>
+                    </div>
+                    <div class="form-group" style="margin-bottom: 20px;">
+                        <label class="form-label" style="font-size: 0.85rem; font-weight: 600; color: #475569;">Refund Method</label>
+                        <input type="text" id="rfMethodDisplay" class="form-input read-only-input" style="background: #f1f5f9; color: #64748b;" readonly value="Loading...">
+                    </div>
+                    <div class="form-group" style="margin-bottom: 24px;">
+                        <label class="form-label" style="font-size: 0.85rem; font-weight: 600; color: #475569;">Reason for Refund <span style="color: #94a3b8; font-weight: 400; font-size: 0.8rem;">(Optional)</span></label>
+                        <textarea id="rfNote" class="form-input" style="height: 100px; padding: 12px; resize: none;" placeholder="Enter details about this refund..."></textarea>
+                    </div>
+                    <p style="font-size: 0.825rem; color: #64748b; line-height: 1.5; margin-bottom: 24px;">
+                        This will record a <strong style="color: #dc2626;">Refund</strong> transaction in the financial ledger and update the membership status.
+                    </p>
+                    <div style="display: flex; gap: 12px;">
+                        <button class="btn btn-secondary" id="closeRefundBtn" style="flex: 1; height: 48px; font-weight: 600; border-radius: 10px;">Cancel</button>
+                        <button class="btn" id="confirmRefundBtn" style="flex: 1.5; height: 48px; background: #dc2626; color: white; border: none; font-weight: 700; border-radius: 10px; box-shadow: 0 4px 6px -1px rgba(220, 38, 38, 0.2);">Issue Refund</button>
+                    </div>
                 </div>
             </div>
         </div>
@@ -1230,21 +1250,18 @@ function setupRefundPurchaseModal() {
         document.body.insertAdjacentHTML('beforeend', modalHtml);
         if (window.feather) feather.replace();
 
-        const overlay = document.getElementById('refundPurchaseConfirmOverlay');
+        const overlay = document.getElementById('refundSummaryOverlay');
 
-        document.getElementById('btnCancelRefundPurchase').addEventListener('click', () => {
-            overlay.classList.remove('active');
-            purchaseToRefund = null;
-        });
+        document.getElementById('cancelRefundBtn').addEventListener('click', () => overlay.classList.remove('active'));
+        document.getElementById('closeRefundBtn').addEventListener('click', () => overlay.classList.remove('active'));
         
         overlay.addEventListener('click', (e) => {
             if (e.target === overlay) {
                 overlay.classList.remove('active');
-                purchaseToRefund = null;
             }
         });
 
-        document.getElementById('btnConfirmRefundPurchase').addEventListener('click', async () => {
+        document.getElementById('confirmRefundBtn').addEventListener('click', async () => {
             if (!purchaseToRefund) return;
             overlay.classList.remove('active');
             await executeRefundMembershipPurchase(purchaseToRefund);
@@ -1253,14 +1270,83 @@ function setupRefundPurchaseModal() {
     }
 }
 
-window.refundMembershipPurchase = function(purchaseId) {
+window.refundMembershipPurchase = async function(purchaseId) {
     setupRefundPurchaseModal();
     purchaseToRefund = purchaseId;
-    document.getElementById('refundPurchaseConfirmOverlay').classList.add('active');
+    const overlay = document.getElementById('refundSummaryOverlay');
+    overlay.classList.add('active');
+
+    const amountDisplay = document.getElementById('rfAmountDisplay');
+    const methodDisplay = document.getElementById('rfMethodDisplay');
+    const confirmBtn = document.getElementById('confirmRefundBtn');
+
+    amountDisplay.textContent = 'Calculating...';
+    methodDisplay.value = 'Loading...';
+    confirmBtn.disabled = true;
+    confirmBtn.textContent = 'Issue Refund';
+    refundableAmount = 0;
+
+    try {
+        const { data, error } = await supabase
+            .from('business_transactions')
+            .select('amount, payment_method, status')
+            .eq('reference_id', purchaseId)
+            .eq('reference_type', 'membership');
+
+        if (error) throw error;
+
+        let ledgerPaid = 0;
+        let ledgerRefunded = 0;
+        let lastMethod = 'Cash';
+
+        (data || []).forEach(tx => {
+            const val = Math.abs(Number(tx.amount || 0));
+            const status = (tx.status || '').toLowerCase().trim();
+            if (status === 'paid') ledgerPaid += val;
+            if (status === 'refunded') ledgerRefunded += val;
+            lastMethod = tx.payment_method || lastMethod;
+        });
+
+        refundableAmount = Math.max(0, ledgerPaid - ledgerRefunded);
+        amountDisplay.textContent = \`₹\${refundableAmount.toLocaleString('en-IN')}\`;
+        
+        const friendlyMethod = lastMethod ? lastMethod.charAt(0).toUpperCase() + lastMethod.slice(1) : 'Cash';
+        methodDisplay.value = friendlyMethod;
+
+        if (refundableAmount > 0) {
+            confirmBtn.disabled = false;
+        } else {
+            confirmBtn.textContent = 'Nothing to Refund';
+            amountDisplay.style.color = '#94a3b8';
+        }
+    } catch (err) {
+        amountDisplay.textContent = 'Error';
+    }
 };
 
 async function executeRefundMembershipPurchase(purchaseId) {
     try {
+        if (refundableAmount > 0) {
+            // First log the refund to ledger
+            const note = document.getElementById('rfNote')?.value.trim() || \`Refund membership purchase \${purchaseId}\`;
+            const method = (document.getElementById('rfMethodDisplay')?.value || 'Cash').toLowerCase();
+            
+            const { error: txError } = await supabase
+                .from('business_transactions')
+                .insert({
+                    company_id: getCompanyId(),
+                    branch_id: getBranchId(),
+                    reference_id: purchaseId,
+                    reference_type: 'membership',
+                    amount: Math.abs(refundableAmount),
+                    status: 'refunded',
+                    payment_method: method,
+                    notes: note,
+                    paid_at: new Date().toISOString().replace('Z', '')
+                });
+            if (txError) throw txError;
+        }
+
         const { error } = await supabase
             .from('membership_purchases')
             .eq('purchase_id', purchaseId)
