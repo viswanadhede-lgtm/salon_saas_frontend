@@ -1039,7 +1039,12 @@ async function executeMembershipAssignment() {
         expiryDate = d.toISOString().split('T')[0];
     }
 
+    // Pre-generate purchase_id so we can use it for business_transactions
+    // without needing .select() after .insert() (not supported in Supabase v1)
+    const newPurchaseId = crypto.randomUUID();
+
     const payload = {
+        purchase_id: newPurchaseId,
         company_id: getCompanyId(),
         branch_id: getBranchId(),
         assigned_by_user_id: userId,
@@ -1048,7 +1053,7 @@ async function executeMembershipAssignment() {
         customer_name: finalCustomerName,
         membership_id: planValue,
         plan_name: selectedPlan ? (selectedPlan.plan_name || selectedPlan.name) : null,
-        price: finalPrice, 
+        price: finalPrice,
         duration: duration,
         payment_method: payMethod,
         payment_status: 'completed',
@@ -1059,16 +1064,15 @@ async function executeMembershipAssignment() {
 
     try {
         // 1. Insert into membership_purchases
-        const { data: insertedRows, error } = await supabase
+        const { error } = await supabase
             .from('membership_purchases')
-            .insert(payload)
-            .select('purchase_id, id');
+            .insert(payload);
 
         if (error) throw error;
 
         // 2. Record in business_transactions (for Sales History / Revenue reports)
         if (finalPrice > 0) {
-            const purchaseId = insertedRows?.[0]?.purchase_id || insertedRows?.[0]?.id || null;
+            const purchaseId = newPurchaseId;
             const companyId  = getCompanyId();
             const branchId   = getBranchId();
             // Strip 'Z' suffix — business_transactions.paid_at is 'timestamp without time zone'
