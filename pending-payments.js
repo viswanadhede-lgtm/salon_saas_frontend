@@ -69,19 +69,18 @@ document.addEventListener('DOMContentLoaded', async () => {
                     .select('*')
                     .eq('company_id', companyId)
                     .eq('branch_id', branchId),
-                // Query membership_purchases directly to get accurate price/amount_paid columns
+                // Query pending_membership_payments view
                 supabase
-                    .from('membership_purchases')
-                    .select('purchase_id, id, customer_name, plan_name, membership_name, purchase_date, price, amount_paid, payment_status, company_id, branch_id')
+                    .from('pending_membership_payments')
+                    .select('*')
                     .eq('company_id', companyId)
                     .eq('branch_id', branchId)
-                    .in('payment_status', ['pending', 'partial'])
             ]);
     
             if (bookingRes.error) throw bookingRes.error;
             if (productRes.error) throw productRes.error;
             if (membershipRes.error) {
-                console.warn('[PP] membership_purchases fetch error:', membershipRes.error.message);
+                console.warn('[PP] pending_membership_payments fetch error:', membershipRes.error.message);
             }
 
             // Map Bookings
@@ -106,15 +105,15 @@ document.addEventListener('DOMContentLoaded', async () => {
                 branch_id: p.branch_id
             }));
 
-            // Map Memberships — price, amount_paid come directly from membership_purchases table
+            // Map Memberships from pending_membership_payments view
             const memberships = (membershipRes.data || []).map(m => {
-                const total = Number(m.price || 0);
+                const total = Number(m.total_amount || 0);
                 const paid  = Number(m.amount_paid || 0);
-                const due   = total - paid;
+                const due   = Number(m.balance || 0);
                 return {
-                    booking_id:    m.purchase_id || m.id,
+                    booking_id:    m.purchase_id,
                     customer_name: m.customer_name || 'Unknown Customer',
-                    service_name:  m.plan_name || m.membership_name || 'Membership',
+                    service_name:  m.plan_name || 'Membership',
                     booking_date:  m.purchase_date,
                     start_time:    '',
                     total,
