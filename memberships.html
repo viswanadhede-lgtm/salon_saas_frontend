@@ -1992,15 +1992,9 @@
                             <label class="form-label" for="assignCustomerEmail">Email <span id="assignEmailOptionalLabel" class="text-muted">(Optional)</span></label>
                             <input type="email" id="assignCustomerEmail" class="form-input" placeholder="Enter email address">
                         </div>
-                        <div class="form-group">
-                            <label class="form-label">Select Plan <span class="text-rose">*</span></label>
-                            <select id="assignPlanInput" class="form-select">
-                                <option value="" disabled selected>Choose a plan</option>
-                            </select>
-                        </div>
                         <div class="form-group" style="margin-bottom: 0 !important;">
-                            <label class="form-label">Purchase Date</label>
-                            <input type="date" id="assignDateInput" class="form-input" value="2026-03-14">
+                            <label class="form-label">Notes (Optional)</label>
+                            <textarea id="assignNotes" class="form-input" placeholder="Add payment notes..." style="height: 80px; resize: none;"></textarea>
                         </div>
                     </div>
 
@@ -2009,16 +2003,14 @@
                         <div class="modal-section-title" style="margin-top: 0 !important; font-size: 0.7rem !important;">Payment Information</div>
                         
                         <div class="form-group">
-                            <label class="form-label">Discount (Optional)</label>
-                            <div style="position: relative;">
-                                <span style="position: absolute; left: 12px; top: 50%; transform: translateY(-50%); color: #64748b; font-size: 0.9rem;">₹</span>
-                                <input type="number" id="assignDiscount" class="form-input" placeholder="0.00" style="padding-left: 25px;">
-                            </div>
+                            <label class="form-label">Select Plan <span class="text-rose">*</span></label>
+                            <select id="assignPlanInput" class="form-select">
+                                <option value="" disabled selected>Choose a plan</option>
+                            </select>
                         </div>
-
                         <div class="form-group" style="margin-bottom: 1.5rem !important;">
-                            <label class="form-label">Notes (Optional)</label>
-                            <textarea id="assignNotes" class="form-input" placeholder="Add payment notes..." style="height: 80px; resize: none;"></textarea>
+                            <label class="form-label">Purchase Date</label>
+                            <input type="date" id="assignDateInput" class="form-input" value="2026-03-14">
                         </div>
 
                         <!-- POS Style Cart Summary -->

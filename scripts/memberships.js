@@ -179,14 +179,11 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
 
     const assignPlanInput = document.getElementById('assignPlanInput');
-    const assignDiscount = document.getElementById('assignDiscount');
     
     function updateAssignModalSummary() {
         const planValue = assignPlanInput?.value;
         const selectedPlan = currentPlans.find(p => (p.membership_id || p.id) === planValue);
         const price = selectedPlan ? Number(selectedPlan.price || 0) : 0;
-        const discountVal = Number(assignDiscount?.value || 0);
-        const finalPrice = Math.max(0, price - discountVal);
         
         const subElem = document.getElementById('assignSubtotal');
         const taxElem = document.getElementById('assignTax');
@@ -194,14 +191,11 @@ document.addEventListener('DOMContentLoaded', async () => {
         
         if (subElem) subElem.textContent = `₹${price.toLocaleString('en-IN')}`;
         if (taxElem) taxElem.textContent = `₹0`;
-        if (totElem) totElem.textContent = `₹${finalPrice.toLocaleString('en-IN')}`;
+        if (totElem) totElem.textContent = `₹${price.toLocaleString('en-IN')}`;
     }
 
     if (assignPlanInput) {
         assignPlanInput.addEventListener('change', updateAssignModalSummary);
-    }
-    if (assignDiscount) {
-        assignDiscount.addEventListener('input', updateAssignModalSummary);
     }
 
     const confirmAssignBtn = document.getElementById('btnConfirmAssign');
@@ -908,14 +902,12 @@ async function preValidateAndShowCollect() {
     document.getElementById('assignModalOverlay')?.classList.remove('active');
 
     const price = selectedPlan ? Number(selectedPlan.price || 0) : 0;
-    const discountVal = Number(document.getElementById('assignDiscount').value || 0);
-    const finalPrice = Math.max(0, price - discountVal);
 
     const cashConfirmOverlay = document.getElementById('cashConfirmOverlay');
     if (cashConfirmOverlay) {
-        document.getElementById('cardTotal').textContent = `₹${finalPrice.toLocaleString('en-IN')}`;
-        document.getElementById('cardDue').textContent = `₹${finalPrice.toLocaleString('en-IN')}`;
-        document.getElementById('confirmAmountInput').value = finalPrice;
+        document.getElementById('cardTotal').textContent = `₹${price.toLocaleString('en-IN')}`;
+        document.getElementById('cardDue').textContent = `₹${price.toLocaleString('en-IN')}`;
+        document.getElementById('confirmAmountInput').value = price;
         cashConfirmOverlay.classList.add('active');
     }
 }
@@ -1036,7 +1028,6 @@ async function executeMembershipAssignment() {
         // Reset form
         document.getElementById('custSearchInput').value = '';
         document.getElementById('assignPlanInput').value = '';
-        document.getElementById('assignDiscount').value = '';
         document.getElementById('assignNotes').value = '';
         selectedCustomer = null;
         
