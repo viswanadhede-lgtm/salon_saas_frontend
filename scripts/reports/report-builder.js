@@ -1884,7 +1884,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                 if (splitRes.error) console.warn('Distribution Error:', splitRes.error);
                 if (typeof renderDistributionChart === 'function') {
                     if (splitRes.data && splitRes.data.length > 0) {
-                        renderDistributionChart(splitRes.data.map(s => s.category || s.item_type || s.plan_name || 'OTHER'), splitRes.data.map(s => Number(s.total_sales || s.revenue || s.total_revenue || 0)));
+                        renderDistributionChart(splitRes.data.map(s => s.membership_name || s.category || s.item_type || s.plan_name || 'OTHER'), splitRes.data.map(s => Number(s.total_sales || s.revenue || s.total_revenue || 0)));
                     } else renderDistributionChart([], []);
                 }
 
@@ -1894,8 +1894,8 @@ document.addEventListener('DOMContentLoaded', async () => {
                 if (tRes.data && tRes.data.length > 0) {
                     const tRows = tRes.data.map(r => {
                         const dateText = r.date ? new Date(r.date).toLocaleString() : '—';
-                        const itemName = r.plan_name || r.item_name || '—';
-                        const cat = r.duration || r.category || '—';
+                        const itemName = r.membership_name || r.plan_name || r.item_name || '—';
+                        const cat = r.membership_duration || r.duration_months || r.duration || r.category || '—';
                         const price = formatCurrency(r.price || r.unit_price || 0);
                         const qty = Number(r.quantity || r.sold_count || 0).toLocaleString();
                         const total = formatCurrency(r.total_amount || r.revenue || 0);
