@@ -142,9 +142,9 @@ const REPORT_TYPES = {
         icon: 'credit-card',
         backCat: null,
         kpi1: { label: 'Total Expenses', value: 'Loading...' },
-        kpi2: { label: 'This Month', value: 'Loading...' },
-        kpi3: { label: 'Top Category', value: 'Loading...' },
-        kpi4: { label: 'Avg per Entry', value: 'Loading...' },
+        kpi2: { label: 'Number of Expenses', value: 'Loading...' },
+        kpi3: { label: 'Avg Expense', value: 'Loading...' },
+        kpi4: null,
         tableTitle: 'Expense Records',
         headers: ['Date', 'Category', 'Amount', 'Notes', 'Added By'],
         rows: []
@@ -231,9 +231,9 @@ const REPORT_TYPES = {
         icon: 'shopping-cart',
         backCat: 'financial',
         kpi1: { label: 'Total Expenses', value: 'Loading...' },
-        kpi2: { label: 'This Month', value: 'Loading...' },
-        kpi3: { label: 'Top Category', value: 'Loading...' },
-        kpi4: { label: 'Avg per Entry', value: 'Loading...' },
+        kpi2: { label: 'Number of Expenses', value: 'Loading...' },
+        kpi3: { label: 'Avg Expense', value: 'Loading...' },
+        kpi4: null,
         tableTitle: 'Expense Records',
         headers: ['Date', 'Category', 'Amount', 'Notes', 'Added By'],
         rows: []
@@ -1984,82 +1984,132 @@ document.addEventListener('DOMContentLoaded', async () => {
             console.error('Error loading products report data:', err);
             updateTable(data.headers, []);
         }
-    } else if (type === 'expenses') {
+    } else if (type === 'expenses' || type === 'fin-expenses') {
         // --- LIVE SUPABASE INTEGRATION FOR EXPENSES ---
         const companyId = localStorage.getItem('company_id');
-        const branchId  = localStorage.getItem('active_branch_id');
+        const filterStart = document.getElementById('filterStartDate');
+        const filterEnd = document.getElementById('filterEndDate');
+        const filterBranch = document.getElementById('filterBranch');
+        const btnApply = document.getElementById('btnApplyFilters');
 
         if (!companyId) {
             updateTable(data.headers, []);
             return;
         }
 
-        try {
-            let query = supabase
-                .from('expenses')
-                .select('*')
-                .eq('company_id', companyId)
-                .neq('status', 'deleted')
-                .order('date', { ascending: false });
-
-            // Filter by branch if available
-            if (branchId) query = query.eq('branch_id', branchId);
-
-            const { data: dbExpenses, error } = await query;
-            if (error) throw error;
-
-            const expensesList = dbExpenses || [];
-
-            // KPI calculations
-            const now = new Date();
-            const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
-
-            const totalAmount = expensesList.reduce((sum, e) => sum + Number(e.amount || 0), 0);
-            const thisMonthTotal = expensesList
-                .filter(e => e.date && new Date(e.date) >= startOfMonth)
-                .reduce((sum, e) => sum + Number(e.amount || 0), 0);
-            const avgPerEntry = expensesList.length > 0
-                ? totalAmount / expensesList.length
-                : 0;
-
-            // Find top category by total spend
-            const categoryTotals = {};
-            expensesList.forEach(e => {
-                const cat = e.category || 'Other';
-                categoryTotals[cat] = (categoryTotals[cat] || 0) + Number(e.amount || 0);
-            });
-            const topCategory = Object.entries(categoryTotals)
-                .sort((a, b) => b[1] - a[1])[0]?.[0] || '—';
-
-            // Build table rows
-            const formattedRows = expensesList.map(e => {
-                const date     = e.date ? new Date(e.date).toLocaleDateString() : '—';
-                const category = e.category || 'Other';
-                const amount   = formatCurrency(Number(e.amount || 0));
-                const notes    = e.notes || '—';
-                const addedBy  = e.added_by || 'Admin';
-                return [date, category, amount, notes, addedBy];
-            });
-
-            // Override KPIs
-            data.kpi1.label = 'Total Expenses';
-            data.kpi1.value = formatCurrency(totalAmount);
-            data.kpi2.label = 'This Month';
-            data.kpi2.value = formatCurrency(thisMonthTotal);
-            data.kpi3.label = 'Top Category';
-            data.kpi3.value = topCategory;
-            data.kpi4.label = 'Avg per Entry';
-            data.kpi4.value = formatCurrency(Math.round(avgPerEntry));
-
-            data.headers = ['Date', 'Category', 'Amount', 'Notes', 'Added By'];
-
-            updateKPIs(data.kpi1, data.kpi2, data.kpi3, data.kpi4);
-            updateTable(data.headers, formattedRows);
-
-        } catch (err) {
-            console.error('Error loading expenses report data:', err);
-            updateTable(data.headers, []);
+        // Set Default Dates
+        if (filterStart && filterEnd) {
+            const today = new Date();
+            const firstDay = new Date(today.getFullYear(), today.getMonth(), 1);
+            if (!filterStart.value) filterStart.value = firstDay.toISOString().split('T')[0];
+            if (!filterEnd.value) filterEnd.value = today.toISOString().split('T')[0];
         }
+
+        // Fetch Branches
+        try {
+            const { data: bList } = await supabase.from('branches').select('branch_id, branch_name').eq('company_id', companyId);
+            if (bList && filterBranch) {
+                const existing = filterBranch.value;
+                filterBranch.innerHTML = '<option value="all">All Branches</option>' + bList.map(b => `<option value="${b.branch_id}">${b.branch_name}</option>`).join('');
+                filterBranch.value = existing || 'all';
+            }
+        } catch(e) { console.warn('Could not fetch branches', e); }
+
+        const loadExpensesData = async () => {
+            const start = filterStart ? filterStart.value : '2000-01-01';
+            const end = filterEnd ? filterEnd.value : '2099-12-31';
+            const bid = (filterBranch && filterBranch.value !== 'all') ? filterBranch.value : null;
+
+            try {
+                // 1. KPI Summary
+                const { data: sumData, error: sumError } = await supabase.rpc('get_expenses_summary', {
+                    p_branch_id: bid, p_start_date: start, p_end_date: end
+                });
+                if (sumError) console.warn('KPI fetch error:', sumError);
+                
+                let totalExp = 0, totalEntries = 0, avgExp = 0;
+                if (sumData && sumData.length > 0) {
+                    const row = sumData[0];
+                    totalExp = Number(row.total_expenses || 0);
+                    totalEntries = Number(row.total_entries || 0);
+                    avgExp = Number(row.avg_expense || 0);
+                }
+                
+                data.kpi1.label = 'Total Expenses';
+                data.kpi1.value = formatCurrency(totalExp);
+                data.kpi2.label = 'Number of Entries';
+                data.kpi2.value = totalEntries.toString();
+                data.kpi3.label = 'Avg Expense';
+                data.kpi3.value = formatCurrency(Math.round(avgExp));
+                data.kpi4 = null;
+                
+                updateKPIs(data.kpi1, data.kpi2, data.kpi3, data.kpi4);
+
+                // 2. Trend Line Chart
+                const { data: trendData, error: trendError } = await supabase.rpc('get_expenses_trend', {
+                    p_branch_id: bid, p_start_date: start, p_end_date: end
+                });
+                if (trendError) console.warn('Trend fetch error:', trendError);
+                if (typeof renderTrendChart === 'function') {
+                    if (trendData && trendData.length > 0) {
+                        renderTrendChart(trendData.map(t => new Date(t.date).toLocaleDateString(undefined, {month:'short', day:'numeric'})), trendData.map(t => Number(t.amount)));
+                    } else {
+                        renderTrendChart([], []);
+                    }
+                }
+
+                // 3. Donut Chart
+                const { data: splitData, error: splitError } = await supabase.rpc('get_expenses_split', {
+                    p_branch_id: bid, p_start_date: start, p_end_date: end
+                });
+                if (splitError) console.warn('Split fetch error:', splitError);
+                if (splitData && splitData.length > 0) {
+                    renderDistributionChart(splitData.map(s => s.category || 'Other'), splitData.map(s => Number(s.amount || 0)));
+                } else {
+                    renderDistributionChart([], []);
+                }
+
+                // 4. Data Table
+                data.headers = ['Date', 'Category', 'Amount', 'Notes', 'Status'];
+                
+                const { data: tData, error: tError } = await supabase.rpc('get_expenses_table', {
+                    p_branch_id: bid, p_start_date: start, p_end_date: end
+                });
+
+                if (tError) console.warn('Table fetch error:', tError);
+                if (tData && tData.length > 0) {
+                    const tRows = tData.map(r => {
+                        const date = r.date ? new Date(r.date).toLocaleDateString() : '—';
+                        const cat = r.category || 'Other';
+                        const amt = formatCurrency(Number(r.amount || 0));
+                        const notes = r.notes || '—';
+                        
+                        let sType = (r.status || 'completed').toLowerCase();
+                        let statusHtml = '<span class="status-pill active">Active</span>';
+                        if (sType === 'deleted' || sType === 'cancelled') {
+                           statusHtml = '<span class="status-pill cancelled">Deleted</span>';
+                        } else if (sType === 'pending') {
+                           statusHtml = '<span class="status-pill pending">Pending</span>';
+                        } else {
+                           statusHtml = `<span class="status-pill completed">${r.status || 'Completed'}</span>`;
+                        }
+
+                        return [date, cat, amt, notes, statusHtml];
+                    });
+                    updateTable(data.headers, tRows);
+                } else {
+                    updateTable(data.headers, []);
+                }
+            } catch (err) {
+                console.error('Critical exception in loadExpensesData:', err);
+                renderTrendChart([], []);
+                renderDistributionChart([], []);
+                updateTable(data.headers, []);
+            }
+        };
+
+        if (btnApply) btnApply.addEventListener('click', loadExpensesData);
+        loadExpensesData();
     } else {
         // Render hardcoded mock data for the rest of the reports
         updateTable(data.headers, data.rows);
