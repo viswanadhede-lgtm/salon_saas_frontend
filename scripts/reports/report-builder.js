@@ -302,10 +302,10 @@ const REPORT_TYPES = {
         subtitle: 'Best-selling retail products by units and revenue',
         icon: 'box',
         backCat: 'sales',
-        kpi1: { label: 'Total Products', value: 'Loading...' },
-        kpi2: { label: 'Units Sold', value: '—' },
-        kpi3: { label: 'Top Product', value: '—' },
-        kpi4: { label: 'Retail Revenue', value: '—' },
+        kpi1: { label: 'Top Product', value: 'Loading...' },
+        kpi2: { label: 'Top 5 Revenue', value: 'Loading...' },
+        kpi3: { label: 'Top 5 Contribution %', value: 'Loading...' },
+        kpi4: { label: 'Best Seller (by quantity)', value: 'Loading...' },
         tableTitle: 'Product Rankings',
         headers: ['Product Name', 'Category', 'Unit Price', 'Stock Status', 'Stock Value', 'Status'],
         rows: []
@@ -1923,6 +1923,143 @@ document.addEventListener('DOMContentLoaded', async () => {
         initializeBranchDropdown().then(() => {
             if (btnApply) btnApply.addEventListener('click', loadMembershipRevenueData);
             loadMembershipRevenueData();
+        });
+
+    } else if (type === 'sales-top-products') {
+        const companyId = localStorage.getItem('company_id');
+        const filterStart = document.getElementById('filterStartDate');
+        const filterEnd = document.getElementById('filterEndDate');
+        const filterBranch = document.getElementById('filterBranch');
+        const btnApply = document.getElementById('btnApplyFilters');
+
+        if (!companyId) {
+            updateTable(data.headers, []);
+            return;
+        }
+
+        const now = new Date();
+        const today = new Date(now.getTime() - now.getTimezoneOffset() * 60000);
+        const firstDay = new Date(today.getFullYear(), today.getMonth(), 1, 12, 0, 0);
+
+        if (filterStart && filterEnd) {
+            if (!filterStart.value) filterStart.value = firstDay.toISOString().split('T')[0];
+            if (!filterEnd.value) filterEnd.value = today.toISOString().split('T')[0];
+        }
+
+        const initializeBranchDropdown = async () => {
+            try {
+                const { data: bList } = await supabase.from('branches').select('branch_id, branch_name').eq('company_id', companyId);
+                if (bList && filterBranch) {
+                    const existing = filterBranch.value;
+                    filterBranch.innerHTML = '<option value="all">All Branches</option>' + bList.map(b => `<option value="${b.branch_id}">${b.branch_name}</option>`).join('');
+                    filterBranch.value = existing || 'all';
+                }
+            } catch(e) { }
+        };
+
+        const loadTopProductsData = async () => {
+            const start = filterStart ? filterStart.value : '2000-01-01';
+            const end = filterEnd ? filterEnd.value : '2099-12-31';
+            const bid = (filterBranch && filterBranch.value !== 'all') ? filterBranch.value : null;
+
+            // Loading state
+            data.kpi1.value = 'Loading...';
+            data.kpi2.value = 'Loading...';
+            data.kpi3.value = 'Loading...';
+            data.kpi4.value = 'Loading...';
+            updateKPIs(data.kpi1, data.kpi2, data.kpi3, data.kpi4);
+            const tbody = document.getElementById('tableBody');
+            if (tbody) tbody.innerHTML = '<tr><td colspan="7" style="text-align: center; padding: 2rem;">Loading data...</td></tr>';
+
+            try {
+                // Execute all queries in parallel
+                const args = { p_company_id: companyId, p_branch_id: bid, p_start_date: start, p_end_date: end };
+                const [sumRes, trendRes, splitRes, tRes] = await Promise.all([
+                    supabase.rpc('get_top_products_summary', args),
+                    supabase.rpc('get_top_products_trend', args),
+                    supabase.rpc('get_top_products_distribution', args),
+                    supabase.rpc('get_top_products_table', args)
+                ]);
+                
+                // 1. KPI Summary
+                if (sumRes.error) console.warn('KPI fetch error:', sumRes.error);
+                const sumData = sumRes.data;
+                if (sumData) {
+                    const row = Array.isArray(sumData) ? sumData[0] : sumData;
+                    if (row) {
+                        data.kpi1.value = row.top_product || row.top_product_name || '—';
+                        data.kpi2.value = formatCurrency(row.top_5_revenue || row.total_sales || 0);
+                        data.kpi3.value = row.top_5_contribution !== undefined ? `${row.top_5_contribution}%` : '—';
+                        data.kpi4.value = row.best_seller || row.best_selling_product || '—';
+                    }
+                } else {
+                    data.kpi1.value = '—';
+                    data.kpi2.value = '₹0';
+                    data.kpi3.value = '—';
+                    data.kpi4.value = '—';
+                }
+                updateKPIs(data.kpi1, data.kpi2, data.kpi3, data.kpi4);
+
+                // 2. Trend Chart
+                if (trendRes.error) console.warn('Trend Error:', trendRes.error);
+                if (typeof renderTrendChart === 'function') {
+                    if (trendRes.data && trendRes.data.length > 0) {
+                        const extractVal = (t) => {
+                            const val = t.total_sales ?? t.revenue ?? t.total_revenue ?? t.amount ?? t.sales ?? t.total ?? t.sum;
+                            if (val !== undefined && val !== null) return Number(val);
+                            for (let key in t) if (key !== 'date') { const n = parseFloat(t[key]); if(!isNaN(n)) return n; }
+                            return 0;
+                        };
+                        renderTrendChart(
+                            trendRes.data.map(t => new Date(t.date).toLocaleDateString(undefined, {month:'short', day:'numeric'})), 
+                            trendRes.data.map(t => extractVal(t))
+                        );
+                    } else renderTrendChart([], []);
+                }
+
+                // 3. Distribution Donut Chart
+                if (splitRes.error) console.warn('Distribution Error:', splitRes.error);
+                if (typeof renderDistributionChart === 'function') {
+                    if (splitRes.data && splitRes.data.length > 0) {
+                        renderDistributionChart(splitRes.data.map(s => s.product_name || s.category || s.item_type || 'OTHER'), splitRes.data.map(s => Number(s.total_sales || s.revenue || s.total_revenue || 0)));
+                    } else renderDistributionChart([], []);
+                }
+
+                // 4. Data Table
+                data.headers = ['Date', 'Product Name', 'Category', 'Unit Price', 'Sold Count', 'Revenue Generated'];
+                if (tRes.error) console.warn('Table Error:', tRes.error);
+                if (tRes.data && tRes.data.length > 0) {
+                    const tRows = tRes.data.map(r => {
+                        const dateText = r.date ? new Date(r.date).toLocaleString() : '—';
+                        const itemName = r.product_name || r.item_name || '—';
+                        const cat = r.category || '—';
+                        const price = formatCurrency(r.price || r.unit_price || 0);
+                        const qty = Number(r.quantity || r.sold_count || 0).toLocaleString();
+                        const total = formatCurrency(r.total_amount || r.revenue || 0);
+
+                        return [
+                            dateText,
+                            `<strong style="color:#334155;">${itemName}</strong>`,
+                            `<span class="status-pill active" style="background:#f1f5f9; color:#475569;">${cat}</span>`,
+                            price,
+                            qty,
+                            `<strong style="color:#10b981;">${total}</strong>`
+                        ];
+                    });
+                    updateTable(data.headers, tRows);
+                } else updateTable(data.headers, []);
+
+            } catch (err) {
+                console.error('Data fetch fault:', err);
+                if(typeof renderTrendChart==='function') renderTrendChart([], []); 
+                if(typeof renderDistributionChart==='function') renderDistributionChart([], []); 
+                updateTable(data.headers, []);
+            }
+        };
+
+        initializeBranchDropdown().then(() => {
+            if (btnApply) btnApply.addEventListener('click', loadTopProductsData);
+            loadTopProductsData();
         });
 
     } else if (type === 'staff') {
