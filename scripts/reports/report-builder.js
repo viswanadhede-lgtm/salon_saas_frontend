@@ -699,10 +699,10 @@ document.addEventListener('DOMContentLoaded', async () => {
 
         // Fetch Branches
         try {
-            const { data: bList } = await supabase.from('branches').select('id, branch_name').eq('company_id', companyId);
+            const { data: bList } = await supabase.from('branches').select('branch_id, branch_name').eq('company_id', companyId);
             if (bList && filterBranch) {
                 const existing = filterBranch.value;
-                filterBranch.innerHTML = '<option value="all">All Branches</option>' + bList.map(b => `<option value="${b.id}">${b.branch_name}</option>`).join('');
+                filterBranch.innerHTML = '<option value="all">All Branches</option>' + bList.map(b => `<option value="${b.branch_id}">${b.branch_name}</option>`).join('');
                 filterBranch.value = existing || 'all';
             }
         } catch(e) { console.warn('Could not fetch branches', e); }
@@ -760,7 +760,8 @@ document.addEventListener('DOMContentLoaded', async () => {
                 // 1. KPI Summary
                 let sumQuery = supabase.from('report_financial_summary').select('*');
                 if (bid) sumQuery = sumQuery.eq('branch_id', bid);
-                const { data: sumData } = await sumQuery;
+                const { data: sumData, error: sumError } = await sumQuery;
+                if (sumError) console.warn('KPI fetch error:', sumError);
                 
                 let rev = 0, coll = 0, pend = 0, ref = 0;
                 if (sumData) {
@@ -782,19 +783,27 @@ document.addEventListener('DOMContentLoaded', async () => {
                 updateKPIs(data.kpi1, data.kpi2, data.kpi3, data.kpi4);
 
                 // 2. Trend Line Chart
-                const { data: trendData } = await supabase.rpc('get_revenue_trend', {
+                const { data: trendData, error: trendError } = await supabase.rpc('get_revenue_trend', {
                     p_branch_id: bid, p_start_date: start, p_end_date: end
                 });
-                if (trendData && typeof renderTrendChart === 'function') {
-                    renderTrendChart(trendData.map(t => new Date(t.date).toLocaleDateString(undefined, {month:'short', day:'numeric'})), trendData.map(t => Number(t.revenue)));
+                if (trendError) console.warn('Trend fetch error:', trendError);
+                if (typeof renderTrendChart === 'function') {
+                    if (trendData && trendData.length > 0) {
+                        renderTrendChart(trendData.map(t => new Date(t.date).toLocaleDateString(undefined, {month:'short', day:'numeric'})), trendData.map(t => Number(t.revenue)));
+                    } else {
+                        renderTrendChart([], []);
+                    }
                 }
 
                 // 3. Donut Chart
-                const { data: splitData } = await supabase.rpc('get_revenue_split', {
+                const { data: splitData, error: splitError } = await supabase.rpc('get_revenue_split', {
                     p_branch_id: bid, p_start_date: start, p_end_date: end
                 });
-                if (splitData) {
+                if (splitError) console.warn('Split fetch error:', splitError);
+                if (splitData && splitData.length > 0) {
                     renderDistributionChart(splitData.map(s => s.category || 'Other'), splitData.map(s => Number(s.revenue || 0)));
+                } else {
+                    renderDistributionChart([], []);
                 }
 
                 // 4. Data Table
@@ -807,8 +816,9 @@ document.addEventListener('DOMContentLoaded', async () => {
                     
                 if (bid) tblQuery = tblQuery.eq('branch_id', bid);
                 
-                const { data: tData } = await tblQuery;
-                if (tData) {
+                const { data: tData, error: tError } = await tblQuery;
+                if (tError) console.warn('Table fetch error:', tError);
+                if (tData && tData.length > 0) {
                     const tRows = tData.map(r => {
                         const d = new Date(r.created_at).toLocaleDateString();
                         const sType = r.reference_type || 'Unknown';
@@ -823,7 +833,10 @@ document.addEventListener('DOMContentLoaded', async () => {
                     updateTable(data.headers, []);
                 }
             } catch (err) {
-                console.error(err);
+                console.error('Critical exception in loadRevenueData:', err);
+                renderTrendChart([], []);
+                renderDistributionChart([], []);
+                updateTable(data.headers, []);
             }
         };
 
