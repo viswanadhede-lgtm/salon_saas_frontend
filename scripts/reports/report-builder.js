@@ -1019,9 +1019,10 @@ document.addEventListener('DOMContentLoaded', async () => {
                 updateKPIs(data.kpi1, data.kpi2, data.kpi3, data.kpi4, data.kpi5);
 
                 // 2. Trend Chart
-                const { data: trendData } = await supabase.rpc('get_payments_trend', {
+                const { data: trendData, error: e2 } = await supabase.rpc('get_payments_trend', {
                     p_branch_id: bid, p_start_date: start, p_end_date: end
                 });
+                if (e2) console.warn('get_payments_trend Error:', e2);
                 if (typeof renderTrendChart === 'function') {
                     if (trendData && trendData.length > 0) {
                         renderTrendChart(trendData.map(t => new Date(t.date).toLocaleDateString(undefined, {month:'short', day:'numeric'})), trendData.map(t => Number(t.amount)));
@@ -1029,17 +1030,19 @@ document.addEventListener('DOMContentLoaded', async () => {
                 }
 
                 // 3. Distribution Donut Chart
-                const { data: splitData } = await supabase.rpc('get_payments_split', {
+                const { data: splitData, error: e3 } = await supabase.rpc('get_payments_split', {
                     p_branch_id: bid, p_start_date: start, p_end_date: end
                 });
+                if (e3) console.warn('get_payments_split Error:', e3);
                 if (splitData && splitData.length > 0) {
                     renderDistributionChart(splitData.map(s => s.method ? s.method.toUpperCase() : 'Other'), splitData.map(s => Number(s.amount || 0)));
                 } else renderDistributionChart([], []);
 
                 // 4. Data Table
-                const { data: tData } = await supabase.rpc('get_payments_table', {
+                const { data: tData, error: e4 } = await supabase.rpc('get_payments_table', {
                     p_branch_id: bid, p_start_date: start, p_end_date: end
                 });
+                if (e4) console.warn('get_payments_table Error:', e4);
                 if (tData && tData.length > 0) {
                     const tRows = tData.map(r => {
                         const paidAt = r.paid_at ? new Date(r.paid_at).toLocaleString() : '—';
