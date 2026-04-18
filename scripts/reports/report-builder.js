@@ -551,7 +551,7 @@ document.addEventListener('DOMContentLoaded', async () => {
      * Renders a bar chart with grey bars and a highlighted purple bar for the most recent data point.
      * Matches the design aesthetic provided: rounded corners and premium color palette.
      */
-    const renderTrendChart = (labels, values, chartType = 'bar') => {
+    const renderTrendChart = (labels, values) => {
         const ctx = document.getElementById('trendChart');
         if (!ctx) return;
 
@@ -564,23 +564,16 @@ document.addEventListener('DOMContentLoaded', async () => {
             i === values.length - 1 ? '#d946ef' : '#e2e8f0'
         );
 
-        const chartConfig = {
-            type: chartType,
+        trendChartInstance = new Chart(ctx, {
+            type: 'bar',
             data: {
                 labels: labels,
                 datasets: [{
                     data: values,
-                    backgroundColor: chartType === 'bar' ? backgroundColors : 'rgba(217, 70, 239, 0.1)',
-                    borderColor: chartType === 'line' ? '#d946ef' : undefined,
-                    borderWidth: chartType === 'line' ? 3 : 0,
-                    fill: chartType === 'line',
-                    tension: 0.4,
-                    pointBackgroundColor: '#d946ef',
-                    pointBorderColor: '#fff',
-                    pointRadius: chartType === 'line' ? 4 : 0,
-                    borderRadius: chartType === 'bar' ? 8 : 0,
+                    backgroundColor: backgroundColors,
+                    borderRadius: 8,
                     borderSkipped: false,
-                    barThickness: chartType === 'bar' ? 32 : undefined
+                    barThickness: 32
                 }]
             },
             options: {
@@ -1510,169 +1503,6 @@ document.addEventListener('DOMContentLoaded', async () => {
         initializeBranchDropdown().then(() => {
             if (btnApply) btnApply.addEventListener('click', loadSalesData);
             loadSalesData();
-        });
-
-    } else if (type === 'sales-service-revenue') {
-        const companyId = localStorage.getItem('company_id');
-        const filterStart = document.getElementById('filterStartDate');
-        const filterEnd = document.getElementById('filterEndDate');
-        const filterBranch = document.getElementById('filterBranch');
-        const btnApply = document.getElementById('btnApplyFilters');
-
-        if (!companyId) {
-            updateTable(data.headers, []);
-            return;
-        }
-
-        const now = new Date();
-        const today = new Date(now.getTime() - now.getTimezoneOffset() * 60000);
-        const firstDay = new Date(today.getFullYear(), today.getMonth(), 1, 12, 0, 0);
-
-        if (filterStart && filterEnd) {
-            if (!filterStart.value) filterStart.value = firstDay.toISOString().split('T')[0];
-            if (!filterEnd.value) filterEnd.value = today.toISOString().split('T')[0];
-        }
-
-        const initializeBranchDropdown = async () => {
-            try {
-                const { data: bList } = await supabase.from('branches').select('branch_id, branch_name').eq('company_id', companyId);
-                if (bList && filterBranch) {
-                    const existing = filterBranch.value;
-                    filterBranch.innerHTML = '<option value="all">All Branches</option>' + bList.map(b => `<option value="${b.branch_id}">${b.branch_name}</option>`).join('');
-                    filterBranch.value = existing || 'all';
-                }
-            } catch(e) { }
-        };
-
-        const loadServiceRevenueData = async () => {
-            const start = filterStart ? filterStart.value : '2000-01-01';
-            const end = filterEnd ? filterEnd.value : '2099-12-31';
-            const bid = (filterBranch && filterBranch.value !== 'all') ? filterBranch.value : null;
-
-            // Loading state
-            data.kpi1.value = 'Loading...';
-            data.kpi2.value = 'Loading...';
-            data.kpi3.value = 'Loading...';
-            data.kpi4.value = 'Loading...';
-            updateKPIs(data.kpi1, data.kpi2, data.kpi3, data.kpi4);
-            const tbody = document.getElementById('tableBody');
-            if (tbody) tbody.innerHTML = '<tr><td colspan="7" style="text-align: center; padding: 2rem;">Loading data...</td></tr>';
-
-            const rightTitle = document.getElementById('rightChartTitle');
-            if (rightTitle) rightTitle.textContent = 'Top Services & Distribution';
-
-            try {
-                // Execute all queries in parallel for strict performance requirement
-                const args = { p_company_id: companyId, p_branch_id: bid, p_start_date: start, p_end_date: end };
-                const [sumRes, trendRes, topRes, tRes, distRes] = await Promise.all([
-                    supabase.rpc('get_service_revenue_summary', args),
-                    supabase.rpc('get_service_revenue_trend', args),
-                    supabase.rpc('get_top_services', args),
-                    supabase.rpc('get_service_revenue_table', args),
-                    supabase.rpc('get_service_revenue_distribution', args)
-                ]);
-                
-                // 1. KPI Summary
-                if (sumRes.error) console.warn('KPI fetch error:', sumRes.error);
-                const sumData = sumRes.data;
-                if (sumData) {
-                    const row = Array.isArray(sumData) ? sumData[0] : sumData;
-                    if (row) {
-                        data.kpi1.value = formatCurrency(row.total_service_revenue || 0);
-                        data.kpi2.value = Number(row.total_bookings || 0).toLocaleString();
-                        data.kpi3.value = formatCurrency(row.avg_service_value || 0);
-                        data.kpi4.value = Number(row.total_services || 0).toLocaleString();
-                    }
-                } else {
-                    data.kpi1.value = '₹0';
-                    data.kpi2.value = '0';
-                    data.kpi3.value = '₹0';
-                    data.kpi4.value = '0';
-                }
-                updateKPIs(data.kpi1, data.kpi2, data.kpi3, data.kpi4);
-
-                // 2. Trend Chart (Line Chart Required)
-                if (trendRes.error) console.warn('get_service_revenue_trend Error:', trendRes.error);
-                if (typeof renderTrendChart === 'function') {
-                    if (trendRes.data && trendRes.data.length > 0) {
-                        renderTrendChart(trendRes.data.map(t => new Date(t.date).toLocaleDateString(undefined, {month:'short', day:'numeric'})), trendRes.data.map(t => Number(t.total_service_revenue || 0)), 'line');
-                    } else renderTrendChart([], [], 'line');
-                }
-
-                // 3 & 5. Distribution Donut Chart and Top Services Info
-                if (distRes.error) console.warn('get_service_revenue_distribution Error:', distRes.error);
-                let distLabels = [];
-                let distValues = [];
-                
-                // Show categorical distribution if there are multiple categories
-                if (distRes.data && distRes.data.length > 1) {
-                    distLabels = distRes.data.map(s => s.category ? s.category.toUpperCase() : 'OTHER');
-                    distValues = distRes.data.map(s => Number(s.total_revenue || 0));
-                } else if (topRes.data && topRes.data.length > 0) {
-                    // Fallback to top 5 services if categories are minimal
-                    distLabels = topRes.data.slice(0, 5).map(s => s.service_name || 'UNKNOWN');
-                    distValues = topRes.data.slice(0, 5).map(s => Number(s.total_revenue || 0));
-                }
-
-                if (typeof renderDistributionChart === 'function') {
-                    if (distValues.length > 0) {
-                        renderDistributionChart(distLabels, distValues);
-                    } else {
-                        renderDistributionChart([], []);
-                    }
-                }
-
-                // Render Top Services directly into the InfoGraphic Legend space
-                const legendEl = document.getElementById('infographicLegend');
-                if (legendEl) {
-                    if (topRes.data && topRes.data.length > 0) {
-                        legendEl.innerHTML = topRes.data.slice(0, 5).map((t, idx) => `
-                            <div class="metric-item">
-                                <div class="metric-icon-wrap" style="background:#f1f5f9; color:#64748b; font-weight:700;">#${idx+1}</div>
-                                <div class="metric-info">
-                                    <h4 style="font-size: 0.85rem">${t.service_name}</h4>
-                                    <p>${formatCurrency(t.total_revenue || 0)} (${t.total_count || 0} served)</p>
-                                </div>
-                            </div>
-                        `).join('');
-                    } else {
-                        legendEl.innerHTML = '<span style="color:#94a3b8; font-size: 0.8rem;">No top services data.</span>';
-                    }
-                }
-
-                // 4. Data Table
-                data.headers = ['Date', 'Service Name', 'Quantity', 'Unit Price', 'Total Amount'];
-                if (tRes.error) console.warn('get_service_revenue_table Error:', tRes.error);
-                if (tRes.data && tRes.data.length > 0) {
-                    const tRows = tRes.data.map(r => {
-                        const dateText = r.date ? new Date(r.date).toLocaleString() : '—';
-                        const itemName = r.service_name || '—';
-                        const qty = Number(r.quantity || 0).toLocaleString();
-                        const price = formatCurrency(r.unit_price || 0);
-                        const total = formatCurrency(r.total_amount || 0);
-
-                        return [
-                            dateText,
-                            `<strong style="color:#334155;">${itemName}</strong>`,
-                            qty,
-                            price,
-                            `<strong style="color:#10b981;">${total}</strong>`
-                        ];
-                    });
-                    updateTable(data.headers, tRows);
-                } else updateTable(data.headers, []);
-
-            } catch (err) {
-                console.error('Data fetch fault:', err);
-                if(typeof renderTrendChart==='function') renderTrendChart([], [], 'line'); 
-                if(typeof renderDistributionChart==='function') renderDistributionChart([], []); 
-                updateTable(data.headers, []);
-            }
-        };
-
-        initializeBranchDropdown().then(() => {
-            if (btnApply) btnApply.addEventListener('click', loadServiceRevenueData);
-            loadServiceRevenueData();
         });
 
     } else if (type === 'staff') {
