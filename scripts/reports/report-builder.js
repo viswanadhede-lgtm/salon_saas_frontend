@@ -761,18 +761,21 @@ document.addEventListener('DOMContentLoaded', async () => {
 
             try {
                 // 1. KPI Summary
-                let sumQuery = supabase.from('report_financial_summary').select('*');
-                if (bid) sumQuery = sumQuery.eq('branch_id', bid);
-                const { data: sumData, error: sumError } = await sumQuery;
+                const { data: sumData, error: sumError } = await supabase.rpc('get_revenue_summary', {
+                    p_branch_id: bid, p_start_date: start, p_end_date: end
+                });
                 if (sumError) console.warn('KPI fetch error:', sumError);
                 
                 let rev = 0, coll = 0, pend = 0, ref = 0;
                 if (sumData) {
-                    sumData.forEach(row => {
-                        rev += Number(row.total_revenue||0);
-                        coll += Number(row.collected_amount||0);
-                        pend += Number(row.pending_amount||0);
-                        ref += Number(row.refunded_amount||0);
+                    const rows = Array.isArray(sumData) ? sumData : [sumData];
+                    rows.forEach(row => {
+                        if(row) {
+                            rev += Number(row.total_revenue || row.total || 0);
+                            coll += Number(row.collected_amount || row.paid_amount || 0);
+                            pend += Number(row.pending_amount || row.due_amount || 0);
+                            ref += Number(row.refunded_amount || 0);
+                        }
                     });
                 }
                 data.kpi1.value = formatCurrency(rev);
