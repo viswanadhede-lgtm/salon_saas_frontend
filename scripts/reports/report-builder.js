@@ -619,6 +619,92 @@ document.addEventListener('DOMContentLoaded', async () => {
         }
     };
 
+    let distributionChartInstance = null;
+    const renderDistributionChart = (labels, values) => {
+        const ctx = document.getElementById('distributionChart');
+        if(!ctx) return;
+        if(distributionChartInstance) distributionChartInstance.destroy();
+        
+        const colors = ['#6366f1', '#10b981', '#f59e0b', '#ec4899', '#8b5cf6'];
+        
+        distributionChartInstance = new Chart(ctx, {
+            type: 'doughnut',
+            data: {
+                labels: labels,
+                datasets: [{
+                    data: values,
+                    backgroundColor: colors.slice(0, labels.length),
+                    borderWidth: 0,
+                    hoverOffset: 4
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                cutout: '75%',
+                plugins: {
+                    legend: { display: false },
+                    tooltip: {
+                        backgroundColor: '#1e293b',
+                        padding: 12,
+                        titleFont: { size: 13, weight: 'bold' },
+                        bodyFont: { size: 13 },
+                        cornerRadius: 8,
+                        displayColors: true,
+                        callbacks: {
+                            label: function(context) {
+                                let label = context.label || '';
+                                if (label) { label += ': '; }
+                                if (context.parsed !== null) {
+                                    label += new Intl.NumberFormat('en-IN', { style: 'currency', currency: 'INR', maximumFractionDigits: 0 }).format(context.parsed);
+                                }
+                                return label;
+                            }
+                        }
+                    }
+                }
+            }
+        });
+
+        const legendContainer = document.getElementById('infographicLegend');
+        if (legendContainer) {
+            if (labels.length === 0 || values.every(v => v === 0)) {
+                legendContainer.innerHTML = '<div style="color:#94a3b8; font-size:0.875rem;">No data to display</div>';
+            } else {
+                const total = values.reduce((a, b) => a + b, 0);
+                legendContainer.innerHTML = labels.map((l, i) => {
+                    const val = values[i];
+                    const perc = total > 0 ? Math.round((val / total) * 100) : 0;
+                    return `
+                        <div class="metric-item">
+                            <span class="metric-dot" style="background-color: ${colors[i % colors.length]};"></span>
+                            <div class="metric-label">
+                                <span class="name">${l}</span>
+                                <span class="perc">${perc}%</span>
+                            </div>
+                            <div class="metric-value">${formatCurrency(val)}</div>
+                        </div>
+                    `;
+                }).join('');
+            }
+        }
+
+        if (values.length > 0 && !values.every(v => v === 0)) {
+            const maxIdx = values.indexOf(Math.max(...values));
+            const total = values.reduce((a,b)=>a+b, 0);
+            const perc = total > 0 ? Math.round((values[maxIdx] / total) * 100) : 0;
+            const hmVal = document.getElementById('heroMetricValue');
+            const hmLabel = document.getElementById('heroMetricLabel');
+            if(hmVal) hmVal.textContent = perc + '%';
+            if(hmLabel) hmLabel.textContent = 'Revenue from ' + labels[maxIdx];
+        } else {
+            const hmVal = document.getElementById('heroMetricValue');
+            const hmLabel = document.getElementById('heroMetricLabel');
+            if(hmVal) hmVal.textContent = '0%';
+            if(hmLabel) hmLabel.textContent = 'No Data Available';
+        }
+    };
+
     // 4. Initial layout render
     updateKPIs(data.kpi1, data.kpi2, data.kpi3, data.kpi4);
     
@@ -722,50 +808,6 @@ document.addEventListener('DOMContentLoaded', async () => {
                 filterBranch.value = existing || 'all';
             }
         } catch(e) { console.warn('Could not fetch branches', e); }
-
-        let distributionChartInstance = null;
-        const renderDistributionChart = (labels, values) => {
-            const ctx = document.getElementById('distributionChart');
-            if(!ctx) return;
-            if(distributionChartInstance) distributionChartInstance.destroy();
-            
-            const colors = ['#6366f1', '#10b981', '#f59e0b', '#ec4899', '#8b5cf6'];
-            
-            distributionChartInstance = new Chart(ctx, {
-                type: 'doughnut',
-                data: {
-                    labels: labels,
-                    datasets: [{
-                        data: values,
-                        backgroundColor: colors.slice(0, labels.length),
-                        borderWidth: 0,
-                        hoverOffset: 4
-                    }]
-                },
-                options: {
-                    responsive: true,
-                    maintainAspectRatio: false,
-                    cutout: '75%',
-                    plugins: {
-                        legend: { display: false },
-                        tooltip: { enabled: true }
-                    }
-                }
-            });
-            // Update hero metric if data exists
-            if (values.length > 0) {
-                const maxIdx = values.indexOf(Math.max(...values));
-                const total = values.reduce((a,b)=>a+b, 0);
-                const perc = total > 0 ? Math.round((values[maxIdx] / total) * 100) : 0;
-                const hmVal = document.getElementById('heroMetricValue');
-                const hmLabel = document.getElementById('heroMetricLabel');
-                if(hmVal) hmVal.textContent = perc + '%';
-                if(hmLabel) hmLabel.textContent = 'Revenue from ' + labels[maxIdx];
-            } else {
-                const hmVal = document.getElementById('heroMetricValue');
-                if(hmVal) hmVal.textContent = '0%';
-            }
-        };
 
         const loadRevenueData = async () => {
             const start = filterStart ? filterStart.value : '2000-01-01';
