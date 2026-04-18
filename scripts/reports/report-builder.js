@@ -2112,7 +2112,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                 // Execute all queries in parallel
                 const args = { p_company_id: companyId, p_branch_id: bid, p_start_date: start, p_end_date: end };
                 const [sumRes, trendRes, splitRes, tRes] = await Promise.all([
-                    supabase.rpc('get_top_services', args), // user specified exactly this name
+                    supabase.rpc('get_top_services_summary', args),
                     supabase.rpc('get_top_services_trend', args),
                     supabase.rpc('get_top_services_distribution', args),
                     supabase.rpc('get_top_services_table', args)
@@ -2124,10 +2124,10 @@ document.addEventListener('DOMContentLoaded', async () => {
                 if (sumData) {
                     const row = Array.isArray(sumData) ? sumData[0] : sumData;
                     if (row) {
-                        data.kpi1.value = row.top_service_name || row.top_service || '—';
-                        data.kpi2.value = formatCurrency(row.top_service_revenue || row.total_sales || 0);
-                        data.kpi3.value = formatCurrency(row.top_5_revenue || 0);
-                        data.kpi4.value = row.top_5_contribution !== undefined ? `${row.top_5_contribution}%` : '—';
+                        data.kpi1.value = row.top_service_name || row.top_service || row.service_name || row.name || '—';
+                        data.kpi2.value = formatCurrency(row.top_service_revenue || row.total_revenue || row.revenue || row.total_sales || 0);
+                        data.kpi3.value = formatCurrency(row.top_5_revenue || row.total_top_5_revenue || row.top5_revenue || 0);
+                        data.kpi4.value = (row.top_5_contribution !== undefined && row.top_5_contribution !== null) ? `${row.top_5_contribution}%` : ((row.top_5_contribution_percent || row.top5_contribution) !== undefined ? `${(row.top_5_contribution_percent || row.top5_contribution)}%` : '—');
                     }
                 } else {
                     data.kpi1.value = '—';
@@ -2163,19 +2163,17 @@ document.addEventListener('DOMContentLoaded', async () => {
                 }
 
                 // 4. Data Table
-                data.headers = ['Date', 'Service Name', 'Category', 'Duration', 'Times Booked', 'Revenue Generated'];
+                data.headers = ['Service Name', 'Category', 'Duration', 'Times Booked', 'Revenue Generated'];
                 if (tRes.error) console.warn('Table Error:', tRes.error);
                 if (tRes.data && tRes.data.length > 0) {
                     const tRows = tRes.data.map(r => {
-                        const dateText = r.date ? new Date(r.date).toLocaleString() : '—';
-                        const itemName = r.service_name || r.item_name || '—';
-                        const cat = r.category || '—';
+                        const itemName = r.service_name || r.name || r.item_name || '—';
+                        const cat = r.category || r.service_category || '—';
                         const duration = r.duration || r.service_duration || '—';
-                        const qty = Number(r.times_booked || r.bookings || r.quantity || 0).toLocaleString();
-                        const total = formatCurrency(r.revenue_generated || r.total_amount || r.revenue || 0);
+                        const qty = Number(r.times_booked || r.total_bookings || r.bookings || r.quantity || 0).toLocaleString();
+                        const total = formatCurrency(r.revenue_generated || r.total_revenue || r.total_amount || r.revenue || 0);
 
                         return [
-                            dateText,
                             `<strong style="color:#334155;">${itemName}</strong>`,
                             `<span class="status-pill active" style="background:#f1f5f9; color:#475569;">${cat}</span>`,
                             duration,
