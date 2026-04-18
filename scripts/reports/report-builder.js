@@ -1454,7 +1454,10 @@ document.addEventListener('DOMContentLoaded', async () => {
                 if (trendRes.error) console.warn('get_sales_trend Error:', trendRes.error);
                 if (typeof renderTrendChart === 'function') {
                     if (trendRes.data && trendRes.data.length > 0) {
-                        renderTrendChart(trendRes.data.map(t => new Date(t.date).toLocaleDateString(undefined, {month:'short', day:'numeric'})), trendRes.data.map(t => Number(t.total_sales || 0)));
+                        renderTrendChart(
+                            trendRes.data.map(t => new Date(t.date).toLocaleDateString(undefined, {month:'short', day:'numeric'})), 
+                            trendRes.data.map(t => Number(t.total_sales || t.revenue || t.amount || t.total_amount || 0))
+                        );
                     } else renderTrendChart([], []);
                 }
 
@@ -1584,7 +1587,10 @@ document.addEventListener('DOMContentLoaded', async () => {
                 if (trendRes.error) console.warn('Trend Error:', trendRes.error);
                 if (typeof renderTrendChart === 'function') {
                     if (trendRes.data && trendRes.data.length > 0) {
-                        renderTrendChart(trendRes.data.map(t => new Date(t.date).toLocaleDateString(undefined, {month:'short', day:'numeric'})), trendRes.data.map(t => Number(t.total_sales || t.revenue || t.total_revenue || 0)));
+                        renderTrendChart(
+                            trendRes.data.map(t => new Date(t.date).toLocaleDateString(undefined, {month:'short', day:'numeric'})), 
+                            trendRes.data.map(t => Number(t.total_sales || t.revenue || t.total_revenue || t.amount || t.service_revenue || t.total_amount || 0))
+                        );
                     } else renderTrendChart([], []);
                 }
 
