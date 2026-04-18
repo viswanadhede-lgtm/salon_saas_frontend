@@ -189,15 +189,12 @@ const REPORT_TYPES = {
         icon: 'rotate-ccw',
         backCat: 'financial',
         kpi1: { label: 'Total Refunded', value: '—' },
-        kpi2: { label: 'This Month', value: '—' },
-        kpi3: { label: 'No. of Refunds', value: '—' },
-        kpi4: { label: 'Avg Refund', value: '—' },
+        kpi2: { label: 'No. of Refunds', value: '—' },
+        kpi3: { label: 'Avg Refund', value: '—' },
+        kpi4: null,
         tableTitle: 'Refund Records',
-        headers: ['Date', 'Customer', 'Original Sale', 'Refund Reason', 'Amount', 'Status'],
-        rows: [
-            ['2024-03-18', 'Priya M.', 'Hair Treatment', 'Service Unsatisfactory', '₹2,000', '<span class="status-pill cancelled">Refunded</span>'],
-            ['2024-03-15', 'Kiran D.', 'Membership Plan', 'Cancelled Membership', '₹4,999', '<span class="status-pill cancelled">Refunded</span>']
-        ]
+        headers: ['Refunded On', 'Transaction Ref', 'Category', 'Method', 'Amount', 'Notes'],
+        rows: []
     },
     'fin-pending-dues': {
         title: 'Pending Dues',
@@ -494,7 +491,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     
     // 3. Prepare to update DOM
-    const updateKPIs = (k1, k2, k3, k4, k5 = null) => {
+    const updateKPIs = (k1, k2, k3, k4 = null, k5 = null) => {
         const lbl1 = document.getElementById('kpiLabel1'); const val1 = document.getElementById('kpiValue1');
         if (lbl1 && val1 && k1) { lbl1.textContent = k1.label; val1.textContent = k1.value; }
 
@@ -504,22 +501,37 @@ document.addEventListener('DOMContentLoaded', async () => {
         const lbl3 = document.getElementById('kpiLabel3'); const val3 = document.getElementById('kpiValue3');
         if (lbl3 && val3 && k3) { lbl3.textContent = k3.label; val3.textContent = k3.value; }
 
-        const lbl4 = document.getElementById('kpiLabel4'); const val4 = document.getElementById('kpiValue4');
-        if (lbl4 && val4 && k4) { lbl4.textContent = k4.label; val4.textContent = k4.value; }
+        const kpiRow = document.getElementById('kpiRow');
+        
+        const card4 = document.getElementById('kpiLabel4')?.closest('.kpi-card') || (kpiRow && kpiRow.children.length > 3 ? kpiRow.children[3] : null);
+        const lbl4 = document.getElementById('kpiLabel4'); 
+        const val4 = document.getElementById('kpiValue4');
+        
+        if (lbl4 && val4 && k4) { 
+            lbl4.textContent = k4.label; val4.textContent = k4.value; 
+            if (card4) card4.style.display = 'flex';
+        } else if (card4) {
+            card4.style.display = 'none';
+        }
 
         const card5 = document.getElementById('kpiCard5');
         const lbl5 = document.getElementById('kpiLabel5'); 
         const val5 = document.getElementById('kpiValue5');
-        const kpiRow = document.getElementById('kpiRow');
+        
+        let visibleCount = 3;
+        if (k4) visibleCount = 4;
+        if (k5) visibleCount = 5;
         
         if (k5 && card5 && lbl5 && val5 && kpiRow) {
             lbl5.textContent = k5.label; 
             val5.textContent = k5.value;
             card5.style.display = 'flex';
-            kpiRow.style.gridTemplateColumns = 'repeat(5, 1fr)';
         } else if (card5 && kpiRow) {
             card5.style.display = 'none';
-            kpiRow.style.gridTemplateColumns = 'repeat(4, 1fr)';
+        }
+        
+        if (kpiRow) {
+            kpiRow.style.gridTemplateColumns = `repeat(${Math.max(1, visibleCount)}, 1fr)`;
         }
     };
 
@@ -1114,6 +1126,124 @@ document.addEventListener('DOMContentLoaded', async () => {
         initializeBranchDropdown().then(() => {
             if (btnApply) btnApply.addEventListener('click', loadPaymentsData);
             loadPaymentsData();
+        });
+
+    } else if (type === 'fin-refunds') {
+        const companyId = localStorage.getItem('company_id');
+        const filterStart = document.getElementById('filterStartDate');
+        const filterEnd = document.getElementById('filterEndDate');
+        const filterBranch = document.getElementById('filterBranch');
+        const btnApply = document.getElementById('btnApplyFilters');
+
+        const now = new Date();
+        const today = new Date(now.getTime() - now.getTimezoneOffset() * 60000);
+        const firstDay = new Date(today.getFullYear(), today.getMonth(), 1, 12, 0, 0);
+
+        if (filterStart && filterEnd) {
+            if (!filterStart.value) filterStart.value = firstDay.toISOString().split('T')[0];
+            if (!filterEnd.value) filterEnd.value = today.toISOString().split('T')[0];
+        }
+
+        const initializeBranchDropdown = async () => {
+            try {
+                const { data: bList } = await supabase.from('branches').select('branch_id, branch_name').eq('company_id', companyId);
+                if (bList && filterBranch) {
+                    const existing = filterBranch.value;
+                    filterBranch.innerHTML = '<option value="all">All Branches</option>' + bList.map(b => `<option value="${b.branch_id}">${b.branch_name}</option>`).join('');
+                    filterBranch.value = existing || 'all';
+                }
+            } catch(e) { }
+        };
+
+        const loadRefundsData = async () => {
+            const start = filterStart ? filterStart.value : '2000-01-01';
+            const end = filterEnd ? filterEnd.value : '2099-12-31';
+            const bid = (filterBranch && filterBranch.value !== 'all') ? filterBranch.value : null;
+
+            try {
+                // 1. KPI Summary
+                const { data: sumData, error: sumError } = await supabase.rpc('get_refunds_summary', {
+                    p_branch_id: bid, p_start_date: start, p_end_date: end
+                });
+                
+                if (sumData) {
+                    const row = Array.isArray(sumData) ? sumData[0] : sumData;
+                    if (row) {
+                        const tRefunded = Number(row.total_refunded || 0);
+                        const tRefunds = Number(row.total_refunds || 0);
+                        const avgRefund = tRefunds > 0 ? (tRefunded / tRefunds) : 0;
+                        
+                        data.kpi1.value = formatCurrency(tRefunded);
+                        data.kpi2.value = tRefunds.toLocaleString();
+                        data.kpi3.value = formatCurrency(avgRefund);
+                    }
+                } else {
+                    data.kpi1.value = '₹0';
+                    data.kpi2.value = '0';
+                    data.kpi3.value = '₹0';
+                }
+                updateKPIs(data.kpi1, data.kpi2, data.kpi3);
+
+                // 2. Trend Chart
+                const { data: trendData, error: e2 } = await supabase.rpc('get_refunds_trend', {
+                    p_branch_id: bid, p_start_date: start, p_end_date: end
+                });
+                if (e2) console.warn('get_refunds_trend Error:', e2);
+                if (typeof renderTrendChart === 'function') {
+                    if (trendData && trendData.length > 0) {
+                        renderTrendChart(trendData.map(t => new Date(t.date).toLocaleDateString(undefined, {month:'short', day:'numeric'})), trendData.map(t => Number(t.amount)));
+                    } else renderTrendChart([], []);
+                }
+
+                // 3. Distribution Donut Chart
+                const { data: splitData, error: e3 } = await supabase.rpc('get_refunds_split', {
+                    p_branch_id: bid, p_start_date: start, p_end_date: end
+                });
+                if (e3) console.warn('get_refunds_split Error:', e3);
+                if (typeof renderDistributionChart === 'function') {
+                    if (splitData && splitData.length > 0) {
+                        renderDistributionChart(splitData.map(s => s.category ? s.category.toUpperCase() : 'OTHER'), splitData.map(s => Number(s.amount || 0)));
+                    } else renderDistributionChart([], []);
+                }
+
+                // 4. Data Table
+                const { data: tData, error: e4 } = await supabase.rpc('get_refunds_table', {
+                    p_branch_id: bid, p_start_date: start, p_end_date: end
+                });
+                if (e4) console.warn('get_refunds_table Error:', e4);
+                if (tData && tData.length > 0) {
+                    const tRows = tData.map(r => {
+                        const createdDate = r.created_at ? new Date(r.created_at).toLocaleString() : '—';
+                        const refId = r.reference_id || '—';
+                        const shortRef = refId.includes('-') ? refId.split('-')[0].toUpperCase() : refId; 
+                        const sType = (r.reference_type || 'Unknown').toUpperCase();
+                        const method = (r.payment_method || 'Unknown').toUpperCase();
+                        const amount = formatCurrency(r.amount);
+                        const notes = r.notes || '—';
+                        
+                        return [
+                            createdDate, 
+                            `<span style="font-family: monospace; font-weight: 600; color: #6366f1;">#${shortRef}</span>`, 
+                            `<span class="status-pill active" style="background:#fef3c7; color:#d97706;">${sType}</span>`, 
+                            `<strong style="color:#475569;">${method}</strong>`, 
+                            `<strong style="color:#ef4444;">${amount}</strong>`,
+                            `<span style="color:#94a3b8; font-size:0.875rem;">${notes}</span>`
+                        ];
+                    });
+                    updateTable(data.headers, tRows);
+                } else updateTable(data.headers, []);
+
+            } catch (err) {
+                console.error('Data fetch fault:', err);
+                if(typeof renderTrendChart==='function') renderTrendChart([], []); 
+                if(typeof renderDistributionChart==='function') renderDistributionChart([], []); 
+                updateTable(data.headers, []);
+            }
+        };
+
+        initializeBranchDropdown().then(() => {
+            if (btnApply) btnApply.addEventListener('click', loadRefundsData);
+            loadRefundsData();
         });
 
     } else if (type === 'staff') {
