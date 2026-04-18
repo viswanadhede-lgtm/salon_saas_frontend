@@ -594,9 +594,12 @@ document.addEventListener('DOMContentLoaded', async () => {
         if (theadRow && tbody) {
             theadRow.innerHTML = headers.map(h => `<th>${h}</th>`).join('');
             if (rows && rows.length > 0) {
-                tbody.innerHTML = rows.map(row => 
-                    `<tr>${row.map(cell => `<td>${cell}</td>`).join('')}</tr>`
-                ).join('');
+                tbody.innerHTML = rows.map(row => {
+                    if (row && typeof row === 'object' && row.rawHtml) {
+                        return row.rawHtml;
+                    }
+                    return `<tr>${row.map(cell => `<td>${cell}</td>`).join('')}</tr>`;
+                }).join('');
             } else {
                 tbody.innerHTML = `<tr><td colspan="${headers.length}" style="text-align: center; padding: 2rem;">No data available for this report.</td></tr>`;
             }
@@ -806,28 +809,39 @@ document.addEventListener('DOMContentLoaded', async () => {
                     renderDistributionChart([], []);
                 }
 
-                // 4. Data Table
-                let tblQuery = supabase.from('business_transactions')
-                    .select('created_at, reference_type, amount, status, payment_method')
-                    .eq('company_id', companyId)
-                    .in('status', ['paid', 'pending'])
-                    .gte('created_at', start)
-                    .lte('created_at', `${end} 23:59:59`)
-                    .order('created_at', { ascending: false });
-                    
-                if (bid) tblQuery = tblQuery.eq('branch_id', bid);
+                // 4. Data Table (Level 1 Master View)
+                data.headers = ['Transaction ID', 'Type', 'Total Amount', 'Collected', 'Due', 'Refunded'];
                 
-                const { data: tData, error: tError } = await tblQuery;
+                const { data: tData, error: tError } = await supabase.rpc('get_revenue_table', {
+                    p_branch_id: bid, p_start_date: start, p_end_date: end
+                });
+
                 if (tError) console.warn('Table fetch error:', tError);
                 if (tData && tData.length > 0) {
                     const tRows = tData.map(r => {
-                        const d = new Date(r.created_at).toLocaleDateString();
-                        const sType = r.reference_type || 'Unknown';
-                        const pMeth = r.payment_method || '—';
-                        const a = formatCurrency(r.amount);
-                        const statusH = r.status === 'paid' ? '<span class="status-pill completed">Paid</span>' : '<span class="status-pill pending">Pending</span>';
-                        // Matches headers: ['Date', 'Source', 'Description', 'Payment Method', 'Amount', 'Status']
-                        return [d, sType.includes('booking') ? 'Service' : 'Product', sType, pMeth, a, statusH];
+                        const refId = r.reference_id || 'Unknown';
+                        const shortRef = refId.includes('-') ? refId.split('-')[0].toUpperCase() : refId; 
+                        
+                        const sType = (r.reference_type || 'Unknown').toUpperCase();
+                        const total = formatCurrency(r.total_amount);
+                        const paid = formatCurrency(r.paid_amount);
+                        
+                        let dueText = '—';
+                        if (r.due_amount > 0) dueText = `<span style="color: #ef4444; font-weight: 600;">${formatCurrency(r.due_amount)}</span>`;
+                        
+                        let refText = '—';
+                        if (r.refunded_amount > 0) refText = `<span style="color: #f59e0b; font-weight: 600;">${formatCurrency(r.refunded_amount)}</span>`;
+                        
+                        const rawHtml = `<tr style="cursor: pointer; transition: background 0.2s;" onmouseover="this.style.background='#f8fafc'" onmouseout="this.style.background=''" data-action="drilldown" data-ref="${refId}">
+                            <td style="font-family: monospace; font-weight: 600; color: #6366f1;">#${shortRef}</td>
+                            <td><span class="status-pill active">${sType}</span></td>
+                            <td>${total}</td>
+                            <td style="color: #10b981; font-weight:500;">${paid}</td>
+                            <td>${dueText}</td>
+                            <td>${refText}</td>
+                        </tr>`;
+
+                        return { rawHtml };
                     });
                     updateTable(data.headers, tRows);
                 } else {
@@ -843,6 +857,94 @@ document.addEventListener('DOMContentLoaded', async () => {
 
         if (btnApply) btnApply.addEventListener('click', loadRevenueData);
         loadRevenueData();
+
+        // Level 2 Drilldown Handler
+        const tableBody = document.getElementById('tableBody');
+        if (tableBody) {
+            tableBody.addEventListener('click', async (e) => {
+                const tr = e.target.closest('tr[data-action="drilldown"]');
+                if (!tr) return;
+                const refId = tr.getAttribute('data-ref');
+                if (!refId || refId === 'Unknown') return;
+                
+                // Show modal logic
+                let modalOverlay = document.getElementById('drilldownModalOverlay');
+                if (!modalOverlay) {
+                    modalOverlay = document.createElement('div');
+                    modalOverlay.id = 'drilldownModalOverlay';
+                    modalOverlay.className = 'modal-overlay active';
+                    modalOverlay.style.zIndex = '9999';
+                    modalOverlay.innerHTML = `
+                        <div class="modal-container" style="max-width: 800px; width: 90%;">
+                            <div class="modal-header">
+                                <div class="header-titles">
+                                    <h2>Transaction Drill-down</h2>
+                                    <p class="subtitle" id="drilldownSubtitle">Ledger entries for transaction</p>
+                                </div>
+                                <button class="modal-close" onclick="document.getElementById('drilldownModalOverlay').classList.remove('active')"><i data-feather="x"></i></button>
+                            </div>
+                            <div class="modal-body" style="padding: 1.5rem; overflow-y: auto; max-height: 60vh;">
+                                <table class="custom-table" style="width: 100%;">
+                                    <thead>
+                                        <tr>
+                                            <th>Date Executed</th>
+                                            <th>Payment Method</th>
+                                            <th>Amount</th>
+                                            <th>Status</th>
+                                            <th>Notes</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="drilldownTbody">
+                                        <tr><td colspan="5" style="text-align: center; padding: 2rem;">Loading...</td></tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    `;
+                    document.body.appendChild(modalOverlay);
+                    if (window.feather) feather.replace();
+                } else {
+                    modalOverlay.classList.add('active');
+                    document.getElementById('drilldownTbody').innerHTML = '<tr><td colspan="5" style="text-align: center; padding: 2rem;">Loading...</td></tr>';
+                }
+
+                document.getElementById('drilldownSubtitle').textContent = `Ledger history for Ref: #${refId.includes('-') ? refId.split('-')[0].toUpperCase() : refId}`;
+
+                try {
+                    const { data: logs, error } = await supabase
+                        .from('business_transactions')
+                        .select('*')
+                        .eq('reference_id', refId)
+                        .order('created_at', { ascending: false });
+
+                    if (error || !logs || logs.length === 0) {
+                        document.getElementById('drilldownTbody').innerHTML = '<tr><td colspan="5" style="text-align: center; padding: 2rem;">No logs found.</td></tr>';
+                        return;
+                    }
+
+                    document.getElementById('drilldownTbody').innerHTML = logs.map(log => {
+                        const date = new Date(log.created_at).toLocaleString();
+                        const method = log.payment_method ? log.payment_method.toUpperCase() : '—';
+                        const amount = formatCurrency(log.amount);
+                        let statusHtml = '';
+                        if (log.status === 'paid') statusHtml = '<span class="status-pill completed">Paid</span>';
+                        else if (log.status === 'refunded') statusHtml = '<span class="status-pill cancelled" style="background:#fef3c7; color:#d97706;">Refunded</span>';
+                        else statusHtml = '<span class="status-pill pending" style="text-transform: capitalize;">' + (log.status || 'Pending') + '</span>';
+                        const notes = log.notes || '—';
+
+                        return `<tr>
+                            <td>${date}</td>
+                            <td style="font-weight: 600;">${method}</td>
+                            <td>${amount}</td>
+                            <td>${statusHtml}</td>
+                            <td style="color: #64748b; font-size: 0.8rem;">${notes}</td>
+                        </tr>`;
+                    }).join('');
+                } catch (err) {
+                    document.getElementById('drilldownTbody').innerHTML = '<tr><td colspan="5" style="text-align: center; padding: 2rem; color:red;">Failed to fetch logs.</td></tr>';
+                }
+            });
+        }
 
     } else if (type === 'staff') {
         // --- LIVE SUPABASE INTEGRATION FOR STAFF ---
