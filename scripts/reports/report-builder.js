@@ -1382,6 +1382,11 @@ document.addEventListener('DOMContentLoaded', async () => {
         const filterBranch = document.getElementById('filterBranch');
         const btnApply = document.getElementById('btnApplyFilters');
 
+        if (!companyId) {
+            updateTable(data.headers, []);
+            return;
+        }
+
         const now = new Date();
         const today = new Date(now.getTime() - now.getTimezoneOffset() * 60000);
         const firstDay = new Date(today.getFullYear(), today.getMonth(), 1, 12, 0, 0);
@@ -1418,7 +1423,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
             try {
                 // Execute all queries in parallel for strict performance requirement
-                const args = { p_branch_id: bid, p_start_date: start, p_end_date: end };
+                const args = { p_company_id: companyId, p_branch_id: bid, p_start_date: start, p_end_date: end };
                 const [sumRes, trendRes, splitRes, tRes] = await Promise.all([
                     supabase.rpc('get_total_sales_summary', args),
                     supabase.rpc('get_sales_trend', args),
