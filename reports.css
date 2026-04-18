@@ -1,5 +1,267 @@
-/* Reports Library Styles */
+/* =============================================
+   Reports Library Styles
+   ============================================= */
 
+/* ---- Category Grid (reports.html) ---- */
+.category-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(340px, 1fr));
+    gap: 1.75rem;
+    padding: 1rem 0 2rem;
+}
+
+.category-card {
+    background: white;
+    border-radius: 20px;
+    padding: 2rem;
+    text-decoration: none;
+    transition: all 0.35s cubic-bezier(0.4, 0, 0.2, 1);
+    border: 1px solid #f1f5f9;
+    position: relative;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+    gap: 1.25rem;
+    cursor: pointer;
+}
+
+.category-card::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 4px;
+    background: linear-gradient(90deg, var(--cat-color-a, #6366f1), var(--cat-color-b, #8b5cf6));
+    opacity: 0;
+    transition: opacity 0.3s ease;
+}
+
+.category-card:hover::before {
+    opacity: 1;
+}
+
+.category-card:hover {
+    transform: translateY(-6px);
+    box-shadow: 0 20px 40px -12px rgba(99, 102, 241, 0.18);
+    border-color: #e0e7ff;
+    text-decoration: none;
+}
+
+.category-card-top {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+}
+
+.category-icon-wrap {
+    width: 56px;
+    height: 56px;
+    border-radius: 16px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+}
+
+.category-icon-wrap i {
+    width: 24px;
+    height: 24px;
+}
+
+.category-count-badge {
+    font-size: 0.7rem;
+    font-weight: 700;
+    color: #94a3b8;
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+    background: #f8fafc;
+    border: 1px solid #e2e8f0;
+    padding: 4px 10px;
+    border-radius: 20px;
+}
+
+.category-card-body {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+
+.category-card-body h3 {
+    font-size: 1.1rem;
+    font-weight: 700;
+    color: #1e293b;
+    margin: 0;
+}
+
+.category-card-body p {
+    font-size: 0.8125rem;
+    color: #64748b;
+    margin: 0;
+    line-height: 1.5;
+}
+
+.category-sub-pills {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    margin-top: 4px;
+}
+
+.sub-pill {
+    font-size: 0.7rem;
+    font-weight: 500;
+    color: #64748b;
+    background: #f1f5f9;
+    border-radius: 20px;
+    padding: 3px 10px;
+    white-space: nowrap;
+}
+
+.category-card-footer {
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    margin-top: auto;
+}
+
+.category-card-footer a,
+.category-card-footer span {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 0.8rem;
+    font-weight: 600;
+    color: #6366f1;
+    transition: gap 0.2s ease;
+}
+
+.category-card:hover .category-card-footer span {
+    gap: 10px;
+}
+
+/* ---- Sub-Report Grid (report-category.html) ---- */
+.sub-reports-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+    gap: 1.25rem;
+    padding: 1rem 0 2rem;
+}
+
+.sub-report-card {
+    background: white;
+    border-radius: 16px;
+    padding: 1.5rem;
+    display: flex;
+    align-items: center;
+    gap: 1.25rem;
+    text-decoration: none;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    border: 1px solid #f1f5f9;
+    position: relative;
+    overflow: hidden;
+    cursor: pointer;
+}
+
+.sub-report-card:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 12px 24px -8px rgba(99, 102, 241, 0.15);
+    border-color: #e0e7ff;
+    text-decoration: none;
+}
+
+.sub-report-icon-wrap {
+    width: 44px;
+    height: 44px;
+    border-radius: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+}
+
+.sub-report-icon-wrap i {
+    width: 18px;
+    height: 18px;
+}
+
+.sub-report-details {
+    flex: 1;
+    min-width: 0;
+}
+
+.sub-report-details h3 {
+    font-size: 0.9375rem;
+    font-weight: 600;
+    color: #1e293b;
+    margin: 0 0 4px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.sub-report-details p {
+    font-size: 0.775rem;
+    color: #64748b;
+    margin: 0;
+    line-height: 1.4;
+}
+
+.sub-report-card .arrow {
+    margin-left: auto;
+    flex-shrink: 0;
+    width: 16px;
+    height: 16px;
+    color: #cbd5e1;
+    transition: transform 0.3s ease, color 0.3s ease;
+}
+
+.sub-report-card:hover .arrow {
+    transform: translateX(4px);
+    color: #6366f1;
+}
+
+/* ---- Category Header Banner (report-category.html) ---- */
+.category-header-banner {
+    display: flex;
+    align-items: center;
+    gap: 1.5rem;
+    background: white;
+    border: 1px solid #f1f5f9;
+    border-radius: 20px;
+    padding: 1.5rem 2rem;
+    margin-bottom: 1.75rem;
+}
+
+.category-banner-icon {
+    width: 64px;
+    height: 64px;
+    border-radius: 18px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+}
+
+.category-banner-icon i {
+    width: 28px;
+    height: 28px;
+}
+
+.category-banner-text h2 {
+    font-size: 1.35rem;
+    font-weight: 700;
+    color: #1e293b;
+    margin: 0 0 4px;
+}
+
+.category-banner-text p {
+    font-size: 0.875rem;
+    color: #64748b;
+    margin: 0;
+}
+
+/* ---- Legacy Report Card (keep for compatibility) ---- */
 .reports-grid {
     display: grid;
     grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
@@ -70,14 +332,18 @@
     color: #6366f1;
 }
 
-/* Icon Colors */
-.bg-blue { background: rgba(59, 130, 246, 0.1); color: #3b82f6; }
-.bg-emerald { background: rgba(16, 185, 129, 0.1); color: #10b981; }
-.bg-indigo { background: rgba(99, 102, 241, 0.1); color: #6366f1; }
-.bg-violet { background: rgba(139, 92, 246, 0.1); color: #8b5cf6; }
-.bg-amber { background: rgba(245, 158, 11, 0.1); color: #f59e0b; }
-.bg-rose { background: rgba(244, 63, 94, 0.1); color: #f43f5e; }
-.bg-cyan { background: rgba(6, 182, 212, 0.1); color: #06b6d4; }
-.bg-orange { background: rgba(249, 115, 22, 0.1); color: #f97316; }
-.bg-purple { background: rgba(168, 85, 247, 0.1); color: #a855f7; }
-
+/* ---- Icon Color Utilities ---- */
+.bg-blue    { background: rgba(59,  130, 246, 0.1); color: #3b82f6; }
+.bg-emerald { background: rgba(16,  185, 129, 0.1); color: #10b981; }
+.bg-indigo  { background: rgba(99,  102, 241, 0.1); color: #6366f1; }
+.bg-violet  { background: rgba(139, 92,  246, 0.1); color: #8b5cf6; }
+.bg-amber   { background: rgba(245, 158, 11,  0.1); color: #f59e0b; }
+.bg-rose    { background: rgba(244, 63,  94,  0.1); color: #f43f5e; }
+.bg-cyan    { background: rgba(6,   182, 212, 0.1); color: #06b6d4; }
+.bg-orange  { background: rgba(249, 115, 22,  0.1); color: #f97316; }
+.bg-purple  { background: rgba(168, 85,  247, 0.1); color: #a855f7; }
+.bg-teal    { background: rgba(20,  184, 166, 0.1); color: #14b8a6; }
+.bg-sky     { background: rgba(14,  165, 233, 0.1); color: #0ea5e9; }
+.bg-pink    { background: rgba(236, 72,  153, 0.1); color: #ec4899; }
+.bg-lime    { background: rgba(132, 204, 22,  0.1); color: #84cc16; }
+.bg-slate   { background: rgba(100, 116, 139, 0.1); color: #64748b; }

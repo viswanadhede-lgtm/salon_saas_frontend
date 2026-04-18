@@ -1,0 +1,400 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <script src="scripts/auth-loader.js"></script>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Report Category - BharathBots Salon SaaS.">
+    <title>Report Category - BharathBots</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="styles.css">
+    <link rel="stylesheet" href="dashboard.css">
+    <link rel="stylesheet" href="submenu.css">
+    <link rel="stylesheet" href="reports.css">
+    <!-- Feather Icons -->
+    <script src="https://unpkg.com/feather-icons"></script>
+    <style>
+        .back-link {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            text-decoration: none;
+            color: #64748b;
+            font-size: 0.875rem;
+            margin-bottom: 1rem;
+            transition: color 0.2s ease;
+            font-weight: 500;
+        }
+        .back-link:hover {
+            color: #6366f1;
+            text-decoration: none;
+        }
+        .back-link i {
+            width: 14px;
+            height: 14px;
+        }
+    </style>
+</head>
+
+<body class="dashboard-body">
+
+    <!-- Collapsible Sidebar -->
+    <aside class="sidebar" id="sidebar">
+        <div class="sidebar-header">
+            <div class="logo">
+                <svg width="24" height="24" viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <rect x="2" y="6" width="28" height="20" rx="4" stroke="currentColor" stroke-width="2" />
+                    <path d="M8 12C8 12 11 16 16 16C21 16 24 12 24 12" stroke="currentColor" stroke-width="2"
+                        stroke-linecap="round" />
+                    <circle cx="16" cy="16" r="2" fill="currentColor" />
+                </svg>
+                <span class="logo-text">BharathBots</span>
+            </div>
+            <button class="toggle-btn" id="sidebarToggle" title="Close sidebar">
+                <i data-feather="sidebar" class="toggle-icon"></i>
+            </button>
+        </div>
+
+        <nav class="sidebar-nav">
+            <ul class="nav-list">
+                <!-- Dashboard -->
+                <li class="nav-item" title="Dashboard">
+                    <a href="dashboard.html" class="nav-link" data-feature="dashboard_access">
+                        <i data-feather="home" class="nav-icon"></i>
+                        <span class="nav-text">Dashboard</span>
+                    </a>
+                </li>
+
+                <!-- Bookings -->
+                <li class="nav-item" title="Bookings">
+                    <a href="bookings.html" class="nav-link" data-feature="bookings_management">
+                        <i data-feather="calendar" class="nav-icon"></i>
+                        <span class="nav-text">Bookings</span>
+                    </a>
+                </li>
+
+                <!-- Customers -->
+                <li class="nav-item" title="Customers">
+                    <a href="customers.html" class="nav-link" data-feature="customers_management">
+                        <i data-feather="users" class="nav-icon"></i>
+                        <span class="nav-text">Customers</span>
+                    </a>
+                </li>
+
+                <!-- Staff -->
+                <li class="nav-item has-submenu" title="Staff">
+                    <div class="nav-link submenu-toggle">
+                        <i data-feather="user-check" class="nav-icon"></i>
+                        <span class="nav-text">Staff</span>
+                        <i data-feather="chevron-down" class="submenu-arrow"></i>
+                    </div>
+                    <ul class="submenu">
+                        <li><a href="staff.html" class="submenu-link" data-feature="staff_management"><span class="submenu-bullet">&bull;</span><span class="nav-text">Staff</span></a></li>
+                        <li><a href="staff-schedule.html" class="submenu-link" data-feature="staff_schedules"><span class="submenu-bullet">&bull;</span><span class="nav-text">Staff Schedules</span></a></li>
+                    </ul>
+                </li>
+
+                <!-- Services -->
+                <li class="nav-item" title="Services">
+                    <a href="services.html" class="nav-link" data-feature="services_management">
+                        <i data-feather="scissors" class="nav-icon"></i>
+                        <span class="nav-text">Services</span>
+                    </a>
+                </li>
+
+                <!-- Sales -->
+                <li class="nav-item has-submenu" title="Sales">
+                    <div class="nav-link submenu-toggle">
+                        <i data-feather="dollar-sign" class="nav-icon"></i>
+                        <span class="nav-text">Sales</span>
+                        <i data-feather="chevron-down" class="submenu-arrow"></i>
+                    </div>
+                    <ul class="submenu">
+                        <li><a href="pos.html" class="submenu-link" data-feature="pos_system"><span class="submenu-bullet">&bull;</span><span class="nav-text">Point of Sale</span></a></li>
+                        <li><a href="products.html" class="submenu-link" data-feature="product_management"><span class="submenu-bullet">&bull;</span><span class="nav-text">Products</span></a></li>
+                        <li><a href="sales-history.html" class="submenu-link" data-feature="sales_history"><span class="submenu-bullet">&bull;</span><span class="nav-text">Sales History</span></a></li>
+                    </ul>
+                </li>
+
+                <!-- Payments -->
+                <li class="nav-item has-submenu" title="Payments">
+                    <div class="nav-link submenu-toggle">
+                        <i data-feather="credit-card" class="nav-icon"></i>
+                        <span class="nav-text">Payments</span>
+                        <i data-feather="chevron-down" class="submenu-arrow"></i>
+                    </div>
+                    <ul class="submenu">
+                        <li><a href="pending-payments.html" class="submenu-link" data-feature="pending_payments"><span class="submenu-bullet">&bull;</span><span class="nav-text">Pending Payments</span></a></li>
+                        <li><a href="payments-history.html" class="submenu-link" data-feature="payments_history"><span class="submenu-bullet">&bull;</span><span class="nav-text">Payments History</span></a></li>
+                    </ul>
+                </li>
+
+                <!-- Marketing -->
+                <li class="nav-item has-submenu" title="Marketing">
+                    <div class="nav-link submenu-toggle">
+                        <i data-feather="gift" class="nav-icon"></i>
+                        <span class="nav-text">Marketing</span>
+                        <i data-feather="chevron-down" class="submenu-arrow"></i>
+                    </div>
+                    <ul class="submenu">
+                        <li><a href="offers.html" class="submenu-link" data-feature="marketing_offers"><span class="submenu-bullet">&bull;</span><span class="nav-text">Offers</span></a></li>
+                        <li><a href="coupons.html" class="submenu-link" data-feature="marketing_coupons"><span class="submenu-bullet">&bull;</span><span class="nav-text">Coupons</span></a></li>
+                        <li><a href="memberships.html" class="submenu-link" data-feature="marketing_memberships"><span class="submenu-bullet">&bull;</span><span class="nav-text">Memberships</span></a></li>
+                        <li><a href="ad-campaigns.html" class="submenu-link" data-feature="marketing_campaigns"><span class="submenu-bullet">&bull;</span><span class="nav-text">Ad Campaigns</span></a></li>
+                    </ul>
+                </li>
+
+                <!-- Analytics -->
+                <li class="nav-item has-submenu active" title="Analytics">
+                    <div class="nav-link submenu-toggle">
+                        <i data-feather="bar-chart-2" class="nav-icon"></i>
+                        <span class="nav-text">Analytics</span>
+                        <i data-feather="chevron-down" class="submenu-arrow"></i>
+                    </div>
+                    <ul class="submenu">
+                        <li><a href="overview.html" class="submenu-link" data-feature="analytics_overview"><span class="submenu-bullet">&bull;</span><span class="nav-text">Overview</span></a></li>
+                        <li><a href="reports.html" class="submenu-link active"><span class="submenu-bullet">&bull;</span><span class="nav-text">Reports</span></a></li>
+                        <li><a href="expenses.html" class="submenu-link" data-feature="analytics_expenses"><span class="submenu-bullet">&bull;</span><span class="nav-text">Expenses</span></a></li>
+                    </ul>
+                </li>
+
+                <!-- Settings -->
+                <li class="nav-item has-submenu" title="Settings">
+                    <div class="nav-link submenu-toggle">
+                        <i data-feather="settings" class="nav-icon"></i>
+                        <span class="nav-text">Settings</span>
+                        <i data-feather="chevron-down" class="submenu-arrow"></i>
+                    </div>
+                    <ul class="submenu">
+                        <li><a href="company.html" class="submenu-link" data-feature="company_settings"><span class="submenu-bullet">&bull;</span><span class="nav-text">Company</span></a></li>
+                        <li><a href="branches.html" class="submenu-link" data-feature="branch_management"><span class="submenu-bullet">&bull;</span><span class="nav-text">Branches</span></a></li>
+                        <li><a href="users.html" class="submenu-link" data-feature="user_management"><span class="submenu-bullet">&bull;</span><span class="nav-text">Users</span></a></li>
+                        <li><a href="roles-permissions.html" class="submenu-link" data-feature="roles_permissions"><span class="submenu-bullet">&bull;</span><span class="nav-text">Roles &amp; Permissions</span></a></li>
+                        <li><a href="custom-fields.html" class="submenu-link" data-feature="custom_fields"><span class="submenu-bullet">&bull;</span><span class="nav-text">Custom Fields</span></a></li>
+                        <li><a href="billing-subscription.html" class="submenu-link" data-feature="billing_subscription_management"><span class="submenu-bullet">&bull;</span><span class="nav-text">Billing &amp; Subscription</span></a></li>
+                    </ul>
+                </li>
+            </ul>
+        </nav>
+
+    </aside>
+
+    <!-- Main Content Wrapper -->
+    <div class="main-wrapper" id="mainWrapper">
+        <header class="top-header">
+            <div class="header-left">
+                <!-- Branch Switcher -->
+                <div class="branch-switcher">
+                    <i data-feather="map-pin" class="branch-icon"></i>
+                    <select id="branchSelect" class="branch-select">
+                        <option value="branch_1">Downtown Branch</option>
+                        <option value="branch_2">Uptown Spa</option>
+                    </select>
+                </div>
+            </div>
+
+            <div class="header-center">
+                <div class="search-bar">
+                    <i data-feather="search" class="search-icon"></i>
+                    <input type="text" placeholder="Search bookings, customers..." class="search-input">
+                </div>
+            </div>
+
+            <div class="header-right">
+                <!-- Quick Actions -->
+                <div class="quick-actions">
+                    <button class="qa-btn qa-primary" id="btnNewBooking">
+                        <i data-feather="calendar" class="qa-icon"></i>
+                        <span>New Booking</span>
+                    </button>
+                </div>
+                <div class="header-divider"></div>
+                <div class="plan-badge" id="headerPlanBadge">Growth</div>
+                <button class="icon-btn" title="Notifications">
+                    <i data-feather="bell"></i>
+                    <span class="notification-dot"></span>
+                </button>
+                <div class="user-profile" id="userProfileDropdown">
+                    <div class="avatar" id="avatarBtn">
+                        <img src="https://ui-avatars.com/api/?name=Admin+User&background=1E3A8A&color=fff" alt="User">
+                    </div>
+
+                    <!-- Profile Dropdown Menu -->
+                    <div class="profile-dropdown" id="profileMenu">
+                        <div class="dropdown-header">
+                            <p class="dropdown-name">Admin User</p>
+                            <p class="dropdown-role">Owner</p>
+                        </div>
+                        <div class="dropdown-divider"></div>
+                        <ul class="dropdown-list">
+                            <li>
+                                <a href="#" class="dropdown-item">
+                                    <i data-feather="user"></i>
+                                    <span>Profile</span>
+                                </a>
+                            </li>
+                            <li>
+                                <a href="#" class="dropdown-item">
+                                    <i data-feather="calendar"></i>
+                                    <span>Schedule</span>
+                                </a>
+                            </li>
+                            <li>
+                                <a href="#" class="dropdown-item">
+                                    <i data-feather="settings"></i>
+                                    <span>Settings</span>
+                                </a>
+                            </li>
+                            <li>
+                                <a href="#" class="dropdown-item">
+                                    <i data-feather="help-circle"></i>
+                                    <span>Support</span>
+                                </a>
+                            </li>
+                            <li>
+                                <a href="#" class="dropdown-item text-danger">
+                                    <i data-feather="log-out"></i>
+                                    <span>Logout</span>
+                                </a>
+                            </li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </header>
+
+        <!-- Profile Dropdown Backdrop -->
+        <div id="profileBackdrop" class="profile-backdrop"></div>
+
+        <main class="content-area">
+            <!-- Back Link -->
+            <a href="reports.html" class="back-link" id="backLink">
+                <i data-feather="arrow-left"></i>
+                Back to Report Library
+            </a>
+
+            <!-- Category Header Banner (populated by JS) -->
+            <div class="category-header-banner" id="categoryBanner">
+                <div class="category-banner-icon" id="bannerIcon">
+                    <i data-feather="bar-chart-2"></i>
+                </div>
+                <div class="category-banner-text">
+                    <h2 id="bannerTitle">Loading...</h2>
+                    <p id="bannerSubtitle">Select a sub-report to view detailed analytics</p>
+                </div>
+            </div>
+
+            <!-- Sub-reports grid (populated by JS) -->
+            <div class="sub-reports-grid" id="subReportsGrid">
+                <!-- Injected by report-category.js -->
+            </div>
+        </main>
+    </div>
+
+    <!-- ===== GLOBAL MODALS (copied from reports.html) ===== -->
+    <!-- New Booking Modal -->
+    <div class="modal-overlay" id="bookingModalOverlay">
+        <div class="modal-container" id="bookingModal">
+            <div class="modal-header">
+                <div class="header-titles">
+                    <h2>New Booking</h2>
+                    <p class="subtitle">Create a new appointment for a customer.</p>
+                </div>
+                <button class="modal-close" id="closeBookingModal"><i data-feather="x"></i></button>
+            </div>
+            <div class="modal-body" style="padding: 1.5rem; overflow-y: auto;">
+                <div class="modal-form-side" style="width: 100%; max-width: none; flex: 1; padding: 0; border: none;">
+                    <div style="width: 100%; display: grid; grid-template-columns: 1fr 1fr; gap: 32px;">
+                        <div style="display: flex; flex-direction: column;">
+                            <div class="form-group relative">
+                                <label class="form-label" for="phoneSearch">Phone Number <span class="text-rose">*</span></label>
+                                <input type="tel" id="phoneSearch" class="form-input" placeholder="Enter phone number" autocomplete="off">
+                                <div class="search-suggestions" id="searchSuggestions"></div>
+                            </div>
+                            <div class="customer-badge-container" id="customerBadgeContainer" style="display:none; margin-bottom: 8px;">
+                                <span class="badge-pill existing-badge" id="customerBadge">Existing Customer</span>
+                            </div>
+                            <div class="form-group span-full" id="newCustomerBadgeContainer" style="display:none; margin-bottom: 8px;">
+                                <span class="badge-pill new-badge" id="newCustomerBadge">New Customer</span>
+                            </div>
+                            <div class="form-group" id="customerNameGroup">
+                                <label class="form-label" for="customerName">Customer Name <span class="text-rose">*</span></label>
+                                <input type="text" id="customerName" class="form-input" placeholder="Enter customer name">
+                            </div>
+                            <div class="form-group" id="customerEmailGroup">
+                                <label class="form-label" for="customerEmail">Email <span id="emailOptionalLabel" class="text-muted"></span></label>
+                                <input type="email" id="customerEmail" class="form-input" placeholder="Enter email address">
+                            </div>
+                            <div class="form-group section-gap flex-grow" style="margin-bottom: 1.5rem;">
+                                <label class="form-label" for="bookingNotes">Booking Notes <span class="text-muted">(Optional)</span></label>
+                                <textarea id="bookingNotes" class="form-input form-textarea" placeholder="Add optional notes for this booking..." style="min-height: 120px;"></textarea>
+                            </div>
+                        </div>
+                        <div style="display: flex; flex-direction: column;">
+                            <div class="form-group" style="margin-top: 0;">
+                                <label class="form-label" for="bookingService">Service <span class="text-rose">*</span></label>
+                                <select id="bookingService" class="form-select">
+                                    <option value="" disabled selected>Select a service</option>
+                                </select>
+                            </div>
+                            <div class="form-grid" id="serviceMetaFields" style="display:none;">
+                                <div class="form-group">
+                                    <label class="form-label">Duration</label>
+                                    <input type="text" class="form-input read-only-input" id="roDuration" readonly>
+                                </div>
+                                <div class="form-group">
+                                    <label class="form-label">Price</label>
+                                    <input type="text" class="form-input read-only-input" id="roPrice" readonly>
+                                </div>
+                            </div>
+                            <div class="form-group section-gap">
+                                <label class="form-label" for="bookingStaff">Staff <span class="text-rose">*</span></label>
+                                <select id="bookingStaff" class="form-select">
+                                    <option value="" disabled selected>Select staff member</option>
+                                </select>
+                            </div>
+                            <div class="form-grid section-gap">
+                                <div class="form-group">
+                                    <label class="form-label" for="bookingDate">Date <span class="text-rose">*</span></label>
+                                    <input type="date" id="bookingDate" class="form-input">
+                                </div>
+                                <div class="form-group">
+                                    <label class="form-label" for="bookingTime">Time <span class="text-rose">*</span></label>
+                                    <div class="relative" style="display: flex; gap: 8px;">
+                                        <input type="time" id="bookingTime" class="form-input" style="flex: 1;">
+                                        <button type="button" class="btn btn-secondary" id="btnTimeNow" style="padding: 0 12px; height: 40px; font-size: 13px;">Now</button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" id="btnCancelBooking">Cancel</button>
+                <button type="button" class="btn btn-primary" id="btnConfirmBooking" disabled>Confirm Booking</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Toast Notification -->
+    <div id="toastNotification" class="toast-notification">Booking created successfully (demo)</div>
+
+    <!-- Global Bookings Actions Dropdown -->
+    <div id="bkGlobalDropdown" class="bk-dropdown" style="position: fixed; display: none;"></div>
+
+    <script src="dashboard.js"></script>
+    <script>
+        feather.replace();
+    </script>
+    <script type="module" src="scripts/reports/report-category.js"></script>
+    <script src="logout.js"></script>
+    <script src="change-password.js"></script>
+    <script type="module" src="scripts/global-auth-guard.js"></script>
+    <script type="module" src="scripts/sub-features/sub-feature-gate.js"></script>
+</body>
+
+</html>

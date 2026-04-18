@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="en">
 
 <head>
@@ -270,130 +270,131 @@
             <div class="content-header">
                 <div class="header-title">
                     <h1>Report Library</h1>
-                    <p class="subtitle">Choose a report category to analyze detailed performance</p>
+                    <p class="subtitle">Choose a report category to dive into detailed analytics</p>
                 </div>
             </div>
 
-            <div class="reports-grid">
-                <!-- Financial Reports -->
-                <a href="report-detail.html?type=financial" class="report-card" data-feature="basic_reports">
-                    <div class="report-icon-wrap bg-blue">
-                        <i data-feather="dollar-sign"></i>
+            <div class="category-grid">
+
+                <!-- 1. Financial -->
+                <a href="report-category.html?cat=financial" class="category-card" data-feature="basic_reports"
+                   style="--cat-color-a:#3b82f6; --cat-color-b:#6366f1;">
+                    <div class="category-card-top">
+                        <div class="category-icon-wrap bg-blue">
+                            <i data-feather="dollar-sign"></i>
+                        </div>
+                        <span class="category-count-badge">6 reports</span>
                     </div>
-                    <div class="report-details">
-                        <h3>Financial Reports</h3>
-                        <p>Revenue, payments, and discounts analysis</p>
+                    <div class="category-card-body">
+                        <h3>Financial</h3>
+                        <p>Revenue, payments, refunds, pending dues, discounts &amp; expenses</p>
+                        <div class="category-sub-pills">
+                            <span class="sub-pill">Revenue</span>
+                            <span class="sub-pill">Payments</span>
+                            <span class="sub-pill">Refunds</span>
+                            <span class="sub-pill">Pending Dues</span>
+                            <span class="sub-pill">Discounts</span>
+                            <span class="sub-pill">Expenses</span>
+                        </div>
                     </div>
-                    <i data-feather="chevron-right" class="arrow"></i>
+                    <div class="category-card-footer">
+                        <span>View Reports <i data-feather="arrow-right" style="width:14px;height:14px;"></i></span>
+                    </div>
                 </a>
 
-                <!-- Booking Reports -->
-                <a href="report-detail.html?type=bookings" class="report-card" data-feature="basic_reports">
-                    <div class="report-icon-wrap bg-emerald">
-                        <i data-feather="calendar"></i>
+                <!-- 2. Sales & Services -->
+                <a href="report-category.html?cat=sales" class="category-card" data-feature="basic_reports"
+                   style="--cat-color-a:#10b981; --cat-color-b:#059669;">
+                    <div class="category-card-top">
+                        <div class="category-icon-wrap bg-emerald">
+                            <i data-feather="shopping-bag"></i>
+                        </div>
+                        <span class="category-count-badge">5 reports</span>
                     </div>
-                    <div class="report-details">
-                        <h3>Booking & Appointments</h3>
-                        <p>Appointments, cancellations, and peak hours</p>
+                    <div class="category-card-body">
+                        <h3>Sales &amp; Services</h3>
+                        <p>Total sales, service revenue, product sales, top services &amp; products</p>
+                        <div class="category-sub-pills">
+                            <span class="sub-pill">Total Sales</span>
+                            <span class="sub-pill">Service Revenue</span>
+                            <span class="sub-pill">Product Sales</span>
+                            <span class="sub-pill">Top Services</span>
+                            <span class="sub-pill">Top Products</span>
+                        </div>
                     </div>
-                    <i data-feather="chevron-right" class="arrow"></i>
+                    <div class="category-card-footer">
+                        <span>View Reports <i data-feather="arrow-right" style="width:14px;height:14px;"></i></span>
+                    </div>
                 </a>
 
-                <!-- Customer Reports -->
-                <a href="report-detail.html?type=customers" class="report-card" data-feature="basic_reports">
-                    <div class="report-icon-wrap bg-indigo">
-                        <i data-feather="user"></i>
+                <!-- 3. Bookings -->
+                <a href="report-category.html?cat=bookings" class="category-card" data-feature="basic_reports"
+                   style="--cat-color-a:#6366f1; --cat-color-b:#8b5cf6;">
+                    <div class="category-card-top">
+                        <div class="category-icon-wrap bg-indigo">
+                            <i data-feather="calendar"></i>
+                        </div>
+                        <span class="category-count-badge">4 reports</span>
                     </div>
-                    <div class="report-details">
-                        <h3>Customer Reports</h3>
-                        <p>New vs returning customers and retention</p>
+                    <div class="category-card-body">
+                        <h3>Bookings</h3>
+                        <p>Total appointments, completed, cancelled and no-show analysis</p>
+                        <div class="category-sub-pills">
+                            <span class="sub-pill">Total Appointments</span>
+                            <span class="sub-pill">Completed</span>
+                            <span class="sub-pill">Cancelled</span>
+                            <span class="sub-pill">No-Shows</span>
+                        </div>
                     </div>
-                    <i data-feather="chevron-right" class="arrow"></i>
+                    <div class="category-card-footer">
+                        <span>View Reports <i data-feather="arrow-right" style="width:14px;height:14px;"></i></span>
+                    </div>
                 </a>
 
-                <!-- Service Performance -->
-                <a href="report-detail.html?type=services" class="report-card" data-feature="basic_reports">
-                    <div class="report-icon-wrap bg-violet">
-                        <i data-feather="scissors"></i>
+                <!-- 4. Customers -->
+                <a href="report-category.html?cat=customers" class="category-card" data-feature="basic_reports"
+                   style="--cat-color-a:#8b5cf6; --cat-color-b:#a855f7;">
+                    <div class="category-card-top">
+                        <div class="category-icon-wrap bg-violet">
+                            <i data-feather="users"></i>
+                        </div>
+                        <span class="category-count-badge">2 reports</span>
                     </div>
-                    <div class="report-details">
-                        <h3>Service Performance</h3>
-                        <p>Top services and revenue contribution</p>
+                    <div class="category-card-body">
+                        <h3>Customers</h3>
+                        <p>New vs returning customers, acquisition trends and retention</p>
+                        <div class="category-sub-pills">
+                            <span class="sub-pill">New Customers</span>
+                            <span class="sub-pill">Returning Customers</span>
+                        </div>
                     </div>
-                    <i data-feather="chevron-right" class="arrow"></i>
+                    <div class="category-card-footer">
+                        <span>View Reports <i data-feather="arrow-right" style="width:14px;height:14px;"></i></span>
+                    </div>
                 </a>
 
-                <!-- Product Reports -->
-                <a href="report-detail.html?type=products" class="report-card" data-feature="advanced_reports">
-                    <div class="report-icon-wrap bg-amber">
-                        <i data-feather="package"></i>
+                <!-- 5. Operations -->
+                <a href="report-category.html?cat=operations" class="category-card" data-feature="advanced_reports"
+                   style="--cat-color-a:#f43f5e; --cat-color-b:#e11d48;">
+                    <div class="category-card-top">
+                        <div class="category-icon-wrap bg-rose">
+                            <i data-feather="activity"></i>
+                        </div>
+                        <span class="category-count-badge">2 reports</span>
                     </div>
-                    <div class="report-details">
-                        <h3>Product & Retail</h3>
-                        <p>Retail sales, units sold and stock movement</p>
+                    <div class="category-card-body">
+                        <h3>Operations</h3>
+                        <p>Staff performance, branch comparison and operational efficiency</p>
+                        <div class="category-sub-pills">
+                            <span class="sub-pill">Staff Performance</span>
+                            <span class="sub-pill">Branch Performance</span>
+                        </div>
                     </div>
-                    <i data-feather="chevron-right" class="arrow"></i>
+                    <div class="category-card-footer">
+                        <span>View Reports <i data-feather="arrow-right" style="width:14px;height:14px;"></i></span>
+                    </div>
                 </a>
 
-                <!-- Staff Performance -->
-                <a href="report-detail.html?type=staff" class="report-card" data-feature="advanced_reports">
-                    <div class="report-icon-wrap bg-rose">
-                        <i data-feather="user-check"></i>
-                    </div>
-                    <div class="report-details">
-                        <h3>Staff Performance</h3>
-                        <p>Revenue and efficiency by staff member</p>
-                    </div>
-                    <i data-feather="chevron-right" class="arrow"></i>
-                </a>
-
-                <!-- Branch Performance -->
-                <a href="report-detail.html?type=branch" class="report-card" data-feature="advanced_reports">
-                    <div class="report-icon-wrap bg-cyan">
-                        <i data-feather="map-pin"></i>
-                    </div>
-                    <div class="report-details">
-                        <h3>Branch Performance</h3>
-                        <p>Multi-location comparison and trends</p>
-                    </div>
-                    <i data-feather="chevron-right" class="arrow"></i>
-                </a>
-
-                <!-- Marketing Reports -->
-                <a href="report-detail.html?type=marketing" class="report-card" data-feature="advanced_reports">
-                    <div class="report-icon-wrap bg-orange">
-                        <i data-feather="zap"></i>
-                    </div>
-                    <div class="report-details">
-                        <h3>Marketing & Promotions</h3>
-                        <p>Coupon usage and offer effectiveness</p>
-                    </div>
-                    <i data-feather="chevron-right" class="arrow"></i>
-                </a>
-
-                <!-- Membership Reports -->
-                <a href="report-detail.html?type=membership" class="report-card" data-feature="advanced_reports">
-                    <div class="report-icon-wrap bg-purple">
-                        <i data-feather="award"></i>
-                    </div>
-                    <div class="report-details">
-                        <h3>Membership Reports</h3>
-                        <p>Membership sales, usage and renewals</p>
-                    </div>
-                    <i data-feather="chevron-right" class="arrow"></i>
-                </a>
-
-                <!-- Expenses Report -->
-                <a href="report-detail.html?type=expenses" class="report-card" data-feature="advanced_reports">
-                    <div class="report-icon-wrap bg-rose">
-                        <i data-feather="credit-card"></i>
-                    </div>
-                    <div class="report-details">
-                        <h3>Expenses Report</h3>
-                        <p>Track and analyse all business expenditures</p>
-                    </div>
-                    <i data-feather="chevron-right" class="arrow"></i>
-                </a>
             </div>
         </main>
     </div>
@@ -1806,7 +1807,6 @@
 </body>
 
 </html>
-
 
 
 

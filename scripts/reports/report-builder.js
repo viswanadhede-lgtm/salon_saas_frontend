@@ -140,6 +140,7 @@ const REPORT_TYPES = {
         title: 'Expenses Report',
         subtitle: 'Track and analyse all business expenditures',
         icon: 'credit-card',
+        backCat: null,
         kpi1: { label: 'Total Expenses', value: 'Loading...' },
         kpi2: { label: 'This Month', value: 'Loading...' },
         kpi3: { label: 'Top Category', value: 'Loading...' },
@@ -147,12 +148,304 @@ const REPORT_TYPES = {
         tableTitle: 'Expense Records',
         headers: ['Date', 'Category', 'Amount', 'Notes', 'Added By'],
         rows: []
+    },
+
+    // ─────────────────────────────────────────────
+    // FINANCIAL SUB-REPORTS
+    // ─────────────────────────────────────────────
+    'fin-revenue': {
+        title: 'Revenue',
+        subtitle: 'Total income from all sources over time',
+        icon: 'trending-up',
+        backCat: 'financial',
+        kpi1: { label: 'Total Revenue', value: '—' },
+        kpi2: { label: 'This Month', value: '—' },
+        kpi3: { label: 'This Week', value: '—' },
+        kpi4: { label: 'Avg Daily', value: '—' },
+        tableTitle: 'Revenue Breakdown',
+        headers: ['Date', 'Source', 'Description', 'Payment Method', 'Amount', 'Status'],
+        rows: [
+            ['2024-03-21', 'Service', 'Haircut & Styling', 'Card', '₹1,200', '<span class="status-pill completed">Completed</span>'],
+            ['2024-03-21', 'Product', 'Argan Oil Serum', 'Cash', '₹1,500', '<span class="status-pill completed">Completed</span>']
+        ]
+    },
+    'fin-payments': {
+        title: 'Payments',
+        subtitle: 'Payment methods breakdown and transaction history',
+        icon: 'credit-card',
+        backCat: 'financial',
+        kpi1: { label: 'Total Collected', value: '—' },
+        kpi2: { label: 'Card Payments', value: '—' },
+        kpi3: { label: 'Cash Payments', value: '—' },
+        kpi4: { label: 'UPI / Online', value: '—' },
+        tableTitle: 'Payment Transactions',
+        headers: ['Date', 'Customer', 'Description', 'Payment Method', 'Amount', 'Status'],
+        rows: [
+            ['2024-03-21', 'Anita Sharma', 'Bridal Makeup', 'UPI', '₹4,500', '<span class="status-pill completed">Paid</span>'],
+            ['2024-03-21', 'Raj Patel', 'Haircut', 'Cash', '₹600', '<span class="status-pill completed">Paid</span>']
+        ]
+    },
+    'fin-refunds': {
+        title: 'Refunds',
+        subtitle: 'Refunded transactions and reversal details',
+        icon: 'rotate-ccw',
+        backCat: 'financial',
+        kpi1: { label: 'Total Refunded', value: '—' },
+        kpi2: { label: 'This Month', value: '—' },
+        kpi3: { label: 'No. of Refunds', value: '—' },
+        kpi4: { label: 'Avg Refund', value: '—' },
+        tableTitle: 'Refund Records',
+        headers: ['Date', 'Customer', 'Original Sale', 'Refund Reason', 'Amount', 'Status'],
+        rows: [
+            ['2024-03-18', 'Priya M.', 'Hair Treatment', 'Service Unsatisfactory', '₹2,000', '<span class="status-pill cancelled">Refunded</span>'],
+            ['2024-03-15', 'Kiran D.', 'Membership Plan', 'Cancelled Membership', '₹4,999', '<span class="status-pill cancelled">Refunded</span>']
+        ]
+    },
+    'fin-pending-dues': {
+        title: 'Pending Dues',
+        subtitle: 'Unpaid balances and outstanding dues',
+        icon: 'clock',
+        backCat: 'financial',
+        kpi1: { label: 'Total Pending', value: '—' },
+        kpi2: { label: 'Overdue (30d+)', value: '—' },
+        kpi3: { label: 'Customers Owing', value: '—' },
+        kpi4: { label: 'Avg Due Amount', value: '—' },
+        tableTitle: 'Pending Payment Records',
+        headers: ['Customer', 'Service / Product', 'Date', 'Due Amount', 'Overdue By', 'Status'],
+        rows: [
+            ['Suresh K.', 'Gold Membership', '2024-03-01', '₹999', '20 days', '<span class="status-pill pending">Pending</span>'],
+            ['Lakshmi R.', 'Bridal Package', '2024-02-28', '₹5,000', '23 days', '<span class="status-pill cancelled">Overdue</span>']
+        ]
+    },
+    'fin-discounts': {
+        title: 'Discounts',
+        subtitle: 'Discount amounts given and their revenue impact',
+        icon: 'tag',
+        backCat: 'financial',
+        kpi1: { label: 'Total Discounts', value: '—' },
+        kpi2: { label: 'This Month', value: '—' },
+        kpi3: { label: 'Coupon Discounts', value: '—' },
+        kpi4: { label: 'Offer Discounts', value: '—' },
+        tableTitle: 'Discount Records',
+        headers: ['Date', 'Customer', 'Type', 'Code / Offer', 'Original', 'Discount', 'Final Amount'],
+        rows: [
+            ['2024-03-21', 'Nisha P.', 'Coupon', 'SAVE20', '₹1,500', '-₹300', '₹1,200'],
+            ['2024-03-20', 'Arjun K.', 'Offer', 'Summer Deal', '₹2,000', '-₹400', '₹1,600']
+        ]
+    },
+    'fin-expenses': {
+        title: 'Expenses',
+        subtitle: 'All business expenditures by category',
+        icon: 'shopping-cart',
+        backCat: 'financial',
+        kpi1: { label: 'Total Expenses', value: 'Loading...' },
+        kpi2: { label: 'This Month', value: 'Loading...' },
+        kpi3: { label: 'Top Category', value: 'Loading...' },
+        kpi4: { label: 'Avg per Entry', value: 'Loading...' },
+        tableTitle: 'Expense Records',
+        headers: ['Date', 'Category', 'Amount', 'Notes', 'Added By'],
+        rows: []
+    },
+
+    // ─────────────────────────────────────────────
+    // SALES & SERVICES SUB-REPORTS
+    // ─────────────────────────────────────────────
+    'sales-total': {
+        title: 'Total Sales',
+        subtitle: 'Combined POS and service sales overview',
+        icon: 'bar-chart-2',
+        backCat: 'sales',
+        kpi1: { label: 'Total Sales', value: '—' },
+        kpi2: { label: 'Service Sales', value: '—' },
+        kpi3: { label: 'Product Sales', value: '—' },
+        kpi4: { label: 'Avg Sale Value', value: '—' },
+        tableTitle: 'Sales Ledger',
+        headers: ['Date', 'Type', 'Customer', 'Description', 'Qty', 'Amount', 'Status'],
+        rows: [
+            ['2024-03-21', 'Service', 'Anita S.', 'Bridal Makeup', '1', '₹4,500', '<span class="status-pill completed">Completed</span>'],
+            ['2024-03-21', 'Product', 'Walk-in', 'Argan Oil Serum', '2', '₹3,000', '<span class="status-pill completed">Completed</span>']
+        ]
+    },
+    'sales-service-revenue': {
+        title: 'Service Revenue',
+        subtitle: 'Revenue generated from service bookings',
+        icon: 'scissors',
+        backCat: 'sales',
+        kpi1: { label: 'Service Revenue', value: 'Loading...' },
+        kpi2: { label: 'Services Booked', value: 'Loading...' },
+        kpi3: { label: 'Top Service', value: 'Loading...' },
+        kpi4: { label: 'Avg Service Value', value: 'Loading...' },
+        tableTitle: 'Service Revenue Details',
+        headers: ['Service Name', 'Category', 'Duration', 'Price', 'Times Booked', 'Revenue Generated', 'Status'],
+        rows: []
+    },
+    'sales-product-sales': {
+        title: 'Product Sales',
+        subtitle: 'Retail product units sold and revenue',
+        icon: 'package',
+        backCat: 'sales',
+        kpi1: { label: 'Total Products', value: 'Loading...' },
+        kpi2: { label: 'Out of Stock', value: 'Loading...' },
+        kpi3: { label: 'Low Stock', value: 'Loading...' },
+        kpi4: { label: 'Total Stock Value', value: 'Loading...' },
+        tableTitle: 'Product Inventory',
+        headers: ['Product Name', 'Category', 'Unit Price', 'Stock Status', 'Stock Value', 'Status'],
+        rows: []
+    },
+    'sales-top-services': {
+        title: 'Top Services',
+        subtitle: 'Highest performing services by bookings and revenue',
+        icon: 'award',
+        backCat: 'sales',
+        kpi1: { label: 'Active Services', value: 'Loading...' },
+        kpi2: { label: 'Total Bookings', value: 'Loading...' },
+        kpi3: { label: 'Top Service', value: 'Loading...' },
+        kpi4: { label: 'Avg Duration', value: 'Loading...' },
+        tableTitle: 'Service Rankings',
+        headers: ['Service Name', 'Category', 'Duration', 'Price', 'Times Booked', 'Revenue Generated', 'Status'],
+        rows: []
+    },
+    'sales-top-products': {
+        title: 'Top Products',
+        subtitle: 'Best-selling retail products by units and revenue',
+        icon: 'box',
+        backCat: 'sales',
+        kpi1: { label: 'Total Products', value: 'Loading...' },
+        kpi2: { label: 'Units Sold', value: '—' },
+        kpi3: { label: 'Top Product', value: '—' },
+        kpi4: { label: 'Retail Revenue', value: '—' },
+        tableTitle: 'Product Rankings',
+        headers: ['Product Name', 'Category', 'Unit Price', 'Stock Status', 'Stock Value', 'Status'],
+        rows: []
+    },
+
+    // ─────────────────────────────────────────────
+    // BOOKINGS SUB-REPORTS
+    // ─────────────────────────────────────────────
+    'bk-total': {
+        title: 'Total Appointments',
+        subtitle: 'All appointments across all statuses',
+        icon: 'calendar',
+        backCat: 'bookings',
+        kpi1: { label: 'Total Bookings', value: 'Loading...' },
+        kpi2: { label: 'Completed', value: 'Loading...' },
+        kpi3: { label: 'Cancelled', value: 'Loading...' },
+        kpi4: { label: 'No-Shows', value: 'Loading...' },
+        tableTitle: 'All Appointments',
+        headers: ['Date', 'Time', 'Customer', 'Service', 'Staff', 'Duration', 'Status'],
+        rows: []
+    },
+    'bk-completed': {
+        title: 'Completed Appointments',
+        subtitle: 'Successfully completed appointments',
+        icon: 'check-circle',
+        backCat: 'bookings',
+        kpi1: { label: 'Completed', value: 'Loading...' },
+        kpi2: { label: 'This Month', value: 'Loading...' },
+        kpi3: { label: 'This Week', value: 'Loading...' },
+        kpi4: { label: 'Completion Rate', value: 'Loading...' },
+        tableTitle: 'Completed Appointments',
+        headers: ['Date', 'Time', 'Customer', 'Service', 'Staff', 'Duration', 'Amount'],
+        rows: []
+    },
+    'bk-cancelled': {
+        title: 'Cancelled Appointments',
+        subtitle: 'Cancellations by reason and time period',
+        icon: 'x-circle',
+        backCat: 'bookings',
+        kpi1: { label: 'Cancelled', value: 'Loading...' },
+        kpi2: { label: 'This Month', value: 'Loading...' },
+        kpi3: { label: 'This Week', value: 'Loading...' },
+        kpi4: { label: 'Cancellation Rate', value: 'Loading...' },
+        tableTitle: 'Cancelled Appointments',
+        headers: ['Date', 'Customer', 'Service', 'Staff', 'Cancelled On', 'Reason', 'Status'],
+        rows: [
+            ['2024-03-21', 'Deepa R.', 'Hair Spa', 'Priya', '2024-03-20', 'Personal Reason', '<span class="status-pill cancelled">Cancelled</span>'],
+            ['2024-03-19', 'Mohan V.', 'Beard Trim', 'Ravi', '2024-03-18', 'No Reason Given', '<span class="status-pill cancelled">Cancelled</span>']
+        ]
+    },
+    'bk-no-shows': {
+        title: 'No-Shows',
+        subtitle: 'Customers who missed their appointments',
+        icon: 'user-x',
+        backCat: 'bookings',
+        kpi1: { label: 'No-Shows', value: 'Loading...' },
+        kpi2: { label: 'This Month', value: 'Loading...' },
+        kpi3: { label: 'This Week', value: 'Loading...' },
+        kpi4: { label: 'No-Show Rate', value: 'Loading...' },
+        tableTitle: 'No-Show Records',
+        headers: ['Date', 'Time', 'Customer', 'Service', 'Staff', 'Amount Lost', 'Status'],
+        rows: [
+            ['2024-03-21', '10:00 AM', 'Ajay K.', 'Haircut', 'Michael', '₹600', '<span class="status-pill cancelled" style="background:#fef3c7;color:#92400e;">No-Show</span>'],
+            ['2024-03-20', '02:00 PM', 'Sneha M.', 'Facial', 'Priya', '₹1,200', '<span class="status-pill cancelled" style="background:#fef3c7;color:#92400e;">No-Show</span>']
+        ]
+    },
+
+    // ─────────────────────────────────────────────
+    // CUSTOMERS SUB-REPORTS
+    // ─────────────────────────────────────────────
+    'cust-new': {
+        title: 'New Customers',
+        subtitle: 'First-time customers and acquisition trends',
+        icon: 'user-plus',
+        backCat: 'customers',
+        kpi1: { label: 'Total Customers', value: 'Loading...' },
+        kpi2: { label: 'New This Month', value: 'Loading...' },
+        kpi3: { label: 'New This Week', value: 'Loading...' },
+        kpi4: { label: 'Avg Spend (New)', value: '—' },
+        tableTitle: 'New Customer Registry',
+        headers: ['Joined Date', 'Customer Name', 'Phone', 'Total Visits', 'Total Spend', 'Last Visit', 'Status'],
+        rows: []
+    },
+    'cust-returning': {
+        title: 'Returning Customers',
+        subtitle: 'Repeat visits and loyalty patterns',
+        icon: 'repeat',
+        backCat: 'customers',
+        kpi1: { label: 'Total Customers', value: 'Loading...' },
+        kpi2: { label: 'Returning (2+ visits)', value: 'Loading...' },
+        kpi3: { label: 'Retention Rate', value: '—' },
+        kpi4: { label: 'Avg Bookings', value: 'Loading...' },
+        tableTitle: 'Returning Customer Registry',
+        headers: ['Joined Date', 'Customer Name', 'Phone', 'Total Visits', 'Total Spend', 'Last Visit', 'Status'],
+        rows: []
+    },
+
+    // ─────────────────────────────────────────────
+    // OPERATIONS SUB-REPORTS
+    // ─────────────────────────────────────────────
+    'ops-staff': {
+        title: 'Staff Performance',
+        subtitle: 'Revenue, bookings and ratings by staff member',
+        icon: 'user-check',
+        backCat: 'operations',
+        kpi1: { label: 'Active Staff', value: 'Loading...' },
+        kpi2: { label: 'Total Hours', value: '—' },
+        kpi3: { label: 'Top Performer', value: 'Loading...' },
+        kpi4: { label: 'Commission', value: '—' },
+        tableTitle: 'Staff Directory',
+        headers: ['Staff Name', 'Role', 'Status', 'Appointments', 'Total Hours', 'Revenue', 'Rating'],
+        rows: []
+    },
+    'ops-branch': {
+        title: 'Branch Performance',
+        subtitle: 'Multi-location comparison and trends',
+        icon: 'map-pin',
+        backCat: 'operations',
+        kpi1: { label: 'Active Branches', value: 'Loading...' },
+        kpi2: { label: 'Total Visits', value: 'Loading...' },
+        kpi3: { label: 'Top Branch', value: 'Loading...' },
+        kpi4: { label: 'Total Revenue', value: 'Loading...' },
+        tableTitle: 'Branch Overview',
+        headers: ['Branch Name', 'Address', 'Phone', 'Staff Count', 'Total Visits', 'Revenue', 'Status'],
+        rows: []
     }
 };
 
 function formatCurrency(num) {
     if (isNaN(num)) return '₹0';
     return new Intl.NumberFormat('en-IN', { style: 'currency', currency: 'INR', maximumFractionDigits: 0 }).format(num);
+
 }
 
 document.addEventListener('DOMContentLoaded', async () => {
@@ -168,7 +461,10 @@ document.addEventListener('DOMContentLoaded', async () => {
     const data = REPORT_TYPES[type];
     console.log(`[report-builder] Initializing ${type} report views.`);
     
-    // 2. Update page header elements dynamically
+    // 2. Update page <title>
+    document.title = `${data.title} - BharathBots Reports`;
+
+    // 3. Update page header elements dynamically
     const titleEl = document.getElementById('reportTitle');
     const subtitleEl = document.getElementById('reportSubtitle');
     const rightChartTitleEl = document.getElementById('rightChartTitle');
@@ -176,6 +472,28 @@ document.addEventListener('DOMContentLoaded', async () => {
     if (titleEl) titleEl.textContent = data.title;
     if (subtitleEl) subtitleEl.textContent = data.subtitle;
     if (rightChartTitleEl) rightChartTitleEl.textContent = 'Distribution';
+
+    // 4. Wire "Back" breadcrumb link
+    //    If this report came from a category (has backCat), show "Back to <Category> Reports"
+    //    Otherwise show "Back to Report Library"
+    const backLinkEl = document.getElementById('reportBackLink');
+    if (backLinkEl) {
+        if (data.backCat) {
+            const catLabels = {
+                financial: 'Financial',
+                sales: 'Sales & Services',
+                bookings: 'Bookings',
+                customers: 'Customers',
+                operations: 'Operations'
+            };
+            backLinkEl.textContent = `← Back to ${catLabels[data.backCat] || data.backCat} Reports`;
+            backLinkEl.href = `report-category.html?cat=${data.backCat}`;
+        } else {
+            backLinkEl.textContent = '← Back to Report Library';
+            backLinkEl.href = 'reports.html';
+        }
+    }
+
     
     // 3. Prepare to update DOM
     const updateKPIs = (k1, k2, k3, k4) => {
