@@ -248,10 +248,9 @@ const REPORT_TYPES = {
         icon: 'bar-chart-2',
         backCat: 'sales',
         kpi1: { label: 'Total Sales', value: '—' },
-        kpi2: { label: 'Service Sales', value: '—' },
-        kpi3: { label: 'Product Sales', value: '—' },
-        kpi4: { label: 'Membership Revenue', value: '—' },
-        kpi5: { label: 'Avg Sale Value', value: '—' },
+        kpi2: { label: 'Total Orders', value: '—' },
+        kpi3: { label: 'Avg Order Value', value: '—' },
+        kpi4: { label: 'Total Items Sold', value: '—' },
         tableTitle: 'Sales Ledger',
         headers: ['Date', 'Type', 'Customer', 'Description', 'Qty', 'Amount', 'Status'],
         rows: [
@@ -1374,6 +1373,131 @@ document.addEventListener('DOMContentLoaded', async () => {
         initializeBranchDropdown().then(() => {
             if (btnApply) btnApply.addEventListener('click', loadDuesData);
             loadDuesData();
+        });
+
+    } else if (type === 'sales-total') {
+        const companyId = localStorage.getItem('company_id');
+        const filterStart = document.getElementById('filterStartDate');
+        const filterEnd = document.getElementById('filterEndDate');
+        const filterBranch = document.getElementById('filterBranch');
+        const btnApply = document.getElementById('btnApplyFilters');
+
+        const now = new Date();
+        const today = new Date(now.getTime() - now.getTimezoneOffset() * 60000);
+        const firstDay = new Date(today.getFullYear(), today.getMonth(), 1, 12, 0, 0);
+
+        if (filterStart && filterEnd) {
+            if (!filterStart.value) filterStart.value = firstDay.toISOString().split('T')[0];
+            if (!filterEnd.value) filterEnd.value = today.toISOString().split('T')[0];
+        }
+
+        const initializeBranchDropdown = async () => {
+            try {
+                const { data: bList } = await supabase.from('branches').select('branch_id, branch_name').eq('company_id', companyId);
+                if (bList && filterBranch) {
+                    const existing = filterBranch.value;
+                    filterBranch.innerHTML = '<option value="all">All Branches</option>' + bList.map(b => `<option value="${b.branch_id}">${b.branch_name}</option>`).join('');
+                    filterBranch.value = existing || 'all';
+                }
+            } catch(e) { }
+        };
+
+        const loadSalesData = async () => {
+            const start = filterStart ? filterStart.value : '2000-01-01';
+            const end = filterEnd ? filterEnd.value : '2099-12-31';
+            const bid = (filterBranch && filterBranch.value !== 'all') ? filterBranch.value : null;
+
+            // Loading state
+            data.kpi1.value = 'Loading...';
+            data.kpi2.value = 'Loading...';
+            data.kpi3.value = 'Loading...';
+            data.kpi4.value = 'Loading...';
+            updateKPIs(data.kpi1, data.kpi2, data.kpi3, data.kpi4);
+            const tbody = document.getElementById('tableBody');
+            if (tbody) tbody.innerHTML = '<tr><td colspan="7" style="text-align: center; padding: 2rem;">Loading data...</td></tr>';
+
+            try {
+                // Execute all queries in parallel for strict performance requirement
+                const args = { p_branch_id: bid, p_start_date: start, p_end_date: end };
+                const [sumRes, trendRes, splitRes, tRes] = await Promise.all([
+                    supabase.rpc('get_total_sales_summary', args),
+                    supabase.rpc('get_sales_trend', args),
+                    supabase.rpc('get_sales_distribution', args),
+                    supabase.rpc('get_sales_table', args)
+                ]);
+                
+                // 1. KPI Summary
+                if (sumRes.error) console.warn('KPI fetch error:', sumRes.error);
+                const sumData = sumRes.data;
+                if (sumData) {
+                    const row = Array.isArray(sumData) ? sumData[0] : sumData;
+                    if (row) {
+                        data.kpi1.value = formatCurrency(row.total_sales || 0);
+                        data.kpi2.value = Number(row.total_orders || 0).toLocaleString();
+                        data.kpi3.value = formatCurrency(row.avg_order_value || 0);
+                        data.kpi4.value = Number(row.total_items_sold || 0).toLocaleString();
+                    }
+                } else {
+                    data.kpi1.value = '₹0';
+                    data.kpi2.value = '0';
+                    data.kpi3.value = '₹0';
+                    data.kpi4.value = '0';
+                }
+                updateKPIs(data.kpi1, data.kpi2, data.kpi3, data.kpi4);
+
+                // 2. Trend Chart
+                if (trendRes.error) console.warn('get_sales_trend Error:', trendRes.error);
+                if (typeof renderTrendChart === 'function') {
+                    if (trendRes.data && trendRes.data.length > 0) {
+                        renderTrendChart(trendRes.data.map(t => new Date(t.date).toLocaleDateString(undefined, {month:'short', day:'numeric'})), trendRes.data.map(t => Number(t.total_sales || 0)));
+                    } else renderTrendChart([], []);
+                }
+
+                // 3. Distribution Donut Chart
+                if (splitRes.error) console.warn('get_sales_distribution Error:', splitRes.error);
+                if (typeof renderDistributionChart === 'function') {
+                    if (splitRes.data && splitRes.data.length > 0) {
+                        renderDistributionChart(splitRes.data.map(s => s.item_type ? s.item_type.toUpperCase() : 'OTHER'), splitRes.data.map(s => Number(s.total_sales || 0)));
+                    } else renderDistributionChart([], []);
+                }
+
+                // 4. Data Table
+                data.headers = ['Date', 'Type', 'Item Name', 'Category', 'Quantity', 'Unit Price', 'Total Amount'];
+                if (tRes.error) console.warn('get_sales_table Error:', tRes.error);
+                if (tRes.data && tRes.data.length > 0) {
+                    const tRows = tRes.data.map(r => {
+                        const dateText = r.date ? new Date(r.date).toLocaleString() : '—';
+                        const typeText = (r.item_type || 'Unknown').toUpperCase();
+                        const itemName = r.item_name || '—';
+                        const cat = r.category || '—';
+                        const qty = Number(r.quantity || 0).toLocaleString();
+                        const price = formatCurrency(r.unit_price || 0);
+                        const total = formatCurrency(r.total_amount || 0);
+
+                        return [
+                            dateText,
+                            `<span class="status-pill active" style="background:#e0e7ff; color:#4338ca;">${typeText}</span>`,
+                            `<strong style="color:#334155;">${itemName}</strong>`,
+                            cat,
+                            qty,
+                            price,
+                            `<strong style="color:#10b981;">${total}</strong>`
+                        ];
+                    });
+                    updateTable(data.headers, tRows);
+                } else updateTable(data.headers, []);
+
+            } catch (err) {
+                console.error('Data fetch fault:', err);
+                if(typeof renderTrendChart==='function') renderTrendChart([], []); 
+                if(typeof renderDistributionChart==='function') renderDistributionChart([], []); 
+                updateTable(data.headers, []);
+            }
+        };
+
+        initializeBranchDropdown().then(() => {
+            if (btnApply) btnApply.addEventListener('click', loadSalesData);
+            loadSalesData();
         });
 
     } else if (type === 'staff') {
