@@ -201,16 +201,13 @@ const REPORT_TYPES = {
         subtitle: 'Unpaid balances and outstanding dues',
         icon: 'clock',
         backCat: 'financial',
-        kpi1: { label: 'Total Pending', value: '—' },
-        kpi2: { label: 'Overdue (30d+)', value: '—' },
-        kpi3: { label: 'Customers Owing', value: '—' },
-        kpi4: { label: 'Avg Due Amount', value: '—' },
+        kpi1: { label: 'Total Due', value: '—' },
+        kpi2: { label: 'Pending Transactions', value: '—' },
+        kpi3: { label: 'Avg Due', value: '—' },
+        kpi4: null,
         tableTitle: 'Pending Payment Records',
-        headers: ['Customer', 'Service / Product', 'Date', 'Due Amount', 'Overdue By', 'Status'],
-        rows: [
-            ['Suresh K.', 'Gold Membership', '2024-03-01', '₹999', '20 days', '<span class="status-pill pending">Pending</span>'],
-            ['Lakshmi R.', 'Bridal Package', '2024-02-28', '₹5,000', '23 days', '<span class="status-pill cancelled">Overdue</span>']
-        ]
+        headers: ['Transaction Ref', 'Category', 'Total Amount', 'Collected', 'Due Amount', 'Action'],
+        rows: []
     },
     'fin-discounts': {
         title: 'Discounts',
@@ -1244,6 +1241,125 @@ document.addEventListener('DOMContentLoaded', async () => {
         initializeBranchDropdown().then(() => {
             if (btnApply) btnApply.addEventListener('click', loadRefundsData);
             loadRefundsData();
+        });
+
+    } else if (type === 'fin-pending-dues') {
+        const companyId = localStorage.getItem('company_id');
+        const filterStart = document.getElementById('filterStartDate');
+        const filterEnd = document.getElementById('filterEndDate');
+        const filterBranch = document.getElementById('filterBranch');
+        const btnApply = document.getElementById('btnApplyFilters');
+
+        const now = new Date();
+        const today = new Date(now.getTime() - now.getTimezoneOffset() * 60000);
+        const firstDay = new Date(today.getFullYear(), today.getMonth(), 1, 12, 0, 0);
+
+        if (filterStart && filterEnd) {
+            if (!filterStart.value) filterStart.value = firstDay.toISOString().split('T')[0];
+            if (!filterEnd.value) filterEnd.value = today.toISOString().split('T')[0];
+        }
+
+        const initializeBranchDropdown = async () => {
+            try {
+                const { data: bList } = await supabase.from('branches').select('branch_id, branch_name').eq('company_id', companyId);
+                if (bList && filterBranch) {
+                    const existing = filterBranch.value;
+                    filterBranch.innerHTML = '<option value="all">All Branches</option>' + bList.map(b => `<option value="${b.branch_id}">${b.branch_name}</option>`).join('');
+                    filterBranch.value = existing || 'all';
+                }
+            } catch(e) { }
+        };
+
+        const loadDuesData = async () => {
+            const start = filterStart ? filterStart.value : '2000-01-01';
+            const end = filterEnd ? filterEnd.value : '2099-12-31';
+            const bid = (filterBranch && filterBranch.value !== 'all') ? filterBranch.value : null;
+
+            try {
+                // 1. KPI Summary
+                const { data: sumData, error: sumError } = await supabase.rpc('get_dues_summary', {
+                    p_branch_id: bid, p_start_date: start, p_end_date: end
+                });
+                
+                if (sumData) {
+                    const row = Array.isArray(sumData) ? sumData[0] : sumData;
+                    if (row) {
+                        data.kpi1.value = formatCurrency(row.total_due || 0);
+                        data.kpi2.value = Number(row.pending_transactions || 0).toLocaleString();
+                        data.kpi3.value = formatCurrency(row.avg_due || 0);
+                    }
+                } else {
+                    data.kpi1.value = '₹0';
+                    data.kpi2.value = '0';
+                    data.kpi3.value = '₹0';
+                }
+                updateKPIs(data.kpi1, data.kpi2, data.kpi3);
+
+                // 2. Trend Chart
+                const { data: trendData, error: e2 } = await supabase.rpc('get_dues_trend', {
+                    p_branch_id: bid, p_start_date: start, p_end_date: end
+                });
+                if (e2) console.warn('get_dues_trend Error:', e2);
+                if (typeof renderTrendChart === 'function') {
+                    if (trendData && trendData.length > 0) {
+                        renderTrendChart(trendData.map(t => new Date(t.date).toLocaleDateString(undefined, {month:'short', day:'numeric'})), trendData.map(t => Number(t.due_amount || 0)));
+                    } else renderTrendChart([], []);
+                }
+
+                // 3. Distribution Donut Chart
+                const { data: splitData, error: e3 } = await supabase.rpc('get_dues_split', {
+                    p_branch_id: bid, p_start_date: start, p_end_date: end
+                });
+                if (e3) console.warn('get_dues_split Error:', e3);
+                if (typeof renderDistributionChart === 'function') {
+                    if (splitData && splitData.length > 0) {
+                        renderDistributionChart(splitData.map(s => s.category ? s.category.toUpperCase() : 'OTHER'), splitData.map(s => Number(s.due_amount || 0)));
+                    } else renderDistributionChart([], []);
+                }
+
+                // 4. Data Table
+                const { data: tData, error: e4 } = await supabase.rpc('get_dues_table', {
+                    p_branch_id: bid, p_start_date: start, p_end_date: end
+                });
+                if (e4) console.warn('get_dues_table Error:', e4);
+                if (tData && tData.length > 0) {
+                    const tRows = tData.map(r => {
+                        const refId = r.reference_id || 'Unknown';
+                        const shortRef = refId.includes('-') ? refId.split('-')[0].toUpperCase() : refId; 
+                        const sType = (r.reference_type || 'Unknown').toUpperCase();
+                        
+                        const total = formatCurrency(r.total_amount || 0);
+                        const paid = formatCurrency(r.paid_amount || 0);
+                        const due = formatCurrency(r.due_amount || 0);
+                        
+                        // Enforce Due styling
+                        const dueHtml = `<span style="color: #ef4444; font-weight: 600;">${due}</span>`;
+                        // Action button embedding the ID for quick collections
+                        const actionHtml = `<button class="btn-primary" style="padding: 4px 12px; font-size: 0.8rem; border-radius: 6px; background: #6366f1;" onclick="alert('Collect action clicked for Ref: ${refId}')">Collect</button>`;
+
+                        return [
+                            `<span style="font-family: monospace; font-weight: 600; color: #475569;">#${shortRef}</span>`, 
+                            `<span class="status-pill pending" style="text-transform:uppercase;">${sType}</span>`, 
+                            total, 
+                            `<strong style="color:#10b981;">${paid}</strong>`, 
+                            dueHtml,
+                            actionHtml
+                        ];
+                    });
+                    updateTable(data.headers, tRows);
+                } else updateTable(data.headers, []);
+
+            } catch (err) {
+                console.error('Data fetch fault:', err);
+                if(typeof renderTrendChart==='function') renderTrendChart([], []); 
+                if(typeof renderDistributionChart==='function') renderDistributionChart([], []); 
+                updateTable(data.headers, []);
+            }
+        };
+
+        initializeBranchDropdown().then(() => {
+            if (btnApply) btnApply.addEventListener('click', loadDuesData);
+            loadDuesData();
         });
 
     } else if (type === 'staff') {
