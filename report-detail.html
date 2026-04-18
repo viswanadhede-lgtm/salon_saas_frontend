@@ -754,21 +754,24 @@
             </div>
 
             <!-- Filters -->
-            <div class="filter-bar">
+            <div class="filter-bar" id="reportFilterBar">
                 <div class="filter-group">
-                    <label>Date Range</label>
-                    <input type="date" value="2024-03-01">
+                    <label for="filterStartDate">Start Date</label>
+                    <input type="date" id="filterStartDate">
                 </div>
                 <div class="filter-group">
-                    <label>Branch</label>
-                    <select>
-                        <option>All Branches</option>
-                        <option>Downtown</option>
-                        <option>Indiranagar</option>
+                    <label for="filterEndDate">End Date</label>
+                    <input type="date" id="filterEndDate">
+                </div>
+                <div class="filter-group">
+                    <label for="filterBranch">Branch</label>
+                    <select id="filterBranch">
+                        <option value="all">All Branches</option>
+                        <!-- Populated dynamically via JS if needed -->
                     </select>
                 </div>
                 <div class="filter-group" style="margin-left: auto;">
-                    <button class="btn-primary" style="padding: 10px 20px; border-radius: 8px;">Apply Filters</button>
+                    <button class="btn-primary" id="btnApplyFilters" style="padding: 10px 20px; border-radius: 8px;">Apply Filters</button>
                 </div>
             </div>
 

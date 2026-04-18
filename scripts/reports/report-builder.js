@@ -676,6 +676,160 @@ document.addEventListener('DOMContentLoaded', async () => {
             console.error('Error loading customer report data:', err);
             updateTable(data.headers, []);
         }
+    } else if (type === 'fin-revenue') {
+        // --- LIVE SUPABASE INTEGRATION FOR REVENUE REPORT ---
+        const companyId = localStorage.getItem('company_id');
+        const filterStart = document.getElementById('filterStartDate');
+        const filterEnd = document.getElementById('filterEndDate');
+        const filterBranch = document.getElementById('filterBranch');
+        const btnApply = document.getElementById('btnApplyFilters');
+
+        if (!companyId) {
+            updateTable(data.headers, []);
+            return;
+        }
+
+        // Set Default Dates
+        if (filterStart && filterEnd) {
+            const today = new Date();
+            const firstDay = new Date(today.getFullYear(), today.getMonth(), 1);
+            if (!filterStart.value) filterStart.value = firstDay.toISOString().split('T')[0];
+            if (!filterEnd.value) filterEnd.value = today.toISOString().split('T')[0];
+        }
+
+        // Fetch Branches
+        try {
+            const { data: bList } = await supabase.from('branches').select('id, branch_name').eq('company_id', companyId);
+            if (bList && filterBranch) {
+                const existing = filterBranch.value;
+                filterBranch.innerHTML = '<option value="all">All Branches</option>' + bList.map(b => `<option value="${b.id}">${b.branch_name}</option>`).join('');
+                filterBranch.value = existing || 'all';
+            }
+        } catch(e) { console.warn('Could not fetch branches', e); }
+
+        let distributionChartInstance = null;
+        const renderDistributionChart = (labels, values) => {
+            const ctx = document.getElementById('distributionChart');
+            if(!ctx) return;
+            if(distributionChartInstance) distributionChartInstance.destroy();
+            
+            const colors = ['#6366f1', '#10b981', '#f59e0b', '#ec4899', '#8b5cf6'];
+            
+            distributionChartInstance = new Chart(ctx, {
+                type: 'doughnut',
+                data: {
+                    labels: labels,
+                    datasets: [{
+                        data: values,
+                        backgroundColor: colors.slice(0, labels.length),
+                        borderWidth: 0,
+                        hoverOffset: 4
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    cutout: '75%',
+                    plugins: {
+                        legend: { display: false },
+                        tooltip: { enabled: true }
+                    }
+                }
+            });
+            // Update hero metric if data exists
+            if (values.length > 0) {
+                const maxIdx = values.indexOf(Math.max(...values));
+                const total = values.reduce((a,b)=>a+b, 0);
+                const perc = total > 0 ? Math.round((values[maxIdx] / total) * 100) : 0;
+                const hmVal = document.getElementById('heroMetricValue');
+                const hmLabel = document.getElementById('heroMetricLabel');
+                if(hmVal) hmVal.textContent = perc + '%';
+                if(hmLabel) hmLabel.textContent = 'Revenue from ' + labels[maxIdx];
+            } else {
+                const hmVal = document.getElementById('heroMetricValue');
+                if(hmVal) hmVal.textContent = '0%';
+            }
+        };
+
+        const loadRevenueData = async () => {
+            const start = filterStart ? filterStart.value : '2000-01-01';
+            const end = filterEnd ? filterEnd.value : '2099-12-31';
+            const bid = (filterBranch && filterBranch.value !== 'all') ? filterBranch.value : null;
+
+            try {
+                // 1. KPI Summary
+                let sumQuery = supabase.from('report_financial_summary').select('*');
+                if (bid) sumQuery = sumQuery.eq('branch_id', bid);
+                const { data: sumData } = await sumQuery;
+                
+                let rev = 0, coll = 0, pend = 0, ref = 0;
+                if (sumData) {
+                    sumData.forEach(row => {
+                        rev += Number(row.total_revenue||0);
+                        coll += Number(row.collected_amount||0);
+                        pend += Number(row.pending_amount||0);
+                        ref += Number(row.refunded_amount||0);
+                    });
+                }
+                data.kpi1.value = formatCurrency(rev);
+                data.kpi2.value = formatCurrency(coll);
+                data.kpi3.value = formatCurrency(pend);
+                data.kpi4.value = formatCurrency(ref);
+                data.kpi1.label = 'Total Revenue';
+                data.kpi2.label = 'Collected';
+                data.kpi3.label = 'Pending';
+                data.kpi4.label = 'Refunded';
+                updateKPIs(data.kpi1, data.kpi2, data.kpi3, data.kpi4);
+
+                // 2. Trend Line Chart
+                const { data: trendData } = await supabase.rpc('get_revenue_trend', {
+                    p_branch_id: bid, p_start_date: start, p_end_date: end
+                });
+                if (trendData && typeof renderTrendChart === 'function') {
+                    renderTrendChart(trendData.map(t => new Date(t.date).toLocaleDateString(undefined, {month:'short', day:'numeric'})), trendData.map(t => Number(t.revenue)));
+                }
+
+                // 3. Donut Chart
+                const { data: splitData } = await supabase.rpc('get_revenue_split', {
+                    p_branch_id: bid, p_start_date: start, p_end_date: end
+                });
+                if (splitData) {
+                    renderDistributionChart(splitData.map(s => s.category || 'Other'), splitData.map(s => Number(s.revenue || 0)));
+                }
+
+                // 4. Data Table
+                let tblQuery = supabase.from('business_transactions')
+                    .select('created_at, reference_type, amount, status, payment_method')
+                    .in('status', ['paid', 'pending'])
+                    .gte('created_at', start + 'T00:00:00.000Z')
+                    .lte('created_at', end + 'T23:59:59.999Z')
+                    .order('created_at', { ascending: false });
+                    
+                if (bid) tblQuery = tblQuery.eq('branch_id', bid);
+                
+                const { data: tData } = await tblQuery;
+                if (tData) {
+                    const tRows = tData.map(r => {
+                        const d = new Date(r.created_at).toLocaleDateString();
+                        const sType = r.reference_type || 'Unknown';
+                        const pMeth = r.payment_method || '—';
+                        const a = formatCurrency(r.amount);
+                        const statusH = r.status === 'paid' ? '<span class="status-pill completed">Paid</span>' : '<span class="status-pill pending">Pending</span>';
+                        // Matches headers: ['Date', 'Source', 'Description', 'Payment Method', 'Amount', 'Status']
+                        return [d, sType.includes('booking') ? 'Service' : 'Product', sType, pMeth, a, statusH];
+                    });
+                    updateTable(data.headers, tRows);
+                } else {
+                    updateTable(data.headers, []);
+                }
+            } catch (err) {
+                console.error(err);
+            }
+        };
+
+        if (btnApply) btnApply.addEventListener('click', loadRevenueData);
+        loadRevenueData();
+
     } else if (type === 'staff') {
         // --- LIVE SUPABASE INTEGRATION FOR STAFF ---
         const companyId = localStorage.getItem('company_id');
