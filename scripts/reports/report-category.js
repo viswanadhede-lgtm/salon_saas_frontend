@@ -99,6 +99,13 @@ const CATEGORIES = {
                 desc: 'Best-selling retail products by units',
                 icon: 'box',
                 colorClass: 'bg-sky'
+            },
+            {
+                type: 'sales-membership-revenue',
+                label: 'Membership Revenue',
+                desc: 'Revenue generated from membership plans',
+                icon: 'award',
+                colorClass: 'bg-purple'
             }
         ]
     },

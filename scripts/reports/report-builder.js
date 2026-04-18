@@ -250,7 +250,8 @@ const REPORT_TYPES = {
         kpi1: { label: 'Total Sales', value: '—' },
         kpi2: { label: 'Service Sales', value: '—' },
         kpi3: { label: 'Product Sales', value: '—' },
-        kpi4: { label: 'Avg Sale Value', value: '—' },
+        kpi4: { label: 'Membership Revenue', value: '—' },
+        kpi5: { label: 'Avg Sale Value', value: '—' },
         tableTitle: 'Sales Ledger',
         headers: ['Date', 'Type', 'Customer', 'Description', 'Qty', 'Amount', 'Status'],
         rows: [
@@ -308,6 +309,19 @@ const REPORT_TYPES = {
         kpi4: { label: 'Retail Revenue', value: '—' },
         tableTitle: 'Product Rankings',
         headers: ['Product Name', 'Category', 'Unit Price', 'Stock Status', 'Stock Value', 'Status'],
+        rows: []
+    },
+    'sales-membership-revenue': {
+        title: 'Membership Revenue',
+        subtitle: 'Revenue generated from membership plans',
+        icon: 'award',
+        backCat: 'sales',
+        kpi1: { label: 'Membership Revenue', value: 'Loading...' },
+        kpi2: { label: 'Plans Sold', value: 'Loading...' },
+        kpi3: { label: 'Top Plan', value: 'Loading...' },
+        kpi4: { label: 'Avg Plan Value', value: 'Loading...' },
+        tableTitle: 'Membership Sales Details',
+        headers: ['Plan Name', 'Duration', 'Price', 'Times Sold', 'Revenue Generated', 'Status'],
         rows: []
     },
 
