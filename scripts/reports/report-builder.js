@@ -809,9 +809,10 @@ document.addEventListener('DOMContentLoaded', async () => {
                 // 4. Data Table
                 let tblQuery = supabase.from('business_transactions')
                     .select('created_at, reference_type, amount, status, payment_method')
+                    .eq('company_id', companyId)
                     .in('status', ['paid', 'pending'])
-                    .gte('created_at', start + 'T00:00:00.000Z')
-                    .lte('created_at', end + 'T23:59:59.999Z')
+                    .gte('created_at', start)
+                    .lte('created_at', `${end} 23:59:59`)
                     .order('created_at', { ascending: false });
                     
                 if (bid) tblQuery = tblQuery.eq('branch_id', bid);
