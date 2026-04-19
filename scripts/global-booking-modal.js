@@ -98,33 +98,37 @@ export function initGlobalBookingModal() {
         const div = document.createElement('div');
         div.className = 'service-booking-row';
         div.dataset.rowId = rowId;
-        div.style.cssText = 'padding:12px 14px; border:1px solid #e2e8f0; border-radius:10px; background:#fafafa; position:relative;';
+
+        // Separator for additional rows
+        const separatorHtml = !isFirst
+            ? `<hr style="border:none; border-top:1px dashed #e2e8f0; margin: 0 0 12px 0;">`
+            : '';
 
         div.innerHTML = `
-            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
-                <span style="font-size:0.78rem; font-weight:600; color:#94a3b8; text-transform:uppercase; letter-spacing:0.04em;">
-                    ${isFirst ? 'Service 1' : `Service ${rowId + 1}`}
-                </span>
-                ${!isFirst ? `<button type="button" class="btn-remove-row"
-                    style="font-size:0.75rem; padding:2px 8px; border-radius:5px; border:1px solid #fca5a5;
-                    background:#fff5f5; color:#ef4444; font-weight:600; cursor:pointer; line-height:1.5;">✕ Remove</button>` : ''}
+            ${separatorHtml}
+            <div class="form-group" style="margin-top:0; margin-bottom:8px;">
+                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:6px;">
+                    <label class="form-label" style="margin-bottom:0;">Service <span class="text-rose">*</span></label>
+                    ${!isFirst ? `<button type="button" class="btn-remove-row"
+                        style="font-size:0.75rem; padding:2px 8px; border-radius:5px; border:1px solid #fca5a5;
+                        background:#fff5f5; color:#ef4444; font-weight:600; cursor:pointer; line-height:1.5;">✕ Remove</button>` : ''}
+                </div>
+                <select class="form-select svc-select">
+                    <option value="" disabled selected>Select a service</option>
+                    ${svcOptions}
+                </select>
+                <div class="svc-meta" style="display:none; font-size:0.82rem; color:#475569; margin-top:6px;
+                    padding:5px 10px; background:#f0fdf4; border-radius:5px; border-left:3px solid #10b981;">
+                    <span class="svc-meta-text"></span>
+                </div>
             </div>
-
-            <label class="form-label" style="font-size:0.82rem; margin-bottom:4px;">Service <span class="text-rose">*</span></label>
-            <select class="form-select svc-select" style="margin-bottom:6px; font-size:0.875rem;">
-                <option value="" disabled selected>Select a service</option>
-                ${svcOptions}
-            </select>
-            <div class="svc-meta" style="display:none; font-size:0.8rem; color:#475569; margin-bottom:8px;
-                padding:5px 10px; background:#f0fdf4; border-radius:5px; border-left:3px solid #10b981;">
-                <span class="svc-meta-text"></span>
+            <div class="form-group section-gap" style="margin-bottom:0;">
+                <label class="form-label" for="bookingStaff">Staff <span class="text-rose">*</span></label>
+                <select class="form-select staff-select">
+                    <option value="" disabled selected>Select staff member</option>
+                    ${staffOptions}
+                </select>
             </div>
-
-            <label class="form-label" style="font-size:0.82rem; margin-bottom:4px; margin-top:4px;">Staff <span class="text-rose">*</span></label>
-            <select class="form-select staff-select" style="font-size:0.875rem;">
-                <option value="" disabled selected>Select staff member</option>
-                ${staffOptions}
-            </select>
         `;
 
         const svcSel     = div.querySelector('.svc-select');
