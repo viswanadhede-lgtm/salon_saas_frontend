@@ -117,9 +117,15 @@ export function initGlobalBookingModal() {
                     <option value="" disabled selected>Select a service</option>
                     ${svcOptions}
                 </select>
-                <div class="svc-meta" style="display:none; font-size:0.82rem; color:#475569; margin-top:6px;
-                    padding:5px 10px; background:#f0fdf4; border-radius:5px; border-left:3px solid #10b981;">
-                    <span class="svc-meta-text"></span>
+                <div class="svc-meta form-grid" style="display:none; margin-top:8px;">
+                    <div class="form-group" style="margin-bottom:0;">
+                        <label class="form-label">Duration</label>
+                        <input type="text" class="form-input read-only-input svc-duration" readonly placeholder="—">
+                    </div>
+                    <div class="form-group" style="margin-bottom:0;">
+                        <label class="form-label">Price</label>
+                        <input type="text" class="form-input read-only-input svc-price" readonly placeholder="—">
+                    </div>
                 </div>
             </div>
             <div class="form-group section-gap" style="margin-bottom:0;">
@@ -131,24 +137,23 @@ export function initGlobalBookingModal() {
             </div>
         `;
 
-        const svcSel     = div.querySelector('.svc-select');
-        const staffSel   = div.querySelector('.staff-select');
-        const svcMeta    = div.querySelector('.svc-meta');
-        const svcMetaTxt = div.querySelector('.svc-meta-text');
+        const svcSel      = div.querySelector('.svc-select');
+        const staffSel    = div.querySelector('.staff-select');
+        const svcMeta     = div.querySelector('.svc-meta');
+        const svcDuration = div.querySelector('.svc-duration');
+        const svcPrice    = div.querySelector('.svc-price');
 
-        // Service selected → show meta badge
+        // Service selected → populate Duration & Price read-only inputs
         svcSel.addEventListener('change', () => {
             const opt = svcSel.options[svcSel.selectedIndex];
             if (opt && opt.value) {
                 const dur   = opt.dataset.duration;
                 const price = parseFloat(opt.dataset.price || 0);
-                const parts = [];
-                if (dur && dur !== '0')   parts.push(`${dur} min`);
-                if (price)                parts.push(`₹${price.toLocaleString('en-IN')}`);
-                svcMetaTxt.textContent = parts.join(' · ') || 'No details available';
-                svcMeta.style.display  = 'block';
+                svcDuration.value  = dur && dur !== '0' ? `${dur} min` : '—';
+                svcPrice.value     = price ? `₹${price.toLocaleString('en-IN')}` : '—';
+                svcMeta.style.display = 'grid';
             } else {
-                svcMeta.style.display  = 'none';
+                svcMeta.style.display = 'none';
             }
             validateForm();
         });
