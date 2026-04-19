@@ -42,7 +42,7 @@ export function initGlobalBookingModal() {
     const btnCloseModal          = document.getElementById('closeBookingModal');
     const btnCancelBooking       = document.getElementById('btnCancelBooking');
     const btnConfirmBooking      = document.getElementById('btnConfirmBooking');
-    const btnAddService          = document.getElementById('btnAddService');
+    // btnAddService is built dynamically inside the first service row
 
     const searchSuggestions         = document.getElementById('searchSuggestions');
     const newCustomerBadgeContainer = document.getElementById('newCustomerBadgeContainer');
@@ -109,9 +109,15 @@ export function initGlobalBookingModal() {
             <div class="form-group" style="margin-top:0; margin-bottom:8px;">
                 <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:6px;">
                     <label class="form-label" style="margin-bottom:0;">Service <span class="text-rose">*</span></label>
-                    ${!isFirst ? `<button type="button" class="btn-remove-row"
-                        style="font-size:0.75rem; padding:2px 8px; border-radius:5px; border:1px solid #fca5a5;
-                        background:#fff5f5; color:#ef4444; font-weight:600; cursor:pointer; line-height:1.5;">✕ Remove</button>` : ''}
+                    ${isFirst
+                        ? `<button type="button" id="btnAddService"
+                            style="font-size:0.78rem; padding:3px 10px; border-radius:6px; border:1.5px solid #8b5cf6;
+                            background:#f5f3ff; color:#7c3aed; font-weight:600; cursor:pointer;
+                            display:flex; align-items:center; gap:3px; transition:all 0.2s;">+ Add Service</button>`
+                        : `<button type="button" class="btn-remove-row"
+                            style="font-size:0.75rem; padding:2px 8px; border-radius:5px; border:1px solid #fca5a5;
+                            background:#fff5f5; color:#ef4444; font-weight:600; cursor:pointer; line-height:1.5;">✕ Remove</button>`
+                    }
                 </div>
                 <select class="form-select svc-select">
                     <option value="" disabled selected>Select a service</option>
@@ -233,6 +239,19 @@ export function initGlobalBookingModal() {
         serviceRowsContainer.innerHTML = '';
         rowCounter = 0;
         serviceRowsContainer.appendChild(buildServiceRow(rowCounter++, true));
+
+        // Wire the + Add Service button (it lives inside the first row)
+        document.getElementById('btnAddService')?.addEventListener('click', () => {
+            serviceRowsContainer.appendChild(buildServiceRow(rowCounter++, false));
+            // Auto-sync staff from first row into new row
+            const firstStaff = serviceRowsContainer.querySelector('.staff-select');
+            if (firstStaff && firstStaff.value) {
+                serviceRowsContainer.querySelectorAll('.staff-select').forEach(sel => {
+                    sel.value = firstStaff.value;
+                });
+            }
+            validateForm();
+        });
     }
 
     // ── Open / Close ──────────────────────────────────────────────────────
@@ -270,18 +289,7 @@ export function initGlobalBookingModal() {
         modalOverlay.classList.remove('active');
     }
 
-    // ── Add Service row button ────────────────────────────────────────────
-    btnAddService?.addEventListener('click', () => {
-        serviceRowsContainer.appendChild(buildServiceRow(rowCounter++, false));
-        // Auto-sync staff from first row into new row
-        const firstStaff = serviceRowsContainer.querySelector('.staff-select');
-        if (firstStaff && firstStaff.value) {
-            serviceRowsContainer.querySelectorAll('.staff-select').forEach(sel => {
-                sel.value = firstStaff.value;
-            });
-        }
-        validateForm();
-    });
+    // btnAddService listener is attached in resetServiceRows() after first row is built
 
     // ── Override Confirmation Modal ───────────────────────────────────────
     if (!document.getElementById('staffOverrideConfirmOverlay')) {
