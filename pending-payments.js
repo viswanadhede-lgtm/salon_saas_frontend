@@ -460,7 +460,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
         } catch (err) {
             console.error('[PP] Error recording payment:', err);
-            ppShowToast('Failed to record payment', true);
+            ppShowToast('Failed to record payment: ' + (err.message || 'Unknown error'), true);
         } finally {
             recordBtn.disabled = false;
             recordBtn.textContent = originalBtnText;
