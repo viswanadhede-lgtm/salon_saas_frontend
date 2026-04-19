@@ -84,10 +84,21 @@ document.addEventListener('DOMContentLoaded', async () => {
             }
 
             // Map Bookings
-            const bookings = (bookingRes.data || []).map(b => ({
-                ...b,
-                ref_type: 'booking'
-            }));
+            const bookings = (bookingRes.data || []).map(b => {
+                // Determine service name from aggregated array or fallback
+                let sName = '-';
+                if (Array.isArray(b.service_names)) {
+                    sName = b.service_names.filter(Boolean).join(', ');
+                } else if (b.service_name) {
+                    sName = b.service_name;
+                }
+
+                return {
+                    ...b,
+                    service_name: sName,
+                    ref_type: 'booking'
+                };
+            });
     
             // Map Products (standardize columns to match table)
             const products = (productRes.data || []).map(p => ({
