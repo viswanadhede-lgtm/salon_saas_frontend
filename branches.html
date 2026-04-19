@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="en">
 
 <head>
@@ -509,37 +509,21 @@
                         </div>
 
                         <!-- RIGHT COLUMN -->
-                        <div style="display: flex; flex-direction: column;">
-                            <!-- Service Selection -->
-                            <div class="form-group" style="margin-top: 0;">
-                                <label class="form-label" for="bookingService">Service <span
-                                        class="text-rose">*</span></label>
-                                <select id="bookingService" class="form-select">
-                                    <option value="" disabled selected>Select a service</option>
-                                    <!-- populated via JS -->
-                                </select>
+                        <div style="display: flex; flex-direction: column; gap: 0;">
+                            <!-- Services header -->
+                            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
+                                <label class="form-label" style="margin-bottom:0;">Services <span class="text-rose">*</span></label>
+                                <button type="button" id="btnAddService"
+                                    style="font-size:0.78rem; padding:4px 12px; border-radius:6px; border:1.5px solid #8b5cf6;
+                                    background:#f5f3ff; color:#7c3aed; font-weight:600; cursor:pointer;
+                                    display:flex; align-items:center; gap:4px; transition: all 0.2s;"
+                                    onmouseover="this.style.background='#ede9fe'" onmouseout="this.style.background='#f5f3ff'">
+                                    + Add Service
+                                </button>
                             </div>
 
-                            <div class="form-grid" id="serviceMetaFields" style="display:none;">
-                                <div class="form-group">
-                                    <label class="form-label">Duration</label>
-                                    <input type="text" class="form-input read-only-input" id="roDuration" readonly>
-                                </div>
-                                <div class="form-group">
-                                    <label class="form-label">Price</label>
-                                    <input type="text" class="form-input read-only-input" id="roPrice" readonly>
-                                </div>
-                            </div>
-
-                            <!-- Staff Selection -->
-                            <div class="form-group section-gap">
-                                <label class="form-label" for="bookingStaff">Staff <span
-                                        class="text-rose">*</span></label>
-                                <select id="bookingStaff" class="form-select">
-                                    <option value="" disabled selected>Select staff member</option>
-                                    <!-- populated via JS -->
-                                </select>
-                            </div>
+                            <!-- Dynamic Service + Staff rows (injected by JS) -->
+                            <div id="serviceRowsContainer" style="display:flex; flex-direction:column; gap:12px; margin-bottom:14px;"></div>
 
                             <!-- Date & Time -->
                             <div class="form-grid section-gap">
