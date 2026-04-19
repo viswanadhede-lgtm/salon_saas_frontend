@@ -111,8 +111,9 @@ export function initGlobalBookingModal() {
                     <label class="form-label" style="margin-bottom:0;">Service <span class="text-rose">*</span></label>
                     ${isFirst
                         ? `<button type="button" id="btnAddService"
-                            style="font-size:0.78rem; padding:3px 10px; border-radius:6px; border:1.5px solid #8b5cf6;
-                            background:#f5f3ff; color:#7c3aed; font-weight:600; cursor:pointer;
+                            style="font-size:0.78rem; padding:3px 10px; border-radius:6px;
+                            border:1.5px solid var(--accent, #d946ef);
+                            background:var(--accent, #d946ef); color:#fff; font-weight:600; cursor:pointer;
                             display:flex; align-items:center; gap:3px; transition:all 0.2s;">+ Add Service</button>`
                         : `<button type="button" class="btn-remove-row"
                             style="font-size:0.75rem; padding:2px 8px; border-radius:5px; border:1px solid #fca5a5;
