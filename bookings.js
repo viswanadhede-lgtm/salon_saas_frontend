@@ -54,14 +54,16 @@ function buildRow(b, includeDate = false) {
     const bookingId    = b.booking_id || b.id || '';
     const customerName = b.customer_name || '—';
     const phone        = String(b.customer_phone || '');
-    const serviceName  = b.service_name || '—';
-    const staffName    = b.staff_name || '—';
     const bookingType  = b.booking_type || '—';
     const dateOnly     = b.booking_date || '';
     const timeOnly     = b.start_time   || '';
     const amount       = b.price != null ? `₹${Number(b.price).toLocaleString('en-IN')}` : '—';
     const status       = b.status || '';
     const payment      = b.payment_status || '';
+
+    // Multi-service support: prefer aggregated arrays, fall back to single values
+    const serviceNames = (b.service_names || (b.service_name ? [b.service_name] : [])).filter(Boolean);
+    const staffNames   = (b.staff_names   || (b.staff_name   ? [b.staff_name]   : [])).filter(Boolean);
 
     const isCancellable = !['cancelled', 'completed', 'no-show', 'no_show'].includes(status.toLowerCase());
     const isEditable    = !['cancelled', 'completed'].includes(status.toLowerCase());
@@ -83,6 +85,17 @@ function buildRow(b, includeDate = false) {
         } catch { timeDisplay = timeOnly; }
     }
 
+    // Render service names as small chips (one per service)
+    const serviceCell = serviceNames.length
+        ? serviceNames.map(s =>
+            `<span style="display:inline-block; padding:2px 8px; border-radius:20px; font-size:0.72rem;
+             font-weight:500; background:#f1f5f9; color:#334155; margin:1px 2px 1px 0; white-space:nowrap;">${s}</span>`
+          ).join('')
+        : '—';
+
+    // Render staff names as plain text (joined)
+    const staffCell = staffNames.length ? staffNames.join(', ') : '—';
+
     const cellStyle = 'overflow:hidden;text-overflow:ellipsis;white-space:nowrap;';
 
     return `
@@ -95,8 +108,8 @@ function buildRow(b, includeDate = false) {
         </td>
         <td style="padding:10px 8px;font-size:0.85rem;color:#334155;${cellStyle}">${dateDisplay}</td>
         <td style="padding:10px 8px;font-size:0.85rem;color:#334155;${cellStyle}">${timeDisplay}</td>
-        <td style="padding:10px 8px;font-size:0.85rem;color:#334155;${cellStyle}">${serviceName}</td>
-        <td style="padding:10px 8px;font-size:0.85rem;color:#334155;${cellStyle}">${staffName}</td>
+        <td style="padding:10px 8px; max-width:200px;">${serviceCell}</td>
+        <td style="padding:10px 8px;font-size:0.85rem;color:#334155;${cellStyle}">${staffCell}</td>
         <td style="padding:10px 8px;font-size:0.85rem;color:#334155;${cellStyle}">${bookingType}</td>
         <td style="padding:10px 8px;">${statusBadge(status)}</td>
         <td style="padding:10px 8px;font-size:0.85rem;font-weight:600;color:#0f172a;${cellStyle}">${amount}</td>
