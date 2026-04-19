@@ -60,7 +60,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             // Parallel fetch for Bookings, Products and Memberships
             const [bookingRes, productRes, membershipRes] = await Promise.all([
                 supabase
-                    .from('pending_payments_view')
+                    .from('pending_bookings_payments')
                     .select('*')
                     .eq('company_id', companyId)
                     .eq('branch_id', branchId),
