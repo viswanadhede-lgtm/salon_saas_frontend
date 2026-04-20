@@ -5,6 +5,13 @@ import { FEATURES } from './config/feature-registry.js';
 // ─── In-Memory Store ─────────────────────────────────────────────────────────
 let liveBookingsData = [];
 
+// ─── Edit Modal State ─────────────────────────────────────────────────────────
+let editLiveServices      = [];
+let editLiveStaff         = [];
+let editRowCounter        = 0;
+let editActiveBooking     = null;   // the grouped booking record from liveBookingsData
+let originalServiceRowIds = new Set(); // tracks DB row ids fetched when modal opened
+
 // ─── Helpers ─────────────────────────────────────────────────────────────────
 function getCompanyId() {
     try {
@@ -168,7 +175,7 @@ function setupModals() {
     if (!document.getElementById('editBookingModal')) {
         document.body.insertAdjacentHTML('beforeend', `
         <div class="modal-overlay" id="editBookingModal">
-            <div class="modal-container" style="width:600px;max-width:95vw;">
+            <div class="modal-container" style="width:640px;max-width:95vw;">
                 <div class="modal-header">
                     <div class="header-titles">
                         <h2>Edit Booking</h2>
@@ -178,55 +185,41 @@ function setupModals() {
                         <i data-feather="x"></i>
                     </button>
                 </div>
-                <div class="modal-body" style="padding:1.5rem;overflow-y:auto;">
-                    <form id="editBookingForm" style="display:grid;grid-template-columns:1fr 1fr;gap:16px 24px;">
+                <div class="modal-body" style="padding:1.5rem;overflow-y:auto;max-height:70vh;">
+                    <form id="editBookingForm">
                         <input type="hidden" id="editBookingId">
+                        <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px 24px;margin-bottom:16px;">
+                            <div class="form-group" style="margin:0;">
+                                <label class="form-label" for="editBkDate">Date <span class="text-rose">*</span></label>
+                                <input type="date" id="editBkDate" class="form-input" required>
+                            </div>
+                            <div class="form-group" style="margin:0;">
+                                <label class="form-label" for="editBkTime">Time <span class="text-rose">*</span></label>
+                                <input type="time" id="editBkTime" class="form-input" required>
+                            </div>
+                            <div class="form-group" style="margin:0;">
+                                <label class="form-label">Status</label>
+                                <select id="editBkStatus" class="form-select">
+                                    <option value="booked">Booked</option>
+                                    <option value="confirmed">Confirmed</option>
+                                    <option value="completed">Completed</option>
+                                    <option value="no-show">No-Show</option>
+                                </select>
+                            </div>
+                            <div class="form-group" style="margin:0;">
+                                <label class="form-label">Payment</label>
+                                <input type="text" id="editBkPayment" class="form-input" readonly
+                                    style="background:#f8fafc;cursor:not-allowed;color:#64748b;font-weight:600;text-transform:capitalize;">
+                            </div>
+                        </div>
 
-                        <div class="form-group" style="margin:0;">
-                            <label class="form-label" for="editBkDate">Date <span class="text-rose">*</span></label>
-                            <input type="date" id="editBkDate" class="form-input" required>
-                        </div>
-                        <div class="form-group" style="margin:0;">
-                            <label class="form-label" for="editBkTime">Time <span class="text-rose">*</span></label>
-                            <input type="time" id="editBkTime" class="form-input" required>
-                        </div>
-
-                        <div class="form-group" style="margin:0;">
-                            <label class="form-label" for="editBkService">Service</label>
-                            <select id="editBkService" class="form-select">
-                                <option value="">Loading services...</option>
-                            </select>
-                        </div>
-                        <div class="form-group" style="margin:0;">
-                            <label class="form-label" for="editBkStaff">Staff</label>
-                            <select id="editBkStaff" class="form-select">
-                                <option value="">Loading staff...</option>
-                            </select>
-                        </div>
-
-                        <div class="form-group" style="margin:0;">
-                            <label class="form-label">Status</label>
-                            <select id="editBkStatus" class="form-select">
-                                <option value="booked">Booked</option>
-                                <option value="confirmed">Confirmed</option>
-                                <option value="completed">Completed</option>
-                                <option value="no-show">No-Show</option>
-                            </select>
-                        </div>
-                        <div class="form-group" style="margin:0;">
-                            <label class="form-label">Payment</label>
-                            <input type="text" id="editBkPayment" class="form-input" readonly 
-                                style="background:#f8fafc; cursor:not-allowed; color:#64748b; font-weight:600; text-transform:capitalize;">
+                        <div style="border:1px solid #e2e8f0;border-radius:10px;padding:14px;margin-bottom:16px;background:#fafafa;">
+                            <div id="editServiceRowsContainer"></div>
                         </div>
 
                         <div class="form-group" style="margin:0;">
-                            <label class="form-label" for="editBkPrice">Price <span style="font-weight:400;color:#94a3b8;">(₹)</span></label>
-                            <input type="number" id="editBkPrice" class="form-input" placeholder="e.g. 500" min="0" step="0.01">
-                        </div>
-
-                        <div class="form-group" style="margin:0;grid-column:1/-1;">
                             <label class="form-label" for="editBkNotes">Notes <span style="font-weight:400;color:#94a3b8;">(Optional)</span></label>
-                            <textarea id="editBkNotes" class="form-input form-textarea" style="min-height:80px;"></textarea>
+                            <textarea id="editBkNotes" class="form-input form-textarea" style="min-height:70px;"></textarea>
                         </div>
                     </form>
                 </div>
@@ -302,73 +295,100 @@ function setupModals() {
     if (window.feather) feather.replace();
 }
 
-// ─── Populate Edit Dropdowns (Supabase) ───────────────────────────────────────
-async function populateEditDropdowns(currentServiceName, currentStaffName, currentPrice) {
-    const serviceSelect = document.getElementById('editBkService');
-    const staffSelect   = document.getElementById('editBkStaff');
-    if (!serviceSelect || !staffSelect) return;
+// ─── Edit Modal: Load Services + Staff into module-level arrays ───────────────
+async function loadEditDropdownData() {
+    const company_id = getCompanyId();
+    const branch_id  = getBranchId();
+    const [svcRes, staffRes] = await Promise.all([
+        supabase.from('services').select('*').eq('company_id', company_id).eq('branch_id', branch_id),
+        supabase.from('staff').select('*').eq('company_id', company_id).eq('branch_id', branch_id)
+    ]);
+    editLiveServices = (svcRes.data || []).filter(s => (s.status || '').trim().toLowerCase() === 'active');
+    editLiveStaff    = (staffRes.data || []).filter(s => s.status !== 'deleted');
+}
 
-    serviceSelect.innerHTML = '<option value="">Loading services...</option>';
-    staffSelect.innerHTML   = '<option value="">Loading staff...</option>';
-    serviceSelect.disabled  = true;
-    staffSelect.disabled    = true;
+// ─── Edit Modal: Build a single service + staff + price row ───────────────────
+function buildEditServiceRow(rowId, isFirst, prefillSvcId = '', prefillStaffId = '', prefillPrice = '', dbId = null) {
+    const svcOptions = editLiveServices.map(s =>
+        `<option value="${s.service_id}" data-price="${s.price || 0}" ${
+            prefillSvcId === s.service_id ? 'selected' : ''}>${s.service_name}</option>`
+    ).join('');
 
-    try {
-        const company_id = getCompanyId();
-        const branch_id = getBranchId();
+    const staffOptions = editLiveStaff.map(m =>
+        `<option value="${m.staff_id}" ${
+            prefillStaffId === m.staff_id ? 'selected' : ''}>${m.staff_name || m.name}</option>`
+    ).join('');
 
-        const [svcRes, staffRes] = await Promise.all([
-            supabase.from('services').select('*').eq('company_id', company_id).eq('branch_id', branch_id),
-            supabase.from('staff').select('*').eq('company_id', company_id).eq('branch_id', branch_id)
-        ]);
+    const div = document.createElement('div');
+    div.className    = 'edit-service-row';
+    div.dataset.rowId = rowId;
+    if (dbId) div.dataset.dbId = dbId; // Supabase row PK — used for targeted UPDATE/DELETE
 
-        // Services
-        serviceSelect.innerHTML = '<option value="">Select a service</option>';
-        const services = (svcRes.data || []).filter(s => (s.status || '').trim().toLowerCase() === 'active');
-        services.forEach(s => {
-            const opt = document.createElement('option');
-            opt.value       = s.service_id;
-            opt.textContent = s.service_name;
-            opt.dataset.price = (s.price || '').toString();
-            serviceSelect.appendChild(opt);
-        });
-        
-        if (currentServiceName) {
-            const match = Array.from(serviceSelect.options).find(
-                o => o.textContent.trim().toLowerCase() === currentServiceName.trim().toLowerCase()
-            );
-            if (match) serviceSelect.value = match.value;
+    const separatorHtml = !isFirst
+        ? `<hr style="border:none;border-top:1px dashed #e2e8f0;margin:8px 0;">`
+        : '';
+
+    div.innerHTML = `
+        ${separatorHtml}
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:8px;">
+            <div class="form-group" style="margin:0;">
+                <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px;">
+                    <label class="form-label" style="margin-bottom:0;">Service <span class="text-rose">*</span></label>
+                    ${isFirst
+                        ? `<button type="button" id="btnEditAddService"
+                                style="font-size:0.78rem;padding:3px 10px;border-radius:6px;
+                                border:1.5px solid var(--accent,#d946ef);
+                                background:var(--accent,#d946ef);color:#fff;font-weight:600;cursor:pointer;">+ Add</button>`
+                        : `<button type="button" class="btn-edit-remove-row"
+                                style="font-size:0.75rem;padding:2px 8px;border-radius:5px;border:1px solid #fca5a5;
+                                background:#fff5f5;color:#ef4444;font-weight:600;cursor:pointer;">✕ Remove</button>`
+                    }
+                </div>
+                <select class="form-select edit-svc-select">
+                    <option value="" disabled ${!prefillSvcId ? 'selected' : ''}>Select a service</option>
+                    ${svcOptions}
+                </select>
+            </div>
+            <div class="form-group" style="margin:0;">
+                <label class="form-label">Staff <span class="text-rose">*</span></label>
+                <select class="form-select edit-staff-select">
+                    <option value="" disabled ${!prefillStaffId ? 'selected' : ''}>Select staff</option>
+                    ${staffOptions}
+                </select>
+            </div>
+        </div>
+        <div class="form-group" style="margin:0;">
+            <label class="form-label">Price <span style="font-weight:400;color:#94a3b8;">(₹)</span></label>
+            <input type="number" class="form-input edit-svc-price" placeholder="e.g. 500" min="0" step="0.01"
+                value="${prefillPrice !== '' && prefillPrice != null ? prefillPrice : ''}">
+        </div>
+    `;
+
+    // Auto-fill price when service changes
+    const svcSel     = div.querySelector('.edit-svc-select');
+    const priceInput = div.querySelector('.edit-svc-price');
+    svcSel.addEventListener('change', () => {
+        const opt = svcSel.options[svcSel.selectedIndex];
+        if (opt?.value) {
+            const p = parseFloat(opt.dataset.price || 0);
+            if (p && !priceInput.value) priceInput.value = p;
         }
-        serviceSelect.disabled = false;
+    });
 
-        // Staff
-        staffSelect.innerHTML = '<option value="">Select staff member</option>';
-        const staffList = (staffRes.data || []).filter(s => s.status !== 'deleted');
-        staffList.forEach(m => {
-            const opt = document.createElement('option');
-            opt.value       = m.staff_id;
-            opt.textContent = m.staff_name || m.name;
-            staffSelect.appendChild(opt);
-        });
-        
-        if (currentStaffName) {
-            const match = Array.from(staffSelect.options).find(
-                o => o.textContent.trim().toLowerCase() === currentStaffName.trim().toLowerCase()
-            );
-            if (match) staffSelect.value = match.value;
-        }
-        staffSelect.disabled = false;
+    // Staff sync across all rows in the container
+    const staffSel = div.querySelector('.edit-staff-select');
+    staffSel.addEventListener('change', () => {
+        document.getElementById('editServiceRowsContainer')
+            ?.querySelectorAll('.edit-staff-select')
+            .forEach(sel => { if (sel !== staffSel) sel.value = staffSel.value; });
+    });
 
-        const priceInput = document.getElementById('editBkPrice');
-        if (priceInput && currentPrice != null) priceInput.value = currentPrice;
-
-    } catch (err) {
-        console.error('Error populating edit dropdowns:', err);
-        serviceSelect.innerHTML = '<option value="">Error loading</option>';
-        staffSelect.innerHTML   = '<option value="">Error loading</option>';
-        serviceSelect.disabled  = false;
-        staffSelect.disabled    = false;
+    // Remove button (non-first rows only)
+    if (!isFirst) {
+        div.querySelector('.btn-edit-remove-row').addEventListener('click', () => div.remove());
     }
+
+    return div;
 }
 
 // ─── Refund Logic ────────────────────────────────────────────────────────────
@@ -525,43 +545,100 @@ function attachEventListeners() {
         const bookingId = document.getElementById('editBookingId').value;
         const date      = document.getElementById('editBkDate').value;
         const time      = document.getElementById('editBkTime').value;
+        const status    = document.getElementById('editBkStatus').value;
+        const notes     = document.getElementById('editBkNotes').value.trim();
 
-        const svcSel   = document.getElementById('editBkService');
-        const staffSel = document.getElementById('editBkStaff');
+        const container = document.getElementById('editServiceRowsContainer');
+        const svcRowEls = container?.querySelectorAll('.edit-service-row');
 
-        const updatePayload = {
-            booking_date:   date,
-            start_time:     time,
-            service_id:     svcSel?.value || '',
-            service_name:   svcSel?.options[svcSel.selectedIndex]?.text || '',
-            staff_id:       staffSel?.value || '',
-            staff_name:     staffSel?.options[staffSel.selectedIndex]?.text || '',
-            price:          Number(document.getElementById('editBkPrice')?.value || 0),
-            status:         document.getElementById('editBkStatus').value,
-            notes:          document.getElementById('editBkNotes').value.trim()
-        };
+        if (!svcRowEls || svcRowEls.length === 0) {
+            window.toast && window.toast('Please add at least one service.');
+            return;
+        }
 
-        const btn = document.querySelector('button[form="editBookingForm"]');
+        // Validate all rows
+        let valid = true;
+        svcRowEls.forEach(row => {
+            if (!row.querySelector('.edit-svc-select')?.value ||
+                !row.querySelector('.edit-staff-select')?.value) valid = false;
+        });
+        if (!valid) {
+            window.toast && window.toast('Please select a service and staff for every row.');
+            return;
+        }
+
+        const btn  = document.querySelector('button[form="editBookingForm"]');
         const orig = btn?.textContent;
         if (btn) { btn.textContent = 'Updating...'; btn.disabled = true; }
 
         try {
-            const { data, error } = await supabase
-                .from('bookings')
-                .eq('booking_id', bookingId)
-                .update(updatePayload);
+            const b = editActiveBooking;
+            const currentDbIds = new Set();
+            const updates = [];
+            const inserts = [];
 
-            if (error) {
-                console.error('Supabase update error:', error);
-                window.toast && window.toast('Error: ' + (error.message || 'Unknown error'));
-            } else {
-                window.toast && window.toast('Booking updated successfully!');
-                editModal.classList.remove('active');
-                await fetchBookings();
+            Array.from(svcRowEls).forEach(row => {
+                const svcSel     = row.querySelector('.edit-svc-select');
+                const staffSel   = row.querySelector('.edit-staff-select');
+                const priceInput = row.querySelector('.edit-svc-price');
+                const opt        = svcSel?.options[svcSel.selectedIndex];
+                const dbId       = row.dataset.dbId || null;
+
+                const payload = {
+                    company_id:     getCompanyId(),
+                    branch_id:      getBranchId(),
+                    booking_id:     bookingId,
+                    customer_id:    b?.customer_id    || null,
+                    customer_name:  b?.customer_name  || '',
+                    customer_mail:  b?.customer_mail  || b?.customer_email || null,
+                    customer_phone: b?.customer_phone || '',
+                    service_id:     svcSel?.value     || '',
+                    service_name:   opt?.textContent?.trim() || '',
+                    staff_id:       staffSel?.value   || '',
+                    staff_name:     staffSel?.options[staffSel.selectedIndex]?.text || '',
+                    booking_date:   date,
+                    start_time:     time,
+                    end_time:       null,
+                    notes:          notes,
+                    price:          Number(priceInput?.value || 0),
+                    status:         status,
+                    payment:        b?.payment        || 'pending',
+                    booking_type:   b?.booking_type   || 'walk-in'
+                };
+
+                if (dbId) {
+                    currentDbIds.add(dbId);
+                    updates.push({ id: dbId, payload });
+                } else {
+                    inserts.push(payload);
+                }
+            });
+
+            // Rows removed from UI that existed in DB → DELETE
+            const toDelete = [...originalServiceRowIds].filter(id => !currentDbIds.has(id));
+
+            const ops = [];
+            for (const { id, payload } of updates) {
+                ops.push(supabase.from('bookings').update(payload).eq('id', id));
             }
+            if (inserts.length > 0) {
+                ops.push(supabase.from('bookings').insert(inserts));
+            }
+            for (const id of toDelete) {
+                ops.push(supabase.from('bookings').delete().eq('id', id));
+            }
+
+            const results = await Promise.all(ops);
+            const failedOp = results.find(r => r.error);
+            if (failedOp) throw failedOp.error;
+
+            window.toast && window.toast('Booking updated successfully!');
+            editModal.classList.remove('active');
+            await fetchBookings();
+
         } catch (err) {
-            console.error(err);
-            window.toast && window.toast('Network error updating booking.');
+            console.error('[EditBooking] Update error:', err);
+            window.toast && window.toast('Error updating booking: ' + (err.message || 'Unknown error'));
         } finally {
             if (btn) { btn.textContent = orig; btn.disabled = false; }
         }
@@ -609,10 +686,14 @@ function attachEventListeners() {
     });
 
     // ── Global window helpers (called from row buttons) ────────────────────────
-    window.openEditBookingModal = (bookingId) => {
+    window.openEditBookingModal = async (bookingId) => {
         const b = liveBookingsData.find(x => (x.booking_id || x.id) === bookingId);
         if (!b) return;
 
+        editActiveBooking     = b;
+        originalServiceRowIds = new Set();
+
+        // Prefill shared fields
         document.getElementById('editBookingId').value = bookingId;
         document.getElementById('editBkDate').value    = b.booking_date || '';
         document.getElementById('editBkTime').value    = (b.start_time || '').slice(0, 5);
@@ -622,24 +703,60 @@ function attachEventListeners() {
         if (!statusVal || statusVal === 'null') statusVal = 'confirmed';
         if (statusVal === 'no_show') statusVal = 'no-show';
 
-        let paymentVal = (b.payment_status || '').toLowerCase().trim();
-        if (!paymentVal || paymentVal === 'null') paymentVal = 'pending';
-
         const statusEl = document.getElementById('editBkStatus');
         if (statusEl) {
-            let matchIndex = Array.from(statusEl.options).findIndex(o => o.value === statusVal);
-            statusEl.selectedIndex = matchIndex >= 0 ? matchIndex : 1;
+            const idx = Array.from(statusEl.options).findIndex(o => o.value === statusVal);
+            statusEl.selectedIndex = idx >= 0 ? idx : 1;
         }
 
         const paymentEl = document.getElementById('editBkPayment');
-        if (paymentEl) {
-            paymentEl.value = paymentVal;
-        }
+        if (paymentEl) paymentEl.value = (b.payment_status || b.payment || 'pending').toLowerCase();
 
-        document.getElementById('editBookingModal')?.classList.add('active');
+        // Open modal & show loading state
+        const editModal = document.getElementById('editBookingModal');
+        editModal?.classList.add('active');
         if (window.feather) feather.replace();
 
-        populateEditDropdowns(b.service_name || '', b.staff_name || '', b.price);
+        const container = document.getElementById('editServiceRowsContainer');
+        if (container) container.innerHTML = `
+            <div style="text-align:center;padding:24px;color:#94a3b8;font-size:0.9rem;">
+                ⏳ Loading services...
+            </div>`;
+
+        try {
+            // Parallel: load dropdown data + fetch all service rows for this booking group
+            const [, { data: allRows, error }] = await Promise.all([
+                loadEditDropdownData(),
+                supabase.from('bookings').select('*').eq('booking_id', bookingId)
+            ]);
+
+            if (error) throw error;
+
+            container.innerHTML = '';
+            editRowCounter = 0;
+            const rows = (allRows && allRows.length > 0) ? allRows : [b];
+
+            rows.forEach((row, i) => {
+                // Track original DB row ids so we can DELETE removed ones on save
+                if (row.id) originalServiceRowIds.add(row.id);
+                container.appendChild(buildEditServiceRow(
+                    editRowCounter++, i === 0,
+                    row.service_id || '', row.staff_id || '', row.price ?? '',
+                    row.id || null
+                ));
+            });
+
+            // Wire the "+ Add" button (lives inside first row)
+            document.getElementById('btnEditAddService')?.addEventListener('click', () => {
+                const firstStaff = container.querySelector('.edit-staff-select')?.value || '';
+                container.appendChild(buildEditServiceRow(editRowCounter++, false, '', firstStaff, '', null));
+            });
+
+        } catch (err) {
+            console.error('[EditModal] Error loading booking rows:', err);
+            if (container) container.innerHTML =
+                `<div style="color:#ef4444;padding:12px;text-align:center;">Error loading booking details.</div>`;
+        }
     };
 
     window.triggerCancelBooking = (bookingId) => {
