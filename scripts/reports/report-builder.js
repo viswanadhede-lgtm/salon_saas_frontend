@@ -3001,10 +3001,10 @@ document.addEventListener('DOMContentLoaded', async () => {
                 if (sumRes.error) console.warn('get_bookings_summary Error:', sumRes.error);
                 const sumRow = Array.isArray(sumRes.data) ? sumRes.data[0] : sumRes.data;
                 if (sumRow) {
-                    data.kpi1.value = Number(sumRow.total_bookings || 0).toLocaleString();
-                    data.kpi2.value = Number(sumRow.completed      || 0).toLocaleString();
-                    data.kpi3.value = Number(sumRow.cancelled      || 0).toLocaleString();
-                    data.kpi4.value = Number(sumRow.no_shows       || 0).toLocaleString();
+                    data.kpi1.value = Number(sumRow.total_appointments || sumRow.total_bookings || 0).toLocaleString();
+                    data.kpi2.value = Number(sumRow.completed          || 0).toLocaleString();
+                    data.kpi3.value = Number(sumRow.cancelled          || 0).toLocaleString();
+                    data.kpi4.value = Number(sumRow.no_shows           || 0).toLocaleString();
                 } else {
                     data.kpi1.value = '0'; data.kpi2.value = '0';
                     data.kpi3.value = '0'; data.kpi4.value = '0';
