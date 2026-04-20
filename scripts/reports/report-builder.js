@@ -425,12 +425,12 @@ const REPORT_TYPES = {
         subtitle: 'Revenue, bookings and ratings by staff member',
         icon: 'user-check',
         backCat: 'operations',
-        kpi1: { label: 'Active Staff', value: 'Loading...' },
-        kpi2: { label: 'Total Hours', value: '—' },
-        kpi3: { label: 'Top Performer', value: 'Loading...' },
-        kpi4: { label: 'Commission', value: '—' },
-        tableTitle: 'Staff Directory',
-        headers: ['Staff Name', 'Role', 'Status', 'Appointments', 'Total Hours', 'Revenue', 'Rating'],
+        kpi1: { label: 'Total Bookings Handled',  value: 'Loading...' },
+        kpi2: { label: 'Total Revenue Generated', value: 'Loading...' },
+        kpi3: { label: 'Avg Bookings / Staff',    value: 'Loading...' },
+        kpi4: { label: 'Avg Revenue / Staff',     value: 'Loading...' },
+        tableTitle: 'Staff Performance Breakdown',
+        headers: ['Staff Name', 'Total Bookings', 'Completed', 'Completion Rate', 'Revenue', 'Avg / Booking', 'Last Booking', 'Status'],
         rows: []
     },
     'ops-branch': {
@@ -3760,6 +3760,143 @@ document.addEventListener('DOMContentLoaded', async () => {
         initializeBranchDropdown().then(() => {
             if (btnApply) btnApply.addEventListener('click', loadInsightsData);
             loadInsightsData();
+        });
+
+    } else if (type === 'ops-staff') {
+        // ── LIVE: Staff Performance Report ───────────────────────────────────
+        const companyId    = localStorage.getItem('company_id');
+        const filterStart  = document.getElementById('filterStartDate');
+        const filterEnd    = document.getElementById('filterEndDate');
+        const filterBranch = document.getElementById('filterBranch');
+        const btnApply     = document.getElementById('btnApplyFilters');
+
+        const now      = new Date();
+        const today    = new Date(now.getTime() - now.getTimezoneOffset() * 60000);
+        const firstDay = new Date(today.getFullYear(), today.getMonth(), 1, 12, 0, 0);
+
+        if (filterStart && filterEnd) {
+            if (!filterStart.value) filterStart.value = firstDay.toISOString().split('T')[0];
+            if (!filterEnd.value)   filterEnd.value   = today.toISOString().split('T')[0];
+        }
+
+        const initializeBranchDropdown = async () => {
+            try {
+                const { data: bList } = await supabase.from('branches').select('branch_id, branch_name').eq('company_id', companyId);
+                if (bList && filterBranch) {
+                    const existing = filterBranch.value;
+                    filterBranch.innerHTML = '<option value="all">All Branches</option>' +
+                        bList.map(b => `<option value="${b.branch_id}">${b.branch_name}</option>`).join('');
+                    filterBranch.value = existing || 'all';
+                }
+            } catch(e) { console.warn('Branch fetch failed', e); }
+        };
+
+        const loadStaffData = async () => {
+            const start = filterStart ? filterStart.value : '2000-01-01';
+            const end   = filterEnd   ? filterEnd.value   : '2099-12-31';
+            const bid   = (filterBranch && filterBranch.value !== 'all')
+                ? filterBranch.value
+                : localStorage.getItem('active_branch_id');
+
+            data.kpi1.value = 'Loading...'; data.kpi2.value = 'Loading...';
+            data.kpi3.value = 'Loading...'; data.kpi4.value = 'Loading...';
+            updateKPIs(data.kpi1, data.kpi2, data.kpi3, data.kpi4);
+            const tbody = document.getElementById('tableBody');
+            if (tbody) tbody.innerHTML = '<tr><td colspan="8" style="text-align:center;padding:2rem;">Loading data...</td></tr>';
+
+            try {
+                const args = { p_company_id: companyId, p_branch_id: bid, p_start_date: start, p_end_date: end };
+
+                const [sumRes, trendRes, distRes, tRes] = await Promise.all([
+                    supabase.rpc('get_staff_performance_summary', args),
+                    supabase.rpc('get_staff_performance_trend', args),
+                    supabase.rpc('get_staff_performance_distribution', args),
+                    supabase.rpc('get_staff_performance_table', args)
+                ]);
+
+                // 1. KPI Cards
+                if (sumRes.error) console.warn('get_staff_performance_summary Error:', sumRes.error);
+                const sumRow = Array.isArray(sumRes.data) ? sumRes.data[0] : sumRes.data;
+                if (sumRow) {
+                    data.kpi1.value = Number(sumRow.total_bookings         || 0).toLocaleString();
+                    data.kpi2.value = sumRow.total_revenue         != null ? formatCurrency(sumRow.total_revenue)         : '—';
+                    data.kpi3.value = sumRow.avg_bookings_per_staff != null ? Number(sumRow.avg_bookings_per_staff).toFixed(1) : '—';
+                    data.kpi4.value = sumRow.avg_revenue_per_staff  != null ? formatCurrency(sumRow.avg_revenue_per_staff)  : '—';
+                } else {
+                    data.kpi1.value = '0'; data.kpi2.value = '—';
+                    data.kpi3.value = '—'; data.kpi4.value = '—';
+                }
+                updateKPIs(data.kpi1, data.kpi2, data.kpi3, data.kpi4);
+
+                // 2. Trend Chart — daily bookings
+                if (trendRes.error) console.warn('get_staff_performance_trend Error:', trendRes.error);
+                if (typeof renderTrendChart === 'function') {
+                    if (trendRes.data && trendRes.data.length > 0) {
+                        renderTrendChart(
+                            trendRes.data.map(t => new Date(t.booking_date).toLocaleDateString(undefined, {month:'short', day:'numeric'})),
+                            trendRes.data.map(t => Number(t.bookings || 0))
+                        );
+                    } else renderTrendChart([], []);
+                }
+
+                // 3. Donut Chart — revenue share per staff
+                if (distRes.error) console.warn('get_staff_performance_distribution Error:', distRes.error);
+                if (typeof renderDistributionChart === 'function') {
+                    if (distRes.data && distRes.data.length > 0) {
+                        renderDistributionChart(
+                            distRes.data.map(s => s.staff_name || 'Unknown'),
+                            distRes.data.map(s => Number(s.revenue || 0))
+                        );
+                    } else renderDistributionChart([], []);
+                }
+
+                // 4. Data Table — 8 columns
+                data.headers = ['Staff Name', 'Total Bookings', 'Completed', 'Completion Rate', 'Revenue', 'Avg / Booking', 'Last Booking', 'Status'];
+                if (tRes.error) console.warn('get_staff_performance_table Error:', tRes.error);
+                if (tRes.data && tRes.data.length > 0) {
+                    const tRows = tRes.data.map(r => {
+                        const name       = r.staff_name    || '—';
+                        const totalBk    = Number(r.total_bookings     || 0).toLocaleString();
+                        const completed  = Number(r.completed_services || 0).toLocaleString();
+                        const rate       = r.completion_rate != null ? Number(r.completion_rate).toFixed(1) + '%' : '—';
+                        const revenue    = r.total_revenue  != null ? formatCurrency(r.total_revenue)  : '—';
+                        const avgBk      = r.avg_revenue_per_booking != null ? formatCurrency(r.avg_revenue_per_booking) : '—';
+                        const lastBk     = r.last_booking_date
+                            ? new Date(r.last_booking_date).toLocaleDateString('en-IN', {day:'2-digit', month:'short', year:'numeric'})
+                            : '—';
+
+                        const rateColor  = Number(r.completion_rate) >= 75 ? '#10b981' : Number(r.completion_rate) >= 50 ? '#f59e0b' : '#ef4444';
+                        const statusStyle = r.status === 'Active'
+                            ? 'background:#dcfce7;color:#166534;'
+                            : 'background:#f1f5f9;color:#64748b;';
+
+                        return [
+                            `<strong>${name}</strong>`,
+                            totalBk,
+                            completed,
+                            `<span style="color:${rateColor};font-weight:600;">${rate}</span>`,
+                            `<strong style="color:#10b981;">${revenue}</strong>`,
+                            avgBk,
+                            lastBk,
+                            `<span class="status-pill" style="${statusStyle}">${r.status || '—'}</span>`
+                        ];
+                    });
+                    updateTable(data.headers, tRows);
+                } else {
+                    updateTable(data.headers, []);
+                }
+
+            } catch (err) {
+                console.error('Critical exception in loadStaffData:', err);
+                if (typeof renderTrendChart === 'function')        renderTrendChart([], []);
+                if (typeof renderDistributionChart === 'function') renderDistributionChart([], []);
+                updateTable(data.headers, []);
+            }
+        };
+
+        initializeBranchDropdown().then(() => {
+            if (btnApply) btnApply.addEventListener('click', loadStaffData);
+            loadStaffData();
         });
 
     } else {
