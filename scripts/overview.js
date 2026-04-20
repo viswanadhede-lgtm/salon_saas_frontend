@@ -67,11 +67,7 @@ const initializeOverview = async () => {
                 supabase.rpc('get_overview_leaders', args),
                 supabase.rpc('get_overview_revenue_split', args),
                 supabase.rpc('get_overview_insights', args),
-                supabase.rpc('get_overview_branch_performance', { 
-                    p_company_id: companyId, 
-                    p_start_date: args.p_start_date, 
-                    p_end_date: args.p_end_date 
-                }) // Note: branch logic applies globally, ignoring p_branch_id
+                supabase.rpc('get_overview_branch_performance', args) // Branch logic ignores p_branch_id globally
             ]);
 
             // ── A. Render KPIs ──
