@@ -708,6 +708,20 @@ function attachEventListeners() {
                     .eq('booking_id', bookingToCancel);
                 if (summaryErr) console.error('[Cancel] summary update error:', summaryErr);
 
+                // Insert cancellation marker in the financial ledger
+                const { error: ledgerErr } = await supabase
+                    .from('business_transactions')
+                    .insert([{
+                        company_id: getCompanyId() || null,
+                        branch_id: getBranchId() || null,
+                        reference_id: bookingToCancel,
+                        reference_type: 'booking',
+                        status: 'cancelled',
+                        amount: 0,
+                        created_at: new Date().toISOString()
+                    }]);
+                if (ledgerErr) console.error('[Cancel] ledger insert error:', ledgerErr);
+
                 window.toast && window.toast('Booking cancelled successfully!');
                 await fetchBookings();
             }
