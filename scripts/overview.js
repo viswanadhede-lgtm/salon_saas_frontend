@@ -1,7 +1,6 @@
-import { supabase } from './lib/supabase.js';
+import { supabase } from '../lib/supabase.js';
 
 // Ensure Chart.js is loaded
-Chart.register(ChartDataLabels);
 Chart.defaults.font.family = 'Inter, sans-serif';
 Chart.defaults.color = '#64748b';
 
@@ -11,7 +10,7 @@ let bookingTrendChartInstance = null;
 let staffPerformanceChartInstance = null;
 let revenueSplitChartInstance = null;
 
-document.addEventListener('DOMContentLoaded', async () => {
+const initializeOverview = async () => {
     // 1. Initialize UI Elements (Filters)
     const companyId = localStorage.getItem('company_id');
     const branchSelect = document.getElementById('branchSelect');
@@ -297,4 +296,10 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     // Initial Load
     loadOverviewData();
-});
+};
+
+if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', initializeOverview);
+} else {
+    initializeOverview();
+}
