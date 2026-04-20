@@ -2978,7 +2978,10 @@ document.addEventListener('DOMContentLoaded', async () => {
         const loadBookingsData = async () => {
             const start = filterStart ? filterStart.value : '2000-01-01';
             const end   = filterEnd   ? filterEnd.value   : '2099-12-31';
-            const bid   = (filterBranch && filterBranch.value !== 'all') ? filterBranch.value : null;
+            // Fall back to active branch when "All Branches" is selected (functions use strict = not IS NULL)
+            const bid = (filterBranch && filterBranch.value !== 'all')
+                ? filterBranch.value
+                : localStorage.getItem('active_branch_id');
 
             // Loading state
             data.kpi1.value = 'Loading...'; data.kpi2.value = 'Loading...';
@@ -2994,7 +2997,12 @@ document.addEventListener('DOMContentLoaded', async () => {
                     p_start_date: start,
                     p_end_date:   end
                 };
-                const summaryArgs = { p_branch_id: bid, p_start_date: start, p_end_date: end };
+                const summaryArgs = {
+                    p_company_id: companyId,
+                    p_branch_id:  bid,
+                    p_start_date: start,
+                    p_end_date:   end
+                };
 
                 const [sumRes, trendRes, distRes, tRes] = await Promise.all([
                     supabase.rpc('get_bookings_summary', summaryArgs),
@@ -3010,7 +3018,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                     data.kpi1.value = Number(sumRow.total_appointments || sumRow.total_bookings || 0).toLocaleString();
                     data.kpi2.value = Number(sumRow.completed          || 0).toLocaleString();
                     data.kpi3.value = Number(sumRow.cancelled          || 0).toLocaleString();
-                    data.kpi4.value = Number(sumRow.no_shows           || 0).toLocaleString();
+                    data.kpi4.value = Number(sumRow.no_shows || sumRow.no_show || sumRow.noshow || 0).toLocaleString();
                 } else {
                     data.kpi1.value = '0'; data.kpi2.value = '0';
                     data.kpi3.value = '0'; data.kpi4.value = '0';
