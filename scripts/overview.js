@@ -61,11 +61,17 @@ const initializeOverview = async () => {
         if (window.feather) feather.replace();
 
         try {
-            const [kpiRes, trendRes, leadersRes, splitRes] = await Promise.all([
+            const [kpiRes, trendRes, leadersRes, splitRes, insightsRes, branchRes] = await Promise.all([
                 supabase.rpc('get_overview_kpis', args),
                 supabase.rpc('get_overview_trends', args),
                 supabase.rpc('get_overview_leaders', args),
-                supabase.rpc('get_overview_revenue_split', args)
+                supabase.rpc('get_overview_revenue_split', args),
+                supabase.rpc('get_overview_insights', args),
+                supabase.rpc('get_overview_branch_performance', { 
+                    p_company_id: companyId, 
+                    p_start_date: args.p_start_date, 
+                    p_end_date: args.p_end_date 
+                }) // Note: branch logic applies globally, ignoring p_branch_id
             ]);
 
             // ── A. Render KPIs ──
@@ -283,6 +289,28 @@ const initializeOverview = async () => {
                 if (primaryValue) primaryValue.textContent = Math.round((servicesRev / totalRevForDonut) * 100) + '%';
             }
 
+            // Update Marketing Block (Memberships Data)
+            const membRevEl = document.getElementById('overviewMembRevenue');
+            if (membRevEl) membRevEl.textContent = `₹${membersRev.toLocaleString('en-IN')}`;
+
+            // Fetch Coupons and Offers Usage directly (they don't need a dedicated RPC)
+            Promise.all([
+                supabase.from('coupons').select('current_usage_count').eq('company_id', companyId),
+                supabase.from('offers').select('current_usage_count').eq('company_id', companyId)
+            ]).then(([couponsData, offersData]) => {
+                let couponsUsed = 0;
+                let offersRedeemed = 0;
+
+                if (couponsData.data) couponsUsed = couponsData.data.reduce((sum, c) => sum + Number(c.current_usage_count || 0), 0);
+                if (offersData.data) offersRedeemed = offersData.data.reduce((sum, o) => sum + Number(o.current_usage_count || 0), 0);
+
+                const cEl = document.getElementById('overviewCouponsUsed');
+                const oEl = document.getElementById('overviewOffersRedeemed');
+                
+                if (cEl) cEl.textContent = couponsUsed;
+                if (oEl) oEl.textContent = offersRedeemed;
+            }).catch(e => console.warn('Could not load marketing metrics', e));
+
             // Update Metric Items list
             const metrics = document.querySelectorAll('.metric-item');
             if (metrics.length >= 3) {
@@ -292,6 +320,52 @@ const initializeOverview = async () => {
                 metrics[1].querySelector('p').textContent = `₹${productsRev.toLocaleString('en-IN')}`;
                 metrics[2].querySelector('h4').textContent = 'Memberships';
                 metrics[2].querySelector('p').textContent = `₹${membersRev.toLocaleString('en-IN')}`;
+            }
+
+            // ── E. Render Insights & Branch ──
+            if (insightsRes && insightsRes.data && insightsRes.data.length > 0) {
+                const insight = insightsRes.data[0];
+                const retCustEl = document.getElementById('overviewReturningCust');
+                const retRateEl = document.getElementById('overviewRetentionRate');
+                const loyalEl = document.getElementById('overviewLoyalCust');
+                const loyalBar = document.getElementById('overviewLoyalBar');
+                
+                if (retCustEl) retCustEl.textContent = `${insight.returning_percentage || 0}%`;
+                if (retRateEl) retRateEl.textContent = `${insight.retention_rate || 0}%`;
+                if (loyalEl) loyalEl.textContent = insight.loyal_customers || '0';
+                
+                // An arbitrary visual max bound of 100 loyal customers for the progress bar
+                if (loyalBar) {
+                    const maxBound = 100; 
+                    const pct = Math.min(((insight.loyal_customers || 0) / maxBound) * 100, 100);
+                    loyalBar.style.width = `${pct}%`;
+                }
+            }
+
+            // Branch Performance Chart
+            const branchCtx = document.getElementById('branchPerformanceChart')?.getContext('2d');
+            const branchData = branchRes?.data || [];
+            if (branchCtx && branchData.length > 0) {
+                // Destroy old dummy inline branch chart if it somehow exists (this chart does not have an instance variable yet)
+                if (window.branchPerformanceChartInstance) window.branchPerformanceChartInstance.destroy();
+                
+                window.branchPerformanceChartInstance = new Chart(branchCtx, {
+                    type: 'bar',
+                    data: {
+                        labels: branchData.map(b => b.branch_name || 'Unknown'),
+                        datasets: [{
+                            data: branchData.map(b => Number(b.revenue || 0)),
+                            backgroundColor: '#8b5cf6',
+                            borderRadius: 6,
+                            hoverBackgroundColor: '#7c3aed'
+                        }]
+                    },
+                    options: {
+                        responsive: true, maintainAspectRatio: false,
+                        plugins: { legend: { display: false }, datalabels: { display: false } },
+                        scales: { y: { display: false }, x: { display: true, grid: {display: false} } }
+                    }
+                });
             }
 
             if (window.feather) feather.replace();
