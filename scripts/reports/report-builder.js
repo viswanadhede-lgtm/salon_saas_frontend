@@ -3360,6 +3360,134 @@ document.addEventListener('DOMContentLoaded', async () => {
             loadCancelledData();
         });
 
+    } else if (type === 'bk-no-shows') {
+        // ── LIVE: No-Shows Report ─────────────────────────────────────────────
+        const companyId    = localStorage.getItem('company_id');
+        const filterStart  = document.getElementById('filterStartDate');
+        const filterEnd    = document.getElementById('filterEndDate');
+        const filterBranch = document.getElementById('filterBranch');
+        const btnApply     = document.getElementById('btnApplyFilters');
+
+        const now      = new Date();
+        const today    = new Date(now.getTime() - now.getTimezoneOffset() * 60000);
+        const firstDay = new Date(today.getFullYear(), today.getMonth(), 1, 12, 0, 0);
+
+        if (filterStart && filterEnd) {
+            if (!filterStart.value) filterStart.value = firstDay.toISOString().split('T')[0];
+            if (!filterEnd.value)   filterEnd.value   = today.toISOString().split('T')[0];
+        }
+
+        const initializeBranchDropdown = async () => {
+            try {
+                const { data: bList } = await supabase.from('branches').select('branch_id, branch_name').eq('company_id', companyId);
+                if (bList && filterBranch) {
+                    const existing = filterBranch.value;
+                    filterBranch.innerHTML = '<option value="all">All Branches</option>' +
+                        bList.map(b => `<option value="${b.branch_id}">${b.branch_name}</option>`).join('');
+                    filterBranch.value = existing || 'all';
+                }
+            } catch(e) { console.warn('Branch fetch failed', e); }
+        };
+
+        const loadNoShowData = async () => {
+            const start = filterStart ? filterStart.value : '2000-01-01';
+            const end   = filterEnd   ? filterEnd.value   : '2099-12-31';
+            const bid   = (filterBranch && filterBranch.value !== 'all')
+                ? filterBranch.value
+                : localStorage.getItem('active_branch_id');
+
+            // Loading state
+            data.kpi1.value = 'Loading...'; data.kpi2.value = 'Loading...';
+            data.kpi3.value = 'Loading...'; data.kpi4.value = 'Loading...';
+            updateKPIs(data.kpi1, data.kpi2, data.kpi3, data.kpi4);
+            const tbody = document.getElementById('tableBody');
+            if (tbody) tbody.innerHTML = '<tr><td colspan="7" style="text-align:center;padding:2rem;">Loading data...</td></tr>';
+
+            try {
+                const args = { p_company_id: companyId, p_branch_id: bid, p_start_date: start, p_end_date: end };
+
+                const [sumRes, trendRes, distRes, tRes] = await Promise.all([
+                    supabase.rpc('get_no_show_summary', args),
+                    supabase.rpc('get_no_show_trend', args),
+                    supabase.rpc('get_no_show_distribution', args),
+                    supabase.rpc('get_no_show_table', args)
+                ]);
+
+                // 1. KPI Cards
+                if (sumRes.error) console.warn('get_no_show_summary Error:', sumRes.error);
+                const sumRow = Array.isArray(sumRes.data) ? sumRes.data[0] : sumRes.data;
+                if (sumRow) {
+                    data.kpi1.value = Number(sumRow.no_shows     || 0).toLocaleString();
+                    data.kpi2.value = Number(sumRow.this_month   || 0).toLocaleString();
+                    data.kpi3.value = Number(sumRow.this_week    || 0).toLocaleString();
+                    data.kpi4.value = (Number(sumRow.no_show_rate || 0).toFixed(1)) + '%';
+                } else {
+                    data.kpi1.value = '0'; data.kpi2.value = '0';
+                    data.kpi3.value = '0'; data.kpi4.value = '0%';
+                }
+                updateKPIs(data.kpi1, data.kpi2, data.kpi3, data.kpi4);
+
+                // 2. Trend Bar Chart — x: booking_date, y: no_shows count
+                if (trendRes.error) console.warn('get_no_show_trend Error:', trendRes.error);
+                if (typeof renderTrendChart === 'function') {
+                    if (trendRes.data && trendRes.data.length > 0) {
+                        renderTrendChart(
+                            trendRes.data.map(t => new Date(t.booking_date || t.date).toLocaleDateString(undefined, {month:'short', day:'numeric'})),
+                            trendRes.data.map(t => Number(t.no_shows || t.count || 0))
+                        );
+                    } else renderTrendChart([], []);
+                }
+
+                // 3. Donut Chart — label: 'No-Show'/'Attended', count
+                if (distRes.error) console.warn('get_no_show_distribution Error:', distRes.error);
+                if (typeof renderDistributionChart === 'function') {
+                    if (distRes.data && distRes.data.length > 0) {
+                        renderDistributionChart(
+                            distRes.data.map(s => s.label || s.status || 'Unknown'),
+                            distRes.data.map(s => Number(s.count || 0))
+                        );
+                    } else renderDistributionChart([], []);
+                }
+
+                // 4. Data Table
+                // Columns: booking_date, booking_time, customer_name, service_name, staff_name, total_price, status
+                data.headers = ['Date', 'Time', 'Customer', 'Service', 'Staff', 'Amount Lost', 'Status'];
+                if (tRes.error) console.warn('get_no_show_table Error:', tRes.error);
+                if (tRes.data && tRes.data.length > 0) {
+                    const tRows = tRes.data.map(r => {
+                        const dateText = r.booking_date
+                            ? new Date(r.booking_date).toLocaleDateString('en-IN', {day:'2-digit', month:'short', year:'numeric'})
+                            : '—';
+                        const timeText   = r.booking_time || (r.start_time ? r.start_time.slice(0, 5) : '—');
+                        const customer   = r.customer_name || '—';
+                        const service    = r.service_name  || '—';
+                        const staff      = r.staff_name    || '—';
+                        const amountLost = r.total_price != null ? formatCurrency(r.total_price) : '—';
+                        const statusHtml = `<span class="status-pill" style="background:#fef3c7;color:#92400e;">No-Show</span>`;
+
+                        return [dateText, timeText, customer, service, staff,
+                            `<strong style="color:#f59e0b;">${amountLost}</strong>`,
+                            statusHtml
+                        ];
+                    });
+                    updateTable(data.headers, tRows);
+                } else {
+                    updateTable(data.headers, []);
+                }
+
+            } catch (err) {
+                console.error('Critical exception in loadNoShowData:', err);
+                if (typeof renderTrendChart === 'function')        renderTrendChart([], []);
+                if (typeof renderDistributionChart === 'function') renderDistributionChart([], []);
+                updateTable(data.headers, []);
+            }
+        };
+
+        initializeBranchDropdown().then(() => {
+            if (btnApply) btnApply.addEventListener('click', loadNoShowData);
+            loadNoShowData();
+        });
+
     } else {
         // Render hardcoded mock data for the rest of the reports
         updateTable(data.headers, data.rows);
