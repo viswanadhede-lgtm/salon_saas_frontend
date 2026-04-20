@@ -632,6 +632,34 @@ function attachEventListeners() {
             const failedOp = results.find(r => r.error);
             if (failedOp) throw failedOp.error;
 
+            // ── Update summary row in bookings_for_business_transaction ──
+            const allCurrentRows = Array.from(svcRowEls);
+            const summaryUpdate = {
+                service_id:   allCurrentRows[0]?.querySelector('.edit-svc-select')?.value   || null,
+                staff_id:     allCurrentRows[0]?.querySelector('.edit-staff-select')?.value  || null,
+                service_name: allCurrentRows.map(row => {
+                    const sel = row.querySelector('.edit-svc-select');
+                    return sel?.options[sel.selectedIndex]?.textContent?.trim() || '';
+                }).filter(Boolean).join(', '),
+                staff_name: [...new Set(allCurrentRows.map(row => {
+                    const sel = row.querySelector('.edit-staff-select');
+                    return sel?.options[sel.selectedIndex]?.text?.trim() || '';
+                }).filter(Boolean))].join(', '),
+                total_price:  allCurrentRows.reduce((sum, row) => {
+                    return sum + (Number(row.querySelector('.edit-svc-price')?.value) || 0);
+                }, 0),
+                booking_date: date,
+                start_time:   time,
+                notes:        notes,
+                status:       status,
+                updated_at:   new Date().toISOString()
+            };
+            const { error: summaryErr } = await supabase
+                .from('bookings_for_business_transaction')
+                .update(summaryUpdate)
+                .eq('booking_id', bookingId);
+            if (summaryErr) console.error('[EditBooking] summary update error:', summaryErr);
+
             window.toast && window.toast('Booking updated successfully!');
             editModal.classList.remove('active');
             await fetchBookings();
@@ -673,6 +701,13 @@ function attachEventListeners() {
                 console.error('Supabase cancel error:', error);
                 window.toast && window.toast('Error: ' + error.message);
             } else {
+                // Also cancel the summary row
+                const { error: summaryErr } = await supabase
+                    .from('bookings_for_business_transaction')
+                    .update({ status: 'cancelled', updated_at: new Date().toISOString() })
+                    .eq('booking_id', bookingToCancel);
+                if (summaryErr) console.error('[Cancel] summary update error:', summaryErr);
+
                 window.toast && window.toast('Booking cancelled successfully!');
                 await fetchBookings();
             }

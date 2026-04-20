@@ -526,6 +526,33 @@ export function initGlobalBookingModal() {
             const { data, error } = await supabase.from('bookings').insert(payloads);
             console.log('[createBookings] result:', { data, error });
             if (!error) {
+                // ── Write one summary row to bookings_for_business_transaction ──
+                const summaryRow = {
+                    booking_id:     payloads[0].booking_id,
+                    company_id:     payloads[0].company_id,
+                    branch_id:      payloads[0].branch_id,
+                    customer_id:    payloads[0].customer_id    || null,
+                    customer_name:  payloads[0].customer_name  || '',
+                    customer_mail:  payloads[0].customer_mail  || null,
+                    customer_phone: payloads[0].customer_phone || '',
+                    service_id:     payloads[0].service_id     || null,   // first service
+                    staff_id:       payloads[0].staff_id       || null,   // first staff
+                    service_name:   payloads.map(p => p.service_name).filter(Boolean).join(', '),
+                    staff_name:     [...new Set(payloads.map(p => p.staff_name).filter(Boolean))].join(', '),
+                    booking_date:   payloads[0].booking_date,
+                    start_time:     payloads[0].start_time,
+                    end_time:       payloads[0].end_time       || null,
+                    notes:          payloads[0].notes          || '',
+                    total_price:    payloads.reduce((sum, p) => sum + (Number(p.price) || 0), 0),
+                    status:         payloads[0].status         || 'booked',
+                    payment:        payloads[0].payment        || 'pending',
+                    booking_type:   payloads[0].booking_type   || 'walk-in'
+                };
+                const { error: summaryErr } = await supabase
+                    .from('bookings_for_business_transaction')
+                    .insert(summaryRow);
+                if (summaryErr) console.error('[createBookings] summary insert error:', summaryErr);
+
                 const label = payloads.length > 1 ? `${payloads.length} bookings` : 'Booking';
                 showMsg(`${label} created successfully!`);
                 overrideOverlay?.classList.remove('active');
