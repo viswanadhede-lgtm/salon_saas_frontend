@@ -840,7 +840,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             try {
                 // 1. KPI Summary
                 const { data: sumData, error: sumError } = await supabase.rpc('get_revenue_summary', {
-                    p_branch_id: bid, p_start_date: start, p_end_date: end
+                    p_company_id: companyId, p_branch_id: bid, p_start_date: start, p_end_date: end
                 });
                 if (sumError) console.warn('KPI fetch error:', sumError);
                 
@@ -868,7 +868,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
                 // 2. Trend Line Chart
                 const { data: trendData, error: trendError } = await supabase.rpc('get_revenue_trend', {
-                    p_branch_id: bid, p_start_date: start, p_end_date: end
+                    p_company_id: companyId, p_branch_id: bid, p_start_date: start, p_end_date: end
                 });
                 if (trendError) console.warn('Trend fetch error:', trendError);
                 if (typeof renderTrendChart === 'function') {
@@ -881,7 +881,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
                 // 3. Donut Chart
                 const { data: splitData, error: splitError } = await supabase.rpc('get_revenue_split', {
-                    p_branch_id: bid, p_start_date: start, p_end_date: end
+                    p_company_id: companyId, p_branch_id: bid, p_start_date: start, p_end_date: end
                 });
                 if (splitError) console.warn('Split fetch error:', splitError);
                 if (splitData && splitData.length > 0) {
@@ -894,7 +894,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                 data.headers = ['Transaction ID', 'Type', 'Total Amount', 'Collected', 'Due', 'Refunded'];
                 
                 const { data: tData, error: tError } = await supabase.rpc('get_revenue_table', {
-                    p_branch_id: bid, p_start_date: start, p_end_date: end
+                    p_company_id: companyId, p_branch_id: bid, p_start_date: start, p_end_date: end
                 });
 
                 if (tError) console.warn('Table fetch error:', tError);
@@ -1062,7 +1062,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             try {
                 // 1. KPI Summary
                 const { data: sumData, error: sumError } = await supabase.rpc('get_payments_summary', {
-                    p_branch_id: bid, p_start_date: start, p_end_date: end
+                    p_company_id: companyId, p_branch_id: bid, p_start_date: start, p_end_date: end
                 });
                 
                 if (sumData) {
@@ -1085,7 +1085,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
                 // 2. Trend Chart
                 const { data: trendData, error: e2 } = await supabase.rpc('get_payments_trend', {
-                    p_branch_id: bid, p_start_date: start, p_end_date: end
+                    p_company_id: companyId, p_branch_id: bid, p_start_date: start, p_end_date: end
                 });
                 if (e2) console.warn('get_payments_trend Error:', e2);
                 if (typeof renderTrendChart === 'function') {
@@ -1096,7 +1096,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
                 // 3. Distribution Donut Chart
                 const { data: splitData, error: e3 } = await supabase.rpc('get_payments_split', {
-                    p_branch_id: bid, p_start_date: start, p_end_date: end
+                    p_company_id: companyId, p_branch_id: bid, p_start_date: start, p_end_date: end
                 });
                 if (e3) console.warn('get_payments_split Error:', e3);
                 if (splitData && splitData.length > 0) {
@@ -1105,7 +1105,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
                 // 4. Data Table
                 const { data: tData, error: e4 } = await supabase.rpc('get_payments_table', {
-                    p_branch_id: bid, p_start_date: start, p_end_date: end
+                    p_company_id: companyId, p_branch_id: bid, p_start_date: start, p_end_date: end
                 });
                 if (e4) console.warn('get_payments_table Error:', e4);
                 if (tData && tData.length > 0) {
@@ -1174,7 +1174,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             try {
                 // 1. KPI Summary
                 const { data: sumData, error: sumError } = await supabase.rpc('get_refunds_summary', {
-                    p_branch_id: bid, p_start_date: start, p_end_date: end
+                    p_company_id: companyId, p_branch_id: bid, p_start_date: start, p_end_date: end
                 });
                 
                 if (sumData) {
@@ -1197,7 +1197,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
                 // 2. Trend Chart
                 const { data: trendData, error: e2 } = await supabase.rpc('get_refunds_trend', {
-                    p_branch_id: bid, p_start_date: start, p_end_date: end
+                    p_company_id: companyId, p_branch_id: bid, p_start_date: start, p_end_date: end
                 });
                 if (e2) console.warn('get_refunds_trend Error:', e2);
                 if (typeof renderTrendChart === 'function') {
@@ -1208,7 +1208,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
                 // 3. Distribution Donut Chart
                 const { data: splitData, error: e3 } = await supabase.rpc('get_refunds_split', {
-                    p_branch_id: bid, p_start_date: start, p_end_date: end
+                    p_company_id: companyId, p_branch_id: bid, p_start_date: start, p_end_date: end
                 });
                 if (e3) console.warn('get_refunds_split Error:', e3);
                 if (typeof renderDistributionChart === 'function') {
@@ -1219,7 +1219,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
                 // 4. Data Table
                 const { data: tData, error: e4 } = await supabase.rpc('get_refunds_table', {
-                    p_branch_id: bid, p_start_date: start, p_end_date: end
+                    p_company_id: companyId, p_branch_id: bid, p_start_date: start, p_end_date: end
                 });
                 if (e4) console.warn('get_refunds_table Error:', e4);
                 if (tData && tData.length > 0) {
@@ -1292,7 +1292,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             try {
                 // 1. KPI Summary
                 const { data: sumData, error: sumError } = await supabase.rpc('get_dues_summary', {
-                    p_branch_id: bid, p_start_date: start, p_end_date: end
+                    p_company_id: companyId, p_branch_id: bid, p_start_date: start, p_end_date: end
                 });
                 
                 if (sumData) {
@@ -1311,7 +1311,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
                 // 2. Trend Chart
                 const { data: trendData, error: e2 } = await supabase.rpc('get_dues_trend', {
-                    p_branch_id: bid, p_start_date: start, p_end_date: end
+                    p_company_id: companyId, p_branch_id: bid, p_start_date: start, p_end_date: end
                 });
                 if (e2) console.warn('get_dues_trend Error:', e2);
                 if (typeof renderTrendChart === 'function') {
@@ -1322,7 +1322,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
                 // 3. Distribution Donut Chart
                 const { data: splitData, error: e3 } = await supabase.rpc('get_dues_split', {
-                    p_branch_id: bid, p_start_date: start, p_end_date: end
+                    p_company_id: companyId, p_branch_id: bid, p_start_date: start, p_end_date: end
                 });
                 if (e3) console.warn('get_dues_split Error:', e3);
                 if (typeof renderDistributionChart === 'function') {
@@ -1333,7 +1333,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
                 // 4. Data Table
                 const { data: tData, error: e4 } = await supabase.rpc('get_dues_table', {
-                    p_branch_id: bid, p_start_date: start, p_end_date: end
+                    p_company_id: companyId, p_branch_id: bid, p_start_date: start, p_end_date: end
                 });
                 if (e4) console.warn('get_dues_table Error:', e4);
                 if (tData && tData.length > 0) {
@@ -1424,7 +1424,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
             try {
                 // Execute all queries in parallel for strict performance requirement
-                const args = { p_company_id: companyId, p_branch_id: bid, p_start_date: start, p_end_date: end };
+                const args = { p_company_id: companyId, p_company_id: companyId, p_branch_id: bid, p_start_date: start, p_end_date: end };
                 const [sumRes, trendRes, splitRes, tRes] = await Promise.all([
                     supabase.rpc('get_total_sales_summary', args),
                     supabase.rpc('get_sales_trend', args),
@@ -1563,7 +1563,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
             try {
                 // Execute all queries in parallel
-                const args = { p_company_id: companyId, p_branch_id: bid, p_start_date: start, p_end_date: end };
+                const args = { p_company_id: companyId, p_company_id: companyId, p_branch_id: bid, p_start_date: start, p_end_date: end };
                 const [sumRes, trendRes, splitRes, tRes] = await Promise.all([
                     supabase.rpc('get_service_revenue_summary', args),
                     supabase.rpc('get_service_revenue_trend', args),
@@ -1700,7 +1700,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
             try {
                 // Execute all queries in parallel
-                const args = { p_company_id: companyId, p_branch_id: bid, p_start_date: start, p_end_date: end };
+                const args = { p_company_id: companyId, p_company_id: companyId, p_branch_id: bid, p_start_date: start, p_end_date: end };
                 const [sumRes, trendRes, splitRes, tRes] = await Promise.all([
                     supabase.rpc('get_product_sales_summary', args),
                     supabase.rpc('get_product_sales_trend', args),
@@ -1837,7 +1837,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
             try {
                 // Execute all queries in parallel
-                const args = { p_company_id: companyId, p_branch_id: bid, p_start_date: start, p_end_date: end };
+                const args = { p_company_id: companyId, p_company_id: companyId, p_branch_id: bid, p_start_date: start, p_end_date: end };
                 const [sumRes, trendRes, splitRes, tRes] = await Promise.all([
                     supabase.rpc('get_membership_revenue_summary', args),
                     supabase.rpc('get_membership_revenue_trend', args),
@@ -1974,7 +1974,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
             try {
                 // Execute all queries in parallel
-                const args = { p_company_id: companyId, p_branch_id: bid, p_start_date: start, p_end_date: end };
+                const args = { p_company_id: companyId, p_company_id: companyId, p_branch_id: bid, p_start_date: start, p_end_date: end };
                 const [sumRes, trendRes, splitRes, tRes] = await Promise.all([
                     supabase.rpc('get_top_products_summary', args),
                     supabase.rpc('get_top_products_trend', args),
@@ -2111,7 +2111,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
             try {
                 // Execute all queries in parallel
-                const args = { p_company_id: companyId, p_branch_id: bid, p_start_date: start, p_end_date: end };
+                const args = { p_company_id: companyId, p_company_id: companyId, p_branch_id: bid, p_start_date: start, p_end_date: end };
                 const [sumRes, trendRes, splitRes, tRes] = await Promise.all([
                     supabase.rpc('get_top_services_summary', args),
                     supabase.rpc('get_top_services_trend', args),
@@ -2859,7 +2859,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             try {
                 // 1. KPI Summary
                 const { data: sumData, error: sumError } = await supabase.rpc('get_expenses_summary', {
-                    p_branch_id: bid, p_start_date: start, p_end_date: end
+                    p_company_id: companyId, p_branch_id: bid, p_start_date: start, p_end_date: end
                 });
                 if (sumError) console.warn('KPI fetch error:', sumError);
                 
@@ -2883,7 +2883,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
                 // 2. Trend Line Chart
                 const { data: trendData, error: trendError } = await supabase.rpc('get_expenses_trend', {
-                    p_branch_id: bid, p_start_date: start, p_end_date: end
+                    p_company_id: companyId, p_branch_id: bid, p_start_date: start, p_end_date: end
                 });
                 if (trendError) console.warn('Trend fetch error:', trendError);
                 if (typeof renderTrendChart === 'function') {
@@ -2896,7 +2896,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
                 // 3. Donut Chart
                 const { data: splitData, error: splitError } = await supabase.rpc('get_expenses_split', {
-                    p_branch_id: bid, p_start_date: start, p_end_date: end
+                    p_company_id: companyId, p_branch_id: bid, p_start_date: start, p_end_date: end
                 });
                 if (splitError) console.warn('Split fetch error:', splitError);
                 if (splitData && splitData.length > 0) {
@@ -2909,7 +2909,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                 data.headers = ['Date', 'Category', 'Amount', 'Notes', 'Status'];
                 
                 const { data: tData, error: tError } = await supabase.rpc('get_expenses_table', {
-                    p_branch_id: bid, p_start_date: start, p_end_date: end
+                    p_company_id: companyId, p_branch_id: bid, p_start_date: start, p_end_date: end
                 });
 
                 if (tError) console.warn('Table fetch error:', tError);
@@ -3144,7 +3144,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             if (tbody) tbody.innerHTML = '<tr><td colspan="7" style="text-align:center;padding:2rem;">Loading data...</td></tr>';
 
             try {
-                const args = { p_company_id: companyId, p_branch_id: bid, p_start_date: start, p_end_date: end };
+                const args = { p_company_id: companyId, p_company_id: companyId, p_branch_id: bid, p_start_date: start, p_end_date: end };
 
                 const [sumRes, trendRes, distRes, tRes] = await Promise.all([
                     supabase.rpc('get_completed_bookings_summary', args),
@@ -3281,7 +3281,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             if (tbody) tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;padding:2rem;">Loading data...</td></tr>';
 
             try {
-                const args = { p_company_id: companyId, p_branch_id: bid, p_start_date: start, p_end_date: end };
+                const args = { p_company_id: companyId, p_company_id: companyId, p_branch_id: bid, p_start_date: start, p_end_date: end };
 
                 const [sumRes, trendRes, distRes, tRes] = await Promise.all([
                     supabase.rpc('get_cancelled_bookings_summary', args),
@@ -3405,7 +3405,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             if (tbody) tbody.innerHTML = '<tr><td colspan="7" style="text-align:center;padding:2rem;">Loading data...</td></tr>';
 
             try {
-                const args = { p_company_id: companyId, p_branch_id: bid, p_start_date: start, p_end_date: end };
+                const args = { p_company_id: companyId, p_company_id: companyId, p_branch_id: bid, p_start_date: start, p_end_date: end };
 
                 const [sumRes, trendRes, distRes, tRes] = await Promise.all([
                     supabase.rpc('get_no_show_summary', args),
@@ -3534,7 +3534,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
             try {
                 const baseArgs  = { p_company_id: companyId, p_branch_id: bid };
-                const rangeArgs = { p_company_id: companyId, p_branch_id: bid, p_start_date: start, p_end_date: end };
+                const rangeArgs = { p_company_id: companyId, p_company_id: companyId, p_branch_id: bid, p_start_date: start, p_end_date: end };
 
                 const [sumRes, trendRes, distRes, tRes] = await Promise.all([
                     supabase.rpc('get_customer_metrics_summary', baseArgs),
@@ -3667,7 +3667,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             if (tbody) tbody.innerHTML = '<tr><td colspan="7" style="text-align:center;padding:2rem;">Loading data...</td></tr>';
 
             try {
-                const args = { p_company_id: companyId, p_branch_id: bid, p_start_date: start, p_end_date: end };
+                const args = { p_company_id: companyId, p_company_id: companyId, p_branch_id: bid, p_start_date: start, p_end_date: end };
 
                 const [sumRes, trendRes, distRes, tRes] = await Promise.all([
                     supabase.rpc('get_customer_insights_summary', args),
@@ -3805,7 +3805,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             if (tbody) tbody.innerHTML = '<tr><td colspan="8" style="text-align:center;padding:2rem;">Loading data...</td></tr>';
 
             try {
-                const args = { p_company_id: companyId, p_branch_id: bid, p_start_date: start, p_end_date: end };
+                const args = { p_company_id: companyId, p_company_id: companyId, p_branch_id: bid, p_start_date: start, p_end_date: end };
 
                 const [sumRes, trendRes, distRes, tRes] = await Promise.all([
                     supabase.rpc('get_staff_performance_summary', args),
@@ -4037,3 +4037,4 @@ document.addEventListener('DOMContentLoaded', async () => {
         updateTable(data.headers, data.rows);
     }
 });
+
