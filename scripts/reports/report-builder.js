@@ -3013,6 +3013,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
                 // 2. Trend Bar Chart
                 if (trendRes.error) console.warn('get_bookings_trend Error:', trendRes.error);
+                console.log('[bk-total] trendRes.data:', trendRes.data);
                 if (typeof renderTrendChart === 'function') {
                     if (trendRes.data && trendRes.data.length > 0) {
                         renderTrendChart(
@@ -3024,6 +3025,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
                 // 3. Donut Chart - Status Distribution
                 if (distRes.error) console.warn('get_bookings_status_distribution Error:', distRes.error);
+                console.log('[bk-total] distRes.data:', distRes.data);
                 if (typeof renderDistributionChart === 'function') {
                     if (distRes.data && distRes.data.length > 0) {
                         renderDistributionChart(
