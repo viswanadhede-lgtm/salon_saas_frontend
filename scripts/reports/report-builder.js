@@ -389,32 +389,35 @@ const REPORT_TYPES = {
     // ─────────────────────────────────────────────
     // CUSTOMERS SUB-REPORTS
     // ─────────────────────────────────────────────
-    'cust-new': {
-        title: 'New Customers',
-        subtitle: 'First-time customers and acquisition trends',
-        icon: 'user-plus',
+    'cust-metrics': {
+        title: 'Customer Metrics',
+        subtitle: 'Total, new, active and inactive customers',
+        icon: 'users',
         backCat: 'customers',
-        kpi1: { label: 'Total Customers', value: 'Loading...' },
-        kpi2: { label: 'New This Month', value: 'Loading...' },
-        kpi3: { label: 'New This Week', value: 'Loading...' },
-        kpi4: { label: 'Avg Spend (New)', value: '—' },
-        tableTitle: 'New Customer Registry',
-        headers: ['Joined Date', 'Customer Name', 'Phone', 'Total Visits', 'Total Spend', 'Last Visit', 'Status'],
+        kpi1: { label: 'Total Customers',   value: 'Loading...' },
+        kpi2: { label: 'New This Month',     value: 'Loading...' },
+        kpi3: { label: 'Active Customers',   value: 'Loading...' },
+        kpi4: { label: 'Inactive Customers', value: 'Loading...' },
+        tableTitle: 'Customer Overview',
+        headers: ['Customer', 'Total Bookings', 'Completed', 'Revenue', 'First Booking', 'Last Booking', 'Last Completed', 'Type', 'Status'],
         rows: []
     },
-    'cust-returning': {
-        title: 'Returning Customers',
-        subtitle: 'Repeat visits and loyalty patterns',
-        icon: 'repeat',
+    'cust-insights': {
+        title: 'Customer Insights',
+        subtitle: 'Deep-dive into customer behaviour and spend',
+        icon: 'bar-chart-2',
         backCat: 'customers',
-        kpi1: { label: 'Total Customers', value: 'Loading...' },
-        kpi2: { label: 'Returning (2+ visits)', value: 'Loading...' },
-        kpi3: { label: 'Retention Rate', value: '—' },
-        kpi4: { label: 'Avg Bookings', value: 'Loading...' },
-        tableTitle: 'Returning Customer Registry',
-        headers: ['Joined Date', 'Customer Name', 'Phone', 'Total Visits', 'Total Spend', 'Last Visit', 'Status'],
-        rows: []
+        kpi1: { label: 'Top Customer', value: '—' },
+        kpi2: { label: 'Avg Revenue / Customer', value: '—' },
+        kpi3: { label: 'Avg Visits / Customer', value: '—' },
+        kpi4: { label: 'Retention Rate', value: '—' },
+        tableTitle: 'Customer Insights',
+        headers: ['Customer', 'Total Visits', 'Total Spend', 'Avg Spend', 'First Visit', 'Last Visit', 'Status'],
+        rows: [
+            ['Coming soon...', '—', '—', '—', '—', '—', '—']
+        ]
     },
+
 
     // ─────────────────────────────────────────────
     // OPERATIONS SUB-REPORTS
@@ -3486,6 +3489,141 @@ document.addEventListener('DOMContentLoaded', async () => {
         initializeBranchDropdown().then(() => {
             if (btnApply) btnApply.addEventListener('click', loadNoShowData);
             loadNoShowData();
+        });
+
+    } else if (type === 'cust-metrics') {
+        // ── LIVE: Customer Metrics Report ────────────────────────────────────
+        const companyId    = localStorage.getItem('company_id');
+        const filterStart  = document.getElementById('filterStartDate');
+        const filterEnd    = document.getElementById('filterEndDate');
+        const filterBranch = document.getElementById('filterBranch');
+        const btnApply     = document.getElementById('btnApplyFilters');
+
+        const now      = new Date();
+        const today    = new Date(now.getTime() - now.getTimezoneOffset() * 60000);
+        const firstDay = new Date(today.getFullYear(), today.getMonth(), 1, 12, 0, 0);
+
+        if (filterStart && filterEnd) {
+            if (!filterStart.value) filterStart.value = firstDay.toISOString().split('T')[0];
+            if (!filterEnd.value)   filterEnd.value   = today.toISOString().split('T')[0];
+        }
+
+        const initializeBranchDropdown = async () => {
+            try {
+                const { data: bList } = await supabase.from('branches').select('branch_id, branch_name').eq('company_id', companyId);
+                if (bList && filterBranch) {
+                    const existing = filterBranch.value;
+                    filterBranch.innerHTML = '<option value="all">All Branches</option>' +
+                        bList.map(b => `<option value="${b.branch_id}">${b.branch_name}</option>`).join('');
+                    filterBranch.value = existing || 'all';
+                }
+            } catch(e) { console.warn('Branch fetch failed', e); }
+        };
+
+        const loadCustomerMetrics = async () => {
+            const start = filterStart ? filterStart.value : '2000-01-01';
+            const end   = filterEnd   ? filterEnd.value   : '2099-12-31';
+            const bid   = (filterBranch && filterBranch.value !== 'all')
+                ? filterBranch.value
+                : localStorage.getItem('active_branch_id');
+
+            // Loading state
+            data.kpi1.value = 'Loading...'; data.kpi2.value = 'Loading...';
+            data.kpi3.value = 'Loading...'; data.kpi4.value = 'Loading...';
+            updateKPIs(data.kpi1, data.kpi2, data.kpi3, data.kpi4);
+            const tbody = document.getElementById('tableBody');
+            if (tbody) tbody.innerHTML = '<tr><td colspan="9" style="text-align:center;padding:2rem;">Loading data...</td></tr>';
+
+            try {
+                const baseArgs  = { p_company_id: companyId, p_branch_id: bid };
+                const rangeArgs = { p_company_id: companyId, p_branch_id: bid, p_start_date: start, p_end_date: end };
+
+                const [sumRes, trendRes, distRes, tRes] = await Promise.all([
+                    supabase.rpc('get_customer_metrics_summary', baseArgs),
+                    supabase.rpc('get_customer_metrics_trend', rangeArgs),
+                    supabase.rpc('get_customer_metrics_distribution', baseArgs),
+                    supabase.rpc('get_customer_metrics_table', rangeArgs)
+                ]);
+
+                // 1. KPI Cards
+                if (sumRes.error) console.warn('get_customer_metrics_summary Error:', sumRes.error);
+                const sumRow = Array.isArray(sumRes.data) ? sumRes.data[0] : sumRes.data;
+                if (sumRow) {
+                    data.kpi1.value = Number(sumRow.total_customers    || 0).toLocaleString();
+                    data.kpi2.value = Number(sumRow.new_customers      || 0).toLocaleString();
+                    data.kpi3.value = Number(sumRow.active_customers   || 0).toLocaleString();
+                    data.kpi4.value = Number(sumRow.inactive_customers || 0).toLocaleString();
+                } else {
+                    data.kpi1.value = '0'; data.kpi2.value = '0';
+                    data.kpi3.value = '0'; data.kpi4.value = '0';
+                }
+                updateKPIs(data.kpi1, data.kpi2, data.kpi3, data.kpi4);
+
+                // 2. Trend Bar Chart — new customers per day
+                if (trendRes.error) console.warn('get_customer_metrics_trend Error:', trendRes.error);
+                if (typeof renderTrendChart === 'function') {
+                    if (trendRes.data && trendRes.data.length > 0) {
+                        renderTrendChart(
+                            trendRes.data.map(t => new Date(t.join_date || t.date).toLocaleDateString(undefined, {month:'short', day:'numeric'})),
+                            trendRes.data.map(t => Number(t.new_customers || t.count || 0))
+                        );
+                    } else renderTrendChart([], []);
+                }
+
+                // 3. Donut Chart — Active vs Inactive
+                if (distRes.error) console.warn('get_customer_metrics_distribution Error:', distRes.error);
+                if (typeof renderDistributionChart === 'function') {
+                    if (distRes.data && distRes.data.length > 0) {
+                        renderDistributionChart(
+                            distRes.data.map(s => s.label || 'Unknown'),
+                            distRes.data.map(s => Number(s.count || 0))
+                        );
+                    } else renderDistributionChart([], []);
+                }
+
+                // 4. Data Table — 9 columns
+                data.headers = ['Customer', 'Total Bookings', 'Completed', 'Revenue', 'First Booking', 'Last Booking', 'Last Completed', 'Type', 'Status'];
+                if (tRes.error) console.warn('get_customer_metrics_table Error:', tRes.error);
+                if (tRes.data && tRes.data.length > 0) {
+                    const tRows = tRes.data.map(r => {
+                        const name    = r.customer_name  || '—';
+                        const phone   = r.customer_phone || '';
+                        const custCell = phone ? `<div><strong>${name}</strong><br><small style="color:#64748b;">${phone}</small></div>` : `<strong>${name}</strong>`;
+                        const totalBk  = Number(r.total_bookings     || 0).toLocaleString();
+                        const compBk   = Number(r.completed_bookings || 0).toLocaleString();
+                        const revenue  = r.total_revenue != null ? formatCurrency(r.total_revenue) : '—';
+                        const firstBk  = r.first_booking_date ? new Date(r.first_booking_date).toLocaleDateString('en-IN', {day:'2-digit', month:'short', year:'numeric'}) : '—';
+                        const lastBk   = r.last_booking_date  ? new Date(r.last_booking_date).toLocaleDateString('en-IN', {day:'2-digit', month:'short', year:'numeric'})  : '—';
+                        const lastComp = r.last_completed_service_date ? new Date(r.last_completed_service_date).toLocaleDateString('en-IN', {day:'2-digit', month:'short', year:'numeric'}) : '—';
+
+                        const typeStyle = r.customer_type === 'New'
+                            ? 'background:#e0e7ff;color:#3730a3;'
+                            : 'background:#fef3c7;color:#92400e;';
+                        const typeHtml = `<span class="status-pill" style="${typeStyle}">${r.customer_type || '—'}</span>`;
+
+                        const statusStyle = r.status === 'Active'
+                            ? 'background:#dcfce7;color:#166534;'
+                            : 'background:#f1f5f9;color:#64748b;';
+                        const statusHtml = `<span class="status-pill" style="${statusStyle}">${r.status || '—'}</span>`;
+
+                        return [custCell, totalBk, compBk, `<strong style="color:#10b981;">${revenue}</strong>`, firstBk, lastBk, lastComp, typeHtml, statusHtml];
+                    });
+                    updateTable(data.headers, tRows);
+                } else {
+                    updateTable(data.headers, []);
+                }
+
+            } catch (err) {
+                console.error('Critical exception in loadCustomerMetrics:', err);
+                if (typeof renderTrendChart === 'function')        renderTrendChart([], []);
+                if (typeof renderDistributionChart === 'function') renderDistributionChart([], []);
+                updateTable(data.headers, []);
+            }
+        };
+
+        initializeBranchDropdown().then(() => {
+            if (btnApply) btnApply.addEventListener('click', loadCustomerMetrics);
+            loadCustomerMetrics();
         });
 
     } else {

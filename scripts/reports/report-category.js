@@ -152,17 +152,17 @@ const CATEGORIES = {
         colorClass: 'bg-violet',
         subReports: [
             {
-                type: 'cust-new',
-                label: 'New Customers',
-                desc: 'First-time customers and acquisition trends',
-                icon: 'user-plus',
+                type: 'cust-metrics',
+                label: 'Customer Metrics',
+                desc: 'Total, new, active and inactive customers',
+                icon: 'users',
                 colorClass: 'bg-violet'
             },
             {
-                type: 'cust-returning',
-                label: 'Returning Customers',
-                desc: 'Repeat visits and loyalty patterns',
-                icon: 'repeat',
+                type: 'cust-insights',
+                label: 'Customer Insights',
+                desc: 'Deep-dive into customer behaviour and spend',
+                icon: 'bar-chart-2',
                 colorClass: 'bg-purple'
             }
         ]
