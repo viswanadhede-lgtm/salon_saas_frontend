@@ -77,24 +77,37 @@ const initializeOverview = async () => {
             
             if (cards.length >= 4) {
                 // Card 1: Gross Revenue
-                cards[0].querySelector('.stat-label').textContent = 'Gross Revenue';
-                cards[0].querySelector('.stat-value').textContent = `₹${Number(kpi.gross_revenue || 0).toLocaleString('en-IN')}`;
+                const lbl1 = cards[0].querySelector('.stat-label');
+                const val1 = cards[0].querySelector('.stat-value');
+                if (lbl1) lbl1.textContent = 'Gross Revenue';
+                if (val1) val1.textContent = `₹${Number(kpi.gross_revenue || 0).toLocaleString('en-IN')}`;
                 
                 // Card 2: Expenses
-                cards[1].querySelector('.stat-label').textContent = 'Total Expenses';
-                cards[1].querySelector('.stat-value').textContent = `₹${Number(kpi.total_expenses || 0).toLocaleString('en-IN')}`;
-                cards[1].querySelector('.stat-icon').className = 'stat-icon bg-rose-light';
-                cards[1].querySelector('.text-emerald').outerHTML = '<i data-feather="trending-down" class="text-rose"></i>';
+                const lbl2 = cards[1].querySelector('.stat-label');
+                const val2 = cards[1].querySelector('.stat-value');
+                const iconBase2 = cards[1].querySelector('.stat-icon');
+                if (lbl2) lbl2.textContent = 'Total Expenses';
+                if (val2) val2.textContent = `₹${Number(kpi.total_expenses || 0).toLocaleString('en-IN')}`;
+                if (iconBase2) {
+                    iconBase2.className = 'stat-icon bg-rose-light';
+                    iconBase2.innerHTML = '<i data-feather="dollar-sign" class="text-rose" style="color: #f43f5e;"></i>';
+                }
                 
                 // Card 3: Net Revenue (Profit)
                 const netRev = Number(kpi.net_revenue || 0);
-                cards[2].querySelector('.stat-label').textContent = 'Net Revenue';
-                cards[2].querySelector('.stat-value').textContent = `₹${netRev.toLocaleString('en-IN')}`;
-                cards[2].querySelector('.stat-value').style.color = netRev >= 0 ? '#10b981' : '#ef4444';
+                const lbl3 = cards[2].querySelector('.stat-label');
+                const val3 = cards[2].querySelector('.stat-value');
+                if (lbl3) lbl3.textContent = 'Net Revenue';
+                if (val3) {
+                    val3.textContent = `₹${netRev.toLocaleString('en-IN')}`;
+                    val3.style.color = netRev >= 0 ? '#10b981' : '#ef4444';
+                }
                 
                 // Card 4: Total Bookings
-                cards[3].querySelector('.stat-label').textContent = 'Total Bookings';
-                cards[3].querySelector('.stat-value').textContent = kpi.total_bookings || '0';
+                const lbl4 = cards[3].querySelector('.stat-label');
+                const val4 = cards[3].querySelector('.stat-value');
+                if (lbl4) lbl4.textContent = 'Total Bookings';
+                if (val4) val4.textContent = kpi.total_bookings || '0';
             }
 
             // ── B. Render Trends (Line Chart) ──
