@@ -438,12 +438,12 @@ const REPORT_TYPES = {
         subtitle: 'Multi-location comparison and trends',
         icon: 'map-pin',
         backCat: 'operations',
-        kpi1: { label: 'Active Branches', value: 'Loading...' },
-        kpi2: { label: 'Total Visits', value: 'Loading...' },
-        kpi3: { label: 'Top Branch', value: 'Loading...' },
-        kpi4: { label: 'Total Revenue', value: 'Loading...' },
-        tableTitle: 'Branch Overview',
-        headers: ['Branch Name', 'Address', 'Phone', 'Staff Count', 'Total Visits', 'Revenue', 'Status'],
+        kpi1: { label: 'Total Branches',        value: 'Loading...' },
+        kpi2: { label: 'Total Revenue',          value: 'Loading...' },
+        kpi3: { label: 'Top Branch',             value: 'Loading...' },
+        kpi4: { label: 'Avg Revenue / Branch',   value: 'Loading...' },
+        tableTitle: 'Branch Comparison',
+        headers: ['Branch', 'Active Staff', 'Bookings', 'Completed', 'Cancelled', 'No-Shows', 'Revenue', 'Expenses', 'Net Revenue', 'Completion Rate', 'Status'],
         rows: []
     }
 };
@@ -3898,6 +3898,139 @@ document.addEventListener('DOMContentLoaded', async () => {
             if (btnApply) btnApply.addEventListener('click', loadStaffData);
             loadStaffData();
         });
+
+    } else if (type === 'ops-branch') {
+        // ── LIVE: Branch Performance Report ──────────────────────────────────
+        // Company-wide: no branch filter — always compares ALL branches
+        const companyId   = localStorage.getItem('company_id');
+        const filterStart = document.getElementById('filterStartDate');
+        const filterEnd   = document.getElementById('filterEndDate');
+        const filterBranch = document.getElementById('filterBranch');
+        const btnApply    = document.getElementById('btnApplyFilters');
+
+        // Hide branch filter — not applicable for cross-branch comparison
+        if (filterBranch) {
+            const branchWrapper = filterBranch.closest('.filter-group') || filterBranch.parentElement;
+            if (branchWrapper) branchWrapper.style.display = 'none';
+        }
+
+        const now      = new Date();
+        const today    = new Date(now.getTime() - now.getTimezoneOffset() * 60000);
+        const firstDay = new Date(today.getFullYear(), today.getMonth(), 1, 12, 0, 0);
+
+        if (filterStart && filterEnd) {
+            if (!filterStart.value) filterStart.value = firstDay.toISOString().split('T')[0];
+            if (!filterEnd.value)   filterEnd.value   = today.toISOString().split('T')[0];
+        }
+
+        const loadBranchData = async () => {
+            const start = filterStart ? filterStart.value : '2000-01-01';
+            const end   = filterEnd   ? filterEnd.value   : '2099-12-31';
+
+            data.kpi1.value = 'Loading...'; data.kpi2.value = 'Loading...';
+            data.kpi3.value = 'Loading...'; data.kpi4.value = 'Loading...';
+            updateKPIs(data.kpi1, data.kpi2, data.kpi3, data.kpi4);
+            const tbody = document.getElementById('tableBody');
+            if (tbody) tbody.innerHTML = '<tr><td colspan="11" style="text-align:center;padding:2rem;">Loading data...</td></tr>';
+
+            try {
+                const args = { p_company_id: companyId, p_start_date: start, p_end_date: end };
+
+                const [sumRes, trendRes, distRes, tRes] = await Promise.all([
+                    supabase.rpc('get_branch_performance_summary', args),
+                    supabase.rpc('get_branch_performance_trend', args),
+                    supabase.rpc('get_branch_performance_distribution', args),
+                    supabase.rpc('get_branch_performance_table', args)
+                ]);
+
+                // 1. KPI Cards
+                if (sumRes.error) console.warn('get_branch_performance_summary Error:', sumRes.error);
+                const sumRow = Array.isArray(sumRes.data) ? sumRes.data[0] : sumRes.data;
+                if (sumRow) {
+                    data.kpi1.value = Number(sumRow.total_branches         || 0).toLocaleString();
+                    data.kpi2.value = sumRow.total_revenue          != null ? formatCurrency(sumRow.total_revenue)          : '—';
+                    data.kpi3.value = sumRow.top_branch             || '—';
+                    data.kpi4.value = sumRow.avg_revenue_per_branch  != null ? formatCurrency(sumRow.avg_revenue_per_branch)  : '—';
+                } else {
+                    data.kpi1.value = '0'; data.kpi2.value = '—';
+                    data.kpi3.value = '—'; data.kpi4.value = '—';
+                }
+                updateKPIs(data.kpi1, data.kpi2, data.kpi3, data.kpi4);
+
+                // 2. Trend Chart — daily bookings across all branches
+                if (trendRes.error) console.warn('get_branch_performance_trend Error:', trendRes.error);
+                if (typeof renderTrendChart === 'function') {
+                    if (trendRes.data && trendRes.data.length > 0) {
+                        renderTrendChart(
+                            trendRes.data.map(t => new Date(t.booking_date).toLocaleDateString(undefined, {month:'short', day:'numeric'})),
+                            trendRes.data.map(t => Number(t.bookings || 0))
+                        );
+                    } else renderTrendChart([], []);
+                }
+
+                // 3. Donut Chart — revenue per branch
+                if (distRes.error) console.warn('get_branch_performance_distribution Error:', distRes.error);
+                if (typeof renderDistributionChart === 'function') {
+                    if (distRes.data && distRes.data.length > 0) {
+                        renderDistributionChart(
+                            distRes.data.map(s => s.branch_name || 'Unknown'),
+                            distRes.data.map(s => Number(s.revenue || 0))
+                        );
+                    } else renderDistributionChart([], []);
+                }
+
+                // 4. Data Table — 11 columns
+                data.headers = ['Branch', 'Active Staff', 'Bookings', 'Completed', 'Cancelled', 'No-Shows', 'Revenue', 'Expenses', 'Net Revenue', 'Completion Rate', 'Status'];
+                if (tRes.error) console.warn('get_branch_performance_table Error:', tRes.error);
+                if (tRes.data && tRes.data.length > 0) {
+                    const tRows = tRes.data.map(r => {
+                        const name       = r.branch_name    || '—';
+                        const staff      = Number(r.active_staff    || 0).toLocaleString();
+                        const totalBk    = Number(r.total_bookings  || 0).toLocaleString();
+                        const completed  = Number(r.completed       || 0).toLocaleString();
+                        const cancelled  = Number(r.cancelled       || 0).toLocaleString();
+                        const noShows    = Number(r.no_shows        || 0).toLocaleString();
+                        const revenue    = r.total_revenue   != null ? formatCurrency(r.total_revenue)   : '—';
+                        const expenses   = r.total_expenses  != null ? formatCurrency(r.total_expenses)  : '—';
+                        const netRev     = r.net_revenue     != null ? r.net_revenue : 0;
+                        const netColor   = netRev >= 0 ? '#10b981' : '#ef4444';
+                        const netHtml    = `<strong style="color:${netColor};">${formatCurrency(netRev)}</strong>`;
+                        const rate       = r.completion_rate != null ? Number(r.completion_rate).toFixed(1) + '%' : '—';
+                        const rateColor  = Number(r.completion_rate) >= 75 ? '#10b981' : Number(r.completion_rate) >= 50 ? '#f59e0b' : '#ef4444';
+
+                        const statusStyle = r.status === 'Active'
+                            ? 'background:#dcfce7;color:#166534;'
+                            : 'background:#f1f5f9;color:#64748b;';
+
+                        return [
+                            `<strong>${name}</strong>`,
+                            staff,
+                            totalBk,
+                            `<span style="color:#10b981;">${completed}</span>`,
+                            `<span style="color:#ef4444;">${cancelled}</span>`,
+                            `<span style="color:#f59e0b;">${noShows}</span>`,
+                            `<strong style="color:#10b981;">${revenue}</strong>`,
+                            `<span style="color:#ef4444;">${expenses}</span>`,
+                            netHtml,
+                            `<span style="color:${rateColor};font-weight:600;">${rate}</span>`,
+                            `<span class="status-pill" style="${statusStyle}">${r.status || '—'}</span>`
+                        ];
+                    });
+                    updateTable(data.headers, tRows);
+                } else {
+                    updateTable(data.headers, []);
+                }
+
+            } catch (err) {
+                console.error('Critical exception in loadBranchData:', err);
+                if (typeof renderTrendChart === 'function')        renderTrendChart([], []);
+                if (typeof renderDistributionChart === 'function') renderDistributionChart([], []);
+                updateTable(data.headers, []);
+            }
+        };
+
+        if (btnApply) btnApply.addEventListener('click', loadBranchData);
+        loadBranchData();
 
     } else {
         // Render hardcoded mock data for the rest of the reports
