@@ -3016,8 +3016,8 @@ document.addEventListener('DOMContentLoaded', async () => {
                 if (typeof renderTrendChart === 'function') {
                     if (trendRes.data && trendRes.data.length > 0) {
                         renderTrendChart(
-                            trendRes.data.map(t => new Date(t.date).toLocaleDateString(undefined, {month:'short', day:'numeric'})),
-                            trendRes.data.map(t => Number(t.count || t.total || t.bookings || 0))
+                            trendRes.data.map(t => new Date(t.booking_date || t.date).toLocaleDateString(undefined, {month:'short', day:'numeric'})),
+                            trendRes.data.map(t => Number(t.completed || 0) + Number(t.cancelled || 0) + Number(t.no_shows || 0))
                         );
                     } else renderTrendChart([], []);
                 }
