@@ -535,8 +535,8 @@ export function initGlobalBookingModal() {
                     customer_name:  payloads[0].customer_name  || '',
                     customer_mail:  payloads[0].customer_mail  || null,
                     customer_phone: payloads[0].customer_phone || '',
-                    service_id:     payloads[0].service_id     || null,   // first service
-                    staff_id:       payloads[0].staff_id       || null,   // first staff
+                    service_id:     payloads.map(p => p.service_id).filter(Boolean).join(', '),
+                    staff_id:       [...new Set(payloads.map(p => p.staff_id).filter(Boolean))].join(', '),
                     service_name:   payloads.map(p => p.service_name).filter(Boolean).join(', '),
                     staff_name:     [...new Set(payloads.map(p => p.staff_name).filter(Boolean))].join(', '),
                     booking_date:   payloads[0].booking_date,

@@ -635,8 +635,8 @@ function attachEventListeners() {
             // ── Update summary row in bookings_for_business_transaction ──
             const allCurrentRows = Array.from(svcRowEls);
             const summaryUpdate = {
-                service_id:   allCurrentRows[0]?.querySelector('.edit-svc-select')?.value   || null,
-                staff_id:     allCurrentRows[0]?.querySelector('.edit-staff-select')?.value  || null,
+                service_id:   allCurrentRows.map(row => row.querySelector('.edit-svc-select')?.value || '').filter(Boolean).join(', '),
+                staff_id:     [...new Set(allCurrentRows.map(row => row.querySelector('.edit-staff-select')?.value || '').filter(Boolean))].join(', '),
                 service_name: allCurrentRows.map(row => {
                     const sel = row.querySelector('.edit-svc-select');
                     return sel?.options[sel.selectedIndex]?.textContent?.trim() || '';
