@@ -407,15 +407,13 @@ const REPORT_TYPES = {
         subtitle: 'Deep-dive into customer behaviour and spend',
         icon: 'bar-chart-2',
         backCat: 'customers',
-        kpi1: { label: 'Top Customer', value: '—' },
-        kpi2: { label: 'Avg Revenue / Customer', value: '—' },
-        kpi3: { label: 'Avg Visits / Customer', value: '—' },
-        kpi4: { label: 'Retention Rate', value: '—' },
-        tableTitle: 'Customer Insights',
-        headers: ['Customer', 'Total Visits', 'Total Spend', 'Avg Spend', 'First Visit', 'Last Visit', 'Status'],
-        rows: [
-            ['Coming soon...', '—', '—', '—', '—', '—', '—']
-        ]
+        kpi1: { label: 'Top Customer',            value: 'Loading...' },
+        kpi2: { label: 'Avg Revenue / Customer',  value: 'Loading...' },
+        kpi3: { label: 'Avg Visits / Customer',  value: 'Loading...' },
+        kpi4: { label: 'Repeat Customer Rate',    value: 'Loading...' },
+        tableTitle: 'Customer Deep-Dive',
+        headers: ['Customer', 'Total Visits', 'Total Spend', 'Avg / Visit', 'Favourite Service', 'Last Visit', 'Status'],
+        rows: []
     },
 
 
@@ -3624,6 +3622,144 @@ document.addEventListener('DOMContentLoaded', async () => {
         initializeBranchDropdown().then(() => {
             if (btnApply) btnApply.addEventListener('click', loadCustomerMetrics);
             loadCustomerMetrics();
+        });
+
+    } else if (type === 'cust-insights') {
+        // ── LIVE: Customer Insights Report ───────────────────────────────────
+        const companyId    = localStorage.getItem('company_id');
+        const filterStart  = document.getElementById('filterStartDate');
+        const filterEnd    = document.getElementById('filterEndDate');
+        const filterBranch = document.getElementById('filterBranch');
+        const btnApply     = document.getElementById('btnApplyFilters');
+
+        const now      = new Date();
+        const today    = new Date(now.getTime() - now.getTimezoneOffset() * 60000);
+        const firstDay = new Date(today.getFullYear(), today.getMonth(), 1, 12, 0, 0);
+
+        if (filterStart && filterEnd) {
+            if (!filterStart.value) filterStart.value = firstDay.toISOString().split('T')[0];
+            if (!filterEnd.value)   filterEnd.value   = today.toISOString().split('T')[0];
+        }
+
+        const initializeBranchDropdown = async () => {
+            try {
+                const { data: bList } = await supabase.from('branches').select('branch_id, branch_name').eq('company_id', companyId);
+                if (bList && filterBranch) {
+                    const existing = filterBranch.value;
+                    filterBranch.innerHTML = '<option value="all">All Branches</option>' +
+                        bList.map(b => `<option value="${b.branch_id}">${b.branch_name}</option>`).join('');
+                    filterBranch.value = existing || 'all';
+                }
+            } catch(e) { console.warn('Branch fetch failed', e); }
+        };
+
+        const loadInsightsData = async () => {
+            const start = filterStart ? filterStart.value : '2000-01-01';
+            const end   = filterEnd   ? filterEnd.value   : '2099-12-31';
+            const bid   = (filterBranch && filterBranch.value !== 'all')
+                ? filterBranch.value
+                : localStorage.getItem('active_branch_id');
+
+            data.kpi1.value = 'Loading...'; data.kpi2.value = 'Loading...';
+            data.kpi3.value = 'Loading...'; data.kpi4.value = 'Loading...';
+            updateKPIs(data.kpi1, data.kpi2, data.kpi3, data.kpi4);
+            const tbody = document.getElementById('tableBody');
+            if (tbody) tbody.innerHTML = '<tr><td colspan="7" style="text-align:center;padding:2rem;">Loading data...</td></tr>';
+
+            try {
+                const args = { p_company_id: companyId, p_branch_id: bid, p_start_date: start, p_end_date: end };
+
+                const [sumRes, trendRes, distRes, tRes] = await Promise.all([
+                    supabase.rpc('get_customer_insights_summary', args),
+                    supabase.rpc('get_customer_insights_trend', args),
+                    supabase.rpc('get_customer_insights_distribution', args),
+                    supabase.rpc('get_customer_insights_table', args)
+                ]);
+
+                // 1. KPI Cards
+                if (sumRes.error) console.warn('get_customer_insights_summary Error:', sumRes.error);
+                const sumRow = Array.isArray(sumRes.data) ? sumRes.data[0] : sumRes.data;
+                if (sumRow) {
+                    data.kpi1.value = sumRow.top_customer                || '—';
+                    data.kpi2.value = sumRow.avg_revenue_per_customer != null ? formatCurrency(sumRow.avg_revenue_per_customer) : '—';
+                    data.kpi3.value = sumRow.avg_visits_per_customer  != null ? Number(sumRow.avg_visits_per_customer).toFixed(1) : '—';
+                    data.kpi4.value = sumRow.repeat_customer_rate     != null ? Number(sumRow.repeat_customer_rate).toFixed(1) + '%' : '—';
+                } else {
+                    data.kpi1.value = '—'; data.kpi2.value = '—';
+                    data.kpi3.value = '—'; data.kpi4.value = '—';
+                }
+                updateKPIs(data.kpi1, data.kpi2, data.kpi3, data.kpi4);
+
+                // 2. Trend Chart — visits per day
+                if (trendRes.error) console.warn('get_customer_insights_trend Error:', trendRes.error);
+                if (typeof renderTrendChart === 'function') {
+                    if (trendRes.data && trendRes.data.length > 0) {
+                        renderTrendChart(
+                            trendRes.data.map(t => new Date(t.booking_date || t.date).toLocaleDateString(undefined, {month:'short', day:'numeric'})),
+                            trendRes.data.map(t => Number(t.visits || t.count || 0))
+                        );
+                    } else renderTrendChart([], []);
+                }
+
+                // 3. Donut Chart — New vs Repeat
+                if (distRes.error) console.warn('get_customer_insights_distribution Error:', distRes.error);
+                if (typeof renderDistributionChart === 'function') {
+                    if (distRes.data && distRes.data.length > 0) {
+                        renderDistributionChart(
+                            distRes.data.map(s => s.label || 'Unknown'),
+                            distRes.data.map(s => Number(s.count || 0))
+                        );
+                    } else renderDistributionChart([], []);
+                }
+
+                // 4. Data Table — 7 columns
+                data.headers = ['Customer', 'Total Visits', 'Total Spend', 'Avg / Visit', 'Favourite Service', 'Last Visit', 'Status'];
+                if (tRes.error) console.warn('get_customer_insights_table Error:', tRes.error);
+                if (tRes.data && tRes.data.length > 0) {
+                    const tRows = tRes.data.map(r => {
+                        const name     = r.customer_name  || '—';
+                        const phone    = r.customer_phone || '';
+                        const custCell = phone
+                            ? `<div><strong>${name}</strong><br><small style="color:#64748b;">${phone}</small></div>`
+                            : `<strong>${name}</strong>`;
+                        const visits   = Number(r.total_visits || 0).toLocaleString();
+                        const spend    = r.total_spend != null ? formatCurrency(r.total_spend) : '—';
+                        const avgVisit = r.avg_spend_per_visit != null ? formatCurrency(r.avg_spend_per_visit) : '—';
+                        const favSvc   = r.favourite_service || '—';
+                        const lastVisit = r.last_visit
+                            ? new Date(r.last_visit).toLocaleDateString('en-IN', {day:'2-digit', month:'short', year:'numeric'})
+                            : '—';
+                        const statusStyle = r.status === 'Active'
+                            ? 'background:#dcfce7;color:#166534;'
+                            : 'background:#f1f5f9;color:#64748b;';
+                        const statusHtml = `<span class="status-pill" style="${statusStyle}">${r.status || '—'}</span>`;
+
+                        return [
+                            custCell,
+                            visits,
+                            `<strong style="color:#10b981;">${spend}</strong>`,
+                            avgVisit,
+                            `<span style="color:#6366f1;font-weight:500;">${favSvc}</span>`,
+                            lastVisit,
+                            statusHtml
+                        ];
+                    });
+                    updateTable(data.headers, tRows);
+                } else {
+                    updateTable(data.headers, []);
+                }
+
+            } catch (err) {
+                console.error('Critical exception in loadInsightsData:', err);
+                if (typeof renderTrendChart === 'function')        renderTrendChart([], []);
+                if (typeof renderDistributionChart === 'function') renderDistributionChart([], []);
+                updateTable(data.headers, []);
+            }
+        };
+
+        initializeBranchDropdown().then(() => {
+            if (btnApply) btnApply.addEventListener('click', loadInsightsData);
+            loadInsightsData();
         });
 
     } else {
