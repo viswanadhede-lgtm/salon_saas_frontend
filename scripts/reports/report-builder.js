@@ -390,7 +390,7 @@ const REPORT_TYPES = {
     // CUSTOMERS SUB-REPORTS
     // ─────────────────────────────────────────────
     'cust-metrics': {
-        title: 'Customer Metrics',
+        title: 'Customers Overview',
         subtitle: 'Total, new, active and inactive customers',
         icon: 'users',
         backCat: 'customers',

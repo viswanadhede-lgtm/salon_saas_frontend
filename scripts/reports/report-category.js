@@ -153,7 +153,7 @@ const CATEGORIES = {
         subReports: [
             {
                 type: 'cust-metrics',
-                label: 'Customer Metrics',
+                label: 'Customers Overview',
                 desc: 'Total, new, active and inactive customers',
                 icon: 'users',
                 colorClass: 'bg-violet'
