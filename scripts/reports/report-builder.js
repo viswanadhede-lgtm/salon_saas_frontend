@@ -2945,6 +2945,144 @@ document.addEventListener('DOMContentLoaded', async () => {
 
         if (btnApply) btnApply.addEventListener('click', loadExpensesData);
         loadExpensesData();
+
+    } else if (type === 'bk-total') {
+        // ── LIVE: Total Appointments Report ──────────────────────────────────
+        const companyId = localStorage.getItem('company_id');
+        const filterStart  = document.getElementById('filterStartDate');
+        const filterEnd    = document.getElementById('filterEndDate');
+        const filterBranch = document.getElementById('filterBranch');
+        const btnApply     = document.getElementById('btnApplyFilters');
+
+        const now      = new Date();
+        const today    = new Date(now.getTime() - now.getTimezoneOffset() * 60000);
+        const firstDay = new Date(today.getFullYear(), today.getMonth(), 1, 12, 0, 0);
+
+        if (filterStart && filterEnd) {
+            if (!filterStart.value) filterStart.value = firstDay.toISOString().split('T')[0];
+            if (!filterEnd.value)   filterEnd.value   = today.toISOString().split('T')[0];
+        }
+
+        const initializeBranchDropdown = async () => {
+            try {
+                const { data: bList } = await supabase.from('branches').select('branch_id, branch_name').eq('company_id', companyId);
+                if (bList && filterBranch) {
+                    const existing = filterBranch.value;
+                    filterBranch.innerHTML = '<option value="all">All Branches</option>' +
+                        bList.map(b => `<option value="${b.branch_id}">${b.branch_name}</option>`).join('');
+                    filterBranch.value = existing || 'all';
+                }
+            } catch(e) { console.warn('Branch fetch failed', e); }
+        };
+
+        const loadBookingsData = async () => {
+            const start = filterStart ? filterStart.value : '2000-01-01';
+            const end   = filterEnd   ? filterEnd.value   : '2099-12-31';
+            const bid   = (filterBranch && filterBranch.value !== 'all') ? filterBranch.value : null;
+
+            // Loading state
+            data.kpi1.value = 'Loading...'; data.kpi2.value = 'Loading...';
+            data.kpi3.value = 'Loading...'; data.kpi4.value = 'Loading...';
+            updateKPIs(data.kpi1, data.kpi2, data.kpi3, data.kpi4);
+            const tbody = document.getElementById('tableBody');
+            if (tbody) tbody.innerHTML = '<tr><td colspan="7" style="text-align:center;padding:2rem;">Loading data...</td></tr>';
+
+            try {
+                const args = { p_branch_id: bid, p_start_date: start, p_end_date: end };
+
+                const [sumRes, trendRes, distRes, tRes] = await Promise.all([
+                    supabase.rpc('get_bookings_summary', args),
+                    supabase.rpc('get_bookings_trend', args),
+                    supabase.rpc('get_bookings_status_distribution', args),
+                    supabase.rpc('get_bookings_table', args)
+                ]);
+
+                // 1. KPI Cards
+                if (sumRes.error) console.warn('get_bookings_summary Error:', sumRes.error);
+                const sumRow = Array.isArray(sumRes.data) ? sumRes.data[0] : sumRes.data;
+                if (sumRow) {
+                    data.kpi1.value = Number(sumRow.total_bookings || 0).toLocaleString();
+                    data.kpi2.value = Number(sumRow.completed      || 0).toLocaleString();
+                    data.kpi3.value = Number(sumRow.cancelled      || 0).toLocaleString();
+                    data.kpi4.value = Number(sumRow.no_shows       || 0).toLocaleString();
+                } else {
+                    data.kpi1.value = '0'; data.kpi2.value = '0';
+                    data.kpi3.value = '0'; data.kpi4.value = '0';
+                }
+                updateKPIs(data.kpi1, data.kpi2, data.kpi3, data.kpi4);
+
+                // 2. Trend Bar Chart
+                if (trendRes.error) console.warn('get_bookings_trend Error:', trendRes.error);
+                if (typeof renderTrendChart === 'function') {
+                    if (trendRes.data && trendRes.data.length > 0) {
+                        renderTrendChart(
+                            trendRes.data.map(t => new Date(t.date).toLocaleDateString(undefined, {month:'short', day:'numeric'})),
+                            trendRes.data.map(t => Number(t.count || t.total || t.bookings || 0))
+                        );
+                    } else renderTrendChart([], []);
+                }
+
+                // 3. Donut Chart - Status Distribution
+                if (distRes.error) console.warn('get_bookings_status_distribution Error:', distRes.error);
+                if (typeof renderDistributionChart === 'function') {
+                    if (distRes.data && distRes.data.length > 0) {
+                        renderDistributionChart(
+                            distRes.data.map(s => {
+                                const st = (s.status || 'unknown').replace('_', '-');
+                                return st.charAt(0).toUpperCase() + st.slice(1);
+                            }),
+                            distRes.data.map(s => Number(s.count || s.total || 0))
+                        );
+                    } else renderDistributionChart([], []);
+                }
+
+                // 4. Data Table
+                data.headers = ['Date', 'Time', 'Customer', 'Service', 'Staff', 'Status', 'Amount'];
+                if (tRes.error) console.warn('get_bookings_table Error:', tRes.error);
+                if (tRes.data && tRes.data.length > 0) {
+                    const statusStyles = {
+                        'completed': 'background:#dcfce7;color:#166534;',
+                        'confirmed': 'background:#dbeafe;color:#1e40af;',
+                        'booked':    'background:#e0e7ff;color:#3730a3;',
+                        'cancelled': 'background:#fee2e2;color:#991b1b;',
+                        'no-show':   'background:#fef3c7;color:#92400e;',
+                        'no_show':   'background:#fef3c7;color:#92400e;'
+                    };
+                    const tRows = tRes.data.map(r => {
+                        const dateText = r.booking_date
+                            ? new Date(r.booking_date).toLocaleDateString('en-IN', {day:'2-digit', month:'short', year:'numeric'})
+                            : '—';
+                        const timeText  = r.start_time ? r.start_time.slice(0, 5) : '—';
+                        const customer  = r.customer_name || '—';
+                        const service   = r.service_name  || '—';
+                        const staff     = r.staff_name    || '—';
+                        const stKey     = (r.status || 'booked').toLowerCase().replace('_', '-');
+                        const stStyle   = statusStyles[stKey] || '';
+                        const statusHtml = `<span class="status-pill" style="${stStyle}">${stKey.charAt(0).toUpperCase() + stKey.slice(1)}</span>`;
+                        const amount    = r.total_price != null
+                            ? formatCurrency(r.total_price)
+                            : (r.price != null ? formatCurrency(r.price) : '—');
+
+                        return [dateText, timeText, customer, service, staff, statusHtml, amount];
+                    });
+                    updateTable(data.headers, tRows);
+                } else {
+                    updateTable(data.headers, []);
+                }
+
+            } catch (err) {
+                console.error('Critical exception in loadBookingsData:', err);
+                if (typeof renderTrendChart === 'function')       renderTrendChart([], []);
+                if (typeof renderDistributionChart === 'function') renderDistributionChart([], []);
+                updateTable(data.headers, []);
+            }
+        };
+
+        initializeBranchDropdown().then(() => {
+            if (btnApply) btnApply.addEventListener('click', loadBookingsData);
+            loadBookingsData();
+        });
+
     } else {
         // Render hardcoded mock data for the rest of the reports
         updateTable(data.headers, data.rows);
