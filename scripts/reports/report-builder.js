@@ -2988,10 +2988,16 @@ document.addEventListener('DOMContentLoaded', async () => {
             if (tbody) tbody.innerHTML = '<tr><td colspan="7" style="text-align:center;padding:2rem;">Loading data...</td></tr>';
 
             try {
-                const args = { p_branch_id: bid, p_start_date: start, p_end_date: end };
+                const args = {
+                    p_company_id: companyId,
+                    p_branch_id:  bid,
+                    p_start_date: start,
+                    p_end_date:   end
+                };
+                const summaryArgs = { p_branch_id: bid, p_start_date: start, p_end_date: end };
 
                 const [sumRes, trendRes, distRes, tRes] = await Promise.all([
-                    supabase.rpc('get_bookings_summary', args),
+                    supabase.rpc('get_bookings_summary', summaryArgs),
                     supabase.rpc('get_bookings_trend', args),
                     supabase.rpc('get_bookings_status_distribution', args),
                     supabase.rpc('get_bookings_table', args)
