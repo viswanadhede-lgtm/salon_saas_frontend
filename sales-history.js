@@ -895,7 +895,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 let resultingLineId = itemId;
 
                 if (refundQty < (itemObj.quantity || 1)) {
-                    // PARTIAL REFUND: Strictly shrink existing quantity, do NOT spawn new rows
+                    // PARTIAL REFUND: Strictly shrink existing quantity
                     const remainingQty = itemObj.quantity - refundQty;
                     const remainingAmount = remainingQty * itemPrice;
                     saleUpdatePromises.push(
@@ -909,6 +909,26 @@ document.addEventListener('DOMContentLoaded', () => {
                     saleUpdatePromises.push(
                         supabase.from('sales').update({ status: 'refunded' }).eq('id', itemId)
                     );
+                }
+
+                // INVENTORY RESTOCK LOGIC
+                if (itemObj.product_id) {
+                    try {
+                        const { data: prodData } = await supabase
+                            .from('products')
+                            .select('stock_quantity')
+                            .eq('id', itemObj.product_id)
+                            .single();
+                            
+                        if (prodData) {
+                            const newStock = Number(prodData.stock_quantity || 0) + refundQty;
+                            saleUpdatePromises.push(
+                                supabase.from('products').update({ stock_quantity: newStock }).eq('id', itemObj.product_id)
+                            );
+                        }
+                    } catch (restockErr) {
+                        console.error('Failed to restock product:', itemObj.product_id, restockErr);
+                    }
                 }
 
                 // Add Ledger Entry linked to the original row ID
