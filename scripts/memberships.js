@@ -1249,9 +1249,9 @@ function setupRefundPurchaseModal() {
                     <button class="modal-close" id="cancelMemRefundBtn"><i data-feather="x" style="color: #991b1b;"></i></button>
                 </div>
                 <div class="modal-body" style="padding: 24px; background: #fff;">
-                    <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 12px; padding: 20px; margin-bottom: 24px; text-align: center;">
-                        <p style="font-size: 0.75rem; color: #64748b; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 8px;">Refundable Amount</p>
-                        <p style="font-size: 2.25rem; font-weight: 800; color: #dc2626; margin: 0;" id="rfMemAmountDisplay">₹0</p>
+                    <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 12px; padding: 20px; margin-bottom: 24px; text-align: center; display: flex; flex-direction: column; align-items: center;">
+                        <p style="font-size: 0.75rem; color: #64748b; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 12px;">Refundable Amount (₹)</p>
+                        <input type="number" id="rfMemAmountDisplay" style="font-size: 2.25rem; font-weight: 800; color: #dc2626; margin: 0; text-align: center; border: 1px solid #fca5a5; border-radius: 8px; width: 100%; max-width: 250px; background: white; padding: 8px; outline: none;" value="0" min="0">
                     </div>
 
                     <div class="form-group" style="margin-bottom: 20px;">
@@ -1318,7 +1318,7 @@ window.refundMembershipPurchase = async function(purchaseId) {
     const custName = purchaseToRefundObj.customer_name || `${purchaseToRefundObj.first_name || ''} ${purchaseToRefundObj.last_name || ''}`.trim() || 'Customer';
     const planName = purchaseToRefundObj.plan_name || purchaseToRefundObj.membership_name || purchaseToRefundObj.name || 'Plan';
     subtitle.textContent = `${custName} • ${planName}`;
-    amountDisplay.textContent = 'Calculating...';
+    amountDisplay.value = 'Loading...';
     methodDisplay.value = 'Loading...';
     if (noteField) noteField.value = '';
     if (confirmBtn) { confirmBtn.disabled = true; confirmBtn.textContent = 'Issue Refund'; }
@@ -1356,19 +1356,14 @@ window.refundMembershipPurchase = async function(purchaseId) {
 
         if (refundableMembershipAmount < 0) refundableMembershipAmount = 0;
 
-        amountDisplay.textContent = `₹${refundableMembershipAmount.toLocaleString('en-IN')}`;
+        amountDisplay.value = refundableMembershipAmount;
         amountDisplay.style.color = (refundableMembershipAmount <= 0) ? '#94a3b8' : '#dc2626';
 
         const lastMethod = data && data.length > 0 ? data[data.length - 1].payment_method : 'cash';
         methodDisplay.value = lastMethod ? (lastMethod.charAt(0).toUpperCase() + lastMethod.slice(1)) : 'Cash';
 
-        if (refundableMembershipAmount <= 0) {
-            confirmBtn.disabled = true;
-            confirmBtn.textContent = 'Nothing to Refund';
-        } else {
-            confirmBtn.disabled = false;
-            confirmBtn.textContent = 'Issue Refund';
-        }
+        confirmBtn.disabled = false;
+        confirmBtn.textContent = 'Issue Refund';
 
     } catch (err) {
         console.error('Error fetching ledger for refund:', err);
@@ -1377,7 +1372,13 @@ window.refundMembershipPurchase = async function(purchaseId) {
 };
 
 async function processMembershipRefund() {
-    if (!purchaseToRefundObj || refundableMembershipAmount <= 0) return;
+    const amountDisplay = document.getElementById('rfMemAmountDisplay');
+    const finalRefundAmount = Math.abs(parseFloat(amountDisplay?.value || '0'));
+
+    if (!purchaseToRefundObj || finalRefundAmount <= 0) {
+        showToast('Please enter a valid refund amount higher than 0.');
+        return;
+    }
     
     const confirmBtn = document.getElementById('confirmMemRefundBtn');
     const note = document.getElementById('rfMemNote')?.value.trim();
@@ -1397,7 +1398,7 @@ async function processMembershipRefund() {
                 branch_id: getBranchId(),
                 reference_id: purchaseId,
                 reference_type: 'membership',
-                amount: Math.abs(refundableMembershipAmount),
+                amount: finalRefundAmount,
                 status: 'refunded',
                 payment_method: (document.getElementById('rfMemMethodDisplay')?.value || 'cash').toLowerCase(),
                 notes: note || `Refund processed for membership ${purchaseId}`,
