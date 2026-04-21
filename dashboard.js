@@ -290,169 +290,17 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
-    async function fetchAndRenderWeeklyRevenue(currentBranchId) {
-        const chartContainer = document.getElementById('weeklyRevenueChart');
-        if (!chartContainer || !currentBranchId) return;
-
-        try {
-            const { supabase } = await import('./lib/supabase.js');
-            const dates = [];
-            for (let i = 6; i >= 0; i--) {
-                const d = new Date();
-                d.setDate(d.getDate() - i);
-                dates.push(d.toISOString().split('T')[0]);
-            }
-
-            const { data: transactions, error } = await supabase
-                .from('business_transactions')
-                .select('amount, paid_at')
-                .eq('branch_id', currentBranchId)
-                .eq('status', 'paid')
-                .gte('paid_at', dates[0] + 'T00:00:00');
-
-            if (error) throw error;
-
-            const dailyMap = {};
-            dates.forEach(d => dailyMap[d] = 0);
-            transactions.forEach(t => {
-                const d = t.paid_at.split('T')[0];
-                if (dailyMap[d] !== undefined) dailyMap[d] += t.amount;
-            });
-
-            const maxAmount = Math.max(...Object.values(dailyMap), 1000);
-            const daysShort = ['S','M','T','W','T','F','S'];
-
-            chartContainer.innerHTML = dates.map(d => {
-                const dateObj = new Date(d);
-                const dayLabel = daysShort[dateObj.getDay()];
-                const height = (dailyMap[d] / maxAmount) * 100;
-                const isToday = d === new Date().toISOString().split('T')[0];
-
-                return `
-                    <div class="bar-group ${isToday ? 'active' : ''}" title="₹${dailyMap[d].toLocaleString('en-IN')}">
-                        <div class="bar" style="height: ${Math.max(height, 5)}%"></div>
-                        <span class="day">${dayLabel}</span>
-                    </div>
-                `;
-            }).join('');
-
-        } catch (err) {
-            console.error("Error fetching Weekly Revenue:", err);
-            chartContainer.innerHTML = '<div class="centered-placeholder" style="color:#ef4444;">Error loading.</div>';
-        }
-    }
-
-    async function fetchAndRenderTopServices(currentBranchId) {
-        const listContainer = document.getElementById('topServicesList');
-        if (!listContainer || !currentBranchId) return;
-
-        try {
-            const { supabase } = await import('./lib/supabase.js');
-            const { data, error } = await supabase
-                .from('bookings_for_business_transaction')
-                .select('service_name, total_price')
-                .eq('branch_id', currentBranchId)
-                .eq('status', 'completed');
-
-            if (error) throw error;
-
-            const map = {};
-            (data || []).forEach(b => {
-                if (!map[b.service_name]) map[b.service_name] = { name: b.service_name, count: 0, revenue: 0 };
-                map[b.service_name].count++;
-                map[b.service_name].revenue += b.total_price;
-            });
-
-            const sorted = Object.values(map).sort((a,b) => b.count - a.count).slice(0, 3);
-            if (sorted.length === 0) {
-                listContainer.innerHTML = '<li class="centered-placeholder">No services yet.</li>';
-                return;
-            }
-
-            listContainer.innerHTML = sorted.map(s => `
-                <li>
-                    <div class="service-info">
-                        <span class="service-name">${s.name}</span>
-                        <span class="service-count">${s.count} bookings</span>
-                    </div>
-                    <div class="service-revenue">₹${s.revenue.toLocaleString('en-IN')}</div>
-                </li>
-            `).join('');
-        } catch (err) {
-            console.error("Error Top Services:", err);
-            listContainer.innerHTML = '<li class="centered-placeholder" style="color:#ef4444;">Error.</li>';
-        }
-    }
-
-    async function fetchAndRenderTopServicesToday(currentBranchId) {
-        const listContainer = document.getElementById('topServicesTodayList');
-        if (!listContainer || !currentBranchId) return;
-
-        try {
-            const { supabase } = await import('./lib/supabase.js');
-            const today = new Date(new Date().getTime() - (new Date().getTimezoneOffset() * 60000)).toISOString().split('T')[0];
-
-            const { data, error } = await supabase
-                .from('bookings_for_business_transaction')
-                .select('service_name')
-                .eq('branch_id', currentBranchId)
-                .eq('booking_date', today);
-
-            if (error) throw error;
-
-            const map = {};
-            (data || []).forEach(b => {
-                map[b.service_name] = (map[b.service_name] || 0) + 1;
-            });
-
-            const sorted = Object.entries(map).map(([name, count]) => ({ name, count }))
-                .sort((a,b) => b.count - a.count).slice(0, 3);
-
-            if (sorted.length === 0) {
-                listContainer.innerHTML = '<li class="centered-placeholder">No service bookings today.</li>';
-                return;
-            }
-
-            const maxCount = sorted[0].count;
-            const colors = ['#a78bfa', '#34d399', '#60a5fa', '#fb923c', '#f472b6'];
-
-            listContainer.innerHTML = sorted.map((s, idx) => `
-                <li class="services-today-item">
-                    <div class="sti-info">
-                        <span class="sti-dot" style="background:${colors[idx % colors.length]}"></span>
-                        <span class="sti-name">${s.name}</span>
-                    </div>
-                    <div class="sti-right">
-                        <div class="sti-bar-track">
-                            <div class="sti-bar" style="width:${(s.count / maxCount) * 100}%; background:${colors[idx % colors.length]}"></div>
-                        </div>
-                        <span class="sti-count">${s.count}</span>
-                    </div>
-                </li>
-            `).join('');
-        } catch (err) {
-            console.error("Error Today Services:", err);
-            listContainer.innerHTML = '<li class="centered-placeholder" style="color:#ef4444;">Error.</li>';
-        }
-    }
-
     // Call on load if branchId exists
     if (branchId) {
         fetchAndRenderDashboardKPIs(branchId);
         fetchAndRenderProductSales(branchId);
         fetchAndRenderAppointments(branchId);
-        fetchAndRenderWeeklyRevenue(branchId);
-        fetchAndRenderTopServices(branchId);
-        fetchAndRenderTopServicesToday(branchId);
     }
     
     // Attach dynamically to the global so branch switcher can use it
     window.fetchAndRenderDashboardKPIs = fetchAndRenderDashboardKPIs;
     window.fetchAndRenderProductSales = fetchAndRenderProductSales;
     window.fetchAndRenderAppointments = fetchAndRenderAppointments;
-    window.fetchAndRenderWeeklyRevenue = fetchAndRenderWeeklyRevenue;
-    window.fetchAndRenderTopServices = fetchAndRenderTopServices;
-    window.fetchAndRenderTopServicesToday = fetchAndRenderTopServicesToday;
 
     // ----------------------------------------------------------------
     // 4. APPOINTMENTS TAB LOGIC
@@ -838,14 +686,16 @@ async function loadBranches(storedBranchId) {
     }
 }
 
-    function refreshAllData(branchId) {
-        if (!branchId) return;
-        if (window.fetchAndRenderDashboardKPIs) window.fetchAndRenderDashboardKPIs(branchId);
-        if (window.fetchAndRenderProductSales) window.fetchAndRenderProductSales(branchId);
-        if (window.fetchAndRenderAppointments) window.fetchAndRenderAppointments(branchId);
-        if (window.fetchAndRenderWeeklyRevenue) window.fetchAndRenderWeeklyRevenue(branchId);
-        if (window.fetchAndRenderTopServices) window.fetchAndRenderTopServices(branchId);
-        if (window.fetchAndRenderTopServicesToday) window.fetchAndRenderTopServicesToday(branchId);
+function refreshAllData(branchId) {
+    // 1. Dashboard specific
+    if (typeof window.fetchAndRenderDashboardKPIs === 'function') {
+        window.fetchAndRenderDashboardKPIs(branchId);
+    }
+    if (typeof window.fetchAndRenderProductSales === 'function') {
+        window.fetchAndRenderProductSales(branchId);
+    }
+    if (typeof window.fetchAndRenderAppointments === 'function') {
+        window.fetchAndRenderAppointments(branchId);
     }
     // 2. Sub-pages (Today's Bookings, Completed, No-shows)
     if (typeof window.initPage === 'function') {
