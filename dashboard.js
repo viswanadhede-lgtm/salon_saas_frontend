@@ -290,17 +290,82 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
+    async function fetchAndRenderTopServicesToday(currentBranchId) {
+        const listContainer = document.getElementById('topServicesTodayList');
+        if (!listContainer || !currentBranchId) return;
+
+        try {
+            const { supabase } = await import('./lib/supabase.js');
+            const now = new Date();
+            const today = new Date(now.getTime() - (now.getTimezoneOffset() * 60000)).toISOString().split('T')[0];
+
+            // Fetch today's bookings for this branch
+            const { data: bookings, error } = await supabase
+                .from('bookings_for_business_transaction')
+                .select('service_name')
+                .eq('branch_id', currentBranchId)
+                .eq('booking_date', today)
+                .not('status', 'in', '("cancelled","no-show")');
+
+            if (error) throw error;
+
+            if (!bookings || bookings.length === 0) {
+                listContainer.innerHTML = '<li class="centered-placeholder">No services recorded today.</li>';
+                return;
+            }
+
+            // Aggregate counts
+            const serviceCounts = {};
+            bookings.forEach(b => {
+                const name = b.service_name || 'Other';
+                serviceCounts[name] = (serviceCounts[name] || 0) + 1;
+            });
+
+            const sorted = Object.entries(serviceCounts)
+                .map(([name, count]) => ({ name, count }))
+                .sort((a, b) => b.count - a.count);
+
+            const maxCount = sorted[0].count;
+            const colors = ['#a78bfa', '#34d399', '#60a5fa', '#fb923c', '#f472b6', '#818cf8', '#fb7185'];
+
+            listContainer.innerHTML = sorted.map((s, idx) => {
+                const percentage = Math.round((s.count / maxCount) * 100);
+                const color = colors[idx % colors.length];
+                return `
+                    <li class="services-today-item">
+                        <div class="sti-info">
+                            <span class="sti-dot" style="background:${color}"></span>
+                            <span class="sti-name">${s.name}</span>
+                        </div>
+                        <div class="sti-right">
+                            <div class="sti-bar-track">
+                                <div class="sti-bar" style="width:${percentage}%; background:${color}"></div>
+                            </div>
+                            <span class="sti-count">${s.count}</span>
+                        </div>
+                    </li>
+                `;
+            }).join('');
+
+        } catch (err) {
+            console.error("Error fetching Top Services Today:", err);
+            listContainer.innerHTML = '<li class="centered-placeholder" style="color:#ef4444;">Error loading services.</li>';
+        }
+    }
+
     // Call on load if branchId exists
     if (branchId) {
         fetchAndRenderDashboardKPIs(branchId);
         fetchAndRenderProductSales(branchId);
         fetchAndRenderAppointments(branchId);
+        fetchAndRenderTopServicesToday(branchId);
     }
     
     // Attach dynamically to the global so branch switcher can use it
     window.fetchAndRenderDashboardKPIs = fetchAndRenderDashboardKPIs;
     window.fetchAndRenderProductSales = fetchAndRenderProductSales;
     window.fetchAndRenderAppointments = fetchAndRenderAppointments;
+    window.fetchAndRenderTopServicesToday = fetchAndRenderTopServicesToday;
 
     // ----------------------------------------------------------------
     // 4. APPOINTMENTS TAB LOGIC
@@ -696,6 +761,9 @@ function refreshAllData(branchId) {
     }
     if (typeof window.fetchAndRenderAppointments === 'function') {
         window.fetchAndRenderAppointments(branchId);
+    }
+    if (typeof window.fetchAndRenderTopServicesToday === 'function') {
+        window.fetchAndRenderTopServicesToday(branchId);
     }
     // 2. Sub-pages (Today's Bookings, Completed, No-shows)
     if (typeof window.initPage === 'function') {
