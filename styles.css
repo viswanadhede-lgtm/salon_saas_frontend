@@ -20,20 +20,20 @@
     --shadow-xl: 0 20px 25px -5px rgb(0 0 0 / 0.1), 0 8px 10px -6px rgb(0 0 0 / 0.1);
 }
 
-/* Dark Mode Overrides */
+/* Dark Mode Overrides (Softer Slate Palette) */
 [data-theme="dark"] {
     --primary: #f8fafc; /* Slate 50 */
     --primary-hover: #f1f5f9;
     
-    --bg-main: #020617; /* Deep Slate 950 */
-    --bg-secondary: #0f172a; /* Slate 900 */
-    --bg-tertiary: #1e293b; /* Slate 800 */
+    --bg-main: #0f172a; /* Slate 900 - Softer base */
+    --bg-secondary: #1e293b; /* Slate 800 - Lighter surface */
+    --bg-tertiary: #334155; /* Slate 700 - Lighter background */
     
     --text-main: #f8fafc; /* Slate 50 */
     --text-muted: #94a3b8; /* Slate 400 */
     
-    --border: #334155; /* Slate 700 */
-    --border-focus: #d946ef; /* Keep Fuchsia accent */
+    --border: #334155; /* Slate 700 (More balanced) */
+    --border-focus: #d946ef; 
     
     /* Dark shadows need to be stronger */
     --shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.3);
