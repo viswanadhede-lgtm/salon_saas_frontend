@@ -862,12 +862,7 @@ function renderPurchases() {
                             <i data-feather="eye" style="width: 16px; height: 16px;"></i>
                         </button>
                         ${isActive ? `
-                        <button class="action-btn" onclick="window.refundMembershipPurchase('${purchaseId}')" style="padding: 6px; border-radius: 6px; border: 1px solid #e2e8f0; background: #fff; cursor: pointer; color: #f59e0b;" title="Refund">
-                            <i data-feather="corner-up-left" style="width: 16px; height: 16px;"></i>
-                        </button>
-                        <button class="action-btn" onclick="window.cancelMembershipPurchase('${purchaseId}')" style="padding: 6px; border-radius: 6px; border: 1px solid #e2e8f0; background: #fff; cursor: pointer; color: #ef4444;" title="Cancel">
-                            <i data-feather="x-circle" style="width: 16px; height: 16px;"></i>
-                        </button>
+                        <button onclick="window.cancelMembershipPurchase('${purchaseId}')" style="padding: 4px 12px; border-radius: 6px; border: 1px solid #fecdd3; background: #fff1f2; cursor: pointer; color: #e11d48; font-size: 0.75rem; font-weight: 600; transition: all 0.2s;" onmouseover="this.style.background='#ffe4e6'" onmouseout="this.style.background='#fff1f2'" title="Cancel">Cancel</button>
                         ` : ''}
                     </div>
                 </td>
