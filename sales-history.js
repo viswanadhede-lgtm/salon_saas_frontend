@@ -894,22 +894,21 @@ document.addEventListener('DOMContentLoaded', () => {
                 
                 let resultingLineId = itemId;
 
-                if (refundQty < (itemObj.quantity || 1)) {
-                    // PARTIAL REFUND: Strictly shrink existing quantity
-                    const remainingQty = itemObj.quantity - refundQty;
-                    const remainingAmount = remainingQty * itemPrice;
-                    saleUpdatePromises.push(
-                        supabase.from('sales').update({ 
-                            quantity: remainingQty, 
-                            total_amount: remainingAmount 
-                        }).eq('id', itemId)
-                    );
-                } else {
-                    // FULL ROW REFUND
-                    saleUpdatePromises.push(
-                        supabase.from('sales').update({ status: 'refunded' }).eq('id', itemId)
-                    );
+                const remainingQty = (itemObj.quantity || 1) - refundQty;
+                const remainingAmount = remainingQty * itemPrice;
+                
+                const updatePayload = {
+                    quantity: remainingQty,
+                    total_amount: remainingAmount
+                };
+                
+                if (remainingQty <= 0) {
+                    updatePayload.status = 'refunded';
                 }
+                
+                saleUpdatePromises.push(
+                    supabase.from('sales').update(updatePayload).eq('id', itemId)
+                );
 
                 // INVENTORY RESTOCK LOGIC
                 if (itemObj.product_id) {
