@@ -340,24 +340,7 @@
     <div id="caToast" class="tb-toast"></div>
 
     <script>
-        const todaysBookingsData = [
-            { id:'BK001', customer:'Sarah Jenkins',   time:'09:00 AM', service:'Classic Haircut & Blowdry',  staff:'Michael', status:'completed', amount:'₹650',   payment:'paid' },
-            { id:'BK002', customer:'Emma Watson',     time:'10:30 AM', service:'Full Color & Highlights',    staff:'Sarah',   status:'completed', amount:'₹3,200', payment:'paid' },
-            { id:'BK003', customer:'David Rodriguez', time:'11:45 AM', service:"Men's Haircut",              staff:'Michael', status:'completed', amount:'₹500',   payment:'paid' },
-            { id:'BK004', customer:'Meera Patel',     time:'12:30 PM', service:'Waxing',                     staff:'Sarah',   status:'noshow',    amount:'₹400',   payment:'pending' },
-            { id:'BK005', customer:'Amit Singh',      time:'01:00 PM', service:'Pedicure',                   staff:'Anjali',  status:'cancelled', amount:'₹900',   payment:'pending' },
-            { id:'BK006', customer:'Priya Kapoor',    time:'02:00 PM', service:'Hair Spa & Treatment',       staff:'Anjali',  status:'booked',    amount:'₹1,200', payment:'pending' },
-            { id:'BK007', customer:'Ravi Sharma',     time:'03:15 PM', service:"Men's Haircut & Beard",      staff:'Michael', status:'booked',    amount:'₹800',   payment:'paid' },
-            { id:'BK008', customer:'Nisha Reddy',     time:'04:30 PM', service:'Bridal Makeup & Trial',      staff:'Sarah',   status:'booked',    amount:'₹5,500', payment:'partial' },
-            { id:'BK009', customer:'Kiran Verma',     time:'05:00 PM', service:'Deep Conditioning',          staff:'Anjali',  status:'booked',    amount:'₹950',   payment:'pending' },
-            { id:'BK010', customer:'Sunita Rao',      time:'05:30 PM', service:'Eyebrow Threading',          staff:'Sarah',   status:'booked',    amount:'₹250',   payment:'paid' },
-            { id:'BK011', customer:'Mohit Gupta',     time:'06:00 PM', service:"Men's Facial",               staff:'Michael', status:'completed', amount:'₹1,100', payment:'paid' },
-            { id:'BK012', customer:'Anjali Desai',    time:'06:30 PM', service:'Manicure & Pedicure',        staff:'Anjali',  status:'booked',    amount:'₹1,400', payment:'partial' },
-            { id:'BK013', customer:'Rahul Mehta',     time:'07:00 PM', service:'Head Massage',               staff:'Michael', status:'cancelled', amount:'₹600',   payment:'pending' },
-            { id:'BK014', customer:'Pooja Iyer',      time:'07:30 PM', service:'Keratin Treatment',          staff:'Sarah',   status:'booked',    amount:'₹3,500', payment:'pending' },
-            { id:'BK015', customer:'Deepak Nair',     time:'08:00 PM', service:'Scalp Treatment',            staff:'Anjali',  status:'noshow',    amount:'₹750',   payment:'pending' },
-            { id:'BK016', customer:'Lakshmi Pillai',  time:'08:30 PM', service:'Hair Straightening',         staff:'Sarah',   status:'booked',    amount:'₹2,200', payment:'paid' },
-        ];
+        let todaysBookingsData = [];
 
         let activeMenuEl = null;
         let currentActionData = null;
@@ -403,11 +386,60 @@
             initPage();
         });
 
-        function initPage() {
+        async function initPage() {
             const now = new Date();
-            document.getElementById('caDateLabel').textContent = now.toLocaleDateString('en-IN', { weekday:'long', year:'numeric', month:'long', day:'numeric' });
-            const completed = todaysBookingsData.filter(b => b.status === 'completed');
-            document.getElementById('caCountBadge').textContent = completed.length + ' completed';
+            const opts = { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' };
+            document.getElementById('caDateLabel').textContent = now.toLocaleDateString('en-IN', opts);
+            
+            try {
+                const branchId = localStorage.getItem('company_branch_id');
+                if (!branchId) throw new Error("No branch selected.");
+
+                const { supabase } = await import('./lib/supabase.js');
+                
+                const localISOTime = new Date(now.getTime() - (now.getTimezoneOffset() * 60000)).toISOString().split('T')[0];
+
+                let query = supabase
+                    .from('bookings_for_business_transaction')
+                    .select('*')
+                    .eq('branch_id', branchId)
+                    .eq('booking_date', localISOTime)
+                    .order('start_time', { ascending: true });
+                    
+                query = query.eq('status', 'completed');
+
+                const { data, error } = await query;
+                if (error) throw error;
+
+                todaysBookingsData = (data || []).map((b, i) => {
+                    const parsedStart = b.start_time ? b.start_time.split(':') : ['09', '00'];
+                    let hours = parseInt(parsedStart[0]);
+                    const minutes = parsedStart[1];
+                    const ampm = hours >= 12 ? 'PM' : 'AM';
+                    hours = hours % 12 || 12;
+                    const formattedTime = `${String(hours).padStart(2, '0')}:${minutes} ${ampm}`;
+                    const displayId = 'BK-' + (b.booking_id ? b.booking_id.substring(0,6).toUpperCase() : '000000');
+
+                    return {
+                        id: displayId,
+                        customer: b.customer_name || 'Walk-in Customer',
+                        time: formattedTime,
+                        service: b.service_name || 'N/A',
+                        staff: b.staff_name || 'Unassigned',
+                        status: (b.status || 'booked').toLowerCase(),
+                        amount: '₹' + (b.total_price || 0).toLocaleString('en-IN'),
+                        payment: (b.payment || 'pending').toLowerCase()
+                    };
+                });
+            } catch (err) {
+                console.error("Failed to load live bookings:", err);
+            }
+
+            
+        const completed = todaysBookingsData.filter(b => b.status === 'completed');
+        document.getElementById('caCountBadge').textContent = completed.length + ' completed';
+        
+            
             renderTable();
         }
 

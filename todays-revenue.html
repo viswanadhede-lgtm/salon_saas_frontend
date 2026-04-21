@@ -235,24 +235,7 @@
     </div>
 
     <script>
-        const todaysBookingsData = [
-            { id:'BK001', customer:'Sarah Jenkins',   time:'09:00 AM', service:'Classic Haircut & Blowdry',  staff:'Michael', status:'completed', amount:'₹650',   payment:'paid' },
-            { id:'BK002', customer:'Emma Watson',     time:'10:30 AM', service:'Full Color & Highlights',    staff:'Sarah',   status:'completed', amount:'₹3,200', payment:'paid' },
-            { id:'BK003', customer:'David Rodriguez', time:'11:45 AM', service:"Men's Haircut",              staff:'Michael', status:'completed', amount:'₹500',   payment:'paid' },
-            { id:'BK004', customer:'Meera Patel',     time:'12:30 PM', service:'Waxing',                     staff:'Sarah',   status:'noshow',    amount:'₹400',   payment:'pending' },
-            { id:'BK005', customer:'Amit Singh',      time:'01:00 PM', service:'Pedicure',                   staff:'Anjali',  status:'cancelled', amount:'₹900',   payment:'pending' },
-            { id:'BK006', customer:'Priya Kapoor',    time:'02:00 PM', service:'Hair Spa & Treatment',       staff:'Anjali',  status:'booked',    amount:'₹1,200', payment:'pending' },
-            { id:'BK007', customer:'Ravi Sharma',     time:'03:15 PM', service:"Men's Haircut & Beard",      staff:'Michael', status:'booked',    amount:'₹800',   payment:'paid' },
-            { id:'BK008', customer:'Nisha Reddy',     time:'04:30 PM', service:'Bridal Makeup & Trial',      staff:'Sarah',   status:'booked',    amount:'₹5,500', payment:'partial' },
-            { id:'BK009', customer:'Kiran Verma',     time:'05:00 PM', service:'Deep Conditioning',          staff:'Anjali',  status:'booked',    amount:'₹950',   payment:'pending' },
-            { id:'BK010', customer:'Sunita Rao',      time:'05:30 PM', service:'Eyebrow Threading',          staff:'Sarah',   status:'booked',    amount:'₹250',   payment:'paid' },
-            { id:'BK011', customer:'Mohit Gupta',     time:'06:00 PM', service:"Men's Facial",               staff:'Michael', status:'completed', amount:'₹1,100', payment:'paid' },
-            { id:'BK012', customer:'Anjali Desai',    time:'06:30 PM', service:'Manicure & Pedicure',        staff:'Anjali',  status:'booked',    amount:'₹1,400', payment:'partial' },
-            { id:'BK013', customer:'Rahul Mehta',     time:'07:00 PM', service:'Head Massage',               staff:'Michael', status:'cancelled', amount:'₹600',   payment:'pending' },
-            { id:'BK014', customer:'Pooja Iyer',      time:'07:30 PM', service:'Keratin Treatment',          staff:'Sarah',   status:'booked',    amount:'₹3,500', payment:'pending' },
-            { id:'BK015', customer:'Deepak Nair',     time:'08:00 PM', service:'Scalp Treatment',            staff:'Anjali',  status:'noshow',    amount:'₹750',   payment:'pending' },
-            { id:'BK016', customer:'Lakshmi Pillai',  time:'08:30 PM', service:'Hair Straightening',         staff:'Sarah',   status:'booked',    amount:'₹2,200', payment:'paid' },
-        ];
+        let todaysBookingsData = [];
 
         document.addEventListener('DOMContentLoaded', () => {
             if (window.feather) feather.replace();
@@ -297,27 +280,64 @@
             calculateAndRenderRevenue();
         });
 
-        function calculateAndRenderRevenue() {
+        async function calculateAndRenderRevenue() {
             let realized = 0, booked = 0, lost = 0;
             const staffRevenue = {};
             const tableBody = document.getElementById('revTableBody');
-            tableBody.innerHTML = '';
+            tableBody.innerHTML = '<tr><td colspan="4" style="text-align:center; padding:24px; color:#94a3b8;">Loading live data...</td></tr>';
 
-            todaysBookingsData.forEach(b => {
-                const amount = parseInt(b.amount.replace('₹','').replace(',',''));
-                if (b.status === 'completed') {
-                    realized += amount;
-                    staffRevenue[b.staff] = (staffRevenue[b.staff] || 0) + amount;
-                    const tr = document.createElement('tr');
-                    tr.style.borderBottom = '1px solid #f1f5f9';
-                    tr.innerHTML = `<td style="padding:16px 24px;"><span class="customer-link" onclick="viewCustomerProfile('${b.customer}')">${b.customer}</span></td><td style="padding:16px 24px; color:#475569;">${b.service}</td><td style="padding:16px 24px;"><span class="badge">${b.staff}</span></td><td style="padding:16px 24px; text-align:right; font-weight:700; color:#10b981;">${b.amount}</td>`;
-                    tableBody.appendChild(tr);
-                } else if (b.status === 'booked') {
-                    booked += amount;
-                } else if (b.status === 'noshow' || b.status === 'cancelled') {
-                    lost += amount;
+            try {
+                const branchId = localStorage.getItem('company_branch_id');
+                if (!branchId) throw new Error("No branch selected.");
+
+                const { supabase } = await import('./lib/supabase.js');
+                const now = new Date();
+                const localISOTime = new Date(now.getTime() - (now.getTimezoneOffset() * 60000)).toISOString().split('T')[0];
+
+                const { data, error } = await supabase
+                    .from('bookings_for_business_transaction')
+                    .select('*')
+                    .eq('branch_id', branchId)
+                    .eq('booking_date', localISOTime);
+
+                if (error) throw error;
+
+                todaysBookingsData = data || [];
+                tableBody.innerHTML = '';
+
+                todaysBookingsData.forEach(b => {
+                    const amount = b.total_price || 0;
+                    const status = (b.status || 'booked').toLowerCase();
+                    const staffName = b.staff_name || 'Unassigned';
+                    const customerName = b.customer_name || 'Walk-in Customer';
+
+                    if (status === 'completed') {
+                        realized += amount;
+                        staffRevenue[staffName] = (staffRevenue[staffName] || 0) + amount;
+                        const tr = document.createElement('tr');
+                        tr.style.borderBottom = '1px solid #f1f5f9';
+                        tr.innerHTML = `
+                            <td style="padding:16px 24px;"><span class="customer-link" onclick="viewCustomerProfile('${customerName}')">${customerName}</span></td>
+                            <td style="padding:16px 24px; color:#475569;">${b.service_name || 'N/A'}</td>
+                            <td style="padding:16px 24px;"><span class="badge">${staffName}</span></td>
+                            <td style="padding:16px 24px; text-align:right; font-weight:700; color:#10b981;">₹${amount.toLocaleString('en-IN')}</td>
+                        `;
+                        tableBody.appendChild(tr);
+                    } else if (status === 'booked') {
+                        booked += amount;
+                    } else if (status === 'noshow' || status === 'cancelled') {
+                        lost += amount;
+                    }
+                });
+
+                if (todaysBookingsData.filter(b => b.status === 'completed').length === 0) {
+                    tableBody.innerHTML = '<tr><td colspan="4" style="text-align:center; padding:32px; color:#94a3b8;">No completed transactions found for today.</td></tr>';
                 }
-            });
+
+            } catch (err) {
+                console.error("Failed to load revenue data:", err);
+                tableBody.innerHTML = '<tr><td colspan="4" style="text-align:center; padding:24px; color:#ef4444;">Failed to load live data. Please refresh.</td></tr>';
+            }
 
             const totalForecast = realized + booked;
             const captureRate = totalForecast > 0 ? Math.round((realized / totalForecast) * 100) : 0;
