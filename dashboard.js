@@ -124,7 +124,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 if (elAppts) {
                     elAppts.innerHTML = `${data.completed_appointments} <span class="stat-value-sub" id="kpiCompletedApptsSub">/ ${data.todays_bookings} completed</span>`;
                     const cTrendEl = document.getElementById('kpiCompletedApptsTrend');
-                    cTrendEl.innerHTML = `${fmtTrend(data.completion_rate - 50)} ${data.completion_rate}% completion rate`;
+                    cTrendEl.innerHTML = `<i data-feather="trending-${data.completion_rate >= 50 ? 'up' : 'down'}"></i> ${data.completion_rate}% completion rate`;
                     cTrendEl.className = trendClass(data.completion_rate - 50);
                 }
 
