@@ -128,7 +128,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     payment_status: (row.payment_status || 'unpaid').toLowerCase(),
                     totalAmountNum: Number(row.total_amount || 0),
                     total: `₹${Number(row.total_amount || 0).toLocaleString('en-IN')}`,
-                    item_count: Number(row.item_count || 1),
+                    item_count: row.item_count != null ? Number(row.item_count) : 1,
                     products_summary: row.product_list || '',
                     is_view_grouped: true 
                 };
@@ -196,7 +196,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 ? `<del style="color:#94a3b8; font-weight:400;">${sale.total}</del> <span style="color:#dc2626; font-size: 0.8rem; display:block;">Refunded</span>`
                 : sale.total;
 
-            const itemCount = sale.item_count || 1;
+            const itemCount = sale.item_count === 0 ? 'N/A' : (sale.item_count != null ? sale.item_count : 1);
             const productDisplay = sale.products_summary || 'Product';
 
             tr.innerHTML = `
