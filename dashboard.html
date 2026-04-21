@@ -394,28 +394,8 @@
                         </div>
                         <div class="card-body">
                             <div class="chart-container">
-                                <div class="bar-chart">
-                                    <div class="bar-group">
-                                        <div class="bar" style="height: 40%"></div><span class="day">M</span>
-                                    </div>
-                                    <div class="bar-group">
-                                        <div class="bar" style="height: 60%"></div><span class="day">T</span>
-                                    </div>
-                                    <div class="bar-group">
-                                        <div class="bar" style="height: 35%"></div><span class="day">W</span>
-                                    </div>
-                                    <div class="bar-group">
-                                        <div class="bar" style="height: 80%"></div><span class="day">T</span>
-                                    </div>
-                                    <div class="bar-group">
-                                        <div class="bar" style="height: 50%"></div><span class="day">F</span>
-                                    </div>
-                                    <div class="bar-group active">
-                                        <div class="bar" style="height: 90%"></div><span class="day">S</span>
-                                    </div>
-                                    <div class="bar-group">
-                                        <div class="bar" style="height: 70%"></div><span class="day">S</span>
-                                    </div>
+                                <div class="bar-chart" id="weeklyRevenueChart">
+                                    <div class="centered-placeholder">Loading chart...</div>
                                 </div>
                             </div>
                         </div>
@@ -427,28 +407,8 @@
                             <h2>Top Services</h2>
                         </div>
                         <div class="card-body">
-                            <ul class="service-list">
-                                <li>
-                                    <div class="service-info">
-                                        <span class="service-name">Women's Haircut</span>
-                                        <span class="service-count">12 bookings</span>
-                                    </div>
-                                    <div class="service-revenue">₹6,000</div>
-                                </li>
-                                <li>
-                                    <div class="service-info">
-                                        <span class="service-name">Coloring &amp; Highlights</span>
-                                        <span class="service-count">8 bookings</span>
-                                    </div>
-                                    <div class="service-revenue">₹24,000</div>
-                                </li>
-                                <li>
-                                    <div class="service-info">
-                                        <span class="service-name">Manicure / Pedicure</span>
-                                        <span class="service-count">15 bookings</span>
-                                    </div>
-                                    <div class="service-revenue">₹7,500</div>
-                                </li>
+                            <ul class="service-list" id="topServicesList">
+                                <li class="centered-placeholder">Loading services...</li>
                             </ul>
                         </div>
                     </div>
@@ -459,67 +419,8 @@
                             <h2>Top Services Today</h2>
                         </div>
                         <div class="card-body">
-                            <ul class="services-today-list">
-                                <li class="services-today-item">
-                                    <div class="sti-info">
-                                        <span class="sti-dot" style="background:#a78bfa"></span>
-                                        <span class="sti-name">Haircut</span>
-                                    </div>
-                                    <div class="sti-right">
-                                        <div class="sti-bar-track">
-                                            <div class="sti-bar" style="width:80%;background:#a78bfa"></div>
-                                        </div>
-                                        <span class="sti-count">12</span>
-                                    </div>
-                                </li>
-                                <li class="services-today-item">
-                                    <div class="sti-info">
-                                        <span class="sti-dot" style="background:#34d399"></span>
-                                        <span class="sti-name">Hair Color</span>
-                                    </div>
-                                    <div class="sti-right">
-                                        <div class="sti-bar-track">
-                                            <div class="sti-bar" style="width:40%;background:#34d399"></div>
-                                        </div>
-                                        <span class="sti-count">5</span>
-                                    </div>
-                                </li>
-                                <li class="services-today-item">
-                                    <div class="sti-info">
-                                        <span class="sti-dot" style="background:#60a5fa"></span>
-                                        <span class="sti-name">Facial</span>
-                                    </div>
-                                    <div class="sti-right">
-                                        <div class="sti-bar-track">
-                                            <div class="sti-bar" style="width:25%;background:#60a5fa"></div>
-                                        </div>
-                                        <span class="sti-count">3</span>
-                                    </div>
-                                </li>
-                                <li class="services-today-item">
-                                    <div class="sti-info">
-                                        <span class="sti-dot" style="background:#fb923c"></span>
-                                        <span class="sti-name">Manicure</span>
-                                    </div>
-                                    <div class="sti-right">
-                                        <div class="sti-bar-track">
-                                            <div class="sti-bar" style="width:20%;background:#fb923c"></div>
-                                        </div>
-                                        <span class="sti-count">2</span>
-                                    </div>
-                                </li>
-                                <li class="services-today-item">
-                                    <div class="sti-info">
-                                        <span class="sti-dot" style="background:#f472b6"></span>
-                                        <span class="sti-name">Waxing</span>
-                                    </div>
-                                    <div class="sti-right">
-                                        <div class="sti-bar-track">
-                                            <div class="sti-bar" style="width:15%;background:#f472b6"></div>
-                                        </div>
-                                        <span class="sti-count">2</span>
-                                    </div>
-                                </li>
+                            <ul class="services-today-list" id="topServicesTodayList">
+                                <li class="centered-placeholder">Loading top services...</li>
                             </ul>
                         </div><!-- /card-body -->
                     </div><!-- /top-services-today card -->
