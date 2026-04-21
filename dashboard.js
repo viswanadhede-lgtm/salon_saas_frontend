@@ -433,7 +433,7 @@ document.addEventListener('DOMContentLoaded', () => {
             // Fetch bookings for the last 7 days
             const { data: bookings, error } = await supabase
                 .from('bookings_for_business_transaction')
-                .select('service_name, price')
+                .select('service_name, total_price')
                 .eq('branch_id', currentBranchId)
                 .gte('booking_date', startDate)
                 .lte('booking_date', endDate)
@@ -454,7 +454,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     serviceMap[name] = { name, count: 0, revenue: 0 };
                 }
                 serviceMap[name].count++;
-                serviceMap[name].revenue += Number(b.price || 0);
+                serviceMap[name].revenue += Number(b.total_price || 0);
             });
 
             const sorted = Object.values(serviceMap)
