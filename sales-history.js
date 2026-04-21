@@ -895,23 +895,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 let resultingLineId = itemId;
 
                 if (refundQty < (itemObj.quantity || 1)) {
-                    // PARTIAL REFUND: We need to split the row!
-                    // 1. Create duplicate row for the return
-                    const newRowObj = { ...itemObj };
-                    delete newRowObj.id; // Let DB generate new Primary Key
-                    newRowObj.quantity = refundQty;
-                    newRowObj.total_amount = refundAmount;
-                    newRowObj.status = 'refunded';
-                    
-                    const { data: newInserted, error: insertErr } = await supabase
-                        .from('sales')
-                        .insert([newRowObj])
-                        .select();
-                        
-                    if (insertErr) throw insertErr;
-                    resultingLineId = newInserted && newInserted.length > 0 ? newInserted[0].id : itemId;
-                    
-                    // 2. Update existing row with remaining inventory
+                    // PARTIAL REFUND: Strictly shrink existing quantity, do NOT spawn new rows
                     const remainingQty = itemObj.quantity - refundQty;
                     const remainingAmount = remainingQty * itemPrice;
                     saleUpdatePromises.push(
@@ -927,7 +911,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     );
                 }
 
-                // Add Ledger Entry linked to the effectively returned row ID
+                // Add Ledger Entry linked to the original row ID
                 ledgerRows.push({
                     company_id: getCompanyId(),
                     branch_id: getBranchId(),
