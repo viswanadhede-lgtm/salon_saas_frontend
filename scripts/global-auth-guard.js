@@ -4,56 +4,6 @@ import { SUB_FEATURES_MAP } from '../config/sub-feature-registry.js';
 import { initSubFeatures } from './sub-features/sub-feature-manager.js';
 import { applySubFeatureGates } from './sub-features/sub-feature-gate.js';
 import { initGlobalBookingModal } from './global-booking-modal.js';
-import i18n from './i18n.js';
-import { Sidebar } from './components/Sidebar.js';
-import { Header } from './components/Header.js';
-
-// ─── Theme Management ────────────────────────────────────────────────────────
-export function applyTheme(themeChoice) {
-    const html = document.documentElement;
-    if (themeChoice === 'dark') {
-        html.setAttribute('data-theme', 'dark');
-    } else if (themeChoice === 'light') {
-        html.removeAttribute('data-theme');
-    } else if (themeChoice === 'system') {
-        const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
-        if (prefersDark) {
-            html.setAttribute('data-theme', 'dark');
-        } else {
-            html.removeAttribute('data-theme');
-        }
-    }
-}
-
-export function initTheme() {
-    // 1. Listen for system theme changes (only matters if 'system' is selected)
-    window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', () => {
-        const contextStr = localStorage.getItem('appContext');
-        if (contextStr) {
-            const context = JSON.parse(contextStr);
-            if (context.preferences?.theme === 'system') {
-                applyTheme('system');
-            }
-        }
-    });
-
-    // 2. Initial Apply
-    const contextStr = localStorage.getItem('appContext');
-    if (contextStr) {
-        try {
-            const context = JSON.parse(contextStr);
-            const theme = context.preferences?.theme || 'light';
-            applyTheme(theme);
-        } catch (e) {
-            applyTheme('light');
-        }
-    } else {
-        applyTheme('light');
-    }
-}
-
-// Run immediately 
-initTheme();
 
 // ─── Route → Feature mapping ──────────────────────────────────────────────────
 const ROUTE_MAP = {
@@ -288,9 +238,6 @@ export async function runGlobalAuthGuard() {
     const filename = path.substring(path.lastIndexOf('/')) || '/';
     const featureKey = ROUTE_MAP[filename] || null;
 
-    // 0. Initialize i18n
-    await i18n.init();
-
     // Public routes — skip auth
     if (!featureKey) {
         console.log(`[Auth Guard] Public route: ${filename}. Bypassing.`);
@@ -509,14 +456,86 @@ window.populateGlobalHeader = populateGlobalHeader;
 
 // ─── Global Header Hydration ──────────────────────────────────────────────────
 export function populateGlobalHeader() {
+    const contextStr = localStorage.getItem('appContext');
+    if (!contextStr) return;
+
     try {
-        // Render dynamic components
-        Sidebar.render();
-        Header.render();
-        
-        console.log('[Auth Guard] i18n components rendered ✓');
+        const context = JSON.parse(contextStr);
+
+        const branchSelect = document.getElementById('branchSelect');
+        const planBadge    = document.getElementById('headerPlanBadge');
+        const profileMenu  = document.getElementById('profileMenu');
+        const avatarImg    = document.querySelector('#avatarBtn img');
+
+        // Plan badge
+        if (planBadge && context.company?.plan) {
+            const p = context.company.plan;
+            planBadge.textContent = p.charAt(0).toUpperCase() + p.slice(1);
+        }
+
+        // Profile dropdown
+        if (profileMenu && context.user) {
+            const nameEl = profileMenu.querySelector('.dropdown-name');
+            const roleEl = profileMenu.querySelector('.dropdown-role');
+            if (nameEl && context.user.name)      nameEl.textContent = context.user.name;
+            if (roleEl && context.user.role_name) roleEl.textContent = context.user.role_name;
+        }
+
+        // Avatar
+        let avatarUrl = '';
+        if (context.user?.name) {
+            avatarUrl = `https://ui-avatars.com/api/?name=${encodeURIComponent(context.user.name)}&background=1E3A8A&color=fff`;
+        }
+        if (avatarImg && avatarUrl) avatarImg.src = avatarUrl;
+
+        // Profile modal fields
+        if (context.user) {
+            const profileAvatarImg    = document.getElementById('profileAvatarImg');
+            const profileNameDisplay  = document.querySelector('.profile-name-display');
+            const profileRoleDisplay  = document.querySelector('.profile-role-display');
+            const profileFirstName    = document.getElementById('profileFirstName');
+            const profileLastName     = document.getElementById('profileLastName');
+            const profilePhone        = document.getElementById('profilePhone');
+            const profileEmail        = document.getElementById('profileEmail');
+            const profileRoleInput    = document.getElementById('profileRole');
+            const profileJoined       = document.getElementById('profileJoined');
+
+            if (profileAvatarImg && avatarUrl)                          profileAvatarImg.src  = avatarUrl;
+            if (profileNameDisplay && context.user.name)                profileNameDisplay.textContent = context.user.name;
+            if (profileRoleDisplay && context.user.role_name)           profileRoleDisplay.textContent = context.user.role_name;
+            if (profileFirstName   && context.user.first_name)          profileFirstName.value  = context.user.first_name;
+            if (profileLastName    && context.user.last_name)           profileLastName.value   = context.user.last_name;
+            if (profilePhone       && context.user.phone)               profilePhone.value      = context.user.phone;
+            if (profileEmail       && context.user.email)               profileEmail.value      = context.user.email;
+            if (profileRoleInput   && context.user.role_name)           profileRoleInput.value  = context.user.role_name;
+            if (profileJoined      && context.user.joined_on)           profileJoined.value     = context.user.joined_on;
+
+            const profileEmergencyName = document.getElementById('profileEmergencyName');
+            const profileEmergencyPhone = document.getElementById('profileEmergencyPhone');
+            if (profileEmergencyName && context.user.emergency_name)    profileEmergencyName.value = context.user.emergency_name;
+            if (profileEmergencyPhone && context.user.emergency_phone)  profileEmergencyPhone.value = context.user.emergency_phone;
+        }
+
+        // Branch dropdown
+        if (branchSelect && Array.isArray(context.branches) && context.branches.length > 0) {
+            branchSelect.innerHTML = '';
+            context.branches.forEach(b => {
+                const opt = document.createElement('option');
+                opt.value       = b.branch_id || b.id;
+                opt.textContent = b.branch_name || b.name;
+                branchSelect.appendChild(opt);
+            });
+
+            const saved = localStorage.getItem('active_branch_id');
+            branchSelect.value = saved || context.current_branch_id || context.branches[0].branch_id;
+
+            branchSelect.addEventListener('change', e => {
+                localStorage.setItem('active_branch_id', e.target.value);
+            });
+        }
+
     } catch (e) {
-        console.error('[Auth Guard] Failed to render i18n components:', e);
+        console.error('[Auth Guard] Failed to hydrate header:', e);
     }
 }
 

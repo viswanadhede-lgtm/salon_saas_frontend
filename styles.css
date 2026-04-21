@@ -1,78 +1,17 @@
 :root {
-    /* Core Brand Colors */
     --primary: #0f172a; /* Slate 900 */
     --primary-hover: #1e293b; /* Slate 800 */
-    --accent: #d946ef; /* Fuchsia 500 */
+    --accent: #d946ef; /* Fuchsia 500 - slightly softer salon vibe */
     --accent-hover: #c026d3; /* Fuchsia 600 */
-    
-    /* Theme Semantic Variables (Light Mode) */
-    --bg-main: #ffffff;
-    --bg-secondary: #f8fafc;
-    --bg-tertiary: #f1f5f9;
-    --bg-panel: #ffffff;
-    --bg-input: #ffffff;
-    --bg-modal: #ffffff;
-    --bg-overlay: rgba(15, 23, 42, 0.4);
-    
     --text-main: #0f172a;
     --text-muted: #64748b;
-    --text-heading: #1e293b;
-    --text-inverse: #ffffff;
-    
+    --bg-main: #ffffff;
+    --bg-secondary: #f8fafc;
     --border: #e2e8f0;
-    --border-strong: #cbd5e1;
     --border-focus: #d946ef;
-    
-    /* Status Colors (Light Mode) */
-    --status-success-bg: #dcfce7;
-    --status-success-text: #166534;
-    --status-error-bg: #fef2f2;
-    --status-error-text: #991b1b;
-    --status-warning-bg: #fef3c7;
-    --status-warning-text: #92400e;
-    
-    /* Shadows */
     --shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.05);
     --shadow-md: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
     --shadow-xl: 0 20px 25px -5px rgb(0 0 0 / 0.1), 0 8px 10px -6px rgb(0 0 0 / 0.1);
-    --shadow-modal: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
-}
-
-/* Dark Mode Overrides (Softer Slate Palette) */
-[data-theme="dark"] {
-    --primary: #f8fafc; /* Slate 50 */
-    --primary-hover: #f1f5f9;
-    
-    --bg-main: #0f172a; /* Slate 900 */
-    --bg-secondary: #1e293b; /* Slate 800 */
-    --bg-tertiary: #020617; /* Slate 950 - Even deeper background */
-    --bg-panel: #1e293b; /* Slate 800 */
-    --bg-input: #0f172a; /* Slate 900 */
-    --bg-modal: #1e293b; /* Slate 800 */
-    --bg-overlay: rgba(0, 0, 0, 0.75);
-    
-    --text-main: #f8fafc; /* Slate 50 */
-    --text-muted: #94a3b8; /* Slate 400 */
-    --text-heading: #ffffff;
-    --text-inverse: #0f172a;
-    
-    --border: #334155; /* Slate 700 */
-    --border-strong: #475569; /* Slate 600 */
-    --border-focus: #d946ef; 
-    
-    /* Status Colors (Dark Mode) */
-    --status-success-bg: rgba(34, 197, 94, 0.15);
-    --status-success-text: #4ade80;
-    --status-error-bg: rgba(239, 68, 68, 0.15);
-    --status-error-text: #f87171;
-    --status-warning-bg: rgba(245, 158, 11, 0.15);
-    --status-warning-text: #fbbf24;
-    
-    /* Dark shadows need to be stronger */
-    --shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.3);
-    --shadow-md: 0 4px 6px -1px rgb(0 0 0 / 0.4), 0 2px 4px -2px rgb(0 0 0 / 0.4);
-    --shadow-xl: 0 20px 25px -5px rgb(0 0 0 / 0.5), 0 8px 10px -6px rgb(0 0 0 / 0.5);
-    --shadow-modal: 0 25px 50px -12px rgba(0, 0, 0, 0.65);
 }
 
 * {
@@ -236,7 +175,7 @@ a:hover {
     align-items: center;
     justify-content: center;
     padding: 2rem;
-    background: var(--bg-main);
+    background: white;
     max-width: 600px;
     width: 100%;
 }
@@ -330,7 +269,7 @@ a:hover {
     font-size: 0.875rem;
     font-weight: 500;
     margin-bottom: 0.5rem;
-    color: var(--text-main);
+    color: #334155;
 }
 
 .form-group input {
@@ -342,7 +281,7 @@ a:hover {
     font-family: inherit;
     color: var(--text-main);
     transition: all 0.2s ease;
-    background: var(--bg-main);
+    background: #fff;
 }
 
 .form-group input::placeholder {
@@ -497,7 +436,7 @@ a:hover {
     display: flex;
     gap: 3rem;
     padding-bottom: 2rem;
-    border-bottom: 1px solid var(--border);
+    border-bottom: 1px solid #e2e8f0;
 }
 
 .settings-section:last-child {
@@ -513,21 +452,21 @@ a:hover {
 .settings-sidebar h3 {
     font-size: 1.1rem;
     font-weight: 600;
-    color: var(--text-heading);
+    color: #1e293b;
     margin-bottom: 0.5rem;
 }
 
 .settings-sidebar p {
     font-size: 0.9rem;
-    color: var(--text-muted);
+    color: #64748b;
     line-height: 1.5;
 }
 
 /* Right Column: Forms */
 .settings-form {
     flex-grow: 1;
-    background: var(--bg-main);
-    border: 1px solid var(--border);
+    background: #ffffff;
+    border: 1px solid #e2e8f0;
     border-radius: 12px;
     padding: 2rem;
     box-shadow: 0 1px 3px rgba(0,0,0,0.05);
@@ -547,7 +486,7 @@ a:hover {
     font-size: 0.85rem;
     font-weight: 600;
     margin-bottom: 0.5rem;
-    color: var(--text-muted);
+    color: #475569;
 }
 
 .settings-form .form-input,
@@ -557,9 +496,8 @@ a:hover {
     font-size: 0.95rem;
     padding: 10px 14px;
     border-radius: 8px;
-    border: 1px solid var(--border);
-    background-color: var(--bg-secondary);
-    color: var(--text-main);
+    border: 1px solid #cbd5e1;
+    background-color: #f8fafc;
     transition: all 0.2s ease;
     font-family: 'Inter', sans-serif;
 }
@@ -610,8 +548,8 @@ a:hover {
     width: 80px;
     height: 80px;
     border-radius: 16px;
-    background: var(--bg-secondary);
-    border: 1px dashed var(--border);
+    background: #f1f5f9;
+    border: 1px dashed #cbd5e1;
     display: flex;
     align-items: center;
     justify-content: center;
@@ -620,7 +558,7 @@ a:hover {
 }
 
 .logo-placeholder {
-    color: var(--text-muted);
+    color: #94a3b8;
     display: flex;
     align-items: center;
     justify-content: center;
@@ -634,7 +572,7 @@ a:hover {
 
 .upload-hint {
     font-size: 0.8rem;
-    color: var(--text-muted);
+    color: #64748b;
     margin: 0;
 }
 
@@ -644,9 +582,9 @@ a:hover {
     bottom: 0;
     left: 260px; /* Offset sidebar width */
     right: 0;
-    background: var(--bg-main);
+    background: rgba(255, 255, 255, 0.95);
     backdrop-filter: blur(8px);
-    border-top: 1px solid var(--border);
+    border-top: 1px solid #e2e8f0;
     padding: 1rem 2.5rem;
     z-index: 100;
     transform: translateY(100%);
@@ -670,7 +608,7 @@ a:hover {
 .unsaved-text {
     font-size: 0.95rem;
     font-weight: 500;
-    color: var(--text-muted);
+    color: #475569;
     margin: 0;
     display: flex;
     align-items: center;
@@ -731,10 +669,10 @@ a:hover {
 
 /* Table Adjustments */
 .table-container {
-    background: var(--bg-main);
+    background: #ffffff;
     border-radius: 12px;
-    border: 1px solid var(--border);
-    box-shadow: var(--shadow-sm);
+    border: 1px solid #e2e8f0;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.05);
     overflow: hidden;
 }
 
@@ -750,8 +688,8 @@ a:hover {
 }
 
 .status-active {
-    background-color: var(--status-success-bg);
-    color: var(--status-success-text);
+    background-color: #dcfce7;
+    color: #166534;
 }
 
 .status-active::before {
@@ -764,8 +702,8 @@ a:hover {
 }
 
 .status-inactive {
-    background-color: var(--bg-secondary);
-    color: var(--text-muted);
+    background-color: #f1f5f9;
+    color: #475569;
 }
 
 .status-inactive::before {
@@ -805,9 +743,9 @@ a:hover {
 }
 
 .action-btn.delete:hover {
-    color: var(--status-error-text);
-    border-color: var(--status-error-text);
-    background: var(--status-error-bg);
+    color: #ef4444;
+    border-color: #fecaca;
+    background: #fef2f2;
 }
 
 /* Slide-out Panel Overlay */
@@ -838,9 +776,9 @@ a:hover {
     width: 100%;
     max-width: 500px; /* Modern sidebar width */
     height: 100vh;
-    background: var(--bg-modal);
+    background: #ffffff;
     z-index: 1001;
-    box-shadow: -8px 0 24px rgba(0, 0, 0, 0.1);
+    box-shadow: -8px 0 24px rgba(15, 23, 42, 0.1);
     display: flex;
     flex-direction: column;
     transform: translateX(100%);
@@ -854,7 +792,7 @@ a:hover {
 /* Panel Header */
 .side-panel-header {
     padding: 24px 32px;
-    border-bottom: 1px solid var(--border);
+    border-bottom: 1px solid #e2e8f0;
     display: flex;
     justify-content: space-between;
     align-items: flex-start;

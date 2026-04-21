@@ -1,10 +1,6 @@
 // dashboard.js - Logic for the main application dashboard
 
 document.addEventListener('DOMContentLoaded', () => {
-    // 0. Initial Localization
-    if (typeof renderDashboardUI === 'function') {
-        renderDashboardUI();
-    }
 
     // ----------------------------------------------------------------
     // 1. AUTHENTICATION & DATA CHECK
@@ -642,11 +638,6 @@ document.addEventListener('DOMContentLoaded', () => {
             
             // Fetch live settings
             fetchAndPopulateSettings();
-            
-            // Localize modal content
-            if (typeof renderDashboardUI === 'function') {
-                renderDashboardUI();
-            }
 
             // SIMULATE UPDATE CHECK (Disabled until backend connection)
             /*
@@ -849,22 +840,6 @@ document.addEventListener('DOMContentLoaded', () => {
             }
 
             if (result.error) throw result.error;
-
-            // 2. Update local appContext to sync UI instantly
-            context.preferences = {
-                language: lang,
-                theme: theme,
-                notifications: notify
-            };
-            localStorage.setItem('appContext', JSON.stringify(context));
-
-            // 3. Apply Theme & Language instantly
-            const { applyTheme } = await import('./scripts/global-auth-guard.js');
-            applyTheme(theme);
-            
-            if (window.i18n && typeof window.i18n.setLanguage === 'function') {
-                await window.i18n.setLanguage(lang);
-            }
 
             if (typeof window.toast === 'function') {
                 window.toast("Settings saved successfully!");
@@ -1301,23 +1276,7 @@ function initBranchSwitcher(storedBranchId) {
 // BOOKINGS PAGE SPECIFIC LOGIC (TABS, FILTERS, DATA)
 // ----------------------------------------------------------------
 
-document.addEventListener('DOMContentLoaded', async () => {
-    // Wait for i18n if it's being initialized
-    if (window.i18n && !window.i18n.isLoaded) {
-        window.addEventListener('i18nReady', () => {
-            initDashboard();
-        });
-    } else {
-        initDashboard();
-    }
-});
-
-function initDashboard() {
-    renderDashboardUI();
-    
-    const activeBranchId = localStorage.getItem('branch_id') || 'branch_1';
-    initBranchSwitcher(activeBranchId);
-    
+document.addEventListener('DOMContentLoaded', () => {
     // 1. Tab Switching Logic
     const tabBtns = document.querySelectorAll('.bookings-tab-btn');
     const tabPanes = document.querySelectorAll('.bookings-tab-pane');
@@ -1425,14 +1384,19 @@ function generateActionsMenu(id) {
 
 function getStatusPill(status) {
     status = status.toLowerCase();
-    const label = window.t ? window.t(`stats.${status.replace('-', '_')}`) : status;
-    return `<span class="tb-status-pill tb-status-${status.replace('-', '')}">${label}</span>`;
+    if (status === 'booked') return '<span class="tb-status-pill tb-status-booked">Booked</span>';
+    if (status === 'completed') return '<span class="tb-status-pill tb-status-completed">Completed</span>';
+    if (status === 'no-show') return '<span class="tb-status-pill tb-status-noshow">No-Show</span>';
+    if (status === 'cancelled') return '<span class="tb-status-pill tb-status-cancelled">Cancelled</span>';
+    return `<span class="tb-status-pill">${status}</span>`;
 }
 
 function getPaymentPill(status) {
     status = status.toLowerCase();
-    const label = window.t ? window.t(`stats.${status}`) : status;
-    return `<span class="tb-status-pill tb-payment-${status}">${label}</span>`;
+    if (status === 'paid') return '<span class="tb-status-pill tb-payment-paid">Paid</span>';
+    if (status === 'pending') return '<span class="tb-status-pill tb-payment-pending">Pending</span>';
+    if (status === 'partial') return '<span class="tb-status-pill tb-payment-partial">Partial</span>';
+    return `<span class="tb-status-pill">${status}</span>`;
 }
 
 // Global action handler
@@ -1660,40 +1624,4 @@ window.onclick = function(event) {
             }
         }
     }
-}
-
-function renderDashboardUI() {
-    if (!window.t) return;
-
-    // 1. UI Elements (targeted by ID)
-    const elements = {
-        'i18n-stats-todays-bookings': 'stats.todays_bookings',
-        'i18n-stats-completed-appointments': 'stats.completed_appointments',
-        'i18n-stats-no-shows-cancellations': 'stats.no_shows_cancellations',
-        'i18n-stats-no-shows': 'stats.no_shows',
-        'i18n-stats-cancelled': 'stats.cancelled',
-        'i18n-stats-todays-revenue': 'stats.todays_revenue',
-        'i18n-settings-app-preferences': 'settings.app_preferences',
-        'i18n-settings-language': 'settings.language',
-        'i18n-settings-theme': 'settings.theme',
-        'i18n-settings-notifications': 'settings.notifications'
-    };
-
-    for (const [id, key] of Object.entries(elements)) {
-        const el = document.getElementById(id);
-        if (el) el.textContent = window.t(key);
-    }
-
-    // 2. Tab Headers
-    const tabSelectors = {
-        '[data-tab="upcoming"]': 'nav.bookings',
-        '[data-tab="completed"]': 'stats.completed'
-    };
-
-    for (const [selector, key] of Object.entries(tabSelectors)) {
-        const el = document.querySelector(selector);
-        if (el) el.textContent = window.t(key);
-    }
-    
-    console.log('[Dashboard] UI localized ✓');
 }
