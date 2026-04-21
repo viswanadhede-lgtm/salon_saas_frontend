@@ -317,7 +317,7 @@
                             <i data-feather="printer" style="width:14px; height:14px; margin-right:4px;"></i> Print
                         </button>
                         <button class="btn" id="sdRefundBtn" style="height: 32px; padding: 0 10px; font-size: 0.8rem; background: #fff1f2; color: #dc2626; border: 1px solid #fecdd3;">
-                            <i data-feather="corner-up-left" style="width:14px; height:14px; margin-right:4px;"></i> Refund
+                            <i data-feather="corner-up-left" style="width:14px; height:14px; margin-right:4px;"></i> Return
                         </button>
                     </div>
                     <button class="modal-close" id="closeSaleDetailsModal"><i data-feather="x"></i></button>
@@ -421,18 +421,26 @@
 
         <!-- Refund Confirmation Overlay (Descriptive Style) -->
         <div class="modal-overlay" id="refundSummaryOverlay" style="z-index:9999;">
-            <div class="modal-container" style="width: 480px; border-radius: 16px; padding: 0; overflow: hidden; box-shadow: 0 20px 25px -5px rgba(0,0,0,0.1);">
+            <div class="modal-container" style="width: 520px; border-radius: 16px; padding: 0; overflow: hidden; box-shadow: 0 20px 25px -5px rgba(0,0,0,0.1);">
                 <div class="modal-header" style="border-bottom: 1px solid #fee2e2; background: #fff1f2; padding: 20px 24px;">
                     <div class="header-titles">
-                        <h2 style="color: #991b1b; font-size: 1.25rem; margin:0;">Process Refund</h2>
+                        <h2 style="color: #991b1b; font-size: 1.25rem; margin:0;">Return Products</h2>
                         <p class="subtitle" id="rfModalSubtitle" style="color: #b91c1c; font-size: 0.85rem; margin:4px 0 0 0;">Customer Name • Products</p>
                     </div>
                     <button class="modal-close" id="cancelRefundBtn"><i data-feather="x" style="color: #991b1b;"></i></button>
                 </div>
-                <div class="modal-body" style="padding: 24px; background: #fff;">
-                    <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 12px; padding: 20px; margin-bottom: 24px; text-align: center;">
-                        <p style="font-size: 0.75rem; color: #64748b; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 8px;">Refundable Amount</p>
-                        <p style="font-size: 2.25rem; font-weight: 800; color: #dc2626; margin: 0;" id="rfAmountDisplay">₹0</p>
+                <div class="modal-body" style="padding: 24px; background: #fff; max-height: 70vh; overflow-y: auto;">
+                    
+                    <p style="font-size: 0.85rem; color: #475569; margin-bottom: 12px; font-weight: 600;">Select items to return:</p>
+                    
+                    <div id="rfProductList" style="border: 1px solid #e2e8f0; border-radius: 8px; overflow: hidden; margin-bottom: 20px;">
+                        <!-- Dynamically populated rows go here -->
+                        <div style="padding: 20px; text-align: center; color: #64748b; font-size: 0.85rem;">Loading items...</div>
+                    </div>
+
+                    <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 12px; padding: 16px; margin-bottom: 24px; display: flex; justify-content: space-between; align-items: center;">
+                        <p style="font-size: 0.8rem; color: #64748b; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; margin: 0;">Total Refund</p>
+                        <p style="font-size: 1.5rem; font-weight: 800; color: #dc2626; margin: 0;" id="rfAmountDisplay">₹0</p>
                     </div>
 
                     <div class="form-group" style="margin-bottom: 20px;">
@@ -441,18 +449,17 @@
                     </div>
 
                     <div class="form-group" style="margin-bottom: 24px;">
-                        <label class="form-label" style="font-size: 0.85rem; font-weight: 600; color: #475569;">Reason for Refund <span style="color: #94a3b8; font-weight: 400; font-size: 0.8rem;">(Optional)</span></label>
-                        <textarea id="rfNote" class="form-input" style="height: 100px; padding: 12px; resize: none;" placeholder="Enter details about this refund..."></textarea>
+                        <label class="form-label" style="font-size: 0.85rem; font-weight: 600; color: #475569;">Reason for Return <span style="color: #94a3b8; font-weight: 400; font-size: 0.8rem;">(Optional)</span></label>
+                        <textarea id="rfNote" class="form-input" style="height: 100px; padding: 12px; resize: none;" placeholder="Enter reason..."></textarea>
                     </div>
                     
-                    <p style="font-size: 0.825rem; color: #64748b; line-height: 1.5; margin-bottom: 24px;">
-                        This will record a <strong style="color: #dc2626;">Refund</strong> transaction in the financial ledger and update the sale status.
-                    </p>
-
                     <div style="display: flex; gap: 12px;">
                         <button class="btn btn-secondary" id="closeRefundBtn" style="flex: 1; height: 48px; font-weight: 600; border-radius: 10px;">Cancel</button>
-                        <button class="btn" id="confirmRefundBtn" style="flex: 1.5; height: 48px; background: #dc2626; color: white; border: none; font-weight: 700; border-radius: 10px; box-shadow: 0 4px 6px -1px rgba(220, 38, 38, 0.2);">Issue Refund</button>
+                        <button class="btn" id="confirmRefundBtn" style="flex: 1.5; height: 48px; background: #dc2626; color: white; border: none; font-weight: 700; border-radius: 10px; box-shadow: 0 4px 6px -1px rgba(220, 38, 38, 0.2);">Process Refund</button>
                     </div>
+                </div>
+            </div>
+        </div>
                 </div>
             </div>
         </div>

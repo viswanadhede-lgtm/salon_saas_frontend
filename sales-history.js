@@ -214,8 +214,8 @@ document.addEventListener('DOMContentLoaded', () => {
 
             const actionCell = tr.querySelector('.action-cell');
             const refundBtn = document.createElement('button');
-            refundBtn.textContent = 'Refund';
-            refundBtn.title = payStatus === 'unpaid' ? 'Cannot refund pending sale' : 'Refund Sale';
+            refundBtn.textContent = 'Return';
+            refundBtn.title = payStatus === 'unpaid' ? 'Cannot return pending sale' : 'Return Items';
             refundBtn.style.padding = '4px 10px';
             refundBtn.style.borderRadius = '6px';
             refundBtn.style.border = `1px solid ${payStatus === 'unpaid' ? '#f1f5f9' : '#fecdd3'}`;
@@ -416,7 +416,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 <div style="height: 1px; background: #e2e8f0; margin: 4px 0;"></div>
                 <button class="tb-menu-item danger" onclick="handleSaleAction('refund', ${idx})">
                     <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 14 4 9 9 4"/><path d="M20 20v-7a4 4 0 0 0-4-4H4"/></svg>
-                    Refund Sale
+                    Return Items
                 </button>
             `;
         }
@@ -543,98 +543,124 @@ document.addEventListener('DOMContentLoaded', () => {
     // ----------------------------------------------------------------------
     // 7.2. REFUND MODAL
     // ----------------------------------------------------------------------
-    let refundableAmount = 0;
+    // ----------------------------------------------------------------------
+    // 7.2. RETURN MODAL (Itemized)
+    // ----------------------------------------------------------------------
+    let currentRefundItems = [];
+    
     async function openRefundModal(sale) {
         if (!sale) return;
         const modal = document.getElementById('refundSummaryOverlay');
         if (!modal) return;
-
-        // 1. Show modal immediately for instant feedback
+        
         modal.classList.add('active');
 
         const subtitle = document.getElementById('rfModalSubtitle');
+        const productList = document.getElementById('rfProductList');
         const amountDisplay = document.getElementById('rfAmountDisplay');
         const methodDisplay = document.getElementById('rfMethodDisplay');
         const noteField = document.getElementById('rfNote');
         const confirmBtn = document.getElementById('confirmRefundBtn');
 
-        // 2. Clear previous state/set loading
+        // Clear UI config
         if (subtitle) subtitle.textContent = `${sale.customer || 'Customer'} • ${sale.products_summary || 'Sale'}`;
-        if (amountDisplay) amountDisplay.textContent = 'Calculating...';
+        if (productList) productList.innerHTML = `<div style="padding: 20px; text-align: center; color: #64748b; font-size: 0.85rem;">Loading items...</div>`;
+        if (amountDisplay) amountDisplay.textContent = '₹0';
         if (methodDisplay) methodDisplay.value = 'Loading...';
         if (noteField) noteField.value = '';
-        if (confirmBtn) { confirmBtn.disabled = true; confirmBtn.textContent = 'Issue Refund'; }
+        if (confirmBtn) { confirmBtn.disabled = true; confirmBtn.textContent = 'Process Refund'; }
 
         try {
-            // Fetch transactions for this sale from ledger
-            const { data, error } = await supabase
-                .from('business_transactions')
-                .select('amount, payment_method, status')
-                .eq('reference_id', sale.id)
-                .eq('reference_type', 'product');
+            // Fetch individual items comprising this sale group
+            const { data: items, error } = await supabase
+                .from('sales')
+                .select('*')
+                .eq('sale_id', sale.id);
 
             if (error) throw error;
+            currentRefundItems = items || [];
 
-            // Sum up transactions from ledger
-            let ledgerPaid = 0;
-            let ledgerRefunded = 0;
+            // Hint last payment method
+            const { data: txs } = await supabase
+                .from('business_transactions')
+                .select('payment_method')
+                .eq('reference_id', sale.id)
+                .limit(1);
 
-            (data || []).forEach(tx => {
-                const val = Math.abs(Number(tx.amount || 0));
-                const status = (tx.status || '').toLowerCase().trim();
-                if (status === 'paid') ledgerPaid += val;
-                if (status === 'refunded') ledgerRefunded += val;
-            });
-
-            const ledgerNet = ledgerPaid - ledgerRefunded;
-
-            // Robust amount logic:
-            // 1. If we have a net positive in the ledger, use it.
-            // 2. If ledger is empty but sale is marked as 'paid' or 'completed', use the sale total.
-            // 3. Otherwise, use 0.
-            if (ledgerNet > 0) {
-                refundableAmount = ledgerNet;
-            } else if (data && data.length === 0 && (sale.payment_status === 'paid' || sale.status === 'completed')) {
-                // Fallback for legacy data or missing ledger records
-                refundableAmount = (sale.totalAmountNum || 0) - ledgerRefunded;
-            } else {
-                refundableAmount = Math.max(0, ledgerNet);
-            }
-            
-            if (refundableAmount < 0) refundableAmount = 0;
-
-            if (amountDisplay) {
-                amountDisplay.textContent = `₹${refundableAmount.toLocaleString('en-IN')}`;
-                amountDisplay.style.color = (refundableAmount <= 0) ? '#94a3b8' : '#dc2626';
-            }
-            
-            // Use the last payment method as a hint
-            const lastMethod = data && data.length > 0 ? data[data.length - 1].payment_method : (sale.payment || 'Cash');
             if (methodDisplay) {
-                methodDisplay.value = lastMethod ? (lastMethod.charAt(0).toUpperCase() + lastMethod.slice(1)) : 'N/A';
+                const method = (txs && txs.length > 0 && txs[0].payment_method) ? txs[0].payment_method : (sale.payment || 'Cash');
+                methodDisplay.value = method.charAt(0).toUpperCase() + method.slice(1);
             }
 
-            if (refundableAmount <= 0) {
-                if (confirmBtn) {
-                    confirmBtn.disabled = true;
-                    confirmBtn.textContent = 'Nothing to Refund';
-                }
-            } else {
-                if (confirmBtn) {
-                    confirmBtn.disabled = false;
-                    confirmBtn.textContent = 'Issue Refund';
-                }
-            }
+            renderRefundItems();
+
         } catch (err) {
-            console.error('[Refund Check Error]', err);
-            if (amountDisplay) amountDisplay.textContent = 'Error';
-            if (confirmBtn) { confirmBtn.disabled = true; confirmBtn.textContent = 'Refund Error'; }
+            console.error('[Return Load Error]', err);
+            if (productList) productList.innerHTML = `<div style="padding: 20px; text-align: center; color: #dc2626; font-size: 0.85rem;">Failed to load items.</div>`;
         }
         
         if (typeof feather !== 'undefined') feather.replace();
     }
     window.openRefundModal = openRefundModal;
 
+    function renderRefundItems() {
+        const list = document.getElementById('rfProductList');
+        if (!list) return;
+        
+        list.innerHTML = '';
+        
+        if (currentRefundItems.length === 0) {
+            list.innerHTML = `<div style="padding: 20px; text-align: center; color: #64748b; font-size: 0.85rem;">No items found.</div>`;
+            return;
+        }
+
+        currentRefundItems.forEach(item => {
+            const isRefunded = (item.status === 'refunded');
+            const priceStr = `₹${Number(item.total_amount || 0).toLocaleString('en-IN')}`;
+            
+            const row = document.createElement('div');
+            row.style.cssText = `display: flex; align-items: center; justify-content: space-between; padding: 12px 16px; border-bottom: 1px solid #f1f5f9; ${isRefunded ? 'background: #f8fafc; opacity: 0.6;' : ''}`;
+            
+            row.innerHTML = `
+                <div style="display: flex; align-items: center; gap: 12px; flex: 1;">
+                    <input type="checkbox" class="rf-item-cb" data-id="${item.id}" data-amount="${item.total_amount || 0}" 
+                        style="width: 18px; height: 18px; accent-color: #dc2626; cursor: ${isRefunded ? 'not-allowed' : 'pointer'};" 
+                        ${isRefunded ? 'checked disabled' : ''}>
+                    <div>
+                        <p style="margin: 0; font-size: 0.9rem; font-weight: 600; color: #1e293b; text-decoration: ${isRefunded ? 'line-through' : 'none'};">${item.product_name || 'Product'}</p>
+                        <p style="margin: 0; font-size: 0.75rem; color: #64748b;">Qty: ${item.quantity || 1}</p>
+                    </div>
+                </div>
+                <div style="font-weight: 600; color: #1e293b;">
+                    ${isRefunded ? '<span style="color: #dc2626; font-size: 0.75rem; text-transform: uppercase; margin-right: 8px;">Returned</span>' : ''} ${priceStr}
+                </div>
+            `;
+            list.appendChild(row);
+        });
+
+        // Attach recalculation
+        document.querySelectorAll('.rf-item-cb:not(:disabled)').forEach(cb => {
+            cb.addEventListener('change', calculateRefundTotal);
+        });
+        
+        calculateRefundTotal();
+    }
+
+    function calculateRefundTotal() {
+        let total = 0;
+        let selectedCount = 0;
+        
+        document.querySelectorAll('.rf-item-cb:not(:disabled):checked').forEach(cb => {
+            total += Number(cb.dataset.amount || 0);
+            selectedCount++;
+        });
+        
+        const amountDisplay = document.getElementById('rfAmountDisplay');
+        if (amountDisplay) amountDisplay.textContent = `₹${total.toLocaleString('en-IN')}`;
+        
+        const btn = document.getElementById('confirmRefundBtn');
+        if (btn) btn.disabled = (selectedCount === 0);
+    }
 
     // ----------------------------------------------------------------------
     // FILTER: Apply & Clear (called from HTML onclick)
@@ -737,6 +763,8 @@ document.addEventListener('DOMContentLoaded', () => {
 
             if (sdRefundBtn) {
                 const isRefunded = sale.status === 'refunded';
+                // Wait, if it is partially refunded we should still allow returns!
+                // So always display it unless items are 100% returned (which we can check later).
                 sdRefundBtn.style.display = isRefunded ? 'none' : 'inline-flex';
             }
 
@@ -748,64 +776,76 @@ document.addEventListener('DOMContentLoaded', () => {
 
 
     // ----------------------------------------------------------------------
-    // 9. PROCESS REFUND (via Supabase update)
+    // 9. PROCESS REFUND (via Supabase array/multi-row update)
     // ----------------------------------------------------------------------
     async function processRefund() {
-        if (!currentActionData || !currentActionData.sale || refundableAmount <= 0) return;
-        
-        const { sale } = currentActionData;
-        const saleId = sale.id;
-        const confirmBtn = document.getElementById('confirmRefundBtn');
-        const note = document.getElementById('rfNote')?.value.trim();
+        if (!currentActionData || !currentActionData.sale) return;
 
+        const checkedBoxes = Array.from(document.querySelectorAll('.rf-item-cb:not(:disabled):checked'));
+        if (checkedBoxes.length === 0) return;
+
+        const confirmBtn = document.getElementById('confirmRefundBtn');
         if (confirmBtn) {
             confirmBtn.textContent = 'Processing...';
             confirmBtn.disabled = true;
         }
 
         try {
-            // 1. Record the Refund in the Ledger
-            const { error: txError } = await supabase
-                .from('business_transactions')
-                .insert({
+            const saleId = currentActionData.sale.id; // The Parent Group ID
+            const note = document.getElementById('rfNote')?.value.trim();
+            const methodDisplay = document.getElementById('rfMethodDisplay');
+            const method = methodDisplay ? methodDisplay.value.toLowerCase() : 'cash';
+
+            // 1. Build the distinct ledger inserts
+            const ledgerRows = checkedBoxes.map(cb => {
+                const itemId = cb.dataset.id;
+                const itemObj = currentRefundItems.find(i => String(i.id) === itemId);
+                const amount = Number(cb.dataset.amount || 0);
+
+                return {
                     company_id: getCompanyId(),
                     branch_id: getBranchId(),
-                    reference_id: saleId,
+                    reference_id: saleId,               // Parent cart ID
+                    reference_line_id: itemId,          // Specific product row ID
                     reference_type: 'product',
-                    amount: Math.abs(refundableAmount),
+                    amount: Math.abs(amount),
                     status: 'refunded',
-                    payment_method: (document.getElementById('rfMethodDisplay')?.value || 'cash').toLowerCase(),
-                    notes: note || `Refund processed for sale ${saleId}`,
+                    payment_method: method,
+                    notes: note || `Returned: ${itemObj?.product_name || 'Item'}`,
                     paid_at: new Date().toISOString()
-                });
+                };
+            });
+
+            // 2. Insert array into ledger
+            const { error: txError } = await supabase
+                .from('business_transactions')
+                .insert(ledgerRows);
 
             if (txError) throw txError;
 
-            // 2. Update the sale status in the sales table
-            // The sales table always uses 'sale_id' as the primary key column
-            const { error } = await supabase
-                .from('sales')
-                .eq('sale_id', saleId)
-                .update({ status: 'refunded' });
-
-            if (error) throw error;
+            // 3. Mark the individual rows in the sales table as refunded
+            const itemIds = checkedBoxes.map(cb => cb.dataset.id);
+            const updatePromises = itemIds.map(id => 
+                supabase.from('sales').update({ status: 'refunded' }).eq('id', id)
+            );
+            await Promise.all(updatePromises);
 
             // Success!
-            showToast(`${sale.customer}'s purchase has been refunded.`, '#dc2626');
+            showToast(`Successfully returned ${checkedBoxes.length} item(s).`, '#dc2626');
             document.getElementById('refundSummaryOverlay').classList.remove('active');
             
-            // Re-fetch to sync everything
+            // Re-fetch to sync table badges
             await fetchSalesHistory();
             
-            // Update local Detail view if open
-            if (sdTotal) sdTotal.innerHTML = `<del style="color:#94a3b8; font-weight:400; margin-right: 8px;">${sale.total}</del> <span style="color:#dc2626;">Refunded</span>`;
+            // Close detail modal if open
             if (sdRefundBtn) sdRefundBtn.style.display = 'none';
 
         } catch (err) {
-            console.error('Refund error:', err);
-            showToast('Failed to process refund: ' + (err.message || 'Unknown error'), '#dc2626');
+            console.error('Return error:', err);
+            showToast('Failed to process return: ' + (err.message || 'Unknown error'), '#dc2626');
+        } finally {
             if (confirmBtn) {
-                confirmBtn.textContent = 'Issue Refund';
+                confirmBtn.textContent = 'Process Refund';
                 confirmBtn.disabled = false;
             }
         }
