@@ -5,19 +5,37 @@
     --accent: #d946ef; /* Fuchsia 500 */
     --accent-hover: #c026d3; /* Fuchsia 600 */
     
-    /* Theme Semantic Variables (Light Mode - Original Default) */
+    /* Theme Semantic Variables (Light Mode) */
     --bg-main: #ffffff;
     --bg-secondary: #f8fafc;
     --bg-tertiary: #f1f5f9;
+    --bg-panel: #ffffff;
+    --bg-input: #ffffff;
+    --bg-modal: #ffffff;
+    --bg-overlay: rgba(15, 23, 42, 0.4);
+    
     --text-main: #0f172a;
     --text-muted: #64748b;
+    --text-heading: #1e293b;
+    --text-inverse: #ffffff;
+    
     --border: #e2e8f0;
+    --border-strong: #cbd5e1;
     --border-focus: #d946ef;
+    
+    /* Status Colors (Light Mode) */
+    --status-success-bg: #dcfce7;
+    --status-success-text: #166534;
+    --status-error-bg: #fef2f2;
+    --status-error-text: #991b1b;
+    --status-warning-bg: #fef3c7;
+    --status-warning-text: #92400e;
     
     /* Shadows */
     --shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.05);
     --shadow-md: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
     --shadow-xl: 0 20px 25px -5px rgb(0 0 0 / 0.1), 0 8px 10px -6px rgb(0 0 0 / 0.1);
+    --shadow-modal: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
 }
 
 /* Dark Mode Overrides (Softer Slate Palette) */
@@ -25,20 +43,36 @@
     --primary: #f8fafc; /* Slate 50 */
     --primary-hover: #f1f5f9;
     
-    --bg-main: #0f172a; /* Slate 900 - Softer base */
-    --bg-secondary: #1e293b; /* Slate 800 - Lighter surface */
-    --bg-tertiary: #334155; /* Slate 700 - Lighter background */
+    --bg-main: #0f172a; /* Slate 900 */
+    --bg-secondary: #1e293b; /* Slate 800 */
+    --bg-tertiary: #020617; /* Slate 950 - Even deeper background */
+    --bg-panel: #1e293b; /* Slate 800 */
+    --bg-input: #0f172a; /* Slate 900 */
+    --bg-modal: #1e293b; /* Slate 800 */
+    --bg-overlay: rgba(0, 0, 0, 0.75);
     
     --text-main: #f8fafc; /* Slate 50 */
     --text-muted: #94a3b8; /* Slate 400 */
+    --text-heading: #ffffff;
+    --text-inverse: #0f172a;
     
-    --border: #334155; /* Slate 700 (More balanced) */
+    --border: #334155; /* Slate 700 */
+    --border-strong: #475569; /* Slate 600 */
     --border-focus: #d946ef; 
+    
+    /* Status Colors (Dark Mode) */
+    --status-success-bg: rgba(34, 197, 94, 0.15);
+    --status-success-text: #4ade80;
+    --status-error-bg: rgba(239, 68, 68, 0.15);
+    --status-error-text: #f87171;
+    --status-warning-bg: rgba(245, 158, 11, 0.15);
+    --status-warning-text: #fbbf24;
     
     /* Dark shadows need to be stronger */
     --shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.3);
     --shadow-md: 0 4px 6px -1px rgb(0 0 0 / 0.4), 0 2px 4px -2px rgb(0 0 0 / 0.4);
     --shadow-xl: 0 20px 25px -5px rgb(0 0 0 / 0.5), 0 8px 10px -6px rgb(0 0 0 / 0.5);
+    --shadow-modal: 0 25px 50px -12px rgba(0, 0, 0, 0.65);
 }
 
 * {
@@ -463,7 +497,7 @@ a:hover {
     display: flex;
     gap: 3rem;
     padding-bottom: 2rem;
-    border-bottom: 1px solid #e2e8f0;
+    border-bottom: 1px solid var(--border);
 }
 
 .settings-section:last-child {
@@ -479,13 +513,13 @@ a:hover {
 .settings-sidebar h3 {
     font-size: 1.1rem;
     font-weight: 600;
-    color: #1e293b;
+    color: var(--text-heading);
     margin-bottom: 0.5rem;
 }
 
 .settings-sidebar p {
     font-size: 0.9rem;
-    color: #64748b;
+    color: var(--text-muted);
     line-height: 1.5;
 }
 
@@ -513,7 +547,7 @@ a:hover {
     font-size: 0.85rem;
     font-weight: 600;
     margin-bottom: 0.5rem;
-    color: #475569;
+    color: var(--text-muted);
 }
 
 .settings-form .form-input,
@@ -576,8 +610,8 @@ a:hover {
     width: 80px;
     height: 80px;
     border-radius: 16px;
-    background: #f1f5f9;
-    border: 1px dashed #cbd5e1;
+    background: var(--bg-secondary);
+    border: 1px dashed var(--border);
     display: flex;
     align-items: center;
     justify-content: center;
@@ -586,7 +620,7 @@ a:hover {
 }
 
 .logo-placeholder {
-    color: #94a3b8;
+    color: var(--text-muted);
     display: flex;
     align-items: center;
     justify-content: center;
@@ -600,7 +634,7 @@ a:hover {
 
 .upload-hint {
     font-size: 0.8rem;
-    color: #64748b;
+    color: var(--text-muted);
     margin: 0;
 }
 
@@ -636,7 +670,7 @@ a:hover {
 .unsaved-text {
     font-size: 0.95rem;
     font-weight: 500;
-    color: #475569;
+    color: var(--text-muted);
     margin: 0;
     display: flex;
     align-items: center;
@@ -697,10 +731,10 @@ a:hover {
 
 /* Table Adjustments */
 .table-container {
-    background: #ffffff;
+    background: var(--bg-main);
     border-radius: 12px;
-    border: 1px solid #e2e8f0;
-    box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+    border: 1px solid var(--border);
+    box-shadow: var(--shadow-sm);
     overflow: hidden;
 }
 
@@ -716,8 +750,8 @@ a:hover {
 }
 
 .status-active {
-    background-color: #dcfce7;
-    color: #166534;
+    background-color: var(--status-success-bg);
+    color: var(--status-success-text);
 }
 
 .status-active::before {
@@ -730,8 +764,8 @@ a:hover {
 }
 
 .status-inactive {
-    background-color: #f1f5f9;
-    color: #475569;
+    background-color: var(--bg-secondary);
+    color: var(--text-muted);
 }
 
 .status-inactive::before {
@@ -771,9 +805,9 @@ a:hover {
 }
 
 .action-btn.delete:hover {
-    color: #ef4444;
-    border-color: #fecaca;
-    background: #fef2f2;
+    color: var(--status-error-text);
+    border-color: var(--status-error-text);
+    background: var(--status-error-bg);
 }
 
 /* Slide-out Panel Overlay */
@@ -804,9 +838,9 @@ a:hover {
     width: 100%;
     max-width: 500px; /* Modern sidebar width */
     height: 100vh;
-    background: #ffffff;
+    background: var(--bg-modal);
     z-index: 1001;
-    box-shadow: -8px 0 24px rgba(15, 23, 42, 0.1);
+    box-shadow: -8px 0 24px rgba(0, 0, 0, 0.1);
     display: flex;
     flex-direction: column;
     transform: translateX(100%);
@@ -820,7 +854,7 @@ a:hover {
 /* Panel Header */
 .side-panel-header {
     padding: 24px 32px;
-    border-bottom: 1px solid #e2e8f0;
+    border-bottom: 1px solid var(--border);
     display: flex;
     justify-content: space-between;
     align-items: flex-start;

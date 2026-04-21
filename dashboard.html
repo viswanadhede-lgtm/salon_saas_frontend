@@ -587,12 +587,12 @@
                         font-size: 0.85rem;
                         font-weight: 600;
                         margin-bottom: 6px;
-                        color: #475569;
+                        color: var(--text-muted);
                         transition: color 0.2s ease;
                     }
 
                     #profileContent .form-group:hover .form-label {
-                        color: #1e293b;
+                        color: var(--text-heading);
                     }
 
                     #profileContent .form-input {
@@ -600,29 +600,29 @@
                         font-size: 0.95rem;
                         padding: 10px 16px;
                         border-radius: 10px;
-                        border: 1px solid #e2e8f0;
-                        background-color: #fafafa;
+                        border: 1px solid var(--border);
+                        background-color: var(--bg-input);
                         box-shadow: 0 1px 2px rgba(0, 0, 0, 0.02) inset;
                         transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
                     }
 
                     #profileContent .form-input:hover:not(.read-only-input) {
-                        background-color: #ffffff;
-                        border-color: #cbd5e1;
+                        background-color: var(--bg-main);
+                        border-color: var(--border-strong);
                         box-shadow: 0 2px 4px rgba(0, 0, 0, 0.03);
                     }
 
                     #profileContent .form-input:focus {
-                        background-color: #ffffff;
-                        border-color: #8b5cf6;
-                        box-shadow: 0 0 0 4px rgba(139, 92, 246, 0.12), 0 2px 4px rgba(0, 0, 0, 0.05);
+                        background-color: var(--bg-main);
+                        border-color: var(--accent);
+                        box-shadow: 0 0 0 4px rgba(217, 70, 239, 0.12), 0 2px 4px rgba(0, 0, 0, 0.05);
                         transform: translateY(-1px);
                     }
 
                     #profileContent .read-only-input {
-                        background-color: #f8fafc;
-                        border-color: #f1f5f9;
-                        color: #64748b;
+                        background-color: var(--bg-secondary);
+                        border-color: var(--border);
+                        color: var(--text-muted);
                         box-shadow: none !important;
                         transform: none !important;
                     }
@@ -643,7 +643,7 @@
 
                     .profile-avatar-wrap:hover {
                         transform: scale(1.05) translateY(-2px);
-                        box-shadow: 0 0 0 6px #e0e7ff, 0 12px 24px rgba(30, 58, 138, 0.2) !important;
+                        box-shadow: 0 0 0 6px var(--bg-secondary), 0 12px 24px rgba(0, 0, 0, 0.2) !important;
                     }
 
                     /* Subtle pulsing background for photo button */
@@ -682,7 +682,7 @@
 
                     /* Text subtle lift */
                     .profile-name-display {
-                        background: linear-gradient(135deg, #1e3a8a 0%, #3b82f6 100%);
+                        background: linear-gradient(135deg, var(--accent) 0%, var(--accent-hover) 100%);
                         -webkit-background-clip: text;
                         background-clip: text;
                         -webkit-text-fill-color: transparent;
@@ -694,10 +694,10 @@
 
                     <!-- LEFT: Avatar column -->
                     <div
-                        style="display: flex; flex-direction: column; align-items: center; padding: 1rem 2.5rem 2rem 2.5rem; border-right: 1px solid #f1f5f9; width: 100%; box-sizing: border-box; justify-content: flex-start;">
+                        style="display: flex; flex-direction: column; align-items: center; padding: 1rem 2.5rem 2rem 2.5rem; border-right: 1px solid var(--border); width: 100%; box-sizing: border-box; justify-content: flex-start;">
                         <!-- Avatar Circle -->
                         <div class="profile-avatar-wrap"
-                            style="width: 140px; height: 140px; margin-bottom: 24px; box-shadow: 0 0 0 4px #c7d2fe, 0 6px 16px rgba(30, 58, 138, 0.18);">
+                            style="width: 140px; height: 140px; margin-bottom: 24px; box-shadow: 0 0 0 4px var(--bg-secondary), 0 6px 16px rgba(0, 0, 0, 0.18);">
                             <img id="profileAvatarImg"
                                 src="https://ui-avatars.com/api/?name=Admin+User&background=1E3A8A&color=fff&size=256"
                                 alt="Profile Avatar">
@@ -783,10 +783,10 @@
 
                     <!-- LEFT: App Preferences -->
                     <div
-                        style="display: flex; flex-direction: column; padding: 1rem 2.5rem 3rem 2.5rem; border-right: 1px solid #f1f5f9; width: 100%; box-sizing: border-box; justify-content: center; align-items: center;">
+                        style="display: flex; flex-direction: column; padding: 1rem 2.5rem 3rem 2.5rem; border-right: 1px solid var(--border); width: 100%; box-sizing: border-box; justify-content: center; align-items: center;">
                         <div style="width: 100%; max-width: 450px;">
                             <h3
-                                style="font-size: 1.1rem; font-weight: 600; color: #1e293b; margin-bottom: 24px; padding-bottom: 12px; border-bottom: 1px solid #e2e8f0; width: 100%;">
+                                style="font-size: 1.1rem; font-weight: 600; color: var(--text-heading); margin-bottom: 24px; padding-bottom: 12px; border-bottom: 1px solid var(--border); width: 100%;">
                                 App Preferences</h3>
 
                             <!-- Language -->

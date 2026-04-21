@@ -23,7 +23,7 @@ const helperScript = `
             var toast = document.getElementById('toastNotification');
             if (!toast) return;
             toast.textContent = msg || 'Done';
-            toast.style.background = color || '#3b82f6';
+            toast.style.background = color || 'var(--primary)';
             toast.classList.add('show');
             setTimeout(function() { toast.classList.remove('show'); }, 3000);
         }

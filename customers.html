@@ -1,4 +1,4 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="en">
 
 <head>
@@ -24,7 +24,7 @@
             justify-content: space-between;
             padding: 0.75rem 0;
             gap: 1rem;
-            border-bottom: 1px solid #e2e8f0;
+            border-bottom: 1px solid var(--border);
             margin-bottom: 1.25rem;
         }
 
@@ -38,7 +38,7 @@
         .customers-title {
             font-size: 1.5rem;
             font-weight: 700;
-            color: #0f172a;
+            color: var(--text-main);
             margin: 0;
             line-height: 1.2;
             letter-spacing: -0.3px;
@@ -46,7 +46,7 @@
 
         .customers-caption {
             font-size: 0.875rem;
-            color: #64748b;
+            color: var(--text-muted);
             margin: 0;
             font-weight: 400;
         }
@@ -65,23 +65,23 @@
             align-items: center;
             height: 38px;
             width: 480px; /* Base width */
-            background: #fff;
-            border: 1px solid #e2e8f0;
+            background: var(--bg-main);
+            border: 1px solid var(--border);
             border-radius: 0.5rem;
             overflow: hidden;
         }
 
         .customers-search-wrap:focus-within {
-            background: #fff;
-            border-color: #a855f7;
-            box-shadow: 0 4px 12px rgba(168, 85, 247, 0.15), 0 0 0 3px rgba(168, 85, 247, 0.1);
+            background: var(--bg-main);
+            border-color: var(--accent);
+            box-shadow: 0 4px 12px rgba(217, 70, 239, 0.15), 0 0 0 3px rgba(217, 70, 239, 0.1);
             transform: translateY(-1px);
         }
 
         .customers-search-icon {
             width: 15px;
             height: 15px;
-            color: #94a3b8;
+            color: var(--text-muted);
             flex-shrink: 0;
             margin-left: 0.75rem;
             pointer-events: none;
@@ -95,14 +95,14 @@
             background: transparent;
             font-size: 0.875rem;
             font-family: inherit;
-            color: #0f172a;
+            color: var(--text-main);
             outline: none;
         }
 
         .customers-search-divider {
             width: 1px;
             height: 20px;
-            background: #e2e8f0;
+            background: var(--border);
             flex-shrink: 0;
         }
 
@@ -115,25 +115,25 @@
             font-size: 0.875rem;
             font-weight: 600;
             font-family: inherit;
-            color: #7c3aed;
+            color: var(--accent);
             cursor: pointer;
             white-space: nowrap;
             transition: background 0.15s ease, color 0.15s ease;
         }
 
         .customers-search-btn:hover {
-            background: #faf5ff;
-            color: #6d28d9;
+            background: var(--bg-secondary);
+            color: var(--accent-hover);
         }
 
         .customers-search-input::placeholder {
-            color: #94a3b8;
+            color: var(--text-muted);
         }
 
         .customers-search-input:focus {
-            background-color: #fff;
-            border-color: #a855f7;
-            box-shadow: 0 0 0 3px rgba(168, 85, 247, 0.1);
+            background-color: var(--bg-main);
+            border-color: var(--accent);
+            box-shadow: 0 0 0 3px rgba(217, 70, 239, 0.1);
         }
 
         /* Filter */
@@ -146,13 +146,13 @@
             align-items: center;
             gap: 0.4rem;
             padding: 0.5rem 0.875rem;
-            border: 1px solid #e2e8f0;
+            border: 1px solid var(--border);
             border-radius: 0.5rem;
-            background-color: #fff;
+            background-color: var(--bg-main);
             font-size: 0.875rem;
             font-weight: 500;
             font-family: inherit;
-            color: #334155;
+            color: var(--text-main);
             cursor: pointer;
             transition: all 0.2s ease;
             white-space: nowrap;
@@ -160,16 +160,16 @@
         }
 
         .customers-filter-btn:hover {
-            background-color: #f8fafc;
-            border-color: #cbd5e1;
-            color: #0f172a;
+            background-color: var(--bg-secondary);
+            border-color: var(--border);
+            color: var(--text-main);
         }
 
         .customers-filter-btn.open {
-            background-color: #f8fafc;
-            border-color: #a855f7;
-            color: #7c3aed;
-            box-shadow: 0 0 0 3px rgba(168, 85, 247, 0.1);
+            background-color: var(--bg-secondary);
+            border-color: var(--accent);
+            color: var(--accent);
+            box-shadow: 0 0 0 3px rgba(217, 70, 239, 0.1);
         }
 
         .filter-btn-icon {
@@ -195,10 +195,10 @@
             top: calc(100% + 6px);
             left: 0;
             min-width: 200px;
-            background: #fff;
-            border: 1px solid #e2e8f0;
+            background: var(--bg-modal);
+            border: 1px solid var(--border);
             border-radius: 0.625rem;
-            box-shadow: 0 10px 24px -4px rgba(0,0,0,0.1), 0 4px 8px -2px rgba(0,0,0,0.06);
+            box-shadow: var(--shadow-xl);
             z-index: 100;
             opacity: 0;
             visibility: hidden;
@@ -225,19 +225,19 @@
             padding: 0.5rem 0.875rem;
             font-size: 0.875rem;
             font-weight: 500;
-            color: #334155;
+            color: var(--text-muted);
             cursor: pointer;
             transition: background 0.12s ease, color 0.12s ease;
         }
 
         .filter-option:hover {
-            background-color: #f8fafc;
-            color: #0f172a;
+            background-color: var(--bg-secondary);
+            color: var(--text-main);
         }
 
         .filter-option.active {
-            background-color: #faf5ff;
-            color: #7c3aed;
+            background-color: var(--bg-tertiary);
+            color: var(--accent);
         }
 
         .filter-option-icon {
@@ -294,23 +294,24 @@
         .data-table th {
             font-size: 0.75rem;
             font-weight: 600;
-            color: #64748b;
+            color: var(--text-muted);
             text-transform: uppercase;
             letter-spacing: 0.05em;
             padding: 1rem 1.5rem;
-            border-bottom: 2px solid #e2e8f0;
-            background-color: #f8fafc;
+            border-bottom: 2px solid var(--border);
+            background-color: var(--bg-secondary);
             white-space: nowrap;
         }
 
         .data-table td {
             padding: 1rem 1.5rem;
-            border-bottom: 1px solid #e2e8f0;
+            border-bottom: 1px solid var(--border);
             vertical-align: middle;
+            color: var(--text-main);
         }
 
         .data-table tbody tr:hover {
-            background-color: #f8fafc;
+            background-color: var(--bg-secondary);
         }
 
         .customer-info {
@@ -326,7 +327,7 @@
             border-radius: 50%;
             overflow: hidden;
             flex-shrink: 0;
-            background-color: #e2e8f0;
+            background-color: var(--bg-secondary);
             display: flex;
             align-items: center;
             justify-content: center;
@@ -386,27 +387,27 @@
         #addCustomerModal .form-label {
             font-size: 0.875rem;
             font-weight: 500;
-            color: #334155;
+            color: var(--text-muted);
         }
 
         #addCustomerModal .form-input,
         #addCustomerModal .form-select {
             width: 100%;
             padding: 0.75rem 1rem;
-            border: 1px solid #cbd5e1;
+            border: 1px solid var(--border);
             border-radius: 0.5rem;
             font-size: 0.875rem;
-            color: #0f172a;
-            background-color: #ffffff;
+            color: var(--text-main);
+            background-color: var(--bg-main);
             transition: all 0.2s ease;
             box-sizing: border-box;
         }
 
         #addCustomerModal .form-input:focus,
         #addCustomerModal .form-select:focus {
-            background-color: #fff;
-            border-color: #a855f7;
-            box-shadow: 0 0 0 3px rgba(168, 85, 247, 0.15);
+            background-color: var(--bg-main);
+            border-color: var(--accent);
+            box-shadow: 0 0 0 3px rgba(217, 70, 239, 0.15);
             outline: none;
         }
 
@@ -794,7 +795,7 @@
 
                 <!-- Inactive / Churned -->
                 <div class="card stat-card">
-                    <div class="stat-icon bg-rose-light text-rose" style="background-color: #ffe4e6; color: #e11d48;">
+                    <div class="stat-icon bg-rose-light text-rose">
                         <i data-feather="user-minus"></i>
                     </div>
                     <div class="stat-details">
