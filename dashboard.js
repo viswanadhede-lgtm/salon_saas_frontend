@@ -105,39 +105,39 @@ document.addEventListener('DOMContentLoaded', () => {
             if (data) {
                 // Formatting Helpers
                 const fmtTrend = (val) => `<i data-feather="trending-${val >= 0 ? 'up' : 'down'}"></i> ${Math.abs(val)}%`;
-                const trendClass = (val) => \`stat-trend \${val >= 0 ? 'positive' : 'negative'}\`;
+                const trendClass = (val) => `stat-trend ${val >= 0 ? 'positive' : 'negative'}`;
 
                 // Card 1
                 const elBookings = document.getElementById('kpiTodayBookings');
                 if (elBookings) {
                     elBookings.textContent = data.todays_bookings;
                     const bTrendEl = document.getElementById('kpiTodayBookingsTrend');
-                    bTrendEl.innerHTML = \`\${fmtTrend(data.booking_trend)} vs yesterday\`;
+                    bTrendEl.innerHTML = `${fmtTrend(data.booking_trend)} vs yesterday`;
                     bTrendEl.className = trendClass(data.booking_trend);
                 }
 
                 // Card 2
                 const elAppts = document.getElementById('kpiCompletedAppts');
                 if (elAppts) {
-                    elAppts.innerHTML = \`\${data.completed_appointments} <span class="stat-value-sub" id="kpiCompletedApptsSub">/ \${data.todays_bookings} completed</span>\`;
+                    elAppts.innerHTML = `${data.completed_appointments} <span class="stat-value-sub" id="kpiCompletedApptsSub">/ ${data.todays_bookings} completed</span>`;
                     const cTrendEl = document.getElementById('kpiCompletedApptsTrend');
-                    cTrendEl.innerHTML = \`\${fmtTrend(data.completion_rate - 50)} \${data.completion_rate}% completion rate\`; // Note: using 50 as a generic positive baseline just for the UI icon direction
+                    cTrendEl.innerHTML = `${fmtTrend(data.completion_rate - 50)} ${data.completion_rate}% completion rate`;
                     cTrendEl.className = trendClass(data.completion_rate - 50);
                 }
 
                 // Card 3
                 const elNoShows = document.getElementById('kpiNoShows');
                 if (elNoShows) {
-                    elNoShows.innerHTML = \`No-shows: <strong>\${data.no_shows}</strong>\`;
-                    document.getElementById('kpiCancelled').innerHTML = \`Cancelled: <strong>\${data.cancelled}</strong>\`;
+                    elNoShows.innerHTML = `No-shows: <strong>${data.no_shows}</strong>`;
+                    document.getElementById('kpiCancelled').innerHTML = `Cancelled: <strong>${data.cancelled}</strong>`;
                 }
 
                 // Card 4
                 const elRevenue = document.getElementById('kpiTodayRevenue');
                 if (elRevenue) {
-                    elRevenue.textContent = \`₹\${Number(data.todays_revenue).toLocaleString('en-IN')}\`;
+                    elRevenue.textContent = `₹${Number(data.todays_revenue).toLocaleString('en-IN')}`;
                     const rTrendEl = document.getElementById('kpiTodayRevenueTrend');
-                    rTrendEl.innerHTML = \`\${fmtTrend(data.revenue_trend)} vs yesterday\`;
+                    rTrendEl.innerHTML = `${fmtTrend(data.revenue_trend)} vs yesterday`;
                     rTrendEl.className = trendClass(data.revenue_trend);
                 }
 
