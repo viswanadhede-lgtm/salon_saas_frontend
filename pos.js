@@ -548,7 +548,8 @@ function setupEventListeners() {
             const ledgerBatch = insertedSales.map(sale => ({
                 company_id: getCompanyId() || null,
                 branch_id: getBranchId() || null,
-                reference_id: sale.id, // Direct map to the newly generated sales table ID
+                reference_id: saleGroupId, // The overarching cart/transaction ID
+                reference_line_id: sale.id, // The specific product row ID
                 reference_type: 'product',
                 amount: sale.total_amount, // The exact price of this single item
                 currency: 'INR',
