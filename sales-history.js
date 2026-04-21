@@ -905,12 +905,11 @@ document.addEventListener('DOMContentLoaded', () => {
                     
                     const { data: newInserted, error: insertErr } = await supabase
                         .from('sales')
-                        .insert(newRowObj)
-                        .select()
-                        .single();
+                        .insert([newRowObj])
+                        .select();
                         
                     if (insertErr) throw insertErr;
-                    resultingLineId = newInserted.id;
+                    resultingLineId = newInserted && newInserted.length > 0 ? newInserted[0].id : itemId;
                     
                     // 2. Update existing row with remaining inventory
                     const remainingQty = itemObj.quantity - refundQty;
