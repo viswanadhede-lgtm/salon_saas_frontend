@@ -353,12 +353,80 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
+    async function fetchAndRenderWeeklyRevenue(currentBranchId) {
+        const chartContainer = document.getElementById('weeklyRevenueChart');
+        if (!chartContainer || !currentBranchId) return;
+
+        try {
+            const { supabase } = await import('./lib/supabase.js');
+            const companyId = localStorage.getItem('company_id');
+
+            const now = new Date();
+            const endDate = new Date(now.getTime() - (now.getTimezoneOffset() * 60000)).toISOString().split('T')[0];
+            const startDate = new Date(now.getTime() - (now.getTimezoneOffset() * 60000) - (6 * 24 * 60 * 60 * 1000)).toISOString().split('T')[0];
+
+            const { data: trendData, error } = await supabase.rpc('get_revenue_trend', {
+                p_company_id: companyId,
+                p_branch_id: currentBranchId,
+                p_start_date: startDate,
+                p_end_date: endDate
+            });
+
+            if (error) throw error;
+
+            // Fill gaps for missing days
+            const dayMap = ['S', 'M', 'T', 'W', 'T', 'F', 'S'];
+            const dailyRevenue = {};
+            
+            // Initialize last 7 days with 0
+            for (let i = 0; i < 7; i++) {
+                const d = new Date(now.getTime() - (i * 24 * 60 * 60 * 1000));
+                const dateKey = new Date(d.getTime() - (d.getTimezoneOffset() * 60000)).toISOString().split('T')[0];
+                dailyRevenue[dateKey] = {
+                    date: dateKey,
+                    revenue: 0,
+                    day: dayMap[d.getDay()],
+                    isToday: i === 0
+                };
+            }
+
+            // Map data from RPC
+            if (trendData) {
+                trendData.forEach(t => {
+                    const dateKey = t.date;
+                    if (dailyRevenue[dateKey]) {
+                        dailyRevenue[dateKey].revenue = Number(t.revenue);
+                    }
+                });
+            }
+
+            // Sort by date ascending for the chart
+            const sortedItems = Object.values(dailyRevenue).sort((a, b) => a.date.localeCompare(b.date));
+            const maxRevenue = Math.max(...sortedItems.map(item => item.revenue), 1000); // at least 1000 for scaling
+
+            chartContainer.innerHTML = sortedItems.map(item => {
+                const heightPerc = Math.max(Math.round((item.revenue / maxRevenue) * 100), 2); // min 2% height for visibility
+                return `
+                    <div class="bar-group ${item.isToday ? 'active' : ''}">
+                        <div class="bar" style="height: ${heightPerc}%" title="₹${item.revenue.toLocaleString('en-IN')}"></div>
+                        <span class="day">${item.day}</span>
+                    </div>
+                `;
+            }).join('');
+
+        } catch (err) {
+            console.error("Error fetching Weekly Revenue:", err);
+            chartContainer.innerHTML = '<div class="centered-placeholder" style="color:#ef4444; min-height: 180px;">Error loading revenue.</div>';
+        }
+    }
+
     // Call on load if branchId exists
     if (branchId) {
         fetchAndRenderDashboardKPIs(branchId);
         fetchAndRenderProductSales(branchId);
         fetchAndRenderAppointments(branchId);
         fetchAndRenderTopServicesToday(branchId);
+        fetchAndRenderWeeklyRevenue(branchId);
     }
     
     // Attach dynamically to the global so branch switcher can use it
@@ -366,6 +434,7 @@ document.addEventListener('DOMContentLoaded', () => {
     window.fetchAndRenderProductSales = fetchAndRenderProductSales;
     window.fetchAndRenderAppointments = fetchAndRenderAppointments;
     window.fetchAndRenderTopServicesToday = fetchAndRenderTopServicesToday;
+    window.fetchAndRenderWeeklyRevenue = fetchAndRenderWeeklyRevenue;
 
     // ----------------------------------------------------------------
     // 4. APPOINTMENTS TAB LOGIC
@@ -764,6 +833,9 @@ function refreshAllData(branchId) {
     }
     if (typeof window.fetchAndRenderTopServicesToday === 'function') {
         window.fetchAndRenderTopServicesToday(branchId);
+    }
+    if (typeof window.fetchAndRenderWeeklyRevenue === 'function') {
+        window.fetchAndRenderWeeklyRevenue(branchId);
     }
     // 2. Sub-pages (Today's Bookings, Completed, No-shows)
     if (typeof window.initPage === 'function') {
