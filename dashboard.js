@@ -151,13 +151,74 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
+    async function fetchAndRenderProductSales(currentBranchId) {
+        const listContainer = document.getElementById('productSalesList');
+        if (!listContainer || !currentBranchId) return;
+
+        try {
+            const { supabase } = await import('./lib/supabase.js');
+            const companyId = localStorage.getItem('company_id');
+
+            const now = new Date();
+            const today = new Date(now.getTime() - (now.getTimezoneOffset() * 60000)).toISOString().split('T')[0];
+
+            // Fetch completed sales for today
+            const { data: sales, error } = await supabase
+                .from('sales')
+                .select('product_name, quantity, total_amount')
+                .eq('company_id', companyId)
+                .eq('branch_id', currentBranchId)
+                .eq('status', 'completed')
+                .gte('created_at', today + 'T00:00:00')
+                .lte('created_at', today + 'T23:59:59');
+
+            if (error) throw error;
+
+            if (!sales || sales.length === 0) {
+                listContainer.innerHTML = '<li style="justify-content:center; padding:20px; color:#94a3b8; font-size:0.85rem;">No product sales today.</li>';
+                return;
+            }
+
+            // Aggregate data
+            const productMap = {};
+            sales.forEach(sale => {
+                const name = sale.product_name;
+                if (!productMap[name]) {
+                    productMap[name] = { name, count: 0, revenue: 0 };
+                }
+                productMap[name].count += sale.quantity;
+                productMap[name].revenue += sale.total_amount;
+            });
+
+            const aggregated = Object.values(productMap)
+                .sort((a, b) => b.count - a.count)
+                .slice(0, 5);
+
+            listContainer.innerHTML = aggregated.map(p => `
+                <li>
+                    <div class="service-info">
+                        <span class="service-name">${p.name}</span>
+                        <span class="service-count">${p.count} sold</span>
+                    </div>
+                    <div class="service-revenue">₹${p.revenue.toLocaleString('en-IN')}</div>
+                </li>
+            `).join('');
+
+        } catch (err) {
+            console.error("Error fetching Product Sales:", err);
+            listContainer.innerHTML = '<li style="justify-content:center; padding:20px; color:#ef4444; font-size:0.85rem;">Error loading sales.</li>';
+        }
+    }
+
     // Call on load if branchId exists
     if (branchId) {
         fetchAndRenderDashboardKPIs(branchId);
+        fetchAndRenderProductSales(branchId);
     }
     
     // Attach dynamically to the global so branch switcher can use it
     window.fetchAndRenderDashboardKPIs = fetchAndRenderDashboardKPIs;
+    window.fetchAndRenderProductSales = fetchAndRenderProductSales;
 
     // ----------------------------------------------------------------
     // 4. APPOINTMENTS TAB LOGIC
@@ -547,6 +608,9 @@ function refreshAllData(branchId) {
     // 1. Dashboard specific
     if (typeof window.fetchAndRenderDashboardKPIs === 'function') {
         window.fetchAndRenderDashboardKPIs(branchId);
+    }
+    if (typeof window.fetchAndRenderProductSales === 'function') {
+        window.fetchAndRenderProductSales(branchId);
     }
     // 2. Sub-pages (Today's Bookings, Completed, No-shows)
     if (typeof window.initPage === 'function') {
