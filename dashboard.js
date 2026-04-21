@@ -507,10 +507,17 @@ async function loadBranches(storedBranchId) {
     if (!branchSelect) return;
 
     try {
+        const companyId = localStorage.getItem('company_id');
+        if (!companyId) {
+            console.warn("No company_id found in localStorage. Cannot filter branches.");
+            return;
+        }
+
         const { supabase } = await import('./lib/supabase.js');
         const { data: branches, error } = await supabase
             .from('branches')
-            .select('branch_id, branch_name');
+            .select('branch_id, branch_name')
+            .eq('company_id', companyId);
 
         if (error) throw error;
 
