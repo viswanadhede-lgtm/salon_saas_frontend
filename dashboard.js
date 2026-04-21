@@ -660,6 +660,86 @@ document.addEventListener('DOMContentLoaded', () => {
         if (window.feather) feather.replace();
     }
 
+    async function handleProfileUpdate() {
+        const btn = document.getElementById('btnSaveGenericModal');
+        const originalText = btn.textContent;
+        
+        try {
+            const contextStr = localStorage.getItem('appContext');
+            if (!contextStr) throw new Error("App context not found. Please refresh.");
+            const context = JSON.parse(contextStr);
+            const user_id = context.user.user_id;
+
+            const firstName = document.getElementById('profileFirstName').value.trim();
+            const lastName  = document.getElementById('profileLastName').value.trim();
+            const phone     = document.getElementById('profilePhone').value.trim();
+            const emergencyName  = document.getElementById('profileEmergencyName').value.trim();
+            const emergencyPhone = document.getElementById('profileEmergencyPhone').value.trim();
+
+            if (!firstName) throw new Error("First name is required.");
+
+            btn.textContent = 'Saving...';
+            btn.disabled = true;
+
+            const { supabase } = await import('./lib/supabase.js');
+
+            // 1. Update Profiles Table
+            const { error: profileErr } = await supabase
+                .from('profiles')
+                .update({
+                    first_name: firstName,
+                    last_name: lastName,
+                    phone: phone,
+                    emergency_contact_name: emergencyName,
+                    emergency_contact_number: emergencyPhone
+                })
+                .eq('user_id', user_id);
+
+            if (profileErr) throw profileErr;
+
+            // 2. Update Users Table (for core name/phone consistency)
+            const fullName = `${firstName} ${lastName}`.trim();
+            const { error: userErr } = await supabase
+                .from('users')
+                .update({
+                    name: fullName,
+                    phone: phone
+                })
+                .eq('user_id', user_id);
+
+            if (userErr) throw userErr;
+
+            // 3. Update Sync local appContext
+            context.user.name = fullName;
+            context.user.first_name = firstName;
+            context.user.last_name = lastName;
+            context.user.phone = phone;
+            context.user.emergency_name = emergencyName;
+            context.user.emergency_phone = emergencyPhone;
+            localStorage.setItem('appContext', JSON.stringify(context));
+
+            // 4. Update UI Header & Close
+            if (typeof window.populateGlobalHeader === 'function') {
+                window.populateGlobalHeader();
+            }
+            
+            if (typeof window.toast === 'function') {
+                window.toast("Profile updated successfully!");
+            } else {
+                alert("Profile updated successfully!");
+            }
+
+            closeGenericModalFn();
+
+        } catch (err) {
+            console.error("Profile Update Error:", err);
+            alert(err.message || "Failed to update profile.");
+        } finally {
+            btn.textContent = originalText;
+            btn.disabled = false;
+        }
+    }
+
     function closeGenericModalFn() {
         if (genericModalOverlay) genericModalOverlay.classList.remove('active');
     }
@@ -706,6 +786,20 @@ document.addEventListener('DOMContentLoaded', () => {
     if (genericModalOverlay) {
         genericModalOverlay.addEventListener('click', (e) => {
             if (e.target === genericModalOverlay) closeGenericModalFn();
+        });
+    }
+
+    // Save Button Handler
+    const btnSaveGenericModal = document.getElementById('btnSaveGenericModal');
+    if (btnSaveGenericModal) {
+        btnSaveGenericModal.addEventListener('click', () => {
+            const title = document.getElementById('genericModalTitle').textContent;
+            if (title === 'Profile') {
+                handleProfileUpdate();
+            } else {
+                // Placeholder for other modals
+                closeGenericModalFn();
+            }
         });
     }
 

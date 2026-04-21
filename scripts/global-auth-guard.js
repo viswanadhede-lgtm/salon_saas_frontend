@@ -391,7 +391,7 @@ export async function runGlobalAuthGuard() {
 
         // 9. Load profile for header hydration
         const { data: profileRows } = await supabase.from('profiles')
-            .select('first_name, last_name, phone, email, joined_on')
+            .select('first_name, last_name, phone, email, joined_on, emergency_contact_name, emergency_contact_number')
             .eq('user_id', user_id);
         const profile = profileRows?.[0];
 
@@ -411,7 +411,9 @@ export async function runGlobalAuthGuard() {
                 role_name:  userRow.role_name,
                 first_name: profile?.first_name || '',
                 last_name:  profile?.last_name  || '',
-                joined_on:  profile?.joined_on  || ''
+                joined_on:  profile?.joined_on  || '',
+                emergency_name:  profile?.emergency_contact_name || '',
+                emergency_phone: profile?.emergency_contact_number || ''
             },
             company: {
                 company_id:          resolvedCompanyId,
@@ -450,6 +452,7 @@ export async function runGlobalAuthGuard() {
 }
 
 document.addEventListener('DOMContentLoaded', runGlobalAuthGuard);
+window.populateGlobalHeader = populateGlobalHeader;
 
 // ─── Global Header Hydration ──────────────────────────────────────────────────
 export function populateGlobalHeader() {
@@ -506,6 +509,11 @@ export function populateGlobalHeader() {
             if (profileEmail       && context.user.email)               profileEmail.value      = context.user.email;
             if (profileRoleInput   && context.user.role_name)           profileRoleInput.value  = context.user.role_name;
             if (profileJoined      && context.user.joined_on)           profileJoined.value     = context.user.joined_on;
+
+            const profileEmergencyName = document.getElementById('profileEmergencyName');
+            const profileEmergencyPhone = document.getElementById('profileEmergencyPhone');
+            if (profileEmergencyName && context.user.emergency_name)    profileEmergencyName.value = context.user.emergency_name;
+            if (profileEmergencyPhone && context.user.emergency_phone)  profileEmergencyPhone.value = context.user.emergency_phone;
         }
 
         // Branch dropdown
