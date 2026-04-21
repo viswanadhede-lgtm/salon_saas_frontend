@@ -864,6 +864,9 @@ function renderPurchases() {
                         ${isActive ? `
                         <button onclick="window.cancelMembershipPurchase('${purchaseId}')" style="padding: 4px 12px; border-radius: 6px; border: 1px solid #fecdd3; background: #fff1f2; cursor: pointer; color: #e11d48; font-size: 0.75rem; font-weight: 600; transition: all 0.2s;" onmouseover="this.style.background='#ffe4e6'" onmouseout="this.style.background='#fff1f2'" title="Cancel">Cancel</button>
                         ` : ''}
+                        ${isCancelled ? `
+                        <button onclick="window.refundMembershipPurchase('${purchaseId}')" style="padding: 4px 12px; border-radius: 6px; border: 1px solid #fef08a; background: #fefce8; cursor: pointer; color: #b45309; font-size: 0.75rem; font-weight: 600; transition: all 0.2s;" onmouseover="this.style.background='#fef9c3'" onmouseout="this.style.background='#fefce8'" title="Refund">Refund</button>
+                        ` : ''}
                     </div>
                 </td>
             </tr>`;
