@@ -588,10 +588,17 @@ document.addEventListener('DOMContentLoaded', () => {
                 .limit(1);
 
             if (methodDisplay) {
-                const method = (txs && txs.length > 0 && txs[0].payment_method) ? txs[0].payment_method : (sale.payment || 'Cash');
-                methodDisplay.value = method.charAt(0).toUpperCase() + method.slice(1);
+                let inferredMethod = (txs && txs.length > 0 && txs[0].payment_method) ? txs[0].payment_method.toLowerCase() : (sale.payment || 'cash').toLowerCase();
+                
+                // Fallback to cash if check constraint violates
+                if (!['cash', 'card', 'upi'].includes(inferredMethod)) {
+                    inferredMethod = 'cash';
+                }
+                
+                methodDisplay.value = inferredMethod.charAt(0).toUpperCase() + inferredMethod.slice(1);
             }
 
+            // Render right away
             renderRefundItems();
 
         } catch (err) {
@@ -602,6 +609,7 @@ document.addEventListener('DOMContentLoaded', () => {
         if (typeof feather !== 'undefined') feather.replace();
     }
     window.openRefundModal = openRefundModal;
+
 
     function renderRefundItems() {
         const list = document.getElementById('rfProductList');
@@ -865,7 +873,10 @@ document.addEventListener('DOMContentLoaded', () => {
             const saleId = currentActionData.sale.id; // The Parent Group ID
             const note = document.getElementById('rfNote')?.value.trim();
             const methodDisplay = document.getElementById('rfMethodDisplay');
-            const method = methodDisplay ? methodDisplay.value.toLowerCase() : 'cash';
+            let method = methodDisplay ? methodDisplay.value.toLowerCase() : 'cash';
+            
+            // ENSURE CHECK CONSTRAINT COMPLIANCE
+            if (!['cash', 'card', 'upi'].includes(method)) method = 'cash';
 
             const ledgerRows = [];
             const saleUpdatePromises = [];
