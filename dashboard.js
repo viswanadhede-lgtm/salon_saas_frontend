@@ -90,15 +90,71 @@ document.addEventListener('DOMContentLoaded', () => {
     // compared to default browser tooltips ALWAYS showing.
 
     // ----------------------------------------------------------------
-    // 3. SECURE API CALL STRUCTURE (MOCK)
+    // 3. SECURE API CALL STRUCTURE (REAL)
     // ----------------------------------------------------------------
-    /*
-    Example of how all data fetches on this page should occur:
-    
-    function fetchDashboardData() {
-        console.log("Fetching dashboard data...");
+    async function fetchAndRenderDashboardKPIs(currentBranchId) {
+        if (!currentBranchId) return;
+        
+        try {
+            const { data, error } = await supabase.rpc('get_dashboard_today_kpis', { 
+                p_branch_id: currentBranchId 
+            });
+
+            if (error) throw error;
+            
+            if (data) {
+                // Formatting Helpers
+                const fmtTrend = (val) => `<i data-feather="trending-${val >= 0 ? 'up' : 'down'}"></i> ${Math.abs(val)}%`;
+                const trendClass = (val) => \`stat-trend \${val >= 0 ? 'positive' : 'negative'}\`;
+
+                // Card 1
+                const elBookings = document.getElementById('kpiTodayBookings');
+                if (elBookings) {
+                    elBookings.textContent = data.todays_bookings;
+                    const bTrendEl = document.getElementById('kpiTodayBookingsTrend');
+                    bTrendEl.innerHTML = \`\${fmtTrend(data.booking_trend)} vs yesterday\`;
+                    bTrendEl.className = trendClass(data.booking_trend);
+                }
+
+                // Card 2
+                const elAppts = document.getElementById('kpiCompletedAppts');
+                if (elAppts) {
+                    elAppts.innerHTML = \`\${data.completed_appointments} <span class="stat-value-sub" id="kpiCompletedApptsSub">/ \${data.todays_bookings} completed</span>\`;
+                    const cTrendEl = document.getElementById('kpiCompletedApptsTrend');
+                    cTrendEl.innerHTML = \`\${fmtTrend(data.completion_rate - 50)} \${data.completion_rate}% completion rate\`; // Note: using 50 as a generic positive baseline just for the UI icon direction
+                    cTrendEl.className = trendClass(data.completion_rate - 50);
+                }
+
+                // Card 3
+                const elNoShows = document.getElementById('kpiNoShows');
+                if (elNoShows) {
+                    elNoShows.innerHTML = \`No-shows: <strong>\${data.no_shows}</strong>\`;
+                    document.getElementById('kpiCancelled').innerHTML = \`Cancelled: <strong>\${data.cancelled}</strong>\`;
+                }
+
+                // Card 4
+                const elRevenue = document.getElementById('kpiTodayRevenue');
+                if (elRevenue) {
+                    elRevenue.textContent = \`₹\${Number(data.todays_revenue).toLocaleString('en-IN')}\`;
+                    const rTrendEl = document.getElementById('kpiTodayRevenueTrend');
+                    rTrendEl.innerHTML = \`\${fmtTrend(data.revenue_trend)} vs yesterday\`;
+                    rTrendEl.className = trendClass(data.revenue_trend);
+                }
+
+                if (window.feather) feather.replace();
+            }
+        } catch (err) {
+            console.error("Error fetching Dashboard KPIs:", err);
+        }
     }
-    */
+
+    // Call on load if branchId exists
+    if (branchId) {
+        fetchAndRenderDashboardKPIs(branchId);
+    }
+    
+    // Attach dynamically to the global so branch switcher can use it
+    window.fetchAndRenderDashboardKPIs = fetchAndRenderDashboardKPIs;
 
     // ----------------------------------------------------------------
     // 4. APPOINTMENTS TAB LOGIC
@@ -458,6 +514,11 @@ function initBranchSwitcher(storedBranchId) {
         const newBranchId = e.target.value;
         localStorage.setItem('branch_id', newBranchId);
         console.log(`Switched to branch: ${newBranchId}. Fetching new data...`);
+        
+        // Refresh all dashboard metrics using exact sizing!
+        if (typeof window.fetchAndRenderDashboardKPIs === 'function') {
+            window.fetchAndRenderDashboardKPIs(newBranchId);
+        }
     });
 }
 
