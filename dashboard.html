@@ -20,246 +20,12 @@
 <body class="dashboard-body">
 
     <!-- Collapsible Sidebar -->
-    <aside class="sidebar" id="sidebar">
-        <div class="sidebar-header">
-            <div class="logo">
-                <svg width="24" height="24" viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg">
-                    <rect x="2" y="6" width="28" height="20" rx="4" stroke="currentColor" stroke-width="2" />
-                    <path d="M8 12C8 12 11 16 16 16C21 16 24 12 24 12" stroke="currentColor" stroke-width="2"
-                        stroke-linecap="round" />
-                    <circle cx="16" cy="16" r="2" fill="currentColor" />
-                </svg>
-                <span class="logo-text">BharathBots</span>
-            </div>
-            <button class="toggle-btn" id="sidebarToggle" title="Close sidebar">
-                <i data-feather="sidebar" class="toggle-icon"></i>
-            </button>
-        </div>
-
-        <nav class="sidebar-nav">
-            <ul class="nav-list">
-                <!-- Dashboard -->
-                <li class="nav-item active" title="Dashboard">
-                    <a href="dashboard.html" class="nav-link" data-feature="dashboard_access">
-                        <i data-feather="home" class="nav-icon"></i>
-                        <span class="nav-text">Dashboard</span>
-                    </a>
-                </li>
-
-                <!-- Bookings -->
-                <li class="nav-item" title="Bookings">
-                    <a href="bookings.html" class="nav-link" data-feature="bookings_management">
-                        <i data-feather="calendar" class="nav-icon"></i>
-                        <span class="nav-text">Bookings</span>
-                    </a>
-                </li>
-
-                <!-- Customers -->
-                <li class="nav-item" title="Customers">
-                    <a href="customers.html" class="nav-link" data-feature="customers_management">
-                        <i data-feather="users" class="nav-icon"></i>
-                        <span class="nav-text">Customers</span>
-                    </a>
-                </li>
-
-                <!-- Staff -->
-                <li class="nav-item has-submenu" title="Staff">
-                    <div class="nav-link submenu-toggle">
-                        <i data-feather="user-check" class="nav-icon"></i>
-                        <span class="nav-text">Staff</span>
-                        <i data-feather="chevron-down" class="submenu-arrow"></i>
-                    </div>
-                    <ul class="submenu">
-                        <li><a href="staff.html" class="submenu-link" data-feature="staff_management"><span class="submenu-bullet">&bull;</span><span class="nav-text">Staff</span></a></li>
-                        <li><a href="staff-schedule.html" class="submenu-link" data-feature="staff_schedules"><span class="submenu-bullet">&bull;</span><span class="nav-text">Staff Schedules</span></a></li>
-                    </ul>
-                </li>
-
-                <!-- Services -->
-                <li class="nav-item" title="Services">
-                <a href="services.html" class="nav-link" data-feature="services_management">
-                    <i data-feather="scissors" class="nav-icon"></i>
-                    <span class="nav-text">Services</span>
-                </a>
-            </li>
-
-                <!-- Sales -->
-                <li class="nav-item has-submenu" title="Sales">
-                    <div class="nav-link submenu-toggle">
-                        <i data-feather="dollar-sign" class="nav-icon"></i>
-                        <span class="nav-text">Sales</span>
-                        <i data-feather="chevron-down" class="submenu-arrow"></i>
-                    </div>
-                    <ul class="submenu">
-                        <li><a href="pos.html" class="submenu-link" data-feature="pos_system"><span class="submenu-bullet">&bull;</span><span
-                                    class="nav-text">Point of Sale</span></a></li>
-                        <li><a href="products.html" class="submenu-link" data-feature="product_management"><span class="submenu-bullet">&bull;</span><span
-                                    class="nav-text">Products</span></a></li>
-                        <li><a href="sales-history.html" class="submenu-link" data-feature="sales_history"><span class="submenu-bullet">&bull;</span><span class="nav-text">Sales History</span></a></li>
-                    </ul>
-                </li>
-
-                <!-- Payments -->
-                <li class="nav-item has-submenu" title="Payments">
-                    <div class="nav-link submenu-toggle">
-                        <i data-feather="credit-card" class="nav-icon"></i>
-                        <span class="nav-text">Payments</span>
-                        <i data-feather="chevron-down" class="submenu-arrow"></i>
-                    </div>
-                    <ul class="submenu">
-                        <li><a href="pending-payments.html" class="submenu-link" data-feature="pending_payments"><span class="submenu-bullet">&bull;</span><span
-                                    class="nav-text">Pending Payments</span></a></li>
-                        <li><a href="payments-history.html" class="submenu-link" data-feature="payments_history"><span class="submenu-bullet">&bull;</span><span
-                                    class="nav-text">Payments History</span></a></li>
-                    </ul>
-                </li>
-
-                <!-- Marketing -->
-                <li class="nav-item has-submenu" title="Marketing">
-                    <div class="nav-link submenu-toggle">
-                        <i data-feather="gift" class="nav-icon"></i>
-                        <span class="nav-text">Marketing</span>
-                        <i data-feather="chevron-down" class="submenu-arrow"></i>
-                    </div>
-                    <ul class="submenu">
-                        <li><a href="offers.html" class="submenu-link" data-feature="marketing_offers"><span class="submenu-bullet">&bull;</span><span
-                                    class="nav-text">Offers</span></a></li>
-                        <li><a href="coupons.html" class="submenu-link" data-feature="marketing_coupons"><span class="submenu-bullet">&bull;</span><span
-                                    class="nav-text">Coupons</span></a></li>
-                        <li><a href="memberships.html" class="submenu-link" data-feature="marketing_memberships"><span class="submenu-bullet">&bull;</span><span
-                                    class="nav-text">Memberships</span></a></li>
-                        <li><a href="ad-campaigns.html" class="submenu-link" data-feature="marketing_campaigns"><span class="submenu-bullet">&bull;</span><span
-                                    class="nav-text">Ad Campaigns</span></a></li>
-                    </ul>
-                </li>
-
-                <!-- Analytics -->
-                <li class="nav-item has-submenu" title="Analytics">
-                    <div class="nav-link submenu-toggle">
-                        <i data-feather="bar-chart-2" class="nav-icon"></i>
-                        <span class="nav-text">Analytics</span>
-                        <i data-feather="chevron-down" class="submenu-arrow"></i>
-                    </div>
-                    <ul class="submenu">
-                        <li><a href="overview.html" class="submenu-link" data-feature="analytics_overview"><span class="submenu-bullet">&bull;</span><span
-                                    class="nav-text">Overview</span></a></li>
-                        <li><a href="reports.html" class="submenu-link" data-feature="reports_access"><span class="submenu-bullet">&bull;</span><span
-                                    class="nav-text">Reports</span></a></li>
-                        <li><a href="expenses.html" class="submenu-link" data-feature="analytics_expenses"><span class="submenu-bullet">&bull;</span><span class="nav-text">Expenses</span></a></li>
-                    </ul>
-                </li>
-
-                <!-- Settings -->
-                <li class="nav-item has-submenu" title="Settings">
-                    <div class="nav-link submenu-toggle">
-                        <i data-feather="settings" class="nav-icon"></i>
-                        <span class="nav-text">Settings</span>
-                        <i data-feather="chevron-down" class="submenu-arrow"></i>
-                    </div>
-                    <ul class="submenu">
-                        <li><a href="company.html" class="submenu-link" data-feature="company_settings"><span class="submenu-bullet">&bull;</span><span
-                                    class="nav-text">Company</span></a></li>
-                        <li><a href="branches.html" class="submenu-link" data-feature="branch_management"><span class="submenu-bullet">&bull;</span><span
-                                    class="nav-text">Branches</span></a></li>
-                        <li><a href="users.html" class="submenu-link" data-feature="user_management"><span class="submenu-bullet">&bull;</span><span
-                                    class="nav-text">Users</span></a></li>
-                        <li><a href="roles-permissions.html" class="submenu-link" data-feature="roles_permissions"><span class="submenu-bullet">&bull;</span><span
-                                    class="nav-text">Roles & Permissions</span></a></li>
-                        <li><a href="custom-fields.html" class="submenu-link" data-feature="custom_fields"><span class="submenu-bullet">&bull;</span><span
-                                    class="nav-text">Custom Fields</span></a></li>
-                        <li><a href="billing-subscription.html" class="submenu-link" data-feature="billing_subscription_management"><span class="submenu-bullet">&bull;</span><span
-                                    class="nav-text">Billing & Subscription</span></a></li>
-                    </ul>
-                </li>
-            </ul>
-        </nav>
-
-    </aside>
+    <aside class="sidebar" id="sidebar"></aside>
 
     <!-- Main Content Wrapper -->
     <div class="main-wrapper" id="mainWrapper">
 
         <!-- Top Header Bar -->
-        <header class="top-header">
-            <div class="header-left">
-                <!-- Branch Switcher -->
-                <div class="branch-switcher">
-                    <i data-feather="map-pin" class="branch-icon"></i>
-                    <select id="branchSelect" class="branch-select">
-                        <option value="branch_1">Downtown Branch</option>
-                        <option value="branch_2">Uptown Spa</option>
-                    </select>
-                </div>
-            </div>
-
-            <div class="header-center">
-                <div class="search-bar">
-                    <i data-feather="search" class="search-icon"></i>
-                    <input type="text" placeholder="Search bookings, customers..." class="search-input">
-                </div>
-            </div>
-
-            <div class="header-right">
-                <!-- Quick Actions -->
-                <div class="quick-actions">
-                    <button class="qa-btn qa-primary" id="btnNewBooking" data-sub-feature="dashboard_create_booking">
-                        <i data-feather="calendar" class="qa-icon"></i>
-                        <span>New Booking</span>
-                    </button>
-                </div>
-                <div class="header-divider"></div>
-                <div class="plan-badge" id="headerPlanBadge">Growth</div>
-                <button class="icon-btn" title="Notifications">
-                    <i data-feather="bell"></i>
-                    <span class="notification-dot"></span>
-                </button>
-                <div class="user-profile" id="userProfileDropdown">
-                    <div class="avatar" id="avatarBtn">
-                        <img src="https://ui-avatars.com/api/?name=Admin+User&background=1E3A8A&color=fff" alt="User">
-                    </div>
-
-                    <!-- Profile Dropdown Menu -->
-                    <div class="profile-dropdown" id="profileMenu">
-                        <div class="dropdown-header">
-                            <p class="dropdown-name">Admin User</p>
-                            <p class="dropdown-role">Owner</p>
-                        </div>
-                        <div class="dropdown-divider"></div>
-                        <ul class="dropdown-list">
-                            <li>
-                                <a href="#" class="dropdown-item">
-                                    <i data-feather="user"></i>
-                                    <span>Profile</span>
-                                </a>
-                            </li>
-                            <li>
-                                <a href="#" class="dropdown-item">
-                                    <i data-feather="calendar"></i>
-                                    <span>Schedule</span>
-                                </a>
-                            </li>
-                            <li>
-                                <a href="#" class="dropdown-item">
-                                    <i data-feather="settings"></i>
-                                    <span>Settings</span>
-                                </a>
-                            </li>
-                            <li>
-                                <a href="#" class="dropdown-item">
-                                    <i data-feather="help-circle"></i>
-                                    <span>Support</span>
-                                </a>
-                            </li>
-                            <li>
-                                <a href="#" class="dropdown-item text-danger">
-                                    <i data-feather="log-out"></i>
-                                    <span>Logout</span>
-                                </a>
-                            </li>
-                        </ul>
-                    </div>
-                </div>
-            </div>
         </header>
 
         <!-- Profile Dropdown Backdrop -->
@@ -279,7 +45,7 @@
                             <i data-feather="calendar" class="text-indigo"></i>
                         </div>
                         <div class="stat-details">
-                            <p class="stat-label">Today's Bookings</p>
+                            <p class="stat-label" id="i18n-stats-todays-bookings">Today's Bookings</p>
                             <h3 class="stat-value" id="kpiTodayBookings">--</h3>
                             <p class="stat-trend positive" id="kpiTodayBookingsTrend">
                                 <i data-feather="trending-up"></i> --% vs yesterday
@@ -294,7 +60,7 @@
                             <i data-feather="check-circle" class="text-teal"></i>
                         </div>
                         <div class="stat-details">
-                            <p class="stat-label">Completed Appointments Today</p>
+                            <p class="stat-label" id="i18n-stats-completed-appointments">Completed Appointments Today</p>
                             <h3 class="stat-value" id="kpiCompletedAppts">-- <span class="stat-value-sub" id="kpiCompletedApptsSub">/ -- completed</span></h3>
                             <p class="stat-trend positive" id="kpiCompletedApptsTrend">
                                 <i data-feather="trending-up"></i> --% completion rate
@@ -309,10 +75,10 @@
                             <i data-feather="x-circle" class="text-rose"></i>
                         </div>
                         <div class="stat-details">
-                            <p class="stat-label">No-shows &amp; Cancellations</p>
-                            <div class="noshow-row">
-                                <span class="noshow-pill noshow" id="kpiNoShows">No-shows: <strong>--</strong></span>
-                                <span class="noshow-pill cancelled" id="kpiCancelled">Cancelled: <strong>--</strong></span>
+                            <p class="stat-label" id="i18n-stats-no-shows-cancellations">No-shows &amp; Cancellations</p>
+<div class="noshow-row">
+                                <span class="noshow-pill noshow" id="kpiNoShows"><span id="i18n-stats-no-shows">No-shows</span>: <strong>--</strong></span>
+                                <span class="noshow-pill cancelled" id="kpiCancelled"><span id="i18n-stats-cancelled">Cancelled</span>: <strong>--</strong></span>
                             </div>
                         </div>
                     </div>
@@ -323,7 +89,7 @@
                             <i data-feather="dollar-sign" class="text-emerald"></i>
                         </div>
                         <div class="stat-details">
-                            <p class="stat-label">Today's Revenue</p>
+                            <p class="stat-label" id="i18n-stats-todays-revenue">Today's Revenue</p>
                             <h3 class="stat-value" id="kpiTodayRevenue">₹--</h3>
                             <p class="stat-trend positive" id="kpiTodayRevenueTrend">
                                 <i data-feather="trending-up"></i> --% vs yesterday
@@ -785,43 +551,46 @@
                     <div
                         style="display: flex; flex-direction: column; padding: 1rem 2.5rem 3rem 2.5rem; border-right: 1px solid var(--border); width: 100%; box-sizing: border-box; justify-content: center; align-items: center;">
                         <div style="width: 100%; max-width: 450px;">
-                            <h3
-                                style="font-size: 1.1rem; font-weight: 600; color: var(--text-heading); margin-bottom: 24px; padding-bottom: 12px; border-bottom: 1px solid var(--border); width: 100%;">
-                                App Preferences</h3>
+                            <div class="settings-section">
+                                <h3 id="i18n-settings-app-preferences" style="font-size: 1rem; font-weight: 600; color: #1e293b; margin-bottom: 1rem;">App Preferences</h3>
+                                
+                                <!-- Language -->
+                                <div class="form-group">
+                                    <label class="form-label" for="settingsLanguage" id="i18n-settings-language">Language</label>
+                                    <select id="settingsLanguage" class="form-input"
+                                        style="appearance: auto; cursor: pointer;">
+                                        <option value="en">English</option>
+                                        <option value="hi">Hindi (हिन्दी)</option>
+                                        <option value="kn">Kannada (ಕನ್ನಡ)</option>
+                                        <option value="te">Telugu (తెలుగు)</option>
+                                        <option value="ta">Tamil (தமிழ்)</option>
+                                        <option value="bn">Bengali (বাংলা)</option>
+                                        <option value="ml">Malayalam (മലയാളം)</option>
+                                        <option value="mr">Marathi (मराठी)</option>
+                                        <option value="gu">Gujarati (ગુજરાતી)</option>
+                                        <option value="or">Odia (ଓଡ଼ିଆ)</option>
+                                    </select>
+                                </div>
 
-                            <!-- Language -->
-                            <div class="form-group">
-                                <label class="form-label" for="settingsLanguage">Language</label>
-                                <select id="settingsLanguage" class="form-input"
-                                    style="appearance: auto; cursor: pointer;">
-                                    <option value="en" selected>English</option>
-                                    <option value="hi">Hindi</option>
-                                    <option value="te">Telugu</option>
-                                    <option value="ta">Tamil</option>
-                                </select>
+                                <!-- Theme -->
+                                <div class="form-group">
+                                    <label class="form-label" for="settingsTheme" id="i18n-settings-theme">Theme</label>
+                                    <select id="settingsTheme" class="form-input" style="appearance: auto; cursor: pointer;">
+                                        <option value="light">Light</option>
+                                        <option value="dark">Dark</option>
+                                        <option value="system">System</option>
+                                    </select>
+                                </div>
+
+                                <!-- Notifications -->
+                                <div class="form-group">
+                                    <label class="form-label" for="settingsNotifications" id="i18n-settings-notifications">Notifications</label>
+                                    <select id="settingsNotifications" class="form-input" style="appearance: auto; cursor: pointer;">
+                                        <option value="enabled">Enabled</option>
+                                        <option value="disabled">Disabled</option>
+                                    </select>
+                                </div>
                             </div>
-
-                            <!-- Theme -->
-                            <div class="form-group">
-                                <label class="form-label" for="settingsTheme">Theme</label>
-                                <select id="settingsTheme" class="form-input"
-                                    style="appearance: auto; cursor: pointer;">
-                                    <option value="light" selected>Light</option>
-                                    <option value="dark">Dark</option>
-                                    <option value="system">System Default</option>
-                                </select>
-                            </div>
-
-                            <!-- Notifications -->
-                            <div class="form-group">
-                                <label class="form-label" for="settingsNotifications">Notifications</label>
-                                <select id="settingsNotifications" class="form-input"
-                                    style="appearance: auto; cursor: pointer;">
-                                    <option value="enabled" selected>Enabled</option>
-                                    <option value="disabled">Disabled</option>
-                                </select>
-                            </div>
-
                         </div> <!-- /max-width container -->
                     </div>
 
