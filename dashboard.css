@@ -807,7 +807,7 @@
     display: flex;
     flex-direction: column;
     gap: 1rem;
-    min-height: 400px; /* Stabilize card height */
+    min-height: 280px; /* Reduced to fit ~3 rows */
 }
 
 .appointment-item {
@@ -961,7 +961,7 @@
     display: flex;
     flex-direction: column;
     gap: 1.25rem;
-    min-height: 400px; /* Align with appointments card */
+    min-height: 280px; /* Reduced to align with appointments list */
 }
 
 .service-list li {
@@ -988,7 +988,7 @@
     align-items: center;
     justify-content: center;
     height: 100%;
-    min-height: calc(400px - 2rem); /* Account for card padding/header gaps */
+    min-height: calc(280px - 1rem); /* Adjusted for new height */
     text-align: center;
     color: #94a3b8;
     font-size: 0.9rem;
