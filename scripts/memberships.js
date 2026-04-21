@@ -1343,18 +1343,13 @@ window.refundMembershipPurchase = async function(purchaseId) {
             if (stat === 'refunded') ledgerRefunded += val;
         });
 
-        const ledgerNet = ledgerPaid - ledgerRefunded;
-        
-        if (ledgerNet > 0) {
-            refundableMembershipAmount = ledgerNet;
-        } else if (data && data.length === 0) {
-             // Fallback for legacy items without ledger
-            refundableMembershipAmount = Number(purchaseToRefundObj.price || 0) - ledgerRefunded;
-        } else {
-            refundableMembershipAmount = Math.max(0, ledgerNet);
+        // Fallback for legacy items without an explicit 'paid' ledger record
+        if (ledgerPaid === 0) {
+            ledgerPaid = Number(purchaseToRefundObj.price || 0);
         }
 
-        if (refundableMembershipAmount < 0) refundableMembershipAmount = 0;
+        const ledgerNet = ledgerPaid - ledgerRefunded;
+        refundableMembershipAmount = Math.max(0, ledgerNet);
 
         amountDisplay.value = refundableMembershipAmount;
         amountDisplay.style.color = (refundableMembershipAmount <= 0) ? '#94a3b8' : '#dc2626';
