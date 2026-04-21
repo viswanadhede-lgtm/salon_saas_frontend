@@ -619,19 +619,19 @@ document.addEventListener('DOMContentLoaded', () => {
             const priceStr = `₹${Number(item.total_amount || 0).toLocaleString('en-IN')}`;
             
             const row = document.createElement('div');
-            row.style.cssText = `display: flex; align-items: center; justify-content: space-between; padding: 12px 16px; border-bottom: 1px solid #f1f5f9; ${isRefunded ? 'background: #f8fafc; opacity: 0.6;' : ''}`;
+            row.style.cssText = `display: flex; align-items: center; justify-content: space-between; padding: 14px 16px; min-height: 60px; flex-shrink: 0; border-bottom: 1px solid #f1f5f9; ${isRefunded ? 'background: #f8fafc; opacity: 0.6;' : ''}`;
             
             row.innerHTML = `
                 <div style="display: flex; align-items: center; gap: 12px; flex: 1;">
                     <input type="checkbox" class="rf-item-cb" data-id="${item.id}" data-amount="${item.total_amount || 0}" 
-                        style="width: 18px; height: 18px; accent-color: #dc2626; cursor: ${isRefunded ? 'not-allowed' : 'pointer'};" 
+                        style="width: 18px; height: 18px; flex-shrink: 0; accent-color: #dc2626; cursor: ${isRefunded ? 'not-allowed' : 'pointer'};" 
                         ${isRefunded ? 'checked disabled' : ''}>
-                    <div>
-                        <p style="margin: 0; font-size: 0.9rem; font-weight: 600; color: #1e293b; text-decoration: ${isRefunded ? 'line-through' : 'none'};">${item.product_name || 'Product'}</p>
-                        <p style="margin: 0; font-size: 0.75rem; color: #64748b;">Qty: ${item.quantity || 1}</p>
+                    <div style="display: flex; flex-direction: column; justify-content: center;">
+                        <p style="margin: 0 0 2px 0; font-size: 0.9rem; font-weight: 600; line-height: 1.2; color: #1e293b; text-decoration: ${isRefunded ? 'line-through' : 'none'};">${item.product_name || 'Product'}</p>
+                        <p style="margin: 0; font-size: 0.75rem; color: #64748b; line-height: 1;">Qty: ${item.quantity || 1}</p>
                     </div>
                 </div>
-                <div style="font-weight: 600; color: #1e293b;">
+                <div style="font-weight: 600; color: #1e293b; white-space: nowrap; flex-shrink: 0;">
                     ${isRefunded ? '<span style="color: #dc2626; font-size: 0.75rem; text-transform: uppercase; margin-right: 8px;">Returned</span>' : ''} ${priceStr}
                 </div>
             `;
