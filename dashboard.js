@@ -502,26 +502,67 @@ function updateHeaderBadges(planName) {
     }
 }
 
+async function loadBranches(storedBranchId) {
+    const branchSelect = document.getElementById('branchSelect');
+    if (!branchSelect) return;
+
+    try {
+        const { supabase } = await import('./lib/supabase.js');
+        const { data: branches, error } = await supabase
+            .from('branches')
+            .select('branch_id, branch_name');
+
+        if (error) throw error;
+
+        if (branches && branches.length > 0) {
+            branchSelect.innerHTML = branches.map(b => 
+                `<option value="${b.branch_id}">${b.branch_name}</option>`
+            ).join('');
+
+            // Check if stored ID exists
+            const exists = branches.some(b => b.branch_id === storedBranchId);
+            if (exists) {
+                branchSelect.value = storedBranchId;
+            } else {
+                // Default to first branch if no match
+                const firstId = branches[0].branch_id;
+                branchSelect.value = firstId;
+                localStorage.setItem('branch_id', firstId);
+                refreshAllData(firstId);
+            }
+        }
+    } catch (err) {
+        console.error("Error loading branches:", err);
+    }
+}
+
+function refreshAllData(branchId) {
+    // 1. Dashboard specific
+    if (typeof window.fetchAndRenderDashboardKPIs === 'function') {
+        window.fetchAndRenderDashboardKPIs(branchId);
+    }
+    // 2. Sub-pages (Today's Bookings, Completed, No-shows)
+    if (typeof window.initPage === 'function') {
+        window.initPage();
+    }
+    // 3. Revenue sub-page
+    if (typeof window.calculateAndRenderRevenue === 'function') {
+        window.calculateAndRenderRevenue();
+    }
+}
+
 function initBranchSwitcher(storedBranchId) {
     const branchSelect = document.getElementById('branchSelect');
-    if (!branchSelect) return; // guard: element may not exist on all pages
+    if (!branchSelect) return;
     
-    // If we had a stored branch ID, we would set it here
-    if (storedBranchId) {
-        // Find matching option and set it
-        // branchSelect.value = storedBranchId;
-    }
+    // Load dynamic list
+    loadBranches(storedBranchId);
     
-    // Listen for changes to save back to local storage and refresh data
     branchSelect.addEventListener('change', (e) => {
         const newBranchId = e.target.value;
         localStorage.setItem('branch_id', newBranchId);
-        console.log(`Switched to branch: ${newBranchId}. Fetching new data...`);
-        
-        // Refresh all dashboard metrics using exact sizing!
-        if (typeof window.fetchAndRenderDashboardKPIs === 'function') {
-            window.fetchAndRenderDashboardKPIs(newBranchId);
-        }
+        console.log(`Switched to branch: ${newBranchId}. Refreshing...`);
+        refreshAllData(newBranchId);
     });
 }
 

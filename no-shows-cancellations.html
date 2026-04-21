@@ -257,13 +257,13 @@
             initPage();
         });
 
-        async function initPage() {
+        window.initPage = async function() {
             const now = new Date();
             const opts = { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' };
             document.getElementById('noscDateLabel').textContent = now.toLocaleDateString('en-IN', opts);
             
             try {
-                const branchId = localStorage.getItem('company_branch_id');
+                const branchId = localStorage.getItem('branch_id');
                 if (!branchId) throw new Error("No branch selected.");
 
                 const { supabase } = await import('./lib/supabase.js');

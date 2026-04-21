@@ -280,14 +280,14 @@
             calculateAndRenderRevenue();
         });
 
-        async function calculateAndRenderRevenue() {
+        window.calculateAndRenderRevenue = async function() {
             let realized = 0, booked = 0, lost = 0;
             const staffRevenue = {};
             const tableBody = document.getElementById('revTableBody');
             tableBody.innerHTML = '<tr><td colspan="4" style="text-align:center; padding:24px; color:#94a3b8;">Loading live data...</td></tr>';
 
             try {
-                const branchId = localStorage.getItem('company_branch_id');
+                const branchId = localStorage.getItem('branch_id');
                 if (!branchId) throw new Error("No branch selected.");
 
                 const { supabase } = await import('./lib/supabase.js');
