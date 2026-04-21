@@ -533,30 +533,34 @@ function setupEventListeners() {
                 total_amount: item.price * item.quantity
             }));
 
-            // Insert Batch into 'sales' table
-            const { error: saleError } = await supabase
+            // Insert Batch into 'sales' table AND immediately fetch the newly created rows/IDs
+            const { data: insertedSales, error: saleError } = await supabase
                 .from('sales')
-                .insert(salesBatch);
+                .insert(salesBatch)
+                .select('id, product_name, total_amount, payment_method');
 
             if (saleError) throw saleError;
             
-            // ─── Record Payment Transaction in Ledger ─────────────────────────────
-            // Rule: Frontend only records money ('paid'). Backend trigger handles the 'pending' invoice.
-            const prodCountStr = cart.length === 1 ? '1 item' : `${cart.length} items`;
+            // ─── Record Payment Transactions in Ledger ────────────────────────────
+            // We now insert one explicit ledger row for every single product purchased.
+            // Strict Rule: No partial payments on products. `total_amount` is fully paid upfront.
+            
+            const ledgerBatch = insertedSales.map(sale => ({
+                company_id: getCompanyId() || null,
+                branch_id: getBranchId() || null,
+                reference_id: sale.id, // Direct map to the newly generated sales table ID
+                reference_type: 'product',
+                amount: sale.total_amount, // The exact price of this single item
+                currency: 'INR',
+                payment_method: sale.payment_method,
+                status: 'paid',
+                notes: `POS Sale - ${sale.product_name}`,
+                paid_at: new Date().toISOString()
+            }));
+
             const { error: txError } = await supabase
                 .from('business_transactions')
-                .insert({
-                    company_id: getCompanyId(),
-                    branch_id: getBranchId(),
-                    reference_id: saleGroupId,
-                    reference_type: 'product',
-                    amount: amountCollected,
-                    currency: 'INR',
-                    payment_method: paymentMethod,
-                    status: 'paid',
-                    notes: `POS Sale - ${prodCountStr}`,
-                    paid_at: new Date().toISOString()
-                });
+                .insert(ledgerBatch);
 
             if (txError) {
                 console.error('POS: Ledger recording failed:', txError);
