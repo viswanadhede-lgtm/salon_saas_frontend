@@ -420,6 +420,63 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
+    async function fetchAndRenderTopServicesWeekly(currentBranchId) {
+        const listContainer = document.getElementById('topServicesWeeklyList');
+        if (!listContainer || !currentBranchId) return;
+
+        try {
+            const { supabase } = await import('./lib/supabase.js');
+            const now = new Date();
+            const endDate = new Date(now.getTime() - (now.getTimezoneOffset() * 60000)).toISOString().split('T')[0];
+            const startDate = new Date(now.getTime() - (now.getTimezoneOffset() * 60000) - (6 * 24 * 60 * 60 * 1000)).toISOString().split('T')[0];
+
+            // Fetch bookings for the last 7 days
+            const { data: bookings, error } = await supabase
+                .from('bookings_for_business_transaction')
+                .select('service_name, price')
+                .eq('branch_id', currentBranchId)
+                .gte('booking_date', startDate)
+                .lte('booking_date', endDate)
+                .not('status', 'in', '("cancelled","no-show")');
+
+            if (error) throw error;
+
+            if (!bookings || bookings.length === 0) {
+                listContainer.innerHTML = '<li class="centered-placeholder" style="min-height: 180px;">No service data for this week.</li>';
+                return;
+            }
+
+            // Aggregate counts and revenue
+            const serviceMap = {};
+            bookings.forEach(b => {
+                const name = b.service_name || 'Other';
+                if (!serviceMap[name]) {
+                    serviceMap[name] = { name, count: 0, revenue: 0 };
+                }
+                serviceMap[name].count++;
+                serviceMap[name].revenue += Number(b.price || 0);
+            });
+
+            const sorted = Object.values(serviceMap)
+                .sort((a, b) => b.count - a.count)
+                .slice(0, 5);
+
+            listContainer.innerHTML = sorted.map(s => `
+                <li>
+                    <div class="service-info">
+                        <span class="service-name">${s.name}</span>
+                        <span class="service-count">${s.count} bookings</span>
+                    </div>
+                    <div class="service-revenue">₹${s.revenue.toLocaleString('en-IN')}</div>
+                </li>
+            `).join('');
+
+        } catch (err) {
+            console.error("Error fetching Weekly Top Services:", err);
+            listContainer.innerHTML = '<li class="centered-placeholder" style="color:#ef4444; min-height: 180px;">Error loading services.</li>';
+        }
+    }
+
     // Call on load if branchId exists
     if (branchId) {
         fetchAndRenderDashboardKPIs(branchId);
@@ -427,6 +484,7 @@ document.addEventListener('DOMContentLoaded', () => {
         fetchAndRenderAppointments(branchId);
         fetchAndRenderTopServicesToday(branchId);
         fetchAndRenderWeeklyRevenue(branchId);
+        fetchAndRenderTopServicesWeekly(branchId);
     }
     
     // Attach dynamically to the global so branch switcher can use it
@@ -435,6 +493,7 @@ document.addEventListener('DOMContentLoaded', () => {
     window.fetchAndRenderAppointments = fetchAndRenderAppointments;
     window.fetchAndRenderTopServicesToday = fetchAndRenderTopServicesToday;
     window.fetchAndRenderWeeklyRevenue = fetchAndRenderWeeklyRevenue;
+    window.fetchAndRenderTopServicesWeekly = fetchAndRenderTopServicesWeekly;
 
     // ----------------------------------------------------------------
     // 4. APPOINTMENTS TAB LOGIC
@@ -836,6 +895,9 @@ function refreshAllData(branchId) {
     }
     if (typeof window.fetchAndRenderWeeklyRevenue === 'function') {
         window.fetchAndRenderWeeklyRevenue(branchId);
+    }
+    if (typeof window.fetchAndRenderTopServicesWeekly === 'function') {
+        window.fetchAndRenderTopServicesWeekly(branchId);
     }
     // 2. Sub-pages (Today's Bookings, Completed, No-shows)
     if (typeof window.initPage === 'function') {
