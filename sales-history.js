@@ -632,7 +632,11 @@ document.addEventListener('DOMContentLoaded', () => {
                             ? `<p style="margin: 0; font-size: 0.75rem; color: #64748b; line-height: 1;">Qty: ${item.quantity || 1}</p>`
                             : `<div style="display: flex; align-items: center; gap: 6px; margin-top: 4px;">
                                  <span style="font-size: 0.75rem; color: #64748b;">Return Qty:</span>
-                                 <input type="number" class="rf-qty-input" data-id="${item.id}" value="${item.quantity || 1}" min="1" max="${item.quantity || 1}" style="width: 50px; padding: 2px 4px; font-size: 0.75rem; border: 1px solid #cbd5e1; border-radius: 4px; text-align: center;">
+                                 <div style="display: flex; align-items: center; border: 1px solid #cbd5e1; border-radius: 4px; overflow: hidden; height: 22px;">
+                                     <button type="button" class="rf-qty-btn minus" data-id="${item.id}" style="width: 22px; height: 100%; display: flex; align-items: center; justify-content: center; background: #f8fafc; border: none; border-right: 1px solid #cbd5e1; color: #475569; font-weight: 600; cursor: pointer;">-</button>
+                                     <input type="text" class="rf-qty-input" data-id="${item.id}" value="${item.quantity || 1}" data-max="${item.quantity || 1}" readonly style="width: 28px; height: 100%; border: none; text-align: center; font-size: 0.75rem; color: #1e293b; background: white; pointer-events: none; padding: 0;">
+                                     <button type="button" class="rf-qty-btn plus" data-id="${item.id}" style="width: 22px; height: 100%; display: flex; align-items: center; justify-content: center; background: #f8fafc; border: none; border-left: 1px solid #cbd5e1; color: #475569; font-weight: 600; cursor: pointer;">+</button>
+                                 </div>
                                  <span style="font-size: 0.7rem; color: #94a3b8;">/ ${item.quantity || 1}</span>
                                </div>`
                         }
@@ -650,9 +654,32 @@ document.addEventListener('DOMContentLoaded', () => {
         document.querySelectorAll('.rf-item-cb:not(:disabled)').forEach(cb => {
             cb.addEventListener('change', calculateRefundTotal);
         });
-        document.querySelectorAll('.rf-qty-input').forEach(input => {
-            input.addEventListener('input', calculateRefundTotal);
-            input.addEventListener('change', calculateRefundTotal);
+        
+        document.querySelectorAll('.rf-qty-btn').forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                const id = e.currentTarget.dataset.id;
+                const input = document.querySelector(`.rf-qty-input[data-id="${id}"]`);
+                if (!input) return;
+                
+                let val = parseInt(input.value) || 1;
+                const max = parseInt(input.dataset.max) || 1;
+                
+                if (e.currentTarget.classList.contains('plus')) {
+                    if (val < max) val++;
+                } else if (e.currentTarget.classList.contains('minus')) {
+                    if (val > 1) val--;
+                }
+                
+                input.value = val;
+                
+                // If they interact with quantity, instinctively they want to return it. Auto-check the combo.
+                const cb = document.querySelector(`.rf-item-cb[data-id="${id}"]`);
+                if (cb && !cb.checked) {
+                    cb.checked = true;
+                }
+                
+                calculateRefundTotal();
+            });
         });
         
         calculateRefundTotal();
