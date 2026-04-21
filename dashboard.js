@@ -816,11 +816,133 @@ document.addEventListener('DOMContentLoaded', () => {
     const paneThisWeek = document.getElementById('paneThisWeek');
     const paneNextWeek = document.getElementById('paneNextWeek');
 
-    function openScheduleModal() {
-        if (scheduleModalOverlay) {
-            scheduleModalOverlay.classList.add('active');
-            // Reset to default tab (This Week)
-            if (tabBtnThisWeek) tabBtnThisWeek.click();
+    async function fetchAndRenderUserSchedule() {
+        const paneThisWeek = document.getElementById('paneThisWeek');
+        const paneNextWeek = document.getElementById('paneNextWeek');
+        if (!paneThisWeek || !paneNextWeek) return;
+
+        // Show loading state
+        const loadingHtml = '<div style="padding:40px; text-align:center; color:#64748b;"><div class="spinner-sm" style="margin:0 auto 12px;"></div>Loading your schedule...</div>';
+        paneThisWeek.innerHTML = loadingHtml;
+        paneNextWeek.innerHTML = loadingHtml;
+
+        try {
+            const contextStr = localStorage.getItem('appContext');
+            if (!contextStr) throw new Error("App context not found.");
+            const context = JSON.parse(contextStr);
+            const userEmail = context.user.email;
+            const companyId = context.company.company_id || localStorage.getItem('company_id');
+            const branchId = context.current_branch_id || localStorage.getItem('active_branch_id');
+
+            const { supabase } = await import('./lib/supabase.js');
+
+            // 1. Find staff_id by email
+            const { data: staffData, error: staffErr } = await supabase
+                .from('staff')
+                .select('staff_id')
+                .eq('email', userEmail)
+                .eq('company_id', companyId)
+                .maybeSingle();
+
+            if (staffErr) throw staffErr;
+            if (!staffData) {
+                const noStaffHtml = '<div style="padding:40px; text-align:center; color:#64748b;">No staff record found for your email. Please contact your administrator.</div>';
+                paneThisWeek.innerHTML = noStaffHtml;
+                paneNextWeek.innerHTML = noStaffHtml;
+                return;
+            }
+
+            const staffId = staffData.staff_id;
+
+            // 2. Calculate Date Ranges
+            const today = new Date();
+            const getMonday = (d) => {
+                const date = new Date(d);
+                const day = date.getDay();
+                const diff = date.getDate() - day + (day === 0 ? -6 : 1); // Adjust for Sunday
+                return new Date(date.setDate(diff));
+            };
+
+            const thisMon = getMonday(today);
+            const nextMon = new Date(thisMon);
+            nextMon.setDate(thisMon.getDate() + 7);
+
+            const getWeekDates = (monday) => {
+                const dates = [];
+                for (let i = 0; i < 7; i++) {
+                    const d = new Date(monday);
+                    d.setDate(monday.getDate() + i);
+                    dates.push(d.toISOString().split('T')[0]);
+                }
+                return dates;
+            };
+
+            const thisWeekDates = getWeekDates(thisMon);
+            const nextWeekDates = getWeekDates(nextMon);
+
+            // 3. Fetch Schedules
+            const allDates = [...thisWeekDates, ...nextWeekDates];
+            const { data: schedData, error: schedErr } = await supabase
+                .from('staff_schedule')
+                .select('*')
+                .eq('staff_id', staffId)
+                .in('schedule_date', allDates);
+
+            if (schedErr) throw schedErr;
+
+            // 4. Render Helper
+            const renderWeek = (dates) => {
+                let html = `
+                    <div style="display: grid; grid-template-columns: 100px 120px 1fr 1fr; padding: 6px 16px 10px 16px; border-bottom: 1px solid #e2e8f0; margin-bottom: 8px;">
+                        <div style="font-size: 0.75rem; font-weight: 700; color: #94a3b8; text-transform: uppercase; letter-spacing: 0.05em;">Date</div>
+                        <div style="font-size: 0.75rem; font-weight: 700; color: #94a3b8; text-transform: uppercase; letter-spacing: 0.05em;">Day</div>
+                        <div style="font-size: 0.75rem; font-weight: 700; color: #94a3b8; text-transform: uppercase; letter-spacing: 0.05em;">Time</div>
+                        <div style="font-size: 0.75rem; font-weight: 700; color: #94a3b8; text-transform: uppercase; letter-spacing: 0.05em; text-align: right;">Comments</div>
+                    </div>
+                    <ul class="schedule-list" style="list-style: none; padding: 0; margin: 0; display: flex; flex-direction: column; gap: 8px;">
+                `;
+
+                dates.forEach(dateStr => {
+                    const dateObj = new Date(dateStr);
+                    const dayName = dateObj.toLocaleDateString('en-US', { weekday: 'long' });
+                    const shortDate = dateObj.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+                    const record = schedData.find(s => s.schedule_date === dateStr);
+
+                    if (!record || record.is_off) {
+                        html += `
+                            <li class="schedule-item" style="display: grid; grid-template-columns: 100px 120px 1fr 1fr; padding: 12px 16px; background: #fff5f5; border: 1px dashed #fecdd3; border-radius: 8px; align-items: center;">
+                                <div style="font-size: 0.85rem; color: #64748b; font-weight: 500;">${shortDate}</div>
+                                <div style="font-weight: 600; color: #334155; font-size: 0.9rem;">${dayName}</div>
+                                <div style="color: #e11d48; font-size: 0.9rem; font-weight: 600;">Off</div>
+                                <div style="color: #fca5a5; font-size: 0.85rem; text-align: right;">${record?.notes || '-'}</div>
+                            </li>
+                        `;
+                    } else {
+                        const start = record.start_time.substring(0, 5);
+                        const end = record.end_time.substring(0, 5);
+                        html += `
+                            <li class="schedule-item" style="display: grid; grid-template-columns: 100px 120px 1fr 1fr; padding: 12px 16px; background: #f8fafc; border-radius: 8px; align-items: center; border: 1px solid #e2e8f0;">
+                                <div style="font-size: 0.85rem; color: #64748b; font-weight: 500;">${shortDate}</div>
+                                <div style="font-weight: 600; color: #334155; font-size: 0.9rem;">${dayName}</div>
+                                <div style="color: #0f172a; font-size: 0.9rem; font-weight: 500;">${start} - ${end}</div>
+                                <div style="color: #64748b; font-size: 0.85rem; text-align: right;">${record.notes || '-'}</div>
+                            </li>
+                        `;
+                    }
+                });
+
+                html += `</ul>`;
+                return html;
+            };
+
+            paneThisWeek.innerHTML = renderWeek(thisWeekDates);
+            paneNextWeek.innerHTML = renderWeek(nextWeekDates);
+
+        } catch (err) {
+            console.error("Schedule Fetch Error:", err);
+            const errHtml = `<div style="padding:40px; text-align:center; color:#ef4444;">Failed to load schedule: ${err.message}</div>`;
+            paneThisWeek.innerHTML = errHtml;
+            paneNextWeek.innerHTML = errHtml;
         }
     }
 
@@ -835,6 +957,16 @@ document.addEventListener('DOMContentLoaded', () => {
         scheduleModalOverlay.addEventListener('click', (e) => {
             if (e.target === scheduleModalOverlay) closeScheduleModalFn();
         });
+    }
+
+    function openScheduleModal() {
+        if (scheduleModalOverlay) {
+            scheduleModalOverlay.classList.add('active');
+            // Reset to default tab (This Week)
+            if (tabBtnThisWeek) tabBtnThisWeek.click();
+            // Fetch live data
+            fetchAndRenderUserSchedule();
+        }
     }
 
     // Tab switching logic
