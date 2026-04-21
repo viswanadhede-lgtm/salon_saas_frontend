@@ -210,15 +210,97 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
+    async function fetchAndRenderAppointments(currentBranchId) {
+        const upcomingList = document.getElementById('tabUpcomingList');
+        const completedList = document.getElementById('tabCompletedList');
+        if (!upcomingList || !completedList || !currentBranchId) return;
+
+        try {
+            const { supabase } = await import('./lib/supabase.js');
+            const now = new Date();
+            const today = new Date(now.getTime() - (now.getTimezoneOffset() * 60000)).toISOString().split('T')[0];
+
+            const { data: bookings, error } = await supabase
+                .from('bookings_for_business_transaction')
+                .select('*')
+                .eq('branch_id', currentBranchId)
+                .eq('booking_date', today)
+                .order('start_time', { ascending: true });
+
+            if (error) throw error;
+
+            const upcomingData = (bookings || []).filter(b => !['completed', 'cancelled', 'no-show'].includes(b.status));
+            const completedData = (bookings || []).filter(b => b.status === 'completed');
+
+            const renderList = (container, list, emptyMsg) => {
+                if (list.length === 0) {
+                    container.innerHTML = `<div style="text-align:center; padding:40px; color:#94a3b8; font-size:0.9rem;">${emptyMsg}</div>`;
+                    return;
+                }
+
+                container.innerHTML = list.map(b => {
+                    // Time formatting
+                    const [h, m] = b.start_time.split(':');
+                    const ampm = h >= 12 ? 'PM' : 'AM';
+                    const formattedTime = `${h % 12 || 12}:${m} ${ampm}`;
+
+                    // Duration calculation
+                    const startArr = b.start_time.split(':');
+                    const endArr = b.end_time.split(':');
+                    const diff = (parseInt(endArr[0]) * 60 + parseInt(endArr[1])) - (parseInt(startArr[0]) * 60 + parseInt(startArr[1]));
+                    const durationStr = diff >= 60 ? `${Math.floor(diff/60)}h${diff%60 > 0 ? ' '+(diff%60)+'m' : ''}` : `${diff}m`;
+
+                    const initials = b.customer_name ? b.customer_name.split(' ').slice(0,2).map(n => n[0]).join('').toUpperCase() : '??';
+                    const statusClass = b.status ? b.status.toLowerCase() : 'booked';
+
+                    return `
+                        <div class="appointment-item">
+                            <div class="time-block">
+                                <span class="time">${formattedTime}</span>
+                                <span class="duration">${durationStr}</span>
+                            </div>
+                            <div class="details-block">
+                                <div class="client-info">
+                                    <div class="avatar small">
+                                        <img src="https://ui-avatars.com/api/?name=${encodeURIComponent(b.customer_name)}&background=random" alt="${b.customer_name}">
+                                    </div>
+                                    <div class="name-service">
+                                        <h4><span class="customer-link" onclick="viewCustomerProfile('${b.customer_name}')">${b.customer_name}</span></h4>
+                                        <p>${b.service_name || 'N/A'}</p>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="staff-block"><span class="badge">${b.staff_name || 'Unassigned'}</span></div>
+                            <div class="status-block">
+                                <span class="status-pill ${statusClass}">${b.status.charAt(0).toUpperCase() + b.status.slice(1)}</span>
+                            </div>
+                        </div>
+                    `;
+                }).join('');
+            };
+
+            renderList(upcomingList, upcomingData, "No upcoming appointments for today.");
+            renderList(completedList, completedData, "No completed bookings yet today.");
+
+            if (window.feather) feather.replace();
+
+        } catch (err) {
+            console.error("Error fetching appointments:", err);
+            upcomingList.innerHTML = completedList.innerHTML = '<div style="text-align:center; padding:40px; color:#ef4444; font-size:0.9rem;">Error loading bookings.</div>';
+        }
+    }
+
     // Call on load if branchId exists
     if (branchId) {
         fetchAndRenderDashboardKPIs(branchId);
         fetchAndRenderProductSales(branchId);
+        fetchAndRenderAppointments(branchId);
     }
     
     // Attach dynamically to the global so branch switcher can use it
     window.fetchAndRenderDashboardKPIs = fetchAndRenderDashboardKPIs;
     window.fetchAndRenderProductSales = fetchAndRenderProductSales;
+    window.fetchAndRenderAppointments = fetchAndRenderAppointments;
 
     // ----------------------------------------------------------------
     // 4. APPOINTMENTS TAB LOGIC
@@ -611,6 +693,9 @@ function refreshAllData(branchId) {
     }
     if (typeof window.fetchAndRenderProductSales === 'function') {
         window.fetchAndRenderProductSales(branchId);
+    }
+    if (typeof window.fetchAndRenderAppointments === 'function') {
+        window.fetchAndRenderAppointments(branchId);
     }
     // 2. Sub-pages (Today's Bookings, Completed, No-shows)
     if (typeof window.initPage === 'function') {
