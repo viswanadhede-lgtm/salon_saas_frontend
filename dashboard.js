@@ -837,14 +837,15 @@ document.addEventListener('DOMContentLoaded', () => {
             const { supabase } = await import('./lib/supabase.js');
 
             // 1. Find staff_id by email
-            const { data: staffData, error: staffErr } = await supabase
+            const { data: staffDataArr, error: staffErr } = await supabase
                 .from('staff')
                 .select('staff_id')
                 .eq('email', userEmail)
                 .eq('company_id', companyId)
-                .maybeSingle();
+                .limit(1);
 
             if (staffErr) throw staffErr;
+            const staffData = staffDataArr && staffDataArr.length > 0 ? staffDataArr[0] : null;
             if (!staffData) {
                 const noStaffHtml = '<div style="padding:40px; text-align:center; color:#64748b;">No staff record found for your email. Please contact your administrator.</div>';
                 paneThisWeek.innerHTML = noStaffHtml;
