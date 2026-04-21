@@ -175,7 +175,7 @@ document.addEventListener('DOMContentLoaded', () => {
             if (error) throw error;
 
             if (!sales || sales.length === 0) {
-                listContainer.innerHTML = '<li style="justify-content:center; padding:20px; color:#94a3b8; font-size:0.85rem;">No product sales today.</li>';
+                listContainer.innerHTML = '<li class="centered-placeholder">No product sales today.</li>';
                 return;
             }
 
@@ -206,7 +206,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
         } catch (err) {
             console.error("Error fetching Product Sales:", err);
-            listContainer.innerHTML = '<li style="justify-content:center; padding:20px; color:#ef4444; font-size:0.85rem;">Error loading sales.</li>';
+            listContainer.innerHTML = '<li class="centered-placeholder" style="color:#ef4444;">Error loading sales.</li>';
         }
     }
 
@@ -234,7 +234,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
             const renderList = (container, list, emptyMsg) => {
                 if (list.length === 0) {
-                    container.innerHTML = `<div style="text-align:center; padding:40px; color:#94a3b8; font-size:0.9rem;">${emptyMsg}</div>`;
+                    container.innerHTML = `<div class="centered-placeholder">${emptyMsg}</div>`;
                     return;
                 }
 
@@ -286,7 +286,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
         } catch (err) {
             console.error("Error fetching appointments:", err);
-            upcomingList.innerHTML = completedList.innerHTML = '<div style="text-align:center; padding:40px; color:#ef4444; font-size:0.9rem;">Error loading bookings.</div>';
+            upcomingList.innerHTML = completedList.innerHTML = '<div class="centered-placeholder" style="color:#ef4444;">Error loading bookings.</div>';
         }
     }
 

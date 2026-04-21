@@ -350,14 +350,20 @@
                                 <!-- Tab Pane 1: Upcoming Appointments -->
                                 <div class="tab-pane active" id="tabUpcoming">
                                     <div class="appointment-list" id="tabUpcomingList">
-                                        <div style="text-align:center; padding:40px; color:#94a3b8; font-size:0.9rem;">Loading upcoming bookings...</div>
+                                        <div class="centered-placeholder">
+                                            <i data-feather="loader" style="width:24px; height:24px; animation:spin 2s linear infinite; margin-bottom:12px;"></i>
+                                            Loading upcoming bookings...
+                                        </div>
                                     </div>
                                 </div>
 
                                 <!-- Tab Pane 2: Completed Bookings Today -->
                                 <div class="tab-pane" id="tabCompleted">
                                     <div class="appointment-list" id="tabCompletedList">
-                                        <div style="text-align:center; padding:40px; color:#94a3b8; font-size:0.9rem;">Loading completed bookings...</div>
+                                        <div class="centered-placeholder">
+                                            <i data-feather="loader" style="width:24px; height:24px; animation:spin 2s linear infinite; margin-bottom:12px;"></i>
+                                            Loading completed bookings...
+                                        </div>
                                     </div>
                                 </div>
                             </div>
@@ -372,7 +378,10 @@
                         </div>
                         <div class="card-body">
                             <ul class="service-list" id="productSalesList">
-                                <li style="justify-content:center; padding:20px; color:#94a3b8; font-size:0.85rem;">Loading sales...</li>
+                                <li class="centered-placeholder">
+                                    <i data-feather="loader" style="width:24px; height:24px; animation:spin 2s linear infinite; margin-bottom:12px;"></i>
+                                    Loading sales...
+                                </li>
                             </ul>
                         </div>
                     </div>
