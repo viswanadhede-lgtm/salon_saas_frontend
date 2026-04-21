@@ -181,7 +181,7 @@
 
         
         <div class="nosc-tab-strip">
-            <button class="nosc-tab active" id="noscTabNoShow" onclick="switchTab('noshow')">
+            <button class="nosc-tab active" id="noscTabNoShow" onclick="switchTab('no-show')">
                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/></svg>
                 No-show Appointments
             </button>
@@ -214,7 +214,7 @@
     <script>
         let todaysBookingsData = [];
 
-        let activeTab = 'noshow';
+        let activeTab = 'no-show';
 
         document.addEventListener('DOMContentLoaded', () => {
             if (window.feather) feather.replace();
@@ -277,7 +277,7 @@
                     .eq('booking_date', localISOTime)
                     .order('start_time', { ascending: true });
                     
-                query = query.in('status', ['noshow', 'cancelled']);
+                query = query.in('status', ['no-show', 'cancelled']);
 
                 const { data, error } = await query;
                 if (error) throw error;
@@ -307,7 +307,7 @@
             }
 
             
-        const noShows = todaysBookingsData.filter(b => b.status === 'noshow');
+        const noShows = todaysBookingsData.filter(b => b.status === 'no-show');
         const cancelled = todaysBookingsData.filter(b => b.status === 'cancelled');
         document.getElementById('noscNoShowBadge').textContent = noShows.length + ' no-show' + (noShows.length !== 1 ? 's' : '');
         document.getElementById('noscCancelledBadge').textContent = cancelled.length + ' cancelled';
@@ -318,7 +318,7 @@
 
         function switchTab(tab) {
             activeTab = tab;
-            document.getElementById('noscTabNoShow').classList.toggle('active', tab === 'noshow');
+            document.getElementById('noscTabNoShow').classList.toggle('active', tab === 'no-show');
             document.getElementById('noscTabCancelled').classList.toggle('active', tab === 'cancelled');
             renderTable();
         }
@@ -328,12 +328,12 @@
             tbody.innerHTML = '';
             const filtered = todaysBookingsData.filter(b => b.status === activeTab);
             if (filtered.length === 0) {
-                tbody.innerHTML = `<tr><td colspan="8" class="nosc-empty">No ${activeTab === 'noshow' ? 'no-show' : 'cancelled'} appointments today.</td></tr>`;
+                tbody.innerHTML = `<tr><td colspan="8" class="nosc-empty">No ${activeTab === 'no-show' ? 'no-show' : 'cancelled'} appointments today.</td></tr>`;
                 return;
             }
             filtered.forEach(b => {
                 const statusClass = 'tb-status-' + b.status;
-                const statusLabel = b.status === 'noshow' ? 'No-show' : 'Cancelled';
+                const statusLabel = b.status === 'no-show' ? 'No-show' : 'Cancelled';
                 const tr = document.createElement('tr');
                 tr.className = 'tb-row';
                 tr.innerHTML = `
