@@ -1351,7 +1351,12 @@ window.refundMembershipPurchase = async function(purchaseId) {
         const ledgerNet = ledgerPaid - ledgerRefunded;
         refundableMembershipAmount = Math.max(0, ledgerNet);
 
-        amountDisplay.value = refundableMembershipAmount;
+        console.log('calculated refund limit:', refundableMembershipAmount, 'from paid:', ledgerPaid);
+        if (refundableMembershipAmount === 0 && Number(purchaseToRefundObj.price) > 0) {
+            refundableMembershipAmount = Number(purchaseToRefundObj.price);
+        }
+
+        amountDisplay.value = refundableMembershipAmount || 0;
         amountDisplay.style.color = (refundableMembershipAmount <= 0) ? '#94a3b8' : '#dc2626';
 
         const lastMethod = data && data.length > 0 ? data[data.length - 1].payment_method : 'cash';
