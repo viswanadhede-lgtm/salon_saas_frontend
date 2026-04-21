@@ -96,6 +96,9 @@ document.addEventListener('DOMContentLoaded', () => {
         if (!currentBranchId) return;
         
         try {
+            // Dynamically import the Supabase client (since dashboard.js is not a module)
+            const { supabase } = await import('./lib/supabase.js');
+
             const { data, error } = await supabase.rpc('get_dashboard_today_kpis', { 
                 p_branch_id: currentBranchId 
             });
