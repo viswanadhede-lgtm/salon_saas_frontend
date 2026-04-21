@@ -616,23 +616,31 @@ document.addEventListener('DOMContentLoaded', () => {
 
         currentRefundItems.forEach(item => {
             const isRefunded = (item.status === 'refunded');
-            const priceStr = `₹${Number(item.total_amount || 0).toLocaleString('en-IN')}`;
+            const itemPrice = Number(item.price || 0);
             
             const row = document.createElement('div');
             row.style.cssText = `display: flex; align-items: center; justify-content: space-between; padding: 14px 16px; min-height: 60px; flex-shrink: 0; border-bottom: 1px solid #f1f5f9; ${isRefunded ? 'background: #f8fafc; opacity: 0.6;' : ''}`;
             
             row.innerHTML = `
                 <div style="display: flex; align-items: center; gap: 12px; flex: 1;">
-                    <input type="checkbox" class="rf-item-cb" data-id="${item.id}" data-amount="${item.total_amount || 0}" 
+                    <input type="checkbox" class="rf-item-cb" data-id="${item.id}" 
                         style="width: 18px; height: 18px; flex-shrink: 0; accent-color: #dc2626; cursor: ${isRefunded ? 'not-allowed' : 'pointer'};" 
                         ${isRefunded ? 'checked disabled' : ''}>
                     <div style="display: flex; flex-direction: column; justify-content: center;">
                         <p style="margin: 0 0 2px 0; font-size: 0.9rem; font-weight: 600; line-height: 1.2; color: #1e293b; text-decoration: ${isRefunded ? 'line-through' : 'none'};">${item.product_name || 'Product'}</p>
-                        <p style="margin: 0; font-size: 0.75rem; color: #64748b; line-height: 1;">Qty: ${item.quantity || 1}</p>
+                        ${isRefunded 
+                            ? `<p style="margin: 0; font-size: 0.75rem; color: #64748b; line-height: 1;">Qty: ${item.quantity || 1}</p>`
+                            : `<div style="display: flex; align-items: center; gap: 6px; margin-top: 4px;">
+                                 <span style="font-size: 0.75rem; color: #64748b;">Return Qty:</span>
+                                 <input type="number" class="rf-qty-input" data-id="${item.id}" value="${item.quantity || 1}" min="1" max="${item.quantity || 1}" style="width: 50px; padding: 2px 4px; font-size: 0.75rem; border: 1px solid #cbd5e1; border-radius: 4px; text-align: center;">
+                                 <span style="font-size: 0.7rem; color: #94a3b8;">/ ${item.quantity || 1}</span>
+                               </div>`
+                        }
                     </div>
                 </div>
-                <div style="font-weight: 600; color: #1e293b; white-space: nowrap; flex-shrink: 0;">
-                    ${isRefunded ? '<span style="color: #dc2626; font-size: 0.75rem; text-transform: uppercase; margin-right: 8px;">Returned</span>' : ''} ${priceStr}
+                <div style="font-weight: 600; color: #1e293b; white-space: nowrap; flex-shrink: 0; display: flex; flex-direction: column; align-items: flex-end;">
+                    ${isRefunded ? `<span style="color: #dc2626; font-size: 0.75rem; text-transform: uppercase;">Returned</span>` : ''}
+                    <div class="rf-row-price" data-id="${item.id}" style="margin-top: 2px;"></div>
                 </div>
             `;
             list.appendChild(row);
@@ -642,6 +650,10 @@ document.addEventListener('DOMContentLoaded', () => {
         document.querySelectorAll('.rf-item-cb:not(:disabled)').forEach(cb => {
             cb.addEventListener('change', calculateRefundTotal);
         });
+        document.querySelectorAll('.rf-qty-input').forEach(input => {
+            input.addEventListener('input', calculateRefundTotal);
+            input.addEventListener('change', calculateRefundTotal);
+        });
         
         calculateRefundTotal();
     }
@@ -650,9 +662,38 @@ document.addEventListener('DOMContentLoaded', () => {
         let total = 0;
         let selectedCount = 0;
         
-        document.querySelectorAll('.rf-item-cb:not(:disabled):checked').forEach(cb => {
-            total += Number(cb.dataset.amount || 0);
-            selectedCount++;
+        // Update individual row prices and calculate global total
+        currentRefundItems.forEach(item => {
+            const isRefunded = (item.status === 'refunded');
+            const price = Number(item.price || 0);
+            
+            let displayVal = 0;
+            
+            if (isRefunded) {
+                displayVal = Number(item.total_amount || 0);
+            } else {
+                const cb = document.querySelector(`.rf-item-cb[data-id="${item.id}"]`);
+                const qtyInput = document.querySelector(`.rf-qty-input[data-id="${item.id}"]`);
+                
+                let qty = qtyInput ? parseInt(qtyInput.value) || 1 : (item.quantity || 1);
+                
+                // Bounds enforcement
+                if (qty > (item.quantity || 1)) qty = item.quantity || 1;
+                if (qty < 1) qty = 1;
+                if (qtyInput && parseInt(qtyInput.value) !== qty) qtyInput.value = qty;
+                
+                displayVal = price * qty;
+                
+                if (cb && cb.checked) {
+                    total += displayVal;
+                    selectedCount++;
+                }
+            }
+            
+            const priceDisplay = document.querySelector(`.rf-row-price[data-id="${item.id}"]`);
+            if (priceDisplay) {
+                priceDisplay.textContent = `₹${displayVal.toLocaleString('en-IN')}`;
+            }
         });
         
         const amountDisplay = document.getElementById('rfAmountDisplay');
@@ -725,7 +766,8 @@ document.addEventListener('DOMContentLoaded', () => {
             const { data: items, error } = await supabase
                 .from('sales')
                 .select('*')
-                .eq('sale_id', sale.id);
+                .eq('sale_id', sale.id)
+                .order('id', { ascending: true }); // Keep grouped items ordered predictably
 
             if (error) throw error;
 
@@ -735,15 +777,23 @@ document.addEventListener('DOMContentLoaded', () => {
 
                 (items || []).forEach(item => {
                     const lineTotal = Number(item.total_amount || 0);
-                    subtotal += lineTotal;
+                    const isRefunded = item.status === 'refunded';
+                    subtotal += isRefunded ? 0 : lineTotal; // Don't add refunded lines to subtotal
 
                     const row = document.createElement('tr');
                     row.style.borderBottom = '1px solid #f1f5f9';
+                    if (isRefunded) {
+                        row.style.background = '#f8fafc';
+                        row.style.opacity = '0.7';
+                    }
+                    
                     row.innerHTML = `
-                        <td style="padding:12px 16px; font-size:0.875rem; color:#334155;">${item.product_name || 'Product'}</td>
+                        <td style="padding:12px 16px; font-size:0.875rem; color:#334155; text-decoration: ${isRefunded ? 'line-through' : 'none'};">
+                            ${item.product_name || 'Product'} ${isRefunded ? '<span style="color:#dc2626; font-size:0.7rem; font-weight:600; margin-left:8px; text-transform:uppercase;">Returned</span>' : ''}
+                        </td>
                         <td style="padding:12px 16px; font-size:0.875rem; color:#475569; text-align:center;">${item.quantity || 1}</td>
                         <td style="padding:12px 16px; font-size:0.875rem; color:#475569; text-align:right;">₹${Number(item.price || 0).toLocaleString('en-IN')}</td>
-                        <td style="padding:12px 16px; font-size:0.875rem; color:#1e293b; font-weight:600; text-align:right;">₹${lineTotal.toLocaleString('en-IN')}</td>
+                        <td style="padding:12px 16px; font-size:0.875rem; color:#1e293b; font-weight:600; text-align:right; text-decoration: ${isRefunded ? 'line-through' : 'none'};">₹${lineTotal.toLocaleString('en-IN')}</td>
                     `;
                     sdItemsList.appendChild(row);
                 });
@@ -752,20 +802,14 @@ document.addEventListener('DOMContentLoaded', () => {
                 if (sdTax)      sdTax.textContent      = `₹0`; // Placeholder
                 if (sdDiscount) sdDiscount.textContent = `₹0`; // Placeholder
                 if (sdTotal) {
-                    const isRefunded = sale.status === 'refunded';
-                    if (isRefunded) {
-                        sdTotal.innerHTML = `<del style="color:#94a3b8; font-weight:400; margin-right: 8px;">₹${subtotal.toLocaleString('en-IN')}</del> <span style="color:#dc2626;">Refunded</span>`;
-                    } else {
-                        sdTotal.textContent = `₹${subtotal.toLocaleString('en-IN')}`;
-                    }
+                    sdTotal.textContent = `₹${subtotal.toLocaleString('en-IN')}`;
                 }
             }
 
             if (sdRefundBtn) {
-                const isRefunded = sale.status === 'refunded';
-                // Wait, if it is partially refunded we should still allow returns!
-                // So always display it unless items are 100% returned (which we can check later).
-                sdRefundBtn.style.display = isRefunded ? 'none' : 'inline-flex';
+                // If every single item is refunded, hide the button
+                const allRefunded = items && items.length > 0 && items.every(i => i.status === 'refunded');
+                sdRefundBtn.style.display = allRefunded ? 'none' : 'inline-flex';
             }
 
         } catch (err) {
@@ -796,45 +840,85 @@ document.addEventListener('DOMContentLoaded', () => {
             const methodDisplay = document.getElementById('rfMethodDisplay');
             const method = methodDisplay ? methodDisplay.value.toLowerCase() : 'cash';
 
-            // 1. Build the distinct ledger inserts
-            const ledgerRows = checkedBoxes.map(cb => {
+            const ledgerRows = [];
+            const saleUpdatePromises = [];
+            
+            for (const cb of checkedBoxes) {
                 const itemId = cb.dataset.id;
                 const itemObj = currentRefundItems.find(i => String(i.id) === itemId);
-                const amount = Number(cb.dataset.amount || 0);
+                if (!itemObj) continue;
 
-                return {
+                const qtyInput = document.querySelector(`.rf-qty-input[data-id="${itemId}"]`);
+                const refundQty = qtyInput ? parseInt(qtyInput.value) || 1 : (itemObj.quantity || 1);
+                
+                const itemPrice = Number(itemObj.price || 0);
+                const refundAmount = refundQty * itemPrice;
+                
+                let resultingLineId = itemId;
+
+                if (refundQty < (itemObj.quantity || 1)) {
+                    // PARTIAL REFUND: We need to split the row!
+                    // 1. Create duplicate row for the return
+                    const newRowObj = { ...itemObj };
+                    delete newRowObj.id; // Let DB generate new Primary Key
+                    newRowObj.quantity = refundQty;
+                    newRowObj.total_amount = refundAmount;
+                    newRowObj.status = 'refunded';
+                    
+                    const { data: newInserted, error: insertErr } = await supabase
+                        .from('sales')
+                        .insert(newRowObj)
+                        .select()
+                        .single();
+                        
+                    if (insertErr) throw insertErr;
+                    resultingLineId = newInserted.id;
+                    
+                    // 2. Update existing row with remaining inventory
+                    const remainingQty = itemObj.quantity - refundQty;
+                    const remainingAmount = remainingQty * itemPrice;
+                    saleUpdatePromises.push(
+                        supabase.from('sales').update({ 
+                            quantity: remainingQty, 
+                            total_amount: remainingAmount 
+                        }).eq('id', itemId)
+                    );
+                } else {
+                    // FULL ROW REFUND
+                    saleUpdatePromises.push(
+                        supabase.from('sales').update({ status: 'refunded' }).eq('id', itemId)
+                    );
+                }
+
+                // Add Ledger Entry linked to the effectively returned row ID
+                ledgerRows.push({
                     company_id: getCompanyId(),
                     branch_id: getBranchId(),
                     reference_id: saleId,               // Parent cart ID
-                    reference_line_id: itemId,          // Specific product row ID
+                    reference_line_id: resultingLineId, // Direct specific row ID
                     reference_type: 'product',
-                    amount: Math.abs(amount),
+                    amount: Math.abs(refundAmount),
                     status: 'refunded',
                     payment_method: method,
-                    notes: note || `Returned: ${itemObj?.product_name || 'Item'}`,
+                    notes: note || `Returned: ${itemObj.product_name || 'Item'} (Qty: ${refundQty})`,
                     paid_at: new Date().toISOString()
-                };
-            });
+                });
+            }
 
-            // 2. Insert array into ledger
-            const { error: txError } = await supabase
-                .from('business_transactions')
-                .insert(ledgerRows);
-
-            if (txError) throw txError;
-
-            // 3. Mark the individual rows in the sales table as refunded
-            const itemIds = checkedBoxes.map(cb => cb.dataset.id);
-            const updatePromises = itemIds.map(id => 
-                supabase.from('sales').update({ status: 'refunded' }).eq('id', id)
-            );
-            await Promise.all(updatePromises);
+            // Execute batched DB operations
+            if (saleUpdatePromises.length > 0) {
+                await Promise.all(saleUpdatePromises);
+            }
+            if (ledgerRows.length > 0) {
+                const { error: txError } = await supabase.from('business_transactions').insert(ledgerRows);
+                if (txError) throw txError;
+            }
 
             // Success!
-            showToast(`Successfully returned ${checkedBoxes.length} item(s).`, '#dc2626');
+            showToast(`Successfully returned ${checkedBoxes.length} partial/full item(s).`, '#dc2626');
             document.getElementById('refundSummaryOverlay').classList.remove('active');
             
-            // Re-fetch to sync table badges
+            // Re-fetch to sync table badges and metrics
             await fetchSalesHistory();
             
             // Close detail modal if open
