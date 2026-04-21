@@ -5,6 +5,53 @@ import { initSubFeatures } from './sub-features/sub-feature-manager.js';
 import { applySubFeatureGates } from './sub-features/sub-feature-gate.js';
 import { initGlobalBookingModal } from './global-booking-modal.js';
 
+// ─── Theme Management ────────────────────────────────────────────────────────
+export function applyTheme(themeChoice) {
+    const html = document.documentElement;
+    if (themeChoice === 'dark') {
+        html.setAttribute('data-theme', 'dark');
+    } else if (themeChoice === 'light') {
+        html.removeAttribute('data-theme');
+    } else if (themeChoice === 'system') {
+        const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+        if (prefersDark) {
+            html.setAttribute('data-theme', 'dark');
+        } else {
+            html.removeAttribute('data-theme');
+        }
+    }
+}
+
+export function initTheme() {
+    // 1. Listen for system theme changes (only matters if 'system' is selected)
+    window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', () => {
+        const contextStr = localStorage.getItem('appContext');
+        if (contextStr) {
+            const context = JSON.parse(contextStr);
+            if (context.preferences?.theme === 'system') {
+                applyTheme('system');
+            }
+        }
+    });
+
+    // 2. Initial Apply
+    const contextStr = localStorage.getItem('appContext');
+    if (contextStr) {
+        try {
+            const context = JSON.parse(contextStr);
+            const theme = context.preferences?.theme || 'light';
+            applyTheme(theme);
+        } catch (e) {
+            applyTheme('light');
+        }
+    } else {
+        applyTheme('light');
+    }
+}
+
+// Run immediately 
+initTheme();
+
 // ─── Route → Feature mapping ──────────────────────────────────────────────────
 const ROUTE_MAP = {
     '/dashboard.html':             FEATURES.DASHBOARD_ACCESS,

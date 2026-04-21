@@ -1,17 +1,44 @@
 :root {
+    /* Core Brand Colors */
     --primary: #0f172a; /* Slate 900 */
     --primary-hover: #1e293b; /* Slate 800 */
-    --accent: #d946ef; /* Fuchsia 500 - slightly softer salon vibe */
+    --accent: #d946ef; /* Fuchsia 500 */
     --accent-hover: #c026d3; /* Fuchsia 600 */
-    --text-main: #0f172a;
-    --text-muted: #64748b;
+    
+    /* Theme Semantic Variables (Light Mode - Original Default) */
     --bg-main: #ffffff;
     --bg-secondary: #f8fafc;
+    --bg-tertiary: #f1f5f9;
+    --text-main: #0f172a;
+    --text-muted: #64748b;
     --border: #e2e8f0;
     --border-focus: #d946ef;
+    
+    /* Shadows */
     --shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.05);
     --shadow-md: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
     --shadow-xl: 0 20px 25px -5px rgb(0 0 0 / 0.1), 0 8px 10px -6px rgb(0 0 0 / 0.1);
+}
+
+/* Dark Mode Overrides */
+[data-theme="dark"] {
+    --primary: #f8fafc; /* Slate 50 */
+    --primary-hover: #f1f5f9;
+    
+    --bg-main: #020617; /* Deep Slate 950 */
+    --bg-secondary: #0f172a; /* Slate 900 */
+    --bg-tertiary: #1e293b; /* Slate 800 */
+    
+    --text-main: #f8fafc; /* Slate 50 */
+    --text-muted: #94a3b8; /* Slate 400 */
+    
+    --border: #334155; /* Slate 700 */
+    --border-focus: #d946ef; /* Keep Fuchsia accent */
+    
+    /* Dark shadows need to be stronger */
+    --shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.3);
+    --shadow-md: 0 4px 6px -1px rgb(0 0 0 / 0.4), 0 2px 4px -2px rgb(0 0 0 / 0.4);
+    --shadow-xl: 0 20px 25px -5px rgb(0 0 0 / 0.5), 0 8px 10px -6px rgb(0 0 0 / 0.5);
 }
 
 * {
@@ -175,7 +202,7 @@ a:hover {
     align-items: center;
     justify-content: center;
     padding: 2rem;
-    background: white;
+    background: var(--bg-main);
     max-width: 600px;
     width: 100%;
 }
@@ -269,7 +296,7 @@ a:hover {
     font-size: 0.875rem;
     font-weight: 500;
     margin-bottom: 0.5rem;
-    color: #334155;
+    color: var(--text-main);
 }
 
 .form-group input {
@@ -281,7 +308,7 @@ a:hover {
     font-family: inherit;
     color: var(--text-main);
     transition: all 0.2s ease;
-    background: #fff;
+    background: var(--bg-main);
 }
 
 .form-group input::placeholder {
@@ -465,8 +492,8 @@ a:hover {
 /* Right Column: Forms */
 .settings-form {
     flex-grow: 1;
-    background: #ffffff;
-    border: 1px solid #e2e8f0;
+    background: var(--bg-main);
+    border: 1px solid var(--border);
     border-radius: 12px;
     padding: 2rem;
     box-shadow: 0 1px 3px rgba(0,0,0,0.05);
@@ -496,8 +523,9 @@ a:hover {
     font-size: 0.95rem;
     padding: 10px 14px;
     border-radius: 8px;
-    border: 1px solid #cbd5e1;
-    background-color: #f8fafc;
+    border: 1px solid var(--border);
+    background-color: var(--bg-secondary);
+    color: var(--text-main);
     transition: all 0.2s ease;
     font-family: 'Inter', sans-serif;
 }
@@ -582,9 +610,9 @@ a:hover {
     bottom: 0;
     left: 260px; /* Offset sidebar width */
     right: 0;
-    background: rgba(255, 255, 255, 0.95);
+    background: var(--bg-main);
     backdrop-filter: blur(8px);
-    border-top: 1px solid #e2e8f0;
+    border-top: 1px solid var(--border);
     padding: 1rem 2.5rem;
     z-index: 100;
     transform: translateY(100%);

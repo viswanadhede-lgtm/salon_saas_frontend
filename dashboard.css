@@ -2,7 +2,7 @@
 
 /* Base Layout Config */
 .dashboard-body {
-    background-color: #f1f5f9;
+    background-color: var(--bg-tertiary);
     /* Slate 50 */
     margin: 0;
     padding: 0;
@@ -18,7 +18,7 @@
 ---------------------------------------------------------------- */
 .sidebar {
     width: 240px;
-    background-color: #ffffff;
+    background-color: var(--bg-main);
     border-right: 1px solid var(--border);
     display: flex;
     flex-direction: column;
@@ -94,12 +94,12 @@
 }
 
 .nav-link:hover {
-    background-color: #f1f5f9;
+    background-color: var(--bg-tertiary);
     color: var(--text-main);
 }
 
 .nav-item.active .nav-link {
-    background-color: #f8fafc;
+    background-color: var(--bg-secondary);
     /* Very light slate */
     color: var(--accent);
     /* Fuchsia/Purple Accent */
@@ -152,8 +152,8 @@
 }
 
 .toggle-btn:hover {
-    background-color: #f1f5f9;
-    border-color: #cbd5e1;
+    background-color: var(--bg-tertiary);
+    border-color: var(--border);
     color: var(--text-main);
 }
 
@@ -182,7 +182,7 @@
 
 .top-header {
     height: 64px;
-    background-color: #ffffff;
+    background-color: var(--bg-main);
     border-bottom: 1px solid var(--border);
     display: flex;
     align-items: center;
@@ -202,7 +202,7 @@
     align-items: center;
     gap: 0.5rem;
     padding: 0.35rem 0.75rem;
-    background-color: #f8fafc;
+    background-color: var(--bg-secondary);
     border: 1px solid var(--border);
     border-radius: 0.5rem;
     color: var(--text-main);
@@ -250,13 +250,13 @@
     padding: 0.5rem 1rem 0.5rem 2.5rem;
     border: 1px solid var(--border);
     border-radius: 2rem;
-    background-color: #f8fafc;
+    background-color: var(--bg-secondary);
     font-size: 0.9rem;
     transition: all 0.2s;
 }
 
 .search-input:focus {
-    background-color: #fff;
+    background-color: var(--bg-main);
     border-color: var(--accent);
     outline: none;
     box-shadow: 0 0 0 2px rgba(217, 70, 239, 0.1);
@@ -636,7 +636,7 @@
 
 /* Generic Card */
 .card {
-    background: #ffffff;
+    background: var(--bg-main);
     border-radius: 1rem;
     border: 1px solid var(--border);
     box-shadow: 0 1px 3px rgba(0, 0, 0, 0.02);
@@ -1421,7 +1421,7 @@
 }
 
 .modal-container {
-    background: #ffffff;
+    background: var(--bg-main);
     width: 75%;
     max-width: 75%;
     /* Set to 75% of screen width */
@@ -1445,18 +1445,18 @@
 
 .modal-header {
     padding: 1rem 1.5rem;
-    border-bottom: 1px solid #f1f5f9;
+    border-bottom: 1px solid var(--border);
     display: flex;
     justify-content: space-between;
     align-items: flex-start;
-    background-color: #ffffff;
+    background-color: var(--bg-main);
 }
 
 .header-titles h2 {
     margin: 0;
     font-size: 1.15rem;
     font-weight: 700;
-    color: #0f172a;
+    color: var(--text-main);
     letter-spacing: -0.01em;
 }
 
@@ -1529,12 +1529,12 @@
 
 .modal-footer {
     padding: 1rem 1.5rem;
-    border-top: 1px solid #f1f5f9;
+    border-top: 1px solid var(--border);
     display: flex;
     justify-content: flex-end;
     align-items: center;
     gap: 0.75rem;
-    background-color: #ffffff;
+    background-color: var(--bg-main);
 }
 
 /* Form Styles */

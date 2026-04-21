@@ -841,6 +841,18 @@ document.addEventListener('DOMContentLoaded', () => {
 
             if (result.error) throw result.error;
 
+            // 2. Update local appContext to sync UI instantly
+            context.preferences = {
+                language: lang,
+                theme: theme,
+                notifications: notify
+            };
+            localStorage.setItem('appContext', JSON.stringify(context));
+
+            // 3. Apply Theme instantly
+            const { applyTheme } = await import('./scripts/global-auth-guard.js');
+            applyTheme(theme);
+
             if (typeof window.toast === 'function') {
                 window.toast("Settings saved successfully!");
             } else {
