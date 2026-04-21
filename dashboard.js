@@ -636,6 +636,9 @@ document.addEventListener('DOMContentLoaded', () => {
             if (placeholderContent){ placeholderContent.style.display = 'none'; }
             if (footerSave)        { footerSave.style.display = ''; }
             
+            // Fetch live settings
+            fetchAndPopulateSettings();
+
             // SIMULATE UPDATE CHECK (Disabled until backend connection)
             /*
             setTimeout(() => {
@@ -740,6 +743,121 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
+    async function fetchAndPopulateSettings() {
+        const langDropdown = document.getElementById('settingsLanguage');
+        const themeDropdown = document.getElementById('settingsTheme');
+        const notifyDropdown = document.getElementById('settingsNotifications');
+
+        if (!langDropdown || !themeDropdown || !notifyDropdown) return;
+
+        try {
+            const contextStr = localStorage.getItem('appContext');
+            if (!contextStr) return;
+            const context = JSON.parse(contextStr);
+            const user_id = context.user.user_id;
+
+            const { supabase } = await import('./lib/supabase.js');
+
+            const { data, error } = await supabase
+                .from('user_preferences')
+                .select('*')
+                .eq('user_id', user_id)
+                .limit(1);
+
+            if (error) throw error;
+
+            if (data && data.length > 0) {
+                const prefs = data[0];
+                if (prefs.language) langDropdown.value = prefs.language;
+                if (prefs.theme) themeDropdown.value = prefs.theme;
+                if (prefs.notifications !== undefined) {
+                    notifyDropdown.value = prefs.notifications ? 'enabled' : 'disabled';
+                }
+            }
+        } catch (err) {
+            console.error("Fetch Settings Error:", err);
+        }
+    }
+
+    async function handleSettingsUpdate() {
+        const btn = document.getElementById('btnSaveGenericModal');
+        const originalText = btn.textContent;
+
+        const lang = document.getElementById('settingsLanguage').value;
+        const theme = document.getElementById('settingsTheme').value;
+        const notify = document.getElementById('settingsNotifications').value === 'enabled';
+
+        try {
+            const contextStr = localStorage.getItem('appContext');
+            if (!contextStr) throw new Error("User context not found.");
+            const context = JSON.parse(contextStr);
+            const user_id = context.user.user_id;
+            const company_id = context.company.company_id || localStorage.getItem('company_id');
+            const branch_id = context.current_branch_id || localStorage.getItem('active_branch_id');
+
+            btn.textContent = 'Saving...';
+            btn.disabled = true;
+
+            const { supabase } = await import('./lib/supabase.js');
+
+            // 1. Check if record exists
+            const { data: existing, error: checkErr } = await supabase
+                .from('user_preferences')
+                .select('id')
+                .eq('user_id', user_id)
+                .limit(1);
+
+            if (checkErr) throw checkErr;
+
+            let result;
+            if (existing && existing.length > 0) {
+                // Update
+                result = await supabase
+                    .from('user_preferences')
+                    .update({
+                        company_id,
+                        branch_id,
+                        language: lang,
+                        theme: theme,
+                        notifications: notify,
+                        updated_at: new Date().toISOString()
+                    })
+                    .eq('user_id', user_id);
+            } else {
+                // Insert
+                result = await supabase
+                    .from('user_preferences')
+                    .insert([{
+                        user_id,
+                        company_id,
+                        branch_id,
+                        language: lang,
+                        theme: theme,
+                        notifications: notify,
+                        created_at: new Date().toISOString(),
+                        updated_at: new Date().toISOString()
+                    }]);
+            }
+
+            if (result.error) throw result.error;
+
+            if (typeof window.toast === 'function') {
+                window.toast("Settings saved successfully!");
+            } else {
+                alert("Settings saved successfully!");
+            }
+
+            closeGenericModalFn();
+
+        } catch (err) {
+            console.error("Settings Update Error:", err);
+            alert(err.message || "Failed to update settings.");
+        } finally {
+            btn.textContent = originalText;
+            btn.disabled = false;
+        }
+    }
+
     function closeGenericModalFn() {
         if (genericModalOverlay) genericModalOverlay.classList.remove('active');
     }
@@ -796,6 +914,8 @@ document.addEventListener('DOMContentLoaded', () => {
             const title = document.getElementById('genericModalTitle').textContent;
             if (title === 'Profile') {
                 handleProfileUpdate();
+            } else if (title === 'Settings') {
+                handleSettingsUpdate();
             } else {
                 // Placeholder for other modals
                 closeGenericModalFn();
