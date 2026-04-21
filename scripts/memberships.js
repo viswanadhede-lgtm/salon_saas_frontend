@@ -1205,6 +1205,26 @@ async function executeCancelMembershipPurchase(purchaseId) {
             if (err2) throw err2;
         }
 
+        // Audit Trail: Insert Cancelled Ledger Row
+        const { error: txError } = await supabase
+            .from('business_transactions')
+            .insert([{
+                company_id: getCompanyId(),
+                branch_id: getBranchId(),
+                reference_id: purchaseId,
+                reference_type: 'membership',
+                amount: 0,
+                currency: 'INR',
+                payment_method: 'cash',
+                status: 'cancelled',
+                notes: 'Membership Cancelled (No Refund Processed)',
+                paid_at: new Date().toISOString().replace('Z', '')
+            }]);
+            
+        if (txError) {
+            console.error('Ledger recording failed for cancellation:', txError);
+        }
+
         showToast('Membership has been cancelled.');
         await loadPurchases();
     } catch (err) {
