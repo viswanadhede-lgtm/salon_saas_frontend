@@ -504,10 +504,14 @@ function attachEventListeners() {
 
                 if (pkgData && pkgData.length > 0) {
                     const newPkgId = pkgData[0].package_id;
-                    const psPayloads = Array.from(selectedPackageServices).map(svcId => ({
-                        package_id: newPkgId,
-                        service_id: svcId
-                    }));
+                    const psPayloads = Array.from(selectedPackageServices).map(svcId => {
+                        const svc = (window.liveServicesData || []).find(s => (s.service_id || s.id) === svcId);
+                        return {
+                            package_id: newPkgId,
+                            service_id: svcId,
+                            service_name: svc ? (svc.service_name || svc.name) : 'Unknown Service'
+                        };
+                    });
 
                     const { error: psError } = await supabase
                         .from('package_services')
