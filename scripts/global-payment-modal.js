@@ -71,14 +71,14 @@ function injectGlobalPaymentModalStyles() {
         }
         #gpmContent {
             background: #fff;
-            max-width: 540px;
-            width: 95%;
+            max-width: 920px;
+            width: 96%;
             border-radius: 24px;
             overflow: hidden;
-            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
-            transform: translateY(20px) scale(0.95);
+            box-shadow: 0 25px 60px -12px rgba(0, 0, 0, 0.3);
+            transform: translateY(20px) scale(0.97);
             transition: transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
-            max-height: 90vh;
+            max-height: 94vh;
             display: flex;
             flex-direction: column;
         }
@@ -104,18 +104,31 @@ function injectGlobalPaymentModalStyles() {
         .gpm-close-btn:hover { background: #f1f5f9; color: #1e293b; }
 
         .gpm-body {
-            padding: 0; background: #fff; flex: 1; overflow-y: auto;
+            padding: 0; background: #fff; flex: 1; overflow: hidden;
+            display: grid; grid-template-columns: 1fr 1fr;
+        }
+        .gpm-left-col {
+            display: flex; flex-direction: column;
+            border-right: 1px solid #f1f5f9;
+            overflow-y: auto;
+        }
+        .gpm-right-col {
+            display: flex; flex-direction: column;
+            overflow-y: auto;
         }
 
         .gpm-stats {
-            background: #f8fafc; border-bottom: 1px solid #f1f5f9; padding: 24px 32px;
-            display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 20px;
+            background: linear-gradient(135deg, #1e3a8a 0%, #4f46e5 100%);
+            padding: 28px 32px;
+            display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 16px;
         }
         .gpm-stat-box { text-align: center; }
-        .gpm-stat-label { font-size: 0.7rem; color: #94a3b8; margin-bottom: 8px; text-transform: uppercase; font-weight: 700; letter-spacing: 0.05em; }
-        .gpm-stat-val { font-size: 1.25rem; font-weight: 800; margin: 0; }
+        .gpm-stat-label { font-size: 0.65rem; color: rgba(255,255,255,0.7); margin-bottom: 8px; text-transform: uppercase; font-weight: 700; letter-spacing: 0.08em; }
+        .gpm-stat-val { font-size: 1.5rem; font-weight: 800; margin: 0; color: #fff; }
+        .gpm-stat-val.paid { color: #86efac; }
+        .gpm-stat-val.due { color: #fca5a5; }
 
-        .gpm-section { padding: 20px 32px; border-bottom: 1px solid #f1f5f9; }
+        .gpm-section { padding: 20px 28px; border-bottom: 1px solid #f1f5f9; }
         .gpm-section-title { font-size: 0.875rem; font-weight: 700; color: #475569; margin-bottom: 12px; display: flex; align-items: center; justify-content: space-between; }
 
         /* Discount & Coupon Layout */
@@ -152,16 +165,18 @@ function injectGlobalPaymentModalStyles() {
 
         /* Payment Methods */
         .gpm-methods { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 12px; }
-        .gpm-method-btn { height: 52px; border: 2px solid #f1f5f9; background: #ffffff; color: #64748b; border-radius: 12px; font-weight: 700; font-size: 0.95rem; cursor: pointer; transition: all 0.2s; display: flex; align-items: center; justify-content: center; gap: 8px; }
-        .gpm-method-btn.active { border-color: #e0e7ff; background: #eef2ff; color: #4338ca; }
+        .gpm-method-btn { height: 64px; border: 2px solid #f1f5f9; background: #ffffff; color: #64748b; border-radius: 14px; font-weight: 700; font-size: 0.95rem; cursor: pointer; transition: all 0.2s; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 6px; }
+        .gpm-method-btn:hover { border-color: #c7d2fe; background: #f8faff; }
+        .gpm-method-btn.active { border-color: #4f46e5; background: #eef2ff; color: #4338ca; box-shadow: 0 0 0 3px rgba(79,70,229,0.1); }
+        .gpm-method-btn i { width: 20px; height: 20px; }
 
         /* Footer */
-        .gpm-footer { padding: 24px 32px; background: #fff; display: flex; gap: 16px; border-top: 1px solid #f8fafc; }
-        .gpm-btn-cancel { flex: 1; height: 56px; border-radius: 14px; font-weight: 700; font-size: 1rem; border: 2px solid #e2e8f0; background: #fff; color: #64748b; cursor: pointer; transition: all 0.2s; }
+        .gpm-footer { padding: 20px 32px; background: #fff; display: flex; gap: 16px; border-top: 1px solid #f1f5f9; }
+        .gpm-btn-cancel { flex: 1; height: 52px; border-radius: 12px; font-weight: 700; font-size: 1rem; border: 2px solid #e2e8f0; background: #fff; color: #64748b; cursor: pointer; transition: all 0.2s; }
         .gpm-btn-cancel:hover { background: #f8fafc; }
-        .gpm-btn-proceed { flex: 2; height: 56px; border-radius: 14px; font-weight: 700; font-size: 1.1rem; background: #1e3a8a; color: #fff; border: none; box-shadow: 0 4px 6px -1px rgba(30, 58, 138, 0.2); cursor: pointer; transition: all 0.2s; }
-        .gpm-btn-proceed:hover { background: #1e40af; box-shadow: 0 6px 10px -1px rgba(30, 58, 138, 0.3); }
-        .gpm-btn-proceed:disabled { background: #94a3b8; cursor: not-allowed; box-shadow: none; }
+        .gpm-btn-proceed { flex: 2; height: 52px; border-radius: 12px; font-weight: 700; font-size: 1.05rem; background: linear-gradient(135deg, #1e3a8a 0%, #4f46e5 100%); color: #fff; border: none; box-shadow: 0 4px 12px rgba(30, 58, 138, 0.3); cursor: pointer; transition: all 0.2s; }
+        .gpm-btn-proceed:hover { box-shadow: 0 6px 16px rgba(30, 58, 138, 0.4); transform: translateY(-1px); }
+        .gpm-btn-proceed:disabled { background: #94a3b8; cursor: not-allowed; box-shadow: none; transform: none; }
 
         /* Line Items for Discounts */
         .gpm-breakdown { font-size: 0.85rem; color: #64748b; margin-top: 12px; display: flex; flex-direction: column; gap: 6px; }
@@ -188,77 +203,95 @@ function injectGlobalPaymentModalHTML() {
             </div>
 
             <div class="gpm-body">
-                <!-- Summary Stats -->
-                <div class="gpm-stats">
-                    <div class="gpm-stat-box">
-                        <p class="gpm-stat-label">Subtotal</p>
-                        <h3 class="gpm-stat-val" style="color: #1e293b;" id="gpmStatSubtotal">₹0</h3>
-                    </div>
-                    <div class="gpm-stat-box">
-                        <p class="gpm-stat-label">Paid</p>
-                        <h3 class="gpm-stat-val" style="color: #10b981;" id="gpmStatPaid">₹0</h3>
-                    </div>
-                    <div class="gpm-stat-box">
-                        <p class="gpm-stat-label">Final Due</p>
-                        <h3 class="gpm-stat-val" style="color: #ef4444;" id="gpmStatDue">₹0</h3>
-                    </div>
-                </div>
 
-                <!-- Membership Alert -->
-                <div class="gpm-section" id="gpmMembershipSection" style="display:none; padding-bottom:0; border-bottom:none;">
-                    <div class="gpm-membership-alert" id="gpmMembershipAlert">
-                        <div class="gpm-membership-icon"><i data-feather="star"></i></div>
-                        <div class="gpm-membership-text" id="gpmMembershipText">Gold Member Applied</div>
-                        <div class="gpm-membership-val" id="gpmMembershipVal">-10%</div>
-                    </div>
-                </div>
+                <!-- LEFT COLUMN -->
+                <div class="gpm-left-col">
 
-                <!-- Discounts & Coupons -->
-                <div class="gpm-section" id="gpmDiscountSection">
-                    <div class="gpm-section-title">Discounts & Offers</div>
-                    
-                    <button id="gpmBtnCheckOffers" class="gpm-btn-check-offers"><i data-feather="tag" style="width:16px;height:16px;"></i> Check Available Offers</button>
-                    <div id="gpmOffersListContainer" class="gpm-offers-list">
-                        <!-- Offers injected here -->
-                    </div>
-                    
-                    <label style="font-size: 0.75rem; font-weight: 600; color: #94a3b8; display:block; margin-bottom: 6px;">Manual Discount</label>
-                    <div class="gpm-discount-row">
-                        <div class="gpm-discount-toggle">
-                            <button id="gpmToggleFlat" class="active">₹</button>
-                            <button id="gpmTogglePct">%</button>
+                    <!-- Summary Stats -->
+                    <div class="gpm-stats">
+                        <div class="gpm-stat-box">
+                            <p class="gpm-stat-label">Subtotal</p>
+                            <h3 class="gpm-stat-val" id="gpmStatSubtotal">₹0</h3>
                         </div>
-                        <input type="number" id="gpmDiscountInput" class="gpm-input" placeholder="0" min="0">
+                        <div class="gpm-stat-box">
+                            <p class="gpm-stat-label">Paid</p>
+                            <h3 class="gpm-stat-val paid" id="gpmStatPaid">₹0</h3>
+                        </div>
+                        <div class="gpm-stat-box">
+                            <p class="gpm-stat-label">Final Due</p>
+                            <h3 class="gpm-stat-val due" id="gpmStatDue">₹0</h3>
+                        </div>
                     </div>
 
-                    <label style="font-size: 0.75rem; font-weight: 600; color: #94a3b8; display:block; margin-bottom: 6px;">Coupon Code</label>
-                    <div class="gpm-coupon-row">
-                        <input type="text" id="gpmCouponInput" class="gpm-input" placeholder="Enter code" style="text-transform: uppercase;">
-                        <button id="gpmBtnApplyCoupon" class="gpm-btn-apply">Apply</button>
+                    <!-- Membership Alert -->
+                    <div class="gpm-section" id="gpmMembershipSection" style="display:none;">
+                        <div class="gpm-membership-alert" id="gpmMembershipAlert">
+                            <div class="gpm-membership-icon"><i data-feather="star"></i></div>
+                            <div class="gpm-membership-text" id="gpmMembershipText">Gold Member Applied</div>
+                            <div class="gpm-membership-val" id="gpmMembershipVal">-10%</div>
+                        </div>
                     </div>
-                    <p id="gpmCouponMsg" style="font-size: 0.75rem; margin-top: 6px; display: none;"></p>
 
-                    <!-- Breakdown -->
-                    <div class="gpm-breakdown" id="gpmBreakdown">
-                        <!-- Injected via JS -->
+                    <!-- Payment Method -->
+                    <div class="gpm-section" style="flex:1;">
+                        <div class="gpm-section-title">Payment Method <span style="color: #ef4444;">*</span></div>
+                        <div class="gpm-methods" id="gpmMethods">
+                            <button class="gpm-method-btn active" data-method="cash">
+                                <i data-feather="dollar-sign"></i>
+                                <span>Cash</span>
+                            </button>
+                            <button class="gpm-method-btn" data-method="card">
+                                <i data-feather="credit-card"></i>
+                                <span>Card</span>
+                            </button>
+                            <button class="gpm-method-btn" data-method="upi">
+                                <i data-feather="smartphone"></i>
+                                <span>UPI</span>
+                            </button>
+                        </div>
                     </div>
+
                 </div>
 
-                <!-- Payment Method -->
-                <div class="gpm-section" style="border-bottom: none;">
-                    <div class="gpm-section-title">Payment Method <span style="color: #ef4444;">*</span></div>
-                    <div class="gpm-methods" id="gpmMethods">
-                        <button class="gpm-method-btn active" data-method="cash">
-                            <i data-feather="dollar-sign"></i> Cash
-                        </button>
-                        <button class="gpm-method-btn" data-method="card">
-                            <i data-feather="credit-card"></i> Card
-                        </button>
-                        <button class="gpm-method-btn" data-method="upi">
-                            <i data-feather="smartphone"></i> UPI
-                        </button>
+                <!-- RIGHT COLUMN -->
+                <div class="gpm-right-col">
+
+                    <!-- Discounts & Offers -->
+                    <div class="gpm-section" style="flex:1; border-bottom:none;">
+                        <div class="gpm-section-title">Discounts &amp; Offers</div>
+
+                        <!-- Offers -->
+                        <button id="gpmBtnCheckOffers" class="gpm-btn-check-offers"><i data-feather="tag" style="width:16px;height:16px;"></i> Check Available Offers</button>
+                        <div id="gpmOffersListContainer" class="gpm-offers-list">
+                            <!-- Offers injected here -->
+                        </div>
+
+                        <!-- Manual Discount -->
+                        <label style="font-size: 0.75rem; font-weight: 600; color: #94a3b8; display:block; margin-bottom: 6px;">Manual Discount</label>
+                        <div class="gpm-discount-row">
+                            <div class="gpm-discount-toggle">
+                                <button id="gpmToggleFlat" class="active">₹</button>
+                                <button id="gpmTogglePct">%</button>
+                            </div>
+                            <input type="number" id="gpmDiscountInput" class="gpm-input" placeholder="0" min="0">
+                        </div>
+
+                        <!-- Coupon Code -->
+                        <label style="font-size: 0.75rem; font-weight: 600; color: #94a3b8; display:block; margin-bottom: 6px;">Coupon Code</label>
+                        <div class="gpm-coupon-row">
+                            <input type="text" id="gpmCouponInput" class="gpm-input" placeholder="Enter code" style="text-transform: uppercase;">
+                            <button id="gpmBtnApplyCoupon" class="gpm-btn-apply">Apply</button>
+                        </div>
+                        <p id="gpmCouponMsg" style="font-size: 0.75rem; margin-top: 6px; display: none;"></p>
+
+                        <!-- Breakdown -->
+                        <div class="gpm-breakdown" id="gpmBreakdown" style="margin-top: 20px;">
+                            <!-- Injected via JS -->
+                        </div>
                     </div>
+
                 </div>
+
             </div>
 
             <div class="gpm-footer">
