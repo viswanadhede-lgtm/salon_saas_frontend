@@ -26,6 +26,8 @@ function generateUUID() {
 let liveCustomersDB = [];
 let liveServicesDB  = [];
 let liveStaffDB     = [];
+let livePackagesDB  = [];
+let livePackageServicesDB = [];
 let rowCounter      = 0;
 
 export function initGlobalBookingModal() {
@@ -88,8 +90,22 @@ export function initGlobalBookingModal() {
     // ── Build a single Service + Staff row ────────────────────────────────
     function buildServiceRow(rowId, isFirst) {
         const svcOptions = liveServicesDB.map(s =>
-            `<option value="${s.service_id}" data-duration="${s.duration || 0}" data-price="${s.price || 0}">${s.service_name}</option>`
+            `<option value="${s.service_id}" data-type="service" data-duration="${s.duration || 0}" data-price="${s.price || 0}">${s.service_name}</option>`
         ).join('');
+
+        const pkgOptions = livePackagesDB.map(p =>
+            `<option value="${p.package_id}" data-type="package" data-duration="0" data-price="${p.final_price || 0}">${p.package_name}</option>`
+        ).join('');
+        
+        const combinedOptions = `
+            <optgroup label="--- Services ---">
+                ${svcOptions}
+            </optgroup>
+            ${pkgOptions ? `
+            <optgroup label="--- Packages ---">
+                ${pkgOptions}
+            </optgroup>` : ''}
+        `;
 
         const staffOptions = liveStaffDB.map(m =>
             `<option value="${m.staff_id}">${m.staff_name || m.name}</option>`
@@ -108,22 +124,24 @@ export function initGlobalBookingModal() {
             ${separatorHtml}
             <div class="form-group" style="margin-top:0; margin-bottom:8px;">
                 <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:6px;">
-                    <label class="form-label" style="margin-bottom:0;">Service <span class="text-rose">*</span></label>
+                    <label class="form-label" style="margin-bottom:0;">Service or Package <span class="text-rose">*</span></label>
                     ${isFirst
                         ? `<button type="button" id="btnAddService"
                             style="font-size:0.78rem; padding:3px 10px; border-radius:6px;
                             border:1.5px solid var(--accent, #d946ef);
                             background:var(--accent, #d946ef); color:#fff; font-weight:600; cursor:pointer;
-                            display:flex; align-items:center; gap:3px; transition:all 0.2s;">+ Add Service</button>`
+                            display:flex; align-items:center; gap:3px; transition:all 0.2s;">+ Add Item</button>`
                         : `<button type="button" class="btn-remove-row"
                             style="font-size:0.75rem; padding:2px 8px; border-radius:5px; border:1px solid #fca5a5;
                             background:#fff5f5; color:#ef4444; font-weight:600; cursor:pointer; line-height:1.5;">✕ Remove</button>`
                     }
                 </div>
                 <select class="form-select svc-select">
-                    <option value="" disabled selected>Select a service</option>
-                    ${svcOptions}
+                    <option value="" disabled selected>Select a service or package</option>
+                    ${combinedOptions}
                 </select>
+                
+                <!-- Service Meta: Duration and Price -->
                 <div class="svc-meta form-grid" style="display:none; margin-top:8px;">
                     <div class="form-group" style="margin-bottom:0;">
                         <label class="form-label">Duration</label>
@@ -133,6 +151,18 @@ export function initGlobalBookingModal() {
                         <label class="form-label">Price</label>
                         <input type="text" class="form-input read-only-input svc-price" readonly placeholder="—">
                     </div>
+                </div>
+                
+                <!-- Package Meta: Included Services and Final Price -->
+                <div class="pkg-meta" style="display:none; margin-top:8px; padding:12px; background:#f8fafc; border-radius:8px; border:1px solid #e2e8f0;">
+                    <div style="display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:8px;">
+                        <label class="form-label" style="margin-bottom:0; color:#334155;">Included Services</label>
+                        <div style="text-align:right;">
+                            <div style="font-size:0.75rem; color:#64748b; font-weight:600; text-transform:uppercase;">Package Price</div>
+                            <div class="pkg-price-display" style="font-size:1.1rem; color:#15803d; font-weight:700;">—</div>
+                        </div>
+                    </div>
+                    <div class="pkg-services-list" style="display:flex; flex-wrap:wrap; gap:6px;"></div>
                 </div>
             </div>
             <div class="form-group section-gap" style="margin-bottom:0;">
@@ -149,18 +179,42 @@ export function initGlobalBookingModal() {
         const svcMeta     = div.querySelector('.svc-meta');
         const svcDuration = div.querySelector('.svc-duration');
         const svcPrice    = div.querySelector('.svc-price');
+        
+        const pkgMeta         = div.querySelector('.pkg-meta');
+        const pkgPriceDisplay = div.querySelector('.pkg-price-display');
+        const pkgServicesList = div.querySelector('.pkg-services-list');
 
-        // Service selected → populate Duration & Price read-only inputs
+        // Service/Package selected
         svcSel.addEventListener('change', () => {
             const opt = svcSel.options[svcSel.selectedIndex];
             if (opt && opt.value) {
-                const dur   = opt.dataset.duration;
+                const type  = opt.dataset.type;
                 const price = parseFloat(opt.dataset.price || 0);
-                svcDuration.value  = dur && dur !== '0' ? `${dur} min` : '—';
-                svcPrice.value     = price ? `₹${price.toLocaleString('en-IN')}` : '—';
-                svcMeta.style.display = 'grid';
+
+                if (type === 'service') {
+                    const dur = opt.dataset.duration;
+                    svcDuration.value  = dur && dur !== '0' ? `${dur} min` : '—';
+                    svcPrice.value     = price ? `₹${price.toLocaleString('en-IN')}` : '—';
+                    svcMeta.style.display = 'grid';
+                    pkgMeta.style.display = 'none';
+                } else if (type === 'package') {
+                    pkgPriceDisplay.textContent = price ? `₹${price.toLocaleString('en-IN')}` : '—';
+                    
+                    const includedServices = livePackageServicesDB.filter(ps => ps.package_id === opt.value);
+                    if (includedServices.length > 0) {
+                        pkgServicesList.innerHTML = includedServices.map(ps => 
+                            `<span style="display:inline-flex; align-items:center; background:#e0e7ff; color:#3730a3; padding:2px 8px; border-radius:12px; font-size:0.75rem; font-weight:600;">${ps.service_name || 'Service'}</span>`
+                        ).join('');
+                    } else {
+                        pkgServicesList.innerHTML = `<span style="font-size:0.8rem; color:#94a3b8;">No specific services defined</span>`;
+                    }
+                    
+                    svcMeta.style.display = 'none';
+                    pkgMeta.style.display = 'block';
+                }
             } else {
                 svcMeta.style.display = 'none';
+                pkgMeta.style.display = 'none';
             }
             validateForm();
         });
@@ -201,15 +255,19 @@ export function initGlobalBookingModal() {
             const company_id = getCompanyId();
             const branch_id  = getBranchId();
 
-            const [svcRes, staffRes, custRes] = await Promise.all([
+            const [svcRes, staffRes, custRes, pkgRes, pkgSvcRes] = await Promise.all([
                 supabase.from('services').select('*').eq('company_id', company_id).eq('branch_id', branch_id),
                 supabase.from('staff').select('*').eq('company_id', company_id).eq('branch_id', branch_id),
-                supabase.from('customers').select('*').eq('company_id', company_id).eq('branch_id', branch_id)
+                supabase.from('customers').select('*').eq('company_id', company_id).eq('branch_id', branch_id),
+                supabase.from('packages').select('*').eq('company_id', company_id).eq('branch_id', branch_id).eq('is_active', true),
+                supabase.from('package_services').select('*')
             ]);
 
             liveServicesDB  = (svcRes.data  || []).filter(s => (s.status || '').trim().toLowerCase() === 'active');
             liveStaffDB     = (staffRes.data || []).filter(s => s.status !== 'deleted');
             liveCustomersDB = custRes.data || [];
+            livePackagesDB  = pkgRes.data || [];
+            livePackageServicesDB = pkgSvcRes.data || [];
 
             // Repopulate options in all existing rows
             serviceRowsContainer.querySelectorAll('.service-booking-row').forEach(row => {
@@ -217,12 +275,18 @@ export function initGlobalBookingModal() {
                 const staffSel = row.querySelector('.staff-select');
                 const prevSvc  = svcSel.value;
                 const prevStf  = staffSel.value;
+                
+                const combinedOptions = `
+                    <optgroup label="--- Services ---">
+                        ${liveServicesDB.map(s => `<option value="${s.service_id}" data-type="service" data-duration="${s.duration || 0}" data-price="${s.price || 0}" ${prevSvc === s.service_id ? 'selected' : ''}>${s.service_name}</option>`).join('')}
+                    </optgroup>
+                    ${livePackagesDB.length > 0 ? `
+                    <optgroup label="--- Packages ---">
+                        ${livePackagesDB.map(p => `<option value="${p.package_id}" data-type="package" data-duration="0" data-price="${p.final_price || 0}" ${prevSvc === p.package_id ? 'selected' : ''}>${p.package_name}</option>`).join('')}
+                    </optgroup>` : ''}
+                `;
 
-                svcSel.innerHTML = `<option value="" disabled ${!prevSvc ? 'selected' : ''}>Select a service</option>` +
-                    liveServicesDB.map(s =>
-                        `<option value="${s.service_id}" data-duration="${s.duration || 0}" data-price="${s.price || 0}"
-                            ${prevSvc === s.service_id ? 'selected' : ''}>${s.service_name}</option>`
-                    ).join('');
+                svcSel.innerHTML = `<option value="" disabled ${!prevSvc ? 'selected' : ''}>Select a service or package</option>` + combinedOptions;
 
                 staffSel.innerHTML = `<option value="" disabled ${!prevStf ? 'selected' : ''}>Select staff member</option>` +
                     liveStaffDB.map(m =>
@@ -494,6 +558,9 @@ export function initGlobalBookingModal() {
             const opt      = svcSel.options[svcSel.selectedIndex];
             const duration = parseInt(opt?.dataset?.duration || 0);
             const price    = parseFloat(opt?.dataset?.price || 0);
+            const type     = opt?.dataset?.type || 'service';
+            
+            const nameSuffix = type === 'package' ? ' (Package)' : '';
 
             return {
                 company_id:      getCompanyId(),
@@ -504,7 +571,7 @@ export function initGlobalBookingModal() {
                 customer_mail:   customerEmail?.value.trim() || null,
                 customer_phone:  phoneSearch.value.trim(),
                 service_id:      svcSel.value,
-                service_name:    opt?.textContent?.trim() || '',
+                service_name:    (opt?.textContent?.trim() || '') + nameSuffix,
                 staff_id:        staffSel.value,
                 staff_name:      staffSel.options[staffSel.selectedIndex]?.text || '',
                 booking_date:    bookingDate.value,
