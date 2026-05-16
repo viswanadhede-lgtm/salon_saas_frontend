@@ -185,7 +185,20 @@ function injectGlobalPaymentModalStyles() {
         .gpm-btn-proceed:hover { box-shadow: 0 6px 16px rgba(30, 58, 138, 0.4); transform: translateY(-1px); }
         .gpm-btn-proceed:disabled { background: #94a3b8; cursor: not-allowed; box-shadow: none; transform: none; }
 
-        /* Line Items for Discounts */
+        /* Membership Toggle */
+        .gpm-membership-toggle-row { display: flex; align-items: center; justify-content: space-between; padding: 14px 16px; background: #fefce8; border: 1px solid #fef08a; border-radius: 12px; margin-bottom: 0; }
+        .gpm-membership-toggle-label { display: flex; flex-direction: column; gap: 2px; }
+        .gpm-membership-toggle-label strong { font-size: 0.875rem; color: #854d0e; font-weight: 700; }
+        .gpm-membership-toggle-label span { font-size: 0.75rem; color: #a16207; }
+        .gpm-toggle-switch { position: relative; width: 44px; height: 24px; flex-shrink: 0; }
+        .gpm-toggle-switch input { opacity: 0; width: 0; height: 0; }
+        .gpm-toggle-slider { position: absolute; cursor: pointer; inset: 0; background: #cbd5e1; border-radius: 999px; transition: 0.3s; }
+        .gpm-toggle-slider:before { position: absolute; content: ''; height: 18px; width: 18px; left: 3px; bottom: 3px; background: white; border-radius: 50%; transition: 0.3s; }
+        .gpm-toggle-switch input:checked + .gpm-toggle-slider { background: #eab308; }
+        .gpm-toggle-switch input:checked + .gpm-toggle-slider:before { transform: translateX(20px); }
+        .gpm-membership-result { margin-top: 10px; font-size: 0.8rem; padding: 8px 12px; border-radius: 8px; display: none; }
+        .gpm-membership-result.found { background: #dcfce7; color: #166534; font-weight: 600; display: block; }
+        .gpm-membership-result.not-found { background: #fee2e2; color: #b91c1c; display: block; }
         .gpm-breakdown { font-size: 0.85rem; color: #64748b; margin-top: 12px; display: flex; flex-direction: column; gap: 6px; }
         .gpm-breakdown-row { display: flex; justify-content: space-between; }
         .gpm-breakdown-row.discount { color: #10b981; font-weight: 500; }
@@ -230,13 +243,20 @@ function injectGlobalPaymentModalHTML() {
                         </div>
                     </div>
 
-                    <!-- Membership Alert -->
-                    <div class="gpm-section" id="gpmMembershipSection" style="display:none;">
-                        <div class="gpm-membership-alert" id="gpmMembershipAlert">
-                            <div class="gpm-membership-icon"><i data-feather="star"></i></div>
-                            <div class="gpm-membership-text" id="gpmMembershipText">Gold Member Applied</div>
-                            <div class="gpm-membership-val" id="gpmMembershipVal">-10%</div>
+                    <!-- Membership Toggle -->
+                    <div class="gpm-section" id="gpmMembershipSection">
+                        <div class="gpm-section-title">Membership Discount</div>
+                        <div class="gpm-membership-toggle-row">
+                            <div class="gpm-membership-toggle-label">
+                                <strong>Apply Membership Discount</strong>
+                                <span id="gpmMembershipSubtitle">Toggle to check customer's membership</span>
+                            </div>
+                            <label class="gpm-toggle-switch">
+                                <input type="checkbox" id="gpmMembershipToggle">
+                                <span class="gpm-toggle-slider"></span>
+                            </label>
                         </div>
+                        <div class="gpm-membership-result" id="gpmMembershipResult"></div>
                     </div>
 
                     <!-- Payment Method -->
@@ -328,6 +348,24 @@ function bindGlobalPaymentModalEvents() {
         }
     });
 
+    // Membership Toggle
+    document.getElementById('gpmMembershipToggle').addEventListener('change', async (e) => {
+        if (e.target.checked) {
+            // Fetch membership for current customer
+            if (globalPaymentConfig?.customerId) {
+                await fetchCustomerMembership(globalPaymentConfig.customerId);
+            }
+        } else {
+            // Remove membership discount
+            paymentState.appliedMembership = null;
+            const resultEl = document.getElementById('gpmMembershipResult');
+            resultEl.className = 'gpm-membership-result';
+            resultEl.textContent = '';
+            document.getElementById('gpmMembershipSubtitle').textContent = 'Toggle to check customer\'s membership';
+            calculateFinalDue();
+        }
+    });
+
     // Payment Methods
     document.querySelectorAll('.gpm-method-btn').forEach(btn => {
         btn.addEventListener('click', (e) => {
@@ -406,12 +444,17 @@ window.openGlobalPaymentModal = async function(config) {
     document.getElementById('gpmStatSubtotal').textContent = `₹${config.totalAmount}`;
     document.getElementById('gpmStatPaid').textContent = `₹${config.amountPaid || 0}`;
 
-    // Fetch Membership if applicable
-    document.getElementById('gpmMembershipSection').style.display = 'none';
-    document.getElementById('gpmMembershipAlert').classList.remove('active');
-    
+    // Show/hide membership toggle only when customerId is available and not a membership purchase
+    const memSection = document.getElementById('gpmMembershipSection');
+    const memToggle = document.getElementById('gpmMembershipToggle');
     if (config.customerId && !config.isMembershipPurchase) {
-        await fetchCustomerMembership(config.customerId);
+        memSection.style.display = 'block';
+        memToggle.checked = false;
+        document.getElementById('gpmMembershipResult').className = 'gpm-membership-result';
+        document.getElementById('gpmMembershipResult').textContent = '';
+        document.getElementById('gpmMembershipSubtitle').textContent = 'Toggle to check customer\'s membership';
+    } else {
+        memSection.style.display = 'none';
     }
 
     // Fetch Offers
@@ -430,43 +473,76 @@ function closeGlobalPaymentModal() {
 // ── Logic ──────────────────────────────────────────────────────────────────
 
 async function fetchCustomerMembership(customerId) {
+    const resultEl = document.getElementById('gpmMembershipResult');
+    const subtitleEl = document.getElementById('gpmMembershipSubtitle');
+
+    resultEl.className = 'gpm-membership-result';
+    resultEl.textContent = 'Checking...';
+    resultEl.style.display = 'block';
+
     try {
         const { supabase } = await import('./lib/supabase.js');
-        
-        // Find active customer membership
-        const { data: cmData, error: cmError } = await supabase
-            .from('customer_memberships')
-            .select('membership_id')
+
+        const today = new Date().toISOString().split('T')[0];
+
+        // Step 1: Find active membership purchase for this customer
+        const { data: purchases, error: pErr } = await supabase
+            .from('membership_purchases')
+            .select('membership_id, plan_name, expiry_date')
             .eq('customer_id', customerId)
             .eq('status', 'active')
-            .gte('end_date', new Date().toISOString().split('T')[0])
+            .gte('expiry_date', today)
             .limit(1);
 
-        if (cmError || !cmData || cmData.length === 0) return;
-
-        // Fetch membership details
-        const { data: mData, error: mError } = await supabase
-            .from('memberships')
-            .select('name, service_discount_percentage')
-            .eq('membership_id', cmData[0].membership_id)
-            .single();
-
-        if (mError || !mData) return;
-
-        paymentState.appliedMembership = {
-            name: mData.name,
-            discount_percentage: mData.service_discount_percentage || 0
-        };
-
-        if (paymentState.appliedMembership.discount_percentage > 0) {
-            document.getElementById('gpmMembershipSection').style.display = 'block';
-            document.getElementById('gpmMembershipAlert').classList.add('active');
-            document.getElementById('gpmMembershipText').textContent = `${mData.name} Member Applied`;
-            document.getElementById('gpmMembershipVal').textContent = `-${mData.service_discount_percentage}%`;
+        if (pErr || !purchases || purchases.length === 0) {
+            paymentState.appliedMembership = null;
+            resultEl.className = 'gpm-membership-result not-found';
+            resultEl.textContent = 'No active membership found for this customer.';
+            subtitleEl.textContent = 'No active membership';
+            calculateFinalDue();
+            return;
         }
 
+        const purchase = purchases[0];
+
+        // Step 2: Fetch discount details from memberships table
+        const { data: membership, error: mErr } = await supabase
+            .from('memberships')
+            .select('plan_name, discount_type, discount_value')
+            .eq('membership_id', purchase.membership_id)
+            .single();
+
+        if (mErr || !membership || !membership.discount_value) {
+            paymentState.appliedMembership = null;
+            resultEl.className = 'gpm-membership-result not-found';
+            resultEl.textContent = 'Membership found but no discount configured.';
+            calculateFinalDue();
+            return;
+        }
+
+        // Apply membership discount
+        paymentState.appliedMembership = {
+            name: membership.plan_name || purchase.plan_name,
+            type: membership.discount_type,   // 'percentage' or 'flat'
+            value: membership.discount_value
+        };
+
+        const valStr = membership.discount_type === 'percentage'
+            ? `${membership.discount_value}% OFF`
+            : `₹${membership.discount_value} OFF`;
+
+        resultEl.className = 'gpm-membership-result found';
+        resultEl.textContent = `✓ ${paymentState.appliedMembership.name} — ${valStr} applied!`;
+        subtitleEl.textContent = `${paymentState.appliedMembership.name} active`;
+
+        calculateFinalDue();
+
     } catch (err) {
-        console.error("Error fetching membership for checkout:", err);
+        console.error('Error fetching membership:', err);
+        paymentState.appliedMembership = null;
+        resultEl.className = 'gpm-membership-result not-found';
+        resultEl.textContent = 'Error checking membership.';
+        calculateFinalDue();
     }
 }
 
@@ -474,55 +550,54 @@ async function fetchActiveOffers() {
     try {
         const { supabase } = await import('./lib/supabase.js');
 
-        // Robust ID resolution — appContext uses company.company_id and current_branch_id
-        let companyId = localStorage.getItem('company_id');
-        let branchId = localStorage.getItem('active_branch_id') || document.getElementById('branchSelect')?.value;
-
+        // Use exact same pattern as offers.js which successfully loads offers
+        let companyId;
         try {
             const ctx = JSON.parse(localStorage.getItem('appContext') || '{}');
-            if (!companyId) companyId = ctx.company?.company_id || ctx.company?.id || null;
-            if (!branchId) branchId = ctx.current_branch_id || ctx.branch?.id || null;
-        } catch (e) {}
+            companyId = ctx.company?.id || localStorage.getItem('company_id') || null;
+        } catch {
+            companyId = localStorage.getItem('company_id') || null;
+        }
 
-        console.log('[GPM Offers] Fetching — companyId:', companyId, 'branchId:', branchId);
+        const branchId = localStorage.getItem('active_branch_id')
+            || document.getElementById('branchSelect')?.value
+            || null;
 
-        if (!companyId) {
-            console.warn('[GPM Offers] No companyId found, cannot fetch offers');
+        console.log('[GPM Offers] companyId:', companyId, 'branchId:', branchId);
+
+        if (!companyId || !branchId) {
+            console.warn('[GPM Offers] Missing companyId or branchId');
             liveOffersDB = [];
             renderOffersList();
             return;
         }
 
-        // Only filter by branch if we have one
-        let query = supabase
+        const { data, error } = await supabase
             .from('offers')
             .select('offer_id, offer_name, discount_type, discount_value')
             .eq('company_id', companyId)
+            .eq('branch_id', branchId)
             .eq('status', 'active');
-
-        if (branchId) query = query.eq('branch_id', branchId);
-
-        const { data, error } = await query;
-        console.log('[GPM Offers] Raw data:', data, 'Error:', error);
 
         if (error) throw error;
 
-        // Dedup offers (multiple rows per offer due to per-service rows)
-        const uniqueOffersMap = new Map();
+        // Dedup — one row per service, so group by offer_id
+        const seen = new Map();
         (data || []).forEach(o => {
-            if (!uniqueOffersMap.has(o.offer_id)) uniqueOffersMap.set(o.offer_id, o);
+            if (!seen.has(o.offer_id)) seen.set(o.offer_id, o);
         });
-        liveOffersDB = Array.from(uniqueOffersMap.values());
-        console.log('[GPM Offers] Final list:', liveOffersDB);
+        liveOffersDB = Array.from(seen.values());
+        console.log('[GPM Offers] Loaded:', liveOffersDB);
 
         renderOffersList();
 
     } catch (err) {
-        console.error('Error fetching offers for payment modal:', err);
+        console.error('Error fetching offers:', err);
         liveOffersDB = [];
         renderOffersList();
     }
 }
+
 
 function renderOffersList() {
     const listEl = document.getElementById('gpmOffersListContainer');
@@ -604,20 +679,25 @@ async function applyCouponCode() {
         btnApply.disabled = true;
 
         const { supabase } = await import('./lib/supabase.js');
-        
-        let companyId = localStorage.getItem('company_id');
-        if (!companyId) {
-            try {
-                const ctx = JSON.parse(localStorage.getItem('appContext') || '{}');
-                companyId = ctx.company?.id || null;
-            } catch (e) {}
+
+        let companyId;
+        try {
+            const ctx = JSON.parse(localStorage.getItem('appContext') || '{}');
+            companyId = ctx.company?.id || localStorage.getItem('company_id') || null;
+        } catch {
+            companyId = localStorage.getItem('company_id') || null;
         }
+
+        const branchId = localStorage.getItem('active_branch_id')
+            || document.getElementById('branchSelect')?.value
+            || null;
 
         const { data, error } = await supabase
             .from('coupons')
             .select('*')
             .eq('company_id', companyId)
-            .eq('code', code)
+            .eq('branch_id', branchId)
+            .eq('coupon_code', code)
             .eq('status', 'active')
             .single();
 
@@ -625,10 +705,10 @@ async function applyCouponCode() {
             throw new Error("Invalid or inactive coupon code.");
         }
 
-        // Validate dates
+        // Validate dates using correct column names: valid_from / valid_to
         const now = new Date();
-        if (data.start_date && new Date(data.start_date) > now) throw new Error("Coupon not active yet.");
-        if (data.end_date && new Date(data.end_date) < now) throw new Error("Coupon expired.");
+        if (data.valid_from && new Date(data.valid_from) > now) throw new Error("Coupon not active yet.");
+        if (data.valid_to && new Date(data.valid_to) < now) throw new Error("Coupon expired.");
 
         // Check usage limits if we wanted to (omitted for brevity, assume valid if active)
 
@@ -677,16 +757,24 @@ function calculateFinalDue() {
 
     // 1. Membership Discount
     let memDiscount = 0;
-    if (paymentState.appliedMembership && paymentState.appliedMembership.discount_percentage > 0) {
-        memDiscount = baseAmount * (paymentState.appliedMembership.discount_percentage / 100);
+    if (paymentState.appliedMembership && paymentState.appliedMembership.value > 0) {
+        if (paymentState.appliedMembership.type === 'percentage') {
+            memDiscount = baseAmount * (paymentState.appliedMembership.value / 100);
+        } else {
+            memDiscount = paymentState.appliedMembership.value;
+        }
+        if (memDiscount > baseAmount) memDiscount = baseAmount;
         discountAmount += memDiscount;
+        const valStr = paymentState.appliedMembership.type === 'percentage'
+            ? `${paymentState.appliedMembership.value}%` : `\u20b9${paymentState.appliedMembership.value}`;
         breakdownHtml.push(`
             <div class="gpm-breakdown-row discount">
-                <span>Membership (${paymentState.appliedMembership.discount_percentage}%)</span>
-                <span>-₹${memDiscount.toFixed(2)}</span>
+                <span>Membership (${paymentState.appliedMembership.name} \u2014 ${valStr})</span>
+                <span>-\u20b9${memDiscount.toFixed(2)}</span>
             </div>
         `);
     }
+
 
     // Amount after membership
     let amountAfterMem = baseAmount - memDiscount;
