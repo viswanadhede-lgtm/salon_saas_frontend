@@ -245,10 +245,13 @@ document.addEventListener('DOMContentLoaded', () => {
                     const formattedTime = `${h % 12 || 12}:${m} ${ampm}`;
 
                     // Duration calculation
-                    const startArr = b.start_time.split(':');
-                    const endArr = b.end_time.split(':');
-                    const diff = (parseInt(endArr[0]) * 60 + parseInt(endArr[1])) - (parseInt(startArr[0]) * 60 + parseInt(startArr[1]));
-                    const durationStr = diff >= 60 ? `${Math.floor(diff/60)}h${diff%60 > 0 ? ' '+(diff%60)+'m' : ''}` : `${diff}m`;
+                    let durationStr = '—';
+                    if (b.start_time && b.end_time) {
+                        const startArr = b.start_time.split(':');
+                        const endArr = b.end_time.split(':');
+                        const diff = (parseInt(endArr[0]) * 60 + parseInt(endArr[1])) - (parseInt(startArr[0]) * 60 + parseInt(startArr[1]));
+                        durationStr = diff >= 60 ? `${Math.floor(diff/60)}h${diff%60 > 0 ? ' '+(diff%60)+'m' : ''}` : `${diff}m`;
+                    }
 
                     const initials = b.customer_name ? b.customer_name.split(' ').slice(0,2).map(n => n[0]).join('').toUpperCase() : '??';
                     const statusClass = b.status ? b.status.toLowerCase() : 'booked';
