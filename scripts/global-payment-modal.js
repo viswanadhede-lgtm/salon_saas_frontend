@@ -692,38 +692,62 @@ async function applyCouponCode() {
             || document.getElementById('branchSelect')?.value
             || null;
 
-        const { data, error } = await supabase
+        // Fetch all rows matching this coupon code (one row per service)
+        const { data: rows, error } = await supabase
             .from('coupons')
             .select('*')
             .eq('company_id', companyId)
             .eq('branch_id', branchId)
             .eq('coupon_code', code)
-            .eq('status', 'active')
-            .single();
+            .eq('status', 'active');
 
-        if (error || !data) {
-            throw new Error("Invalid or inactive coupon code.");
+        if (error || !rows || rows.length === 0) {
+            throw new Error('Invalid or inactive coupon code.');
         }
 
-        // Validate dates using correct column names: valid_from / valid_to
-        const now = new Date();
-        if (data.valid_from && new Date(data.valid_from) > now) throw new Error("Coupon not active yet.");
-        if (data.valid_to && new Date(data.valid_to) < now) throw new Error("Coupon expired.");
+        // Smart service matching:
+        // - If the coupon has a service_id, it only applies if that service is in the cart/booking
+        // - If service_id is null, it's a global coupon that applies to everything
+        const serviceIds = globalPaymentConfig?.serviceIds || [];
 
-        // Check usage limits if we wanted to (omitted for brevity, assume valid if active)
+        let data = null;
+
+        if (serviceIds.length > 0) {
+            // 1. Try to find a row matching one of the booked services
+            data = rows.find(r => r.service_id && serviceIds.includes(r.service_id)) || null;
+            // 2. Fallback to global coupon (service_id is null)
+            if (!data) data = rows.find(r => !r.service_id) || null;
+            // 3. If still nothing, the coupon is service-specific and doesn't match
+            if (!data) throw new Error('This coupon is not applicable to the selected service(s).');
+        } else {
+            // No serviceIds provided — prefer global coupon, else take first row
+            data = rows.find(r => !r.service_id) || rows[0];
+        }
+
+        // Validate dates
+        const now = new Date();
+        if (data.valid_from && new Date(data.valid_from) > now) throw new Error('Coupon not active yet.');
+        if (data.valid_to && new Date(data.valid_to) < now) throw new Error('Coupon expired.');
+
+        // Check usage limit
+        if (data.total_usage_limit && data.current_usage_count >= data.total_usage_limit) {
+            throw new Error('Coupon usage limit has been reached.');
+        }
 
         paymentState.appliedCoupon = {
             id: data.coupon_id,
-            code: data.code,
-            type: data.discount_type, // 'percentage' or 'flat'
+            code: data.coupon_code,
+            type: data.discount_type,
             value: data.discount_value
         };
 
+
         // UI Update
-        msgEl.textContent = "Coupon applied successfully!";
-        msgEl.style.color = "#10b981";
-        msgEl.style.display = "block";
-        
+        const valStr = data.discount_type === 'percentage' ? `${data.discount_value}% OFF` : `₹${data.discount_value} OFF`;
+        msgEl.textContent = `✓ Coupon applied — ${valStr}!`;
+        msgEl.style.color = '#10b981';
+        msgEl.style.display = 'block';
+
         codeInput.disabled = true;
         btnApply.textContent = 'Remove';
         btnApply.style.background = '#ef4444';

@@ -447,12 +447,19 @@ function setupEventListeners() {
         const shortID = Math.random().toString(36).substring(2, 10).toUpperCase();
 
         if (window.openGlobalPaymentModal) {
+            // Collect service IDs from cart for coupon service-matching
+            const serviceIds = cart
+                .filter(item => item.type === 'service' || item.service_id)
+                .map(item => item.service_id || item.id)
+                .filter(Boolean);
+
             window.openGlobalPaymentModal({
                 saleId: shortID,
                 customerId: customerId,
                 customerName: customerName,
                 totalAmount: total,
                 amountDue: total,
+                serviceIds: serviceIds,
                 isMembershipPurchase: false,
                 onComplete: async (payload) => {
                     await finalizeSale(payload, shortID);
