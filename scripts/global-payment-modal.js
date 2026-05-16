@@ -433,8 +433,22 @@ async function fetchCustomerMembership(customerId) {
 async function fetchActiveOffers() {
     try {
         const { supabase } = await import('./lib/supabase.js');
-        const companyId = localStorage.getItem('company_id');
-        const branchId = localStorage.getItem('active_branch_id') || document.getElementById('branchSelect')?.value;
+        
+        let companyId = localStorage.getItem('company_id');
+        if (!companyId) {
+            try {
+                const ctx = JSON.parse(localStorage.getItem('appContext') || '{}');
+                companyId = ctx.company?.id || null;
+            } catch (e) {}
+        }
+
+        let branchId = localStorage.getItem('active_branch_id') || document.getElementById('branchSelect')?.value;
+        if (!branchId) {
+            try {
+                const ctx = JSON.parse(localStorage.getItem('appContext') || '{}');
+                branchId = ctx.branch?.id || null;
+            } catch (e) {}
+        }
 
         // Fetch active offers
         const { data, error } = await supabase
@@ -549,7 +563,14 @@ async function applyCouponCode() {
         btnApply.disabled = true;
 
         const { supabase } = await import('./lib/supabase.js');
-        const companyId = localStorage.getItem('company_id');
+        
+        let companyId = localStorage.getItem('company_id');
+        if (!companyId) {
+            try {
+                const ctx = JSON.parse(localStorage.getItem('appContext') || '{}');
+                companyId = ctx.company?.id || null;
+            } catch (e) {}
+        }
 
         const { data, error } = await supabase
             .from('coupons')
