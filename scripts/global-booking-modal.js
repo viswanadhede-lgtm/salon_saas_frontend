@@ -126,7 +126,7 @@ export function initGlobalBookingModal() {
                 <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:6px;">
                     <label class="form-label" style="margin-bottom:0;">Service or Package <span class="text-rose">*</span></label>
                     ${isFirst
-                        ? `<button type="button" id="btnAddService"
+                        ? `<button type="button" id="btnAddBookingItem"
                             style="font-size:0.78rem; padding:3px 10px; border-radius:6px;
                             border:1.5px solid var(--accent, #d946ef);
                             background:var(--accent, #d946ef); color:#fff; font-weight:600; cursor:pointer;
@@ -303,20 +303,25 @@ export function initGlobalBookingModal() {
     function resetServiceRows() {
         serviceRowsContainer.innerHTML = '';
         rowCounter = 0;
-        serviceRowsContainer.appendChild(buildServiceRow(rowCounter++, true));
+        
+        const firstRow = buildServiceRow(rowCounter++, true);
+        serviceRowsContainer.appendChild(firstRow);
 
-        // Wire the + Add Service button (it lives inside the first row)
-        document.getElementById('btnAddService')?.addEventListener('click', () => {
-            serviceRowsContainer.appendChild(buildServiceRow(rowCounter++, false));
-            // Auto-sync staff from first row into new row
-            const firstStaff = serviceRowsContainer.querySelector('.staff-select');
-            if (firstStaff && firstStaff.value) {
-                serviceRowsContainer.querySelectorAll('.staff-select').forEach(sel => {
-                    sel.value = firstStaff.value;
-                });
-            }
-            validateForm();
-        });
+        // Wire the + Add Item button (it lives inside the first row)
+        const btnAddBookingItem = firstRow.querySelector('#btnAddBookingItem');
+        if (btnAddBookingItem) {
+            btnAddBookingItem.addEventListener('click', () => {
+                serviceRowsContainer.appendChild(buildServiceRow(rowCounter++, false));
+                // Auto-sync staff from first row into new row
+                const firstStaff = serviceRowsContainer.querySelector('.staff-select');
+                if (firstStaff && firstStaff.value) {
+                    serviceRowsContainer.querySelectorAll('.staff-select').forEach(sel => {
+                        sel.value = firstStaff.value;
+                    });
+                }
+                validateForm();
+            });
+        }
     }
 
     // ── Open / Close ──────────────────────────────────────────────────────
