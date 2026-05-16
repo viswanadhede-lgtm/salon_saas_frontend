@@ -434,33 +434,45 @@ async function fetchActiveOffers() {
     try {
         const { supabase } = await import('./lib/supabase.js');
         
+        // Robust ID resolution — check multiple sources
         let companyId = localStorage.getItem('company_id');
-        if (!companyId) {
-            try {
-                const ctx = JSON.parse(localStorage.getItem('appContext') || '{}');
-                companyId = ctx.company?.id || null;
-            } catch (e) {}
-        }
-
         let branchId = localStorage.getItem('active_branch_id') || document.getElementById('branchSelect')?.value;
-        if (!branchId) {
-            try {
-                const ctx = JSON.parse(localStorage.getItem('appContext') || '{}');
-                branchId = ctx.branch?.id || null;
-            } catch (e) {}
+
+        try {
+            const ctx = JSON.parse(localStorage.getItem('appContext') || '{}');
+            if (!companyId) companyId = ctx.company?.id || null;
+            if (!branchId) branchId = ctx.branch?.id || null;
+            // Also try activeBranch key
+            if (!branchId) branchId = ctx.activeBranch?.id || null;
+        } catch (e) {}
+
+        console.log('[GPM Offers] Fetching with companyId:', companyId, 'branchId:', branchId);
+
+        if (!companyId) {
+            console.warn('[GPM Offers] No companyId found, cannot fetch offers');
+            liveOffersDB = [];
+            renderOffersList();
+            return;
         }
 
-        // Fetch active offers
-        const { data, error } = await supabase
+        // Build query — only filter by branch if we have one
+        let query = supabase
             .from('offers')
             .select('offer_id, offer_name, discount_type, discount_value')
             .eq('company_id', companyId)
-            .eq('branch_id', branchId)
             .eq('status', 'active');
+
+        if (branchId) {
+            query = query.eq('branch_id', branchId);
+        }
+
+        const { data, error } = await query;
+
+        console.log('[GPM Offers] Raw data:', data, 'Error:', error);
 
         if (error) throw error;
 
-        // Dedup offers (in case of multiple services)
+        // Dedup offers (in case of multiple service rows per offer)
         const uniqueOffersMap = new Map();
         if (data) {
             data.forEach(o => {
@@ -470,6 +482,7 @@ async function fetchActiveOffers() {
             });
         }
         liveOffersDB = Array.from(uniqueOffersMap.values());
+        console.log('[GPM Offers] Final offers list:', liveOffersDB);
         
         renderOffersList();
 
