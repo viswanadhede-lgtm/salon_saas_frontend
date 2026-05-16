@@ -144,15 +144,22 @@ function injectGlobalPaymentModalStyles() {
         .gpm-btn-apply:hover { background: #0f172a; }
 
         /* Offers List */
-        .gpm-btn-check-offers { width: 100%; height: 42px; background: #f8fafc; border: 1.5px dashed #cbd5e1; border-radius: 8px; color: #475569; font-weight: 600; cursor: pointer; transition: all 0.2s; margin-bottom: 12px; display: flex; align-items: center; justify-content: center; gap: 8px; }
-        .gpm-btn-check-offers:hover { background: #f1f5f9; border-color: #94a3b8; color: #1e293b; }
-        .gpm-offers-list { display: none; background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 12px; margin-bottom: 16px; max-height: 180px; overflow-y: auto; }
+        .gpm-btn-check-offers { width: 100%; height: 42px; background: #f8fafc; border: 1.5px dashed #cbd5e1; border-radius: 8px; color: #475569; font-weight: 600; cursor: pointer; transition: all 0.2s; margin-bottom: 12px; display: flex; align-items: center; justify-content: center; gap: 8px; font-size: 0.875rem; }
+        .gpm-btn-check-offers:hover { background: #f1f5f9; border-color: #4f46e5; color: #4f46e5; }
+        .gpm-offers-list { display: none; background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 10px; padding: 10px; margin-bottom: 16px; max-height: 220px; overflow-y: auto; }
         .gpm-offers-list.active { display: flex; flex-direction: column; gap: 8px; }
-        .gpm-offer-item { display: flex; justify-content: space-between; align-items: center; padding: 10px; background: #fff; border: 1px solid #e2e8f0; border-radius: 6px; cursor: pointer; transition: all 0.2s; }
-        .gpm-offer-item:hover { border-color: #4f46e5; box-shadow: 0 2px 4px rgba(79, 70, 229, 0.05); }
-        .gpm-offer-item.selected { border-color: #4f46e5; background: #eef2ff; }
-        .gpm-offer-name { font-weight: 600; color: #1e293b; font-size: 0.85rem; }
-        .gpm-offer-val { font-weight: 700; color: #10b981; font-size: 0.85rem; }
+        .gpm-offer-item { display: flex; justify-content: space-between; align-items: center; padding: 10px 12px; background: #fff; border: 1.5px solid #e2e8f0; border-radius: 8px; gap: 10px; }
+        .gpm-offer-item.applied { border-color: #4f46e5; background: #eef2ff; }
+        .gpm-offer-info { display: flex; flex-direction: column; gap: 2px; flex: 1; min-width: 0; }
+        .gpm-offer-name { font-weight: 600; color: #1e293b; font-size: 0.85rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        .gpm-offer-badge { font-weight: 700; font-size: 0.75rem; padding: 2px 8px; border-radius: 999px; display: inline-block; width: fit-content; }
+        .gpm-offer-badge.pct { background: #dcfce7; color: #166534; }
+        .gpm-offer-badge.flat { background: #dbeafe; color: #1e40af; }
+        .gpm-offer-apply-btn { flex-shrink: 0; height: 32px; padding: 0 14px; border-radius: 6px; font-size: 0.8rem; font-weight: 700; cursor: pointer; border: none; transition: all 0.2s; }
+        .gpm-offer-apply-btn.apply { background: #4f46e5; color: #fff; }
+        .gpm-offer-apply-btn.apply:hover { background: #4338ca; }
+        .gpm-offer-apply-btn.remove { background: #fee2e2; color: #b91c1c; }
+        .gpm-offer-apply-btn.remove:hover { background: #fecaca; }
 
         /* Membership Badge */
         .gpm-membership-alert {
@@ -466,20 +473,18 @@ async function fetchCustomerMembership(customerId) {
 async function fetchActiveOffers() {
     try {
         const { supabase } = await import('./lib/supabase.js');
-        
-        // Robust ID resolution — check multiple sources
+
+        // Robust ID resolution — appContext uses company.company_id and current_branch_id
         let companyId = localStorage.getItem('company_id');
         let branchId = localStorage.getItem('active_branch_id') || document.getElementById('branchSelect')?.value;
 
         try {
             const ctx = JSON.parse(localStorage.getItem('appContext') || '{}');
-            if (!companyId) companyId = ctx.company?.id || null;
-            if (!branchId) branchId = ctx.branch?.id || null;
-            // Also try activeBranch key
-            if (!branchId) branchId = ctx.activeBranch?.id || null;
+            if (!companyId) companyId = ctx.company?.company_id || ctx.company?.id || null;
+            if (!branchId) branchId = ctx.current_branch_id || ctx.branch?.id || null;
         } catch (e) {}
 
-        console.log('[GPM Offers] Fetching with companyId:', companyId, 'branchId:', branchId);
+        console.log('[GPM Offers] Fetching — companyId:', companyId, 'branchId:', branchId);
 
         if (!companyId) {
             console.warn('[GPM Offers] No companyId found, cannot fetch offers');
@@ -488,39 +493,32 @@ async function fetchActiveOffers() {
             return;
         }
 
-        // Build query — only filter by branch if we have one
+        // Only filter by branch if we have one
         let query = supabase
             .from('offers')
             .select('offer_id, offer_name, discount_type, discount_value')
             .eq('company_id', companyId)
             .eq('status', 'active');
 
-        if (branchId) {
-            query = query.eq('branch_id', branchId);
-        }
+        if (branchId) query = query.eq('branch_id', branchId);
 
         const { data, error } = await query;
-
         console.log('[GPM Offers] Raw data:', data, 'Error:', error);
 
         if (error) throw error;
 
-        // Dedup offers (in case of multiple service rows per offer)
+        // Dedup offers (multiple rows per offer due to per-service rows)
         const uniqueOffersMap = new Map();
-        if (data) {
-            data.forEach(o => {
-                if (!uniqueOffersMap.has(o.offer_id)) {
-                    uniqueOffersMap.set(o.offer_id, o);
-                }
-            });
-        }
+        (data || []).forEach(o => {
+            if (!uniqueOffersMap.has(o.offer_id)) uniqueOffersMap.set(o.offer_id, o);
+        });
         liveOffersDB = Array.from(uniqueOffersMap.values());
-        console.log('[GPM Offers] Final offers list:', liveOffersDB);
-        
+        console.log('[GPM Offers] Final list:', liveOffersDB);
+
         renderOffersList();
 
     } catch (err) {
-        console.error("Error fetching offers for payment modal:", err);
+        console.error('Error fetching offers for payment modal:', err);
         liveOffersDB = [];
         renderOffersList();
     }
@@ -529,47 +527,44 @@ async function fetchActiveOffers() {
 function renderOffersList() {
     const listEl = document.getElementById('gpmOffersListContainer');
     if (liveOffersDB.length === 0) {
-        listEl.innerHTML = `<div style="text-align: center; color: #94a3b8; font-size: 0.85rem; padding: 8px;">No active offers available</div>`;
+        listEl.innerHTML = `<div style="text-align:center;color:#94a3b8;font-size:0.85rem;padding:12px;">No active offers available</div>`;
         return;
     }
 
     listEl.innerHTML = liveOffersDB.map(o => {
-        const valStr = o.discount_type === 'percentage' ? `${o.discount_value}% OFF` : `₹${o.discount_value} OFF`;
-        const isSelected = paymentState.appliedOffer && paymentState.appliedOffer.id === o.offer_id;
+        const isApplied = paymentState.appliedOffer && paymentState.appliedOffer.id === o.offer_id;
+        const badgeClass = o.discount_type === 'percentage' ? 'pct' : 'flat';
+        const badgeText  = o.discount_type === 'percentage' ? `${o.discount_value}% OFF` : `₹${o.discount_value} OFF`;
         return `
-            <div class="gpm-offer-item ${isSelected ? 'selected' : ''}" data-id="${o.offer_id}">
-                <div class="gpm-offer-name">${o.offer_name}</div>
-                <div class="gpm-offer-val">${valStr}</div>
+            <div class="gpm-offer-item ${isApplied ? 'applied' : ''}" data-id="${o.offer_id}">
+                <div class="gpm-offer-info">
+                    <div class="gpm-offer-name">${o.offer_name}</div>
+                    <span class="gpm-offer-badge ${badgeClass}">${badgeText}</span>
+                </div>
+                <button class="gpm-offer-apply-btn ${isApplied ? 'remove' : 'apply'}" data-id="${o.offer_id}">
+                    ${isApplied ? 'Remove' : 'Apply'}
+                </button>
             </div>
         `;
     }).join('');
 
-    // Bind click events
-    listEl.querySelectorAll('.gpm-offer-item').forEach(item => {
-        item.addEventListener('click', (e) => {
-            const offerId = e.currentTarget.dataset.id;
-            
+    // Bind Apply/Remove button events
+    listEl.querySelectorAll('.gpm-offer-apply-btn').forEach(btn => {
+        btn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            const offerId = btn.dataset.id;
             if (paymentState.appliedOffer && paymentState.appliedOffer.id === offerId) {
-                // Deselect
+                // Remove
                 paymentState.appliedOffer = null;
             } else {
-                // Select
+                // Apply
                 const o = liveOffersDB.find(x => x.offer_id === offerId);
                 if (o) {
-                    paymentState.appliedOffer = {
-                        id: o.offer_id,
-                        name: o.offer_name,
-                        type: o.discount_type,
-                        value: o.discount_value
-                    };
+                    paymentState.appliedOffer = { id: o.offer_id, name: o.offer_name, type: o.discount_type, value: o.discount_value };
                 }
             }
-            
-            renderOffersList(); // re-render to update selected styling
+            renderOffersList();
             calculateFinalDue();
-            
-            // Optionally close the list
-            listEl.classList.remove('active');
         });
     });
 }
