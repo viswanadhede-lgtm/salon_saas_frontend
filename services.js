@@ -4,6 +4,7 @@ import { FEATURES } from './config/feature-registry.js';
 import { SUB_FEATURES } from './config/sub-feature-registry.js';
 
 let liveServicesData = [];
+let livePackagesData = [];
 
 // --- Helpers ---
 function getCompanyId() { return localStorage.getItem('company_id') || null; }
@@ -15,6 +16,7 @@ export async function initServices() {
     setupModals();
     attachEventListeners();
     await fetchServices();
+    if (window.fetchPackages) await fetchPackages();
 }
 
 function setupModals() {
@@ -110,6 +112,25 @@ function setupModals() {
         </div>
         `;
         document.body.insertAdjacentHTML('beforeend', deleteOverlayHtml);
+    }
+    
+    // Inject Delete Package Confirm Overlay
+    if (!document.getElementById('deletePackageConfirmOverlay')) {
+        const deletePkgHtml = `
+        <div class="modal-overlay custom-logout-overlay" id="deletePackageConfirmOverlay" style="z-index: 9999; backdrop-filter: blur(8px);">
+            <div class="logout-modal" style="background: white; border-radius: 16px; padding: 32px; width: 400px; max-width: 90vw; text-align: center; box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);">
+                <div class="logout-icon-container" style="width: 64px; height: 64px; border-radius: 50%; background: #fee2e2; display: flex; align-items: center; justify-content: center; margin: 0 auto 20px;">
+                    <i data-feather="trash-2" style="color: #ef4444; width: 32px; height: 32px;"></i>
+                </div>
+                <h2 style="font-size: 1.5rem; font-weight: 700; color: #0f172a; margin-bottom: 8px;">Delete Package?</h2>
+                <p style="color: #64748b; font-size: 0.95rem; margin-bottom: 24px; line-height: 1.5;">Are you sure you want to delete this package? This action cannot be undone.</p>
+                <div style="display: flex; gap: 12px; justify-content: center;">
+                    <button id="btnCancelDeletePackage" style="flex: 1; padding: 12px 20px; border-radius: 8px; border: 1px solid #e2e8f0; background: white; color: #64748b; font-weight: 600; cursor: pointer; transition: all 0.2s;">Cancel</button>
+                    <button id="btnConfirmDeletePackage" style="flex: 1; padding: 12px 20px; border-radius: 8px; border: none; background: #ef4444; color: white; font-weight: 600; cursor: pointer; transition: background 0.2s;">Yes, Delete</button>
+                </div>
+            </div>
+        </div>`;
+        document.body.insertAdjacentHTML('beforeend', deletePkgHtml);
     }
     
     if (window.feather) feather.replace();
@@ -322,6 +343,218 @@ function attachEventListeners() {
         if (window.svcMenu) { window.svcMenu.remove(); window.svcMenu = null; }
     };
     
+    // --------------------------------------------------------
+    // Packages Logic
+    // --------------------------------------------------------
+    const pkgServicesDropdownToggle = document.getElementById('pkgServicesDropdownToggle');
+    const pkgServicesDropdownMenu = document.getElementById('pkgServicesDropdownMenu');
+    let selectedPackageServices = new Set();
+
+    if (pkgServicesDropdownToggle) {
+        pkgServicesDropdownToggle.addEventListener('click', () => {
+            pkgServicesDropdownMenu.style.display = pkgServicesDropdownMenu.style.display === 'none' ? 'block' : 'none';
+        });
+        
+        document.addEventListener('click', (e) => {
+            if (!pkgServicesDropdownToggle.contains(e.target) && !pkgServicesDropdownMenu.contains(e.target)) {
+                pkgServicesDropdownMenu.style.display = 'none';
+            }
+        });
+    }
+
+    window.populatePackageServicesDropdown = () => {
+        if (!pkgServicesDropdownMenu) return;
+        pkgServicesDropdownMenu.innerHTML = '';
+        selectedPackageServices.clear();
+        window.updatePackageServicesChips();
+
+        (window.liveServicesData || []).filter(s => s.status === 'active').forEach(s => {
+            const label = document.createElement('label');
+            label.style.display = 'flex';
+            label.style.alignItems = 'center';
+            label.style.padding = '8px 16px';
+            label.style.cursor = 'pointer';
+            label.style.gap = '8px';
+            
+            const checkbox = document.createElement('input');
+            checkbox.type = 'checkbox';
+            checkbox.value = s.service_id || s.id;
+            checkbox.dataset.name = s.service_name || s.name;
+            checkbox.style.accentColor = '#1e3a8a';
+            
+            checkbox.addEventListener('change', (e) => {
+                if (e.target.checked) selectedPackageServices.add(s.service_id || s.id);
+                else selectedPackageServices.delete(s.service_id || s.id);
+                window.updatePackageServicesChips();
+            });
+
+            label.appendChild(checkbox);
+            label.appendChild(document.createTextNode(s.service_name || s.name));
+            label.addEventListener('mouseenter', () => label.style.background = '#f8fafc');
+            label.addEventListener('mouseleave', () => label.style.background = 'transparent');
+            
+            pkgServicesDropdownMenu.appendChild(label);
+        });
+    };
+
+    window.updatePackageServicesChips = () => {
+        const chipsContainer = document.getElementById('pkgServicesSelectedChips');
+        const placeholder = document.getElementById('pkgServicesPlaceholder');
+        if (!chipsContainer || !placeholder) return;
+        
+        chipsContainer.innerHTML = '';
+        if (selectedPackageServices.size === 0) {
+            placeholder.style.display = 'inline';
+        } else {
+            placeholder.style.display = 'none';
+            selectedPackageServices.forEach(id => {
+                const svc = (window.liveServicesData || []).find(s => (s.service_id || s.id) === id);
+                if (svc) {
+                    const chip = document.createElement('span');
+                    chip.style.background = '#e0e7ff';
+                    chip.style.color = '#3730a3';
+                    chip.style.padding = '2px 8px';
+                    chip.style.borderRadius = '12px';
+                    chip.style.fontSize = '0.75rem';
+                    chip.style.fontWeight = '600';
+                    chip.style.display = 'inline-flex';
+                    chip.style.alignItems = 'center';
+                    chip.style.gap = '4px';
+                    
+                    const xBtn = document.createElement('i');
+                    xBtn.dataset.feather = 'x';
+                    xBtn.style.width = '12px';
+                    xBtn.style.height = '12px';
+                    xBtn.style.cursor = 'pointer';
+                    xBtn.addEventListener('click', (e) => {
+                        e.stopPropagation();
+                        selectedPackageServices.delete(id);
+                        const cb = pkgServicesDropdownMenu.querySelector(`input[value="${id}"]`);
+                        if (cb) cb.checked = false;
+                        window.updatePackageServicesChips();
+                    });
+                    
+                    chip.appendChild(document.createTextNode(svc.service_name || svc.name));
+                    chip.appendChild(xBtn);
+                    chipsContainer.appendChild(chip);
+                }
+            });
+            if (window.feather) feather.replace();
+        }
+    };
+
+    const addPkgForm = document.getElementById('addPackageForm');
+    if (addPkgForm) {
+        addPkgForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            if (selectedPackageServices.size === 0) {
+                window.toast && window.toast('Please select at least one service.');
+                return;
+            }
+
+            const payload = {
+                company_id: getCompanyId(),
+                branch_id: getBranchId(),
+                package_name: document.getElementById('pkgName').value.trim(),
+                description: document.getElementById('pkgDescription').value.trim(),
+                original_price: parseFloat(document.getElementById('pkgOriginalPrice').value),
+                final_price: parseFloat(document.getElementById('pkgFinalPrice').value),
+                services_count: selectedPackageServices.size,
+                is_active: document.querySelector('input[name="pkgStatus"]:checked').value === 'true'
+            };
+
+            const btn = document.querySelector('button[form="addPackageForm"]');
+            const originalText = btn ? btn.textContent : 'Save Package';
+            if (btn) { btn.textContent = 'Saving...'; btn.disabled = true; }
+
+            try {
+                const { data: pkgData, error: pkgError } = await supabase
+                    .from('packages')
+                    .insert(payload)
+                    .select();
+
+                if (pkgError) throw pkgError;
+
+                if (pkgData && pkgData.length > 0) {
+                    const newPkgId = pkgData[0].package_id;
+                    const psPayloads = Array.from(selectedPackageServices).map(svcId => ({
+                        package_id: newPkgId,
+                        service_id: svcId
+                    }));
+
+                    const { error: psError } = await supabase
+                        .from('package_services')
+                        .insert(psPayloads);
+
+                    if (psError) throw psError;
+
+                    window.toast && window.toast('Package added successfully!');
+                    document.getElementById('addPackageModal').classList.remove('active');
+                    addPkgForm.reset();
+                    selectedPackageServices.clear();
+                    window.updatePackageServicesChips();
+                    if (window.fetchPackages) await window.fetchPackages();
+                }
+            } catch (err) {
+                console.error(err);
+                window.toast && window.toast('Error adding package: ' + err.message);
+            } finally {
+                if (btn) { btn.textContent = originalText; btn.disabled = false; }
+            }
+        });
+    }
+
+    const deletePkgOverlay = document.getElementById('deletePackageConfirmOverlay');
+    let packageToDelete = null;
+
+    if (deletePkgOverlay) {
+        document.getElementById('btnCancelDeletePackage').addEventListener('click', () => {
+            deletePkgOverlay.classList.remove('active');
+            packageToDelete = null;
+        });
+
+        deletePkgOverlay.addEventListener('click', (e) => {
+            if (e.target === deletePkgOverlay) {
+                deletePkgOverlay.classList.remove('active');
+                packageToDelete = null;
+            }
+        });
+
+        document.getElementById('btnConfirmDeletePackage').addEventListener('click', async () => {
+            if (!packageToDelete) return;
+            
+            deletePkgOverlay.classList.remove('active');
+            const loader = document.getElementById('fullScreenDeleteServiceLoader');
+            if (loader) loader.classList.add('active');
+            
+            try {
+                // Cascading delete handles package_services
+                const { error: deleteError } = await supabase
+                    .from('packages')
+                    .delete()
+                    .eq('package_id', packageToDelete.id);
+
+                if (!deleteError) {
+                    window.toast && window.toast('Package deleted successfully!');
+                    if (window.fetchPackages) await window.fetchPackages();
+                } else {
+                    window.toast && window.toast('Error deleting package: ' + deleteError.message);
+                }
+            } catch (err) {
+                console.error('Error deleting package:', err);
+                window.toast && window.toast('Error: ' + (err.message || 'Unknown error deleting package'));
+            } finally {
+                if (loader) loader.classList.remove('active');
+                packageToDelete = null;
+            }
+        });
+    }
+
+    window.triggerDeletePackage = (pkgId, pkgName) => {
+        packageToDelete = { id: pkgId, name: pkgName };
+        const overlay = document.getElementById('deletePackageConfirmOverlay');
+        if (overlay) overlay.classList.add('active');
+    };
 }
 
 // Function to populate edit category dropdown from categories data
@@ -378,5 +611,36 @@ export async function fetchServices() {
         if (window.renderSvc) window.renderSvc(liveServicesData || []);
     }
 }
+
+window.fetchPackages = async function() {
+    try {
+        const companyId = getCompanyId();
+        const branchId = getBranchId();
+
+        let query = supabase
+            .from('packages')
+            .select('*')
+            .order('created_at', { ascending: false });
+        
+        if (companyId) query = query.eq('company_id', companyId);
+        if (branchId) query = query.eq('branch_id', branchId);
+
+        const { data, error } = await query;
+        if (error) throw new Error(error.message);
+        
+        livePackagesData = data || [];
+        window.livePackagesData = livePackagesData;
+        
+        if (window.renderPackages) window.renderPackages(livePackagesData);
+        
+        const countEl = document.getElementById('countPackages');
+        if (countEl) {
+            countEl.textContent = livePackagesData.length;
+        }
+    } catch (err) {
+        console.error('Network Error fetching packages:', err);
+        if (window.renderPackages) window.renderPackages(livePackagesData || []);
+    }
+};
 
 
