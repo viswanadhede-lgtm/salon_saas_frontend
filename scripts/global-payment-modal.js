@@ -481,7 +481,7 @@ async function fetchCustomerMembership(customerId) {
     resultEl.style.display = 'block';
 
     try {
-        const { supabase } = await import('./lib/supabase.js');
+        const { supabase } = await import('../lib/supabase.js');
 
         const today = new Date().toISOString().split('T')[0];
 
@@ -548,7 +548,7 @@ async function fetchCustomerMembership(customerId) {
 
 async function fetchActiveOffers() {
     try {
-        const { supabase } = await import('./lib/supabase.js');
+        const { supabase } = await import('../lib/supabase.js');
 
         // Use exact same pattern as offers.js which successfully loads offers
         let companyId;
@@ -678,7 +678,7 @@ async function applyCouponCode() {
         btnApply.textContent = '...';
         btnApply.disabled = true;
 
-        const { supabase } = await import('./lib/supabase.js');
+        const { supabase } = await import('../lib/supabase.js');
 
         let companyId;
         try {
