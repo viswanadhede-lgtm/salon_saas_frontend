@@ -496,6 +496,10 @@
                     <td style="padding:14px 16px;">${statusBadge(p.is_active)}</td>
                     <td style="padding:14px 16px; vertical-align:middle;">
                         <div class="action-buttons" style="display:flex; justify-content:flex-start; gap:0.5rem;">
+                            <button class="hover-lift" onclick="window.openEditPackageModal('${p.package_id}')" title="Edit Package" style="display:flex; flex-direction:column; align-items:center; justify-content:center; padding: 4px 8px; border-radius:8px; border:1px solid #e0e7ff; background:#eff6ff; cursor:pointer; color:#3b82f6; transition:all 0.2s; min-width: 52px;">
+                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="margin-bottom:2px;"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path></svg>
+                                <span style="font-size:10px; font-weight:600;">Edit</span>
+                            </button>
                             <button class="hover-lift" onclick="window.triggerDeletePackage('${p.package_id}', '${pName.replace(/'/g, "\\'")}')" title="Delete Package" style="display:flex; flex-direction:column; align-items:center; justify-content:center; padding: 4px 8px; border-radius:8px; border:1px solid #fee2e2; background:#fef2f2; cursor:pointer; color:#ef4444; transition:all 0.2s; min-width: 52px;">
                                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="margin-bottom:2px;"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path><line x1="10" y1="11" x2="10" y2="17"></line><line x1="14" y1="11" x2="14" y2="17"></line></svg>
                                 <span style="font-size:10px; font-weight:600;">Delete</span>
@@ -591,6 +595,13 @@
             document.getElementById('btnCancelAddPackage').addEventListener('click',()=>addPackageModal.classList.remove('active'));
             addPackageModal.addEventListener('click',e=>{if(e.target===addPackageModal)addPackageModal.classList.remove('active');});
             
+            const editPackageModal=document.getElementById('editPackageModal');
+            if (document.getElementById('btnCloseEditPackageModal')) {
+                document.getElementById('btnCloseEditPackageModal').addEventListener('click',()=>editPackageModal.classList.remove('active'));
+                document.getElementById('btnCancelEditPackage').addEventListener('click',()=>editPackageModal.classList.remove('active'));
+                editPackageModal.addEventListener('click',e=>{if(e.target===editPackageModal)editPackageModal.classList.remove('active');});
+            }
+            
             document.addEventListener('click',()=>{if(window.svcMenu){window.svcMenu.remove();window.svcMenu=null;}});
             
             feather.replace();
@@ -661,6 +672,41 @@
                 </form>
             </div>
             <div class="modal-footer"><button type="button" class="btn btn-secondary" id="btnCancelAddPackage">Cancel</button><button type="submit" class="btn btn-primary" form="addPackageForm">Save Package</button></div>
+        </div>
+    </div>
+
+    <!-- Edit Package Modal -->
+    <div class="modal-overlay" id="editPackageModal">
+        <div class="modal-container" style="width:600px;max-width:95vw;">
+            <div class="modal-header"><div class="header-titles"><h2>Edit Package</h2><p class="subtitle">Update package details and services.</p></div><button class="modal-close" id="btnCloseEditPackageModal"><i data-feather="x"></i></button></div>
+            <div class="modal-body" style="padding:1.5rem;overflow-y:auto;">
+                <form id="editPackageForm" style="display:flex;flex-direction:column;gap:16px;">
+                    <input type="hidden" id="editPkgId">
+                    <div class="form-group" style="margin:0;"><label class="form-label" for="editPkgName">Package Name <span class="text-rose">*</span></label><input type="text" id="editPkgName" class="form-input" required></div>
+                    
+                    <div class="form-group" style="margin:0; position:relative;">
+                        <label class="form-label">Included Services <span class="text-rose">*</span></label>
+                        <div id="editPkgServicesDropdownToggle" class="form-input" style="display:flex; align-items:center; justify-content:space-between; cursor:pointer; min-height:42px; height:auto; padding:8px 16px;">
+                            <span id="editPkgServicesPlaceholder" style="color:#94a3b8;">Select services...</span>
+                            <div id="editPkgServicesSelectedChips" style="display:flex; flex-wrap:wrap; gap:6px; flex:1;"></div>
+                            <i data-feather="chevron-down" style="width:16px;height:16px;color:#64748b;margin-left:8px;flex-shrink:0;"></i>
+                        </div>
+                        <div id="editPkgServicesDropdownMenu" style="display:none; position:absolute; top:100%; left:0; right:0; background:#fff; border:1px solid #e2e8f0; border-radius:8px; margin-top:4px; box-shadow:0 4px 6px -1px rgba(0,0,0,0.1), 0 2px 4px -1px rgba(0,0,0,0.06); max-height:240px; overflow-y:auto; z-index:100; padding:8px 0;">
+                            <!-- Checkboxes injected via JS -->
+                        </div>
+                    </div>
+
+                    <div style="display:flex; gap:16px;">
+                        <div class="form-group" style="margin:0; flex:1;"><label class="form-label" for="editPkgOriginalPrice">Original Price <span class="text-rose">*</span></label><input type="number" id="editPkgOriginalPrice" class="form-input" placeholder="0" min="0" required></div>
+                        <div class="form-group" style="margin:0; flex:1;"><label class="form-label" for="editPkgFinalPrice">Final Price <span class="text-rose">*</span></label><input type="number" id="editPkgFinalPrice" class="form-input" placeholder="0" min="0" required></div>
+                    </div>
+
+                    <div class="form-group" style="margin:0;"><label class="form-label" for="editPkgDescription">Description <span style="font-weight:400;color:#94a3b8;">(Optional)</span></label><textarea id="editPkgDescription" class="form-input form-textarea" style="min-height:80px;"></textarea></div>
+                    
+                    <div class="form-group" style="margin:0;"><label class="form-label">Status</label><div style="display:flex;gap:20px;padding-top:8px;"><label style="display:flex;align-items:center;gap:8px;cursor:pointer;font-size:0.9rem;"><input type="radio" name="editPkgStatus" value="true" style="accent-color:#1e3a8a;"> Active</label><label style="display:flex;align-items:center;gap:8px;cursor:pointer;font-size:0.9rem;"><input type="radio" name="editPkgStatus" value="false" style="accent-color:#1e3a8a;"> Inactive</label></div></div>
+                </form>
+            </div>
+            <div class="modal-footer"><button type="button" class="btn btn-secondary" id="btnCancelEditPackage">Cancel</button><button type="submit" class="btn btn-primary" form="editPackageForm">Update Package</button></div>
         </div>
     </div><!-- Premium New Booking Modal -->
     <div class="modal-overlay" id="bookingModalOverlay">
