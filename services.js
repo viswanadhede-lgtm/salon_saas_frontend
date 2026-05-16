@@ -371,16 +371,23 @@ function attachEventListeners() {
         (window.liveServicesData || []).filter(s => s.status === 'active').forEach(s => {
             const label = document.createElement('label');
             label.style.display = 'flex';
+            label.style.flexDirection = 'row';
             label.style.alignItems = 'center';
+            label.style.justifyContent = 'flex-start';
+            label.style.textAlign = 'left';
             label.style.padding = '8px 16px';
             label.style.cursor = 'pointer';
-            label.style.gap = '8px';
+            label.style.gap = '12px';
+            label.style.width = '100%';
+            label.style.boxSizing = 'border-box';
             
             const checkbox = document.createElement('input');
             checkbox.type = 'checkbox';
             checkbox.value = s.service_id || s.id;
             checkbox.dataset.name = s.service_name || s.name;
             checkbox.style.accentColor = '#1e3a8a';
+            checkbox.style.margin = '0';
+            checkbox.style.flexShrink = '0';
             
             checkbox.addEventListener('change', (e) => {
                 if (e.target.checked) selectedPackageServices.add(s.service_id || s.id);
@@ -389,7 +396,12 @@ function attachEventListeners() {
             });
 
             label.appendChild(checkbox);
-            label.appendChild(document.createTextNode(s.service_name || s.name));
+            const textSpan = document.createElement('span');
+            textSpan.textContent = s.service_name || s.name;
+            textSpan.style.flex = '1';
+            textSpan.style.wordBreak = 'break-word';
+            label.appendChild(textSpan);
+            
             label.addEventListener('mouseenter', () => label.style.background = '#f8fafc');
             label.addEventListener('mouseleave', () => label.style.background = 'transparent');
             
