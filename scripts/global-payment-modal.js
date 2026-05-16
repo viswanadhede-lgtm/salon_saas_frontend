@@ -33,8 +33,11 @@ let paymentState = {
     discountValue: 0,
     appliedCoupon: null, // { code, type, value }
     appliedMembership: null, // { name, discount_percentage }
+    appliedOffer: null, // { id, name, type, value }
     finalDue: 0
 };
+
+let liveOffersDB = [];
 
 // ── Inject CSS & HTML on load ──────────────────────────────────────────────
 document.addEventListener('DOMContentLoaded', () => {
@@ -127,6 +130,17 @@ function injectGlobalPaymentModalStyles() {
         .gpm-btn-apply { height: 42px; padding: 0 16px; background: #1e293b; color: #fff; border: none; border-radius: 8px; font-weight: 600; cursor: pointer; transition: background 0.2s; }
         .gpm-btn-apply:hover { background: #0f172a; }
 
+        /* Offers List */
+        .gpm-btn-check-offers { width: 100%; height: 42px; background: #f8fafc; border: 1.5px dashed #cbd5e1; border-radius: 8px; color: #475569; font-weight: 600; cursor: pointer; transition: all 0.2s; margin-bottom: 12px; display: flex; align-items: center; justify-content: center; gap: 8px; }
+        .gpm-btn-check-offers:hover { background: #f1f5f9; border-color: #94a3b8; color: #1e293b; }
+        .gpm-offers-list { display: none; background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 12px; margin-bottom: 16px; max-height: 180px; overflow-y: auto; }
+        .gpm-offers-list.active { display: flex; flex-direction: column; gap: 8px; }
+        .gpm-offer-item { display: flex; justify-content: space-between; align-items: center; padding: 10px; background: #fff; border: 1px solid #e2e8f0; border-radius: 6px; cursor: pointer; transition: all 0.2s; }
+        .gpm-offer-item:hover { border-color: #4f46e5; box-shadow: 0 2px 4px rgba(79, 70, 229, 0.05); }
+        .gpm-offer-item.selected { border-color: #4f46e5; background: #eef2ff; }
+        .gpm-offer-name { font-weight: 600; color: #1e293b; font-size: 0.85rem; }
+        .gpm-offer-val { font-weight: 700; color: #10b981; font-size: 0.85rem; }
+
         /* Membership Badge */
         .gpm-membership-alert {
             display: none; background: #fefce8; border: 1px solid #fef08a; padding: 12px 16px; border-radius: 12px; align-items: center; gap: 12px; margin-bottom: 16px;
@@ -203,6 +217,11 @@ function injectGlobalPaymentModalHTML() {
                 <div class="gpm-section" id="gpmDiscountSection">
                     <div class="gpm-section-title">Discounts & Offers</div>
                     
+                    <button id="gpmBtnCheckOffers" class="gpm-btn-check-offers"><i data-feather="tag" style="width:16px;height:16px;"></i> Check Available Offers</button>
+                    <div id="gpmOffersListContainer" class="gpm-offers-list">
+                        <!-- Offers injected here -->
+                    </div>
+                    
                     <label style="font-size: 0.75rem; font-weight: 600; color: #94a3b8; display:block; margin-bottom: 6px;">Manual Discount</label>
                     <div class="gpm-discount-row">
                         <div class="gpm-discount-toggle">
@@ -258,6 +277,16 @@ function bindGlobalPaymentModalEvents() {
     // Close
     document.getElementById('gpmBtnClose').addEventListener('click', closeGlobalPaymentModal);
     document.getElementById('gpmBtnCancel').addEventListener('click', closeGlobalPaymentModal);
+
+    // Offers List Toggle
+    document.getElementById('gpmBtnCheckOffers').addEventListener('click', () => {
+        const listEl = document.getElementById('gpmOffersListContainer');
+        if (listEl.classList.contains('active')) {
+            listEl.classList.remove('active');
+        } else {
+            listEl.classList.add('active');
+        }
+    });
 
     // Payment Methods
     document.querySelectorAll('.gpm-method-btn').forEach(btn => {
@@ -315,6 +344,7 @@ window.openGlobalPaymentModal = async function(config) {
         discountValue: 0,
         appliedCoupon: null,
         appliedMembership: null,
+        appliedOffer: null,
         finalDue: 0
     };
 
@@ -343,6 +373,9 @@ window.openGlobalPaymentModal = async function(config) {
     if (config.customerId && !config.isMembershipPurchase) {
         await fetchCustomerMembership(config.customerId);
     }
+
+    // Fetch Offers
+    await fetchActiveOffers();
 
     calculateFinalDue();
 
@@ -395,6 +428,90 @@ async function fetchCustomerMembership(customerId) {
     } catch (err) {
         console.error("Error fetching membership for checkout:", err);
     }
+}
+
+async function fetchActiveOffers() {
+    try {
+        const { supabase } = await import('./lib/supabase.js');
+        const companyId = localStorage.getItem('company_id');
+        const branchId = localStorage.getItem('active_branch_id') || document.getElementById('branchSelect')?.value;
+
+        // Fetch active offers
+        const { data, error } = await supabase
+            .from('offers')
+            .select('offer_id, offer_name, discount_type, discount_value')
+            .eq('company_id', companyId)
+            .eq('branch_id', branchId)
+            .eq('status', 'active');
+
+        if (error) throw error;
+
+        // Dedup offers (in case of multiple services)
+        const uniqueOffersMap = new Map();
+        if (data) {
+            data.forEach(o => {
+                if (!uniqueOffersMap.has(o.offer_id)) {
+                    uniqueOffersMap.set(o.offer_id, o);
+                }
+            });
+        }
+        liveOffersDB = Array.from(uniqueOffersMap.values());
+        
+        renderOffersList();
+
+    } catch (err) {
+        console.error("Error fetching offers for payment modal:", err);
+        liveOffersDB = [];
+        renderOffersList();
+    }
+}
+
+function renderOffersList() {
+    const listEl = document.getElementById('gpmOffersListContainer');
+    if (liveOffersDB.length === 0) {
+        listEl.innerHTML = `<div style="text-align: center; color: #94a3b8; font-size: 0.85rem; padding: 8px;">No active offers available</div>`;
+        return;
+    }
+
+    listEl.innerHTML = liveOffersDB.map(o => {
+        const valStr = o.discount_type === 'percentage' ? `${o.discount_value}% OFF` : `₹${o.discount_value} OFF`;
+        const isSelected = paymentState.appliedOffer && paymentState.appliedOffer.id === o.offer_id;
+        return `
+            <div class="gpm-offer-item ${isSelected ? 'selected' : ''}" data-id="${o.offer_id}">
+                <div class="gpm-offer-name">${o.offer_name}</div>
+                <div class="gpm-offer-val">${valStr}</div>
+            </div>
+        `;
+    }).join('');
+
+    // Bind click events
+    listEl.querySelectorAll('.gpm-offer-item').forEach(item => {
+        item.addEventListener('click', (e) => {
+            const offerId = e.currentTarget.dataset.id;
+            
+            if (paymentState.appliedOffer && paymentState.appliedOffer.id === offerId) {
+                // Deselect
+                paymentState.appliedOffer = null;
+            } else {
+                // Select
+                const o = liveOffersDB.find(x => x.offer_id === offerId);
+                if (o) {
+                    paymentState.appliedOffer = {
+                        id: o.offer_id,
+                        name: o.offer_name,
+                        type: o.discount_type,
+                        value: o.discount_value
+                    };
+                }
+            }
+            
+            renderOffersList(); // re-render to update selected styling
+            calculateFinalDue();
+            
+            // Optionally close the list
+            listEl.classList.remove('active');
+        });
+    });
 }
 
 async function applyCouponCode() {
@@ -535,7 +652,29 @@ function calculateFinalDue() {
         `);
     }
 
-    // 3. Manual Discount
+    // 3. Offer Discount
+    let offerDiscount = 0;
+    if (paymentState.appliedOffer) {
+        if (paymentState.appliedOffer.type === 'percentage') {
+            offerDiscount = amountAfterMem * (paymentState.appliedOffer.value / 100);
+        } else {
+            offerDiscount = paymentState.appliedOffer.value;
+        }
+
+        if (offerDiscount > amountAfterMem) offerDiscount = amountAfterMem;
+        discountAmount += offerDiscount;
+        amountAfterMem -= offerDiscount;
+
+        const valStr = paymentState.appliedOffer.type === 'percentage' ? `${paymentState.appliedOffer.value}%` : `₹${paymentState.appliedOffer.value}`;
+        breakdownHtml.push(`
+            <div class="gpm-breakdown-row discount">
+                <span>Offer (${paymentState.appliedOffer.name})</span>
+                <span>-₹${offerDiscount.toFixed(2)}</span>
+            </div>
+        `);
+    }
+
+    // 4. Manual Discount
     let manDiscount = 0;
     if (paymentState.discountValue > 0) {
         if (paymentState.discountType === 'percent') {
@@ -595,6 +734,8 @@ async function finalizePayment() {
             manualValue: paymentState.discountValue > 0 ? paymentState.discountValue : 0,
             couponId: paymentState.appliedCoupon ? paymentState.appliedCoupon.id : null,
             couponCode: paymentState.appliedCoupon ? paymentState.appliedCoupon.code : null,
+            offerId: paymentState.appliedOffer ? paymentState.appliedOffer.id : null,
+            offerName: paymentState.appliedOffer ? paymentState.appliedOffer.name : null,
             membershipName: paymentState.appliedMembership ? paymentState.appliedMembership.name : null,
             membershipDiscountPct: paymentState.appliedMembership ? paymentState.appliedMembership.discount_percentage : 0
         }
