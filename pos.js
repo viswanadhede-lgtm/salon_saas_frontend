@@ -418,11 +418,6 @@ function setupEventListeners() {
 
     // Complete Sale Logic (Modal Driven)
     const btnCollect = document.getElementById('btnCompleteSale');
-    const collectModalOverlay = document.getElementById('cashConfirmOverlay');
-    const btnCancelCollect = document.getElementById('btnCancelCashConfirm');
-    const btnCancelCollect2 = document.getElementById('btnCancelCashConfirm2');
-    const btnConfirmCollect = document.getElementById('btnProceedCashConfirm');
-    const confirmTotalEl = document.getElementById('confirmTotal');
 
     const openCollectModal = () => {
         const total = cart.reduce((sum, item) => sum + (item.price * item.quantity), 0);
@@ -448,58 +443,37 @@ function setupEventListeners() {
             return;
         }
 
-        // Populate Redesigned Modal Fields
-        const subtitleEl = document.getElementById('confirmSubtitle');
-        const cardTotalEl = document.getElementById('cardTotal');
-        const cardDueEl = document.getElementById('cardDue');
-        const amountInput = document.getElementById('confirmAmountInput');
+        const customerId = selectedCustomer?.customer_id || selectedCustomer?.id || null;
+        const shortID = Math.random().toString(36).substring(2, 10).toUpperCase();
 
-        if (subtitleEl) {
-            const shortID = Math.random().toString(36).substring(2, 10);
-            const itemSummary = cart.length > 1 ? `${cart[0].name} + ${cart.length - 1} more` : cart[0].name;
-            subtitleEl.textContent = `${shortID} · ${customerName} · ${itemSummary}`;
+        if (window.openGlobalPaymentModal) {
+            window.openGlobalPaymentModal({
+                saleId: shortID,
+                customerId: customerId,
+                customerName: customerName,
+                totalAmount: total,
+                amountDue: total,
+                isMembershipPurchase: false,
+                onComplete: async (payload) => {
+                    await finalizeSale(payload, shortID);
+                }
+            });
+        } else {
+            showToast('Global payment modal not loaded', true);
         }
-
-        if (cardTotalEl) cardTotalEl.textContent = `₹${total.toLocaleString('en-IN')}`;
-        if (cardDueEl) cardDueEl.textContent = `₹${total.toLocaleString('en-IN')}`;
-        if (amountInput) amountInput.value = total;
-
-        if (collectModalOverlay) {
-            collectModalOverlay.classList.add('active');
-            collectModalOverlay.style.display = 'flex';
-        }
-        
-        if (window.feather) feather.replace();
-    };
-
-    const closeCollectModal = () => {
-        if (collectModalOverlay) collectModalOverlay.style.display = 'none';
     };
 
     if (btnCollect) btnCollect.addEventListener('click', openCollectModal);
-    if (btnCancelCollect) btnCancelCollect.addEventListener('click', closeCollectModal);
-    if (btnCancelCollect2) btnCancelCollect2.addEventListener('click', closeCollectModal);
-    if (btnConfirmCollect) btnConfirmCollect.addEventListener('click', () => {
-        finalizeSale();
-    });
 
-    const finalizeSale = async () => {
-        const originalBtnHTML = btnConfirmCollect.innerHTML;
-        btnConfirmCollect.innerHTML = '<i data-feather="loader" style="width:16px;height:16px;animation:spin 1s linear infinite;"></i> Processing...';
-        btnConfirmCollect.disabled = true;
-
+    const finalizeSale = async (payload, saleGroupId) => {
         try {
             const customerName = (selectedCustomer?.customer_name || `${selectedCustomer?.first_name || ''} ${selectedCustomer?.last_name || ''}`).trim() || '';
             const customerPhone = (selectedCustomer?.customer_phone || selectedCustomer?.phone || '').toString();
             const customerId = selectedCustomer?.customer_id || selectedCustomer?.id || null;
 
-            const totalAmount = cart.reduce((sum, item) => sum + (item.price * item.quantity), 0);
-            const amountCollected = parseFloat(document.getElementById('confirmAmountInput')?.value || totalAmount);
-            const paymentMethod = currentPaymentMethod.toLowerCase();
+            const amountCollected = payload.amountCollected;
+            const paymentMethod = payload.paymentMethod;
 
-            // Form Flat Sales Data (One row per cart item, sharing the same UUID)
-            const saleGroupId = crypto.randomUUID(); // Requires a valid UUID for sale_id
-            
             // Resolve the logged-in user's name
             let staffName = localStorage.getItem('staff_name');
             if (!staffName) {
@@ -515,6 +489,9 @@ function setupEventListeners() {
                 }
                 if (!staffName) staffName = 'System';
             }
+            
+            // NOTE: We could apply discount logic to the individual sales lines if needed,
+            // but for now we maintain the original logic of creating the sales lines based on cart.
             const salesBatch = cart.map(item => ({
                 sale_id: saleGroupId,
                 company_id: getCompanyId(),
@@ -542,20 +519,17 @@ function setupEventListeners() {
             if (saleError) throw saleError;
             
             // ─── Record Payment Transactions in Ledger ────────────────────────────
-            // We now insert one explicit ledger row for every single product purchased.
-            // Strict Rule: No partial payments on products. `total_amount` is fully paid upfront.
-            
             const ledgerBatch = insertedSales.map(sale => ({
                 company_id: getCompanyId() || null,
                 branch_id: getBranchId() || null,
                 reference_id: saleGroupId, // The overarching cart/transaction ID
                 reference_line_id: sale.id, // The specific product row ID
                 reference_type: 'product',
-                amount: sale.total_amount, // The exact price of this single item
+                amount: sale.total_amount, // Original price (discounts could be prorated if needed)
                 currency: 'INR',
                 payment_method: sale.payment_method,
                 status: 'paid',
-                notes: `POS Sale - ${sale.product_name}`,
+                notes: `POS Sale - ${sale.product_name} (Total Paid: ₹${amountCollected})`,
                 paid_at: new Date().toISOString()
             }));
 
@@ -565,11 +539,9 @@ function setupEventListeners() {
 
             if (txError) {
                 console.error('POS: Ledger recording failed:', txError);
-                // We show a warning but don't stop the user since the sale was saved
                 showToast('Sale saved, but ledger record failed. Please check history.', true);
             } else {
                 showToast('✓ Sale completed successfully!');
-                closeCollectModal();
             }
 
             // Reset state
@@ -578,6 +550,9 @@ function setupEventListeners() {
             updateCartUI();
 
             // Clear customer fields
+            const custSearch = document.getElementById('posCustomerSearch');
+            const custNameField = document.getElementById('posCustomerName');
+            const custPhoneField = document.getElementById('posCustomerPhone');
             if (custSearch) custSearch.value = '';
             if (custNameField) custNameField.value = '';
             if (custPhoneField) custPhoneField.value = '';
@@ -588,12 +563,7 @@ function setupEventListeners() {
         } catch (err) {
             console.error('POS: Error completing sale:', err);
             showToast('Failed to complete sale: ' + (err.message || 'Unknown error'), true);
-        } finally {
-            if (btnConfirmCollect) {
-                btnConfirmCollect.innerHTML = originalBtnHTML;
-                btnConfirmCollect.disabled = false;
-            }
-            if (typeof feather !== 'undefined') feather.replace();
+            throw err; // throw so the modal stays open if it fails
         }
     };
 }

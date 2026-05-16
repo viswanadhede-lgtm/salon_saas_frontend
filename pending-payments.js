@@ -301,82 +301,37 @@ document.addEventListener('DOMContentLoaded', async () => {
 
         const total = Number(row.total) || 0;
         const paid = Number(row.paid) || 0;
-        const due = Number(row.due) || (total - paid);
-
-        document.getElementById('ppModalSubtitle').textContent  = `${row.booking_id.substring(0,8)} · ${row.customer_name} · ${row.service_name}`;
-        document.getElementById('ppSummaryTotal').textContent   = '₹' + total.toLocaleString('en-IN');
-        document.getElementById('ppSummaryPaid').textContent    = '₹' + paid.toLocaleString('en-IN');
-        document.getElementById('ppSummaryDue').textContent     = '₹' + due.toLocaleString('en-IN');
-        document.getElementById('ppAmountInput').value          = due;
-        document.getElementById('ppAmountInput').max            = due;
-
-        // Reset payment method selection
-        document.querySelectorAll('input[name="ppPayMethod"]').forEach(r => r.checked = false);
-        document.querySelectorAll('.pp-method-btn').forEach(b => {
-            b.style.borderColor = '#e2e8f0';
-            b.style.background  = '#fff';
-            b.style.color       = '#475569';
-        });
-
-        const overlay = document.getElementById('ppCollectOverlay');
-        overlay.style.display = 'flex';
-        if (window.feather) feather.replace();
-    };
-
-    // Payment method visual selection
-    window.ppSelectMethod = function(radio) {
-        document.querySelectorAll('.pp-method-btn').forEach(b => {
-            b.style.borderColor = '#e2e8f0';
-            b.style.background  = '#fff';
-            b.style.color       = '#475569';
-        });
-        const selectedBtn = radio.nextElementSibling;
-        selectedBtn.style.borderColor = '#1e3a8a';
-        selectedBtn.style.background  = '#eff6ff';
-        selectedBtn.style.color       = '#1e3a8a';
-    };
-
-    // Record Payment
-    window.ppRecordPayment = async function() {
-        if (!activeBookingId) return;
-
-        const amountInput  = document.getElementById('ppAmountInput');
-        const methodRadio  = document.querySelector('input[name="ppPayMethod"]:checked');
-        const recordBtn    = document.getElementById('ppRecordBtn');
-        const amount       = parseFloat(amountInput.value);
-        
-        const row = allPayments.find(p => p.booking_id === activeBookingId);
-        if (!row) return;
-
-        const total = Number(row.total) || 0;
-        const paid = Number(row.paid) || 0;
         const due = total - paid;
 
-        if (!amount || amount <= 0) {
-            amountInput.style.borderColor = '#dc2626';
-            amountInput.focus();
-            return;
-        }
-        if (amount > due) {
-            amountInput.style.borderColor = '#dc2626';
-            amountInput.focus();
-            ppShowToast('Amount exceeds due balance', true);
-            return;
-        }
-        if (!methodRadio) {
-            ppShowToast('Please select a payment method', true);
-            return;
-        }
+        // Extract customer ID if possible (though the view might not expose customer_id directly,
+        // we can try to look it up or just pass the name)
+        const customerId = row.customer_id || null; 
 
-        // --- Start Loading ---
-        const originalBtnText = recordBtn.textContent;
-        recordBtn.disabled = true;
-        recordBtn.textContent = 'Recording...';
+        if (window.openGlobalPaymentModal) {
+            window.openGlobalPaymentModal({
+                saleId: row.booking_id,
+                customerId: customerId,
+                customerName: row.customer_name || 'Guest',
+                totalAmount: due, // Pending payments usually collect the remaining due
+                amountDue: due,
+                isMembershipPurchase: row.ref_type === 'membership',
+                onComplete: async (payload) => {
+                    await processPendingPayment(payload, row);
+                }
+            });
+        } else {
+            ppShowToast('Global payment modal not loaded', true);
+        }
+    };
+
+    // Record Payment (Callback from Global Modal)
+    async function processPendingPayment(payload, row) {
+        const amount = payload.amountCollected;
+        const payMethod = payload.paymentMethod;
 
         try {
             const companyId = getCompanyId();
             const branchId = getBranchId();
-            const payMethod = methodRadio.value;
 
             // Read user ID from appContext (correct source — user_id is NOT stored separately)
             let userId = null;
@@ -417,7 +372,6 @@ document.addEventListener('DOMContentLoaded', async () => {
                         paid_at:        paidAt
                     });
                 if (txError) {
-                    // Non-fatal: membership_purchases was already updated, log but don't rollback
                     console.error('[PP] business_transactions insert failed for membership:', txError);
                 }
             } else {
@@ -440,8 +394,6 @@ document.addEventListener('DOMContentLoaded', async () => {
                 if (txError) throw txError;
             }
 
-            // Close modal & Refresh
-            document.getElementById('ppCollectOverlay').style.display = 'none';
             ppShowToast('Payment recorded successfully!');
             activeBookingId = null;
             
@@ -450,7 +402,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             
             // Dispatch custom event for other modules
             document.dispatchEvent(new CustomEvent('payment-recorded', {
-                detail: { bookingId: activeBookingId, amount: amount }
+                detail: { bookingId: row.booking_id, amount: amount }
             }));
 
             // Force refetch on Bookings if it exists in the current session
@@ -461,11 +413,9 @@ document.addEventListener('DOMContentLoaded', async () => {
         } catch (err) {
             console.error('[PP] Error recording payment:', err);
             ppShowToast('Failed to record payment: ' + (err.message || 'Unknown error'), true);
-        } finally {
-            recordBtn.disabled = false;
-            recordBtn.textContent = originalBtnText;
+            throw err; // Re-throw to keep modal open
         }
-    };
+    }
 
     // ─── TOAST ─────────────────────────────────────────────────────────────
     function ppShowToast(msg, isError = false) {

@@ -205,41 +205,6 @@ document.addEventListener('DOMContentLoaded', async () => {
             await preValidateAndShowCollect();
         });
     }
-
-    const btnCancelCashConfirm2 = document.getElementById('btnCancelCashConfirm2');
-    const btnCancelCashConfirm = document.getElementById('btnCancelCashConfirm');
-    const cashConfirmOverlay = document.getElementById('cashConfirmOverlay');
-
-    if (btnCancelCashConfirm2) {
-        btnCancelCashConfirm2.addEventListener('click', () => {
-            cashConfirmOverlay?.classList.remove('active');
-            document.getElementById('assignModalOverlay')?.classList.add('active');
-        });
-    }
-    if (btnCancelCashConfirm) {
-        btnCancelCashConfirm.addEventListener('click', () => {
-            cashConfirmOverlay?.classList.remove('active');
-            document.getElementById('assignModalOverlay')?.classList.add('active');
-        });
-    }
-
-    const btnProceedCashConfirm = document.getElementById('btnProceedCashConfirm');
-    if (btnProceedCashConfirm) {
-        btnProceedCashConfirm.addEventListener('click', async () => {
-            await executeMembershipAssignment();
-        });
-    }
-
-    const posPaymentMethods = document.getElementById('posPaymentMethods');
-    if (posPaymentMethods) {
-        const methods = posPaymentMethods.querySelectorAll('.pay-method-btn');
-        methods.forEach(btn => {
-            btn.addEventListener('click', () => {
-                methods.forEach(b => b.classList.remove('active'));
-                btn.classList.add('active');
-            });
-        });
-    }
 });
 
 // ── Helpers ────────────────────────────────────────────────────────────────
@@ -946,20 +911,32 @@ async function preValidateAndShowCollect() {
         if (window.feather) feather.replace();
     }
 
+    const price = selectedPlan ? Number(selectedPlan.price || 0) : 0;
+    
+    // Hide the assign modal
     document.getElementById('assignModalOverlay')?.classList.remove('active');
 
-    const price = selectedPlan ? Number(selectedPlan.price || 0) : 0;
+    // Generate purchase ID ahead of time so we have a reference
+    const newPurchaseId = crypto.randomUUID();
 
-    const cashConfirmOverlay = document.getElementById('cashConfirmOverlay');
-    if (cashConfirmOverlay) {
-        document.getElementById('cardTotal').textContent = `₹${price.toLocaleString('en-IN')}`;
-        document.getElementById('cardDue').textContent = `₹${price.toLocaleString('en-IN')}`;
-        document.getElementById('confirmAmountInput').value = price;
-        cashConfirmOverlay.classList.add('active');
+    if (window.openGlobalPaymentModal) {
+        window.openGlobalPaymentModal({
+            saleId: newPurchaseId,
+            customerId: finalCustomerId,
+            customerName: selectedCustomer ? (selectedCustomer.customer_name || `${selectedCustomer.first_name || ''} ${selectedCustomer.last_name || ''}`).trim() : custNameValue,
+            totalAmount: price,
+            amountDue: price,
+            isMembershipPurchase: true, // Show membership perks in the modal if applicable
+            onComplete: async (payload) => {
+                await executeMembershipAssignment(payload, newPurchaseId);
+            }
+        });
+    } else {
+        showToast('Global payment modal not loaded', '#ef4444');
     }
 }
 
-async function executeMembershipAssignment() {
+async function executeMembershipAssignment(payload, newPurchaseId) {
     const planValue = document.getElementById('assignPlanInput').value;
     const selectedPlan = currentPlans.find(p => (p.membership_id || p.id) === planValue);
 
@@ -968,22 +945,9 @@ async function executeMembershipAssignment() {
     const custEmailValue = document.getElementById('assignCustomerEmail')?.value.trim();
     const assignDate = document.getElementById('assignDateInput').value;
     
-    // Get active payment method from the Collect modal
-    let payMethod = 'cash';
-    const activeMethodBtn = document.querySelector('#posPaymentMethods .pay-method-btn.active');
-    if (activeMethodBtn) {
-        payMethod = activeMethodBtn.dataset.method;
-    }
-    
-    // Get final collected amount
-    const finalPrice = Number(document.getElementById('confirmAmountInput').value || 0);
-
-    const btn = document.getElementById('btnProceedCashConfirm');
-    const origText = btn ? btn.textContent : 'Record Payment';
-    if (btn) {
-        btn.textContent = 'Processing...';
-        btn.disabled = true;
-    }
+    // Get active payment method and collected amount from the payload
+    let payMethod = payload.paymentMethod || 'cash';
+    const finalPrice = payload.amountCollected || 0;
 
     // Create new customer if not selected
     let finalCustomerId = selectedCustomer ? (selectedCustomer.id || selectedCustomer.customer_id) : null;
@@ -1012,11 +976,7 @@ async function executeMembershipAssignment() {
             } catch (err) {
                 console.error('Failed to create new customer:', err);
                 showToast('Failed to create customer: ' + (err.message || ''));
-                if (btn) {
-                    btn.textContent = origText;
-                    btn.disabled = false;
-                }
-                return;
+                throw err;
             }
         }
     }
@@ -1044,10 +1004,6 @@ async function executeMembershipAssignment() {
         expiryDate = d.toISOString().split('T')[0];
     }
 
-    // Pre-generate purchase_id so we can use it for business_transactions
-    // without needing .select() after .insert() (not supported in Supabase v1)
-    const newPurchaseId = crypto.randomUUID();
-
     // Determine the actual total price of the plan
     const planPrice = selectedPlan ? Number(selectedPlan.price || 0) : 0;
 
@@ -1061,7 +1017,7 @@ async function executeMembershipAssignment() {
         paymentStatus = 'partial';
     }
 
-    const payload = {
+    const membershipPayload = {
         purchase_id: newPurchaseId,
         company_id: getCompanyId(),
         branch_id: getBranchId(),
@@ -1084,7 +1040,7 @@ async function executeMembershipAssignment() {
         // 1. Insert into membership_purchases
         const { error } = await supabase
             .from('membership_purchases')
-            .insert(payload);
+            .insert(membershipPayload);
 
         if (error) throw error;
 
@@ -1126,7 +1082,6 @@ async function executeMembershipAssignment() {
         }
 
         showToast('Membership assigned successfully!');
-        document.getElementById('cashConfirmOverlay')?.classList.remove('active');
         
         // Reset form
         if (window.resetAssignMembershipForm) window.resetAssignMembershipForm();
@@ -1135,11 +1090,7 @@ async function executeMembershipAssignment() {
     } catch (err) {
         console.error('executeMembershipAssignment error:', err);
         showToast('An error occurred during assignment: ' + (err.message || ''));
-    } finally {
-        if (btn) {
-            btn.textContent = origText;
-            btn.disabled = false;
-        }
+        throw err;
     }
 }
 

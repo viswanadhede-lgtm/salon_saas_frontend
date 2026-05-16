@@ -341,38 +341,6 @@ document.addEventListener('DOMContentLoaded', () => {
             });
         }
 
-        // --- Collect Payment Modal Listeners ---
-        const closeCollectBtn = document.getElementById('closeCollectPaymentModal');
-        const cancelCollectBtn = document.getElementById('cancelCollectBtn');
-        const confirmCollectBtn = document.getElementById('confirmCollectBtn');
-        const collectOverlay = document.getElementById('collectPaymentModalOverlay');
-
-        const closeCollectModal = () => { if (collectOverlay) collectOverlay.classList.remove('active'); };
-        if (closeCollectBtn) closeCollectBtn.addEventListener('click', closeCollectModal);
-        if (cancelCollectBtn) cancelCollectBtn.addEventListener('click', closeCollectModal);
-        if (collectOverlay) {
-            collectOverlay.addEventListener('click', (e) => {
-                if (e.target === collectOverlay) closeCollectModal();
-            });
-        }
-        if (confirmCollectBtn) confirmCollectBtn.addEventListener('click', processProductPayment);
-
-        // Payment Method selection for Collect Modal
-        const cpPayBtns = document.querySelectorAll('#collectPaymentModalOverlay .pay-method-btn');
-        cpPayBtns.forEach(btn => {
-            btn.addEventListener('click', (e) => {
-                cpPayBtns.forEach(b => {
-                    b.classList.remove('active');
-                    b.style.background = '#fff';
-                    b.style.borderColor = '#e2e8f0';
-                });
-                const target = e.currentTarget;
-                target.classList.add('active');
-                target.style.background = '#f0fdf4';
-                target.style.borderColor = '#bbf7d0';
-            });
-        });
-
         // --- Refund Modal Listeners (updated) ---
         const closeRefundBtn = document.getElementById('closeRefundBtn');
         if (closeRefundBtn) closeRefundBtn.addEventListener('click', closeRefundModal);
@@ -475,43 +443,32 @@ document.addEventListener('DOMContentLoaded', () => {
     // ----------------------------------------------------------------------
     async function openCollectPaymentModal(sale) {
         if (!sale) return;
-        
-        const modal = document.getElementById('collectPaymentModalOverlay');
-        const cpTotal = document.getElementById('cpTotal');
-        const cpPaid = document.getElementById('cpPaid');
-        const cpBalance = document.getElementById('cpBalance');
-        const cpInput = document.getElementById('cpAmountInput');
-        
-        if (!modal) return;
-        
+
         const total = sale.totalAmountNum || 0;
         const paid = sale.amount_paid || 0;
         const balance = Math.max(0, total - paid);
-        
-        if (cpTotal) cpTotal.textContent = `₹${total.toLocaleString('en-IN')}`;
-        if (cpPaid) cpPaid.textContent = `₹${paid.toLocaleString('en-IN')}`;
-        if (cpBalance) cpBalance.textContent = `₹${balance.toLocaleString('en-IN')}`;
-        if (cpInput) cpInput.value = balance;
-        
-        modal.classList.add('active');
-        if (typeof feather !== 'undefined') feather.replace();
+
+        if (window.openGlobalPaymentModal) {
+            window.openGlobalPaymentModal({
+                saleId: sale.id,
+                customerId: sale.customer_id,
+                customerName: sale.customer || 'Walk-in',
+                totalAmount: balance, // In sales history we collect the remaining balance
+                amountDue: balance,
+                isMembershipPurchase: false, // Sales history typically shows products/services
+                onComplete: async (payload) => {
+                    await processProductPayment(payload, sale);
+                }
+            });
+        } else {
+            showToast('Global payment modal not loaded', '#ef4444');
+        }
     }
 
-    async function processProductPayment() {
-        if (!currentActionData || !currentActionData.sale) return;
-        const sale = currentActionData.sale;
-        const amount = Number(document.getElementById('cpAmountInput')?.value || 0);
-        const methodEl = document.querySelector('#collectPaymentModalOverlay .pay-method-btn.active');
-        const method = methodEl ? methodEl.dataset.method : 'cash';
+    async function processProductPayment(payload, sale) {
+        const amount = payload.amountCollected;
+        const method = payload.paymentMethod;
         
-        if (amount <= 0) {
-            showToast('Please enter a valid amount.', '#ef4444');
-            return;
-        }
-
-        const btn = document.getElementById('confirmCollectBtn');
-        if (btn) { btn.disabled = true; btn.textContent = 'Recording...'; }
-
         try {
             const { error } = await supabase
                 .from('business_transactions')
@@ -530,13 +487,11 @@ document.addEventListener('DOMContentLoaded', () => {
             if (error) throw error;
 
             showToast('Payment recorded successfully!', '#10b981');
-            document.getElementById('collectPaymentModalOverlay').classList.remove('active');
             await fetchSalesHistory(); // Refresh to update badges
         } catch (err) {
             console.error('Error recording payment:', err);
             showToast('Failed to record payment.', '#ef4444');
-        } finally {
-            if (btn) { btn.disabled = false; btn.textContent = 'Record Payment'; }
+            throw err; // Re-throw so modal handles it
         }
     }
 
