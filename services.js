@@ -369,41 +369,58 @@ function attachEventListeners() {
         window.updatePackageServicesChips();
 
         (window.liveServicesData || []).filter(s => s.status === 'active').forEach(s => {
-            const label = document.createElement('label');
-            label.style.display = 'block';
-            label.style.padding = '10px 16px';
-            label.style.cursor = 'pointer';
-            label.style.width = '100%';
-            label.style.boxSizing = 'border-box';
+            const itemDiv = document.createElement('div');
+            itemDiv.style.display = 'flex';
+            itemDiv.style.flexDirection = 'row';
+            itemDiv.style.alignItems = 'center';
+            itemDiv.style.justifyContent = 'flex-start';
+            itemDiv.style.padding = '10px 16px';
+            itemDiv.style.cursor = 'pointer';
+            itemDiv.style.width = '100%';
+            itemDiv.style.boxSizing = 'border-box';
+            itemDiv.style.margin = '0';
+            itemDiv.style.borderBottom = '1px solid #f1f5f9';
             
             const checkbox = document.createElement('input');
             checkbox.type = 'checkbox';
             checkbox.value = s.service_id || s.id;
             checkbox.dataset.name = s.service_name || s.name;
-            checkbox.style.accentColor = '#1e3a8a';
+            checkbox.style.display = 'inline-block';
+            checkbox.style.width = '16px';
+            checkbox.style.height = '16px';
             checkbox.style.margin = '0 12px 0 0';
-            checkbox.style.verticalAlign = 'middle';
+            checkbox.style.padding = '0';
+            checkbox.style.accentColor = '#1e3a8a';
+            checkbox.style.flexShrink = '0';
             checkbox.style.cursor = 'pointer';
+
+            const textSpan = document.createElement('span');
+            textSpan.textContent = s.service_name || s.name;
+            textSpan.style.display = 'inline-block';
+            textSpan.style.whiteSpace = 'nowrap';
+            textSpan.style.overflow = 'hidden';
+            textSpan.style.textOverflow = 'ellipsis';
+            textSpan.style.fontSize = '0.9rem';
+            textSpan.style.color = '#374151';
+            textSpan.style.flexGrow = '1';
+            textSpan.style.textAlign = 'left';
             
-            checkbox.addEventListener('change', (e) => {
-                if (e.target.checked) selectedPackageServices.add(s.service_id || s.id);
+            itemDiv.appendChild(checkbox);
+            itemDiv.appendChild(textSpan);
+            
+            itemDiv.addEventListener('click', (e) => {
+                if (e.target !== checkbox) {
+                    checkbox.checked = !checkbox.checked;
+                }
+                if (checkbox.checked) selectedPackageServices.add(s.service_id || s.id);
                 else selectedPackageServices.delete(s.service_id || s.id);
                 window.updatePackageServicesChips();
             });
 
-            const textSpan = document.createElement('span');
-            textSpan.textContent = s.service_name || s.name;
-            textSpan.style.verticalAlign = 'middle';
-            textSpan.style.fontSize = '0.9rem';
-            textSpan.style.color = '#374151';
+            itemDiv.addEventListener('mouseenter', () => itemDiv.style.background = '#f8fafc');
+            itemDiv.addEventListener('mouseleave', () => itemDiv.style.background = 'transparent');
             
-            label.appendChild(checkbox);
-            label.appendChild(textSpan);
-            
-            label.addEventListener('mouseenter', () => label.style.background = '#f8fafc');
-            label.addEventListener('mouseleave', () => label.style.background = 'transparent');
-            
-            pkgServicesDropdownMenu.appendChild(label);
+            pkgServicesDropdownMenu.appendChild(itemDiv);
         });
     };
 
