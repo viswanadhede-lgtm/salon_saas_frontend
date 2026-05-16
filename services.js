@@ -370,14 +370,9 @@ function attachEventListeners() {
 
         (window.liveServicesData || []).filter(s => s.status === 'active').forEach(s => {
             const label = document.createElement('label');
-            label.style.display = 'flex';
-            label.style.flexDirection = 'row';
-            label.style.alignItems = 'center';
-            label.style.justifyContent = 'flex-start';
-            label.style.textAlign = 'left';
-            label.style.padding = '8px 16px';
+            label.style.display = 'block';
+            label.style.padding = '10px 16px';
             label.style.cursor = 'pointer';
-            label.style.gap = '12px';
             label.style.width = '100%';
             label.style.boxSizing = 'border-box';
             
@@ -386,8 +381,9 @@ function attachEventListeners() {
             checkbox.value = s.service_id || s.id;
             checkbox.dataset.name = s.service_name || s.name;
             checkbox.style.accentColor = '#1e3a8a';
-            checkbox.style.margin = '0';
-            checkbox.style.flexShrink = '0';
+            checkbox.style.margin = '0 12px 0 0';
+            checkbox.style.verticalAlign = 'middle';
+            checkbox.style.cursor = 'pointer';
             
             checkbox.addEventListener('change', (e) => {
                 if (e.target.checked) selectedPackageServices.add(s.service_id || s.id);
@@ -395,11 +391,13 @@ function attachEventListeners() {
                 window.updatePackageServicesChips();
             });
 
-            label.appendChild(checkbox);
             const textSpan = document.createElement('span');
             textSpan.textContent = s.service_name || s.name;
-            textSpan.style.flex = '1';
-            textSpan.style.wordBreak = 'break-word';
+            textSpan.style.verticalAlign = 'middle';
+            textSpan.style.fontSize = '0.9rem';
+            textSpan.style.color = '#374151';
+            
+            label.appendChild(checkbox);
             label.appendChild(textSpan);
             
             label.addEventListener('mouseenter', () => label.style.background = '#f8fafc');
