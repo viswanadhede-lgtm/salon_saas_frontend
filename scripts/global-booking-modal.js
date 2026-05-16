@@ -90,19 +90,19 @@ export function initGlobalBookingModal() {
     // ── Build a single Service + Staff row ────────────────────────────────
     function buildServiceRow(rowId, isFirst) {
         const svcOptions = liveServicesDB.map(s =>
-            `<option value="${s.service_id}" data-type="service" data-duration="${s.duration || 0}" data-price="${s.price || 0}">${s.service_name}</option>`
+            `<option value="${s.service_id}" data-type="service" style="color: #0f172a; font-weight: normal;" data-duration="${s.duration || 0}" data-price="${s.price || 0}">${s.service_name}</option>`
         ).join('');
 
         const pkgOptions = livePackagesDB.map(p =>
-            `<option value="${p.package_id}" data-type="package" data-duration="0" data-price="${p.final_price || 0}">${p.package_name}</option>`
+            `<option value="${p.package_id}" data-type="package" style="color: #0f172a; font-weight: normal;" data-duration="0" data-price="${p.final_price || 0}">${p.package_name}</option>`
         ).join('');
         
         const combinedOptions = `
-            <optgroup label="--- Services ---">
+            <optgroup label="Services" style="color: #1d4ed8; font-weight: 600;">
                 ${svcOptions}
             </optgroup>
             ${pkgOptions ? `
-            <optgroup label="--- Packages ---">
+            <optgroup label="Packages" style="color: #1d4ed8; font-weight: 600;">
                 ${pkgOptions}
             </optgroup>` : ''}
         `;
@@ -277,12 +277,12 @@ export function initGlobalBookingModal() {
                 const prevStf  = staffSel.value;
                 
                 const combinedOptions = `
-                    <optgroup label="--- Services ---">
-                        ${liveServicesDB.map(s => `<option value="${s.service_id}" data-type="service" data-duration="${s.duration || 0}" data-price="${s.price || 0}" ${prevSvc === s.service_id ? 'selected' : ''}>${s.service_name}</option>`).join('')}
+                    <optgroup label="Services" style="color: #1d4ed8; font-weight: 600;">
+                        ${liveServicesDB.map(s => `<option value="${s.service_id}" data-type="service" style="color: #0f172a; font-weight: normal;" data-duration="${s.duration || 0}" data-price="${s.price || 0}" ${prevSvc === s.service_id ? 'selected' : ''}>${s.service_name}</option>`).join('')}
                     </optgroup>
                     ${livePackagesDB.length > 0 ? `
-                    <optgroup label="--- Packages ---">
-                        ${livePackagesDB.map(p => `<option value="${p.package_id}" data-type="package" data-duration="0" data-price="${p.final_price || 0}" ${prevSvc === p.package_id ? 'selected' : ''}>${p.package_name}</option>`).join('')}
+                    <optgroup label="Packages" style="color: #1d4ed8; font-weight: 600;">
+                        ${livePackagesDB.map(p => `<option value="${p.package_id}" data-type="package" style="color: #0f172a; font-weight: normal;" data-duration="0" data-price="${p.final_price || 0}" ${prevSvc === p.package_id ? 'selected' : ''}>${p.package_name}</option>`).join('')}
                     </optgroup>` : ''}
                 `;
 
