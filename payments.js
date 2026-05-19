@@ -468,7 +468,13 @@ document.addEventListener('DOMContentLoaded', () => {
                 let errMsg = 'Failed to initialize subscription. Please try again.';
                 try {
                     const parsed = JSON.parse(errText);
-                    if (parsed.error) errMsg = parsed.error;
+                    if (parsed.error) {
+                        if (typeof parsed.error === 'string') errMsg = parsed.error;
+                        else if (parsed.error.description) errMsg = parsed.error.description;
+                        else errMsg = JSON.stringify(parsed.error);
+                    } else if (parsed.description) {
+                        errMsg = parsed.description;
+                    }
                 } catch (_) {}
                 throw new Error(errMsg);
             }
