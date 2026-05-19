@@ -444,20 +444,15 @@ window.openGlobalPaymentModal = async function(config) {
     document.getElementById('gpmStatSubtotal').textContent = `₹${config.totalAmount}`;
     document.getElementById('gpmStatPaid').textContent = `₹${config.amountPaid || 0}`;
 
-    // Show membership toggle for all non-membership transactions
-    // Even if customerId is missing, we show it — fetchCustomerMembership will handle it gracefully
+    // Show/hide membership toggle only when customerId is available and not a membership purchase
     const memSection = document.getElementById('gpmMembershipSection');
     const memToggle = document.getElementById('gpmMembershipToggle');
-    if (!config.isMembershipPurchase) {
+    if (config.customerId && !config.isMembershipPurchase) {
         memSection.style.display = 'block';
         memToggle.checked = false;
         document.getElementById('gpmMembershipResult').className = 'gpm-membership-result';
         document.getElementById('gpmMembershipResult').textContent = '';
-        document.getElementById('gpmMembershipSubtitle').textContent = config.customerId
-            ? 'Toggle to check customer\'s membership'
-            : 'No customer linked to this transaction';
-        memToggle.disabled = !config.customerId; // disable toggle if no customerId
-
+        document.getElementById('gpmMembershipSubtitle').textContent = 'Toggle to check customer\'s membership';
     } else {
         memSection.style.display = 'none';
     }
