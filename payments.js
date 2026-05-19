@@ -432,7 +432,14 @@ document.addEventListener('DOMContentLoaded', () => {
             const SUPABASE_URL      = 'https://qxmgyxjwpxkdbgldpdil.supabase.co';
             const SUPABASE_ANON_KEY = 'sb_publishable_aqCSbMiVxH5cSZxgssdNqw_jQZvzmA0';
 
-            // Step 1: Call Edge Function to create Razorpay subscription
+            // Get the billing amount for this plan/cycle (stored in payments table for reference)
+            const amount = cycle === 'annual' ? basePlanAnnual : basePlanMonthly;
+
+            // Step 1: Call create-razorpay-subscription (deployed Supabase edge function)
+            // Fields MUST match the edge function's destructuring:
+            //   razorpay_plan_id  ← Razorpay Plan ID
+            //   db_plan_id        ← Supabase UUID
+            //   is_trial          ← triggers start_at delay of 7 days in the edge function
             const response = await fetch(
                 `${SUPABASE_URL}/functions/v1/create-razorpay-subscription`,
                 {
@@ -442,13 +449,14 @@ document.addEventListener('DOMContentLoaded', () => {
                         'apikey': SUPABASE_ANON_KEY
                     },
                     body: JSON.stringify({
-                        plan_id:        rzpPlanId,
-                        db_plan_id:     dbPlanId,
-                        customer_email: customerEmail,
-                        customer_name:  customerName,
-                        customer_phone: customerPhone,
-                        company_id:     storedCompanyId
-                        // is_trial & expected_amount removed — edge function is trial-only
+                        razorpay_plan_id: rzpPlanId,      // ← Razorpay Plan ID (was wrongly sent as plan_id before)
+                        db_plan_id:       dbPlanId,        // ← Supabase UUID
+                        company_id:       storedCompanyId,
+                        customer_email:   customerEmail,
+                        customer_name:    customerName,
+                        customer_phone:   customerPhone,
+                        is_trial:         isTrial,          // ← was missing before; triggers 7-day start_at
+                        amount:           amount            // ← was missing before
                     })
                 }
             );
@@ -456,15 +464,22 @@ document.addEventListener('DOMContentLoaded', () => {
             if (!response.ok) {
                 const errText = await response.text();
                 console.error('[triggerSubscriptionCheckout] Edge function error:', errText);
-                throw new Error('Failed to initialize subscription. Please try again.');
+                // Parse for a cleaner error message
+                let errMsg = 'Failed to initialize subscription. Please try again.';
+                try {
+                    const parsed = JSON.parse(errText);
+                    if (parsed.error) errMsg = parsed.error;
+                } catch (_) {}
+                throw new Error(errMsg);
             }
 
             const data = await response.json();
-            const subscriptionId = data?.id || data?.subscription?.id;
+            console.log('[triggerSubscriptionCheckout] Edge function response:', data);
+            const subscriptionId = data?.subscription_id || data?.id;
 
             if (!subscriptionId) {
                 console.error('[triggerSubscriptionCheckout] No subscription ID in response:', data);
-                throw new Error('Invalid response from payment service.');
+                throw new Error('Invalid response from payment service. Please contact support.');
             }
 
             resetLoadingState(btnElement, originalText);
