@@ -103,7 +103,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             // Map Products (standardize columns to match table)
             const products = (productRes.data || []).map(p => ({
                 booking_id: p.sale_id,
-                customer_name: p.customer_name,
+                customer_name: p.customer_name,`n                customer_id: p.customer_id || null,
                 service_name: p.product_list || 'Product Sale',
                 booking_date: p.sale_date,
                 start_time: '', 
@@ -124,6 +124,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                 return {
                     booking_id:    m.purchase_id,
                     customer_name: m.customer_name || 'Unknown Customer',
+                    customer_id:   m.customer_id || null,
                     service_name:  m.plan_name || 'Membership',
                     booking_date:  m.purchase_date,
                     start_time:    '',
