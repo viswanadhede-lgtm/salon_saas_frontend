@@ -252,11 +252,21 @@ document.addEventListener('DOMContentLoaded', () => {
         setLoadingState(btnElement, 'Initiating Payment...');
 
         try {
+            // Always re-read signup_data fresh — captures phone entered via Google OAuth banner
             const signupData      = JSON.parse(localStorage.getItem('signup_data') || '{}');
             const customerEmail   = signupData.email       || '';
             const customerName    = signupData.full_name   || '';
             const customerPhone   = signupData.phone       || '';
             const storedCompanyId = localStorage.getItem('company_id') || companyId;
+
+            // Guard: Razorpay requires a valid phone for Indian recurring payments
+            if (!customerPhone || !/^[6-9][0-9]{9}$/.test(customerPhone)) {
+                resetLoadingState(btnElement, originalText);
+                showMessage('Please enter a valid 10-digit Indian mobile number before proceeding.', 'error');
+                const banner = document.getElementById('phoneCollectionBanner');
+                if (banner) { banner.style.display = 'block'; document.getElementById('googleUserPhone')?.focus(); }
+                return;
+            }
 
             // Fetch plan from DB — we need both the amount AND the Razorpay Plan ID
             const { data: dbPlans, error: planErr } = await supabase
@@ -373,6 +383,7 @@ document.addEventListener('DOMContentLoaded', () => {
         setLoadingState(btnElement, isTrial ? 'Setting up trial...' : 'Initiating payment...');
 
         try {
+            // Always re-read signup_data fresh — captures phone entered via Google OAuth banner
             const signupData      = JSON.parse(localStorage.getItem('signup_data') || '{}');
             const customerEmail   = signupData.email;
             const customerName    = signupData.full_name || '';
@@ -383,6 +394,15 @@ document.addEventListener('DOMContentLoaded', () => {
             if (!customerEmail) {
                 showMessage('Could not find your email. Please sign up again.', 'error');
                 resetLoadingState(btnElement, originalText);
+                return;
+            }
+
+            // Guard: Razorpay requires a valid phone for Indian recurring payments (UPI AutoPay / e-NACH)
+            if (!customerPhone || !/^[6-9][0-9]{9}$/.test(customerPhone)) {
+                resetLoadingState(btnElement, originalText);
+                showMessage('Please enter a valid 10-digit Indian mobile number before proceeding.', 'error');
+                const banner = document.getElementById('phoneCollectionBanner');
+                if (banner) { banner.style.display = 'block'; document.getElementById('googleUserPhone')?.focus(); }
                 return;
             }
 

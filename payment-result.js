@@ -164,6 +164,34 @@ document.addEventListener('DOMContentLoaded', async () => {
                 console.log('[payment-result] companies subscription status updated.');
             }
 
+            // ── 4. Backfill phone into users + profiles if it was missing (Google OAuth flow) ──
+            // During onboarding the phone was empty; it was collected on payments.html and saved
+            // to signup_data. We now patch it back into the DB so all tables are consistent.
+            if (userPhone && userId) {
+                const [userPhoneUpdate, profilePhoneUpdate] = await Promise.all([
+                    supabase
+                        .from('users')
+                        .update({ phone: userPhone })
+                        .eq('user_id', userId)
+                        .eq('company_id', companyId),
+                    supabase
+                        .from('profiles')
+                        .update({ phone: userPhone })
+                        .eq('user_id', userId)
+                        .eq('company_id', companyId)
+                ]);
+                if (userPhoneUpdate.error) {
+                    console.warn('[payment-result] users phone backfill warning:', userPhoneUpdate.error);
+                } else {
+                    console.log('[payment-result] users.phone backfilled successfully.');
+                }
+                if (profilePhoneUpdate.error) {
+                    console.warn('[payment-result] profiles phone backfill warning:', profilePhoneUpdate.error);
+                } else {
+                    console.log('[payment-result] profiles.phone backfilled successfully.');
+                }
+            }
+
             markDone(step2);
             markActive(step3);
 

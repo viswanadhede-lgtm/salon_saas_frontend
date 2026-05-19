@@ -32,6 +32,89 @@
 
         <div id="paymentMessage" class="payment-message" style="display: none;"></div>
 
+        <!-- Phone Collection Banner (shown only for Google OAuth users missing phone) -->
+        <div id="phoneCollectionBanner" style="display:none; background: #fffbeb; border: 1.5px solid #f59e0b; border-radius: 14px; padding: 20px 24px; margin-bottom: 24px; display: none;">
+            <div style="display: flex; align-items: flex-start; gap: 14px;">
+                <div style="font-size: 1.5rem; line-height: 1;">📱</div>
+                <div style="flex: 1;">
+                    <p style="font-weight: 700; color: #92400e; font-size: 0.97rem; margin-bottom: 4px;">One more step — we need your mobile number</p>
+                    <p style="color: #78350f; font-size: 0.85rem; margin-bottom: 14px; line-height: 1.5;">Razorpay requires a valid Indian mobile number to set up recurring billing. Your Google account didn't include one.</p>
+                    <div style="display: flex; gap: 10px; align-items: center; flex-wrap: wrap;">
+                        <div style="display: flex; align-items: center; border: 1.5px solid #f59e0b; border-radius: 10px; overflow: hidden; background: #fff;">
+                            <span style="padding: 0 12px; color: #92400e; font-weight: 600; font-size: 0.9rem; border-right: 1.5px solid #f59e0b; height: 44px; display: flex; align-items: center;">+91</span>
+                            <input
+                                type="tel"
+                                id="googleUserPhone"
+                                placeholder="10-digit mobile number"
+                                maxlength="10"
+                                pattern="[6-9][0-9]{9}"
+                                style="border: none; outline: none; padding: 0 14px; font-size: 0.95rem; font-family: 'Inter', sans-serif; height: 44px; width: 210px; color: #0f172a; background: transparent;"
+                            />
+                        </div>
+                        <button id="btnSavePhone" onclick="saveGoogleUserPhone()" style="padding: 0 20px; height: 44px; background: #f59e0b; color: #fff; border: none; border-radius: 10px; font-family: 'Inter', sans-serif; font-weight: 700; font-size: 0.9rem; cursor: pointer; transition: background 0.2s;">Save &amp; Continue</button>
+                    </div>
+                    <p id="phoneError" style="color: #dc2626; font-size: 0.82rem; margin-top: 8px; display: none;">Please enter a valid 10-digit Indian mobile number (starting with 6–9).</p>
+                </div>
+            </div>
+        </div>
+
+        <script>
+            function saveGoogleUserPhone() {
+                const input = document.getElementById('googleUserPhone');
+                const phone = (input.value || '').trim();
+                const errEl = document.getElementById('phoneError');
+                // Validate: Indian mobile 10 digits starting with 6-9
+                if (!/^[6-9][0-9]{9}$/.test(phone)) {
+                    errEl.style.display = 'block';
+                    input.focus();
+                    return;
+                }
+                errEl.style.display = 'none';
+                // Save to signup_data
+                const signupData = JSON.parse(localStorage.getItem('signup_data') || '{}');
+                signupData.phone = phone;
+                localStorage.setItem('signup_data', JSON.stringify(signupData));
+                // Hide banner with success feedback
+                const banner = document.getElementById('phoneCollectionBanner');
+                banner.style.background = '#f0fdf4';
+                banner.style.borderColor = '#10b981';
+                banner.innerHTML = '<div style="display:flex;align-items:center;gap:12px;color:#065f46;"><span style="font-size:1.4rem;">✅</span><div><strong>Mobile number saved!</strong><br><span style="font-size:0.85rem;">You can now proceed with payment.</span></div></div>';
+                setTimeout(() => { banner.style.display = 'none'; }, 2500);
+            }
+            // Show banner if phone is missing (runs immediately)
+            (function() {
+                const data = JSON.parse(localStorage.getItem('signup_data') || '{}');
+                if (!data.phone || data.phone.trim() === '') {
+                    document.getElementById('phoneCollectionBanner').style.display = 'block';
+                    // Also disable checkout buttons until phone is saved
+                    document.addEventListener('DOMContentLoaded', function() {
+                        const lockButtons = () => {
+                            const d = JSON.parse(localStorage.getItem('signup_data') || '{}');
+                            if (!d.phone || d.phone.trim() === '') {
+                                ['btnPayNow', 'btnStartTrial'].forEach(id => {
+                                    const btn = document.getElementById(id);
+                                    if (btn) { btn.disabled = true; btn.style.opacity = '0.45'; btn.title = 'Please enter your mobile number above first.'; }
+                                });
+                            }
+                        };
+                        lockButtons();
+                        // Re-enable after phone is saved
+                        document.getElementById('btnSavePhone').addEventListener('click', function() {
+                            setTimeout(() => {
+                                const d = JSON.parse(localStorage.getItem('signup_data') || '{}');
+                                if (d.phone) {
+                                    ['btnPayNow', 'btnStartTrial'].forEach(id => {
+                                        const btn = document.getElementById(id);
+                                        if (btn) { btn.disabled = false; btn.style.opacity = '1'; btn.title = ''; }
+                                    });
+                                }
+                            }, 300);
+                        });
+                    });
+                }
+            })();
+        </script>
+
         <!-- Three Column Layout -->
         <div class="three-col-layout">
             
