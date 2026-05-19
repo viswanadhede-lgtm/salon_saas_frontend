@@ -385,7 +385,11 @@ document.addEventListener('DOMContentLoaded', () => {
                 btn.style.opacity = '1';
                 btn.style.cursor = 'pointer';
                 btn.disabled = false;
-                alert(err.message || 'An error occurred. Please try again.');
+                const errEl = document.getElementById('signup-error');
+                if (errEl) {
+                    errEl.textContent = err.message || 'An error occurred. Please try again.';
+                    errEl.style.display = 'block';
+                }
             }
         });
     }
@@ -526,7 +530,11 @@ document.addEventListener('DOMContentLoaded', () => {
                 btn.style.opacity = '1';
                 btn.style.cursor = 'pointer';
                 btn.disabled = false;
-                alert('Sign in failed. ' + err.message);
+                const errEl = document.getElementById('signin-error');
+                if (errEl) {
+                    errEl.textContent = 'Sign in failed. ' + (err.message || 'Please check your credentials.');
+                    errEl.style.display = 'block';
+                }
             }
         });
     }
