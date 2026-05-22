@@ -230,19 +230,20 @@ async function submitOnboarding() {
             }
         }
 
-        // 5. Insert User with SHA-256 password hash
-        await supabase.from('users').insert({
+        // 5. Insert User
+        const { error: userErr } = await supabase.from('users').insert({
             user_id,
             company_id,
             branch_id,
             name: data.full_name,
             email: data.email,
-            phone: data.phone,
-            password_hash: data.password_hash || '',
+            phone: data.phone || null,           // null for Google OAuth users (no phone yet)
+            password_hash: data.password_hash || null, // null for Google OAuth users (no password)
             role_id,
             role_name: 'Owner',
             status: 'active'
         });
+        if (userErr) throw new Error('Failed to create User record: ' + userErr.message);
 
         // 6. Fetch plan_limits and insert one usage_counter row per resource
         console.log('[usage_counters] Fetching plan_limits for plan_id:', planId);
@@ -290,18 +291,19 @@ async function submitOnboarding() {
         const nameParts = (data.full_name || '').split(' ');
         const first_name = nameParts[0];
         const last_name = nameParts.length > 1 ? nameParts.slice(1).join(' ') : '';
-        await supabase.from('profiles').insert({
+        const { error: profileErr } = await supabase.from('profiles').insert({
             user_id,
             company_id,
             branch_id,
             first_name,
             last_name,
-            phone: data.phone,
+            phone: data.phone || null,
             email: data.email,
             role_id,
             role_name: 'Owner',
             joined_on: company_created_at
         });
+        if (profileErr) throw new Error('Failed to create Profile record: ' + profileErr.message);
 
         // Save context to localStorage
         localStorage.setItem('company_id', company_id);
