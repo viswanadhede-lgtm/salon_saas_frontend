@@ -276,6 +276,15 @@ document.addEventListener('DOMContentLoaded', () => {
     const googleBtn = document.querySelector('.btn-social');
     if (!googleBtn) return;
 
+    // Capture the original text (e.g. "Sign up with Google" or "Sign in with Google")
+    // By getting the text nodes while ignoring the SVG
+    let originalText = 'Continue with Google';
+    for (const node of googleBtn.childNodes) {
+        if (node.nodeType === Node.TEXT_NODE && node.textContent.trim().length > 0) {
+            originalText = node.textContent.trim();
+        }
+    }
+
     googleBtn.addEventListener('click', async () => {
         googleBtn.disabled = true;
         googleBtn.style.opacity = '0.7';
@@ -308,7 +317,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     <path d="M5.84 14.11c-.22-.66-.35-1.36-.35-2.11s.13-1.45.35-2.11V7.05H2.15C1.46 8.43 1.07 9.97 1.07 11.6c0 1.63.39 3.17 1.08 4.55l3.69-2.04z" fill="#FBBC05"/>
                     <path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.15 7.05l3.69 2.84c.87-2.6 3.3-4.51 6.16-4.51z" fill="#EA4335"/>
                 </svg>
-                Continue with Google
+                ${originalText}
             `;
             // Show error inline
             const errEl = document.getElementById('signup-error') || document.getElementById('signin-error');
