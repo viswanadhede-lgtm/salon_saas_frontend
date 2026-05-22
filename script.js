@@ -291,6 +291,12 @@ document.addEventListener('DOMContentLoaded', () => {
         googleBtn.style.cursor = 'wait';
         googleBtn.textContent = 'Redirecting to Google...';
 
+        // Save which page triggered the OAuth so auth-callback.html can route correctly.
+        // 'signin' → must exist in DB → go to dashboard (or show error)
+        // 'signup' → may be new → go to plans
+        const mode = document.getElementById('signin-form') ? 'signin' : 'signup';
+        localStorage.setItem('oauth_mode', mode);
+
         try {
             const { error } = await supabase.auth.signInWithOAuth({
                 provider: 'google',

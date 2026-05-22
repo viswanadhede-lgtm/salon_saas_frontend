@@ -111,7 +111,7 @@
                     .eq('user_id', user.id);
 
                 if (userData && userData.length > 0) {
-                    // Existing user — set context and go to dashboard
+                    // ── Existing user — set context and go to dashboard ──
                     const profile = userData[0];
 
                     if (profile.status === 'deleted' || profile.status === 'inactive') {
@@ -126,6 +126,7 @@
                     localStorage.removeItem('userFeatures');
                     localStorage.removeItem('userSubFeatures');
                     localStorage.removeItem('appContext');
+                    localStorage.removeItem('oauth_mode');
 
                     document.getElementById('statusTitle').textContent = 'Welcome back!';
                     document.getElementById('statusMsg').textContent = 'Redirecting to your dashboard...';
@@ -133,11 +134,23 @@
                     setTimeout(() => { window.location.href = 'dashboard.html'; }, 1000);
 
                 } else {
-                    // New user — go to plans
-                    document.getElementById('statusTitle').textContent = 'Account created!';
-                    document.getElementById('statusMsg').textContent = 'Redirecting to plan selection...';
+                    // ── No DB record found — check which flow triggered this ──
+                    const oauthMode = localStorage.getItem('oauth_mode') || 'signup';
+                    localStorage.removeItem('oauth_mode');
 
-                    setTimeout(() => { window.location.href = 'plans.html'; }, 1000);
+                    if (oauthMode === 'signin') {
+                        // User tried to sign IN with Google but has no account.
+                        // Show a clear error instead of silently running through onboarding.
+                        await supabase.auth.signOut();
+                        localStorage.removeItem('token');
+                        localStorage.removeItem('refresh_token');
+                        throw new Error('No account found for this Google email. Please sign up first.');
+                    } else {
+                        // New user via Sign Up flow — proceed to plan selection
+                        document.getElementById('statusTitle').textContent = 'Account created!';
+                        document.getElementById('statusMsg').textContent = 'Redirecting to plan selection...';
+                        setTimeout(() => { window.location.href = 'plans.html'; }, 1000);
+                    }
                 }
 
             } catch (err) {
