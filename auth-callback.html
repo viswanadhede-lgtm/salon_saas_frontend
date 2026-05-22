@@ -140,11 +140,12 @@
 
                     if (oauthMode === 'signin') {
                         // User tried to sign IN with Google but has no account.
-                        // Show a clear error instead of silently running through onboarding.
-                        await supabase.auth.signOut();
+                        // Clear any partial session tokens and redirect back with a clear error.
                         localStorage.removeItem('token');
                         localStorage.removeItem('refresh_token');
-                        throw new Error('No account found for this Google email. Please sign up first.');
+                        localStorage.removeItem('signup_data');
+                        window.location.href = 'signin.html?error=no_account';
+                        return;
                     } else {
                         // New user via Sign Up flow — proceed to plan selection
                         document.getElementById('statusTitle').textContent = 'Account created!';

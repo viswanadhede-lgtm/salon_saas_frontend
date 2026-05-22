@@ -1,5 +1,27 @@
 import { supabase } from './lib/supabase.js';
 
+// ─── Show error message if redirected back from auth-callback (e.g. no Google account found) ─
+(function () {
+    const params = new URLSearchParams(window.location.search);
+    const errorCode = params.get('error');
+    if (!errorCode) return;
+
+    // Clean the URL immediately
+    window.history.replaceState({}, '', window.location.pathname);
+
+    const messages = {
+        no_account: 'No account found for this Google email. Please sign up first or use a different account.'
+    };
+
+    document.addEventListener('DOMContentLoaded', () => {
+        const errEl = document.getElementById('signin-error');
+        if (errEl) {
+            errEl.textContent = messages[errorCode] || 'Something went wrong. Please try again.';
+            errEl.style.display = 'block';
+        }
+    });
+})();
+
 // ─── Show "Logged out successfully" toast if redirected from logout ────────────
 (function () {
     const params = new URLSearchParams(window.location.search);
