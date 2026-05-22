@@ -302,33 +302,49 @@ document.addEventListener('DOMContentLoaded', () => {
             const SUPABASE_URL      = 'https://qxmgyxjwpxkdbgldpdil.supabase.co';
             const SUPABASE_ANON_KEY = 'sb_publishable_aqCSbMiVxH5cSZxgssdNqw_jQZvzmA0';
 
-            // Call the create-razorpay-order Edge Function.
-            // We send razorpay_plan_id so the backend creates a recurring Subscription,
-            // not a one-time Order.
-            const res = await fetch(`${SUPABASE_URL}/functions/v1/create-razorpay-order`, {
+            // Call the unified create-razorpay-subscription Edge Function
+            // (Used for both Paid and Trial flows. We pass is_trial: false here)
+            const res = await fetch(`${SUPABASE_URL}/functions/v1/create-razorpay-subscription`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json', 'apikey': SUPABASE_ANON_KEY },
                 body: JSON.stringify({
                     company_id:       storedCompanyId,
-                    plan_id:          dbPlan.plan_id,
-                    razorpay_plan_id: rzpPlanId,   // ← Razorpay Plan ID for subscription
+                    db_plan_id:       dbPlan.plan_id,      // ← Matches edge fn expectation
+                    razorpay_plan_id: rzpPlanId,           // ← Razorpay Plan ID
                     amount:           amount,
-                    billing_cycle:    cycle,
+                    is_trial:         false,               // ← Paid flow, no 7-day delay
                     customer_email:   customerEmail,
                     customer_name:    customerName,
                     customer_phone:   customerPhone
                 })
             });
 
+            if (!res.ok) {
+                const errText = await res.text();
+                console.error('[triggerOrderCreation] Edge function error:', errText);
+                let errMsg = 'Failed to create subscription. Please try again.';
+                try {
+                    const parsed = JSON.parse(errText);
+                    if (parsed.error) {
+                        if (typeof parsed.error === 'string') errMsg = parsed.error;
+                        else if (parsed.error.description) errMsg = parsed.error.description;
+                        else errMsg = JSON.stringify(parsed.error);
+                    } else if (parsed.description) {
+                        errMsg = parsed.description;
+                    }
+                } catch (_) {}
+                throw new Error(errMsg);
+            }
+
             const data = await res.json();
             console.log('[triggerOrderCreation] Edge function response:', data);
 
-            // Edge function returns subscription_id when using plan-based flow
+            // Edge function returns subscription_id
             const subscriptionId = data.subscription_id || data.id;
 
             if (!subscriptionId) {
                 console.error('[triggerOrderCreation] Edge function error:', data);
-                throw new Error(data.error || 'Failed to create subscription. Please try again.');
+                throw new Error('Invalid response from payment service. Please contact support.');
             }
 
             // Open Razorpay Checkout with subscription_id (recurring billing)
