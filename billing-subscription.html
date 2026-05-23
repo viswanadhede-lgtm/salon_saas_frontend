@@ -1,4 +1,4 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="en">
 
 <head>
@@ -203,7 +203,7 @@
             <div class="header-right">
                 <!-- Quick Actions -->
                 <div class="quick-actions">
-                    <button class="qa-btn qa-primary" id="btnNewBooking">
+                    <button class="qa-btn qa-primary" id="btnNewBooking" data-sub-feature="billing_create_booking">
                         <i data-feather="calendar" class="qa-icon"></i>
                         <span>New Booking</span>
                     </button>
@@ -313,11 +313,11 @@
                             </div>
                         </div>
                         <div class="plan-actions">
-                            <button class="btn-billing btn-billing-primary" onclick="window.location.href='plans.html?current=growth'">
+                            <button class="btn-billing btn-billing-primary" data-sub-feature="billing_upgrade_plan" onclick="window.location.href='plans.html?current=growth'">
                                 <i data-feather="arrow-up-circle"></i>
                                 Upgrade Plan
                             </button>
-                            <button class="btn-billing btn-billing-secondary" onclick="window.location.href='plans.html?current=growth'">
+                            <button class="btn-billing btn-billing-secondary" data-sub-feature="billing_change_plan" onclick="window.location.href='plans.html?current=growth'">
                                 <i data-feather="refresh-cw"></i>
                                 Change Plan
                             </button>
@@ -470,7 +470,7 @@
                                 <p class="addon-desc">Deep-dive revenue, staff & service analytics</p>
                                 <p class="addon-price">₹299 / month</p>
                             </div>
-                            <button class="btn-addon-add btn-addon-cta">
+                            <button class="btn-addon-add btn-addon-cta" data-sub-feature="billing_add_addon">
                                 <i data-feather="plus"></i>
                                 Add
                             </button>
@@ -484,7 +484,7 @@
                                 <p class="addon-desc">Push & SMS alerts for bookings and updates</p>
                                 <p class="addon-price">₹199 / month</p>
                             </div>
-                            <button class="btn-addon-add btn-addon-cta">
+                            <button class="btn-addon-add btn-addon-cta" data-sub-feature="billing_add_addon">
                                 <i data-feather="plus"></i>
                                 Add
                             </button>
@@ -522,7 +522,7 @@
                             </div>
                         </div>
                     </div>
-                    <button class="btn-billing btn-billing-secondary btn-full-width" style="margin-top: 1rem;">
+                    <button class="btn-billing btn-billing-secondary btn-full-width" data-sub-feature="billing_update_payment" style="margin-top: 1rem;">
                         <i data-feather="edit-2"></i>
                         Update Payment Method
                     </button>
@@ -538,7 +538,7 @@
                         <h2 class="section-title">Payment History</h2>
                         <p class="section-sub">Your past transactions</p>
                     </div>
-                    <button class="btn-billing btn-billing-ghost">
+                    <button class="btn-billing btn-billing-ghost" data-sub-feature="billing_export">
                         <i data-feather="download"></i>
                         Export All
                     </button>
@@ -572,6 +572,7 @@
 
     <script src="dashboard.js"></script>
     <script type="module" src="billing-subscription.js"></script>
+    <script type="module" src="scripts/sub-features/sub-feature-gate.js"></script>
     <script>
         // Init Feather Icons
         feather.replace();

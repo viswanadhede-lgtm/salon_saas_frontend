@@ -2,6 +2,7 @@
 <html lang="en">
 <head>
     <script src="scripts/auth-loader.js"></script>
+    <script type="module" src="scripts/sub-features/sub-feature-gate.js"></script>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="description" content="Coupons - BharathBots Salon SaaS.">
@@ -155,7 +156,7 @@
             </div>
             <div class="header-right">
                 <div class="quick-actions">
-                    <button class="qa-btn qa-primary" id="btnNewBooking">
+                    <button class="qa-btn qa-primary" id="btnNewBooking" data-sub-feature="coupons_create_booking">
                         <i data-feather="calendar" class="qa-icon"></i><span>New Booking</span>
                     </button>
                 </div>

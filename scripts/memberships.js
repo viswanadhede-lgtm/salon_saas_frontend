@@ -37,8 +37,8 @@ document.addEventListener('DOMContentLoaded', async () => {
     // ── Plan Modal wiring ──
     const overlay = document.getElementById('planModalOverlay');
 
-    // Open "Create Plan" via the primary action button (only when on "plans" tab)
-    document.getElementById('primaryActionBtn')?.addEventListener('click', () => {
+    // Open "Create Plan" via the dedicated Create button
+    document.getElementById('btnCreatePlan')?.addEventListener('click', () => {
         const activeTab = document.querySelector('.nav-tab.active')?.getAttribute('data-tab');
         if (activeTab === 'plans') openCreateModal();
     });
@@ -461,11 +461,11 @@ function renderPlans() {
                 <td>${statusBadge}</td>
                 <td style="text-align:right;">
                     <div style="display:flex;gap:8px;justify-content:flex-end;">
-                        <button onclick="window.editPlan('${planId}')" class="action-btn edit-btn"
+                        <button data-sub-feature="update_membership" onclick="window.editPlan('${planId}')" class="action-btn edit-btn"
                             style="padding:6px;border-radius:6px;border:1px solid #e2e8f0;background:#fff;cursor:pointer;color:#3b82f6;" title="Edit">
                             <i data-feather="edit-2" style="width:16px;height:16px;"></i>
                         </button>
-                        <button onclick="window.deletePlan('${planId}')" class="action-btn delete-btn"
+                        <button data-sub-feature="delete_membership" onclick="window.deletePlan('${planId}')" class="action-btn delete-btn"
                             style="padding:6px;border-radius:6px;border:1px solid #e2e8f0;background:#fff;cursor:pointer;color:#ef4444;" title="Delete">
                             <i data-feather="trash-2" style="width:16px;height:16px;"></i>
                         </button>
@@ -475,6 +475,7 @@ function renderPlans() {
     }).join('');
 
     if (window.feather) feather.replace();
+    if (window.applySubFeatureGates) window.applySubFeatureGates();
 }
 
 function populateAssignPlanDropdown() {
@@ -838,6 +839,7 @@ function renderPurchases() {
     }).join('');
 
     if (window.feather) feather.replace();
+    if (window.applySubFeatureGates) window.applySubFeatureGates();
 }
 
 async function preValidateAndShowCollect() {

@@ -168,10 +168,10 @@ function renderRolesList() {
             </div>
             ${!role.protected ? `
             <div class="role-item-actions">
-                <button class="role-item-action-btn" title="Edit role" data-action="edit" data-role="${roleId}">
+                <button class="role-item-action-btn" title="Edit role" data-action="edit" data-role="${roleId}" data-sub-feature="role_update">
                     <i data-feather="edit-2" style="width:14px;height:14px;"></i>
                 </button>
-                <button class="role-item-action-btn danger" title="Delete role" data-action="delete" data-role="${roleId}">
+                <button class="role-item-action-btn danger" title="Delete role" data-action="delete" data-role="${roleId}" data-sub-feature="role_delete">
                     <i data-feather="trash-2" style="width:14px;height:14px;"></i>
                 </button>
             </div>` : ''}
@@ -186,6 +186,10 @@ function renderRolesList() {
     });
 
     if (window.feather) feather.replace();
+
+    if (window.applySubFeatureGates) {
+        window.applySubFeatureGates();
+    }
 }
 
 function selectRole(roleId) {

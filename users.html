@@ -1,4 +1,4 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="en">
 
 <head>
@@ -202,7 +202,7 @@
             <div class="header-right">
                 <!-- Quick Actions -->
                 <div class="quick-actions">
-                    <button class="qa-btn qa-primary" id="btnNewBooking">
+                    <button class="qa-btn qa-primary" id="btnNewBooking" data-sub-feature="user_create_booking">
                         <i data-feather="calendar" class="qa-icon"></i>
                         <span>New Booking</span>
                     </button>
@@ -276,7 +276,7 @@
                     <h1>Users</h1>
                     <p class="subtitle">Manage staff accounts and system access</p>
                 </div>
-                <button class="qa-btn qa-primary" id="btnAddUser">
+                <button class="qa-btn qa-primary" id="btnAddUser" data-sub-feature="user_create">
                     <i data-feather="plus" class="qa-icon"></i>
                     <span>Add User</span>
                 </button>
@@ -384,6 +384,7 @@
 
     <script src="dashboard.js"></script>
     <script type="module" src="users.js?v=2"></script>
+    <script type="module" src="scripts/sub-features/sub-feature-gate.js"></script>
     <script>
         // Init Feather Icons
         feather.replace();

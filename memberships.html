@@ -3,6 +3,7 @@
 
 <head>
     <script src="scripts/auth-loader.js"></script>
+    <script type="module" src="scripts/sub-features/sub-feature-gate.js"></script>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="description" content="Dashboard for BharathBots Salon SaaS.">
@@ -566,7 +567,7 @@
             <div class="header-right">
                 <!-- Quick Actions -->
                 <div class="quick-actions">
-                    <button class="qa-btn qa-primary" id="btnNewBooking">
+                    <button class="qa-btn qa-primary" id="btnNewBooking" data-sub-feature="memberships_create_booking">
                         <i data-feather="calendar" class="qa-icon"></i>
                         <span>New Booking</span>
                     </button>
@@ -702,9 +703,18 @@
                                 </div>
                             </div>
                         </div>
-                        <button id="primaryActionBtn" class="qa-btn qa-primary">
-                            <i data-feather="plus" id="actionIcon" class="qa-icon"></i>
-                            <span id="actionText">Create Plan</span>
+                        <!-- 3 Dedicated View Buttons (Toggled via JS) -->
+                        <button id="btnCreatePlan" class="qa-btn qa-primary" data-sub-feature="create_membership">
+                            <i data-feather="plus" class="qa-icon"></i>
+                            <span>Create Plan</span>
+                        </button>
+                        <button id="btnAssignPlan" class="qa-btn qa-primary" data-sub-feature="assign_membership" style="display:none;">
+                            <i data-feather="user-plus" class="qa-icon"></i>
+                            <span>Assign Membership</span>
+                        </button>
+                        <button id="btnExportUsage" class="qa-btn qa-secondary" data-sub-feature="export_membership_usage" style="display:none;">
+                            <i data-feather="download" class="qa-icon"></i>
+                            <span>Export</span>
                         </button>
                     </div>
                 </div>
@@ -968,9 +978,10 @@
         const tabs = document.querySelectorAll('.nav-tab');
         const contents = document.querySelectorAll('.tab-content');
         const searchInput = document.getElementById('membershipSearch');
-        const actionText = document.getElementById('actionText');
-        const actionIcon = document.getElementById('actionIcon');
-        const primaryActionBtn = document.getElementById('primaryActionBtn');
+        
+        const btnCreatePlan = document.getElementById('btnCreatePlan');
+        const btnAssignPlan = document.getElementById('btnAssignPlan');
+        const btnExportUsage = document.getElementById('btnExportUsage');
 
         tabs.forEach(tab => {
             tab.addEventListener('click', () => {
@@ -1002,24 +1013,10 @@
 
                 if (target === 'plans') {
                     searchInput.placeholder = 'Search plans...';
-                    actionText.innerText = 'Create Plan';
-                    primaryActionBtn.classList.remove('qa-secondary');
-                    primaryActionBtn.classList.add('qa-primary');
-                    actionIcon.setAttribute('data-feather', 'plus');
                     
-                    // Reset Filter UI
-                    filterPanel.style.width = '580px';
-                    filterGrid.style.gridTemplateColumns = 'repeat(3, 1fr)';
-                    filterColDuration.style.display = 'block';
-                    filterColStatus.style.display = 'block';
-                    document.getElementById('applyFilter').innerText = 'Apply Filter';
-                    feather.replace();
-                } else if (target === 'purchases') {
-                    searchInput.placeholder = 'Search customers...';
-                    actionText.innerText = 'Assign Membership';
-                    primaryActionBtn.classList.remove('qa-secondary');
-                    primaryActionBtn.classList.add('qa-primary');
-                    actionIcon.setAttribute('data-feather', 'user-plus');
+                    if (btnCreatePlan) btnCreatePlan.style.display = 'inline-flex';
+                    if (btnAssignPlan) btnAssignPlan.style.display = 'none';
+                    if (btnExportUsage) btnExportUsage.style.display = 'none';
 
                     // Reset Filter UI
                     filterPanel.style.width = '580px';
@@ -1027,13 +1024,25 @@
                     filterColDuration.style.display = 'block';
                     filterColStatus.style.display = 'block';
                     document.getElementById('applyFilter').innerText = 'Apply Filter';
-                    feather.replace();
+                } else if (target === 'purchases') {
+                    searchInput.placeholder = 'Search customers...';
+                    
+                    if (btnCreatePlan) btnCreatePlan.style.display = 'none';
+                    if (btnAssignPlan) btnAssignPlan.style.display = 'inline-flex';
+                    if (btnExportUsage) btnExportUsage.style.display = 'none';
+
+                    // Reset Filter UI
+                    filterPanel.style.width = '580px';
+                    filterGrid.style.gridTemplateColumns = 'repeat(3, 1fr)';
+                    filterColDuration.style.display = 'block';
+                    filterColStatus.style.display = 'block';
+                    document.getElementById('applyFilter').innerText = 'Apply Filter';
                 } else if (target === 'usage') {
                     searchInput.placeholder = 'Search usage history...';
-                    actionText.innerText = 'Export';
-                    primaryActionBtn.classList.remove('qa-primary');
-                    primaryActionBtn.classList.add('qa-secondary');
-                    actionIcon.setAttribute('data-feather', 'download');
+                    
+                    if (btnCreatePlan) btnCreatePlan.style.display = 'none';
+                    if (btnAssignPlan) btnAssignPlan.style.display = 'none';
+                    if (btnExportUsage) btnExportUsage.style.display = 'inline-flex';
 
                     // Compact Filter UI for Usage History
                     filterPanel.style.width = '240px';
@@ -1936,13 +1945,12 @@
     <script>
         // Modal logic
         const assignModal = document.getElementById('assignModalOverlay');
-        const primaryBtn = document.getElementById('primaryActionBtn');
+        const assignBtn = document.getElementById('btnAssignPlan');
 
-        // Handle Primary Action Button (Create/Assign)
-        if (primaryBtn) {
-            primaryBtn.addEventListener('click', () => {
+        // Handle Primary Action Button (Assign)
+        if (assignBtn) {
+            assignBtn.addEventListener('click', () => {
                 const currentTab = document.querySelector('.nav-tab.active')?.getAttribute('data-tab');
-                // The 'plans' tab logic is handled by scripts/memberships.js module
                 if (currentTab === 'purchases') {
                     if (window.resetAssignMembershipForm) window.resetAssignMembershipForm();
                     assignModal.classList.add('active');

@@ -273,10 +273,10 @@ document.addEventListener('DOMContentLoaded', () => {
                     </td>
                     <td style="padding: 16px 20px; text-align: center;">
                         <div style="display: flex; gap: 6px; justify-content: center;">
-                            <button class="icon-btn edit-btn" data-id="${offerId}" style="padding: 6px; border-radius: 6px; border: 1px solid #e2e8f0; background: #fff; cursor: pointer; color: #3b82f6;" title="Edit">
+                            <button class="icon-btn edit-btn" data-sub-feature="update_offer" data-id="${offerId}" style="padding: 6px; border-radius: 6px; border: 1px solid #e2e8f0; background: #fff; cursor: pointer; color: #3b82f6;" title="Edit">
                                 <i data-feather="edit-2" style="width: 16px; height: 16px;"></i>
                             </button>
-                            <button class="icon-btn delete-btn" data-id="${offerId}" style="padding: 6px; border-radius: 6px; border: 1px solid #e2e8f0; background: #fff; cursor: pointer; color: #ef4444;" title="Delete">
+                            <button class="icon-btn delete-btn" data-sub-feature="delete_offer" data-id="${offerId}" style="padding: 6px; border-radius: 6px; border: 1px solid #e2e8f0; background: #fff; cursor: pointer; color: #ef4444;" title="Delete">
                                 <i data-feather="trash-2" style="width: 16px; height: 16px;"></i>
                             </button>
                         </div>
@@ -286,6 +286,7 @@ document.addEventListener('DOMContentLoaded', () => {
         }).join('');
 
         if (window.feather) window.feather.replace();
+        if (window.applySubFeatureGates) window.applySubFeatureGates();
     }
 
     // ─────────────────────────────────────────────────────────────────────────
@@ -553,7 +554,10 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     });
 
-    if (btnCreateOffer) btnCreateOffer.addEventListener('click', openModalForCreate);
+    if (btnCreateOffer) {
+        btnCreateOffer.setAttribute('data-sub-feature', 'create_offer');
+        btnCreateOffer.addEventListener('click', openModalForCreate);
+    }
     if (btnCancelOffer) btnCancelOffer.addEventListener('click', closeModal);
     if (closeOfferModalBtn) closeOfferModalBtn.addEventListener('click', closeModal);
     if (btnSaveOffer) btnSaveOffer.addEventListener('click', handleSaveOffer);

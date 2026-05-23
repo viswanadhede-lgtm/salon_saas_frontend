@@ -1,4 +1,4 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="en">
 
 <head>
@@ -536,7 +536,7 @@
             <div class="header-right">
                 <!-- Quick Actions -->
                 <div class="quick-actions">
-                    <button class="qa-btn qa-primary" id="btnNewBooking">
+                    <button class="qa-btn qa-primary" id="btnNewBooking" data-sub-feature="expenses_create_booking">
                         <i data-feather="calendar" class="qa-icon"></i>
                         <span>New Booking</span>
                     </button>
@@ -618,7 +618,7 @@
                             <option value="all">All Time</option>
                         </select>
                     </div>
-                    <button class="btn btn-primary" onclick="window.openAddExpenseModal()" style="display: flex; align-items: center; gap: 8px;">
+                    <button class="btn btn-primary" onclick="window.openAddExpenseModal()" data-sub-feature="expenses_create" style="display: flex; align-items: center; gap: 8px;">
                         <i data-feather="plus"></i>
                         Add Expense
                     </button>
@@ -735,6 +735,7 @@
     <script src="config/feature-registry.js" type="module"></script>
     <script src="config/api.js" type="module"></script>
     <script src="scripts/global-auth-guard.js" type="module"></script>
+    <script src="scripts/sub-features/sub-feature-gate.js" type="module"></script>
     <script src="scripts/logout.js" type="module"></script>
     <script src="scripts/expenses.js" type="module"></script>
 

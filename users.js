@@ -294,19 +294,23 @@ import { supabase } from './lib/supabase.js';
                 <td style="padding:13px 16px;color:#94a3b8;font-size:0.875rem;">${lastLoginText}</td>
                 <td style="padding:13px 24px 13px 16px;text-align:right;">
                     <div style="display:flex; justify-content:flex-end; gap:6px;">
-                        <button class="icon-btn" onclick="window.userAction('edit', '${u.user_id || u.id}')" title="Edit User" style="width:32px;height:32px;border-radius:8px;border:1px solid #e2e8f0;background:#f8fafc;display:inline-flex;align-items:center;justify-content:center;cursor:pointer;color:#64748b;transition:all .2s;" onmouseover="this.style.background='#f1f5f9';this.style.color='#1e293b';" onmouseout="this.style.background='#f8fafc';this.style.color='#64748b';"><i data-feather="edit-2" style="width:14px;height:14px;"></i></button>
+                        <button class="icon-btn" onclick="window.userAction('edit', '${u.user_id || u.id}')" data-sub-feature="user_update" title="Edit User" style="width:32px;height:32px;border-radius:8px;border:1px solid #e2e8f0;background:#f8fafc;display:inline-flex;align-items:center;justify-content:center;cursor:pointer;color:#64748b;transition:all .2s;" onmouseover="this.style.background='#f1f5f9';this.style.color='#1e293b';" onmouseout="this.style.background='#f8fafc';this.style.color='#64748b';"><i data-feather="edit-2" style="width:14px;height:14px;"></i></button>
                         
-                        <button class="icon-btn" onclick="window.userAction('reset', '${u.user_id || u.id}')" title="Reset Password" style="width:32px;height:32px;border-radius:8px;border:1px solid #e2e8f0;background:#f8fafc;display:inline-flex;align-items:center;justify-content:center;cursor:pointer;color:#64748b;transition:all .2s;" onmouseover="this.style.background='#f1f5f9';this.style.color='#1e293b';" onmouseout="this.style.background='#f8fafc';this.style.color='#64748b';"><i data-feather="key" style="width:14px;height:14px;"></i></button>
+                        <button class="icon-btn" onclick="window.userAction('reset', '${u.user_id || u.id}')" data-sub-feature="user_update" title="Reset Password" style="width:32px;height:32px;border-radius:8px;border:1px solid #e2e8f0;background:#f8fafc;display:inline-flex;align-items:center;justify-content:center;cursor:pointer;color:#64748b;transition:all .2s;" onmouseover="this.style.background='#f1f5f9';this.style.color='#1e293b';" onmouseout="this.style.background='#f8fafc';this.style.color='#64748b';"><i data-feather="key" style="width:14px;height:14px;"></i></button>
                         
-                        <button class="icon-btn" onclick="window.userAction('toggle', '${u.user_id || u.id}')" title="${isActive ? 'Deactivate' : 'Activate'}" style="width:32px;height:32px;border-radius:8px;border:1px solid #e2e8f0;background:#f8fafc;display:inline-flex;align-items:center;justify-content:center;cursor:pointer;color:${isActive ? '#22c55e' : '#94a3b8'};transition:all .2s;" onmouseover="this.style.background='#f1f5f9';" onmouseout="this.style.background='#f8fafc';"><i data-feather="power" style="width:14px;height:14px;"></i></button>
+                        <button class="icon-btn" onclick="window.userAction('toggle', '${u.user_id || u.id}')" data-sub-feature="user_update" title="${isActive ? 'Deactivate' : 'Activate'}" style="width:32px;height:32px;border-radius:8px;border:1px solid #e2e8f0;background:#f8fafc;display:inline-flex;align-items:center;justify-content:center;cursor:pointer;color:${isActive ? '#22c55e' : '#94a3b8'};transition:all .2s;" onmouseover="this.style.background='#f1f5f9';" onmouseout="this.style.background='#f8fafc';"><i data-feather="power" style="width:14px;height:14px;"></i></button>
                         
-                        ${!isOwner ? `<button class="icon-btn" onclick="window.userAction('delete', '${u.user_id || u.id}')" title="Delete User" style="width:32px;height:32px;border-radius:8px;border:1px solid #fee2e2;background:#fef2f2;display:inline-flex;align-items:center;justify-content:center;cursor:pointer;color:#ef4444;transition:all .2s;" onmouseover="this.style.background='#fee2e2';" onmouseout="this.style.background='#fef2f2';"><i data-feather="trash-2" style="width:14px;height:14px;"></i></button>` : ''}
+                        ${!isOwner ? `<button class="icon-btn" onclick="window.userAction('delete', '${u.user_id || u.id}')" data-sub-feature="user_delete" title="Delete User" style="width:32px;height:32px;border-radius:8px;border:1px solid #fee2e2;background:#fef2f2;display:inline-flex;align-items:center;justify-content:center;cursor:pointer;color:#ef4444;transition:all .2s;" onmouseover="this.style.background='#fee2e2';" onmouseout="this.style.background='#fef2f2';"><i data-feather="trash-2" style="width:14px;height:14px;"></i></button>` : ''}
                     </div>
                 </td>`;
             tbody.appendChild(tr);
         });
 
         if (window.feather) feather.replace();
+
+        if (window.applySubFeatureGates) {
+            window.applySubFeatureGates();
+        }
     }
 
     // ── User Actions ──────────────────────────────────────────────

@@ -1,4 +1,4 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="en">
 
 <head>
@@ -202,7 +202,7 @@
             <div class="header-right">
                 <!-- Quick Actions -->
                 <div class="quick-actions">
-                    <button class="qa-btn qa-primary" id="btnNewBooking">
+                    <button class="qa-btn qa-primary" id="btnNewBooking" data-sub-feature="company_create_booking">
                         <i data-feather="calendar" class="qa-icon"></i>
                         <span>New Booking</span>
                     </button>
@@ -273,7 +273,7 @@
                     <p class="subtitle">Manage your business identity and global company information</p>
                 </div>
                 <div class="header-actions">
-                    <button class="btn btn-primary" onclick="saveSettings()">Save Changes</button>
+                    <button class="btn btn-primary" onclick="saveSettings()" data-sub-feature="company_update">Save Changes</button>
                 </div>
             </div>
 
@@ -295,7 +295,7 @@
                                     </div>
                                 </div>
                                 <div class="logo-upload-actions">
-                                    <label for="companyLogo" class="btn btn-secondary">
+                                    <label for="companyLogo" class="btn btn-secondary" data-sub-feature="company_update">
                                         <i data-feather="upload" style="width: 14px; margin-right: 6px;"></i> Upload Image
                                     </label>
                                     <input type="file" id="companyLogo" accept="image/*" style="display: none;">
