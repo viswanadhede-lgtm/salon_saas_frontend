@@ -215,6 +215,7 @@ document.addEventListener('DOMContentLoaded', () => {
             const actionCell = tr.querySelector('.action-cell');
             const refundBtn = document.createElement('button');
             refundBtn.textContent = 'Return';
+            refundBtn.setAttribute('data-sub-feature', 'pos_issue_refund');
             refundBtn.title = payStatus === 'unpaid' ? 'Cannot return pending sale' : 'Return Items';
             refundBtn.style.padding = '4px 10px';
             refundBtn.style.borderRadius = '6px';
@@ -249,6 +250,7 @@ document.addEventListener('DOMContentLoaded', () => {
         });
 
         if (typeof feather !== 'undefined') feather.replace();
+        if (window.applySubFeatureGates) window.applySubFeatureGates();
     }
 
 
@@ -382,7 +384,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     Print Receipt
                 </button>
                 <div style="height: 1px; background: #e2e8f0; margin: 4px 0;"></div>
-                <button class="tb-menu-item danger" onclick="handleSaleAction('refund', ${idx})">
+                <button class="tb-menu-item danger" data-sub-feature="pos_issue_refund" onclick="handleSaleAction('refund', ${idx})">
                     <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 14 4 9 9 4"/><path d="M20 20v-7a4 4 0 0 0-4-4H4"/></svg>
                     Return Items
                 </button>
@@ -400,6 +402,8 @@ document.addEventListener('DOMContentLoaded', () => {
 
         menu.style.top = top + 'px';
         menu.style.left = left + 'px';
+        
+        if (window.applySubFeatureGates) window.applySubFeatureGates();
     };
 
     function closeOpenActionMenu() {

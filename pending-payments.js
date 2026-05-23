@@ -206,7 +206,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                 <td style="padding:14px 16px; color:#dc2626; font-weight:600;">₹${due.toLocaleString('en-IN')}</td>
                 <td style="padding:14px 16px;">${statusBadge}</td>
                 <td style="padding:14px 16px;">
-                    <button onclick="ppOpenCollect('${row.booking_id}')" style="height:32px; padding:0 14px; background:#eff6ff; color:#1e40af; border:1px solid #bfdbfe; border-radius:7px; font-size:0.8rem; font-weight:600; cursor:pointer; display:inline-flex; align-items:center; gap:5px; white-space:nowrap;" onmouseover="this.style.background='#dbeafe'" onmouseout="this.style.background='#eff6ff'">
+                    <button data-sub-feature="pending_payments_collect" onclick="ppOpenCollect('${row.booking_id}')" style="height:32px; padding:0 14px; background:#eff6ff; color:#1e40af; border:1px solid #bfdbfe; border-radius:7px; font-size:0.8rem; font-weight:600; cursor:pointer; display:inline-flex; align-items:center; gap:5px; white-space:nowrap;" onmouseover="this.style.background='#dbeafe'" onmouseout="this.style.background='#eff6ff'">
                         <i data-feather="credit-card" style="width:13px; height:13px;"></i> Collect
                     </button>
                 </td>`;
@@ -214,6 +214,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         });
 
         if (window.feather) feather.replace();
+        if (window.applySubFeatureGates) window.applySubFeatureGates();
     }
 
     // ─── APPLY ALL FILTERS ──────────────────────────────────────────────────

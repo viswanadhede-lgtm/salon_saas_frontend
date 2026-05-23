@@ -302,7 +302,7 @@
                                 <input type="tel" id="posCustomerSearch" placeholder="Search by phone number" style="flex: 1; border: none; background: transparent; padding: 10px; font-size: 0.9rem; outline: none; color: #1e293b; font-weight: 500;" autocomplete="off" inputmode="numeric">
                                 <div id="posCustomerSuggestions" style="display:none; position:absolute; top:100%; left:0; right:0; background:#fff; border:1px solid #e2e8f0; border-radius:8px; box-shadow:0 10px 15px -3px rgba(0,0,0,0.1); margin-top:4px; z-index:50; max-height:220px; overflow-y:auto;"></div>
                             </div>
-                            <button id="btnOpenAddCustomer" style="width: 46px; height: 46px; flex-shrink: 0; border-radius: 8px; border: 1.5px solid #1e293b; background: #ffffff; color: #1e293b; display: flex; flex-direction: column; align-items: center; justify-content: center; cursor: pointer; transition: all 0.2s; box-shadow: 0 2px 4px rgba(0,0,0,0.05); gap: 1px;" title="Add Customer">
+                            <button id="btnOpenAddCustomer" data-sub-feature="pos_create_customer" style="width: 46px; height: 46px; flex-shrink: 0; border-radius: 8px; border: 1.5px solid #1e293b; background: #ffffff; color: #1e293b; display: flex; flex-direction: column; align-items: center; justify-content: center; cursor: pointer; transition: all 0.2s; box-shadow: 0 2px 4px rgba(0,0,0,0.05); gap: 1px;" title="Add Customer">
                                 <i data-feather="plus" style="width: 20px; height: 20px; stroke-width: 3;"></i>
                                 <span style="font-size: 0.5rem; font-weight: 700; text-transform: uppercase;">Add</span>
                             </button>
@@ -335,7 +335,7 @@
                         </div>
                     </div>
                     <!-- Sale Action -->
-                    <button id="btnCompleteSale" class="btn btn-primary" style="width: 100%; height: 50px; font-size: 1rem; font-weight: 600; border-radius: 10px; display: flex; justify-content: center; align-items: center; gap: 8px; opacity: 0.6; cursor: not-allowed; outline: none; border: none; background-color: #4f46e5; color: white;">
+                    <button id="btnCompleteSale" data-sub-feature="pos_checkout" class="btn btn-primary" style="width: 100%; height: 50px; font-size: 1rem; font-weight: 600; border-radius: 10px; display: flex; justify-content: center; align-items: center; gap: 8px; opacity: 0.6; cursor: not-allowed; outline: none; border: none; background-color: #4f46e5; color: white;">
                         <i data-feather="dollar-sign" style="width: 18px; height: 18px;"></i> Collect
                     </button>
                 </div>

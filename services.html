@@ -290,13 +290,13 @@
                         <i data-feather="search" class="search-icon" style="left:12px;width:15px;height:15px;"></i>
                         <input type="text" id="packagesSearchInput" placeholder="Search packages..." class="search-input" style="padding:0.55rem 1rem 0.55rem 2.4rem;font-size:0.875rem;border-radius:6px;">
                     </div>
-                    <button class="qa-btn qa-primary" id="btnAddService">
+                    <button class="qa-btn qa-primary" id="btnAddService" data-sub-feature="create_service">
                         <i data-feather="plus" class="qa-icon"></i><span>Add Service</span>
                     </button>
-                    <button class="qa-btn qa-primary" id="btnAddCategory" style="display:none;">
+                    <button class="qa-btn qa-primary" id="btnAddCategory" style="display:none;" data-sub-feature="create_service_category">
                         <i data-feather="plus" class="qa-icon"></i><span>Add Category</span>
                     </button>
-                    <button class="qa-btn qa-primary" id="btnAddPackage" style="display:none;">
+                    <button class="qa-btn qa-primary" id="btnAddPackage" style="display:none;" data-sub-feature="create_package">
                         <i data-feather="plus" class="qa-icon"></i><span>Add Package</span>
                     </button>
                 </div>
@@ -429,11 +429,11 @@
                     <td style="padding:14px 16px;">${statusBadge(s.status)}</td>
                     <td style="padding:14px 16px; vertical-align:middle;">
                         <div class="action-buttons" style="display:flex; justify-content:flex-start; gap:0.5rem;">
-                            <button class="hover-lift" onclick="window.openEditServiceModal('${sId}')" title="Edit Service" style="display:flex; flex-direction:column; align-items:center; justify-content:center; padding: 4px 8px; border-radius:8px; border:1px solid #e0e7ff; background:#eff6ff; cursor:pointer; color:#3b82f6; transition:all 0.2s; min-width: 52px;">
+                            <button class="hover-lift" onclick="window.openEditServiceModal('${sId}')" title="Edit Service" data-sub-feature="update_service" style="display:flex; flex-direction:column; align-items:center; justify-content:center; padding: 4px 8px; border-radius:8px; border:1px solid #e0e7ff; background:#eff6ff; cursor:pointer; color:#3b82f6; transition:all 0.2s; min-width: 52px;">
                                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="margin-bottom:2px;"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path></svg>
                                 <span style="font-size:10px; font-weight:600;">Edit</span>
                             </button>
-                            <button class="hover-lift" onclick="window.triggerDeleteService('${sId}', '${sName.replace(/'/g, "\\'")}')" title="Delete Service" style="display:flex; flex-direction:column; align-items:center; justify-content:center; padding: 4px 8px; border-radius:8px; border:1px solid #fee2e2; background:#fef2f2; cursor:pointer; color:#ef4444; transition:all 0.2s; min-width: 52px;">
+                            <button class="hover-lift" onclick="window.triggerDeleteService('${sId}', '${sName.replace(/'/g, "\\'")}')" title="Delete Service" data-sub-feature="delete_service" style="display:flex; flex-direction:column; align-items:center; justify-content:center; padding: 4px 8px; border-radius:8px; border:1px solid #fee2e2; background:#fef2f2; cursor:pointer; color:#ef4444; transition:all 0.2s; min-width: 52px;">
                                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="margin-bottom:2px;"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path><line x1="10" y1="11" x2="10" y2="17"></line><line x1="14" y1="11" x2="14" y2="17"></line></svg>
                                 <span style="font-size:10px; font-weight:600;">Delete</span>
                             </button>
@@ -441,6 +441,7 @@
                     </td>
                 </tr>`;
             }).join('');
+            if (typeof window.applySubFeatureGates === 'function') window.applySubFeatureGates();
         };
         window.openSvcMenu = function(e,id,name){
             e.stopPropagation();if(window.svcMenu){window.svcMenu.remove();window.svcMenu=null;}
@@ -468,11 +469,11 @@
                     <td style="padding:14px 16px;">${statusBadge(catStatus)}</td>
                     <td style="padding:14px 16px; vertical-align:middle;">
                         <div class="action-buttons" style="display:flex; justify-content:flex-start; gap:0.5rem;">
-                            <button class="btn-edit-cat hover-lift" onclick="window.openEditCategoryModal('${c.id || c.category_id || ''}', '${catName}')" title="Edit Category" style="display:flex; flex-direction:column; align-items:center; justify-content:center; padding: 4px 8px; border-radius:8px; border:1px solid #e0e7ff; background:#eff6ff; cursor:pointer; color:#3b82f6; transition:all 0.2s; min-width: 52px;">
+                            <button class="btn-edit-cat hover-lift" onclick="window.openEditCategoryModal('${c.id || c.category_id || ''}', '${catName}')" title="Edit Category" data-sub-feature="update_service_category" style="display:flex; flex-direction:column; align-items:center; justify-content:center; padding: 4px 8px; border-radius:8px; border:1px solid #e0e7ff; background:#eff6ff; cursor:pointer; color:#3b82f6; transition:all 0.2s; min-width: 52px;">
                                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="margin-bottom:2px;"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path></svg>
                                 <span style="font-size:10px; font-weight:600;">Edit</span>
                             </button>
-                            <button class="btn-delete-cat flex-shrink-0 hover-lift" ${cnt > 0 ? 'disabled' : ''} onclick="${cnt > 0 ? '' : `window.triggerDeleteCategory('${c.id || c.category_id || ''}', '${catName}')`}" title="${cnt > 0 ? 'Cannot delete the service category because there are active services under this category' : 'Delete Category'}" style="display:flex; flex-direction:column; align-items:center; justify-content:center; padding: 4px 8px; border-radius:8px; border:1px solid #fee2e2; background:#fef2f2; cursor:${cnt > 0 ? 'not-allowed' : 'pointer'}; color:#ef4444; transition:all 0.2s; min-width: 52px; opacity: ${cnt > 0 ? '0.45' : '1'};">
+                            <button class="btn-delete-cat flex-shrink-0 hover-lift" ${cnt > 0 ? 'disabled' : ''} onclick="${cnt > 0 ? '' : `window.triggerDeleteCategory('${c.id || c.category_id || ''}', '${catName}')`}" title="${cnt > 0 ? 'Cannot delete the service category because there are active services under this category' : 'Delete Category'}" data-sub-feature="delete_service_category" style="display:flex; flex-direction:column; align-items:center; justify-content:center; padding: 4px 8px; border-radius:8px; border:1px solid #fee2e2; background:#fef2f2; cursor:${cnt > 0 ? 'not-allowed' : 'pointer'}; color:#ef4444; transition:all 0.2s; min-width: 52px; opacity: ${cnt > 0 ? '0.45' : '1'};">
                                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="margin-bottom:2px;"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path><line x1="10" y1="11" x2="10" y2="17"></line><line x1="14" y1="11" x2="14" y2="17"></line></svg>
                                 <span style="font-size:10px; font-weight:600;">Delete</span>
                             </button>
@@ -480,6 +481,7 @@
                     </td>
                 </tr>`;
             }).join('');
+            if (typeof window.applySubFeatureGates === 'function') window.applySubFeatureGates();
         };
 
         window.renderPackages = function(data){
@@ -496,11 +498,11 @@
                     <td style="padding:14px 16px;">${statusBadge(p.is_active)}</td>
                     <td style="padding:14px 16px; vertical-align:middle;">
                         <div class="action-buttons" style="display:flex; justify-content:flex-start; gap:0.5rem;">
-                            <button class="hover-lift" onclick="window.openEditPackageModal('${p.package_id}')" title="Edit Package" style="display:flex; flex-direction:column; align-items:center; justify-content:center; padding: 4px 8px; border-radius:8px; border:1px solid #e0e7ff; background:#eff6ff; cursor:pointer; color:#3b82f6; transition:all 0.2s; min-width: 52px;">
+                            <button class="hover-lift" onclick="window.openEditPackageModal('${p.package_id}')" title="Edit Package" data-sub-feature="update_package" style="display:flex; flex-direction:column; align-items:center; justify-content:center; padding: 4px 8px; border-radius:8px; border:1px solid #e0e7ff; background:#eff6ff; cursor:pointer; color:#3b82f6; transition:all 0.2s; min-width: 52px;">
                                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="margin-bottom:2px;"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path></svg>
                                 <span style="font-size:10px; font-weight:600;">Edit</span>
                             </button>
-                            <button class="hover-lift" onclick="window.triggerDeletePackage('${p.package_id}', '${pName.replace(/'/g, "\\'")}')" title="Delete Package" style="display:flex; flex-direction:column; align-items:center; justify-content:center; padding: 4px 8px; border-radius:8px; border:1px solid #fee2e2; background:#fef2f2; cursor:pointer; color:#ef4444; transition:all 0.2s; min-width: 52px;">
+                            <button class="hover-lift" onclick="window.triggerDeletePackage('${p.package_id}', '${pName.replace(/'/g, "\\'")}')" title="Delete Package" data-sub-feature="delete_package" style="display:flex; flex-direction:column; align-items:center; justify-content:center; padding: 4px 8px; border-radius:8px; border:1px solid #fee2e2; background:#fef2f2; cursor:pointer; color:#ef4444; transition:all 0.2s; min-width: 52px;">
                                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="margin-bottom:2px;"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path><line x1="10" y1="11" x2="10" y2="17"></line><line x1="14" y1="11" x2="14" y2="17"></line></svg>
                                 <span style="font-size:10px; font-weight:600;">Delete</span>
                             </button>
@@ -508,6 +510,7 @@
                     </td>
                 </tr>`;
             }).join('');
+            if (typeof window.applySubFeatureGates === 'function') window.applySubFeatureGates();
         };
         window.toast = function(msg){const t=document.getElementById('toastNotification');if(t){t.textContent=msg;t.classList.add('show');setTimeout(()=>t.classList.remove('show'),3000);}};
 

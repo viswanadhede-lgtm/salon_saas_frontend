@@ -124,11 +124,13 @@ function buildRow(b, includeDate = false) {
         <td style="padding:10px 8px;">
             <div style="display:flex;gap:6px;flex-wrap:nowrap;">
                 ${isEditable ? `<button onclick="window.openEditBookingModal('${bookingId}')"
+                    data-sub-feature="update_booking"
                     style="padding:4px 10px;border-radius:6px;border:1px solid #e2e8f0;background:#fff;color:#475569;font-size:0.75rem;font-weight:600;cursor:pointer;white-space:nowrap;transition:all 0.2s;"
                     onmouseover="this.style.borderColor='#94a3b8'" onmouseout="this.style.borderColor='#e2e8f0'">
                     Edit
                 </button>` : ''}
                 ${isCancellable ? `<button onclick="window.triggerCancelBooking('${bookingId}')"
+                    data-sub-feature="cancel_booking"
                     style="padding:4px 10px;border-radius:6px;border:1px solid #fecdd3;background:#fff5f5;color:#e11d48;font-size:0.75rem;font-weight:600;cursor:pointer;white-space:nowrap;transition:all 0.2s;"
                     onmouseover="this.style.background='#fee2e2'" onmouseout="this.style.background='#fff5f5'">
                     Cancel

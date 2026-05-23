@@ -9,40 +9,47 @@ export const SUB_FEATURES = {
     // ---- BOOKINGS ----
     CREATE_BOOKING: 'create_booking',
     UPDATE_BOOKING: 'update_booking',
-    READ_BOOKINGS: 'read_bookings',
     CANCEL_BOOKING: 'cancel_booking',
 
     // ---- SERVICES ----
     CREATE_SERVICE_CATEGORY: 'create_service_category',
-    READ_SERVICE_CATEGORY: 'read_service_category',
     UPDATE_SERVICE_CATEGORY: 'update_service_category',
     DELETE_SERVICE_CATEGORY: 'delete_service_category',
 
     CREATE_SERVICE: 'create_service',
-    READ_SERVICES: 'read_services',
     UPDATE_SERVICE: 'update_service',
     DELETE_SERVICE: 'delete_service',
 
-    // ---- POS / SALES ----
+    CREATE_PACKAGE: 'create_package',
+    UPDATE_PACKAGE: 'update_package',
+    DELETE_PACKAGE: 'delete_package',
+
+    // ---- POS ----
     POS_CHECKOUT: 'pos_checkout',
-    POS_APPLY_DISCOUNT: 'pos_apply_discount',
+    POS_CREATE_CUSTOMER: 'pos_create_customer',
+
+    // ---- SALES HISTORY ----
     POS_ISSUE_REFUND: 'pos_issue_refund',
+    POS_EXPORT_SALES: 'pos_export_sales',
+
+    // ---- PENDING PAYMENTS ----
+    PENDING_PAYMENTS_COLLECT: 'pending_payments_collect',
+
+    // ---- PAYMENTS HISTORY ----
+    PAYMENTS_HISTORY_EXPORT: 'payments_history_export',
 
     // ---- CUSTOMERS ----
     CUSTOMER_CREATE: 'customer_create',
     CUSTOMER_EDIT: 'customer_edit',
-    CUSTOMER_EXPORT: 'customer_export',
     CUSTOMER_DELETE: 'customer_delete',
 
     // ---- STAFF ----
     CREATE_STAFF: 'create_staff',
-    READ_STAFF: 'read_staff',
     UPDATE_STAFF: 'update_staff',
     DELETE_STAFF: 'delete_staff',
 
     // ---- STAFF SCHEDULES ----
     CREATE_STAFF_SCHEDULE: 'create_staff_schedule',
-    READ_STAFF_SCHEDULE: 'read_staff_schedule',
     EDIT_STAFF_SCHEDULE: 'edit_staff_schedule',
     DELETE_STAFF_SCHEDULE: 'delete_staff_schedule',
 
@@ -57,12 +64,10 @@ export const SUB_FEATURES = {
 
     // ---- INVENTORY / PRODUCTS ----
     CREATE_PRODUCT_CATEGORY: 'create_product_category',
-    READ_PRODUCT_CATEGORIES: 'read_product_categories',
     UPDATE_PRODUCT_CATEGORY: 'update_product_category',
     DELETE_PRODUCT_CATEGORY: 'delete_product_category',
 
     CREATE_PRODUCT: 'create_product',
-    READ_PRODUCTS: 'read_products',
     UPDATE_PRODUCT: 'update_product',
     DELETE_PRODUCT: 'delete_product',
 
@@ -87,41 +92,48 @@ export const SUB_FEATURES_MAP = {
     [FEATURES.BOOKINGS_MANAGEMENT]: [
         { key: SUB_FEATURES.CREATE_BOOKING, label: 'Create Booking' },
         { key: SUB_FEATURES.UPDATE_BOOKING, label: 'Update Booking' },
-        { key: SUB_FEATURES.READ_BOOKINGS, label: 'Read Bookings' },
         { key: SUB_FEATURES.CANCEL_BOOKING, label: 'Cancel Booking' }
     ],
     [FEATURES.STAFF_MANAGEMENT]: [
         { key: SUB_FEATURES.CREATE_STAFF, label: 'Create Staff' },
-        { key: SUB_FEATURES.READ_STAFF, label: 'Read Staff' },
         { key: SUB_FEATURES.UPDATE_STAFF, label: 'Update Staff' },
         { key: SUB_FEATURES.DELETE_STAFF, label: 'Delete Staff' }
     ],
     [FEATURES.STAFF_SCHEDULES]: [
         { key: SUB_FEATURES.CREATE_STAFF_SCHEDULE, label: 'Create Schedule' },
-        { key: SUB_FEATURES.READ_STAFF_SCHEDULE, label: 'Read Schedules' },
         { key: SUB_FEATURES.EDIT_STAFF_SCHEDULE, label: 'Edit Schedule' },
         { key: SUB_FEATURES.DELETE_STAFF_SCHEDULE, label: 'Delete Schedule' }
     ],
     [FEATURES.SERVICES_MANAGEMENT]: [
         { key: SUB_FEATURES.CREATE_SERVICE_CATEGORY, label: 'Create Service Category' },
-        { key: SUB_FEATURES.READ_SERVICE_CATEGORY, label: 'Read Service Categories' },
         { key: SUB_FEATURES.UPDATE_SERVICE_CATEGORY, label: 'Update Service Category' },
         { key: SUB_FEATURES.DELETE_SERVICE_CATEGORY, label: 'Delete Service Category' },
 
         { key: SUB_FEATURES.CREATE_SERVICE, label: 'Create Service' },
-        { key: SUB_FEATURES.READ_SERVICES, label: 'Read Services' },
         { key: SUB_FEATURES.UPDATE_SERVICE, label: 'Update Service' },
-        { key: SUB_FEATURES.DELETE_SERVICE, label: 'Delete Service' }
+        { key: SUB_FEATURES.DELETE_SERVICE, label: 'Delete Service' },
+
+        { key: SUB_FEATURES.CREATE_PACKAGE, label: 'Create Package' },
+        { key: SUB_FEATURES.UPDATE_PACKAGE, label: 'Update Package' },
+        { key: SUB_FEATURES.DELETE_PACKAGE, label: 'Delete Package' }
     ],
     [FEATURES.POS_SYSTEM]: [
         { key: SUB_FEATURES.POS_CHECKOUT, label: 'Process Checkout' },
-        { key: SUB_FEATURES.POS_APPLY_DISCOUNT, label: 'Apply Discounts' },
-        { key: SUB_FEATURES.POS_ISSUE_REFUND, label: 'Issue Refunds' }
+        { key: SUB_FEATURES.POS_CREATE_CUSTOMER, label: 'Create Customer (POS)' }
+    ],
+    [FEATURES.SALES_HISTORY]: [
+        { key: SUB_FEATURES.POS_ISSUE_REFUND, label: 'Issue Refunds / Returns' },
+        { key: SUB_FEATURES.POS_EXPORT_SALES, label: 'Export Sales History' }
+    ],
+    [FEATURES.PENDING_PAYMENTS]: [
+        { key: SUB_FEATURES.PENDING_PAYMENTS_COLLECT, label: 'Collect Payment' }
+    ],
+    [FEATURES.PAYMENTS_HISTORY]: [
+        { key: SUB_FEATURES.PAYMENTS_HISTORY_EXPORT, label: 'Export Payments History' }
     ],
     [FEATURES.CUSTOMERS_MANAGEMENT]: [
         { key: SUB_FEATURES.CUSTOMER_CREATE, label: 'Create Customer' },
         { key: SUB_FEATURES.CUSTOMER_EDIT, label: 'Edit Customer' },
-        { key: SUB_FEATURES.CUSTOMER_EXPORT, label: 'Export Data' },
         { key: SUB_FEATURES.CUSTOMER_DELETE, label: 'Delete Customer' }
     ],
     [FEATURES.REPORTS_ACCESS]: [
@@ -137,12 +149,10 @@ export const SUB_FEATURES_MAP = {
     ],
     [FEATURES.PRODUCT_MANAGEMENT]: [
         { key: SUB_FEATURES.CREATE_PRODUCT_CATEGORY, label: 'Create Product Category' },
-        { key: SUB_FEATURES.READ_PRODUCT_CATEGORIES, label: 'Read Product Categories' },
         { key: SUB_FEATURES.UPDATE_PRODUCT_CATEGORY, label: 'Update Product Category' },
         { key: SUB_FEATURES.DELETE_PRODUCT_CATEGORY, label: 'Delete Product Category' },
 
         { key: SUB_FEATURES.CREATE_PRODUCT, label: 'Create Product' },
-        { key: SUB_FEATURES.READ_PRODUCTS, label: 'Read Products' },
         { key: SUB_FEATURES.UPDATE_PRODUCT, label: 'Update Product' },
         { key: SUB_FEATURES.DELETE_PRODUCT, label: 'Delete Product' }
     ],

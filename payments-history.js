@@ -117,6 +117,7 @@ function phRenderTable(data) {
     });
 
     if (window.feather) feather.replace();
+    if (window.applySubFeatureGates) window.applySubFeatureGates();
 }
 
 // Drawer Functions

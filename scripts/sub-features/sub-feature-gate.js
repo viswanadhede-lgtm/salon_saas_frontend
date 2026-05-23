@@ -54,3 +54,6 @@ if (document.readyState === 'loading') {
 } else {
     applySubFeatureGates();
 }
+
+// Make accessible to non-module inline scripts
+window.applySubFeatureGates = applySubFeatureGates;

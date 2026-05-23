@@ -131,20 +131,27 @@ function initTabs() {
                 searchInput.placeholder  = 'Search products...';
                 filterBtn.style.display  = 'flex';
                 primaryActionText.textContent = 'Add Product';
+                primaryActionBtn.setAttribute('data-sub-feature', 'create_product');
                 primaryActionBtn.onclick = window.openAddProductModal;
+                if(window.applySubFeatureGates) window.applySubFeatureGates();
                 fetchProductCategories().then(() => fetchProducts());
             } else {
                 document.getElementById('tabCategories').style.display = 'block';
                 searchInput.placeholder  = 'Search categories...';
                 filterBtn.style.display  = 'none';
                 primaryActionText.textContent = 'Add Category';
+                primaryActionBtn.setAttribute('data-sub-feature', 'create_product_category');
                 primaryActionBtn.onclick = window.openAddCategoryModal;
+                if(window.applySubFeatureGates) window.applySubFeatureGates();
                 fetchProductCategories();
             }
         });
     });
 
-    if (primaryActionBtn) { primaryActionBtn.onclick = window.openAddProductModal; }
+    if (primaryActionBtn) {
+        primaryActionBtn.onclick = window.openAddProductModal;
+        primaryActionBtn.setAttribute('data-sub-feature', 'create_product');
+    }
     
     if (searchInput) {
         searchInput.addEventListener('input', () => {
@@ -223,11 +230,11 @@ function renderProductsTable() {
             <td style="padding:16px;">${statusBadge(p.status)}</td>
             <td style="padding:16px; vertical-align:middle;">
                 <div class="action-buttons" style="display:flex; justify-content:flex-end; gap:0.5rem;">
-                    <button class="hover-lift" onclick="window.openEditProductModal('${p.product_id || p.id}')" title="Edit Product" style="display:flex; flex-direction:column; align-items:center; justify-content:center; padding: 4px 8px; border-radius:8px; border:1px solid #e0e7ff; background:#eff6ff; cursor:pointer; color:#3b82f6; transition:all 0.2s; min-width: 52px;">
+                    <button class="hover-lift" data-sub-feature="update_product" onclick="window.openEditProductModal('${p.product_id || p.id}')" title="Edit Product" style="display:flex; flex-direction:column; align-items:center; justify-content:center; padding: 4px 8px; border-radius:8px; border:1px solid #e0e7ff; background:#eff6ff; cursor:pointer; color:#3b82f6; transition:all 0.2s; min-width: 52px;">
                         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="margin-bottom:2px;"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path></svg>
                         <span style="font-size:10px; font-weight:600;">Edit</span>
                     </button>
-                    <button class="hover-lift" onclick="window.triggerDeleteProduct('${p.product_id || p.id}', '${(p.product_name || '').replace(/'/g, "\\'")}')" title="Delete Product" style="display:flex; flex-direction:column; align-items:center; justify-content:center; padding: 4px 8px; border-radius:8px; border:1px solid #fee2e2; background:#fef2f2; cursor:pointer; color:#ef4444; transition:all 0.2s; min-width: 52px;">
+                    <button class="hover-lift" data-sub-feature="delete_product" onclick="window.triggerDeleteProduct('${p.product_id || p.id}', '${(p.product_name || '').replace(/'/g, "\\'")}')" title="Delete Product" style="display:flex; flex-direction:column; align-items:center; justify-content:center; padding: 4px 8px; border-radius:8px; border:1px solid #fee2e2; background:#fef2f2; cursor:pointer; color:#ef4444; transition:all 0.2s; min-width: 52px;">
                         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="margin-bottom:2px;"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2-2v2"></path><line x1="10" y1="11" x2="10" y2="17"></line><line x1="14" y1="11" x2="14" y2="17"></line></svg>
                         <span style="font-size:10px; font-weight:600;">Delete</span>
                     </button>
@@ -237,6 +244,7 @@ function renderProductsTable() {
         tbody.appendChild(tr);
     });
     if (window.feather) feather.replace();
+    if (window.applySubFeatureGates) window.applySubFeatureGates();
 }
 
 function renderFilterOptions() {
@@ -286,11 +294,11 @@ function renderCategoriesTable() {
             <td style="padding:16px;">${statusBadge(c.status)}</td>
             <td style="padding:16px; vertical-align:middle;">
                 <div class="action-buttons" style="display:flex; justify-content:flex-end; gap:0.5rem;">
-                    <button class="hover-lift" onclick="window.openEditCategoryModal('${c.category_id || c.id}')" title="Edit Category" style="display:flex; flex-direction:column; align-items:center; justify-content:center; padding: 4px 8px; border-radius:8px; border:1px solid #e0e7ff; background:#eff6ff; cursor:pointer; color:#3b82f6; transition:all 0.2s; min-width: 52px;">
+                    <button class="hover-lift" data-sub-feature="update_product_category" onclick="window.openEditCategoryModal('${c.category_id || c.id}')" title="Edit Category" style="display:flex; flex-direction:column; align-items:center; justify-content:center; padding: 4px 8px; border-radius:8px; border:1px solid #e0e7ff; background:#eff6ff; cursor:pointer; color:#3b82f6; transition:all 0.2s; min-width: 52px;">
                         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="margin-bottom:2px;"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path></svg>
                         <span style="font-size:10px; font-weight:600;">Edit</span>
                     </button>
-                    <button class="flex-shrink-0 hover-lift" ${pCount > 0 ? 'disabled' : ''} onclick="${pCount > 0 ? '' : `window.triggerDeleteCategory('${c.category_id || c.id}', '${(c.category_name || '').replace(/'/g, "\\'")}')`}" title="${pCount > 0 ? 'Cannot delete: products exist under this category' : 'Delete Category'}" style="display:flex; flex-direction:column; align-items:center; justify-content:center; padding: 4px 8px; border-radius:8px; border:1px solid #fee2e2; background:#fef2f2; cursor:${pCount > 0 ? 'not-allowed' : 'pointer'}; color:#ef4444; transition:all 0.2s; min-width: 52px; opacity: ${pCount > 0 ? '0.45' : '1'};">
+                    <button class="flex-shrink-0 hover-lift" data-sub-feature="delete_product_category" ${pCount > 0 ? 'disabled' : ''} onclick="${pCount > 0 ? '' : `window.triggerDeleteCategory('${c.category_id || c.id}', '${(c.category_name || '').replace(/'/g, "\\'")}')`}" title="${pCount > 0 ? 'Cannot delete: products exist under this category' : 'Delete Category'}" style="display:flex; flex-direction:column; align-items:center; justify-content:center; padding: 4px 8px; border-radius:8px; border:1px solid #fee2e2; background:#fef2f2; cursor:${pCount > 0 ? 'not-allowed' : 'pointer'}; color:#ef4444; transition:all 0.2s; min-width: 52px; opacity: ${pCount > 0 ? '0.45' : '1'};">
                         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="margin-bottom:2px;"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path><line x1="10" y1="11" x2="10" y2="17"></line><line x1="14" y1="11" x2="14" y2="17"></line></svg>
                         <span style="font-size:10px; font-weight:600;">Delete</span>
                     </button>
@@ -300,6 +308,7 @@ function renderCategoriesTable() {
         tbody.appendChild(tr);
     });
     if (window.feather) feather.replace();
+    if (window.applySubFeatureGates) window.applySubFeatureGates();
 }
 
 window.toggleDropdown = function (btn) {

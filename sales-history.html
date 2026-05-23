@@ -3,6 +3,7 @@
 
 <head>
     <script src="scripts/auth-loader.js"></script>
+    <script type="module" src="scripts/sub-features/sub-feature-gate.js"></script>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="description" content="Sales History - BharathBots Salon SaaS">
@@ -256,7 +257,7 @@
 
                     <!-- Export Button -->
                     <div style="position:relative;">
-                        <button id="hsExportBtn" class="btn btn-secondary" style="height:40px; display:flex; align-items:center; gap:6px; padding:0 14px;"
+                        <button id="hsExportBtn" class="btn btn-secondary" data-sub-feature="pos_export_sales" style="height:40px; display:flex; align-items:center; gap:6px; padding:0 14px;"
                             onclick="event.stopPropagation(); var m=document.getElementById('hsExportMenu'); m.style.display=(m.style.display==='block'?'none':'block'); document.getElementById('hsFilterMenu').style.display='none'; document.getElementById('hsDateMenu').style.display='none';">
                             <i data-feather="download" style="width:15px; height:15px;"></i> Export
                         </button>
@@ -316,7 +317,7 @@
                         <button class="btn btn-secondary" id="sdPrintBtn" style="height: 32px; padding: 0 10px; font-size: 0.8rem;">
                             <i data-feather="printer" style="width:14px; height:14px; margin-right:4px;"></i> Print
                         </button>
-                        <button class="btn" id="sdRefundBtn" style="height: 32px; padding: 0 10px; font-size: 0.8rem; background: #fff1f2; color: #dc2626; border: 1px solid #fecdd3;">
+                        <button class="btn" id="sdRefundBtn" data-sub-feature="pos_issue_refund" style="height: 32px; padding: 0 10px; font-size: 0.8rem; background: #fff1f2; color: #dc2626; border: 1px solid #fecdd3;">
                             <i data-feather="corner-up-left" style="width:14px; height:14px; margin-right:4px;"></i> Return
                         </button>
                     </div>
