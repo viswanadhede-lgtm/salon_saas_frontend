@@ -158,17 +158,20 @@ export const SUB_FEATURES_MAP = {
     [FEATURES.CUSTOMERS_MANAGEMENT]: [
         { key: SUB_FEATURES.CUSTOMER_CREATE, label: 'Create Customer' },
         { key: SUB_FEATURES.CUSTOMER_EDIT, label: 'Edit Customer' },
-        { key: SUB_FEATURES.CUSTOMER_DELETE, label: 'Delete Customer' }
+        { key: SUB_FEATURES.CUSTOMER_DELETE, label: 'Delete Customer' },
+        { key: SUB_FEATURES.CUSTOMERS_CREATE_BOOKING, label: 'Create Booking (Quick Action)' }
     ],
     [FEATURES.STAFF_MANAGEMENT]: [
         { key: SUB_FEATURES.CREATE_STAFF, label: 'Create Staff' },
         { key: SUB_FEATURES.UPDATE_STAFF, label: 'Update Staff' },
-        { key: SUB_FEATURES.DELETE_STAFF, label: 'Delete Staff' }
+        { key: SUB_FEATURES.DELETE_STAFF, label: 'Delete Staff' },
+        { key: SUB_FEATURES.STAFF_CREATE_BOOKING, label: 'Create Booking (Quick Action)' }
     ],
     [FEATURES.STAFF_SCHEDULES]: [
         { key: SUB_FEATURES.CREATE_STAFF_SCHEDULE, label: 'Create Schedule' },
         { key: SUB_FEATURES.EDIT_STAFF_SCHEDULE, label: 'Edit Schedule' },
-        { key: SUB_FEATURES.DELETE_STAFF_SCHEDULE, label: 'Delete Schedule' }
+        { key: SUB_FEATURES.DELETE_STAFF_SCHEDULE, label: 'Delete Schedule' },
+        { key: SUB_FEATURES.STAFF_SCHEDULE_CREATE_BOOKING, label: 'Create Booking (Quick Action)' }
     ],
     [FEATURES.SERVICES_MANAGEMENT]: [
         { key: SUB_FEATURES.CREATE_SERVICE_CATEGORY, label: 'Create Service Category' },
@@ -181,11 +184,14 @@ export const SUB_FEATURES_MAP = {
 
         { key: SUB_FEATURES.CREATE_PACKAGE, label: 'Create Package' },
         { key: SUB_FEATURES.UPDATE_PACKAGE, label: 'Update Package' },
-        { key: SUB_FEATURES.DELETE_PACKAGE, label: 'Delete Package' }
+        { key: SUB_FEATURES.DELETE_PACKAGE, label: 'Delete Package' },
+        
+        { key: SUB_FEATURES.SERVICES_CREATE_BOOKING, label: 'Create Booking (Quick Action)' }
     ],
     [FEATURES.POS_SYSTEM]: [
         { key: SUB_FEATURES.POS_CHECKOUT, label: 'Process Checkout' },
-        { key: SUB_FEATURES.POS_CREATE_CUSTOMER, label: 'Create Customer (POS)' }
+        { key: SUB_FEATURES.POS_CREATE_CUSTOMER, label: 'Create Customer (POS)' },
+        { key: SUB_FEATURES.POS_CREATE_BOOKING, label: 'Create Booking (Quick Action)' }
     ],
     [FEATURES.PRODUCT_MANAGEMENT]: [
         { key: SUB_FEATURES.CREATE_PRODUCT_CATEGORY, label: 'Create Product Category' },
@@ -194,35 +200,43 @@ export const SUB_FEATURES_MAP = {
 
         { key: SUB_FEATURES.CREATE_PRODUCT, label: 'Create Product' },
         { key: SUB_FEATURES.UPDATE_PRODUCT, label: 'Update Product' },
-        { key: SUB_FEATURES.DELETE_PRODUCT, label: 'Delete Product' }
+        { key: SUB_FEATURES.DELETE_PRODUCT, label: 'Delete Product' },
+
+        { key: SUB_FEATURES.PRODUCTS_CREATE_BOOKING, label: 'Create Booking (Quick Action)' }
     ],
     [FEATURES.SALES_HISTORY]: [
         { key: SUB_FEATURES.POS_ISSUE_REFUND, label: 'Issue Refunds / Returns' },
-        { key: SUB_FEATURES.POS_EXPORT_SALES, label: 'Export Sales History' }
+        { key: SUB_FEATURES.POS_EXPORT_SALES, label: 'Export Sales History' },
+        { key: SUB_FEATURES.SALES_HISTORY_CREATE_BOOKING, label: 'Create Booking (Quick Action)' }
     ],
     [FEATURES.PENDING_PAYMENTS]: [
-        { key: SUB_FEATURES.PENDING_PAYMENTS_COLLECT, label: 'Collect Payment' }
+        { key: SUB_FEATURES.PENDING_PAYMENTS_COLLECT, label: 'Collect Payment' },
+        { key: SUB_FEATURES.PENDING_PAYMENTS_CREATE_BOOKING, label: 'Create Booking (Quick Action)' }
     ],
     [FEATURES.PAYMENTS_HISTORY]: [
-        { key: SUB_FEATURES.PAYMENTS_HISTORY_EXPORT, label: 'Export Payments History' }
+        { key: SUB_FEATURES.PAYMENTS_HISTORY_EXPORT, label: 'Export Payments History' },
+        { key: SUB_FEATURES.PAYMENTS_HISTORY_CREATE_BOOKING, label: 'Create Booking (Quick Action)' }
     ],
     [FEATURES.MARKETING_OFFERS]: [
         { key: SUB_FEATURES.CREATE_OFFER, label: 'Create Offer' },
         { key: SUB_FEATURES.UPDATE_OFFER, label: 'Edit Offer' },
-        { key: SUB_FEATURES.DELETE_OFFER, label: 'Delete Offer' }
+        { key: SUB_FEATURES.DELETE_OFFER, label: 'Delete Offer' },
+        { key: SUB_FEATURES.OFFERS_CREATE_BOOKING, label: 'Create Booking (Quick Action)' }
     ],
     [FEATURES.MARKETING_COUPONS]: [
         { key: SUB_FEATURES.CREATE_COUPON, label: 'Create Coupon' },
         { key: SUB_FEATURES.UPDATE_COUPON, label: 'Edit Coupon' },
         { key: SUB_FEATURES.DELETE_COUPON, label: 'Delete Coupon' },
-        { key: SUB_FEATURES.DISCOUNT_OVERRIDE, label: 'Override Discounts' }
+        { key: SUB_FEATURES.DISCOUNT_OVERRIDE, label: 'Override Discounts' },
+        { key: SUB_FEATURES.COUPONS_CREATE_BOOKING, label: 'Create Booking (Quick Action)' }
     ],
     [FEATURES.MARKETING_MEMBERSHIPS]: [
         { key: SUB_FEATURES.CREATE_MEMBERSHIP, label: 'Create Plan' },
         { key: SUB_FEATURES.UPDATE_MEMBERSHIP, label: 'Edit Plan' },
         { key: SUB_FEATURES.DELETE_MEMBERSHIP, label: 'Delete Plan' },
         { key: SUB_FEATURES.ASSIGN_MEMBERSHIP, label: 'Assign Membership' },
-        { key: SUB_FEATURES.EXPORT_MEMBERSHIP_USAGE, label: 'Export Usage' }
+        { key: SUB_FEATURES.EXPORT_MEMBERSHIP_USAGE, label: 'Export Usage' },
+        { key: SUB_FEATURES.MEMBERSHIPS_CREATE_BOOKING, label: 'Create Booking (Quick Action)' }
     ],
     [FEATURES.MARKETING_CAMPAIGNS]: [
         { key: SUB_FEATURES.CAMPAIGN_CREATE_BOOKING, label: 'Create Booking (Quick Action)' }
