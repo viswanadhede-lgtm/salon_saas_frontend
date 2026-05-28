@@ -83,12 +83,14 @@ function getFilteredList(tag) {
 }
 
 // Called by the filter dropdown in customers.html
+// Exposed on window because customers.js is an ES module (not global by default)
 function applyCustomerFilter(tag) {
     activeFilter = tag;
     // Reset search input so results aren't stale
     if (customerSearchInput) customerSearchInput.value = '';
     renderCustomers(getFilteredList(tag));
 }
+window.applyCustomerFilter = applyCustomerFilter;
 
 // -- READ --
 async function fetchCustomers() {
