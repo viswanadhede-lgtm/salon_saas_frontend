@@ -569,22 +569,51 @@ window.viewCustomerProfile = async function(customerId, customerName) {
             .limit(1);
 
         if (error) throw error;
-        data = data && data.length > 0 ? data[0] : null;
-        if (!data) throw new Error("Customer not found.");
+        let customer = data && data.length > 0 ? data[0] : null;
+        if (!customer) throw new Error("Customer not found.");
 
-        const name = data.customer_name || 'Unknown';
-        const phone = data.customer_phone || '-';
-        const email = data.customer_email || '-';
-        const tags = data.tags || 'Regular';
-        const notes = data.notes || 'None';
+        const companyId = customer.company_id || localStorage.getItem('company_id');
+        const branchId = customer.branch_id || localStorage.getItem('active_branch_id');
+
+        // Dynamically compute total spent across 3 transaction sources
+        const [bookingsRes, salesRes, membershipsRes] = await Promise.all([
+            supabase.from('bookings_for_business_transaction')
+                .select('total_price')
+                .eq('company_id', companyId)
+                .eq('branch_id', branchId)
+                .eq('customer_id', customerId)
+                .eq('status', 'completed'),
+            supabase.from('sales_with_payment_status')
+                .select('amount_paid')
+                .eq('company_id', companyId)
+                .eq('branch_id', branchId)
+                .eq('customer_id', customerId),
+            supabase.from('membership_purchases')
+                .select('price')
+                .eq('company_id', companyId)
+                .eq('branch_id', branchId)
+                .eq('customer_id', customerId)
+                .eq('payment_status', 'paid')
+        ]);
+
+        let computedTotalSpent = 0;
+        (bookingsRes.data || []).forEach(b => computedTotalSpent += (parseFloat(b.total_price) || 0));
+        (salesRes.data || []).forEach(s => computedTotalSpent += (parseFloat(s.amount_paid) || 0));
+        (membershipsRes.data || []).forEach(m => computedTotalSpent += (parseFloat(m.price) || 0));
+
+        const name = customer.customer_name || 'Unknown';
+        const phone = customer.customer_phone || '-';
+        const email = customer.customer_email || '-';
+        const tags = customer.tags || 'Regular';
+        const notes = customer.notes || 'None';
         
         let joinedDate = 'Recently';
-        if (data.created_at) {
-            const dateObj = new Date(data.created_at);
+        if (customer.created_at) {
+            const dateObj = new Date(customer.created_at);
             joinedDate = `${String(dateObj.getDate()).padStart(2, '0')}-${String(dateObj.getMonth() + 1).padStart(2, '0')}-${dateObj.getFullYear()}`;
         }
 
-        const avatarUrl = data.profile_photo || `https://ui-avatars.com/api/?name=${encodeURIComponent(name)}&background=c7d2fe&color=3730A3`;
+        const avatarUrl = customer.profile_photo || `https://ui-avatars.com/api/?name=${encodeURIComponent(name)}&background=c7d2fe&color=3730A3`;
 
         body.innerHTML = `
             <div style="display:flex; align-items:center; gap:16px; margin-bottom:24px;">
@@ -615,7 +644,7 @@ window.viewCustomerProfile = async function(customerId, customerName) {
                 </div>
                 <div style="background:#f8fafc; border:1px solid #e2e8f0; border-radius:8px; padding:12px;">
                     <p style="margin:0; font-size:0.75rem; color:#94a3b8; font-weight:600; text-transform:uppercase;">Total Spent</p>
-                    <p style="margin:4px 0 0 0; font-size:0.95rem; font-weight:600; color:#059669;">₹${data.total_spent || 0}</p>
+                    <p style="margin:4px 0 0 0; font-size:0.95rem; font-weight:600; color:#059669;">₹${computedTotalSpent}</p>
                 </div>
             </div>
 
