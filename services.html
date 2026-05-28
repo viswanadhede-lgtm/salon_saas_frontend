@@ -484,6 +484,50 @@
             if (typeof window.applySubFeatureGates === 'function') window.applySubFeatureGates();
         };
 
+        window.openPkgServicesModal = async function(pkgId, pkgName) {
+            const modal = document.getElementById('pkgServicesModal');
+            const title = document.getElementById('pkgServicesModalTitle');
+            const body = document.getElementById('pkgServicesModalBody');
+            const btnContainer = document.getElementById('pkgModalLoadingState');
+            
+            // Initial blank state
+            title.innerHTML = `${pkgName} <span style="display: inline-flex; align-items: center; justify-content: center; min-width: 26px; height: 26px; border-radius: 50%; background-color: #eff6ff; color: #1e3a8a; font-size: 0.9rem; font-weight: 600; margin-left: 8px; vertical-align: middle; padding: 0 6px;">...</span>`;
+            body.innerHTML = '<tr><td colspan="3" style="padding:40px;text-align:center;"><div style="color:#64748b;font-weight:500;">Loading services...</div></td></tr>';
+            modal.classList.add('active');
+            
+            try {
+                // Fetch service IDs mapped to this package
+                const { data: pkgServices, error } = await supabase.from('package_services').select('service_id').eq('package_id', pkgId);
+                if (error) throw error;
+                
+                // Map the IDs to fully detailed service objects
+                const validIds = (pkgServices || []).map(p => p.service_id);
+                const services = (window.liveServicesData || []).filter(s => validIds.includes(s.service_id || s.id));
+                
+                title.innerHTML = `${pkgName} <span style="display: inline-flex; align-items: center; justify-content: center; min-width: 26px; height: 26px; border-radius: 50%; background-color: #eff6ff; color: #1e3a8a; font-size: 0.9rem; font-weight: 600; margin-left: 8px; vertical-align: middle; padding: 0 6px;">${services.length}</span>`;
+                
+                if (!services.length) {
+                    body.innerHTML = '<tr><td colspan="3" style="padding:40px;text-align:center;"><div style="color:#64748b;font-weight:500;">No services included in this package.</div></td></tr>';
+                } else {
+                    body.innerHTML = services.map(s => {
+                        const name = s.service_name || s.name || '';
+                        const duration = s.duration ? s.duration + ' min' : '—';
+                        const price = s.price != null ? '&#8377;' + parseFloat(s.price).toLocaleString() : '—';
+                        return `<tr class="tb-row">
+                            <td style="padding:14px 16px 14px 20px;"><div style="font-weight:600;color:#1e293b;font-size:0.87rem;">${name}</div></td>
+                            <td style="padding:14px 16px;color:#64748b;font-size:0.85rem;">${duration}</td>
+                            <td style="padding:14px 16px;color:#374151;font-weight:500;font-size:0.85rem;">${price}</td>
+                        </tr>`;
+                    }).join('');
+                    if (typeof window.applySubFeatureGates === 'function') window.applySubFeatureGates();
+                }
+            } catch (err) {
+                console.error("Error fetching package services: ", err);
+                body.innerHTML = '<tr><td colspan="3" style="padding:40px;text-align:center;color:#ef4444;">Failed to load services.</td></tr>';
+                title.innerHTML = pkgName;
+            }
+        };
+
         window.openCatServicesModal = function(catName) {
             const services = (window.liveServicesData||[]).filter(s => s.category_name === catName);
             const modal = document.getElementById('catServicesModal');
@@ -515,7 +559,7 @@
                 const cnt = p.services_count || 0;
                 return `<tr class="tb-row">
                     <td style="padding:14px 16px 14px 24px;"><div style="font-weight:600;color:#1e293b;font-size:0.9rem;">${pName}</div>${p.description?`<div style="font-size:0.8rem;color:#94a3b8;margin-top:2px;">${p.description}</div>`:''}</td>
-                    <td style="padding:14px 16px; text-align:center;"><span style="display:inline-flex;align-items:center;gap:6px;"><span style="display:inline-flex;align-items:center;justify-content:center;min-width:28px;height:28px;padding:0 8px;background:#eff6ff;color:#1d4ed8;border-radius:20px;font-size:0.82rem;font-weight:700;">${cnt}</span></span></td>
+                    <td style="padding:14px 16px; text-align:center;"><span style="display:inline-flex;align-items:center;gap:6px;"><span onclick="window.openPkgServicesModal('${p.package_id}', '${pName.replace(/'/g, "\\'")}')" style="cursor:pointer;display:inline-flex;align-items:center;justify-content:center;min-width:28px;height:28px;padding:0 8px;background:#eff6ff;color:#1d4ed8;border-radius:20px;font-size:0.82rem;font-weight:700;transition:background 0.15s;" title="View services in ${pName.replace(/"/g, '&quot;')}">${cnt}</span></span></td>
                     <td style="padding:14px 16px;color:#374151;">&#8377;${parseFloat(p.original_price||0).toLocaleString()}</td>
                     <td style="padding:14px 16px;color:#15803d;font-weight:600;">&#8377;${parseFloat(p.final_price||0).toLocaleString()}</td>
                     <td style="padding:14px 16px;">${statusBadge(p.is_active)}</td>
@@ -760,6 +804,33 @@
             <div class="modal-footer" style="justify-content:space-between;">
                 <button type="button" class="btn btn-secondary" onclick="document.getElementById('catServicesModal').classList.remove('active')">Close</button>
                 <button type="button" class="btn btn-primary" onclick="document.getElementById('catServicesModal').classList.remove('active');switchTab('services');">View All Services</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Package Services Modal -->
+    <div class="modal-overlay" id="pkgServicesModal" onclick="if(event.target===this)this.classList.remove('active')">
+        <div class="modal-container" style="width:560px;max-width:95vw;">
+            <div class="modal-header">
+                <div class="header-titles">
+                    <h2 id="pkgServicesModalTitle">Package Name</h2>
+                    <p class="subtitle">Services included in this package.</p>
+                </div>
+                <button class="modal-close" onclick="document.getElementById('pkgServicesModal').classList.remove('active')"><i data-feather="x"></i></button>
+            </div>
+            <div class="modal-body" style="padding:0;overflow-y:auto;max-height:400px;">
+                <table style="width:100%;border-collapse:collapse;font-size:0.875rem;table-layout:fixed;">
+                    <colgroup><col style="width:45%"><col style="width:25%"><col style="width:30%"></colgroup>
+                    <thead><tr style="background:#f8fafc;border-bottom:2px solid #e2e8f0;position:sticky;top:0;z-index:1;">
+                        <th style="padding:11px 16px 11px 20px;text-align:left;font-size:0.72rem;font-weight:600;color:#64748b;text-transform:uppercase;letter-spacing:0.05em;">Service</th>
+                        <th style="padding:11px 16px;text-align:left;font-size:0.72rem;font-weight:600;color:#64748b;text-transform:uppercase;letter-spacing:0.05em;">Duration</th>
+                        <th style="padding:11px 16px;text-align:left;font-size:0.72rem;font-weight:600;color:#64748b;text-transform:uppercase;letter-spacing:0.05em;">Price</th>
+                    </tr></thead>
+                    <tbody id="pkgServicesModalBody"></tbody>
+                </table>
+            </div>
+            <div class="modal-footer" style="justify-content:flex-end;">
+                <button type="button" class="btn btn-primary" onclick="document.getElementById('pkgServicesModal').classList.remove('active')">Close</button>
             </div>
         </div>
     </div>
