@@ -298,12 +298,21 @@ function attachEventListeners() {
         document.addEventListener('click', () => staffFilterMenu.classList.remove('show'));
         
         const btnApply = document.getElementById('btnStaffFilterApply');
-        if (btnApply) btnApply.addEventListener('click', () => staffFilterMenu.classList.remove('show'));
+        if (btnApply) btnApply.addEventListener('click', () => {
+            const checkedStatuses = Array.from(
+                staffFilterMenu.querySelectorAll('input[type=checkbox]:checked')
+            ).map(cb => cb.value);
+            
+            const filtered = liveStaffData.filter(s => checkedStatuses.includes(s.status));
+            renderStaffTable(filtered);
+            staffFilterMenu.classList.remove('show');
+        });
         
         const btnReset = document.getElementById('btnStaffFilterReset');
         if (btnReset) {
             btnReset.addEventListener('click', () => {
                 staffFilterMenu.querySelectorAll('input[type=checkbox]').forEach(cb => cb.checked = true);
+                renderStaffTable(liveStaffData);
             });
         }
     }
