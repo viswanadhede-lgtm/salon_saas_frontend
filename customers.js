@@ -275,7 +275,9 @@ function renderCustomers(listToRender = customersList) {
                 <p class="text-sm text-muted" style="margin:0; font-size:0.875rem; color:#64748b;">${email}</p>
             </td>
             <td>
-                <p class="text-main fw-600" style="margin:0; font-weight:600; color:#10b981;">₹${totalSpent}</p>
+                <button class="total-spent-btn" data-customer-id="${customer.customer_id || customer.id}" title="View spending breakdown">
+                    ₹${totalSpent}
+                </button>
             </td>
             <td>
                 <p class="text-sm" style="margin:0; font-weight:500; font-size:0.875rem; color:#0f172a;">${lastVisit}</p>
@@ -365,6 +367,15 @@ function renderCustomers(listToRender = customersList) {
             }
         });
     }
+
+    // Attach spending breakdown listeners
+    document.querySelectorAll('.total-spent-btn').forEach(btn => {
+        btn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            const customerId = e.currentTarget.getAttribute('data-customer-id');
+            openSpendingModal(customerId);
+        });
+    });
 
     try {
         if (typeof applySubFeatureGates === 'function') {
@@ -528,6 +539,74 @@ async function deleteCustomer(id) {
         console.error('Error deleting customer:', err);
         showToast('Failed to delete customer. Ensure they have no active bookings.', true);
         return false;
+    }
+}
+
+// -- SPENDING BREAKDOWN MODAL --
+async function openSpendingModal(customerId) {
+    const overlay  = document.getElementById('spendingBreakdownOverlay');
+    const loading  = document.getElementById('sbdLoading');
+    const content  = document.getElementById('sbdContent');
+    const closeBtn = document.getElementById('closeSpendingModal');
+
+    if (!overlay) return;
+
+    // Show overlay + loading state
+    loading.style.display  = 'flex';
+    content.style.display  = 'none';
+    overlay.classList.add('active');
+
+    // Close handlers
+    const closeModal = () => overlay.classList.remove('active');
+    closeBtn.onclick = closeModal;
+    overlay.onclick  = (e) => { if (e.target === overlay) closeModal(); };
+
+    try {
+        const companyId = getCompanyId();
+        const branchId  = getBranchId();
+
+        // Fire 3 queries in parallel
+        const [bookingsRes, salesRes, membershipsRes] = await Promise.all([
+            supabase
+                .from('bookings_for_business_transaction')
+                .select('total_price')
+                .eq('company_id', companyId)
+                .eq('branch_id', branchId)
+                .eq('customer_id', customerId)
+                .eq('status', 'completed'),
+
+            supabase
+                .from('sales_with_payment_status')
+                .select('amount_paid')
+                .eq('company_id', companyId)
+                .eq('branch_id', branchId)
+                .eq('customer_id', customerId),
+
+            supabase
+                .from('membership_purchases')
+                .select('price')
+                .eq('company_id', companyId)
+                .eq('branch_id', branchId)
+                .eq('customer_id', customerId)
+                .eq('payment_status', 'paid')
+        ]);
+
+        const services    = (bookingsRes.data    || []).reduce((s, r) => s + (parseFloat(r.total_price)  || 0), 0);
+        const products    = (salesRes.data        || []).reduce((s, r) => s + (parseFloat(r.amount_paid)  || 0), 0);
+        const memberships = (membershipsRes.data  || []).reduce((s, r) => s + (parseFloat(r.price)        || 0), 0);
+        const total       = services + products + memberships;
+
+        document.getElementById('sbdServices').textContent    = `₹${services}`;
+        document.getElementById('sbdProducts').textContent    = `₹${products}`;
+        document.getElementById('sbdMemberships').textContent = `₹${memberships}`;
+        document.getElementById('sbdTotal').textContent       = `₹${total}`;
+
+        loading.style.display = 'none';
+        content.style.display = 'block';
+
+    } catch (err) {
+        console.error('Spending breakdown error:', err);
+        loading.innerHTML = `<span style="color:#ef4444; font-size:0.85rem;">Failed to load breakdown.</span>`;
     }
 }
 

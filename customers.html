@@ -415,6 +415,133 @@
             grid-template-columns: 1fr 1fr;
             gap: 1.25rem;
         }
+
+        /* ── Total Spent Clickable Chip ────────────────────────────── */
+        .total-spent-btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+            padding: 4px 10px;
+            border: none;
+            border-radius: 20px;
+            background: #d1fae5;
+            color: #059669;
+            font-size: 0.875rem;
+            font-weight: 700;
+            font-family: inherit;
+            cursor: pointer;
+            transition: background 0.15s ease, transform 0.15s ease, box-shadow 0.15s ease;
+            line-height: 1.4;
+        }
+        .total-spent-btn:hover {
+            background: #a7f3d0;
+            transform: translateY(-1px);
+            box-shadow: 0 2px 8px rgba(16, 185, 129, 0.25);
+        }
+        .total-spent-btn:active {
+            transform: translateY(0);
+            box-shadow: none;
+        }
+
+        /* ── Spending Breakdown Modal ──────────────────────────────── */
+        #spendingBreakdownOverlay {
+            display: none;
+            position: fixed;
+            inset: 0;
+            background: rgba(15, 23, 42, 0.45);
+            backdrop-filter: blur(3px);
+            z-index: 9998;
+            align-items: center;
+            justify-content: center;
+        }
+        #spendingBreakdownOverlay.active { display: flex; }
+
+        #spendingBreakdownModal {
+            background: #fff;
+            border-radius: 14px;
+            padding: 1.5rem 1.75rem;
+            min-width: 300px;
+            max-width: 380px;
+            width: 90vw;
+            box-shadow: 0 20px 48px rgba(0,0,0,0.18), 0 4px 12px rgba(0,0,0,0.08);
+            animation: sbd-pop 0.2s cubic-bezier(0.34,1.56,0.64,1) both;
+        }
+        @keyframes sbd-pop {
+            from { opacity: 0; transform: scale(0.9) translateY(8px); }
+            to   { opacity: 1; transform: scale(1) translateY(0); }
+        }
+
+        .sbd-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 1.25rem;
+        }
+        .sbd-title {
+            font-size: 0.9rem;
+            font-weight: 700;
+            color: #0f172a;
+            margin: 0;
+            letter-spacing: -0.2px;
+        }
+        .sbd-close-btn {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            width: 28px;
+            height: 28px;
+            border: none;
+            border-radius: 50%;
+            background: #f1f5f9;
+            color: #64748b;
+            cursor: pointer;
+            font-size: 1rem;
+            line-height: 1;
+            transition: background 0.15s, color 0.15s;
+        }
+        .sbd-close-btn:hover { background: #e2e8f0; color: #0f172a; }
+
+        .sbd-row {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 0.45rem 0;
+            font-size: 0.875rem;
+        }
+        .sbd-row-label { color: #64748b; font-weight: 500; }
+        .sbd-row-value { color: #0f172a; font-weight: 600; }
+
+        .sbd-divider {
+            border: none;
+            border-top: 1px dashed #cbd5e1;
+            margin: 0.75rem 0;
+        }
+        .sbd-total-row {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 0.3rem 0 0;
+        }
+        .sbd-total-label { font-size: 0.875rem; font-weight: 700; color: #0f172a; }
+        .sbd-total-value { font-size: 1rem; font-weight: 800; color: #059669; }
+
+        .sbd-loading {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 10px;
+            padding: 1rem 0;
+        }
+        .sbd-spinner {
+            width: 28px;
+            height: 28px;
+            border: 3px solid #e2e8f0;
+            border-top-color: #10b981;
+            border-radius: 50%;
+            animation: sbd-spin 0.65s linear infinite;
+        }
+        @keyframes sbd-spin { to { transform: rotate(360deg); } }
+        .sbd-loading-text { font-size: 0.8rem; color: #94a3b8; font-weight: 500; }
     </style>
 </head>
 
@@ -972,6 +1099,41 @@
             <div class="modal-footer">
                 <button type="button" class="btn btn-secondary" id="btnCancelAddCustomer">Cancel</button>
                 <button type="button" class="btn btn-primary" id="btnSaveNewCustomer" style="background: #10b981; border-color: #10b981;">Save Customer</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Spending Breakdown Modal -->
+    <div id="spendingBreakdownOverlay">
+        <div id="spendingBreakdownModal">
+            <div class="sbd-header">
+                <p class="sbd-title">Customer Spending Breakdown</p>
+                <button class="sbd-close-btn" id="closeSpendingModal" title="Close">&times;</button>
+            </div>
+            <!-- Loading state -->
+            <div class="sbd-loading" id="sbdLoading">
+                <div class="sbd-spinner"></div>
+                <span class="sbd-loading-text">Fetching breakdown…</span>
+            </div>
+            <!-- Breakdown content (hidden while loading) -->
+            <div id="sbdContent" style="display:none;">
+                <div class="sbd-row">
+                    <span class="sbd-row-label">Services</span>
+                    <span class="sbd-row-value" id="sbdServices">₹0</span>
+                </div>
+                <div class="sbd-row">
+                    <span class="sbd-row-label">Products</span>
+                    <span class="sbd-row-value" id="sbdProducts">₹0</span>
+                </div>
+                <div class="sbd-row">
+                    <span class="sbd-row-label">Memberships</span>
+                    <span class="sbd-row-value" id="sbdMemberships">₹0</span>
+                </div>
+                <hr class="sbd-divider">
+                <div class="sbd-total-row">
+                    <span class="sbd-total-label">Total</span>
+                    <span class="sbd-total-value" id="sbdTotal">₹0</span>
+                </div>
             </div>
         </div>
     </div>
