@@ -604,9 +604,9 @@ window.viewCustomerProfile = async function(customerId, customerName) {
             const sb = statusBg[s]    || '#f1f5f9';
             return `<tr style="border-bottom:1px solid #f1f5f9;">
                 <td style="padding:8px 10px;font-size:0.8rem;color:#475569;">${bkDate}</td>
-                <td style="padding:8px 10px;font-size:0.8rem;color:#1e293b;max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${bk.service_name||'—'}</td>
+                <td style="padding:8px 10px;font-size:0.8rem;font-weight:700;color:#1e293b;max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${bk.service_name||'—'}</td>
                 <td style="padding:8px 10px;font-size:0.8rem;color:#475569;">${bk.staff_name||'—'}</td>
-                <td style="padding:8px 10px;font-size:0.8rem;font-weight:600;color:#0f172a;">₹${bk.total_price||0}</td>
+                <td style="padding:8px 10px;font-size:0.8rem;font-weight:600;color:#059669;">₹${bk.total_price||0}</td>
                 <td style="padding:8px 10px;"><span style="display:inline-block;padding:2px 8px;border-radius:20px;font-size:0.72rem;font-weight:600;color:${sc};background:${sb};">${bk.status||'—'}</span></td>
             </tr>`;
         }).join('') : `<tr><td colspan="5" style="padding:24px;text-align:center;color:#94a3b8;font-size:0.85rem;">No booking history found.</td></tr>`;
