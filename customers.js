@@ -24,6 +24,7 @@ const inputNotes = document.getElementById('newCustNotes');
 
 let customersList = [];
 let editingCustomerId = null;
+let activeFilter = 'all'; // tracks the current filter tag
 
 function getCompanyId() { return localStorage.getItem('company_id') || null; }
 
@@ -41,19 +42,52 @@ if (document.readyState === 'loading') {
 if (customerSearchInput) {
     customerSearchInput.addEventListener('input', (e) => {
         const query = e.target.value.toLowerCase().trim();
+        const base = getFilteredList(activeFilter);
         if (!query) {
-            renderCustomers(customersList);
+            renderCustomers(base);
             return;
         }
-
-        const filtered = customersList.filter(c => {
+        const filtered = base.filter(c => {
             const name = (c.customer_name || '').toLowerCase();
             const phone = String(c.customer_phone || '').toLowerCase();
             return name.includes(query) || phone.includes(query);
         });
-
         renderCustomers(filtered);
     });
+}
+
+// Returns a filtered subset of customersList based on a filter tag
+function getFilteredList(tag) {
+    const now = new Date();
+    const thirtyDaysAgo = new Date(now); thirtyDaysAgo.setDate(now.getDate() - 30);
+    const ninetyDaysAgo = new Date(now); ninetyDaysAgo.setDate(now.getDate() - 90);
+
+    switch (tag) {
+        case 'vip':
+            return customersList.filter(c => (c.tags || '').toLowerCase() === 'vip');
+        case 'regular':
+            return customersList.filter(c => (c.tags || '').toLowerCase() === 'regular');
+        case 'new':
+            return customersList.filter(c => c.created_at && new Date(c.created_at) >= thirtyDaysAgo);
+        case 'inactive':
+            return customersList.filter(c => {
+                if (c.last_visit) {
+                    return new Date(c.last_visit) < ninetyDaysAgo;
+                }
+                // Never visited but account is older than 90 days
+                return c.created_at && new Date(c.created_at) < ninetyDaysAgo;
+            });
+        default:
+            return customersList;
+    }
+}
+
+// Called by the filter dropdown in customers.html
+function applyCustomerFilter(tag) {
+    activeFilter = tag;
+    // Reset search input so results aren't stale
+    if (customerSearchInput) customerSearchInput.value = '';
+    renderCustomers(getFilteredList(tag));
 }
 
 // -- READ --

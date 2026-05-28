@@ -848,18 +848,6 @@
                                     <i data-feather="user-x" class="filter-option-icon"></i>
                                     Inactive
                                 </li>
-                                <li class="filter-option" data-tag="high-spenders">
-                                    <i data-feather="trending-up" class="filter-option-icon"></i>
-                                    High Spenders
-                                </li>
-                                <li class="filter-option" data-tag="frequent">
-                                    <i data-feather="repeat" class="filter-option-icon"></i>
-                                    Frequent Visitors
-                                </li>
-                                <li class="filter-option" data-tag="no-recent">
-                                    <i data-feather="clock" class="filter-option-icon"></i>
-                                    No Recent Visit
-                                </li>
                             </ul>
                         </div>
                     </div>
@@ -1000,7 +988,7 @@
                     const tag = option.dataset.tag;
                     filterLabel.textContent = tag === 'all' ? 'Filter' : option.textContent.trim();
                     closeDropdown();
-                    // TODO: trigger table filter by tag
+                    if (typeof applyCustomerFilter === 'function') applyCustomerFilter(tag);
                 });
             });
 
