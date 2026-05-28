@@ -79,28 +79,34 @@ async function fetchCustomers() {
         if (error) throw error;
 
         // 1. Fetch completed bookings for last_visit AND total spent
-        const { data: completedBookings } = await supabase
+        const { data: completedBookings, error: err1 } = await supabase
             .from('bookings_for_business_transaction')
             .select('customer_id, booking_date, total_price')
             .eq('company_id', companyId)
             .eq('branch_id', branchId)
             .eq('status', 'completed');
+        
+        if (err1) throw new Error("Bookings table error: " + err1.message);
 
         // 2. Fetch completed POS sales
-        const { data: posSales } = await supabase
+        const { data: posSales, error: err2 } = await supabase
             .from('sales_with_payment_status')
             .select('customer_id, amount_paid')
             .eq('company_id', companyId)
             .eq('branch_id', branchId)
             .gt('amount_paid', 0); // They paid something
 
+        if (err2) throw new Error("POS Sales view error: " + err2.message);
+
         // 3. Fetch membership purchases
-        const { data: memberships } = await supabase
+        const { data: memberships, error: err3 } = await supabase
             .from('membership_purchases')
             .select('customer_id, price')
             .eq('company_id', companyId)
             .eq('branch_id', branchId)
             .eq('payment_status', 'paid');
+            
+        if (err3) throw new Error("Membership purchases error: " + err3.message);
 
         // Build maps: customer_id -> last_visit date & customer_id -> total_spent
         const lastVisitMap = {};
@@ -181,7 +187,7 @@ async function fetchCustomers() {
     } catch (error) {
         console.error('Error fetching customers:', error);
         if (customersTableBody) {
-            customersTableBody.innerHTML = '<tr><td colspan="6" class="text-center py-4 text-rose" style="text-align:center; color: #e11d48;">Failed to load customers.</td></tr>';
+            customersTableBody.innerHTML = `<tr><td colspan="6" class="text-center py-4 text-rose" style="text-align:center; color: #e11d48;"><b>Failed to load customers:</b><br>${error.message}</td></tr>`;
         }
     }
 }
