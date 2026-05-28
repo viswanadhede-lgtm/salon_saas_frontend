@@ -266,8 +266,7 @@ function renderCustomers(listToRender = customersList) {
                 <p class="text-sm text-muted" style="margin:0; font-size:0.875rem; color:#64748b;">${email}</p>
             </td>
             <td>
-                <p class="text-main fw-600" style="margin:0; font-weight:600; color:#0f172a;">₹${totalSpent}</p>
-                <p class="text-sm text-muted" style="margin:0; font-size:0.875rem; color:#64748b;">${totalBookings} Bookings</p>
+                <p class="text-main fw-600" style="margin:0; font-weight:600; color:#10b981;">₹${totalSpent}</p>
             </td>
             <td>
                 <p class="text-sm" style="margin:0; font-size:0.875rem;">${lastVisit}</p>
