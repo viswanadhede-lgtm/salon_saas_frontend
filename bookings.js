@@ -603,7 +603,7 @@ window.viewCustomerProfile = async function(customerId, customerName) {
             const sc = statusColor[s] || '#475569';
             const sb = statusBg[s]    || '#f1f5f9';
             return `<tr style="border-bottom:1px solid #f1f5f9;">
-                <td style="padding:8px 10px;font-size:0.8rem;color:#475569;">${bkDate}</td>
+                <td style="padding:8px 10px;font-size:0.8rem;color:#475569;white-space:nowrap;">${bkDate}</td>
                 <td style="padding:8px 10px;font-size:0.8rem;font-weight:700;color:#1e293b;max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${bk.service_name||'—'}</td>
                 <td style="padding:8px 10px;font-size:0.8rem;color:#475569;">${bk.staff_name||'—'}</td>
                 <td style="padding:8px 10px;font-size:0.8rem;font-weight:600;color:#059669;">₹${bk.total_price||0}</td>
@@ -613,7 +613,7 @@ window.viewCustomerProfile = async function(customerId, customerName) {
 
         // ── 4. Render 3-column layout
         body.innerHTML = `
-        <div style="display:grid; grid-template-columns:220px 1fr 1fr; min-height:420px;">
+        <div style="display:grid; grid-template-columns:210px 1fr 1.5fr; min-height:420px;">
 
             <!-- LEFT: Profile Card -->
             <div style="background:linear-gradient(160deg,#eef2ff 0%,#f8fafc 100%); border-right:1px solid #e2e8f0; padding:28px 20px; display:flex; flex-direction:column; align-items:center; gap:12px;">
