@@ -78,22 +78,65 @@ async function fetchCustomers() {
 
         if (error) throw error;
 
-        // Fetch completed bookings to derive last_visit dynamically
+        // 1. Fetch completed bookings for last_visit AND total spent
         const { data: completedBookings } = await supabase
             .from('bookings_for_business_transaction')
-            .select('customer_id, booking_date')
+            .select('customer_id, booking_date, total_price')
             .eq('company_id', companyId)
             .eq('branch_id', branchId)
             .eq('status', 'completed');
 
-        // Build a map: customer_id -> most recent booking_date
+        // 2. Fetch completed POS sales
+        const { data: posSales } = await supabase
+            .from('sales_with_payment_status')
+            .select('customer_id, amount_paid')
+            .eq('company_id', companyId)
+            .eq('branch_id', branchId)
+            .gt('amount_paid', 0); // They paid something
+
+        // 3. Fetch membership purchases
+        const { data: memberships } = await supabase
+            .from('membership_purchases')
+            .select('customer_id, price')
+            .eq('company_id', companyId)
+            .eq('branch_id', branchId)
+            .eq('payment_status', 'paid');
+
+        // Build maps: customer_id -> last_visit date & customer_id -> total_spent
         const lastVisitMap = {};
+        const totalSpentMap = {};
+
+        // Process Bookings
         (completedBookings || []).forEach(b => {
-            if (!b.customer_id || !b.booking_date) return;
+            if (!b.customer_id) return;
             const cid = String(b.customer_id).trim();
-            if (!lastVisitMap[cid] || b.booking_date > lastVisitMap[cid]) {
-                lastVisitMap[cid] = b.booking_date;
+            
+            // Last Visit
+            if (b.booking_date) {
+                if (!lastVisitMap[cid] || b.booking_date > lastVisitMap[cid]) {
+                    lastVisitMap[cid] = b.booking_date;
+                }
             }
+            
+            // Spend
+            const amount = parseFloat(b.total_price) || 0;
+            totalSpentMap[cid] = (totalSpentMap[cid] || 0) + amount;
+        });
+
+        // Process POS Sales
+        (posSales || []).forEach(s => {
+            if (!s.customer_id) return;
+            const cid = String(s.customer_id).trim();
+            const amount = parseFloat(s.amount_paid) || 0;
+            totalSpentMap[cid] = (totalSpentMap[cid] || 0) + amount;
+        });
+
+        // Process Memberships
+        (memberships || []).forEach(m => {
+            if (!m.customer_id) return;
+            const cid = String(m.customer_id).trim();
+            const amount = parseFloat(m.price) || 0;
+            totalSpentMap[cid] = (totalSpentMap[cid] || 0) + amount;
         });
 
         customersList = (data || []).map(c => {
@@ -103,8 +146,8 @@ async function fetchCustomers() {
                 customer_name: c.customer_name || c.name,
                 customer_phone: c.customer_phone || c.phone,
                 customer_email: c.customer_email || c.email,
-                // Derive last_visit from completed bookings using customer_id
-                last_visit: lastVisitMap[customerId] || null
+                last_visit: lastVisitMap[customerId] || null,
+                total_spent: totalSpentMap[customerId] || 0
             };
         });
 
