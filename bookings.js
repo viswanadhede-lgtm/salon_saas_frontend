@@ -562,13 +562,14 @@ window.viewCustomerProfile = async function(customerId, customerName) {
 
     try {
         // Fetch from customers table
-        const { data, error } = await supabase
+        let { data, error } = await supabase
             .from('customers')
             .select('*')
             .eq('customer_id', customerId)
-            .single();
+            .limit(1);
 
         if (error) throw error;
+        data = data && data.length > 0 ? data[0] : null;
         if (!data) throw new Error("Customer not found.");
 
         const name = data.customer_name || 'Unknown';
