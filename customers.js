@@ -304,7 +304,7 @@ function renderCustomers(listToRender = customersList) {
                         <img src="${avatarUrl}" alt="${name}" style="width:100%; height:100%; object-fit:cover;">
                     </div>
                     <div>
-                        <a href="javascript:void(0)" class="text-main fw-600 customer-name-link customer-link" style="font-weight:600; text-decoration:none;" onclick="viewCustomerProfile('${customer.customer_id || customer.id}')">${name}</a>
+                        <span class="customer-link" onclick="viewCustomerProfile('${customer.customer_id || customer.id}')">${name}</span>
                         <p class="text-sm text-muted" style="margin:0; font-size:0.875rem; color:#64748b;">Joined ${joinedDate}</p>
                     </div>
                 </div>
