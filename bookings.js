@@ -563,7 +563,7 @@ window.viewCustomerProfile = async function(customerId, customerName) {
             supabase.from('membership_purchases')
                 .select('price').eq('customer_id', customerId).eq('payment_status', 'paid'),
             supabase.from('bookings_for_business_transaction')
-                .select('booking_id, booking_date, service_name, staff_name, total_price, status, payment_status')
+                .select('*')
                 .eq('customer_id', customerId)
                 .order('booking_date', { ascending: false })
                 .limit(10)
