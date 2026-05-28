@@ -31,6 +31,67 @@ function getBranchId() {
     return localStorage.getItem('active_branch_id') || null;
 }
 
+// Expose delete logic
+window.confirmDeleteCustomer = confirmDeleteCustomer;
+window.cancelDeleteCustomer = cancelDeleteCustomer;
+
+window.showSpendBreakdown = function(services, products, memberships, total) {
+    let overlay = document.getElementById('spendBreakdownOverlay');
+    
+    if (!overlay) {
+        const modalHtml = `
+        <div class="modal-overlay" id="spendBreakdownOverlay" style="z-index: 9999; backdrop-filter: blur(4px); display: none;">
+            <div class="modal-container" style="max-width: 380px; padding: 1.5rem; border-radius: 12px; background: #fff; box-shadow: 0 10px 15px -3px rgba(0,0,0,0.1);">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.25rem;">
+                    <h3 style="font-size: 1.1rem; font-weight: 600; color: #0f172a; margin: 0; display:flex; align-items:center; gap:8px;">
+                        <span style="display:inline-flex; align-items:center; justify-content:center; width:32px; height:32px; border-radius:50%; background:#f1f5f9; color:#64748b;">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="1" x2="12" y2="23"></line><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"></path></svg>
+                        </span>
+                        Customer Spending Breakdown
+                    </h3>
+                    <button class="modal-close" style="background:none; border:none; cursor:pointer; color:#94a3b8; padding:4px;" onclick="document.getElementById('spendBreakdownOverlay').classList.remove('active')"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg></button>
+                </div>
+                
+                <div style="display: flex; flex-direction: column; gap: 0.75rem; font-family: 'Consolas', 'Courier New', monospace; font-size: 0.95rem; color: #374151;">
+                    <div style="display: flex; justify-content: space-between;">
+                        <span>Services</span>
+                        <span id="sbServices">₹0</span>
+                    </div>
+                    <div style="display: flex; justify-content: space-between;">
+                        <span>Products</span>
+                        <span id="sbProducts">₹0</span>
+                    </div>
+                    <div style="display: flex; justify-content: space-between;">
+                        <span>Memberships</span>
+                        <span id="sbMemberships">₹0</span>
+                    </div>
+                    <div style="border-top: 1px dashed #cbd5e1; margin: 6px 0;"></div>
+                    <div style="display: flex; justify-content: space-between; font-weight: 700; color: #0f172a; font-size: 1.05rem;">
+                        <span>Total</span>
+                        <span id="sbTotal">₹0</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+        `;
+        document.body.insertAdjacentHTML('beforeend', modalHtml);
+        overlay = document.getElementById('spendBreakdownOverlay');
+        overlay.addEventListener('click', (e) => {
+            if(e.target === overlay) overlay.classList.remove('active');
+        });
+    }
+
+    document.getElementById('sbServices').textContent = `₹${services}`;
+    document.getElementById('sbProducts').textContent = `₹${products}`;
+    document.getElementById('sbMemberships').textContent = `₹${memberships}`;
+    document.getElementById('sbTotal').textContent = `₹${total}`;
+    
+    // Add small delay to ensure rendering before animating in
+    setTimeout(() => {
+        overlay.classList.add('active');
+    }, 10);
+};
+
 // Initialize
 if (document.readyState === 'loading') {
     document.addEventListener('DOMContentLoaded', fetchCustomers);
@@ -107,11 +168,17 @@ async function fetchCustomers() {
             
         if (err3) throw new Error("Membership purchases error: " + err3.message);
 
-        // Build maps: customer_id -> last_visit date & customer_id -> total_spent
+        // Build maps: customer_id -> last_visit date & customer_id -> spend totals
         const lastVisitMap = {};
-        const totalSpentMap = {};
+        const spendBreakdownMap = {};
 
-        // Process Bookings
+        const initSpend = (cid) => {
+            if (!spendBreakdownMap[cid]) {
+                spendBreakdownMap[cid] = { services: 0, products: 0, memberships: 0, total: 0 };
+            }
+        };
+
+        // Process Bookings (Services)
         (completedBookings || []).forEach(b => {
             if (!b.customer_id) return;
             const cid = String(b.customer_id).trim();
@@ -124,24 +191,30 @@ async function fetchCustomers() {
             }
             
             // Spend
+            initSpend(cid);
             const amount = parseFloat(b.total_price) || 0;
-            totalSpentMap[cid] = (totalSpentMap[cid] || 0) + amount;
+            spendBreakdownMap[cid].services += amount;
+            spendBreakdownMap[cid].total += amount;
         });
 
-        // Process POS Sales
+        // Process POS Sales (Products)
         (posSales || []).forEach(s => {
             if (!s.customer_id) return;
             const cid = String(s.customer_id).trim();
+            initSpend(cid);
             const amount = parseFloat(s.amount_paid) || 0;
-            totalSpentMap[cid] = (totalSpentMap[cid] || 0) + amount;
+            spendBreakdownMap[cid].products += amount;
+            spendBreakdownMap[cid].total += amount;
         });
 
         // Process Memberships
         (memberships || []).forEach(m => {
             if (!m.customer_id) return;
             const cid = String(m.customer_id).trim();
+            initSpend(cid);
             const amount = parseFloat(m.price) || 0;
-            totalSpentMap[cid] = (totalSpentMap[cid] || 0) + amount;
+            spendBreakdownMap[cid].memberships += amount;
+            spendBreakdownMap[cid].total += amount;
         });
 
         customersList = (data || []).map(c => {
@@ -152,7 +225,7 @@ async function fetchCustomers() {
                 customer_phone: c.customer_phone || c.phone,
                 customer_email: c.customer_email || c.email,
                 last_visit: lastVisitMap[customerId] || null,
-                total_spent: totalSpentMap[customerId] || 0
+                spend_breakdown: spendBreakdownMap[customerId] || { services: 0, products: 0, memberships: 0, total: 0 }
             };
         });
 
@@ -228,7 +301,8 @@ function renderCustomers(listToRender = customersList) {
             joinedDate = d.toLocaleDateString();
         }
         
-        const totalSpent    = customer.total_spent    != null ? customer.total_spent    : 0;
+        const spend = customer.spend_breakdown || { services: 0, products: 0, memberships: 0, total: 0 };
+        const totalSpent = spend.total;
         const totalBookings = customer.total_bookings != null ? customer.total_bookings : 0;
         let lastVisit = '-';
         let lastVisitDay = '';
@@ -275,7 +349,7 @@ function renderCustomers(listToRender = customersList) {
                 <p class="text-sm text-muted" style="margin:0; font-size:0.875rem; color:#64748b;">${email}</p>
             </td>
             <td>
-                <p class="text-main fw-600" style="margin:0; font-weight:600; color:#10b981;">₹${totalSpent}</p>
+                <a href="#" onclick="window.showSpendBreakdown(${spend.services}, ${spend.products}, ${spend.memberships}, ${totalSpent}); return false;" class="text-main fw-600 hover-lift" style="display:inline-block; margin:0; font-weight:600; color:#10b981; text-decoration:none; padding:4px 8px; border-radius:6px; background:#d1fae5; border:1px solid #a7f3d0; cursor:pointer;" title="View Breakdown">₹${totalSpent}</a>
             </td>
             <td>
                 <p class="text-sm" style="margin:0; font-weight:500; font-size:0.875rem; color:#0f172a;">${lastVisit}</p>
