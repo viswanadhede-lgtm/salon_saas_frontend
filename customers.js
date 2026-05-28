@@ -260,8 +260,11 @@ function renderCustomers(listToRender = customersList) {
         
         let joinedDate = 'Recently';
         if (customer.created_at) {
-            const d = new Date(customer.created_at);
-            joinedDate = d.toLocaleDateString();
+            const dateObj = new Date(customer.created_at);
+            const d = String(dateObj.getDate()).padStart(2, '0');
+            const m = String(dateObj.getMonth() + 1).padStart(2, '0');
+            const y = dateObj.getFullYear();
+            joinedDate = `${d}-${m}-${y}`;
         }
         
         const totalSpent    = customer.total_spent    != null ? customer.total_spent    : 0;
