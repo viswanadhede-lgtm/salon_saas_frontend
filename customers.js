@@ -78,12 +78,35 @@ async function fetchCustomers() {
 
         if (error) throw error;
 
-        customersList = (data || []).map(c => ({
-            ...c, 
-            customer_name: c.customer_name || c.name,
-            customer_phone: c.customer_phone || c.phone,
-            customer_email: c.customer_email || c.email
-        }));
+        // Fetch completed bookings to derive last_visit dynamically
+        const { data: completedBookings } = await supabase
+            .from('bookings_for_business_transaction')
+            .select('customer_id, booking_date')
+            .eq('company_id', companyId)
+            .eq('branch_id', branchId)
+            .eq('status', 'completed');
+
+        // Build a map: customer_id -> most recent booking_date
+        const lastVisitMap = {};
+        (completedBookings || []).forEach(b => {
+            if (!b.customer_id || !b.booking_date) return;
+            const cid = String(b.customer_id).trim();
+            if (!lastVisitMap[cid] || b.booking_date > lastVisitMap[cid]) {
+                lastVisitMap[cid] = b.booking_date;
+            }
+        });
+
+        customersList = (data || []).map(c => {
+            const customerId = String(c.customer_id || c.id || '').trim();
+            return {
+                ...c,
+                customer_name: c.customer_name || c.name,
+                customer_phone: c.customer_phone || c.phone,
+                customer_email: c.customer_email || c.email,
+                // Derive last_visit from completed bookings using customer_id
+                last_visit: lastVisitMap[customerId] || null
+            };
+        });
 
         // Calculate simple stats
         const now = new Date();
@@ -159,7 +182,9 @@ function renderCustomers(listToRender = customersList) {
         
         const totalSpent    = customer.total_spent    != null ? customer.total_spent    : 0;
         const totalBookings = customer.total_bookings != null ? customer.total_bookings : 0;
-        const lastVisit = customer.last_visit || '-';
+        const lastVisit = customer.last_visit
+            ? new Date(customer.last_visit).toLocaleDateString()
+            : '-';
 
         // Avatar generation
         const avatarUrl = customer.profile_photo || `https://ui-avatars.com/api/?name=${encodeURIComponent(name)}&background=c7d2fe&color=3730A3`;
