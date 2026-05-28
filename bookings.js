@@ -715,6 +715,9 @@ function attachEventListeners() {
     document.getElementById('btnCancelEditBooking')?.addEventListener('click',     () => editModal?.classList.remove('active'));
     editModal?.addEventListener('click', (e) => { if (e.target === editModal) editModal.classList.remove('active'); });
 
+    const profModal = document.getElementById('customerProfileBookingModal');
+    profModal?.addEventListener('click', (e) => { if (e.target === profModal) profModal.classList.remove('active'); });
+
     // ── Update Booking → Supabase PATCH ──────────────────────────────────────
     editForm?.addEventListener('submit', async (e) => {
         e.preventDefault();
