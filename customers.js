@@ -93,9 +93,8 @@ async function fetchCustomers() {
             .from('sales_with_payment_status')
             .select('customer_id, amount_paid')
             .eq('company_id', companyId)
-            .eq('branch_id', branchId)
-            .gt('amount_paid', 0); // They paid something
-
+            .eq('branch_id', branchId);
+            
         if (err2) throw new Error("POS Sales view error: " + err2.message);
 
         // 3. Fetch membership purchases
