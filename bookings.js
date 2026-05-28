@@ -566,7 +566,7 @@ window.viewCustomerProfile = async function(customerId, customerName) {
                 .select('*')
                 .eq('customer_id', customerId)
                 .order('booking_date', { ascending: false })
-                .limit(10)
+                .limit(5)
         ]);
 
         const customer = custRes.data && custRes.data.length > 0 ? custRes.data[0] : null;
@@ -681,7 +681,7 @@ window.viewCustomerProfile = async function(customerId, customerName) {
             </div>
         </div>`;
 
-        subTitle.innerHTML = `<span style="color:#10b981;">Profile Loaded</span>`;
+        subTitle.innerHTML = `<span style="color:#94a3b8;">Profile Insights</span>`;
         if (window.feather) feather.replace();
 
     } catch (err) {
