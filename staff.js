@@ -218,7 +218,7 @@ function setupModals() {
                             <input type="text" class="form-input read-only-input" value="Staff" readonly style="background-color: #f8fafc; color: #64748b; cursor: not-allowed; border-color: #e2e8f0;">
                         </div>
                         <div class="form-group" style="margin:0; grid-column: 1 / -1;">
-                            <label class="form-label" for="editSfServices">Services Offered</label>
+                            <label class="form-label" for="editSfServices">Specialized in</label>
                             <input type="text" id="editSfServices" class="form-input">
                         </div>
                         <div class="form-group" style="margin:0;">
