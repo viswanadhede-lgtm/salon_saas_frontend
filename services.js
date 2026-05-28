@@ -908,4 +908,33 @@ window.fetchPackages = async function() {
     }
 };
 
+window._openPkgServicesModalInner = async function(pkgId, pkgName) {
+    const title = document.getElementById('pkgServicesModalTitle');
+    const body = document.getElementById('pkgServicesModalBody');
+    try {
+        const { data: rows, error } = await supabase
+            .from('package_services')
+            .select('service_name')
+            .eq('package_id', pkgId);
+        if (error) throw error;
+
+        const services = (rows || []).filter(r => r.service_name);
+        title.innerHTML = `${pkgName} <span style="display: inline-flex; align-items: center; justify-content: center; min-width: 26px; height: 26px; border-radius: 50%; background-color: #eff6ff; color: #1e3a8a; font-size: 0.9rem; font-weight: 600; margin-left: 8px; vertical-align: middle; padding: 0 6px;">${services.length}</span>`;
+
+        if (!services.length) {
+            body.innerHTML = '<tr><td style="padding:40px;text-align:center;color:#64748b;font-weight:500;">No services included in this package.</td></tr>';
+        } else {
+            body.innerHTML = services.map(r => `
+                <tr class="tb-row">
+                    <td style="padding:14px 16px 14px 20px;font-weight:600;color:#1e293b;font-size:0.87rem;">${r.service_name}</td>
+                </tr>`
+            ).join('');
+        }
+    } catch (err) {
+        console.error('Error fetching package services:', err);
+        title.innerHTML = pkgName;
+        body.innerHTML = '<tr><td style="padding:40px;text-align:center;color:#ef4444;">Failed to load services.</td></tr>';
+    }
+};
+
 
