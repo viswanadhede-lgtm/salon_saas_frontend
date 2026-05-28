@@ -111,8 +111,7 @@ function buildRow(b, includeDate = false) {
         onmouseout="this.style.background=''">
         <td style="padding:10px 8px 10px 14px;font-size:0.8rem;color:#64748b;font-family:monospace;${cellStyle}">#${(bookingId||'').slice(0, 8)}</td>
         <td style="padding:10px 8px;${cellStyle}">
-            <div style="font-weight:600;font-size:0.87rem;color:#0f172a;${cellStyle}">${customerName}</div>
-            ${phone ? `<div style="font-size:0.75rem;color:#94a3b8;${cellStyle}">${phone}</div>` : ''}
+            <span class="customer-link" style="font-weight:600;font-size:0.87rem;${cellStyle}" onclick="window.viewCustomerProfile('${b.customer_id || ''}', '${customerName}')">${customerName}</span>
         </td>
         <td style="padding:10px 8px;font-size:0.85rem;color:#334155;${cellStyle}">${dateDisplay}</td>
         <td style="padding:10px 8px;font-size:0.85rem;color:#334155;${cellStyle}">${timeDisplay}</td>
@@ -290,6 +289,29 @@ function setupModals() {
                 <div class="modal-footer">
                     <button type="button" class="btn btn-secondary" id="btnCancelRefund">Cancel</button>
                     <button type="button" class="btn btn-primary" id="btnConfirmRefund" style="background:#e11d48; border-color:#e11d48;">Issue Refund</button>
+                </div>
+            </div>
+        </div>`);
+    }
+
+    if (!document.getElementById('customerProfileBookingModal')) {
+        document.body.insertAdjacentHTML('beforeend', `
+        <div class="modal-overlay" id="customerProfileBookingModal" style="z-index:9999;">
+            <div class="modal-container" style="width:500px;max-width:95vw;">
+                <div class="modal-header">
+                    <div class="header-titles">
+                        <h2>Customer Profile</h2>
+                        <p class="subtitle" id="profModalSubtitle">Loading details...</p>
+                    </div>
+                    <button class="modal-close" id="btnCloseProfModal" onclick="document.getElementById('customerProfileBookingModal').classList.remove('active')"><i data-feather="x"></i></button>
+                </div>
+                <div class="modal-body" style="padding:1.5rem;" id="profModalBody">
+                    <div style="text-align:center;padding:24px;color:#94a3b8;font-size:0.9rem;">
+                        ⏳ Loading customer information...
+                    </div>
+                </div>
+                <div class="modal-footer" style="justify-content:flex-end;">
+                    <button type="button" class="btn btn-secondary" onclick="document.getElementById('customerProfileBookingModal').classList.remove('active')">Close</button>
                 </div>
             </div>
         </div>`);
@@ -518,6 +540,104 @@ window.processRefund = async function() {
 };
 
 // ─── Attach Event Listeners ───────────────────────────────────────────────────
+
+window.viewCustomerProfile = async function(customerId, customerName) {
+    if (!customerId) {
+        alert('Viewing details for: ' + customerName + '\n(Walk-in customer / No matching record found)');
+        return;
+    }
+
+    const modal = document.getElementById('customerProfileBookingModal');
+    const subTitle = document.getElementById('profModalSubtitle');
+    const body = document.getElementById('profModalBody');
+
+    if (modal) {
+        modal.classList.add('active');
+        subTitle.textContent = customerName || 'Loading...';
+        body.innerHTML = `
+            <div style="text-align:center;padding:24px;color:#94a3b8;font-size:0.9rem;">
+                ⏳ Fetching data...
+            </div>`;
+    }
+
+    try {
+        // Fetch from customers table
+        const { data, error } = await supabase
+            .from('customers')
+            .select('*')
+            .eq('customer_id', customerId)
+            .single();
+
+        if (error) throw error;
+        if (!data) throw new Error("Customer not found.");
+
+        const name = data.customer_name || 'Unknown';
+        const phone = data.customer_phone || '-';
+        const email = data.customer_email || '-';
+        const tags = data.tags || 'Regular';
+        const notes = data.notes || 'None';
+        
+        let joinedDate = 'Recently';
+        if (data.created_at) {
+            const dateObj = new Date(data.created_at);
+            joinedDate = `${String(dateObj.getDate()).padStart(2, '0')}-${String(dateObj.getMonth() + 1).padStart(2, '0')}-${dateObj.getFullYear()}`;
+        }
+
+        const avatarUrl = data.profile_photo || `https://ui-avatars.com/api/?name=${encodeURIComponent(name)}&background=c7d2fe&color=3730A3`;
+
+        body.innerHTML = `
+            <div style="display:flex; align-items:center; gap:16px; margin-bottom:24px;">
+                <div style="width:64px; height:64px; border-radius:50%; overflow:hidden; flex-shrink:0;">
+                    <img src="${avatarUrl}" alt="${name}" style="width:100%; height:100%; object-fit:cover;">
+                </div>
+                <div>
+                    <h3 style="margin:0; font-size:1.15rem; color:#1e293b; font-weight:700;">${name}</h3>
+                    <p style="margin:2px 0 0 0; font-size:0.85rem; color:#64748b;">${phone}</p>
+                </div>
+            </div>
+
+            <div style="display:grid; grid-template-columns:1fr 1fr; gap:16px; margin-bottom:16px;">
+                <div style="background:#f8fafc; border:1px solid #e2e8f0; border-radius:8px; padding:12px;">
+                    <p style="margin:0; font-size:0.75rem; color:#94a3b8; font-weight:600; text-transform:uppercase;">Email</p>
+                    <p style="margin:4px 0 0 0; font-size:0.9rem; color:#334155;">${email}</p>
+                </div>
+                <div style="background:#f8fafc; border:1px solid #e2e8f0; border-radius:8px; padding:12px;">
+                    <p style="margin:0; font-size:0.75rem; color:#94a3b8; font-weight:600; text-transform:uppercase;">Joined On</p>
+                    <p style="margin:4px 0 0 0; font-size:0.9rem; color:#334155;">${joinedDate}</p>
+                </div>
+            </div>
+
+            <div style="display:grid; grid-template-columns:1fr 1fr; gap:16px; margin-bottom:16px;">
+                <div style="background:#f8fafc; border:1px solid #e2e8f0; border-radius:8px; padding:12px;">
+                    <p style="margin:0; font-size:0.75rem; color:#94a3b8; font-weight:600; text-transform:uppercase;">Status / Tags</p>
+                    <div style="margin:4px 0 0 0; display:inline-block; padding:3px 10px; border-radius:20px; font-size:0.8rem; font-weight:600; background:#e0e7ff; color:#3730a3; text-transform:capitalize;">${tags}</div>
+                </div>
+                <div style="background:#f8fafc; border:1px solid #e2e8f0; border-radius:8px; padding:12px;">
+                    <p style="margin:0; font-size:0.75rem; color:#94a3b8; font-weight:600; text-transform:uppercase;">Total Spent</p>
+                    <p style="margin:4px 0 0 0; font-size:0.95rem; font-weight:600; color:#059669;">₹${data.total_spent || 0}</p>
+                </div>
+            </div>
+
+            <div style="background:#f8fafc; border:1px solid #e2e8f0; border-radius:8px; padding:12px;">
+                <p style="margin:0; font-size:0.75rem; color:#94a3b8; font-weight:600; text-transform:uppercase;">Notes</p>
+                <p style="margin:4px 0 0 0; font-size:0.9rem; color:#334155; white-space:pre-wrap;">${notes}</p>
+            </div>
+        `;
+        subTitle.innerHTML = `<span style="color:#10b981;">Profile Loaded</span>`;
+
+        if(window.feather) feather.replace();
+
+    } catch (err) {
+        console.error("Error loading profile:", err);
+        body.innerHTML = `
+            <div style="text-align:center;padding:24px;color:#ef4444;font-size:0.9rem;">
+                ❌ Could not load customer profile.<br>
+                <span style="font-size:0.8rem; color:#94a3b8;">(${err.message || "No data available."})</span>
+            </div>`;
+        subTitle.textContent = "Error";
+    }
+};
+
 function attachEventListeners() {
 
     // Refund Modal Listeners
