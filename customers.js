@@ -230,9 +230,18 @@ function renderCustomers(listToRender = customersList) {
         
         const totalSpent    = customer.total_spent    != null ? customer.total_spent    : 0;
         const totalBookings = customer.total_bookings != null ? customer.total_bookings : 0;
-        const lastVisit = customer.last_visit
-            ? new Date(customer.last_visit).toLocaleDateString()
-            : '-';
+        let lastVisit = '-';
+        let lastVisitDay = '';
+        if (customer.last_visit) {
+            const dateObj = new Date(customer.last_visit);
+            const d = String(dateObj.getDate()).padStart(2, '0');
+            const m = String(dateObj.getMonth() + 1).padStart(2, '0');
+            const y = dateObj.getFullYear();
+            lastVisit = `${d}-${m}-${y}`;
+            
+            const days = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+            lastVisitDay = days[dateObj.getDay()];
+        }
 
         // Avatar generation
         const avatarUrl = customer.profile_photo || `https://ui-avatars.com/api/?name=${encodeURIComponent(name)}&background=c7d2fe&color=3730A3`;
@@ -269,7 +278,8 @@ function renderCustomers(listToRender = customersList) {
                 <p class="text-main fw-600" style="margin:0; font-weight:600; color:#10b981;">₹${totalSpent}</p>
             </td>
             <td>
-                <p class="text-sm" style="margin:0; font-size:0.875rem;">${lastVisit}</p>
+                <p class="text-sm" style="margin:0; font-weight:500; font-size:0.875rem; color:#0f172a;">${lastVisit}</p>
+                ${lastVisitDay ? `<p class="text-sm text-muted" style="margin:0; font-size:0.875rem; color:#64748b;">${lastVisitDay}</p>` : ''}
             </td>
             <td>${tagHtml}</td>
             <td style="vertical-align:middle;">
