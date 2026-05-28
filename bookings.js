@@ -78,13 +78,16 @@ function buildRow(b, includeDate = false) {
     const status       = b.status || '';
     const payment      = b.payment_status || '';
 
-    // Multi-service support: prefer aggregated arrays, fall back to splitting comma-separated string
-    const serviceNames = Array.isArray(b.service_names) && b.service_names.length
-        ? b.service_names.filter(Boolean)
-        : (b.service_name ? b.service_name.split(',').map(s => s.trim()).filter(Boolean) : []);
-    const staffNames = Array.isArray(b.staff_names) && b.staff_names.length
-        ? b.staff_names.filter(Boolean)
-        : (b.staff_name ? b.staff_name.split(',').map(s => s.trim()).filter(Boolean) : []);
+    // Multi-service support: flatMap splits each element by comma, handles both
+    // ["Hair Trimming, Nail Trimming"] and ["Hair Trimming", "Nail Trimming"]
+    const serviceNames = (Array.isArray(b.service_names) ? b.service_names : [b.service_name])
+        .filter(Boolean)
+        .flatMap(s => s.split(',').map(item => item.trim()))
+        .filter(Boolean);
+    const staffNames = (Array.isArray(b.staff_names) ? b.staff_names : [b.staff_name])
+        .filter(Boolean)
+        .flatMap(s => s.split(',').map(item => item.trim()))
+        .filter(Boolean);
 
     const isCancellable = !['cancelled', 'completed', 'no-show', 'no_show'].includes(status.toLowerCase());
     const isEditable    = !['cancelled', 'completed'].includes(status.toLowerCase());
