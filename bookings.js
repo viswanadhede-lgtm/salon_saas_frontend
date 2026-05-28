@@ -92,13 +92,30 @@ function buildRow(b, includeDate = false) {
         } catch { timeDisplay = timeOnly; }
     }
 
-    // Render service names as small chips (one per service)
-    const serviceCell = serviceNames.length
-        ? serviceNames.map(s =>
-            `<span style="display:inline-block; padding:2px 8px; border-radius:20px; font-size:0.72rem;
-             font-weight:500; background:#f1f5f9; color:#334155; margin:1px 2px 1px 0; white-space:nowrap;">${s}</span>`
-          ).join('')
-        : '—';
+    // Render service names: show first chip + collapsible +N toggle
+    const chipStyle = `display:inline-block;padding:2px 8px;border-radius:20px;font-size:0.72rem;font-weight:500;background:#f1f5f9;color:#334155;margin:1px 2px 1px 0;white-space:nowrap;`;
+    let serviceCell = '—';
+    if (serviceNames.length) {
+        const firstChip = `<span style="${chipStyle}">${serviceNames[0]}</span>`;
+        if (serviceNames.length === 1) {
+            serviceCell = firstChip;
+        } else {
+            const extraCount = serviceNames.length - 1;
+            const extraId = `svc-extra-${bookingId}`;
+            const toggleId = `svc-toggle-${bookingId}`;
+            const extraChips = serviceNames.slice(1).map(s => `<span style="${chipStyle}">${s}</span>`).join('');
+            serviceCell = `
+                <div style="display:flex;flex-wrap:wrap;align-items:flex-start;gap:2px;">
+                    ${firstChip}
+                    <span id="${toggleId}"
+                        onclick="(function(){var el=document.getElementById('${extraId}');var tog=document.getElementById('${toggleId}');var shown=el.style.display!=='none';el.style.display=shown?'none':'flex';tog.textContent=shown?'+${extraCount}':'▲';})()"
+                        style="display:inline-block;padding:2px 7px;border-radius:20px;font-size:0.7rem;font-weight:600;background:#e0e7ff;color:#4f46e5;cursor:pointer;white-space:nowrap;user-select:none;">+${extraCount}</span>
+                    <div id="${extraId}" style="display:none;flex-wrap:wrap;gap:2px;width:100%;margin-top:3px;">
+                        ${extraChips}
+                    </div>
+                </div>`;
+        }
+    }
 
     // Render staff names as plain text (joined)
     const staffCell = staffNames.length ? staffNames.join(', ') : '—';
