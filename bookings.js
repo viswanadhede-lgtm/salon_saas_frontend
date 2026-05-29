@@ -1263,17 +1263,21 @@ function attachEventListeners() {
         filterMenu?.classList.remove('active');
     });
 
-    document.getElementById('btnFilterReset')?.addEventListener('click', () => {
-        // Reset Status: check "All", uncheck individuals
-        document.querySelectorAll('input[name="filterStatus"]').forEach(c => {
-            c.checked = c.value === 'all';
-        });
+    document.getElementById('btnFilterClear')?.addEventListener('click', () => {
+        // Uncheck all status filters (no filter = show all)
+        document.querySelectorAll('input[name="filterStatus"]').forEach(c => c.checked = false);
+        // Reset staff to All Staff
         const staffAll = document.querySelector('input[name="filterStaff"][value="all"]');
         if (staffAll) staffAll.checked = true;
         document.querySelectorAll('input[name="filterStaff"]:not([value="all"])').forEach(c => c.checked = false);
+        // Reset date to View All Time
         const dateAll = document.querySelector('input[name="filterDateRange"][value="all"]');
         if (dateAll) dateAll.checked = true;
-        
+        // Clear search
+        currentSearchQuery = '';
+        const searchInput = document.getElementById('bookingsPageSearch');
+        if (searchInput) searchInput.value = '';
+
         renderBookings(getFilteredBookings());
         filterMenu?.classList.remove('active');
     });

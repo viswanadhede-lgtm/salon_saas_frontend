@@ -2303,11 +2303,11 @@
     border: 1px solid #e2e8f0;
     border-radius: 12px;
     box-shadow: 0 8px 30px rgba(15, 23, 42, 0.12);
-    min-width: 240px;
+    min-width: 560px;
     z-index: 500;
     animation: dropIn 0.15s ease;
 }
-.filter-menu.show { display: block; }
+.filter-menu.active { display: block; }
 
 .filter-header {
     padding: 14px 16px 10px 16px;
@@ -2323,8 +2323,8 @@
 .filter-body {
     padding: 12px 16px;
     display: flex;
-    flex-direction: column;
-    gap: 14px;
+    flex-direction: row;
+    gap: 24px;
 }
 
 .filter-section { display: flex; flex-direction: column; gap: 6px; }
