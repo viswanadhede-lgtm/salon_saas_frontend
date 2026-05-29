@@ -1120,9 +1120,18 @@ function attachEventListeners() {
         alert('Invoice generation placeholder for Booking ' + bookingId);
     };
 
-    window.triggerRebook = (bookingId) => {
+    window.triggerRebook = async (bookingId) => {
         const b = liveBookingsData.find(x => (x.booking_id || x.id) == bookingId);
         if (!b) return;
+
+        // Try to fetch the email directly if it's missing from the view payload
+        let cEmail = b.customer_email || b.customer_mail || '';
+        if (!cEmail && b.customer_id) {
+            try {
+                const { data } = await supabase.from('customers').select('customer_email').eq('customer_id', b.customer_id).limit(1).single();
+                if (data && data.customer_email) cEmail = data.customer_email;
+            } catch(e) { console.error('Failed to grab customer_email for prefill', e); }
+        }
 
         // Open the New Booking Modal natively built in the DOM
         const btnNewBooking = document.getElementById('btnNewBooking') || document.getElementById('btnNewBookingPage');
@@ -1139,7 +1148,7 @@ function attachEventListeners() {
                     b.customer_id, 
                     b.customer_name, 
                     b.customer_phone, 
-                    b.customer_email
+                    cEmail
                 );
             } else {
                 // Fallback for older code bridging
