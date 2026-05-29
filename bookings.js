@@ -1738,7 +1738,7 @@ function openCalendarDayModal(dateStr, bookings) {
         const tr = document.createElement('tr');
         tr.style.borderBottom = '1px solid #f1f5f9';
         tr.innerHTML = `
-            <td style="padding:10px 14px; font-weight:600; color:#334155;">${ptime || '—'}</td>
+            <td style="padding:10px 14px; font-weight:600; color:#334155; white-space:nowrap;">${ptime || '—'}</td>
             <td style="padding:10px 8px; font-weight:600; color:#1e293b;">${b.customer_name || '—'}</td>
             <td style="padding:10px 8px;">${svcs}</td>
             <td style="padding:10px 8px; color:#475569; font-size:0.8rem;">${b.staff_name || '—'}</td>
