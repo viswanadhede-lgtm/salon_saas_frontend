@@ -1028,6 +1028,21 @@ function attachEventListeners() {
             textEl.innerHTML = `Change this booking's status to <strong>${newStatus}</strong>?`;
         }
 
+        // Dynamic button label + colour based on status
+        const btnConfirm = document.getElementById('btnConfirmUpdateStatus');
+        if (btnConfirm) {
+            const statusConfig = {
+                'completed': { label: 'Yes, Mark Completed', bg: '#059669', hover: '#047857' },
+                'cancelled':  { label: 'Yes, Mark Cancelled',  bg: '#dc2626', hover: '#b91c1c' },
+                'no-show':    { label: 'Yes, Mark No-show',    bg: '#ea580c', hover: '#c2410c' },
+            };
+            const cfg = statusConfig[newStatus.toLowerCase()] || { label: 'Yes, Update', bg: '#2563eb', hover: '#1d4ed8' };
+            btnConfirm.textContent = cfg.label;
+            btnConfirm.style.background = cfg.bg;
+            btnConfirm.onmouseover = () => btnConfirm.style.background = cfg.hover;
+            btnConfirm.onmouseout  = () => btnConfirm.style.background = cfg.bg;
+        }
+
         const overlay = document.getElementById('updateStatusConfirmOverlay');
         if (overlay) overlay.classList.add('active');
         if (window.feather) feather.replace();
