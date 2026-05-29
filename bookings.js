@@ -196,6 +196,18 @@ function emptyRow(colspan, msg) {
 }
 
 // ─── Render Tables ────────────────────────────────────────────────────────────
+let currentSearchQuery = '';
+
+function getFilteredBookings() {
+    if (!currentSearchQuery) return liveBookingsData;
+    const q = currentSearchQuery.toLowerCase();
+    return liveBookingsData.filter(b => {
+        const name = String(b.customer_name || '').toLowerCase();
+        const phone = String(b.customer_phone || '').toLowerCase();
+        return name.includes(q) || phone.includes(q);
+    });
+}
+
 function renderBookings(data) {
     const today    = data.filter(b => (b.booking_date || '').slice(0, 10) === todayISO());
     const allBooks = data;
@@ -738,6 +750,14 @@ window.viewCustomerProfile = async function(customerId, customerName) {
 
 function attachEventListeners() {
 
+    const searchInput = document.getElementById('bookingsPageSearch');
+    if (searchInput) {
+        searchInput.addEventListener('input', (e) => {
+            currentSearchQuery = e.target.value.trim();
+            renderBookings(getFilteredBookings());
+        });
+    }
+
     // Refund Modal Listeners
     const refundModal = document.getElementById('refundBookingModal');
     const btnCancelRefund = document.getElementById('btnCancelRefund');
@@ -1153,7 +1173,7 @@ export async function fetchBookings() {
 
         liveBookingsData = data || [];
         window.liveBookingsData = liveBookingsData;
-        renderBookings(liveBookingsData);
+        renderBookings(getFilteredBookings());
 
     } catch (err) {
         console.error('[Bookings] Unexpected error:', err);
