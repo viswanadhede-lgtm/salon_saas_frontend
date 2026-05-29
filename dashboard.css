@@ -2307,7 +2307,12 @@
     z-index: 500;
     animation: dropIn 0.15s ease;
 }
-.filter-menu.active { display: block; }
+.filter-menu.active {
+    display: block;
+    opacity: 1;
+    visibility: visible;
+    transform: translateY(0);
+}
 
 .filter-header {
     padding: 14px 16px 10px 16px;
