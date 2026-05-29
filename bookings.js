@@ -1032,9 +1032,9 @@ function attachEventListeners() {
         const btnConfirm = document.getElementById('btnConfirmUpdateStatus');
         if (btnConfirm) {
             const statusConfig = {
-                'completed': { label: 'Yes, Mark Completed', bg: '#059669', hover: '#047857' },
-                'cancelled':  { label: 'Yes, Mark Cancelled',  bg: '#dc2626', hover: '#b91c1c' },
-                'no-show':    { label: 'Yes, Mark No-show',    bg: '#ea580c', hover: '#c2410c' },
+                'completed': { label: 'Mark Completed', bg: '#7cfc00', hover: '#6de000' },
+                'cancelled':  { label: 'Mark Cancelled',  bg: '#dc2626', hover: '#b91c1c' },
+                'no-show':    { label: 'Mark No-show',    bg: '#ea580c', hover: '#c2410c' },
             };
             const cfg = statusConfig[newStatus.toLowerCase()] || { label: 'Yes, Update', bg: '#2563eb', hover: '#1d4ed8' };
             btnConfirm.textContent = cfg.label;
