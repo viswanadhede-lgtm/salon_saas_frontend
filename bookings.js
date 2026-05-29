@@ -488,8 +488,8 @@ function buildEditServiceRow(rowId, isFirst, prefillSvcId = '', prefillStaffId =
                 ? `<button type="button" class="btn-edit-remove-row" style="position:absolute;top:16px;right:16px;font-size:0.75rem;padding:4px 8px;border-radius:6px;border:1px solid #fca5a5;background:#fff5f5;color:#ef4444;font-weight:600;cursor:pointer;">✕ Remove</button>`
                 : ''
             }
-            <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:12px;margin-top:${!isFirst ? '24px' : '0'};">
-                <div class="form-group" style="margin:0; ${!isFirst ? 'padding-right: 20px;' : ''}">
+            <div style="display:grid;grid-template-columns:2fr 2fr 1fr;gap:16px;margin-bottom:0;margin-top:${!isFirst ? '24px' : '0'};">
+                <div class="form-group" style="margin:0;">
                     <label class="form-label">Service <span class="text-rose">*</span></label>
                     <select class="form-select edit-svc-select" required>
                         <option value="" disabled ${!prefillSvcId ? 'selected' : ''}>Select a service</option>
@@ -503,10 +503,10 @@ function buildEditServiceRow(rowId, isFirst, prefillSvcId = '', prefillStaffId =
                         ${staffOptions}
                     </select>
                 </div>
-            </div>
-            <div class="form-group" style="margin:0;">
-                <label class="form-label">Price <span style="font-weight:400;color:#94a3b8;">(₹)</span></label>
-                <input type="number" class="form-input edit-svc-price" placeholder="e.g. 500" min="0" step="0.01" value="${prefillPrice !== '' && prefillPrice != null ? prefillPrice : ''}" required>
+                <div class="form-group" style="margin:0; ${!isFirst ? 'padding-right: 24px;' : ''}">
+                    <label class="form-label">Price <span style="font-weight:400;color:#94a3b8;">(₹)</span></label>
+                    <input type="number" class="form-input edit-svc-price" placeholder="e.g. 500" min="0" step="0.01" value="${prefillPrice !== '' && prefillPrice != null ? prefillPrice : ''}" required>
+                </div>
             </div>
         </div>
     `;
