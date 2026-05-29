@@ -1740,7 +1740,7 @@ function openCalendarDayModal(dateStr, bookings) {
         tr.innerHTML = `
             <td style="padding:10px 14px; font-weight:600; color:#334155; white-space:nowrap;">${ptime || '—'}</td>
             <td style="padding:10px 8px; font-weight:600; color:#1e293b;">
-                ${b.customer_name ? `<a href="#" style="color:#2563eb; text-decoration:none;" onclick="event.preventDefault(); if(window.openCustomerProfileModal) window.openCustomerProfileModal('${b.customer_id}')">${b.customer_name}</a>` : '—'}
+                ${b.customer_name ? `<a href="#" style="color:#2563eb; text-decoration:none;" onclick="event.preventDefault(); if(window.viewCustomerProfile) { window.viewCustomerProfile('${b.customer_id || ''}', '${b.customer_name}'); document.getElementById('calDayModalOverlay').classList.remove('active'); }">${b.customer_name}</a>` : '—'}
             </td>
             <td style="padding:10px 8px;">${svcs}</td>
             <td style="padding:10px 8px; color:#475569; font-size:0.8rem;">${b.staff_name || '—'}</td>
@@ -1783,8 +1783,15 @@ document.addEventListener('DOMContentLoaded', () => {
     const closeBtn1 = document.getElementById('calDayModalClose');
     const closeBtn2 = document.getElementById('calDayModalCloseBtn');
 
-    const handleClose = () => overlay.classList.remove('active');
+    const handleClose = () => { if (overlay) overlay.classList.remove('active'); };
     if (closeBtn1) closeBtn1.addEventListener('click', handleClose);
     if (closeBtn2) closeBtn2.addEventListener('click', handleClose);
+    
+    // Close on outside click
+    if (overlay) {
+        overlay.addEventListener('click', (e) => {
+            if (e.target === overlay) handleClose();
+        });
+    }
 });
 
