@@ -543,6 +543,7 @@ function buildEditServiceRow(rowId, isFirst, prefillSvcId = '', prefillStaffId =
             const p = parseFloat(opt.dataset.price || 0);
             if (p && !priceInput.value) priceInput.value = p;
         }
+        syncEditServiceDropdowns();
     });
 
     // Remove button (non-first rows only) — re-labels all badges after removal
@@ -553,10 +554,35 @@ function buildEditServiceRow(rowId, isFirst, prefillSvcId = '', prefillStaffId =
                 const badge = row.querySelector('.edit-row-badge');
                 if (badge) badge.textContent = `#${i + 1}`;
             });
+            syncEditServiceDropdowns();
         });
     }
 
     return div;
+}
+
+// ─── Edit Modal: Prevent duplicate service selection across cards ───────────────
+function syncEditServiceDropdowns() {
+    const container = document.getElementById('editServiceRowsContainer');
+    if (!container) return;
+    const allSelects = Array.from(container.querySelectorAll('.edit-svc-select'));
+    const selectedValues = allSelects.map(sel => sel.value).filter(Boolean);
+    allSelects.forEach(sel => {
+        const myValue = sel.value;
+        Array.from(sel.options).forEach(opt => {
+            if (!opt.value) return; // skip placeholder
+            if (opt.value === myValue) {
+                opt.disabled = false;
+                opt.hidden   = false;
+            } else if (selectedValues.includes(opt.value)) {
+                opt.disabled = true;
+                opt.hidden   = true;
+            } else {
+                opt.disabled = false;
+                opt.hidden   = false;
+            }
+        });
+    });
 }
 
 // ─── Refund Logic ────────────────────────────────────────────────────────────
@@ -1227,6 +1253,7 @@ function attachEventListeners() {
                     row.id || null
                 ));
             });
+            syncEditServiceDropdowns();
 
             // Wire the "+ Add" button safely using onclick to prevent duplicate listeners
             const addBtn = document.getElementById('btnEditAddService');
@@ -1234,6 +1261,7 @@ function attachEventListeners() {
                 addBtn.onclick = () => {
                     const firstStaff = container.querySelector('.edit-staff-select')?.value || '';
                     container.appendChild(buildEditServiceRow(editRowCounter++, false, '', firstStaff, '', null));
+                    syncEditServiceDropdowns();
                 };
             }
 
