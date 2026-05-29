@@ -7,6 +7,7 @@ let liveBookingsData = [];
 
 // ─── Edit Modal State ─────────────────────────────────────────────────────────
 let editLiveServices      = [];
+let editLivePackages      = [];
 let editLiveStaff         = [];
 let editRowCounter        = 0;
 let editActiveBooking     = null;   // the grouped booking record from liveBookingsData
@@ -474,20 +475,37 @@ function setupModals() {
 async function loadEditDropdownData() {
     const company_id = getCompanyId();
     const branch_id  = getBranchId();
-    const [svcRes, staffRes] = await Promise.all([
+    const [svcRes, staffRes, pkgRes] = await Promise.all([
         supabase.from('services').select('*').eq('company_id', company_id).eq('branch_id', branch_id),
-        supabase.from('staff').select('*').eq('company_id', company_id).eq('branch_id', branch_id)
+        supabase.from('staff').select('*').eq('company_id', company_id).eq('branch_id', branch_id),
+        supabase.from('packages').select('*').eq('company_id', company_id).eq('branch_id', branch_id).eq('is_active', true)
     ]);
     editLiveServices = (svcRes.data || []).filter(s => (s.status || '').trim().toLowerCase() === 'active');
+    editLivePackages = pkgRes.data || [];
     editLiveStaff    = (staffRes.data || []).filter(s => s.status !== 'deleted');
 }
 
 // ─── Edit Modal: Build a single service + staff + price row ───────────────────
 function buildEditServiceRow(rowId, isFirst, prefillSvcId = '', prefillStaffId = '', prefillPrice = '', dbId = null) {
     const svcOptions = editLiveServices.map(s =>
-        `<option value="${s.service_id}" data-price="${s.price || 0}" ${
+        `<option value="${s.service_id}" data-type="service" data-price="${s.price || 0}" ${
             prefillSvcId === s.service_id ? 'selected' : ''}>${s.service_name}</option>`
     ).join('');
+
+    const pkgOptions = editLivePackages.map(p =>
+        `<option value="${p.package_id}" data-type="package" data-price="${p.final_price || 0}" ${
+            prefillSvcId === p.package_id ? 'selected' : ''}>${p.package_name}</option>`
+    ).join('');
+
+    const combinedOptions = `
+        <optgroup label="Services" style="color: #1d4ed8; font-weight: 600;">
+            ${svcOptions}
+        </optgroup>
+        ${pkgOptions ? `
+        <optgroup label="Packages" style="color: #1d4ed8; font-weight: 600;">
+            ${pkgOptions}
+        </optgroup>` : ''}
+    `;
 
     const staffOptions = editLiveStaff.map(m =>
         `<option value="${m.staff_id}" ${
@@ -515,8 +533,8 @@ function buildEditServiceRow(rowId, isFirst, prefillSvcId = '', prefillStaffId =
                 <div class="form-group" style="margin:0;">
                     <label class="form-label">Service <span class="text-rose">*</span></label>
                     <select class="form-select edit-svc-select" required>
-                        <option value="" disabled ${!prefillSvcId ? 'selected' : ''}>Select a service</option>
-                        ${svcOptions}
+                        <option value="" disabled ${!prefillSvcId ? 'selected' : ''}>Select a service or package</option>
+                        ${combinedOptions}
                     </select>
                 </div>
                 <div class="form-group" style="margin:0;">
@@ -551,6 +569,7 @@ function buildEditServiceRow(rowId, isFirst, prefillSvcId = '', prefillStaffId =
         div.querySelector('.btn-edit-remove-row').addEventListener('click', () => {
             div.remove();
             document.querySelectorAll('#editServiceRowsContainer .edit-service-row').forEach((row, i) => {
+                row.dataset.rowId = i;
                 const badge = row.querySelector('.edit-row-badge');
                 if (badge) badge.textContent = `#${i + 1}`;
             });
@@ -1260,7 +1279,8 @@ function attachEventListeners() {
             if (addBtn) {
                 addBtn.onclick = () => {
                     const firstStaff = container.querySelector('.edit-staff-select')?.value || '';
-                    container.appendChild(buildEditServiceRow(editRowCounter++, false, '', firstStaff, '', null));
+                    const nextId = container.querySelectorAll('.edit-service-row').length;
+                    container.appendChild(buildEditServiceRow(nextId, false, '', firstStaff, '', null));
                     syncEditServiceDropdowns();
                 };
             }
