@@ -994,16 +994,6 @@ function attachEventListeners() {
         const b = liveBookingsData.find(x => (x.booking_id || x.id) == bookingId);
         if (!b) return;
 
-        // Prefill modal via DOM triggers
-        const phoneInput = document.getElementById('phoneSearch');
-        if (phoneInput) {
-            phoneInput.value = b.customer_phone || '';
-            phoneInput.dispatchEvent(new Event('input', { bubbles: true }));
-        }
-        
-        const nameInput = document.getElementById('customerName');
-        if (nameInput) nameInput.value = b.customer_name || '';
-
         // Open the New Booking Modal natively built in the DOM
         const btnNewBooking = document.getElementById('btnNewBooking') || document.getElementById('btnNewBookingPage');
         if (btnNewBooking) {
@@ -1011,6 +1001,22 @@ function attachEventListeners() {
         } else {
             document.getElementById('bookingModalOverlay')?.classList.add('active');
         }
+
+        // Slight delay to allow openModal (if any) to wipe fields first, THEN we overwrite them.
+        setTimeout(() => {
+            const phoneInput = document.getElementById('phoneSearch');
+            if (phoneInput) {
+                phoneInput.value = b.customer_phone || '';
+                phoneInput.dispatchEvent(new Event('input', { bubbles: true }));
+            }
+            
+            const nameInput = document.getElementById('customerName');
+            if (nameInput) {
+                nameInput.value = b.customer_name || '';
+                nameInput.readOnly = false;
+                nameInput.classList.remove('read-only-input');
+            }
+        }, 150);
     };
 
     // ── Global window helpers (called from row buttons) ────────────────────────
