@@ -1712,11 +1712,9 @@ function renderCalendar() {
 
             // ── Total bookings header ──────────────────────────────────────
             const totalEl = document.createElement('div');
-            totalEl.style.cssText = `
-                font-size:0.85rem; font-weight:700; color:#1e293b;
-                margin-bottom:4px; cursor:pointer;
-            `;
+            totalEl.className = 'calendar-badge';
             totalEl.textContent = `${dayBookings.length} Booking${dayBookings.length > 1 ? 's' : ''}`;
+            totalEl.style.cursor = 'pointer';
             totalEl.addEventListener('click', () => openCalendarDayModal(dateStr, dayBookings));
             badgesWrap.appendChild(totalEl);
 
