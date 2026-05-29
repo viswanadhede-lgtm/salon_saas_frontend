@@ -496,6 +496,7 @@ function setupModals() {
                 </div>
             </div>
         </div>`);
+        wireRefundModal();
     }
 
     if (!document.getElementById('customerProfileBookingModal')) {
@@ -1561,9 +1562,12 @@ const closeRefundModal = () => {
     currentRefundBookingId = null;
 };
 
-document.addEventListener('DOMContentLoaded', () => {
+function wireRefundModal() {
     const btnCancelRefund = document.getElementById('btnCancelRefund');
     if (btnCancelRefund) btnCancelRefund.addEventListener('click', closeRefundModal);
+
+    const btnCloseRefundModal = document.getElementById('btnCloseRefundModal');
+    if (btnCloseRefundModal) btnCloseRefundModal.addEventListener('click', closeRefundModal);
 
     const btnConfirmRefund = document.getElementById('btnConfirmRefund');
     if (btnConfirmRefund) {
@@ -1581,7 +1585,6 @@ document.addEventListener('DOMContentLoaded', () => {
             if (!['cash', 'card', 'upi'].includes(method)) method = 'cash';
 
             try {
-                // Insert new transaction
                 const { error: txError } = await supabase.from('business_transactions').insert([{
                     company_id: getCompanyId(),
                     branch_id: getBranchId(),
@@ -1604,9 +1607,9 @@ document.addEventListener('DOMContentLoaded', () => {
                     toast.classList.add('show');
                     setTimeout(() => toast.classList.remove('show'), 3000);
                 }
-                
+
                 closeRefundModal();
-                await window.fetchBookings();
+                await fetchBookings();
 
             } catch (err) {
                 console.error('Refund Error:', err);
@@ -1622,4 +1625,4 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         });
     }
-});
+}
