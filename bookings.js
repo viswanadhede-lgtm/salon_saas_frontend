@@ -1760,7 +1760,7 @@ function openCalendarDayModal(dateStr, bookings) {
     // Sort bookings by time ascending
     const sorted = [...bookings].sort((a,b) => (a.start_time || '').localeCompare(b.start_time || ''));
 
-    sorted.forEach(b => {
+    sorted.forEach((b, index) => {
         const timeVal = (b.start_time || '').slice(0,5);
         
         let ptime = '';
@@ -1777,6 +1777,10 @@ function openCalendarDayModal(dateStr, bookings) {
 
         const tr = document.createElement('tr');
         tr.style.borderBottom = '1px solid #f1f5f9';
+        // Zebra striping for readability
+        if (index % 2 !== 0) {
+            tr.style.backgroundColor = '#f8fafc';
+        }
         tr.innerHTML = `
             <td style="padding:10px 14px; font-weight:600; color:#334155; white-space:nowrap;">${ptime || '—'}</td>
             <td style="padding:10px 8px; font-weight:600; color:#1e293b;">
