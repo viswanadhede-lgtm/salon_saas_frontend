@@ -1773,7 +1773,7 @@ function openCalendarDayModal(dateStr, bookings) {
             ptime = `${String(hr).padStart(2,'0')}:${mm} ${ampm}`;
         }
 
-        const svcs = (b.service_name || '').split(',').map(s=> `<span style="display:inline-block;padding:2px 6px;margin:2px;background:#f1f5f9;border-radius:4px;font-size:0.7rem;">${s.trim()}</span>`).join('');
+        const svcs = (b.service_name || '').split(',').map(s=> `<span style="display:inline-block;padding:2px 6px;margin:2px;background:#f1f5f9;border-radius:4px;font-size:0.85rem;">${s.trim()}</span>`).join('');
 
         const tr = document.createElement('tr');
         tr.style.borderBottom = '1px solid #f1f5f9';
@@ -1782,13 +1782,13 @@ function openCalendarDayModal(dateStr, bookings) {
             tr.style.backgroundColor = '#f8fafc';
         }
         tr.innerHTML = `
-            <td style="padding:10px 14px; font-weight:600; color:#334155; white-space:nowrap;">${ptime || '—'}</td>
-            <td style="padding:10px 8px; font-weight:600; color:#1e293b;">
+            <td style="padding:12px 14px; font-weight:600; font-size:0.95rem; color:#334155; white-space:nowrap;">${ptime || '—'}</td>
+            <td style="padding:12px 8px; font-weight:600; font-size:1rem; color:#1e293b;">
                 ${b.customer_name ? `<a href="#" style="color:#2563eb; text-decoration:none;" onclick="event.preventDefault(); if(window.viewCustomerProfile) { window.viewCustomerProfile('${b.customer_id || ''}', '${b.customer_name}'); document.getElementById('calDayModalOverlay').classList.remove('active'); }">${b.customer_name}</a>` : '—'}
             </td>
-            <td style="padding:10px 8px;">${svcs}</td>
-            <td style="padding:10px 8px; color:#475569; font-size:0.8rem;">${b.staff_name || '—'}</td>
-            <td style="padding:10px 8px;">${statusBadge(b.status)}</td>
+            <td style="padding:12px 8px;">${svcs}</td>
+            <td style="padding:12px 8px; color:#475569; font-size:0.9rem;">${b.staff_name || '—'}</td>
+            <td style="padding:12px 8px;">${statusBadge(b.status)}</td>
         `;
         tbody.appendChild(tr);
     });
