@@ -1032,7 +1032,7 @@ function attachEventListeners() {
         const btnConfirm = document.getElementById('btnConfirmUpdateStatus');
         if (btnConfirm) {
             const statusConfig = {
-                'completed': { label: 'Mark Completed', bg: '#7cfc00', hover: '#6de000' },
+                'completed': { label: 'Mark Completed', bg: '#22c55e', hover: '#16a34a' },
                 'cancelled':  { label: 'Mark Cancelled',  bg: '#dc2626', hover: '#b91c1c' },
                 'no-show':    { label: 'Mark No-show',    bg: '#ea580c', hover: '#c2410c' },
             };
