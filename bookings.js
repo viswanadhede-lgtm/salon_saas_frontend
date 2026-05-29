@@ -1654,8 +1654,7 @@ function renderCalendar() {
     // Padding empty cells before 1st of month
     for (let i = 0; i < firstDay; i++) {
         const emptyCell = document.createElement('div');
-        emptyCell.className = 'calendar-day';
-        emptyCell.style.background = '#f8fafc'; // light gray for empty
+        emptyCell.className = 'calendar-day empty-day';
         grid.appendChild(emptyCell);
     }
 
@@ -1663,8 +1662,7 @@ function renderCalendar() {
     for (let d = 1; d <= daysInMonth; d++) {
         const cell = document.createElement('div');
         cell.className = 'calendar-day';
-        cell.style.position = 'relative';
-
+        
         const rawDate = new Date(year, month, d);
         // format local yyyy-mm-dd safely (without UTC shift offset issues)
         const dateStr = [
@@ -1675,14 +1673,14 @@ function renderCalendar() {
 
         // Highlight today
         if (dateStr === todayStr) {
-            cell.style.background = '#eff6ff'; // light blue tint
-            cell.style.border = '1.5px solid #3b82f6'; // distinct border
+            cell.classList.add('today');
         }
 
         const numEl = document.createElement('div');
         numEl.textContent = d;
-        numEl.style.fontWeight = '600';
-        numEl.style.color = '#1e293b';
+        numEl.style.fontWeight = '700';
+        numEl.style.color = '#334155';
+        if (dateStr === todayStr) numEl.style.color = '#4f46e5';
         cell.appendChild(numEl);
 
         // Find how many bookings fall on this day
@@ -1691,20 +1689,10 @@ function renderCalendar() {
 
         if (dayBookings.length > 0) {
             const badge = document.createElement('div');
+            badge.className = 'calendar-badge';
             badge.textContent = dayBookings.length + ' Booking' + (dayBookings.length > 1 ? 's' : '');
-            badge.style.marginTop = '8px';
-            badge.style.padding = '4px 6px';
-            badge.style.background = '#3b82f6';
-            badge.style.color = '#fff';
-            badge.style.borderRadius = '4px';
-            badge.style.fontSize = '0.7rem';
-            badge.style.fontWeight = '600';
-            badge.style.textAlign = 'center';
-            badge.style.cursor = 'pointer';
             
             // Interaction
-            badge.addEventListener('mouseenter', () => badge.style.background = '#2563eb');
-            badge.addEventListener('mouseleave', () => badge.style.background = '#3b82f6');
             badge.addEventListener('click', () => openCalendarDayModal(dateStr, dayBookings));
 
             cell.appendChild(badge);
