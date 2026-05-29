@@ -201,10 +201,19 @@ function buildRow(b, includeDate = false) {
                 ${['cancelled', 'no-show', 'no_show'].includes(status.toLowerCase()) ? `
                 <button onclick="window.triggerRebook('${bookingId}')"
                     data-sub-feature="create_booking"
-                    style="padding:4px 10px;border-radius:6px;border:1px solid #ffedd5;background:#fff7ed;color:#ea580c;font-size:0.75rem;font-weight:600;cursor:pointer;white-space:nowrap;transition:all 0.2s;"
+                    style="padding:4px 10px;border-radius:6px;border:1px solid #ffedd5;background:#fff7ed;color:#ea580c;font-size:0.75rem;font-weight:600;cursor:pointer;white-space:nowrap;transition:all 0.2s;margin-right:6px;"
                     onmouseover="this.style.background='#ffedd5'" onmouseout="this.style.background='#fff7ed'">
                     Re-Book
                 </button>` : ''}
+                
+                ${['cancelled', 'no-show', 'no_show'].includes(status.toLowerCase()) && ['paid', 'partial'].includes(payment.toLowerCase()) ? `
+                <button onclick="window.triggerRefund('${bookingId}')"
+                    data-sub-feature="update_booking" 
+                    style="padding:4px 10px;border-radius:6px;border:1px solid #fecdd3;background:#fff1f2;color:#dc2626;font-size:0.75rem;font-weight:600;cursor:pointer;white-space:nowrap;transition:all 0.2s;"
+                    onmouseover="this.style.background='#ffe4e6'" onmouseout="this.style.background='#fff1f2'">
+                    Refund
+                </button>
+                ` : ''}
             </div>
         </td>
     </tr>`;
@@ -1482,3 +1491,138 @@ export async function initBookings() {
 
     await fetchBookings();
 }
+
+// ─── Refund Logic ─────────────────────────────────────────────────────────────
+let currentRefundBookingId = null;
+let currentRefundAmount = 0;
+
+window.triggerRefund = async function(bookingId) {
+    const b = liveBookingsData.find(x => String(x.id) === String(bookingId));
+    if (!b) return;
+
+    currentRefundBookingId = bookingId;
+    currentRefundAmount = 0;
+
+    const modal = document.getElementById('refundBookingModal');
+    if (modal) modal.classList.add('active');
+
+    const btn = document.getElementById('btnConfirmRefund');
+    if (btn) { btn.textContent = 'Issue Refund'; btn.disabled = true; }
+
+    const amountDisplay = document.getElementById('refundAmountDisplay');
+    if (amountDisplay) amountDisplay.textContent = 'Calculating...';
+
+    const methodDisplay = document.getElementById('refundMethodDisplay');
+    if (methodDisplay) methodDisplay.value = 'Loading...';
+
+    try {
+        const { data: txs, error } = await window.supabase
+            .from('business_transactions')
+            .select('amount, payment_method')
+            .eq('reference_id', bookingId)
+            .in('status', ['paid', 'completed']);
+
+        if (error) throw error;
+
+        let totalPaid = 0;
+        let lastMethod = 'cash';
+        if (txs && txs.length > 0) {
+            txs.forEach(t => { totalPaid += Number(t.amount || 0); });
+            lastMethod = txs[0].payment_method || 'cash';
+        }
+
+        currentRefundAmount = totalPaid;
+        
+        if (amountDisplay) {
+            amountDisplay.textContent = `₹${currentRefundAmount.toLocaleString('en-IN')}`;
+        }
+
+        if (methodDisplay) {
+            let inferred = lastMethod.toLowerCase();
+            if (!['cash', 'card', 'upi'].includes(inferred)) inferred = 'cash';
+            methodDisplay.value = inferred.charAt(0).toUpperCase() + inferred.slice(1);
+        }
+
+        if (btn) btn.disabled = (currentRefundAmount <= 0);
+
+    } catch (err) {
+        console.error('Error fetching refund amount:', err);
+        if (amountDisplay) amountDisplay.textContent = 'Error';
+    }
+};
+
+const closeRefundModal = () => {
+    const modal = document.getElementById('refundBookingModal');
+    if (modal) modal.classList.remove('active');
+    currentRefundBookingId = null;
+};
+
+document.addEventListener('DOMContentLoaded', () => {
+    const btnCancelRefund = document.getElementById('btnCancelRefund');
+    if (btnCancelRefund) btnCancelRefund.addEventListener('click', closeRefundModal);
+
+    const btnConfirmRefund = document.getElementById('btnConfirmRefund');
+    if (btnConfirmRefund) {
+        btnConfirmRefund.addEventListener('click', async () => {
+            if (!currentRefundBookingId) return;
+
+            const btn = document.getElementById('btnConfirmRefund');
+            if (btn) { btn.textContent = 'Processing...'; btn.disabled = true; }
+
+            const noteEl = document.getElementById('refundNote');
+            const note = noteEl ? noteEl.value.trim() : '';
+
+            const methodEl = document.getElementById('refundMethodDisplay');
+            let method = methodEl ? methodEl.value.toLowerCase() : 'cash';
+            if (!['cash', 'card', 'upi'].includes(method)) method = 'cash';
+
+            try {
+                // Insert new transaction
+                const { error: txError } = await window.supabase.from('business_transactions').insert([{
+                    company_id: getCompanyId(),
+                    branch_id: getBranchId(),
+                    reference_id: currentRefundBookingId,
+                    reference_type: 'booking',
+                    amount: Math.abs(currentRefundAmount),
+                    status: 'refunded',
+                    payment_method: method,
+                    notes: note || 'Refund for cancelled/no-show booking',
+                    paid_at: new Date().toISOString()
+                }]);
+
+                if (txError) throw txError;
+
+                // Update booking status
+                const { error: updateError } = await window.supabase
+                    .from('bookings')
+                    .update({ payment_status: 'refunded' })
+                    .eq('id', currentRefundBookingId);
+                
+                if (updateError) throw updateError;
+
+                const toast = document.getElementById('toastNotification');
+                if (toast) {
+                    toast.textContent = 'Refund processed successfully!';
+                    toast.style.background = '#10b981';
+                    toast.classList.add('show');
+                    setTimeout(() => toast.classList.remove('show'), 3000);
+                }
+                
+                closeRefundModal();
+                await window.fetchBookings();
+
+            } catch (err) {
+                console.error('Refund Error:', err);
+                const toast = document.getElementById('toastNotification');
+                if (toast) {
+                    toast.textContent = 'Failed to process refund.';
+                    toast.style.background = '#ef4444';
+                    toast.classList.add('show');
+                    setTimeout(() => toast.classList.remove('show'), 3000);
+                }
+            } finally {
+                if (btn) { btn.textContent = 'Issue Refund'; btn.disabled = false; }
+            }
+        });
+    }
+});
