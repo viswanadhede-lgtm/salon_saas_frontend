@@ -2813,11 +2813,13 @@
    CALENDAR TAB LAYOUT
 ---------------------------------------------------------------- */
 .calendar-wrapper {
-    background-color: #ffffff;
-    border: 1px solid var(--border);
+    background-color: #F6F3FF;
+    border: 1px solid #e0e7ff; /* Slightly deeper border to pop off the light purple */
     border-radius: 12px;
     padding: 1.5rem;
     box-shadow: 0 1px 3px rgba(0,0,0,0.02);
+    max-width: 1000px;
+    margin: 0 auto;
 }
 
 .calendar-header {
@@ -2870,8 +2872,8 @@
 }
 
 .calendar-day {
-    min-height: 120px;
-    padding: 12px;
+    min-height: 100px;
+    padding: 10px;
     background-color: #ffffff;
     border: 1px solid #e2e8f0;
     border-radius: 12px;
