@@ -469,6 +469,22 @@ export function initGlobalBookingModal() {
         }
     });
 
+    // ── External API for pre-filling ──────────────────────────────────────
+    window.setGlobalBookingCustomer = function(customerId, name, phone, email) {
+        if (!customerId) return;
+        selectedCustomerId = customerId;
+        phoneSearch.value = phone || '';
+        setExistingCustomerState(name || '', email || '');
+        
+        searchSuggestions.style.display = 'none';
+        if (newCustomerBadgeContainer) newCustomerBadgeContainer.style.display = 'none';
+        if (customerBadgeContainer) {
+            customerBadgeContainer.style.display = 'block';
+            if (customerBadge) customerBadge.textContent = 'Existing Customer';
+        }
+        validateForm();
+    };
+
     // ── Form Validation ───────────────────────────────────────────────────
     function validateForm() {
         const hasPhone     = phoneSearch.value.trim().length >= 10;

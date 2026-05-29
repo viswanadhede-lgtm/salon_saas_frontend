@@ -1134,17 +1134,26 @@ function attachEventListeners() {
 
         // Slight delay to allow openModal (if any) to wipe fields first, THEN we overwrite them.
         setTimeout(() => {
-            const phoneInput = document.getElementById('phoneSearch');
-            if (phoneInput) {
-                phoneInput.value = b.customer_phone || '';
-                phoneInput.dispatchEvent(new Event('input', { bubbles: true }));
-            }
-            
-            const nameInput = document.getElementById('customerName');
-            if (nameInput) {
-                nameInput.value = b.customer_name || '';
-                nameInput.readOnly = false;
-                nameInput.classList.remove('read-only-input');
+            if (window.setGlobalBookingCustomer) {
+                window.setGlobalBookingCustomer(
+                    b.customer_id, 
+                    b.customer_name, 
+                    b.customer_phone, 
+                    b.customer_email
+                );
+            } else {
+                // Fallback for older code bridging
+                const phoneInput = document.getElementById('phoneSearch');
+                if (phoneInput) {
+                    phoneInput.value = b.customer_phone || '';
+                    phoneInput.dispatchEvent(new Event('input', { bubbles: true }));
+                }
+                const nameInput = document.getElementById('customerName');
+                if (nameInput) {
+                    nameInput.value = b.customer_name || '';
+                    nameInput.readOnly = false;
+                    nameInput.classList.remove('read-only-input');
+                }
             }
 
             // Fill services and staff
