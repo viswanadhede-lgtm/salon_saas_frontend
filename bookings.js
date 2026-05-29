@@ -1497,8 +1497,11 @@ let currentRefundBookingId = null;
 let currentRefundAmount = 0;
 
 window.triggerRefund = async function(bookingId) {
-    const b = liveBookingsData.find(x => String(x.id) === String(bookingId));
-    if (!b) return;
+    const b = liveBookingsData.find(x => String(x.booking_id) === String(bookingId));
+    if (!b) {
+        console.error("No booking found for", bookingId, liveBookingsData.slice(0,2));
+        return;
+    }
 
     currentRefundBookingId = bookingId;
     currentRefundAmount = 0;
