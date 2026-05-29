@@ -504,11 +504,14 @@ function buildEditServiceRow(rowId, isFirst, prefillSvcId = '', prefillStaffId =
 
     div.innerHTML = `
         <div style="padding:16px;background:${cardBg};border:1px solid #e2e8f0;border-radius:10px;box-shadow:0 1px 3px rgba(0,0,0,0.05);position:relative;">
-            ${!isFirst 
-                ? `<button type="button" class="btn-edit-remove-row" style="position:absolute;top:16px;right:16px;font-size:0.75rem;padding:4px 8px;border-radius:6px;border:1px solid #fca5a5;background:#fff5f5;color:#ef4444;font-weight:600;cursor:pointer;">✕ Remove</button>`
-                : ''
-            }
-            <div style="display:grid;grid-template-columns:2fr 2fr 1fr;gap:16px;margin-bottom:0;margin-top:${!isFirst ? '24px' : '0'};">
+            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;">
+                <span class="edit-row-badge" style="font-size:0.7rem;font-weight:700;color:#4f46e5;background:#e0e7ff;border:1px solid #c7d2fe;border-radius:6px;padding:2px 9px;letter-spacing:0.03em;">#${rowId + 1}</span>
+                ${!isFirst
+                    ? `<button type="button" class="btn-edit-remove-row" style="font-size:0.75rem;padding:4px 8px;border-radius:6px;border:1px solid #fca5a5;background:#fff5f5;color:#ef4444;font-weight:600;cursor:pointer;">✕ Remove</button>`
+                    : '<span></span>'
+                }
+            </div>
+            <div style="display:grid;grid-template-columns:2fr 2fr 1fr;gap:16px;margin-bottom:0;">
                 <div class="form-group" style="margin:0;">
                     <label class="form-label">Service <span class="text-rose">*</span></label>
                     <select class="form-select edit-svc-select" required>
@@ -523,7 +526,7 @@ function buildEditServiceRow(rowId, isFirst, prefillSvcId = '', prefillStaffId =
                         ${staffOptions}
                     </select>
                 </div>
-                <div class="form-group" style="margin:0; ${!isFirst ? 'padding-right: 24px;' : ''}">
+                <div class="form-group" style="margin:0;">
                     <label class="form-label">Price <span style="font-weight:400;color:#94a3b8;">(₹)</span></label>
                     <input type="number" class="form-input edit-svc-price" placeholder="e.g. 500" min="0" step="0.01" value="${prefillPrice !== '' && prefillPrice != null ? prefillPrice : ''}" required>
                 </div>
@@ -542,11 +545,15 @@ function buildEditServiceRow(rowId, isFirst, prefillSvcId = '', prefillStaffId =
         }
     });
 
-    // Individual Staff selection allowed, so no staff sync block applies here
-
-    // Remove button (non-first rows only)
+    // Remove button (non-first rows only) — re-labels all badges after removal
     if (!isFirst) {
-        div.querySelector('.btn-edit-remove-row').addEventListener('click', () => div.remove());
+        div.querySelector('.btn-edit-remove-row').addEventListener('click', () => {
+            div.remove();
+            document.querySelectorAll('#editServiceRowsContainer .edit-service-row').forEach((row, i) => {
+                const badge = row.querySelector('.edit-row-badge');
+                if (badge) badge.textContent = `#${i + 1}`;
+            });
+        });
     }
 
     return div;
