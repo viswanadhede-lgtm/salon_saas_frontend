@@ -1683,19 +1683,50 @@ function renderCalendar() {
         if (dateStr === todayStr) numEl.style.color = '#4f46e5';
         cell.appendChild(numEl);
 
-        // Find how many bookings fall on this day
-        // ensure we check against liveBookingsData safely
+        // Find bookings for this day
         const dayBookings = window.liveBookingsData.filter(b => b.booking_date === dateStr);
 
         if (dayBookings.length > 0) {
-            const badge = document.createElement('div');
-            badge.className = 'calendar-badge';
-            badge.textContent = dayBookings.length + ' Booking' + (dayBookings.length > 1 ? 's' : '');
-            
-            // Interaction
-            badge.addEventListener('click', () => openCalendarDayModal(dateStr, dayBookings));
+            // Group by normalised status
+            const statusConfig = {
+                completed: { label: 'Completed', color: '#065f46', bg: '#d1fae5' },
+                cancelled:  { label: 'Cancelled',  color: '#991b1b', bg: '#fee2e2' },
+                'no-show':  { label: 'No-Show',    color: '#92400e', bg: '#fef3c7' },
+                'no_show':  { label: 'No-Show',    color: '#92400e', bg: '#fef3c7' },
+                booked:     { label: 'Booked',     color: '#1e40af', bg: '#dbeafe' },
+                confirmed:  { label: 'Confirmed',  color: '#1e40af', bg: '#dbeafe' },
+            };
 
-            cell.appendChild(badge);
+            // Tally counts per status
+            const counts = {};
+            dayBookings.forEach(bk => {
+                const s = (bk.status || '').toLowerCase().trim();
+                counts[s] = (counts[s] || 0) + 1;
+            });
+
+            const badgesWrap = document.createElement('div');
+            badgesWrap.style.display = 'flex';
+            badgesWrap.style.flexDirection = 'column';
+            badgesWrap.style.gap = '4px';
+            badgesWrap.style.marginTop = '8px';
+
+            Object.entries(counts).forEach(([s, count]) => {
+                const cfg = statusConfig[s] || { label: s, color: '#475569', bg: '#f1f5f9' };
+                const pill = document.createElement('div');
+                pill.style.cssText = `
+                    display:flex; align-items:center; justify-content:space-between;
+                    padding:4px 8px; border-radius:6px; cursor:pointer;
+                    background:${cfg.bg}; font-size:0.72rem; font-weight:600; color:${cfg.color};
+                    transition:opacity 0.15s ease;
+                `;
+                pill.innerHTML = `<span>${cfg.label}</span><span style="font-size:0.8rem;font-weight:700;">${count}</span>`;
+                pill.addEventListener('mouseenter', () => pill.style.opacity = '0.8');
+                pill.addEventListener('mouseleave', () => pill.style.opacity = '1');
+                pill.addEventListener('click', () => openCalendarDayModal(dateStr, dayBookings));
+                badgesWrap.appendChild(pill);
+            });
+
+            cell.appendChild(badgesWrap);
         }
 
         grid.appendChild(cell);
