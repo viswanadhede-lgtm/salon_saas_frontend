@@ -133,8 +133,28 @@ function buildRow(b, includeDate = false) {
         } // end else
     } // end if serviceNames.length
 
-    // Render staff names as plain text (joined)
-    const staffCell = staffNames.length ? staffNames.join(', ') : '—';
+    // Render staff names: show first chip + collapsible +N toggle
+    let staffCell = '—';
+    if (staffNames.length) {
+        const firstChip = `<span style="${chipStyle}">${staffNames[0]}</span>`;
+        if (staffNames.length === 1) {
+            staffCell = firstChip;
+        } else {
+            const extraCount = staffNames.length - 1;
+            const extraId = `staff-extra-${bookingId}`;
+            const toggleId = `staff-toggle-${bookingId}`;
+            const extraChips = staffNames.slice(1).map(s => `<span style="${chipStyle}">${s}</span>`).join('');
+            staffCell = `<div style="display:flex;flex-wrap:wrap;align-items:flex-start;gap:2px;width:100%;">
+                    ${firstChip}
+                    <span id="${toggleId}"
+                        onclick="window.toggleSvcExtra('${extraId}', '${toggleId}', ${extraCount})"
+                        style="display:inline-block;padding:2px 7px;border-radius:20px;font-size:0.7rem;font-weight:600;background:#e0e7ff;color:#4f46e5;cursor:pointer;white-space:nowrap;user-select:none;">+${extraCount}</span>
+                    <div id="${extraId}" style="display:none;flex-wrap:wrap;gap:2px;width:100%;margin-top:3px;">
+                        ${extraChips}
+                    </div>
+                </div>`;
+        }
+    }
 
     const cellStyle = 'overflow:hidden;text-overflow:ellipsis;white-space:nowrap;';
 
@@ -522,13 +542,7 @@ function buildEditServiceRow(rowId, isFirst, prefillSvcId = '', prefillStaffId =
         }
     });
 
-    // Staff sync across all rows in the container
-    const staffSel = div.querySelector('.edit-staff-select');
-    staffSel.addEventListener('change', () => {
-        document.getElementById('editServiceRowsContainer')
-            ?.querySelectorAll('.edit-staff-select')
-            .forEach(sel => { if (sel !== staffSel) sel.value = staffSel.value; });
-    });
+    // Individual Staff selection allowed, so no staff sync block applies here
 
     // Remove button (non-first rows only)
     if (!isFirst) {
