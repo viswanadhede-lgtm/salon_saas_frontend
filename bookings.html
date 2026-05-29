@@ -299,53 +299,50 @@
                             <div class="filter-header">
                                 <h3>Filter Bookings</h3>
                             </div>
-                            <div class="filter-body">
+                            <div class="filter-body" style="display: flex; gap: 32px; padding: 16px;">
                                 <!-- Status -->
-                                <div class="filter-section">
-                                    <div class="filter-section-title">Status</div>
-                                    <label class="filter-option">
-                                        <input type="checkbox" value="booked" checked> Booked
-                                    </label>
-                                    <label class="filter-option">
-                                        <input type="checkbox" value="completed" checked> Completed
-                                    </label>
-                                    <label class="filter-option">
-                                        <input type="checkbox" value="cancelled"> Cancelled
-                                    </label>
-                                    <label class="filter-option">
-                                        <input type="checkbox" value="no-show"> No-show
-                                    </label>
+                                <div class="filter-section" style="flex: 1;">
+                                    <div class="filter-section-title" style="margin-bottom: 8px; font-weight: 600; color: #475569;">Status</div>
+                                    <div style="display: flex; flex-direction: column; gap: 8px;">
+                                        <label class="filter-option" style="display: flex; align-items: center; gap: 6px;">
+                                            <input type="checkbox" name="filterStatus" value="booked" checked> Booked
+                                        </label>
+                                        <label class="filter-option" style="display: flex; align-items: center; gap: 6px;">
+                                            <input type="checkbox" name="filterStatus" value="completed" checked> Completed
+                                        </label>
+                                        <label class="filter-option" style="display: flex; align-items: center; gap: 6px;">
+                                            <input type="checkbox" name="filterStatus" value="cancelled"> Cancelled
+                                        </label>
+                                        <label class="filter-option" style="display: flex; align-items: center; gap: 6px;">
+                                            <input type="checkbox" name="filterStatus" value="no-show"> No-show
+                                        </label>
+                                    </div>
                                 </div>
 
                                 <!-- Staff -->
-                                <div class="filter-section">
-                                    <div class="filter-section-title">Staff</div>
-                                    <label class="filter-option">
-                                        <input type="checkbox" value="all" checked> All Staff
-                                    </label>
-                                    <label class="filter-option">
-                                        <input type="checkbox" value="Michael"> Michael
-                                    </label>
-                                    <label class="filter-option">
-                                        <input type="checkbox" value="Sarah"> Sarah
-                                    </label>
-                                    <label class="filter-option">
-                                        <input type="checkbox" value="Anjali"> Anjali
-                                    </label>
+                                <div class="filter-section" style="flex: 1;">
+                                    <div class="filter-section-title" style="margin-bottom: 8px; font-weight: 600; color: #475569;">Staff</div>
+                                    <div id="filterStaffList" style="display: flex; flex-direction: column; gap: 8px;">
+                                        <label class="filter-option" style="display: flex; align-items: center; gap: 6px;">
+                                            <input type="checkbox" name="filterStaff" value="all" checked> All Staff
+                                        </label>
+                                    </div>
                                 </div>
 
                                 <!-- Date Range -->
-                                <div class="filter-section">
-                                    <div class="filter-section-title">Date Range</div>
-                                    <label class="filter-option">
-                                        <input type="radio" name="filterDateRange" value="7days" checked> Last 7 days
-                                    </label>
-                                    <label class="filter-option">
-                                        <input type="radio" name="filterDateRange" value="30days"> Last 30 days
-                                    </label>
-                                    <label class="filter-option">
-                                        <input type="radio" name="filterDateRange" value="custom"> Custom Range
-                                    </label>
+                                <div class="filter-section" style="flex: 1;">
+                                    <div class="filter-section-title" style="margin-bottom: 8px; font-weight: 600; color: #475569;">Date Range</div>
+                                    <div style="display: flex; flex-direction: column; gap: 8px;">
+                                        <label class="filter-option" style="display: flex; align-items: center; gap: 6px;">
+                                            <input type="radio" name="filterDateRange" value="all" checked> View All Time
+                                        </label>
+                                        <label class="filter-option" style="display: flex; align-items: center; gap: 6px;">
+                                            <input type="radio" name="filterDateRange" value="7days"> Last 7 days
+                                        </label>
+                                        <label class="filter-option" style="display: flex; align-items: center; gap: 6px;">
+                                            <input type="radio" name="filterDateRange" value="30days"> Last 30 days
+                                        </label>
+                                    </div>
                                 </div>
                             </div>
                             <div class="filter-footer">

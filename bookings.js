@@ -199,12 +199,97 @@ function emptyRow(colspan, msg) {
 let currentSearchQuery = '';
 
 function getFilteredBookings() {
-    if (!currentSearchQuery) return liveBookingsData;
-    const q = currentSearchQuery.toLowerCase();
-    return liveBookingsData.filter(b => {
-        const name = String(b.customer_name || '').toLowerCase();
-        const phone = String(b.customer_phone || '').toLowerCase();
-        return name.includes(q) || phone.includes(q);
+    let results = liveBookingsData || [];
+
+    // Apply Search
+    if (currentSearchQuery) {
+        const q = currentSearchQuery.toLowerCase();
+        results = results.filter(b => {
+            const name = String(b.customer_name || '').toLowerCase();
+            const phone = String(b.customer_phone || '').toLowerCase();
+            return name.includes(q) || phone.includes(q);
+        });
+    }
+
+    // Apply Status Filter
+    const activeStatuses = Array.from(document.querySelectorAll('input[name="filterStatus"]:checked')).map(c => c.value);
+    
+    // Apply Staff Filter
+    const staffAllChecked = document.querySelector('input[name="filterStaff"][value="all"]')?.checked;
+    const activeStaff = Array.from(document.querySelectorAll('input[name="filterStaff"]:not([value="all"]):checked')).map(c => c.value);
+    
+    // Apply Date Filter
+    const dateFilter = document.querySelector('input[name="filterDateRange"]:checked')?.value || 'all';
+
+    const now = new Date();
+    let cutoff = null;
+    if (dateFilter === '7days') cutoff = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
+    else if (dateFilter === '30days') cutoff = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
+
+    return results.filter(b => {
+        // Status Check
+        if (activeStatuses.length && !activeStatuses.includes(String(b.status).toLowerCase())) {
+            return false;
+        }
+
+        // Staff Check
+        if (!staffAllChecked && activeStaff.length > 0) {
+            const rowStaffNames = (Array.isArray(b.staff_names) ? b.staff_names : [b.staff_name])
+                .filter(Boolean)
+                .flatMap(s => String(s).split(',').map(item => item.trim()))
+                .filter(Boolean);
+            
+            const matchedStaff = rowStaffNames.some(name => activeStaff.includes(name));
+            if (!matchedStaff) return false;
+        }
+
+        // Date Check
+        if (cutoff && b.booking_date) {
+            const bDate = new Date(b.booking_date + 'T00:00');
+            if (bDate < cutoff) return false;
+        }
+
+        return true;
+    });
+}
+
+function populateStaffFilter() {
+    const list = document.getElementById('filterStaffList');
+    if (!list) return;
+
+    const wasAllChecked = list.querySelector('input[value="all"]')?.checked ?? true;
+    const selectedStaff = Array.from(list.querySelectorAll('input[name="filterStaff"]:not([value="all"]):checked')).map(c => c.value);
+
+    const allStaffRaw = (liveBookingsData || []).flatMap(b => {
+        return (Array.isArray(b.staff_names) ? b.staff_names : [b.staff_name])
+            .filter(Boolean)
+            .flatMap(s => String(s).split(',').map(item => item.trim()));
+    });
+    const uniqueStaff = [...new Set(allStaffRaw)].filter(s => s && s.toLowerCase() !== 'undefined');
+
+    let html = '<label class="filter-option" style="display: flex; align-items: center; gap: 6px;">'
+        + '<input type="checkbox" name="filterStaff" value="all"' + (wasAllChecked ? ' checked' : '') + '> All Staff'
+        + '</label>';
+
+    uniqueStaff.sort().forEach(staff => {
+        const checked = selectedStaff.includes(staff) ? ' checked' : '';
+        html += '<label class="filter-option" style="display: flex; align-items: center; gap: 6px;">'
+            + '<input type="checkbox" name="filterStaff" value="' + staff + '"' + checked + '> ' + staff
+            + '</label>';
+    });
+
+    list.innerHTML = html;
+
+    list.querySelectorAll('input[name="filterStaff"]').forEach(cb => {
+        cb.addEventListener('change', (e) => {
+            const val = e.target.value;
+            if (val === 'all' && e.target.checked) {
+                list.querySelectorAll('input[name="filterStaff"]:not([value="all"])').forEach(c => c.checked = false);
+            } else if (val !== 'all' && e.target.checked) {
+                const allCb = list.querySelector('input[value="all"]');
+                if (allCb) allCb.checked = false;
+            }
+        });
     });
 }
 
@@ -1146,7 +1231,37 @@ function attachEventListeners() {
                 `<div style="color:#ef4444;padding:12px;text-align:center;">Error loading booking details.</div>`;
         }
     };
+    const btnFilter = document.getElementById('btnFilterBookings');
+    const filterMenu = document.getElementById('filterDropdownMenu');
+    
+    btnFilter?.addEventListener('click', (e) => {
+        e.stopPropagation();
+        filterMenu?.classList.toggle('active');
+    });
 
+    document.addEventListener('click', (e) => {
+        const container = document.getElementById('bookingsFilterContainer');
+        if (filterMenu && filterMenu.classList.contains('active') && container && !container.contains(e.target)) {
+            filterMenu.classList.remove('active');
+        }
+    });
+
+    document.getElementById('btnFilterApply')?.addEventListener('click', () => {
+        renderBookings(getFilteredBookings());
+        filterMenu?.classList.remove('active');
+    });
+
+    document.getElementById('btnFilterReset')?.addEventListener('click', () => {
+        document.querySelectorAll('input[name="filterStatus"]').forEach(c => c.checked = ['booked', 'completed'].includes(c.value));
+        const staffAll = document.querySelector('input[name="filterStaff"][value="all"]');
+        if (staffAll) staffAll.checked = true;
+        document.querySelectorAll('input[name="filterStaff"]:not([value="all"])').forEach(c => c.checked = false);
+        const dateAll = document.querySelector('input[name="filterDateRange"][value="all"]');
+        if (dateAll) dateAll.checked = true;
+        
+        renderBookings(getFilteredBookings());
+        filterMenu?.classList.remove('active');
+    });
 }
 
 // ─── Fetch Bookings from Supabase ─────────────────────────────────────────────
@@ -1173,6 +1288,7 @@ export async function fetchBookings() {
 
         liveBookingsData = data || [];
         window.liveBookingsData = liveBookingsData;
+        populateStaffFilter(); 
         renderBookings(getFilteredBookings());
 
     } catch (err) {
