@@ -343,25 +343,9 @@ function setupModals() {
                                 <label class="form-label" for="editBkTime">Time <span class="text-rose">*</span></label>
                                 <input type="time" id="editBkTime" class="form-input" required>
                             </div>
-                            <div class="form-group" style="margin:0;">
-                                <label class="form-label">Status</label>
-                                <select id="editBkStatus" class="form-select">
-                                    <option value="booked">Booked</option>
-                                    <option value="confirmed">Confirmed</option>
-                                    <option value="completed">Completed</option>
-                                    <option value="no-show">No-Show</option>
-                                </select>
-                            </div>
-                            <div class="form-group" style="margin:0;">
-                                <label class="form-label">Payment</label>
-                                <input type="text" id="editBkPayment" class="form-input" readonly
-                                    style="background:#f8fafc;cursor:not-allowed;color:#64748b;font-weight:600;text-transform:capitalize;">
-                            </div>
                         </div>
 
-                        <div style="border:1px solid #e2e8f0;border-radius:10px;padding:14px;margin-bottom:16px;background:#fafafa;">
-                            <div id="editServiceRowsContainer"></div>
-                        </div>
+                        <div id="editServiceRowsContainer" style="display:flex;flex-direction:column;gap:16px;margin-bottom:16px;"></div>
 
                         <div class="form-group" style="margin:0;">
                             <label class="form-label" for="editBkNotes">Notes <span style="font-weight:400;color:#94a3b8;">(Optional)</span></label>
@@ -488,43 +472,32 @@ function buildEditServiceRow(rowId, isFirst, prefillSvcId = '', prefillStaffId =
     div.dataset.rowId = rowId;
     if (dbId) div.dataset.dbId = dbId; // Supabase row PK — used for targeted UPDATE/DELETE
 
-    const separatorHtml = !isFirst
-        ? `<hr style="border:none;border-top:1px dashed #e2e8f0;margin:8px 0;">`
-        : '';
-
     div.innerHTML = `
-        ${separatorHtml}
-        <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:8px;">
-            <div class="form-group" style="margin:0;">
-                <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px;">
-                    <label class="form-label" style="margin-bottom:0;">Service <span class="text-rose">*</span></label>
-                    ${isFirst
-                        ? `<button type="button" id="btnEditAddService"
-                                style="font-size:0.78rem;padding:3px 10px;border-radius:6px;
-                                border:1.5px solid var(--accent,#d946ef);
-                                background:var(--accent,#d946ef);color:#fff;font-weight:600;cursor:pointer;">+ Add</button>`
-                        : `<button type="button" class="btn-edit-remove-row"
-                                style="font-size:0.75rem;padding:2px 8px;border-radius:5px;border:1px solid #fca5a5;
-                                background:#fff5f5;color:#ef4444;font-weight:600;cursor:pointer;">✕ Remove</button>`
-                    }
+        <div style="padding:16px;background:#fff;border:1px solid #e2e8f0;border-radius:10px;box-shadow:0 1px 3px rgba(0,0,0,0.05);position:relative;">
+            ${isFirst 
+                ? `<button type="button" id="btnEditAddService" style="position:absolute;top:16px;right:16px;font-size:0.75rem;padding:4px 10px;border-radius:6px;border:1.5px solid var(--accent,#d946ef);background:var(--accent,#d946ef);color:#fff;font-weight:600;cursor:pointer;">+ Add Service</button>`
+                : `<button type="button" class="btn-edit-remove-row" style="position:absolute;top:16px;right:16px;font-size:0.75rem;padding:4px 8px;border-radius:6px;border:1px solid #fca5a5;background:#fff5f5;color:#ef4444;font-weight:600;cursor:pointer;">✕ Remove</button>`
+            }
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:12px;margin-top:${isFirst ? '0' : '24px'};">
+                <div class="form-group" style="margin:0; ${isFirst ? 'padding-right: 90px;' : ''}">
+                    <label class="form-label">Service <span class="text-rose">*</span></label>
+                    <select class="form-select edit-svc-select" required>
+                        <option value="" disabled ${!prefillSvcId ? 'selected' : ''}>Select a service</option>
+                        ${svcOptions}
+                    </select>
                 </div>
-                <select class="form-select edit-svc-select">
-                    <option value="" disabled ${!prefillSvcId ? 'selected' : ''}>Select a service</option>
-                    ${svcOptions}
-                </select>
+                <div class="form-group" style="margin:0;">
+                    <label class="form-label">Staff <span class="text-rose">*</span></label>
+                    <select class="form-select edit-staff-select" required>
+                        <option value="" disabled ${!prefillStaffId ? 'selected' : ''}>Select staff</option>
+                        ${staffOptions}
+                    </select>
+                </div>
             </div>
             <div class="form-group" style="margin:0;">
-                <label class="form-label">Staff <span class="text-rose">*</span></label>
-                <select class="form-select edit-staff-select">
-                    <option value="" disabled ${!prefillStaffId ? 'selected' : ''}>Select staff</option>
-                    ${staffOptions}
-                </select>
+                <label class="form-label">Price <span style="font-weight:400;color:#94a3b8;">(₹)</span></label>
+                <input type="number" class="form-input edit-svc-price" placeholder="e.g. 500" min="0" step="0.01" value="${prefillPrice !== '' && prefillPrice != null ? prefillPrice : ''}" required>
             </div>
-        </div>
-        <div class="form-group" style="margin:0;">
-            <label class="form-label">Price <span style="font-weight:400;color:#94a3b8;">(₹)</span></label>
-            <input type="number" class="form-input edit-svc-price" placeholder="e.g. 500" min="0" step="0.01"
-                value="${prefillPrice !== '' && prefillPrice != null ? prefillPrice : ''}">
         </div>
     `;
 
@@ -887,7 +860,7 @@ function attachEventListeners() {
         const bookingId = document.getElementById('editBookingId').value;
         const date      = document.getElementById('editBkDate').value;
         const time      = document.getElementById('editBkTime').value;
-        const status    = document.getElementById('editBkStatus').value;
+        const status    = editActiveBooking?.status || 'booked';
         const notes     = document.getElementById('editBkNotes').value.trim();
 
         const container = document.getElementById('editServiceRowsContainer');
@@ -1196,22 +1169,29 @@ function attachEventListeners() {
 
         // Prefill shared fields
         document.getElementById('editBookingId').value = bookingId;
-        document.getElementById('editBkDate').value    = b.booking_date || '';
-        document.getElementById('editBkTime').value    = (b.start_time || '').slice(0, 5);
-        document.getElementById('editBkNotes').value   = b.notes || '';
+        const dateInput = document.getElementById('editBkDate');
+        const timeInput = document.getElementById('editBkTime');
 
-        let statusVal = (b.status || '').toLowerCase().trim();
-        if (!statusVal || statusVal === 'null') statusVal = 'confirmed';
-        if (statusVal === 'no_show') statusVal = 'no-show';
+        dateInput.value = b.booking_date || '';
+        timeInput.value = (b.start_time || '').slice(0, 5);
+        document.getElementById('editBkNotes').value = b.notes || '';
 
-        const statusEl = document.getElementById('editBkStatus');
-        if (statusEl) {
-            const idx = Array.from(statusEl.options).findIndex(o => o.value === statusVal);
-            statusEl.selectedIndex = idx >= 0 ? idx : 1;
-        }
-
-        const paymentEl = document.getElementById('editBkPayment');
-        if (paymentEl) paymentEl.value = (b.payment_status || b.payment || 'pending').toLowerCase();
+        // Restrict Date & Time to Future
+        const todayStr = todayISO();
+        dateInput.min = todayStr;
+        
+        const restrictTime = () => {
+            if (dateInput.value === todayStr) {
+                const now = new Date();
+                const hh = String(now.getHours()).padStart(2, '0');
+                const mm = String(now.getMinutes()).padStart(2, '0');
+                timeInput.min = `${hh}:${mm}`;
+            } else {
+                timeInput.removeAttribute('min');
+            }
+        };
+        dateInput.addEventListener('change', restrictTime);
+        restrictTime();
 
         // Open modal & show loading state
         const editModal = document.getElementById('editBookingModal');
