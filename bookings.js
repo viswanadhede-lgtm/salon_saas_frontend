@@ -1594,14 +1594,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 }]);
 
                 if (txError) throw txError;
-
-                // Update booking status
-                const { error: updateError } = await supabase
-                    .from('bookings')
-                    .update({ payment_status: 'refunded' })
-                    .eq('id', currentRefundBookingId);
-                
-                if (updateError) throw updateError;
+                // payment_status is computed from the view — no separate update needed
 
                 const toast = document.getElementById('toastNotification');
                 if (toast) {
