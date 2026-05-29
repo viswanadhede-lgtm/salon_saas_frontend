@@ -428,9 +428,9 @@
                         <div class="calendar-header">
                             <h2 class="calendar-title" id="calendarMonthTitle">October 2024</h2>
                             <div style="display: flex; gap: 8px;">
-                                <button class="calendar-nav-btn"><i data-feather="chevron-left" style="width: 16px; height: 16px;"></i></button>
-                                <button class="btn btn-secondary" style="height: 30px; font-size: 0.8rem; padding: 0 10px;">Today</button>
-                                <button class="calendar-nav-btn"><i data-feather="chevron-right" style="width: 16px; height: 16px;"></i></button>
+                                <button class="calendar-nav-btn" id="calPrevBtn"><i data-feather="chevron-left" style="width: 16px; height: 16px;"></i></button>
+                                <button class="btn btn-secondary" id="calTodayBtn" style="height: 30px; font-size: 0.8rem; padding: 0 10px;">Today</button>
+                                <button class="calendar-nav-btn" id="calNextBtn"><i data-feather="chevron-right" style="width: 16px; height: 16px;"></i></button>
                             </div>
                         </div>
                         <div class="calendar-grid" id="calendarGrid">
@@ -448,6 +448,36 @@
 
             </div></div>
         </main>
+    </div>
+
+    <!-- Calendar Day Detail Modal -->
+    <div class="modal-overlay" id="calDayModalOverlay" style="z-index:9999;">
+        <div class="modal-container" style="width:700px;max-width:96vw;">
+            <div class="modal-header">
+                <div class="header-titles">
+                    <h2 id="calDayModalTitle" style="font-size:1.1rem;">Bookings</h2>
+                    <p class="subtitle" id="calDayModalSubtitle"></p>
+                </div>
+                <button class="modal-close" id="calDayModalClose"><i data-feather="x"></i></button>
+            </div>
+            <div class="modal-body" style="padding:0;overflow-y:auto;max-height:60vh;">
+                <table style="width:100%;border-collapse:collapse;font-size:0.85rem;">
+                    <thead>
+                        <tr style="background:#f0f4f8;border-bottom:2px solid #c9d8e8;position:sticky;top:0;z-index:5;">
+                            <th style="padding:10px 14px;text-align:left;font-size:0.7rem;font-weight:600;color:#64748b;text-transform:uppercase;letter-spacing:0.04em;">Time</th>
+                            <th style="padding:10px 8px;text-align:left;font-size:0.7rem;font-weight:600;color:#64748b;text-transform:uppercase;letter-spacing:0.04em;">Customer</th>
+                            <th style="padding:10px 8px;text-align:left;font-size:0.7rem;font-weight:600;color:#64748b;text-transform:uppercase;letter-spacing:0.04em;">Service</th>
+                            <th style="padding:10px 8px;text-align:left;font-size:0.7rem;font-weight:600;color:#64748b;text-transform:uppercase;letter-spacing:0.04em;">Staff</th>
+                            <th style="padding:10px 8px;text-align:left;font-size:0.7rem;font-weight:600;color:#64748b;text-transform:uppercase;letter-spacing:0.04em;">Status</th>
+                        </tr>
+                    </thead>
+                    <tbody id="calDayModalBody"></tbody>
+                </table>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-secondary" id="calDayModalCloseBtn">Close</button>
+            </div>
+        </div>
     </div>
 
     <script src="dashboard.js"></script>

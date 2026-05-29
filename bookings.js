@@ -1472,6 +1472,7 @@ export async function fetchBookings() {
         window.liveBookingsData = liveBookingsData;
         populateStaffFilter(); 
         renderBookings(getFilteredBookings());
+        if (typeof renderCalendar === 'function') renderCalendar();
 
     } catch (err) {
         console.error('[Bookings] Unexpected error:', err);
@@ -1626,3 +1627,174 @@ function wireRefundModal() {
         });
     }
 }
+
+// ─── Calendar Logic ───────────────────────────────────────────────────────────
+let currentCalDate = new Date(); // tracks the viewed month/year in the calendar tab
+
+function renderCalendar() {
+    const grid = document.getElementById('calendarGrid');
+    const title = document.getElementById('calendarMonthTitle');
+    if (!grid || !title) return;
+
+    // Remove existing day cells (keep the 7 headers)
+    const existingDays = grid.querySelectorAll('.calendar-day');
+    existingDays.forEach(cell => cell.remove());
+
+    const year = currentCalDate.getFullYear();
+    const month = currentCalDate.getMonth(); // 0-11
+
+    title.textContent = new Date(year, month, 1).toLocaleString('default', { month: 'long', year: 'numeric' });
+
+    const firstDay = new Date(year, month, 1).getDay(); // 0 is Sunday
+    const daysInMonth = new Date(year, month + 1, 0).getDate();
+
+    // Today's exact yyyy-mm-dd for highlighting
+    const todayStr = new Date().toISOString().split('T')[0];
+
+    // Padding empty cells before 1st of month
+    for (let i = 0; i < firstDay; i++) {
+        const emptyCell = document.createElement('div');
+        emptyCell.className = 'calendar-day';
+        emptyCell.style.background = '#f8fafc'; // light gray for empty
+        grid.appendChild(emptyCell);
+    }
+
+    // Populate actual days
+    for (let d = 1; d <= daysInMonth; d++) {
+        const cell = document.createElement('div');
+        cell.className = 'calendar-day';
+        cell.style.position = 'relative';
+
+        const rawDate = new Date(year, month, d);
+        // format local yyyy-mm-dd safely (without UTC shift offset issues)
+        const dateStr = [
+            rawDate.getFullYear(),
+            String(rawDate.getMonth() + 1).padStart(2, '0'),
+            String(rawDate.getDate()).padStart(2, '0')
+        ].join('-');
+
+        // Highlight today
+        if (dateStr === todayStr) {
+            cell.style.background = '#eff6ff'; // light blue tint
+            cell.style.border = '1.5px solid #3b82f6'; // distinct border
+        }
+
+        const numEl = document.createElement('div');
+        numEl.textContent = d;
+        numEl.style.fontWeight = '600';
+        numEl.style.color = '#1e293b';
+        cell.appendChild(numEl);
+
+        // Find how many bookings fall on this day
+        // ensure we check against liveBookingsData safely
+        const dayBookings = window.liveBookingsData.filter(b => b.booking_date === dateStr);
+
+        if (dayBookings.length > 0) {
+            const badge = document.createElement('div');
+            badge.textContent = dayBookings.length + ' Booking' + (dayBookings.length > 1 ? 's' : '');
+            badge.style.marginTop = '8px';
+            badge.style.padding = '4px 6px';
+            badge.style.background = '#3b82f6';
+            badge.style.color = '#fff';
+            badge.style.borderRadius = '4px';
+            badge.style.fontSize = '0.7rem';
+            badge.style.fontWeight = '600';
+            badge.style.textAlign = 'center';
+            badge.style.cursor = 'pointer';
+            
+            // Interaction
+            badge.addEventListener('mouseenter', () => badge.style.background = '#2563eb');
+            badge.addEventListener('mouseleave', () => badge.style.background = '#3b82f6');
+            badge.addEventListener('click', () => openCalendarDayModal(dateStr, dayBookings));
+
+            cell.appendChild(badge);
+        }
+
+        grid.appendChild(cell);
+    }
+}
+
+function openCalendarDayModal(dateStr, bookings) {
+    const modal = document.getElementById('calDayModalOverlay');
+    const subtitle = document.getElementById('calDayModalSubtitle');
+    const tbody = document.getElementById('calDayModalBody');
+
+    if (!modal || !tbody) return;
+
+    // format beautiful string like "29-05-2026, Thursday"
+    const [y, m, d] = dateStr.split('-');
+    const dateObj = new Date(y, m - 1, d);
+    const dayName = dateObj.toLocaleDateString('default', { weekday: 'long' });
+    subtitle.textContent = `${d}-${m}-${y}, ${dayName}`;
+
+    tbody.innerHTML = '';
+    
+    // Sort bookings by time ascending
+    const sorted = [...bookings].sort((a,b) => (a.start_time || '').localeCompare(b.start_time || ''));
+
+    sorted.forEach(b => {
+        const timeVal = (b.start_time || '').slice(0,5);
+        
+        let ptime = '';
+        if (timeVal) {
+            let [hh, mm] = timeVal.split(':');
+            let hr = parseInt(hh, 10);
+            let ampm = hr >= 12 ? 'PM' : 'AM';
+            hr = hr % 12;
+            if (hr === 0) hr = 12;
+            ptime = `${String(hr).padStart(2,'0')}:${mm} ${ampm}`;
+        }
+
+        const svcs = (b.service_name || '').split(',').map(s=> `<span style="display:inline-block;padding:2px 6px;margin:2px;background:#f1f5f9;border-radius:4px;font-size:0.7rem;">${s.trim()}</span>`).join('');
+
+        const tr = document.createElement('tr');
+        tr.style.borderBottom = '1px solid #f1f5f9';
+        tr.innerHTML = `
+            <td style="padding:10px 14px; font-weight:600; color:#334155;">${ptime || '—'}</td>
+            <td style="padding:10px 8px; font-weight:600; color:#1e293b;">${b.customer_name || '—'}</td>
+            <td style="padding:10px 8px;">${svcs}</td>
+            <td style="padding:10px 8px; color:#475569; font-size:0.8rem;">${b.staff_name || '—'}</td>
+            <td style="padding:10px 8px;">${window.bookingStatusBadge ? window.bookingStatusBadge(b.status) : b.status}</td>
+        `;
+        tbody.appendChild(tr);
+    });
+
+    modal.classList.add('active');
+}
+
+// Wire Calendar Navigation Listeners
+document.addEventListener('DOMContentLoaded', () => {
+    // Needs feather icons again mostly managed elsewhere
+    const prev = document.getElementById('calPrevBtn');
+    const next = document.getElementById('calNextBtn');
+    const todayBtn = document.getElementById('calTodayBtn');
+
+    if (prev) {
+        prev.addEventListener('click', () => {
+            currentCalDate.setMonth(currentCalDate.getMonth() - 1);
+            renderCalendar();
+        });
+    }
+    if (next) {
+        next.addEventListener('click', () => {
+            currentCalDate.setMonth(currentCalDate.getMonth() + 1);
+            renderCalendar();
+        });
+    }
+    if (todayBtn) {
+        todayBtn.addEventListener('click', () => {
+            currentCalDate = new Date();
+            renderCalendar();
+        });
+    }
+
+    // Modal close handlers
+    const overlay = document.getElementById('calDayModalOverlay');
+    const closeBtn1 = document.getElementById('calDayModalClose');
+    const closeBtn2 = document.getElementById('calDayModalCloseBtn');
+
+    const handleClose = () => overlay.classList.remove('active');
+    if (closeBtn1) closeBtn1.addEventListener('click', handleClose);
+    if (closeBtn2) closeBtn2.addEventListener('click', handleClose);
+});
+
