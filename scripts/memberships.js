@@ -956,10 +956,15 @@ async function executeMembershipAssignment(payload, newPurchaseId) {
     let finalCustomerName = selectedCustomer ? (selectedCustomer.customer_name || `${selectedCustomer.first_name || ''} ${selectedCustomer.last_name || ''}`).trim() : custNameValue;
     
     if (!finalCustomerId) {
-        const existingCust = allCustomers.find(c => String(c.customer_phone || c.phone_number || '') === custSearchValue);
+        const inputDigits = custSearchValue.replace(/\D/g, '');
+        const existingCust = allCustomers.find(c => {
+            const p = String(c.customer_phone || c.phone_number || '').replace(/\D/g, '');
+            return p === inputDigits || p === custSearchValue;
+        });
+
         if (existingCust) {
-            finalCustomerId = existingCust.id || existingCust.customer_id;
-            finalCustomerName = existingCust.customer_name || `${existingCust.first_name || ''} ${existingCust.last_name || ''}`.trim() || 'Unknown Customer';
+            showToast('Customer already exists! Please select them from the dropdown list.', true);
+            return;
         } else {
             try {
                 const { data: newCust, error: custErr } = await supabase.from('customers').insert({
@@ -967,7 +972,7 @@ async function executeMembershipAssignment(payload, newPurchaseId) {
                     branch_id: getBranchId(),
                     customer_name: finalCustomerName || 'Unknown Customer',
                     customer_phone: custSearchValue,
-                    customer_mail: custEmailValue || null,
+                    customer_email: custEmailValue || null,
                     status: 'active'
                 }).select();
                 if (custErr) throw custErr;

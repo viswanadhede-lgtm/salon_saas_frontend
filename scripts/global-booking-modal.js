@@ -651,19 +651,35 @@ export function initGlobalBookingModal() {
 
         // Create new customer if needed
         if (!targetId && phoneSearch.value.trim().length >= 10) {
+            const typedPhone = phoneSearch.value.trim();
+            const digitsOnly = typedPhone.replace(/\D/g, '');
+            
+            // Check if phone already exists
+            const existingCust = window.liveCustomersDB?.find(c => {
+                const cPhone = String(c.customer_phone || '').replace(/\D/g, '');
+                return cPhone === digitsOnly || cPhone === typedPhone;
+            });
+            
+            if (existingCust) {
+                showMsg('Customer with this phone number already exists! Please select them from the dropdown list.', true);
+                btnConfirmBooking.textContent = originalText;
+                btnConfirmBooking.disabled    = false;
+                return;
+            }
+
             try {
                 const { data: newCust, error: custErr } = await supabase.from('customers').insert({
                     company_id:     getCompanyId(),
                     branch_id:      getBranchId(),
                     customer_name:  targetName || 'Unknown Customer',
-                    customer_phone: phoneSearch.value.trim(),
+                    customer_phone: typedPhone,
                     customer_email: customerEmail?.value.trim() || '',
                     status:         'active'
                 });
                 if (custErr) throw custErr;
                 if (newCust && newCust.length > 0) {
                     targetId = newCust[0].customer_id;
-                    liveCustomersDB.push(newCust[0]);
+                    if (window.liveCustomersDB) window.liveCustomersDB.push(newCust[0]);
                 }
             } catch (err) {
                 console.error('[Booking] Error creating customer:', err);
