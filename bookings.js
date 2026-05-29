@@ -1710,16 +1710,27 @@ function renderCalendar() {
             badgesWrap.style.gap = '4px';
             badgesWrap.style.marginTop = '8px';
 
+            // ── Total bookings header ──────────────────────────────────────
+            const totalEl = document.createElement('div');
+            totalEl.style.cssText = `
+                font-size:0.85rem; font-weight:700; color:#1e293b;
+                margin-bottom:4px; cursor:pointer;
+            `;
+            totalEl.textContent = `${dayBookings.length} Booking${dayBookings.length > 1 ? 's' : ''}`;
+            totalEl.addEventListener('click', () => openCalendarDayModal(dateStr, dayBookings));
+            badgesWrap.appendChild(totalEl);
+
+            // ── Per-status breakdown ───────────────────────────────────────
             Object.entries(counts).forEach(([s, count]) => {
                 const cfg = statusConfig[s] || { label: s, color: '#475569', bg: '#f1f5f9' };
                 const pill = document.createElement('div');
                 pill.style.cssText = `
                     display:flex; align-items:center; justify-content:space-between;
-                    padding:4px 8px; border-radius:6px; cursor:pointer;
-                    background:${cfg.bg}; font-size:0.72rem; font-weight:600; color:${cfg.color};
+                    padding:3px 7px; border-radius:6px; cursor:pointer;
+                    background:${cfg.bg}; font-size:0.68rem; font-weight:600; color:${cfg.color};
                     transition:opacity 0.15s ease;
                 `;
-                pill.innerHTML = `<span>${cfg.label}</span><span style="font-size:0.8rem;font-weight:700;">${count}</span>`;
+                pill.innerHTML = `<span>${cfg.label}</span><span style="font-size:0.75rem;font-weight:700;">${count}</span>`;
                 pill.addEventListener('mouseenter', () => pill.style.opacity = '0.8');
                 pill.addEventListener('mouseleave', () => pill.style.opacity = '1');
                 pill.addEventListener('click', () => openCalendarDayModal(dateStr, dayBookings));
