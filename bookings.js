@@ -346,6 +346,13 @@ function setupModals() {
                         </div>
 
                         <div id="editServiceRowsContainer" style="display:flex;flex-direction:column;gap:16px;margin-bottom:16px;"></div>
+                        
+                        <div style="text-align:right; margin-bottom:16px;">
+                            <button type="button" id="btnEditAddService" style="font-size:0.8rem;padding:6px 16px;border-radius:6px;border:1.5px solid var(--accent,#d946ef);background:var(--accent,#d946ef);color:#fff;font-weight:600;cursor:pointer; display:inline-flex; align-items:center; gap:6px;">
+                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg> 
+                                Add Another Service
+                            </button>
+                        </div>
 
                         <div class="form-group" style="margin:0;">
                             <label class="form-label" for="editBkNotes">Notes <span style="font-weight:400;color:#94a3b8;">(Optional)</span></label>
@@ -477,12 +484,12 @@ function buildEditServiceRow(rowId, isFirst, prefillSvcId = '', prefillStaffId =
 
     div.innerHTML = `
         <div style="padding:16px;background:${cardBg};border:1px solid #e2e8f0;border-radius:10px;box-shadow:0 1px 3px rgba(0,0,0,0.05);position:relative;">
-            ${isFirst 
-                ? `<button type="button" id="btnEditAddService" style="position:absolute;top:16px;right:16px;font-size:0.75rem;padding:4px 10px;border-radius:6px;border:1.5px solid var(--accent,#d946ef);background:var(--accent,#d946ef);color:#fff;font-weight:600;cursor:pointer;">+ Add Service</button>`
-                : `<button type="button" class="btn-edit-remove-row" style="position:absolute;top:16px;right:16px;font-size:0.75rem;padding:4px 8px;border-radius:6px;border:1px solid #fca5a5;background:#fff5f5;color:#ef4444;font-weight:600;cursor:pointer;">✕ Remove</button>`
+            ${!isFirst 
+                ? `<button type="button" class="btn-edit-remove-row" style="position:absolute;top:16px;right:16px;font-size:0.75rem;padding:4px 8px;border-radius:6px;border:1px solid #fca5a5;background:#fff5f5;color:#ef4444;font-weight:600;cursor:pointer;">✕ Remove</button>`
+                : ''
             }
-            <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:12px;margin-top:${isFirst ? '0' : '24px'};">
-                <div class="form-group" style="margin:0; ${isFirst ? 'padding-right: 90px;' : ''}">
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:12px;margin-top:${!isFirst ? '24px' : '0'};">
+                <div class="form-group" style="margin:0; ${!isFirst ? 'padding-right: 20px;' : ''}">
                     <label class="form-label">Service <span class="text-rose">*</span></label>
                     <select class="form-select edit-svc-select" required>
                         <option value="" disabled ${!prefillSvcId ? 'selected' : ''}>Select a service</option>
@@ -1230,11 +1237,14 @@ function attachEventListeners() {
                 ));
             });
 
-            // Wire the "+ Add" button (lives inside first row)
-            document.getElementById('btnEditAddService')?.addEventListener('click', () => {
-                const firstStaff = container.querySelector('.edit-staff-select')?.value || '';
-                container.appendChild(buildEditServiceRow(editRowCounter++, false, '', firstStaff, '', null));
-            });
+            // Wire the "+ Add" button safely using onclick to prevent duplicate listeners
+            const addBtn = document.getElementById('btnEditAddService');
+            if (addBtn) {
+                addBtn.onclick = () => {
+                    const firstStaff = container.querySelector('.edit-staff-select')?.value || '';
+                    container.appendChild(buildEditServiceRow(editRowCounter++, false, '', firstStaff, '', null));
+                };
+            }
 
         } catch (err) {
             console.error('[EditModal] Error loading booking rows:', err);
