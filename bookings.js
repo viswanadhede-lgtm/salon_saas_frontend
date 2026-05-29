@@ -173,7 +173,7 @@ function buildRow(b, includeDate = false) {
         <td style="padding:10px 8px;font-size:0.85rem;color:#334155;${cellStyle}">${bookingType}</td>
         <td style="padding:10px 8px;">${statusBadge(status)}</td>
         <td style="padding:10px 8px;font-size:0.85rem;font-weight:600;color:#059669;${cellStyle}">${amount}</td>
-        <td style="padding:10px 8px;">${paymentBadge(payment)}</td>
+        <td style="padding:10px 8px;font-size:0.85rem;color:#334155;${cellStyle}">${payment ? payment.charAt(0).toUpperCase() + payment.slice(1) : '—'}</td>
         <td style="padding:10px 8px;">
             <div style="display:flex;gap:6px;flex-wrap:nowrap;">
                 ${['booked', 'confirmed'].includes(status.toLowerCase()) ? `
