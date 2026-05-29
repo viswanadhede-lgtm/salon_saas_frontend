@@ -355,6 +355,50 @@ export function initGlobalBookingModal() {
         await populateBookingDropdowns();
     }
 
+    // ── External hook: open modal and pre-fill customer + services (for rebook) ──
+    window.openAndPrefillBooking = async function({ customerId, name, phone, email, serviceIds = [], staffIds = [] }) {
+        // Step 1: open the modal and await full dropdown population
+        await openModal();
+
+        // Step 2: lock-in the existing customer
+        if (customerId) {
+            window.setGlobalBookingCustomer(customerId, name, phone, email);
+        }
+
+        // Step 3: now that dropdowns are populated, fill services/packages
+        if (serviceIds.length > 0) {
+            const container = document.getElementById('serviceRowsContainer');
+            if (container) {
+                const btnAdd = container.querySelector('#btnAddBookingItem');
+                // Add extra rows as needed
+                while (container.querySelectorAll('.service-booking-row').length < serviceIds.length && btnAdd) {
+                    btnAdd.click();
+                }
+
+                const rows = container.querySelectorAll('.service-booking-row');
+                rows.forEach((row, i) => {
+                    if (i < serviceIds.length) {
+                        const svcSel   = row.querySelector('.svc-select');
+                        const staffSel = row.querySelector('.staff-select');
+
+                        if (svcSel && serviceIds[i]) {
+                            svcSel.value = serviceIds[i];
+                            svcSel.dispatchEvent(new Event('change', { bubbles: true }));
+                        }
+
+                        const stfId = staffIds[i] || staffIds[0];
+                        if (staffSel && stfId) {
+                            staffSel.value = stfId;
+                            staffSel.dispatchEvent(new Event('change', { bubbles: true }));
+                        }
+                    }
+                });
+            }
+        }
+
+        validateForm();
+    };
+
     function closeModal() {
         modalOverlay.classList.remove('active');
     }

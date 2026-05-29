@@ -1124,7 +1124,7 @@ function attachEventListeners() {
         const b = liveBookingsData.find(x => (x.booking_id || x.id) == bookingId);
         if (!b) return;
 
-        // Try to fetch the email directly if it's missing from the view payload
+        // Try to fetch the email if missing from view payload
         let cEmail = b.customer_email || b.customer_mail || '';
         if (!cEmail && b.customer_id) {
             try {
@@ -1133,72 +1133,24 @@ function attachEventListeners() {
             } catch(e) { console.error('Failed to grab customer_email for prefill', e); }
         }
 
-        // Open the New Booking Modal natively built in the DOM
-        const btnNewBooking = document.getElementById('btnNewBooking') || document.getElementById('btnNewBookingPage');
-        if (btnNewBooking) {
-            btnNewBooking.click();
+        const serviceIds = String(b.service_id || '').split(',').map(s => s.trim()).filter(Boolean);
+        const staffIds   = String(b.staff_id   || '').split(',').map(s => s.trim()).filter(Boolean);
+
+        if (window.openAndPrefillBooking) {
+            // This awaits dropdown population BEFORE filling values — fixes race condition
+            await window.openAndPrefillBooking({
+                customerId: b.customer_id,
+                name:       b.customer_name,
+                phone:      b.customer_phone,
+                email:      cEmail,
+                serviceIds,
+                staffIds
+            });
         } else {
-            document.getElementById('bookingModalOverlay')?.classList.add('active');
+            // Fallback: just open the modal normally
+            const btnNewBooking = document.getElementById('btnNewBooking') || document.getElementById('btnNewBookingPage');
+            if (btnNewBooking) btnNewBooking.click();
         }
-
-        // Slight delay to allow openModal (if any) to wipe fields first, THEN we overwrite them.
-        setTimeout(() => {
-            if (window.setGlobalBookingCustomer) {
-                window.setGlobalBookingCustomer(
-                    b.customer_id, 
-                    b.customer_name, 
-                    b.customer_phone, 
-                    cEmail
-                );
-            } else {
-                // Fallback for older code bridging
-                const phoneInput = document.getElementById('phoneSearch');
-                if (phoneInput) {
-                    phoneInput.value = b.customer_phone || '';
-                    phoneInput.dispatchEvent(new Event('input', { bubbles: true }));
-                }
-                const nameInput = document.getElementById('customerName');
-                if (nameInput) {
-                    nameInput.value = b.customer_name || '';
-                    nameInput.readOnly = false;
-                    nameInput.classList.remove('read-only-input');
-                }
-            }
-
-            // Fill services and staff
-            const serviceIds = String(b.service_id || '').split(',').map(s => s.trim()).filter(Boolean);
-            const staffIds = String(b.staff_id || '').split(',').map(s => s.trim()).filter(Boolean);
-            
-            if (serviceIds.length > 0) {
-                const container = document.getElementById('serviceRowsContainer');
-                if (container) {
-                    const btnAdd = container.querySelector('#btnAddBookingItem');
-                    // Create enough rows if there are multiple services
-                    while (container.querySelectorAll('.service-booking-row').length < serviceIds.length && btnAdd) {
-                        btnAdd.click();
-                    }
-
-                    const rows = container.querySelectorAll('.service-booking-row');
-                    rows.forEach((row, i) => {
-                        if (i < serviceIds.length) {
-                            const svcSel = row.querySelector('.svc-select');
-                            const staffSel = row.querySelector('.staff-select');
-                            
-                            if (svcSel && serviceIds[i]) {
-                                svcSel.value = serviceIds[i];
-                                svcSel.dispatchEvent(new Event('change', { bubbles: true }));
-                            }
-                            
-                            const stfIdToUse = staffIds[i] || staffIds[0];
-                            if (staffSel && stfIdToUse) {
-                                staffSel.value = stfIdToUse;
-                                staffSel.dispatchEvent(new Event('change', { bubbles: true }));
-                            }
-                        }
-                    });
-                }
-            }
-        }, 150);
     };
 
     // ── Global window helpers (called from row buttons) ────────────────────────
