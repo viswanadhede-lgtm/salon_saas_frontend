@@ -47,10 +47,11 @@ function statusBadge(status) {
 // ─── Payment Badge HTML ───────────────────────────────────────────────────────
 function paymentBadge(status) {
     const map = {
-        paid:    { color: '#065f46', bg: '#d1fae5', label: 'Paid' },
-        unpaid:  { color: '#991b1b', bg: '#fee2e2', label: 'Unpaid' },
-        pending: { color: '#92400e', bg: '#fef3c7', label: 'Pending' },
-        partial: { color: '#86198f', bg: '#f5d0fe', label: 'Partial' },
+        paid:     { color: '#065f46', bg: '#d1fae5', label: 'Paid' },
+        unpaid:   { color: '#991b1b', bg: '#fee2e2', label: 'Unpaid' },
+        pending:  { color: '#92400e', bg: '#fef3c7', label: 'Pending' },
+        partial:  { color: '#86198f', bg: '#f5d0fe', label: 'Partial' },
+        refunded: { color: '#b45309', bg: '#fef3c7', label: 'Refunded' },
     };
     const s = (status || '').toLowerCase().trim();
     const cfg = map[s] || { color: '#475569', bg: '#f1f5f9', label: status || '—' };
