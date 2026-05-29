@@ -216,6 +216,32 @@ function emptyRow(colspan, msg) {
 
 // ─── Render Tables ────────────────────────────────────────────────────────────
 let currentSearchQuery = '';
+let currentSortCol = null;
+let currentSortDesc = false;
+
+window.toggleSort = function(col) {
+    if (currentSortCol === col) {
+        currentSortDesc = !currentSortDesc;
+    } else {
+        currentSortCol = col;
+        currentSortDesc = false;
+    }
+    
+    // Update visual arrows
+    document.querySelectorAll('.sort-icon').forEach(icon => {
+        if (icon.dataset.col === col) {
+            icon.textContent = currentSortDesc ? '↓' : '↑';
+            icon.style.opacity = '1';
+            icon.style.color = '#4f46e5';
+        } else {
+            icon.textContent = '↕';
+            icon.style.opacity = '0.3';
+            icon.style.color = 'inherit';
+        }
+    });
+
+    renderBookings(getFilteredBookings());
+};
 
 function getFilteredBookings() {
     let results = liveBookingsData || [];
@@ -246,7 +272,7 @@ function getFilteredBookings() {
     if (dateFilter === '7days') cutoff = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
     else if (dateFilter === '30days') cutoff = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
 
-    return results.filter(b => {
+    let filtered = results.filter(b => {
         // Status Check — skip if "All" is checked
         if (!statusAllChecked && activeStatuses.length && !activeStatuses.includes(String(b.status).toLowerCase())) {
             return false;
@@ -271,6 +297,18 @@ function getFilteredBookings() {
 
         return true;
     });
+
+    if (currentSortCol) {
+        filtered.sort((a, b) => {
+            let valA = String(a[currentSortCol] || '').toLowerCase();
+            let valB = String(b[currentSortCol] || '').toLowerCase();
+            if (valA < valB) return currentSortDesc ? 1 : -1;
+            if (valA > valB) return currentSortDesc ? -1 : 1;
+            return 0;
+        });
+    }
+
+    return filtered;
 }
 
 function populateStaffFilter() {
