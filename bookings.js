@@ -1519,7 +1519,7 @@ window.triggerRefund = async function(bookingId) {
     if (methodDisplay) methodDisplay.value = 'Loading...';
 
     try {
-        const { data: txs, error } = await window.supabase
+        const { data: txs, error } = await supabase
             .from('business_transactions')
             .select('amount, payment_method')
             .eq('reference_id', bookingId)
@@ -1581,7 +1581,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
             try {
                 // Insert new transaction
-                const { error: txError } = await window.supabase.from('business_transactions').insert([{
+                const { error: txError } = await supabase.from('business_transactions').insert([{
                     company_id: getCompanyId(),
                     branch_id: getBranchId(),
                     reference_id: currentRefundBookingId,
@@ -1596,7 +1596,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 if (txError) throw txError;
 
                 // Update booking status
-                const { error: updateError } = await window.supabase
+                const { error: updateError } = await supabase
                     .from('bookings')
                     .update({ payment_status: 'refunded' })
                     .eq('id', currentRefundBookingId);
