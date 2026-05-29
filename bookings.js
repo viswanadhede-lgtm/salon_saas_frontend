@@ -472,8 +472,11 @@ function buildEditServiceRow(rowId, isFirst, prefillSvcId = '', prefillStaffId =
     div.dataset.rowId = rowId;
     if (dbId) div.dataset.dbId = dbId; // Supabase row PK — used for targeted UPDATE/DELETE
 
+    const colors = ['#f8fafc', '#fdf4ff', '#f0fdf4', '#fffbeb', '#fef2f2', '#f0f9ff'];
+    const cardBg = colors[rowId % colors.length];
+
     div.innerHTML = `
-        <div style="padding:16px;background:#fff;border:1px solid #e2e8f0;border-radius:10px;box-shadow:0 1px 3px rgba(0,0,0,0.05);position:relative;">
+        <div style="padding:16px;background:${cardBg};border:1px solid #e2e8f0;border-radius:10px;box-shadow:0 1px 3px rgba(0,0,0,0.05);position:relative;">
             ${isFirst 
                 ? `<button type="button" id="btnEditAddService" style="position:absolute;top:16px;right:16px;font-size:0.75rem;padding:4px 10px;border-radius:6px;border:1.5px solid var(--accent,#d946ef);background:var(--accent,#d946ef);color:#fff;font-weight:600;cursor:pointer;">+ Add Service</button>`
                 : `<button type="button" class="btn-edit-remove-row" style="position:absolute;top:16px;right:16px;font-size:0.75rem;padding:4px 8px;border-radius:6px;border:1px solid #fca5a5;background:#fff5f5;color:#ef4444;font-weight:600;cursor:pointer;">✕ Remove</button>`
