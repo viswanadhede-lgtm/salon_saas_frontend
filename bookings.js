@@ -212,7 +212,8 @@ function getFilteredBookings() {
     }
 
     // Apply Status Filter
-    const activeStatuses = Array.from(document.querySelectorAll('input[name="filterStatus"]:checked')).map(c => c.value);
+    const statusAllChecked = document.querySelector('input[name="filterStatus"][value="all"]')?.checked;
+    const activeStatuses = Array.from(document.querySelectorAll('input[name="filterStatus"]:not([value="all"]):checked')).map(c => c.value);
     
     // Apply Staff Filter
     const staffAllChecked = document.querySelector('input[name="filterStaff"][value="all"]')?.checked;
@@ -227,8 +228,8 @@ function getFilteredBookings() {
     else if (dateFilter === '30days') cutoff = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
 
     return results.filter(b => {
-        // Status Check
-        if (activeStatuses.length && !activeStatuses.includes(String(b.status).toLowerCase())) {
+        // Status Check — skip if "All" is checked
+        if (!statusAllChecked && activeStatuses.length && !activeStatuses.includes(String(b.status).toLowerCase())) {
             return false;
         }
 
@@ -843,6 +844,17 @@ function attachEventListeners() {
         });
     }
 
+    // Status filter mutual-exclusion: All <-> individual statuses
+    document.addEventListener('change', (e) => {
+        if (e.target.name !== 'filterStatus') return;
+        if (e.target.value === 'all' && e.target.checked) {
+            document.querySelectorAll('input[name="filterStatus"]:not([value="all"])').forEach(c => c.checked = false);
+        } else if (e.target.value !== 'all' && e.target.checked) {
+            const allCb = document.querySelector('input[name="filterStatus"][value="all"]');
+            if (allCb) allCb.checked = false;
+        }
+    });
+
     // Refund Modal Listeners
     const refundModal = document.getElementById('refundBookingModal');
     const btnCancelRefund = document.getElementById('btnCancelRefund');
@@ -1252,7 +1264,10 @@ function attachEventListeners() {
     });
 
     document.getElementById('btnFilterReset')?.addEventListener('click', () => {
-        document.querySelectorAll('input[name="filterStatus"]').forEach(c => c.checked = ['booked', 'completed'].includes(c.value));
+        // Reset Status: check "All", uncheck individuals
+        document.querySelectorAll('input[name="filterStatus"]').forEach(c => {
+            c.checked = c.value === 'all';
+        });
         const staffAll = document.querySelector('input[name="filterStaff"][value="all"]');
         if (staffAll) staffAll.checked = true;
         document.querySelectorAll('input[name="filterStaff"]:not([value="all"])').forEach(c => c.checked = false);
