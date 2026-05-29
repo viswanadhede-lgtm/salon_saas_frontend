@@ -2813,8 +2813,8 @@
    CALENDAR TAB LAYOUT
 ---------------------------------------------------------------- */
 .calendar-wrapper {
-    background-color: #F6F3FF;
-    border: 1px solid #e0e7ff; /* Slightly deeper border to pop off the light purple */
+    background-color: #ffffff;
+    border: 1px solid var(--border);
     border-radius: 12px;
     padding: 1.5rem;
     box-shadow: 0 1px 3px rgba(0,0,0,0.02);
