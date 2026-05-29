@@ -278,26 +278,26 @@ function setupModals() {
         </div>`);
     }
 
-    if (!document.getElementById('cancelBookingConfirmOverlay')) {
+    if (!document.getElementById('updateStatusConfirmOverlay')) {
         document.body.insertAdjacentHTML('beforeend', `
-        <div class="modal-overlay custom-logout-overlay" id="cancelBookingConfirmOverlay" style="z-index:9999;backdrop-filter:blur(8px);">
+        <div class="modal-overlay custom-logout-overlay" id="updateStatusConfirmOverlay" style="z-index:9999;backdrop-filter:blur(8px);">
             <div class="logout-modal" style="background:#fff;border-radius:16px;padding:32px;width:400px;max-width:90vw;text-align:center;box-shadow:0 20px 25px -5px rgba(0,0,0,.1);">
-                <div style="width:64px;height:64px;border-radius:50%;background:#fee2e2;display:flex;align-items:center;justify-content:center;margin:0 auto 20px;">
-                    <i data-feather="x-circle" style="color:#ef4444;width:32px;height:32px;"></i>
+                <div style="width:64px;height:64px;border-radius:50%;background:#e0e7ff;display:flex;align-items:center;justify-content:center;margin:0 auto 20px;" id="updateStatusIconBg">
+                    <i data-feather="alert-circle" style="color:#4f46e5;width:32px;height:32px;" id="updateStatusIcon"></i>
                 </div>
-                <h2 style="font-size:1.5rem;font-weight:700;color:#0f172a;margin-bottom:8px;">Cancel Booking?</h2>
-                <p style="color:#64748b;font-size:0.95rem;margin-bottom:24px;line-height:1.5;">Are you sure you want to cancel this booking? The customer will need to rebook.</p>
+                <h2 style="font-size:1.5rem;font-weight:700;color:#0f172a;margin-bottom:8px;">Update Status?</h2>
+                <p style="color:#64748b;font-size:0.95rem;margin-bottom:24px;line-height:1.5;" id="updateStatusConfirmText">Are you sure you want to change this booking's status?</p>
                 <div style="display:flex;gap:12px;justify-content:center;">
-                    <button id="btnKeepBooking" style="flex:1;padding:12px 20px;border-radius:8px;border:1px solid #e2e8f0;background:#fff;color:#64748b;font-weight:600;cursor:pointer;">Keep</button>
-                    <button id="btnConfirmCancelBooking" style="flex:1;padding:12px 20px;border-radius:8px;border:none;background:#ef4444;color:#fff;font-weight:600;cursor:pointer;">Yes, Cancel</button>
+                    <button id="btnKeepStatus" style="flex:1;padding:12px 20px;border-radius:8px;border:1px solid #e2e8f0;background:#fff;color:#64748b;font-weight:600;cursor:pointer;">Cancel</button>
+                    <button id="btnConfirmUpdateStatus" style="flex:1;padding:12px 20px;border-radius:8px;border:none;background:#4f46e5;color:#fff;font-weight:600;cursor:pointer;">Yes, Update</button>
                 </div>
             </div>
         </div>
 
-        <div class="modal-overlay custom-logout-overlay" id="fullScreenCancelBookingLoader" style="z-index:10000;backdrop-filter:blur(8px);">
+        <div class="modal-overlay custom-logout-overlay" id="fullScreenUpdateStatusLoader" style="z-index:10000;backdrop-filter:blur(8px);">
             <div style="display:flex;flex-direction:column;align-items:center;justify-content:center;height:100%;">
                 <div style="width:48px;height:48px;border:4px solid rgba(255,255,255,.3);border-radius:50%;border-top-color:#fff;animation:spin 1s ease-in-out infinite;margin-bottom:16px;"></div>
-                <h2 style="color:#fff;font-size:1.5rem;font-weight:600;">Cancelling booking...</h2>
+                <h2 style="color:#fff;font-size:1.5rem;font-weight:600;">Updating status...</h2>
             </div>
         </div>`);
     }
@@ -897,8 +897,49 @@ function attachEventListeners() {
     });
 
     // ── Update Booking Status & Helpers ─────────────────────────────────────────
-    window.updateBookingStatus = async (bookingId, newStatus) => {
+    let statusUpdateBookingId = null;
+    let statusUpdateNewStatus = null;
+
+    window.updateBookingStatus = (bookingId, newStatus) => {
         if (!bookingId || !newStatus) return;
+        statusUpdateBookingId = bookingId;
+        statusUpdateNewStatus = newStatus;
+        
+        const textEl = document.getElementById('updateStatusConfirmText');
+        if (textEl) {
+            textEl.innerHTML = `Change this booking's status to <strong>${newStatus}</strong>?`;
+        }
+
+        const overlay = document.getElementById('updateStatusConfirmOverlay');
+        if (overlay) overlay.classList.add('active');
+        if (window.feather) feather.replace();
+    };
+
+    // Close button logic securely wrapped
+    document.addEventListener('click', (e) => {
+        if (e.target.id === 'btnKeepStatus') {
+            document.getElementById('updateStatusConfirmOverlay')?.classList.remove('active');
+            statusUpdateBookingId = null;
+            statusUpdateNewStatus = null;
+        }
+        if (e.target.id === 'updateStatusConfirmOverlay') {
+            document.getElementById('updateStatusConfirmOverlay')?.classList.remove('active');
+            statusUpdateBookingId = null;
+            statusUpdateNewStatus = null;
+        }
+        
+        if (e.target.id === 'btnConfirmUpdateStatus') {
+            window.confirmUpdateBookingStatus();
+        }
+    });
+
+    window.confirmUpdateBookingStatus = async () => {
+        if (!statusUpdateBookingId || !statusUpdateNewStatus) return;
+        const bookingId = statusUpdateBookingId;
+        const newStatus = statusUpdateNewStatus;
+        
+        document.getElementById('updateStatusConfirmOverlay')?.classList.remove('active');
+        document.getElementById('fullScreenUpdateStatusLoader')?.classList.add('active');
         
         try {
             const { error: dbError } = await supabase
@@ -912,14 +953,12 @@ function attachEventListeners() {
                 return;
             }
             
-            // Replicate summary and financial ledger updates similar to previous cancellation flow
             const { error: summaryErr } = await supabase
                 .from('bookings_for_business_transaction')
                 .update({ status: newStatus, updated_at: new Date().toISOString() })
                 .eq('booking_id', bookingId);
             if (summaryErr) console.error('[Status Update] summary update error:', summaryErr);
 
-            // Handle specific ledger insert if status is cancelled
             if (newStatus.toLowerCase() === 'cancelled') {
                 const { error: ledgerErr } = await supabase
                     .from('business_transactions')
@@ -940,6 +979,10 @@ function attachEventListeners() {
         } catch (err) {
             console.error(err);
             window.toast && window.toast('Network error updating booking status.');
+        } finally {
+            document.getElementById('fullScreenUpdateStatusLoader')?.classList.remove('active');
+            statusUpdateBookingId = null;
+            statusUpdateNewStatus = null;
         }
     };
 
