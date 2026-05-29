@@ -156,23 +156,35 @@ function buildRow(b, includeDate = false) {
         <td style="padding:10px 8px;">${paymentBadge(payment)}</td>
         <td style="padding:10px 8px;">
             <div style="display:flex;gap:6px;flex-wrap:nowrap;">
-                ${isEditable ? `<button onclick="window.openEditBookingModal('${bookingId}')"
+                ${['booked', 'confirmed'].includes(status.toLowerCase()) ? `
+                <button onclick="window.openEditBookingModal('${bookingId}')"
                     data-sub-feature="update_booking"
                     style="padding:4px 10px;border-radius:6px;border:1px solid #e2e8f0;background:#fff;color:#475569;font-size:0.75rem;font-weight:600;cursor:pointer;white-space:nowrap;transition:all 0.2s;"
                     onmouseover="this.style.borderColor='#94a3b8'" onmouseout="this.style.borderColor='#e2e8f0'">
                     Edit
+                </button>
+                <div style="position:relative; display:inline-block;" data-sub-feature="update_booking">
+                    <select onchange="window.updateBookingStatus('${bookingId}', this.value); this.value='';" 
+                        style="appearance:none; padding:4px 24px 4px 10px; border-radius:6px; border:1px solid #e2e8f0; background:#fff url(&quot;data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23475569' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3e%3cpolyline points='6 9 12 15 18 9'%3e%3c/polyline%3e%3c/svg%3e&quot;) no-repeat right 6px center / 12px; color:#475569; font-size:0.75rem; font-weight:600; cursor:pointer; min-width:130px; outline:none; transition:all 0.2s;"
+                        onmouseover="this.style.borderColor='#94a3b8'" onmouseout="this.style.borderColor='#e2e8f0'">
+                        <option value="" disabled selected>Update Status</option>
+                        <option value="completed">Completed</option>
+                        <option value="cancelled">Cancelled</option>
+                        <option value="no-show">No-Show</option>
+                    </select>
+                </div>` : ''}
+                ${status.toLowerCase() === 'completed' ? `
+                <button onclick="window.triggerInvoice('${bookingId}')"
+                    style="padding:4px 10px;border-radius:6px;border:1px solid #e0e7ff;background:#eef2ff;color:#4f46e5;font-size:0.75rem;font-weight:600;cursor:pointer;white-space:nowrap;transition:all 0.2s;"
+                    onmouseover="this.style.background='#e0e7ff'" onmouseout="this.style.background='#eef2ff'">
+                    Invoice
                 </button>` : ''}
-                ${isCancellable ? `<button onclick="window.triggerCancelBooking('${bookingId}')"
-                    data-sub-feature="cancel_booking"
-                    style="padding:4px 10px;border-radius:6px;border:1px solid #fecdd3;background:#fff5f5;color:#e11d48;font-size:0.75rem;font-weight:600;cursor:pointer;white-space:nowrap;transition:all 0.2s;"
-                    onmouseover="this.style.background='#fee2e2'" onmouseout="this.style.background='#fff5f5'">
-                    Cancel
-                </button>` : ''}
-                ${status.toLowerCase() === 'cancelled' && (payment.toLowerCase() === 'paid' || payment.toLowerCase() === 'partial') ? `
-                <button onclick="window.openRefundModal('${bookingId}')"
-                    style="padding:4px 10px;border-radius:6px;border:1px solid #fecdd3;background:#fff1f2;color:#e11d48;font-size:0.75rem;font-weight:600;cursor:pointer;white-space:nowrap;transition:all 0.2s;"
-                    onmouseover="this.style.background='#ffe4e6'" onmouseout="this.style.background='#fff1f2'">
-                    Refund
+                ${['cancelled', 'no-show', 'no_show'].includes(status.toLowerCase()) ? `
+                <button onclick="window.triggerRebook('${bookingId}')"
+                    data-sub-feature="create_booking"
+                    style="padding:4px 10px;border-radius:6px;border:1px solid #ffedd5;background:#fff7ed;color:#ea580c;font-size:0.75rem;font-weight:600;cursor:pointer;white-space:nowrap;transition:all 0.2s;"
+                    onmouseover="this.style.background='#ffedd5'" onmouseout="this.style.background='#fff7ed'">
+                    Re-Book
                 </button>` : ''}
             </div>
         </td>
@@ -884,67 +896,79 @@ function attachEventListeners() {
         }
     });
 
-    // ── Cancel Booking → Supabase PATCH status='cancelled' ───────────────────
-    const cancelOverlay = document.getElementById('cancelBookingConfirmOverlay');
-    const fullLoader    = document.getElementById('fullScreenCancelBookingLoader');
-    let bookingToCancel = null;
-
-    document.getElementById('btnKeepBooking')?.addEventListener('click', () => {
-        cancelOverlay?.classList.remove('active');
-        bookingToCancel = null;
-    });
-    cancelOverlay?.addEventListener('click', (e) => {
-        if (e.target === cancelOverlay) { cancelOverlay.classList.remove('active'); bookingToCancel = null; }
-    });
-
-    document.getElementById('btnConfirmCancelBooking')?.addEventListener('click', async () => {
-        if (!bookingToCancel) return;
-
-        cancelOverlay?.classList.remove('active');
-        fullLoader?.classList.add('active');
-
+    // ── Update Booking Status & Helpers ─────────────────────────────────────────
+    window.updateBookingStatus = async (bookingId, newStatus) => {
+        if (!bookingId || !newStatus) return;
+        
         try {
-            const { error } = await supabase
+            const { error: dbError } = await supabase
                 .from('bookings')
-                .eq('booking_id', bookingToCancel)
-                .update({ status: 'cancelled' });
+                .update({ status: newStatus })
+                .eq('booking_id', bookingId);
 
-            if (error) {
-                console.error('Supabase cancel error:', error);
-                window.toast && window.toast('Error: ' + error.message);
-            } else {
-                // Also cancel the summary row
-                const { error: summaryErr } = await supabase
-                    .from('bookings_for_business_transaction')
-                    .update({ status: 'cancelled', updated_at: new Date().toISOString() })
-                    .eq('booking_id', bookingToCancel);
-                if (summaryErr) console.error('[Cancel] summary update error:', summaryErr);
+            if (dbError) {
+                console.error('Supabase status update error:', dbError);
+                window.toast && window.toast('Error: ' + dbError.message);
+                return;
+            }
+            
+            // Replicate summary and financial ledger updates similar to previous cancellation flow
+            const { error: summaryErr } = await supabase
+                .from('bookings_for_business_transaction')
+                .update({ status: newStatus, updated_at: new Date().toISOString() })
+                .eq('booking_id', bookingId);
+            if (summaryErr) console.error('[Status Update] summary update error:', summaryErr);
 
-                // Insert cancellation marker in the financial ledger
+            // Handle specific ledger insert if status is cancelled
+            if (newStatus.toLowerCase() === 'cancelled') {
                 const { error: ledgerErr } = await supabase
                     .from('business_transactions')
                     .insert([{
                         company_id: getCompanyId() || null,
                         branch_id: getBranchId() || null,
-                        reference_id: bookingToCancel,
+                        reference_id: bookingId,
                         reference_type: 'booking',
                         status: 'cancelled',
                         amount: 0,
                         created_at: new Date().toISOString()
                     }]);
-                if (ledgerErr) console.error('[Cancel] ledger insert error:', ledgerErr);
-
-                window.toast && window.toast('Booking cancelled successfully!');
-                await fetchBookings();
+                if (ledgerErr) console.error('[Status Update] ledger insert error:', ledgerErr);
             }
+
+            window.toast && window.toast(`Booking status updated to ${newStatus}`);
+            await fetchBookings();
         } catch (err) {
             console.error(err);
-            window.toast && window.toast('Network error cancelling booking.');
-        } finally {
-            fullLoader?.classList.remove('active');
-            bookingToCancel = null;
+            window.toast && window.toast('Network error updating booking status.');
         }
-    });
+    };
+
+    window.triggerInvoice = (bookingId) => {
+        alert('Invoice generation placeholder for Booking ' + bookingId);
+    };
+
+    window.triggerRebook = (bookingId) => {
+        const b = liveBookingsData.find(x => (x.booking_id || x.id) == bookingId);
+        if (!b) return;
+
+        // Prefill modal via DOM triggers
+        const phoneInput = document.getElementById('phoneSearch');
+        if (phoneInput) {
+            phoneInput.value = b.customer_phone || '';
+            phoneInput.dispatchEvent(new Event('input', { bubbles: true }));
+        }
+        
+        const nameInput = document.getElementById('customerName');
+        if (nameInput) nameInput.value = b.customer_name || '';
+
+        // Open the New Booking Modal natively built in the DOM
+        const btnNewBooking = document.getElementById('btnNewBooking') || document.getElementById('btnNewBookingPage');
+        if (btnNewBooking) {
+            btnNewBooking.click();
+        } else {
+            document.getElementById('bookingModalOverlay')?.classList.add('active');
+        }
+    };
 
     // ── Global window helpers (called from row buttons) ────────────────────────
     window.openEditBookingModal = async (bookingId) => {
@@ -1020,11 +1044,6 @@ function attachEventListeners() {
         }
     };
 
-    window.triggerCancelBooking = (bookingId) => {
-        bookingToCancel = bookingId;
-        document.getElementById('cancelBookingConfirmOverlay')?.classList.add('active');
-        if (window.feather) feather.replace();
-    };
 }
 
 // ─── Fetch Bookings from Supabase ─────────────────────────────────────────────
