@@ -139,9 +139,7 @@ function buildRow(b, includeDate = false) {
     const cellStyle = 'overflow:hidden;text-overflow:ellipsis;white-space:nowrap;';
 
     return `
-    <tr style="border-bottom:1px solid #f1f5f9;transition:background 0.15s;"
-        onmouseover="this.style.background='#f8fafc'"
-        onmouseout="this.style.background=''">
+    <tr style="border-bottom:1px solid #f1f5f9;transition:background 0.15s;">
         <td style="padding:10px 8px 10px 14px;font-size:0.8rem;color:#64748b;font-family:monospace;${cellStyle}">#${(bookingId||'').slice(0, 8)}</td>
         <td style="padding:10px 8px;${cellStyle}">
             <span class="customer-link" style="font-weight:600;font-size:0.87rem;${cellStyle}" onclick="window.viewCustomerProfile('${b.customer_id || ''}', '${customerName}')">${customerName}</span>
