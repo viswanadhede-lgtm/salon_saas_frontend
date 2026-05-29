@@ -321,7 +321,7 @@ function setupModals() {
     if (!document.getElementById('editBookingModal')) {
         document.body.insertAdjacentHTML('beforeend', `
         <div class="modal-overlay" id="editBookingModal">
-            <div class="modal-container" style="width:640px;max-width:95vw;">
+            <div class="modal-container" style="width:520px;max-width:95vw;">
                 <div class="modal-header">
                     <div class="header-titles">
                         <h2>Edit Booking</h2>
