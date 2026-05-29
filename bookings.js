@@ -281,6 +281,9 @@ function populateStaffFilter() {
 
     list.innerHTML = html;
 
+    // Restore any saved staff filter state (set by restoreFilterState on load)
+    if (window._applyPendingStaffFilter) window._applyPendingStaffFilter();
+
     list.querySelectorAll('input[name="filterStaff"]').forEach(cb => {
         cb.addEventListener('change', (e) => {
             const val = e.target.value;
@@ -1245,7 +1248,65 @@ function attachEventListeners() {
     };
     const btnFilter = document.getElementById('btnFilterBookings');
     const filterMenu = document.getElementById('filterDropdownMenu');
-    
+    const FILTER_KEY = 'bookings_filter_state';
+
+    // ── Save current DOM filter state to localStorage ────────────────────────
+    function saveFilterState() {
+        const statuses = Array.from(document.querySelectorAll('input[name="filterStatus"]'))
+            .map(c => ({ value: c.value, checked: c.checked }));
+        const staffAll = document.querySelector('input[name="filterStaff"][value="all"]')?.checked ?? true;
+        const staff = Array.from(document.querySelectorAll('input[name="filterStaff"]:not([value="all"])'))
+            .map(c => ({ value: c.value, checked: c.checked }));
+        const dateRange = document.querySelector('input[name="filterDateRange"]:checked')?.value || 'all';
+        const search = currentSearchQuery || '';
+        localStorage.setItem(FILTER_KEY, JSON.stringify({ statuses, staffAll, staff, dateRange, search }));
+    }
+
+    // ── Restore filter state from localStorage into DOM ──────────────────────
+    function restoreFilterState() {
+        const raw = localStorage.getItem(FILTER_KEY);
+        if (!raw) return;
+        try {
+            const s = JSON.parse(raw);
+            // Status
+            if (s.statuses) {
+                s.statuses.forEach(({ value, checked }) => {
+                    const el = document.querySelector(`input[name="filterStatus"][value="${value}"]`);
+                    if (el) el.checked = checked;
+                });
+            }
+            // Date
+            if (s.dateRange) {
+                const el = document.querySelector(`input[name="filterDateRange"][value="${s.dateRange}"]`);
+                if (el) el.checked = true;
+            }
+            // Search
+            if (s.search) {
+                currentSearchQuery = s.search;
+                const searchInput = document.getElementById('bookingsPageSearch');
+                if (searchInput) searchInput.value = s.search;
+            }
+            // Staff is restored after populateStaffFilter runs — store for later
+            window._pendingStaffFilter = s;
+        } catch (e) { /* ignore bad JSON */ }
+    }
+
+    // Apply pending staff filter after populateStaffFilter has re-rendered staff checkboxes
+    window._applyPendingStaffFilter = function() {
+        const s = window._pendingStaffFilter;
+        if (!s) return;
+        const staffAllEl = document.querySelector('input[name="filterStaff"][value="all"]');
+        if (staffAllEl) staffAllEl.checked = s.staffAll ?? true;
+        if (s.staff) {
+            s.staff.forEach(({ value, checked }) => {
+                const el = document.querySelector(`input[name="filterStaff"][value="${value}"]`);
+                if (el) el.checked = checked;
+            });
+        }
+        window._pendingStaffFilter = null;
+    };
+
+    // ── Dropdown toggle ──────────────────────────────────────────────────────
     btnFilter?.addEventListener('click', (e) => {
         e.stopPropagation();
         filterMenu?.classList.toggle('active');
@@ -1258,12 +1319,16 @@ function attachEventListeners() {
         }
     });
 
+    // ── Apply ────────────────────────────────────────────────────────────────
     document.getElementById('btnFilterApply')?.addEventListener('click', () => {
+        saveFilterState();
         renderBookings(getFilteredBookings());
         filterMenu?.classList.remove('active');
     });
 
-    document.getElementById('btnFilterClear')?.addEventListener('click', () => {
+    // ── Clear ────────────────────────────────────────────────────────────────
+    document.getElementById('btnFilterClear')?.addEventListener('click', (e) => {
+        e.stopPropagation();
         // Uncheck all status filters (no filter = show all)
         document.querySelectorAll('input[name="filterStatus"]').forEach(c => c.checked = false);
         // Reset staff to All Staff
@@ -1278,9 +1343,13 @@ function attachEventListeners() {
         const searchInput = document.getElementById('bookingsPageSearch');
         if (searchInput) searchInput.value = '';
 
+        saveFilterState();
         renderBookings(getFilteredBookings());
         filterMenu?.classList.remove('active');
     });
+
+    // Restore state on load (staff part deferred — applied after populateStaffFilter)
+    restoreFilterState();
 }
 
 // ─── Fetch Bookings from Supabase ─────────────────────────────────────────────
