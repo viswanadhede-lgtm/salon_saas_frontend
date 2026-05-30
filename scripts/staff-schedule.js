@@ -976,10 +976,49 @@ function transformScheduleResponse(flatData) {
 }
 
 // ─────────────────────────────────────────────────────────────
+// FETCH TODAY'S BOOKINGS PER STAFF
+// ─────────────────────────────────────────────────────────────
+
+/**
+ * Queries bookings_for_business_transaction for today and returns
+ * a Map<staffId (string), count (number)>.
+ */
+async function fetchTodayBookings(staffIds) {
+    const countMap = new Map();
+    if (!staffIds || staffIds.length === 0) return countMap;
+
+    try {
+        const branchId = localStorage.getItem('active_branch_id') || null;
+        const today = new Date();
+        const todayStr = toISODate(today); // 'YYYY-MM-DD'
+
+        const { data, error } = await supabase
+            .from('bookings_for_business_transaction')
+            .select('staff_id')
+            .eq('branch_id', branchId)
+            .eq('booking_date', todayStr)
+            .in('staff_id', staffIds);
+
+        if (error) throw error;
+
+        if (data) {
+            for (const row of data) {
+                const sid = String(row.staff_id);
+                countMap.set(sid, (countMap.get(sid) || 0) + 1);
+            }
+        }
+    } catch (err) {
+        console.warn('fetchTodayBookings failed:', err);
+    }
+
+    return countMap;
+}
+
+// ─────────────────────────────────────────────────────────────
 // RENDER TABLE
 // ─────────────────────────────────────────────────────────────
 
-function renderTable() {
+async function renderTable() {
     if (!DOM.tableBody) return;
 
     // rawSchedules is already filtered by month from the API
@@ -993,43 +1032,149 @@ function renderTable() {
         return;
     }
 
+    // ── Fetch today's booking counts per staff ────────────────
+    const allStaffIds = viewData.map(s => String(s.staff_id));
+    const todayBookingsMap = await fetchTodayBookings(allStaffIds);
+
+    // ── Date helpers for This Week's Schedule column ──────────
+    const now = new Date();
+    const todayDateNum = now.getDate();
+    // ISO weekday: 0=Mon … 6=Sun
+    const isoTodayIdx = (now.getDay() + 6) % 7; // convert Sun=0..Sat=6 → Mon=0..Sun=6
+
+    // Get Mon of this week
+    const monday = new Date(now);
+    monday.setDate(now.getDate() - isoTodayIdx);
+    monday.setHours(0, 0, 0, 0);
+
+    // Build array of 7 Date objects: Mon → Sun
+    const weekDates = Array.from({ length: 7 }, (_, i) => {
+        const d = new Date(monday);
+        d.setDate(monday.getDate() + i);
+        return d;
+    });
+
+    // Short day labels Mon=0 … Sun=6 (matching s.days order which is Mon-Sun)
+    const DAY_SHORT_MON_FIRST = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
+
+    // Ordinal suffix helper
+    function ordinal(n) {
+        const s = ['th','st','nd','rd'];
+        const v = n % 100;
+        return n + (s[(v - 20) % 10] || s[v] || s[0]);
+    }
+
+    // Format 24h time string (HH:MM) to 12h (h:MM AM/PM)
+    function fmt12(t) {
+        if (!t) return '';
+        const [h, m] = t.split(':').map(Number);
+        const period = h >= 12 ? 'PM' : 'AM';
+        const h12 = h % 12 || 12;
+        return `${h12}:${String(m).padStart(2, '0')} ${period}`;
+    }
+
     DOM.tableBody.innerHTML = viewData.map(s => {
-        const dayPills = s.days.map(d =>
-            d.active
-                ? `<div style="display:inline-block; margin:2px 4px 2px 0; background:#e0e7ff; color:#4338ca;
-                              padding:2px 7px; border-radius:4px; font-size:0.7rem; font-weight:600;"
-                       title="${d.start} – ${d.end}">${d.day}</div>`
-                : `<div style="display:inline-block; margin:2px 4px 2px 0; background:#f1f5f9; color:#94a3b8;
-                              padding:2px 7px; border-radius:4px; font-size:0.7rem; font-weight:500;"
-                       title="Off">${d.day}</div>`
-        ).join('');
 
-        const todayDayIndex = new Date().getDay();
-        const todayDayStr = WEEK_DAYS_SHORT[todayDayIndex];
-        const todaySchedule = s.days.find(d => d.day === todayDayStr);
+        // ── Column 2: This Week's Schedule ───────────────────────
+        const weekPills = weekDates.map((date, idx) => {
+            const dayCode = DAY_SHORT_MON_FIRST[idx]; // Mon, Tue … Sun
+            const dateNum = date.getDate();
+            const isToday = (date.getDate() === now.getDate() &&
+                             date.getMonth() === now.getMonth() &&
+                             date.getFullYear() === now.getFullYear());
 
-        let todayTimingsStr = 'Off';
-        let statusBadge = `<span style="background:#f1f5f9; color:#94a3b8; padding:3px 8px; border-radius:12px; font-size:0.75rem; font-weight:600;">Inactive</span>`;
+            // Look up schedule for this weekday
+            const dayEntry = s.days.find(d => d.day === dayCode);
+            const isActive = dayEntry && dayEntry.active;
 
-        if (todaySchedule && todaySchedule.active) {
-            todayTimingsStr = `${todaySchedule.start} - ${todaySchedule.end}`;
-            statusBadge = `<span style="background:#dcfce7; color:#16a34a; padding:3px 8px; border-radius:12px; font-size:0.75rem; font-weight:600;">Active</span>`;
+            // Try to get exact timing from schedule_entries for that date
+            const dateStr = toISODate(date);
+            const exactEntry = s.schedule_entries?.find(e => e.schedule_date === dateStr);
+            let shiftLabel;
+            if (exactEntry) {
+                shiftLabel = exactEntry.is_off ? 'Off' : `${fmt12(exactEntry.start_time)}–${fmt12(exactEntry.end_time)}`;
+            } else if (isActive) {
+                shiftLabel = `${fmt12(dayEntry.start)}–${fmt12(dayEntry.end)}`;
+            } else {
+                shiftLabel = 'Off';
+            }
+
+            const isOff = shiftLabel === 'Off';
+
+            // Styles
+            let boxBg, headerColor, bodyColor, borderStyle;
+            if (isToday) {
+                boxBg = '#6366f1'; headerColor = '#fff'; bodyColor = '#e0e7ff'; borderStyle = '1px solid #4f46e5';
+            } else if (isOff) {
+                boxBg = '#f8fafc'; headerColor = '#94a3b8'; bodyColor = '#cbd5e1'; borderStyle = '1px dashed #e2e8f0';
+            } else {
+                boxBg = '#f0f9ff'; headerColor = '#0369a1'; bodyColor = '#0ea5e9'; borderStyle = '1px solid #bae6fd';
+            }
+
+            return `<div style="display:flex; flex-direction:column; align-items:center; min-width:54px; flex:1;
+                               background:${boxBg}; border:${borderStyle}; border-radius:7px;
+                               padding:5px 4px; box-sizing:border-box;">
+                        <span style="font-size:0.68rem; font-weight:700; color:${headerColor}; letter-spacing:0.03em; white-space:nowrap;">${dayCode} ${dateNum}</span>
+                        <span style="font-size:0.62rem; font-weight:600; color:${bodyColor}; margin-top:3px; text-align:center; line-height:1.2; white-space:nowrap;">${shiftLabel}</span>
+                    </div>`;
+        }).join('');
+
+        // ── Column 3: Today Shift ────────────────────────────────
+        const isoTodayDayIdx = (now.getDay() + 6) % 7; // 0=Mon … 6=Sun
+        const todayDayCode = DAY_SHORT_MON_FIRST[isoTodayDayIdx];
+        // Full day name (Sun=0 so map via native getDay)
+        const fullDayNames = ['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
+        const todayFullDay = fullDayNames[now.getDay()];
+        const todayOrdinal = ordinal(now.getDate());
+
+        const todayDayEntry = s.days.find(d => d.day === todayDayCode);
+        const todayDateStr = toISODate(now);
+        const todayExactEntry = s.schedule_entries?.find(e => e.schedule_date === todayDateStr);
+
+        let todayShiftLine2, shiftIsOff;
+        if (todayExactEntry) {
+            shiftIsOff = todayExactEntry.is_off;
+            todayShiftLine2 = shiftIsOff ? 'Day Off' : `${fmt12(todayExactEntry.start_time)} – ${fmt12(todayExactEntry.end_time)}`;
+        } else if (todayDayEntry && todayDayEntry.active) {
+            shiftIsOff = false;
+            todayShiftLine2 = `${fmt12(todayDayEntry.start)} – ${fmt12(todayDayEntry.end)}`;
+        } else {
+            shiftIsOff = true;
+            todayShiftLine2 = 'Day Off';
+        }
+
+        const shiftLine2Color = shiftIsOff ? '#ef4444' : '#1e293b';
+
+        // ── Column 4: Today Bookings ─────────────────────────────
+        const bookingCount = todayBookingsMap.get(String(s.staff_id)) || 0;
+        let bookingsCell;
+        if (bookingCount > 0) {
+            bookingsCell = `<span style="display:inline-flex; align-items:center; gap:5px;
+                                         background:#eff6ff; color:#2563eb;
+                                         padding:4px 10px; border-radius:20px;
+                                         font-size:0.78rem; font-weight:700; border:1px solid #bfdbfe;">
+                                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+                                ${bookingCount} Booking${bookingCount !== 1 ? 's' : ''}
+                            </span>`;
+        } else {
+            bookingsCell = `<span style="font-size:0.8rem; color:#94a3b8; font-weight:500;">No Bookings</span>`;
         }
 
         return `
         <tr class="tb-row" style="border-bottom:1px solid #e2e8f0; transition:background 0.2s;">
-            <td style="padding:14px 16px 14px 24px;">
+            <td style="padding:14px 16px 14px 24px; vertical-align:middle;">
                 <div style="font-weight:600; color:#1e293b; font-size:0.9rem;">${s.staff_name}</div>
                 <div style="font-size:0.75rem; color:#64748b; margin-top:2px;">${s.staff_role}</div>
             </td>
-            <td style="padding:14px 16px;">
-                <div style="display:flex; flex-wrap:wrap;">${dayPills}</div>
+            <td style="padding:10px 16px; vertical-align:middle;">
+                <div style="display:flex; gap:5px; align-items:stretch;">${weekPills}</div>
             </td>
-            <td style="padding:14px 16px; font-weight:600; color:#0f172a; font-size:0.85rem;">
-                ${todayTimingsStr}
+            <td style="padding:14px 16px; vertical-align:middle;">
+                <div style="font-weight:600; color:#334155; font-size:0.85rem;">${todayFullDay}, ${todayOrdinal}</div>
+                <div style="font-size:0.8rem; color:${shiftLine2Color}; margin-top:3px; font-weight:${shiftIsOff ? '500' : '600'}">${todayShiftLine2}</div>
             </td>
-            <td style="padding:14px 16px;">
-                ${statusBadge}
+            <td style="padding:14px 16px; vertical-align:middle;">
+                ${bookingsCell}
             </td>
             <td style="padding:14px 16px; vertical-align:middle;">
                 <div class="action-buttons" style="display:flex; justify-content:flex-start; gap:0.5rem;">
