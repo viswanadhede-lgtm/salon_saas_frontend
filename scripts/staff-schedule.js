@@ -1101,21 +1101,67 @@ async function renderTable() {
 
             const isOff = shiftLabel === 'Off';
 
-            // Styles
-            let boxBg, headerColor, bodyColor, borderStyle;
+            // Determine styling based on state
+            let boxBg, headerColor, headerBg, headerBorder, bodyBg, bodyColor, bodyBorder;
+
             if (isToday) {
-                boxBg = '#6366f1'; headerColor = '#fff'; bodyColor = '#e0e7ff'; borderStyle = '1px solid #4f46e5';
+                // Today highlighted: Both boxes indigo
+                boxBg = 'transparent';
+                headerBg = '#4f46e5';
+                headerColor = '#ffffff';
+                headerBorder = '1px solid #4338ca';
+
+                bodyBg = '#6366f1';
+                bodyColor = '#ffffff';
+                bodyBorder = '1px solid #4f46e5';
             } else if (isOff) {
-                boxBg = '#f8fafc'; headerColor = '#94a3b8'; bodyColor = '#cbd5e1'; borderStyle = '1px dashed #e2e8f0';
+                // Day off: Both boxes muted grey
+                boxBg = 'transparent';
+                headerBg = '#f1f5f9';
+                headerColor = '#94a3b8';
+                headerBorder = '1px solid #e2e8f0';
+
+                bodyBg = '#f8fafc';
+                bodyColor = '#cbd5e1';
+                bodyBorder = '1px dashed #e2e8f0';
             } else {
-                boxBg = '#f0f9ff'; headerColor = '#0369a1'; bodyColor = '#0ea5e9'; borderStyle = '1px solid #bae6fd';
+                // Regular active day: Light blue
+                boxBg = 'transparent';
+                headerBg = '#e0f2fe';
+                headerColor = '#0369a1';
+                headerBorder = '1px solid #bae6fd';
+
+                bodyBg = '#f0f9ff';
+                bodyColor = '#0284c7';
+                bodyBorder = '1px solid #e0f2fe';
             }
 
-            return `<div style="display:flex; flex-direction:column; align-items:center; min-width:54px; flex:1;
-                               background:${boxBg}; border:${borderStyle}; border-radius:7px;
-                               padding:5px 4px; box-sizing:border-box;">
-                        <span style="font-size:0.68rem; font-weight:700; color:${headerColor}; letter-spacing:0.03em; white-space:nowrap;">${dayCode} ${dateNum}</span>
-                        <span style="font-size:0.62rem; font-weight:600; color:${bodyColor}; margin-top:3px; text-align:center; line-height:1.2; white-space:nowrap;">${shiftLabel}</span>
+            // Generate HTML for bottom timings box
+            let timingHtml;
+            if (isOff) {
+                timingHtml = `<span style="font-size:0.65rem; font-weight:600; line-height:1;">Off</span>`;
+            } else {
+                // Split "9:00 AM-6:00 PM" into three segments
+                const times = shiftLabel.split('–');
+                const start = times[0] ? times[0].trim() : '';
+                const end = times[1] ? times[1].trim() : '';
+
+                timingHtml = `
+                    <span style="font-size:0.6rem; font-weight:700; line-height:1.2;">${start}</span>
+                    <span style="font-size:0.5rem; font-weight:500; line-height:0.8; opacity:0.8;">-</span>
+                    <span style="font-size:0.6rem; font-weight:700; line-height:1.2;">${end}</span>
+                `;
+            }
+
+            return `<div style="display:flex; flex-direction:column; align-items:center; min-width:48px; flex:1; gap:2px;">
+                        <!-- Top Box: Day + Date -->
+                        <div style="width:100%; text-align:center; background:${headerBg}; border:${headerBorder}; border-radius:6px; padding:4px 2px; box-sizing:border-box;">
+                            <span style="font-size:0.65rem; font-weight:700; color:${headerColor}; letter-spacing:0.02em; white-space:nowrap;">${dayCode} ${dateNum}</span>
+                        </div>
+                        <!-- Bottom Box: Timings -->
+                        <div style="display:flex; flex-direction:column; align-items:center; justify-content:center; width:100%; flex:1; background:${bodyBg}; border:${bodyBorder}; border-radius:6px; padding:3px 2px; box-sizing:border-box; color:${bodyColor};">
+                            ${timingHtml}
+                        </div>
                     </div>`;
         }).join('');
 
