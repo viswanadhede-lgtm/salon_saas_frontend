@@ -219,8 +219,40 @@ function setupEventListeners() {
     });
 
     DOM.applyFullMonth?.addEventListener('change', () => {
+        if (DOM.applyFullMonth.checked) {
+            syncFullMonthData();
+        }
         updatePaginationUI();
+        renderDayRows();
     });
+}
+
+function syncFullMonthData() {
+    if (!currentMonthWeeks.length) return;
+    const baseWeeks = currentMonthWeeks[0];
+    const today = new Date();
+    today.setHours(0,0,0,0);
+    
+    // Grab pattern from week 1
+    const weekPattern = {};
+    for (const d of baseWeeks) {
+        weekPattern[d.getDay()] = monthScheduleData[toISODate(d)] || { active:false, start:'', end:'', notes:'' };
+    }
+    
+    // Apply to weeks 2+
+    for (let i = 1; i < currentMonthWeeks.length; i++) {
+        for (const date of currentMonthWeeks[i]) {
+            if (date < today) continue; // Skip strictly past dates
+            const jsDay = date.getDay();
+            const source = weekPattern[jsDay];
+            monthScheduleData[toISODate(date)] = {
+                active: source.active,
+                start: source.start,
+                end: source.end,
+                notes: source.notes
+            };
+        }
+    }
 }
 
 function updatePaginationUI() {
@@ -266,7 +298,21 @@ function renderDayRows() {
         const dateStr       = toISODate(date);
         const dateLabel     = formatDateOnly(date);
         const dayLabel      = formatDayOnly(date);
-        const state         = monthScheduleData[dateStr] || { active:false, start:'', end:'', notes:'' };
+        let state           = monthScheduleData[dateStr] || { active:false, start:'', end:'', notes:'' };
+
+        const isApplyAllChecked = DOM.applyFullMonth?.checked;
+        let isForcedByFullMonth = false;
+
+        if (isApplyAllChecked && currentWeekIndex > 0) {
+            const baseWeekDates = currentMonthWeeks[0] || [];
+            const week1Date = baseWeekDates.find(d => d.getDay() === jsDay);
+            if (week1Date) {
+                const w1Str = toISODate(week1Date);
+                state = monthScheduleData[w1Str] || { active:false, start:'', end:'', notes:'' };
+                isForcedByFullMonth = true;
+            }
+        }
+
 
         // Check if this row is today — apply min time restriction
         const now = new Date();
@@ -278,10 +324,12 @@ function renderDayRows() {
 
         return `
             <div class="day-row"
-                 style="display:grid; grid-template-columns:1.2fr 1.2fr 80px 1fr 1fr 2.5fr; gap:12px; align-items:center;
+                 style="position:relative; display:grid; grid-template-columns:1.2fr 1.2fr 80px 1fr 1fr 2.5fr; gap:12px; align-items:center;
                         background:${isPastOrToday ? '#f8fafc' : '#fff'}; padding:12px 16px; border-radius:8px; border:1px solid #e2e8f0;
                         box-shadow:0 1px 2px rgba(0,0,0,0.02); transition:border-color 0.2s; ${isPastOrToday ? 'opacity:0.6;' : ''}"
                  data-date="${dateStr}" data-idx="${ix}">
+                 
+                 ${isForcedByFullMonth ? `<div style="position:absolute; inset:0; z-index:10; border-radius:8px; cursor:not-allowed;" onclick="showToast('Please uncheck the apply to entire month box to make individual changes', true)"></div>` : ''}
 
                 <!-- Date column -->
                 <div style="font-weight:600; color:#334155; font-size:0.82rem;">
@@ -293,14 +341,14 @@ function renderDayRows() {
                 <div style="font-weight:500; color:#475569; font-size:0.875rem;">${dayLabel}</div>
 
                 <!-- Active toggle -->
-                <div>
-                    <label class="toggle-switch" style="position:relative; display:inline-block; width:44px; height:24px; ${isPastOrToday ? 'cursor:not-allowed;' : ''}">
+                <div style="position:relative;">
+                    <label class="toggle-switch" style="position:relative; display:inline-block; width:44px; height:24px; ${(isPastOrToday || isForcedByFullMonth) ? 'cursor:not-allowed; opacity:0.7;' : ''}">
                         <input type="checkbox" id="chk_${ix}" class="day-active-chk" data-idx="${ix}" data-date="${dateStr}"
                                ${state.active && !isPastOrToday ? 'checked' : ''}
-                               ${isPastOrToday ? 'disabled' : ''}
+                               ${isPastOrToday || isForcedByFullMonth ? 'disabled' : ''}
                                style="opacity:0; width:0; height:0; position:absolute;">
                         <span class="slider round"
-                               style="position:absolute; cursor:${isPastOrToday ? 'not-allowed' : 'pointer'}; top:0; left:0; right:0; bottom:0;
+                               style="position:absolute; cursor:${(isPastOrToday || isForcedByFullMonth) ? 'not-allowed' : 'pointer'}; top:0; left:0; right:0; bottom:0;
                                       background-color:${(state.active && !isPastOrToday) ? '#10b981' : '#cbd5e1'};
                                       border-radius:24px; transition:.4s;">
                             <span style="position:absolute; height:18px; width:18px;
@@ -315,31 +363,31 @@ function renderDayRows() {
                 <div>
                     <input type="time" id="start_${ix}" class="form-input day-start" data-date="${dateStr}"
                            value="${state.start}"
-                           ${(!state.active || isPastOrToday) ? 'disabled' : ''}
+                           ${(!state.active || isPastOrToday || isForcedByFullMonth) ? 'disabled' : ''}
                            ${minAttr}
                            style="width:100%; height:36px; padding:0 8px; font-size:0.85rem;
-                                  border:1px solid #e2e8f0; border-radius:6px; ${isPastOrToday ? 'cursor:not-allowed;' : ''}">
+                                  border:1px solid #e2e8f0; border-radius:6px; ${(isPastOrToday || isForcedByFullMonth) ? 'cursor:not-allowed; opacity:0.7;' : ''}">
                 </div>
 
                 <!-- End Time -->
                 <div>
                     <input type="time" id="end_${ix}" class="form-input day-end" data-date="${dateStr}"
                            value="${state.end}"
-                           ${(!state.active || isPastOrToday) ? 'disabled' : ''}
+                           ${(!state.active || isPastOrToday || isForcedByFullMonth) ? 'disabled' : ''}
                            ${minAttr}
                            style="width:100%; height:36px; padding:0 8px; font-size:0.85rem;
-                                  border:1px solid #e2e8f0; border-radius:6px; ${isPastOrToday ? 'cursor:not-allowed;' : ''}">
+                                  border:1px solid #e2e8f0; border-radius:6px; ${(isPastOrToday || isForcedByFullMonth) ? 'cursor:not-allowed; opacity:0.7;' : ''}">
                 </div>
 
                 <!-- Notes -->
                 <div>
                     <textarea id="notes_${ix}" class="form-input day-notes" data-date="${dateStr}"
-                              placeholder="Notes..."
-                              ${(!state.active || isPastOrToday) ? 'disabled' : ''}
+                              placeholder="${isForcedByFullMonth ? 'Synced with Week 1' : 'Notes...'}"
+                              ${(!state.active || isPastOrToday || isForcedByFullMonth) ? 'disabled' : ''}
                               style="width:100%; height:36px; padding:6px 8px; font-size:0.82rem;
                                      border:1px solid #e2e8f0; border-radius:6px; resize:none;
                                      font-family:inherit; box-sizing:border-box;
-                                     ${isPastOrToday ? 'cursor:not-allowed; background:#f1f5f9;' : ''}">${state.notes}</textarea>
+                                     ${(isPastOrToday || isForcedByFullMonth) ? 'cursor:not-allowed; opacity:0.7; background:#f1f5f9;' : ''}">${state.notes}</textarea>
                 </div>
             </div>
         `;
@@ -388,6 +436,9 @@ function renderDayRows() {
                 monthScheduleData[dateStr].start = '';
                 monthScheduleData[dateStr].end = '';
             }
+            if (DOM.applyFullMonth?.checked && currentWeekIndex === 0) {
+                syncFullMonthData();
+            }
         });
     });
 
@@ -397,6 +448,9 @@ function renderDayRows() {
             input.addEventListener('input', e => {
                 const dateStr = e.target.dataset.date;
                 monthScheduleData[dateStr][cat] = e.target.value;
+                if (DOM.applyFullMonth?.checked && currentWeekIndex === 0) {
+                    syncFullMonthData();
+                }
             });
         });
     });
