@@ -716,6 +716,18 @@ window.viewSchedule = function(scheduleId) {
     const s = rawSchedules.find(x => x.id === scheduleId);
     if (!s) return;
 
+    // Dynamically rename the first tab
+    const now = new Date();
+    const currentMonthVal = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
+    const tabThisWeekBtn = document.getElementById('tabThisWeekBtn');
+    if (tabThisWeekBtn) {
+        if (s.target_month === currentMonthVal) {
+            tabThisWeekBtn.textContent = "This Week's Timings";
+        } else {
+            tabThisWeekBtn.textContent = "First Week's Timings";
+        }
+    }
+
     document.getElementById('viewStaffName').textContent = s.staff_name;
     const [yyyy, mm] = s.target_month.split('-');
     const dateObj = new Date(parseInt(yyyy), parseInt(mm) - 1);
