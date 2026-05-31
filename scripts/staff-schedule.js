@@ -1464,8 +1464,8 @@ async function renderTable() {
         return `
         <tr class="tb-row" style="border-bottom:1px solid #e2e8f0; transition:background 0.2s;">
             <td style="padding:14px 16px 14px 24px; vertical-align:middle;">
-                <div style="font-weight:600; color:#4f46e5; font-size:0.9rem;">${s.staff_name}</div>
-                <div style="font-size:0.75rem; color:#64748b; margin-top:2px;">${s.staff_role}</div>
+                <div style="font-weight:600; color:#4f46e5; font-size:1rem;">${s.staff_name}</div>
+                <div style="font-size:0.85rem; color:#64748b; margin-top:2px;">${s.staff_role}</div>
             </td>
             <td style="padding:10px 16px; vertical-align:middle;">
                 <div style="display:flex; gap:5px; align-items:stretch;">${weekPills}</div>
