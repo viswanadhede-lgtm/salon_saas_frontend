@@ -346,7 +346,7 @@ function renderDayRows() {
             : '';
         const minAttr = isToday ? `min="${currentTimeStr}"` : '';
 
-        return `
+    return `
             <div class="day-row"
                  style="position:relative; display:grid; grid-template-columns:1.2fr 1.2fr 80px 1fr 1fr 2.5fr; gap:12px; align-items:center;
                         background:${isPastOrToday ? '#f8fafc' : '#fff'}; padding:12px 16px; border-radius:8px; border:1px solid #e2e8f0;
@@ -364,7 +364,7 @@ function renderDayRows() {
 
                 <!-- Active toggle -->
                 <div style="position:relative;">
-                    ${isForcedByFullMonth ? `<div style="position:absolute; inset:-4px; z-index:10; cursor:pointer;" onclick="showInlinePopup(event, 'Please uncheck Apply to entire month to make changes')"></div>` : ''}
+                    ${isForcedByFullMonth ? `<div style="position:absolute; inset:-4px; z-index:10; cursor:pointer;" onclick="showInlinePopup(event, 'Please uncheck the apply to entire month box to make changes')"></div>` : ''}
                     <label class="toggle-switch" style="position:relative; display:inline-block; width:44px; height:24px; ${isPastOrToday ? 'cursor:not-allowed;' : ''}">
                         <input type="checkbox" id="chk_${ix}" class="day-active-chk" data-idx="${ix}" data-date="${dateStr}"
                                ${state.active && !isPastOrToday ? 'checked' : ''}
@@ -384,7 +384,7 @@ function renderDayRows() {
 
                 <!-- Start Time -->
                 <div style="position:relative;">
-                    ${isForcedByFullMonth ? `<div style="position:absolute; inset:0; z-index:10; cursor:pointer;" onclick="showInlinePopup(event, 'Please uncheck Apply to entire month to make changes')"></div>` : ''}
+                    ${isForcedByFullMonth ? `<div style="position:absolute; inset:0; z-index:10; cursor:pointer;" onclick="showInlinePopup(event, 'Please uncheck the apply to entire month box to make changes')"></div>` : ''}
                     <input type="time" id="start_${ix}" class="form-input day-start" data-date="${dateStr}"
                            value="${state.start}"
                            ${(!state.active || isPastOrToday || isForcedByFullMonth) ? 'disabled' : ''}
@@ -395,7 +395,7 @@ function renderDayRows() {
 
                 <!-- End Time -->
                 <div style="position:relative;">
-                    ${isForcedByFullMonth ? `<div style="position:absolute; inset:0; z-index:10; cursor:pointer;" onclick="showInlinePopup(event, 'Please uncheck Apply to entire month to make changes')"></div>` : ''}
+                    ${isForcedByFullMonth ? `<div style="position:absolute; inset:0; z-index:10; cursor:pointer;" onclick="showInlinePopup(event, 'Please uncheck the apply to entire month box to make changes')"></div>` : ''}
                     <input type="time" id="end_${ix}" class="form-input day-end" data-date="${dateStr}"
                            value="${state.end}"
                            ${(!state.active || isPastOrToday || isForcedByFullMonth) ? 'disabled' : ''}
@@ -406,7 +406,7 @@ function renderDayRows() {
 
                 <!-- Notes -->
                 <div style="position:relative;">
-                    ${isForcedByFullMonth ? `<div style="position:absolute; inset:0; z-index:10; cursor:pointer;" onclick="showInlinePopup(event, 'Please uncheck Apply to entire month to make changes')"></div>` : ''}
+                    ${isForcedByFullMonth ? `<div style="position:absolute; inset:0; z-index:10; cursor:pointer;" onclick="showInlinePopup(event, 'Please uncheck the apply to entire month box to make changes')"></div>` : ''}
                     <textarea id="notes_${ix}" class="form-input day-notes" data-date="${dateStr}"
                               placeholder="${isForcedByFullMonth ? 'Synced with Week 1' : 'Notes...'}"
                               ${(!state.active || isPastOrToday || isForcedByFullMonth) ? 'disabled' : ''}
