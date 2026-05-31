@@ -828,42 +828,89 @@ window.viewSchedule = function(scheduleId) {
     }
 
     // Wire up Share Button
-    document.getElementById('btnShareSchedule').onclick = () => {
-        let bodyText = `Hi ${s.staff_name},\n\nHere is your schedule for ${dateObj.toLocaleString('default', { month: 'long', year: 'numeric' })}:\n\n`;
-        bodyText += `--- Weekly Pattern ---\n`;
-        const fullDayMap = { 'Mon': 'Monday', 'Tue': 'Tuesday', 'Wed': 'Wednesday', 'Thu': 'Thursday', 'Fri': 'Friday', 'Sat': 'Saturday', 'Sun': 'Sunday' };
-        s.days.forEach(d => {
-            if (d.active) {
-                function fmt(t) {
-                    if (!t) return '';
-                    const [h, m] = t.split(':').map(Number);
-                    return `${h % 12 || 12}:${String(m).padStart(2, '0')} ${h >= 12 ? 'PM' : 'AM'}`;
+    const btnShare = document.getElementById('btnShareSchedule');
+    if (btnShare) {
+        btnShare.onclick = () => {
+            let bodyText = `Hi ${s.staff_name},\n\nHere is your schedule for ${dateObj.toLocaleString('default', { month: 'long', year: 'numeric' })}:\n\n`;
+            bodyText += `--- Weekly Pattern ---\n`;
+            const fullDayMap = { 'Mon': 'Monday', 'Tue': 'Tuesday', 'Wed': 'Wednesday', 'Thu': 'Thursday', 'Fri': 'Friday', 'Sat': 'Saturday', 'Sun': 'Sunday' };
+            s.days.forEach(d => {
+                if (d.active) {
+                    function fmt(t) {
+                        if (!t) return '';
+                        const [h, m] = t.split(':').map(Number);
+                        return `${h % 12 || 12}:${String(m).padStart(2, '0')} ${h >= 12 ? 'PM' : 'AM'}`;
+                    }
+                    bodyText += `${fullDayMap[d.day] || d.day}: ${fmt(d.start)} - ${fmt(d.end)}\n`;
+                } else {
+                    bodyText += `${fullDayMap[d.day] || d.day}: Off\n`;
                 }
-                bodyText += `${fullDayMap[d.day] || d.day}: ${fmt(d.start)} - ${fmt(d.end)}\n`;
-            } else {
-                bodyText += `${fullDayMap[d.day] || d.day}: Off\n`;
-            }
-        });
-
-        if (s.schedule_entries && s.schedule_entries.length > 0) {
-            bodyText += `\n--- Specific Overrides ---\n`;
-            s.schedule_entries.forEach(e => {
-                function fmt(t) {
-                    if (!t) return '';
-                    const [h, m] = t.split(':').map(Number);
-                    return `${h % 12 || 12}:${String(m).padStart(2, '0')} ${h >= 12 ? 'PM' : 'AM'}`;
-                }
-                bodyText += `${e.schedule_date}: ${e.is_off ? 'Off' : fmt(e.start_time) + ' - ' + fmt(e.end_time)}\n`;
             });
-        }
-        
-        bodyText += `\nTotal Hours: ${s.total_hours} hrs/week\n`;
-        bodyText += `\nPlease let us know if you have any questions.\n`;
 
-        const subject = encodeURIComponent(`Your Schedule: ${dateObj.toLocaleString('default', { month: 'long', year: 'numeric' })}`);
-        const body = encodeURIComponent(bodyText);
-        window.location.href = `mailto:?subject=${subject}&body=${body}`;
-    };
+            if (s.schedule_entries && s.schedule_entries.length > 0) {
+                bodyText += `\n--- Specific Overrides ---\n`;
+                s.schedule_entries.forEach(e => {
+                    if (e.is_off) {
+                        bodyText += `${e.schedule_date}: Off\n`;
+                    } else {
+                        function fmt(t) {
+                            if (!t) return '';
+                            const [h, m] = t.split(':').map(Number);
+                            return `${h % 12 || 12}:${String(m).padStart(2, '0')} ${h >= 12 ? 'PM' : 'AM'}`;
+                        }
+                        bodyText += `${e.schedule_date}: ${fmt(e.start_time)} - ${fmt(e.end_time)}\n`;
+                    }
+                });
+            }
+            
+            bodyText += `\nTotal Hours: ${s.total_hours} hrs/week\n`;
+            bodyText += `\nPlease let us know if you have any questions.\n`;
+
+            const subject = encodeURIComponent(`Your Schedule: ${dateObj.toLocaleString('default', { month: 'long', year: 'numeric' })}`);
+            const body = encodeURIComponent(bodyText);
+            window.location.href = `mailto:?subject=${subject}&body=${body}`;
+        };
+    }
+
+    // Wire up Download Button (PDF)
+    const btnDownload = document.getElementById('btnDownloadSchedule');
+    if (btnDownload) {
+        btnDownload.onclick = () => {
+            if (!window.html2pdf) {
+                showToast('Unable to load PDF generator.', true);
+                return;
+            }
+
+            // Force switch to the monthly view so the DOM is rendered correctly for html2canvas
+            switchViewTab('month');
+            
+            const element = document.getElementById('tabMonthContent');
+            const opt = {
+                margin:       0.3, 
+                filename:     `${s.staff_name.replace(/\W+/g, '_')}_Monthly_Schedule_${s.target_month}.pdf`,
+                image:        { type: 'jpeg', quality: 0.98 },
+                html2canvas:  { scale: 2, useCORS: true },
+                jsPDF:        { unit: 'in', format: 'letter', orientation: 'portrait' }
+            };
+            
+            const originalHTML = btnDownload.innerHTML;
+            btnDownload.innerHTML = `
+                <svg style="animation:spin 0.8s linear infinite; width:14px; height:14px; margin-right:4px;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83"/>
+                </svg> Generated`;
+            btnDownload.disabled = true;
+
+            html2pdf().set(opt).from(element).save().then(() => {
+                btnDownload.innerHTML = originalHTML;
+                btnDownload.disabled = false;
+            }).catch(err => {
+                console.error(err);
+                btnDownload.innerHTML = originalHTML;
+                btnDownload.disabled = false;
+                if (window.showToast) showToast('Failed to download PDF', true);
+            });
+        };
+    }
 
     // Helpers for Date & Time Mapping
     function fmt12(t) {

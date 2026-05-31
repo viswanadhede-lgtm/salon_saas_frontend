@@ -15,6 +15,8 @@
     <link rel="stylesheet" href="submenu.css">
     <!-- Feather Icons for a clean SaaS look -->
     <script src="https://unpkg.com/feather-icons"></script>
+    <!-- html2pdf for generating schedule PDFs -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
     <style>
         @keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
     </style>
@@ -415,10 +417,16 @@
                         <button type="button" class="view-tab-btn active" id="tabThisWeekBtn" style="background:none; border:none; border-bottom:3px solid #6366f1; color:#1e293b; font-weight:600; font-size:0.95rem; padding:4px 16px; margin-bottom:-1px; cursor:pointer; transition:all 0.2s;">This Week's Timings</button>
                         <button type="button" class="view-tab-btn" id="tabMonthBtn" style="background:none; border:none; border-bottom:3px solid transparent; color:#64748b; font-weight:500; font-size:0.95rem; padding:4px 16px; margin-bottom:-1px; cursor:pointer; transition:all 0.2s;">Monthly Timings</button>
                     </div>
-                    <button id="btnShareSchedule" type="button" style="display:flex; align-items:center; gap:6px; background:#f8fafc; color:#475569; border:1px solid #cbd5e1; padding:4px 12px; border-radius:6px; font-size:0.75rem; font-weight:600; cursor:pointer; margin-bottom:6px; transition:all 0.2s;">
-                        <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24"><circle cx="18" cy="5" r="3"></circle><circle cx="6" cy="12" r="3"></circle><circle cx="18" cy="19" r="3"></circle><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"></line><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"></line></svg>
-                        Share
-                    </button>
+                    <div style="display:flex; gap:8px;">
+                        <button id="btnDownloadSchedule" type="button" style="display:flex; align-items:center; gap:6px; background:#f8fafc; color:#475569; border:1px solid #cbd5e1; padding:4px 12px; border-radius:6px; font-size:0.75rem; font-weight:600; cursor:pointer; margin-bottom:6px; transition:all 0.2s;">
+                            <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
+                            Download
+                        </button>
+                        <button id="btnShareSchedule" type="button" style="display:flex; align-items:center; gap:6px; background:#f8fafc; color:#475569; border:1px solid #cbd5e1; padding:4px 12px; border-radius:6px; font-size:0.75rem; font-weight:600; cursor:pointer; margin-bottom:6px; transition:all 0.2s;">
+                            <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24"><circle cx="18" cy="5" r="3"></circle><circle cx="6" cy="12" r="3"></circle><circle cx="18" cy="19" r="3"></circle><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"></line><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"></line></svg>
+                            Share
+                        </button>
+                    </div>
                 </div>
 
                 <!-- Tab Content 1: This Week -->
