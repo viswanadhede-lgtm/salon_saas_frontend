@@ -41,8 +41,7 @@ if (!document.getElementById('addCustomerModalOverlay')) {
                     <div class="form-group">
                         <label class="form-label" for="newCustTag">Customer Tag</label>
                         <select id="newCustTag" class="form-select">
-                            <option value="new" selected>New</option>
-                            <option value="regular">Regular</option>
+                            <option value="regular" selected>Regular</option>
                             <option value="vip">VIP</option>
                         </select>
                     </div>
@@ -76,7 +75,7 @@ window.openGlobalAddCustomerModal = function(callback) {
     document.getElementById('newCustPhone').value = '';
     document.getElementById('newCustEmail').value = '';
     document.getElementById('newCustDob').value = '';
-    document.getElementById('newCustTag').value = 'new';
+    document.getElementById('newCustTag').value = 'regular';
     document.getElementById('newCustNotes').value = '';
     
     document.getElementById('addCustomerModalOverlay').classList.add('active');
@@ -157,14 +156,26 @@ document.getElementById('btnSaveNewCustomer')?.addEventListener('click', async (
         };
         if (dob) payload.dob = dob;
 
-        const { data, error } = await supabase.from('customers').insert(payload).select().single();
+        const { error } = await supabase.from('customers').insert(payload);
 
         if (error) throw error;
+
+        // Fetch the newly created customer by phone to pass back to callback
+        const { data: newCustomerArr } = await supabase
+            .from('customers')
+            .select('*')
+            .eq('company_id', companyId)
+            .eq('branch_id', branchId)
+            .eq('customer_phone', digitsOnly)
+            .eq('status', 'active')
+            .order('created_at', { ascending: false })
+            .limit(1);
+        const newCustomer = newCustomerArr && newCustomerArr.length > 0 ? newCustomerArr[0] : null;
 
         closeGlobalAddCustomerModal();
         showGlobalToast('Customer created successfully!');
         if (onSuccessCallback) {
-            onSuccessCallback(data);
+            onSuccessCallback(newCustomer);
         }
     } catch (err) {
         if (err.message !== 'Duplicate phone') {
