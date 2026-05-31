@@ -96,9 +96,9 @@ function initMonthScheduleData() {
             const isWeekday     = (jsDay !== 0 && jsDay !== 6) && !isPastOrToday;
             
             monthScheduleData[dateStr] = {
-                active: isWeekday,
-                start: isWeekday ? '09:00' : '',
-                end: isWeekday ? '18:00' : '',
+                active: false,
+                start: '',
+                end: '',
                 notes: ''
             };
         }
@@ -268,6 +268,14 @@ function renderDayRows() {
         const dayLabel      = formatDayOnly(date);
         const state         = monthScheduleData[dateStr] || { active:false, start:'', end:'', notes:'' };
 
+        // Check if this row is today — apply min time restriction
+        const now = new Date();
+        const isToday = toISODate(date) === toISODate(now);
+        const currentTimeStr = isToday
+            ? `${String(now.getHours()).padStart(2,'0')}:${String(now.getMinutes()).padStart(2,'0')}`
+            : '';
+        const minAttr = isToday ? `min="${currentTimeStr}"` : '';
+
         return `
             <div class="day-row"
                  style="display:grid; grid-template-columns:1.2fr 1.2fr 80px 1fr 1fr 2.5fr; gap:12px; align-items:center;
@@ -308,6 +316,7 @@ function renderDayRows() {
                     <input type="time" id="start_${ix}" class="form-input day-start" data-date="${dateStr}"
                            value="${state.start}"
                            ${(!state.active || isPastOrToday) ? 'disabled' : ''}
+                           ${minAttr}
                            style="width:100%; height:36px; padding:0 8px; font-size:0.85rem;
                                   border:1px solid #e2e8f0; border-radius:6px; ${isPastOrToday ? 'cursor:not-allowed;' : ''}">
                 </div>
@@ -317,6 +326,7 @@ function renderDayRows() {
                     <input type="time" id="end_${ix}" class="form-input day-end" data-date="${dateStr}"
                            value="${state.end}"
                            ${(!state.active || isPastOrToday) ? 'disabled' : ''}
+                           ${minAttr}
                            style="width:100%; height:36px; padding:0 8px; font-size:0.85rem;
                                   border:1px solid #e2e8f0; border-radius:6px; ${isPastOrToday ? 'cursor:not-allowed;' : ''}">
                 </div>
@@ -1504,7 +1514,14 @@ async function handleFormSubmit(e) {
 
     // ── Send to backend ────────────────────────────────────────
     const btnSubmit = e.target.querySelector('button[type="submit"]');
-    if (btnSubmit) { btnSubmit.disabled = true; btnSubmit.textContent = 'Saving...'; }
+    if (btnSubmit) {
+        btnSubmit.disabled = true;
+        btnSubmit.innerHTML = `
+            <svg style="animation:spin 0.8s linear infinite; width:16px; height:16px; vertical-align:middle; margin-right:6px;"
+                 viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83"/>
+            </svg>Saving...`;
+    }
 
     let companyId = null;
     try {
@@ -1551,7 +1568,7 @@ async function handleFormSubmit(e) {
         console.error('API sync failed:', err);
         showToast(err.message || 'Error saving the schedule', true);
     } finally {
-        if (btnSubmit) { btnSubmit.disabled = false; btnSubmit.textContent = 'Save Schedule'; }
+        if (btnSubmit) { btnSubmit.disabled = false; btnSubmit.innerHTML = 'Save Schedule'; }
         closeModal();
         renderTable();
     }
