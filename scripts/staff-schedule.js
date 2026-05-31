@@ -543,7 +543,7 @@ window.editSchedule = function(scheduleId) {
     today.setHours(0,0,0,0);
     for (const [dateStr, data] of Object.entries(monthScheduleData)) {
         const dDate = new Date(dateStr);
-        if (dDate <= today) continue;
+        if (dDate < today) continue;
 
         const jsDay = dDate.getDay();
         const shortDay = WEEK_DAYS_SHORT[jsDay];
@@ -1529,7 +1529,7 @@ async function handleFormSubmit(e) {
         for (const day of weekPattern) {
             const allDates = getAllWeekdayDatesInMonth(year, month, day.jsDay);
             for (const d of allDates) {
-                if (d <= today) continue; // enforce past-date bypass
+                if (d < today) continue; // enforce past-date bypass
 
                 scheduleEntries.push({
                     staff_id:      staffId,
@@ -1546,7 +1546,7 @@ async function handleFormSubmit(e) {
         // Serialize explicitly typed month Schedule Data accurately
         for (const [dateStr, data] of Object.entries(monthScheduleData)) {
             const dDate = new Date(dateStr);
-            if (dDate <= today) continue; // enforce past-date bypass
+            if (dDate < today) continue; // enforce past-date bypass
             
             // Validate any active blocks typed out into future weeks
             if (data.active && (!data.start || !data.end)) {
