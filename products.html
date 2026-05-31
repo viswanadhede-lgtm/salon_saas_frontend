@@ -351,16 +351,14 @@
                 <div class="tb-table-area">
                     <table id="categoriesTable" style="width:100%; border-collapse:collapse; font-size:0.875rem; table-layout:fixed;">
                         <colgroup>
-                            <col style="width:25%">
-                            <col style="width:20%">
-                            <col style="width:20%">
                             <col style="width:35%">
+                            <col style="width:25%">
+                            <col style="width:40%">
                         </colgroup>
                         <thead>
                             <tr style="background:#fff; border-bottom:2px solid #e2e8f0; position:sticky; top:0; z-index:10;">
                                 <th style="padding:13px 16px; text-align:left; font-size:0.75rem; font-weight:600; color:#64748b; text-transform:uppercase; letter-spacing:0.05em;">Category</th>
-                                <th style="padding:13px 16px; text-align:left; font-size:0.75rem; font-weight:600; color:#64748b; text-transform:uppercase; letter-spacing:0.05em;">Products Count</th>
-                                <th style="padding:13px 16px; text-align:left; font-size:0.75rem; font-weight:600; color:#64748b; text-transform:uppercase; letter-spacing:0.05em;">Status</th>
+                                <th style="padding:13px 16px; text-align:left; font-size:0.75rem; font-weight:600; color:#64748b; text-transform:uppercase; letter-spacing:0.05em;">Products</th>
                                 <th style="padding:13px 16px; text-align:right; font-size:0.75rem; font-weight:600; color:#64748b; text-transform:uppercase; letter-spacing:0.05em;">Actions</th>
                             </tr>
                         </thead>
@@ -505,8 +503,8 @@
         <div class="modal-container" id="addCategoryModal" style="width: 420px; max-width: 95%;">
             <div class="modal-header">
                 <div class="header-titles">
-                    <h2>Add Category</h2>
-                    <p class="subtitle">Group products into a category</p>
+                    <h2>Add Product Category</h2>
+                    <p class="subtitle">Create a new product category</p>
                 </div>
                 <button class="modal-close" id="closeAddCategoryModal"><i data-feather="x"></i></button>
             </div>
@@ -514,25 +512,6 @@
                 <div class="form-group">
                     <label class="form-label" for="categoryName">Category Name <span class="text-rose">*</span></label>
                     <input type="text" id="categoryName" class="form-input" placeholder="e.g. Hair Care">
-                </div>
-
-                <div class="form-group">
-                    <label class="form-label">Status</label>
-                    <div style="display:flex; gap:8px; margin-top:4px;">
-                        <label style="flex:1; cursor:pointer;">
-                            <input type="radio" name="categoryStatus" value="Active" checked style="display:none;">
-                            <div id="catStatusActiveBtn" onclick="selectCatStatus('Active')" style="border:2px solid #1e3a8a; background:#eff6ff; color:#1e3a8a; border-radius:8px; padding:9px 0; text-align:center; font-size:0.88rem; font-weight:600; transition:all 0.2s;">Active</div>
-                        </label>
-                        <label style="flex:1; cursor:pointer;">
-                            <input type="radio" name="categoryStatus" value="Inactive" style="display:none;">
-                            <div id="catStatusInactiveBtn" onclick="selectCatStatus('Inactive')" style="border:2px solid #e2e8f0; background:#f8fafc; color:#64748b; border-radius:8px; padding:9px 0; text-align:center; font-size:0.88rem; font-weight:600; transition:all 0.2s;">Inactive</div>
-                        </label>
-                    </div>
-                </div>
-
-                <div class="form-group">
-                    <label class="form-label" for="categoryDescription">Description <span style="color:#94a3b8;font-weight:400;">(Optional)</span></label>
-                    <textarea id="categoryDescription" class="form-input form-textarea" placeholder="Describe this category..." style="min-height:80px;"></textarea>
                 </div>
             </div>
             <div class="modal-footer" style="border-top: 1px solid #f1f5f9; padding: 16px 2rem; display: flex; justify-content: flex-end; gap: 12px;">
