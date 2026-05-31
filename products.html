@@ -267,13 +267,13 @@
         <div id="profileBackdrop" class="profile-backdrop"></div>
 
         <!-- Page Content -->
-        <main class="content-area" style="padding: 24px 0 0 0; width: 100%; box-sizing: border-box; display: flex; flex-direction: column; gap: 24px;">
+        <main class="content-area" style="display:flex;flex-direction:column;padding:0;background:#f8fafc;">
 
             <!-- Page Header -->
-            <div style="display: flex; justify-content: space-between; align-items: flex-end; padding: 0 32px;">
+            <div style="display: flex; justify-content: space-between; align-items: center; border-bottom:1px solid #e2e8f0; padding: 18px 32px 14px 32px; background:#fff;">
                 <div>
-                    <h1 style="font-size: 1.5rem; font-weight: 700; color: #1e293b; margin: 0 0 4px 0;">Products</h1>
-                    <p style="font-size: 0.9rem; color: #64748b; margin: 0;">Manage retail products</p>
+                    <h1 style="font-size: 1.45rem; font-weight: 700; color: #1e293b; margin: 0;">Products</h1>
+                    <p style="font-size: 0.95rem; color: #64748b; margin: 2px 0 0 0;">Manage retail products</p>
                 </div>
                 <div id="pageHeaderActions" style="display: flex; gap: 10px; align-items: center;">
                     <div style="background:#fff; border:1px solid #e2e8f0; border-radius:8px; padding:0 12px; display:flex; align-items:center; width:220px; height:40px;">
@@ -310,17 +310,17 @@
             </div>
 
             <!-- Tabs -->
-            <div style="display:flex; border-bottom:1px solid #e2e8f0; gap:28px; padding: 0 32px;">
-                <button class="tab-btn active" data-target="products" style="padding:10px 0; background:none; border:none; border-bottom:2px solid #4338ca; font-size:0.93rem; font-weight:600; color:#4338ca; cursor:pointer; display:flex; align-items:center; gap:8px;">
-                    Products <span id="productsCountBadge" style="background:#e0e7ff; color:#4338ca; padding:2px 8px; border-radius:12px; font-size:0.75rem;">6</span>
+            <div style="display:flex;align-items:center;padding:0 32px;background:#fff;border-bottom:1px solid #e2e8f0;">
+                <button class="tab-btn prod-tab active" data-target="products">
+                    Products <span id="productsCountBadge" class="prod-badge"></span>
                 </button>
-                <button class="tab-btn" data-target="categories" style="padding:10px 0; background:none; border:none; border-bottom:2px solid transparent; font-size:0.93rem; font-weight:500; color:#64748b; cursor:pointer; display:flex; align-items:center; gap:8px;">
-                    Categories <span id="categoriesCountBadge" style="background:#f1f5f9; color:#64748b; padding:2px 8px; border-radius:12px; font-size:0.75rem;">4</span>
+                <button class="tab-btn prod-tab" data-target="categories">
+                    Categories <span id="categoriesCountBadge" class="prod-badge"></span>
                 </button>
             </div>
 
             <!-- Products Tab -->
-            <div id="tabProducts" style="display:block;">
+            <div id="tabProducts" style="margin:20px 32px 32px;background:#fff;border:1px solid #e2e8f0;border-radius:12px;overflow:hidden;box-shadow:0 1px 3px rgba(0,0,0,0.04);display:block;">
                 <div class="tb-table-area">
                     <table id="productsTable" style="width:100%; border-collapse:collapse; font-size:0.875rem; table-layout:fixed;">
                         <colgroup>
@@ -332,8 +332,8 @@
                             <col style="width:20%">
                         </colgroup>
                         <thead>
-                            <tr style="background:#fff; border-bottom:2px solid #e2e8f0; position:sticky; top:0; z-index:10;">
-                                <th style="padding:13px 16px; text-align:left; font-size:0.75rem; font-weight:600; color:#64748b; text-transform:uppercase; letter-spacing:0.05em;">Product</th>
+                            <tr style="background:#f8fafc; border-bottom:2px solid #e2e8f0; position:sticky; top:0; z-index:10;">
+                                <th style="padding:13px 16px 13px 24px; text-align:left; font-size:0.75rem; font-weight:600; color:#64748b; text-transform:uppercase; letter-spacing:0.05em;">Product</th>
                                 <th style="padding:13px 16px; text-align:left; font-size:0.75rem; font-weight:600; color:#64748b; text-transform:uppercase; letter-spacing:0.05em;">Category</th>
                                 <th style="padding:13px 16px; text-align:left; font-size:0.75rem; font-weight:600; color:#64748b; text-transform:uppercase; letter-spacing:0.05em;">Price</th>
                                 <th style="padding:13px 16px; text-align:left; font-size:0.75rem; font-weight:600; color:#64748b; text-transform:uppercase; letter-spacing:0.05em;">Stock</th>
@@ -347,7 +347,7 @@
             </div>
 
             <!-- Categories Tab -->
-            <div id="tabCategories" style="display:none;">
+            <div id="tabCategories" style="margin:20px 32px 32px;background:#fff;border:1px solid #e2e8f0;border-radius:12px;overflow:hidden;box-shadow:0 1px 3px rgba(0,0,0,0.04);display:none;">
                 <div class="tb-table-area">
                     <table id="categoriesTable" style="width:100%; border-collapse:collapse; font-size:0.875rem; table-layout:fixed;">
                         <colgroup>
@@ -356,8 +356,8 @@
                             <col style="width:55%">
                         </colgroup>
                         <thead>
-                            <tr style="background:#fff; border-bottom:2px solid #e2e8f0; position:sticky; top:0; z-index:10;">
-                                <th style="padding:13px 16px; text-align:left; font-size:0.75rem; font-weight:600; color:#64748b; text-transform:uppercase; letter-spacing:0.05em;">Category</th>
+                            <tr style="background:#f8fafc; border-bottom:2px solid #e2e8f0; position:sticky; top:0; z-index:10;">
+                                <th style="padding:13px 16px 13px 24px; text-align:left; font-size:0.75rem; font-weight:600; color:#64748b; text-transform:uppercase; letter-spacing:0.05em;">Category</th>
                                 <th style="padding:13px 16px; text-align:left; font-size:0.75rem; font-weight:600; color:#64748b; text-transform:uppercase; letter-spacing:0.05em;">Products</th>
                                 <th style="padding:13px 16px; text-align:right; font-size:0.75rem; font-weight:600; color:#64748b; text-transform:uppercase; letter-spacing:0.05em;">Actions</th>
                             </tr>
@@ -373,6 +373,11 @@
     <style>
         .hover-lift { transition: transform 0.2s, box-shadow 0.2s; }
         .hover-lift:hover { transform: translateY(-2px); box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06); }
+        .prod-tab { padding:14px 20px;border:none;background:none;font-size:0.92rem;font-weight:500;color:#64748b;border-bottom:2px solid transparent;cursor:pointer;transition:all 0.2s;display:flex;align-items:center;gap:8px;margin-bottom:-1px; }
+        .prod-tab.active { color:#1e3a8a;border-bottom:2px solid #1e3a8a;font-weight:600; }
+        .prod-tab:hover:not(.active) { color:#334155; }
+        .prod-badge { display:inline-flex;align-items:center;justify-content:center;min-width:22px;height:22px;padding:0 6px;background:#f1f5f9;color:#64748b;border-radius:20px;font-size:0.75rem;font-weight:600; }
+        .prod-tab.active .prod-badge { background:#dbeafe;color:#1e3a8a; }
     </style>
 
     <script src="dashboard.js"></script>
