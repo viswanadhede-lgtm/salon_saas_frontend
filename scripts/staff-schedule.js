@@ -1593,7 +1593,7 @@ async function handleFormSubmit(e) {
     );
 
     // ── Send to backend ────────────────────────────────────────
-    const btnSubmit = e.target.querySelector('button[type="submit"]');
+    const btnSubmit = document.getElementById('btnSaveSchedule');
     if (btnSubmit) {
         btnSubmit.disabled = true;
         btnSubmit.innerHTML = `
