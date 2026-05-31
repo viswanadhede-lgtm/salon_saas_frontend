@@ -1036,15 +1036,34 @@ async function renderTable() {
     const allStaffIds = viewData.map(s => String(s.staff_id));
     const todayBookingsMap = await fetchTodayBookings(allStaffIds);
 
-    // ── Date helpers for This Week's Schedule column ──────────
+    // ── Date helpers for Schedule column ──────────
     const now = new Date();
-    const todayDateNum = now.getDate();
-    // ISO weekday: 0=Mon … 6=Sun
-    const isoTodayIdx = (now.getDay() + 6) % 7; // convert Sun=0..Sat=6 → Mon=0..Sun=6
+    const filterMonthVal = DOM.monthFilter ? DOM.monthFilter.value : ''; // 'YYYY-MM'
+    
+    // Check if the selected filter month is the actual current month
+    const currentMonthVal = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
+    const isCurrentMonth = !filterMonthVal || filterMonthVal === currentMonthVal;
+    
+    let targetWeekDateObj;
+    let tableHeaderEl = document.getElementById('weekScheduleHeader');
+    
+    if (isCurrentMonth) {
+        // Current Month selected: show the week containing Today
+        if (tableHeaderEl) tableHeaderEl.textContent = "This Week's Schedule";
+        targetWeekDateObj = now;
+    } else {
+        // Past or Future Month selected: show the first week of that month
+        if (tableHeaderEl) tableHeaderEl.textContent = "First Week's Schedule";
+        const [fYear, fMonth] = filterMonthVal.split('-').map(Number);
+        targetWeekDateObj = new Date(fYear, fMonth - 1, 1); // 1st of the selected month
+    }
+    
+    // ISO weekday of the target date: 0=Mon … 6=Sun
+    const isoTargetIdx = (targetWeekDateObj.getDay() + 6) % 7; 
 
-    // Get Mon of this week
-    const monday = new Date(now);
-    monday.setDate(now.getDate() - isoTodayIdx);
+    // Get Mon of the target week
+    const monday = new Date(targetWeekDateObj);
+    monday.setDate(targetWeekDateObj.getDate() - isoTargetIdx);
     monday.setHours(0, 0, 0, 0);
 
     // Build array of 7 Date objects: Mon → Sun
