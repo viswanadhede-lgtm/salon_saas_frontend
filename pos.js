@@ -228,9 +228,29 @@ function setupEventListeners() {
     const custSuggestions = document.getElementById('posCustomerSuggestions');
     const custNameField = document.getElementById('posCustomerName');
     const custPhoneField = document.getElementById('posCustomerPhone');
+    const clearBtn = document.getElementById('posClearCustomer');
+
+    // Show/hide clear button based on input content
+    function updateClearBtn() {
+        if (clearBtn) clearBtn.style.display = custSearch && custSearch.value.length > 0 ? 'inline-block' : 'none';
+    }
+
+    // Clear button resets everything
+    if (clearBtn) {
+        clearBtn.addEventListener('click', () => {
+            if (custSearch) custSearch.value = '';
+            if (custNameField) custNameField.value = '';
+            if (custPhoneField) custPhoneField.value = '';
+            if (custSuggestions) custSuggestions.style.display = 'none';
+            selectedCustomer = null;
+            updateClearBtn();
+            if (custSearch) custSearch.focus();
+        });
+    }
 
     if (custSearch) {
         custSearch.addEventListener('input', (e) => {
+            updateClearBtn();
             const raw = e.target.value.trim();
             const digits = raw.replace(/\D/g, '');
 
