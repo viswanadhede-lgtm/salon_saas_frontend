@@ -816,8 +816,6 @@ window.viewSchedule = function(scheduleId) {
             const jsDay = jsDayMap[dayCode];
             const dateObj = weekDates.find(d => d.getDay() === jsDay);
             
-            const dateFormatted = String(dateObj.getDate()).padStart(2, '0');
-
             if (!dateObj) {
                 return `<div style="display:flex; flex-direction:column; background:#f8fafc; padding:6px; border-radius:6px; flex:1; text-align:center; border:1px dashed #e2e8f0; opacity:0.4;">
                  <span style="font-size:0.7rem; font-weight:600; color:#cbd5e1; text-transform:uppercase;">${dayCode}</span>
@@ -825,8 +823,9 @@ window.viewSchedule = function(scheduleId) {
                </div>`;
             }
 
+            const dateFormatted = String(dateObj.getDate()).padStart(2, '0');
             const dateStr = toISODate(dateObj);
-            const entry = s.schedule_entries.find(e => e.schedule_date === dateStr);
+            const entry = s.schedule_entries?.find(e => e.schedule_date === dateStr);
             const isActive = entry && !entry.is_off;
 
             if (isActive) {
