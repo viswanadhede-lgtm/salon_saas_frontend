@@ -161,19 +161,19 @@ function buildRow(b, includeDate = false) {
     const cellStyle = 'overflow:hidden;text-overflow:ellipsis;white-space:nowrap;';
 
     return `
-    <tr style="border-bottom:1px solid #f1f5f9;transition:background 0.15s;">
-        <td style="padding:10px 8px 10px 14px;font-size:0.8rem;color:#64748b;font-family:monospace;${cellStyle}">${(bookingId||'').slice(0, 8).toUpperCase()}</td>
-        <td style="padding:10px 8px;${cellStyle}">
+    <tr class="tb-row" style="border-bottom:1px solid #f8fafc;transition:background 0.15s;">
+        <td style="padding:14px 8px 14px 24px;font-size:0.8rem;color:#64748b;font-family:monospace;${cellStyle}">${(bookingId||'').slice(0, 8).toUpperCase()}</td>
+        <td style="padding:14px 8px;${cellStyle}">
             <span class="customer-link" style="font-weight:600;font-size:0.87rem;${cellStyle}" onclick="window.viewCustomerProfile('${b.customer_id || ''}', '${customerName}')">${customerName}</span>
         </td>
-        <td style="padding:10px 8px;font-size:0.85rem;color:#334155;${cellStyle}">${dateDisplay}</td>
-        <td style="padding:10px 8px;font-size:0.85rem;color:#334155;${cellStyle}">${timeDisplay}</td>
-        <td style="padding:10px 8px; max-width:200px;">${serviceCell}</td>
-        <td style="padding:10px 8px;font-size:0.85rem;color:#334155;${cellStyle}">${staffCell}</td>
-        <td style="padding:10px 8px;font-size:0.85rem;color:#334155;${cellStyle}">${bookingType}</td>
-        <td style="padding:10px 8px;">${statusBadge(status)}</td>
-        <td style="padding:10px 8px;font-size:0.85rem;font-weight:600;color:#059669;${cellStyle}">${amount}</td>
-        <td style="padding:10px 8px;font-size:0.85rem;${cellStyle}">
+        <td style="padding:14px 8px;font-size:0.85rem;color:#334155;${cellStyle}">${dateDisplay}</td>
+        <td style="padding:14px 8px;font-size:0.85rem;color:#334155;${cellStyle}">${timeDisplay}</td>
+        <td style="padding:14px 8px; max-width:200px;">${serviceCell}</td>
+        <td style="padding:14px 8px;font-size:0.85rem;color:#334155;${cellStyle}">${staffCell}</td>
+        <td style="padding:14px 8px;font-size:0.85rem;color:#334155;${cellStyle}">${bookingType}</td>
+        <td style="padding:14px 8px;">${statusBadge(status)}</td>
+        <td style="padding:14px 8px;font-size:0.85rem;font-weight:600;color:#059669;${cellStyle}">${amount}</td>
+        <td style="padding:14px 8px;font-size:0.85rem;${cellStyle}">
             ${(() => {
                 const p = (payment || '').toLowerCase();
                 const label = payment ? payment.charAt(0).toUpperCase() + payment.slice(1) : '—';
@@ -183,7 +183,7 @@ function buildRow(b, includeDate = false) {
                 return `<span style="color:#334155;">${label}</span>`;
             })()}
         </td>
-        <td style="padding:10px 8px;">
+        <td style="padding:14px 8px 14px 24px;">
             <div style="display:flex;gap:6px;flex-wrap:nowrap;">
                 ${['booked', 'confirmed'].includes(status.toLowerCase()) ? `
                 <button onclick="window.openEditBookingModal('${bookingId}')"
