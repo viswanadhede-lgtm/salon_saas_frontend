@@ -219,10 +219,6 @@ function setupEventListeners() {
     });
 
     DOM.applyFullMonth?.addEventListener('change', () => {
-        if (DOM.applyFullMonth.checked) {
-            currentWeekIndex = 0;
-            renderDayRows();
-        }
         updatePaginationUI();
     });
 }
@@ -243,12 +239,11 @@ function updatePaginationUI() {
     }
     
     if (btnNext) {
-        const isApplyAllChecked = DOM.applyFullMonth?.checked;
         const reachedEnd = currentWeekIndex >= currentMonthWeeks.length - 1;
         
-        btnNext.disabled = reachedEnd || isApplyAllChecked;
-        btnNext.style.opacity = (reachedEnd || isApplyAllChecked) ? '0.3' : '1';
-        btnNext.style.cursor  = (reachedEnd || isApplyAllChecked) ? 'not-allowed' : 'pointer';
+        btnNext.disabled = reachedEnd;
+        btnNext.style.opacity = reachedEnd ? '0.3' : '1';
+        btnNext.style.cursor  = reachedEnd ? 'not-allowed' : 'pointer';
     }
 }
 
