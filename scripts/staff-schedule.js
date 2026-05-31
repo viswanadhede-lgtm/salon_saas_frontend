@@ -853,9 +853,9 @@ window.viewSchedule = function(scheduleId) {
             const dateObj = weekDates.find(d => d.getDay() === jsDay);
             
             if (!dateObj) {
-                return `<div style="display:flex; flex-direction:column; background:#f8fafc; padding:6px; border-radius:6px; flex:1; text-align:center; border:1px dashed #e2e8f0; opacity:0.4;">
-                 <span style="font-size:0.7rem; font-weight:600; color:#cbd5e1; text-transform:uppercase;">${dayCode}</span>
-                 <span style="font-size:0.75rem; font-weight:500; color:#cbd5e1; margin-top:2px;">-</span>
+                return `<div style="display:flex; flex-direction:column; background:#f8fafc; padding:10px 6px; border-radius:6px; flex:1; text-align:center; border:1px dashed #e2e8f0; opacity:0.4;">
+                 <span style="font-size:0.75rem; font-weight:600; color:#cbd5e1; text-transform:uppercase;">${dayCode}</span>
+                 <span style="font-size:0.8rem; font-weight:500; color:#cbd5e1; margin-top:4px;">-</span>
                </div>`;
             }
 
@@ -869,14 +869,14 @@ window.viewSchedule = function(scheduleId) {
             if (isActive) {
                 const shiftTimings = `${fmt12(entry.start_time)} - ${fmt12(entry.end_time)}`;
                 
-                return `<div style="display:flex; flex-direction:column; background:#e0e7ff; padding:6px; border-radius:6px; flex:1; text-align:center; border:1px solid #c7d2fe;">
-                 <span style="font-size:0.7rem; font-weight:700; color:#4338ca; text-transform:uppercase;">${topStr}</span>
-                 <span style="font-size:0.65rem; font-weight:600; color:#312e81; margin-top:2px; line-height:1.2;">${shiftTimings}</span>
+                return `<div style="display:flex; flex-direction:column; background:#e0e7ff; padding:10px 6px; border-radius:6px; flex:1; text-align:center; border:1px solid #c7d2fe;">
+                 <span style="font-size:0.75rem; font-weight:700; color:#4338ca; text-transform:uppercase;">${topStr}</span>
+                 <span style="font-size:0.72rem; font-weight:600; color:#312e81; margin-top:4px; line-height:1.3;">${shiftTimings}</span>
                </div>`;
             } else {
-                return `<div style="display:flex; flex-direction:column; background:#f1f5f9; padding:6px; border-radius:6px; flex:1; text-align:center; border:1px dashed #cbd5e1; opacity:0.6;">
-                 <span style="font-size:0.7rem; font-weight:600; color:#94a3b8; text-transform:uppercase;">${topStr}</span>
-                 <span style="font-size:0.75rem; font-weight:500; color:#cbd5e1; margin-top:2px;">Off</span>
+                return `<div style="display:flex; flex-direction:column; background:#f1f5f9; padding:10px 6px; border-radius:6px; flex:1; text-align:center; border:1px dashed #cbd5e1; opacity:0.6;">
+                 <span style="font-size:0.75rem; font-weight:600; color:#94a3b8; text-transform:uppercase;">${topStr}</span>
+                 <span style="font-size:0.8rem; font-weight:500; color:#cbd5e1; margin-top:4px;">Off</span>
                </div>`;
             }
         }).join('');
