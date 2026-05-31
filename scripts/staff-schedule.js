@@ -733,8 +733,6 @@ window.viewSchedule = function(scheduleId) {
     const dateObj = new Date(parseInt(yyyy), parseInt(mm) - 1);
     document.getElementById('viewTargetMonth').textContent = dateObj.toLocaleString('default', { month: 'long', year: 'numeric' });
 
-    document.getElementById('viewHoursBdg').textContent = s.total_hours;
-    
     const scopeBdg = document.getElementById('viewMonthScopeBdg');
     if (s.apply_full_month) {
         scopeBdg.textContent = 'Full Month';
