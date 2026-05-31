@@ -735,7 +735,7 @@ window.viewSchedule = function(scheduleId) {
 
     const scopeBdg = document.getElementById('viewMonthScopeBdg');
     if (s.apply_full_month) {
-        scopeBdg.textContent = 'Full Month';
+        scopeBdg.textContent = "Full Month's Schedule";
         scopeBdg.style.background = '#dcfce7'; scopeBdg.style.color = '#16a34a';
     } else {
         scopeBdg.textContent = 'Partial / Custom';
