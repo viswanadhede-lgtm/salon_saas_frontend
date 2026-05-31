@@ -309,89 +309,32 @@ function setupEventListeners() {
         }
     }
 
-    // Add Customer Modal Logic
+    // Add Customer Button — delegates to global modal
     const btnOpenAddCustomer = document.getElementById('btnOpenAddCustomer');
-    const addCustOverlay = document.getElementById('addCustomerModalOverlay');
-    const btnCloseAddCustomer = document.getElementById('closeAddCustomerModal');
-    const btnCancelAddCustomer = document.getElementById('btnCancelAddCustomer');
-    const btnSaveCustomer = document.getElementById('btnSaveNewCustomer');
-
-    if (btnOpenAddCustomer && addCustOverlay) {
+    if (btnOpenAddCustomer) {
         btnOpenAddCustomer.addEventListener('click', () => {
-            addCustOverlay.classList.add('active');
-            if (typeof feather !== 'undefined') feather.replace();
-        });
-
-        const closeAddModal = () => {
-            addCustOverlay.classList.remove('active');
-            ['newCustName','newCustPhone','newCustEmail','newCustDob','newCustNotes'].forEach(id => {
-                const el = document.getElementById(id);
-                if (el) el.value = '';
-            });
-        };
-
-        if (btnCloseAddCustomer) btnCloseAddCustomer.addEventListener('click', closeAddModal);
-        if (btnCancelAddCustomer) btnCancelAddCustomer.addEventListener('click', closeAddModal);
-        addCustOverlay.addEventListener('click', (e) => {
-            if (e.target === addCustOverlay) closeAddModal();
-        });
-
-        if (btnSaveCustomer) {
-            btnSaveCustomer.addEventListener('click', async () => {
-                const fullName = (document.getElementById('newCustName')?.value || '').trim();
-                const phone = (document.getElementById('newCustPhone')?.value || '').trim();
-                const email = (document.getElementById('newCustEmail')?.value || '').trim();
-                const dob = (document.getElementById('newCustDob')?.value || '').trim();
-                const tag = (document.getElementById('newCustTag')?.value || 'new').trim();
-                const notes = (document.getElementById('newCustNotes')?.value || '').trim();
-
-                if (!fullName || !phone) {
-                    alert('Please fill in Full Name and Phone Number');
-                    return;
-                }
-
-                btnSaveCustomer.disabled = true;
-                btnSaveCustomer.textContent = 'Saving...';
-
-                try {
-                    const { data: newCust, error } = await supabase
-                        .from('customers')
-                        .insert({
-                            company_id: getCompanyId(),
-                            branch_id: getBranchId(),
-                            customer_name: fullName,
-                            customer_phone: phone,
-                            customer_email: email || null,
-                            date_of_birth: dob || null,
-                            customer_tag: tag,
-                            notes: notes || 'Added from POS'
-                        });
-
-                    if (error) throw error;
-
-                    // Refresh customers list
+            if (typeof window.openGlobalAddCustomerModal === 'function') {
+                window.openGlobalAddCustomerModal(async (newCustomer) => {
+                    // Refresh local customers list
                     await fetchCustomers();
 
-                    // If the new record was returned, auto-select it
-                    const created = newCust && newCust.length > 0 ? newCust[0] : null;
-                    if (created) {
-                        selectedCustomer = created;
+                    // Auto-select the newly created customer
+                    if (newCustomer) {
+                        selectedCustomer = newCustomer;
+                        const fullName = newCustomer.customer_name || '';
+                        const phone = newCustomer.customer_phone || '';
+
+                        const custSearch = document.getElementById('posCustomerSearch');
+                        const custNameField = document.getElementById('posCustomerName');
+                        const custPhoneField = document.getElementById('posCustomerPhone');
+
                         if (custSearch) custSearch.value = phone;
                         if (custNameField) custNameField.value = fullName;
                         if (custPhoneField) custPhoneField.value = phone;
                     }
-
-                    showToast('Customer saved successfully!');
-                    closeAddModal();
-                } catch (err) {
-                    console.error(err);
-                    showToast('Failed to save customer: ' + (err.message || 'Unknown error'), true);
-                } finally {
-                    btnSaveCustomer.disabled = false;
-                    btnSaveCustomer.textContent = 'Save Customer';
-                }
-            });
-        }
+                });
+            }
+        });
     }
 
     // Payment Methods Selection (Inside Modal)

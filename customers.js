@@ -6,8 +6,7 @@ import { applySubFeatureGates } from './scripts/sub-features/sub-feature-gate.js
 // DOM Elements
 const customersTableBody = document.getElementById('customersTableBody');
 const customerSearchInput = document.getElementById('customerSearch');
-const btnAddCustomer = document.getElementById('btnAddCustomer');
-const btnCancelAddCustomer = document.getElementById('btnCancelAddCustomer');
+// Note: btnAddCustomer open/close is handled by global-customer-modal.js
 const btnSaveCustomer = document.getElementById('btnSaveNewCustomer');
 const modalOverlay = document.getElementById('addCustomerModalOverlay');
 const addCustomerModalWrapper = document.getElementById('addCustomerModal');
@@ -465,11 +464,7 @@ function closeModal() {
     if (modalOverlay) modalOverlay.classList.remove('active');
 }
 
-if (btnAddCustomer) {
-    btnAddCustomer.addEventListener('click', () => {
-        openModalForCreate();
-    });
-}
+// Note: btnAddCustomer click is handled by global-customer-modal.js (via customers.html inline script)
 
 // -- CREATE / UPDATE --
 if (btnSaveCustomer) {
@@ -552,17 +547,7 @@ if (btnSaveCustomer) {
     });
 }
 
-if (btnCancelAddCustomer) {
-    btnCancelAddCustomer.addEventListener('click', closeModal);
-}
-if (addCustomerModalWrapper) {
-    addCustomerModalWrapper.querySelector('.modal-close')?.addEventListener('click', closeModal);
-}
-if (modalOverlay) {
-    modalOverlay.addEventListener('click', (e) => {
-        if (e.target === modalOverlay) closeModal();
-    });
-}
+// Note: Cancel and close are handled by global-customer-modal.js
 
 // -- DELETE --
 async function deleteCustomer(id) {
