@@ -525,7 +525,7 @@ window.editSchedule = function(scheduleId) {
     
     // reset form
     DOM.form.reset();
-    if (DOM.applyFullMonth) DOM.applyFullMonth.checked = !!s.apply_full_month;
+    if (DOM.applyFullMonth) DOM.applyFullMonth.checked = false; // Default unchecked when editing to prevent accidental overwrite
 
     if (DOM.staffSelect) {
         DOM.staffSelect.value = s.staff_id;
@@ -565,7 +565,7 @@ window.editSchedule = function(scheduleId) {
     const todayStr = toISODate(today);
     let targetWeek = 0;
     for (let i = 0; i < currentMonthWeeks.length; i++) {
-        if (currentMonthWeeks[i].some(d => d > today)) {
+        if (currentMonthWeeks[i].some(d => d >= today)) {
             targetWeek = i;
             break;
         }
