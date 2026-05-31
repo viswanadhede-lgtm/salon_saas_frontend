@@ -1444,7 +1444,7 @@ async function renderTable() {
             todayShiftLine2 = 'Day Off';
         }
 
-        const shiftLine2Color = shiftIsOff ? '#ef4444' : '#1e293b';
+        const shiftLine2Color = shiftIsOff ? '#ef4444' : '#475569';
 
         // ── Column 4: Today Bookings ─────────────────────────────
         const bookingCount = todayBookingsMap.get(String(s.staff_id)) || 0;
