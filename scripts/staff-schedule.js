@@ -885,6 +885,18 @@ window.viewSchedule = function(scheduleId) {
             switchViewTab('month');
             
             const element = document.getElementById('tabMonthContent');
+            
+            // Inject temporary header for the PDF
+            const tempHeader = document.createElement('div');
+            tempHeader.id = 'pdfTempHeader';
+            tempHeader.style.marginBottom = '20px';
+            tempHeader.style.padding = '8px 16px 0 16px';
+            tempHeader.innerHTML = `
+                <h2 style="font-size: 1.25rem; font-weight: 700; color: #1e293b; margin: 0 0 4px 0; font-family: Inter, sans-serif;">Schedule: <span style="color:#6366f1;">${s.staff_name}</span></h2>
+                <p style="font-size: 0.875rem; color: #64748b; margin: 0; font-family: Inter, sans-serif; font-weight:500;">Target Month: <span style="color:#475569; font-weight:600;">${dateObj.toLocaleString('default', { month: 'long', year: 'numeric' })}</span></p>
+            `;
+            element.insertBefore(tempHeader, element.firstChild);
+
             const opt = {
                 margin:       0.3, 
                 filename:     `${s.staff_name.replace(/\W+/g, '_')}_Monthly_Schedule_${s.target_month}.pdf`,
@@ -903,10 +915,14 @@ window.viewSchedule = function(scheduleId) {
             html2pdf().set(opt).from(element).save().then(() => {
                 btnDownload.innerHTML = originalHTML;
                 btnDownload.disabled = false;
+                const h = document.getElementById('pdfTempHeader');
+                if (h) h.remove();
             }).catch(err => {
                 console.error(err);
                 btnDownload.innerHTML = originalHTML;
                 btnDownload.disabled = false;
+                const h = document.getElementById('pdfTempHeader');
+                if (h) h.remove();
                 if (window.showToast) showToast('Failed to download PDF', true);
             });
         };
