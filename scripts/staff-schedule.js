@@ -92,7 +92,7 @@ function initMonthScheduleData() {
         for (const date of week) {
             const dateStr       = toISODate(date);
             const jsDay         = date.getDay();
-            const isPastOrToday = date <= today;
+            const isPastOrToday = date < today;
             const isWeekday     = (jsDay !== 0 && jsDay !== 6) && !isPastOrToday;
             
             monthScheduleData[dateStr] = {
@@ -259,7 +259,7 @@ function renderDayRows() {
     today.setHours(0, 0, 0, 0);
 
     const htmlRows = patternDates.map((date, ix) => {
-        const isPastOrToday = date <= today;
+        const isPastOrToday = date < today;
         if (isPastOrToday) return ''; // Hide past dates completely
 
         const jsDay         = date.getDay();
@@ -1379,6 +1379,19 @@ async function handleFormSubmit(e) {
     if (!staffMember) {
         showToast('Invalid staff selection', true);
         return;
+    }
+
+    // ── Duplicate guard (create mode only) ───────────────────
+    if (!currentEditingScheduleId) {
+        const alreadyExists = rawSchedules.some(
+            s => String(s.staff_id) === String(staffId) && s.target_month === targetMonth
+        );
+        if (alreadyExists) {
+            const [dy, dm] = targetMonth.split('-').map(Number);
+            const monthLabel = new Date(dy, dm - 1, 1).toLocaleString('default', { month: 'long', year: 'numeric' });
+            showToast(`Schedule is already assigned to this staff for ${monthLabel}`, true);
+            return;
+        }
     }
 
     const [yyyy, mm] = targetMonth.split('-').map(Number);
