@@ -283,6 +283,30 @@ function updatePaginationUI() {
 // RENDER DAY ROWS IN MODAL  (date-aware)
 // ─────────────────────────────────────────────────────────────
 
+window.showInlinePopup = function(e, msg) {
+    const popup = document.createElement('div');
+    popup.textContent = msg;
+    popup.style.cssText = `
+        position: fixed;
+        left: ${e.clientX}px;
+        top: ${e.clientY - 35}px;
+        background: #1e293b;
+        color: #fff;
+        padding: 6px 12px;
+        font-size: 0.75rem;
+        border-radius: 6px;
+        box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+        z-index: 999999;
+        pointer-events: none;
+        white-space: nowrap;
+        opacity: 1;
+        transition: opacity 0.3s;
+    `;
+    document.body.appendChild(popup);
+    setTimeout(() => { popup.style.opacity = '0'; }, 1500);
+    setTimeout(() => { popup.remove(); }, 1800);
+};
+
 function renderDayRows() {
     if (!DOM.daysContainer) return;
 
@@ -328,8 +352,6 @@ function renderDayRows() {
                         background:${isPastOrToday ? '#f8fafc' : '#fff'}; padding:12px 16px; border-radius:8px; border:1px solid #e2e8f0;
                         box-shadow:0 1px 2px rgba(0,0,0,0.02); transition:border-color 0.2s; ${isPastOrToday ? 'opacity:0.6;' : ''}"
                  data-date="${dateStr}" data-idx="${ix}">
-                 
-                 ${isForcedByFullMonth ? `<div style="position:absolute; inset:0; z-index:10; border-radius:8px; cursor:not-allowed;" onclick="showToast('Please uncheck the apply to entire month box to make individual changes', true)"></div>` : ''}
 
                 <!-- Date column -->
                 <div style="font-weight:600; color:#334155; font-size:0.82rem;">
@@ -342,13 +364,14 @@ function renderDayRows() {
 
                 <!-- Active toggle -->
                 <div style="position:relative;">
-                    <label class="toggle-switch" style="position:relative; display:inline-block; width:44px; height:24px; ${(isPastOrToday || isForcedByFullMonth) ? 'cursor:not-allowed; opacity:0.7;' : ''}">
+                    ${isForcedByFullMonth ? `<div style="position:absolute; inset:-4px; z-index:10; cursor:pointer;" onclick="showInlinePopup(event, 'Please uncheck Apply to entire month to make changes')"></div>` : ''}
+                    <label class="toggle-switch" style="position:relative; display:inline-block; width:44px; height:24px; ${isPastOrToday ? 'cursor:not-allowed;' : ''}">
                         <input type="checkbox" id="chk_${ix}" class="day-active-chk" data-idx="${ix}" data-date="${dateStr}"
                                ${state.active && !isPastOrToday ? 'checked' : ''}
                                ${isPastOrToday || isForcedByFullMonth ? 'disabled' : ''}
                                style="opacity:0; width:0; height:0; position:absolute;">
                         <span class="slider round"
-                               style="position:absolute; cursor:${(isPastOrToday || isForcedByFullMonth) ? 'not-allowed' : 'pointer'}; top:0; left:0; right:0; bottom:0;
+                               style="position:absolute; cursor:${isPastOrToday ? 'not-allowed' : 'pointer'}; top:0; left:0; right:0; bottom:0;
                                       background-color:${(state.active && !isPastOrToday) ? '#10b981' : '#cbd5e1'};
                                       border-radius:24px; transition:.4s;">
                             <span style="position:absolute; height:18px; width:18px;
@@ -360,34 +383,37 @@ function renderDayRows() {
                 </div>
 
                 <!-- Start Time -->
-                <div>
+                <div style="position:relative;">
+                    ${isForcedByFullMonth ? `<div style="position:absolute; inset:0; z-index:10; cursor:pointer;" onclick="showInlinePopup(event, 'Please uncheck Apply to entire month to make changes')"></div>` : ''}
                     <input type="time" id="start_${ix}" class="form-input day-start" data-date="${dateStr}"
                            value="${state.start}"
                            ${(!state.active || isPastOrToday || isForcedByFullMonth) ? 'disabled' : ''}
                            ${minAttr}
                            style="width:100%; height:36px; padding:0 8px; font-size:0.85rem;
-                                  border:1px solid #e2e8f0; border-radius:6px; ${(isPastOrToday || isForcedByFullMonth) ? 'cursor:not-allowed; opacity:0.7;' : ''}">
+                                  border:1px solid #e2e8f0; border-radius:6px; ${(isPastOrToday) ? 'cursor:not-allowed;' : ''} ${(isForcedByFullMonth) ? 'opacity:0.7;' : ''}">
                 </div>
 
                 <!-- End Time -->
-                <div>
+                <div style="position:relative;">
+                    ${isForcedByFullMonth ? `<div style="position:absolute; inset:0; z-index:10; cursor:pointer;" onclick="showInlinePopup(event, 'Please uncheck Apply to entire month to make changes')"></div>` : ''}
                     <input type="time" id="end_${ix}" class="form-input day-end" data-date="${dateStr}"
                            value="${state.end}"
                            ${(!state.active || isPastOrToday || isForcedByFullMonth) ? 'disabled' : ''}
                            ${minAttr}
                            style="width:100%; height:36px; padding:0 8px; font-size:0.85rem;
-                                  border:1px solid #e2e8f0; border-radius:6px; ${(isPastOrToday || isForcedByFullMonth) ? 'cursor:not-allowed; opacity:0.7;' : ''}">
+                                  border:1px solid #e2e8f0; border-radius:6px; ${(isPastOrToday) ? 'cursor:not-allowed;' : ''} ${(isForcedByFullMonth) ? 'opacity:0.7;' : ''}">
                 </div>
 
                 <!-- Notes -->
-                <div>
+                <div style="position:relative;">
+                    ${isForcedByFullMonth ? `<div style="position:absolute; inset:0; z-index:10; cursor:pointer;" onclick="showInlinePopup(event, 'Please uncheck Apply to entire month to make changes')"></div>` : ''}
                     <textarea id="notes_${ix}" class="form-input day-notes" data-date="${dateStr}"
                               placeholder="${isForcedByFullMonth ? 'Synced with Week 1' : 'Notes...'}"
                               ${(!state.active || isPastOrToday || isForcedByFullMonth) ? 'disabled' : ''}
                               style="width:100%; height:36px; padding:6px 8px; font-size:0.82rem;
                                      border:1px solid #e2e8f0; border-radius:6px; resize:none;
                                      font-family:inherit; box-sizing:border-box;
-                                     ${(isPastOrToday || isForcedByFullMonth) ? 'cursor:not-allowed; opacity:0.7; background:#f1f5f9;' : ''}">${state.notes}</textarea>
+                                     ${(isPastOrToday) ? 'cursor:not-allowed; background:#f1f5f9;' : ''} ${(isForcedByFullMonth) ? 'opacity:0.7; background:#f1f5f9;' : ''}">${state.notes}</textarea>
                 </div>
             </div>
         `;
