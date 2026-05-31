@@ -826,16 +826,20 @@ window.viewSchedule = function(scheduleId) {
             const dateStr = toISODate(dateObj);
             const entry = s.schedule_entries.find(e => e.schedule_date === dateStr);
             const isActive = entry && !entry.is_off;
-            const start = isActive ? entry.start_time : 'Off';
+            
+            const dateNumStr = String(dateObj.getDate()).padStart(2, '0');
+            const topStr = `${dayCode} ${dateNumStr}`;
 
             if (isActive) {
+                const shiftTimings = `${fmt12(entry.start_time)} - ${fmt12(entry.end_time)}`;
+                
                 return `<div style="display:flex; flex-direction:column; background:#e0e7ff; padding:6px; border-radius:6px; flex:1; text-align:center; border:1px solid #c7d2fe;">
-                 <span style="font-size:0.7rem; font-weight:700; color:#4338ca; text-transform:uppercase;">${dayCode}</span>
-                 <span style="font-size:0.75rem; font-weight:600; color:#312e81; margin-top:2px;">${start}</span>
+                 <span style="font-size:0.7rem; font-weight:700; color:#4338ca; text-transform:uppercase;">${topStr}</span>
+                 <span style="font-size:0.65rem; font-weight:600; color:#312e81; margin-top:2px; line-height:1.2;">${shiftTimings}</span>
                </div>`;
             } else {
                 return `<div style="display:flex; flex-direction:column; background:#f1f5f9; padding:6px; border-radius:6px; flex:1; text-align:center; border:1px dashed #cbd5e1; opacity:0.6;">
-                 <span style="font-size:0.7rem; font-weight:600; color:#94a3b8; text-transform:uppercase;">${dayCode}</span>
+                 <span style="font-size:0.7rem; font-weight:600; color:#94a3b8; text-transform:uppercase;">${topStr}</span>
                  <span style="font-size:0.75rem; font-weight:500; color:#cbd5e1; margin-top:2px;">Off</span>
                </div>`;
             }
