@@ -768,26 +768,34 @@ window.viewSchedule = function(scheduleId) {
     const DAY_ORDER = ['Mon','Tue','Wed','Thu','Fri','Sat','Sun'];
 
     // Populate This Week
+    const fullDayMap = { 'Mon': 'Monday', 'Tue': 'Tuesday', 'Wed': 'Wednesday', 'Thu': 'Thursday', 'Fri': 'Friday', 'Sat': 'Saturday', 'Sun': 'Sunday' };
+    
     const weekHtml = s.days.map((d, index) => {
-        // Calculate exact date string e.g. "Jun 1"
+        // Calculate exact date string e.g. "01-06-2026"
         const dayOffset = DAY_ORDER.indexOf(d.day);
         const exactDate = new Date(mondayBtn);
         exactDate.setDate(mondayBtn.getDate() + dayOffset);
-        const dateFormatted = exactDate.toLocaleDateString('en-GB', { day: 'numeric', month: 'short' });  // "1 Jun" or "30 May"
+        
+        const dd = String(exactDate.getDate()).padStart(2, '0');
+        const mmStr = String(exactDate.getMonth() + 1).padStart(2, '0');
+        const yyyyStr = exactDate.getFullYear();
+        const dateFormatted = `${dd}-${mmStr}-${yyyyStr}`;
+        
+        const fullDayName = fullDayMap[d.day] || d.day;
 
         if (d.active) {
             return `
-                <div style="display:grid; grid-template-columns:100px 100px 150px 1fr; gap:12px; align-items:center; background:#fff; padding:12px 16px; border-radius:8px; border:1px solid #e2e8f0;">
+                <div style="display:grid; grid-template-columns:repeat(4, 1fr); gap:12px; align-items:center; background:#fff; padding:12px 16px; border-radius:8px; border:1px solid #e2e8f0;">
                     <div style="font-size:0.875rem; color:#475569; font-weight:600;">${dateFormatted}</div>
-                    <div style="font-weight:600; color:#334155; font-size:0.875rem;">${d.day}</div>
+                    <div style="font-weight:600; color:#334155; font-size:0.875rem;">${fullDayName}</div>
                     <div style="font-size:0.85rem; color:#475569; font-weight:600;">${fmt12(d.start)} - ${fmt12(d.end)}</div>
                     <div style="font-size:0.85rem; color:#64748b; font-style:italic;">${d.notes || '-'}</div>
                 </div>`;
         } else {
             return `
-                <div style="display:grid; grid-template-columns:100px 100px 150px 1fr; gap:12px; align-items:center; background:#f8fafc; padding:12px 16px; border-radius:8px; border:1px dashed #cbd5e1; opacity:0.8;">
+                <div style="display:grid; grid-template-columns:repeat(4, 1fr); gap:12px; align-items:center; background:#f8fafc; padding:12px 16px; border-radius:8px; border:1px dashed #cbd5e1; opacity:0.8;">
                     <div style="font-size:0.875rem; color:#94a3b8; font-weight:600;">${dateFormatted}</div>
-                    <div style="font-weight:600; color:#94a3b8; font-size:0.875rem;">${d.day}</div>
+                    <div style="font-weight:600; color:#94a3b8; font-size:0.875rem;">${fullDayName}</div>
                     <div style="font-size:0.85rem; color:#94a3b8; font-weight:600;">Off</div>
                     <div style="font-size:0.85rem; color:#cbd5e1;">-</div>
                 </div>`;
