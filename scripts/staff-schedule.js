@@ -742,6 +742,44 @@ window.viewSchedule = function(scheduleId) {
         scopeBdg.style.background = '#fef9c3'; scopeBdg.style.color = '#854d0e';
     }
 
+    // Wire up Share Button
+    document.getElementById('btnShareSchedule').onclick = () => {
+        let bodyText = `Hi ${s.staff_name},\n\nHere is your schedule for ${dateObj.toLocaleString('default', { month: 'long', year: 'numeric' })}:\n\n`;
+        bodyText += `--- Weekly Pattern ---\n`;
+        const fullDayMap = { 'Mon': 'Monday', 'Tue': 'Tuesday', 'Wed': 'Wednesday', 'Thu': 'Thursday', 'Fri': 'Friday', 'Sat': 'Saturday', 'Sun': 'Sunday' };
+        s.days.forEach(d => {
+            if (d.active) {
+                function fmt(t) {
+                    if (!t) return '';
+                    const [h, m] = t.split(':').map(Number);
+                    return `${h % 12 || 12}:${String(m).padStart(2, '0')} ${h >= 12 ? 'PM' : 'AM'}`;
+                }
+                bodyText += `${fullDayMap[d.day] || d.day}: ${fmt(d.start)} - ${fmt(d.end)}\n`;
+            } else {
+                bodyText += `${fullDayMap[d.day] || d.day}: Off\n`;
+            }
+        });
+
+        if (s.schedule_entries && s.schedule_entries.length > 0) {
+            bodyText += `\n--- Specific Overrides ---\n`;
+            s.schedule_entries.forEach(e => {
+                function fmt(t) {
+                    if (!t) return '';
+                    const [h, m] = t.split(':').map(Number);
+                    return `${h % 12 || 12}:${String(m).padStart(2, '0')} ${h >= 12 ? 'PM' : 'AM'}`;
+                }
+                bodyText += `${e.schedule_date}: ${e.is_off ? 'Off' : fmt(e.start_time) + ' - ' + fmt(e.end_time)}\n`;
+            });
+        }
+        
+        bodyText += `\nTotal Hours: ${s.total_hours} hrs/week\n`;
+        bodyText += `\nPlease let us know if you have any questions.\n`;
+
+        const subject = encodeURIComponent(`Your Schedule: ${dateObj.toLocaleString('default', { month: 'long', year: 'numeric' })}`);
+        const body = encodeURIComponent(bodyText);
+        window.location.href = `mailto:?subject=${subject}&body=${body}`;
+    };
+
     // Helpers for Date & Time Mapping
     function fmt12(t) {
         if (!t || typeof t !== 'string') return '';
