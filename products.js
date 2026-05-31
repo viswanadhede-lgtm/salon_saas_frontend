@@ -290,7 +290,7 @@ function renderCategoriesTable() {
                     <div><p style="font-weight:600;color:#1e293b;margin:0;font-size:0.9rem;">${c.category_name || '-'}</p></div>
                 </div>
             </td>
-            <td style="padding:16px;"><span style="font-size:0.9rem;font-weight:700;color:#334155;">${pCount}</span><span style="font-size:0.8rem;color:#94a3b8;margin-left:5px;">items</span></td>
+            <td style="padding:16px;"><span style="font-size:0.9rem;font-weight:700;color:#334155;">${pCount}</span><span style="font-size:0.8rem;color:#94a3b8;margin-left:5px;">${pCount === 1 ? 'product' : 'products'}</span></td>
             <td style="padding:16px; vertical-align:middle;">
                 <div class="action-buttons" style="display:flex; justify-content:flex-end; gap:0.5rem;">
                     <button class="hover-lift" data-sub-feature="update_product_category" onclick="window.openEditCategoryModal('${c.category_id || c.id}')" title="Edit Category" style="display:flex; flex-direction:column; align-items:center; justify-content:center; padding: 4px 8px; border-radius:8px; border:1px solid #e0e7ff; background:#eff6ff; cursor:pointer; color:#3b82f6; transition:all 0.2s; min-width: 52px;">
