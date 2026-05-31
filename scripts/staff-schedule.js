@@ -744,22 +744,51 @@ window.viewSchedule = function(scheduleId) {
         scopeBdg.style.background = '#fef9c3'; scopeBdg.style.color = '#854d0e';
     }
 
+    // Helpers for Date & Time Mapping
+    function fmt12(t) {
+        if (!t || typeof t !== 'string') return '';
+        const [h, m] = t.split(':').map(Number);
+        const period = h >= 12 ? 'PM' : 'AM';
+        const h12 = h % 12 || 12;
+        return `${h12}:${String(m).padStart(2, '0')} ${period}`;
+    }
+
+    let targetWeekDateObjBtn;
+    if (s.target_month === currentMonthVal) {
+        targetWeekDateObjBtn = now;
+    } else {
+        const [fYear, fMonth] = s.target_month.split('-').map(Number);
+        targetWeekDateObjBtn = new Date(fYear, fMonth - 1, 1);
+    }
+    const isoTargetIdxBtn = (targetWeekDateObjBtn.getDay() + 6) % 7; 
+    const mondayBtn = new Date(targetWeekDateObjBtn);
+    mondayBtn.setDate(targetWeekDateObjBtn.getDate() - isoTargetIdxBtn);
+    mondayBtn.setHours(0, 0, 0, 0);
+
+    const DAY_ORDER = ['Mon','Tue','Wed','Thu','Fri','Sat','Sun'];
+
     // Populate This Week
-    const weekHtml = s.days.map(d => {
+    const weekHtml = s.days.map((d, index) => {
+        // Calculate exact date string e.g. "Jun 1"
+        const dayOffset = DAY_ORDER.indexOf(d.day);
+        const exactDate = new Date(mondayBtn);
+        exactDate.setDate(mondayBtn.getDate() + dayOffset);
+        const dateFormatted = exactDate.toLocaleDateString('en-GB', { day: 'numeric', month: 'short' });  // "1 Jun" or "30 May"
+
         if (d.active) {
             return `
                 <div style="display:grid; grid-template-columns:100px 100px 150px 1fr; gap:12px; align-items:center; background:#fff; padding:12px 16px; border-radius:8px; border:1px solid #e2e8f0;">
+                    <div style="font-size:0.875rem; color:#475569; font-weight:600;">${dateFormatted}</div>
                     <div style="font-weight:600; color:#334155; font-size:0.875rem;">${d.day}</div>
-                    <div><span style="background:#dcfce7; color:#16a34a; padding:3px 8px; border-radius:12px; font-size:0.75rem; font-weight:600;">Active</span></div>
-                    <div style="font-size:0.85rem; color:#475569;">${d.start} - ${d.end}</div>
+                    <div style="font-size:0.85rem; color:#475569; font-weight:600;">${fmt12(d.start)} - ${fmt12(d.end)}</div>
                     <div style="font-size:0.85rem; color:#64748b; font-style:italic;">${d.notes || '-'}</div>
                 </div>`;
         } else {
             return `
                 <div style="display:grid; grid-template-columns:100px 100px 150px 1fr; gap:12px; align-items:center; background:#f8fafc; padding:12px 16px; border-radius:8px; border:1px dashed #cbd5e1; opacity:0.8;">
-                    <div style="font-weight:600; color:#64748b; font-size:0.875rem;">${d.day}</div>
-                    <div><span style="background:#f1f5f9; color:#94a3b8; padding:3px 8px; border-radius:12px; font-size:0.75rem; font-weight:600;">Inactive</span></div>
-                    <div style="font-size:0.85rem; color:#94a3b8;">Off</div>
+                    <div style="font-size:0.875rem; color:#94a3b8; font-weight:600;">${dateFormatted}</div>
+                    <div style="font-weight:600; color:#94a3b8; font-size:0.875rem;">${d.day}</div>
+                    <div style="font-size:0.85rem; color:#94a3b8; font-weight:600;">Off</div>
                     <div style="font-size:0.85rem; color:#cbd5e1;">-</div>
                 </div>`;
         }
@@ -770,7 +799,6 @@ window.viewSchedule = function(scheduleId) {
     const monthHtmlArray = [];
     const targetWeeks = generateMonthWeeks(parseInt(yyyy), parseInt(mm) - 1);
     
-    const DAY_ORDER = ['Mon','Tue','Wed','Thu','Fri','Sat','Sun'];
     const jsDayMap = { 'Mon': 1, 'Tue': 2, 'Wed': 3, 'Thu': 4, 'Fri': 5, 'Sat': 6, 'Sun': 0 };
 
     for(let w = 0; w < targetWeeks.length; w++) {
