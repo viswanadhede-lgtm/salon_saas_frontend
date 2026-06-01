@@ -468,7 +468,7 @@
                     <td style="padding:14px 16px;">
                         <button class="hover-lift" onclick="window.openCatServicesModal('${catName.replace(/'/g, "\\'")}')" style="cursor:${cnt>0?'pointer':'default'}; display:inline-flex; align-items:center; gap:6px; background:#eff6ff; border:1px solid #bfdbfe; padding:6px 14px; border-radius:20px; transition:all 0.2s; box-shadow:0 2px 4px rgba(0,0,0,0.04);" ${cnt>0?`title="View services in ${catName.replace(/"/g, '&quot;')}"`:''}>
                             <span style="font-size:0.85rem; font-weight:700; color:#1d4ed8;">${cnt}</span>
-                            <span style="font-size:0.85rem; font-weight:600; color:#0f172a;">${cnt === 1 ? 'service' : 'services'}</span>
+                            <span style="font-size:0.85rem; font-weight:600; color:#475569;">${cnt === 1 ? 'service' : 'services'}</span>
                         </button>
                     </td>
                     <td style="padding:14px 16px;">${statusBadge(catStatus)}</td>
@@ -533,7 +533,7 @@
                     <td style="padding:14px 16px; text-align:center;">
                         <button class="hover-lift" onclick="window.openPkgServicesModal('${p.package_id}', '${pName.replace(/'/g, "\\'")}')" style="cursor:pointer; display:inline-flex; align-items:center; gap:6px; background:#eff6ff; border:1px solid #bfdbfe; padding:6px 14px; border-radius:20px; transition:all 0.2s; box-shadow:0 2px 4px rgba(0,0,0,0.04);" title="View services in ${pName.replace(/"/g, '&quot;')}">
                             <span style="font-size:0.85rem; font-weight:700; color:#1d4ed8;">${cnt}</span>
-                            <span style="font-size:0.85rem; font-weight:600; color:#0f172a;">${cnt === 1 ? 'service' : 'services'}</span>
+                            <span style="font-size:0.85rem; font-weight:600; color:#475569;">${cnt === 1 ? 'service' : 'services'}</span>
                         </button>
                     </td>
                     <td style="padding:14px 16px;color:#374151;">&#8377;${parseFloat(p.original_price||0).toLocaleString()}</td>
