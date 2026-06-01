@@ -291,7 +291,10 @@ function renderCategoriesTable() {
                 </div>
             </td>
             <td style="padding:14px 16px; text-align:left;">
-                <span style="cursor:pointer;color:#3b82f6;font-weight:700;font-size:0.9rem;" onclick="window.openCatProductsModal('${(c.category_name || '').replace(/'/g, "\\'")}')">${pCount}</span><span style="color:#334155;margin-left:6px;font-size:0.85rem;font-weight:500;">${pCount === 1 ? 'product' : 'products'}</span>
+                <span class="hover-lift" onclick="window.openCatProductsModal('${(c.category_name || '').replace(/'/g, "\\'")}')" style="cursor:pointer; display:inline-flex; align-items:center; gap:6px; background:#eff6ff; border:1px solid #dbeafe; padding:4px 12px; border-radius:20px; transition:all 0.2s;">
+                    <span style="font-size:0.85rem; font-weight:700; color:#1d4ed8;">${pCount}</span>
+                    <span style="font-size:0.8rem; font-weight:500; color:#3b82f6;">${pCount === 1 ? 'product' : 'products'}</span>
+                </span>
             </td>
             <td style="padding:14px 16px; vertical-align:middle;">
                 <div class="action-buttons" style="display:flex; justify-content:flex-start; gap:0.5rem;">
