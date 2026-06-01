@@ -291,9 +291,9 @@ function renderCategoriesTable() {
                 </div>
             </td>
             <td style="padding:14px 16px; text-align:left;">
-                <button class="hover-lift" onclick="window.openCatProductsModal('${(c.category_name || '').replace(/'/g, "\\'")}')" style="cursor:pointer; display:inline-flex; align-items:center; gap:8px; background:#ffffff; border:1px solid #e2e8f0; padding:6px 12px; border-radius:20px; transition:all 0.2s; box-shadow:0 1px 2px rgba(0,0,0,0.05);">
-                    <span style="font-size:0.85rem; font-weight:600; color:#475569;">Products</span>
-                    <span style="display:inline-flex; align-items:center; justify-content:center; min-width:22px; height:22px; background:#dbeafe; color:#1d4ed8; border-radius:12px; font-size:0.75rem; font-weight:700; padding:0 6px;">${pCount}</span>
+                <button class="hover-lift" onclick="window.openCatProductsModal('${(c.category_name || '').replace(/'/g, "\\'")}')" style="cursor:pointer; display:inline-flex; align-items:center; gap:6px; background:#eff6ff; border:1px solid #bfdbfe; padding:6px 14px; border-radius:20px; transition:all 0.2s; box-shadow:0 2px 4px rgba(0,0,0,0.04);">
+                    <span style="font-size:0.85rem; font-weight:700; color:#1d4ed8;">${pCount}</span>
+                    <span style="font-size:0.85rem; font-weight:600; color:#3b82f6;">${pCount === 1 ? 'product' : 'products'}</span>
                 </button>
             </td>
             <td style="padding:14px 16px; vertical-align:middle;">
