@@ -828,7 +828,17 @@ window.openCatProductsModal = function (catName) {
     const title = document.getElementById('catProductsModalTitle');
     const body = document.getElementById('catProductsModalBody');
     
-    title.innerHTML = `${catName} <span style="display: inline-flex; align-items: center; justify-content: center; min-width: 26px; height: 26px; border-radius: 50%; background-color: #eff6ff; color: #1e3a8a; font-size: 0.9rem; font-weight: 600; margin-left: 8px; vertical-align: middle; padding: 0 6px;">${products.length}</span>`;
+    title.style.display = 'flex';
+    title.style.flexDirection = 'column';
+    title.style.alignItems = 'flex-start';
+    title.style.lineHeight = '1.2';
+    title.innerHTML = `
+        <div style="display:flex; align-items:center;">
+            <span style="color:#2563eb;">${catName}</span>
+            <span style="display: inline-flex; align-items: center; justify-content: center; min-width: 26px; height: 26px; border-radius: 50%; background-color: #eff6ff; color: #1e3a8a; font-size: 0.9rem; font-weight: 600; margin-left: 8px; vertical-align: middle; padding: 0 6px;">${products.length}</span>
+        </div>
+        <div style="font-size: 0.85rem; color: #64748b; font-weight: 500; margin-top: 6px;">Products under this category</div>
+    `;
     
     if (!products.length) {
         body.innerHTML = '<tr><td colspan="3" style="padding:40px;text-align:center;"><div style="font-size:2rem;margin-bottom:10px;">📦</div><div style="color:#64748b;font-weight:500;font-size:0.92rem;">No products listed in this category yet.</div></td></tr>';
