@@ -290,7 +290,12 @@ function renderCategoriesTable() {
                     <div><p style="font-weight:600;color:#1e293b;margin:0;font-size:0.9rem;">${c.category_name || '-'}</p></div>
                 </div>
             </td>
-            <td style="padding:14px 16px;"><span style="font-size:0.9rem;font-weight:700;color:#334155;">${pCount}</span><span style="font-size:0.8rem;color:#94a3b8;margin-left:5px;">${pCount === 1 ? 'product' : 'products'}</span></td>
+            <td style="padding:14px 16px; text-align:left;">
+                <span class="hover-lift" onclick="window.openCatProductsModal('${(c.category_name || '').replace(/'/g, "\\'")}')" style="cursor:pointer; display:inline-flex; align-items:center; gap:6px; background:#eff6ff; border:1px solid #dbeafe; padding:4px 12px; border-radius:20px; transition:all 0.2s;">
+                    <span style="font-size:0.85rem; font-weight:700; color:#1d4ed8;">${pCount}</span>
+                    <span style="font-size:0.8rem; font-weight:500; color:#3b82f6;">${pCount === 1 ? 'product' : 'products'}</span>
+                </span>
+            </td>
             <td style="padding:14px 16px; vertical-align:middle;">
                 <div class="action-buttons" style="display:flex; justify-content:flex-start; gap:0.5rem;">
                     <button class="hover-lift" data-sub-feature="update_product_category" onclick="window.openEditCategoryModal('${c.category_id || c.id}')" title="Edit Category" style="display:flex; flex-direction:column; align-items:center; justify-content:center; padding: 4px 8px; border-radius:8px; border:1px solid #e0e7ff; background:#eff6ff; cursor:pointer; color:#3b82f6; transition:all 0.2s; min-width: 52px;">
@@ -813,6 +818,35 @@ window.openAddCategoryModal = function () {
     window.selectCatStatus('Active');
     document.getElementById('addCategoryModalOverlay').classList.add('active');
     if (window.feather) feather.replace();
+};
+
+window.openCatProductsModal = function (catName) {
+    const products = liveProductsData.filter(p => p.category_name === catName);
+    const modal = document.getElementById('catProductsModal');
+    if(!modal) return;
+    
+    const title = document.getElementById('catProductsModalTitle');
+    const body = document.getElementById('catProductsModalBody');
+    
+    title.innerHTML = `${catName} <span style="display: inline-flex; align-items: center; justify-content: center; min-width: 26px; height: 26px; border-radius: 50%; background-color: #eff6ff; color: #1e3a8a; font-size: 0.9rem; font-weight: 600; margin-left: 8px; vertical-align: middle; padding: 0 6px;">${products.length}</span>`;
+    
+    if (!products.length) {
+        body.innerHTML = '<tr><td colspan="3" style="padding:40px;text-align:center;"><div style="font-size:2rem;margin-bottom:10px;">📦</div><div style="color:#64748b;font-weight:500;font-size:0.92rem;">No products listed in this category yet.</div></td></tr>';
+    } else {
+        body.innerHTML = products.map(p => {
+            const name = p.product_name || p.name || '';
+            const stock = p.stock_quantity || 0;
+            const price = p.price != null ? '&#8377;' + parseFloat(p.price).toLocaleString('en-IN') : '—';
+            return `<tr class="tb-row">
+                <td style="padding:12px 16px 12px 24px;font-weight:500;color:#1e293b;">${name}</td>
+                <td style="padding:12px 16px;color:#475569;font-weight:500;">
+                    ${stock <= 5 && stock > 0 ? `<span style="color:#f59e0b;">Low: ${stock}</span>` : stock == 0 ? `<span style="color:#ef4444;">Out</span>` : stock}
+                </td>
+                <td style="padding:12px 16px;color:#15803d;font-weight:600;">${price}</td>
+            </tr>`;
+        }).join('');
+    }
+    modal.classList.add('active');
 };
 
 window.openEditProductModal = function (id) {

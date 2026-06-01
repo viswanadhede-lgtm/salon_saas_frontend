@@ -1171,6 +1171,31 @@
         </div>
     </div>
 
+    <!-- Category Products Modal -->
+    <div class="modal-overlay" id="catProductsModal" onclick="if(event.target===this)this.classList.remove('active')">
+        <div class="modal-container" style="width:550px;max-width:95vw;">
+            <div class="modal-header">
+                <div>
+                    <h2 id="catProductsModalTitle" style="display:flex;align-items:center;">Category Products</h2>
+                </div>
+                <button class="modal-close" onclick="document.getElementById('catProductsModal').classList.remove('active')"><i data-feather="x"></i></button>
+            </div>
+            <div class="modal-body" style="padding:0;max-height:60vh;overflow-y:auto;">
+                <table style="width:100%;border-collapse:collapse;font-size:0.875rem;">
+                    <thead style="position:sticky;top:0;background:#f8fafc;z-index:2;border-bottom:1px solid #e2e8f0;">
+                        <tr>
+                            <th style="padding:10px 16px 10px 24px;text-align:left;font-weight:600;color:#64748b;text-transform:uppercase;font-size:0.75rem;letter-spacing:0.05em;">Product Name</th>
+                            <th style="padding:10px 16px;text-align:left;font-weight:600;color:#64748b;text-transform:uppercase;font-size:0.75rem;letter-spacing:0.05em;">Stock</th>
+                            <th style="padding:10px 16px;text-align:left;font-weight:600;color:#64748b;text-transform:uppercase;font-size:0.75rem;letter-spacing:0.05em;">Price</th>
+                        </tr>
+                    </thead>
+                    <tbody id="catProductsModalBody">
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
 <script src="logout.js"></script><script src="change-password.js"></script>    <script type="module" src="scripts/global-auth-guard.js"></script>
     <script type="module" src="scripts/sub-features/sub-feature-gate.js"></script>
 </body>
