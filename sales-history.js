@@ -914,29 +914,34 @@ document.addEventListener('DOMContentLoaded', () => {
             if (sdItemsList) {
                 sdItemsList.innerHTML = '';
                 let subtotal = 0;
+                let rowsHTML = '';
 
                 (items || []).forEach(item => {
                     const lineTotal = Number(item.total_amount || 0);
-                    const isRefunded = item.status === 'refunded';
-                    subtotal += isRefunded ? 0 : lineTotal; // Don't add refunded lines to subtotal
+                    const qty = Number(item.quantity || 1);
+                    const isRefunded = (item.status === 'refunded');
+                    subtotal += isRefunded ? 0 : lineTotal; 
 
-                    const row = document.createElement('tr');
-                    row.style.borderBottom = '1px solid #f1f5f9';
-                    if (isRefunded) {
-                        row.style.background = '#f8fafc';
-                        row.style.opacity = '0.7';
-                    }
-                    
-                    row.innerHTML = `
-                        <td style="padding:12px 16px; font-size:0.875rem; color:#334155; text-decoration: ${isRefunded ? 'line-through' : 'none'};">
-                            ${item.product_name || 'Product'} ${isRefunded ? '<span style="color:#dc2626; font-size:0.7rem; font-weight:600; margin-left:8px; text-transform:uppercase;">Returned</span>' : ''}
-                        </td>
-                        <td style="padding:12px 16px; font-size:0.875rem; color:#475569; text-align:center;">${item.quantity || 1}</td>
-                        <td style="padding:12px 16px; font-size:0.875rem; color:#475569; text-align:right;">₹${Number(item.price || 0).toLocaleString('en-IN')}</td>
-                        <td style="padding:12px 16px; font-size:0.875rem; color:#1e293b; font-weight:600; text-align:right; text-decoration: ${isRefunded ? 'line-through' : 'none'};">₹${lineTotal.toLocaleString('en-IN')}</td>
+                    let calculatedPrice = 0;
+                    if (qty > 0) calculatedPrice = lineTotal / qty;
+
+                    const rowBg = isRefunded ? 'background: #f8fafc; opacity: 0.7;' : '';
+                    const strike = isRefunded ? 'text-decoration: line-through;' : '';
+                    const badge = isRefunded ? '<span style="color:#dc2626; font-size:0.7rem; font-weight:600; margin-left:8px; text-transform:uppercase;">Returned</span>' : '';
+
+                    rowsHTML += `
+                        <tr style="border-bottom: 1px solid #f1f5f9; ${rowBg}">
+                            <td style="padding:12px 16px; font-size:0.875rem; color:#334155; ${strike}">
+                                ${item.product_name || 'Product'} ${badge}
+                            </td>
+                            <td style="padding:12px 16px; font-size:0.875rem; color:#475569; text-align:center;">${qty}</td>
+                            <td style="padding:12px 16px; font-size:0.875rem; color:#475569; text-align:right;">₹${calculatedPrice.toLocaleString('en-IN', {maximumFractionDigits:2})}</td>
+                            <td style="padding:12px 16px; font-size:0.875rem; color:#1e293b; font-weight:600; text-align:right; ${strike}">₹${lineTotal.toLocaleString('en-IN', {maximumFractionDigits:2})}</td>
+                        </tr>
                     `;
-                    sdItemsList.appendChild(row);
                 });
+                
+                sdItemsList.innerHTML = rowsHTML;
 
                 if (sdSubtotal) sdSubtotal.textContent = `₹${subtotal.toLocaleString('en-IN')}`;
                 if (sdTax)      sdTax.textContent      = `₹0`; // Placeholder
