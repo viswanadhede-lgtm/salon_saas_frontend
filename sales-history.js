@@ -204,7 +204,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 if (parts.length > 0) {
                     const formatPart = (p) => {
                         const match = p.match(/^(\d+)\s*\*\s*(.+)$/);
-                        if (match) return `${match[2]} &times;${match[1]}`;
+                        if (match) return `${match[2]} - ${match[1]}`;
                         return p;
                     };
                     const firstPart = formatPart(parts[0]);
