@@ -207,21 +207,28 @@ document.addEventListener('DOMContentLoaded', () => {
                         if (match) return `${match[2]} - ${match[1]}`;
                         return p;
                     };
-                    const firstPart = formatPart(parts[0]);
                     
-                    if (parts.length === 1) {
-                        productDisplayHtml = `<span>${firstPart}</span>`;
+                    const chipStyle = `display:inline-block;padding:2px 8px;border-radius:20px;font-size:0.75rem;font-weight:500;color:#334155;margin:1px 2px 1px 0;white-space:nowrap;`;
+                    
+                    const formattedParts = parts.map(formatPart);
+                    const firstChip = `<span style="${chipStyle}">${formattedParts[0]}</span>`;
+                    
+                    if (formattedParts.length === 1) {
+                        productDisplayHtml = firstChip;
                     } else {
-                        const othersHtml = parts.slice(1).map(p => `<div style="padding:4px 0;">${formatPart(p)}</div>`).join('');
-                        productDisplayHtml = `
-                            <div style="position:relative; display:flex; align-items:center; gap:6px; flex-wrap:wrap;">
-                                <span style="white-space:nowrap;">${firstPart}</span>
-                                <span class="hover-lift" style="cursor:pointer; background:#eff6ff; color:#3b82f6; font-size:0.75rem; font-weight:600; padding:2px 6px; border-radius:10px; border:1px solid #dbeafe; transition:all 0.2s;" onclick="event.stopPropagation(); const el = this.nextElementSibling; if (el) el.style.display = el.style.display === 'none' ? 'block' : 'none';">+${parts.length - 1}</span>
-                                <div class="others-dropdown" style="display:none; position:absolute; top:calc(100% + 4px); left:0; z-index:50; background:#fff; border:1px solid #e2e8f0; padding:4px 12px; border-radius:8px; box-shadow:0 10px 15px -3px rgba(0,0,0,0.1); min-width:max-content; white-space:nowrap; text-align:left;">
-                                    ${othersHtml}
-                                </div>
+                        const extraCount = formattedParts.length - 1;
+                        const extraId = `prod-extra-${sale.id}`;
+                        const toggleId = `prod-toggle-${sale.id}`;
+                        const extraChips = formattedParts.slice(1).map(s => `<span style="${chipStyle}">${s}</span>`).join('');
+                        productDisplayHtml = `<div style="display:flex;flex-wrap:wrap;align-items:flex-start;gap:2px;width:100%;">
+                            ${firstChip}
+                            <span id="${toggleId}"
+                                onclick="event.stopPropagation(); window.toggleProdExtra('${extraId}', '${toggleId}', ${extraCount})"
+                                style="display:inline-block;padding:2px 7px;border-radius:20px;font-size:0.7rem;font-weight:600;background:#e0e7ff;color:#4f46e5;cursor:pointer;white-space:nowrap;user-select:none;">+${extraCount}</span>
+                            <div id="${extraId}" style="display:none;flex-wrap:wrap;gap:2px;width:100%;margin-top:3px;">
+                                ${extraChips}
                             </div>
-                        `;
+                        </div>`;
                     }
                 }
             }
@@ -1039,3 +1046,12 @@ function hsExportData(format) {
 }
 
 window.hsExportData = hsExportData;
+
+window.toggleProdExtra = function(extraId, toggleId, extraCount) {
+    var el  = document.getElementById(extraId);
+    var tog = document.getElementById(toggleId);
+    if (!el || !tog) return;
+    var isHidden = el.style.display === 'none' || el.style.display === '';
+    el.style.display  = isHidden ? 'flex' : 'none';
+    tog.textContent   = isHidden ? '▲ less' : '+' + extraCount;
+};
