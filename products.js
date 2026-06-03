@@ -306,7 +306,7 @@ function renderProductsTable() {
             <td style="padding:14px 16px;"><span style="background:#f1f5f9;padding:3px 8px;border-radius:6px;font-size:0.8rem;color:#475569;">${p.category_name || 'Uncategorized'}</span></td>
             <td style="padding:14px 16px;color:#374151;font-weight:500;font-size:0.9rem;">&#8377;${p.price || 0}</td>
             <td style="padding:14px 16px;">${stockBadge(p.stock_quantity || 0)}</td>
-            <td style="padding:14px 16px;">
+            <td style="padding:14px 4px 14px 16px;">
                 ${p.product_image_url || p.image_url || p.photo_url 
                     ? `<img src="${p.product_image_url || p.image_url || p.photo_url}" style="width:40px; height:40px; border-radius:8px; object-fit:cover; border:1px solid #cbd5e1; padding:2px; background:#ffffff; cursor:pointer;" alt="${p.product_name}" onclick="window.openImageViewer('${p.product_image_url || p.image_url || p.photo_url}')">` 
                     : `<div style="width:40px; height:40px; border-radius:8px; background:#f8fafc; border:1px dashed #cbd5e1; display:flex; align-items:center; justify-content:center; color:#94a3b8;"><i data-feather="image" style="width:18px; height:18px;"></i></div>`}
