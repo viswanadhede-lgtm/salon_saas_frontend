@@ -228,7 +228,12 @@ document.addEventListener('DOMContentLoaded', () => {
 
             tr.innerHTML = `
                 <td style="padding:14px 16px 14px 24px; color:#475569; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">${sale.date}</td>
-                <td style="padding:14px 16px; color:#1e293b; font-weight:500; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">${sale.customer}</td>
+                <td style="padding:14px 16px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">
+                    ${sale.customer_id 
+                        ? `<span class="customer-link" style="font-weight:600; cursor:pointer;" onclick="event.stopPropagation(); window.viewCustomerProfile('${sale.customer_id}', '${(sale.customer || '').replace(/'/g, "\\'")}')">${sale.customer}</span>`
+                        : `<span style="color:#1e293b; font-weight:500;">${sale.customer}</span>`
+                    }
+                </td>
                 <td style="padding:14px 16px; color:#475569;">${productDisplayHtml}</td>
                 <td style="padding:14px 16px; font-weight:600; color:#1e293b;">${saleTotalDisplay}</td>
                 <td style="padding:14px 16px;">
