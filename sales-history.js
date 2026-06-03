@@ -265,9 +265,7 @@ document.addEventListener('DOMContentLoaded', () => {
             invoiceBtn.onmouseout = () => { invoiceBtn.style.background = '#f1f5f9'; invoiceBtn.style.color = '#64748b'; invoiceBtn.style.borderColor = '#e2e8f0'; };
             invoiceBtn.onclick = (e) => {
                 e.stopPropagation();
-                // If there's an invoice logic
-                if (window.toast) window.toast('Invoice feature coming soon!');
-                else alert('Invoice feature coming soon!');
+                handleSaleAction('view', idx);
             };
 
             // Refund action
@@ -295,12 +293,7 @@ document.addEventListener('DOMContentLoaded', () => {
             
             actionCell.appendChild(invoiceBtn);
             actionCell.appendChild(refundBtn);
-            
-            tr.addEventListener('click', (e) => {
-                if (!e.target.closest('button')) {
-                    handleSaleAction('view', idx);
-                }
-            });
+
 
             tableBody.appendChild(tr);
         });
