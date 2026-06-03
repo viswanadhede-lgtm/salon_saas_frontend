@@ -10,6 +10,7 @@ let currentSortDirection = 'asc'; // 'asc' or 'desc'
 // --- Image Upload State & Helper ---
 let currentAddProductImageUrl = null;
 let currentEditProductImageUrl = null;
+let pendingUploadedImages = [];
 
 window.uploadProductImage = async function(file) {
     if (!file) return null;
@@ -55,6 +56,7 @@ document.addEventListener('change', async function(e) {
                 if (window.feather) feather.replace();
             }
             if (url) {
+                pendingUploadedImages.push(url);
                 currentAddProductImageUrl = url;
                 const wrap = document.querySelector('#addProductModal .product-photo-wrap');
                 if (wrap) wrap.innerHTML = `<img src="${url}" style="width:100%; height:100%; object-fit:cover; border-radius:12px;">`;
@@ -75,6 +77,7 @@ document.addEventListener('change', async function(e) {
                 if (window.feather) feather.replace();
             }
             if (url) {
+                pendingUploadedImages.push(url);
                 currentEditProductImageUrl = url;
                 const wrap = document.querySelector('#editProductModal .product-photo-wrap');
                 if (wrap) wrap.innerHTML = `<img src="${url}" style="width:100%; height:100%; object-fit:cover; border-radius:12px;">`;
@@ -828,6 +831,9 @@ function attachGlobalEventListeners() {
                 if (error) throw error;
 
                 showToast('Product created');
+                // Remove successfully saved image from cleanup array
+                pendingUploadedImages = pendingUploadedImages.filter(url => url !== currentAddProductImageUrl);
+                
                 ['productName','productPrice','productStock','productDescription'].forEach(id => {
                     const el = document.getElementById(id); if (el) el.value = '';
                 });
@@ -900,6 +906,9 @@ function attachGlobalEventListeners() {
                 if (error) throw error;
 
                 showToast('Product updated');
+                // Remove successfully saved image from cleanup array
+                pendingUploadedImages = pendingUploadedImages.filter(url => url !== currentEditProductImageUrl);
+
                 closeAllModals();
                 fetchProducts();
             } catch (err) {
@@ -1092,6 +1101,12 @@ window.openEditCategoryModal = function (id) {
 
 function closeAllModals() {
     document.querySelectorAll('.modal-overlay.active').forEach(el => el.classList.remove('active'));
+    
+    // Cleanup orphaned images
+    if (pendingUploadedImages.length > 0) {
+        pendingUploadedImages.forEach(url => window.deleteProductImage(url));
+        pendingUploadedImages = [];
+    }
 }
 
 // --- Toast ---
