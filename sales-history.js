@@ -242,7 +242,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     }
                 </td>
                 <td style="padding:14px 16px; color:#475569;">${productDisplayHtml}</td>
-                <td style="padding:14px 16px; font-weight:600; color:#1e293b;">${saleTotalDisplay}</td>
+                <td style="padding:14px 16px; font-weight:600; color:#059669;">${saleTotalDisplay}</td>
                 <td style="padding:14px 16px;">
                     <span class="tb-status-pill ${statusPillClass}" style="text-transform: uppercase; font-size: 0.7rem;">${statusLabel}</span>
                 </td>
