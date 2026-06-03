@@ -58,6 +58,11 @@ window.fetchStaff = async function() {
                 initials = (initialsMatches.shift() + (initialsMatches.pop() || '')).substring(0,2).toUpperCase();
             }
             
+            let rawStatus = String(staff.status || 'active').toLowerCase().trim();
+            let normStatus = 'active';
+            if (rawStatus.includes('leave')) normStatus = 'on-leave';
+            else if (rawStatus.includes('inactive')) normStatus = 'inactive';
+
             return {
                 id: staff.staff_id || staff.id,
                 name: rawName,
@@ -66,7 +71,7 @@ window.fetchStaff = async function() {
                 phone: staff.phone || '-',
                 email: staff.email || '',
                 notes: staff.notes || '',
-                status: staff.status || 'active',
+                status: normStatus,
                 initials: initials,
                 color: avatarColors[idx % avatarColors.length]
             };
