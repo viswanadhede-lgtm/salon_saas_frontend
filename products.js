@@ -107,9 +107,6 @@ window.deleteProductImage = async function(url) {
 
 document.addEventListener('click', async function(e) {
     if (e.target.closest('#removeAddProductPhotoBtn')) {
-        if (currentAddProductImageUrl) {
-            await window.deleteProductImage(currentAddProductImageUrl);
-        }
         currentAddProductImageUrl = null;
         const input = document.getElementById('productPhotoInput');
         if (input) input.value = '';
@@ -119,9 +116,6 @@ document.addEventListener('click', async function(e) {
         if (removeBtn) removeBtn.style.display = 'none';
         if (window.feather) feather.replace();
     } else if (e.target.closest('#removeEditProductPhotoBtn')) {
-        if (currentEditProductImageUrl) {
-            await window.deleteProductImage(currentEditProductImageUrl);
-        }
         currentEditProductImageUrl = null;
         const input = document.getElementById('editProductPhotoInput');
         if (input) input.value = '';
@@ -867,6 +861,21 @@ function attachGlobalEventListeners() {
             updateProdBtn.disabled = true;
             updateProdBtn.textContent = 'Updating...';
             try {
+                // Fetch the old product row first to see if we need to delete an old image
+                const { data: oldData } = await supabase
+                    .from('products')
+                    .select('product_image_url')
+                    .eq('product_id', productId)
+                    .single();
+
+                if (oldData && oldData.product_image_url && oldData.product_image_url !== currentEditProductImageUrl) {
+                    const urlParts = oldData.product_image_url.split('/');
+                    const filename = urlParts[urlParts.length - 1];
+                    if (filename) {
+                        await supabase.storage.from('product-images').remove([filename]);
+                    }
+                }
+
                 const { error } = await supabase
                     .from('products')
                     .eq('product_id', productId)
@@ -916,11 +925,26 @@ function attachGlobalEventListeners() {
             let error;
 
             if (isProd) {
-                // Soft delete — set status to 'deleted'
+                // Fetch product first to check for image
+                const { data: prodData } = await supabase
+                    .from('products')
+                    .select('product_image_url')
+                    .eq('product_id', deleteTarget.id)
+                    .single();
+
+                if (prodData && prodData.product_image_url) {
+                    const urlParts = prodData.product_image_url.split('/');
+                    const filename = urlParts[urlParts.length - 1];
+                    if (filename) {
+                        await supabase.storage.from('product-images').remove([filename]);
+                    }
+                }
+                
+                // Hard delete row
                 ({ error } = await supabase
                     .from('products')
                     .eq('product_id', deleteTarget.id)
-                    .update({ status: 'deleted' }));
+                    .delete());
             } else {
                 ({ error } = await supabase
                     .from('product_categories')
