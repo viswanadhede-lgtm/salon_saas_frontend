@@ -1067,3 +1067,49 @@ window.toggleProdExtra = function(extraId, toggleId, extraCount) {
     el.style.display  = isHidden ? 'flex' : 'none';
     tog.textContent   = isHidden ? '▲ less' : '+' + extraCount;
 };
+
+window.hsFilterByDate = function(range) {
+    const label = document.getElementById('hsDateLabel');
+    const now = new Date();
+    let from = null;
+    let to = null;
+
+    if (range === 'today') {
+        from = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+        if (label) label.textContent = 'Today';
+    } else if (range === 'week') {
+        from = new Date(now);
+        from.setDate(from.getDate() - 7);
+        if (label) label.textContent = 'Last 7 days';
+    } else if (range === 'month') {
+        from = new Date(now);
+        from.setDate(from.getDate() - 30);
+        if (label) label.textContent = 'Last 30 days';
+    } else if (range === 'custom') {
+        const fromInput = document.getElementById('hsCustomFrom');
+        const toInput = document.getElementById('hsCustomTo');
+        if (fromInput && fromInput.value) from = new Date(fromInput.value);
+        if (toInput && toInput.value) {
+            to = new Date(toInput.value);
+            to.setHours(23, 59, 59, 999); // include the full end day
+        }
+        if (label) {
+            const f = fromInput?.value || '...';
+            const t = toInput?.value || '...';
+            label.textContent = `${f} → ${t}`;
+        }
+    } else {
+        // 'all' - no date restriction
+        if (label) label.textContent = 'All Time';
+    }
+
+    currentSalesData = initialSalesData.filter(s => {
+        if (!s.raw_date) return false;
+        if (from && s.raw_date < from) return false;
+        if (to && s.raw_date > to) return false;
+        return true;
+    });
+
+    renderTable();
+};
+

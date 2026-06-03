@@ -211,17 +211,25 @@
                             <i data-feather="calendar" style="width:15px; height:15px;"></i>
                             <span id="hsDateLabel">Date Range</span>
                         </button>
-                        <div id="hsDateMenu" style="display:none; position:absolute; top:46px; right:0; width:170px; background:#fff; border:1px solid #e2e8f0; border-radius:10px; box-shadow:0 8px 24px rgba(15,23,42,0.1); padding:6px 0; z-index:9999;">
-                            <button onclick="event.stopPropagation(); document.getElementById('hsDateLabel').textContent='Today'; document.getElementById('hsDateMenu').style.display='none';"
+                        <div id="hsDateMenu" style="display:none; position:absolute; top:46px; right:0; width:200px; background:#fff; border:1px solid #e2e8f0; border-radius:10px; box-shadow:0 8px 24px rgba(15,23,42,0.1); padding:6px 0; z-index:9999;">
+                            <button onclick="event.stopPropagation(); window.hsFilterByDate('all'); document.getElementById('hsDateMenu').style.display='none';"
+                                style="width:100%; padding:9px 16px; text-align:left; border:none; background:none; font-size:0.85rem; color:#374151; cursor:pointer;" onmouseover="this.style.background='#f8fafc'" onmouseout="this.style.background='none'">All Time</button>
+                            <button onclick="event.stopPropagation(); window.hsFilterByDate('today'); document.getElementById('hsDateMenu').style.display='none';"
                                 style="width:100%; padding:9px 16px; text-align:left; border:none; background:none; font-size:0.85rem; color:#374151; cursor:pointer;" onmouseover="this.style.background='#f8fafc'" onmouseout="this.style.background='none'">Today</button>
-                            <button onclick="event.stopPropagation(); document.getElementById('hsDateLabel').textContent='Last 7 days'; document.getElementById('hsDateMenu').style.display='none';"
+                            <button onclick="event.stopPropagation(); window.hsFilterByDate('week'); document.getElementById('hsDateMenu').style.display='none';"
                                 style="width:100%; padding:9px 16px; text-align:left; border:none; background:none; font-size:0.85rem; color:#374151; cursor:pointer;" onmouseover="this.style.background='#f8fafc'" onmouseout="this.style.background='none'">Last 7 days</button>
-                            <button onclick="event.stopPropagation(); document.getElementById('hsDateLabel').textContent='Last 30 days'; document.getElementById('hsDateMenu').style.display='none';"
+                            <button onclick="event.stopPropagation(); window.hsFilterByDate('month'); document.getElementById('hsDateMenu').style.display='none';"
                                 style="width:100%; padding:9px 16px; text-align:left; border:none; background:none; font-size:0.85rem; color:#374151; cursor:pointer;" onmouseover="this.style.background='#f8fafc'" onmouseout="this.style.background='none'">Last 30 days</button>
-                            <button onclick="event.stopPropagation(); document.getElementById('hsDateLabel').textContent='This month'; document.getElementById('hsDateMenu').style.display='none';"
-                                style="width:100%; padding:9px 16px; text-align:left; border:none; background:none; font-size:0.85rem; color:#374151; cursor:pointer;" onmouseover="this.style.background='#f8fafc'" onmouseout="this.style.background='none'">This month</button>
-                            <button onclick="event.stopPropagation(); document.getElementById('hsDateLabel').textContent='Custom Range'; document.getElementById('hsDateMenu').style.display='none';"
-                                style="width:100%; padding:9px 16px; text-align:left; border:none; background:none; font-size:0.85rem; color:#374151; cursor:pointer;" onmouseover="this.style.background='#f8fafc'" onmouseout="this.style.background='none'">Custom Range...</button>
+                            <button onclick="event.stopPropagation(); var p=document.getElementById('hsCustomRange'); p.style.display=p.style.display==='none'?'block':'none';"
+                                style="width:100%; padding:9px 16px; text-align:left; border:none; background:none; font-size:0.85rem; color:#374151; cursor:pointer; border-top:1px solid #f1f5f9;" onmouseover="this.style.background='#f8fafc'" onmouseout="this.style.background='none'">Custom Range...</button>
+                            <div id="hsCustomRange" style="display:none; padding:10px 16px; border-top:1px solid #f1f5f9;">
+                                <label style="font-size:0.75rem; color:#64748b; font-weight:600; display:block; margin-bottom:3px;">From</label>
+                                <input type="date" id="hsCustomFrom" style="width:100%; border:1px solid #e2e8f0; border-radius:6px; padding:5px 8px; font-size:0.82rem; margin-bottom:8px; outline:none;">
+                                <label style="font-size:0.75rem; color:#64748b; font-weight:600; display:block; margin-bottom:3px;">To</label>
+                                <input type="date" id="hsCustomTo" style="width:100%; border:1px solid #e2e8f0; border-radius:6px; padding:5px 8px; font-size:0.82rem; margin-bottom:10px; outline:none;">
+                                <button onclick="event.stopPropagation(); window.hsFilterByDate('custom'); document.getElementById('hsDateMenu').style.display='none';"
+                                    style="width:100%; padding:7px 0; background:#1e3a8a; color:#fff; border:none; border-radius:6px; font-size:0.82rem; font-weight:600; cursor:pointer;">Apply</button>
+                            </div>
                         </div>
                     </div>
 
