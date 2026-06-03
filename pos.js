@@ -163,10 +163,14 @@ function renderProducts(products) {
         const avatarBg = colors[colorIdx];
         const avatarColor = textColors[colorIdx];
         const initials = name.split(' ').slice(0, 2).map(w => w[0]).join('').toUpperCase();
+        const imgUrl = product.product_image_url || product.image_url || product.photo_url;
 
         card.innerHTML = `
             <div style="height: 120px; background: ${avatarBg}; position: relative; overflow: hidden; display: flex; align-items: center; justify-content: center;">
-                <span style="font-size: 2.5rem; font-weight: 700; color: ${avatarColor}; letter-spacing: -2px;">${initials}</span>
+                ${imgUrl 
+                    ? `<img src="${imgUrl}" style="width: 100%; height: 100%; object-fit: cover;" alt="${name}">`
+                    : `<span style="font-size: 2.5rem; font-weight: 700; color: ${avatarColor}; letter-spacing: -2px;">${initials}</span>`
+                }
                 <div style="position: absolute; top: 10px; right: 10px; background: rgba(255,255,255,0.92); padding: 4px 10px; border-radius: 6px; font-weight: 700; font-size: 0.88rem; color: #0f172a; box-shadow: 0 1px 4px rgba(0,0,0,0.1);">
                     ₹${price}
                 </div>
