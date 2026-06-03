@@ -313,6 +313,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 currentSalesData = initialSalesData.filter(s => 
                     String(s.id).toLowerCase().includes(term) || 
                     s.customer.toLowerCase().includes(term) ||
+                    (s.customer_phone || '').toLowerCase().includes(term) ||
                     s.staff.toLowerCase().includes(term) ||
                     (s.products_summary || '').toLowerCase().includes(term)
                 );
