@@ -494,7 +494,28 @@ function setupEventListeners() {
                 .select('id, product_name, total_amount, payment_method');
 
             if (saleError) throw saleError;
-            
+
+            // ─── Decrement Stock in Products Table ────────────────────────────────
+            for (const item of cart) {
+                const productId = item.id;
+                const soldQty = item.quantity;
+                if (!productId) continue;
+
+                // Fetch current stock
+                const { data: prodRows } = await supabase
+                    .from('products')
+                    .select('stock_quantity')
+                    .eq('product_id', productId);
+
+                const currentStock = prodRows && prodRows.length > 0 ? (Number(prodRows[0].stock_quantity) || 0) : 0;
+                const newStock = Math.max(0, currentStock - soldQty);
+
+                await supabase
+                    .from('products')
+                    .eq('product_id', productId)
+                    .update({ stock_quantity: newStock });
+            }
+
             // ─── Record Payment Transactions in Ledger ────────────────────────────
             const ledgerBatch = insertedSales.map(sale => ({
                 company_id: getCompanyId() || null,
