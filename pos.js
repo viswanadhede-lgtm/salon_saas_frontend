@@ -171,16 +171,18 @@ function renderProducts(products) {
                     ? `<img src="${imgUrl}" style="width: 100%; height: 100%; object-fit: cover;" alt="${name}">`
                     : `<span style="font-size: 2.5rem; font-weight: 700; color: ${avatarColor}; letter-spacing: -2px;">${initials}</span>`
                 }
-                <div style="position: absolute; top: 10px; right: 10px; background: rgba(255,255,255,0.92); padding: 4px 10px; border-radius: 6px; font-weight: 700; font-size: 0.88rem; color: #0f172a; box-shadow: 0 1px 4px rgba(0,0,0,0.1);">
-                    ₹${price}
-                </div>
                 ${isOutOfStock ? `<div style="position: absolute; bottom: 8px; left: 50%; transform: translateX(-50%); background: #ef4444; color: white; font-size: 0.7rem; font-weight: 700; padding: 2px 8px; border-radius: 4px; white-space: nowrap;">OUT OF STOCK</div>` : ''}
                 ${!isOutOfStock && stock <= 5 ? `<div style="position: absolute; bottom: 8px; left: 50%; transform: translateX(-50%); background: #f97316; color: white; font-size: 0.7rem; font-weight: 700; padding: 2px 8px; border-radius: 4px; white-space: nowrap;">LOW: ${stock} left</div>` : ''}
             </div>
             <div style="padding: 14px 16px; flex: 1; display: flex; flex-direction: column; gap: 10px;">
-                <div>
-                    <h3 style="font-size: 0.9rem; font-weight: 600; color: #334155; margin: 0 0 4px 0; line-height: 1.4; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;" title="${name}">${name}</h3>
-                    ${category ? `<span style="font-size: 0.74rem; background: #f1f5f9; color: #64748b; padding: 2px 7px; border-radius: 4px; font-weight: 500;">${category}</span>` : ''}
+                <div style="display: flex; justify-content: space-between; align-items: flex-start; gap: 8px;">
+                    <div style="min-width: 0; flex: 1;">
+                        <h3 style="font-size: 0.9rem; font-weight: 600; color: #334155; margin: 0 0 4px 0; line-height: 1.4; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;" title="${name}">${name}</h3>
+                        ${category ? `<span style="font-size: 0.74rem; background: #f1f5f9; color: #64748b; padding: 2px 7px; border-radius: 4px; font-weight: 500;">${category}</span>` : ''}
+                    </div>
+                    <div style="font-weight: 700; font-size: 0.95rem; color: #0f172a; white-space: nowrap;">
+                        ₹${price}
+                    </div>
                 </div>
                 <button 
                     onclick="${isOutOfStock ? '' : `window.addToCart('${id}')`}"
