@@ -304,7 +304,7 @@ function renderProductsTable() {
             <td style="padding:14px 16px;">${stockBadge(p.stock_quantity || 0)}</td>
             <td style="padding:14px 16px;">
                 ${p.product_image_url || p.image_url || p.photo_url 
-                    ? `<img src="${p.product_image_url || p.image_url || p.photo_url}" style="width:40px; height:40px; border-radius:8px; object-fit:cover; border:1px solid #e2e8f0;" alt="${p.product_name}">` 
+                    ? `<img src="${p.product_image_url || p.image_url || p.photo_url}" style="width:40px; height:40px; border-radius:8px; object-fit:cover; border:1px solid #e2e8f0; cursor:pointer;" alt="${p.product_name}" onclick="window.openImageViewer('${p.product_image_url || p.image_url || p.photo_url}')">` 
                     : `<div style="width:40px; height:40px; border-radius:8px; background:#f8fafc; border:1px dashed #cbd5e1; display:flex; align-items:center; justify-content:center; color:#94a3b8;"><i data-feather="image" style="width:18px; height:18px;"></i></div>`}
             </td>
             <td style="padding:14px 16px; vertical-align:middle;">
@@ -976,6 +976,37 @@ window.showToast = function(msg, isError) {
         toast.style.opacity = '0';
         setTimeout(() => toast.remove(), 350);
     }, 3000);
+}
+
+// --- Image Viewer Modal ---
+window.openImageViewer = function(url) {
+    if (!document.getElementById('imageViewerModalOverlay')) {
+        document.body.insertAdjacentHTML('beforeend', `
+        <div class="modal-overlay" id="imageViewerModalOverlay" style="z-index: 10000; display: flex; align-items: center; justify-content: center;">
+            <div class="modal-container" id="imageViewerModal" style="width: auto; max-width: 90vw; background: transparent; box-shadow: none; padding: 0;">
+                <div style="position: relative; display: inline-block;">
+                    <button id="closeImageViewerBtn" style="position: absolute; top: -16px; right: -16px; width: 36px; height: 36px; border-radius: 50%; background: #ffffff; border: none; color: #1e293b; display: flex; align-items: center; justify-content: center; cursor: pointer; box-shadow: 0 4px 12px rgba(0,0,0,0.15); z-index: 10;">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+                    </button>
+                    <img id="imageViewerImg" src="" style="max-height: 85vh; max-width: 100vw; border-radius: 12px; box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.2); display: block;" alt="Preview">
+                </div>
+            </div>
+        </div>`);
+        
+        document.getElementById('closeImageViewerBtn').addEventListener('click', () => {
+            document.getElementById('imageViewerModalOverlay').classList.remove('active');
+        });
+        
+        document.getElementById('imageViewerModalOverlay').addEventListener('click', (e) => {
+            if (e.target.id === 'imageViewerModalOverlay') {
+                e.target.classList.remove('active');
+            }
+        });
+    }
+    
+    document.getElementById('imageViewerImg').src = url;
+    document.getElementById('imageViewerModalOverlay').classList.add('active');
 };
+;
 
 function showToast(msg, isError) { window.showToast(msg, isError); }
