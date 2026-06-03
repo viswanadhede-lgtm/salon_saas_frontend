@@ -3,6 +3,10 @@ import { supabase } from './lib/supabase.js';
 let liveProductsData = [];
 let liveProductCategoriesData = [];
 
+// --- Sorting State ---
+let currentSortField = null; // 'price' or 'stock'
+let currentSortDirection = 'asc'; // 'asc' or 'desc'
+
 // --- Image Upload State & Helper ---
 let currentAddProductImageUrl = null;
 let currentEditProductImageUrl = null;
@@ -275,6 +279,23 @@ function initTabs() {
             document.getElementById('filterMenu').classList.remove('active');
         });
     }
+
+    // Sorting handlers
+    ['Price', 'Stock'].forEach(field => {
+        const th = document.getElementById(`sort${field}`);
+        if (th) {
+            th.addEventListener('click', () => {
+                const f = field.toLowerCase();
+                if (currentSortField === f) {
+                    currentSortDirection = currentSortDirection === 'asc' ? 'desc' : 'asc';
+                } else {
+                    currentSortField = f;
+                    currentSortDirection = 'asc';
+                }
+                renderProductsTable();
+            });
+        }
+    });
 }
 
 // --- Render Logic ---
@@ -325,6 +346,33 @@ function renderProductsTable() {
             return true;
         });
     }
+
+    // Apply Sorting
+    if (currentSortField) {
+        filtered.sort((a, b) => {
+            let valA = 0, valB = 0;
+            if (currentSortField === 'price') {
+                valA = Number(a.price) || 0;
+                valB = Number(b.price) || 0;
+            } else if (currentSortField === 'stock') {
+                valA = Number(a.stock_quantity) || 0;
+                valB = Number(b.stock_quantity) || 0;
+            }
+            if (valA < valB) return currentSortDirection === 'asc' ? -1 : 1;
+            if (valA > valB) return currentSortDirection === 'asc' ? 1 : -1;
+            return 0;
+        });
+    }
+
+    // Update Sorting UI Arrows
+    ['Price', 'Stock'].forEach(field => {
+        const up = document.getElementById(`sort${field}Up`);
+        const down = document.getElementById(`sort${field}Down`);
+        if (up && down) {
+            up.style.color = (currentSortField === field.toLowerCase() && currentSortDirection === 'asc') ? '#3b82f6' : '#cbd5e1';
+            down.style.color = (currentSortField === field.toLowerCase() && currentSortDirection === 'desc') ? '#3b82f6' : '#cbd5e1';
+        }
+    });
 
     filtered.forEach(p => {
         const tr = document.createElement('tr');

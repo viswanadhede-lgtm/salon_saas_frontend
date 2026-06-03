@@ -353,8 +353,24 @@
                             <tr style="background:#f8fafc; border-bottom:2px solid #e2e8f0; position:sticky; top:0; z-index:10;">
                                 <th style="padding:13px 16px 13px 24px; text-align:left; font-size:0.75rem; font-weight:600; color:#64748b; text-transform:uppercase; letter-spacing:0.05em;">Product</th>
                                 <th style="padding:13px 16px; text-align:left; font-size:0.75rem; font-weight:600; color:#64748b; text-transform:uppercase; letter-spacing:0.05em;">Category</th>
-                                <th style="padding:13px 16px; text-align:left; font-size:0.75rem; font-weight:600; color:#64748b; text-transform:uppercase; letter-spacing:0.05em;">Price</th>
-                                <th style="padding:13px 16px; text-align:left; font-size:0.75rem; font-weight:600; color:#64748b; text-transform:uppercase; letter-spacing:0.05em;">Stock</th>
+                                <th style="padding:13px 16px; text-align:left; font-size:0.75rem; font-weight:600; color:#64748b; text-transform:uppercase; letter-spacing:0.05em; cursor:pointer;" id="sortPrice">
+                                    <div style="display:flex; align-items:center; gap:4px;">
+                                        <span style="pointer-events:none;">Price</span>
+                                        <div style="display:flex; flex-direction:column; pointer-events:none;">
+                                            <svg id="sortPriceUp" width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" style="color:#cbd5e1;"><polyline points="18 15 12 9 6 15"></polyline></svg>
+                                            <svg id="sortPriceDown" width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" style="color:#cbd5e1; margin-top:-3px;"><polyline points="6 9 12 15 18 9"></polyline></svg>
+                                        </div>
+                                    </div>
+                                </th>
+                                <th style="padding:13px 16px; text-align:left; font-size:0.75rem; font-weight:600; color:#64748b; text-transform:uppercase; letter-spacing:0.05em; cursor:pointer;" id="sortStock">
+                                    <div style="display:flex; align-items:center; gap:4px;">
+                                        <span style="pointer-events:none;">Stock</span>
+                                        <div style="display:flex; flex-direction:column; pointer-events:none;">
+                                            <svg id="sortStockUp" width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" style="color:#cbd5e1;"><polyline points="18 15 12 9 6 15"></polyline></svg>
+                                            <svg id="sortStockDown" width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" style="color:#cbd5e1; margin-top:-3px;"><polyline points="6 9 12 15 18 9"></polyline></svg>
+                                        </div>
+                                    </div>
+                                </th>
                                 <th style="padding:13px 8px 13px 16px; text-align:center; font-size:0.75rem; font-weight:600; color:#64748b; text-transform:uppercase; letter-spacing:0.05em;">Picture</th>
                                 <th style="padding:13px 16px; text-align:center; font-size:0.75rem; font-weight:600; color:#64748b; text-transform:uppercase; letter-spacing:0.05em;">Actions</th>
                             </tr>
