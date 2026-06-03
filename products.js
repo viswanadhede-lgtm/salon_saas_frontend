@@ -242,6 +242,20 @@ function initTabs() {
         });
     }
 
+    // Filter button toggle
+    const filterMenu = document.getElementById('filterMenu');
+    if (filterBtn && filterMenu) {
+        filterBtn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            filterMenu.classList.toggle('show');
+        });
+        document.addEventListener('click', (e) => {
+            if (!filterMenu.contains(e.target) && !filterBtn.contains(e.target)) {
+                filterMenu.classList.remove('show');
+            }
+        });
+    }
+
     const applyFilters = document.getElementById('applyFilters');
     if (applyFilters) {
         applyFilters.addEventListener('click', () => {
