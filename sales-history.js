@@ -197,12 +197,39 @@ document.addEventListener('DOMContentLoaded', () => {
                 : sale.total;
 
             const itemCount = sale.item_count === 0 ? 'N/A' : (sale.item_count != null ? sale.item_count : 1);
-            const productDisplay = sale.products_summary || 'Product';
+            
+            let productDisplayHtml = '-';
+            if (sale.products_summary) {
+                const parts = sale.products_summary.split(',').map(s => s.trim()).filter(Boolean);
+                if (parts.length > 0) {
+                    const formatPart = (p) => {
+                        const match = p.match(/^(\d+)\s*\*\s*(.+)$/);
+                        if (match) return `${match[2]} &times;${match[1]}`;
+                        return p;
+                    };
+                    const firstPart = formatPart(parts[0]);
+                    
+                    if (parts.length === 1) {
+                        productDisplayHtml = `<span>${firstPart}</span>`;
+                    } else {
+                        const othersHtml = parts.slice(1).map(p => `<div style="padding:4px 0;">${formatPart(p)}</div>`).join('');
+                        productDisplayHtml = `
+                            <div style="position:relative; display:flex; align-items:center; gap:6px; flex-wrap:wrap;">
+                                <span style="white-space:nowrap;">${firstPart}</span>
+                                <span class="hover-lift" style="cursor:pointer; background:#eff6ff; color:#3b82f6; font-size:0.75rem; font-weight:600; padding:2px 6px; border-radius:10px; border:1px solid #dbeafe; transition:all 0.2s;" onclick="event.stopPropagation(); const el = this.nextElementSibling; if (el) el.style.display = el.style.display === 'none' ? 'block' : 'none';">+${parts.length - 1}</span>
+                                <div class="others-dropdown" style="display:none; position:absolute; top:calc(100% + 4px); left:0; z-index:50; background:#fff; border:1px solid #e2e8f0; padding:4px 12px; border-radius:8px; box-shadow:0 10px 15px -3px rgba(0,0,0,0.1); min-width:max-content; white-space:nowrap; text-align:left;">
+                                    ${othersHtml}
+                                </div>
+                            </div>
+                        `;
+                    }
+                }
+            }
 
             tr.innerHTML = `
                 <td style="padding:14px 16px 14px 24px; color:#475569; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">${sale.date}</td>
                 <td style="padding:14px 16px; color:#1e293b; font-weight:500; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">${sale.customer}</td>
-                <td style="padding:14px 16px; color:#475569; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">${productDisplay}</td>
+                <td style="padding:14px 16px; color:#475569;">${productDisplayHtml}</td>
                 <td style="padding:14px 16px; font-weight:600; color:#1e293b;">${saleTotalDisplay}</td>
                 <td style="padding:14px 16px;">
                     <span class="tb-status-pill ${statusPillClass}" style="text-transform: uppercase; font-size: 0.7rem;">${statusLabel}</span>
