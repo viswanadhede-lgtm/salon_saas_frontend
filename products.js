@@ -312,7 +312,7 @@ function renderProductsTable() {
                     : `<div style="width:40px; height:40px; border-radius:8px; background:#f8fafc; border:1px dashed #cbd5e1; display:flex; align-items:center; justify-content:center; color:#94a3b8;"><i data-feather="image" style="width:18px; height:18px;"></i></div>`}
             </td>
             <td style="padding:14px 16px; vertical-align:middle;">
-                <div class="action-buttons" style="display:flex; justify-content:flex-end; gap:0.5rem;">
+                <div class="action-buttons" style="display:flex; justify-content:flex-start; gap:0.5rem;">
                     <button class="hover-lift" data-sub-feature="update_product" onclick="window.openEditProductModal('${p.product_id || p.id}')" title="Edit Product" style="display:flex; flex-direction:column; align-items:center; justify-content:center; padding: 4px 8px; border-radius:8px; border:1px solid #e0e7ff; background:#eff6ff; cursor:pointer; color:#3b82f6; transition:all 0.2s; min-width: 52px;">
                         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="margin-bottom:2px;"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path></svg>
                         <span style="font-size:10px; font-weight:600;">Edit</span>
