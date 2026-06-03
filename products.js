@@ -22,7 +22,7 @@ window.uploadProductImage = async function(file) {
         return data.publicUrl;
     } catch (err) {
         console.error('Image upload failed:', err);
-        showToast('Failed to upload image', true);
+        window.showToast('Failed to upload image', true);
         return null;
     }
 };
