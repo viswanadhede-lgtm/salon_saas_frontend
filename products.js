@@ -871,11 +871,12 @@ function attachGlobalEventListeners() {
             updateProdBtn.textContent = 'Updating...';
             try {
                 // Fetch the old product row first to see if we need to delete an old image
-                const { data: oldData } = await supabase
+                const { data: oldDataRows } = await supabase
                     .from('products')
                     .select('product_image_url')
-                    .eq('product_id', productId)
-                    .single();
+                    .eq('product_id', productId);
+                
+                const oldData = oldDataRows && oldDataRows.length > 0 ? oldDataRows[0] : null;
 
                 if (oldData && oldData.product_image_url && oldData.product_image_url !== currentEditProductImageUrl) {
                     const { error: storageError } = await window.deleteProductImage(oldData.product_image_url);
@@ -932,11 +933,12 @@ function attachGlobalEventListeners() {
 
             if (isProd) {
                 // Fetch product first to check for image
-                const { data: prodData } = await supabase
+                const { data: prodDataRows } = await supabase
                     .from('products')
                     .select('product_image_url')
-                    .eq('product_id', deleteTarget.id)
-                    .single();
+                    .eq('product_id', deleteTarget.id);
+                
+                const prodData = prodDataRows && prodDataRows.length > 0 ? prodDataRows[0] : null;
 
                 if (prodData && prodData.product_image_url) {
                     const { error: storageError } = await window.deleteProductImage(prodData.product_image_url);
