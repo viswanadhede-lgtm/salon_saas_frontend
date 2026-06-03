@@ -227,7 +227,11 @@ function renderProductsTable() {
             <td style="padding:14px 16px;"><span style="background:#f1f5f9;padding:3px 8px;border-radius:6px;font-size:0.8rem;color:#475569;">${p.category_name || 'Uncategorized'}</span></td>
             <td style="padding:14px 16px;color:#374151;font-weight:500;font-size:0.9rem;">&#8377;${p.price || 0}</td>
             <td style="padding:14px 16px;">${stockBadge(p.stock_quantity || 0)}</td>
-            <td style="padding:14px 16px;">${statusBadge(p.status)}</td>
+            <td style="padding:14px 16px;">
+                ${p.image_url || p.photo_url 
+                    ? `<img src="${p.image_url || p.photo_url}" style="width:40px; height:40px; border-radius:8px; object-fit:cover; border:1px solid #e2e8f0;" alt="${p.product_name}">` 
+                    : `<div style="width:40px; height:40px; border-radius:8px; background:#f8fafc; border:1px dashed #cbd5e1; display:flex; align-items:center; justify-content:center; color:#94a3b8;"><i data-feather="image" style="width:18px; height:18px;"></i></div>`}
+            </td>
             <td style="padding:14px 16px; vertical-align:middle;">
                 <div class="action-buttons" style="display:flex; justify-content:flex-end; gap:0.5rem;">
                     <button class="hover-lift" data-sub-feature="update_product" onclick="window.openEditProductModal('${p.product_id || p.id}')" title="Edit Product" style="display:flex; flex-direction:column; align-items:center; justify-content:center; padding: 4px 8px; border-radius:8px; border:1px solid #e0e7ff; background:#eff6ff; cursor:pointer; color:#3b82f6; transition:all 0.2s; min-width: 52px;">
