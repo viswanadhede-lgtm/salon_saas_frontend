@@ -251,31 +251,46 @@ document.addEventListener('DOMContentLoaded', () => {
             `;
 
             const actionCell = tr.querySelector('.action-cell');
+            actionCell.style.display = 'flex';
+            actionCell.style.alignItems = 'center';
+            actionCell.style.justifyContent = 'center';
+            actionCell.style.gap = '12px';
+
+            // Invoice action
+            const invoiceBtn = document.createElement('button');
+            invoiceBtn.innerHTML = '<i data-feather="file-text" style="width:16px; height:16px;"></i>';
+            invoiceBtn.style.cssText = 'background:none; border:none; cursor:pointer; color:#64748b; padding:4px; transition:color 0.2s;';
+            invoiceBtn.title = 'View Invoice';
+            invoiceBtn.onmouseover = () => invoiceBtn.style.color = '#3b82f6';
+            invoiceBtn.onmouseout = () => invoiceBtn.style.color = '#64748b';
+            invoiceBtn.onclick = (e) => {
+                e.stopPropagation();
+                // If there's an invoice logic
+                if (window.toast) window.toast('Invoice feature coming soon!');
+                else alert('Invoice feature coming soon!');
+            };
+
+            // Refund action
             const refundBtn = document.createElement('button');
-            refundBtn.textContent = 'Return';
+            refundBtn.innerHTML = '<i data-feather="corner-up-left" style="width:16px; height:16px;"></i>';
             refundBtn.setAttribute('data-sub-feature', 'pos_issue_refund');
+            refundBtn.style.cssText = 'background:none; border:none; cursor:pointer; color:#64748b; padding:4px; transition:color 0.2s;';
             refundBtn.title = payStatus === 'unpaid' ? 'Cannot return pending sale' : 'Return Items';
-            refundBtn.style.padding = '4px 10px';
-            refundBtn.style.borderRadius = '6px';
-            refundBtn.style.border = `1px solid ${payStatus === 'unpaid' ? '#f1f5f9' : '#fecdd3'}`;
-            refundBtn.style.background = payStatus === 'unpaid' ? '#f8fafc' : '#fff1f2';
-            refundBtn.style.color = payStatus === 'unpaid' ? '#cbd5e1' : '#e11d48';
-            refundBtn.style.fontSize = '0.75rem';
-            refundBtn.style.fontWeight = '600';
-            refundBtn.style.cursor = payStatus === 'unpaid' ? 'not-allowed' : 'pointer';
-            refundBtn.style.whiteSpace = 'nowrap';
-            refundBtn.style.transition = 'all 0.2s';
             
             if (payStatus === 'unpaid') {
                 refundBtn.disabled = true;
+                refundBtn.style.opacity = '0.4';
+                refundBtn.style.cursor = 'not-allowed';
             } else {
-                refundBtn.onmouseover = () => refundBtn.style.background = '#ffe4e6';
-                refundBtn.onmouseout = () => refundBtn.style.background = '#fff1f2';
+                refundBtn.onmouseover = () => refundBtn.style.color = '#ef4444';
+                refundBtn.onmouseout = () => refundBtn.style.color = '#64748b';
                 refundBtn.addEventListener('click', (e) => {
                     e.stopPropagation();
                     handleSaleAction('refund', idx);
                 });
             }
+            
+            actionCell.appendChild(invoiceBtn);
             actionCell.appendChild(refundBtn);
             
             tr.addEventListener('click', (e) => {
