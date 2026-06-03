@@ -85,6 +85,54 @@ document.addEventListener('change', async function(e) {
     }
 });
 
+window.deleteProductImage = async function(url) {
+    if (!url) return;
+    try {
+        const urlParts = url.split('/');
+        const filename = urlParts[urlParts.length - 1];
+        if (!filename) return;
+
+        const apiUrl = `${supabase._url}/storage/v1/object/product-images/${filename}`;
+        await fetch(apiUrl, {
+            method: 'DELETE',
+            headers: {
+                'apikey': supabase._key,
+                'Authorization': `Bearer ${supabase._key}`
+            }
+        });
+    } catch (err) {
+        console.error('Failed to delete image from bucket:', err);
+    }
+};
+
+document.addEventListener('click', async function(e) {
+    if (e.target.closest('#removeAddProductPhotoBtn')) {
+        if (currentAddProductImageUrl) {
+            await window.deleteProductImage(currentAddProductImageUrl);
+        }
+        currentAddProductImageUrl = null;
+        const input = document.getElementById('productPhotoInput');
+        if (input) input.value = '';
+        const wrap = document.querySelector('#addProductModal .product-photo-wrap');
+        if (wrap) wrap.innerHTML = `<i data-feather="image" style="width: 48px; height: 48px; opacity: 0.5;"></i>`;
+        const removeBtn = document.getElementById('removeAddProductPhotoBtn');
+        if (removeBtn) removeBtn.style.display = 'none';
+        if (window.feather) feather.replace();
+    } else if (e.target.closest('#removeEditProductPhotoBtn')) {
+        if (currentEditProductImageUrl) {
+            await window.deleteProductImage(currentEditProductImageUrl);
+        }
+        currentEditProductImageUrl = null;
+        const input = document.getElementById('editProductPhotoInput');
+        if (input) input.value = '';
+        const wrap = document.querySelector('#editProductModal .product-photo-wrap');
+        if (wrap) wrap.innerHTML = `<i data-feather="image" style="width: 48px; height: 48px; opacity: 0.5;"></i>`;
+        const removeBtn = document.getElementById('removeEditProductPhotoBtn');
+        if (removeBtn) removeBtn.style.display = 'none';
+        if (window.feather) feather.replace();
+    }
+});
+
 
 // --- Helpers ---
 function getCompanyId() {
@@ -686,7 +734,6 @@ function attachGlobalEventListeners() {
                 showToast('Category created successfully');
                 closeAllModals();
                 document.getElementById('categoryName').value = '';
-                document.getElementById('categoryDescription').value = '';
                 fetchProductCategories();
             } catch (err) {
                 showToast(err.message || 'Failed to create category', true);
