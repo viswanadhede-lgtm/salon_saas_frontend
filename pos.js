@@ -413,7 +413,8 @@ function setupEventListeners() {
         }
 
         const customerId = selectedCustomer?.customer_id || selectedCustomer?.id || null;
-        const shortID = Math.random().toString(36).substring(2, 10).toUpperCase();
+        const shortDisplayId = Math.random().toString(36).substring(2, 10).toUpperCase();
+        const saleGroupUUID = crypto.randomUUID();
 
         if (window.openGlobalPaymentModal) {
             // Collect service IDs from cart for coupon service-matching
@@ -423,7 +424,7 @@ function setupEventListeners() {
                 .filter(Boolean);
 
             window.openGlobalPaymentModal({
-                saleId: shortID,
+                saleId: shortDisplayId,
                 customerId: customerId,
                 customerName: customerName,
                 totalAmount: total,
@@ -431,7 +432,7 @@ function setupEventListeners() {
                 serviceIds: serviceIds,
                 isMembershipPurchase: false,
                 onComplete: async (payload) => {
-                    await finalizeSale(payload, shortID);
+                    await finalizeSale(payload, saleGroupUUID);
                 }
             });
         } else {
