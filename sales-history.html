@@ -244,22 +244,10 @@
                     </div>
 
                     <!-- Export Button -->
-                    <div style="position:relative;">
-                        <button id="hsExportBtn" class="btn btn-secondary" data-sub-feature="pos_export_sales" style="height:40px; display:flex; align-items:center; gap:6px; padding:0 14px;"
-                            onclick="event.stopPropagation(); var m=document.getElementById('hsExportMenu'); m.style.display=(m.style.display==='block'?'none':'block'); document.getElementById('hsFilterMenu').style.display='none'; document.getElementById('hsDateMenu').style.display='none';">
-                            <i data-feather="download" style="width:15px; height:15px;"></i> Export
-                        </button>
-                        <div id="hsExportMenu" style="display:none; position:absolute; top:46px; right:0; width:165px; background:#fff; border:1px solid #e2e8f0; border-radius:10px; box-shadow:0 8px 24px rgba(15,23,42,0.1); padding:6px 0; z-index:9999;">
-                            <button onclick="event.stopPropagation(); document.getElementById('hsExportMenu').style.display='none'; hsExportData('csv');"
-                                style="width:100%; padding:9px 16px; text-align:left; border:none; background:none; font-size:0.85rem; color:#374151; cursor:pointer; display:flex; align-items:center; gap:8px;" onmouseover="this.style.background='#f8fafc'" onmouseout="this.style.background='none'">
-                                <i data-feather="file-text" style="width:14px; height:14px; color:#64748b;"></i> Export as CSV
-                            </button>
-                            <button onclick="event.stopPropagation(); document.getElementById('hsExportMenu').style.display='none'; hsExportData('excel');"
-                                style="width:100%; padding:9px 16px; text-align:left; border:none; background:none; font-size:0.85rem; color:#374151; cursor:pointer; display:flex; align-items:center; gap:8px;" onmouseover="this.style.background='#f8fafc'" onmouseout="this.style.background='none'">
-                                <i data-feather="grid" style="width:14px; height:14px; color:#64748b;"></i> Export as Excel
-                            </button>
-                        </div>
-                    </div>
+                    <button id="hsExportBtn" class="btn btn-secondary" data-sub-feature="pos_export_sales" style="height:40px; display:flex; align-items:center; gap:6px; padding:0 14px;"
+                        onclick="window.hsExportData();">
+                        <i data-feather="download" style="width:15px; height:15px;"></i> Export
+                    </button>
                 </div>
             </div>
 

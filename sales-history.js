@@ -1059,56 +1059,46 @@ document.addEventListener('DOMContentLoaded', () => {
 });
 
 // ─── EXPORT FUNCTION (global so onclick can call it) ────────────────────────
-function hsExportData(format) {
-    const rows = [];
-    const headers = ['Sale ID', 'Customer', 'Date', 'Products', 'Total', 'Payment', 'Staff'];
-    rows.push(headers);
+function hsExportData() {
+    const headers = ['Date', 'Customer', 'Products', 'Total', 'Payment', 'Staff'];
+    const rows = [headers];
 
-    const tbody = document.getElementById('hsTableBody');
-    if (tbody) {
-        Array.from(tbody.querySelectorAll('tr')).forEach(tr => {
-            const cells = Array.from(tr.querySelectorAll('td'));
-            if (cells.length >= 7) {
-                rows.push([
-                    cells[0].innerText.trim(),
-                    cells[1].innerText.trim(),
-                    cells[2].innerText.trim(),
-                    cells[3].innerText.trim(),
-                    cells[4].innerText.trim(),
-                    cells[5].innerText.trim(),
-                    cells[6].innerText.trim()
-                ]);
-            }
-        });
-    }
+    currentSalesData.forEach(s => {
+        const products = (s.products_summary || '')
+            .split(',')
+            .map(p => {
+                const m = p.trim().match(/^(\d+)\s*\*\s*(.+)$/);
+                return m ? `${m[2].trim()} - ${m[1]}` : p.trim();
+            })
+            .join('; ');
 
-    if (format === 'csv') {
-        const csv = rows.map(r => r.map(v => `"${v.replace(/"/g, '""')}"`).join(',')).join('\n');
-        const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
-        const url = URL.createObjectURL(blob);
-        const a = document.createElement('a');
-        a.href = url;
-        a.download = 'sales-history.csv';
-        a.click();
-        URL.revokeObjectURL(url);
-    } else {
-        let xls = '<table border="1">';
-        rows.forEach((r, i) => {
-            xls += '<tr>';
-            r.forEach(v => {
-                xls += i === 0 ? `<th>${v}</th>` : `<td>${v}</td>`;
-            });
-            xls += '</tr>';
+        rows.push([
+            s.date || '',
+            s.customer || '',
+            products,
+            s.total || '',
+            s.payment || '',
+            s.staff || ''
+        ]);
+    });
+
+    let xls = '<table border="1">';
+    rows.forEach((r, i) => {
+        xls += '<tr>';
+        r.forEach(v => {
+            xls += i === 0 ? `<th>${v}</th>` : `<td>${v}</td>`;
         });
-        xls += '</table>';
-        const blob = new Blob([xls], { type: 'application/vnd.ms-excel;charset=utf-8;' });
-        const url = URL.createObjectURL(blob);
-        const a = document.createElement('a');
-        a.href = url;
-        a.download = 'sales-history.xls';
-        a.click();
-        URL.revokeObjectURL(url);
-    }
+        xls += '</tr>';
+    });
+    xls += '</table>';
+
+    const blob = new Blob([xls], { type: 'application/vnd.ms-excel;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'sales-history.xls';
+    a.click();
+    URL.revokeObjectURL(url);
 }
 
 window.hsExportData = hsExportData;
