@@ -451,20 +451,19 @@ function setupEventListeners() {
             const amountCollected = payload.amountCollected;
             const paymentMethod = payload.paymentMethod;
 
-            // Resolve the logged-in user's name
-            let staffName = localStorage.getItem('staff_name');
-            if (!staffName) {
-                const token = localStorage.getItem('token');
-                if (token && supabase.auth && supabase.auth.getUser) {
-                    try {
-                        const { data: uData } = await supabase.auth.getUser(token);
-                        if (uData && uData.user) {
-                            staffName = uData.user.user_metadata?.full_name || uData.user.raw_user_meta_data?.full_name || 'Admin';
-                            localStorage.setItem('staff_name', staffName);
-                        }
-                    } catch (e) { console.warn('Could not fetch user name:', e); }
+            let staffName = 'System';
+            try {
+                const contextStr = localStorage.getItem('appContext');
+                if (contextStr) {
+                    const ctx = JSON.parse(contextStr);
+                    if (ctx?.user?.first_name) {
+                        staffName = ctx.user.first_name;
+                    } else if (ctx?.user?.name) {
+                        staffName = ctx.user.name.split(' ')[0];
+                    }
                 }
-                if (!staffName) staffName = 'System';
+            } catch (e) {
+                console.warn('Could not parse appContext for staff name:', e);
             }
             
             // NOTE: We could apply discount logic to the individual sales lines if needed,
