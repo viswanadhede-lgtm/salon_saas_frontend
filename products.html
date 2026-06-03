@@ -285,44 +285,32 @@
                             <i data-feather="filter" style="width:15px; height:15px;"></i> Filter
                         </button>
                         <!-- Filter Dropdown Menu -->
-                        <div class="filter-menu" id="filterMenu" style="width: 520px;">
+                        <div class="filter-menu" id="filterMenu" style="width: 360px;">
                             <div class="filter-header">
                                 <h3>Filter Products</h3>
                             </div>
-                            <div class="filter-body" style="display:grid; grid-template-columns:1fr 1fr 1fr; gap:0; padding:0;">
+                            <div class="filter-body" style="display:grid; grid-template-columns:1fr 1fr; gap:0; padding:0;">
                                 <!-- Column 1: Category -->
                                 <div class="filter-section" style="padding:16px; border-right:1px solid #f1f5f9;">
                                     <h4 class="filter-section-title" style="margin-bottom:10px;">Category</h4>
                                     <div id="categoryFilterOptions" style="display:flex; flex-direction:column; gap:6px; max-height:200px; overflow-y:auto;"></div>
                                 </div>
-                                <!-- Column 2: Price Range -->
-                                <div class="filter-section" style="padding:16px; border-right:1px solid #f1f5f9;">
-                                    <h4 class="filter-section-title" style="margin-bottom:10px;">Price (₹)</h4>
-                                    <div style="display:flex; flex-direction:column; gap:10px;">
-                                        <div>
-                                            <label style="font-size:0.75rem; color:#64748b; font-weight:500; display:block; margin-bottom:4px;">Min</label>
-                                            <input type="number" id="filterPriceMin" min="0" placeholder="0" style="width:100%; padding:7px 10px; border:1px solid #e2e8f0; border-radius:7px; font-size:0.85rem; outline:none; color:#1e293b;">
-                                        </div>
-                                        <div style="text-align:center; color:#94a3b8; font-size:0.8rem;">to</div>
-                                        <div>
-                                            <label style="font-size:0.75rem; color:#64748b; font-weight:500; display:block; margin-bottom:4px;">Max</label>
-                                            <input type="number" id="filterPriceMax" min="0" placeholder="Any" style="width:100%; padding:7px 10px; border:1px solid #e2e8f0; border-radius:7px; font-size:0.85rem; outline:none; color:#1e293b;">
-                                        </div>
-                                    </div>
-                                </div>
-                                <!-- Column 3: Stock Range -->
+                                <!-- Column 2: Stock -->
                                 <div class="filter-section" style="padding:16px;">
-                                    <h4 class="filter-section-title" style="margin-bottom:10px;">Stock Qty</h4>
-                                    <div style="display:flex; flex-direction:column; gap:10px;">
-                                        <div>
-                                            <label style="font-size:0.75rem; color:#64748b; font-weight:500; display:block; margin-bottom:4px;">Low</label>
-                                            <input type="number" id="filterStockMin" min="0" placeholder="0" style="width:100%; padding:7px 10px; border:1px solid #e2e8f0; border-radius:7px; font-size:0.85rem; outline:none; color:#1e293b;">
-                                        </div>
-                                        <div style="text-align:center; color:#94a3b8; font-size:0.8rem;">to</div>
-                                        <div>
-                                            <label style="font-size:0.75rem; color:#64748b; font-weight:500; display:block; margin-bottom:4px;">High</label>
-                                            <input type="number" id="filterStockMax" min="0" placeholder="Any" style="width:100%; padding:7px 10px; border:1px solid #e2e8f0; border-radius:7px; font-size:0.85rem; outline:none; color:#1e293b;">
-                                        </div>
+                                    <h4 class="filter-section-title" style="margin-bottom:10px;">Stock</h4>
+                                    <div style="display:flex; flex-direction:column; gap:8px;">
+                                        <label style="display:flex; align-items:center; gap:8px; font-size:0.85rem; color:#374151; cursor:pointer;">
+                                            <input type="radio" name="filterStock" value="all" checked style="accent-color:#4f46e5;"> All
+                                        </label>
+                                        <label style="display:flex; align-items:center; gap:8px; font-size:0.85rem; color:#374151; cursor:pointer;">
+                                            <input type="radio" name="filterStock" value="in_stock" style="accent-color:#4f46e5;"> In Stock
+                                        </label>
+                                        <label style="display:flex; align-items:center; gap:8px; font-size:0.85rem; color:#374151; cursor:pointer;">
+                                            <input type="radio" name="filterStock" value="low_stock" style="accent-color:#4f46e5;"> Low Stock
+                                        </label>
+                                        <label style="display:flex; align-items:center; gap:8px; font-size:0.85rem; color:#374151; cursor:pointer;">
+                                            <input type="radio" name="filterStock" value="out_of_stock" style="accent-color:#4f46e5;"> Out of Stock
+                                        </label>
                                     </div>
                                 </div>
                             </div>

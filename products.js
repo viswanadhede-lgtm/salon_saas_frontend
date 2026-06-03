@@ -269,10 +269,8 @@ function initTabs() {
         resetFilters.addEventListener('click', () => {
             const allCatRadio = document.querySelector('input[name="filterCategory"][value="all"]');
             if (allCatRadio) allCatRadio.checked = true;
-            ['filterPriceMin','filterPriceMax','filterStockMin','filterStockMax'].forEach(id => {
-                const el = document.getElementById(id);
-                if (el) el.value = '';
-            });
+            const allStockRadio = document.querySelector('input[name="filterStock"][value="all"]');
+            if (allStockRadio) allStockRadio.checked = true;
             renderProductsTable();
             document.getElementById('filterMenu').classList.remove('active');
         });
@@ -316,21 +314,17 @@ function renderProductsTable() {
         filtered = filtered.filter(p => p.category_name === selectedCategory.value);
     }
 
-    // Price range filter
-    const priceMin = document.getElementById('filterPriceMin');
-    const priceMax = document.getElementById('filterPriceMax');
-    const pMin = priceMin && priceMin.value !== '' ? Number(priceMin.value) : null;
-    const pMax = priceMax && priceMax.value !== '' ? Number(priceMax.value) : null;
-    if (pMin !== null) filtered = filtered.filter(p => Number(p.price) >= pMin);
-    if (pMax !== null) filtered = filtered.filter(p => Number(p.price) <= pMax);
-
-    // Stock range filter
-    const stockMin = document.getElementById('filterStockMin');
-    const stockMax = document.getElementById('filterStockMax');
-    const sMin = stockMin && stockMin.value !== '' ? Number(stockMin.value) : null;
-    const sMax = stockMax && stockMax.value !== '' ? Number(stockMax.value) : null;
-    if (sMin !== null) filtered = filtered.filter(p => Number(p.stock_quantity) >= sMin);
-    if (sMax !== null) filtered = filtered.filter(p => Number(p.stock_quantity) <= sMax);
+    // Stock filter
+    const selectedStock = document.querySelector('input[name="filterStock"]:checked');
+    if (selectedStock && selectedStock.value !== 'all') {
+        filtered = filtered.filter(p => {
+            const qty = Number(p.stock_quantity) || 0;
+            if (selectedStock.value === 'in_stock')     return qty > 5;
+            if (selectedStock.value === 'low_stock')    return qty >= 1 && qty <= 5;
+            if (selectedStock.value === 'out_of_stock') return qty === 0;
+            return true;
+        });
+    }
 
     filtered.forEach(p => {
         const tr = document.createElement('tr');
