@@ -392,8 +392,8 @@ document.addEventListener('DOMContentLoaded', () => {
                     s.date || '',
                     s.customer || '',
                     products,
-                    s.total || '',
-                    s.payment || '',
+                    s.totalAmountNum || 0,
+                    (s.payment_status || 'UNPAID').toUpperCase(),
                     s.staff || ''
                 ]);
             });
@@ -408,7 +408,7 @@ document.addEventListener('DOMContentLoaded', () => {
             });
             xls += '</table>';
 
-            const blob = new Blob([xls], { type: 'application/vnd.ms-excel;charset=utf-8;' });
+            const blob = new Blob(['\ufeff', xls], { type: 'application/vnd.ms-excel;charset=utf-8;' });
             const url = URL.createObjectURL(blob);
             const a = document.createElement('a');
             a.href = url;
