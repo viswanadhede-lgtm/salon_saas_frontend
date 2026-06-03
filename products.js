@@ -15,11 +15,21 @@ window.uploadProductImage = async function(file) {
     const filename = `${timestamp}-${randomString}-${safeName}`;
     
     try {
-        const { error } = await supabase.storage.from('product-images').upload(filename, file);
-        if (error) throw error;
+        const url = `${supabase._url}/storage/v1/object/product-images/${filename}`;
+        const res = await fetch(url, {
+            method: 'POST',
+            headers: {
+                'apikey': supabase._key,
+                'Authorization': `Bearer ${supabase._key}`,
+                'Content-Type': file.type || 'application/octet-stream'
+            },
+            body: file
+        });
         
-        const { data } = supabase.storage.from('product-images').getPublicUrl(filename);
-        return data.publicUrl;
+        const data = await res.json().catch(() => null);
+        if (!res.ok) throw new Error(data?.message || data?.error || `HTTP ${res.status}`);
+        
+        return `${supabase._url}/storage/v1/object/public/product-images/${filename}`;
     } catch (err) {
         console.error('Image upload failed:', err);
         window.showToast('Failed to upload image', true);
