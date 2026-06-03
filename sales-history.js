@@ -1119,26 +1119,30 @@ document.addEventListener('DOMContentLoaded', () => {
 
 
 
-window.shareInvoice = async function() {
+window.triggerShare = function(method) {
     if (!currentActionData || !currentActionData.sale) return;
     const s = currentActionData.sale;
-    
     const title = `Invoice - ${String(s.id).substring(0,8).toUpperCase()}`;
     const text = `Here is your Invoice: ${String(s.id).substring(0,8).toUpperCase()}\nDate: ${s.date}\nCustomer: ${s.customer || 'Walk-in'}\nTotal: ₹${Number(s.totalAmountNum || 0).toLocaleString('en-IN')}\n\nThank you for choosing us!`;
-    
-    if (navigator.share) {
+    const encodedText = encodeURIComponent(text);
+
+    if (method === 'whatsapp') {
+        window.open(`https://api.whatsapp.com/send?text=${encodedText}`, '_blank');
+    } else if (method === 'mail') {
+        window.open(`mailto:?subject=${encodeURIComponent(title)}&body=${encodedText}`, '_self');
+    } else if (method === 'copy') {
+        const temp = document.createElement("textarea");
+        temp.value = text;
+        document.body.appendChild(temp);
+        temp.select();
         try {
-            await navigator.share({
-                title: title,
-                text: text
-            });
-        } catch (err) {
-            console.log('User cancelled share or share failed', err);
+            document.execCommand("copy");
+            if (window.hsShowToast) hsShowToast("Invoice copied!", "#10b981");
+            else alert("Invoice copied!");
+        } catch(e) {
+            alert("Could not copy text.");
         }
-    } else {
-        navigator.clipboard.writeText(text);
-        if (window.hsShowToast) hsShowToast("Invoice copied to clipboard!", "#10b981");
-        else alert("Invoice details copied to clipboard!");
+        document.body.removeChild(temp);
     }
 };
 

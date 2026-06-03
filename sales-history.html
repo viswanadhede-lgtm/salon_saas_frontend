@@ -290,10 +290,21 @@
                         <h2>Invoice Details</h2>
                         <p class="subtitle" id="sdSubtitle">Loading...</p>
                     </div>
-                    <div style="display: flex; align-items: center; gap: 16px; margin-left: auto;">
-                        <button class="btn btn-secondary" id="sdShareBtn" onclick="window.shareInvoice()" style="height: 32px; padding: 0 10px; font-size: 0.8rem;">
+                    <div style="display: flex; align-items: center; gap: 16px; margin-left: auto; position: relative;">
+                        <button class="btn btn-secondary" id="sdShareBtn" onclick="var sm = document.getElementById('sdShareMenu'); sm.style.display = sm.style.display==='block'?'none':'block'; setTimeout(()=> {if(typeof feather !== 'undefined') feather.replace();}, 10);" style="height: 32px; padding: 0 10px; font-size: 0.8rem;">
                             <i data-feather="share-2" style="width:14px; height:14px; margin-right:4px;"></i> Share
                         </button>
+                        <div id="sdShareMenu" style="display: none; position: absolute; top: 40px; right: 54px; width: 170px; background: #fff; border: 1px solid #e2e8f0; border-radius: 10px; box-shadow: 0 8px 24px rgba(15,23,42,0.1); padding: 8px 0; z-index: 9999;">
+                            <button class="share-opts" onclick="document.getElementById('sdShareMenu').style.display='none'; window.triggerShare('whatsapp');" style="width:100%; padding:9px 16px; text-align:left; border:none; background:none; font-size:0.85rem; color:#374151; cursor:pointer; display:flex; align-items:center;" onmouseover="this.style.background='#f8fafc'" onmouseout="this.style.background='none'">
+                                <i data-feather="message-circle" style="width:14px; height:14px; margin-right:8px; color:#10b981;"></i> WhatsApp
+                            </button>
+                            <button class="share-opts" onclick="document.getElementById('sdShareMenu').style.display='none'; window.triggerShare('mail');" style="width:100%; padding:9px 16px; text-align:left; border:none; background:none; font-size:0.85rem; color:#374151; cursor:pointer; display:flex; align-items:center;" onmouseover="this.style.background='#f8fafc'" onmouseout="this.style.background='none'">
+                                <i data-feather="mail" style="width:14px; height:14px; margin-right:8px; color:#3b82f6;"></i> Mail
+                            </button>
+                            <button class="share-opts" onclick="document.getElementById('sdShareMenu').style.display='none'; window.triggerShare('copy');" style="width:100%; padding:9px 16px; text-align:left; border:none; background:none; font-size:0.85rem; color:#374151; cursor:pointer; display:flex; align-items:center;" onmouseover="this.style.background='#f8fafc'" onmouseout="this.style.background='none'">
+                                <i data-feather="copy" style="width:14px; height:14px; margin-right:8px; color:#64748b;"></i> Copy Text
+                            </button>
+                        </div>
                         <button class="btn btn-secondary" id="sdPrintBtn" style="height: 32px; padding: 0 10px; font-size: 0.8rem;">
                             <i data-feather="printer" style="width:14px; height:14px; margin-right:4px;"></i> Print
                         </button>
