@@ -872,7 +872,8 @@ function attachGlobalEventListeners() {
                     const urlParts = oldData.product_image_url.split('/');
                     const filename = urlParts[urlParts.length - 1];
                     if (filename) {
-                        await supabase.storage.from('product-images').remove([filename]);
+                        const { error: storageError } = await supabase.storage.from('product-images').remove([filename]);
+                        if (storageError) throw new Error('Storage deletion failed: ' + storageError.message);
                     }
                 }
 
@@ -936,7 +937,8 @@ function attachGlobalEventListeners() {
                     const urlParts = prodData.product_image_url.split('/');
                     const filename = urlParts[urlParts.length - 1];
                     if (filename) {
-                        await supabase.storage.from('product-images').remove([filename]);
+                        const { error: storageError } = await supabase.storage.from('product-images').remove([filename]);
+                        if (storageError) throw new Error('Storage deletion failed: ' + storageError.message);
                     }
                 }
                 
