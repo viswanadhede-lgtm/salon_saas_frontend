@@ -374,6 +374,48 @@ document.addEventListener('DOMContentLoaded', () => {
             renderTable();
         };
 
+        // Export to Excel — exposed on window, defined here inside IIFE to access currentSalesData
+        window.hsExportData = function() {
+            const headers = ['Date', 'Customer', 'Products', 'Total', 'Payment', 'Staff'];
+            const rows = [headers];
+
+            currentSalesData.forEach(s => {
+                const products = (s.products_summary || '')
+                    .split(',')
+                    .map(p => {
+                        const m = p.trim().match(/^(\d+)\s*\*\s*(.+)$/);
+                        return m ? `${m[2].trim()} - ${m[1]}` : p.trim();
+                    })
+                    .join('; ');
+
+                rows.push([
+                    s.date || '',
+                    s.customer || '',
+                    products,
+                    s.total || '',
+                    s.payment || '',
+                    s.staff || ''
+                ]);
+            });
+
+            let xls = '<table border="1">';
+            rows.forEach((r, i) => {
+                xls += '<tr>';
+                r.forEach(v => {
+                    xls += i === 0 ? `<th>${v}</th>` : `<td>${v}</td>`;
+                });
+                xls += '</tr>';
+            });
+            xls += '</table>';
+
+            const blob = new Blob([xls], { type: 'application/vnd.ms-excel;charset=utf-8;' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = 'sales-history.xls';
+            a.click();
+            URL.revokeObjectURL(url);
+        };
 
         document.addEventListener('click', (e) => {
             if (activeMenuEl && !activeMenuEl.contains(e.target)) closeOpenActionMenu();
@@ -1058,50 +1100,7 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 });
 
-// ─── EXPORT FUNCTION (global so onclick can call it) ────────────────────────
-function hsExportData() {
-    const headers = ['Date', 'Customer', 'Products', 'Total', 'Payment', 'Staff'];
-    const rows = [headers];
 
-    currentSalesData.forEach(s => {
-        const products = (s.products_summary || '')
-            .split(',')
-            .map(p => {
-                const m = p.trim().match(/^(\d+)\s*\*\s*(.+)$/);
-                return m ? `${m[2].trim()} - ${m[1]}` : p.trim();
-            })
-            .join('; ');
-
-        rows.push([
-            s.date || '',
-            s.customer || '',
-            products,
-            s.total || '',
-            s.payment || '',
-            s.staff || ''
-        ]);
-    });
-
-    let xls = '<table border="1">';
-    rows.forEach((r, i) => {
-        xls += '<tr>';
-        r.forEach(v => {
-            xls += i === 0 ? `<th>${v}</th>` : `<td>${v}</td>`;
-        });
-        xls += '</tr>';
-    });
-    xls += '</table>';
-
-    const blob = new Blob([xls], { type: 'application/vnd.ms-excel;charset=utf-8;' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = 'sales-history.xls';
-    a.click();
-    URL.revokeObjectURL(url);
-}
-
-window.hsExportData = hsExportData;
 
 window.toggleProdExtra = function(extraId, toggleId, extraCount) {
     var el  = document.getElementById(extraId);
