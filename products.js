@@ -247,11 +247,11 @@ function initTabs() {
     if (filterBtn && filterMenu) {
         filterBtn.addEventListener('click', (e) => {
             e.stopPropagation();
-            filterMenu.classList.toggle('show');
+            filterMenu.classList.toggle('active');
         });
         document.addEventListener('click', (e) => {
             if (!filterMenu.contains(e.target) && !filterBtn.contains(e.target)) {
-                filterMenu.classList.remove('show');
+                filterMenu.classList.remove('active');
             }
         });
     }
@@ -260,7 +260,7 @@ function initTabs() {
     if (applyFilters) {
         applyFilters.addEventListener('click', () => {
             renderProductsTable();
-            document.getElementById('filterMenu').classList.remove('show');
+            document.getElementById('filterMenu').classList.remove('active');
         });
     }
 
@@ -274,7 +274,7 @@ function initTabs() {
                 if (el) el.value = '';
             });
             renderProductsTable();
-            document.getElementById('filterMenu').classList.remove('show');
+            document.getElementById('filterMenu').classList.remove('active');
         });
     }
 }
