@@ -925,7 +925,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 let subtotal = 0;
                 let rowsHTML = '';
 
-                (items || []).forEach(item => {
+                (items || []).forEach((item, index) => {
                     const lineTotal = Number(item.total_amount || 0);
                     const qty = Number(item.quantity || 1);
                     const isRefunded = (item.status === 'refunded');
@@ -937,15 +937,18 @@ document.addEventListener('DOMContentLoaded', () => {
                     const rowBg = isRefunded ? 'background: #f8fafc; opacity: 0.7;' : '';
                     const strike = isRefunded ? 'text-decoration: line-through;' : '';
                     const badge = isRefunded ? '<span style="color:#dc2626; font-size:0.7rem; font-weight:600; margin-left:8px; text-transform:uppercase;">Returned</span>' : '';
+                    
+                    const isLast = (index === items.length - 1);
+                    const tdBorder = isLast ? '' : 'border-bottom: 1px solid #e2e8f0;';
 
                     rowsHTML += `
-                        <tr style="border-bottom: 1px solid #f1f5f9; ${rowBg}">
-                            <td style="padding:12px 16px; font-size:0.875rem; color:#334155; ${strike}">
+                        <tr style="${rowBg}">
+                            <td style="padding:12px 16px; font-size:0.875rem; color:#334155; ${tdBorder} ${strike}">
                                 ${item.product_name || 'Product'} ${badge}
                             </td>
-                            <td style="padding:12px 16px; font-size:0.875rem; color:#475569; text-align:center;">${qty}</td>
-                            <td style="padding:12px 16px; font-size:0.875rem; color:#475569; text-align:right;">₹${calculatedPrice.toLocaleString('en-IN', {maximumFractionDigits:2})}</td>
-                            <td style="padding:12px 16px; font-size:0.875rem; color:#1e293b; font-weight:600; text-align:right; ${strike}">₹${lineTotal.toLocaleString('en-IN', {maximumFractionDigits:2})}</td>
+                            <td style="padding:12px 16px; font-size:0.875rem; color:#475569; text-align:center; ${tdBorder}">${qty}</td>
+                            <td style="padding:12px 16px; font-size:0.875rem; color:#475569; text-align:right; ${tdBorder}">₹${calculatedPrice.toLocaleString('en-IN', {maximumFractionDigits:2})}</td>
+                            <td style="padding:12px 16px; font-size:0.875rem; color:#1e293b; font-weight:600; text-align:right; ${tdBorder} ${strike}">₹${lineTotal.toLocaleString('en-IN', {maximumFractionDigits:2})}</td>
                         </tr>
                     `;
                 });
