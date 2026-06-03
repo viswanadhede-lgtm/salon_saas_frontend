@@ -200,15 +200,15 @@ document.addEventListener('DOMContentLoaded', () => {
             const productDisplay = sale.products_summary || 'Product';
 
             tr.innerHTML = `
-                <td style="padding:12px 12px 12px 24px; color:#1e293b; font-weight:500; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">${sale.customer}</td>
-                <td style="padding:12px 12px; color:#475569; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">${sale.date}</td>
-                <td style="padding:12px 12px; color:#475569; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">${productDisplay}</td>
-                <td style="padding:12px 12px; font-weight:600; color:#1e293b;">${saleTotalDisplay}</td>
-                <td style="padding:12px 12px;">
+                <td style="padding:14px 16px 14px 24px; color:#1e293b; font-weight:500; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">${sale.customer}</td>
+                <td style="padding:14px 16px; color:#475569; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">${sale.date}</td>
+                <td style="padding:14px 16px; color:#475569; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">${productDisplay}</td>
+                <td style="padding:14px 16px; font-weight:600; color:#1e293b;">${saleTotalDisplay}</td>
+                <td style="padding:14px 16px;">
                     <span class="tb-status-pill ${statusPillClass}" style="text-transform: uppercase; font-size: 0.7rem;">${statusLabel}</span>
                 </td>
-                <td style="padding:12px 12px; color:#475569;">${sale.staff}</td>
-                <td style="padding:12px 24px 12px 12px;" class="action-cell"></td>
+                <td style="padding:14px 16px; color:#475569;">${sale.staff}</td>
+                <td style="padding:14px 16px; text-align:center;" class="action-cell"></td>
             `;
 
             const actionCell = tr.querySelector('.action-cell');
