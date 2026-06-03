@@ -54,6 +54,8 @@ document.addEventListener('change', async function(e) {
                 currentAddProductImageUrl = url;
                 const wrap = document.querySelector('#addProductModal .product-photo-wrap');
                 if (wrap) wrap.innerHTML = `<img src="${url}" style="width:100%; height:100%; object-fit:cover; border-radius:12px;">`;
+                const removeBtn = document.getElementById('removeAddProductPhotoBtn');
+                if (removeBtn) { removeBtn.style.display = 'flex'; if (window.feather) feather.replace(); }
             }
         }
     } else if (e.target.id === 'editProductPhotoInput') {
@@ -72,6 +74,8 @@ document.addEventListener('change', async function(e) {
                 currentEditProductImageUrl = url;
                 const wrap = document.querySelector('#editProductModal .product-photo-wrap');
                 if (wrap) wrap.innerHTML = `<img src="${url}" style="width:100%; height:100%; object-fit:cover; border-radius:12px;">`;
+                const removeBtn = document.getElementById('removeEditProductPhotoBtn');
+                if (removeBtn) { removeBtn.style.display = 'flex'; if (window.feather) feather.replace(); }
             }
         }
     }
@@ -450,9 +454,14 @@ function setupInjectedModals() {
                             <div class="product-photo-wrap" style="width: 140px; height: 140px; margin-bottom: 20px; background: #fff; border: 2px dashed #cbd5e1; border-radius: 12px; display: flex; align-items: center; justify-content: center; color: #94a3b8; overflow: hidden;">
                                 <i data-feather="image" style="width: 48px; height: 48px; opacity: 0.5;"></i>
                             </div>
-                            <label for="editProductPhotoInput" class="change-photo-btn" style="padding: 8px 16px; font-size: 0.85rem; border-radius: 8px; margin-bottom: 12px; cursor: pointer; color: #4f46e5; background: #e0e7ff; display: flex; align-items: center; gap: 8px; font-weight: 500;">
-                                <i data-feather="upload" style="width: 14px; height: 14px;"></i> Upload Photo
-                            </label>
+                            <div style="display:flex; gap:8px; margin-bottom: 12px; justify-content:center; flex-direction:column; width:100%;">
+                                <label for="editProductPhotoInput" class="change-photo-btn" style="padding: 8px 16px; font-size: 0.85rem; border-radius: 8px; cursor: pointer; color: #4f46e5; background: #e0e7ff; display: flex; align-items: center; gap: 8px; font-weight: 500; justify-content:center; width:100%;">
+                                    <i data-feather="upload" style="width: 14px; height: 14px;"></i> Upload Photo
+                                </label>
+                                <button type="button" id="removeEditProductPhotoBtn" style="padding: 8px 16px; font-size: 0.85rem; border-radius: 8px; border:1px solid #fee2e2; background:#fef2f2; color:#ef4444; font-weight:500; display:none; align-items:center; justify-content:center; gap:6px; cursor:pointer; width:100%;">
+                                    <i data-feather="trash-2" style="width: 14px; height: 14px;"></i> Remove Photo
+                                </button>
+                            </div>
                             <input type="file" id="editProductPhotoInput" accept="image/*" style="display:none;">
                             <p style="font-size: 0.75rem; color: #64748b; text-align: center; line-height: 1.4;">Recommended: Square image,<br>at least 500x500px, PNG or JPG</p>
                         </div>
@@ -869,6 +878,8 @@ window.openAddProductModal = function () {
     currentAddProductImageUrl = null;
     const wrap = document.querySelector('#addProductModal .product-photo-wrap');
     if (wrap) wrap.innerHTML = `<i data-feather="image" style="width: 48px; height: 48px; opacity: 0.5;"></i>`;
+    const removeBtn = document.getElementById('removeAddProductPhotoBtn');
+    if (removeBtn) removeBtn.style.display = 'none';
 
     document.getElementById('addProductModalOverlay').classList.add('active');
     if (window.feather) feather.replace();
@@ -938,6 +949,11 @@ window.openEditProductModal = function (id) {
                 wrap.innerHTML = `<i data-feather="image" style="width: 48px; height: 48px; opacity: 0.5;"></i>`;
             }
         }
+        const removeBtn = document.getElementById('removeEditProductPhotoBtn');
+        if (removeBtn) {
+            removeBtn.style.display = currentEditProductImageUrl ? 'flex' : 'none';
+        }
+
 
         window.selectEditStatus((p.status || 'Active').charAt(0).toUpperCase() + (p.status || 'Active').slice(1).toLowerCase());
         
@@ -1008,5 +1024,24 @@ window.openImageViewer = function(url) {
     document.getElementById('imageViewerModalOverlay').classList.add('active');
 };
 ;
+
+
+document.addEventListener('click', (e) => {
+    if (e.target.closest('#removeAddProductPhotoBtn')) {
+        currentAddProductImageUrl = null;
+        document.getElementById('productPhotoInput').value = '';
+        const wrap = document.querySelector('#addProductModal .product-photo-wrap');
+        if (wrap) wrap.innerHTML = `<i data-feather="image" style="width: 48px; height: 48px; opacity: 0.5;"></i>`;
+        document.getElementById('removeAddProductPhotoBtn').style.display = 'none';
+        if (window.feather) feather.replace();
+    } else if (e.target.closest('#removeEditProductPhotoBtn')) {
+        currentEditProductImageUrl = null;
+        document.getElementById('editProductPhotoInput').value = '';
+        const wrap = document.querySelector('#editProductModal .product-photo-wrap');
+        if (wrap) wrap.innerHTML = `<i data-feather="image" style="width: 48px; height: 48px; opacity: 0.5;"></i>`;
+        document.getElementById('removeEditProductPhotoBtn').style.display = 'none';
+        if (window.feather) feather.replace();
+    }
+});
 
 function showToast(msg, isError) { window.showToast(msg, isError); }

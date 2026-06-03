@@ -440,9 +440,14 @@
                             <i data-feather="image" style="width: 48px; height: 48px; opacity: 0.5;"></i>
                         </div>
                         
-                        <label for="productPhotoInput" class="change-photo-btn" style="padding: 8px 16px; font-size: 0.85rem; border-radius: 8px; margin-bottom: 12px;">
-                            <i data-feather="upload" style="width: 14px; height: 14px;"></i> Upload Photo
-                        </label>
+                        <div style="display:flex; gap:8px; margin-bottom: 12px; justify-content:center; flex-direction:column; width:100%;">
+                            <label for="productPhotoInput" class="change-photo-btn" style="padding: 8px 16px; font-size: 0.85rem; border-radius: 8px; text-align:center; width:100%;">
+                                <i data-feather="upload" style="width: 14px; height: 14px;"></i> Upload Photo
+                            </label>
+                            <button type="button" id="removeAddProductPhotoBtn" style="padding: 8px 16px; font-size: 0.85rem; border-radius: 8px; border:1px solid #fee2e2; background:#fef2f2; color:#ef4444; font-weight:500; display:none; align-items:center; justify-content:center; gap:6px; cursor:pointer; width:100%;">
+                                <i data-feather="trash-2" style="width: 14px; height: 14px;"></i> Remove Photo
+                            </button>
+                        </div>
                         <input type="file" id="productPhotoInput" accept="image/*" style="display:none;">
                         
                         <p style="font-size: 0.75rem; color: #64748b; text-align: center; line-height: 1.4;">Recommended: Square image,<br>at least 500x500px, PNG or JPG</p>
