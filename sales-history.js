@@ -349,9 +349,16 @@ document.addEventListener('DOMContentLoaded', () => {
                     to.setHours(23, 59, 59, 999);
                 }
                 if (label) {
-                    const f = fromInput?.value || '...';
-                    const t = toInput?.value   || '...';
-                    label.textContent = `${f} → ${t}`;
+                    const fmtDate = (val) => {
+                        if (!val) return '...';
+                        const d = new Date(val);
+                        const day = d.getDate();
+                        const suffix = day === 1 || day === 21 || day === 31 ? 'st'
+                                     : day === 2 || day === 22 ? 'nd'
+                                     : day === 3 || day === 23 ? 'rd' : 'th';
+                        return `${day}${suffix} ${d.toLocaleDateString('en-IN', { month: 'long', year: 'numeric' })}`;
+                    };
+                    label.textContent = `${fmtDate(fromInput?.value)} → ${fmtDate(toInput?.value)}`;
                 }
             } else {
                 if (label) label.textContent = 'All Time';
