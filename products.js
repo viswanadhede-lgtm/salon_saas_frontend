@@ -3,6 +3,71 @@ import { supabase } from './lib/supabase.js';
 let liveProductsData = [];
 let liveProductCategoriesData = [];
 
+// --- Image Upload State & Helper ---
+let currentAddProductImageUrl = null;
+let currentEditProductImageUrl = null;
+
+window.uploadProductImage = async function(file) {
+    if (!file) return null;
+    const timestamp = Math.floor(Date.now() / 1000);
+    const randomString = Math.random().toString(36).substring(2, 8);
+    const safeName = file.name.replace(/[^a-zA-Z0-9.\-]/g, '').toLowerCase();
+    const filename = `${timestamp}-${randomString}-${safeName}`;
+    
+    try {
+        const { error } = await supabase.storage.from('product-images').upload(filename, file);
+        if (error) throw error;
+        
+        const { data } = supabase.storage.from('product-images').getPublicUrl(filename);
+        return data.publicUrl;
+    } catch (err) {
+        console.error('Image upload failed:', err);
+        showToast('Failed to upload image', true);
+        return null;
+    }
+};
+
+document.addEventListener('change', async function(e) {
+    if (e.target.id === 'productPhotoInput') {
+        const file = e.target.files[0];
+        if (file) {
+            e.target.disabled = true;
+            const lbl = document.querySelector('label[for="productPhotoInput"]');
+            if (lbl) lbl.innerHTML = 'Uploading...';
+            const url = await window.uploadProductImage(file);
+            e.target.disabled = false;
+            if (lbl) {
+                lbl.innerHTML = '<i data-feather="upload" style="width: 14px; height: 14px;"></i> Upload Photo';
+                if (window.feather) feather.replace();
+            }
+            if (url) {
+                currentAddProductImageUrl = url;
+                const wrap = document.querySelector('#addProductModal .product-photo-wrap');
+                if (wrap) wrap.innerHTML = `<img src="${url}" style="width:100%; height:100%; object-fit:cover; border-radius:12px;">`;
+            }
+        }
+    } else if (e.target.id === 'editProductPhotoInput') {
+        const file = e.target.files[0];
+        if (file) {
+            e.target.disabled = true;
+            const lbl = document.querySelector('label[for="editProductPhotoInput"]');
+            if (lbl) lbl.innerHTML = 'Uploading...';
+            const url = await window.uploadProductImage(file);
+            e.target.disabled = false;
+            if (lbl) {
+                lbl.innerHTML = '<i data-feather="upload" style="width: 14px; height: 14px;"></i> Upload Photo';
+                if (window.feather) feather.replace();
+            }
+            if (url) {
+                currentEditProductImageUrl = url;
+                const wrap = document.querySelector('#editProductModal .product-photo-wrap');
+                if (wrap) wrap.innerHTML = `<img src="${url}" style="width:100%; height:100%; object-fit:cover; border-radius:12px;">`;
+            }
+        }
+    }
+});
+
+
 // --- Helpers ---
 function getCompanyId() {
     try {
@@ -372,9 +437,14 @@ function setupInjectedModals() {
                 <div class="modal-body" style="padding: 0; overflow-y: auto; max-height: 65vh;">
                     <div style="display: grid; grid-template-columns: 35% 65%; width: 100%;">
                         <div style="display: flex; flex-direction: column; align-items: center; padding: 2rem; border-right: 1px solid #f1f5f9; background: #fafafa;">
-                            <div class="product-photo-wrap" style="width: 140px; height: 140px; margin-bottom: 20px; background: #fff; border: 2px dashed #cbd5e1; border-radius: 12px; display: flex; align-items: center; justify-content: center; color: #94a3b8;">
+                            <div class="product-photo-wrap" style="width: 140px; height: 140px; margin-bottom: 20px; background: #fff; border: 2px dashed #cbd5e1; border-radius: 12px; display: flex; align-items: center; justify-content: center; color: #94a3b8; overflow: hidden;">
                                 <i data-feather="image" style="width: 48px; height: 48px; opacity: 0.5;"></i>
                             </div>
+                            <label for="editProductPhotoInput" class="change-photo-btn" style="padding: 8px 16px; font-size: 0.85rem; border-radius: 8px; margin-bottom: 12px; cursor: pointer; color: #4f46e5; background: #e0e7ff; display: flex; align-items: center; gap: 8px; font-weight: 500;">
+                                <i data-feather="upload" style="width: 14px; height: 14px;"></i> Upload Photo
+                            </label>
+                            <input type="file" id="editProductPhotoInput" accept="image/*" style="display:none;">
+                            <p style="font-size: 0.75rem; color: #64748b; text-align: center; line-height: 1.4;">Recommended: Square image,<br>at least 500x500px, PNG or JPG</p>
                         </div>
                         <div style="padding: 2rem;">
                             <input type="hidden" id="editProductId">
@@ -651,7 +721,9 @@ function attachGlobalEventListeners() {
                     price: Number(price),
                     stock_quantity: Number(stock),
                     status: document.querySelector('input[name="productStatus"]:checked')?.value || 'Active',
-                    description: document.getElementById('productDescription').value.trim() || null
+                    description: document.getElementById('productDescription').value.trim() || null,
+                    product_image_url: currentAddProductImageUrl,
+                    product_image_url: currentAddProductImageUrl
                 });
 
                 if (error) throw error;
@@ -709,7 +781,8 @@ function attachGlobalEventListeners() {
                         price: Number(price),
                         stock_quantity: Number(stock),
                         status: document.querySelector('input[name="editProductStatus"]:checked')?.value || 'Active',
-                        description: document.getElementById('editProductDescription').value.trim() || null
+                        description: document.getElementById('editProductDescription').value.trim() || null,
+                        product_image_url: currentEditProductImageUrl
                     });
 
                 if (error) throw error;
@@ -795,6 +868,10 @@ function attachGlobalEventListeners() {
 // --- Open Modals ---
 window.openAddProductModal = function () {
     window.selectStatus('Active');
+    currentAddProductImageUrl = null;
+    const wrap = document.querySelector('#addProductModal .product-photo-wrap');
+    if (wrap) wrap.innerHTML = `<i data-feather="image" style="width: 48px; height: 48px; opacity: 0.5;"></i>`;
+
     document.getElementById('addProductModalOverlay').classList.add('active');
     if (window.feather) feather.replace();
 };
@@ -853,6 +930,17 @@ window.openEditProductModal = function (id) {
         document.getElementById('editProductPrice').value = p.price || 0;
         document.getElementById('editProductStock').value = p.stock_quantity || 0;
         document.getElementById('editProductDescription').value = p.description || '';
+        
+        currentEditProductImageUrl = p.product_image_url || p.photo_url || p.image_url || null;
+        const wrap = document.querySelector('#editProductModal .product-photo-wrap');
+        if (wrap) {
+            if (currentEditProductImageUrl) {
+                wrap.innerHTML = `<img src="${currentEditProductImageUrl}" style="width:100%; height:100%; object-fit:cover; border-radius:12px;">`;
+            } else {
+                wrap.innerHTML = `<i data-feather="image" style="width: 48px; height: 48px; opacity: 0.5;"></i>`;
+            }
+        }
+
         window.selectEditStatus((p.status || 'Active').charAt(0).toUpperCase() + (p.status || 'Active').slice(1).toLowerCase());
         
         document.getElementById('editProductModalOverlay').classList.add('active');
