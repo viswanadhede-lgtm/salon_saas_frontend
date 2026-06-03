@@ -468,19 +468,7 @@ function setupInjectedModals() {
                                     <input type="number" id="editProductStock" class="form-input" required>
                                 </div>
                             </div>
-                            <div class="form-group" style="margin-bottom: 20px;">
-                                <label class="form-label">Status</label>
-                                <div style="display:flex; gap:8px; margin-top:4px;">
-                                    <label style="flex:1; cursor:pointer;">
-                                        <input type="radio" name="editProductStatus" value="Active" style="display:none;" id="editPStatusActive">
-                                        <div id="editPStatusActiveBtn" onclick="selectEditStatus('Active')" style="border:2px solid #e2e8f0; background:#f8fafc; color:#64748b; border-radius:8px; padding:9px 0; text-align:center; font-size:0.88rem; font-weight:600; transition:all 0.2s;">Active</div>
-                                    </label>
-                                    <label style="flex:1; cursor:pointer;">
-                                        <input type="radio" name="editProductStatus" value="Inactive" style="display:none;" id="editPStatusInactive">
-                                        <div id="editPStatusInactiveBtn" onclick="selectEditStatus('Inactive')" style="border:2px solid #e2e8f0; background:#f8fafc; color:#64748b; border-radius:8px; padding:9px 0; text-align:center; font-size:0.88rem; font-weight:600; transition:all 0.2s;">Inactive</div>
-                                    </label>
-                                </div>
-                            </div>
+
                             <div class="form-group" style="margin-bottom:0;">
                                 <label class="form-label" for="editProductDescription">Description</label>
                                 <textarea id="editProductDescription" class="form-input form-textarea" style="min-height:80px;"></textarea>
