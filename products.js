@@ -255,6 +255,8 @@ function initTabs() {
         resetFilters.addEventListener('click', () => {
             const allCatRadio = document.querySelector('input[name="filterCategory"][value="all"]');
             if (allCatRadio) allCatRadio.checked = true;
+            const allStockRadio = document.querySelector('input[name="filterStock"][value="all"]');
+            if (allStockRadio) allStockRadio.checked = true;
             renderProductsTable();
             document.getElementById('filterMenu').classList.remove('show');
         });
@@ -296,6 +298,17 @@ function renderProductsTable() {
     const selectedCategory = document.querySelector('input[name="filterCategory"]:checked');
     if (selectedCategory && selectedCategory.value !== 'all') {
         filtered = filtered.filter(p => p.category_name === selectedCategory.value);
+    }
+
+    const selectedStock = document.querySelector('input[name="filterStock"]:checked');
+    if (selectedStock && selectedStock.value !== 'all') {
+        filtered = filtered.filter(p => {
+            const qty = Number(p.stock_quantity) || 0;
+            if (selectedStock.value === 'in_stock')    return qty > 5;
+            if (selectedStock.value === 'low_stock')   return qty >= 1 && qty <= 5;
+            if (selectedStock.value === 'out_of_stock') return qty === 0;
+            return true;
+        });
     }
 
     filtered.forEach(p => {

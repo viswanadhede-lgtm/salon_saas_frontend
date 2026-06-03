@@ -285,15 +285,34 @@
                             <i data-feather="filter" style="width:15px; height:15px;"></i> Filter
                         </button>
                         <!-- Filter Dropdown Menu -->
-                        <div class="filter-menu" id="filterMenu" style="width: 260px;">
+                        <div class="filter-menu" id="filterMenu" style="width: 420px;">
                             <div class="filter-header">
                                 <h3>Filter Products</h3>
                             </div>
-                            <div class="filter-body" style="max-height: 250px; overflow-y: auto;">
-                                <div class="filter-section">
-                                    <h4 class="filter-section-title">Category</h4>
+                            <div class="filter-body" style="display:grid; grid-template-columns:1fr 1fr; gap:0; padding:0;">
+                                <!-- Column 1: Category -->
+                                <div class="filter-section" style="padding:16px; border-right:1px solid #f1f5f9;">
+                                    <h4 class="filter-section-title" style="margin-bottom:10px;">Category</h4>
                                     <!-- Options will be populated via JS -->
-                                    <div id="categoryFilterOptions"></div>
+                                    <div id="categoryFilterOptions" style="display:flex; flex-direction:column; gap:6px; max-height:200px; overflow-y:auto;"></div>
+                                </div>
+                                <!-- Column 2: Stock -->
+                                <div class="filter-section" style="padding:16px;">
+                                    <h4 class="filter-section-title" style="margin-bottom:10px;">Stock</h4>
+                                    <div style="display:flex; flex-direction:column; gap:6px;">
+                                        <label style="display:flex; align-items:center; gap:8px; font-size:0.85rem; color:#374151; cursor:pointer;">
+                                            <input type="radio" name="filterStock" value="all" checked style="accent-color:#4f46e5;"> All
+                                        </label>
+                                        <label style="display:flex; align-items:center; gap:8px; font-size:0.85rem; color:#374151; cursor:pointer;">
+                                            <input type="radio" name="filterStock" value="in_stock" style="accent-color:#4f46e5;"> In Stock
+                                        </label>
+                                        <label style="display:flex; align-items:center; gap:8px; font-size:0.85rem; color:#374151; cursor:pointer;">
+                                            <input type="radio" name="filterStock" value="low_stock" style="accent-color:#4f46e5;"> Low Stock
+                                        </label>
+                                        <label style="display:flex; align-items:center; gap:8px; font-size:0.85rem; color:#374151; cursor:pointer;">
+                                            <input type="radio" name="filterStock" value="out_of_stock" style="accent-color:#4f46e5;"> Out of Stock
+                                        </label>
+                                    </div>
                                 </div>
                             </div>
                             <div class="filter-footer">
