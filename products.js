@@ -86,22 +86,31 @@ document.addEventListener('change', async function(e) {
 });
 
 window.deleteProductImage = async function(url) {
-    if (!url) return;
+    if (!url) return { error: null };
     try {
         const urlParts = url.split('/');
         const filename = urlParts[urlParts.length - 1];
-        if (!filename) return;
+        if (!filename) return { error: { message: 'Invalid URL for deletion' } };
 
-        const { data, error } = await supabase
-            .storage
-            .from('product-images')
-            .remove([filename]);
-            
-        if (error) {
-            console.error('Storage deletion error:', error);
+        const apiUrl = `${supabase._url}/storage/v1/object/product-images/${filename}`;
+        const res = await fetch(apiUrl, {
+            method: 'DELETE',
+            headers: {
+                'apikey': supabase._key,
+                'Authorization': `Bearer ${supabase._key}`
+            }
+        });
+        
+        let data = null;
+        try { data = await res.json(); } catch(e){}
+        
+        if (!res.ok) {
+            return { error: data || { message: `HTTP ${res.status}` } };
         }
+        return { error: null };
     } catch (err) {
         console.error('Failed to delete image from bucket:', err);
+        return { error: err };
     }
 };
 
@@ -869,12 +878,8 @@ function attachGlobalEventListeners() {
                     .single();
 
                 if (oldData && oldData.product_image_url && oldData.product_image_url !== currentEditProductImageUrl) {
-                    const urlParts = oldData.product_image_url.split('/');
-                    const filename = urlParts[urlParts.length - 1];
-                    if (filename) {
-                        const { error: storageError } = await supabase.storage.from('product-images').remove([filename]);
-                        if (storageError) throw new Error('Storage deletion failed: ' + storageError.message);
-                    }
+                    const { error: storageError } = await window.deleteProductImage(oldData.product_image_url);
+                    if (storageError) throw new Error('Storage deletion failed: ' + (storageError.message || 'Unknown error'));
                 }
 
                 const { error } = await supabase
@@ -934,12 +939,8 @@ function attachGlobalEventListeners() {
                     .single();
 
                 if (prodData && prodData.product_image_url) {
-                    const urlParts = prodData.product_image_url.split('/');
-                    const filename = urlParts[urlParts.length - 1];
-                    if (filename) {
-                        const { error: storageError } = await supabase.storage.from('product-images').remove([filename]);
-                        if (storageError) throw new Error('Storage deletion failed: ' + storageError.message);
-                    }
+                    const { error: storageError } = await window.deleteProductImage(prodData.product_image_url);
+                    if (storageError) throw new Error('Storage deletion failed: ' + (storageError.message || 'Unknown error'));
                 }
                 
                 // Hard delete row
