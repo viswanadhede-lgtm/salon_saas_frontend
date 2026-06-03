@@ -1119,6 +1119,29 @@ document.addEventListener('DOMContentLoaded', () => {
 
 
 
+window.shareInvoice = async function() {
+    if (!currentActionData || !currentActionData.sale) return;
+    const s = currentActionData.sale;
+    
+    const title = `Invoice - ${String(s.id).substring(0,8).toUpperCase()}`;
+    const text = `Here is your Invoice: ${String(s.id).substring(0,8).toUpperCase()}\nDate: ${s.date}\nCustomer: ${s.customer || 'Walk-in'}\nTotal: ₹${Number(s.totalAmountNum || 0).toLocaleString('en-IN')}\n\nThank you for choosing us!`;
+    
+    if (navigator.share) {
+        try {
+            await navigator.share({
+                title: title,
+                text: text
+            });
+        } catch (err) {
+            console.log('User cancelled share or share failed', err);
+        }
+    } else {
+        navigator.clipboard.writeText(text);
+        if (window.hsShowToast) hsShowToast("Invoice copied to clipboard!", "#10b981");
+        else alert("Invoice details copied to clipboard!");
+    }
+};
+
 window.toggleProdExtra = function(extraId, toggleId, extraCount) {
     var el  = document.getElementById(extraId);
     var tog = document.getElementById(toggleId);
