@@ -258,11 +258,11 @@ document.addEventListener('DOMContentLoaded', () => {
 
             // Invoice action
             const invoiceBtn = document.createElement('button');
-            invoiceBtn.innerHTML = '<i data-feather="file-text" style="width:16px; height:16px;"></i>';
-            invoiceBtn.style.cssText = 'background:none; border:none; cursor:pointer; color:#64748b; padding:4px; transition:color 0.2s;';
+            invoiceBtn.innerHTML = '<i data-feather="file-text" style="width:14px; height:14px;"></i>';
+            invoiceBtn.style.cssText = 'background:#f1f5f9; border:1px solid #e2e8f0; border-radius:6px; cursor:pointer; color:#64748b; padding:6px; transition:all 0.2s; display:flex; align-items:center; justify-content:center;';
             invoiceBtn.title = 'View Invoice';
-            invoiceBtn.onmouseover = () => invoiceBtn.style.color = '#3b82f6';
-            invoiceBtn.onmouseout = () => invoiceBtn.style.color = '#64748b';
+            invoiceBtn.onmouseover = () => { invoiceBtn.style.background = '#e0e7ff'; invoiceBtn.style.color = '#4f46e5'; invoiceBtn.style.borderColor = '#c7d2fe'; };
+            invoiceBtn.onmouseout = () => { invoiceBtn.style.background = '#f1f5f9'; invoiceBtn.style.color = '#64748b'; invoiceBtn.style.borderColor = '#e2e8f0'; };
             invoiceBtn.onclick = (e) => {
                 e.stopPropagation();
                 // If there's an invoice logic
@@ -272,18 +272,21 @@ document.addEventListener('DOMContentLoaded', () => {
 
             // Refund action
             const refundBtn = document.createElement('button');
-            refundBtn.innerHTML = '<i data-feather="corner-up-left" style="width:16px; height:16px;"></i>';
+            refundBtn.innerHTML = '<i data-feather="corner-up-left" style="width:14px; height:14px;"></i>';
             refundBtn.setAttribute('data-sub-feature', 'pos_issue_refund');
-            refundBtn.style.cssText = 'background:none; border:none; cursor:pointer; color:#64748b; padding:4px; transition:color 0.2s;';
+            refundBtn.style.cssText = 'background:#fff1f2; border:1px solid #fecdd3; border-radius:6px; cursor:pointer; color:#e11d48; padding:6px; transition:all 0.2s; display:flex; align-items:center; justify-content:center;';
             refundBtn.title = payStatus === 'unpaid' ? 'Cannot return pending sale' : 'Return Items';
             
             if (payStatus === 'unpaid') {
                 refundBtn.disabled = true;
-                refundBtn.style.opacity = '0.4';
+                refundBtn.style.opacity = '0.5';
                 refundBtn.style.cursor = 'not-allowed';
+                refundBtn.style.background = '#f8fafc';
+                refundBtn.style.borderColor = '#f1f5f9';
+                refundBtn.style.color = '#cbd5e1';
             } else {
-                refundBtn.onmouseover = () => refundBtn.style.color = '#ef4444';
-                refundBtn.onmouseout = () => refundBtn.style.color = '#64748b';
+                refundBtn.onmouseover = () => { refundBtn.style.background = '#ffe4e6'; };
+                refundBtn.onmouseout = () => { refundBtn.style.background = '#fff1f2'; };
                 refundBtn.addEventListener('click', (e) => {
                     e.stopPropagation();
                     handleSaleAction('refund', idx);
