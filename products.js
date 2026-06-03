@@ -92,14 +92,14 @@ window.deleteProductImage = async function(url) {
         const filename = urlParts[urlParts.length - 1];
         if (!filename) return;
 
-        const apiUrl = `${supabase._url}/storage/v1/object/product-images/${filename}`;
-        await fetch(apiUrl, {
-            method: 'DELETE',
-            headers: {
-                'apikey': supabase._key,
-                'Authorization': `Bearer ${supabase._key}`
-            }
-        });
+        const { data, error } = await supabase
+            .storage
+            .from('product-images')
+            .remove([filename]);
+            
+        if (error) {
+            console.error('Storage deletion error:', error);
+        }
     } catch (err) {
         console.error('Failed to delete image from bucket:', err);
     }
