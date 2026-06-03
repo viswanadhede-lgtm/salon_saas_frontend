@@ -1,3 +1,5 @@
+import { supabase } from '../lib/supabase.js';
+
 // Automatically inject the customer profile modal into the document
 if (!document.getElementById('customerProfileBookingModal')) {
     document.body.insertAdjacentHTML('beforeend', `
