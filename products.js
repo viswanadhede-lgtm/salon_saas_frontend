@@ -137,7 +137,7 @@ function initTabs() {
                 fetchProductCategories().then(() => fetchProducts());
             } else {
                 document.getElementById('tabCategories').style.display = 'block';
-                searchInput.placeholder  = 'Search categories...';
+                searchInput.placeholder  = 'Search category...';
                 filterBtn.style.display  = 'none';
                 primaryActionText.textContent = 'Add Category';
                 primaryActionBtn.setAttribute('data-sub-feature', 'create_product_category');
@@ -293,7 +293,7 @@ function renderCategoriesTable() {
             <td style="padding:14px 16px; text-align:left;">
                 <button class="hover-lift" onclick="window.openCatProductsModal('${(c.category_name || '').replace(/'/g, "\\'")}')" style="cursor:pointer; display:inline-flex; align-items:center; gap:6px; background:#eff6ff; border:1px solid #bfdbfe; padding:6px 14px; border-radius:20px; transition:all 0.2s; box-shadow:0 2px 4px rgba(0,0,0,0.04);">
                     <span style="font-size:0.85rem; font-weight:700; color:#1d4ed8;">${pCount}</span>
-                    <span style="font-size:0.85rem; font-weight:600; color:#475569;">${pCount === 1 ? 'product' : 'products'}</span>
+                    <span style="font-size:0.85rem; font-weight:400; color:#475569;">${pCount === 1 ? 'product' : 'products'}</span>
                 </button>
             </td>
             <td style="padding:14px 16px; vertical-align:middle;">
@@ -430,38 +430,23 @@ function setupInjectedModals() {
             <div class="modal-container" id="editCategoryModal" style="width: 420px; max-width: 95%;">
                 <div class="modal-header">
                     <div class="header-titles">
-                        <h2>Edit Category</h2>
-                        <p class="subtitle">Update category details</p>
+                        <h2>Edit Product Category</h2>
+                        <p class="subtitle">Update product category</p>
                     </div>
                     <button class="modal-close" id="closeEditCategoryModal"><i data-feather="x"></i></button>
                 </div>
-                <div class="modal-body" style="padding: 1.5rem; overflow-y: auto;">
+                <div class="modal-body" style="padding: 1.5rem; overflow-y: auto; max-height: 65vh; flex-direction: column;">
                     <input type="hidden" id="editCategoryId">
-                    <div class="form-group" style="margin-bottom: 20px;">
+                    <div class="form-group">
                         <label class="form-label" for="editCategoryName">Category Name <span class="text-rose">*</span></label>
-                        <input type="text" id="editCategoryName" class="form-input" required>
-                    </div>
-                    <div class="form-group" style="margin-bottom: 20px;">
-                        <label class="form-label">Status</label>
-                        <div style="display:flex; gap:8px; margin-top:4px;">
-                            <label style="flex:1; cursor:pointer;">
-                                <input type="radio" name="editCategoryStatus" value="Active" style="display:none;" id="editCStatusActive">
-                                <div id="editCStatusActiveBtn" onclick="selectEditCatStatus('Active')" style="border:2px solid #e2e8f0; background:#f8fafc; color:#64748b; border-radius:8px; padding:9px 0; text-align:center; font-size:0.88rem; font-weight:600; transition:all 0.2s;">Active</div>
-                            </label>
-                            <label style="flex:1; cursor:pointer;">
-                                <input type="radio" name="editCategoryStatus" value="Inactive" style="display:none;" id="editCStatusInactive">
-                                <div id="editCStatusInactiveBtn" onclick="selectEditCatStatus('Inactive')" style="border:2px solid #e2e8f0; background:#f8fafc; color:#64748b; border-radius:8px; padding:9px 0; text-align:center; font-size:0.88rem; font-weight:600; transition:all 0.2s;">Inactive</div>
-                            </label>
-                        </div>
-                    </div>
-                    <div class="form-group" style="margin-bottom:0;">
-                        <label class="form-label" for="editCategoryDescription">Description</label>
-                        <textarea id="editCategoryDescription" class="form-input form-textarea" style="min-height:80px;"></textarea>
+                        <input type="text" id="editCategoryName" class="form-input" placeholder="e.g. Hair Care">
                     </div>
                 </div>
-                <div class="modal-footer" style="padding: 16px 1.5rem; display: flex; justify-content: flex-end; gap: 12px; border-top: 1px solid #f1f5f9;">
+                <div class="modal-footer" style="border-top: 1px solid #f1f5f9; padding: 16px 2rem; display: flex; justify-content: flex-end; gap: 12px;">
                     <button type="button" class="btn btn-secondary" id="cancelEditCategory" style="padding: 8px 16px;">Cancel</button>
-                    <button type="button" class="btn btn-primary" id="updateCategoryBtn" style="display:inline-flex;align-items:center;justify-content:center;gap:6px;padding: 8px 16px;width: auto; flex: 0 0 auto; max-width: max-content;">Update Category</button>
+                    <button type="button" class="btn btn-primary" id="updateCategoryBtn" style="display:inline-flex;align-items:center;justify-content:center;gap:6px;padding: 8px 16px;width: auto; flex: 0 0 auto; max-width: max-content;">
+                        <i data-feather="save" style="width:15px;height:15px;"></i> Update Category
+                    </button>
                 </div>
             </div>
         </div>`);
@@ -613,11 +598,7 @@ function attachGlobalEventListeners() {
                 const { error } = await supabase
                     .from('product_categories')
                     .eq('category_id', catId)
-                    .update({
-                        category_name: name,
-                        description: document.getElementById('editCategoryDescription').value.trim() || null,
-                        status: document.querySelector('input[name="editCategoryStatus"]:checked')?.value || 'Active'
-                    });
+                    .update({ category_name: name });
 
                 if (error) throw error;
 
@@ -628,7 +609,8 @@ function attachGlobalEventListeners() {
                 showToast(err.message || 'Failed to update category', true);
             } finally {
                 updateCatBtn.disabled = false;
-                updateCatBtn.textContent = 'Update Category';
+                updateCatBtn.innerHTML = '<i data-feather="save" style="width:15px;height:15px;margin-right:6px"></i> Update Category';
+                if (window.feather) feather.replace();
             }
         });
     }
@@ -880,8 +862,6 @@ window.openEditCategoryModal = function (id) {
     if (c) {
         document.getElementById('editCategoryId').value = c.category_id || c.id;
         document.getElementById('editCategoryName').value = c.category_name || '';
-        document.getElementById('editCategoryDescription').value = c.description || '';
-        window.selectEditCatStatus((c.status || 'Active').charAt(0).toUpperCase() + (c.status || 'Active').slice(1).toLowerCase());
         
         document.getElementById('editCategoryModalOverlay').classList.add('active');
         if (window.feather) feather.replace();
