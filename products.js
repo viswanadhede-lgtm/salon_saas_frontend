@@ -123,9 +123,7 @@ async function fetchProductCategories() {
 
         if (error) throw error;
 
-        liveProductCategoriesData = (data || []).filter(c =>
-            (c.status || '').toLowerCase() !== 'deleted'
-        );
+        liveProductCategoriesData = data || [];
 
         populateCategoryDropdown('productCategory');
         populateCategoryDropdown('editProductCategory');
@@ -171,7 +169,6 @@ function populateCategoryDropdown(dropdownId) {
     if (!sel) return;
     sel.innerHTML = '<option value="" disabled selected>Select a category</option>';
     liveProductCategoriesData
-        .filter(c => (c.status || '').toLowerCase() === 'active')
         .forEach(c => {
             const o = document.createElement('option');
             o.value = c.category_name;
@@ -626,23 +623,7 @@ window.selectStatus = function (val) {
     }
 };
 
-window.selectCatStatus = function (val) {
-    const act = document.getElementById('catStatusActiveBtn');
-    const inact = document.getElementById('catStatusInactiveBtn');
-    const activeRadio = document.querySelector('input[name="categoryStatus"][value="Active"]');
-    const inactiveRadio = document.querySelector('input[name="categoryStatus"][value="Inactive"]');
-    if (act && inact) {
-        if (val === 'Active') {
-            act.style.borderColor = '#1e3a8a'; act.style.background = '#eff6ff'; act.style.color = '#1e3a8a';
-            inact.style.borderColor = '#e2e8f0'; inact.style.background = '#f8fafc'; inact.style.color = '#64748b';
-            if (activeRadio) activeRadio.checked = true;
-        } else {
-            inact.style.borderColor = '#1e3a8a'; inact.style.background = '#eff6ff'; inact.style.color = '#1e3a8a';
-            act.style.borderColor = '#e2e8f0'; act.style.background = '#f8fafc'; act.style.color = '#64748b';
-            if (inactiveRadio) inactiveRadio.checked = true;
-        }
-    }
-};
+
 
 window.selectEditStatus = function (val) {
     const act = document.getElementById('editPStatusActiveBtn');
@@ -660,21 +641,7 @@ window.selectEditStatus = function (val) {
     }
 };
 
-window.selectEditCatStatus = function (val) {
-    const act = document.getElementById('editCStatusActiveBtn');
-    const inact = document.getElementById('editCStatusInactiveBtn');
-    if (act && inact) {
-        if (val === 'Active') {
-            act.style.borderColor = '#1e3a8a'; act.style.background = '#eff6ff'; act.style.color = '#1e3a8a';
-            inact.style.borderColor = '#e2e8f0'; inact.style.background = '#f8fafc'; inact.style.color = '#64748b';
-            const el = document.getElementById('editCStatusActive'); if (el) el.checked = true;
-        } else {
-            inact.style.borderColor = '#1e3a8a'; inact.style.background = '#eff6ff'; inact.style.color = '#1e3a8a';
-            act.style.borderColor = '#e2e8f0'; act.style.background = '#f8fafc'; act.style.color = '#64748b';
-            const el = document.getElementById('editCStatusInactive'); if (el) el.checked = true;
-        }
-    }
-};
+
 
 // ─────────────────────────────────────────────────────────────────────────────
 // SUPABASE: All CRUD Event Listeners
@@ -707,8 +674,7 @@ function attachGlobalEventListeners() {
             const payload = {
                 company_id: getCompanyId(),
                 branch_id: getBranchId(),
-                category_name: name,
-                status: 'Active'
+                category_name: name
             };
             
             saveCatBtn.disabled = true;
@@ -912,7 +878,7 @@ function attachGlobalEventListeners() {
                 ({ error } = await supabase
                     .from('product_categories')
                     .eq('category_id', deleteTarget.id)
-                    .update({ status: 'deleted' }));
+                    .delete());
             }
 
             if (error) throw error;
@@ -962,7 +928,6 @@ window.openAddProductModal = function () {
 };
 
 window.openAddCategoryModal = function () {
-    window.selectCatStatus('Active');
     document.getElementById('addCategoryModalOverlay').classList.add('active');
     if (window.feather) feather.replace();
 };
