@@ -436,9 +436,10 @@ function renderPlans() {
     }
 
     tbody.innerHTML = currentPlans.map(plan => {
-        const discountDisplay = plan.discount_type === 'flat'
-            ? `₹${plan.discount_value} OFF`
-            : `${plan.discount_value}% OFF`;
+        const isFlat = plan.discount_type === 'flat';
+        const discountText = isFlat ? `₹${plan.discount_value} OFF` : `${plan.discount_value}% OFF`;
+        const discountBadgeColor = isFlat ? 'color:#15803d;background:#dcfce7;' : 'color:#0284c7;background:#e0f2fe;';
+        const discountDisplay = `<span style="font-weight:700;${discountBadgeColor}padding:4px 8px;border-radius:6px;font-size:0.85rem;">${discountText}</span>`;
 
         const durationLabel = plan.duration_months
             ? `${plan.duration_months} Month${plan.duration_months > 1 ? 's' : ''}`
@@ -482,7 +483,7 @@ function renderPlans() {
                     <span style="font-weight:600;color:#059669;">₹${Number(plan.price || 0).toLocaleString('en-IN')}</span>
                 </td>
                 <td style="color:#64748b;">${durationLabel}</td>
-                <td style="color:#64748b;">${discountDisplay}</td>
+                <td>${discountDisplay}</td>
                 <td>${servicesDisplay}</td>
                 <td>
                     <span style="color:#475569;font-size:0.875rem;font-weight:500;">
