@@ -242,11 +242,6 @@ document.addEventListener('DOMContentLoaded', () => {
                 validDatesHtml = `<div style="font-size: 0.9rem; color: #64748b; font-style: italic;">Always Active</div>`;
             }
 
-            const totalMaxLimitStr = offer.total_usage_limit || '∞';
-            const maxCurrentCount = offer.applicable_services.length > 0
-                ? Math.max(...offer.applicable_services.map(s => s.current_usage_count || 0))
-                : (offer.current_usage_count || 0);
-            const counterDisplay = `${maxCurrentCount} / ${totalMaxLimitStr}`;
 
             const valueBadge = offer.discount_type === 'percentage'
                 ? `<span style="font-weight:700;color:#0284c7;background:#e0f2fe;padding:4px 8px;border-radius:6px;font-size:0.85rem;">${offer.discount_value}% OFF</span>`
@@ -263,9 +258,6 @@ document.addEventListener('DOMContentLoaded', () => {
                     </td>
                     <td style="padding: 16px 20px;">${serviceHtml}</td>
                     <td style="padding: 16px 20px;">${validDatesHtml}</td>
-                    <td style="padding: 16px 20px;">
-                        <div style="font-size: 0.9rem; color: #334155;"><span style="font-weight: 600;">${counterDisplay}</span></div>
-                    </td>
                     <td style="padding: 16px 20px; text-align: center;">
                         <div style="display: flex; gap: 6px; justify-content: center;">
                             <button class="icon-btn edit-btn" data-sub-feature="update_offer" data-id="${offerId}" style="padding: 6px; border-radius: 6px; border: 1px solid #e2e8f0; background: #fff; cursor: pointer; color: #3b82f6;" title="Edit">
