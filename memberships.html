@@ -732,9 +732,7 @@
                     <button class="nav-tab" data-tab="purchases" style="padding: 0.75rem 0; font-size: 0.95rem; font-weight: 500; color: #64748b; background: none; border: none; border-bottom: 3px solid transparent; cursor: pointer; transition: all 0.2s; margin-bottom: -2px;">
                         Purchases
                     </button>
-                    <button class="nav-tab" data-tab="usage" style="padding: 0.75rem 0; font-size: 0.95rem; font-weight: 500; color: #64748b; background: none; border: none; border-bottom: 3px solid transparent; cursor: pointer; transition: all 0.2s; margin-bottom: -2px;">
-                        Usage History
-                    </button>
+
                 </div>
 
                 <!-- Table Containers -->
@@ -857,77 +855,7 @@
                     </table>
                 </div>
 
-                <!-- 3. Usage Table (Hidden by default) -->
-                <div id="usageTableContent" class="tab-content" style="display:none; overflow-x: auto;">
-                    <table class="premium-table">
-                        <thead>
-                            <tr>
-                                <th>Customer</th>
-                                <th>Membership</th>
-                                <th>Service</th>
-                                <th>Discount</th>
-                                <th>Date</th>
-                                <th>Staff</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            <tr>
-                                <td>
-                                    <span style="font-weight: 600; color: #1e293b;">Riya Sharma</span>
-                                </td>
-                                <td>
-                                    <span style="font-size: 0.9rem; color: #64748b;">Gold Plan</span>
-                                </td>
-                                <td>
-                                    <span style="font-size: 0.9rem; color: #0f172a; font-weight: 500;">Premium Facial</span>
-                                </td>
-                                <td>
-                                    <span style="font-weight: 600; color: #059669;">₹400</span>
-                                </td>
-                                <td style="color: #64748b; font-size: 0.9rem;">Mar 10, 2024</td>
-                                <td>
-                                    <span style="font-size: 0.9rem; color: #0f172a;">Anita</span>
-                                </td>
-                            </tr>
-                            <tr>
-                                <td>
-                                    <span style="font-weight: 600; color: #1e293b;">Riya Sharma</span>
-                                </td>
-                                <td>
-                                    <span style="font-size: 0.9rem; color: #64748b;">Gold Plan</span>
-                                </td>
-                                <td>
-                                    <span style="font-size: 0.9rem; color: #0f172a; font-weight: 500;">Haircut</span>
-                                </td>
-                                <td>
-                                    <span style="font-weight: 600; color: #059669;">₹250</span>
-                                </td>
-                                <td style="color: #64748b; font-size: 0.9rem;">Mar 18, 2024</td>
-                                <td>
-                                    <span style="font-size: 0.9rem; color: #0f172a;">Rahul</span>
-                                </td>
-                            </tr>
-                            <tr>
-                                <td>
-                                    <span style="font-weight: 600; color: #1e293b;">Arjun Patel</span>
-                                </td>
-                                <td>
-                                    <span style="font-size: 0.9rem; color: #64748b;">Silver Plan</span>
-                                </td>
-                                <td>
-                                    <span style="font-size: 0.9rem; color: #0f172a; font-weight: 500;">Massage</span>
-                                </td>
-                                <td>
-                                    <span style="font-weight: 600; color: #059669;">₹150</span>
-                                </td>
-                                <td style="color: #64748b; font-size: 0.9rem;">Mar 20, 2024</td>
-                                <td>
-                                    <span style="font-size: 0.9rem; color: #0f172a;">Sneha</span>
-                                </td>
-                            </tr>
-                        </tbody>
-                    </table>
-                </div>
+
 
                 </div>
 
@@ -1037,20 +965,6 @@
                     filterColDuration.style.display = 'block';
                     filterColStatus.style.display = 'block';
                     document.getElementById('applyFilter').innerText = 'Apply Filter';
-                } else if (target === 'usage') {
-                    searchInput.placeholder = 'Search usage history...';
-                    
-                    if (btnCreatePlan) btnCreatePlan.style.display = 'none';
-                    if (btnAssignPlan) btnAssignPlan.style.display = 'none';
-                    if (btnExportUsage) btnExportUsage.style.display = 'inline-flex';
-
-                    // Compact Filter UI for Usage History
-                    filterPanel.style.width = '240px';
-                    filterGrid.style.gridTemplateColumns = '1fr';
-                    filterColDuration.style.display = 'none';
-                    filterColStatus.style.display = 'none';
-                    document.getElementById('applyFilter').innerText = 'Apply';
-                    feather.replace();
                 }
                 
                 // Re-apply search on tab switch
