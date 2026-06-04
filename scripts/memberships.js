@@ -477,7 +477,7 @@ function renderPlans() {
         return `
             <tr style="border-bottom:1px solid #e2e8f0;">
                 <td>
-                    <span style="font-weight:600;color:#1e293b;display:block;">${plan.plan_name || plan.name || '-'}</span>
+                    <span style="font-weight:600;color:#1e3a8a;display:block;font-size:1rem;">${plan.plan_name || plan.name || '-'}</span>
                 </td>
                 <td>
                     <span style="font-weight:600;color:#059669;">₹${Number(plan.price || 0).toLocaleString('en-IN')}</span>
