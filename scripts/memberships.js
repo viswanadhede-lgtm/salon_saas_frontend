@@ -479,16 +479,16 @@ function renderPlans() {
                 <td>
                     <span style="font-weight:600;color:#1e3a8a;display:block;font-size:1rem;">${plan.plan_name || plan.name || '-'}</span>
                 </td>
-                <td>
-                    <span style="font-weight:600;color:#059669;">₹${Number(plan.price || 0).toLocaleString('en-IN')}</span>
-                </td>
-                <td style="color:#64748b;">${durationLabel}</td>
                 <td>${discountDisplay}</td>
                 <td>${servicesDisplay}</td>
+                <td style="color:#64748b;">${durationLabel}</td>
                 <td>
                     <span style="color:#475569;font-size:0.875rem;font-weight:500;">
                         ${plan.member_count} ${plan.member_count === 1 ? 'Member' : 'Members'}
                     </span>
+                </td>
+                <td>
+                    <span style="font-weight:600;color:#059669;">₹${Number(plan.price || 0).toLocaleString('en-IN')}</span>
                 </td>
                 <td>
                     <div style="display:flex;gap:8px;">
