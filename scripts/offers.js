@@ -253,7 +253,7 @@ document.addEventListener('DOMContentLoaded', () => {
                         <div style="font-size: 0.9rem; color: #334155; text-transform: capitalize;">${offer.discount_type || 'N/A'}</div>
                     </td>
                     <td style="padding: 16px 20px;">${serviceHtml}</td>
-                    <td style="padding: 16px 20px;">${validDatesHtml}</td>
+                    <td style="padding: 16px 20px; text-align: center;">${validDatesHtml}</td>
                     <td style="padding: 16px 20px; text-align: center;">
                         <div style="display: flex; gap: 6px; justify-content: center;">
                             <button class="icon-btn edit-btn" data-sub-feature="update_offer" data-id="${offerId}" style="padding: 6px; border-radius: 6px; border: 1px solid #e2e8f0; background: #fff; cursor: pointer; color: #3b82f6;" title="Edit">
