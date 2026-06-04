@@ -476,7 +476,7 @@ function renderPlans() {
 
         return `
             <tr style="border-bottom:1px solid #e2e8f0;">
-                <td>
+                <td style="text-align:center;">
                     <span style="font-weight:600;color:#1e3a8a;display:block;font-size:1rem;">${plan.plan_name || plan.name || '-'}</span>
                 </td>
                 <td>
