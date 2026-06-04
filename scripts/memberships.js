@@ -369,27 +369,39 @@ async function loadPlans() {
         const companyId = getCompanyId();
         const branchId = getBranchId();
 
-        // Fetch plans directly
-        const { data: plansData, error: plansErr } = await supabase
-            .from('memberships')
-            .select('*')
-            .eq('company_id', companyId)
-            .eq('branch_id', branchId)
-            .neq('status', 'deleted')
-            .order('created_at', { ascending: false });
+        // Fetch plans and member counts in parallel
+        const [plansResult, purchasesResult] = await Promise.all([
+            supabase
+                .from('memberships')
+                .select('*')
+                .eq('company_id', companyId)
+                .eq('branch_id', branchId)
+                .neq('status', 'deleted')
+                .order('created_at', { ascending: false }),
+            supabase
+                .from('membership_purchases')
+                .select('membership_id')
+                .eq('company_id', companyId)
+                .eq('branch_id', branchId)
+        ]);
 
-        if (plansErr) throw plansErr;
+        if (plansResult.error) throw plansResult.error;
+
+        // Build a count map: membership_id -> count
+        const memberCountMap = {};
+        (purchasesResult.data || []).forEach(row => {
+            if (row.membership_id) {
+                memberCountMap[row.membership_id] = (memberCountMap[row.membership_id] || 0) + 1;
+            }
+        });
 
         // Group flattened rows by membership_id
         const groupedPlans = {};
-        (plansData || []).forEach(row => {
+        (plansResult.data || []).forEach(row => {
             const mId = row.membership_id;
             if (!groupedPlans[mId]) {
-                // Initialize the top-level aggregate object
                 groupedPlans[mId] = { ...row, applicable_services: [] };
             }
-            
-            // Push distinct services
             if (row.service_id) {
                 groupedPlans[mId].applicable_services.push({
                     service_id: row.service_id,
@@ -400,7 +412,10 @@ async function loadPlans() {
         });
 
         currentPlans = Object.values(groupedPlans);
-        // Re-sort based on created_at 
+        // Attach member counts
+        currentPlans.forEach(plan => {
+            plan.member_count = memberCountMap[plan.membership_id] || 0;
+        });
         currentPlans.sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
 
         renderPlans();
@@ -427,7 +442,9 @@ function renderPlans() {
 
         const durationLabel = plan.duration_months
             ? `${plan.duration_months} Month${plan.duration_months > 1 ? 's' : ''}`
-            : (plan.duration || '-');
+            : plan.duration
+                ? `${plan.duration} Month${plan.duration > 1 ? 's' : ''}`
+                : '-';
 
         const planId = plan.membership_id || plan.id;
 
@@ -436,8 +453,6 @@ function renderPlans() {
         let servicesDisplay;
         if (services.length === 0) {
             servicesDisplay = `<span style="color:#94a3b8;font-size:0.8rem;">—</span>`;
-        } else if (services.some(s => s.service_name === 'All Services') || services.length >= availableServices.length && availableServices.length > 0) {
-            servicesDisplay = `<span style="display:inline-block;padding:2px 10px;border-radius:20px;font-size:0.75rem;font-weight:600;background:#ede9fe;color:#7c3aed;">All Services</span>`;
         } else {
             const first = services.slice(0, 2).map(s =>
                 `<span style="display:inline-block;padding:2px 8px;border-radius:20px;font-size:0.75rem;font-weight:500;background:#f1f5f9;color:#475569;margin-right:4px;">${s.service_name}</span>`
@@ -460,11 +475,9 @@ function renderPlans() {
                 <td style="color:#64748b;">${discountDisplay}</td>
                 <td>${servicesDisplay}</td>
                 <td>
-                    <button onclick="window.viewMembersByPlan('${plan.plan_name || plan.name}')"
-                        style="padding:4px 10px;background:#eff6ff;color:#1e40af;border:1px solid #bfdbfe;border-radius:6px;font-size:0.85rem;font-weight:500;cursor:pointer;display:inline-flex;align-items:center;gap:4px;">
-                        ${plan.member_count || 0} members
-                        <i data-feather="external-link" style="width:12px;height:12px;"></i>
-                    </button>
+                    <span style="color:#475569;font-size:0.875rem;font-weight:500;">
+                        ${plan.member_count} ${plan.member_count === 1 ? 'member' : 'members'}
+                    </span>
                 </td>
                 <td style="text-align:right;">
                     <div style="display:flex;gap:8px;justify-content:flex-end;">
