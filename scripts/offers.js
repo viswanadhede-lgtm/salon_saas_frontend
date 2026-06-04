@@ -248,10 +248,6 @@ document.addEventListener('DOMContentLoaded', () => {
                 : (offer.current_usage_count || 0);
             const counterDisplay = `${maxCurrentCount} / ${totalMaxLimitStr}`;
 
-            const statusBadge = offer.status === 'active'
-                ? `<span class="badge-pill" style="background:#dcfce7;color:#166534;font-size:0.75rem;padding:4px 10px;border-radius:999px;font-weight:600;display:inline-flex;align-items:center;gap:4px;"><span style="width:6px;height:6px;border-radius:50%;background:#22c55e;"></span>Active</span>`
-                : `<span class="badge-pill" style="background:#fee2e2;color:#b91c1c;font-size:0.75rem;padding:4px 10px;border-radius:999px;font-weight:600;display:inline-flex;align-items:center;gap:4px;"><span style="width:6px;height:6px;border-radius:50%;background:#ef4444;"></span>Inactive</span>`;
-
             const valueBadge = offer.discount_type === 'percentage'
                 ? `<span style="font-weight:700;color:#0284c7;background:#e0f2fe;padding:4px 8px;border-radius:6px;font-size:0.85rem;">${offer.discount_value}% OFF</span>`
                 : `<span style="font-weight:700;color:#15803d;background:#dcfce7;padding:4px 8px;border-radius:6px;font-size:0.85rem;">₹${offer.discount_value} OFF</span>`;
@@ -267,7 +263,6 @@ document.addEventListener('DOMContentLoaded', () => {
                     </td>
                     <td style="padding: 16px 20px;">${serviceHtml}</td>
                     <td style="padding: 16px 20px;">${validDatesHtml}</td>
-                    <td style="padding: 16px 20px;">${statusBadge}</td>
                     <td style="padding: 16px 20px;">
                         <div style="font-size: 0.9rem; color: #334155;"><span style="font-weight: 600;">${counterDisplay}</span></div>
                     </td>
