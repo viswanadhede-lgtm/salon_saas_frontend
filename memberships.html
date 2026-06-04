@@ -339,6 +339,15 @@
             border-collapse: collapse;
             text-align: left;
             background: #ffffff;
+            font-size: 0.875rem;
+        }
+
+        .premium-table thead tr {
+            background: #f8fafc;
+            border-bottom: 2px solid #e2e8f0;
+            position: sticky;
+            top: 0;
+            z-index: 10;
         }
 
         .premium-table th {
@@ -347,31 +356,37 @@
             color: #64748b;
             text-transform: uppercase;
             letter-spacing: 0.05em;
-            padding: 1rem 1.5rem;
-            border-bottom: 2px solid #e2e8f0;
-            background-color: #f8fafc;
+            padding: 13px 16px;
         }
 
         .premium-table th:first-child,
         .premium-table td:first-child {
-            padding-left: 2rem;
+            padding-left: 24px;
         }
 
         .premium-table th:last-child,
         .premium-table td:last-child {
-            padding-right: 2rem;
+            padding-right: 24px;
         }
 
         .premium-table td {
-            padding: 1rem 1.5rem;
-            border-bottom: 1px solid #f1f5f9;
+            padding: 13px 16px;
+            border-bottom: 1px solid #e3ecf5;
             vertical-align: middle;
             color: #334155;
-            font-size: 0.9rem;
+            font-size: 0.875rem;
+        }
+
+        .premium-table tbody tr {
+            transition: background 0.15s;
+        }
+
+        .premium-table tbody tr:nth-child(even) {
+            background-color: #ffffff;
         }
 
         .premium-table tbody tr:hover {
-            background-color: #f8fafc;
+            background-color: #dce9f1f5;
         }
 
         /* Icon backgrounds */
@@ -739,7 +754,9 @@
                 <div style="width: 100%; margin: 0;">
                 
                 <!-- 1. Membership Plans Table -->
-                <div id="plansTableContent" class="tab-content active" style="overflow-x: auto;">
+                <div id="plansTableContent" class="tab-content active" style="margin: 20px 8px 32px;">
+                    <div style="background:#fff; border:1px solid #e2e8f0; border-radius:12px; overflow:hidden; box-shadow:0 1px 3px rgba(0,0,0,0.04);">
+                    <div style="overflow-x: auto;">
                     <table class="premium-table">
                         <thead>
                             <tr>
@@ -763,10 +780,14 @@
                             </tr>
                         </tbody>
                     </table>
+                    </div>
+                    </div>
                 </div>
 
                 <!-- 2. Purchases Table (Hidden by default) -->
-                <div id="purchasesTableContent" class="tab-content" style="display:none; overflow-x: auto;">
+                <div id="purchasesTableContent" class="tab-content" style="display:none; margin: 20px 8px 32px;">
+                    <div style="background:#fff; border:1px solid #e2e8f0; border-radius:12px; overflow:hidden; box-shadow:0 1px 3px rgba(0,0,0,0.04);">
+                    <div style="overflow-x: auto;">
                     <table class="premium-table">
                         <thead>
                             <tr>
@@ -853,6 +874,8 @@
                             </tr>
                         </tbody>
                     </table>
+                    </div>
+                    </div>
                 </div>
 
 
