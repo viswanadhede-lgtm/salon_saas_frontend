@@ -637,68 +637,14 @@
                 <!-- Right: Search + Filter + Actions -->
                 <div class="header-actions">
                     <!-- Integrated Search Bar -->
-                    <div class="integrated-search-wrap">
+                    <div class="integrated-search-wrap" style="width: 200px;">
                         <i data-feather="search" class="integrated-search-icon"></i>
                         <input type="text" id="membershipSearch" placeholder="Search plans..." class="integrated-search-input">
                     </div>
-                        <div style="position: relative;">
-                            <button id="btnFilter" class="qa-btn qa-secondary">
-                                <i data-feather="filter" class="qa-icon"></i>
-                                Filter
-                            </button>
-                            
-                            <!-- Filter Dropdown Panel -->
-                            <div id="filterPanel" style="display: none; position: absolute; top: calc(100% + 8px); right: 0; width: 580px; background: white; border-radius: 12px; box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1), 0 8px 10px -6px rgba(0, 0, 0, 0.1); border: 1px solid #e2e8f0; z-index: 100; padding: 1.5rem;">
-                                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.25rem;">
-                                    <h3 style="font-size: 1rem; font-weight: 700; color: #0f172a; margin: 0;">Filter Memberships</h3>
-                                    <button id="closeFilter" style="background: none; border: none; color: #94a3b8; cursor: pointer; padding: 4px;"><i data-feather="x" style="width: 18px; height: 18px;"></i></button>
-                                </div>
-                                
-                                <div id="filterGrid" style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 1.5rem; margin-bottom: 1.5rem;">
-                                    <!-- Column 1: Plan Type -->
-                                    <div id="filterColPlanType">
-                                        <p style="font-size: 0.75rem; font-weight: 700; color: #94a3b8; text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 12px;">Plan Type</p>
-                                        <div style="display: flex; flex-direction: column; gap: 10px;">
-                                            <label style="display: flex; align-items: center; gap: 8px; cursor: pointer; font-size: 0.9rem; color: #475569;"><input type="checkbox" checked style="accent-color: #1e3a8a;"> Gold Membership</label>
-                                            <label style="display: flex; align-items: center; gap: 8px; cursor: pointer; font-size: 0.9rem; color: #475569;"><input type="checkbox" style="accent-color: #1e3a8a;"> Silver Membership</label>
-                                            <label style="display: flex; align-items: center; gap: 8px; cursor: pointer; font-size: 0.9rem; color: #475569;"><input type="checkbox" style="accent-color: #1e3a8a;"> VIP Premium</label>
-                                            <label style="display: flex; align-items: center; gap: 8px; cursor: pointer; font-size: 0.9rem; color: #475569;"><input type="checkbox" style="accent-color: #1e3a8a;"> Trial Plan</label>
-                                        </div>
-                                    </div>
-                                    
-                                    <!-- Column 2: Duration -->
-                                    <div id="filterColDuration">
-                                        <p style="font-size: 0.75rem; font-weight: 700; color: #94a3b8; text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 12px;">Duration</p>
-                                        <div style="display: flex; flex-direction: column; gap: 10px;">
-                                            <label style="display: flex; align-items: center; gap: 8px; cursor: pointer; font-size: 0.9rem; color: #475569;"><input type="checkbox" style="accent-color: #1e3a8a;"> 1 Month</label>
-                                            <label style="display: flex; align-items: center; gap: 8px; cursor: pointer; font-size: 0.9rem; color: #475569;"><input type="checkbox" style="accent-color: #1e3a8a;"> 3 Months</label>
-                                            <label style="display: flex; align-items: center; gap: 8px; cursor: pointer; font-size: 0.9rem; color: #475569;"><input type="checkbox" style="accent-color: #1e3a8a;"> 6 Months</label>
-                                            <label style="display: flex; align-items: center; gap: 8px; cursor: pointer; font-size: 0.9rem; color: #475569;"><input type="checkbox" checked style="accent-color: #1e3a8a;"> 12 Months</label>
-                                        </div>
-                                    </div>
-
-                                    <!-- Column 3: Status -->
-                                    <div id="filterColStatus">
-                                        <p style="font-size: 0.75rem; font-weight: 700; color: #94a3b8; text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 12px;">Status</p>
-                                        <div style="display: flex; flex-direction: column; gap: 10px;">
-                                            <label style="display: flex; align-items: center; gap: 8px; cursor: pointer; font-size: 0.9rem; color: #475569;"><input type="checkbox" checked style="accent-color: #1e3a8a;"> Active</label>
-                                            <label style="display: flex; align-items: center; gap: 8px; cursor: pointer; font-size: 0.9rem; color: #475569;"><input type="checkbox" style="accent-color: #1e3a8a;"> Expired</label>
-                                            <label style="display: flex; align-items: center; gap: 8px; cursor: pointer; font-size: 0.9rem; color: #475569;"><input type="checkbox" style="accent-color: #1e3a8a;"> Cancelled</label>
-                                            <label style="display: flex; align-items: center; gap: 8px; cursor: pointer; font-size: 0.9rem; color: #475569;"><input type="checkbox" style="accent-color: #1e3a8a;"> Disabled</label>
-                                        </div>
-                                    </div>
-                                </div>
-
-                                <div style="display: flex; gap: 12px; padding-top: 1.25rem; border-top: 1px solid #f1f5f9;">
-                                    <button id="resetFilter" style="flex: 1; padding: 10px; background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; font-size: 0.9rem; font-weight: 600; color: #64748b; cursor: pointer;">Reset</button>
-                                    <button id="applyFilter" style="flex: 1; padding: 10px; background: #1e3a8a; border: none; border-radius: 8px; font-size: 0.9rem; font-weight: 600; color: white; cursor: pointer;">Apply Filter</button>
-                                </div>
-                            </div>
-                        </div>
                         <!-- 3 Dedicated View Buttons (Toggled via JS) -->
                         <button id="btnCreatePlan" class="qa-btn qa-primary" data-sub-feature="create_membership">
                             <i data-feather="plus" class="qa-icon"></i>
-                            <span>Create Plan</span>
+                            <span>Create Membership Plan</span>
                         </button>
                         <button id="btnAssignPlan" class="qa-btn qa-primary" data-sub-feature="assign_membership" style="display:none;">
                             <i data-feather="user-plus" class="qa-icon"></i>
