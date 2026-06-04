@@ -448,19 +448,29 @@ function renderPlans() {
 
         const planId = plan.membership_id || plan.id;
 
-        // Applicable services pills
+        // Applicable services pills — expandable pattern matching coupons table
         const services = plan.applicable_services || [];
+        const chipStyle = `display:inline-block;padding:2px 8px;border-radius:20px;font-size:0.75rem;font-weight:500;background:#f1f5f9;color:#475569;margin-right:4px;`;
         let servicesDisplay;
         if (services.length === 0) {
             servicesDisplay = `<span style="color:#94a3b8;font-size:0.8rem;">—</span>`;
+        } else if (services.length === 1) {
+            servicesDisplay = `<span style="${chipStyle}">${services[0].service_name}</span>`;
         } else {
-            const first = services.slice(0, 2).map(s =>
-                `<span style="display:inline-block;padding:2px 8px;border-radius:20px;font-size:0.75rem;font-weight:500;background:#f1f5f9;color:#475569;margin-right:4px;">${s.service_name}</span>`
-            ).join('');
-            const more = services.length > 2
-                ? `<span style="font-size:0.75rem;color:#94a3b8;">+${services.length - 2} more</span>`
-                : '';
-            servicesDisplay = first + more;
+            const extraCount = services.length - 1;
+            const extraId = `mem-svc-extra-${planId}`;
+            const toggleId = `mem-svc-toggle-${planId}`;
+            const firstChip = `<span style="${chipStyle}">${services[0].service_name}</span>`;
+            const extraChips = services.slice(1).map(s => `<span style="${chipStyle}">${s.service_name}</span>`).join('');
+            servicesDisplay = `<div style="display:flex;flex-wrap:wrap;align-items:flex-start;gap:2px;width:100%;">
+                    ${firstChip}
+                    <span id="${toggleId}"
+                        onclick="var el=document.getElementById('${extraId}');var tog=document.getElementById('${toggleId}');var h=el.style.display==='none'||el.style.display==='';el.style.display=h?'flex':'none';tog.textContent=h?'▲ less':'+${extraCount}';"
+                        style="display:inline-block;padding:2px 7px;border-radius:20px;font-size:0.7rem;font-weight:600;background:#e0e7ff;color:#4f46e5;cursor:pointer;white-space:nowrap;user-select:none;">+${extraCount}</span>
+                    <div id="${extraId}" style="display:none;flex-wrap:wrap;gap:2px;width:100%;margin-top:3px;">
+                        ${extraChips}
+                    </div>
+                </div>`;
         }
 
         return `
