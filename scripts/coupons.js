@@ -317,7 +317,7 @@ function renderCoupons() {
                 <td style="padding:16px 20px;"><span style="font-weight:700;${badgeColor}padding:4px 8px;border-radius:6px;font-size:0.85rem;">${discountDisplay}</span></td>
                 <td style="padding:16px 20px;font-size:0.9rem;color:#334155;text-transform:capitalize;">${coupon.discount_type || '-'}</td>
                 <td style="padding:16px 20px;font-size:0.9rem;color:#334155;">${svcDisplay}</td>
-                <td style="padding:16px 20px;font-size:0.9rem;color:#64748b;font-style:italic;text-align:center;">${validityText}</td>
+                <td style="padding:16px 20px;font-size:0.9rem;color:#64748b;text-align:center;">${validityText}</td>
                 <td style="padding:14px 16px; vertical-align:middle;">
                     <div class="action-buttons" style="display:flex; justify-content:center; gap:0.5rem;">
                         <button class="hover-lift edit-btn" data-sub-feature="update_coupon" onclick="window.editCoupon('${couponId}')" title="Edit Coupon" style="display:flex; flex-direction:column; align-items:center; justify-content:center; padding: 4px 8px; border-radius:8px; border:1px solid #e0e7ff; background:#eff6ff; cursor:pointer; color:#3b82f6; transition:all 0.2s; min-width: 52px;">
