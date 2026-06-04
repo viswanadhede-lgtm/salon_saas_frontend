@@ -526,14 +526,8 @@ function resetPlanForm() {
 
     document.getElementById('planPriceInput').value = '';
     document.getElementById('planDurationInput').value = '12';
-    document.getElementById('planValidFromInput').value = '';
-    document.getElementById('planDescInput').value = '';
     document.getElementById('planDiscountType').value = 'percentage';
     document.getElementById('planDiscountValue').value = '';
-
-    const tog = document.getElementById('planStatusToggle');
-    tog.checked = true;
-    document.getElementById('planStatusLabel').textContent = 'Active';
 
     // Reset services
     document.querySelectorAll('#planSvcCheckboxList input[type="checkbox"]').forEach(c => c.checked = false);
@@ -558,19 +552,8 @@ window.editPlan = function(id) {
 
     document.getElementById('planPriceInput').value = plan.price || '';
     document.getElementById('planDurationInput').value = plan.duration_months || plan.duration || '12';
-    document.getElementById('planDescInput').value = plan.description || '';
     document.getElementById('planDiscountType').value = plan.discount_type || 'percentage';
     document.getElementById('planDiscountValue').value = plan.discount_value || '';
-
-    if (plan.valid_from) {
-        document.getElementById('planValidFromInput').value = plan.valid_from.split('T')[0];
-    } else {
-        document.getElementById('planValidFromInput').value = '';
-    }
-
-    const tog = document.getElementById('planStatusToggle');
-    tog.checked = plan.status === 'active';
-    document.getElementById('planStatusLabel').textContent = tog.checked ? 'Active' : 'Inactive';
 
     // Services matches
     const checkboxes = document.querySelectorAll('#planSvcCheckboxList input[type="checkbox"]');
@@ -625,13 +608,11 @@ async function handleSavePlan() {
     const plan_name = document.getElementById('planNameInput').value.trim();
     const price = document.getElementById('planPriceInput').value;
     const duration = document.getElementById('planDurationInput').value;
-    const valid_from = document.getElementById('planValidFromInput').value;
     const discount_type = document.getElementById('planDiscountType').value;
     const discount_value = document.getElementById('planDiscountValue').value;
-    const description = document.getElementById('planDescInput').value.trim();
 
-    if (!plan_name || !price || !valid_from || !discount_value) {
-        showToast('Please fill all required fields (Name, Price, Valid From, Discount Value).');
+    if (!plan_name || !price || !discount_value) {
+        showToast('Please fill all required fields (Name, Price, Discount Value).');
         return;
     }
 
@@ -668,11 +649,11 @@ async function handleSavePlan() {
         plan_name,
         price: parseFloat(price),
         duration_months: parseInt(duration, 10),
-        valid_from: valid_from || null,
+        valid_from: null,
         discount_type,
         discount_value: parseFloat(discount_value),
-        status: document.getElementById('planStatusToggle').checked ? 'active' : 'inactive',
-        description: description || null
+        status: 'active',
+        description: null
     };
 
     const btn = document.getElementById('btnSavePlan');
@@ -690,11 +671,11 @@ async function handleSavePlan() {
             plan_name,
             price: parseFloat(price),
             duration: parseInt(duration, 10),
-            valid_from: valid_from || null,
+            valid_from: null,
             discount_type,
             discount_value: parseFloat(discount_value),
-            status: document.getElementById('planStatusToggle').checked ? 'active' : 'inactive',
-            description: description || null,
+            status: 'active',
+            description: null,
             service_id: svc.service_id,
             service_name: svc.service_name
         }));
