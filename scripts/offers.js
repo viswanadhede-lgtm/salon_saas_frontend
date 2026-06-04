@@ -1,5 +1,14 @@
 import { supabase } from '../lib/supabase.js';
 
+window.toggleOfferSvcExtra = function(extraId, toggleId, extraCount) {
+    var el  = document.getElementById(extraId);
+    var tog = document.getElementById(toggleId);
+    if (!el || !tog) return;
+    var isHidden = el.style.display === 'none' || el.style.display === '';
+    el.style.display  = isHidden ? 'flex' : 'none';
+    tog.textContent   = isHidden ? '▲ less' : '+' + extraCount;
+};
+
 document.addEventListener('DOMContentLoaded', () => {
     let offers = [];
     let services = [];
@@ -218,17 +227,34 @@ document.addEventListener('DOMContentLoaded', () => {
         tbody.innerHTML = offers.map(offer => {
             const offerId = offer.offer_id || offer.id;
             const hasAllServices = offer.applicable_services.some(s => s.service_id === 'all') || (services.length > 0 && offer.applicable_services.length >= services.length);
-            const tooltipServices = hasAllServices ? 'All Services' : offer.applicable_services.map(s => s.service_name).join('&#10;');
-            const topServiceText = hasAllServices ? 'All Services' : (offer.applicable_services[0]?.service_name || 'None');
-            const additionalCount = hasAllServices ? 0 : Math.max(0, offer.applicable_services.length - 1);
-
-            let serviceHtml = `<span style="font-size: 0.9rem; color: #334155;">${topServiceText}</span>`;
-            if (additionalCount > 0) {
-                serviceHtml = `<div class="service-tooltip-wrapper" style="position: relative; display: inline-block; cursor: help;" title="${tooltipServices}">
-                    <span style="font-size: 0.9rem; color: #334155;">${topServiceText} <span style="color: #64748b; font-size: 0.8rem; background: #f1f5f9; padding: 2px 6px; border-radius: 4px; margin-left: 4px;">+${additionalCount}</span></span>
-                </div>`;
-            } else if (!hasAllServices) {
-                serviceHtml = `<div class="service-tooltip-wrapper" style="position: relative; display: inline-block; cursor: help;" title="${tooltipServices}">${serviceHtml}</div>`;
+            
+            let serviceHtml = '';
+            const chipStyle = `display:inline-block;padding:2px 8px;border-radius:20px;font-size:0.72rem;font-weight:500;background:#f1f5f9;color:#334155;margin:1px 2px 1px 0;white-space:nowrap;`;
+            
+            if (hasAllServices) {
+                serviceHtml = `<span style="${chipStyle}">All Services</span>`;
+            } else if (offer.applicable_services.length > 0) {
+                const firstChip = `<span style="${chipStyle}">${offer.applicable_services[0].service_name}</span>`;
+                if (offer.applicable_services.length === 1) {
+                    serviceHtml = firstChip;
+                } else {
+                    const extraCount = offer.applicable_services.length - 1;
+                    const extraId = `offer-svc-extra-${offerId}`;
+                    const toggleId = `offer-svc-toggle-${offerId}`;
+                    const extraChips = offer.applicable_services.slice(1).map(s => `<span style="${chipStyle}">${s.service_name}</span>`).join('');
+                    
+                    serviceHtml = `<div style="display:flex;flex-wrap:wrap;align-items:flex-start;gap:2px;width:100%;">
+                            ${firstChip}
+                            <span id="${toggleId}"
+                                onclick="window.toggleOfferSvcExtra('${extraId}', '${toggleId}', ${extraCount})"
+                                style="display:inline-block;padding:2px 7px;border-radius:20px;font-size:0.7rem;font-weight:600;background:#e0e7ff;color:#4f46e5;cursor:pointer;white-space:nowrap;user-select:none;">+${extraCount}</span>
+                            <div id="${extraId}" style="display:none;flex-wrap:wrap;gap:2px;width:100%;margin-top:3px;">
+                                ${extraChips}
+                            </div>
+                        </div>`;
+                }
+            } else {
+                serviceHtml = '—';
             }
 
             const fromText = offer.valid_from ? new Date(offer.valid_from).toLocaleDateString('en-GB') : '-';
