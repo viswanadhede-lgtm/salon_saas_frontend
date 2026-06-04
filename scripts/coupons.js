@@ -189,7 +189,7 @@ async function loadCoupons() {
 
     tbody.innerHTML = `
         <tr>
-            <td colspan="8" style="padding:24px 20px; text-align:center; color:#64748b;">
+            <td colspan="6" style="padding:24px 20px; text-align:center; color:#64748b;">
                 <div style="display:flex;flex-direction:column;align-items:center;gap:12px;">
                     <i data-feather="loader" class="spin" style="width:24px;height:24px;"></i>
                     <span style="font-size:0.9rem;">Loading coupons...</span>
@@ -241,7 +241,7 @@ async function loadCoupons() {
         renderCoupons();
     } catch (err) {
         console.error(err);
-        tbody.innerHTML = `<tr><td colspan="8" style="text-align:center;padding:24px;color:#ef4444;">Failed to load coupons: ${err.message || ''}</td></tr>`;
+        tbody.innerHTML = `<tr><td colspan="6" style="text-align:center;padding:24px;color:#ef4444;">Failed to load coupons: ${err.message || ''}</td></tr>`;
     }
 }
 
@@ -253,7 +253,7 @@ function renderCoupons() {
     if (!tbody) return;
 
     if (currentCoupons.length === 0) {
-        tbody.innerHTML = `<tr><td colspan="8" style="text-align:center;padding:24px;color:#64748b;">No coupons found. Create a new coupon to get started.</td></tr>`;
+        tbody.innerHTML = `<tr><td colspan="6" style="text-align:center;padding:24px;color:#64748b;">No coupons found. Create a new coupon to get started.</td></tr>`;
         return;
     }
 
@@ -274,16 +274,6 @@ function renderCoupons() {
             validityText = `${startStr} – ${endStr}`;
         }
 
-        const isActive = coupon.status === 'active';
-        const statusBadge = isActive
-            ? `<span style="background:#dcfce7;color:#166534;font-size:0.75rem;padding:4px 10px;border-radius:999px;font-weight:600;display:inline-flex;align-items:center;gap:4px;"><span style="width:6px;height:6px;border-radius:50%;background:#22c55e;"></span>Active</span>`
-            : `<span style="background:#f1f5f9;color:#475569;font-size:0.75rem;padding:4px 10px;border-radius:999px;font-weight:600;display:inline-flex;align-items:center;gap:4px;"><span style="width:6px;height:6px;border-radius:50%;background:#94a3b8;"></span>Inactive</span>`;
-
-        const usageLimit = coupon.total_usage_limit || '∞';
-        const usedCount = coupon.applicable_services?.length > 0
-            ? coupon.applicable_services.reduce((sum, svc) => sum + (Number(svc.current_usage_count) || 0), 0)
-            : Number(coupon.current_usage_count) || 0;
-
         return `
             <tr style="border-bottom:1px solid #e2e8f0;">
                 <td style="padding:16px 20px;"><span class="cpn-code-badge">${coupon.coupon_code || 'N/A'}</span></td>
@@ -291,8 +281,6 @@ function renderCoupons() {
                 <td style="padding:16px 20px;font-size:0.9rem;color:#334155;text-transform:capitalize;">${coupon.discount_type || '-'}</td>
                 <td style="padding:16px 20px;font-size:0.9rem;color:#334155;">${svcDisplay}</td>
                 <td style="padding:16px 20px;font-size:0.9rem;color:#64748b;font-style:italic;">${validityText}</td>
-                <td style="padding:16px 20px;"><span style="font-weight:600;color:#334155;">${usedCount}</span><span style="color:#64748b;font-size:0.9rem;"> / ${usageLimit}</span></td>
-                <td style="padding:16px 20px;">${statusBadge}</td>
                 <td style="padding:14px 16px; vertical-align:middle;">
                     <div class="action-buttons" style="display:flex; justify-content:center; gap:0.5rem;">
                         <button class="hover-lift edit-btn" data-sub-feature="update_coupon" onclick="window.editCoupon('${couponId}')" title="Edit Coupon" style="display:flex; flex-direction:column; align-items:center; justify-content:center; padding: 4px 8px; border-radius:8px; border:1px solid #e0e7ff; background:#eff6ff; cursor:pointer; color:#3b82f6; transition:all 0.2s; min-width: 52px;">
