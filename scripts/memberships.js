@@ -493,14 +493,12 @@ function renderPlans() {
                 <td>
                     <div style="display:flex;gap:8px;">
                         <button data-sub-feature="update_membership" onclick="window.editPlan('${planId}')" class="action-btn edit-btn"
-                            style="display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;padding:8px 14px;border-radius:8px;border:1px solid #bfdbfe;background:#eff6ff;cursor:pointer;color:#3b82f6;font-size:0.75rem;font-weight:600;min-width:60px;" title="Edit">
+                            style="padding:6px;border-radius:6px;border:1px solid #e2e8f0;background:#fff;cursor:pointer;color:#3b82f6;" title="Edit">
                             <i data-feather="edit-2" style="width:16px;height:16px;"></i>
-                            Edit
                         </button>
                         <button data-sub-feature="delete_membership" onclick="window.deletePlan('${planId}')" class="action-btn delete-btn"
-                            style="display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;padding:8px 14px;border-radius:8px;border:1px solid #fecdd3;background:#fff1f2;cursor:pointer;color:#ef4444;font-size:0.75rem;font-weight:600;min-width:60px;" title="Delete">
+                            style="padding:6px;border-radius:6px;border:1px solid #e2e8f0;background:#fff;cursor:pointer;color:#ef4444;" title="Delete">
                             <i data-feather="trash-2" style="width:16px;height:16px;"></i>
-                            Delete
                         </button>
                     </div>
                 </td>
