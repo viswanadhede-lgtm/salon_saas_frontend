@@ -490,8 +490,8 @@ function renderPlans() {
                         ${plan.member_count} ${plan.member_count === 1 ? 'member' : 'members'}
                     </span>
                 </td>
-                <td style="text-align:right;">
-                    <div style="display:flex;gap:8px;justify-content:flex-end;">
+                <td>
+                    <div style="display:flex;gap:8px;">
                         <button data-sub-feature="update_membership" onclick="window.editPlan('${planId}')" class="action-btn edit-btn"
                             style="padding:6px;border-radius:6px;border:1px solid #e2e8f0;background:#fff;cursor:pointer;color:#3b82f6;" title="Edit">
                             <i data-feather="edit-2" style="width:16px;height:16px;"></i>
