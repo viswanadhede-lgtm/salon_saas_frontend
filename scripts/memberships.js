@@ -487,7 +487,7 @@ function renderPlans() {
                 <td>${servicesDisplay}</td>
                 <td>
                     <span style="color:#475569;font-size:0.875rem;font-weight:500;">
-                        ${plan.member_count} ${plan.member_count === 1 ? 'member' : 'members'}
+                        ${plan.member_count} ${plan.member_count === 1 ? 'Member' : 'Members'}
                     </span>
                 </td>
                 <td>
