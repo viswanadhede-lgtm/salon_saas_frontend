@@ -320,7 +320,7 @@
                     <div
                         style="background:#fff; border:1px solid #e2e8f0; border-radius:8px; padding:0 12px; display:flex; align-items:center; width:240px; height:40px;">
                         <i data-feather="search" style="color:#94a3b8; width:16px; height:16px; flex-shrink:0;"></i>
-                        <input type="text" placeholder="Search offers..."
+                        <input type="text" id="offersSearchInput" placeholder="Search offer..."
                             style="border:none; background:transparent; padding:8px; font-size:0.85rem; outline:none; width:100%;">
                     </div>
                     <!-- Filter Dropdown Container -->
@@ -335,7 +335,7 @@
                             position:absolute;
                             top:calc(100% + 8px);
                             right:0;
-                            width:460px;
+                            width:250px;
                             background:#fff;
                             border:1px solid #e2e8f0;
                             border-radius:12px;
@@ -351,54 +351,14 @@
                                 </button>
                             </div>
 
-                            <!-- Body: 2-column grid -->
-                            <div style="display:grid; grid-template-columns:1fr 1fr; gap:0; padding:0;">
-
-                                <!-- Left Column -->
-                                <div style="padding:16px 18px; border-right:1px solid #f1f5f9;">
-
-                                    <!-- Status -->
-                                    <div style="margin-bottom:18px;">
-                                        <p style="font-size:0.75rem; font-weight:700; color:#64748b; text-transform:uppercase; letter-spacing:0.06em; margin:0 0 8px;">Status</p>
-                                        <label class="offers-filter-chk"><input type="checkbox" value="active"> Active</label>
-                                        <label class="offers-filter-chk"><input type="checkbox" value="scheduled"> Scheduled</label>
-                                        <label class="offers-filter-chk"><input type="checkbox" value="expired"> Expired</label>
-                                        <label class="offers-filter-chk"><input type="checkbox" value="inactive"> Inactive</label>
-                                    </div>
-
-                                    <!-- Discount Type -->
-                                    <div>
-                                        <p style="font-size:0.75rem; font-weight:700; color:#64748b; text-transform:uppercase; letter-spacing:0.06em; margin:0 0 8px;">Discount Type</p>
-                                        <label class="offers-filter-chk"><input type="checkbox" value="percentage"> Percentage</label>
-                                        <label class="offers-filter-chk"><input type="checkbox" value="flat"> Flat Amount</label>
-                                    </div>
-
+                            <!-- Body -->
+                            <div style="padding:16px 18px;">
+                                <!-- Discount Type -->
+                                <div>
+                                    <p style="font-size:0.75rem; font-weight:700; color:#64748b; text-transform:uppercase; letter-spacing:0.06em; margin:0 0 8px;">Discount Type</p>
+                                    <label class="offers-filter-chk"><input type="checkbox" name="filterDiscountType" value="percentage"> Percentage</label>
+                                    <label class="offers-filter-chk"><input type="checkbox" name="filterDiscountType" value="flat"> Flat Amount</label>
                                 </div>
-
-                                <!-- Right Column -->
-                                <div style="padding:16px 18px;">
-
-                                    <!-- Applicable Service -->
-                                    <div style="margin-bottom:18px;">
-                                        <p style="font-size:0.75rem; font-weight:700; color:#64748b; text-transform:uppercase; letter-spacing:0.06em; margin:0 0 8px;">Applicable Service</p>
-                                        <label class="offers-filter-chk"><input type="checkbox" value="all"> All Services</label>
-                                        <label class="offers-filter-chk"><input type="checkbox" value="haircut"> Haircut</label>
-                                        <label class="offers-filter-chk"><input type="checkbox" value="facial"> Facial</label>
-                                        <label class="offers-filter-chk"><input type="checkbox" value="massage"> Massage</label>
-                                        <label class="offers-filter-chk"><input type="checkbox" value="beard_trim"> Beard Trim</label>
-                                    </div>
-
-                                    <!-- Validity -->
-                                    <div>
-                                        <p style="font-size:0.75rem; font-weight:700; color:#64748b; text-transform:uppercase; letter-spacing:0.06em; margin:0 0 8px;">Validity</p>
-                                        <label class="offers-filter-radio"><input type="radio" name="offerValidity" value="running"> Currently Running</label>
-                                        <label class="offers-filter-radio"><input type="radio" name="offerValidity" value="starting_soon"> Starting Soon</label>
-                                        <label class="offers-filter-radio"><input type="radio" name="offerValidity" value="ending_soon"> Ending Soon</label>
-                                        <label class="offers-filter-radio"><input type="radio" name="offerValidity" value="custom"> Custom Date Range</label>
-                                    </div>
-
-                                </div>
-
                             </div>
 
                             <!-- Footer -->

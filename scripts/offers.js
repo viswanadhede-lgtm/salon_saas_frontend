@@ -219,12 +219,29 @@ document.addEventListener('DOMContentLoaded', () => {
     // RENDER TABLE
     // ─────────────────────────────────────────────────────────────────────────
     function renderOffersTable() {
-        if (offers.length === 0) {
-            tbody.innerHTML = `<tr><td colspan="8" style="text-align: center; padding: 2rem; color: #64748b;">No offers found. Create one.</td></tr>`;
+        const searchInput = document.getElementById('offersSearchInput');
+        const q = searchInput ? searchInput.value.toLowerCase().trim() : '';
+
+        const activeTypes = Array.from(document.querySelectorAll('input[name="filterDiscountType"]:checked')).map(cb => cb.value);
+
+        let filteredOffers = offers;
+        
+        if (q) {
+            filteredOffers = filteredOffers.filter(o => 
+                (o.offer_name || '').toLowerCase().includes(q)
+            );
+        }
+
+        if (activeTypes.length > 0) {
+            filteredOffers = filteredOffers.filter(o => activeTypes.includes(o.discount_type));
+        }
+
+        if (filteredOffers.length === 0) {
+            tbody.innerHTML = `<tr><td colspan="8" style="text-align: center; padding: 2rem; color: #64748b;">No offers found.</td></tr>`;
             return;
         }
 
-        tbody.innerHTML = offers.map(offer => {
+        tbody.innerHTML = filteredOffers.map(offer => {
             const offerId = offer.offer_id || offer.id;
             let servicesToRender = offer.applicable_services;
             if (offer.applicable_services.length === 1 && offer.applicable_services[0].service_id === 'all') {
@@ -579,6 +596,16 @@ document.addEventListener('DOMContentLoaded', () => {
             !offerServicesMenu.contains(e.target)) {
             offerServicesMenu.style.display = 'none';
         }
+    });
+
+    const searchInputEl = document.getElementById('offersSearchInput');
+    if (searchInputEl) {
+        searchInputEl.addEventListener('input', renderOffersTable);
+    }
+
+    const filterCheckboxes = document.querySelectorAll('input[name="filterDiscountType"]');
+    filterCheckboxes.forEach(cb => {
+        cb.addEventListener('change', renderOffersTable);
     });
 
     initOffers();
