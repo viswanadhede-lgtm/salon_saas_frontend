@@ -421,15 +421,6 @@ function renderPlans() {
     }
 
     tbody.innerHTML = currentPlans.map(plan => {
-        const isActive = plan.status === 'active';
-        const statusBadge = isActive
-            ? `<span style="display:inline-flex;align-items:center;gap:6px;padding:4px 10px;border-radius:20px;font-size:0.75rem;font-weight:600;background:#ecfdf5;color:#059669;">
-                   <span style="width:6px;height:6px;border-radius:50%;background:#10b981;"></span>Active
-               </span>`
-            : `<span style="display:inline-flex;align-items:center;gap:6px;padding:4px 10px;border-radius:20px;font-size:0.75rem;font-weight:600;background:#f1f5f9;color:#64748b;">
-                   <span style="width:6px;height:6px;border-radius:50%;background:#94a3b8;"></span>Inactive
-               </span>`;
-
         const discountDisplay = plan.discount_type === 'flat'
             ? `₹${plan.discount_value} OFF`
             : `${plan.discount_value}% OFF`;
@@ -440,17 +431,34 @@ function renderPlans() {
 
         const planId = plan.membership_id || plan.id;
 
+        // Applicable services pills
+        const services = plan.applicable_services || [];
+        let servicesDisplay;
+        if (services.length === 0) {
+            servicesDisplay = `<span style="color:#94a3b8;font-size:0.8rem;">—</span>`;
+        } else if (services.some(s => s.service_name === 'All Services') || services.length >= availableServices.length && availableServices.length > 0) {
+            servicesDisplay = `<span style="display:inline-block;padding:2px 10px;border-radius:20px;font-size:0.75rem;font-weight:600;background:#ede9fe;color:#7c3aed;">All Services</span>`;
+        } else {
+            const first = services.slice(0, 2).map(s =>
+                `<span style="display:inline-block;padding:2px 8px;border-radius:20px;font-size:0.75rem;font-weight:500;background:#f1f5f9;color:#475569;margin-right:4px;">${s.service_name}</span>`
+            ).join('');
+            const more = services.length > 2
+                ? `<span style="font-size:0.75rem;color:#94a3b8;">+${services.length - 2} more</span>`
+                : '';
+            servicesDisplay = first + more;
+        }
+
         return `
             <tr style="border-bottom:1px solid #e2e8f0;">
                 <td>
                     <span style="font-weight:600;color:#1e293b;display:block;">${plan.plan_name || plan.name || '-'}</span>
-                    ${plan.description ? `<span style="font-size:0.8rem;color:#94a3b8;">${plan.description}</span>` : ''}
                 </td>
                 <td>
                     <span style="font-weight:600;color:#059669;">₹${Number(plan.price || 0).toLocaleString('en-IN')}</span>
                 </td>
                 <td style="color:#64748b;">${durationLabel}</td>
                 <td style="color:#64748b;">${discountDisplay}</td>
+                <td>${servicesDisplay}</td>
                 <td>
                     <button onclick="window.viewMembersByPlan('${plan.plan_name || plan.name}')"
                         style="padding:4px 10px;background:#eff6ff;color:#1e40af;border:1px solid #bfdbfe;border-radius:6px;font-size:0.85rem;font-weight:500;cursor:pointer;display:inline-flex;align-items:center;gap:4px;">
@@ -458,7 +466,6 @@ function renderPlans() {
                         <i data-feather="external-link" style="width:12px;height:12px;"></i>
                     </button>
                 </td>
-                <td>${statusBadge}</td>
                 <td style="text-align:right;">
                     <div style="display:flex;gap:8px;justify-content:flex-end;">
                         <button data-sub-feature="update_membership" onclick="window.editPlan('${planId}')" class="action-btn edit-btn"
