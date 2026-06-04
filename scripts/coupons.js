@@ -1,5 +1,14 @@
 import { supabase } from '../lib/supabase.js';
 
+window.toggleCpnSvcExtra = function(extraId, toggleId, extraCount) {
+    var el  = document.getElementById(extraId);
+    var tog = document.getElementById(toggleId);
+    if (!el || !tog) return;
+    var isHidden = el.style.display === 'none' || el.style.display === '';
+    el.style.display  = isHidden ? 'flex' : 'none';
+    tog.textContent   = isHidden ? '▲ less' : '+' + extraCount;
+};
+
 let currentCoupons = [];
 let availableServices = [];
 let isEditing = false;
@@ -263,9 +272,37 @@ function renderCoupons() {
         const discountDisplay = isFlat ? `₹${coupon.discount_value} OFF` : `${coupon.discount_value}% OFF`;
         const badgeColor = isFlat ? 'color:#15803d;background:#dcfce7;' : 'color:#0284c7;background:#e0f2fe;';
 
-        const svcDisplay = coupon.applicable_services?.length > 0
-            ? `${coupon.applicable_services.length} service(s)`
-            : 'All Services';
+        let svcDisplay = '';
+        const chipStyle = `display:inline-block;padding:2px 8px;border-radius:20px;font-size:0.72rem;font-weight:500;background:#f1f5f9;color:#334155;margin:1px 2px 1px 0;white-space:nowrap;`;
+
+        if (coupon.applicable_services?.length > 0) {
+            let servicesToRender = coupon.applicable_services;
+            if (servicesToRender.length === 1 && servicesToRender[0].service_id === 'all') {
+                servicesToRender = availableServices.length > 0 ? availableServices : [{ service_name: 'All Services' }];
+            }
+
+            const firstChip = `<span style="${chipStyle}">${servicesToRender[0].service_name}</span>`;
+            if (servicesToRender.length === 1) {
+                svcDisplay = firstChip;
+            } else {
+                const extraCount = servicesToRender.length - 1;
+                const extraId = `cpn-svc-extra-${couponId}`;
+                const toggleId = `cpn-svc-toggle-${couponId}`;
+                const extraChips = servicesToRender.slice(1).map(s => `<span style="${chipStyle}">${s.service_name}</span>`).join('');
+
+                svcDisplay = `<div style="display:flex;flex-wrap:wrap;align-items:flex-start;gap:2px;width:100%;">
+                        ${firstChip}
+                        <span id="${toggleId}"
+                            onclick="window.toggleCpnSvcExtra('${extraId}', '${toggleId}', ${extraCount})"
+                            style="display:inline-block;padding:2px 7px;border-radius:20px;font-size:0.7rem;font-weight:600;background:#e0e7ff;color:#4f46e5;cursor:pointer;white-space:nowrap;user-select:none;">+${extraCount}</span>
+                        <div id="${extraId}" style="display:none;flex-wrap:wrap;gap:2px;width:100%;margin-top:3px;">
+                            ${extraChips}
+                        </div>
+                    </div>`;
+            }
+        } else {
+            svcDisplay = `<span style="${chipStyle}">All Services</span>`;
+        }
 
         let validityText = 'Always Active';
         if (coupon.valid_from || coupon.valid_to) {
