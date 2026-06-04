@@ -44,6 +44,12 @@ document.addEventListener('DOMContentLoaded', async () => {
         document.getElementById('btnCpnFilterApply')?.addEventListener('click', () => { filterPanel.style.display = 'none'; });
         document.getElementById('btnCpnFilterReset')?.addEventListener('click', () => {
             filterPanel.querySelectorAll('input').forEach(i => i.checked = false);
+            renderCoupons();
+        });
+
+        const filterCheckboxes = document.querySelectorAll('input[name="filterDiscountType"]');
+        filterCheckboxes.forEach(cb => {
+            cb.addEventListener('change', renderCoupons);
         });
         filterPanel.addEventListener('click', e => e.stopPropagation());
     }
@@ -110,6 +116,11 @@ document.addEventListener('DOMContentLoaded', async () => {
     });
 
     document.getElementById('btnSaveCoupon')?.addEventListener('click', handleSaveCoupon);
+
+    const searchInputEl = document.getElementById('couponsSearchInput');
+    if (searchInputEl) {
+        searchInputEl.addEventListener('input', renderCoupons);
+    }
 });
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -162,12 +173,6 @@ function populateServicesCheckboxes() {
     if (modalContainer) {
         modalContainer.innerHTML = allRow + dynamicHtml;
         bindAllServicesToggle(modalContainer);
-    }
-
-    if (filterContainer) {
-        filterContainer.innerHTML = `<label class="cpn-filter-chk"><input type="checkbox" value="all"> All Services</label>` +
-            availableServices.map(svc => `<label class="cpn-filter-chk"><input type="checkbox" value="${svc.service_id}"> ${svc.service_name}</label>`).join('');
-        bindAllServicesToggle(filterContainer);
     }
 }
 
@@ -261,12 +266,29 @@ function renderCoupons() {
     const tbody = document.getElementById('couponsTableBody');
     if (!tbody) return;
 
-    if (currentCoupons.length === 0) {
-        tbody.innerHTML = `<tr><td colspan="6" style="text-align:center;padding:24px;color:#64748b;">No coupons found. Create a new coupon to get started.</td></tr>`;
+    const searchInput = document.getElementById('couponsSearchInput');
+    const q = searchInput ? searchInput.value.toLowerCase().trim() : '';
+
+    const activeTypes = Array.from(document.querySelectorAll('input[name="filterDiscountType"]:checked')).map(cb => cb.value);
+
+    let filteredCoupons = currentCoupons;
+    
+    if (q) {
+        filteredCoupons = filteredCoupons.filter(c => 
+            (c.coupon_code || '').toLowerCase().includes(q)
+        );
+    }
+
+    if (activeTypes.length > 0) {
+        filteredCoupons = filteredCoupons.filter(c => activeTypes.includes(c.discount_type));
+    }
+
+    if (filteredCoupons.length === 0) {
+        tbody.innerHTML = `<tr><td colspan="6" style="text-align:center;padding:24px;color:#64748b;">No coupons found.</td></tr>`;
         return;
     }
 
-    tbody.innerHTML = currentCoupons.map(coupon => {
+    tbody.innerHTML = filteredCoupons.map(coupon => {
         const couponId = coupon.coupon_id || coupon.id;
         const isFlat = coupon.discount_type === 'flat';
         const discountDisplay = isFlat ? `₹${coupon.discount_value} OFF` : `${coupon.discount_value}% OFF`;
