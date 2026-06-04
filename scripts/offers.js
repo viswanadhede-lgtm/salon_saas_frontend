@@ -299,12 +299,14 @@ document.addEventListener('DOMContentLoaded', () => {
                     <td style="padding: 16px 20px;">${serviceHtml}</td>
                     <td style="padding: 16px 20px; text-align: center;">${validDatesHtml}</td>
                     <td style="padding: 16px 20px; text-align: center;">
-                        <div style="display: flex; gap: 6px; justify-content: center;">
-                            <button class="icon-btn edit-btn" data-sub-feature="update_offer" data-id="${offerId}" style="padding: 6px; border-radius: 6px; border: 1px solid #e2e8f0; background: #fff; cursor: pointer; color: #3b82f6;" title="Edit">
-                                <i data-feather="edit-2" style="width: 16px; height: 16px;"></i>
+                        <div style="display:flex;gap:0.5rem;justify-content:center;">
+                            <button class="hover-lift edit-btn" data-sub-feature="update_offer" data-id="${offerId}" title="Edit Offer" style="display:flex;flex-direction:column;align-items:center;justify-content:center;padding:4px 8px;border-radius:8px;border:1px solid #e0e7ff;background:#eff6ff;cursor:pointer;color:#3b82f6;transition:all 0.2s;min-width:52px;">
+                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="margin-bottom:2px;"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path></svg>
+                                <span style="font-size:10px;font-weight:600;pointer-events:none;">Edit</span>
                             </button>
-                            <button class="icon-btn delete-btn" data-sub-feature="delete_offer" data-id="${offerId}" style="padding: 6px; border-radius: 6px; border: 1px solid #e2e8f0; background: #fff; cursor: pointer; color: #ef4444;" title="Delete">
-                                <i data-feather="trash-2" style="width: 16px; height: 16px;"></i>
+                            <button class="hover-lift delete-btn" data-sub-feature="delete_offer" data-id="${offerId}" title="Delete Offer" style="display:flex;flex-direction:column;align-items:center;justify-content:center;padding:4px 8px;border-radius:8px;border:1px solid #fee2e2;background:#fef2f2;cursor:pointer;color:#ef4444;transition:all 0.2s;min-width:52px;">
+                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="margin-bottom:2px;"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path><line x1="10" y1="11" x2="10" y2="17"></line><line x1="14" y1="11" x2="14" y2="17"></line></svg>
+                                <span style="font-size:10px;font-weight:600;pointer-events:none;">Delete</span>
                             </button>
                         </div>
                     </td>
