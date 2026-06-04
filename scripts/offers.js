@@ -226,22 +226,23 @@ document.addEventListener('DOMContentLoaded', () => {
 
         tbody.innerHTML = offers.map(offer => {
             const offerId = offer.offer_id || offer.id;
-            const hasAllServices = offer.applicable_services.some(s => s.service_id === 'all') || (services.length > 0 && offer.applicable_services.length >= services.length);
+            let servicesToRender = offer.applicable_services;
+            if (offer.applicable_services.length === 1 && offer.applicable_services[0].service_id === 'all') {
+                servicesToRender = services.length > 0 ? services : offer.applicable_services;
+            }
             
             let serviceHtml = '';
             const chipStyle = `display:inline-block;padding:2px 8px;border-radius:20px;font-size:0.72rem;font-weight:500;background:#f1f5f9;color:#334155;margin:1px 2px 1px 0;white-space:nowrap;`;
             
-            if (hasAllServices) {
-                serviceHtml = `<span style="${chipStyle}">All Services</span>`;
-            } else if (offer.applicable_services.length > 0) {
-                const firstChip = `<span style="${chipStyle}">${offer.applicable_services[0].service_name}</span>`;
-                if (offer.applicable_services.length === 1) {
+            if (servicesToRender.length > 0) {
+                const firstChip = `<span style="${chipStyle}">${servicesToRender[0].service_name}</span>`;
+                if (servicesToRender.length === 1) {
                     serviceHtml = firstChip;
                 } else {
-                    const extraCount = offer.applicable_services.length - 1;
+                    const extraCount = servicesToRender.length - 1;
                     const extraId = `offer-svc-extra-${offerId}`;
                     const toggleId = `offer-svc-toggle-${offerId}`;
-                    const extraChips = offer.applicable_services.slice(1).map(s => `<span style="${chipStyle}">${s.service_name}</span>`).join('');
+                    const extraChips = servicesToRender.slice(1).map(s => `<span style="${chipStyle}">${s.service_name}</span>`).join('');
                     
                     serviceHtml = `<div style="display:flex;flex-wrap:wrap;align-items:flex-start;gap:2px;width:100%;">
                             ${firstChip}
