@@ -36,10 +36,6 @@ document.addEventListener('DOMContentLoaded', () => {
     const offerStartDateEl = document.getElementById('offerStartDate');
     const offerEndDateEl = document.getElementById('offerEndDate');
     const offerMinBillAmountEl = document.getElementById('offerMinBillAmount');
-    const offerUsageLimitEl = document.getElementById('offerUsageLimit');
-    const offerUsagePerCustomerEl = document.getElementById('offerUsagePerCustomer');
-    const offerCurrentUsageCountEl = document.getElementById('offerCurrentUsageCount');
-    const offerStatusEl = document.getElementById('offerStatus');
 
     // Multi-select dropdown elements
     const offerServicesText = document.getElementById('offerServicesText');
@@ -291,10 +287,6 @@ document.addEventListener('DOMContentLoaded', () => {
         offerStartDateEl.value = '';
         offerEndDateEl.value = '';
         offerMinBillAmountEl.value = '';
-        offerUsageLimitEl.value = '';
-        offerUsagePerCustomerEl.value = '';
-        if (offerCurrentUsageCountEl) offerCurrentUsageCountEl.value = '0';
-        offerStatusEl.value = 'active';
 
         document.querySelectorAll('.serviceCheckboxes').forEach(chk => chk.checked = false);
         offerServicesText.textContent = 'Select services...';
@@ -322,14 +314,6 @@ document.addEventListener('DOMContentLoaded', () => {
         offerStartDateEl.value = o.valid_from ? o.valid_from.split('T')[0] : '';
         offerEndDateEl.value = o.valid_to ? o.valid_to.split('T')[0] : '';
         offerMinBillAmountEl.value = o.min_bill_amount || '';
-        offerUsageLimitEl.value = o.total_usage_limit || '';
-        offerUsagePerCustomerEl.value = o.usage_per_customer || '';
-
-        const maxCurrentCount = o.applicable_services.length > 0
-            ? Math.max(...o.applicable_services.map(s => s.current_usage_count || 0))
-            : (o.current_usage_count || 0);
-        if (offerCurrentUsageCountEl) offerCurrentUsageCountEl.value = maxCurrentCount;
-        offerStatusEl.value = o.status || 'active';
 
         // Populate multi-select
         document.querySelectorAll('.serviceCheckboxes').forEach(chk => chk.checked = false);
@@ -442,12 +426,10 @@ document.addEventListener('DOMContentLoaded', () => {
             offer_name: offerNameEl.value.trim(),
             discount_type: offerDiscountTypeEl.value,
             discount_value: parseFloat(offerDiscountValueEl.value) || 0,
-            status: offerStatusEl.value,
+            status: 'active',
             valid_from: offerStartDateEl.value || null,
             valid_to: offerEndDateEl.value || null,
-            min_bill_amount: offerMinBillAmountEl.value ? parseFloat(offerMinBillAmountEl.value) : null,
-            total_usage_limit: offerUsageLimitEl.value ? parseInt(offerUsageLimitEl.value, 10) : null,
-            usage_per_customer: offerUsagePerCustomerEl.value ? parseInt(offerUsagePerCustomerEl.value, 10) : null
+            min_bill_amount: offerMinBillAmountEl.value ? parseFloat(offerMinBillAmountEl.value) : null
         };
 
         btnSaveOffer.textContent = isEditMode ? 'Saving...' : 'Creating...';
@@ -463,12 +445,10 @@ document.addEventListener('DOMContentLoaded', () => {
                 offer_name: offerNameEl.value.trim(),
                 discount_type: offerDiscountTypeEl.value,
                 discount_value: parseFloat(offerDiscountValueEl.value) || 0,
-                status: offerStatusEl.value,
+                status: 'active',
                 valid_from: offerStartDateEl.value || null,
                 valid_to: offerEndDateEl.value || null,
                 min_bill_amount: offerMinBillAmountEl.value ? parseFloat(offerMinBillAmountEl.value) : null,
-                total_usage_limit: offerUsageLimitEl.value ? parseInt(offerUsageLimitEl.value, 10) : null,
-                usage_per_customer: offerUsagePerCustomerEl.value ? parseInt(offerUsagePerCustomerEl.value, 10) : null,
                 service_id: srv.service_id,
                 service_name: srv.service_name,
                 current_usage_count: srv.current_usage_count
