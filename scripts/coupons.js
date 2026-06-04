@@ -72,13 +72,6 @@ document.addEventListener('DOMContentLoaded', async () => {
         });
     }
 
-    // Status toggle label
-    const toggle = document.getElementById('cpnStatusToggle');
-    const statusLabel = document.getElementById('cpnStatusLabel');
-    if (toggle && statusLabel) {
-        toggle.addEventListener('change', () => { statusLabel.textContent = toggle.checked ? 'Active' : 'Inactive'; });
-    }
-
     // Auto-uppercase coupon code
     const codeInput = document.getElementById('cpnCode');
     if (codeInput) {
@@ -333,11 +326,6 @@ function openCreateModal() {
     document.querySelectorAll('#cpnServicesCheckboxList input[type="checkbox"]').forEach(c => c.checked = false);
     applyServiceSelection();
     document.getElementById('cpnMinBooking').value = '';
-    document.getElementById('cpnUsageLimit').value = '';
-    document.getElementById('cpnUsagePerCustomer').value = '';
-    const tog = document.getElementById('cpnStatusToggle');
-    tog.checked = true;
-    document.getElementById('cpnStatusLabel').textContent = 'Active';
     document.getElementById('cpnStartDate').value = '';
     document.getElementById('cpnEndDate').value = '';
 
@@ -381,12 +369,6 @@ window.editCoupon = function(id) {
     applyServiceSelection();
 
     document.getElementById('cpnMinBooking').value = coupon.min_bill_amount || '';
-    document.getElementById('cpnUsageLimit').value = coupon.total_usage_limit || '';
-    document.getElementById('cpnUsagePerCustomer').value = coupon.usage_per_customer || '';
-
-    const tog = document.getElementById('cpnStatusToggle');
-    tog.checked = coupon.status === 'active';
-    document.getElementById('cpnStatusLabel').textContent = tog.checked ? 'Active' : 'Inactive';
 
     document.getElementById('cpnStartDate').value = coupon.valid_from ? coupon.valid_from.split('T')[0] : '';
     document.getElementById('cpnEndDate').value = coupon.valid_to ? coupon.valid_to.split('T')[0] : '';
@@ -504,10 +486,10 @@ async function handleSaveCoupon() {
             coupon_code: coupon_code,
             discount_type: discount_type,
             discount_value: parseFloat(discount_value),
-            status: document.getElementById('cpnStatusToggle').checked ? 'active' : 'inactive',
+            status: 'active',
             min_bill_amount: document.getElementById('cpnMinBooking').value ? parseFloat(document.getElementById('cpnMinBooking').value) : null,
-            total_usage_limit: document.getElementById('cpnUsageLimit').value ? parseInt(document.getElementById('cpnUsageLimit').value, 10) : null,
-            usage_per_customer: document.getElementById('cpnUsagePerCustomer').value ? parseInt(document.getElementById('cpnUsagePerCustomer').value, 10) : null,
+            total_usage_limit: null,
+            usage_per_customer: null,
             valid_from: document.getElementById('cpnStartDate').value || null,
             valid_to: document.getElementById('cpnEndDate').value || null,
             service_id: svc.service_id,
