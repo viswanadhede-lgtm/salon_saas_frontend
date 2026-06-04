@@ -464,7 +464,7 @@
 
     <!-- Create Offer Modal -->
     <div class="modal-overlay" id="offerModalOverlay">
-        <div class="modal-container" id="offerModal" style="width: 700px; max-width: 90vw;">
+        <div class="modal-container" id="offerModal" style="width: 850px; max-width: 95vw;">
             <!-- Header -->
             <div class="modal-header">
                 <div class="header-titles">
@@ -474,154 +474,163 @@
                 <button class="modal-close" id="closeOfferModal"><i data-feather="x"></i></button>
             </div>
 
-            <div class="modal-body" style="padding: 0 1.5rem 1.5rem 1.5rem; overflow-y: auto;">
-                <div class="form-grid" style="grid-template-columns: 1fr; gap: 20px;">
-
-                    <!-- Offer Name -->
-                    <div class="form-group" style="margin-bottom: 0;">
-                        <label class="form-label" for="offerName">Offer Name <span class="text-rose">*</span></label>
-                        <input type="text" id="offerName" class="form-input" placeholder="e.g., Summer Glow Offer">
-                    </div>
-
-                    <!-- Discount Type & Value -->
-                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px;">
+            <div class="modal-body" style="padding: 1.5rem; overflow-y: auto;">
+                <div style="display:grid; grid-template-columns:1fr 1fr; gap:32px;">
+                    
+                    <!-- LEFT COLUMN -->
+                    <div style="display:flex; flex-direction:column; gap:20px;">
+                        <!-- Offer Name -->
                         <div class="form-group" style="margin-bottom: 0;">
-                            <label class="form-label" for="offerDiscountType">Discount Type <span
-                                    class="text-rose">*</span></label>
-                            <select id="offerDiscountType" class="form-select">
-                                <option value="percentage" selected>Percentage (%)</option>
-                                <option value="flat">Flat Amount (₹)</option>
-                            </select>
+                            <label class="form-label" for="offerName">Offer Name <span class="text-rose">*</span></label>
+                            <input type="text" id="offerName" class="form-input" placeholder="e.g., Summer Glow Offer">
                         </div>
-                        <div class="form-group" style="margin-bottom: 0;">
-                            <label class="form-label" for="offerDiscountValue">Discount Value <span
-                                    class="text-rose">*</span></label>
-                            <input type="number" id="offerDiscountValue" class="form-input" placeholder="e.g., 20">
+
+                        <!-- Discount Type & Value -->
+                        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px;">
+                            <div class="form-group" style="margin-bottom: 0;">
+                                <label class="form-label" for="offerDiscountType">Discount Type <span
+                                        class="text-rose">*</span></label>
+                                <select id="offerDiscountType" class="form-select">
+                                    <option value="percentage" selected>Percentage (%)</option>
+                                    <option value="flat">Flat Amount (₹)</option>
+                                </select>
+                            </div>
+                            <div class="form-group" style="margin-bottom: 0;">
+                                <label class="form-label" for="offerDiscountValue">Discount Value <span
+                                        class="text-rose">*</span></label>
+                                <input type="number" id="offerDiscountValue" class="form-input" placeholder="e.g., 20">
+                            </div>
                         </div>
-                    </div>
 
-                    <!-- Applicable Services (Custom Dropdown) -->
-                    <div class="form-group" style="position: relative; margin-bottom: 0;">
-                        <label class="form-label">Applicable Services <span class="text-rose">*</span></label>
-                        <div class="filter-dropdown-container" style="width: 100%; position: relative;">
-                            <button type="button" class="form-input" id="offerServicesBtn"
-                                style="display: flex; justify-content: space-between; align-items: center; text-align: left; background: #fff; cursor: pointer; height: 42px; width: 100%;">
-                                <span id="offerServicesText" style="color: #94a3b8;">Select services...</span>
-                                <i data-feather="chevron-down" style="width: 16px; height: 16px; color: #94a3b8;"></i>
-                            </button>
+                        <!-- Applicable Services (Custom Dropdown) -->
+                        <div class="form-group" style="position: relative; margin-bottom: 0;">
+                            <label class="form-label">Applicable Services <span class="text-rose">*</span></label>
+                            <div class="filter-dropdown-container" style="width: 100%; position: relative;">
+                                <button type="button" class="form-input" id="offerServicesBtn"
+                                    style="display: flex; justify-content: space-between; align-items: center; text-align: left; background: #fff; cursor: pointer; height: 42px; width: 100%;">
+                                    <span id="offerServicesText" style="color: #94a3b8;">Select services...</span>
+                                    <i data-feather="chevron-down" style="width: 16px; height: 16px; color: #94a3b8;"></i>
+                                </button>
 
-                            <!-- Custom Dropdown Menu -->
-                            <div id="offerServicesMenu"
-                                style="display: none; position: absolute; top: calc(100% + 4px); left: 0; width: 100%; background: #fff; border: 1px solid #e2e8f0; border-radius: 8px; box-shadow: 0 10px 15px -3px rgba(0,0,0,0.1), 0 4px 6px -2px rgba(0,0,0,0.05); z-index: 50;">
-                                <div style="padding: 12px 16px; max-height: 220px; overflow-y: auto;">
-                                    <style>
-                                        .custom-chk-circle {
-                                            appearance: none;
-                                            -webkit-appearance: none;
-                                            width: 16px !important;
-                                            height: 16px !important;
-                                            border: 2px solid #cbd5e1;
-                                            border-radius: 50%;
-                                            background-color: #fff;
-                                            outline: none;
-                                            cursor: pointer;
-                                            position: relative;
-                                            transition: all 0.2s ease;
-                                            flex: 0 0 16px !important;
-                                            margin: 0 !important;
-                                            padding: 0 !important;
-                                        }
+                                <!-- Custom Dropdown Menu -->
+                                <div id="offerServicesMenu"
+                                    style="display: none; position: absolute; top: calc(100% + 4px); left: 0; width: 100%; background: #fff; border: 1px solid #e2e8f0; border-radius: 8px; box-shadow: 0 10px 15px -3px rgba(0,0,0,0.1), 0 4px 6px -2px rgba(0,0,0,0.05); z-index: 50;">
+                                    <div style="padding: 12px 16px; max-height: 220px; overflow-y: auto;">
+                                        <style>
+                                            .custom-chk-circle {
+                                                appearance: none;
+                                                -webkit-appearance: none;
+                                                width: 16px !important;
+                                                height: 16px !important;
+                                                border: 2px solid #cbd5e1;
+                                                border-radius: 50%;
+                                                background-color: #fff;
+                                                outline: none;
+                                                cursor: pointer;
+                                                position: relative;
+                                                transition: all 0.2s ease;
+                                                flex: 0 0 16px !important;
+                                                margin: 0 !important;
+                                                padding: 0 !important;
+                                            }
 
-                                        .custom-chk-circle:checked {
-                                            border-color: #4f46e5;
-                                            background-color: #4f46e5;
-                                        }
+                                            .custom-chk-circle:checked {
+                                                border-color: #4f46e5;
+                                                background-color: #4f46e5;
+                                            }
 
-                                        .custom-chk-circle:checked::after {
-                                            content: '';
-                                            position: absolute;
-                                            top: 50%;
-                                            left: 50%;
-                                            width: 6px;
-                                            height: 6px;
-                                            background-color: #ffffff;
-                                            border-radius: 50%;
-                                            transform: translate(-50%, -50%);
-                                        }
+                                            .custom-chk-circle:checked::after {
+                                                content: '';
+                                                position: absolute;
+                                                top: 50%;
+                                                left: 50%;
+                                                width: 6px;
+                                                height: 6px;
+                                                background-color: #ffffff;
+                                                border-radius: 50%;
+                                                transform: translate(-50%, -50%);
+                                            }
 
-                                        .service-lbl {
-                                            display: flex;
-                                            align-items: center;
-                                            justify-content: flex-start;
-                                            gap: 12px;
-                                            cursor: pointer;
-                                            padding: 10px 0;
-                                            margin: 0 !important;
-                                            border-bottom: 1px solid #f8fafc;
-                                        }
+                                            .service-lbl {
+                                                display: flex;
+                                                align-items: center;
+                                                justify-content: flex-start;
+                                                gap: 12px;
+                                                cursor: pointer;
+                                                padding: 10px 0;
+                                                margin: 0 !important;
+                                                border-bottom: 1px solid #f8fafc;
+                                            }
 
-                                        .service-lbl:last-child {
-                                            border-bottom: none;
-                                        }
+                                            .service-lbl:last-child {
+                                                border-bottom: none;
+                                            }
 
-                                        .service-lbl span {
-                                            font-size: 0.9rem;
-                                            color: #1e293b;
-                                            font-weight: 500;
-                                            user-select: none;
-                                            margin: 0 !important;
-                                            padding: 0 !important;
-                                            line-height: 1;
-                                        }
-                                    </style>
-                                    <div id="servicesCheckboxList" style="display: flex; flex-direction: column;">
-                                        <label class="service-lbl">
-                                            <input type="checkbox" value="All Services" class="custom-chk-circle">
-                                            <span>All Services</span>
-                                        </label>
-                                        <label class="service-lbl">
-                                            <input type="checkbox" value="Hair Care" class="custom-chk-circle">
-                                            <span>Hair Care</span>
-                                        </label>
-                                        <label class="service-lbl">
-                                            <input type="checkbox" value="Styling" class="custom-chk-circle">
-                                            <span>Styling</span>
-                                        </label>
-                                        <label class="service-lbl">
-                                            <input type="checkbox" value="Skin Care" class="custom-chk-circle">
-                                            <span>Skin Care</span>
-                                        </label>
+                                            .service-lbl span {
+                                                font-size: 0.9rem;
+                                                color: #1e293b;
+                                                font-weight: 500;
+                                                user-select: none;
+                                                margin: 0 !important;
+                                                padding: 0 !important;
+                                                line-height: 1;
+                                            }
+                                        </style>
+                                        <div id="servicesCheckboxList" style="display: flex; flex-direction: column;">
+                                            <label class="service-lbl">
+                                                <input type="checkbox" value="All Services" class="custom-chk-circle">
+                                                <span>All Services</span>
+                                            </label>
+                                            <label class="service-lbl">
+                                                <input type="checkbox" value="Hair Care" class="custom-chk-circle">
+                                                <span>Hair Care</span>
+                                            </label>
+                                            <label class="service-lbl">
+                                                <input type="checkbox" value="Styling" class="custom-chk-circle">
+                                                <span>Styling</span>
+                                            </label>
+                                            <label class="service-lbl">
+                                                <input type="checkbox" value="Skin Care" class="custom-chk-circle">
+                                                <span>Skin Care</span>
+                                            </label>
+                                        </div>
                                     </div>
-                                </div>
-                                <div
-                                    style="padding: 12px 16px; border-top: 1px solid #f1f5f9; display: flex; justify-content: space-between; gap: 12px;">
-                                    <button type="button" id="resetServicesBtn"
-                                        style="flex: 1; padding: 10px 0; border: 1px solid #e2e8f0; border-radius: 6px; background: #fff; font-size: 0.9rem; font-weight: 600; color: #64748b; cursor: pointer;">Reset</button>
-                                    <button type="button" id="applyServicesBtn"
-                                        style="flex: 1; padding: 10px 0; border: none; border-radius: 6px; background: #6366f1; font-size: 0.9rem; font-weight: 600; color: #fff; cursor: pointer;">Apply</button>
+                                    <div
+                                        style="padding: 12px 16px; border-top: 1px solid #f1f5f9; display: flex; justify-content: space-between; gap: 12px;">
+                                        <button type="button" id="resetServicesBtn"
+                                            style="flex: 1; padding: 10px 0; border: 1px solid #e2e8f0; border-radius: 6px; background: #fff; font-size: 0.9rem; font-weight: 600; color: #64748b; cursor: pointer;">Reset</button>
+                                        <button type="button" id="applyServicesBtn"
+                                            style="flex: 1; padding: 10px 0; border: none; border-radius: 6px; background: #6366f1; font-size: 0.9rem; font-weight: 600; color: #fff; cursor: pointer;">Apply</button>
+                                    </div>
                                 </div>
                             </div>
                         </div>
+
                     </div>
 
-                    <!-- Validity Dates -->
-                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px;">
-                        <div class="form-group" style="margin-bottom: 0;">
-                            <label class="form-label" for="offerStartDate">Start Date <span
-                                    class="text-rose">*</span></label>
-                            <input type="date" id="offerStartDate" class="form-input">
+                    <!-- RIGHT COLUMN -->
+                    <div style="display:flex; flex-direction:column; gap:20px;">
+                        
+                        <!-- Validity Dates -->
+                        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px;">
+                            <div class="form-group" style="margin-bottom: 0;">
+                                <label class="form-label" for="offerStartDate">Start Date <span
+                                        class="text-rose">*</span></label>
+                                <input type="date" id="offerStartDate" class="form-input">
+                            </div>
+                            <div class="form-group" style="margin-bottom: 0;">
+                                <label class="form-label" for="offerEndDate">End Date <span
+                                        class="text-muted">(Optional)</span></label>
+                                <input type="date" id="offerEndDate" class="form-input">
+                            </div>
                         </div>
-                        <div class="form-group" style="margin-bottom: 0;">
-                            <label class="form-label" for="offerEndDate">End Date <span
-                                    class="text-muted">(Optional)</span></label>
-                            <input type="date" id="offerEndDate" class="form-input">
-                        </div>
-                    </div>
 
-                    <!-- Minimum Bill Amount -->
-                    <div class="form-group" style="margin-bottom: 0;">
-                        <label class="form-label" for="offerMinBillAmount">Minimum Bill Amount <span class="text-muted">(Optional)</span></label>
-                        <input type="number" id="offerMinBillAmount" class="form-input" placeholder="e.g., 500" min="0">
+                        <!-- Minimum Bill Amount -->
+                        <div class="form-group" style="margin-bottom: 0;">
+                            <label class="form-label" for="offerMinBillAmount">Minimum Bill Amount <span class="text-muted">(Optional)</span></label>
+                            <input type="number" id="offerMinBillAmount" class="form-input" placeholder="e.g., 500" min="0">
+                        </div>
+
                     </div>
 
                 </div>
