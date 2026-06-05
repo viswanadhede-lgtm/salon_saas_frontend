@@ -1229,14 +1229,24 @@ function setupCancelPurchaseModal() {
                 <p style="margin: 6px 0 0; font-size: 0.95rem; color: #64748b;">Are you sure you want to cancel this membership?</p>
             </div>
             
-            <div style="margin-bottom: 24px; font-size: 0.95rem; color: #1e293b;">
-                <div style="margin-bottom: 8px;">
-                    <span style="color: #64748b; margin-right: 4px;">Customer:</span>
-                    <span id="cancelMemCustomerName" style="font-weight: 500;">—</span>
-                </div>
+            <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 24px; font-size: 0.95rem; color: #1e293b;">
                 <div>
-                    <span style="color: #64748b; margin-right: 4px;">Plan:</span>
-                    <span id="cancelMemPlanName" style="font-weight: 500;">—</span>
+                    <div style="margin-bottom: 8px;">
+                        <span style="color: #64748b; margin-right: 4px;">Customer:</span>
+                        <span id="cancelMemCustomerName" style="font-weight: 500;">—</span>
+                    </div>
+                    <div style="margin-bottom: 8px;">
+                        <span style="color: #64748b; margin-right: 4px;">Plan:</span>
+                        <span id="cancelMemPlanName" style="font-weight: 500;">—</span>
+                    </div>
+                    <div>
+                        <span style="color: #64748b; margin-right: 4px;">Plan Start Date:</span>
+                        <span id="cancelMemStartDate" style="font-weight: 500;">—</span>
+                    </div>
+                </div>
+                <div style="text-align: right;">
+                    <span style="color: #64748b; display: block; font-size: 0.75rem; text-transform: uppercase; margin-bottom: 4px; font-weight: 700;">Duration</span>
+                    <span id="cancelMemDurationDisplay" style="font-weight: 600; color: #0f172a; font-size: 1rem;">—</span>
                 </div>
             </div>
 
@@ -1290,6 +1300,37 @@ window.cancelMembershipPurchase = function(purchaseId) {
             
             document.getElementById('cancelMemCustomerName').textContent = fullName;
             document.getElementById('cancelMemPlanName').textContent = planName;
+            
+            const rawStart = purchase.purchase_date || purchase.start_date || purchase.created_at;
+            document.getElementById('cancelMemStartDate').textContent = rawStart ? new Date(rawStart).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' }) : 'Unknown';
+            
+            let durationText = 'Unknown';
+            const eDate = purchase.expiry_date || purchase.valid_until;
+            if (rawStart && eDate) {
+                const s = new Date(rawStart);
+                const e = new Date(eDate);
+                if (!isNaN(s) && !isNaN(e)) {
+                    let years = e.getFullYear() - s.getFullYear();
+                    let months = e.getMonth() - s.getMonth();
+                    let days = e.getDate() - s.getDate();
+                    if (days < 0) {
+                        months -= 1;
+                        days += new Date(e.getFullYear(), e.getMonth(), 0).getDate();
+                    }
+                    if (months < 0) {
+                        years -= 1;
+                        months += 12;
+                    }
+                    let arr = [];
+                    if (years > 0) arr.push(`${years} year${years>1?'s':''}`);
+                    if (months > 0) arr.push(`${months} month${months>1?'s':''}`);
+                    if (days > 0) arr.push(`${days} day${days>1?'s':''}`);
+                    durationText = arr.join(' ') || '0 days';
+                }
+            } else if (purchase.duration) {
+                durationText = purchase.duration + ' Months';
+            }
+            document.getElementById('cancelMemDurationDisplay').textContent = durationText;
         }
 
         const noteEl = document.getElementById('cnlMemNote');
