@@ -1210,60 +1210,63 @@ async function executeMembershipAssignment(payload, newPurchaseId) {
 }
 
 function setupCancelPurchaseModal() {
-    if (!document.getElementById('cancelPurchaseConfirmOverlay')) {
-        const modalHtml = `
-        <div class="modal-overlay" id="cancelPurchaseConfirmOverlay" style="z-index: 9999; display: none; background: rgba(15,23,42,0.45); position: fixed; inset: 0; align-items: center; justify-content: center; backdrop-filter: blur(4px);">
-            <div style="background: #fff; border-radius: 12px; width: 420px; max-width: 90vw; padding: 24px; box-shadow: 0 10px 25px -5px rgba(0,0,0,0.1), 0 8px 10px -6px rgba(0,0,0,0.1);">
-                <div style="margin-bottom: 24px;">
-                    <h2 style="margin: 0; font-size: 1.15rem; font-weight: 500; color: #0f172a;">Cancel Membership</h2>
-                </div>
-                
-                <div style="margin-bottom: 24px; font-size: 0.95rem; color: #1e293b;">
-                    <div style="margin-bottom: 8px;">
-                        Customer: <span id="cancelMemCustomerName" style="font-weight: 400;">—</span>
-                    </div>
-                    <div>
-                        Plan: <span id="cancelMemPlanName" style="font-weight: 400;">—</span>
-                    </div>
-                </div>
+    const existingOverlay = document.getElementById('cancelPurchaseConfirmOverlay');
+    if (existingOverlay) {
+        existingOverlay.remove();
+    }
 
-                <div style="margin-bottom: 32px;">
-                    <label style="display: block; font-size: 0.95rem; color: #1e293b; margin-bottom: 8px;">Reason (Optional)</label>
-                    <input type="text" id="cnlMemNote" style="width: 100%; border: none; border-bottom: 1px solid #94a3b8; padding: 4px 0; font-size: 0.95rem; outline: none; background: transparent; color: #1e293b;" placeholder="">
+    const modalHtml = `
+    <div class="modal-overlay" id="cancelPurchaseConfirmOverlay" style="z-index: 9999; display: none; background: rgba(15,23,42,0.45); position: fixed; inset: 0; align-items: center; justify-content: center; backdrop-filter: blur(4px);">
+        <div style="background: #fff; border-radius: 12px; width: 420px; max-width: 90vw; padding: 24px; box-shadow: 0 10px 25px -5px rgba(0,0,0,0.1), 0 8px 10px -6px rgba(0,0,0,0.1);">
+            <div style="margin-bottom: 24px;">
+                <h2 style="margin: 0; font-size: 1.15rem; font-weight: 500; color: #0f172a;">Cancel Membership</h2>
+            </div>
+            
+            <div style="margin-bottom: 24px; font-size: 0.95rem; color: #1e293b;">
+                <div style="margin-bottom: 8px;">
+                    Customer: <span id="cancelMemCustomerName" style="font-weight: 400;">—</span>
                 </div>
-
-                <div style="display: flex; gap: 16px;">
-                    <button id="btnCancelCancelPurchase" style="flex: 1; padding: 10px; border-radius: 6px; border: 1px solid #e2e8f0; background: #fff; color: #475569; font-weight: 500; cursor: pointer; transition: background 0.2s;" onmouseover="this.style.background='#f8fafc'" onmouseout="this.style.background='#fff'">Keep Membership</button>
-                    <button id="btnConfirmCancelPurchase" style="flex: 1; padding: 10px; border-radius: 6px; border: none; background: #ef4444; color: #fff; font-weight: 500; cursor: pointer; transition: background 0.2s;" onmouseover="this.style.background='#dc2626'" onmouseout="this.style.background='#ef4444'">Cancel Membership</button>
+                <div>
+                    Plan: <span id="cancelMemPlanName" style="font-weight: 400;">—</span>
                 </div>
             </div>
+
+            <div style="margin-bottom: 32px;">
+                <label style="display: block; font-size: 0.95rem; color: #1e293b; margin-bottom: 8px;">Reason (Optional)</label>
+                <input type="text" id="cnlMemNote" style="width: 100%; border: none; border-bottom: 1px solid #94a3b8; padding: 4px 0; font-size: 0.95rem; outline: none; background: transparent; color: #1e293b;" placeholder="">
+            </div>
+
+            <div style="display: flex; gap: 16px;">
+                <button id="btnCancelCancelPurchase" style="flex: 1; padding: 10px; border-radius: 6px; border: 1px solid #e2e8f0; background: #fff; color: #475569; font-weight: 500; cursor: pointer; transition: background 0.2s;" onmouseover="this.style.background='#f8fafc'" onmouseout="this.style.background='#fff'">Keep Membership</button>
+                <button id="btnConfirmCancelPurchase" style="flex: 1; padding: 10px; border-radius: 6px; border: none; background: #ef4444; color: #fff; font-weight: 500; cursor: pointer; transition: background 0.2s;" onmouseover="this.style.background='#dc2626'" onmouseout="this.style.background='#ef4444'">Cancel Membership</button>
+            </div>
         </div>
-        `;
-        document.body.insertAdjacentHTML('beforeend', modalHtml);
-        if (window.feather) feather.replace();
+    </div>
+    `;
+    document.body.insertAdjacentHTML('beforeend', modalHtml);
+    if (window.feather) feather.replace();
 
-        const overlay = document.getElementById('cancelPurchaseConfirmOverlay');
+    const overlay = document.getElementById('cancelPurchaseConfirmOverlay');
 
-        document.getElementById('btnCancelCancelPurchase').addEventListener('click', () => {
+    document.getElementById('btnCancelCancelPurchase').addEventListener('click', () => {
+        overlay.style.display = 'none';
+        purchaseToCancel = null;
+    });
+    
+    overlay.addEventListener('click', (e) => {
+        if (e.target === overlay) {
             overlay.style.display = 'none';
             purchaseToCancel = null;
-        });
-        
-        overlay.addEventListener('click', (e) => {
-            if (e.target === overlay) {
-                overlay.style.display = 'none';
-                purchaseToCancel = null;
-            }
-        });
+        }
+    });
 
-        document.getElementById('btnConfirmCancelPurchase').addEventListener('click', async () => {
-            if (!purchaseToCancel) return;
-            const noteFieldValue = document.getElementById('cnlMemNote')?.value.trim() || null;
-            overlay.style.display = 'none';
-            await executeCancelMembershipPurchase(purchaseToCancel, noteFieldValue);
-            purchaseToCancel = null;
-        });
-    }
+    document.getElementById('btnConfirmCancelPurchase').addEventListener('click', async () => {
+        if (!purchaseToCancel) return;
+        const noteFieldValue = document.getElementById('cnlMemNote')?.value.trim() || null;
+        overlay.style.display = 'none';
+        await executeCancelMembershipPurchase(purchaseToCancel, noteFieldValue);
+        purchaseToCancel = null;
+    });
 }
 
 window.cancelMembershipPurchase = function(purchaseId) {
