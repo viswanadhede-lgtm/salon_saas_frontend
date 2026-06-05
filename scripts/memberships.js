@@ -1587,9 +1587,9 @@ window.viewPurchaseNotes = async function(purchaseId) {
     if (!modal) {
         document.body.insertAdjacentHTML('beforeend', `
         <div class="modal-overlay" id="refundNotesModalOverlay" style="z-index:9999;">
-            <div class="modal-container" style="width: 500px; max-width: 95vw; padding: 0; border-radius: 12px; overflow: hidden; box-shadow: 0 20px 25px -5px rgba(0,0,0,0.1);">
+            <div class="modal-container" style="width: 950px; max-width: 95vw; padding: 0; border-radius: 12px; overflow: hidden; box-shadow: 0 20px 25px -5px rgba(0,0,0,0.1);">
                 <div class="modal-header" style="background:#f8fafc; padding:16px 20px; border-bottom:1px solid #e2e8f0; display:flex; justify-content:space-between; align-items:center;">
-                    <h2 style="margin:0; font-size:1.1rem; color:#1e293b;"><i data-feather="file-text" style="width:16px; height:16px; margin-right:8px; color:#64748b; vertical-align:text-bottom;"></i>Notes</h2>
+                    <h2 style="margin:0; font-size:1.1rem; color:#1e293b;"><i data-feather="info" style="width:16px; height:16px; margin-right:8px; color:#3b82f6; vertical-align:text-bottom;"></i>Details</h2>
                     <button class="modal-close" onclick="document.getElementById('refundNotesModalOverlay').classList.remove('active')" style="background:none; border:none; cursor:pointer;"><i data-feather="x" style="color:#64748b;"></i></button>
                 </div>
                 <div class="modal-body" style="padding:24px; min-height:80px; color:#334155; font-size:0.95rem; line-height:1.5;" id="refundNotesContent">
