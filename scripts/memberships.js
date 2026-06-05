@@ -1770,8 +1770,8 @@ window.viewRefundInfo = async function(purchaseId) {
             </div>
             
             <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 16px;">
-                <div style="font-size: 0.75rem; font-weight: 700; color: #64748b; text-transform: uppercase; margin-bottom: 8px;">Cancellation Reason / Notes</div>
-                <div style="font-size: 0.9rem; color: #334155; line-height: 1.5; white-space: pre-wrap;">${cancelledReason || 'No reason specified.'}</div>
+                <div style="font-size: 0.75rem; font-weight: 700; color: #64748b; text-transform: uppercase; margin-bottom: 8px;">Reason for Cancellation</div>
+                <div style="font-size: 0.9rem; color: #334155; line-height: 1.5; white-space: pre-wrap;">${purchase.notes || 'No reason specified.'}</div>
             </div>
         `;
         if (window.feather) feather.replace();
