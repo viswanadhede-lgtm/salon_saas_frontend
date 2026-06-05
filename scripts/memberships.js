@@ -218,11 +218,26 @@ document.addEventListener('DOMContentLoaded', async () => {
                 }
 
                 summaryBody.innerHTML = `
-                    <span style="font-weight:700; font-size:0.95rem; color:#1e293b;">${planName}</span>
-                    <span style="color:#4f46e5; font-weight:600;">₹${price.toLocaleString('en-IN')}</span>
-                    <span style="color:#64748b;">${duration}</span>
-                    ${discountText ? `<span style="color:#059669; font-weight:600;">${discountText}</span>` : ''}
-                    ${servicesLine ? `<span style="color:#6366f1;">${servicesLine}</span>` : ''}
+                    <div style="display: grid; grid-template-columns: 100px 1fr; gap: 6px; width: 100%;">
+                        <span style="font-weight:600; color:#475569;">Plan Name</span>
+                        <span style="font-weight:700; color:#1e293b;">: ${planName}</span>
+                        
+                        <span style="font-weight:600; color:#475569;">Plan Price</span>
+                        <span style="color:#4f46e5; font-weight:600;">: ₹${price.toLocaleString('en-IN')}</span>
+                        
+                        <span style="font-weight:600; color:#475569;">Plan Duration</span>
+                        <span style="color:#64748b;">: ${duration}</span>
+                        
+                        ${discountText ? `
+                        <span style="font-weight:600; color:#475569;">Benefits</span>
+                        <span style="color:#059669; font-weight:600;">: ${discountText}</span>
+                        ` : ''}
+                        
+                        ${servicesLine ? `
+                        <span style="font-weight:600; color:#475569;">Incl. Services</span>
+                        <span style="color:#6366f1;">: ${servicesLine}</span>
+                        ` : ''}
+                    </div>
                 `;
             } else {
                 summaryBody.innerHTML = `<span style="font-size:0.82rem; color:#94a3b8; font-style:italic;">Select a plan to see details</span>`;
