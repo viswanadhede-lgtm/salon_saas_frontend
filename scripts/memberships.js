@@ -1218,7 +1218,7 @@ function setupCancelPurchaseModal() {
     const modalHtml = `
     <div class="modal-overlay" id="cancelPurchaseConfirmOverlay" style="z-index: 9999; backdrop-filter: blur(4px);">
         <div style="background: #fff; border-radius: 12px; width: 950px; max-width: 95vw; padding: 24px; box-shadow: 0 10px 25px -5px rgba(0,0,0,0.1), 0 8px 10px -6px rgba(0,0,0,0.1);">
-            <div style="margin-bottom: 24px;">
+            <div style="margin-bottom: 24px; padding-bottom: 16px; border-bottom: 1px solid #e2e8f0;">
                 <h2 style="margin: 0; font-size: 1.15rem; font-weight: 600; color: #0f172a;">Cancel Membership</h2>
                 <p style="margin: 6px 0 0; font-size: 0.95rem; color: #64748b;">Are you sure you want to cancel this membership?</p>
             </div>
