@@ -1229,7 +1229,7 @@ function setupCancelPurchaseModal() {
                 <p style="margin: 6px 0 0; font-size: 0.95rem; color: #64748b;">Are you sure you want to cancel this membership?</p>
             </div>
             
-            <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 24px; font-size: 0.95rem; color: #1e293b;">
+            <div style="display: grid; grid-template-columns: 1fr auto; align-items: start; gap: 24px; margin-bottom: 24px; font-size: 0.95rem; color: #1e293b;">
                 <div>
                     <div style="margin-bottom: 8px;">
                         <span style="color: #64748b; margin-right: 4px;">Customer:</span>
@@ -1244,9 +1244,9 @@ function setupCancelPurchaseModal() {
                         <span id="cancelMemStartDate" style="font-weight: 500;">—</span>
                     </div>
                 </div>
-                <div style="text-align: right;">
-                    <span style="color: #64748b; display: block; font-size: 0.75rem; text-transform: uppercase; margin-bottom: 4px; font-weight: 700;">Duration</span>
-                    <span id="cancelMemDurationDisplay" style="font-weight: 600; color: #0f172a; font-size: 1rem;">—</span>
+                <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 12px 20px; text-align: center; min-width: 120px;">
+                    <span style="color: #64748b; display: block; font-size: 0.7rem; text-transform: uppercase; font-weight: 700; letter-spacing: 0.05em; margin-bottom: 4px;">Duration</span>
+                    <span id="cancelMemDurationDisplay" style="font-weight: 600; color: #0f172a; font-size: 0.95rem;">—</span>
                 </div>
             </div>
 
