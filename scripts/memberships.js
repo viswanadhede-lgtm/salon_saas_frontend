@@ -193,6 +193,25 @@ document.addEventListener('DOMContentLoaded', async () => {
         if (subElem) subElem.textContent = `₹${price.toLocaleString('en-IN')}`;
         if (taxElem) taxElem.textContent = `₹0`;
         if (totElem) totElem.textContent = `₹${price.toLocaleString('en-IN')}`;
+
+        // Populate plan summary card
+        const summaryBody = document.getElementById('assignPlanSummaryBody');
+        if (summaryBody) {
+            if (selectedPlan) {
+                const planName = selectedPlan.plan_name || selectedPlan.name || 'Unknown Plan';
+                const duration = selectedPlan.duration ? `${selectedPlan.duration} Month${selectedPlan.duration > 1 ? 's' : ''}` : 'N/A';
+                const services = selectedPlan.services || selectedPlan.applicable_services || '';
+                const servicesLine = services ? `<span style="color:#6366f1;">${services}</span>` : '';
+                summaryBody.innerHTML = `
+                    <span style="font-weight:700; font-size:0.95rem; color:#1e293b;">${planName}</span>
+                    <span style="color:#4f46e5; font-weight:600;">₹${price.toLocaleString('en-IN')}</span>
+                    <span style="color:#64748b;">${duration}</span>
+                    ${servicesLine}
+                `;
+            } else {
+                summaryBody.innerHTML = `<span style="font-size:0.82rem; color:#94a3b8; font-style:italic;">Select a plan to see details</span>`;
+            }
+        }
     }
 
     if (assignPlanInput) {
