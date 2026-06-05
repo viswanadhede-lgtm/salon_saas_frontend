@@ -1736,8 +1736,17 @@
                             </select>
                         </div>
 
-                        <!-- Purchase Date hidden; defaults to today in JS -->
-                        <input type="hidden" id="assignDateInput">
+                        <!-- Dates Section (Shown when plan selected) -->
+                        <div id="assignDatesContainer" style="display: none; grid-template-columns: 1fr 1fr; gap: 1rem; margin-top: 1rem;">
+                            <div class="form-group" style="margin-bottom: 0 !important;">
+                                <label class="form-label">Purchase Date</label>
+                                <input type="date" id="assignDateInput" class="form-input">
+                            </div>
+                            <div class="form-group" style="margin-bottom: 0 !important;">
+                                <label class="form-label">Expiry Date</label>
+                                <input type="date" id="assignExpiryInput" class="form-input" disabled>
+                            </div>
+                        </div>
                     </div>
 
                     <!-- Right Column: Plan Summary + Payment Details -->

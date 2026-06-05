@@ -243,6 +243,41 @@ document.addEventListener('DOMContentLoaded', async () => {
                 summaryBody.innerHTML = `<span style="font-size:0.82rem; color:#94a3b8; font-style:italic;">Select a plan to see details</span>`;
             }
         }
+        // Handle Purchase and Expiry Dates
+        const datesContainer = document.getElementById('assignDatesContainer');
+        const purchaseDateInput = document.getElementById('assignDateInput');
+        const expiryDateInput = document.getElementById('assignExpiryInput');
+
+        if (datesContainer && purchaseDateInput && expiryDateInput) {
+            if (selectedPlan) {
+                datesContainer.style.display = 'grid'; // Show the container
+
+                // Default purchase date to today if empty
+                if (!purchaseDateInput.value) {
+                    purchaseDateInput.value = new Date().toISOString().split('T')[0];
+                }
+
+                // Function to calculate and set expiry date
+                const updateExpiryDate = () => {
+                    const dur = selectedPlan.duration_months || selectedPlan.duration || 0;
+                    if (dur && purchaseDateInput.value) {
+                        const pDate = new Date(purchaseDateInput.value);
+                        pDate.setMonth(pDate.getMonth() + dur);
+                        expiryDateInput.value = pDate.toISOString().split('T')[0];
+                    } else {
+                        expiryDateInput.value = '';
+                    }
+                };
+
+                updateExpiryDate();
+
+                // Listen for changes on purchase date to recalculate expiry
+                purchaseDateInput.removeEventListener('change', updateExpiryDate);
+                purchaseDateInput.addEventListener('change', updateExpiryDate);
+            } else {
+                datesContainer.style.display = 'none'; // Hide if no plan selected
+            }
+        }
     }
 
     if (assignPlanInput) {
@@ -1167,9 +1202,11 @@ async function executeMembershipAssignment(payload, newPurchaseId) {
     const duration = selectedPlan ? (selectedPlan.duration_months || selectedPlan.duration) : null;
     const purchaseDate = assignDate || new Date().toISOString().split('T')[0];
     
-    // Javascript calculated Expiry Date
-    let expiryDate = null;
-    if (purchaseDate && duration) {
+    const domExpiry = document.getElementById('assignExpiryInput')?.value;
+    
+    // Javascript calculated Expiry Date (fallback)
+    let expiryDate = domExpiry || null;
+    if (!expiryDate && purchaseDate && duration) {
         const d = new Date(purchaseDate);
         d.setMonth(d.getMonth() + parseInt(duration, 10));
         expiryDate = d.toISOString().split('T')[0];
