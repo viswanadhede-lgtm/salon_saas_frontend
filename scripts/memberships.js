@@ -810,8 +810,15 @@ function renderPurchases() {
             const year = dt.getFullYear();
             return `${day}-${month}-${year}`;
         };
-        const purchaseDateStr = formatDate(purchase.purchase_date);
-        const validUntilStr = formatDate(purchase.expiry_date);
+        const purchaseDateStr = formatDate(purchase.purchase_date || purchase.start_date);
+        const validUntilStr = formatDate(purchase.expiry_date || purchase.valid_until);
+        
+        let displayExpiry = validUntilStr;
+        if (isCancelled || isRefunded) {
+            const cDateStr = formatDate(purchase.cancelled_date || purchase.updated_at);
+            displayExpiry = `<div style="font-size: 0.70rem; font-weight: 700; color: #ef4444; letter-spacing: 0.05em; text-transform: uppercase;">Cancelled On</div>
+                             <div style="font-size: 0.95rem; font-weight: 500; color: #1e293b; margin-top: 2px;">${cDateStr}</div>`;
+        }
         
         const purchaseId = purchase.purchase_id || purchase.id;
         
@@ -836,7 +843,7 @@ function renderPurchases() {
                 </td>
                 <td style="color: #64748b; font-size: 0.9rem;">${purchase.duration ? purchase.duration + ' Months' : '-'}</td>
                 <td style="color: #64748b;">${purchaseDateStr}</td>
-                <td style="color: #64748b;">${validUntilStr}</td>
+                <td style="color: #64748b;">${displayExpiry}</td>
                 <td>${statusBadge}</td>
                 <td style="text-align: center;">
                     <div style="display: flex; gap: 0.5rem; justify-content: center; align-items: stretch;">
@@ -852,13 +859,17 @@ function renderPurchases() {
                             <span style="font-size:10px;font-weight:600;">Cancel</span>
                         </button>
                         ` : ''}
-                        ${(isRefunded || isCancelled) ? `
+                        ${isRefunded ? `
+                        <button onclick="window.viewRefundInfo('${purchaseId}')" title="Info" style="display:flex;flex-direction:column;align-items:center;justify-content:center;padding:4px 8px;min-width:52px;height:40px;border-radius:8px;border:1px solid #e2e8f0;background:#f8fafc;cursor:pointer;color:#64748b;transition:all 0.2s;" onmouseover="this.style.background='#f1f5f9'" onmouseout="this.style.background='#f8fafc'">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="margin-bottom:2px;flex-shrink:0;"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="16" x2="12" y2="12"></line><line x1="12" y1="8" x2="12.01" y2="8"></line></svg>
+                            <span style="font-size:10px;font-weight:600;">Info</span>
+                        </button>
+                        ` : ''}
+                        ${isCancelled ? `
                         <button onclick="window.viewPurchaseNotes('${purchaseId}')" title="View Notes" style="display:flex;flex-direction:column;align-items:center;justify-content:center;padding:4px 8px;min-width:52px;height:40px;border-radius:8px;border:1px solid #e2e8f0;background:#f8fafc;cursor:pointer;color:#64748b;transition:all 0.2s;" onmouseover="this.style.background='#f1f5f9'" onmouseout="this.style.background='#f8fafc'">
                             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="margin-bottom:2px;flex-shrink:0;"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line></svg>
                             <span style="font-size:10px;font-weight:600;">Notes</span>
                         </button>
-                        ` : ''}
-                        ${isCancelled ? `
                         <button onclick="window.refundMembershipPurchase('${purchaseId}')" title="Refund" style="display:flex;flex-direction:column;align-items:center;justify-content:center;padding:4px 8px;min-width:52px;height:40px;border-radius:8px;border:1px solid #fef08a;background:#fefce8;cursor:pointer;color:#b45309;transition:all 0.2s;" onmouseover="this.style.background='#fef9c3'" onmouseout="this.style.background='#fefce8'">
                             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="margin-bottom:2px;flex-shrink:0;"><polyline points="1 4 1 10 7 10"></polyline><path d="M3.51 15a9 9 0 1 0 .49-3.91"></path></svg>
                             <span style="font-size:10px;font-weight:600;">Refund</span>
@@ -1300,14 +1311,15 @@ window.cancelMembershipPurchase = function(purchaseId) {
 
 async function executeCancelMembershipPurchase(purchaseId, notes = null) {
     try {
+        const today = new Date().toISOString().split('T')[0];
         const { error } = await supabase
             .from('membership_purchases')
             .eq('purchase_id', purchaseId)
-            .update({ status: 'cancelled', notes: notes });
+            .update({ status: 'cancelled', notes: notes, cancelled_date: today });
 
         if (error) {
             // fallback if pk is id
-            const { error: err2 } = await supabase.from('membership_purchases').eq('id', purchaseId).update({ status: 'cancelled', notes: notes });
+            const { error: err2 } = await supabase.from('membership_purchases').eq('id', purchaseId).update({ status: 'cancelled', notes: notes, cancelled_date: today });
             if (err2) throw err2;
         }
 
@@ -1515,9 +1527,10 @@ async function processMembershipRefund() {
         }
 
         // 2. Update membership_purchases status AND notes column
+        const refundDate = new Date().toISOString().split('T')[0];
         const { error: memError } = await supabase
             .from('membership_purchases')
-            .update({ status: 'refunded', payment_status: 'refunded', notes: note || null })
+            .update({ status: 'refunded', payment_status: 'refunded', notes: note || null, cancelled_date: refundDate })
             .eq('purchase_id', purchaseId);
 
         if (memError) throw memError;
@@ -1592,6 +1605,118 @@ window.viewPurchaseNotes = async function(purchaseId) {
     } catch (err) {
         console.error('viewPurchaseNotes error:', err);
         content.innerHTML = '<span style="color:#ef4444;">Failed to load note.</span>';
+    }
+};
+
+window.viewRefundInfo = async function(purchaseId) {
+    let modal = document.getElementById('refundInfoModalOverlay');
+    if (!modal) {
+        document.body.insertAdjacentHTML('beforeend', `
+        <div class="modal-overlay" id="refundInfoModalOverlay" style="z-index:9999;">
+            <div class="modal-container" style="width: 550px; max-width: 95vw; padding: 0; border-radius: 12px; overflow: hidden; box-shadow: 0 20px 25px -5px rgba(0,0,0,0.1);">
+                <div class="modal-header" style="background:#f8fafc; padding:20px 24px; border-bottom:1px solid #e2e8f0; display:flex; justify-content:space-between; align-items:center;">
+                    <h2 style="margin:0; font-size:1.15rem; color:#1e293b; font-weight: 600;"><i data-feather="info" style="width:18px; height:18px; margin-right:8px; color:#3b82f6; vertical-align:text-bottom;"></i>Refund Information</h2>
+                    <button class="modal-close" onclick="document.getElementById('refundInfoModalOverlay').classList.remove('active')" style="background:none; border:none; cursor:pointer;"><i data-feather="x" style="color:#64748b;"></i></button>
+                </div>
+                <div class="modal-body" style="padding:24px; background: #fff;" id="refundInfoContent">
+                    <div style="display:flex;justify-content:center;color:#94a3b8;padding: 40px 0;"><i data-feather="loader" class="spin"></i></div>
+                </div>
+                <div style="padding: 16px 24px; border-top: 1px solid #e2e8f0; display: flex; justify-content: flex-end; background: #fafafa;">
+                    <button onclick="document.getElementById('refundInfoModalOverlay').classList.remove('active')" style="padding: 8px 16px; border-radius: 6px; border: 1px solid #cbd5e1; background: #fff; color: #475569; font-weight: 500; cursor: pointer; transition: background 0.2s;" onmouseover="this.style.background='#f1f5f9'" onmouseout="this.style.background='#fff'">Close</button>
+                </div>
+            </div>
+        </div>
+        `);
+        if (window.feather) feather.replace();
+        modal = document.getElementById('refundInfoModalOverlay');
+        modal.addEventListener('click', (e) => { if (e.target === modal) modal.classList.remove('active'); });
+    }
+
+    const content = document.getElementById('refundInfoContent');
+    content.innerHTML = '<div style="display:flex;justify-content:center;color:#94a3b8;padding: 40px 0;"><i data-feather="loader" class="spin"></i></div>';
+    if (window.feather) feather.replace();
+    modal.classList.add('active');
+
+    const purchase = (typeof currentPurchases !== 'undefined' ? currentPurchases : []).find(p => (p.purchase_id || p.id) === purchaseId);
+    if (!purchase) {
+        content.innerHTML = '<span style="color:#ef4444;">Purchase not found.</span>';
+        return;
+    }
+
+    try {
+        const { data, error } = await supabase
+            .from('business_transactions')
+            .select('amount, status, created_at, paid_at, notes')
+            .eq('reference_id', purchaseId)
+            .eq('reference_type', 'membership')
+            .order('created_at', { ascending: false });
+
+        if (error) throw error;
+
+        let paidAmount = 0;
+        let refundedAmount = 0;
+        let cancelledDate = purchase.updated_at || null;
+        let cancelledReason = purchase.notes || 'None provided';
+
+        (data || []).forEach(tx => {
+            const val = Math.abs(Number(tx.amount || 0));
+            const stat = (tx.status || '').toLowerCase().trim();
+            if (stat === 'paid') paidAmount += val;
+            if (stat === 'refunded') {
+                refundedAmount += val;
+                if (!cancelledDate && tx.created_at) cancelledDate = tx.created_at;
+                if (tx.notes && cancelledReason === 'None provided') cancelledReason = tx.notes;
+            }
+        });
+        
+        if (paidAmount === 0 && Number(purchase.price) > 0) paidAmount = Number(purchase.price);
+
+        const custName = purchase.customer_name || `${purchase.first_name || ''} ${purchase.last_name || ''}`.trim() || 'Unknown';
+        const planName = purchase.plan_name || purchase.membership_name || purchase.name || 'Unknown Plan';
+        const startDate = purchase.purchase_date || purchase.start_date || 'N/A';
+        const cDateObj = cancelledDate ? new Date(cancelledDate) : null;
+        const cDateStr = cDateObj ? cDateObj.toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' }) : 'Unknown';
+        const sDateObj = new Date(startDate);
+        const sDateStr = isNaN(sDateObj) ? startDate : sDateObj.toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' });
+
+        content.innerHTML = `
+            <div style="display: grid; grid-template-columns: 1fr 1fr; border: 1px solid #e2e8f0; border-radius: 8px; overflow: hidden; margin-bottom: 20px;">
+                <div style="padding: 16px; border-bottom: 1px solid #e2e8f0; border-right: 1px solid #e2e8f0; background: #fff;">
+                    <div style="font-size: 0.75rem; font-weight: 700; color: #64748b; text-transform: uppercase; margin-bottom: 4px;">Customer Name</div>
+                    <div style="font-size: 0.95rem; font-weight: 500; color: #0f172a;">${custName}</div>
+                </div>
+                <div style="padding: 16px; border-bottom: 1px solid #e2e8f0; background: #fff;">
+                    <div style="font-size: 0.75rem; font-weight: 700; color: #64748b; text-transform: uppercase; margin-bottom: 4px;">Customer Plan</div>
+                    <div style="font-size: 0.95rem; font-weight: 500; color: #0f172a;">${planName}</div>
+                </div>
+                <div style="padding: 16px; border-bottom: 1px solid #e2e8f0; border-right: 1px solid #e2e8f0; background: #fff;">
+                    <div style="font-size: 0.75rem; font-weight: 700; color: #64748b; text-transform: uppercase; margin-bottom: 4px;">Start Date</div>
+                    <div style="font-size: 0.95rem; font-weight: 500; color: #0f172a;">${sDateStr}</div>
+                </div>
+                <div style="padding: 16px; border-bottom: 1px solid #e2e8f0; background: #fff;">
+                    <div style="font-size: 0.75rem; font-weight: 700; color: #64748b; text-transform: uppercase; margin-bottom: 4px;">Refunded Date</div>
+                    <div style="font-size: 0.95rem; font-weight: 500; color: #0f172a;">${cDateStr}</div>
+                </div>
+                <div style="padding: 16px; border-bottom: 1px solid #e2e8f0; border-right: 1px solid #e2e8f0; background: #fff;">
+                    <div style="font-size: 0.75rem; font-weight: 700; color: #64748b; text-transform: uppercase; margin-bottom: 4px;">Paid Amount</div>
+                    <div style="font-size: 1.1rem; font-weight: 700; color: #10b981;">₹${paidAmount.toLocaleString('en-IN')}</div>
+                </div>
+                <div style="padding: 16px; border-bottom: 1px solid #e2e8f0; background: #fff;">
+                    <div style="font-size: 0.75rem; font-weight: 700; color: #64748b; text-transform: uppercase; margin-bottom: 4px;">Refunded Amount</div>
+                    <div style="font-size: 1.1rem; font-weight: 700; color: #dc2626;">₹${refundedAmount.toLocaleString('en-IN')}</div>
+                </div>
+            </div>
+            
+            <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 16px;">
+                <div style="font-size: 0.75rem; font-weight: 700; color: #64748b; text-transform: uppercase; margin-bottom: 8px;">Cancellation Reason / Notes</div>
+                <div style="font-size: 0.9rem; color: #334155; line-height: 1.5; white-space: pre-wrap;">${cancelledReason || 'No reason specified.'}</div>
+            </div>
+        `;
+        if (window.feather) feather.replace();
+
+    } catch (err) {
+        console.error('viewRefundInfo error:', err);
+        content.innerHTML = '<span style="color:#ef4444;">Failed to load refund summary.</span>';
     }
 };
 
