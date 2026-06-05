@@ -1667,7 +1667,7 @@ window.viewRefundInfo = async function(purchaseId) {
     if (!modal) {
         document.body.insertAdjacentHTML('beforeend', `
         <div class="modal-overlay" id="refundInfoModalOverlay" style="z-index:9999;">
-            <div class="modal-container" style="width: 550px; max-width: 95vw; padding: 0; border-radius: 12px; overflow: hidden; box-shadow: 0 20px 25px -5px rgba(0,0,0,0.1);">
+            <div class="modal-container" style="width: 680px; max-width: 95vw; padding: 0; border-radius: 12px; overflow: hidden; box-shadow: 0 20px 25px -5px rgba(0,0,0,0.1);">
                 <div class="modal-header" style="background:#f8fafc; padding:20px 24px; border-bottom:1px solid #e2e8f0; display:flex; justify-content:space-between; align-items:center;">
                     <h2 style="margin:0; font-size:1.15rem; color:#1e293b; font-weight: 600;"><i data-feather="info" style="width:18px; height:18px; margin-right:8px; color:#3b82f6; vertical-align:text-bottom;"></i>Refund Information</h2>
                     <button class="modal-close" onclick="document.getElementById('refundInfoModalOverlay').classList.remove('active')" style="background:none; border:none; cursor:pointer;"><i data-feather="x" style="color:#64748b;"></i></button>
@@ -1733,6 +1733,10 @@ window.viewRefundInfo = async function(purchaseId) {
         const sDateObj = new Date(startDate);
         const sDateStr = isNaN(sDateObj) ? startDate : sDateObj.toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' });
 
+        const rawCancelDate = purchase.cancelled_date || purchase.updated_at || null;
+        const cancelDateObj = rawCancelDate ? new Date(rawCancelDate) : null;
+        const cancelDateStr = cancelDateObj && !isNaN(cancelDateObj) ? cancelDateObj.toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' }) : 'Unknown';
+
         content.innerHTML = `
             <div style="display: grid; grid-template-columns: 1fr 1fr; border: 1px solid #e2e8f0; border-radius: 8px; overflow: hidden; margin-bottom: 20px;">
                 <div style="padding: 16px; border-bottom: 1px solid #e2e8f0; border-right: 1px solid #e2e8f0; background: #fff;">
@@ -1752,10 +1756,14 @@ window.viewRefundInfo = async function(purchaseId) {
                     <div style="font-size: 0.95rem; font-weight: 500; color: #0f172a;">${cDateStr}</div>
                 </div>
                 <div style="padding: 16px; border-bottom: 1px solid #e2e8f0; border-right: 1px solid #e2e8f0; background: #fff;">
+                    <div style="font-size: 0.75rem; font-weight: 700; color: #64748b; text-transform: uppercase; margin-bottom: 4px;">Cancellation Date</div>
+                    <div style="font-size: 0.95rem; font-weight: 500; color: #0f172a;">${cancelDateStr}</div>
+                </div>
+                <div style="padding: 16px; border-bottom: 1px solid #e2e8f0; background: #fff;">
                     <div style="font-size: 0.75rem; font-weight: 700; color: #64748b; text-transform: uppercase; margin-bottom: 4px;">Paid Amount</div>
                     <div style="font-size: 1.1rem; font-weight: 700; color: #10b981;">₹${paidAmount.toLocaleString('en-IN')}</div>
                 </div>
-                <div style="padding: 16px; border-bottom: 1px solid #e2e8f0; background: #fff;">
+                <div style="padding: 16px; border-bottom: 1px solid #e2e8f0; border-right: 1px solid #e2e8f0; background: #fff;">
                     <div style="font-size: 0.75rem; font-weight: 700; color: #64748b; text-transform: uppercase; margin-bottom: 4px;">Refunded Amount</div>
                     <div style="font-size: 1.1rem; font-weight: 700; color: #dc2626;">₹${refundedAmount.toLocaleString('en-IN')}</div>
                 </div>
