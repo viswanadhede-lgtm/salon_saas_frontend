@@ -1360,14 +1360,13 @@ function setupRefundPurchaseModal() {
                         <input type="number" id="rfMemAmountDisplay" style="font-size: 2.25rem; font-weight: 800; color: #dc2626; margin: 0; text-align: center; border: 1px solid #fca5a5; border-radius: 8px; width: 100%; max-width: 250px; background: white; padding: 8px; outline: none;" value="0" min="0">
                     </div>
 
-                    <div class="form-group" style="margin-bottom: 20px;">
-                        <label class="form-label" style="font-size: 0.85rem; font-weight: 600; color: #475569;">Refund Method</label>
-                        <input type="text" id="rfMemMethodDisplay" class="form-input read-only-input" style="background: #f1f5f9; color: #64748b;" readonly value="Loading...">
-                    </div>
-
                     <div class="form-group" style="margin-bottom: 24px;">
-                        <label class="form-label" style="font-size: 0.85rem; font-weight: 600; color: #475569;">Reason for Refund <span style="color: #94a3b8; font-weight: 400; font-size: 0.8rem;">(Optional)</span></label>
-                        <textarea id="rfMemNote" class="form-input" style="height: 100px; padding: 12px; resize: none;" placeholder="Enter details about this refund..."></textarea>
+                        <label class="form-label" style="font-size: 0.85rem; font-weight: 600; color: #475569;">Refund Method</label>
+                        <select id="rfMemMethodDisplay" class="form-input" style="width: 100%; border: 1px solid #e2e8f0; border-radius: 8px; padding: 10px 12px; font-size: 0.95rem; outline: none; background: #fff; color: #1e293b; cursor: pointer;">
+                            <option value="cash">Cash</option>
+                            <option value="upi">UPI</option>
+                            <option value="card">Card</option>
+                        </select>
                     </div>
                     
                     <p style="font-size: 0.825rem; color: #64748b; line-height: 1.5; margin-bottom: 24px;">
@@ -1465,8 +1464,8 @@ window.refundMembershipPurchase = async function(purchaseId) {
         amountDisplay.value = refundableMembershipAmount || 0;
         amountDisplay.style.color = (refundableMembershipAmount <= 0) ? '#94a3b8' : '#dc2626';
 
-        const lastMethod = data && data.length > 0 ? data[data.length - 1].payment_method : 'cash';
-        methodDisplay.value = lastMethod ? (lastMethod.charAt(0).toUpperCase() + lastMethod.slice(1)) : 'Cash';
+        const lastMethod = data && data.length > 0 ? (data[data.length - 1].payment_method || 'cash').toLowerCase() : 'cash';
+        methodDisplay.value = ['cash', 'upi', 'card'].includes(lastMethod) ? lastMethod : 'cash';
 
         confirmBtn.disabled = false;
         confirmBtn.textContent = 'Issue Refund';
