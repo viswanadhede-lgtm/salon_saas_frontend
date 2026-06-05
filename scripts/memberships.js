@@ -1611,13 +1611,15 @@ function renderCancelNoteLayout(record, contentElem) {
     const notesStr = record.notes || 'No reason specified.';
 
     contentElem.innerHTML = `
-        <div style="margin-bottom: 20px;">
-            <div style="font-size: 0.75rem; font-weight: 700; color: #64748b; text-transform: uppercase; margin-bottom: 4px;">Cancelled On:</div>
-            <div style="font-size: 0.95rem; font-weight: 600; color: #0f172a;">${dateStr}</div>
-        </div>
-        <div>
-            <div style="font-size: 0.75rem; font-weight: 700; color: #64748b; text-transform: uppercase; margin-bottom: 4px;">Reason for Cancellation:</div>
-            <div style="font-size: 0.9rem; color: #334155; line-height: 1.5; white-space: pre-wrap; background: #f8fafc; padding: 12px; border-radius: 8px; border: 1px solid #e2e8f0;">${notesStr}</div>
+        <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; overflow: hidden;">
+            <div style="padding: 16px; border-bottom: 1px solid #e2e8f0; background: #fff;">
+                <div style="font-size: 0.75rem; font-weight: 700; color: #64748b; text-transform: uppercase; margin-bottom: 4px;">Cancelled On:</div>
+                <div style="font-size: 0.95rem; font-weight: 600; color: #0f172a;">${dateStr}</div>
+            </div>
+            <div style="padding: 16px; background: #fff;">
+                <div style="font-size: 0.75rem; font-weight: 700; color: #64748b; text-transform: uppercase; margin-bottom: 8px;">Reason for Cancellation:</div>
+                <div style="font-size: 0.9rem; color: #334155; line-height: 1.5; white-space: pre-wrap; background: #f8fafc; padding: 12px; border-radius: 6px; border: 1px solid #e2e8f0;">${notesStr}</div>
+            </div>
         </div>
     `;
 }
