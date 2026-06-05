@@ -808,11 +808,7 @@ function renderPurchases() {
         const purchaseId = purchase.purchase_id || purchase.id;
         
         let priceDisplay = `₹${Number(purchase.price || 0).toLocaleString('en-IN')}`;
-        if (isRefunded) {
-             priceDisplay = `<del style="color:#94a3b8; font-weight:400; margin-right: 4px;">${priceDisplay}</del><br><span style="color:#dc2626; font-size:0.75rem; font-weight:600;">Refunded</span>`;
-        } else {
-             priceDisplay = `<span style="background-color: #ecfdf5; color: #059669; border: 1px solid #d1fae5; padding: 0.25rem 0.6rem; border-radius: 1rem; font-size: 0.75rem; font-weight: 600;">${priceDisplay}</span>`;
-        }
+        priceDisplay = `<span style="background-color: #ecfdf5; color: #059669; border: 1px solid #d1fae5; padding: 0.25rem 0.6rem; border-radius: 1rem; font-size: 0.75rem; font-weight: 600;">${priceDisplay}</span>`;
 
         return `
             <tr style="border-bottom:1px solid #e2e8f0;">
