@@ -799,6 +799,9 @@ function renderPurchases() {
             statusBadge = `<span style="display:inline-flex;align-items:center;gap:6px;padding:4px 10px;border-radius:20px;font-size:0.75rem;font-weight:600;background:#f1f5f9;color:#64748b;">Expired</span>`;
         }
 
+        const matchedCustomer = allCustomers.find(c => c.customer_id === purchase.customer_id || c.id === purchase.customer_id) || {};
+        const customerPhone = matchedCustomer.phone || purchase.customer_phone || '';
+
         const fullName = purchase.customer_name || `${purchase.first_name || ''} ${purchase.last_name || ''}`.trim() || 'Unknown Customer';
         const initials = fullName.split(' ').slice(0, 2).map(w => w[0] || '').join('').toUpperCase();
         
@@ -825,6 +828,7 @@ function renderPurchases() {
                         <div style="width: 32px; height: 32px; border-radius: 50%; background-color: #f1f5f9; display: flex; align-items: center; justify-content: center; color: #1e3a8a; font-weight: 700; font-size: 0.75rem; border: 1px solid #e2e8f0;">${initials}</div>
                         <div>
                             <span style="font-weight: 600; color: #1e3a8a; display: block;">${fullName}</span>
+                            ${customerPhone ? `<span style="font-size: 0.75rem; color: #64748b; display: block; margin-top:2px;">${customerPhone}</span>` : ''}
                         </div>
                     </div>
                 </td>
