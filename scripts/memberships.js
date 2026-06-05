@@ -1217,9 +1217,10 @@ function setupCancelPurchaseModal() {
 
     const modalHtml = `
     <div class="modal-overlay" id="cancelPurchaseConfirmOverlay" style="z-index: 9999; backdrop-filter: blur(4px);">
-        <div style="background: #fff; border-radius: 12px; width: 420px; max-width: 90vw; padding: 24px; box-shadow: 0 10px 25px -5px rgba(0,0,0,0.1), 0 8px 10px -6px rgba(0,0,0,0.1);">
+        <div style="background: #fff; border-radius: 12px; width: 950px; max-width: 95vw; padding: 24px; box-shadow: 0 10px 25px -5px rgba(0,0,0,0.1), 0 8px 10px -6px rgba(0,0,0,0.1);">
             <div style="margin-bottom: 24px;">
                 <h2 style="margin: 0; font-size: 1.15rem; font-weight: 600; color: #0f172a;">Cancel Membership</h2>
+                <p style="margin: 6px 0 0; font-size: 0.95rem; color: #64748b;">Are you sure you want to cancel this membership?</p>
             </div>
             
             <div style="margin-bottom: 24px; font-size: 0.95rem; color: #1e293b;">
@@ -1235,7 +1236,7 @@ function setupCancelPurchaseModal() {
 
             <div style="margin-bottom: 32px;">
                 <label style="display: block; font-size: 0.85rem; color: #475569; margin-bottom: 8px;">Reason (Optional)</label>
-                <input type="text" id="cnlMemNote" style="width: 100%; border: none; border-bottom: 1px solid #cbd5e1; padding: 6px 0; font-size: 0.95rem; outline: none; background: transparent; color: #1e293b;" placeholder="">
+                <textarea id="cnlMemNote" style="width: 100%; border: 1px solid #e2e8f0; border-radius: 8px; padding: 12px; font-size: 0.95rem; outline: none; background: #fafafa; color: #1e293b; height: 100px; resize: none;" placeholder=""></textarea>
             </div>
 
             <div style="display: flex; gap: 12px;">
