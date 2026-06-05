@@ -1216,27 +1216,29 @@ function setupCancelPurchaseModal() {
     }
 
     const modalHtml = `
-    <div class="modal-overlay" id="cancelPurchaseConfirmOverlay" style="z-index: 9999; display: none; background: rgba(15,23,42,0.45); position: fixed; inset: 0; align-items: center; justify-content: center; backdrop-filter: blur(4px);">
+    <div class="modal-overlay" id="cancelPurchaseConfirmOverlay" style="z-index: 9999; backdrop-filter: blur(4px);">
         <div style="background: #fff; border-radius: 12px; width: 420px; max-width: 90vw; padding: 24px; box-shadow: 0 10px 25px -5px rgba(0,0,0,0.1), 0 8px 10px -6px rgba(0,0,0,0.1);">
             <div style="margin-bottom: 24px;">
-                <h2 style="margin: 0; font-size: 1.15rem; font-weight: 500; color: #0f172a;">Cancel Membership</h2>
+                <h2 style="margin: 0; font-size: 1.15rem; font-weight: 600; color: #0f172a;">Cancel Membership</h2>
             </div>
             
             <div style="margin-bottom: 24px; font-size: 0.95rem; color: #1e293b;">
                 <div style="margin-bottom: 8px;">
-                    Customer: <span id="cancelMemCustomerName" style="font-weight: 400;">—</span>
+                    <span style="color: #64748b; margin-right: 4px;">Customer:</span>
+                    <span id="cancelMemCustomerName" style="font-weight: 500;">—</span>
                 </div>
                 <div>
-                    Plan: <span id="cancelMemPlanName" style="font-weight: 400;">—</span>
+                    <span style="color: #64748b; margin-right: 4px;">Plan:</span>
+                    <span id="cancelMemPlanName" style="font-weight: 500;">—</span>
                 </div>
             </div>
 
             <div style="margin-bottom: 32px;">
-                <label style="display: block; font-size: 0.95rem; color: #1e293b; margin-bottom: 8px;">Reason (Optional)</label>
-                <input type="text" id="cnlMemNote" style="width: 100%; border: none; border-bottom: 1px solid #94a3b8; padding: 4px 0; font-size: 0.95rem; outline: none; background: transparent; color: #1e293b;" placeholder="">
+                <label style="display: block; font-size: 0.85rem; color: #475569; margin-bottom: 8px;">Reason (Optional)</label>
+                <input type="text" id="cnlMemNote" style="width: 100%; border: none; border-bottom: 1px solid #cbd5e1; padding: 6px 0; font-size: 0.95rem; outline: none; background: transparent; color: #1e293b;" placeholder="">
             </div>
 
-            <div style="display: flex; gap: 16px;">
+            <div style="display: flex; gap: 12px;">
                 <button id="btnCancelCancelPurchase" style="flex: 1; padding: 10px; border-radius: 6px; border: 1px solid #e2e8f0; background: #fff; color: #475569; font-weight: 500; cursor: pointer; transition: background 0.2s;" onmouseover="this.style.background='#f8fafc'" onmouseout="this.style.background='#fff'">Keep Membership</button>
                 <button id="btnConfirmCancelPurchase" style="flex: 1; padding: 10px; border-radius: 6px; border: none; background: #ef4444; color: #fff; font-weight: 500; cursor: pointer; transition: background 0.2s;" onmouseover="this.style.background='#dc2626'" onmouseout="this.style.background='#ef4444'">Cancel Membership</button>
             </div>
@@ -1249,13 +1251,13 @@ function setupCancelPurchaseModal() {
     const overlay = document.getElementById('cancelPurchaseConfirmOverlay');
 
     document.getElementById('btnCancelCancelPurchase').addEventListener('click', () => {
-        overlay.style.display = 'none';
+        overlay.classList.remove('active');
         purchaseToCancel = null;
     });
     
     overlay.addEventListener('click', (e) => {
         if (e.target === overlay) {
-            overlay.style.display = 'none';
+            overlay.classList.remove('active');
             purchaseToCancel = null;
         }
     });
@@ -1263,30 +1265,34 @@ function setupCancelPurchaseModal() {
     document.getElementById('btnConfirmCancelPurchase').addEventListener('click', async () => {
         if (!purchaseToCancel) return;
         const noteFieldValue = document.getElementById('cnlMemNote')?.value.trim() || null;
-        overlay.style.display = 'none';
+        overlay.classList.remove('active');
         await executeCancelMembershipPurchase(purchaseToCancel, noteFieldValue);
         purchaseToCancel = null;
     });
 }
 
 window.cancelMembershipPurchase = function(purchaseId) {
-    setupCancelPurchaseModal();
-    purchaseToCancel = purchaseId;
-    
-    // Find the purchase data to populate the modal
-    const purchase = currentPurchases.find(p => (p.purchase_id || p.id) === purchaseId);
-    if (purchase) {
-        const fullName = purchase.customer_name || `${purchase.first_name||''} ${purchase.last_name||''}`.trim() || 'Unknown';
-        const planName = purchase.plan_name || purchase.membership_name || purchase.name || 'Unknown Plan';
+    try {
+        setupCancelPurchaseModal();
+        purchaseToCancel = purchaseId;
         
-        document.getElementById('cancelMemCustomerName').textContent = fullName;
-        document.getElementById('cancelMemPlanName').textContent = planName;
-    }
+        const purchase = currentPurchases.find(p => (p.purchase_id || p.id) === purchaseId);
+        if (purchase) {
+            const fullName = purchase.customer_name || `${purchase.first_name||''} ${purchase.last_name||''}`.trim() || 'Unknown';
+            const planName = purchase.plan_name || purchase.membership_name || purchase.name || 'Unknown Plan';
+            
+            document.getElementById('cancelMemCustomerName').textContent = fullName;
+            document.getElementById('cancelMemPlanName').textContent = planName;
+        }
 
-    const noteEl = document.getElementById('cnlMemNote');
-    if (noteEl) noteEl.value = '';
-    
-    document.getElementById('cancelPurchaseConfirmOverlay').style.display = 'flex';
+        const noteEl = document.getElementById('cnlMemNote');
+        if (noteEl) noteEl.value = '';
+        
+        document.getElementById('cancelPurchaseConfirmOverlay').classList.add('active');
+    } catch (err) {
+        console.error("Error opening cancer modal: ", err);
+        showToast("Error opening cancel modal");
+    }
 };
 
 async function executeCancelMembershipPurchase(purchaseId, notes = null) {
