@@ -845,8 +845,8 @@ function renderPurchases() {
                         ${isCancelled ? `
                         <button onclick="window.refundMembershipPurchase('${purchaseId}')" style="padding: 4px 12px; border-radius: 6px; border: 1px solid #fef08a; background: #fefce8; cursor: pointer; color: #b45309; font-size: 0.75rem; font-weight: 600; transition: all 0.2s;" onmouseover="this.style.background='#fef9c3'" onmouseout="this.style.background='#fefce8'" title="Refund">Refund</button>
                         ` : ''}
-                        ${isRefunded ? `
-                        <button onclick="window.viewRefundNotes('${purchaseId}')" style="padding: 6px; border-radius: 6px; border: 1px solid #e2e8f0; background: #fff; cursor: pointer; color: #64748b; transition: all 0.2s;" title="View Refund Reason">
+                        ${(isRefunded || isCancelled) ? `
+                        <button onclick="window.viewPurchaseNotes('${purchaseId}')" style="padding: 6px; border-radius: 6px; border: 1px solid #e2e8f0; background: #fff; cursor: pointer; color: #64748b; transition: all 0.2s;" title="View Notes">
                             <i data-feather="file-text" style="width: 16px; height: 16px;"></i>
                         </button>
                         ` : ''}
@@ -1130,7 +1130,11 @@ function setupCancelPurchaseModal() {
                     <i data-feather="x-circle" style="color: #ef4444; width: 32px; height: 32px;"></i>
                 </div>
                 <h2 style="font-size: 1.5rem; font-weight: 700; color: #0f172a; margin-bottom: 8px;">Cancel Membership?</h2>
-                <p style="color: #64748b; font-size: 0.95rem; margin-bottom: 24px; line-height: 1.5;">Are you sure you want to cancel this membership? This action cannot be undone.</p>
+                <p style="color: #64748b; font-size: 0.95rem; margin-bottom: 16px; line-height: 1.5;">Are you sure you want to cancel this membership? This action cannot be undone.</p>
+                <div style="margin-bottom: 24px; text-align: left;">
+                    <label style="display:block; font-size: 0.85rem; font-weight: 600; color: #475569; margin-bottom: 6px;">Reason for Cancellation <span style="font-weight:400; color:#94a3b8;">(Optional)</span></label>
+                    <textarea id="cnlMemNote" style="width: 100%; border: 1px solid #e2e8f0; border-radius: 8px; padding: 12px; font-size: 0.9rem; resize: none; background: #f8fafc; color: #1e293b; height: 80px;" placeholder="Enter details about why this is being cancelled..."></textarea>
+                </div>
                 <div style="display: flex; gap: 12px; justify-content: center;">
                     <button id="btnCancelCancelPurchase" style="flex: 1; padding: 12px 20px; border-radius: 8px; border: 1px solid #e2e8f0; background: white; color: #64748b; font-weight: 600; cursor: pointer; transition: all 0.2s;">Keep It</button>
                     <button id="btnConfirmCancelPurchase" style="flex: 1; padding: 12px 20px; border-radius: 8px; border: none; background: #ef4444; color: white; font-weight: 600; cursor: pointer; transition: background 0.2s;">Yes, Cancel</button>
@@ -1157,8 +1161,9 @@ function setupCancelPurchaseModal() {
 
         document.getElementById('btnConfirmCancelPurchase').addEventListener('click', async () => {
             if (!purchaseToCancel) return;
+            const noteFieldValue = document.getElementById('cnlMemNote')?.value.trim() || null;
             overlay.classList.remove('active');
-            await executeCancelMembershipPurchase(purchaseToCancel);
+            await executeCancelMembershipPurchase(purchaseToCancel, noteFieldValue);
             purchaseToCancel = null;
         });
     }
@@ -1167,19 +1172,21 @@ function setupCancelPurchaseModal() {
 window.cancelMembershipPurchase = function(purchaseId) {
     setupCancelPurchaseModal();
     purchaseToCancel = purchaseId;
+    const noteEl = document.getElementById('cnlMemNote');
+    if (noteEl) noteEl.value = '';
     document.getElementById('cancelPurchaseConfirmOverlay').classList.add('active');
 };
 
-async function executeCancelMembershipPurchase(purchaseId) {
+async function executeCancelMembershipPurchase(purchaseId, notes = null) {
     try {
         const { error } = await supabase
             .from('membership_purchases')
             .eq('purchase_id', purchaseId)
-            .update({ status: 'cancelled' });
+            .update({ status: 'cancelled', notes: notes });
 
         if (error) {
             // fallback if pk is id
-            const { error: err2 } = await supabase.from('membership_purchases').eq('id', purchaseId).update({ status: 'cancelled' });
+            const { error: err2 } = await supabase.from('membership_purchases').eq('id', purchaseId).update({ status: 'cancelled', notes: notes });
             if (err2) throw err2;
         }
 
@@ -1387,10 +1394,10 @@ async function processMembershipRefund() {
              console.warn('business_transactions insert failed, but updating membership record anyway:', txError);
         }
 
-        // 2. Update membership_purchases status
+        // 2. Update membership_purchases status AND notes column
         const { error: memError } = await supabase
             .from('membership_purchases')
-            .update({ status: 'refunded', payment_status: 'refunded' })
+            .update({ status: 'refunded', payment_status: 'refunded', notes: note || null })
             .eq('purchase_id', purchaseId);
 
         if (memError) throw memError;
@@ -1411,14 +1418,14 @@ async function processMembershipRefund() {
 }
 
 // ── NEW UTILITIES (Notes & Renew) ───────────────────────────────────────
-window.viewRefundNotes = async function(purchaseId) {
+window.viewPurchaseNotes = async function(purchaseId) {
     let modal = document.getElementById('refundNotesModalOverlay');
     if (!modal) {
         document.body.insertAdjacentHTML('beforeend', `
         <div class="modal-overlay" id="refundNotesModalOverlay" style="z-index:9999;">
             <div class="modal-container" style="width: 400px; max-width: 95vw; padding: 0; border-radius: 12px; overflow: hidden; box-shadow: 0 20px 25px -5px rgba(0,0,0,0.1);">
                 <div class="modal-header" style="background:#f8fafc; padding:16px 20px; border-bottom:1px solid #e2e8f0; display:flex; justify-content:space-between; align-items:center;">
-                    <h2 style="margin:0; font-size:1.1rem; color:#1e293b;"><i data-feather="file-text" style="width:16px; height:16px; margin-right:8px; color:#64748b; vertical-align:text-bottom;"></i>Refund Reason</h2>
+                    <h2 style="margin:0; font-size:1.1rem; color:#1e293b;"><i data-feather="file-text" style="width:16px; height:16px; margin-right:8px; color:#64748b; vertical-align:text-bottom;"></i>Notes</h2>
                     <button class="modal-close" onclick="document.getElementById('refundNotesModalOverlay').classList.remove('active')" style="background:none; border:none; cursor:pointer;"><i data-feather="x" style="color:#64748b;"></i></button>
                 </div>
                 <div class="modal-body" style="padding:24px; min-height:80px; color:#334155; font-size:0.95rem; line-height:1.5;" id="refundNotesContent">
@@ -1439,23 +1446,28 @@ window.viewRefundNotes = async function(purchaseId) {
 
     try {
         const { data, error } = await supabase
-            .from('business_transactions')
+            .from('membership_purchases')
             .select('notes')
-            .eq('reference_id', purchaseId)
-            .eq('status', 'refunded')
-            .neq('notes', null)
-            .order('created_at', { ascending: false })
+            .eq('purchase_id', purchaseId)
             .limit(1);
 
-        if (error) throw error;
-        
-        if (data && data.length > 0 && data[0].notes) {
-            content.textContent = data[0].notes;
+        // Fallback for PK name differences
+        if (error) {
+           const { data: d2, error: e2 } = await supabase.from('membership_purchases').select('notes').eq('id', purchaseId).limit(1);
+           if (e2) throw e2;
+           if (d2 && d2.length > 0 && d2[0].notes) {
+               content.textContent = d2[0].notes;
+               return;
+           }
         } else {
-            content.innerHTML = '<span style="color:#94a3b8; font-style:italic;">No refund reason provided.</span>';
+             if (data && data.length > 0 && data[0].notes) {
+                content.textContent = data[0].notes;
+                return;
+             }
         }
+        content.innerHTML = '<span style="color:#94a3b8; font-style:italic;">No reason provided.</span>';
     } catch (err) {
-        console.error('viewRefundNotes error:', err);
+        console.error('viewPurchaseNotes error:', err);
         content.innerHTML = '<span style="color:#ef4444;">Failed to load note.</span>';
     }
 };
