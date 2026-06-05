@@ -802,8 +802,16 @@ function renderPurchases() {
         const fullName = purchase.customer_name || `${purchase.first_name || ''} ${purchase.last_name || ''}`.trim() || 'Unknown Customer';
         const initials = fullName.split(' ').slice(0, 2).map(w => w[0] || '').join('').toUpperCase();
         
-        const purchaseDateStr = purchase.purchase_date ? new Date(purchase.purchase_date).toLocaleDateString() : '-';
-        const validUntilStr = purchase.expiry_date ? new Date(purchase.expiry_date).toLocaleDateString() : '-';
+        const formatDate = (d) => {
+            if (!d) return '-';
+            const dt = new Date(d);
+            const day = String(dt.getDate()).padStart(2, '0');
+            const month = String(dt.getMonth() + 1).padStart(2, '0');
+            const year = dt.getFullYear();
+            return `${day}-${month}-${year}`;
+        };
+        const purchaseDateStr = formatDate(purchase.purchase_date);
+        const validUntilStr = formatDate(purchase.expiry_date);
         
         const purchaseId = purchase.purchase_id || purchase.id;
         
