@@ -1233,20 +1233,20 @@ function setupCancelPurchaseModal() {
                 <div>
                     <div style="margin-bottom: 8px;">
                         <span style="color: #64748b; margin-right: 4px;">Customer:</span>
-                        <span id="cancelMemCustomerName" style="font-weight: 500;">—</span>
+                        <span id="cancelMemCustomerName" style="font-weight: 600; color: #4f46e5;">—</span>
                     </div>
                     <div style="margin-bottom: 8px;">
                         <span style="color: #64748b; margin-right: 4px;">Plan:</span>
-                        <span id="cancelMemPlanName" style="font-weight: 500;">—</span>
+                        <span id="cancelMemPlanName" style="font-weight: 600; color: #4f46e5;">—</span>
                     </div>
                     <div>
                         <span style="color: #64748b; margin-right: 4px;">Plan Start Date:</span>
-                        <span id="cancelMemStartDate" style="font-weight: 500;">—</span>
+                        <span id="cancelMemStartDate" style="font-weight: 600; color: #4f46e5;">—</span>
                     </div>
                 </div>
                 <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 12px 20px; text-align: center; min-width: 120px;">
                     <span style="color: #64748b; display: block; font-size: 0.7rem; text-transform: uppercase; font-weight: 700; letter-spacing: 0.05em; margin-bottom: 4px;">Duration</span>
-                    <span id="cancelMemDurationDisplay" style="font-weight: 600; color: #0f172a; font-size: 0.95rem;">—</span>
+                    <span id="cancelMemDurationDisplay" style="font-weight: 600; color: #4f46e5; font-size: 0.95rem;">—</span>
                 </div>
             </div>
 
