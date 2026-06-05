@@ -1059,7 +1059,7 @@ async function executeMembershipAssignment(payload, newPurchaseId) {
     const custSearchValue = document.getElementById('custSearchInput').value.trim();
     const custNameValue = document.getElementById('assignCustomerName')?.value.trim();
     const custEmailValue = document.getElementById('assignCustomerEmail')?.value.trim();
-    const assignDate = document.getElementById('assignDateInput').value;
+    const assignDate = document.getElementById('assignDateInput')?.value || new Date().toISOString().split('T')[0];
     
     // Get active payment method and collected amount from the payload
     let payMethod = payload.paymentMethod || 'cash';
