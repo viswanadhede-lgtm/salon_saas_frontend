@@ -839,28 +839,33 @@ function renderPurchases() {
                 <td style="color: #64748b;">${validUntilStr}</td>
                 <td>${statusBadge}</td>
                 <td style="text-align: center;">
-                    <div style="display: flex; gap: 8px; justify-content: center; align-items: center;">
-                        <button class="action-btn" title="View" style="display:flex;flex-direction:column;align-items:center;gap:3px;padding:6px 10px;min-width:56px;border-radius:8px;border:1px solid #dbeafe;background:#eff6ff;cursor:pointer;color:#3b82f6;font-size:0.7rem;font-weight:600;transition:all 0.2s;">
-                            <i data-feather="eye" style="width:14px;height:14px;"></i>View
+                    <div style="display: flex; gap: 0.5rem; justify-content: center; align-items: center;">
+                        <button class="action-btn" title="View" style="display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;padding:4px 8px;min-width:52px;border-radius:8px;border:1px solid #dbeafe;background:#eff6ff;cursor:pointer;color:#3b82f6;transition:all 0.2s;">
+                            <i data-feather="eye" style="width:16px;height:16px;margin-bottom:2px;"></i>
+                            <span style="font-size:10px;font-weight:600;">View</span>
                         </button>
                         ${isActive ? `
-                        <button onclick="window.cancelMembershipPurchase('${purchaseId}')" title="Cancel" style="display:flex;flex-direction:column;align-items:center;gap:3px;padding:6px 10px;min-width:56px;border-radius:8px;border:1px solid #fecdd3;background:#fff1f2;cursor:pointer;color:#e11d48;font-size:0.7rem;font-weight:600;transition:all 0.2s;" onmouseover="this.style.background='#ffe4e6'" onmouseout="this.style.background='#fff1f2'">
-                            <i data-feather="x-circle" style="width:14px;height:14px;"></i>Cancel
+                        <button onclick="window.cancelMembershipPurchase('${purchaseId}')" title="Cancel" style="display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;padding:4px 8px;min-width:52px;border-radius:8px;border:1px solid #fecdd3;background:#fff1f2;cursor:pointer;color:#e11d48;transition:all 0.2s;" onmouseover="this.style.background='#ffe4e6'" onmouseout="this.style.background='#fff1f2'">
+                            <i data-feather="x-circle" style="width:16px;height:16px;margin-bottom:2px;"></i>
+                            <span style="font-size:10px;font-weight:600;">Cancel</span>
                         </button>
                         ` : ''}
                         ${isCancelled ? `
-                        <button onclick="window.refundMembershipPurchase('${purchaseId}')" title="Refund" style="display:flex;flex-direction:column;align-items:center;gap:3px;padding:6px 10px;min-width:56px;border-radius:8px;border:1px solid #fef08a;background:#fefce8;cursor:pointer;color:#b45309;font-size:0.7rem;font-weight:600;transition:all 0.2s;" onmouseover="this.style.background='#fef9c3'" onmouseout="this.style.background='#fefce8'">
-                            <i data-feather="rotate-ccw" style="width:14px;height:14px;"></i>Refund
+                        <button onclick="window.refundMembershipPurchase('${purchaseId}')" title="Refund" style="display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;padding:4px 8px;min-width:52px;border-radius:8px;border:1px solid #fef08a;background:#fefce8;cursor:pointer;color:#b45309;transition:all 0.2s;" onmouseover="this.style.background='#fef9c3'" onmouseout="this.style.background='#fefce8'">
+                            <i data-feather="rotate-ccw" style="width:16px;height:16px;margin-bottom:2px;"></i>
+                            <span style="font-size:10px;font-weight:600;">Refund</span>
                         </button>
                         ` : ''}
                         ${(isRefunded || isCancelled) ? `
-                        <button onclick="window.viewPurchaseNotes('${purchaseId}')" title="View Notes" style="display:flex;flex-direction:column;align-items:center;gap:3px;padding:6px 10px;min-width:56px;border-radius:8px;border:1px solid #e2e8f0;background:#f8fafc;cursor:pointer;color:#64748b;font-size:0.7rem;font-weight:600;transition:all 0.2s;" onmouseover="this.style.background='#f1f5f9'" onmouseout="this.style.background='#f8fafc'">
-                            <i data-feather="file-text" style="width:14px;height:14px;"></i>Notes
+                        <button onclick="window.viewPurchaseNotes('${purchaseId}')" title="View Notes" style="display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;padding:4px 8px;min-width:52px;border-radius:8px;border:1px solid #e2e8f0;background:#f8fafc;cursor:pointer;color:#64748b;transition:all 0.2s;" onmouseover="this.style.background='#f1f5f9'" onmouseout="this.style.background='#f8fafc'">
+                            <i data-feather="file-text" style="width:16px;height:16px;margin-bottom:2px;"></i>
+                            <span style="font-size:10px;font-weight:600;">Notes</span>
                         </button>
                         ` : ''}
                         ${(!isActive && !isCancelled && !isRefunded) ? `
-                        <button onclick="window.renewMembershipPurchase('${purchaseId}')" title="Renew" style="display:flex;flex-direction:column;align-items:center;gap:3px;padding:6px 10px;min-width:56px;border-radius:8px;border:1px solid #bbf7d0;background:#f0fdf4;cursor:pointer;color:#166534;font-size:0.7rem;font-weight:600;transition:all 0.2s;" onmouseover="this.style.background='#dcfce7'" onmouseout="this.style.background='#f0fdf4'">
-                            <i data-feather="refresh-cw" style="width:14px;height:14px;"></i>Renew
+                        <button onclick="window.renewMembershipPurchase('${purchaseId}')" title="Renew" style="display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;padding:4px 8px;min-width:52px;border-radius:8px;border:1px solid #bbf7d0;background:#f0fdf4;cursor:pointer;color:#166534;transition:all 0.2s;" onmouseover="this.style.background='#dcfce7'" onmouseout="this.style.background='#f0fdf4'">
+                            <i data-feather="refresh-cw" style="width:16px;height:16px;margin-bottom:2px;"></i>
+                            <span style="font-size:10px;font-weight:600;">Renew</span>
                         </button>
                         ` : ''}
                     </div>
