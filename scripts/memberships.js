@@ -1781,23 +1781,23 @@ window.viewRefundInfo = async function(purchaseId) {
             <div style="display: grid; grid-template-columns: 1fr 1fr; border: 1px solid #e2e8f0; border-radius: 8px; overflow: hidden; margin-bottom: 20px;">
                 <div style="padding: 16px; border-bottom: 1px solid #e2e8f0; border-right: 1px solid #e2e8f0; background: #fff;">
                     <div style="font-size: 0.75rem; font-weight: 700; color: #64748b; text-transform: uppercase; margin-bottom: 4px;">Customer Name</div>
-                    <div style="font-size: 0.95rem; font-weight: 500; color: #0f172a;">${custName}</div>
+                    <div style="font-size: 0.95rem; font-weight: 600; color: #4f46e5;">${custName}</div>
                 </div>
                 <div style="padding: 16px; border-bottom: 1px solid #e2e8f0; background: #fff;">
                     <div style="font-size: 0.75rem; font-weight: 700; color: #64748b; text-transform: uppercase; margin-bottom: 4px;">Customer Plan</div>
-                    <div style="font-size: 0.95rem; font-weight: 500; color: #0f172a;">${planName}</div>
+                    <div style="font-size: 0.95rem; font-weight: 600; color: #4f46e5;">${planName}</div>
                 </div>
                 <div style="padding: 16px; border-bottom: 1px solid #e2e8f0; border-right: 1px solid #e2e8f0; background: #fff;">
                     <div style="font-size: 0.75rem; font-weight: 700; color: #64748b; text-transform: uppercase; margin-bottom: 4px;">Start Date</div>
-                    <div style="font-size: 0.95rem; font-weight: 500; color: #0f172a;">${sDateStr}</div>
+                    <div style="font-size: 0.95rem; font-weight: 600; color: #4f46e5;">${sDateStr}</div>
                 </div>
                 <div style="padding: 16px; border-bottom: 1px solid #e2e8f0; background: #fff;">
                     <div style="font-size: 0.75rem; font-weight: 700; color: #64748b; text-transform: uppercase; margin-bottom: 4px;">Refunded Date</div>
-                    <div style="font-size: 0.95rem; font-weight: 500; color: #0f172a;">${cDateStr}</div>
+                    <div style="font-size: 0.95rem; font-weight: 600; color: #4f46e5;">${cDateStr}</div>
                 </div>
                 <div style="padding: 16px; border-bottom: 1px solid #e2e8f0; border-right: 1px solid #e2e8f0; background: #fff;">
                     <div style="font-size: 0.75rem; font-weight: 700; color: #64748b; text-transform: uppercase; margin-bottom: 4px;">Cancellation Date</div>
-                    <div style="font-size: 0.95rem; font-weight: 500; color: #0f172a;">${cancelDateStr}</div>
+                    <div style="font-size: 0.95rem; font-weight: 600; color: #4f46e5;">${cancelDateStr}</div>
                 </div>
                 <div style="padding: 16px; border-bottom: 1px solid #e2e8f0; background: #fff;">
                     <div style="font-size: 0.75rem; font-weight: 700; color: #64748b; text-transform: uppercase; margin-bottom: 4px;">Paid Amount</div>
