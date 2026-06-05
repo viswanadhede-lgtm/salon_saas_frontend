@@ -859,9 +859,9 @@ function renderPurchases() {
                         </button>
                         ` : ''}
                         ${isCancelled ? `
-                        <button onclick="window.viewPurchaseNotes('${purchaseId}')" title="View Notes" style="display:flex;flex-direction:column;align-items:center;justify-content:center;padding:4px 8px;min-width:52px;height:40px;border-radius:8px;border:1px solid #e2e8f0;background:#f8fafc;cursor:pointer;color:#64748b;transition:all 0.2s;" onmouseover="this.style.background='#f1f5f9'" onmouseout="this.style.background='#f8fafc'">
-                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="margin-bottom:2px;flex-shrink:0;"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line></svg>
-                            <span style="font-size:10px;font-weight:600;">Notes</span>
+                        <button onclick="window.viewPurchaseNotes('${purchaseId}')" title="View Details" style="display:flex;flex-direction:column;align-items:center;justify-content:center;padding:4px 8px;min-width:52px;height:40px;border-radius:8px;border:1px solid #e2e8f0;background:#f8fafc;cursor:pointer;color:#64748b;transition:all 0.2s;" onmouseover="this.style.background='#f1f5f9'" onmouseout="this.style.background='#f8fafc'">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="margin-bottom:2px;flex-shrink:0;"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="16" x2="12" y2="12"></line><line x1="12" y1="8" x2="12.01" y2="8"></line></svg>
+                            <span style="font-size:10px;font-weight:600;">Details</span>
                         </button>
                         <button onclick="window.refundMembershipPurchase('${purchaseId}')" title="Refund" style="display:flex;flex-direction:column;align-items:center;justify-content:center;padding:4px 8px;min-width:52px;height:40px;border-radius:8px;border:1px solid #fef08a;background:#fefce8;cursor:pointer;color:#b45309;transition:all 0.2s;" onmouseover="this.style.background='#fef9c3'" onmouseout="this.style.background='#fefce8'">
                             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="margin-bottom:2px;flex-shrink:0;"><polyline points="1 4 1 10 7 10"></polyline><path d="M3.51 15a9 9 0 1 0 .49-3.91"></path></svg>
@@ -1611,24 +1611,25 @@ window.viewPurchaseNotes = async function(purchaseId) {
     if (window.feather) feather.replace();
     modal.classList.add('active');
 
+    const basePurchase = (typeof currentPurchases !== 'undefined' ? currentPurchases : []).find(p => (p.purchase_id || p.id) === purchaseId) || {};
     try {
         const { data, error } = await supabase
             .from('membership_purchases')
-            .select('notes, cancelled_date, updated_at')
+            .select('*')
             .eq('purchase_id', purchaseId)
             .limit(1);
 
         // Fallback for PK name differences
         if (error) {
-           const { data: d2, error: e2 } = await supabase.from('membership_purchases').select('notes, cancelled_date, updated_at').eq('id', purchaseId).limit(1);
+           const { data: d2, error: e2 } = await supabase.from('membership_purchases').select('*').eq('id', purchaseId).limit(1);
            if (e2) throw e2;
            if (d2 && d2.length > 0) {
-               renderCancelNoteLayout(d2[0], content);
+               renderCancelNoteLayout({...basePurchase, ...d2[0]}, content);
                return;
            }
         } else {
              if (data && data.length > 0) {
-                renderCancelNoteLayout(data[0], content);
+                renderCancelNoteLayout({...basePurchase, ...data[0]}, content);
                 return;
              }
         }
@@ -1640,24 +1641,63 @@ window.viewPurchaseNotes = async function(purchaseId) {
 };
 
 function renderCancelNoteLayout(record, contentElem) {
-    const rawDate = record.cancelled_date || record.updated_at || null;
-    let dateStr = 'Unknown';
-    if (rawDate) {
-        const d = new Date(rawDate);
-        if (!isNaN(d)) dateStr = d.toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' });
+    const custName = record.customer_name || `${record.first_name || ''} ${record.last_name || ''}`.trim() || 'Unknown';
+    const planName = record.plan_name || record.membership_name || record.name || 'Unknown Plan';
+    
+    const rawStart = record.purchase_date || record.start_date || record.created_at;
+    const startObj = rawStart ? new Date(rawStart) : null;
+    const startStr = startObj && !isNaN(startObj) ? startObj.toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' }) : 'Unknown';
+
+    const rawCancel = record.cancelled_date || record.updated_at || null;
+    const cancelObj = rawCancel ? new Date(rawCancel) : null;
+    const cancelStr = cancelObj && !isNaN(cancelObj) ? cancelObj.toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' }) : 'Unknown';
+
+    let durationText = 'Unknown';
+    if (startObj && !isNaN(startObj) && cancelObj && !isNaN(cancelObj)) {
+        let y = cancelObj.getFullYear() - startObj.getFullYear();
+        let m = cancelObj.getMonth() - startObj.getMonth();
+        let d = cancelObj.getDate() - startObj.getDate();
+        if (d < 0) { m -= 1; d += new Date(cancelObj.getFullYear(), cancelObj.getMonth(), 0).getDate(); }
+        if (m < 0) { y -= 1; m += 12; }
+        
+        let arr = [];
+        if (y > 0) arr.push(`${y} year${y>1?'s':''}`);
+        if (m > 0) arr.push(`${m} month${m>1?'s':''}`);
+        if (d > 0) arr.push(`${d} day${d>1?'s':''}`);
+        durationText = arr.join(' ') || '0 days';
     }
+
     const notesStr = record.notes || 'No reason specified.';
 
     contentElem.innerHTML = `
-        <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; overflow: hidden;">
+        <div style="display: grid; grid-template-columns: 1fr 1fr; border: 1px solid #e2e8f0; border-radius: 8px; overflow: hidden; margin-bottom: 20px;">
+            <div style="padding: 16px; border-bottom: 1px solid #e2e8f0; border-right: 1px solid #e2e8f0; background: #fff;">
+                <div style="font-size: 0.75rem; font-weight: 700; color: #64748b; text-transform: uppercase; margin-bottom: 4px;">Customer Name</div>
+                <div style="font-size: 0.95rem; font-weight: 500; color: #0f172a;">${custName}</div>
+            </div>
             <div style="padding: 16px; border-bottom: 1px solid #e2e8f0; background: #fff;">
-                <div style="font-size: 0.75rem; font-weight: 700; color: #64748b; text-transform: uppercase; margin-bottom: 4px;">Cancelled On:</div>
-                <div style="font-size: 0.95rem; font-weight: 600; color: #0f172a;">${dateStr}</div>
+                <div style="font-size: 0.75rem; font-weight: 700; color: #64748b; text-transform: uppercase; margin-bottom: 4px;">Customer Plan</div>
+                <div style="font-size: 0.95rem; font-weight: 500; color: #0f172a;">${planName}</div>
+            </div>
+            <div style="padding: 16px; border-bottom: 1px solid #e2e8f0; border-right: 1px solid #e2e8f0; background: #fff;">
+                <div style="font-size: 0.75rem; font-weight: 700; color: #64748b; text-transform: uppercase; margin-bottom: 4px;">Start Date</div>
+                <div style="font-size: 0.95rem; font-weight: 500; color: #0f172a;">${startStr}</div>
+            </div>
+            <div style="padding: 16px; border-bottom: 1px solid #e2e8f0; background: #fff;">
+                <div style="font-size: 0.75rem; font-weight: 700; color: #64748b; text-transform: uppercase; margin-bottom: 4px;">Cancelled On</div>
+                <div style="font-size: 0.95rem; font-weight: 500; color: #0f172a;">${cancelStr}</div>
+            </div>
+            <div style="padding: 16px; border-right: 1px solid #e2e8f0; background: #fff;">
+                <div style="font-size: 0.75rem; font-weight: 700; color: #64748b; text-transform: uppercase; margin-bottom: 4px;">Duration</div>
+                <div style="font-size: 0.95rem; font-weight: 600; color: #4f46e5;">${durationText}</div>
             </div>
             <div style="padding: 16px; background: #fff;">
-                <div style="font-size: 0.75rem; font-weight: 700; color: #64748b; text-transform: uppercase; margin-bottom: 8px;">Reason for Cancellation:</div>
-                <div style="font-size: 0.9rem; color: #334155; line-height: 1.5; white-space: pre-wrap; background: #f8fafc; padding: 12px; border-radius: 6px; border: 1px solid #e2e8f0;">${notesStr}</div>
+                <!-- Empty cell to cleanly finish the grid row -->
             </div>
+        </div>
+        <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 16px;">
+            <div style="font-size: 0.75rem; font-weight: 700; color: #64748b; text-transform: uppercase; margin-bottom: 8px;">Reason for Cancellation</div>
+            <div style="font-size: 0.9rem; color: #334155; line-height: 1.5; white-space: pre-wrap;">${notesStr}</div>
         </div>
     `;
 }
