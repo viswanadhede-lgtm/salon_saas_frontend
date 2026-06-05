@@ -1576,21 +1576,21 @@ window.viewPurchaseNotes = async function(purchaseId) {
     try {
         const { data, error } = await supabase
             .from('membership_purchases')
-            .select('notes')
+            .select('notes, cancelled_date, updated_at')
             .eq('purchase_id', purchaseId)
             .limit(1);
 
         // Fallback for PK name differences
         if (error) {
-           const { data: d2, error: e2 } = await supabase.from('membership_purchases').select('notes').eq('id', purchaseId).limit(1);
+           const { data: d2, error: e2 } = await supabase.from('membership_purchases').select('notes, cancelled_date, updated_at').eq('id', purchaseId).limit(1);
            if (e2) throw e2;
-           if (d2 && d2.length > 0 && d2[0].notes) {
-               content.textContent = d2[0].notes;
+           if (d2 && d2.length > 0) {
+               renderCancelNoteLayout(d2[0], content);
                return;
            }
         } else {
-             if (data && data.length > 0 && data[0].notes) {
-                content.textContent = data[0].notes;
+             if (data && data.length > 0) {
+                renderCancelNoteLayout(data[0], content);
                 return;
              }
         }
@@ -1600,6 +1600,27 @@ window.viewPurchaseNotes = async function(purchaseId) {
         content.innerHTML = '<span style="color:#ef4444;">Failed to load note.</span>';
     }
 };
+
+function renderCancelNoteLayout(record, contentElem) {
+    const rawDate = record.cancelled_date || record.updated_at || null;
+    let dateStr = 'Unknown';
+    if (rawDate) {
+        const d = new Date(rawDate);
+        if (!isNaN(d)) dateStr = d.toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' });
+    }
+    const notesStr = record.notes || 'No reason specified.';
+
+    contentElem.innerHTML = `
+        <div style="margin-bottom: 20px;">
+            <div style="font-size: 0.75rem; font-weight: 700; color: #64748b; text-transform: uppercase; margin-bottom: 4px;">Cancelled On:</div>
+            <div style="font-size: 0.95rem; font-weight: 600; color: #0f172a;">${dateStr}</div>
+        </div>
+        <div>
+            <div style="font-size: 0.75rem; font-weight: 700; color: #64748b; text-transform: uppercase; margin-bottom: 4px;">Reason for Cancellation:</div>
+            <div style="font-size: 0.9rem; color: #334155; line-height: 1.5; white-space: pre-wrap; background: #f8fafc; padding: 12px; border-radius: 8px; border: 1px solid #e2e8f0;">${notesStr}</div>
+        </div>
+    `;
+}
 
 window.viewRefundInfo = async function(purchaseId) {
     let modal = document.getElementById('refundInfoModalOverlay');
