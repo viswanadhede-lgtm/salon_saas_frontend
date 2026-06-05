@@ -199,14 +199,30 @@ document.addEventListener('DOMContentLoaded', async () => {
         if (summaryBody) {
             if (selectedPlan) {
                 const planName = selectedPlan.plan_name || selectedPlan.name || 'Unknown Plan';
-                const duration = selectedPlan.duration ? `${selectedPlan.duration} Month${selectedPlan.duration > 1 ? 's' : ''}` : 'N/A';
-                const services = selectedPlan.services || selectedPlan.applicable_services || '';
-                const servicesLine = services ? `<span style="color:#6366f1;">${services}</span>` : '';
+
+                const dur = selectedPlan.duration_months || selectedPlan.duration || 0;
+                const duration = dur ? `${dur} Month${dur > 1 ? 's' : ''}` : 'N/A';
+
+                const isFlat = selectedPlan.discount_type === 'flat';
+                const discountVal = selectedPlan.discount_value;
+                const discountText = discountVal
+                    ? (isFlat ? `₹${discountVal} Off` : `${discountVal}% Off`)
+                    : null;
+
+                const svcArr = Array.isArray(selectedPlan.applicable_services) ? selectedPlan.applicable_services : [];
+                let servicesLine = '';
+                if (svcArr.length > 0) {
+                    const firstName = svcArr[0].service_name || '';
+                    const extra = svcArr.length - 1;
+                    servicesLine = extra > 0 ? `${firstName} + ${extra} more service${extra > 1 ? 's' : ''}` : firstName;
+                }
+
                 summaryBody.innerHTML = `
                     <span style="font-weight:700; font-size:0.95rem; color:#1e293b;">${planName}</span>
                     <span style="color:#4f46e5; font-weight:600;">₹${price.toLocaleString('en-IN')}</span>
                     <span style="color:#64748b;">${duration}</span>
-                    ${servicesLine}
+                    ${discountText ? `<span style="color:#059669; font-weight:600;">${discountText}</span>` : ''}
+                    ${servicesLine ? `<span style="color:#6366f1;">${servicesLine}</span>` : ''}
                 `;
             } else {
                 summaryBody.innerHTML = `<span style="font-size:0.82rem; color:#94a3b8; font-style:italic;">Select a plan to see details</span>`;

@@ -1772,9 +1772,7 @@
 
                 </div>
             </div>
-            <div class="modal-footer">
-                <button type="button" class="btn btn-secondary" id="btnCancelAssign">Cancel</button>
-            </div>
+
         </div>
     </div>
 
@@ -1802,7 +1800,12 @@
 
         if (closeAssign) closeAssign.onclick = () => { assignModal.classList.remove('active'); if (window.resetAssignMembershipForm) window.resetAssignMembershipForm(); };
         if (cancelAssign) cancelAssign.onclick = () => { assignModal.classList.remove('active'); if (window.resetAssignMembershipForm) window.resetAssignMembershipForm(); };
-
+        if (assignModal) assignModal.addEventListener('click', (e) => {
+            if (e.target === assignModal) {
+                assignModal.classList.remove('active');
+                if (window.resetAssignMembershipForm) window.resetAssignMembershipForm();
+            }
+        });
         // btnSavePlan is handled by scripts/memberships.js (module)
 
 
