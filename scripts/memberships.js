@@ -845,6 +845,14 @@ function renderPurchases() {
                         ${isCancelled ? `
                         <button onclick="window.refundMembershipPurchase('${purchaseId}')" style="padding: 4px 12px; border-radius: 6px; border: 1px solid #fef08a; background: #fefce8; cursor: pointer; color: #b45309; font-size: 0.75rem; font-weight: 600; transition: all 0.2s;" onmouseover="this.style.background='#fef9c3'" onmouseout="this.style.background='#fefce8'" title="Refund">Refund</button>
                         ` : ''}
+                        ${isRefunded ? `
+                        <button onclick="window.viewRefundNotes('${purchaseId}')" style="padding: 6px; border-radius: 6px; border: 1px solid #e2e8f0; background: #fff; cursor: pointer; color: #64748b; transition: all 0.2s;" title="View Refund Reason">
+                            <i data-feather="file-text" style="width: 16px; height: 16px;"></i>
+                        </button>
+                        ` : ''}
+                        ${(!isActive && !isCancelled && !isRefunded) ? `
+                        <button onclick="window.renewMembershipPurchase('${purchaseId}')" style="padding: 4px 12px; border-radius: 6px; border: 1px solid #dcfce7; background: #f0fdf4; cursor: pointer; color: #166534; font-size: 0.75rem; font-weight: 600; transition: all 0.2s;" onmouseover="this.style.background='#dcfce7'" onmouseout="this.style.background='#f0fdf4'" title="Renew">Renew</button>
+                        ` : ''}
                     </div>
                 </td>
             </tr>`;
@@ -1401,3 +1409,108 @@ async function processMembershipRefund() {
         }
     }
 }
+
+// ── NEW UTILITIES (Notes & Renew) ───────────────────────────────────────
+window.viewRefundNotes = async function(purchaseId) {
+    let modal = document.getElementById('refundNotesModalOverlay');
+    if (!modal) {
+        document.body.insertAdjacentHTML('beforeend', `
+        <div class="modal-overlay" id="refundNotesModalOverlay" style="z-index:9999;">
+            <div class="modal-container" style="width: 400px; max-width: 95vw; padding: 0; border-radius: 12px; overflow: hidden; box-shadow: 0 20px 25px -5px rgba(0,0,0,0.1);">
+                <div class="modal-header" style="background:#f8fafc; padding:16px 20px; border-bottom:1px solid #e2e8f0; display:flex; justify-content:space-between; align-items:center;">
+                    <h2 style="margin:0; font-size:1.1rem; color:#1e293b;"><i data-feather="file-text" style="width:16px; height:16px; margin-right:8px; color:#64748b; vertical-align:text-bottom;"></i>Refund Reason</h2>
+                    <button class="modal-close" onclick="document.getElementById('refundNotesModalOverlay').classList.remove('active')" style="background:none; border:none; cursor:pointer;"><i data-feather="x" style="color:#64748b;"></i></button>
+                </div>
+                <div class="modal-body" style="padding:24px; min-height:80px; color:#334155; font-size:0.95rem; line-height:1.5;" id="refundNotesContent">
+                    Loading note...
+                </div>
+            </div>
+        </div>
+        `);
+        if (window.feather) feather.replace();
+        modal = document.getElementById('refundNotesModalOverlay');
+        modal.addEventListener('click', (e) => { if (e.target === modal) modal.classList.remove('active'); });
+    }
+
+    const content = document.getElementById('refundNotesContent');
+    content.innerHTML = '<div style="display:flex;justify-content:center;color:#94a3b8;"><i data-feather="loader" class="spin"></i></div>';
+    if (window.feather) feather.replace();
+    modal.classList.add('active');
+
+    try {
+        const { data, error } = await supabase
+            .from('business_transactions')
+            .select('notes')
+            .eq('reference_id', purchaseId)
+            .eq('status', 'refunded')
+            .neq('notes', null)
+            .order('created_at', { ascending: false })
+            .limit(1);
+
+        if (error) throw error;
+        
+        if (data && data.length > 0 && data[0].notes) {
+            content.textContent = data[0].notes;
+        } else {
+            content.innerHTML = '<span style="color:#94a3b8; font-style:italic;">No refund reason provided.</span>';
+        }
+    } catch (err) {
+        console.error('viewRefundNotes error:', err);
+        content.innerHTML = '<span style="color:#ef4444;">Failed to load note.</span>';
+    }
+};
+
+window.renewMembershipPurchase = function(purchaseId) {
+    const purchase = currentPurchases.find(p => (p.purchase_id || p.id) === purchaseId);
+    if (!purchase) {
+        showToast('Purchase details not found.');
+        return;
+    }
+
+    const assignModal = document.getElementById('assignModalOverlay');
+    if (!assignModal) return;
+
+    if (window.resetAssignMembershipForm) window.resetAssignMembershipForm();
+
+    // Fill customer fields
+    const custSearch = document.getElementById('custSearchInput');
+    const custName = document.getElementById('assignCustomerName');
+    const planInput = document.getElementById('assignPlanInput');
+
+    if (custSearch) {
+        // Find existing customer by id
+        const custId = purchase.customer_id;
+        const cust = allCustomers.find(c => (c.customer_id || c.id) === custId);
+        if (cust) {
+            const phoneStr = String(cust.customer_phone || cust.phone_number || '');
+            custSearch.value = phoneStr;
+            selectedCustomer = cust;
+            
+            const custBadge = document.getElementById('assignCustomerBadgeContainer');
+            if (custBadge) custBadge.style.display = 'block';
+            
+            if (custName) {
+                custName.value = purchase.customer_name || cust.customer_name || '';
+                custName.readOnly = true;
+                custName.classList.add('read-only-input');
+            }
+        } else {
+            // fallback if customer not found in allCustomers list
+            custSearch.value = '';
+            if (custName) {
+                custName.value = purchase.customer_name || '';
+                custName.readOnly = false;
+                custName.classList.remove('read-only-input');
+            }
+        }
+    }
+
+    if (planInput) {
+        planInput.value = purchase.membership_id || '';
+        // trigger change event to update summary
+        const event = new Event('change');
+        planInput.dispatchEvent(event);
+    }
+
+    assignModal.classList.add('active');
+};
