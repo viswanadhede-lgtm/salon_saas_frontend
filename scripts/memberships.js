@@ -828,7 +828,7 @@ function renderPurchases() {
                         </div>
                     </div>
                 </td>
-                <td>
+                <td style="text-align: center;">
                     <span style="font-weight: 600; color: #475569;">${purchase.plan_name || purchase.membership_name || purchase.name || '-'}</span>
                 </td>
                 <td>
