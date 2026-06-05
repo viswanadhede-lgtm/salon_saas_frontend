@@ -840,7 +840,7 @@ function renderPurchases() {
                 <td>${statusBadge}</td>
                 <td style="text-align: center;">
                     <div style="display: flex; gap: 0.5rem; justify-content: center; align-items: stretch;">
-                        <button class="action-btn" title="View" style="display:flex;flex-direction:column;align-items:center;justify-content:center;padding:4px 8px;min-width:52px;height:40px;border-radius:8px;border:1px solid #dbeafe;background:#eff6ff;cursor:pointer;color:#3b82f6;transition:all 0.2s;">
+                        <button class="action-btn" title="View" onclick="window.viewMembershipSummary('${purchaseId}')" style="display:flex;flex-direction:column;align-items:center;justify-content:center;padding:4px 8px;min-width:52px;height:40px;border-radius:8px;border:1px solid #dbeafe;background:#eff6ff;cursor:pointer;color:#3b82f6;transition:all 0.2s;" onmouseover="this.style.background='#dbeafe'" onmouseout="this.style.background='#eff6ff'">
                             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="margin-bottom:2px;flex-shrink:0;"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path><circle cx="12" cy="12" r="3"></circle></svg>
                             <span style="font-size:10px;font-weight:600;">View</span>
                         </button>
@@ -876,6 +876,79 @@ function renderPurchases() {
     if (window.feather) feather.replace();
     if (window.applySubFeatureGates) window.applySubFeatureGates();
 }
+
+// ── View Membership Summary Modal ─────────────────────────────────────────
+window.viewMembershipSummary = function(purchaseId) {
+    const purchase = currentPurchases.find(p => (p.purchase_id || p.id) === purchaseId);
+    if (!purchase) return;
+
+    const formatDate = (d) => {
+        if (!d) return '—';
+        const dt = new Date(d);
+        return `${String(dt.getDate()).padStart(2,'0')}-${String(dt.getMonth()+1).padStart(2,'0')}-${dt.getFullYear()}`;
+    };
+
+    const fullName = purchase.customer_name || `${purchase.first_name||''} ${purchase.last_name||''}`.trim() || 'Unknown Customer';
+    const initials = fullName.split(' ').slice(0,2).map(w => w[0]||'').join('').toUpperCase();
+    const phone = purchase.customer_phone || purchase.phone_number || '';
+
+    // Status badge
+    const statusMap = {
+        active:    { label:'Active',    bg:'#ecfdf5', color:'#059669' },
+        cancelled: { label:'Cancelled', bg:'#fef2f2', color:'#ef4444' },
+        refunded:  { label:'Refunded',  bg:'#fffbeb', color:'#d97706' },
+    };
+    const st = statusMap[purchase.status] || { label:'Expired', bg:'#f1f5f9', color:'#64748b' };
+    const statusBadgeHtml = `<span style="padding:4px 12px;border-radius:20px;font-size:0.75rem;font-weight:700;background:${st.bg};color:${st.color};">${st.label}</span>`;
+
+    // Discount from matching plan
+    const planRecord = currentPlans.find(p => (p.membership_id || p.id) === purchase.membership_id);
+    let discountText = '—';
+    if (planRecord) {
+        const val = planRecord.discount_value || 0;
+        discountText = planRecord.discount_type === 'flat' ? `₹${val} OFF` : `${val}% OFF`;
+    }
+
+    // Applicable services
+    const services = planRecord?.applicable_services || [];
+    const chipStyle = 'display:inline-block;padding:3px 10px;border-radius:20px;font-size:0.78rem;font-weight:500;background:#f1f5f9;color:#475569;border:1px solid #e2e8f0;';
+    const servicesHtml = services.length === 0
+        ? `<span style="color:#94a3b8;font-size:0.85rem;">All services included</span>`
+        : services.map(s => `<span style="${chipStyle}">${s.service_name}</span>`).join('');
+
+    // Duration
+    const dur = purchase.duration || planRecord?.duration_months || planRecord?.duration || 0;
+    const durationText = dur ? `${dur} Month${dur > 1 ? 's' : ''}` : '—';
+
+    // Populate DOM
+    document.getElementById('msmInitialsCircle').textContent = initials;
+    document.getElementById('msmCustomerName').textContent = fullName;
+    document.getElementById('msmCustomerPhone').textContent = phone ? `📞 ${phone}` : '';
+    document.getElementById('msmStatusBadge').innerHTML = statusBadgeHtml;
+    document.getElementById('msmPlanName').textContent = purchase.plan_name || purchase.membership_name || purchase.name || '—';
+    document.getElementById('msmPrice').textContent = `₹${Number(purchase.price || 0).toLocaleString('en-IN')}`;
+    document.getElementById('msmDuration').textContent = durationText;
+    document.getElementById('msmDiscount').textContent = discountText;
+    document.getElementById('msmPurchaseDate').textContent = formatDate(purchase.purchase_date);
+    document.getElementById('msmExpiryDate').textContent = formatDate(purchase.expiry_date);
+    document.getElementById('msmServices').innerHTML = servicesHtml;
+
+    // Notes
+    const notes = purchase.notes || purchase.note || '';
+    const notesSection = document.getElementById('msmNotesSection');
+    if (notes) {
+        document.getElementById('msmNotes').textContent = notes;
+        notesSection.style.display = 'block';
+    } else {
+        notesSection.style.display = 'none';
+    }
+
+    // Show overlay
+    const overlay = document.getElementById('membershipSummaryOverlay');
+    overlay.style.display = 'flex';
+    // Close on backdrop click
+    overlay.onclick = (e) => { if (e.target === overlay) overlay.style.display = 'none'; };
+};
 
 async function preValidateAndShowCollect() {
     const planValue = document.getElementById('assignPlanInput').value;
