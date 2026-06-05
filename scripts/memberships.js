@@ -810,15 +810,8 @@ function renderPurchases() {
             const year = dt.getFullYear();
             return `${day}-${month}-${year}`;
         };
-        const purchaseDateStr = formatDate(purchase.purchase_date || purchase.start_date);
-        const validUntilStr = formatDate(purchase.expiry_date || purchase.valid_until);
-        
-        let displayExpiry = validUntilStr;
-        if (isCancelled || isRefunded) {
-            const cDateStr = formatDate(purchase.cancelled_date || purchase.updated_at);
-            displayExpiry = `<div style="font-size: 0.70rem; font-weight: 700; color: #ef4444; letter-spacing: 0.05em; text-transform: uppercase;">Cancelled On</div>
-                             <div style="font-size: 0.95rem; font-weight: 500; color: #1e293b; margin-top: 2px;">${cDateStr}</div>`;
-        }
+        const purchaseDateStr = formatDate(purchase.purchase_date);
+        const validUntilStr = formatDate(purchase.expiry_date);
         
         const purchaseId = purchase.purchase_id || purchase.id;
         
@@ -843,7 +836,7 @@ function renderPurchases() {
                 </td>
                 <td style="color: #64748b; font-size: 0.9rem;">${purchase.duration ? purchase.duration + ' Months' : '-'}</td>
                 <td style="color: #64748b;">${purchaseDateStr}</td>
-                <td style="color: #64748b;">${displayExpiry}</td>
+                <td style="color: #64748b;">${validUntilStr}</td>
                 <td>${statusBadge}</td>
                 <td style="text-align: center;">
                     <div style="display: flex; gap: 0.5rem; justify-content: center; align-items: stretch;">
