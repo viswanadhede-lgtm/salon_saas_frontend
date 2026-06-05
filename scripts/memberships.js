@@ -1552,6 +1552,9 @@ window.viewPurchaseNotes = async function(purchaseId) {
                 <div class="modal-body" style="padding:24px; min-height:80px; color:#334155; font-size:0.95rem; line-height:1.5;" id="refundNotesContent">
                     Loading note...
                 </div>
+                <div style="padding: 16px 20px; border-top: 1px solid #e2e8f0; display: flex; justify-content: flex-end; background: #fff;">
+                    <button onclick="document.getElementById('refundNotesModalOverlay').classList.remove('active')" style="padding: 8px 16px; border-radius: 6px; border: 1px solid #cbd5e1; background: #fff; color: #475569; font-weight: 500; cursor: pointer; transition: background 0.2s;" onmouseover="this.style.background='#f8fafc'" onmouseout="this.style.background='#fff'">Close</button>
+                </div>
             </div>
         </div>
         `);
