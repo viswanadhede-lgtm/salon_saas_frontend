@@ -1305,11 +1305,10 @@ window.cancelMembershipPurchase = function(purchaseId) {
             document.getElementById('cancelMemStartDate').textContent = rawStart ? new Date(rawStart).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' }) : 'Unknown';
             
             let durationText = 'Unknown';
-            const eDate = purchase.expiry_date || purchase.valid_until;
-            if (rawStart && eDate) {
+            if (rawStart) {
                 const s = new Date(rawStart);
-                const e = new Date(eDate);
-                if (!isNaN(s) && !isNaN(e)) {
+                const e = new Date(); // today
+                if (!isNaN(s)) {
                     let years = e.getFullYear() - s.getFullYear();
                     let months = e.getMonth() - s.getMonth();
                     let days = e.getDate() - s.getDate();
@@ -1327,8 +1326,6 @@ window.cancelMembershipPurchase = function(purchaseId) {
                     if (days > 0) arr.push(`${days} day${days>1?'s':''}`);
                     durationText = arr.join(' ') || '0 days';
                 }
-            } else if (purchase.duration) {
-                durationText = purchase.duration + ' Months';
             }
             document.getElementById('cancelMemDurationDisplay').textContent = durationText;
         }
