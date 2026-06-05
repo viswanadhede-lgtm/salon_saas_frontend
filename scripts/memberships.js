@@ -321,6 +321,20 @@ window.resetAssignMembershipForm = function() {
     if (custBadge) custBadge.style.display = 'none';
     if (newCustBadge) newCustBadge.style.display = 'none';
 
+    // Clear and Hide Dates
+    const purchaseDateInput = document.getElementById('assignDateInput');
+    const expiryDateInput = document.getElementById('assignExpiryInput');
+    const datesContainer = document.getElementById('assignDatesContainer');
+    if (purchaseDateInput) purchaseDateInput.value = '';
+    if (expiryDateInput) expiryDateInput.value = '';
+    if (datesContainer) datesContainer.style.display = 'none';
+
+    // Reset Plan Summary Card
+    const summaryBody = document.getElementById('assignPlanSummaryBody');
+    if (summaryBody) {
+        summaryBody.innerHTML = `<span style="font-size:0.82rem; color:#94a3b8; font-style:italic;">Select a plan to see details</span>`;
+    }
+
     const subtotal = document.getElementById('assignSubtotal');
     const tax = document.getElementById('assignTax');
     const total = document.getElementById('assignTotal');
