@@ -645,7 +645,6 @@ export function initGlobalBookingModal() {
                 notes:           bookingNotes?.value.trim() || '',
                 price:           price,
                 status:          'booked',
-                payment:         'pending',
                 booking_type:    'walk-in'
             };
         });
@@ -659,6 +658,7 @@ export function initGlobalBookingModal() {
             console.log('[createBookings] result:', { data, error });
             if (!error) {
                 // ── Write one summary row to bookings_for_business_transaction ──
+                const totalPrice = payloads.reduce((sum, p) => sum + (Number(p.price) || 0), 0);
                 const summaryRow = {
                     booking_id:     payloads[0].booking_id,
                     company_id:     payloads[0].company_id,
@@ -675,9 +675,10 @@ export function initGlobalBookingModal() {
                     start_time:     payloads[0].start_time,
                     end_time:       payloads[0].end_time       || null,
                     notes:          payloads[0].notes          || '',
-                    total_price:    payloads.reduce((sum, p) => sum + (Number(p.price) || 0), 0),
+                    total_price:    totalPrice,
+                    final_amount:   totalPrice,
                     status:         payloads[0].status         || 'booked',
-                    payment:        payloads[0].payment        || 'pending',
+                    payment_status: 'pending',
                     booking_type:   payloads[0].booking_type   || 'walk-in'
                 };
                 const { error: summaryErr } = await supabase

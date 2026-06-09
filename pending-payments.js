@@ -392,16 +392,43 @@ document.addEventListener('DOMContentLoaded', async () => {
                     });
                 if (txError) throw txError;
 
-                // 2. Update payment_status on bookings_for_business_transaction
+                // 2. Update bookings_for_business_transaction with payment + discount details
                 if (row.ref_type === 'booking') {
+                    const totalOriginal = Number(row.total) || 0;
+                    const totalDiscount = totalOriginal - amount;
+
+                    // Determine primary discount source from payload
+                    const d = payload.discounts || {};
+                    let discountType = null;
+                    let discountName = null;
+                    if (d.couponCode) {
+                        discountType = 'coupon';
+                        discountName = d.couponCode;
+                    } else if (d.offerName) {
+                        discountType = 'offer';
+                        discountName = d.offerName;
+                    } else if (d.membershipName) {
+                        discountType = 'membership';
+                        discountName = d.membershipName;
+                    } else if (d.manualValue > 0) {
+                        discountType = 'manual';
+                        discountName = d.manualType === 'percent'
+                            ? `${d.manualValue}% off`
+                            : `₹${d.manualValue} off`;
+                    }
+
                     const { error: bftError } = await supabase
                         .from('bookings_for_business_transaction')
                         .update({
-                            payment_status: 'paid',
-                            updated_at: new Date().toISOString()
+                            payment_status:  'paid',
+                            final_amount:    amount,
+                            discount_amount: totalDiscount > 0 ? totalDiscount : null,
+                            discount_type:   discountType,
+                            discount_name:   discountName,
+                            updated_at:      new Date().toISOString()
                         })
                         .eq('booking_id', activeBookingId);
-                    if (bftError) console.error('[PP] Failed to update payment_status on bookings_for_business_transaction:', bftError);
+                    if (bftError) console.error('[PP] Failed to update bookings_for_business_transaction:', bftError);
                 }
             }
 
