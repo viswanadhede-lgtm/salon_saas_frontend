@@ -374,49 +374,52 @@ document.addEventListener('DOMContentLoaded', async () => {
                     console.error('[PP] business_transactions insert failed for membership:', txError);
                 }
             } else {
+                // Compute discount details from payload (shared by both table writes)
+                const totalOriginal = Number(row.total) || 0;
+                const totalDiscount = totalOriginal - amount;
+                const d = payload.discounts || {};
+                let discountType = null;
+                let discountName = null;
+                if (d.couponCode) {
+                    discountType = 'coupon';
+                    discountName = d.couponCode;
+                } else if (d.offerName) {
+                    discountType = 'offer';
+                    discountName = d.offerName;
+                } else if (d.membershipName) {
+                    discountType = 'membership';
+                    discountName = d.membershipName;
+                } else if (d.manualValue > 0) {
+                    discountType = 'manual';
+                    discountName = d.manualType === 'percent'
+                        ? `${d.manualValue}% off`
+                        : `₹${d.manualValue} off`;
+                }
+
                 // 1. Insert into business_transactions (financial ledger)
                 const { error: txError } = await supabase
                     .from('business_transactions')
                     .insert({
-                        company_id:     companyId,
-                        branch_id:      branchId,
-                        reference_id:   activeBookingId,
-                        reference_type: row.ref_type || 'booking',
-                        amount:         amount,
-                        currency:       'INR',
-                        payment_method: payMethod.toLowerCase(),
-                        status:         'paid',
-                        notes:          `Payment for ${row.ref_type || 'booking'} ${activeBookingId.substring(0,8)}`,
-                        created_by:     userId,
-                        paid_at:        paidAt
+                        company_id:      companyId,
+                        branch_id:       branchId,
+                        reference_id:    activeBookingId,
+                        reference_type:  row.ref_type || 'booking',
+                        amount:          amount,
+                        currency:        'INR',
+                        payment_method:  payMethod.toLowerCase(),
+                        status:          'paid',
+                        notes:           `Payment for ${row.ref_type || 'booking'} ${activeBookingId.substring(0,8)}`,
+                        created_by:      userId,
+                        paid_at:         paidAt,
+                        final_amount:    amount,
+                        discount_type:   discountType,
+                        discount_name:   discountName,
+                        discount_amount: totalDiscount > 0 ? totalDiscount : null
                     });
                 if (txError) throw txError;
 
                 // 2. Update bookings_for_business_transaction with payment + discount details
                 if (row.ref_type === 'booking') {
-                    const totalOriginal = Number(row.total) || 0;
-                    const totalDiscount = totalOriginal - amount;
-
-                    // Determine primary discount source from payload
-                    const d = payload.discounts || {};
-                    let discountType = null;
-                    let discountName = null;
-                    if (d.couponCode) {
-                        discountType = 'coupon';
-                        discountName = d.couponCode;
-                    } else if (d.offerName) {
-                        discountType = 'offer';
-                        discountName = d.offerName;
-                    } else if (d.membershipName) {
-                        discountType = 'membership';
-                        discountName = d.membershipName;
-                    } else if (d.manualValue > 0) {
-                        discountType = 'manual';
-                        discountName = d.manualType === 'percent'
-                            ? `${d.manualValue}% off`
-                            : `₹${d.manualValue} off`;
-                    }
-
                     const { error: bftError } = await supabase
                         .from('bookings_for_business_transaction')
                         .update({
