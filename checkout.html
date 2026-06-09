@@ -1,0 +1,405 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <script src="scripts/auth-loader.js"></script>
+    <script type="module" src="scripts/sub-features/sub-feature-gate.js"></script>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Checkout - BharathBots</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="styles.css">
+    <link rel="stylesheet" href="dashboard.css">
+    <script src="https://unpkg.com/feather-icons"></script>
+    <style>
+        .checkout-container {
+            padding: 32px;
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+        .checkout-header {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin-bottom: 24px;
+        }
+        .back-btn {
+            background: none;
+            border: 1px solid #e2e8f0;
+            color: #64748b;
+            padding: 8px;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.2s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .back-btn:hover {
+            background: #f8fafc;
+            color: #0f172a;
+        }
+        .checkout-grid {
+            display: grid;
+            grid-template-columns: 1fr 400px;
+            gap: 32px;
+            align-items: start;
+        }
+        
+        /* Left: Order Summary Panel */
+        .order-panel {
+            background: #ffffff;
+            border: 1px solid #e2e8f0;
+            border-radius: 16px;
+            padding: 24px;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
+        }
+        .order-panel h2 {
+            font-size: 1.1rem;
+            color: #1e293b;
+            margin: 0 0 16px 0;
+            font-weight: 600;
+        }
+        
+        /* Customer & Meta box */
+        .order-meta-box {
+            background: #f8fafc;
+            border: 1px solid #f1f5f9;
+            border-radius: 12px;
+            padding: 16px;
+            margin-bottom: 24px;
+        }
+        .meta-row {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 8px;
+            font-size: 0.9rem;
+        }
+        .meta-row:last-child { margin-bottom: 0; }
+        .meta-label { color: #64748b; font-weight: 500; }
+        .meta-value { color: #0f172a; font-weight: 600; }
+
+        /* Items list */
+        .order-items {
+            list-style: none;
+            padding: 0;
+            margin: 0 0 24px 0;
+            border-top: 1px solid #e2e8f0;
+        }
+        .order-item-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 16px 0;
+            border-bottom: 1px solid #f1f5f9;
+        }
+        .item-info { display: flex; flex-direction: column; gap: 4px; }
+        .item-name { font-weight: 600; color: #1e293b; font-size: 0.95rem; }
+        .item-sub { font-size: 0.8rem; color: #64748b; }
+        .item-price { font-weight: 600; color: #0f172a; }
+
+        /* Right: Payment Panel */
+        .payment-panel {
+            background: #ffffff;
+            border: 1px solid #e2e8f0;
+            border-radius: 16px;
+            padding: 24px;
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+        }
+
+        /* Discount Section */
+        .discount-section {
+            margin-bottom: 24px;
+            padding-bottom: 24px;
+            border-bottom: 1px dashed #cbd5e1;
+        }
+        .discount-section h3 {
+            font-size: 0.95rem;
+            color: #475569;
+            margin: 0 0 12px 0;
+            font-weight: 600;
+        }
+        
+        .discount-input-group {
+            display: flex;
+            gap: 8px;
+            margin-bottom: 12px;
+        }
+        .discount-input-wrap {
+            position: relative;
+            flex: 1;
+        }
+        .discount-input-wrap i {
+            position: absolute;
+            left: 10px;
+            top: 50%;
+            transform: translateY(-50%);
+            color: #94a3b8;
+            width: 16px;
+            height: 16px;
+        }
+        .discount-input {
+            width: 100%;
+            height: 42px;
+            padding: 0 12px 0 34px;
+            border: 1px solid #cbd5e1;
+            border-radius: 8px;
+            font-size: 0.9rem;
+            outline: none;
+            transition: all 0.2s;
+        }
+        .discount-input:focus {
+            border-color: #3b82f6;
+            box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+        }
+        .discount-btn {
+            background: #f1f5f9;
+            color: #0f172a;
+            border: 1px solid #cbd5e1;
+            padding: 0 16px;
+            border-radius: 8px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        .discount-btn:hover { background: #e2e8f0; }
+
+        .active-discount-badge {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            background: #ecfdf5;
+            border: 1px solid #6ee7b7;
+            padding: 8px 12px;
+            border-radius: 8px;
+            margin-bottom: 12px;
+        }
+        .active-discount-badge span { color: #065f46; font-size: 0.85rem; font-weight: 600; }
+        .remove-discount { color: #059669; cursor: pointer; border: none; background: none; padding: 0; }
+        .remove-discount:hover { color: #047857; }
+
+        /* Payment Methods */
+        .payment-methods {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 12px;
+            margin-bottom: 24px;
+        }
+        .pm-btn {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            padding: 16px 8px;
+            border: 2px solid #e2e8f0;
+            border-radius: 12px;
+            background: #FFF;
+            cursor: pointer;
+            transition: all 0.2s;
+            color: #64748b;
+        }
+        .pm-btn:hover {
+            border-color: #cbd5e1;
+            background: #f8fafc;
+        }
+        .pm-btn.active {
+            border-color: #4f46e5;
+            background: #e0e7ff;
+            color: #4338ca;
+        }
+        .pm-btn i { width: 22px; height: 22px; }
+        .pm-btn span { font-size: 0.85rem; font-weight: 600; }
+
+        /* Breakdown Total */
+        .breakdown {
+            background: #f8fafc;
+            border-radius: 12px;
+            padding: 16px;
+            margin-bottom: 24px;
+        }
+        .bd-row {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 8px;
+            font-size: 0.95rem;
+            color: #475569;
+        }
+        .bd-row.discount-row { color: #059669; }
+        .bd-row.total-row {
+            margin-top: 12px;
+            padding-top: 12px;
+            border-top: 1px solid #cbd5e1;
+            font-size: 1.2rem;
+            font-weight: 700;
+            color: #0f172a;
+            margin-bottom: 0;
+        }
+
+        /* Action */
+        .btn-pay {
+            width: 100%;
+            height: 56px;
+            background: #4f46e5;
+            color: white;
+            border: none;
+            border-radius: 12px;
+            font-size: 1.1rem;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+            cursor: pointer;
+            transition: all 0.2s;
+            box-shadow: 0 4px 12px rgba(79, 70, 229, 0.3);
+        }
+        .btn-pay:hover {
+            background: #4338ca;
+            transform: translateY(-2px);
+            box-shadow: 0 6px 16px rgba(79, 70, 229, 0.4);
+        }
+        .btn-pay:disabled {
+            background: #cbd5e1;
+            cursor: not-allowed;
+            transform: none;
+            box-shadow: none;
+        }
+    </style>
+</head>
+<body class="dashboard-body" style="min-height: calc(100vh / 0.93);">
+
+    <!-- Simple Header for Checkout (Distraction free) -->
+    <header style="background: #fff; padding: 16px 32px; border-bottom: 1px solid #e2e8f0; display: flex; align-items: center;">
+        <div class="logo" style="display: flex; align-items: center; gap: 10px; color: #1e3a8a;">
+            <svg width="24" height="24" viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <rect x="2" y="6" width="28" height="20" rx="4" stroke="currentColor" stroke-width="2"/>
+                <path d="M8 12C8 12 11 16 16 16C21 16 24 12 24 12" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+                <circle cx="16" cy="16" r="2" fill="currentColor"/>
+            </svg>
+            <span style="font-weight: 700; font-size: 1.25rem;">BharathBots</span>
+        </div>
+        <div style="margin-left: auto; color: #64748b; font-size: 0.9rem; display: flex; align-items: center; gap: 8px;">
+            <i data-feather="lock" style="width: 14px; height: 14px;"></i> Secure Checkout
+        </div>
+    </header>
+
+    <main class="checkout-container">
+        <div class="checkout-header">
+            <button class="back-btn" onclick="history.back()" title="Go Back">
+                <i data-feather="arrow-left" style="width: 20px; height: 20px;"></i>
+            </button>
+            <div>
+                <h1 style="font-size: 1.5rem; font-weight: 700; color: #0f172a; margin: 0;">Collect Payment</h1>
+                <p style="color: #64748b; margin: 2px 0 0; font-size: 0.95rem;" id="checkoutSubtitle">Loading details...</p>
+            </div>
+        </div>
+
+        <div class="checkout-grid">
+            <!-- Left Panel -->
+            <div class="order-panel">
+                <h2>Order Summary</h2>
+                
+                <div class="order-meta-box">
+                    <div class="meta-row">
+                        <span class="meta-label">Customer</span>
+                        <span class="meta-value" id="coCustomerName">---</span>
+                    </div>
+                    <div class="meta-row">
+                        <span class="meta-label">ID</span>
+                        <span class="meta-value" id="coReferenceId" style="font-family: monospace;">---</span>
+                    </div>
+                </div>
+
+                <ul class="order-items" id="coItemsList">
+                    <!-- Dynamic rendering:
+                    <li class="order-item-row">
+                        <div class="item-info">
+                            <span class="item-name">Haircut</span>
+                            <span class="item-sub">John Doe</span>
+                        </div>
+                        <span class="item-price">₹149</span>
+                    </li>
+                    -->
+                    <div style="text-align: center; padding: 32px; color: #cbd5e1;">Loading items...</div>
+                </ul>
+            </div>
+
+            <!-- Right Panel -->
+            <div class="payment-panel">
+                
+                <div class="discount-section">
+                    <h3>Discounts & Offers</h3>
+                    
+                    <div id="coActiveDiscountContainer" style="display: none;">
+                        <!-- Rendered active discount pill here -->
+                    </div>
+
+                    <div id="coDiscountInputs">
+                        <!-- Coupon/Offer Input -->
+                        <div class="discount-input-group">
+                            <div class="discount-input-wrap">
+                                <i data-feather="tag"></i>
+                                <input type="text" id="coCouponCode" class="discount-input" placeholder="Coupon or Offer code...">
+                            </div>
+                            <button class="discount-btn" id="btnApplyCoupon">Apply</button>
+                        </div>
+                        
+                        <!-- Manual Discount Input -->
+                        <div style="display: flex; gap: 8px; align-items: center; margin-top: 16px;">
+                            <span style="font-size: 0.85rem; color: #64748b; font-weight: 500;">Manual:</span>
+                            <select id="coManualType" style="height: 38px; border: 1px solid #cbd5e1; border-radius: 6px; padding: 0 8px; font-size: 0.85rem; outline: none; flex: 1;">
+                                <option value="flat">Flat ₹</option>
+                                <option value="percent">Percent %</option>
+                            </select>
+                            <input type="number" id="coManualAmount" class="discount-input" placeholder="Amount" style="height: 38px; width: 100px; padding: 0 10px;">
+                            <button class="discount-btn" id="btnApplyManual" style="height: 38px;">Add</button>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="payment-methods" id="pMethodContainer">
+                    <div class="pm-btn active" data-method="cash">
+                        <i data-feather="dollar-sign"></i>
+                        <span>Cash</span>
+                    </div>
+                    <div class="pm-btn" data-method="card">
+                        <i data-feather="credit-card"></i>
+                        <span>Card</span>
+                    </div>
+                    <div class="pm-btn" data-method="upi">
+                        <i data-feather="smartphone"></i>
+                        <span>UPI</span>
+                    </div>
+                </div>
+
+                <div class="breakdown">
+                    <div class="bd-row">
+                        <span>Base Amount</span>
+                        <span id="bdBase">₹0</span>
+                    </div>
+                    <!-- Displayed dynamically when > 0 -->
+                    <div class="bd-row discount-row" id="bdDiscountRow" style="display:none;">
+                        <span>Discount</span>
+                        <span id="bdDiscount">-₹0</span>
+                    </div>
+                    <!-- Add Previous Paid logic for partial payments if needed -->
+                    <div class="bd-row total-row">
+                        <span>Final Due</span>
+                        <span id="bdTotal">₹0</span>
+                    </div>
+                </div>
+
+                <button class="btn-pay" id="btnRecordPayment">
+                    <span>Record Payment</span>
+                    <i data-feather="check-circle" style="width: 20px; height: 20px;"></i>
+                </button>
+            </div>
+        </div>
+    </main>
+
+    <script type="module" src="scripts/checkout.js"></script>
+    <script>
+        feather.replace();
+    </script>
+</body>
+</html>
