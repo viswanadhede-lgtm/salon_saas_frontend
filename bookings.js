@@ -76,7 +76,7 @@ function buildRow(b, includeDate = false) {
     const bookingType  = b.booking_type || '—';
     const dateOnly     = b.booking_date || '';
     const timeOnly     = b.start_time   || '';
-    const amount       = b.price != null ? `₹${Number(b.price).toLocaleString('en-IN')}` : '—';
+    const amount       = b.final_amount != null ? `₹${Number(b.final_amount).toLocaleString('en-IN')}` : (b.total_price != null ? `₹${Number(b.total_price).toLocaleString('en-IN')}` : '—');
     const status       = b.status || '';
     const payment      = b.payment_status || '';
 
@@ -1462,7 +1462,7 @@ export async function fetchBookings() {
         const branchId  = getBranchId();
 
         let query = supabase
-            .from('bookings_with_payment_status')
+            .from('bookings_for_business_transaction')
             .select('*')
             .order('booking_date', { ascending: false });
 
