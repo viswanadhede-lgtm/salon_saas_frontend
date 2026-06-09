@@ -681,10 +681,14 @@ export function initGlobalBookingModal() {
                     payment_status: 'pending',
                     booking_type:   payloads[0].booking_type   || 'walk-in'
                 };
+                console.log('[createBookings] summaryRow to insert:', summaryRow);
                 const { error: summaryErr } = await supabase
                     .from('bookings_for_business_transaction')
                     .insert(summaryRow);
-                if (summaryErr) console.error('[createBookings] summary insert error:', summaryErr);
+                if (summaryErr) {
+                    console.error('[createBookings] summary insert error:', summaryErr);
+                    showMsg('Warning: Booking saved but summary record failed: ' + summaryErr.message, true);
+                }
 
                 const label = payloads.length > 1 ? `${payloads.length} bookings` : 'Booking';
                 showMsg(`${label} created successfully!`);
