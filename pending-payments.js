@@ -60,10 +60,11 @@ document.addEventListener('DOMContentLoaded', async () => {
             // Parallel fetch for Bookings, Products and Memberships
             const [bookingRes, productRes, membershipRes] = await Promise.all([
                 supabase
-                    .from('pending_bookings_payments')
+                    .from('bookings_for_business_transaction')
                     .select('*')
                     .eq('company_id', companyId)
-                    .eq('branch_id', branchId),
+                    .eq('branch_id', branchId)
+                    .eq('payment_status', 'pending'),
                 supabase
                     .from('product_pending_payments_view')
                     .select('*')
@@ -83,19 +84,16 @@ document.addEventListener('DOMContentLoaded', async () => {
                 console.warn('[PP] pending_membership_payments fetch error:', membershipRes.error.message);
             }
 
-            // Map Bookings
+            // Map Bookings directly from bookings_for_business_transaction
             const bookings = (bookingRes.data || []).map(b => {
-                // Determine service name from aggregated array or fallback
-                let sName = '-';
-                if (Array.isArray(b.service_names)) {
-                    sName = b.service_names.filter(Boolean).join(', ');
-                } else if (b.service_name) {
-                    sName = b.service_name;
-                }
-
+                const total = Number(b.final_amount ?? b.total_price ?? 0);
                 return {
                     ...b,
-                    service_name: sName,
+                    service_name: b.service_name || '-',
+                    total,
+                    paid:  0,
+                    due:   total,
+                    status: b.payment_status || 'pending',
                     ref_type: 'booking'
                 };
             });
@@ -376,7 +374,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                     console.error('[PP] business_transactions insert failed for membership:', txError);
                 }
             } else {
-                // Insert into business_transactions for bookings/products
+                // 1. Insert into business_transactions (financial ledger)
                 const { error: txError } = await supabase
                     .from('business_transactions')
                     .insert({
@@ -387,12 +385,24 @@ document.addEventListener('DOMContentLoaded', async () => {
                         amount:         amount,
                         currency:       'INR',
                         payment_method: payMethod.toLowerCase(),
-                        status:         'paid', 
+                        status:         'paid',
                         notes:          `Payment for ${row.ref_type || 'booking'} ${activeBookingId.substring(0,8)}`,
                         created_by:     userId,
                         paid_at:        paidAt
                     });
                 if (txError) throw txError;
+
+                // 2. Update payment_status on bookings_for_business_transaction
+                if (row.ref_type === 'booking') {
+                    const { error: bftError } = await supabase
+                        .from('bookings_for_business_transaction')
+                        .update({
+                            payment_status: 'paid',
+                            updated_at: new Date().toISOString()
+                        })
+                        .eq('booking_id', activeBookingId);
+                    if (bftError) console.error('[PP] Failed to update payment_status on bookings_for_business_transaction:', bftError);
+                }
             }
 
             ppShowToast('Payment recorded successfully!');
