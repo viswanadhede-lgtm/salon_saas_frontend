@@ -575,31 +575,7 @@ function setupEventListeners() {
                     .update({ stock_quantity: newStock });
             }
 
-            // ─── Record Payment Transactions in Ledger ────────────────────────────
-            const ledgerBatch = insertedSales.map(sale => ({
-                company_id: getCompanyId() || null,
-                branch_id: getBranchId() || null,
-                reference_id: saleGroupId, // The overarching cart/transaction ID
-                reference_line_id: sale.id, // The specific product row ID
-                reference_type: 'product',
-                amount: sale.total_amount, // Original price (discounts could be prorated if needed)
-                currency: 'INR',
-                payment_method: sale.payment_method,
-                status: 'paid',
-                notes: `POS Sale - ${sale.product_name} (Total Paid: ₹${amountCollected})`,
-                paid_at: new Date().toISOString()
-            }));
-
-            const { error: txError } = await supabase
-                .from('business_transactions')
-                .insert(ledgerBatch);
-
-            if (txError) {
-                console.error('POS: Ledger recording failed:', txError);
-                showToast('Sale saved, but ledger record failed. Please check history.', true);
-            } else {
-                showToast('✓ Sale completed successfully!');
-            }
+            showToast('✓ Sale completed successfully!');
 
             // Reset state
             cart = [];
