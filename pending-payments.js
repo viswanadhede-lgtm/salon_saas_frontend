@@ -57,19 +57,14 @@ document.addEventListener('DOMContentLoaded', async () => {
                 return;
             }
 
-            // Parallel fetch for Bookings, Products and Memberships
-            const [bookingRes, productRes, membershipRes] = await Promise.all([
+            // Parallel fetch for Bookings and Memberships
+            const [bookingRes, membershipRes] = await Promise.all([
                 supabase
                     .from('bookings_for_business_transaction')
                     .select('*')
                     .eq('company_id', companyId)
                     .eq('branch_id', branchId)
                     .eq('payment_status', 'pending'),
-                supabase
-                    .from('product_pending_payments_view')
-                    .select('*')
-                    .eq('company_id', companyId)
-                    .eq('branch_id', branchId),
                 // Query pending_membership_payments view
                 supabase
                     .from('pending_membership_payments')
@@ -79,7 +74,6 @@ document.addEventListener('DOMContentLoaded', async () => {
             ]);
     
             if (bookingRes.error) throw bookingRes.error;
-            if (productRes.error) throw productRes.error;
             if (membershipRes.error) {
                 console.warn('[PP] pending_membership_payments fetch error:', membershipRes.error.message);
             }
@@ -97,22 +91,6 @@ document.addEventListener('DOMContentLoaded', async () => {
                     ref_type: 'booking'
                 };
             });
-    
-            // Map Products (standardize columns to match table)
-            const products = (productRes.data || []).map(p => ({
-                booking_id: p.sale_id,
-                customer_name: p.customer_name,
-                service_name: p.product_list || 'Product Sale',
-                booking_date: p.sale_date,
-                start_time: '', 
-                total: p.total_amount,
-                paid: p.amount_paid,
-                due: p.balance,
-                status: p.payment_status,
-                ref_type: 'product',
-                company_id: p.company_id,
-                branch_id: p.branch_id
-            }));
 
             // Map Memberships from pending_membership_payments view
             const memberships = (membershipRes.data || []).map(m => {
@@ -135,7 +113,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                 };
             });
     
-            allPayments = [...bookings, ...products, ...memberships];
+            allPayments = [...bookings, ...memberships];
             allPayments.sort((a, b) => new Date(b.booking_date) - new Date(a.booking_date));
             applyAllFilters();
 

@@ -125,12 +125,12 @@ async function fetchCustomers() {
 
         // 2. Fetch completed POS sales
         const { data: posSales, error: err2 } = await supabase
-            .from('sales_with_payment_status')
-            .select('customer_id, amount_paid')
+            .from('sales_for_business_transactions')
+            .select('customer_id, final_amount')
             .eq('company_id', companyId)
             .eq('branch_id', branchId);
             
-        if (err2) throw new Error("POS Sales view error: " + err2.message);
+        if (err2) throw new Error("POS Sales table error: " + err2.message);
 
         // 3. Fetch membership purchases
         const { data: memberships, error: err3 } = await supabase
@@ -167,7 +167,7 @@ async function fetchCustomers() {
         (posSales || []).forEach(s => {
             if (!s.customer_id) return;
             const cid = String(s.customer_id).trim();
-            const amount = parseFloat(s.amount_paid) || 0;
+            const amount = parseFloat(s.final_amount) || 0;
             totalSpentMap[cid] = (totalSpentMap[cid] || 0) + amount;
         });
 
@@ -600,8 +600,8 @@ async function openSpendingModal(customerId) {
                 .eq('status', 'completed'),
 
             supabase
-                .from('sales_with_payment_status')
-                .select('amount_paid')
+                .from('sales_for_business_transactions')
+                .select('final_amount')
                 .eq('company_id', companyId)
                 .eq('branch_id', branchId)
                 .eq('customer_id', customerId),
@@ -616,7 +616,7 @@ async function openSpendingModal(customerId) {
         ]);
 
         const services    = (bookingsRes.data    || []).reduce((s, r) => s + (parseFloat(r.total_price)  || 0), 0);
-        const products    = (salesRes.data        || []).reduce((s, r) => s + (parseFloat(r.amount_paid)  || 0), 0);
+        const products    = (salesRes.data        || []).reduce((s, r) => s + (parseFloat(r.final_amount)  || 0), 0);
         const memberships = (membershipsRes.data  || []).reduce((s, r) => s + (parseFloat(r.price)        || 0), 0);
         const total       = services + products + memberships;
 

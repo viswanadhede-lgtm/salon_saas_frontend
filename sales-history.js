@@ -98,21 +98,28 @@ document.addEventListener('DOMContentLoaded', () => {
 
             if (!companyId) return;
 
-            // Fetch pre-grouped data from the optimized view
+            // Fetch pre-grouped data directly from the consolidated table
             const { data: salesList, error: salesError } = await supabase
-                .from('sales_with_payment_status')
+                .from('sales_for_business_transactions')
                 .select('*')
                 .eq('company_id', companyId)
                 .eq('branch_id', branchId)
-                .order('sale_date', { ascending: false });
+                .order('created_at', { ascending: false });
 
             if (salesError) throw salesError;
 
-            // Map the view rows directly to our state
+            // Map the table rows directly to our state
             initialSalesData = (salesList || []).map(row => {
-                const d = new Date(row.sale_date);
+                const d = new Date(row.created_at);
                 const formattedDate = d.toLocaleDateString('en-IN', { month: 'short', day: 'numeric', year: 'numeric' })
                     + ' ' + d.toLocaleTimeString('en-IN', { hour: 'numeric', minute: '2-digit' });
+
+                // product_names is a text[] array in the new table
+                const productsSummary = Array.isArray(row.product_names)
+                    ? row.product_names.join(', ')
+                    : (row.product_names || '');
+
+                const totalAmount = Number(row.final_amount ?? row.total_price ?? 0);
 
                 return {
                     id: row.sale_id,
@@ -123,14 +130,14 @@ document.addEventListener('DOMContentLoaded', () => {
                     raw_date: d,
                     payment: (row.payment_method || 'other').toLowerCase(),
                     staff: row.staff_name || 'System',
-                    status: (row.status || 'completed').toLowerCase(),
-                    amount_paid: Number(row.amount_paid || 0),
-                    payment_status: (row.payment_status || 'unpaid').toLowerCase(),
-                    totalAmountNum: Number(row.total_amount || 0),
-                    total: `₹${Number(row.total_amount || 0).toLocaleString('en-IN')}`,
-                    item_count: row.item_count != null ? Number(row.item_count) : 1,
-                    products_summary: row.product_list || '',
-                    is_view_grouped: true 
+                    status: (row.payment_status || 'paid').toLowerCase(),
+                    amount_paid: totalAmount,
+                    payment_status: (row.payment_status || 'paid').toLowerCase(),
+                    totalAmountNum: totalAmount,
+                    total: `₹${totalAmount.toLocaleString('en-IN')}`,
+                    item_count: row.total_quantity != null ? Number(row.total_quantity) : 1,
+                    products_summary: productsSummary,
+                    is_view_grouped: true
                 };
             });
 
@@ -685,21 +692,12 @@ document.addEventListener('DOMContentLoaded', () => {
             if (error) throw error;
             currentRefundItems = items || [];
 
-            // Hint last payment method
-            const { data: txs } = await supabase
-                .from('business_transactions')
-                .select('payment_method')
-                .eq('reference_id', sale.id)
-                .limit(1);
-
             if (methodDisplay) {
-                let inferredMethod = (txs && txs.length > 0 && txs[0].payment_method) ? txs[0].payment_method.toLowerCase() : (sale.payment || 'cash').toLowerCase();
-                
-                // Fallback to cash if check constraint violates
+                // Payment method is stored directly on the consolidated table
+                let inferredMethod = (sale.payment || 'cash').toLowerCase();
                 if (!['cash', 'card', 'upi'].includes(inferredMethod)) {
                     inferredMethod = 'cash';
                 }
-                
                 methodDisplay.value = inferredMethod.charAt(0).toUpperCase() + inferredMethod.slice(1);
             }
 

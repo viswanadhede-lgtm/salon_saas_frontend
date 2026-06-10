@@ -50,8 +50,8 @@ window.viewCustomerProfile = async function(customerId, customerName) {
             supabase.from('customers').select('*').eq('customer_id', customerId).limit(1),
             supabase.from('bookings_for_business_transaction')
                 .select('total_price').eq('customer_id', customerId).eq('status', 'completed'),
-            supabase.from('sales_with_payment_status')
-                .select('amount_paid').eq('customer_id', customerId),
+            supabase.from('sales_for_business_transactions')
+                .select('final_amount').eq('customer_id', customerId),
             supabase.from('membership_purchases')
                 .select('price').eq('customer_id', customerId).eq('payment_status', 'paid'),
             supabase.from('bookings_for_business_transaction')
@@ -67,7 +67,7 @@ window.viewCustomerProfile = async function(customerId, customerName) {
         // ── 2. Compute total spent
         let totalSpent = 0;
         (bookingsRes.data || []).forEach(b => totalSpent += parseFloat(b.total_price) || 0);
-        (salesRes.data   || []).forEach(s => totalSpent += parseFloat(s.amount_paid) || 0);
+        (salesRes.data   || []).forEach(s => totalSpent += parseFloat(s.final_amount) || 0);
         (membershipsRes.data || []).forEach(m => totalSpent += parseFloat(m.price) || 0);
 
         const name      = customer.customer_name  || 'Unknown';
