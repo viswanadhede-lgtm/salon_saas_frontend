@@ -452,10 +452,12 @@ function setupEventListeners() {
             const paymentMethod = payload.paymentMethod;
 
             let staffName = 'System';
+            let staffId = null;
             try {
                 const contextStr = localStorage.getItem('appContext');
                 if (contextStr) {
                     const ctx = JSON.parse(contextStr);
+                    if (ctx?.user?.id) staffId = ctx.user.id;
                     if (ctx?.user?.first_name) {
                         staffName = ctx.user.first_name;
                     } else if (ctx?.user?.name) {
@@ -463,7 +465,7 @@ function setupEventListeners() {
                     }
                 }
             } catch (e) {
-                console.warn('Could not parse appContext for staff name:', e);
+                console.warn('Could not parse appContext for staff details:', e);
             }
             
             // NOTE: We could apply discount logic to the individual sales lines if needed,
@@ -493,6 +495,64 @@ function setupEventListeners() {
                 .select('id, product_name, total_amount, payment_method');
 
             if (saleError) throw saleError;
+
+            // ─── Insert Consolidated Summary Row ────────────────────────────────
+            const totalOriginal = cart.reduce((sum, item) => sum + (item.price * item.quantity), 0);
+            const totalDiscount = totalOriginal - amountCollected;
+            const d = payload.discounts || {};
+            let discountType = null;
+            let discountName = null;
+            if (d.couponCode) {
+                discountType = 'coupon';
+                discountName = d.couponCode;
+            } else if (d.offerName) {
+                discountType = 'offer';
+                discountName = d.offerName;
+            } else if (d.membershipName) {
+                discountType = 'membership';
+                discountName = d.membershipName;
+            } else if (d.manualValue > 0) {
+                discountType = 'manual';
+                discountName = d.manualType === 'percent' ? `${d.manualValue}% off` : `₹${d.manualValue} off`;
+            }
+
+            // PostgreSQL array formats need standard JS arrays which Supabase handles
+            const productIds = cart.map(item => item.id).filter(Boolean);
+            const productNames = cart.map(item => item.name).filter(Boolean);
+            const categoryIds = cart.map(item => item.category_id).filter(Boolean);
+            const categoryNames = cart.map(item => item.category_name).filter(Boolean);
+            const totalQty = cart.reduce((sum, item) => sum + item.quantity, 0);
+
+            const summaryRow = {
+                company_id: getCompanyId(),
+                branch_id: getBranchId(),
+                sale_id: saleGroupId,
+                product_ids: productIds.length ? productIds : null,
+                product_names: productNames.length ? productNames : null,
+                category_ids: categoryIds.length ? categoryIds : null,
+                category_names: categoryNames.length ? categoryNames : null,
+                customer_id: customerId,
+                customer_name: customerName,
+                customer_phone: customerPhone,
+                total_quantity: totalQty,
+                total_price: totalOriginal,
+                payment_method: paymentMethod.toLowerCase(),
+                payment_status: 'paid',
+                staff_id: staffId,
+                staff_name: staffName,
+                discount_type: discountType,
+                discount_name: discountName,
+                discount_amount: totalDiscount > 0 ? totalDiscount : null,
+                final_amount: amountCollected
+            };
+            
+            const { error: summaryError } = await supabase
+                .from('sales_for_business_transactions')
+                .insert(summaryRow);
+
+            if (summaryError) {
+                console.error('POS: Summary insert failed:', summaryError);
+            }
 
             // ─── Decrement Stock in Products Table ────────────────────────────────
             for (const item of cart) {
