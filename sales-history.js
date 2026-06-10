@@ -119,7 +119,9 @@ document.addEventListener('DOMContentLoaded', () => {
                     ? row.product_names.join(', ')
                     : (row.product_names || '');
 
-                const totalAmount = Number(row.final_amount ?? row.total_price ?? 0);
+                const subtotal = Number(row.total_price ?? 0);
+                const finalAmount = Number(row.final_amount ?? subtotal);
+                const discountAmt = Number(row.discount_amount ?? 0);
 
                 return {
                     id: row.sale_id,
@@ -131,12 +133,17 @@ document.addEventListener('DOMContentLoaded', () => {
                     payment: (row.payment_method || 'other').toLowerCase(),
                     staff: row.staff_name || 'System',
                     status: (row.payment_status || 'paid').toLowerCase(),
-                    amount_paid: totalAmount,
+                    amount_paid: finalAmount,
                     payment_status: (row.payment_status || 'paid').toLowerCase(),
-                    totalAmountNum: totalAmount,
-                    total: `₹${totalAmount.toLocaleString('en-IN')}`,
+                    totalAmountNum: finalAmount,
+                    total: `₹${finalAmount.toLocaleString('en-IN')}`,
                     item_count: row.total_quantity != null ? Number(row.total_quantity) : 1,
                     products_summary: productsSummary,
+                    // Discount fields from consolidated table
+                    subtotal_price: subtotal,
+                    discount_amount: discountAmt,
+                    discount_type: row.discount_type || null,
+                    discount_name: row.discount_name || null,
                     is_view_grouped: true
                 };
             });
@@ -954,11 +961,35 @@ document.addEventListener('DOMContentLoaded', () => {
                 sdItemsList.innerHTML = rowsHTML;
 
                 if (sdSubtotal) sdSubtotal.textContent = `₹${subtotal.toLocaleString('en-IN')}`;
-                if (sdTax)      sdTax.textContent      = `₹0`; // Placeholder
-                if (sdDiscount) sdDiscount.textContent = `₹0`; // Placeholder
-                if (sdTotal) {
-                    sdTotal.textContent = `₹${subtotal.toLocaleString('en-IN')}`;
+                if (sdTax)      sdTax.textContent      = `₹${0}`;
+
+                // --- Discount row ---
+                const saleDiscount = sale.discount_amount || 0;
+                if (sdDiscount) {
+                    if (saleDiscount > 0) {
+                        // Build a label like "Coupon: SUMMER20" or just "Discount"
+                        let discountLabel = 'Discount';
+                        if (sale.discount_name) {
+                            const typeIcon = sale.discount_type === 'coupon' ? '🏷️' : sale.discount_type === 'membership' ? '💳' : '';
+                            discountLabel = `${typeIcon} ${sale.discount_name}`.trim();
+                        }
+                        // Update the label element if it exists
+                        const discountLabelEl = document.getElementById('sdDiscountLabel');
+                        if (discountLabelEl) discountLabelEl.textContent = discountLabel;
+                        sdDiscount.textContent = `-₹${saleDiscount.toLocaleString('en-IN')}`;
+                        sdDiscount.style.color = '#16a34a'; // green
+                    } else {
+                        const discountLabelEl = document.getElementById('sdDiscountLabel');
+                        if (discountLabelEl) discountLabelEl.textContent = 'Discount';
+                        sdDiscount.textContent = `₹0`;
+                        sdDiscount.style.color = '#16a34a';
+                    }
                 }
+
+                // Final total = final_amount stored on consolidated row
+                const finalTotal = sale.totalAmountNum || subtotal;
+                if (sdTotal) sdTotal.textContent = `₹${finalTotal.toLocaleString('en-IN')}`;
+
             }
 
             if (sdRefundBtn) {
