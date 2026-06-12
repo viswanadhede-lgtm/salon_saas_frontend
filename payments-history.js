@@ -157,14 +157,17 @@ function phRenderTable(data) {
             ? `<del style="color:#94a3b8; font-weight:400;">${formatINR(item.final_amount)}</del><span style="color:#dc2626; font-size:0.75rem; display:block;">Refunded</span>`
             : `<span style="display:inline-block; padding:4px 12px; background:#d1fae5; color:#059669; border:1px solid #a7f3d0; border-radius:9999px; font-size:0.75rem; font-weight:700;">${formatINR(item.final_amount)}</span>`;
 
-        // Staff
+        // Staff — first name only
         let staffHtml = '-';
         const rawStaff = (item.staff_name || '').split(',').map(s => s.trim()).filter(Boolean);
+        const firstNameOnly = name => name.split(' ')[0];
         if (rawStaff.length === 1) {
-            staffHtml = `<span style="background:#f8fafc; color:#475569; border:1px solid #e2e8f0; padding:2px 8px; border-radius:12px; font-size:0.75rem; font-weight:500;">${rawStaff[0]}</span>`;
+            staffHtml = `<span style="color:#475569; font-size:0.85rem;">${firstNameOnly(rawStaff[0])}</span>`;
         } else if (rawStaff.length > 1) {
-            const firstS = rawStaff[0]; const restS = rawStaff.length - 1; const fullListS = rawStaff.join(', ');
-            staffHtml = `<div style="display:flex; flex-direction:column; gap:4px;"><div style="display:flex; align-items:center; gap:6px; cursor:pointer;" onclick="event.stopPropagation(); const e=this.nextElementSibling; e.style.display=e.style.display==='none'?'block':'none'"><span style="background:#f8fafc; color:#475569; border:1px solid #e2e8f0; padding:2px 8px; border-radius:12px; font-size:0.75rem; font-weight:500;">${firstS}</span><span style="background:#f1f5f9; color:#475569; padding:2px 6px; border-radius:12px; font-size:0.7rem; font-weight:600; border:1px solid #cbd5e1;">+${restS}</span></div><div style="display:none; font-size:0.75rem; color:#64748b; line-height:1.4; padding-left:2px; padding-top:2px; white-space:normal;">${fullListS}</div></div>`;
+            const firstS = firstNameOnly(rawStaff[0]);
+            const restS = rawStaff.length - 1;
+            const fullListS = rawStaff.map(firstNameOnly).join(', ');
+            staffHtml = `<div style="display:flex; flex-direction:column; gap:4px;"><div style="display:flex; align-items:center; gap:6px; cursor:pointer;" onclick="event.stopPropagation(); const e=this.nextElementSibling; e.style.display=e.style.display==='none'?'block':'none'"><span style="color:#475569; font-size:0.85rem;">${firstS}</span><span style="background:#f1f5f9; color:#475569; padding:2px 6px; border-radius:12px; font-size:0.7rem; font-weight:600; border:1px solid #cbd5e1;">+${restS}</span></div><div style="display:none; font-size:0.75rem; color:#64748b; line-height:1.4; padding-left:2px; padding-top:2px; white-space:normal;">${fullListS}</div></div>`;
         }
 
         tr.innerHTML = `
