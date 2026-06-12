@@ -915,7 +915,15 @@ function renderPurchases() {
         const purchaseId = purchase.purchase_id || purchase.id;
         
         let priceDisplay = `₹${Number(purchase.price || 0).toLocaleString('en-IN')}`;
-        priceDisplay = `<span style="background-color: #ecfdf5; color: #059669; border: 1px solid #d1fae5; padding: 0.25rem 0.6rem; border-radius: 1rem; font-size: 0.75rem; font-weight: 600;">${priceDisplay}</span>`;
+        if (purchase.discount_amount > 0 && purchase.final_amount != null) {
+             priceDisplay = `<div style="display:flex; flex-direction:column; align-items:flex-start;">
+                 <span style="background-color: #ecfdf5; color: #059669; border: 1px solid #d1fae5; padding: 0.25rem 0.6rem; border-radius: 1rem; font-size: 0.75rem; font-weight: 600;">₹${Number(purchase.final_amount).toLocaleString('en-IN')}</span>
+                 <span style="text-decoration: line-through; color: #94a3b8; font-size: 0.65rem; margin-top:3px; align-self:center;">${priceDisplay}</span>
+                 <span style="color: #6366f1; font-size: 0.65rem; margin-top:1px; align-self:center; font-weight:500;">(-₹${Number(purchase.discount_amount).toLocaleString('en-IN')})</span>
+             </div>`;
+        } else {
+             priceDisplay = `<span style="background-color: #ecfdf5; color: #059669; border: 1px solid #d1fae5; padding: 0.25rem 0.6rem; border-radius: 1rem; font-size: 0.75rem; font-weight: 600;">${priceDisplay}</span>`;
+        }
 
         return `
             <tr style="border-bottom:1px solid #e2e8f0;">
@@ -1229,15 +1237,36 @@ async function executeMembershipAssignment(payload, newPurchaseId) {
     // Determine the actual total price of the plan
     const planPrice = selectedPlan ? Number(selectedPlan.price || 0) : 0;
 
+    // Calculate final amount and discounts
+    const d = payload.discounts || {};
+    let discountType = null;
+    let discountName = null;
+    
+    if (d.couponCode) { discountType = 'coupon'; discountName = d.couponCode; }
+    else if (d.offerName) { discountType = 'offer'; discountName = d.offerName; }
+    else if (d.membershipName) { discountType = 'membership'; discountName = d.membershipName; }
+    else if (d.manualValue > 0) {
+        discountType = 'manual';
+        discountName = d.manualType === 'percent' ? `${d.manualValue}% off` : `₹${d.manualValue} off`;
+    }
+    
+    // finalPrice mapped from payload
+    const finalAmount = finalPrice; 
+    let discountAmount = planPrice > finalAmount ? (planPrice - finalAmount) : null;
+    if (discountAmount <= 0) discountAmount = null;
+
     // Calculate payment status based on how much was collected today
     let paymentStatus = 'pending';
-    if (finalPrice >= planPrice && planPrice > 0) {
+    if (finalAmount >= finalAmount && finalAmount > 0) {
         paymentStatus = 'paid';
-    } else if (finalPrice >= planPrice && planPrice === 0) {
+    } else if (finalAmount === 0 && planPrice === 0) {
         paymentStatus = 'paid'; // Free plans
-    } else if (finalPrice > 0) {
-        paymentStatus = 'partial';
-    }
+    } else if (finalAmount === 0 && planPrice > 0) {
+        paymentStatus = 'pending'; 
+    } 
+
+    // Override because in full payments, if it goes through global modal and we get here, they paid it
+    paymentStatus = 'paid';
 
     const membershipPayload = {
         purchase_id: newPurchaseId,
@@ -1252,10 +1281,14 @@ async function executeMembershipAssignment(payload, newPurchaseId) {
         price: planPrice,               // The true total price of the membership
         duration: duration,
         payment_method: payMethod,
-        payment_status: paymentStatus,  // Dynamically set based on amount
+        payment_status: paymentStatus,  // 'paid' for full payments
         purchase_date: purchaseDate,
         expiry_date: expiryDate,
-        status: 'active'
+        status: 'active',
+        discount_type: discountType,
+        discount_name: discountName,
+        discount_amount: discountAmount,
+        final_amount: finalAmount
     };
 
     try {

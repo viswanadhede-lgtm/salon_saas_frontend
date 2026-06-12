@@ -65,12 +65,13 @@ document.addEventListener('DOMContentLoaded', async () => {
                     .eq('company_id', companyId)
                     .eq('branch_id', branchId)
                     .eq('payment_status', 'pending'),
-                // Query pending_membership_payments view
+                // Query pending memberships directly from membership_purchases
                 supabase
-                    .from('pending_membership_payments')
+                    .from('membership_purchases')
                     .select('*')
                     .eq('company_id', companyId)
                     .eq('branch_id', branchId)
+                    .eq('payment_status', 'pending')
             ]);
     
             if (bookingRes.error) throw bookingRes.error;
@@ -92,11 +93,11 @@ document.addEventListener('DOMContentLoaded', async () => {
                 };
             });
 
-            // Map Memberships from pending_membership_payments view
+            // Map Memberships directly from membership_purchases
             const memberships = (membershipRes.data || []).map(m => {
-                const total = Number(m.total_amount || 0);
-                const paid  = Number(m.amount_paid || 0);
-                const due   = Number(m.balance || 0);
+                const total = Number(m.final_amount ?? m.price ?? 0);
+                const paid  = 0; // Since they are full payments, pending means 0 paid
+                const due   = total;
                 return {
                     booking_id:    m.purchase_id,
                     customer_name: m.customer_name || 'Unknown Customer',
@@ -320,15 +321,44 @@ document.addEventListener('DOMContentLoaded', async () => {
             // Strip 'Z' suffix — business_transactions.paid_at is 'timestamp without time zone'
             const paidAt = new Date().toISOString().replace('Z', '');
 
+            // Compute discount details from payload (shared by both table writes)
+            const totalOriginal = Number(row.total) || 0;
+            const totalDiscount = totalOriginal - amount;
+            const d = payload.discounts || {};
+            let discountType = null;
+            let discountName = null;
+            if (d.couponCode) {
+                discountType = 'coupon';
+                discountName = d.couponCode;
+            } else if (d.offerName) {
+                discountType = 'offer';
+                discountName = d.offerName;
+            } else if (d.membershipName) {
+                discountType = 'membership';
+                discountName = d.membershipName;
+            } else if (d.manualValue > 0) {
+                discountType = 'manual';
+                discountName = d.manualType === 'percent'
+                    ? `${d.manualValue}% off`
+                    : `₹${d.manualValue} off`;
+            }
+
             // For memberships: update membership_purchases AND record in business_transactions
             if (row.ref_type === 'membership') {
                 const newPaid = (Number(row.paid) || 0) + amount;
                 const newStatus = newPaid >= (Number(row.total) || 0) ? 'completed' : 'partial';
 
-                // 1. Update membership_purchases (only status, amount is calculated from business_transactions)
+                // 1. Update membership_purchases
                 const { error: memErr } = await supabase
                     .from('membership_purchases')
-                    .update({ payment_status: newStatus })
+                    .update({ 
+                        payment_status: newStatus,
+                        final_amount: amount,
+                        discount_amount: totalDiscount > 0 ? totalDiscount : null,
+                        discount_type: discountType,
+                        discount_name: discountName,
+                        updated_at: new Date().toISOString()
+                    })
                     .eq('purchase_id', activeBookingId);
                 if (memErr) throw memErr;
 
@@ -346,34 +376,16 @@ document.addEventListener('DOMContentLoaded', async () => {
                         status:         'paid',
                         notes:          `Membership payment — ${row.service_name || 'Plan'} (${row.customer_name || ''})`,
                         created_by:     userId,
-                        paid_at:        paidAt
+                        paid_at:        paidAt,
+                        final_amount:    amount,
+                        discount_type:   discountType,
+                        discount_name:   discountName,
+                        discount_amount: totalDiscount > 0 ? totalDiscount : null
                     });
                 if (txError) {
                     console.error('[PP] business_transactions insert failed for membership:', txError);
                 }
             } else {
-                // Compute discount details from payload (shared by both table writes)
-                const totalOriginal = Number(row.total) || 0;
-                const totalDiscount = totalOriginal - amount;
-                const d = payload.discounts || {};
-                let discountType = null;
-                let discountName = null;
-                if (d.couponCode) {
-                    discountType = 'coupon';
-                    discountName = d.couponCode;
-                } else if (d.offerName) {
-                    discountType = 'offer';
-                    discountName = d.offerName;
-                } else if (d.membershipName) {
-                    discountType = 'membership';
-                    discountName = d.membershipName;
-                } else if (d.manualValue > 0) {
-                    discountType = 'manual';
-                    discountName = d.manualType === 'percent'
-                        ? `${d.manualValue}% off`
-                        : `₹${d.manualValue} off`;
-                }
-
                 // 1. Insert into business_transactions (financial ledger)
                 const { error: txError } = await supabase
                     .from('business_transactions')
