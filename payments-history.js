@@ -160,7 +160,7 @@ function phRenderTable(data) {
         // Staff — first name only
         let staffHtml = '-';
         const rawStaff = (item.staff_name || '').split(',').map(s => s.trim()).filter(Boolean);
-        const firstNameOnly = name => name.split(' ')[0];
+        const firstNameOnly = name => { const n = name.split(' ')[0]; return n.charAt(0).toUpperCase() + n.slice(1); };
         if (rawStaff.length === 1) {
             staffHtml = `<span style="color:#475569; font-size:0.85rem;">${firstNameOnly(rawStaff[0])}</span>`;
         } else if (rawStaff.length > 1) {
