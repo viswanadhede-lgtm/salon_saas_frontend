@@ -177,9 +177,9 @@ function phRenderTable(data) {
             <td style="padding:14px 16px;">
                 <span class="tb-status-pill ${statusPillClass}" style="text-transform:uppercase; font-size:0.7rem;">${statusLabel}</span>
             </td>
-            <td style="padding:14px 16px; text-align:center;" class="action-cell">
-                <button onclick="event.stopPropagation(); window.phOpenDrawer('${item.payment_id}')" title="View Details" style="background:#f1f5f9; border:1px solid #e2e8f0; border-radius:6px; cursor:pointer; color:#64748b; padding:6px; transition:all 0.2s; display:flex; align-items:center; justify-content:center; margin-left:auto; margin-right:auto;" onmouseover="this.style.background='#e0e7ff'; this.style.color='#4f46e5'; this.style.borderColor='#c7d2fe';" onmouseout="this.style.background='#f1f5f9'; this.style.color='#64748b'; this.style.borderColor='#e2e8f0';">
-                    <i data-feather="file-text" style="width:14px; height:14px;"></i>
+            <td style="padding:14px 12px; text-align:center;" class="action-cell">
+                <button onclick="event.stopPropagation(); window.phOpenDrawer('${item.payment_id}')" title="View Invoice" style="background:#eff6ff; border:1px solid #bfdbfe; border-radius:7px; cursor:pointer; color:#1d4ed8; padding:5px 10px; font-size:0.78rem; font-weight:600; transition:all 0.2s; display:inline-flex; align-items:center; gap:5px;" onmouseover="this.style.background='#dbeafe'; this.style.borderColor='#93c5fd';" onmouseout="this.style.background='#eff6ff'; this.style.borderColor='#bfdbfe';">
+                    <i data-feather="file-text" style="width:13px; height:13px;"></i> Invoice
                 </button>
             </td>
         `;
