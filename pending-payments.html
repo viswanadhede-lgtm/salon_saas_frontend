@@ -280,27 +280,7 @@
                         <i data-feather="search" style="color:#94a3b8; width:16px; height:16px; flex-shrink:0;"></i>
                         <input type="text" id="ppSearchInput" placeholder="Search customer or booking..." style="border:none; background:transparent; padding:8px; font-size:0.85rem; outline:none; width:100%;">
                     </div>
-                    <div style="position:relative;">
-                        <button class="btn btn-secondary" style="height:40px; display:flex; align-items:center; gap:6px; padding:0 14px;"
-                            onclick="event.stopPropagation(); var m=document.getElementById('ppFilterMenu'); m.style.display=(m.style.display==='block'?'none':'block'); document.getElementById('ppDateMenu').style.display='none';">
-                            <i data-feather="filter" style="width:15px; height:15px;"></i> Filter
-                        </button>
-                        <div id="ppFilterMenu" style="display:none; position:absolute; top:46px; right:0; width:220px; background:#fff; border:1px solid #e2e8f0; border-radius:10px; box-shadow:0 8px 24px rgba(15,23,42,0.1); padding:16px; z-index:9999;">
-                            <p style="font-size:0.72rem; font-weight:700; color:#94a3b8; text-transform:uppercase; letter-spacing:0.06em; margin:0 0 8px;">Payment Status</p>
-                            <div style="display:flex; flex-direction:column; gap:6px; margin-bottom:14px;">
-                                <label style="display:flex; align-items:center; gap:8px; font-size:0.85rem; color:#374151; cursor:pointer;"><input type="checkbox" class="pp-filter-status" value="Unpaid"> Unpaid</label>
-                                <label style="display:flex; align-items:center; gap:8px; font-size:0.85rem; color:#374151; cursor:pointer;"><input type="checkbox" class="pp-filter-status" value="Partial"> Partial</label>
-                            </div>
-                            <p style="font-size:0.72rem; font-weight:700; color:#94a3b8; text-transform:uppercase; letter-spacing:0.06em; margin:0 0 8px;">Staff</p>
-                            <div id="ppStaffFilters" style="display:flex; flex-direction:column; gap:6px; margin-bottom:14px;">
-                                <!-- To be populated dynamically -->
-                            </div>
-                            <div style="display:flex; gap:8px;">
-                                <button onclick="event.stopPropagation(); ppClearFilter();" style="flex:1; padding:7px 0; border:1px solid #e2e8f0; background:#fff; border-radius:7px; font-size:0.83rem; color:#64748b; cursor:pointer;">Clear</button>
-                                <button onclick="event.stopPropagation(); ppApplyFilter();" style="flex:1; padding:7px 0; border:none; background:#1e3a8a; border-radius:7px; font-size:0.83rem; color:#fff; cursor:pointer; font-weight:600;">Apply</button>
-                            </div>
-                        </div>
-                    </div>
+
                     <div style="position:relative;">
                         <button class="btn btn-secondary" style="height:40px; display:flex; align-items:center; gap:6px; padding:0 14px;"
                             onclick="event.stopPropagation(); var m=document.getElementById('ppDateMenu'); m.style.display=(m.style.display==='block'?'none':'block'); document.getElementById('ppFilterMenu').style.display='none';">
