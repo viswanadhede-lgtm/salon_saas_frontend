@@ -108,11 +108,32 @@ function phRenderTable(data) {
             ? `<del style="color:#94a3b8; font-weight:400;">${formatINR(item.amount)}</del> <span style="color:#dc2626; font-size: 0.8rem; display:block;">Refunded</span>`
             : formatINR(item.amount);
 
+        let serviceHtml = '-';
+        const rawServices = (item.service_name || '').split(',').map(s => s.trim()).filter(Boolean);
+        if (rawServices.length === 1) {
+            serviceHtml = `<span style="display:inline-block; max-width:140px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; vertical-align:middle;" title="${rawServices[0]}">${rawServices[0]}</span>`;
+        } else if (rawServices.length > 1) {
+            const first = rawServices[0];
+            const rest = rawServices.length - 1;
+            const fullList = rawServices.join(', ');
+            serviceHtml = `
+                <div style="display:flex; flex-direction:column; gap:4px;">
+                    <div style="display:flex; align-items:center; gap:6px; cursor:pointer;" onclick="event.stopPropagation(); const e=this.nextElementSibling; e.style.display=e.style.display==='none'?'block':'none'">
+                        <span style="display:inline-block; max-width:140px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; vertical-align:middle;" title="${first}">${first}</span>
+                        <span style="background:#e0e7ff; color:#3730a3; padding:2px 8px; border-radius:12px; font-size:0.7rem; font-weight:600; transition:background 0.2s;" onmouseover="this.style.background='#c7d2fe'" onmouseout="this.style.background='#e0e7ff'">+${rest}</span>
+                    </div>
+                    <div style="display:none; font-size:0.8rem; color:#64748b; line-height:1.4; padding-left:2px; padding-top:2px; white-space:normal;">
+                        ${fullList}
+                    </div>
+                </div>
+            `;
+        }
+
         tr.innerHTML = `
             <td style="padding:14px 16px 14px 24px; color:#475569; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">${displayPaymentId}</td>
             <td style="padding:14px 16px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;"><span style="font-weight:600; cursor:pointer;" onclick="event.stopPropagation(); window.phOpenBooking('${item.booking_id}')">${displayBookingId}</span></td>
             <td style="padding:14px 16px; color:#1e293b; font-weight:500;">${item.customer_name || 'Guest'}</td>
-            <td style="padding:14px 16px; color:#475569;">${item.service_name || '-'}</td>
+            <td style="padding:14px 16px; color:#475569;">${serviceHtml}</td>
             <td style="padding:14px 16px; color:#475569;">${displayDate}</td>
             <td style="padding:14px 16px; font-weight:600; color:#059669;">${saleTotalDisplay}</td>
             <td style="padding:14px 16px;">${methodBadge}</td>

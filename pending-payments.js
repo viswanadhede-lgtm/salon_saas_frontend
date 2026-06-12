@@ -171,9 +171,30 @@ document.addEventListener('DOMContentLoaded', async () => {
                 typePill = `<span style="display:inline-block;margin-left:6px;background:#eff6ff;color:#1d4ed8;border:1px solid #bfdbfe;border-radius:10px;padding:1px 7px;font-size:0.68rem;font-weight:600;vertical-align:middle;">Product</span>`;
             }
 
+            let serviceHtml = '-';
+            const rawServices = (row.service_name || '').split(',').map(s => s.trim()).filter(Boolean);
+            if (rawServices.length === 1) {
+                serviceHtml = `<span style="display:inline-block; max-width:140px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; vertical-align:middle;" title="${rawServices[0]}">${rawServices[0]}</span>`;
+            } else if (rawServices.length > 1) {
+                const first = rawServices[0];
+                const rest = rawServices.length - 1;
+                const fullList = rawServices.join(', ');
+                serviceHtml = `
+                    <div style="display:flex; flex-direction:column; gap:4px;">
+                        <div style="display:flex; align-items:center; gap:6px; cursor:pointer;" onclick="const e=this.nextElementSibling; e.style.display=e.style.display==='none'?'block':'none'">
+                            <span style="display:inline-block; max-width:140px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; vertical-align:middle;" title="${first}">${first}</span>
+                            <span style="background:#e0e7ff; color:#3730a3; padding:2px 8px; border-radius:12px; font-size:0.7rem; font-weight:600; transition:background 0.2s;" onmouseover="this.style.background='#c7d2fe'" onmouseout="this.style.background='#e0e7ff'">+${rest}</span>
+                        </div>
+                        <div style="display:none; font-size:0.8rem; color:#64748b; line-height:1.4; padding-left:2px; padding-top:2px; white-space:normal;">
+                            ${fullList}
+                        </div>
+                    </div>
+                `;
+            }
+
             tr.innerHTML = `
                 <td style="padding:14px 16px 14px 24px; color:#475569; font-weight:600; font-size:0.875rem; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">${row.customer_name || 'Guest'}</td>
-                <td style="padding:14px 16px; color:#475569; font-size:0.875rem; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">${row.service_name || '-'}${typePill}</td>
+                <td style="padding:14px 16px; color:#475569; font-size:0.875rem;">${serviceHtml}${typePill}</td>
                 <td style="padding:14px 16px; color:#475569; font-size:0.83rem;">${dateStr}</td>
                 <td style="padding:14px 16px; color:#475569; font-size:0.83rem; font-weight:500;">${timeStr || '-'}</td>
                 <td style="padding:14px 16px; font-weight:600; color:#1e293b;">₹${total.toLocaleString('en-IN')}</td>
