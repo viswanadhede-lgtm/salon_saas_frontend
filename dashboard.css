@@ -2600,20 +2600,6 @@
 }
 .ph-btn-view:hover {
     background-color: #eef2ff;
-    border-color: #c7d2fe;
-    color: #3730a3;
-}
-
-
-/* Table Zebra Striping for Payments History */
-#phTableBody tr:nth-child(even) {
-    background-color: #f8fafc;
-}
-
-#phTableBody tr:hover {
-    background-color: #f1f5f9;
-}
-
 /* ----------------------------------------------------------------
    CALENDAR TAB LAYOUT
 ---------------------------------------------------------------- */
@@ -2800,10 +2786,7 @@
 }
 
 
-/* Table Zebra Striping for Payments History */
-#phTableBody tr:nth-child(even) {
-    background-color: #f8fafc;
-}
+
 
 #phTableBody tr:hover {
     background-color: #f1f5f9;
