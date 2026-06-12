@@ -53,7 +53,8 @@ async function fetchPaymentHistory() {
         if (error) throw error;
 
         allPayments = data || [];
-        phRenderTable(allPayments);
+        filteredPayments = [...allPayments];
+        phRenderTable(filteredPayments);
 
     } catch (err) {
         console.error('Error fetching history:', err);
@@ -409,7 +410,13 @@ window.phClearFilter = function() {
     Array.from(document.querySelectorAll('.ph-filter-type, .ph-filter-status, .ph-filter-method')).forEach(cb => cb.checked = false);
     const search = document.getElementById('phSearchInput');
     if (search) search.value = '';
-    phRenderTable(allPayments);
+    
+    currentFilterDateRange = { type: 'all' };
+    const label = document.getElementById('phDateLabel');
+    if (label) label.textContent = 'Date Range';
+
+    filteredPayments = [...allPayments];
+    phRenderTable(filteredPayments);
     const menu = document.getElementById('phFilterMenu');
     if (menu) menu.style.display = 'none';
 };
