@@ -34,7 +34,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         if (isLoading) {
             tbody.innerHTML = `
                 <tr>
-                    <td colspan="7" style="text-align:center; padding:60px;">
+                    <td colspan="8" style="text-align:center; padding:60px;">
                         <div style="display:flex; flex-direction:column; align-items:center; gap:12px;">
                             <i data-feather="loader" style="width:32px; height:32px; color:#6366f1; animation: spin 1s linear infinite;"></i>
                             <p style="color:#64748b; font-weight:500;">Fetching pending payments...</p>
@@ -85,6 +85,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                 return {
                     ...b,
                     service_name: b.service_name || '-',
+                    staff_name: b.staff_name || '-',
                     total,
                     paid:  0,
                     due:   total,
@@ -102,6 +103,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                     booking_id:    m.purchase_id,
                     customer_name: m.customer_name || 'Unknown Customer',
                     service_name:  m.plan_name || 'Membership',
+                    staff_name:    m.assigned_by_user_name || '-',
                     booking_date:  m.purchase_date,
                     start_time:    '',
                     total,
@@ -133,7 +135,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         if (filteredPayments.length === 0) {
             tbody.innerHTML = `
                 <tr>
-                    <td colspan="7" style="text-align:center; padding:52px 24px; color:#94a3b8;">
+                    <td colspan="8" style="text-align:center; padding:52px 24px; color:#94a3b8;">
                         <div style="display:flex; flex-direction:column; align-items:center; gap:8px;">
                             <i data-feather="check-circle" style="width:36px; height:36px; color:#c7d2fe;"></i>
                             <p style="font-weight:600; color:#64748b; margin:0;">No pending payments</p>
@@ -192,9 +194,31 @@ document.addEventListener('DOMContentLoaded', async () => {
                 `;
             }
 
+            let staffHtml = '-';
+            const rawStaff = (row.staff_name || '').split(',').map(s => s.trim()).filter(Boolean);
+            if (rawStaff.length === 1) {
+                staffHtml = `<span style="background:#f8fafc; color:#475569; border:1px solid #e2e8f0; padding:2px 8px; border-radius:12px; font-size:0.75rem; font-weight:500;">${rawStaff[0]}</span>`;
+            } else if (rawStaff.length > 1) {
+                const firstS = rawStaff[0];
+                const restS = rawStaff.length - 1;
+                const fullListS = rawStaff.join(', ');
+                staffHtml = `
+                    <div style="display:flex; flex-direction:column; gap:4px;">
+                        <div style="display:flex; align-items:center; gap:6px; cursor:pointer;" onclick="event.stopPropagation(); const e=this.nextElementSibling; e.style.display=e.style.display==='none'?'block':'none'">
+                            <span style="background:#f8fafc; color:#475569; border:1px solid #e2e8f0; padding:2px 8px; border-radius:12px; font-size:0.75rem; font-weight:500;">${firstS}</span>
+                            <span style="background:#f1f5f9; color:#475569; padding:2px 6px; border-radius:12px; font-size:0.7rem; font-weight:600; border:1px solid #cbd5e1;">+${restS}</span>
+                        </div>
+                        <div style="display:none; font-size:0.75rem; color:#64748b; line-height:1.4; padding-left:2px; padding-top:2px; white-space:normal;">
+                            ${fullListS}
+                        </div>
+                    </div>
+                `;
+            }
+
             tr.innerHTML = `
                 <td style="padding:14px 16px 14px 24px; color:#475569; font-weight:600; font-size:0.875rem; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">${row.customer_name || 'Guest'}</td>
                 <td style="padding:14px 16px; color:#475569; font-size:0.875rem;">${serviceHtml}${typePill}</td>
+                <td style="padding:14px 16px; color:#475569;">${staffHtml}</td>
                 <td style="padding:14px 16px; color:#475569; font-size:0.83rem;">${dateStr}</td>
                 <td style="padding:14px 16px; color:#475569; font-size:0.83rem; font-weight:500;">${timeStr || '-'}</td>
                 <td style="padding:14px 16px; font-weight:600; color:#1e293b;">₹${total.toLocaleString('en-IN')}</td>
