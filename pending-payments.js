@@ -151,18 +151,15 @@ document.addEventListener('DOMContentLoaded', async () => {
             const due = Number(row.due) || (total - paid);
             const status = (row.status || 'unpaid').toLowerCase();
 
-            let statusBadge = '';
+            let statusPillClass = 'tb-payment-pending';
+            let statusLabel = 'UNPAID';
             if (status === 'partial') {
-                statusBadge = `<span style="display:inline-flex; align-items:center; gap:4px; background:#fffbeb; color:#b45309; border:1px solid #fde68a; border-radius:20px; padding:3px 10px; font-size:0.73rem; font-weight:600;">Partial</span>`;
-            } else {
-                statusBadge = `<span style="display:inline-flex; align-items:center; gap:4px; background:#fef2f2; color:#dc2626; border:1px solid #fecaca; border-radius:20px; padding:3px 10px; font-size:0.73rem; font-weight:600;">Unpaid</span>`;
+                statusPillClass = 'tb-payment-partial';
+                statusLabel = 'PARTIAL';
             }
 
             const tr = document.createElement('tr');
             tr.className = 'tb-row';
-            tr.style.cssText = 'border-bottom:1px solid #f1f5f9; transition:background 0.12s;';
-            tr.onmouseover = () => tr.style.background = '#f8fafc';
-            tr.onmouseout  = () => tr.style.background = '';
 
             const dateStr = row.booking_date ? new Date(row.booking_date).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' }) : '-';
             const timeStr = row.start_time || '';
@@ -175,16 +172,18 @@ document.addEventListener('DOMContentLoaded', async () => {
             }
 
             tr.innerHTML = `
-                <td style="padding:14px 16px 14px 24px; color:#1e293b; font-weight:500; font-size:0.875rem; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">${row.customer_name || 'Guest'}</td>
+                <td style="padding:14px 16px 14px 24px; color:#475569; font-weight:600; font-size:0.875rem; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">${row.customer_name || 'Guest'}</td>
                 <td style="padding:14px 16px; color:#475569; font-size:0.875rem; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">${row.service_name || '-'}${typePill}</td>
                 <td style="padding:14px 16px; color:#475569; font-size:0.83rem;">${dateStr} <span style="opacity:0.6; margin-left:4px;">${timeStr}</span></td>
-                <td style="padding:14px 16px; color:#1e293b; font-weight:600;">₹${total.toLocaleString('en-IN')}</td>
-                <td style="padding:14px 16px; color:#10b981; font-weight:500;">₹${paid.toLocaleString('en-IN')}</td>
-                <td style="padding:14px 16px; color:#dc2626; font-weight:600;">₹${due.toLocaleString('en-IN')}</td>
-                <td style="padding:14px 16px;">${statusBadge}</td>
+                <td style="padding:14px 16px; font-weight:600; color:#059669;">₹${total.toLocaleString('en-IN')}</td>
+                <td style="padding:14px 16px; font-weight:500; color:#10b981;">₹${paid.toLocaleString('en-IN')}</td>
+                <td style="padding:14px 16px; font-weight:600; color:#dc2626;">₹${due.toLocaleString('en-IN')}</td>
                 <td style="padding:14px 16px;">
-                    <button data-sub-feature="pending_payments_collect" onclick="ppOpenCollect('${row.booking_id}')" style="height:32px; padding:0 14px; background:#eff6ff; color:#1e40af; border:1px solid #bfdbfe; border-radius:7px; font-size:0.8rem; font-weight:600; cursor:pointer; display:inline-flex; align-items:center; gap:5px; white-space:nowrap;" onmouseover="this.style.background='#dbeafe'" onmouseout="this.style.background='#eff6ff'">
-                        <i data-feather="credit-card" style="width:13px; height:13px;"></i> Collect
+                    <span class="tb-status-pill ${statusPillClass}" style="text-transform: uppercase; font-size: 0.7rem;">${statusLabel}</span>
+                </td>
+                <td style="padding:14px 16px;">
+                    <button data-sub-feature="pending_payments_collect" onclick="ppOpenCollect('${row.booking_id}')" title="Collect Payment" style="background:#f1f5f9; border:1px solid #e2e8f0; border-radius:6px; cursor:pointer; color:#64748b; padding:6px; transition:all 0.2s; display:flex; align-items:center; justify-content:center; gap: 4px; font-size: 0.8rem; font-weight: 500;" onmouseover="this.style.background='#e0e7ff'; this.style.color='#4f46e5'; this.style.borderColor='#c7d2fe';" onmouseout="this.style.background='#f1f5f9'; this.style.color='#64748b'; this.style.borderColor='#e2e8f0';">
+                        <i data-feather="credit-card" style="width:14px; height:14px;"></i> Collect
                     </button>
                 </td>`;
             tbody.appendChild(tr);

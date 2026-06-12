@@ -79,38 +79,51 @@ function phRenderTable(data) {
 
     data.forEach(item => {
         const method = (item.payment_method || 'Cash').toLowerCase();
-        let methodIcon = '<i data-feather="dollar-sign" style="width:12px;height:12px"></i>';
-        if(method === 'card') methodIcon = '<i data-feather="credit-card" style="width:12px;height:12px"></i>';
-        else if(method === 'upi') methodIcon = '<i data-feather="smartphone" style="width:12px;height:12px"></i>';
         
         const methodLabel = method.charAt(0).toUpperCase() + method.slice(1);
-        const methodBadge = `<span class="ph-badge-method ${method}">${methodIcon} ${methodLabel}</span>`;
+        const methodBadge = `<span style="font-size: 0.8rem; font-weight: 500; color: #475569;">${methodLabel}</span>`;
 
         const status = (item.status || 'paid').toLowerCase();
-        const statusLabel = status.charAt(0).toUpperCase() + status.slice(1);
-        const statusBadge = `<span class="ph-badge-status ${status}">${statusLabel}</span>`;
+        const statusLabel = status.toUpperCase();
+        
+        let statusPillClass = 'tb-payment-paid';
+        if (status === 'unpaid' || status === 'pending') statusPillClass = 'tb-payment-pending';
+        else if (status === 'partial') statusPillClass = 'tb-payment-partial';
+        else if (status === 'refunded') statusPillClass = 'tb-payment-unpaid';
 
         const tr = document.createElement('tr');
-        tr.style.borderBottom = '1px solid #f1f5f9';
+        tr.className = 'tb-row';
+        tr.style.cursor = 'pointer';
+        tr.onclick = (e) => {
+            if (!e.target.closest('button') && !e.target.closest('.action-cell')) {
+                window.phOpenDrawer(item.payment_id);
+            }
+        };
         
         const displayDate = item.paid_at ? new Date(item.paid_at).toLocaleDateString('en-IN', { day:'2-digit', month:'short', year:'numeric', hour:'2-digit', minute:'2-digit' }) : '-';
         const displayPaymentId = item.payment_id ? item.payment_id.substring(0,8).toUpperCase() : '-';
         const displayBookingId = item.booking_id ? item.booking_id.substring(0,8).toUpperCase() : '-';
 
-        const amountColor = status === 'refunded' ? '#ef4444' : '#10b981';
+        let saleTotalDisplay = status === 'refunded'
+            ? `<del style="color:#94a3b8; font-weight:400;">${formatINR(item.amount)}</del> <span style="color:#dc2626; font-size: 0.8rem; display:block;">Refunded</span>`
+            : formatINR(item.amount);
 
         tr.innerHTML = `
-            <td style="padding:16px 16px 16px 24px; font-weight:600; color:#1e293b;">${displayPaymentId}</td>
-            <td style="padding:16px; font-weight:500; color:#3b82f6; cursor:pointer;" onclick="window.phOpenBooking('${item.booking_id}')">${displayBookingId}</td>
-            <td style="padding:16px; font-weight:500; color:#334155;">${item.customer_name || 'Guest'}</td>
-            <td style="padding:16px; color:#64748b;">${item.service_name || '-'}</td>
-            <td style="padding:16px; font-weight:500; color:#334155;">${displayDate}</td>
-            <td style="padding:16px; font-weight:600; color:${amountColor};">${formatINR(item.amount)}</td>
-            <td style="padding:16px;">${methodBadge}</td>
-            <td style="padding:16px;">${statusBadge}</td>
-            <td style="padding:16px; font-weight:500; color:#475569;">${item.staff_name || '-'}</td>
-            <td style="padding:16px 24px 16px 16px; text-align:right;">
-                <button class="ph-btn-view" onclick="window.phOpenDrawer('${item.payment_id}')">View</button>
+            <td style="padding:14px 16px 14px 24px; color:#475569; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">${displayPaymentId}</td>
+            <td style="padding:14px 16px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;"><span style="font-weight:600; cursor:pointer;" onclick="event.stopPropagation(); window.phOpenBooking('${item.booking_id}')">${displayBookingId}</span></td>
+            <td style="padding:14px 16px; color:#1e293b; font-weight:500;">${item.customer_name || 'Guest'}</td>
+            <td style="padding:14px 16px; color:#475569;">${item.service_name || '-'}</td>
+            <td style="padding:14px 16px; color:#475569;">${displayDate}</td>
+            <td style="padding:14px 16px; font-weight:600; color:#059669;">${saleTotalDisplay}</td>
+            <td style="padding:14px 16px;">${methodBadge}</td>
+            <td style="padding:14px 16px;">
+                 <span class="tb-status-pill ${statusPillClass}" style="text-transform: uppercase; font-size: 0.7rem;">${statusLabel}</span>
+            </td>
+            <td style="padding:14px 16px; color:#475569;">${item.staff_name || '-'}</td>
+            <td style="padding:14px 16px; text-align:center;" class="action-cell">
+                <button onclick="event.stopPropagation(); window.phOpenDrawer('${item.payment_id}')" title="View Details" style="background:#f1f5f9; border:1px solid #e2e8f0; border-radius:6px; cursor:pointer; color:#64748b; padding:6px; transition:all 0.2s; display:flex; align-items:center; justify-content:center; margin-left:auto; margin-right:auto;" onmouseover="this.style.background='#e0e7ff'; this.style.color='#4f46e5'; this.style.borderColor='#c7d2fe';" onmouseout="this.style.background='#f1f5f9'; this.style.color='#64748b'; this.style.borderColor='#e2e8f0';">
+                    <i data-feather="file-text" style="width:14px; height:14px;"></i>
+                </button>
             </td>
         `;
         tbody.appendChild(tr);
