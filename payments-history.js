@@ -247,7 +247,7 @@ window.phOpenDrawer = function(paymentId) {
     }, 10);
 };
 
-function phCloseDrawer() {
+window.phCloseDrawer = function phCloseDrawer() {
     const overlay = document.getElementById('phDrawerOverlay');
     const drawer = document.getElementById('phSideDrawer');
     
