@@ -221,7 +221,9 @@ document.addEventListener('DOMContentLoaded', async () => {
                 <td style="padding:14px 16px; color:#475569;">${staffHtml}</td>
                 <td style="padding:14px 16px; color:#475569; font-size:0.83rem;">${dateStr}</td>
                 <td style="padding:14px 16px; color:#475569; font-size:0.83rem; font-weight:500;">${timeStr || '-'}</td>
-                <td style="padding:14px 16px; font-weight:600; color:#1e293b;">₹${total.toLocaleString('en-IN')}</td>
+                <td style="padding:14px 16px;">
+                    <span style="display:inline-block; padding:4px 12px; background:#d1fae5; color:#059669; border:1px solid #a7f3d0; border-radius:9999px; font-size:0.75rem; font-weight:700;">₹${total.toLocaleString('en-IN')}</span>
+                </td>
                 <td style="padding:14px 16px;">
                     <span class="tb-status-pill ${statusPillClass}" style="text-transform: uppercase; font-size: 0.7rem;">${statusLabel}</span>
                 </td>
