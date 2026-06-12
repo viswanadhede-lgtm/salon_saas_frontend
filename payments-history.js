@@ -10,6 +10,7 @@ import { supabase } from './lib/supabase.js';
 let allPayments = [];
 let filteredPayments = [];
 let phCurrentSort = { column: 'paid_at', order: 'desc' };
+let currentFilterDateRange = { type: 'all' };
 
 document.addEventListener('DOMContentLoaded', async () => {
     
@@ -106,7 +107,7 @@ function phRenderTable(data) {
 
         let saleTotalDisplay = status === 'refunded'
             ? `<del style="color:#94a3b8; font-weight:400;">${formatINR(item.amount)}</del> <span style="color:#dc2626; font-size: 0.8rem; display:block;">Refunded</span>`
-            : formatINR(item.amount);
+            : `<span style="display:inline-block; padding:4px 12px; background:#d1fae5; color:#059669; border:1px solid #a7f3d0; border-radius:9999px; font-size:0.75rem; font-weight:700;">${formatINR(item.amount)}</span>`;
 
         let serviceHtml = '-';
         const rawServices = (item.service_name || '').split(',').map(s => s.trim()).filter(Boolean);
@@ -129,18 +130,39 @@ function phRenderTable(data) {
             `;
         }
 
+        let staffHtml = '-';
+        const rawStaff = (item.staff_name || '').split(',').map(s => s.trim()).filter(Boolean);
+        if (rawStaff.length === 1) {
+            staffHtml = `<span style="background:#f8fafc; color:#475569; border:1px solid #e2e8f0; padding:2px 8px; border-radius:12px; font-size:0.75rem; font-weight:500;">${rawStaff[0]}</span>`;
+        } else if (rawStaff.length > 1) {
+            const firstS = rawStaff[0];
+            const restS = rawStaff.length - 1;
+            const fullListS = rawStaff.join(', ');
+            staffHtml = `
+                <div style="display:flex; flex-direction:column; gap:4px;">
+                    <div style="display:flex; align-items:center; gap:6px; cursor:pointer;" onclick="event.stopPropagation(); const e=this.nextElementSibling; e.style.display=e.style.display==='none'?'block':'none'">
+                        <span style="background:#f8fafc; color:#475569; border:1px solid #e2e8f0; padding:2px 8px; border-radius:12px; font-size:0.75rem; font-weight:500;">${firstS}</span>
+                        <span style="background:#f1f5f9; color:#475569; padding:2px 6px; border-radius:12px; font-size:0.7rem; font-weight:600; border:1px solid #cbd5e1;">+${restS}</span>
+                    </div>
+                    <div style="display:none; font-size:0.75rem; color:#64748b; line-height:1.4; padding-left:2px; padding-top:2px; white-space:normal;">
+                        ${fullListS}
+                    </div>
+                </div>
+            `;
+        }
+
         tr.innerHTML = `
             <td style="padding:14px 16px 14px 24px; color:#475569; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">${displayPaymentId}</td>
             <td style="padding:14px 16px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;"><span style="font-weight:600; cursor:pointer;" onclick="event.stopPropagation(); window.phOpenBooking('${item.booking_id}')">${displayBookingId}</span></td>
             <td style="padding:14px 16px; color:#1e293b; font-weight:500;">${item.customer_name || 'Guest'}</td>
             <td style="padding:14px 16px; color:#475569;">${serviceHtml}</td>
-            <td style="padding:14px 16px; color:#475569;">${displayDate}</td>
-            <td style="padding:14px 16px; font-weight:600; color:#059669;">${saleTotalDisplay}</td>
+            <td style="padding:14px 16px; color:#475569; font-size:0.83rem;">${displayDate}</td>
+            <td style="padding:14px 16px;">${saleTotalDisplay}</td>
             <td style="padding:14px 16px;">${methodBadge}</td>
             <td style="padding:14px 16px;">
                  <span class="tb-status-pill ${statusPillClass}" style="text-transform: uppercase; font-size: 0.7rem;">${statusLabel}</span>
             </td>
-            <td style="padding:14px 16px; color:#475569;">${item.staff_name || '-'}</td>
+            <td style="padding:14px 16px; color:#475569;">${staffHtml}</td>
             <td style="padding:14px 16px; text-align:center;" class="action-cell">
                 <button onclick="event.stopPropagation(); window.phOpenDrawer('${item.payment_id}')" title="View Details" style="background:#f1f5f9; border:1px solid #e2e8f0; border-radius:6px; cursor:pointer; color:#64748b; padding:6px; transition:all 0.2s; display:flex; align-items:center; justify-content:center; margin-left:auto; margin-right:auto;" onmouseover="this.style.background='#e0e7ff'; this.style.color='#4f46e5'; this.style.borderColor='#c7d2fe';" onmouseout="this.style.background='#f1f5f9'; this.style.color='#64748b'; this.style.borderColor='#e2e8f0';">
                     <i data-feather="file-text" style="width:14px; height:14px;"></i>
@@ -259,7 +281,15 @@ window.phApplyFilter = function() {
         const matchesMethod = methods.length === 0 || methods.includes((p.payment_method || '').toLowerCase());
         const matchesStatus = statuses.length === 0 || statuses.includes((p.status || '').toLowerCase());
 
-        return matchesSearch && matchesMethod && matchesStatus;
+        let matchesDate = true;
+        if (currentFilterDateRange && currentFilterDateRange.type !== 'all' && p.paid_at) {
+            const rowDate = new Date(p.paid_at); 
+            const { from, to } = currentFilterDateRange;
+            if (from && rowDate < from) matchesDate = false;
+            if (to && rowDate > to) matchesDate = false;
+        }
+
+        return matchesSearch && matchesMethod && matchesStatus && matchesDate;
     });
 
     phRenderTable(filteredPayments);
@@ -276,20 +306,51 @@ window.phClearFilter = function() {
     if (menu) menu.style.display = 'none';
 };
 
-window.phSetDateRange = function(label) {
-    document.getElementById('phDateLabel').textContent = label;
-    document.getElementById('phDateMenu').style.display = 'none';
-    
-    // Logic for actual date filtering can be added here
-    const today = new Date();
-    if (label === 'Today') {
-        filteredPayments = allPayments.filter(p => new Date(p.paid_at).toDateString() === today.toDateString());
-    } else if (label === 'This Month') {
-        filteredPayments = allPayments.filter(p => new Date(p.paid_at).getMonth() === today.getMonth());
+window.phFilterByDate = function(range) {
+    const label = document.getElementById('phDateLabel');
+    const now = new Date();
+    now.setHours(0, 0, 0, 0); 
+    let from = null;
+    let to = null;
+
+    if (range === 'today') {
+        from = new Date(now);
+        to = new Date(now);
+        to.setHours(23, 59, 59, 999);
+        if (label) label.textContent = 'Today';
+    } else if (range === 'week') {
+        from = new Date(now);
+        from.setDate(from.getDate() - 7);
+        if (label) label.textContent = 'Last 7 days';
+    } else if (range === 'month') {
+        from = new Date(now);
+        from.setDate(from.getDate() - 30);
+        if (label) label.textContent = 'Last 30 days';
+    } else if (range === 'custom') {
+        const fromInput = document.getElementById('phCustomFrom');
+        const toInput   = document.getElementById('phCustomTo');
+        if (fromInput && fromInput.value) from = new Date(fromInput.value + 'T00:00:00');
+        if (toInput && toInput.value) {
+            to = new Date(toInput.value + 'T23:59:59');
+        }
+        if (label) {
+            const fmtDate = (val) => {
+                if (!val) return '...';
+                const d = new Date(val + 'T00:00:00');
+                const day = d.getDate();
+                const suffix = day === 1 || day === 21 || day === 31 ? 'st'
+                             : day === 2 || day === 22 ? 'nd'
+                             : day === 3 || day === 23 ? 'rd' : 'th';
+                return `${day}${suffix} ${d.toLocaleDateString('en-IN', { month: 'long', year: 'numeric' })}`;
+            };
+            label.textContent = `${fmtDate(fromInput?.value)} → ${fmtDate(toInput?.value)}`;
+        }
     } else {
-        filteredPayments = allPayments;
+        if (label) label.textContent = 'Date Range';
     }
-    phRenderTable(filteredPayments);
+
+    currentFilterDateRange = { type: range, from: from, to: to };
+    phApplyFilter();
 };
 
 window.phExportData = function() {
