@@ -5,7 +5,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     // --- State ---
     let allPayments = [];
     let filteredPayments = [];
-    let currentFilter = { status: [], staff: [], dateRange: 'All' };
+    let currentFilter = { status: [], staff: [], dateRange: { type: 'all' } };
     let activeBookingId = null; 
 
     // --- Helpers ---
@@ -267,20 +267,12 @@ document.addEventListener('DOMContentLoaded', async () => {
             
             // Date Range
             let matchesDate = true;
-            if (currentFilter.dateRange !== 'All' && r.booking_date) {
-                const today = new Date();
-                const rowDate = new Date(r.booking_date);
-                const diffTime = Math.abs(today - rowDate);
-                const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-                
-                if (currentFilter.dateRange === 'Today') {
-                    matchesDate = rowDate.toDateString() === today.toDateString();
-                } else if (currentFilter.dateRange === 'Last 7 days') {
-                    matchesDate = diffDays <= 7;
-                } else if (currentFilter.dateRange === 'Last 30 days') {
-                    matchesDate = diffDays <= 30;
-                } else if (currentFilter.dateRange === 'This Month') {
-                    matchesDate = rowDate.getMonth() === today.getMonth() && rowDate.getFullYear() === today.getFullYear();
+            if (currentFilter.dateRange && currentFilter.dateRange.type) {
+                if (currentFilter.dateRange.type !== 'all' && r.booking_date) {
+                    const rowDate = new Date(r.booking_date + 'T00:00:00'); // ensuring local midnight boundary
+                    const { from, to } = currentFilter.dateRange;
+                    if (from && rowDate < from) matchesDate = false;
+                    if (to && rowDate > to) matchesDate = false;
                 }
             }
             
@@ -313,10 +305,50 @@ document.addEventListener('DOMContentLoaded', async () => {
     };
 
     // ─── DATE RANGE ────────────────────────────────────────────────────────
-    window.ppSetDateRange = function(range) {
-        currentFilter.dateRange = range;
-        document.getElementById('ppDateLabel').textContent = range;
-        document.getElementById('ppDateMenu').style.display = 'none';
+    window.ppFilterByDate = function(range) {
+        const label = document.getElementById('ppDateLabel');
+        const now = new Date();
+        now.setHours(0, 0, 0, 0); // normalized local today
+        let from = null;
+        let to = null;
+
+        if (range === 'today') {
+            from = new Date(now);
+            to = new Date(now);
+            to.setHours(23, 59, 59, 999);
+            if (label) label.textContent = 'Today';
+        } else if (range === 'week') {
+            from = new Date(now);
+            from.setDate(from.getDate() - 7);
+            if (label) label.textContent = 'Last 7 days';
+        } else if (range === 'month') {
+            from = new Date(now);
+            from.setDate(from.getDate() - 30);
+            if (label) label.textContent = 'Last 30 days';
+        } else if (range === 'custom') {
+            const fromInput = document.getElementById('ppCustomFrom');
+            const toInput   = document.getElementById('ppCustomTo');
+            if (fromInput && fromInput.value) from = new Date(fromInput.value + 'T00:00:00');
+            if (toInput && toInput.value) {
+                to = new Date(toInput.value + 'T23:59:59');
+            }
+            if (label) {
+                const fmtDate = (val) => {
+                    if (!val) return '...';
+                    const d = new Date(val + 'T00:00:00');
+                    const day = d.getDate();
+                    const suffix = day === 1 || day === 21 || day === 31 ? 'st'
+                                 : day === 2 || day === 22 ? 'nd'
+                                 : day === 3 || day === 23 ? 'rd' : 'th';
+                    return `${day}${suffix} ${d.toLocaleDateString('en-IN', { month: 'long', year: 'numeric' })}`;
+                };
+                label.textContent = `${fmtDate(fromInput?.value)} → ${fmtDate(toInput?.value)}`;
+            }
+        } else {
+            if (label) label.textContent = 'Date Range';
+        }
+
+        currentFilter.dateRange = { type: range, from: from, to: to };
         applyAllFilters();
     };
 
