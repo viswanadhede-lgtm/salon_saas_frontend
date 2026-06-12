@@ -282,16 +282,40 @@
                     </div>
 
                     <div style="position:relative;">
-                        <button class="btn btn-secondary" style="height:40px; display:flex; align-items:center; gap:6px; padding:0 14px;"
-                            onclick="event.stopPropagation(); var m=document.getElementById('ppDateMenu'); m.style.display=(m.style.display==='block'?'none':'block'); document.getElementById('ppFilterMenu').style.display='none';">
+                        <button id="ppDateBtn" class="btn btn-secondary" style="height:40px; display:flex; align-items:center; gap:6px; padding:0 14px;"
+                            onclick="event.stopPropagation(); var m=document.getElementById('ppDateMenu'); m.style.display=(m.style.display==='block'?'none':'block');">
                             <i data-feather="calendar" style="width:15px; height:15px;"></i>
                             <span id="ppDateLabel">Date Range</span>
                         </button>
-                        <div id="ppDateMenu" style="display:none; position:absolute; top:46px; right:0; width:165px; background:#fff; border:1px solid #e2e8f0; border-radius:10px; box-shadow:0 8px 24px rgba(15,23,42,0.1); padding:6px 0; z-index:9999;">
-                            <button onclick="event.stopPropagation(); ppSetDateRange('Today');" style="width:100%; padding:9px 16px; text-align:left; border:none; background:none; font-size:0.85rem; color:#374151; cursor:pointer;" onmouseover="this.style.background='#f8fafc'" onmouseout="this.style.background='none'">Today</button>
-                            <button onclick="event.stopPropagation(); ppSetDateRange('Last 7 days');" style="width:100%; padding:9px 16px; text-align:left; border:none; background:none; font-size:0.85rem; color:#374151; cursor:pointer;" onmouseover="this.style.background='#f8fafc'" onmouseout="this.style.background='none'">Last 7 days</button>
-                            <button onclick="event.stopPropagation(); ppSetDateRange('Last 30 days');" style="width:100%; padding:9px 16px; text-align:left; border:none; background:none; font-size:0.85rem; color:#374151; cursor:pointer;" onmouseover="this.style.background='#f8fafc'" onmouseout="this.style.background='none'">Last 30 days</button>
-                            <button onclick="event.stopPropagation(); ppSetDateRange('This Month');" style="width:100%; padding:9px 16px; text-align:left; border:none; background:none; font-size:0.85rem; color:#374151; cursor:pointer;" onmouseover="this.style.background='#f8fafc'" onmouseout="this.style.background='none'">This Month</button>
+                        <div id="ppDateMenu" style="display:none; position:absolute; top:46px; right:0; width:320px; background:#fff; border:1px solid #e2e8f0; border-radius:10px; box-shadow:0 8px 24px rgba(15,23,42,0.1); padding:6px 0; z-index:9999;">
+                            <button onclick="event.stopPropagation(); window.ppFilterByDate('all'); document.getElementById('ppDateMenu').style.display='none';"
+                                style="width:100%; padding:9px 16px; text-align:left; border:none; background:none; font-size:0.85rem; color:#374151; cursor:pointer;" onmouseover="this.style.background='#f8fafc'" onmouseout="this.style.background='none'">All Time</button>
+                            <button onclick="event.stopPropagation(); window.ppFilterByDate('today'); document.getElementById('ppDateMenu').style.display='none';"
+                                style="width:100%; padding:9px 16px; text-align:left; border:none; background:none; font-size:0.85rem; color:#374151; cursor:pointer;" onmouseover="this.style.background='#f8fafc'" onmouseout="this.style.background='none'">Today</button>
+                            <button onclick="event.stopPropagation(); window.ppFilterByDate('week'); document.getElementById('ppDateMenu').style.display='none';"
+                                style="width:100%; padding:9px 16px; text-align:left; border:none; background:none; font-size:0.85rem; color:#374151; cursor:pointer;" onmouseover="this.style.background='#f8fafc'" onmouseout="this.style.background='none'">Last 7 days</button>
+                            <button onclick="event.stopPropagation(); window.ppFilterByDate('month'); document.getElementById('ppDateMenu').style.display='none';"
+                                style="width:100%; padding:9px 16px; text-align:left; border:none; background:none; font-size:0.85rem; color:#374151; cursor:pointer;" onmouseover="this.style.background='#f8fafc'" onmouseout="this.style.background='none'">Last 30 days</button>
+                            <button onclick="event.stopPropagation(); var p=document.getElementById('ppCustomRange'); p.style.display=p.style.display==='none'?'block':'none';"
+                                style="width:100%; padding:9px 16px; text-align:left; border:none; background:none; font-size:0.85rem; color:#374151; cursor:pointer; border-top:1px solid #f1f5f9;" onmouseover="this.style.background='#f8fafc'" onmouseout="this.style.background='none'">Custom Range...</button>
+                            <div id="ppCustomRange" style="display:none; padding:12px 14px; border-top:1px solid #f1f5f9;">
+                                <div style="display:grid; grid-template-columns:1fr 1fr; gap:8px; margin-bottom:10px;">
+                                    <div>
+                                        <label style="font-size:0.72rem; color:#64748b; font-weight:600; display:block; margin-bottom:4px;">From</label>
+                                        <input type="date" id="ppCustomFrom" style="width:100%; border:1px solid #e2e8f0; border-radius:6px; padding:5px 6px; font-size:0.78rem; outline:none; box-sizing:border-box;">
+                                    </div>
+                                    <div>
+                                        <label style="font-size:0.72rem; color:#64748b; font-weight:600; display:block; margin-bottom:4px;">To</label>
+                                        <input type="date" id="ppCustomTo" style="width:100%; border:1px solid #e2e8f0; border-radius:6px; padding:5px 6px; font-size:0.78rem; outline:none; box-sizing:border-box;">
+                                    </div>
+                                </div>
+                                <div style="display:grid; grid-template-columns:1fr 1fr; gap:8px;">
+                                    <button onclick="event.stopPropagation(); document.getElementById('ppCustomFrom').value=''; document.getElementById('ppCustomTo').value=''; window.ppFilterByDate('all'); document.getElementById('ppDateMenu').style.display='none';"
+                                        style="padding:7px 0; background:#f8fafc; color:#64748b; border:1px solid #e2e8f0; border-radius:6px; font-size:0.8rem; font-weight:600; cursor:pointer;">Reset</button>
+                                    <button onclick="event.stopPropagation(); window.ppFilterByDate('custom'); document.getElementById('ppDateMenu').style.display='none';"
+                                        style="padding:7px 0; background:#1e3a8a; color:#fff; border:none; border-radius:6px; font-size:0.8rem; font-weight:600; cursor:pointer;">Apply</button>
+                                </div>
+                            </div>
                         </div>
                     </div>
                 </div>
