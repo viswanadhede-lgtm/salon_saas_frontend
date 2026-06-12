@@ -74,19 +74,17 @@ function phRenderTable(data) {
     tbody.innerHTML = '';
 
     if(data.length === 0) {
-        tbody.innerHTML = `<tr><td colspan="10" style="padding: 30px; text-align: center; color: #64748b;">No payment records found.</td></tr>`;
+        tbody.innerHTML = `<tr><td colspan="11" style="padding: 30px; text-align: center; color: #64748b;">No payment records found.</td></tr>`;
         return;
     }
 
     data.forEach(item => {
         const method = (item.payment_method || 'Cash').toLowerCase();
-        
-        const methodLabel = method.charAt(0).toUpperCase() + method.slice(1);
-        const methodBadge = `<span style="font-size: 0.8rem; font-weight: 500; color: #475569;">${methodLabel}</span>`;
+        const methodLabel = method === 'card' ? 'Card' : method === 'upi' ? 'UPI' : 'Cash';
+        const methodBadge = `<span style="font-size:0.8rem; font-weight:500; color:#475569;">${methodLabel}</span>`;
 
         const status = (item.status || 'paid').toLowerCase();
         const statusLabel = status.toUpperCase();
-        
         let statusPillClass = 'tb-payment-paid';
         if (status === 'unpaid' || status === 'pending') statusPillClass = 'tb-payment-pending';
         else if (status === 'partial') statusPillClass = 'tb-payment-partial';
@@ -100,69 +98,70 @@ function phRenderTable(data) {
                 window.phOpenDrawer(item.payment_id);
             }
         };
-        
-        const displayDate = item.paid_at ? new Date(item.paid_at).toLocaleDateString('en-IN', { day:'2-digit', month:'short', year:'numeric', hour:'2-digit', minute:'2-digit' }) : '-';
-        const displayPaymentId = item.payment_id ? item.payment_id.substring(0,8).toUpperCase() : '-';
-        const displayBookingId = item.booking_id ? item.booking_id.substring(0,8).toUpperCase() : '-';
 
-        let saleTotalDisplay = status === 'refunded'
-            ? `<del style="color:#94a3b8; font-weight:400;">${formatINR(item.amount)}</del> <span style="color:#dc2626; font-size: 0.8rem; display:block;">Refunded</span>`
-            : `<span style="display:inline-block; padding:4px 12px; background:#d1fae5; color:#059669; border:1px solid #a7f3d0; border-radius:9999px; font-size:0.75rem; font-weight:700;">${formatINR(item.amount)}</span>`;
-
-        let serviceHtml = '-';
-        const rawServices = (item.service_name || '').split(',').map(s => s.trim()).filter(Boolean);
-        if (rawServices.length === 1) {
-            serviceHtml = `<span style="display:inline-block; max-width:140px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; vertical-align:middle;" title="${rawServices[0]}">${rawServices[0]}</span>`;
-        } else if (rawServices.length > 1) {
-            const first = rawServices[0];
-            const rest = rawServices.length - 1;
-            const fullList = rawServices.join(', ');
-            serviceHtml = `
-                <div style="display:flex; flex-direction:column; gap:4px;">
-                    <div style="display:flex; align-items:center; gap:6px; cursor:pointer;" onclick="event.stopPropagation(); const e=this.nextElementSibling; e.style.display=e.style.display==='none'?'block':'none'">
-                        <span style="display:inline-block; max-width:140px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; vertical-align:middle;" title="${first}">${first}</span>
-                        <span style="background:#e0e7ff; color:#3730a3; padding:2px 8px; border-radius:12px; font-size:0.7rem; font-weight:600; transition:background 0.2s;" onmouseover="this.style.background='#c7d2fe'" onmouseout="this.style.background='#e0e7ff'">+${rest}</span>
-                    </div>
-                    <div style="display:none; font-size:0.8rem; color:#64748b; line-height:1.4; padding-left:2px; padding-top:2px; white-space:normal;">
-                        ${fullList}
-                    </div>
-                </div>
-            `;
+        // Date & Time
+        let displayDateTime = '-';
+        if (item.paid_at) {
+            const d = new Date(item.paid_at);
+            const datePart = d.toLocaleDateString('en-IN', { day:'2-digit', month:'short', year:'numeric' });
+            let hrs = d.getHours(), mins = d.getMinutes();
+            const ampm = hrs >= 12 ? 'pm' : 'am';
+            hrs = hrs % 12 || 12;
+            const minStr = mins.toString().padStart(2,'0');
+            displayDateTime = `${datePart}, ${hrs}:${minStr} ${ampm}`;
         }
 
+        // Type badge
+        const typeVal = item.type || '-';
+        const typeColor = typeVal === 'Service' ? { bg:'#dbeafe', color:'#1d4ed8' }
+                       : typeVal === 'Product'  ? { bg:'#fef9c3', color:'#92400e' }
+                       : typeVal === 'Membership' ? { bg:'#f3e8ff', color:'#7e22ce' }
+                       : { bg:'#f1f5f9', color:'#475569' };
+        const typeBadge = `<span style="display:inline-block; padding:2px 10px; background:${typeColor.bg}; color:${typeColor.color}; border-radius:9999px; font-size:0.72rem; font-weight:600;">${typeVal}</span>`;
+
+        // Item (item_name)
+        const itemName = item.item_name || '-';
+        const itemHtml = `<span style="display:inline-block; max-width:160px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; vertical-align:middle;" title="${itemName}">${itemName}</span>`;
+
+        // Original Amount
+        const origAmtHtml = `<span style="color:#475569; font-size:0.85rem;">${formatINR(item.original_amount)}</span>`;
+
+        // Discount
+        let discountHtml = '<span style="color:#94a3b8; font-size:0.8rem;">—</span>';
+        const discAmt = parseFloat(item.discount_amount || 0);
+        if (discAmt > 0) {
+            const discName = item.discount_name ? `<span style="display:block; font-size:0.7rem; color:#94a3b8;">${item.discount_name}</span>` : '';
+            discountHtml = `<span style="color:#dc2626; font-weight:600; font-size:0.82rem;">-${formatINR(discAmt)}</span>${discName}`;
+        }
+
+        // Final Amount (green pill)
+        const finalAmtHtml = status === 'refunded'
+            ? `<del style="color:#94a3b8; font-weight:400;">${formatINR(item.final_amount)}</del><span style="color:#dc2626; font-size:0.75rem; display:block;">Refunded</span>`
+            : `<span style="display:inline-block; padding:4px 12px; background:#d1fae5; color:#059669; border:1px solid #a7f3d0; border-radius:9999px; font-size:0.75rem; font-weight:700;">${formatINR(item.final_amount)}</span>`;
+
+        // Staff
         let staffHtml = '-';
         const rawStaff = (item.staff_name || '').split(',').map(s => s.trim()).filter(Boolean);
         if (rawStaff.length === 1) {
             staffHtml = `<span style="background:#f8fafc; color:#475569; border:1px solid #e2e8f0; padding:2px 8px; border-radius:12px; font-size:0.75rem; font-weight:500;">${rawStaff[0]}</span>`;
         } else if (rawStaff.length > 1) {
-            const firstS = rawStaff[0];
-            const restS = rawStaff.length - 1;
-            const fullListS = rawStaff.join(', ');
-            staffHtml = `
-                <div style="display:flex; flex-direction:column; gap:4px;">
-                    <div style="display:flex; align-items:center; gap:6px; cursor:pointer;" onclick="event.stopPropagation(); const e=this.nextElementSibling; e.style.display=e.style.display==='none'?'block':'none'">
-                        <span style="background:#f8fafc; color:#475569; border:1px solid #e2e8f0; padding:2px 8px; border-radius:12px; font-size:0.75rem; font-weight:500;">${firstS}</span>
-                        <span style="background:#f1f5f9; color:#475569; padding:2px 6px; border-radius:12px; font-size:0.7rem; font-weight:600; border:1px solid #cbd5e1;">+${restS}</span>
-                    </div>
-                    <div style="display:none; font-size:0.75rem; color:#64748b; line-height:1.4; padding-left:2px; padding-top:2px; white-space:normal;">
-                        ${fullListS}
-                    </div>
-                </div>
-            `;
+            const firstS = rawStaff[0]; const restS = rawStaff.length - 1; const fullListS = rawStaff.join(', ');
+            staffHtml = `<div style="display:flex; flex-direction:column; gap:4px;"><div style="display:flex; align-items:center; gap:6px; cursor:pointer;" onclick="event.stopPropagation(); const e=this.nextElementSibling; e.style.display=e.style.display==='none'?'block':'none'"><span style="background:#f8fafc; color:#475569; border:1px solid #e2e8f0; padding:2px 8px; border-radius:12px; font-size:0.75rem; font-weight:500;">${firstS}</span><span style="background:#f1f5f9; color:#475569; padding:2px 6px; border-radius:12px; font-size:0.7rem; font-weight:600; border:1px solid #cbd5e1;">+${restS}</span></div><div style="display:none; font-size:0.75rem; color:#64748b; line-height:1.4; padding-left:2px; padding-top:2px; white-space:normal;">${fullListS}</div></div>`;
         }
 
         tr.innerHTML = `
-            <td style="padding:14px 16px 14px 24px; color:#475569; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">${displayPaymentId}</td>
-            <td style="padding:14px 16px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;"><span style="font-weight:600; cursor:pointer;" onclick="event.stopPropagation(); window.phOpenBooking('${item.booking_id}')">${displayBookingId}</span></td>
+            <td style="padding:14px 16px 14px 24px; color:#475569; font-size:0.83rem; white-space:nowrap;">${displayDateTime}</td>
             <td style="padding:14px 16px; color:#1e293b; font-weight:500;">${item.customer_name || 'Guest'}</td>
-            <td style="padding:14px 16px; color:#475569;">${serviceHtml}</td>
-            <td style="padding:14px 16px; color:#475569; font-size:0.83rem;">${displayDate}</td>
-            <td style="padding:14px 16px;">${saleTotalDisplay}</td>
+            <td style="padding:14px 16px;">${typeBadge}</td>
+            <td style="padding:14px 16px; color:#475569;">${itemHtml}</td>
+            <td style="padding:14px 16px;">${origAmtHtml}</td>
+            <td style="padding:14px 16px;">${discountHtml}</td>
+            <td style="padding:14px 16px;">${finalAmtHtml}</td>
             <td style="padding:14px 16px;">${methodBadge}</td>
+            <td style="padding:14px 16px;">${staffHtml}</td>
             <td style="padding:14px 16px;">
-                 <span class="tb-status-pill ${statusPillClass}" style="text-transform: uppercase; font-size: 0.7rem;">${statusLabel}</span>
+                <span class="tb-status-pill ${statusPillClass}" style="text-transform:uppercase; font-size:0.7rem;">${statusLabel}</span>
             </td>
-            <td style="padding:14px 16px; color:#475569;">${staffHtml}</td>
             <td style="padding:14px 16px; text-align:center;" class="action-cell">
                 <button onclick="event.stopPropagation(); window.phOpenDrawer('${item.payment_id}')" title="View Details" style="background:#f1f5f9; border:1px solid #e2e8f0; border-radius:6px; cursor:pointer; color:#64748b; padding:6px; transition:all 0.2s; display:flex; align-items:center; justify-content:center; margin-left:auto; margin-right:auto;" onmouseover="this.style.background='#e0e7ff'; this.style.color='#4f46e5'; this.style.borderColor='#c7d2fe';" onmouseout="this.style.background='#f1f5f9'; this.style.color='#64748b'; this.style.borderColor='#e2e8f0';">
                     <i data-feather="file-text" style="width:14px; height:14px;"></i>
@@ -182,22 +181,23 @@ window.phOpenDrawer = function(paymentId) {
     if(!p) return;
 
     const displayId = p.payment_id.substring(0,8).toUpperCase();
-    const bookingId = p.booking_id ? p.booking_id.substring(0,8).toUpperCase() : '-';
     const displayDate = p.paid_at ? new Date(p.paid_at).toLocaleString('en-IN') : '-';
+    const pStatus = (p.status || 'paid').toLowerCase();
 
     // Populate data
-    document.getElementById('drawerSubtitle').textContent = displayId;
+    document.getElementById('drawerSubtitle').textContent = `${p.type || ''} — ${displayId}`;
     document.getElementById('drawerPayId').textContent = displayId;
-    document.getElementById('drawerBookingId').textContent = bookingId;
+    const bookingIdEl = document.getElementById('drawerBookingId');
+    if (bookingIdEl) bookingIdEl.textContent = p.payment_id ? p.payment_id.substring(0,8).toUpperCase() : '-';
     document.getElementById('drawerDate').textContent = displayDate;
     document.getElementById('drawerStaff').textContent = p.staff_name || '-';
     document.getElementById('drawerCustomer').textContent = p.customer_name || 'Guest';
-    document.getElementById('drawerService').textContent = p.service_name || '-';
+    document.getElementById('drawerService').textContent = `${p.type || ''}: ${p.item_name || '-'}`;
     
     const drawerAmountEl = document.getElementById('drawerAmount');
     if (drawerAmountEl) {
-        drawerAmountEl.textContent = formatINR(p.amount);
-        drawerAmountEl.style.color = status === 'refunded' ? '#ef4444' : '#10b981';
+        drawerAmountEl.textContent = formatINR(p.final_amount);
+        drawerAmountEl.style.color = pStatus === 'refunded' ? '#ef4444' : '#10b981';
     }
     
     const method = (p.payment_method || 'Cash').toLowerCase();
@@ -205,17 +205,18 @@ window.phOpenDrawer = function(paymentId) {
     if (method === 'card') methodHTML = '<span style="color:#3730a3"><i data-feather="credit-card" style="width:14px;height:14px;vertical-align:middle;margin-right:4px;"></i> Card</span>';
     else if (method === 'upi') methodHTML = '<span style="color:#86198f"><i data-feather="smartphone" style="width:14px;height:14px;vertical-align:middle;margin-right:4px;"></i> UPI</span>';
     else methodHTML = '<span style="color:#475569"><i data-feather="dollar-sign" style="width:14px;height:14px;vertical-align:middle;margin-right:4px;"></i> Cash</span>';
-    
     document.getElementById('drawerMethod').innerHTML = methodHTML;
     
-    const statusBg = status === 'refunded' ? '#fee2e2' : '#dcfce7';
-    const statusColor = status === 'refunded' ? '#991b1b' : '#166534';
+    const statusBg = pStatus === 'refunded' ? '#fee2e2' : '#dcfce7';
+    const statusColor = pStatus === 'refunded' ? '#991b1b' : '#166534';
     document.getElementById('drawerStatus').innerHTML = `<span style="color:${statusColor}; background:${statusBg}; padding:2px 8px; border-radius:4px; font-size:0.75rem;">${p.status || 'Paid'}</span>`;
 
-    // Simple display for totals (can be enhanced if view has these)
-    document.getElementById('drawerBookTotal').textContent = formatINR(p.booking_total);
-    document.getElementById('drawerBookPaid').textContent = formatINR(p.amount); // Simplification
-    document.getElementById('drawerBookDue').textContent = formatINR(0);
+    const drawerBookTotalEl = document.getElementById('drawerBookTotal');
+    const drawerBookPaidEl = document.getElementById('drawerBookPaid');
+    const drawerBookDueEl = document.getElementById('drawerBookDue');
+    if (drawerBookTotalEl) drawerBookTotalEl.textContent = formatINR(p.original_amount);
+    if (drawerBookPaidEl) drawerBookPaidEl.textContent = `${formatINR(p.final_amount)} (Discount: ${formatINR(p.discount_amount || 0)})`;
+    if (drawerBookDueEl) drawerBookDueEl.textContent = formatINR(0);
 
     if (window.feather) feather.replace();
 
