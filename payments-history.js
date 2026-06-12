@@ -92,12 +92,6 @@ function phRenderTable(data) {
 
         const tr = document.createElement('tr');
         tr.className = 'tb-row';
-        tr.style.cursor = 'pointer';
-        tr.onclick = (e) => {
-            if (!e.target.closest('button') && !e.target.closest('.action-cell')) {
-                window.phOpenDrawer(item.payment_id);
-            }
-        };
 
         // Date & Time
         let displayDateTime = '-';
@@ -244,6 +238,8 @@ window.phOpenDrawer = function(paymentId) {
     const overlay = document.getElementById('phDrawerOverlay');
     const drawer = document.getElementById('phSideDrawer');
     overlay.style.display = 'block';
+    // Close when clicking on the dark backdrop (outside the drawer)
+    overlay.onclick = (e) => { if (e.target === overlay) phCloseDrawer(); };
     
     setTimeout(() => {
         overlay.classList.add('active');
