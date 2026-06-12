@@ -260,7 +260,94 @@ window.phCloseDrawer = function phCloseDrawer() {
     }, 300);
 }
 
-// Sorting
+// Print Receipt
+window.phPrintReceipt = function() {
+    const subtitle   = document.getElementById('drawerSubtitle')?.textContent  || '';
+    const payId      = document.getElementById('drawerPayId')?.textContent      || '';
+    const date       = document.getElementById('drawerDate')?.textContent       || '';
+    const customer   = document.getElementById('drawerCustomer')?.textContent   || '';
+    const service    = document.getElementById('drawerService')?.textContent    || '';
+    const staff      = document.getElementById('drawerStaff')?.textContent      || '';
+    const amount     = document.getElementById('drawerAmount')?.textContent     || '';
+    const method     = document.getElementById('drawerMethod')?.innerText       || '';
+    const status     = document.getElementById('drawerStatus')?.innerText       || '';
+    const bookTotal  = document.getElementById('drawerBookTotal')?.textContent  || '';
+    const bookPaid   = document.getElementById('drawerBookPaid')?.textContent   || '';
+    const bookDue    = document.getElementById('drawerBookDue')?.textContent    || '';
+
+    const businessName = document.querySelector('.brand-name')?.textContent?.trim()
+                        || document.title?.split('—')[0]?.trim()
+                        || 'Salon';
+
+    const win = window.open('', '_blank', 'width=480,height=700');
+    win.document.write(`<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<title>Receipt — ${payId}</title>
+<style>
+  * { margin:0; padding:0; box-sizing:border-box; }
+  body { font-family: 'Segoe UI', Arial, sans-serif; background:#fff; color:#1e293b; padding:32px 28px; font-size:14px; }
+  .header { text-align:center; margin-bottom:24px; }
+  .header h1 { font-size:1.4rem; font-weight:800; color:#1e293b; }
+  .header p  { font-size:0.82rem; color:#64748b; margin-top:2px; }
+  .divider { border:none; border-top:1px dashed #cbd5e1; margin:16px 0; }
+  .divider-solid { border:none; border-top:2px solid #1e293b; margin:16px 0; }
+  .badge { display:inline-block; font-size:0.78rem; font-weight:700; padding:3px 10px; border-radius:20px; background:#dcfce7; color:#166534; border:1px solid #bbf7d0; }
+  .section-title { font-size:0.7rem; font-weight:700; color:#94a3b8; text-transform:uppercase; letter-spacing:0.08em; margin-bottom:8px; }
+  .row { display:flex; justify-content:space-between; margin-bottom:8px; }
+  .row .label { color:#64748b; }
+  .row .value { font-weight:600; color:#1e293b; text-align:right; max-width:60%; }
+  .total-row { display:flex; justify-content:space-between; margin-top:12px; padding-top:12px; border-top:1px solid #e2e8f0; }
+  .total-row .label { font-weight:700; font-size:1rem; }
+  .total-row .value { font-weight:800; font-size:1.1rem; color:#059669; }
+  .footer { text-align:center; margin-top:28px; font-size:0.78rem; color:#94a3b8; }
+  @media print { body { padding:0 16px; } }
+</style>
+</head>
+<body>
+<div class="header">
+  <h1>${businessName}</h1>
+  <p>Payment Receipt</p>
+</div>
+<hr class="divider-solid">
+
+<div style="margin-bottom:16px;">
+  <div class="row"><span class="label">Receipt #</span><span class="value">${payId}</span></div>
+  <div class="row"><span class="label">Date & Time</span><span class="value">${date}</span></div>
+  <div class="row"><span class="label">Status</span><span class="value"><span class="badge">${status}</span></span></div>
+</div>
+
+<hr class="divider">
+
+<p class="section-title">Customer</p>
+<div style="margin-bottom:16px;">
+  <div class="row"><span class="label">Name</span><span class="value">${customer}</span></div>
+  <div class="row"><span class="label">Item</span><span class="value">${service}</span></div>
+  <div class="row"><span class="label">Staff</span><span class="value">${staff}</span></div>
+</div>
+
+<hr class="divider">
+
+<p class="section-title">Payment Information</p>
+<div style="margin-bottom:16px;">
+  <div class="row"><span class="label">Payment Method</span><span class="value">${method}</span></div>
+  <div class="row"><span class="label">Original Amount</span><span class="value">${bookTotal}</span></div>
+  <div class="row"><span class="label">Amount Paid</span><span class="value">${bookPaid}</span></div>
+  <div class="total-row"><span class="label">Amount Due</span><span class="value">${bookDue}</span></div>
+</div>
+
+<hr class="divider">
+
+<div class="footer">
+  <p>Thank you for visiting ${businessName}!</p>
+  <p style="margin-top:4px;">This is a computer-generated receipt.</p>
+</div>
+<script>window.onload = () => { window.print(); }<\/script>
+</body></html>`);
+    win.document.close();
+};
+
 function phSortTable(column) {
     if(phCurrentSort.column === column) {
         phCurrentSort.order = phCurrentSort.order === 'asc' ? 'desc' : 'asc';
