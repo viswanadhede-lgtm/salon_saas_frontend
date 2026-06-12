@@ -462,7 +462,53 @@ window.phFilterByDate = function(range) {
 };
 
 window.phExportData = function() {
-    console.log("Exporting live payments history...");
+    if (!filteredPayments || filteredPayments.length === 0) {
+        alert('No data to export.');
+        return;
+    }
+
+    const escapeCsv = (str) => {
+        if (str === null || str === undefined) return '""';
+        const s = String(str);
+        if (s.includes('"') || s.includes(',') || s.includes('\n')) {
+            return `"${s.replace(/"/g, '""')}"`;
+        }
+        return `"${s}"`;
+    };
+
+    const headers = ['Date', 'Payment ID', 'Booking ID', 'Customer', 'Type', 'Item', 'Original Amount', 'Discount', 'Final Amount', 'Method', 'Status', 'Staff'];
+    
+    let csvData = headers.join(',') + '\n';
+    
+    filteredPayments.forEach(p => {
+        const row = [
+            p.paid_at ? new Date(p.paid_at).toLocaleString('en-IN') : '',
+            p.payment_id,
+            p.booking_id,
+            p.customer_name,
+            p.type,
+            p.item_name,
+            p.original_amount,
+            p.discount_amount,
+            p.final_amount,
+            p.payment_method,
+            p.status,
+            p.staff_name
+        ];
+        csvData += row.map(escapeCsv).join(',') + '\n';
+    });
+
+    // Add BOM for Excel UTF-8 support
+    const blob = new Blob(['\uFEFF' + csvData], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    const dateStr = new Date().toISOString().split('T')[0];
+    link.setAttribute('download', `payments_history_${dateStr}.csv`);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
 };
 
 window.phOpenBooking = function(bookingId) {
