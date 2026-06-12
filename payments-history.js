@@ -119,9 +119,27 @@ function phRenderTable(data) {
                        : { bg:'#f1f5f9', color:'#475569' };
         const typeBadge = `<span style="display:inline-block; padding:2px 10px; background:${typeColor.bg}; color:${typeColor.color}; border-radius:9999px; font-size:0.72rem; font-weight:600;">${typeVal}</span>`;
 
-        // Item (item_name)
-        const itemName = item.item_name || '-';
-        const itemHtml = `<span style="display:inline-block; max-width:160px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; vertical-align:middle;" title="${itemName}">${itemName}</span>`;
+        // Item (item_name) — expandable +N
+        const rawItems = (item.item_name || '').split(',').map(s => s.trim()).filter(Boolean);
+        let itemHtml = '-';
+        if (rawItems.length === 1) {
+            itemHtml = `<span style="display:inline-block; max-width:150px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; vertical-align:middle;" title="${rawItems[0]}">${rawItems[0]}</span>`;
+        } else if (rawItems.length > 1) {
+            const firstItem = rawItems[0];
+            const restCount = rawItems.length - 1;
+            const fullItemList = rawItems.join(', ');
+            itemHtml = `
+                <div style="display:flex; flex-direction:column; gap:4px;">
+                    <div style="display:flex; align-items:center; gap:6px; cursor:pointer;" onclick="event.stopPropagation(); const e=this.nextElementSibling; e.style.display=e.style.display==='none'?'block':'none'">
+                        <span style="display:inline-block; max-width:120px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; vertical-align:middle;" title="${firstItem}">${firstItem}</span>
+                        <span style="background:#e0e7ff; color:#3730a3; padding:2px 8px; border-radius:12px; font-size:0.7rem; font-weight:600; transition:background 0.2s;" onmouseover="this.style.background='#c7d2fe'" onmouseout="this.style.background='#e0e7ff'">+${restCount}</span>
+                    </div>
+                    <div style="display:none; font-size:0.8rem; color:#64748b; line-height:1.6; padding-left:2px; padding-top:2px; white-space:normal;">
+                        ${fullItemList}
+                    </div>
+                </div>
+            `;
+        }
 
         // Original Amount
         const origAmtHtml = `<span style="color:#475569; font-size:0.85rem;">${formatINR(item.original_amount)}</span>`;
