@@ -366,10 +366,23 @@
                         </div>
                     </div>
 
-                    <!-- Export -->
-                    <button class="btn btn-secondary" data-sub-feature="payments_history_export" style="height:40px; display:flex; align-items:center; gap:6px; padding:0 14px;" onclick="phExportData()">
-                        <i data-feather="download" style="width:15px; height:15px;"></i> Export
-                    </button>
+                    <!-- Export Dropdown -->
+                    <div style="position:relative;">
+                        <button class="btn btn-secondary" data-sub-feature="payments_history_export" style="height:40px; display:flex; align-items:center; gap:6px; padding:0 14px;" 
+                            onclick="event.stopPropagation(); var m=document.getElementById('phExportMenu'); m.style.display=(m.style.display==='block'?'none':'block');">
+                            <i data-feather="download" style="width:15px; height:15px;"></i> Export
+                        </button>
+                        <div id="phExportMenu" style="display:none; position:absolute; top:46px; right:0; width:150px; background:#fff; border:1px solid #e2e8f0; border-radius:10px; box-shadow:0 8px 24px rgba(15,23,42,0.1); padding:6px 0; z-index:9999;">
+                            <button onclick="event.stopPropagation(); window.phExportData('csv'); document.getElementById('phExportMenu').style.display='none';"
+                                style="width:100%; padding:9px 16px; text-align:left; border:none; background:none; font-size:0.85rem; color:#374151; cursor:pointer;" onmouseover="this.style.background='#f8fafc'" onmouseout="this.style.background='none'">
+                                Download .csv
+                            </button>
+                            <button onclick="event.stopPropagation(); window.phExportData('excel'); document.getElementById('phExportMenu').style.display='none';"
+                                style="width:100%; padding:9px 16px; text-align:left; border:none; background:none; font-size:0.85rem; color:#374151; cursor:pointer;" onmouseover="this.style.background='#f8fafc'" onmouseout="this.style.background='none'">
+                                Download Excel
+                            </button>
+                        </div>
+                    </div>
                 </div>
             </div>
 

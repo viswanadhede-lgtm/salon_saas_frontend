@@ -468,50 +468,89 @@ window.phFilterByDate = function(range) {
     phApplyFilter();
 };
 
-window.phExportData = function() {
-    if (!filteredPayments || filteredPayments.length === 0) {
+window.phExportData = function(format = 'csv') {
+    const activeData = filteredPayments && filteredPayments.length > 0 ? filteredPayments : allPayments;
+    if (!activeData || activeData.length === 0) {
         alert('No data to export.');
         return;
     }
 
-    const escapeCsv = (str) => {
-        if (str === null || str === undefined) return '""';
-        const s = String(str);
-        if (s.includes('"') || s.includes(',') || s.includes('\n')) {
-            return `"${s.replace(/"/g, '""')}"`;
-        }
-        return `"${s}"`;
-    };
-
     const headers = ['Date', 'Payment ID', 'Booking ID', 'Customer', 'Type', 'Item', 'Original Amount', 'Discount', 'Final Amount', 'Method', 'Status', 'Staff'];
     
-    let csvData = headers.join(',') + '\n';
-    
-    filteredPayments.forEach(p => {
-        const row = [
-            p.paid_at ? new Date(p.paid_at).toLocaleString('en-IN') : '',
-            p.payment_id,
-            p.booking_id,
-            p.customer_name,
-            p.type,
-            p.item_name,
-            p.original_amount,
-            p.discount_amount,
-            p.final_amount,
-            p.payment_method,
-            p.status,
-            p.staff_name
-        ];
-        csvData += row.map(escapeCsv).join(',') + '\n';
-    });
+    let content = '';
+    let mimeType = '';
+    let extension = '';
 
-    // Add BOM for Excel UTF-8 support
-    const blob = new Blob(['\uFEFF' + csvData], { type: 'text/csv;charset=utf-8;' });
+    if (format === 'excel') {
+        content = '<html xmlns:x="urn:schemas-microsoft-com:office:excel"><head><meta charset="UTF-8"></head><body><table border="1">';
+        content += '<tr>' + headers.map(h => `<th>${h}</th>`).join('') + '</tr>';
+        
+        activeData.forEach(p => {
+            const row = [
+                p.paid_at ? new Date(p.paid_at).toLocaleString('en-IN') : '',
+                p.payment_id,
+                p.booking_id,
+                p.customer_name,
+                p.type,
+                p.item_name,
+                p.original_amount,
+                p.discount_amount,
+                p.final_amount,
+                p.payment_method,
+                p.status,
+                p.staff_name
+            ];
+            // Format HTML safely
+            content += '<tr>' + row.map(col => {
+                const s = String(col !== null && col !== undefined ? col : '');
+                const safeStr = s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+                return `<td>${safeStr}</td>`;
+            }).join('') + '</tr>';
+        });
+        
+        content += '</table></body></html>';
+        mimeType = 'application/vnd.ms-excel';
+        extension = 'xls';
+    } else {
+        const escapeCsv = (str) => {
+            if (str === null || str === undefined) return '""';
+            const s = String(str);
+            if (s.includes('"') || s.includes(',') || s.includes('\n')) {
+                return `"${s.replace(/"/g, '""')}"`;
+            }
+            return `"${s}"`;
+        };
+
+        let csvData = headers.join(',') + '\n';
+        activeData.forEach(p => {
+            const row = [
+                p.paid_at ? new Date(p.paid_at).toLocaleString('en-IN') : '',
+                p.payment_id,
+                p.booking_id,
+                p.customer_name,
+                p.type,
+                p.item_name,
+                p.original_amount,
+                p.discount_amount,
+                p.final_amount,
+                p.payment_method,
+                p.status,
+                p.staff_name
+            ];
+            csvData += row.map(escapeCsv).join(',') + '\n';
+        });
+        
+        content = '\uFEFF' + csvData; // Add BOM
+        mimeType = 'text/csv;charset=utf-8;';
+        extension = 'csv';
+    }
+
+    const blob = new Blob([content], { type: mimeType });
     const url = URL.createObjectURL(blob);
     const link = document.createElement('a');
     link.href = url;
     const dateStr = new Date().toISOString().split('T')[0];
-    link.setAttribute('download', `payments_history_${dateStr}.csv`);
+    link.setAttribute('download', `payments_history_${dateStr}.${extension}`);
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
