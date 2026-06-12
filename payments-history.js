@@ -25,9 +25,18 @@ document.addEventListener('DOMContentLoaded', async () => {
     // Initial Fetch
     await fetchPaymentHistory();
 
-    // Global click listener for ... (existing logic)
+    // Global click listener to close dropdowns
     document.addEventListener('click', (e) => {
-        // ... same click logic ...
+        const menus = ['phFilterMenu', 'phDateMenu', 'phExportMenu'];
+        menus.forEach(id => {
+            const menu = document.getElementById(id);
+            if (menu && menu.style.display === 'block') {
+                // If the click is outside the menu itself, close it
+                if (!menu.contains(e.target)) {
+                    menu.style.display = 'none';
+                }
+            }
+        });
     });
 });
 
