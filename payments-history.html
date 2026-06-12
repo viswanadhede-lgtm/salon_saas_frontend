@@ -278,7 +278,7 @@
                     <!-- Search -->
                     <div style="background:#fff; border:1px solid #e2e8f0; border-radius:8px; padding:0 12px; display:flex; align-items:center; width:240px; height:40px;">
                         <i data-feather="search" style="color:#94a3b8; width:16px; height:16px; flex-shrink:0;"></i>
-                        <input type="text" id="phSearchInput" placeholder="Search customer or booking..." style="border:none; background:transparent; padding:8px; font-size:0.85rem; outline:none; width:100%;">
+                        <input type="text" id="phSearchInput" placeholder="search customer" style="border:none; background:transparent; padding:8px; font-size:0.85rem; outline:none; width:100%;">
                     </div>
                     
                     <!-- Filter Dropdown -->
@@ -287,29 +287,40 @@
                             onclick="event.stopPropagation(); var m=document.getElementById('phFilterMenu'); m.style.display=(m.style.display==='block'?'none':'block'); document.getElementById('phDateMenu').style.display='none';">
                             <i data-feather="filter" style="width:15px; height:15px;"></i> Filter
                         </button>
-                        <div id="phFilterMenu" style="display:none; position:absolute; top:46px; right:0; width:220px; background:#fff; border:1px solid #e2e8f0; border-radius:10px; box-shadow:0 8px 24px rgba(15,23,42,0.1); padding:16px; z-index:9999;">
+                        <div id="phFilterMenu" style="display:none; position:absolute; top:46px; right:0; width:420px; background:#fff; border:1px solid #e2e8f0; border-radius:10px; box-shadow:0 8px 24px rgba(15,23,42,0.1); padding:16px; z-index:9999;">
                             
-                            <p style="font-size:0.72rem; font-weight:700; color:#94a3b8; text-transform:uppercase; letter-spacing:0.06em; margin:0 0 8px;">Payment Method</p>
-                            <div style="display:flex; flex-direction:column; gap:6px; margin-bottom:14px;">
-                                <label style="display:flex; align-items:center; gap:8px; font-size:0.85rem; color:#374151; cursor:pointer;"><input type="checkbox" class="ph-filter-method" value="Cash"> Cash</label>
-                                <label style="display:flex; align-items:center; gap:8px; font-size:0.85rem; color:#374151; cursor:pointer;"><input type="checkbox" class="ph-filter-method" value="Card"> Card</label>
-                                <label style="display:flex; align-items:center; gap:8px; font-size:0.85rem; color:#374151; cursor:pointer;"><input type="checkbox" class="ph-filter-method" value="UPI"> UPI</label>
+                            <div style="display:grid; grid-template-columns:1fr 1fr 1fr; gap:16px; margin-bottom:16px;">
+                                <!-- Column 1: Type -->
+                                <div>
+                                    <p style="font-size:0.72rem; font-weight:700; color:#94a3b8; text-transform:uppercase; letter-spacing:0.06em; margin:0 0 8px;">Type</p>
+                                    <div style="display:flex; flex-direction:column; gap:6px;">
+                                        <label style="display:flex; align-items:center; gap:8px; font-size:0.85rem; color:#374151; cursor:pointer;"><input type="checkbox" class="ph-filter-type" value="Service"> Service</label>
+                                        <label style="display:flex; align-items:center; gap:8px; font-size:0.85rem; color:#374151; cursor:pointer;"><input type="checkbox" class="ph-filter-type" value="Product"> Product</label>
+                                        <label style="display:flex; align-items:center; gap:8px; font-size:0.85rem; color:#374151; cursor:pointer;"><input type="checkbox" class="ph-filter-type" value="Membership"> Membership</label>
+                                    </div>
+                                </div>
+
+                                <!-- Column 2: Status -->
+                                <div>
+                                    <p style="font-size:0.72rem; font-weight:700; color:#94a3b8; text-transform:uppercase; letter-spacing:0.06em; margin:0 0 8px;">Status</p>
+                                    <div style="display:flex; flex-direction:column; gap:6px;">
+                                        <label style="display:flex; align-items:center; gap:8px; font-size:0.85rem; color:#374151; cursor:pointer;"><input type="checkbox" class="ph-filter-status" value="Paid"> Paid</label>
+                                        <label style="display:flex; align-items:center; gap:8px; font-size:0.85rem; color:#374151; cursor:pointer;"><input type="checkbox" class="ph-filter-status" value="Refunded"> Refunded</label>
+                                    </div>
+                                </div>
+
+                                <!-- Column 3: Method -->
+                                <div>
+                                    <p style="font-size:0.72rem; font-weight:700; color:#94a3b8; text-transform:uppercase; letter-spacing:0.06em; margin:0 0 8px;">Method</p>
+                                    <div style="display:flex; flex-direction:column; gap:6px;">
+                                        <label style="display:flex; align-items:center; gap:8px; font-size:0.85rem; color:#374151; cursor:pointer;"><input type="checkbox" class="ph-filter-method" value="Cash"> Cash</label>
+                                        <label style="display:flex; align-items:center; gap:8px; font-size:0.85rem; color:#374151; cursor:pointer;"><input type="checkbox" class="ph-filter-method" value="UPI"> UPI</label>
+                                        <label style="display:flex; align-items:center; gap:8px; font-size:0.85rem; color:#374151; cursor:pointer;"><input type="checkbox" class="ph-filter-method" value="Card"> Card</label>
+                                    </div>
+                                </div>
                             </div>
 
-                            <p style="font-size:0.72rem; font-weight:700; color:#94a3b8; text-transform:uppercase; letter-spacing:0.06em; margin:0 0 8px;">Staff</p>
-                            <div style="display:flex; flex-direction:column; gap:6px; margin-bottom:14px;">
-                                <label style="display:flex; align-items:center; gap:8px; font-size:0.85rem; color:#374151; cursor:pointer;"><input type="checkbox" class="ph-filter-staff" value="Sarah"> Sarah</label>
-                                <label style="display:flex; align-items:center; gap:8px; font-size:0.85rem; color:#374151; cursor:pointer;"><input type="checkbox" class="ph-filter-staff" value="Michael"> Michael</label>
-                                <label style="display:flex; align-items:center; gap:8px; font-size:0.85rem; color:#374151; cursor:pointer;"><input type="checkbox" class="ph-filter-staff" value="Anjali"> Anjali</label>
-                            </div>
-
-                            <p style="font-size:0.72rem; font-weight:700; color:#94a3b8; text-transform:uppercase; letter-spacing:0.06em; margin:0 0 8px;">Status</p>
-                            <div style="display:flex; flex-direction:column; gap:6px; margin-bottom:14px;">
-                                <label style="display:flex; align-items:center; gap:8px; font-size:0.85rem; color:#374151; cursor:pointer;"><input type="checkbox" class="ph-filter-status" value="Completed"> Completed</label>
-                                <label style="display:flex; align-items:center; gap:8px; font-size:0.85rem; color:#374151; cursor:pointer;"><input type="checkbox" class="ph-filter-status" value="Refunded"> Refunded</label>
-                            </div>
-
-                            <div style="display:flex; gap:8px;">
+                            <div style="display:flex; gap:8px; border-top:1px solid #e2e8f0; padding-top:16px;">
                                 <button onclick="event.stopPropagation(); phClearFilter();" style="flex:1; padding:7px 0; border:1px solid #e2e8f0; background:#fff; border-radius:7px; font-size:0.83rem; color:#64748b; cursor:pointer;">Clear</button>
                                 <button onclick="event.stopPropagation(); phApplyFilter();" style="flex:1; padding:7px 0; border:none; background:#1e3a8a; border-radius:7px; font-size:0.83rem; color:#fff; cursor:pointer; font-weight:600;">Apply</button>
                             </div>

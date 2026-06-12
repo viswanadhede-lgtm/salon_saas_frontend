@@ -376,16 +376,18 @@ function phSortTable(column) {
 window.phApplyFilter = function() {
     const searchTerm = document.getElementById('phSearchInput').value.toLowerCase();
     
-    const methods = Array.from(document.querySelectorAll('.ph-filter-method:checked')).map(cb => cb.value.toLowerCase());
+    const types = Array.from(document.querySelectorAll('.ph-filter-type:checked')).map(cb => cb.value.toLowerCase());
     const statuses = Array.from(document.querySelectorAll('.ph-filter-status:checked')).map(cb => cb.value.toLowerCase());
+    const methods = Array.from(document.querySelectorAll('.ph-filter-method:checked')).map(cb => cb.value.toLowerCase());
 
     filteredPayments = allPayments.filter(p => {
         const matchesSearch = (p.payment_id || '').toLowerCase().includes(searchTerm) || 
                               (p.booking_id || '').toLowerCase().includes(searchTerm) || 
                               (p.customer_name || '').toLowerCase().includes(searchTerm);
         
-        const matchesMethod = methods.length === 0 || methods.includes((p.payment_method || '').toLowerCase());
+        const matchesType = types.length === 0 || types.includes((p.type || '').toLowerCase());
         const matchesStatus = statuses.length === 0 || statuses.includes((p.status || '').toLowerCase());
+        const matchesMethod = methods.length === 0 || methods.includes((p.payment_method || '').toLowerCase());
 
         let matchesDate = true;
         if (currentFilterDateRange && currentFilterDateRange.type !== 'all' && p.paid_at) {
@@ -395,7 +397,7 @@ window.phApplyFilter = function() {
             if (to && rowDate > to) matchesDate = false;
         }
 
-        return matchesSearch && matchesMethod && matchesStatus && matchesDate;
+        return matchesSearch && matchesType && matchesStatus && matchesMethod && matchesDate;
     });
 
     phRenderTable(filteredPayments);
@@ -404,7 +406,7 @@ window.phApplyFilter = function() {
 };
 
 window.phClearFilter = function() {
-    Array.from(document.querySelectorAll('.ph-filter-method, .ph-filter-staff, .ph-filter-status')).forEach(cb => cb.checked = false);
+    Array.from(document.querySelectorAll('.ph-filter-type, .ph-filter-status, .ph-filter-method')).forEach(cb => cb.checked = false);
     const search = document.getElementById('phSearchInput');
     if (search) search.value = '';
     phRenderTable(allPayments);
