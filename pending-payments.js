@@ -164,7 +164,19 @@ document.addEventListener('DOMContentLoaded', async () => {
             tr.className = 'tb-row';
 
             const dateStr = row.booking_date ? new Date(row.booking_date).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' }) : '-';
-            const timeStr = row.start_time || '';
+            
+            let timeStr = '-';
+            if (row.start_time) {
+                const parts = row.start_time.split(':');
+                if (parts.length >= 2) {
+                    let h = parseInt(parts[0], 10);
+                    const ampm = h >= 12 ? 'PM' : 'AM';
+                    h = h % 12 || 12;
+                    timeStr = `${h}:${parts[1]} ${ampm}`;
+                } else {
+                    timeStr = row.start_time;
+                }
+            }
 
             let typePill = '';
             if (row.ref_type === 'membership') {
