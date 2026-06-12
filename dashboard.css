@@ -2899,3 +2899,8 @@
     transform: scale(1.04);
     box-shadow: 0 5px 12px rgba(99, 102, 241, 0.35);
 }
+
+/* Force unified white rows for Payments tables overriding all zebras */
+#phTableBody tr, #ppTableBody tr { background-color: #ffffff !important; }
+#phTableBody tr:hover, #ppTableBody tr:hover { background-color: #f1f5f9 !important; }
+
