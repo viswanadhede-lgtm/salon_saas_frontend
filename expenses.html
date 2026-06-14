@@ -756,39 +756,45 @@
 
     <!-- Add Expense Modal -->
     <div class="modal-overlay" id="addExpenseModal" onclick="if(event.target === this) window.closeAddExpenseModal();">
-        <div class="modal-container" style="max-width: 500px;">
+        <div class="modal-container" style="max-width: 720px;">
             <div class="modal-header">
                 <h2>Add New Expense</h2>
                 <button class="icon-btn" onclick="window.closeAddExpenseModal()"><i data-feather="x"></i></button>
             </div>
             <div class="modal-body">
                 <form id="addExpenseForm">
-                    <div class="form-group row">
-                        <div class="col" style="flex: 1;">
-                            <label class="form-label">Date <span class="required">*</span></label>
-                            <input type="date" class="form-input" id="expenseDate" required>
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px; align-items: start;">
+                        <!-- Left Column -->
+                        <div style="display: flex; flex-direction: column; gap: 16px;">
+                            <div class="form-group" style="margin-bottom: 0;">
+                                <label class="form-label">Date <span class="required">*</span></label>
+                                <input type="date" class="form-input" id="expenseDate" required>
+                            </div>
+                            <div class="form-group" style="margin-bottom: 0;">
+                                <label class="form-label">Category <span class="required">*</span></label>
+                                <select class="form-select" id="expenseCategory" required>
+                                    <option value="" disabled selected>Select Category</option>
+                                    <option value="Rent">Rent</option>
+                                    <option value="Salary">Salary</option>
+                                    <option value="Products">Products</option>
+                                    <option value="Utilities">Utilities</option>
+                                    <option value="Maintenance">Maintenance</option>
+                                    <option value="Marketing">Marketing</option>
+                                    <option value="Other">Other</option>
+                                </select>
+                            </div>
+                            <div class="form-group" style="margin-bottom: 0;">
+                                <label class="form-label">Amount (₹) <span class="required">*</span></label>
+                                <input type="number" class="form-input" id="expenseAmount" min="0" step="0.01" required>
+                            </div>
                         </div>
-                        <div class="col" style="flex: 1;">
-                            <label class="form-label">Category <span class="required">*</span></label>
-                            <select class="form-select" id="expenseCategory" required>
-                                <option value="" disabled selected>Select Category</option>
-                                <option value="Rent">Rent</option>
-                                <option value="Salary">Salary</option>
-                                <option value="Products">Products</option>
-                                <option value="Utilities">Utilities</option>
-                                <option value="Maintenance">Maintenance</option>
-                                <option value="Marketing">Marketing</option>
-                                <option value="Other">Other</option>
-                            </select>
+                        <!-- Right Column -->
+                        <div style="display: flex; flex-direction: column; height: 100%;">
+                            <div class="form-group" style="margin-bottom: 0; flex: 1; display: flex; flex-direction: column;">
+                                <label class="form-label">Notes</label>
+                                <textarea class="form-textarea" id="expenseNotes" placeholder="Optional details..." style="flex: 1; min-height: 140px; resize: none;"></textarea>
+                            </div>
                         </div>
-                    </div>
-                    <div class="form-group">
-                        <label class="form-label">Amount (₹) <span class="required">*</span></label>
-                        <input type="number" class="form-input" id="expenseAmount" min="0" step="0.01" required>
-                    </div>
-                    <div class="form-group">
-                        <label class="form-label">Notes</label>
-                        <textarea class="form-textarea" id="expenseNotes" rows="3" placeholder="Optional details..."></textarea>
                     </div>
                 </form>
             </div>
