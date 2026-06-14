@@ -482,6 +482,9 @@ function renderExpenses() {
             const expD = new Date(exp.date);
             const formattedDate = `${String(expD.getDate()).padStart(2, '0')}-${String(expD.getMonth() + 1).padStart(2, '0')}-${expD.getFullYear()}`;
 
+            const fullName = exp.staff_name || 'Admin';
+            const firstName = fullName.split(' ')[0];
+
             return `
                 <tr>
                     <td>${formattedDate}</td>
@@ -494,7 +497,7 @@ function renderExpenses() {
                         </button>
                         ` : '<span class="text-muted" style="font-weight:500;">N/A</span>'}
                     </td>
-                    <td>${exp.staff_name || 'Admin'}</td>
+                    <td><span title="${fullName}" style="cursor:help;">${firstName}</span></td>
                     <td class="text-right">
                         <div style="display:flex; gap:6px; justify-content:flex-end; align-items:center;">
                             <button class="icon-btn" title="Edit Expense"
