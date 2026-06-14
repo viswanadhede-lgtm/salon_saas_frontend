@@ -502,13 +502,15 @@ function renderExpenses() {
                         <div style="display:flex; gap:6px; justify-content:flex-end; align-items:center;">
                             <button data-sub-feature="expenses_update"
                                 onclick="window.editExpense('${expId}')"
-                                style="display:inline-flex; align-items:center; gap:5px; padding:5px 12px; background:#eff6ff; color:#3b82f6; border:1px solid #bfdbfe; border-radius:7px; font-size:0.8rem; font-weight:600; cursor:pointer;">
-                                <i data-feather="edit-2" style="width:13px;height:13px;"></i> Edit
+                                style="display:inline-flex; flex-direction:column; align-items:center; justify-content:center; gap:2px; padding:5px 10px; background:#eff6ff; color:#3b82f6; border:1px solid #bfdbfe; border-radius:7px; font-size:0.7rem; font-weight:600; cursor:pointer; min-width:44px;">
+                                <i data-feather="edit-2" style="width:13px;height:13px;"></i>
+                                <span>Edit</span>
                             </button>
                             <button data-sub-feature="expenses_delete"
                                 onclick="window.deleteExpense('${expId}')"
-                                style="display:inline-flex; align-items:center; gap:5px; padding:5px 12px; background:#fef2f2; color:#ef4444; border:1px solid #fecaca; border-radius:7px; font-size:0.8rem; font-weight:600; cursor:pointer;">
-                                <i data-feather="trash-2" style="width:13px;height:13px;"></i> Delete
+                                style="display:inline-flex; flex-direction:column; align-items:center; justify-content:center; gap:2px; padding:5px 10px; background:#fef2f2; color:#ef4444; border:1px solid #fecaca; border-radius:7px; font-size:0.7rem; font-weight:600; cursor:pointer; min-width:44px;">
+                                <i data-feather="trash-2" style="width:13px;height:13px;"></i>
+                                <span>Delete</span>
                             </button>
                         </div>
                     </td>
