@@ -498,8 +498,8 @@ function renderExpenses() {
                         ` : '<span class="text-muted" style="font-weight:500; display:block; text-align:center; width:100%;">N/A</span>'}
                     </td>
                     <td><span title="${fullName}" style="cursor:help;">${firstName}</span></td>
-                    <td class="text-right">
-                        <div style="display:flex; gap:6px; justify-content:flex-end; align-items:center;">
+                    <td style="text-align: center;">
+                        <div style="display:flex; gap:6px; justify-content:center; align-items:center;">
                             <button data-sub-feature="expenses_update"
                                 onclick="window.editExpense('${expId}')"
                                 style="display:inline-flex; flex-direction:column; align-items:center; justify-content:center; gap:2px; padding:5px 10px; background:#eff6ff; color:#3b82f6; border:1px solid #bfdbfe; border-radius:7px; font-size:0.7rem; font-weight:600; cursor:pointer; min-width:44px;">
