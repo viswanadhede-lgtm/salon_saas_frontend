@@ -33,7 +33,22 @@ const getUserInfo = () => {
 console.log('Expenses module loaded (Supabase)');
 feather.replace();
 
-document.getElementById('expensesDateRange').addEventListener('change', renderExpenses);
+const dateRangeSelect = document.getElementById('expensesDateRange');
+const customDateWrap = document.getElementById('expensesCustomDateWrapper');
+const customStart = document.getElementById('expensesCustomStart');
+const customEnd = document.getElementById('expensesCustomEnd');
+
+dateRangeSelect.addEventListener('change', () => {
+    if (dateRangeSelect.value === 'custom') {
+        customDateWrap.style.display = 'flex';
+    } else {
+        customDateWrap.style.display = 'none';
+        renderExpenses();
+    }
+});
+
+customStart.addEventListener('change', renderExpenses);
+customEnd.addEventListener('change', renderExpenses);
 document.getElementById('filterCategory').addEventListener('change', renderExpenses);
 
 document.getElementById('addExpenseForm').addEventListener('submit', (e) => {
@@ -327,6 +342,19 @@ function renderExpenses() {
             const twelveMonths = new Date();
             twelveMonths.setFullYear(now.getFullYear() - 1);
             if (expDate < twelveMonths) return false;
+        } else if (dateRangeFilter === 'custom') {
+            const startVal = document.getElementById('expensesCustomStart').value;
+            const endVal = document.getElementById('expensesCustomEnd').value;
+            if (startVal) {
+                const sDate = new Date(startVal);
+                sDate.setHours(0,0,0,0);
+                if (expDate < sDate) return false;
+            }
+            if (endVal) {
+                const eDate = new Date(endVal);
+                eDate.setHours(23,59,59,999);
+                if (expDate > eDate) return false;
+            }
         }
         // 'all' — no date filter
 

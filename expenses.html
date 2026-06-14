@@ -607,16 +607,24 @@
                     <p class="text-muted">Manage and track your business expenses</p>
                 </div>
                 <div class="content-actions" style="display: flex; gap: 12px; align-items: center;">
-                    <div class="date-filter-wrap" style="position: relative;">
-                        <i data-feather="calendar" style="position: absolute; left: 12px; top: 50%; transform: translateY(-50%); width: 14px; color: #64748b;"></i>
-                        <select id="expensesDateRange" class="filter-select">
-                            <option value="this_month">This Month</option>
-                            <option value="last_month">Last Month</option>
-                            <option value="3months">Last 3 Months</option>
-                            <option value="6months">Last 6 Months</option>
-                            <option value="12months">Last 12 Months</option>
-                            <option value="all">All Time</option>
-                        </select>
+                    <div class="date-filter-wrap" style="display: flex; gap: 8px; align-items: center;">
+                        <div style="position: relative;">
+                            <i data-feather="calendar" style="position: absolute; left: 12px; top: 50%; transform: translateY(-50%); width: 14px; color: #64748b;"></i>
+                            <select id="expensesDateRange" class="filter-select">
+                                <option value="this_month">This Month</option>
+                                <option value="last_month">Last Month</option>
+                                <option value="3months">Last 3 Months</option>
+                                <option value="6months">Last 6 Months</option>
+                                <option value="12months">Last 12 Months</option>
+                                <option value="all">All Time</option>
+                                <option value="custom">Custom Range</option>
+                            </select>
+                        </div>
+                        <div id="expensesCustomDateWrapper" style="display:none; gap:8px; align-items:center;">
+                            <input type="date" id="expensesCustomStart" class="filter-select" style="padding-left:12px !important; min-width:130px; background-image:none;">
+                            <span style="color:#64748b; font-size:0.875rem;">to</span>
+                            <input type="date" id="expensesCustomEnd" class="filter-select" style="padding-left:12px !important; min-width:130px; background-image:none;">
+                        </div>
                     </div>
                     <button class="btn btn-primary" onclick="window.openAddExpenseModal()" data-sub-feature="expenses_create" style="display: flex; align-items: center; gap: 8px;">
                         <i data-feather="plus"></i>
