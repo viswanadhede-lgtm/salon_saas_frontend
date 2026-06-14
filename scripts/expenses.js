@@ -325,12 +325,23 @@ function renderExpenses() {
 
     let totalSelectedRange = 0;
     let thisMonthTotal     = 0;
+    let todayTotal         = 0;
+
+    const startOfToday = new Date(now.getFullYear(), now.getMonth(), now.getDate());
 
     allExpenses.forEach(exp => {
-        if (new Date(exp.date) >= startOfCurrentMonth) {
-            thisMonthTotal += parseFloat(exp.amount || 0);
+        const amt = parseFloat(exp.amount || 0);
+        const expDate = new Date(exp.date);
+        
+        if (expDate >= startOfCurrentMonth && expDate < new Date(now.getFullYear(), now.getMonth() + 1, 1)) {
+            thisMonthTotal += amt;
+        }
+        if (expDate >= startOfToday) {
+            todayTotal += amt;
         }
     });
+
+    const categoryTotals = {};
 
     const badgeMap = {
         'Rent':        'bg-indigo-light text-indigo',
@@ -347,6 +358,8 @@ function renderExpenses() {
         tbody.innerHTML = filtered.map(exp => {
             const amt        = parseFloat(exp.amount || 0);
             totalSelectedRange += amt;
+            const cat = exp.category || 'Other';
+            categoryTotals[cat] = (categoryTotals[cat] || 0) + amt;
             const badgeClass = badgeMap[exp.category] || 'bg-gray-100 text-gray-800';
             const expId      = exp.id || exp.expense_id;
 
@@ -378,7 +391,18 @@ function renderExpenses() {
         }).join('');
     }
 
+    let topCatName = '-';
+    let topCatMax = -1;
+    for (const cat in categoryTotals) {
+        if (categoryTotals[cat] > topCatMax) {
+            topCatMax = categoryTotals[cat];
+            topCatName = cat;
+        }
+    }
+
     document.getElementById('cardTotalExpenses').innerText     = `₹${totalSelectedRange.toLocaleString('en-IN', { minimumFractionDigits: 2 })}`;
+    document.getElementById('cardTopCategory').innerText       = topCatName;
+    document.getElementById('cardTodayExpenses').innerText     = `₹${todayTotal.toLocaleString('en-IN', { minimumFractionDigits: 2 })}`;
     document.getElementById('cardThisMonthExpenses').innerText = `₹${thisMonthTotal.toLocaleString('en-IN', { minimumFractionDigits: 2 })}`;
 
     feather.replace();

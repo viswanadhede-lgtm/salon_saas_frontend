@@ -626,14 +626,35 @@
             </div>
 
             <!-- Summary Cards -->
-            <div class="summary-cards" style="margin-bottom: 1.5rem; display: grid; grid-template-columns: repeat(2, 1fr); gap: 1.5rem;">
+            <div class="summary-cards" style="margin-bottom: 1.5rem; display: grid; grid-template-columns: repeat(4, 1fr); gap: 1.5rem;">
+                <!-- Dynamic: Respect Filters -->
                 <div class="card stat-card">
                     <div class="stat-icon bg-indigo-light">
                         <i data-feather="dollar-sign" class="text-indigo"></i>
                     </div>
                     <div class="stat-details">
-                        <p class="stat-label">Total Expenses (Selected Range)</p>
+                        <p class="stat-label">Total Expenses</p>
                         <h3 class="stat-value" id="cardTotalExpenses">₹0</h3>
+                    </div>
+                </div>
+                <div class="card stat-card">
+                    <div class="stat-icon bg-blue-light">
+                        <i data-feather="bar-chart-2" class="text-blue"></i>
+                    </div>
+                    <div class="stat-details">
+                        <p class="stat-label">Top Expense Category</p>
+                        <h3 class="stat-value" id="cardTopCategory">-</h3>
+                    </div>
+                </div>
+                
+                <!-- Static: Ignore Filters -->
+                <div class="card stat-card">
+                    <div class="stat-icon bg-rose-light">
+                        <i data-feather="clock" class="text-rose"></i>
+                    </div>
+                    <div class="stat-details">
+                        <p class="stat-label">Today's Expenses</p>
+                        <h3 class="stat-value" id="cardTodayExpenses">₹0</h3>
                     </div>
                 </div>
                 <div class="card stat-card">
