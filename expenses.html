@@ -799,6 +799,22 @@
         </div>
     </div>
 
+    <!-- View Expense Notes Modal -->
+    <div class="modal-overlay" id="viewExpenseNotesModal" onclick="if(event.target === this) window.closeExpenseNotesModal();">
+        <div class="modal-container" style="max-width: 500px;">
+            <div class="modal-header">
+                <h2>Expense Notes</h2>
+                <button class="icon-btn" onclick="window.closeExpenseNotesModal()"><i data-feather="x"></i></button>
+            </div>
+            <div class="modal-body" style="padding: 1.5rem; white-space: pre-wrap; font-size: 0.95rem; color: #374151; line-height: 1.5;" id="expenseNotesContent">
+                <!-- Notes will populate here -->
+            </div>
+            <div class="modal-footer" style="padding-top: 0; padding-bottom: 24px;">
+                <button class="btn btn-secondary" onclick="window.closeExpenseNotesModal()">Close</button>
+            </div>
+        </div>
+    </div>
+
         <script src="dashboard.js"></script>
     <script src="config/feature-registry.js" type="module"></script>
     <script src="config/api.js" type="module"></script>
