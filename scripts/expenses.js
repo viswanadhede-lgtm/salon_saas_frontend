@@ -500,17 +500,15 @@ function renderExpenses() {
                     <td><span title="${fullName}" style="cursor:help;">${firstName}</span></td>
                     <td class="text-right">
                         <div style="display:flex; gap:6px; justify-content:flex-end; align-items:center;">
-                            <button class="icon-btn" title="Edit Expense"
-                                data-sub-feature="expenses_update"
+                            <button data-sub-feature="expenses_update"
                                 onclick="window.editExpense('${expId}')"
-                                style="color:#3b82f6; border:1px solid #e2e8f0; border-radius:6px; padding:5px; background:#fff;">
-                                <i data-feather="edit-2" style="width:15px;height:15px;"></i>
+                                style="display:inline-flex; align-items:center; gap:5px; padding:5px 12px; background:#eff6ff; color:#3b82f6; border:1px solid #bfdbfe; border-radius:7px; font-size:0.8rem; font-weight:600; cursor:pointer;">
+                                <i data-feather="edit-2" style="width:13px;height:13px;"></i> Edit
                             </button>
-                            <button class="icon-btn text-danger" title="Delete Expense"
-                                data-sub-feature="expenses_delete"
+                            <button data-sub-feature="expenses_delete"
                                 onclick="window.deleteExpense('${expId}')"
-                                style="border:1px solid #e2e8f0; border-radius:6px; padding:5px; background:#fff;">
-                                <i data-feather="trash-2" style="width:15px;height:15px;"></i>
+                                style="display:inline-flex; align-items:center; gap:5px; padding:5px 12px; background:#fef2f2; color:#ef4444; border:1px solid #fecaca; border-radius:7px; font-size:0.8rem; font-weight:600; cursor:pointer;">
+                                <i data-feather="trash-2" style="width:13px;height:13px;"></i> Delete
                             </button>
                         </div>
                     </td>
