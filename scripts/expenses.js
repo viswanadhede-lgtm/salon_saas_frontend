@@ -490,12 +490,12 @@ function renderExpenses() {
                     <td>${formattedDate}</td>
                     <td><span class="status-badge ${badgeClass}">${exp.category || 'Other'}</span></td>
                     <td style="font-weight: 600;">₹${amt.toLocaleString('en-IN', { minimumFractionDigits: 2 })}</td>
-                    <td class="text-center">
+                    <td class="text-center" style="text-align: center; vertical-align: middle;">
                         ${exp.notes ? `
                         <button class="icon-btn mx-auto" title="View Notes" onclick="window.viewExpenseNotes('${expId}')" style="background:#f8fafc; border:1px solid #e2e8f0; border-radius:6px; padding:6px; margin: 0 auto; display: block;">
                             <i data-feather="file-text" style="width:16px;height:16px;color:#64748b;"></i>
                         </button>
-                        ` : '<span class="text-muted" style="font-weight:500;">N/A</span>'}
+                        ` : '<span class="text-muted" style="font-weight:500; display:block; text-align:center; width:100%;">N/A</span>'}
                     </td>
                     <td><span title="${fullName}" style="cursor:help;">${firstName}</span></td>
                     <td class="text-right">
