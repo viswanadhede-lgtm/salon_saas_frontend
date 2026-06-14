@@ -34,22 +34,30 @@ console.log('Expenses module loaded (Supabase)');
 feather.replace();
 
 const dateRangeSelect = document.getElementById('expensesDateRange');
-const customDateWrap = document.getElementById('expensesCustomDateWrapper');
 const customStart = document.getElementById('expensesCustomStart');
 const customEnd = document.getElementById('expensesCustomEnd');
 
 dateRangeSelect.addEventListener('change', () => {
-    if (dateRangeSelect.value === 'custom') {
-        customDateWrap.style.display = 'flex';
-    } else {
-        customDateWrap.style.display = 'none';
-        renderExpenses();
-    }
+    // Rely on renderExpenses
+    renderExpenses();
 });
 
 customStart.addEventListener('change', renderExpenses);
 customEnd.addEventListener('change', renderExpenses);
 document.getElementById('filterCategory').addEventListener('change', renderExpenses);
+
+// Click outside close
+document.addEventListener('click', (e) => {
+    const menus = ['exDateMenu'];
+    menus.forEach(id => {
+        const menu = document.getElementById(id);
+        if (menu && menu.style.display === 'block') {
+            if (!menu.contains(e.target) && e.target.id !== 'exDateBtn' && !document.getElementById('exDateBtn').contains(e.target)) {
+                menu.style.display = 'none';
+            }
+        }
+    });
+});
 
 document.getElementById('addExpenseForm').addEventListener('submit', (e) => {
     e.preventDefault();

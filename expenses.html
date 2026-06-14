@@ -607,25 +607,63 @@
                     <p class="text-muted">Manage and track your business expenses</p>
                 </div>
                 <div class="content-actions" style="display: flex; gap: 12px; align-items: center;">
-                    <div class="date-filter-wrap" style="display: flex; gap: 8px; align-items: center;">
-                        <div style="position: relative;">
-                            <i data-feather="calendar" style="position: absolute; left: 12px; top: 50%; transform: translateY(-50%); width: 14px; color: #64748b;"></i>
-                            <select id="expensesDateRange" class="filter-select">
-                                <option value="this_month">This Month</option>
-                                <option value="last_month">Last Month</option>
-                                <option value="3months">Last 3 Months</option>
-                                <option value="6months">Last 6 Months</option>
-                                <option value="12months">Last 12 Months</option>
-                                <option value="all">All Time</option>
-                                <option value="custom">Custom Range</option>
-                            </select>
-                        </div>
-                        <div id="expensesCustomDateWrapper" style="display:none; gap:8px; align-items:center;">
-                            <input type="date" id="expensesCustomStart" class="filter-select" style="padding-left:12px !important; min-width:130px; background-image:none;">
-                            <span style="color:#64748b; font-size:0.875rem;">to</span>
-                            <input type="date" id="expensesCustomEnd" class="filter-select" style="padding-left:12px !important; min-width:130px; background-image:none;">
+                    <!-- Advanced Date Filter Modal Wrapper -->
+                    <div style="position:relative;">
+                        <button id="exDateBtn" class="filter-select" style="height:42px; display:flex; align-items:center; gap:6px; padding:0 12px 0 16px; background-color:#fff; border:1px solid #e2e8f0; border-radius:8px; box-shadow:0 1px 2px rgba(0,0,0,0.05); color:#334155; font-size:0.875rem; min-width:160px; justify-content:space-between; cursor:pointer;"
+                            onclick="event.stopPropagation(); var m=document.getElementById('exDateMenu'); m.style.display=(m.style.display==='block'?'none':'block');">
+                            <span style="display:flex; align-items:center; gap:6px;">
+                                <i data-feather="calendar" style="width:14px; height:14px; color:#64748b;"></i>
+                                <span id="exDateLabel">This Month</span>
+                            </span>
+                            <i data-feather="chevron-down" style="width:14px; height:14px; color:#64748b;"></i>
+                        </button>
+                        <div id="exDateMenu" style="display:none; position:absolute; top:48px; right:0; width:320px; background:#fff; border:1px solid #e2e8f0; border-radius:10px; box-shadow:0 8px 24px rgba(15,23,42,0.1); padding:6px 0; z-index:9999;">
+                            <button onclick="event.stopPropagation(); document.getElementById('expensesDateRange').value='this_month'; document.getElementById('expensesDateRange').dispatchEvent(new Event('change')); document.getElementById('exDateLabel').innerText='This Month'; document.getElementById('exDateMenu').style.display='none';"
+                                style="width:100%; padding:9px 16px; text-align:left; border:none; background:none; font-size:0.85rem; color:#374151; cursor:pointer;" onmouseover="this.style.background='#f8fafc'" onmouseout="this.style.background='none'">This Month</button>
+                            <button onclick="event.stopPropagation(); document.getElementById('expensesDateRange').value='last_month'; document.getElementById('expensesDateRange').dispatchEvent(new Event('change')); document.getElementById('exDateLabel').innerText='Last Month'; document.getElementById('exDateMenu').style.display='none';"
+                                style="width:100%; padding:9px 16px; text-align:left; border:none; background:none; font-size:0.85rem; color:#374151; cursor:pointer;" onmouseover="this.style.background='#f8fafc'" onmouseout="this.style.background='none'">Last Month</button>
+                            <button onclick="event.stopPropagation(); document.getElementById('expensesDateRange').value='3months'; document.getElementById('expensesDateRange').dispatchEvent(new Event('change')); document.getElementById('exDateLabel').innerText='Last 3 Months'; document.getElementById('exDateMenu').style.display='none';"
+                                style="width:100%; padding:9px 16px; text-align:left; border:none; background:none; font-size:0.85rem; color:#374151; cursor:pointer;" onmouseover="this.style.background='#f8fafc'" onmouseout="this.style.background='none'">Last 3 Months</button>
+                            <button onclick="event.stopPropagation(); document.getElementById('expensesDateRange').value='6months'; document.getElementById('expensesDateRange').dispatchEvent(new Event('change')); document.getElementById('exDateLabel').innerText='Last 6 Months'; document.getElementById('exDateMenu').style.display='none';"
+                                style="width:100%; padding:9px 16px; text-align:left; border:none; background:none; font-size:0.85rem; color:#374151; cursor:pointer;" onmouseover="this.style.background='#f8fafc'" onmouseout="this.style.background='none'">Last 6 Months</button>
+                            <button onclick="event.stopPropagation(); document.getElementById('expensesDateRange').value='12months'; document.getElementById('expensesDateRange').dispatchEvent(new Event('change')); document.getElementById('exDateLabel').innerText='Last 12 Months'; document.getElementById('exDateMenu').style.display='none';"
+                                style="width:100%; padding:9px 16px; text-align:left; border:none; background:none; font-size:0.85rem; color:#374151; cursor:pointer;" onmouseover="this.style.background='#f8fafc'" onmouseout="this.style.background='none'">Last 12 Months</button>
+                            <button onclick="event.stopPropagation(); document.getElementById('expensesDateRange').value='all'; document.getElementById('expensesDateRange').dispatchEvent(new Event('change')); document.getElementById('exDateLabel').innerText='All Time'; document.getElementById('exDateMenu').style.display='none';"
+                                style="width:100%; padding:9px 16px; text-align:left; border:none; background:none; font-size:0.85rem; color:#374151; cursor:pointer;" onmouseover="this.style.background='#f8fafc'" onmouseout="this.style.background='none'">All Time</button>
+                            
+                            <button onclick="event.stopPropagation(); var p=document.getElementById('exCustomRange'); p.style.display=p.style.display==='none'?'block':'none';"
+                                style="width:100%; padding:9px 16px; text-align:left; border:none; background:none; font-size:0.85rem; color:#374151; cursor:pointer; border-top:1px solid #f1f5f9;" onmouseover="this.style.background='#f8fafc'" onmouseout="this.style.background='none'">Custom Range...</button>
+                            <div id="exCustomRange" style="display:none; padding:12px 14px; border-top:1px solid #f1f5f9;">
+                                <div style="display:grid; grid-template-columns:1fr 1fr; gap:8px; margin-bottom:10px;">
+                                    <div>
+                                        <label style="font-size:0.72rem; color:#64748b; font-weight:600; display:block; margin-bottom:4px;">From</label>
+                                        <input type="date" id="expensesCustomStart" style="width:100%; border:1px solid #e2e8f0; border-radius:6px; padding:5px 6px; font-size:0.78rem; outline:none; box-sizing:border-box;">
+                                    </div>
+                                    <div>
+                                        <label style="font-size:0.72rem; color:#64748b; font-weight:600; display:block; margin-bottom:4px;">To</label>
+                                        <input type="date" id="expensesCustomEnd" style="width:100%; border:1px solid #e2e8f0; border-radius:6px; padding:5px 6px; font-size:0.78rem; outline:none; box-sizing:border-box;">
+                                    </div>
+                                </div>
+                                <div style="display:grid; grid-template-columns:1fr 1fr; gap:8px;">
+                                    <button onclick="event.stopPropagation(); document.getElementById('expensesCustomStart').value=''; document.getElementById('expensesCustomEnd').value=''; document.getElementById('expensesDateRange').value='all'; document.getElementById('expensesDateRange').dispatchEvent(new Event('change')); document.getElementById('exDateLabel').innerText='All Time'; document.getElementById('exDateMenu').style.display='none';"
+                                        style="padding:7px 0; background:#f8fafc; color:#64748b; border:1px solid #e2e8f0; border-radius:6px; font-size:0.8rem; font-weight:600; cursor:pointer;">Reset</button>
+                                    <button onclick="event.stopPropagation(); document.getElementById('expensesDateRange').value='custom'; document.getElementById('expensesDateRange').dispatchEvent(new Event('change')); document.getElementById('exDateLabel').innerText='Custom'; document.getElementById('exDateMenu').style.display='none';"
+                                        style="padding:7px 0; background:#1e3a8a; color:#fff; border:none; border-radius:6px; font-size:0.8rem; font-weight:600; cursor:pointer;">Apply</button>
+                                </div>
+                            </div>
                         </div>
                     </div>
+
+                    <!-- Hidden actual select for JS bindings -->
+                    <select id="expensesDateRange" style="display:none;">
+                        <option value="this_month" selected>This Month</option>
+                        <option value="last_month">Last Month</option>
+                        <option value="3months">Last 3 Months</option>
+                        <option value="6months">Last 6 Months</option>
+                        <option value="12months">Last 12 Months</option>
+                        <option value="all">All Time</option>
+                        <option value="custom">Custom Range</option>
+                    </select>
                     <button class="btn btn-primary" onclick="window.openAddExpenseModal()" data-sub-feature="expenses_create" style="display: flex; align-items: center; gap: 8px;">
                         <i data-feather="plus"></i>
                         Add Expense
