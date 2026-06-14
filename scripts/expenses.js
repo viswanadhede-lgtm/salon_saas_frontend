@@ -211,7 +211,8 @@ window.submitExpense = async () => {
                     category,
                     amount,
                     notes:      notes || null,
-                    added_by:   user.id,
+                    staff_id:   user.id,
+                    staff_name: user.name || user.first_name || 'Admin',
                     status:     'active',
                     created_at: new Date().toISOString(),
                     updated_at: new Date().toISOString()
@@ -451,7 +452,7 @@ function renderExpenses() {
                         </button>
                         ` : '<span class="text-muted">-</span>'}
                     </td>
-                    <td>${exp.added_by || 'Admin'}</td>
+                    <td>${exp.staff_name || 'Admin'}</td>
                     <td class="text-right">
                         <div style="display:flex; gap:6px; justify-content:flex-end; align-items:center;">
                             <button class="icon-btn" title="Edit Expense"
