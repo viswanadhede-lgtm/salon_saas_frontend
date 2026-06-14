@@ -609,7 +609,7 @@
                 <div class="content-actions" style="display: flex; gap: 12px; align-items: center;">
                     <!-- Advanced Date Filter Modal Wrapper -->
                     <div style="position:relative;">
-                        <button id="exDateBtn" class="filter-select" style="min-height:42px; display:flex; align-items:center; gap:6px; padding:0 12px 0 16px; background-color:#fff; border:1px solid #e2e8f0; border-radius:8px; box-shadow:0 1px 2px rgba(0,0,0,0.05); color:#334155; font-size:0.875rem; min-width:160px; justify-content:space-between; cursor:pointer;"
+                        <button id="exDateBtn" style="background-image:none !important; min-height:42px; display:flex; align-items:center; gap:6px; padding:0 12px 0 16px; background-color:#fff; border:1px solid #e2e8f0; border-radius:8px; box-shadow:0 1px 2px rgba(0,0,0,0.05); color:#334155; font-size:0.875rem; min-width:160px; justify-content:space-between; cursor:pointer;"
                             onclick="event.stopPropagation(); var m=document.getElementById('exDateMenu'); m.style.display=(m.style.display==='block'?'none':'block');">
                             <span style="display:flex; align-items:center; gap:6px;">
                                 <i data-feather="calendar" style="width:14px; height:14px; color:#64748b; flex-shrink:0;"></i>
@@ -618,17 +618,17 @@
                             <i data-feather="chevron-down" style="width:14px; height:14px; color:#64748b; flex-shrink:0;"></i>
                         </button>
                         <div id="exDateMenu" style="display:none; position:absolute; top:48px; right:0; width:320px; background:#fff; border:1px solid #e2e8f0; border-radius:10px; box-shadow:0 8px 24px rgba(15,23,42,0.1); padding:6px 0; z-index:9999;">
-                            <button onclick="event.stopPropagation(); document.getElementById('expensesDateRange').value='this_month'; document.getElementById('expensesDateRange').dispatchEvent(new Event('change')); document.getElementById('exDateLabel').innerText='This Month'; document.getElementById('exDateMenu').style.display='none';"
+                            <button onclick="event.stopPropagation(); window.setExpensesDateFilter('this_month');"
                                 style="width:100%; padding:9px 16px; text-align:left; border:none; background:none; font-size:0.85rem; color:#374151; cursor:pointer;" onmouseover="this.style.background='#f8fafc'" onmouseout="this.style.background='none'">This Month</button>
-                            <button onclick="event.stopPropagation(); document.getElementById('expensesDateRange').value='last_month'; document.getElementById('expensesDateRange').dispatchEvent(new Event('change')); document.getElementById('exDateLabel').innerText='Last Month'; document.getElementById('exDateMenu').style.display='none';"
+                            <button onclick="event.stopPropagation(); window.setExpensesDateFilter('last_month');"
                                 style="width:100%; padding:9px 16px; text-align:left; border:none; background:none; font-size:0.85rem; color:#374151; cursor:pointer;" onmouseover="this.style.background='#f8fafc'" onmouseout="this.style.background='none'">Last Month</button>
-                            <button onclick="event.stopPropagation(); document.getElementById('expensesDateRange').value='3months'; document.getElementById('expensesDateRange').dispatchEvent(new Event('change')); document.getElementById('exDateLabel').innerText='Last 3 Months'; document.getElementById('exDateMenu').style.display='none';"
+                            <button onclick="event.stopPropagation(); window.setExpensesDateFilter('3months');"
                                 style="width:100%; padding:9px 16px; text-align:left; border:none; background:none; font-size:0.85rem; color:#374151; cursor:pointer;" onmouseover="this.style.background='#f8fafc'" onmouseout="this.style.background='none'">Last 3 Months</button>
-                            <button onclick="event.stopPropagation(); document.getElementById('expensesDateRange').value='6months'; document.getElementById('expensesDateRange').dispatchEvent(new Event('change')); document.getElementById('exDateLabel').innerText='Last 6 Months'; document.getElementById('exDateMenu').style.display='none';"
+                            <button onclick="event.stopPropagation(); window.setExpensesDateFilter('6months');"
                                 style="width:100%; padding:9px 16px; text-align:left; border:none; background:none; font-size:0.85rem; color:#374151; cursor:pointer;" onmouseover="this.style.background='#f8fafc'" onmouseout="this.style.background='none'">Last 6 Months</button>
-                            <button onclick="event.stopPropagation(); document.getElementById('expensesDateRange').value='12months'; document.getElementById('expensesDateRange').dispatchEvent(new Event('change')); document.getElementById('exDateLabel').innerText='Last 12 Months'; document.getElementById('exDateMenu').style.display='none';"
+                            <button onclick="event.stopPropagation(); window.setExpensesDateFilter('12months');"
                                 style="width:100%; padding:9px 16px; text-align:left; border:none; background:none; font-size:0.85rem; color:#374151; cursor:pointer;" onmouseover="this.style.background='#f8fafc'" onmouseout="this.style.background='none'">Last 12 Months</button>
-                            <button onclick="event.stopPropagation(); document.getElementById('expensesDateRange').value='all'; document.getElementById('expensesDateRange').dispatchEvent(new Event('change')); document.getElementById('exDateLabel').innerText='All Time'; document.getElementById('exDateMenu').style.display='none';"
+                            <button onclick="event.stopPropagation(); window.setExpensesDateFilter('all');"
                                 style="width:100%; padding:9px 16px; text-align:left; border:none; background:none; font-size:0.85rem; color:#374151; cursor:pointer;" onmouseover="this.style.background='#f8fafc'" onmouseout="this.style.background='none'">All Time</button>
                             
                             <button onclick="event.stopPropagation(); var p=document.getElementById('exCustomRange'); p.style.display=p.style.display==='none'?'block':'none';"
@@ -645,9 +645,9 @@
                                     </div>
                                 </div>
                                 <div style="display:grid; grid-template-columns:1fr 1fr; gap:8px;">
-                                    <button onclick="event.stopPropagation(); document.getElementById('expensesCustomStart').value=''; document.getElementById('expensesCustomEnd').value=''; document.getElementById('expensesDateRange').value='all'; document.getElementById('expensesDateRange').dispatchEvent(new Event('change')); document.getElementById('exDateLabel').innerText='All Time'; document.getElementById('exDateMenu').style.display='none';"
+                                    <button onclick="event.stopPropagation(); document.getElementById('expensesCustomStart').value=''; document.getElementById('expensesCustomEnd').value=''; window.setExpensesDateFilter('all');"
                                         style="padding:7px 0; background:#f8fafc; color:#64748b; border:1px solid #e2e8f0; border-radius:6px; font-size:0.8rem; font-weight:600; cursor:pointer;">Reset</button>
-                                    <button onclick="event.stopPropagation(); document.getElementById('expensesDateRange').value='custom'; document.getElementById('expensesDateRange').dispatchEvent(new Event('change')); document.getElementById('exDateLabel').innerHTML=window.formatExCustomRange(); document.getElementById('exDateMenu').style.display='none';"
+                                    <button onclick="event.stopPropagation(); window.setExpensesDateFilter('custom');"
                                         style="padding:7px 0; background:#1e3a8a; color:#fff; border:none; border-radius:6px; font-size:0.8rem; font-weight:600; cursor:pointer;">Apply</button>
                                 </div>
                             </div>

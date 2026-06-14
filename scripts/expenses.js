@@ -33,6 +33,11 @@ const getUserInfo = () => {
 console.log('Expenses module loaded (Supabase)');
 feather.replace();
 
+document.addEventListener('DOMContentLoaded', () => {
+    // initialize standard dynamic formatting natively
+    window.setExpensesDateFilter('this_month');
+});
+
 const dateRangeSelect = document.getElementById('expensesDateRange');
 const customStart = document.getElementById('expensesCustomStart');
 const customEnd = document.getElementById('expensesCustomEnd');
@@ -58,10 +63,47 @@ window.formatExCustomDate = (dateStr) => {
 window.formatExCustomRange = () => {
     const start = document.getElementById('expensesCustomStart').value;
     const end = document.getElementById('expensesCustomEnd').value;
-    if (!start && !end) return 'Custom';
+    if (!start && !end) return 'Custom Range';
     
     const badgeStyle = "background:#f1f5f9; border:1px solid #cbd5e1; border-radius:6px; padding:2px 8px; font-weight:600; color:#475569; font-size:0.8rem;";
     return `<span style="${badgeStyle}">${window.formatExCustomDate(start)}</span> <span style="font-size:0.75rem; color:#94a3b8; font-style:italic;">to</span> <span style="${badgeStyle}">${window.formatExCustomDate(end)}</span>`;
+};
+
+window.setExpensesDateFilter = (val) => {
+    document.getElementById('expensesDateRange').value = val;
+    document.getElementById('expensesDateRange').dispatchEvent(new Event('change'));
+    
+    const labelEl = document.getElementById('exDateLabel');
+    const now = new Date();
+    const currentMonthLong = now.toLocaleString('en-US', { month: 'long' });
+    const currentMonthShort = now.toLocaleString('en-US', { month: 'short' });
+    const currentYear = now.getFullYear();
+
+    if (val === 'this_month') {
+        labelEl.innerText = `This Month - ${currentMonthLong} ${currentYear}`;
+    } else if (val === 'last_month') {
+        const lastM = new Date();
+        lastM.setMonth(now.getMonth() - 1);
+        labelEl.innerText = `Last Month - ${lastM.toLocaleString('en-US', { month: 'long' })} ${lastM.getFullYear()}`;
+    } else if (val === '3months') {
+        const past = new Date();
+        past.setMonth(now.getMonth() - 3);
+        labelEl.innerText = `Last 3 Months - ${past.toLocaleString('en-US', { month: 'short' })} ${past.getFullYear()} to ${currentMonthShort} ${currentYear}`;
+    } else if (val === '6months') {
+        const past = new Date();
+        past.setMonth(now.getMonth() - 6);
+        labelEl.innerText = `Last 6 Months - ${past.toLocaleString('en-US', { month: 'short' })} ${past.getFullYear()} to ${currentMonthShort} ${currentYear}`;
+    } else if (val === '12months') {
+        const past = new Date();
+        past.setFullYear(now.getFullYear() - 1);
+        labelEl.innerText = `Last 12 Months - ${past.toLocaleString('en-US', { month: 'short' })} ${past.getFullYear()} to ${currentMonthShort} ${currentYear}`;
+    } else if (val === 'all') {
+        labelEl.innerText = 'All Time';
+    } else if (val === 'custom') {
+        labelEl.innerHTML = window.formatExCustomRange();
+    }
+    
+    document.getElementById('exDateMenu').style.display = 'none';
 };
 
 customStart.addEventListener('change', renderExpenses);
