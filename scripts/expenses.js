@@ -420,7 +420,7 @@ function renderExpenses() {
 
     document.getElementById('cardTotalExpenses').innerText     = `₹${totalSelectedRange.toLocaleString('en-IN', { minimumFractionDigits: 2 })}`;
     document.getElementById('cardTopCategory').innerHTML       = topCatMax > 0 
-        ? `${topCatName} <span style="font-size:0.75em; font-weight:600; color:#64748b; margin-left:6px;">- ₹${topCatMax.toLocaleString('en-IN', { minimumFractionDigits: 2 })}</span>`
+        ? `<div style="font-size:1.1rem; margin-bottom:2px;">${topCatName}</div><div style="font-size:0.8rem; font-weight:600; color:#64748b;">₹${topCatMax.toLocaleString('en-IN', { minimumFractionDigits: 2 })}</div>`
         : '-';
     document.getElementById('cardTodayExpenses').innerText     = `₹${todayTotal.toLocaleString('en-IN', { minimumFractionDigits: 2 })}`;
     document.getElementById('cardThisMonthExpenses').innerText = `₹${thisMonthTotal.toLocaleString('en-IN', { minimumFractionDigits: 2 })}`;

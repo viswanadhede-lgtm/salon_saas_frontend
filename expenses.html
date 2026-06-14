@@ -627,25 +627,6 @@
 
             <!-- Summary Cards -->
             <div class="summary-cards" style="margin-bottom: 1.5rem; display: grid; grid-template-columns: repeat(4, 1fr); gap: 1.5rem;">
-                <!-- Dynamic: Respect Filters -->
-                <div class="card stat-card">
-                    <div class="stat-icon bg-indigo-light">
-                        <i data-feather="dollar-sign" class="text-indigo"></i>
-                    </div>
-                    <div class="stat-details">
-                        <p class="stat-label">Total Expenses</p>
-                        <h3 class="stat-value" id="cardTotalExpenses">₹0</h3>
-                    </div>
-                </div>
-                <div class="card stat-card">
-                    <div class="stat-icon bg-blue-light">
-                        <i data-feather="bar-chart-2" class="text-blue"></i>
-                    </div>
-                    <div class="stat-details">
-                        <p class="stat-label">Top Expense Category</p>
-                        <h3 class="stat-value" id="cardTopCategory">-</h3>
-                    </div>
-                </div>
                 
                 <!-- Static: Ignore Filters -->
                 <div class="card stat-card">
@@ -664,6 +645,26 @@
                     <div class="stat-details">
                         <p class="stat-label">This Month Expenses</p>
                         <h3 class="stat-value" id="cardThisMonthExpenses">₹0</h3>
+                    </div>
+                </div>
+
+                <!-- Dynamic: Respect Filters -->
+                <div class="card stat-card">
+                    <div class="stat-icon bg-indigo-light">
+                        <i data-feather="dollar-sign" class="text-indigo"></i>
+                    </div>
+                    <div class="stat-details">
+                        <p class="stat-label">Total Expenses (Selected Range)</p>
+                        <h3 class="stat-value" id="cardTotalExpenses">₹0</h3>
+                    </div>
+                </div>
+                <div class="card stat-card">
+                    <div class="stat-icon bg-blue-light">
+                        <i data-feather="bar-chart-2" class="text-blue"></i>
+                    </div>
+                    <div class="stat-details">
+                        <p class="stat-label">Top Expense Category</p>
+                        <h3 class="stat-value" id="cardTopCategory" style="line-height: 1.25; margin-top:2px;">-</h3>
                     </div>
                 </div>
             </div>
@@ -693,7 +694,7 @@
                                 <th>Date</th>
                                 <th>Category</th>
                                 <th>Amount</th>
-                                <th class="text-center">Notes</th>
+                                <th style="text-align: center;">Notes</th>
                                 <th>Added By</th>
                                 <th class="text-right">Actions</th>
                             </tr>
