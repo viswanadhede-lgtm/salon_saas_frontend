@@ -88,6 +88,18 @@ window.closeAddExpenseModal = () => {
     document.getElementById('addExpenseModal').classList.remove('active');
 };
 
+window.viewExpenseNotes = (expenseId) => {
+    const expense = allExpenses.find(e => (e.id || e.expense_id) === expenseId || String(e.id || e.expense_id) === String(expenseId));
+    if (!expense) return;
+    
+    document.getElementById('expenseNotesContent').textContent = expense.notes || 'No notes provided.';
+    document.getElementById('viewExpenseNotesModal').classList.add('active');
+};
+
+window.closeExpenseNotesModal = () => {
+    document.getElementById('viewExpenseNotesModal').classList.remove('active');
+};
+
 // ─── CREATE / UPDATE Expense (Supabase) ───────────────────────────────────────
 window.submitExpense = async () => {
     const date     = document.getElementById('expenseDate').value;
@@ -368,7 +380,13 @@ function renderExpenses() {
                     <td>${new Date(exp.date).toLocaleDateString()}</td>
                     <td><span class="status-badge ${badgeClass}">${exp.category || 'Other'}</span></td>
                     <td style="font-weight: 600;">₹${amt.toLocaleString('en-IN', { minimumFractionDigits: 2 })}</td>
-                    <td class="text-muted" style="max-width:200px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;" title="${exp.notes || ''}">${exp.notes || '-'}</td>
+                    <td class="text-center">
+                        ${exp.notes ? `
+                        <button class="icon-btn mx-auto" title="View Notes" onclick="window.viewExpenseNotes('${expId}')" style="background:#f8fafc; border:1px solid #e2e8f0; border-radius:6px; padding:6px; margin: 0 auto; display: block;">
+                            <i data-feather="file-text" style="width:16px;height:16px;color:#64748b;"></i>
+                        </button>
+                        ` : '<span class="text-muted">-</span>'}
+                    </td>
                     <td>${exp.added_by || 'Admin'}</td>
                     <td class="text-right">
                         <div style="display:flex; gap:6px; justify-content:flex-end; align-items:center;">
