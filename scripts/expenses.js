@@ -65,7 +65,9 @@ window.openAddExpenseModal = () => {
     editingExpenseId = null;
 
     // Reset form
-    document.getElementById('expenseDate').value     = new Date().toISOString().split('T')[0];
+    const todayStr = new Date().toISOString().split('T')[0];
+    document.getElementById('expenseDate').value     = todayStr;
+    document.getElementById('expenseDate').max       = todayStr;
     document.getElementById('expenseCategory').value = '';
     document.getElementById('expenseAmount').value   = '';
     document.getElementById('expenseNotes').value    = '';
@@ -86,6 +88,7 @@ window.editExpense = (expenseId) => {
 
     // Pre-fill the form
     document.getElementById('expenseDate').value     = expense.date ? expense.date.split('T')[0] : '';
+    document.getElementById('expenseDate').max       = new Date().toISOString().split('T')[0];
     document.getElementById('expenseCategory').value = expense.category || '';
     document.getElementById('expenseAmount').value   = expense.amount || '';
     document.getElementById('expenseNotes').value    = expense.notes || '';
