@@ -492,7 +492,7 @@ function renderExpenses() {
                         <button class="icon-btn mx-auto" title="View Notes" onclick="window.viewExpenseNotes('${expId}')" style="background:#f8fafc; border:1px solid #e2e8f0; border-radius:6px; padding:6px; margin: 0 auto; display: block;">
                             <i data-feather="file-text" style="width:16px;height:16px;color:#64748b;"></i>
                         </button>
-                        ` : '<span class="text-muted">-</span>'}
+                        ` : '<span class="text-muted" style="font-weight:500;">N/A</span>'}
                     </td>
                     <td>${exp.staff_name || 'Admin'}</td>
                     <td class="text-right">
