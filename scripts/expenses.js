@@ -42,6 +42,28 @@ dateRangeSelect.addEventListener('change', () => {
     renderExpenses();
 });
 
+window.formatExCustomDate = (dateStr) => {
+    if (!dateStr) return '...';
+    try {
+        const d = new Date(dateStr);
+        if (isNaN(d.getTime())) return '...';
+        const day = d.getDate();
+        const suffix = ["th", "st", "nd", "rd"][((day % 100) - 20) % 10] || ["th", "st", "nd", "rd"][day % 100] || "th";
+        const month = d.toLocaleString('en-US', { month: 'short' });
+        const year = d.getFullYear();
+        return `${day}${suffix} ${month} ${year}`;
+    } catch { return '...'; }
+};
+
+window.formatExCustomRange = () => {
+    const start = document.getElementById('expensesCustomStart').value;
+    const end = document.getElementById('expensesCustomEnd').value;
+    if (!start && !end) return 'Custom';
+    
+    const badgeStyle = "background:#f1f5f9; border:1px solid #cbd5e1; border-radius:6px; padding:2px 8px; font-weight:600; color:#475569; font-size:0.8rem;";
+    return `<span style="${badgeStyle}">${window.formatExCustomDate(start)}</span> <span style="font-size:0.75rem; color:#94a3b8; font-style:italic;">to</span> <span style="${badgeStyle}">${window.formatExCustomDate(end)}</span>`;
+};
+
 customStart.addEventListener('change', renderExpenses);
 customEnd.addEventListener('change', renderExpenses);
 document.getElementById('filterCategory').addEventListener('change', renderExpenses);
