@@ -435,10 +435,13 @@ function renderExpenses() {
             categoryTotals[cat] = (categoryTotals[cat] || 0) + amt;
             const badgeClass = badgeMap[exp.category] || 'bg-gray-100 text-gray-800';
             const expId      = exp.id || exp.expense_id;
+            
+            const expD = new Date(exp.date);
+            const formattedDate = `${String(expD.getDate()).padStart(2, '0')}-${String(expD.getMonth() + 1).padStart(2, '0')}-${expD.getFullYear()}`;
 
             return `
                 <tr>
-                    <td>${new Date(exp.date).toLocaleDateString()}</td>
+                    <td>${formattedDate}</td>
                     <td><span class="status-badge ${badgeClass}">${exp.category || 'Other'}</span></td>
                     <td style="font-weight: 600;">₹${amt.toLocaleString('en-IN', { minimumFractionDigits: 2 })}</td>
                     <td class="text-center">
