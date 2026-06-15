@@ -230,9 +230,20 @@ document.addEventListener('DOMContentLoaded', () => {
 
             if (error) throw error;
 
-            const upcomingData = (bookings || []).filter(b => !['completed', 'cancelled', 'no-show'].includes(b.status)).slice(0, 3);
-            const completedData = (bookings || []).filter(b => b.status === 'completed').slice(0, 3);
-            const noshowData = (bookings || []).filter(b => ['cancelled', 'no-show'].includes(b.status)).slice(0, 3);
+            const upcomingFull = (bookings || []).filter(b => !['completed', 'cancelled', 'no-show'].includes(b.status));
+            const completedFull = (bookings || []).filter(b => b.status === 'completed');
+            const noshowFull = (bookings || []).filter(b => ['cancelled', 'no-show'].includes(b.status));
+
+            const uBadge = document.getElementById('badgeUpcoming');
+            const cBadge = document.getElementById('badgeCompleted');
+            const nBadge = document.getElementById('badgeNoshow');
+            if (uBadge) uBadge.innerText = upcomingFull.length;
+            if (cBadge) cBadge.innerText = completedFull.length;
+            if (nBadge) nBadge.innerText = noshowFull.length;
+
+            const upcomingData = upcomingFull.slice(0, 3);
+            const completedData = completedFull.slice(0, 3);
+            const noshowData = noshowFull.slice(0, 3);
 
             const renderList = (container, list, emptyMsg) => {
                 if (list.length === 0) {
