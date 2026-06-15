@@ -1,5 +1,4 @@
 <!DOCTYPE html>
-<!DOCTYPE html>
 <html lang="en">
 
 <head>
@@ -281,6 +280,108 @@
                                     class="nav-text">Overview</span></a></li>
                         <li><a href="reports.html" class="submenu-link" data-feature="reports_access"><span class="submenu-bullet">&bull;</span><span
                                     class="nav-text">Reports</span></a></li>
+                        <li><a href="expenses.html" class="submenu-link" data-feature="analytics_expenses"><span class="submenu-bullet">&bull;</span><span class="nav-text">Expenses</span></a></li>
+                    </ul>
+                </li>
+                <li class="nav-item has-submenu" title="Settings">
+                    <div class="nav-link submenu-toggle"><i data-feather="settings" class="nav-icon"></i><span class="nav-text">Settings</span><i data-feather="chevron-down" class="submenu-arrow"></i></div>
+                    <ul class="submenu">
+                        <li><a href="company.html" class="submenu-link" data-feature="company_settings"><span class="submenu-bullet">&bull;</span><span class="nav-text">Company</span></a></li>
+                        <li><a href="branches.html" class="submenu-link" data-feature="branch_management"><span class="submenu-bullet">&bull;</span><span class="nav-text">Branches</span></a></li>
+                        <li><a href="users.html" class="submenu-link" data-feature="user_management"><span class="submenu-bullet">&bull;</span><span class="nav-text">Users</span></a></li>
+                        <li><a href="roles-permissions.html" class="submenu-link" data-feature="roles_permissions"><span class="submenu-bullet">&bull;</span><span class="nav-text">Roles &amp; Permissions</span></a></li>
+                        <li><a href="custom-fields.html" class="submenu-link" data-feature="custom_fields"><span class="submenu-bullet">&bull;</span><span class="nav-text">Custom Fields</span></a></li>
+                        <li><a href="billing-subscription.html" class="submenu-link" data-feature="billing_subscription_management"><span class="submenu-bullet">&bull;</span><span class="nav-text">Billing & Subscription</span></a></li>
+                    </ul>
+                </li>
+            </ul>
+        </nav>
+    </aside>
+
+    <!-- Main Wrapper -->
+    <div class="main-wrapper" id="mainContent">
+
+        <!-- Top Header Bar -->
+        <!-- Top Header Bar -->
+        <header class="top-header">
+            <div class="header-left">
+                <!-- Branch Switcher -->
+                <div class="branch-switcher">
+                    <i data-feather="map-pin" class="branch-icon"></i>
+                    <select id="branchSelect" class="branch-select">
+                        <option value="branch_1">Downtown Branch</option>
+                        <option value="branch_2">Uptown Spa</option>
+                    </select>
+                </div>
+            </div>
+
+            <div class="header-center">
+                <div class="search-bar">
+                    <i data-feather="search" class="search-icon"></i>
+                    <input type="text" placeholder="Search bookings, customers..." class="search-input">
+                </div>
+            </div>
+
+            <div class="header-right">
+                <!-- Quick Actions -->
+                <div class="quick-actions">
+                    <button class="qa-btn qa-primary" id="btnNewBooking">
+                        <i data-feather="calendar" class="qa-icon"></i>
+                        <span>New Booking</span>
+                    </button>
+                </div>
+                <div class="header-divider"></div>
+                <div class="plan-badge" id="headerPlanBadge">Growth</div>
+                <button class="icon-btn" title="Notifications">
+                    <i data-feather="bell"></i>
+                    <span class="notification-dot"></span>
+                </button>
+                <div class="user-profile" id="userProfileDropdown">
+                    <div class="avatar" id="avatarBtn">
+                        <img src="https://ui-avatars.com/api/?name=Admin+User&background=1E3A8A&color=fff" alt="User">
+                    </div>
+
+                    <!-- Profile Dropdown Menu -->
+                    <div class="profile-dropdown" id="profileMenu">
+                        <div class="dropdown-header">
+                            <p class="dropdown-name">Admin User</p>
+                            <p class="dropdown-role">Owner</p>
+                        </div>
+                        <div class="dropdown-divider"></div>
+                        <ul class="dropdown-list">
+                            <li>
+                                <a href="#" class="dropdown-item">
+                                    <i data-feather="user"></i>
+                                    <span>Profile</span>
+                                </a>
+                            </li>
+                            <li>
+                                <a href="#" class="dropdown-item">
+                                    <i data-feather="calendar"></i>
+                                    <span>Schedule</span>
+                                </a>
+                            </li>
+                            <li>
+                                <a href="#" class="dropdown-item">
+                                    <i data-feather="settings"></i>
+                                    <span>Settings</span>
+                                </a>
+                            </li>
+                            <li>
+                                <a href="#" class="dropdown-item">
+                                    <i data-feather="help-circle"></i>
+                                    <span>Support</span>
+                                </a>
+                            </li>
+                            <li>
+                                <a href="#" class="dropdown-item text-danger">
+                                    <i data-feather="log-out"></i>
+                                    <span>Logout</span>
+                                </a>
+                            </li>
+                        </ul>
+                    </div>
+                </div>
             </div>
         </header>
 
@@ -288,11 +389,11 @@
         <div id="profileBackdrop" class="profile-backdrop"></div>
 
         
-        <!-- Section Title Bar (Specific to Today's Bookings) -->
+        <!-- Section Title Bar (Specific to Upcoming Appointments) -->
         <div class="tb-page-header" style="border-bottom: 1px solid #e2e8f0; padding: 18px 32px 14px 32px; background: #fff;">
             <div style="display:flex; align-items:center; gap:14px;">
                 <div>
-                    <h1 style="font-size:1.45rem; font-weight:700; color:#1e293b; margin:0;">Today's Bookings</h1>
+                    <h1 style="font-size:1.45rem; font-weight:700; color:#1e293b; margin:0;">Upcoming Appointments</h1>
                     <p style="font-size:0.95rem; color:#64748b; margin:2px 0 0 0;" id="tbDateLabel"></p>
                 </div>
             </div>
@@ -1406,6 +1507,7 @@
     <script type="module" src="scripts/sub-features/sub-feature-gate.js"></script>
 </body>
 </html>
+
 
 
 
