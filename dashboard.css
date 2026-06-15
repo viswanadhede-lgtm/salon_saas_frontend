@@ -2926,3 +2926,27 @@
     overflow-y: auto !important;
     min-height: 0 !important;
 }
+
+/* -- Hide Scrollbars Globally for Cards ------------------------------
+   Keeps the scroll functionality but hides the unsightly scrollbar track.
+---------------------------------------------------------------------- */
+.appointments-card .card-body::-webkit-scrollbar,
+.product-sales-card .card-body::-webkit-scrollbar,
+.revenue-card .card-body::-webkit-scrollbar,
+.top-services-card .card-body::-webkit-scrollbar,
+.top-services-today .card-body::-webkit-scrollbar,
+.services-today-list::-webkit-scrollbar,
+.service-list::-webkit-scrollbar {
+    display: none; /* Safari and Chrome */
+}
+
+.appointments-card .card-body,
+.product-sales-card .card-body,
+.revenue-card .card-body,
+.top-services-card .card-body,
+.top-services-today .card-body,
+.services-today-list,
+.service-list {
+    -ms-overflow-style: none;  /* Internet Explorer 10+ */
+    scrollbar-width: none;  /* Firefox */
+}
