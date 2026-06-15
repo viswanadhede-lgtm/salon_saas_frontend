@@ -229,8 +229,8 @@ document.addEventListener('DOMContentLoaded', () => {
 
             if (error) throw error;
 
-            const upcomingData = (bookings || []).filter(b => !['completed', 'cancelled', 'no-show'].includes(b.status));
-            const completedData = (bookings || []).filter(b => b.status === 'completed');
+            const upcomingData = (bookings || []).filter(b => !['completed', 'cancelled', 'no-show'].includes(b.status)).slice(0, 3);
+            const completedData = (bookings || []).filter(b => b.status === 'completed').slice(0, 3);
 
             const renderList = (container, list, emptyMsg) => {
                 if (list.length === 0) {
@@ -326,7 +326,8 @@ document.addEventListener('DOMContentLoaded', () => {
 
             const sorted = Object.entries(serviceCounts)
                 .map(([name, count]) => ({ name, count }))
-                .sort((a, b) => b.count - a.count);
+                .sort((a, b) => b.count - a.count)
+                .slice(0, 5);
 
             const maxCount = sorted[0].count;
             const colors = ['#a78bfa', '#34d399', '#60a5fa', '#fb923c', '#f472b6', '#818cf8', '#fb7185'];
@@ -462,7 +463,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
             const sorted = Object.values(serviceMap)
                 .sort((a, b) => b.count - a.count)
-                .slice(0, 5);
+                .slice(0, 3);
 
             listContainer.innerHTML = sorted.map(s => `
                 <li>
