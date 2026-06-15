@@ -341,7 +341,8 @@
                         <div class="card-header">
                             <div class="header-tabs">
                                 <button class="tab-btn active" data-tab="upcoming">Upcoming Appointments</button>
-                                <button class="tab-btn" data-tab="completed">Completed Bookings Today</button>
+                                <button class="tab-btn" data-tab="completed">Completed Appointments</button>
+                                <button class="tab-btn" data-tab="noshow">No-shows & Cancellations</button>
                             </div>
                             <button class="btn-text">View All</button>
                         </div>
@@ -363,6 +364,16 @@
                                         <div class="centered-placeholder">
                                             <i data-feather="loader" style="width:24px; height:24px; animation:spin 2s linear infinite; margin-bottom:12px;"></i>
                                             Loading completed bookings...
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- Tab Pane 3: No-shows -->
+                                <div class="tab-pane" id="tabNoshow">
+                                    <div class="appointment-list" id="tabNoshowList">
+                                        <div class="centered-placeholder">
+                                            <i data-feather="loader" style="width:24px; height:24px; animation:spin 2s linear infinite; margin-bottom:12px;"></i>
+                                            Loading no-shows...
                                         </div>
                                     </div>
                                 </div>

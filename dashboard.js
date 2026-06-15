@@ -213,6 +213,7 @@ document.addEventListener('DOMContentLoaded', () => {
     async function fetchAndRenderAppointments(currentBranchId) {
         const upcomingList = document.getElementById('tabUpcomingList');
         const completedList = document.getElementById('tabCompletedList');
+        const noshowList = document.getElementById('tabNoshowList');
         if (!upcomingList || !completedList || !currentBranchId) return;
 
         try {
@@ -231,6 +232,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
             const upcomingData = (bookings || []).filter(b => !['completed', 'cancelled', 'no-show'].includes(b.status)).slice(0, 3);
             const completedData = (bookings || []).filter(b => b.status === 'completed').slice(0, 3);
+            const noshowData = (bookings || []).filter(b => ['cancelled', 'no-show'].includes(b.status)).slice(0, 3);
 
             const renderList = (container, list, emptyMsg) => {
                 if (list.length === 0) {
@@ -284,12 +286,15 @@ document.addEventListener('DOMContentLoaded', () => {
 
             renderList(upcomingList, upcomingData, "No upcoming appointments for today.");
             renderList(completedList, completedData, "No completed bookings yet today.");
+            if (noshowList) renderList(noshowList, noshowData, "No no-shows or cancellations recorded today.");
 
             if (window.feather) feather.replace();
 
         } catch (err) {
             console.error("Error fetching appointments:", err);
-            upcomingList.innerHTML = completedList.innerHTML = '<div class="centered-placeholder" style="color:#ef4444;">Error loading bookings.</div>';
+            if (upcomingList) upcomingList.innerHTML = '<div class="centered-placeholder" style="color:#ef4444;">Error loading bookings.</div>';
+            if (completedList) completedList.innerHTML = '<div class="centered-placeholder" style="color:#ef4444;">Error loading bookings.</div>';
+            if (noshowList) noshowList.innerHTML = '<div class="centered-placeholder" style="color:#ef4444;">Error loading bookings.</div>';
         }
     }
 
