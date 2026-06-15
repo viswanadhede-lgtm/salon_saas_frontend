@@ -2906,3 +2906,23 @@
 #phTableBody tr, #ppTableBody tr { background-color: #ffffff !important; }
 #phTableBody tr:hover, #ppTableBody tr:hover { background-color: #f1f5f9 !important; }
 
+
+/* -- Fixed Heights for Large Tab Cards -------------------------------
+   Locking Upcoming Appointments and Product Sales exclusively to ~380px
+   to prevent stretching the dashboard layout and pushing other rows down.
+---------------------------------------------------------------------- */
+.appointments-card,
+.product-sales-card {
+    height: 380px !important;
+    max-height: 380px !important;
+    display: flex !important;
+    flex-direction: column !important;
+    overflow: hidden !important;
+}
+
+.appointments-card .card-body,
+.product-sales-card .card-body {
+    flex: 1 !important;
+    overflow-y: auto !important;
+    min-height: 0 !important;
+}
