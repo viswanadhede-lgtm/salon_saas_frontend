@@ -273,8 +273,7 @@
 
                 <!-- Summary Cards Row 1 -->
                 <div class="summary-cards">
-                    <div class="card stat-card" style="cursor:pointer;"
-                        ondblclick="onStatCardDblClick(this, 'Today\'s Bookings')">
+                    <div class="card stat-card" style="cursor:pointer;">
                         <div class="stat-icon bg-indigo-light">
                             <i data-feather="calendar" class="text-indigo"></i>
                         </div>
@@ -288,8 +287,7 @@
                     </div>
 
                     <!-- Completed Appointments Today -->
-                    <div class="card stat-card" style="cursor:pointer;"
-                        ondblclick="onStatCardDblClick(this, 'Completed Appointments Today')">
+                    <div class="card stat-card" style="cursor:pointer;">
                         <div class="stat-icon bg-teal-light">
                             <i data-feather="check-circle" class="text-teal"></i>
                         </div>
@@ -303,8 +301,7 @@
                     </div>
 
                     <!-- No-Show & Cancelled -->
-                    <div class="card stat-card noshow-card" style="cursor:pointer;"
-                        ondblclick="onStatCardDblClick(this, 'No-shows & Cancellations')">
+                    <div class="card stat-card noshow-card" style="cursor:pointer;">
                         <div class="stat-icon bg-rose-light">
                             <i data-feather="x-circle" class="text-rose"></i>
                         </div>
@@ -317,8 +314,7 @@
                         </div>
                     </div>
 
-                    <div class="card stat-card" style="cursor:pointer;"
-                        ondblclick="onStatCardDblClick(this, 'Today\'s Revenue')">
+                    <div class="card stat-card" style="cursor:pointer;">
                         <div class="stat-icon bg-emerald-light">
                             <i data-feather="dollar-sign" class="text-emerald"></i>
                         </div>
@@ -344,7 +340,7 @@
                                 <button class="tab-btn" data-tab="completed">Completed Appointments <span class="tab-badge" id="badgeCompleted">0</span></button>
                                 <button class="tab-btn" data-tab="noshow">No-shows & Cancellations <span class="tab-badge" id="badgeNoshow">0</span></button>
                             </div>
-                            <button class="btn-text">View All</button>
+                            <a href="upcoming-appointments.html" id="viewAllAppointmentsBtn" class="btn-text" style="text-decoration:none;">View All</a>
                         </div>
                         <div class="card-body">
                             <div class="tab-content">

@@ -534,6 +534,14 @@ document.addEventListener('DOMContentLoaded', () => {
                     const isTarget = pane.id === `tab${targetTab.charAt(0).toUpperCase() + targetTab.slice(1)}`;
                     pane.classList.toggle('active', isTarget);
                 });
+                
+                // Update View All Link dynamically
+                const viewAllBtn = document.getElementById('viewAllAppointmentsBtn');
+                if (viewAllBtn) {
+                    if (targetTab === 'upcoming') viewAllBtn.href = 'upcoming-appointments.html';
+                    else if (targetTab === 'completed') viewAllBtn.href = 'completed-appointments.html';
+                    else if (targetTab === 'noshow') viewAllBtn.href = 'no-shows-cancellations.html';
+                }
             });
         });
     }
