@@ -796,10 +796,12 @@
     font-size: 0.875rem;
     cursor: pointer;
     font-family: inherit;
+    text-decoration: none;
 }
 
 .btn-text:hover {
     text-decoration: underline;
+    text-decoration-color: var(--accent);
 }
 
 /* Appointments List */
