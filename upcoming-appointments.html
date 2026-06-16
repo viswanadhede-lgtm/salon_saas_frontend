@@ -1332,18 +1332,39 @@
                 } else if (rawServices.length > 1) {
                     const first = rawServices[0];
                     const rest = rawServices.length - 1;
+                    const fullList = rawServices.join(', ');
                     serviceHtml = `
-                        <div style="display:flex; align-items:center; gap:6px;">
-                            <span style="display:inline-block; max-width:140px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; vertical-align:middle;" title="${first}">${first}</span>
-                            <span style="background:#e0e7ff; color:#3730a3; padding:2px 8px; border-radius:12px; font-size:0.7rem; font-weight:600;">+${rest}</span>
+                        <div style="display:flex; flex-direction:column; gap:4px;">
+                            <div style="display:flex; align-items:center; gap:6px; cursor:pointer;" onclick="const e=this.nextElementSibling; e.style.display=e.style.display==='none'?'block':'none'">
+                                <span style="display:inline-block; max-width:140px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; vertical-align:middle;" title="${first}">${first}</span>
+                                <span style="background:#e0e7ff; color:#3730a3; padding:2px 8px; border-radius:12px; font-size:0.7rem; font-weight:600; cursor:pointer; transition:background 0.2s;" onmouseover="this.style.background='#c7d2fe'" onmouseout="this.style.background='#e0e7ff'">+${rest}</span>
+                            </div>
+                            <div style="display:none; font-size:0.8rem; color:#64748b; line-height:1.4; padding-left:2px; padding-top:2px; white-space:normal;">
+                                ${fullList}
+                            </div>
                         </div>
                     `;
                 }
 
                 let staffHtml = '-';
                 const rawStaff = (b.staff || '').split(',').map(s => s.trim()).filter(Boolean);
-                if (rawStaff.length > 0) {
+                if (rawStaff.length === 1) {
                     staffHtml = `<span style="background:#f8fafc; color:#475569; border:1px solid #e2e8f0; padding:2px 10px; border-radius:12px; font-size:0.75rem; font-weight:600;">${rawStaff[0]}</span>`;
+                } else if (rawStaff.length > 1) {
+                    const firstS = rawStaff[0];
+                    const restS = rawStaff.length - 1;
+                    const fullListS = rawStaff.join(', ');
+                    staffHtml = `
+                        <div style="display:flex; flex-direction:column; gap:4px;">
+                            <div style="display:flex; align-items:center; gap:6px; cursor:pointer;" onclick="const e=this.nextElementSibling; e.style.display=e.style.display==='none'?'block':'none'">
+                                <span style="background:#f8fafc; color:#475569; border:1px solid #e2e8f0; padding:2px 10px; border-radius:12px; font-size:0.75rem; font-weight:600;">${firstS}</span>
+                                <span style="background:#f1f5f9; color:#475569; padding:2px 6px; border-radius:12px; font-size:0.7rem; font-weight:600; border:1px solid #cbd5e1; transition:background 0.2s;" onmouseover="this.style.background='#e2e8f0'" onmouseout="this.style.background='#f1f5f9'">+${restS}</span>
+                            </div>
+                            <div style="display:none; font-size:0.75rem; color:#64748b; line-height:1.4; padding-left:2px; padding-top:2px; white-space:normal;">
+                                ${fullListS}
+                            </div>
+                        </div>
+                    `;
                 }
 
                 const tr = document.createElement('tr');
