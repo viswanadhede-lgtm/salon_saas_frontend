@@ -419,15 +419,14 @@
             <div class="tb-table-area" style="overflow-x:hidden;">
             <table id="tbTable" style="width:100%; border-collapse:collapse; font-size:0.875rem; table-layout:fixed;">
                 <colgroup>
-                    <col style="width:9%">
-                    <col style="width:13%">
-                    <col style="width:9%">
-                    <col style="width:17%">
-                    <col style="width:8%">
-                    <col style="width:9%">
-                    <col style="width:9%">
-                    <col style="width:9%">
-                    <col style="width:8%">
+                    <col style="width:12%">
+                    <col style="width:14%">
+                    <col style="width:12%">
+                    <col style="width:20%">
+                    <col style="width:12%">
+                    <col style="width:10%">
+                    <col style="width:10%">
+                    <col style="width:10%">
                 </colgroup>
                 <thead>
                     <tr style="background:#f8fafc; border-bottom:2px solid #e2e8f0; position:sticky; top:0; z-index:10;">
@@ -436,10 +435,9 @@
                         <th style="padding:13px 16px; text-align:left; font-size:0.75rem; font-weight:600; color:#64748b; text-transform:uppercase; letter-spacing:0.05em;">Time</th>
                         <th style="padding:13px 16px; text-align:left; font-size:0.75rem; font-weight:600; color:#64748b; text-transform:uppercase; letter-spacing:0.05em;">Service</th>
                         <th style="padding:13px 16px; text-align:left; font-size:0.75rem; font-weight:600; color:#64748b; text-transform:uppercase; letter-spacing:0.05em;">Staff</th>
-                        <th style="padding:13px 16px; text-align:left; font-size:0.75rem; font-weight:600; color:#64748b; text-transform:uppercase; letter-spacing:0.05em;">Status</th>
                         <th style="padding:13px 16px; text-align:left; font-size:0.75rem; font-weight:600; color:#64748b; text-transform:uppercase; letter-spacing:0.05em;">Amount</th>
                         <th style="padding:13px 16px; text-align:left; font-size:0.75rem; font-weight:600; color:#64748b; text-transform:uppercase; letter-spacing:0.05em;">Payment</th>
-                        <th style="padding:13px 16px; text-align:left; font-size:0.75rem; font-weight:600; color:#64748b; text-transform:uppercase; letter-spacing:0.05em;">Actions</th>
+                        <th style="padding:13px 16px; text-align:left; font-size:0.75rem; font-weight:600; color:#64748b; text-transform:uppercase; letter-spacing:0.05em;">Status</th>
                     </tr>
                 </thead>
                 <tbody id="tbTableBody"></tbody>
@@ -1251,6 +1249,7 @@
                         raw_id: b.booking_id,
                         customer: b.customer_name || 'Walk-in Customer',
                         time: formattedTime,
+                        raw_date: b.booking_date,
                         service: b.service_name || 'N/A',
                         staff: b.staff_name || 'Unassigned',
                         status: (b.status || 'booked').toLowerCase(),
@@ -1317,25 +1316,28 @@
                 tr.className = 'tb-row';
                 tr.id = `row-${b.raw_id}`; // Use raw UUID for highlighting
                 tr.innerHTML = `
-                <td style="padding:10px 8px 10px 14px; color:#6366f1; font-weight:600; font-size:0.78rem;">${b.id}</td>
-                <td style="padding:10px 8px;">
-                    <span class="customer-link" onclick="viewCustomerProfile('${b.customer}')">${b.customer}</span>
+                <td style="padding:16px 16px; color:#64748b; font-weight:600; font-size:0.78rem;">${b.id}</td>
+                <td style="padding:16px 16px; font-weight:600; color:#475569; font-size:0.875rem;">
+                    ${b.customer}
                 </td>
-                <td style="padding:10px 8px; color:#374151; font-weight:500; font-size:0.82rem;">${b.time}</td>
-                <td style="padding:10px 8px; color:#374151; font-size:0.82rem;">${b.service}</td>
-                <td style="padding:10px 8px; color:#374151; font-size:0.82rem;">${b.staff}</td>
-                <td style="padding:10px 8px;">
-                    <span class="tb-status-pill ${statusClass}">${statusLabel}</span>
+                <td style="padding:16px 16px;">
+                    <div style="color:#1e293b; font-weight:600; font-size:0.85rem; margin-bottom:2px;">${dateDisplay}</div>
+                    <div style="color:#64748b; font-size:0.8rem;">${b.time}</div>
                 </td>
-                <td style="padding:10px 8px; font-weight:600; color:#1e293b; font-size:0.82rem;">${b.amount}</td>
-                <td style="padding:10px 8px;">
-                    <span class="tb-status-pill ${paymentClass}">${paymentLabel}</span>
+                <td style="padding:16px 16px; color:#475569; font-size:0.85rem;">${serviceHtml}</td>
+                <td style="padding:16px 16px; color:#475569; font-size:0.85rem;">${staffHtml}</td>
+                <td style="padding:16px 16px;">
+                    <span style="display:inline-block; padding:4px 12px; background:#dcfce7; color:#166534; border-radius:9999px; font-size:0.75rem; font-weight:700;">${b.amount}</span>
                 </td>
-                <td style="padding:10px 8px;">
-                    <button class="tb-action-btn" onclick="toggleBookingMenu(event, ${idx})">
-                        Actions
-                        <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
+                <td style="padding:16px 16px;">
+                    ${b.payment !== 'paid' ? `
+                    <button onclick="openRowPayment('${b.raw_id}')" style="background:#4f46e5; border:none; border-radius:6px; cursor:pointer; color:#fff; padding:6px 14px; transition:all 0.2s; display:flex; align-items:center; justify-content:center; gap: 6px; font-size: 0.8rem; font-weight: 600;" onmouseover="this.style.background='#4338ca';" onmouseout="this.style.background='#4f46e5';">
+                        <i data-feather="credit-card" style="width:14px; height:14px;"></i> Collect
                     </button>
+                    ` : `<span style="font-size:0.85rem; color:#64748b; font-style:italic;">Paid</span>`}
+                </td>
+                <td style="padding:16px 16px;">
+                    <span class="tb-status-pill ${paymentClass}" style="text-transform: uppercase;">${paymentLabel}</span>
                 </td>
             `;
                 tbody.appendChild(tr);
@@ -1548,11 +1550,110 @@
                 setTimeout(() => { toast.textContent = ''; }, 300);
             }, 3000);
         }
+        // ================================================================
+        // COLLECT PAYMENT
+        // ================================================================
+        window.openRowPayment = function(bookingId) {
+            const row = todaysBookingsData.find(p => p.raw_id === bookingId);
+            if (!row) return;
+
+            const total = parseInt(row.amount.replace(/[^0-9]/g, ''), 10) || 0;
+            const due = total; // Pending payments usually collect the remaining due
+
+            if (window.openGlobalPaymentModal) {
+                window.openGlobalPaymentModal({
+                    saleId: row.raw_id,
+                    customerId: null, // If explicit DB id exists, pass it here
+                    customerName: row.customer || 'Guest',
+                    totalAmount: due,
+                    amountDue: due,
+                    isMembershipPurchase: false,
+                    onComplete: async (payload) => {
+                        await processPaymentCallback(payload, row);
+                    }
+                });
+            } else {
+                showToast('Global payment modal not loaded', '#ef4444');
+            }
+        };
+
+        async function processPaymentCallback(payload, row) {
+            const amount = payload.amountCollected;
+            const payMethod = payload.paymentMethod;
+
+            try {
+                const { supabase } = await import('./lib/supabase.js');
+                
+                let companyId;
+                try {
+                    const ctx = JSON.parse(localStorage.getItem('appContext') || '{}');
+                    companyId = ctx.company?.id || localStorage.getItem('company_id') || null;
+                } catch {
+                    companyId = localStorage.getItem('company_id') || null;
+                }
+
+                const branchId = localStorage.getItem('branch_id');
+                const paidAt = new Date().toISOString().replace('Z', '');
+                
+                const totalOriginal = parseInt(row.amount.replace(/[^0-9]/g, ''), 10) || 0;
+                const totalDiscount = totalOriginal - amount;
+                const d = payload.discounts || {};
+                let discountType = null;
+                let discountName = null;
+                if (d.couponCode) { discountType = 'coupon'; discountName = d.couponCode; }
+                else if (d.offerName) { discountType = 'offer'; discountName = d.offerName; }
+                else if (d.membershipName) { discountType = 'membership'; discountName = d.membershipName; }
+                else if (d.manualValue > 0) { discountType = 'manual'; discountName = d.manualType === 'percent' ? `${d.manualValue}% off` : `₹${d.manualValue} off`; }
+
+                const { error: txError } = await supabase
+                    .from('business_transactions')
+                    .insert({
+                        company_id: companyId,
+                        branch_id: branchId,
+                        reference_id: row.raw_id,
+                        reference_type: 'booking',
+                        amount: amount,
+                        currency: 'INR',
+                        payment_method: payMethod.toLowerCase(),
+                        status: 'paid',
+                        notes: `Payment for booking ${row.raw_id.substring(0,8)}`,
+                        paid_at: paidAt,
+                        final_amount: amount,
+                        discount_type: discountType,
+                        discount_name: discountName,
+                        discount_amount: totalDiscount > 0 ? totalDiscount : null
+                    });
+                if (txError) throw txError;
+
+                const { error: bftError } = await supabase
+                    .from('bookings_for_business_transaction')
+                    .update({
+                        payment_status: 'paid',
+                        final_amount: amount,
+                        discount_amount: totalDiscount > 0 ? totalDiscount : null,
+                        discount_type: discountType,
+                        discount_name: discountName,
+                        updated_at: new Date().toISOString()
+                    })
+                    .eq('booking_id', row.raw_id);
+                if (bftError) console.error(bftError);
+
+                showToast('Payment recorded successfully!', '#10b981');
+                if (typeof window.initPage === 'function') {
+                    await window.initPage();
+                }
+            } catch (err) {
+                console.error(err);
+                showToast('Failed to record payment: ' + (err.message || 'Unknown error'), '#ef4444');
+                throw err; 
+            }
+        }
     </script>
 
     <script src="dashboard.js"></script>
 <script src="logout.js"></script><script src="change-password.js"></script>    <script type="module" src="scripts/global-auth-guard.js"></script>
     <script type="module" src="scripts/sub-features/sub-feature-gate.js"></script>
+    <script type="module" src="scripts/global-payment-modal.js"></script>
 </body>
 </html>
 
