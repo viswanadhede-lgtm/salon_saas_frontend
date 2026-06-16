@@ -355,6 +355,7 @@
                     }
 
                     if (targetRow) {
+                        targetRow.parentNode.prepend(targetRow);
                         targetRow.scrollIntoView({ behavior: 'smooth', block: 'center' });
                         targetRow.classList.add('highlight-row');
                         
