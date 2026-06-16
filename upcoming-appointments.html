@@ -54,6 +54,16 @@
 
         .tb-row:nth-child(even) { background: #ffffff; }
         .tb-row:hover { background: #dce9f1f5; }
+        
+        .highlight-row {
+            animation: highlightPulse 2s ease-out;
+        }
+
+        @keyframes highlightPulse {
+            0% { background-color: #fef08a; }
+            50% { background-color: #fef08a; }
+            100% { background-color: transparent; }
+        }
 
         .tb-status-pill {
             display: inline-block;
@@ -1257,6 +1267,36 @@
             if (typeof renderBookingsTable === 'function') {
                 renderBookingsTable();
             }
+
+            // Highlight particular booking if specified in URL
+            setTimeout(() => {
+                const urlParams = new URLSearchParams(window.location.search);
+                const highlightId = urlParams.get('highlight');
+                if (highlightId) {
+                    // Try exact ID match first, then formatted BK- match
+                    let targetRow = document.getElementById(`row-${highlightId}`);
+                    if (!targetRow) {
+                        // Sometimes the ID in the link is UUID but the table shows BK-XXXX
+                        // We will try finding the row by matching the booking ID text if the element ID approach fails
+                        const rows = document.querySelectorAll('.tb-row');
+                        for (const row of rows) {
+                            if (row.innerHTML.includes(highlightId)) {
+                                targetRow = row;
+                                break;
+                            }
+                        }
+                    }
+
+                    if (targetRow) {
+                        targetRow.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                        targetRow.classList.add('highlight-row');
+                        
+                        // Clean up URL without refreshing
+                        const newUrl = window.location.pathname;
+                        window.history.replaceState({}, document.title, newUrl);
+                    }
+                }
+            }, 100);
         }
 
         // ================================================================
@@ -1273,6 +1313,7 @@
 
                 const tr = document.createElement('tr');
                 tr.className = 'tb-row';
+                tr.id = `row-${b.id}`; // Add ID for highlighting
                 tr.innerHTML = `
                 <td style="padding:10px 8px 10px 14px; color:#6366f1; font-weight:600; font-size:0.78rem;">${b.id}</td>
                 <td style="padding:10px 8px;">

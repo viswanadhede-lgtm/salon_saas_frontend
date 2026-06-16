@@ -24,6 +24,16 @@
         .tb-row { border-bottom:1px solid #e3ecf5; transition:background 0.15s; }
         .tb-row:nth-child(even) { background:#ffffff; }
         .tb-row:hover { background:#dce9f1f5; }
+        
+        .highlight-row {
+            animation: highlightPulse 2s ease-out;
+        }
+
+        @keyframes highlightPulse {
+            0% { background-color: #fef08a; }
+            50% { background-color: #fef08a; }
+            100% { background-color: transparent; }
+        }
         .tb-status-pill { display:inline-block; padding:3px 10px; border-radius:20px; font-size:0.78rem; font-weight:600; }
         .tb-status-noshow    { background:#fee2e2; color:#991b1b; }
         .tb-status-cancelled { background:#fef9c3; color:#92400e; }
@@ -326,6 +336,32 @@
         
             
             renderTable();
+
+            // Highlight particular booking if specified in URL
+            setTimeout(() => {
+                const urlParams = new URLSearchParams(window.location.search);
+                const highlightId = urlParams.get('highlight');
+                if (highlightId) {
+                    let targetRow = document.getElementById(`row-${highlightId}`);
+                    if (!targetRow) {
+                        const rows = document.querySelectorAll('.tb-row');
+                        for (const row of rows) {
+                            if (row.innerHTML.includes(highlightId)) {
+                                targetRow = row;
+                                break;
+                            }
+                        }
+                    }
+
+                    if (targetRow) {
+                        targetRow.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                        targetRow.classList.add('highlight-row');
+                        
+                        const newUrl = window.location.pathname;
+                        window.history.replaceState({}, document.title, newUrl);
+                    }
+                }
+            }, 100);
         }
 
         function switchTab(tab) {
@@ -348,6 +384,7 @@
                 const statusLabel = b.status === 'no-show' ? 'No-show' : 'Cancelled';
                 const tr = document.createElement('tr');
                 tr.className = 'tb-row';
+                tr.id = `row-${b.id}`; // Add ID for highlighting
                 tr.innerHTML = `
                     <td style="padding:14px 16px 14px 32px;"><span class="customer-link" onclick="viewCustomerProfile('${b.customer}')">${b.customer}</span></td>
                     <td style="padding:14px 16px; color:#374151; font-weight:500;">${b.time}</td>

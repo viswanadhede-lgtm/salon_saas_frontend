@@ -1,5 +1,16 @@
 // dashboard.js - Logic for the main application dashboard
 
+window.navigateToBooking = function(status, bookingId) {
+    status = (status || '').toLowerCase();
+    if (status === 'completed') {
+        window.location.href = `completed-appointments.html?highlight=${bookingId}`;
+    } else if (status === 'cancelled' || status === 'no-show') {
+        window.location.href = `no-shows-cancellations.html?highlight=${bookingId}`;
+    } else {
+        window.location.href = `upcoming-appointments.html?highlight=${bookingId}`;
+    }
+};
+
 document.addEventListener('DOMContentLoaded', () => {
 
     // ----------------------------------------------------------------
@@ -270,7 +281,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     const statusClass = b.status ? b.status.toLowerCase() : 'booked';
 
                     return `
-                        <div class="appointment-item">
+                        <div class="appointment-item" style="cursor: pointer;" ondblclick="navigateToBooking('${b.status}', '${b.booking_id}')">
                             <div class="time-block">
                                 <span class="time">${formattedTime}</span>
                                 <span class="duration">${durationStr}</span>
