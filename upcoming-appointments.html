@@ -1309,8 +1309,42 @@
             todaysBookingsData.forEach((b, idx) => {
                 const statusClass = 'tb-status-' + b.status;
                 const statusLabel = b.status === 'noshow' ? 'No-show' : b.status.charAt(0).toUpperCase() + b.status.slice(1);
-                const paymentClass = 'tb-payment-' + b.payment;
-                const paymentLabel = b.payment.charAt(0).toUpperCase() + b.payment.slice(1);
+                let paymentClass = 'tb-payment-pending';
+                let paymentLabel = 'UNPAID';
+                if (b.payment === 'paid') {
+                    paymentClass = 'tb-payment-paid';
+                    paymentLabel = 'PAID';
+                } else if (b.payment === 'partial') {
+                    paymentClass = 'tb-payment-partial';
+                    paymentLabel = 'PARTIAL';
+                }
+
+                let dateDisplay = '-';
+                if (b.raw_date) {
+                    const d = new Date(b.raw_date + 'T00:00:00');
+                    dateDisplay = d.toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' });
+                }
+
+                let serviceHtml = '-';
+                const rawServices = (b.service || '').split(',').map(s => s.trim()).filter(Boolean);
+                if (rawServices.length === 1) {
+                    serviceHtml = `<span style="display:inline-block; max-width:200px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; vertical-align:middle;" title="${rawServices[0]}">${rawServices[0]}</span>`;
+                } else if (rawServices.length > 1) {
+                    const first = rawServices[0];
+                    const rest = rawServices.length - 1;
+                    serviceHtml = `
+                        <div style="display:flex; align-items:center; gap:6px;">
+                            <span style="display:inline-block; max-width:140px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; vertical-align:middle;" title="${first}">${first}</span>
+                            <span style="background:#e0e7ff; color:#3730a3; padding:2px 8px; border-radius:12px; font-size:0.7rem; font-weight:600;">+${rest}</span>
+                        </div>
+                    `;
+                }
+
+                let staffHtml = '-';
+                const rawStaff = (b.staff || '').split(',').map(s => s.trim()).filter(Boolean);
+                if (rawStaff.length > 0) {
+                    staffHtml = `<span style="background:#f8fafc; color:#475569; border:1px solid #e2e8f0; padding:2px 10px; border-radius:12px; font-size:0.75rem; font-weight:600;">${rawStaff[0]}</span>`;
+                }
 
                 const tr = document.createElement('tr');
                 tr.className = 'tb-row';
