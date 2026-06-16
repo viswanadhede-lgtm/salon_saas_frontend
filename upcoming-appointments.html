@@ -1244,7 +1244,7 @@
                     const ampm = hours >= 12 ? 'PM' : 'AM';
                     hours = hours % 12 || 12;
                     const formattedTime = `${String(hours).padStart(2, '0')}:${minutes} ${ampm}`;
-                    const displayId = 'BK-' + (b.booking_id ? b.booking_id.substring(0,4).toUpperCase() + String(i).padStart(2,'0') : '00000');
+                    const displayId = (b.booking_id || '').slice(0, 8).toUpperCase();
 
                     return {
                         id: displayId,
