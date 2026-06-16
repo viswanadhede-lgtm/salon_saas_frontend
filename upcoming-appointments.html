@@ -1248,6 +1248,7 @@
 
                     return {
                         id: displayId,
+                        raw_id: b.booking_id,
                         customer: b.customer_name || 'Walk-in Customer',
                         time: formattedTime,
                         service: b.service_name || 'N/A',
@@ -1313,7 +1314,7 @@
 
                 const tr = document.createElement('tr');
                 tr.className = 'tb-row';
-                tr.id = `row-${b.id}`; // Add ID for highlighting
+                tr.id = `row-${b.raw_id}`; // Use raw UUID for highlighting
                 tr.innerHTML = `
                 <td style="padding:10px 8px 10px 14px; color:#6366f1; font-weight:600; font-size:0.78rem;">${b.id}</td>
                 <td style="padding:10px 8px;">

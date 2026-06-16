@@ -310,6 +310,7 @@
 
                     return {
                         id: displayId,
+                        raw_id: b.booking_id,
                         customer: b.customer_name || 'Walk-in Customer',
                         time: formattedTime,
                         service: b.service_name || 'N/A',
@@ -384,7 +385,7 @@
                 const statusLabel = b.status === 'no-show' ? 'No-show' : 'Cancelled';
                 const tr = document.createElement('tr');
                 tr.className = 'tb-row';
-                tr.id = `row-${b.id}`; // Add ID for highlighting
+                tr.id = `row-${b.raw_id}`; // Use raw UUID for highlighting
                 tr.innerHTML = `
                     <td style="padding:14px 16px 14px 32px;"><span class="customer-link" onclick="viewCustomerProfile('${b.customer}')">${b.customer}</span></td>
                     <td style="padding:14px 16px; color:#374151; font-weight:500;">${b.time}</td>
