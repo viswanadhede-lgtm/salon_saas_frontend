@@ -1248,6 +1248,7 @@
                         id: displayId,
                         raw_id: b.booking_id,
                         customer: b.customer_name || 'Walk-in Customer',
+                        customer_id: b.customer_id || '',
                         time: formattedTime,
                         raw_date: b.booking_date,
                         service: b.service_name || 'N/A',
@@ -1373,7 +1374,7 @@
                 tr.innerHTML = `
                 <td style="padding:16px 16px; color:#64748b; font-weight:600; font-size:0.78rem;">${b.id}</td>
                 <td style="padding:16px 16px; font-weight:600; color:#475569; font-size:0.875rem;">
-                    ${b.customer}
+                    <span class="customer-link" style="cursor:pointer;" onclick="if(window.viewCustomerProfile) window.viewCustomerProfile('${b.customer_id}', '${b.customer.replace(/'/g, "\\'")}')">${b.customer}</span>
                 </td>
                 <td style="padding:16px 16px;">
                     <div style="color:#1e293b; font-weight:600; font-size:0.85rem;">${b.time}</div>
