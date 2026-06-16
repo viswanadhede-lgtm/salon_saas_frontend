@@ -227,27 +227,22 @@ document.addEventListener('DOMContentLoaded', async () => {
                 `;
             }
 
-            const displayId = (row.booking_id || row.id || '').slice(0, 8).toUpperCase();
-
             tr.innerHTML = `
-                <td style="padding:14px 16px 14px 24px; color:#64748b; font-family:monospace; font-size:0.8rem; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">${displayId}</td>
-                <td style="padding:14px 16px; color:#475569; font-weight:600; font-size:0.875rem; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">${row.customer_name || 'Guest'}</td>
-                <td style="padding:14px 16px; color:#475569; font-size:0.83rem;">
-                    <div style="font-weight:500; color:#334155; margin-bottom:2px;">${dateStr}</div>
-                    <div style="color:#64748b;">${timeStr || '-'}</div>
-                </td>
+                <td style="padding:14px 16px 14px 24px; color:#475569; font-weight:600; font-size:0.875rem; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">${row.customer_name || 'Guest'}</td>
                 <td style="padding:14px 16px; color:#475569; font-size:0.875rem;">${serviceHtml}${typePill}</td>
                 <td style="padding:14px 16px; color:#475569;">${staffHtml}</td>
+                <td style="padding:14px 16px; color:#475569; font-size:0.83rem;">${dateStr}</td>
+                <td style="padding:14px 16px; color:#475569; font-size:0.83rem; font-weight:500;">${timeStr || '-'}</td>
                 <td style="padding:14px 16px;">
                     <span style="display:inline-block; padding:4px 12px; background:#d1fae5; color:#059669; border:1px solid #a7f3d0; border-radius:9999px; font-size:0.75rem; font-weight:700;">₹${total.toLocaleString('en-IN')}</span>
                 </td>
                 <td style="padding:14px 16px;">
-                    <button data-sub-feature="pending_payments_collect" onclick="ppOpenCollect('${row.booking_id}')" title="Collect Payment" style="background:#4f46e5; border:1px solid #4338ca; border-radius:6px; cursor:pointer; color:#fff; padding:6px 12px; transition:all 0.2s; display:flex; align-items:center; justify-content:center; gap: 6px; font-size: 0.8rem; font-weight: 600;" onmouseover="this.style.background='#4338ca';" onmouseout="this.style.background='#4f46e5';">
-                        <i data-feather="credit-card" style="width:14px; height:14px;"></i> Collect
-                    </button>
+                    <span class="tb-status-pill ${statusPillClass}" style="text-transform: uppercase; font-size: 0.7rem;">${statusLabel}</span>
                 </td>
                 <td style="padding:14px 16px;">
-                    <span class="tb-status-pill ${statusPillClass}" style="text-transform: uppercase; font-size: 0.7rem;">${statusLabel}</span>
+                    <button data-sub-feature="pending_payments_collect" onclick="ppOpenCollect('${row.booking_id}')" title="Collect Payment" style="background:#f1f5f9; border:1px solid #e2e8f0; border-radius:6px; cursor:pointer; color:#64748b; padding:6px; transition:all 0.2s; display:flex; align-items:center; justify-content:center; gap: 4px; font-size: 0.8rem; font-weight: 500;" onmouseover="this.style.background='#e0e7ff'; this.style.color='#4f46e5'; this.style.borderColor='#c7d2fe';" onmouseout="this.style.background='#f1f5f9'; this.style.color='#64748b'; this.style.borderColor='#e2e8f0';">
+                        <i data-feather="credit-card" style="width:14px; height:14px;"></i> Collect
+                    </button>
                 </td>`;
             tbody.appendChild(tr);
         });
