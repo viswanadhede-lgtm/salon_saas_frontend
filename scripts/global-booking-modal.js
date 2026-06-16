@@ -695,6 +695,18 @@ export function initGlobalBookingModal() {
                 overrideOverlay?.classList.remove('active');
                 closeModal();
                 if (window.fetchBookings) await window.fetchBookings();
+                
+                // Refresh dashboard data if the functions are available globally
+                if (typeof window.refreshAllData === 'function') {
+                    window.refreshAllData(getBranchId());
+                } else {
+                    if (typeof window.fetchAndRenderDashboardKPIs === 'function') {
+                        window.fetchAndRenderDashboardKPIs(getBranchId());
+                    }
+                    if (typeof window.fetchAndRenderAppointments === 'function') {
+                        window.fetchAndRenderAppointments(getBranchId());
+                    }
+                }
             } else {
                 showMsg('Error saving booking: ' + error.message, true);
             }
