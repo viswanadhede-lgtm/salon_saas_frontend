@@ -1254,7 +1254,7 @@
                         staff: b.staff_name || 'Unassigned',
                         status: (b.status || 'booked').toLowerCase(),
                         amount: '₹' + (b.total_price || 0).toLocaleString('en-IN'),
-                        payment: (b.payment || 'pending').toLowerCase()
+                        payment: (b.payment_status || 'pending').toLowerCase()
                     };
                 });
             } catch (err) {
@@ -1392,7 +1392,7 @@
                     ` : `<span style="font-size:0.85rem; color:#64748b; font-style:italic;">Paid</span>`}
                 </td>
                 <td style="padding:16px 16px;">
-                    <span class="tb-status-pill ${paymentClass}" style="text-transform: uppercase;">${paymentLabel}</span>
+                    <span class="tb-status-pill ${statusClass}" style="text-transform: uppercase;">${statusLabel}</span>
                 </td>
             `;
                 tbody.appendChild(tr);
