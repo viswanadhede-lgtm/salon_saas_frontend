@@ -1686,6 +1686,7 @@
                     .from('bookings_for_business_transaction')
                     .update({
                         payment_status: 'paid',
+                        status: 'completed',
                         final_amount: amount,
                         discount_amount: totalDiscount > 0 ? totalDiscount : null,
                         discount_type: discountType,
@@ -1693,7 +1694,17 @@
                         updated_at: new Date().toISOString()
                     })
                     .eq('booking_id', row.raw_id);
-                if (bftError) console.error(bftError);
+                if (bftError) console.error('bft update error:', bftError);
+
+                // Also update the main bookings table
+                const { error: bookingError } = await supabase
+                    .from('bookings')
+                    .update({
+                        status: 'completed',
+                        updated_at: new Date().toISOString()
+                    })
+                    .eq('id', row.raw_id);
+                if (bookingError) console.error('bookings update error:', bookingError);
 
                 showToast('Payment recorded successfully!', '#10b981');
                 if (typeof window.initPage === 'function') {
