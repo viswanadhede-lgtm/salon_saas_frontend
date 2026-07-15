@@ -381,7 +381,7 @@
                 tbody.innerHTML = `<tr><td colspan="7" class="nosc-empty">No ${activeTab === 'no-show' ? 'no-show' : 'cancelled'} appointments today.</td></tr>`;
                 return;
             }
-            filtered.forEach(b => {
+            filtered.forEach((b, idx) => {
                 const statusClass = 'tb-status-' + b.status.replace('-', '');
                 const statusLabel = b.status === 'no-show' ? 'No-show' : 'Cancelled';
 
