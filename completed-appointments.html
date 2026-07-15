@@ -496,11 +496,14 @@
                 let serviceHtml = '-';
                 const rawServices = (b.service || '').split(',').map(s => s.trim()).filter(Boolean);
                 if (rawServices.length === 1) {
-                    serviceHtml = `<span style="display:inline-block;max-width:180px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;vertical-align:middle;" title="${rawServices[0]}">${rawServices[0]}</span>`;
+                    serviceHtml = `<span style="display:inline-block;padding:2px 8px;border-radius:20px;font-size:0.72rem;font-weight:500;background:#f1f5f9;color:#334155;white-space:nowrap;" title="${rawServices[0]}">${rawServices[0]}</span>`;
                 } else if (rawServices.length > 1) {
-                    const rest = rawServices.length - 1;
-                    const fullList = rawServices.join(', ');
-                    serviceHtml = `<div style="display:flex;flex-direction:column;gap:4px;"><div style="display:flex;align-items:center;gap:6px;cursor:pointer;" onclick="const e=this.nextElementSibling;e.style.display=e.style.display==='none'?'block':'none'"><span style="display:inline-block;max-width:130px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="${rawServices[0]}">${rawServices[0]}</span><span style="background:#e0e7ff;color:#3730a3;padding:2px 8px;border-radius:12px;font-size:0.7rem;font-weight:600;cursor:pointer;">+${rest}</span></div><div style="display:none;font-size:0.8rem;color:#64748b;padding-top:2px;">${fullList}</div></div>`;
+                    const chipStyle = `display:inline-block;padding:2px 8px;border-radius:20px;font-size:0.72rem;font-weight:500;background:#f1f5f9;color:#334155;margin:1px 2px 1px 0;white-space:nowrap;`;
+                    const first = rawServices[0];
+                    const rest = rawServices.slice(1);
+                    const extraPills = rest.map(s => `<span style="${chipStyle}">${s}</span>`).join('');
+                    const uid = 'ca_svc_' + idx;
+                    serviceHtml = `<div style="display:flex;flex-direction:column;gap:4px;"><div style="display:flex;align-items:center;gap:2px;flex-wrap:wrap;"><span style="${chipStyle}">${first}</span><span id="pill_${uid}" style="display:inline-block;padding:2px 7px;border-radius:20px;font-size:0.7rem;font-weight:600;background:#e0e7ff;color:#4f46e5;cursor:pointer;white-space:nowrap;user-select:none;" onclick="const x=document.getElementById('extra_${uid}'); const shown=x.style.display!=='none'; x.style.display=shown?'none':'flex'; this.textContent=shown?'+${rest.length}':'▲ less'">+${rest.length}</span></div><div id="extra_${uid}" style="display:none;flex-wrap:wrap;gap:4px;padding-top:2px;">${extraPills}</div></div>`;
                 }
 
                 // Payment label/style
