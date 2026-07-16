@@ -222,10 +222,73 @@
                     </div>
                 </div>
 
-                <!-- Staff Bars -->
+                <!-- Revenue Snapshot Tiles -->
                 <div class="card span-2">
-                    <div class="card-header"><h2>Top Staff Revenue</h2></div>
-                    <div class="card-body"><div id="revStaffBars" style="display:flex; flex-direction:column; gap:20px; padding:10px 0;"></div></div>
+                    <div class="card-header"><h2>Today's Snapshot</h2></div>
+                    <div class="card-body" style="padding: 20px;">
+                        <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 16px;">
+                            <!-- Tile 1: Total Transactions -->
+                            <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 12px; padding: 16px 20px;">
+                                <div style="display:flex; align-items:center; gap:8px; margin-bottom:10px;">
+                                    <div style="width:30px; height:30px; border-radius:8px; background:#e0f2fe; display:flex; align-items:center; justify-content:center;">
+                                        <i data-feather="hash" style="width:15px; height:15px; color:#0284c7;"></i>
+                                    </div>
+                                    <span style="font-size:0.78rem; font-weight:600; color:#64748b; text-transform:uppercase; letter-spacing:0.05em;">Transactions</span>
+                                </div>
+                                <p id="snapTotalTxn" style="font-size:1.6rem; font-weight:700; color:#1e293b; margin:0;">0</p>
+                            </div>
+                            <!-- Tile 2: Avg Transaction Value -->
+                            <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 12px; padding: 16px 20px;">
+                                <div style="display:flex; align-items:center; gap:8px; margin-bottom:10px;">
+                                    <div style="width:30px; height:30px; border-radius:8px; background:#d1fae5; display:flex; align-items:center; justify-content:center;">
+                                        <i data-feather="trending-up" style="width:15px; height:15px; color:#059669;"></i>
+                                    </div>
+                                    <span style="font-size:0.78rem; font-weight:600; color:#64748b; text-transform:uppercase; letter-spacing:0.05em;">Avg. Value</span>
+                                </div>
+                                <p id="snapAvgValue" style="font-size:1.6rem; font-weight:700; color:#1e293b; margin:0;">₹0</p>
+                            </div>
+                            <!-- Tile 3: Highest Single Sale -->
+                            <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 12px; padding: 16px 20px;">
+                                <div style="display:flex; align-items:center; gap:8px; margin-bottom:10px;">
+                                    <div style="width:30px; height:30px; border-radius:8px; background:#fef9c3; display:flex; align-items:center; justify-content:center;">
+                                        <i data-feather="star" style="width:15px; height:15px; color:#ca8a04;"></i>
+                                    </div>
+                                    <span style="font-size:0.78rem; font-weight:600; color:#64748b; text-transform:uppercase; letter-spacing:0.05em;">Highest Sale</span>
+                                </div>
+                                <p id="snapHighest" style="font-size:1.6rem; font-weight:700; color:#1e293b; margin:0;">₹0</p>
+                            </div>
+                            <!-- Tile 4: Refunds Processed -->
+                            <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 12px; padding: 16px 20px;">
+                                <div style="display:flex; align-items:center; gap:8px; margin-bottom:10px;">
+                                    <div style="width:30px; height:30px; border-radius:8px; background:#fee2e2; display:flex; align-items:center; justify-content:center;">
+                                        <i data-feather="rotate-ccw" style="width:15px; height:15px; color:#dc2626;"></i>
+                                    </div>
+                                    <span style="font-size:0.78rem; font-weight:600; color:#64748b; text-transform:uppercase; letter-spacing:0.05em;">Refunds</span>
+                                </div>
+                                <p id="snapRefunds" style="font-size:1.6rem; font-weight:700; color:#dc2626; margin:0;">₹0</p>
+                            </div>
+                            <!-- Tile 5: Cash Collected -->
+                            <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 12px; padding: 16px 20px;">
+                                <div style="display:flex; align-items:center; gap:8px; margin-bottom:10px;">
+                                    <div style="width:30px; height:30px; border-radius:8px; background:#ede9fe; display:flex; align-items:center; justify-content:center;">
+                                        <i data-feather="dollar-sign" style="width:15px; height:15px; color:#7c3aed;"></i>
+                                    </div>
+                                    <span style="font-size:0.78rem; font-weight:600; color:#64748b; text-transform:uppercase; letter-spacing:0.05em;">Cash</span>
+                                </div>
+                                <p id="snapCash" style="font-size:1.6rem; font-weight:700; color:#1e293b; margin:0;">₹0</p>
+                            </div>
+                            <!-- Tile 6: Digital Payments -->
+                            <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 12px; padding: 16px 20px;">
+                                <div style="display:flex; align-items:center; gap:8px; margin-bottom:10px;">
+                                    <div style="width:30px; height:30px; border-radius:8px; background:#e0e7ff; display:flex; align-items:center; justify-content:center;">
+                                        <i data-feather="credit-card" style="width:15px; height:15px; color:#4f46e5;"></i>
+                                    </div>
+                                    <span style="font-size:0.78rem; font-weight:600; color:#64748b; text-transform:uppercase; letter-spacing:0.05em;">Digital</span>
+                                </div>
+                                <p id="snapDigital" style="font-size:1.6rem; font-weight:700; color:#1e293b; margin:0;">₹0</p>
+                            </div>
+                        </div>
+                    </div>
                 </div>
             </div>
 
@@ -351,6 +414,24 @@
                 document.getElementById('kpiProductsRev').textContent = '₹' + productsRev.toLocaleString('en-IN');
                 document.getElementById('kpiMembershipsRev').textContent = '₹' + membershipsRev.toLocaleString('en-IN');
                 document.getElementById('kpiTotalRev').textContent = '₹' + totalRev.toLocaleString('en-IN');
+
+                // --- SNAPSHOT TILES ---
+                const paidRows = (trxData || []).filter(t => t.status === 'paid');
+                const refundedRows = (trxData || []).filter(t => t.status === 'refunded');
+
+                const totalTxn = paidRows.length;
+                const highestSale = paidRows.reduce((max, t) => Math.max(max, Number(t.final_amount) || Number(t.amount) || 0), 0);
+                const totalRefunds = refundedRows.reduce((sum, t) => sum + (Number(t.final_amount) || Number(t.amount) || 0), 0);
+                const cashTotal = paidRows.filter(t => t.payment_method === 'cash').reduce((sum, t) => sum + (Number(t.final_amount) || Number(t.amount) || 0), 0);
+                const digitalTotal = paidRows.filter(t => t.payment_method === 'upi' || t.payment_method === 'card').reduce((sum, t) => sum + (Number(t.final_amount) || Number(t.amount) || 0), 0);
+                const avgValue = totalTxn > 0 ? Math.round(totalRev / totalTxn) : 0;
+
+                document.getElementById('snapTotalTxn').textContent = totalTxn;
+                document.getElementById('snapAvgValue').textContent = '₹' + avgValue.toLocaleString('en-IN');
+                document.getElementById('snapHighest').textContent = '₹' + highestSale.toLocaleString('en-IN');
+                document.getElementById('snapRefunds').textContent = '₹' + totalRefunds.toLocaleString('en-IN');
+                document.getElementById('snapCash').textContent = '₹' + cashTotal.toLocaleString('en-IN');
+                document.getElementById('snapDigital').textContent = '₹' + digitalTotal.toLocaleString('en-IN');
 
 
                 // --- 2. EXISTING CHART/TABLE LOGIC (bookings_for_business_transaction) ---
