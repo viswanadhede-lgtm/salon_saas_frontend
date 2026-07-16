@@ -2784,7 +2784,6 @@
 }
 .ph-btn-view:hover {
     background-color: #eef2ff;
-}
     border-color: #c7d2fe;
     color: #3730a3;
 }
@@ -2929,8 +2928,8 @@
     min-height: 0 !important;
 }
 
-/* -- Styled Scrollbars for Cards ------------------------------
-   Provides a visible but sleek scrollbar instead of hiding it.
+/* -- Hide Scrollbars Globally for Cards ------------------------------
+   Keeps the scroll functionality but hides the unsightly scrollbar track.
 ---------------------------------------------------------------------- */
 .appointments-card .card-body::-webkit-scrollbar,
 .product-sales-card .card-body::-webkit-scrollbar,
@@ -2939,39 +2938,7 @@
 .top-services-today .card-body::-webkit-scrollbar,
 .services-today-list::-webkit-scrollbar,
 .service-list::-webkit-scrollbar {
-    width: 6px;
-    height: 6px;
-}
-
-.appointments-card .card-body::-webkit-scrollbar-track,
-.product-sales-card .card-body::-webkit-scrollbar-track,
-.revenue-card .card-body::-webkit-scrollbar-track,
-.top-services-card .card-body::-webkit-scrollbar-track,
-.top-services-today .card-body::-webkit-scrollbar-track,
-.services-today-list::-webkit-scrollbar-track,
-.service-list::-webkit-scrollbar-track {
-    background: transparent;
-}
-
-.appointments-card .card-body::-webkit-scrollbar-thumb,
-.product-sales-card .card-body::-webkit-scrollbar-thumb,
-.revenue-card .card-body::-webkit-scrollbar-thumb,
-.top-services-card .card-body::-webkit-scrollbar-thumb,
-.top-services-today .card-body::-webkit-scrollbar-thumb,
-.services-today-list::-webkit-scrollbar-thumb,
-.service-list::-webkit-scrollbar-thumb {
-    background: #cbd5e1;
-    border-radius: 10px;
-}
-
-.appointments-card .card-body::-webkit-scrollbar-thumb:hover,
-.product-sales-card .card-body::-webkit-scrollbar-thumb:hover,
-.revenue-card .card-body::-webkit-scrollbar-thumb:hover,
-.top-services-card .card-body::-webkit-scrollbar-thumb:hover,
-.top-services-today .card-body::-webkit-scrollbar-thumb:hover,
-.services-today-list::-webkit-scrollbar-thumb:hover,
-.service-list::-webkit-scrollbar-thumb:hover {
-    background: #94a3b8;
+    display: none; /* Safari and Chrome */
 }
 
 .appointments-card .card-body,
@@ -2981,8 +2948,8 @@
 .top-services-today .card-body,
 .services-today-list,
 .service-list {
-    scrollbar-width: thin;
-    scrollbar-color: #cbd5e1 transparent;
+    -ms-overflow-style: none;  /* Internet Explorer 10+ */
+    scrollbar-width: none;  /* Firefox */
 }
 
 /* -- Tab Badges --------------------------------------------------------

@@ -215,19 +215,19 @@ document.addEventListener('DOMContentLoaded', () => {
                     const percentage = Math.round((p.count / maxCount) * 100);
                     const color = colors[idx % colors.length];
                     return `
-                        <li class="services-today-item" style="padding-top: 14px; padding-bottom: 14px;">
+                        <li class="services-today-item" style="padding: 10px 4px; margin-bottom: 2px;">
                             <div class="sti-info" style="flex:1;">
-                                <div style="width:30px; height:30px; border-radius:8px; background:${color}15; display:flex; align-items:center; justify-content:center; flex-shrink:0;">
-                                    <i data-feather="package" style="width:14px; height:14px; color:${color};"></i>
+                                <div style="width:28px; height:28px; border-radius:6px; background:${color}15; display:flex; align-items:center; justify-content:center; flex-shrink:0;">
+                                    <i data-feather="package" style="width:13px; height:13px; color:${color};"></i>
                                 </div>
-                                <span class="sti-name" style="font-weight:600;">${p.name}</span>
+                                <span class="sti-name" style="font-weight:600; font-size:0.82rem;">${p.name}</span>
                             </div>
-                            <div class="sti-right" style="flex:1.2; justify-content:flex-end; gap:12px;">
-                                <div class="sti-bar-track" style="flex:1; max-width:80px;">
+                            <div class="sti-right" style="flex:1.2; justify-content:flex-end; gap:8px;">
+                                <div class="sti-bar-track" style="flex:1; max-width:60px;">
                                     <div class="sti-bar" style="width:${percentage}%; background:${color}"></div>
                                 </div>
-                                <span style="background:${color}15; color:${color}; padding:3px 10px; border-radius:12px; font-size:0.75rem; font-weight:700; white-space:nowrap;">${p.count} sold</span>
-                                <span style="font-weight:700; color:#059669; font-size:0.9rem; min-width:60px; text-align:right;">₹${p.revenue.toLocaleString('en-IN')}</span>
+                                <span style="background:${color}15; color:${color}; padding:2px 8px; border-radius:10px; font-size:0.7rem; font-weight:700; white-space:nowrap;">${p.count} sold</span>
+                                <span style="font-weight:700; color:#059669; font-size:0.82rem; min-width:55px; text-align:right;">₹${p.revenue.toLocaleString('en-IN')}</span>
                             </div>
                         </li>
                     `;
