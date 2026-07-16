@@ -174,20 +174,24 @@
             <!-- KPI Cards -->
             <div class="summary-cards" style="margin-bottom:32px;">
                 <div class="card stat-card">
-                    <div class="stat-icon bg-emerald-light"><i data-feather="dollar-sign" class="text-emerald"></i></div>
-                    <div class="stat-details"><p class="stat-label">Realized Revenue</p><h3 class="stat-value" id="revKpiRealized">₹0</h3><p style="font-size:0.75rem; color:#64748b; margin-top:4px;">From completed bookings</p></div>
+                    <div class="stat-icon bg-emerald-light"><i data-feather="scissors" class="text-emerald"></i></div>
+                    <div class="stat-details"><p class="stat-label">Services Revenue</p><h3 class="stat-value" id="kpiServicesRev">₹0</h3><p style="font-size:0.75rem; color:#64748b; margin-top:4px;">Completed appointments</p></div>
                 </div>
                 <div class="card stat-card">
-                    <div class="stat-icon bg-indigo-light"><i data-feather="clock" class="text-indigo"></i></div>
-                    <div class="stat-details"><p class="stat-label">Revenue Forecast</p><h3 class="stat-value" id="revKpiForecast">₹0</h3><p style="font-size:0.75rem; color:#64748b; margin-top:4px;">Realized + Booked items</p></div>
+                    <div class="stat-icon bg-blue-light"><i data-feather="package" class="text-blue" style="color: #3b82f6;"></i></div>
+                    <div class="stat-details"><p class="stat-label">Product Sales</p><h3 class="stat-value" id="kpiProductsRev">₹0</h3><p style="font-size:0.75rem; color:#64748b; margin-top:4px;">Today's POS sales</p></div>
                 </div>
                 <div class="card stat-card">
-                    <div class="stat-icon bg-rose-light"><i data-feather="trending-down" class="text-rose"></i></div>
-                    <div class="stat-details"><p class="stat-label">Revenue Loss</p><h3 class="stat-value" id="revKpiLoss">₹0</h3><p style="font-size:0.75rem; color:#64748b; margin-top:4px;">No-shows / Cancellations</p></div>
+                    <div class="stat-icon bg-purple-light" style="background: #f3e8ff;"><i data-feather="award" class="text-purple" style="color: #a855f7;"></i></div>
+                    <div class="stat-details"><p class="stat-label">Membership Sales</p><h3 class="stat-value" id="kpiMembershipsRev">₹0</h3><p style="font-size:0.75rem; color:#64748b; margin-top:4px;">Memberships sold today</p></div>
                 </div>
-                <div class="card stat-card">
-                    <div class="stat-icon bg-teal-light"><i data-feather="percent" class="text-teal"></i></div>
-                    <div class="stat-details"><p class="stat-label">Capture Rate</p><h3 class="stat-value" id="revKpiRate">0%</h3><p style="font-size:0.75rem; color:#64748b; margin-top:4px;">Realized vs Forecast</p></div>
+                <div class="card stat-card" style="background: linear-gradient(135deg, #1e3a8a 0%, #3b82f6 100%); color: #fff; border: none; box-shadow: 0 10px 15px -3px rgba(59, 130, 246, 0.4);">
+                    <div class="stat-icon" style="background: rgba(255,255,255,0.2);"><i data-feather="dollar-sign" style="color: #fff;"></i></div>
+                    <div class="stat-details">
+                        <p class="stat-label" style="color: #e0e7ff;">Total Revenue</p>
+                        <h3 class="stat-value" id="kpiTotalRev" style="color: #fff;">₹0</h3>
+                        <p style="font-size:0.75rem; color: #bfdbfe; margin-top:4px;">Services + Products + Memberships</p>
+                    </div>
                 </div>
             </div>
 
@@ -297,15 +301,60 @@
                 const now = new Date();
                 const localISOTime = new Date(now.getTime() - (now.getTimezoneOffset() * 60000)).toISOString().split('T')[0];
 
-                const { data, error } = await supabase
+                // --- 1. NEW KPI LOGIC (business_transactions) ---
+                const { data: trxData, error: trxError } = await supabase
+                    .from('business_transactions')
+                    .select('*')
+                    .eq('branch_id', branchId)
+                    .gte('created_at', `${localISOTime}T00:00:00`)
+                    .lte('created_at', `${localISOTime}T23:59:59`);
+
+                if (trxError) throw trxError;
+
+                let servicesRev = 0, productsRev = 0, membershipsRev = 0;
+                const trxMap = {};
+                
+                (trxData || []).forEach(trx => {
+                    const refId = trx.reference_id;
+                    if (!refId) return;
+                    if (!trxMap[refId]) {
+                        trxMap[refId] = { type: trx.reference_type, paid: 0, refunded: 0 };
+                    }
+                    const amt = Number(trx.final_amount) || Number(trx.amount) || 0;
+                    if (trx.status === 'paid') {
+                        trxMap[refId].paid += amt;
+                    } else if (trx.status === 'refunded') {
+                        trxMap[refId].refunded += amt;
+                    }
+                });
+
+                Object.values(trxMap).forEach(group => {
+                    const net = group.paid - group.refunded;
+                    if (net > 0) {
+                        if (group.type === 'booking') servicesRev += net;
+                        else if (group.type === 'product') productsRev += net;
+                        else if (group.type === 'membership') membershipsRev += net;
+                    }
+                });
+
+                const totalRev = servicesRev + productsRev + membershipsRev;
+
+                document.getElementById('kpiServicesRev').textContent = '₹' + servicesRev.toLocaleString('en-IN');
+                document.getElementById('kpiProductsRev').textContent = '₹' + productsRev.toLocaleString('en-IN');
+                document.getElementById('kpiMembershipsRev').textContent = '₹' + membershipsRev.toLocaleString('en-IN');
+                document.getElementById('kpiTotalRev').textContent = '₹' + totalRev.toLocaleString('en-IN');
+
+
+                // --- 2. EXISTING CHART/TABLE LOGIC (bookings_for_business_transaction) ---
+                const { data: bookingsData, error: bookingsError } = await supabase
                     .from('bookings_for_business_transaction')
                     .select('*')
                     .eq('branch_id', branchId)
                     .eq('booking_date', localISOTime);
 
-                if (error) throw error;
+                if (bookingsError) throw bookingsError;
 
-                todaysBookingsData = data || [];
+                todaysBookingsData = bookingsData || [];
                 tableBody.innerHTML = '';
 
                 todaysBookingsData.forEach(b => {
@@ -346,10 +395,7 @@
             const captureRate = totalForecast > 0 ? Math.round((realized / totalForecast) * 100) : 0;
 
             document.getElementById('revRealizedBadge').textContent = '₹' + realized.toLocaleString() + ' realized';
-            document.getElementById('revKpiRealized').textContent = '₹' + realized.toLocaleString();
-            document.getElementById('revKpiForecast').textContent = '₹' + totalForecast.toLocaleString();
-            document.getElementById('revKpiLoss').textContent = '₹' + lost.toLocaleString();
-            document.getElementById('revKpiRate').textContent = captureRate + '%';
+            // Removed old KPI updates since elements are swapped out.
             document.getElementById('revLabelRealized').textContent = '₹' + realized.toLocaleString();
             document.getElementById('revLabelBooked').textContent = '₹' + booked.toLocaleString();
             document.getElementById('revLabelLost').textContent = '₹' + lost.toLocaleString();
