@@ -468,52 +468,15 @@ document.addEventListener('DOMContentLoaded', () => {
             const sortedItems = Object.values(dailyRevenue).sort((a, b) => a.date.localeCompare(b.date));
             const maxRevenue = Math.max(...sortedItems.map(item => item.revenue), 1000);
 
-            // Create / reuse a single tooltip div
-            let tooltip = document.getElementById('weeklyRevenueTooltip');
-            if (!tooltip) {
-                tooltip = document.createElement('div');
-                tooltip.id = 'weeklyRevenueTooltip';
-                tooltip.style.cssText = [
-                    'position:fixed', 'z-index:9999', 'pointer-events:none',
-                    'background:#1e293b', 'color:#f8fafc', 'border-radius:8px',
-                    'padding:8px 12px', 'font-size:0.78rem', 'line-height:1.5',
-                    'box-shadow:0 4px 12px rgba(0,0,0,0.25)', 'display:none',
-                    'white-space:nowrap'
-                ].join(';');
-                document.body.appendChild(tooltip);
-            }
-
             chartContainer.innerHTML = sortedItems.map(item => {
                 const heightPerc = Math.max(Math.round((item.revenue / maxRevenue) * 100), 2);
-                // Full day name and formatted date for tooltip
-                const dateObj   = new Date(item.date + 'T00:00:00');
-                const fullDay   = dateObj.toLocaleDateString('en-GB', { weekday: 'long' });
-                const fmtDate   = dateObj.toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' });
-                const amtStr    = '₹' + item.revenue.toLocaleString('en-IN');
                 return `
-                    <div class="bar-group ${item.isToday ? 'active' : ''}"
-                         data-tip-line1="${amtStr} — ${fullDay}"
-                         data-tip-line2="${fmtDate}">
-                        <div class="bar" style="height: ${heightPerc}%"></div>
+                    <div class="bar-group ${item.isToday ? 'active' : ''}">
+                        <div class="bar" style="height: ${heightPerc}%" title="₹${item.revenue.toLocaleString('en-IN')}"></div>
                         <span class="day">${item.day}</span>
                     </div>
                 `;
             }).join('');
-
-            // Attach hover listeners to bar-groups
-            chartContainer.querySelectorAll('.bar-group[data-tip-line1]').forEach(el => {
-                el.addEventListener('mouseenter', e => {
-                    tooltip.innerHTML = `<div style="font-weight:700;">${el.dataset.tipLine1}</div><div style="color:#94a3b8;">${el.dataset.tipLine2}</div>`;
-                    tooltip.style.display = 'block';
-                });
-                el.addEventListener('mousemove', e => {
-                    tooltip.style.left = (e.clientX + 12) + 'px';
-                    tooltip.style.top  = (e.clientY - 56) + 'px';
-                });
-                el.addEventListener('mouseleave', () => {
-                    tooltip.style.display = 'none';
-                });
-            });
 
         } catch (err) {
             console.error("Error fetching Weekly Revenue:", err);
