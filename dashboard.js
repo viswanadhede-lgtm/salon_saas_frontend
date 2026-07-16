@@ -216,7 +216,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     const color = colors[idx % colors.length];
                     return `
                         <li class="services-today-item" style="padding-top: 14px; padding-bottom: 14px;">
-                            <div class="sti-info" style="flex:1;">
+                            <div class="sti-info" style="flex: 0 0 auto;">
                                 <div style="width:30px; height:30px; border-radius:8px; background:${color}15; display:flex; align-items:center; justify-content:center; flex-shrink:0;">
                                     <i data-feather="package" style="width:14px; height:14px; color:${color};"></i>
                                 </div>
