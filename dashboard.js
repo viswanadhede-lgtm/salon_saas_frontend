@@ -546,12 +546,9 @@ document.addEventListener('DOMContentLoaded', () => {
                 
                 return `
                     <li class="services-today-item" style="padding: 12px 0;">
-                        <div class="sti-info" style="align-items: flex-start; margin-right: 15px;">
-                            <span class="sti-dot" style="background:${color}; margin-top: 6px;"></span>
-                            <div style="display: flex; flex-direction: column;">
-                                <span class="sti-name" style="line-height: 1.2;">${s.name}</span>
-                                <span style="font-size: 0.75rem; color: #64748b; margin-top: 4px; font-weight: 500;">₹${s.revenue.toLocaleString('en-IN')}</span>
-                            </div>
+                        <div class="sti-info" style="align-items: center; margin-right: 15px;">
+                            <span class="sti-dot" style="background:${color};"></span>
+                            <span class="sti-name" style="line-height: 1.2;">${s.name}</span>
                         </div>
                         <div class="sti-right">
                             <div class="sti-bar-track">
