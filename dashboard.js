@@ -526,37 +526,26 @@ document.addEventListener('DOMContentLoaded', () => {
             const allCounts = [...new Set(Object.values(serviceMap).map(s => s.count))].sort((a, b) => b - a);
             const top3Counts = allCounts.slice(0, 3);
             
-            const groupedByCount = {};
+            const finalServices = [];
             top3Counts.forEach(count => {
-                // For a tie-break inside the same rank, you might want to sort by revenue
-                groupedByCount[count] = Object.values(serviceMap)
+                const tiedServices = Object.values(serviceMap)
                     .filter(s => s.count === count)
                     .sort((a, b) => b.revenue - a.revenue);
+                finalServices.push(...tiedServices);
             });
 
-            // Adjust list styling for complex wrap layout
-            listContainer.style.display = 'flex';
-            listContainer.style.flexDirection = 'column';
-            listContainer.style.gap = '16px';
-            listContainer.style.listStyle = 'none';
-            listContainer.style.padding = '0';
+            // Revert any inline styles injected for the grid
+            listContainer.style = '';
 
-            listContainer.innerHTML = top3Counts.map(count => {
-                const grouped = groupedByCount[count];
-                return `
-                    <li style="display: flex; flex-direction: column; gap: 8px; border-bottom: none; padding: 0;">
-                        <span style="font-size: 0.75rem; color: #4f46e5; font-weight: 700; text-transform: uppercase;">${count} Booking${count > 1 ? 's' : ''}</span>
-                        <div style="display: flex; flex-wrap: wrap; gap: 12px;">
-                            ${grouped.map(s => `
-                                <div style="flex: 1 1 calc(33.333% - 12px); min-width: 130px; background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 12px; display: flex; flex-direction: column; justify-content: space-between; box-shadow: 0 1px 2px rgba(0,0,0,0.02);">
-                                    <div style="font-weight: 600; color: #1e293b; font-size: 0.85rem; line-height: 1.2; margin-bottom: 6px;">${s.name}</div>
-                                    <div style="color: #059669; font-weight: 700; font-size: 0.9rem;">₹${s.revenue.toLocaleString('en-IN')}</div>
-                                </div>
-                            `).join('')}
-                        </div>
-                    </li>
-                `;
-            }).join('');
+            listContainer.innerHTML = finalServices.map(s => `
+                <li>
+                    <div class="service-info">
+                        <span class="service-name">${s.name}</span>
+                        <span class="service-count">${s.count} bookings</span>
+                    </div>
+                    <div class="service-revenue">₹${s.revenue.toLocaleString('en-IN')}</div>
+                </li>
+            `).join('');
 
         } catch (err) {
             console.error("Error fetching Weekly Top Services:", err);
