@@ -470,13 +470,55 @@ document.addEventListener('DOMContentLoaded', () => {
 
             chartContainer.innerHTML = sortedItems.map(item => {
                 const heightPerc = Math.max(Math.round((item.revenue / maxRevenue) * 100), 2);
+                // Format date as "06 Feb 2026"
+                const dateObj = new Date(item.date + 'T00:00:00');
+                const formattedDate = dateObj.toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' });
                 return `
                     <div class="bar-group ${item.isToday ? 'active' : ''}">
-                        <div class="bar" style="height: ${heightPerc}%" title="₹${item.revenue.toLocaleString('en-IN')}"></div>
+                        <div class="bar"
+                             style="height: ${heightPerc}%"
+                             data-tip="₹${item.revenue.toLocaleString('en-IN')}"
+                             data-date="${formattedDate}">
+                        </div>
                         <span class="day">${item.day}</span>
                     </div>
                 `;
             }).join('');
+
+            // Custom tooltip — show amount + date on hover
+            const tooltip = (() => {
+                let el = document.getElementById('weeklyRevenueTooltip');
+                if (!el) {
+                    el = document.createElement('div');
+                    el.id = 'weeklyRevenueTooltip';
+                    el.style.cssText = [
+                        'position:fixed', 'z-index:9999', 'pointer-events:none',
+                        'background:#1e293b', 'color:#fff', 'border-radius:8px',
+                        'padding:8px 12px', 'font-size:0.78rem', 'line-height:1.5',
+                        'box-shadow:0 4px 12px rgba(0,0,0,0.2)', 'display:none',
+                        'text-align:center', 'white-space:nowrap'
+                    ].join(';');
+                    document.body.appendChild(el);
+                }
+                return el;
+            })();
+
+            chartContainer.querySelectorAll('.bar[data-tip]').forEach(bar => {
+                bar.addEventListener('mouseenter', () => {
+                    tooltip.innerHTML = `
+                        <span style="font-weight:700; font-size:0.85rem;">${bar.dataset.tip}</span><br>
+                        <span style="color:#94a3b8; font-size:0.75rem;">${bar.dataset.date}</span>
+                    `;
+                    tooltip.style.display = 'block';
+                });
+                bar.addEventListener('mousemove', (e) => {
+                    tooltip.style.left = (e.clientX - tooltip.offsetWidth / 2) + 'px';
+                    tooltip.style.top  = (e.clientY - tooltip.offsetHeight - 10) + 'px';
+                });
+                bar.addEventListener('mouseleave', () => {
+                    tooltip.style.display = 'none';
+                });
+            });
 
         } catch (err) {
             console.error("Error fetching Weekly Revenue:", err);
