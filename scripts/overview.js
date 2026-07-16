@@ -78,10 +78,9 @@ const initializeOverview = async () => {
         if (window.feather) feather.replace();
 
         try {
-            const [kpiRes, trendRes, leadersRes, splitRes, insightsRes, branchRes] = await Promise.all([
+            const [kpiRes, trendRes, splitRes, insightsRes, branchRes] = await Promise.all([
                 supabase.rpc('get_overview_kpis', args),
                 supabase.rpc('get_overview_trends', args),
-                supabase.rpc('get_overview_leaders', args),
                 supabase.rpc('get_overview_revenue_split', args),
                 supabase.rpc('get_overview_insights', args),
                 supabase.rpc('get_overview_branch_performance', args) // Branch logic ignores p_branch_id globally
@@ -269,60 +268,7 @@ const initializeOverview = async () => {
                 });
             }
 
-            // ── C. Render Performance Leaders ──
-            const leadersData = leadersRes.data || [];
-            const topServices = leadersData.filter(l => l.leader_type === 'service');
-            const topStaff = leadersData.filter(l => l.leader_type === 'staff');
 
-            // Top Services HTML Injection
-            const perfList = document.querySelector('.performance-list');
-            if (perfList) {
-                perfList.innerHTML = '';
-                if (topServices.length === 0) {
-                    perfList.innerHTML = '<div style="padding:16px;text-align:center;color:#94a3b8;">No services data available</div>';
-                } else {
-                    const colors = ['#6366f1', '#ec4899', '#f59e0b', '#10b981', '#8b5cf6'];
-                    topServices.forEach((s, idx) => {
-                        const color = colors[idx % colors.length];
-                        perfList.innerHTML += `
-                            <div style="display: flex; justify-content: space-between; align-items: center; padding: 12px 0; border-bottom: 1px solid #f1f5f9;">
-                                <div style="display: flex; align-items: center; gap: 12px;">
-                                    <div style="width: 8px; height: 8px; border-radius: 50%; background: ${color};"></div>
-                                    <span style="font-weight: 500;">${s.name || 'Unknown'}</span>
-                                </div>
-                                <div style="text-align: right;">
-                                    <div style="font-weight: 600;">₹${Number(s.revenue || 0).toLocaleString('en-IN')}</div>
-                                    <div style="font-size: 0.75rem; color: #94a3b8;">${s.bookings} bookings</div>
-                                </div>
-                            </div>
-                        `;
-                    });
-                }
-            }
-
-            // Top Staff Horizontal Bar Chart
-            const staffCtx = document.getElementById('staffPerformanceChart')?.getContext('2d');
-            if (staffCtx) {
-                if (staffPerformanceChartInstance) staffPerformanceChartInstance.destroy();
-                staffPerformanceChartInstance = new Chart(staffCtx, {
-                    type: 'bar',
-                    data: {
-                        labels: topStaff.map(s => s.name || 'Unknown'),
-                        datasets: [{
-                            label: 'Revenue Generated',
-                            data: topStaff.map(s => Number(s.revenue || 0)),
-                            backgroundColor: '#3b82f6',
-                            borderRadius: 4
-                        }]
-                    },
-                    options: {
-                        indexAxis: 'y', // Makes it horizontal
-                        responsive: true, maintainAspectRatio: false,
-                        plugins: { datalabels: { display: false }, legend: { display: false } },
-                        scales: { x: { beginAtZero: true, grid: { display: false } }, y: { grid: { display: false } } }
-                    }
-                });
-            }
 
             // ── D. Render Revenue Split (Donut Chart) ──
             const splitData = splitRes.data || [];
