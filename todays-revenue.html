@@ -215,9 +215,9 @@
                             </div>
                         </div>
                         <div style="margin-top:24px; width:100%; padding:0 20px;">
-                            <div style="display:flex; justify-content:space-between; margin-bottom:8px;"><div style="display:flex; align-items:center; gap:8px;"><span style="width:10px; height:10px; border-radius:2px; background:#10b981;"></span><span style="font-size:0.85rem; color:#475569;">Realized</span></div><span id="revLabelRealized" style="font-size:0.85rem; font-weight:600; color:#1e293b;">₹0</span></div>
-                            <div style="display:flex; justify-content:space-between; margin-bottom:8px;"><div style="display:flex; align-items:center; gap:8px;"><span style="width:10px; height:10px; border-radius:2px; background:#6366f1;"></span><span style="font-size:0.85rem; color:#475569;">Pending</span></div><span id="revLabelBooked" style="font-size:0.85rem; font-weight:600; color:#1e293b;">₹0</span></div>
-                            <div style="display:flex; justify-content:space-between;"><div style="display:flex; align-items:center; gap:8px;"><span style="width:10px; height:10px; border-radius:2px; background:#f43f5e;"></span><span style="font-size:0.85rem; color:#475569;">Lost</span></div><span id="revLabelLost" style="font-size:0.85rem; font-weight:600; color:#1e293b;">₹0</span></div>
+                            <div style="display:flex; justify-content:space-between; margin-bottom:8px;"><div style="display:flex; align-items:center; gap:8px;"><span style="width:10px; height:10px; border-radius:2px; background:#10b981;"></span><span style="font-size:0.85rem; color:#475569;">Services</span></div><span id="revLabelServices" style="font-size:0.85rem; font-weight:600; color:#1e293b;">₹0</span></div>
+                            <div style="display:flex; justify-content:space-between; margin-bottom:8px;"><div style="display:flex; align-items:center; gap:8px;"><span style="width:10px; height:10px; border-radius:2px; background:#3b82f6;"></span><span style="font-size:0.85rem; color:#475569;">Products</span></div><span id="revLabelProducts" style="font-size:0.85rem; font-weight:600; color:#1e293b;">₹0</span></div>
+                            <div style="display:flex; justify-content:space-between;"><div style="display:flex; align-items:center; gap:8px;"><span style="width:10px; height:10px; border-radius:2px; background:#a855f7;"></span><span style="font-size:0.85rem; color:#475569;">Memberships</span></div><span id="revLabelMemberships" style="font-size:0.85rem; font-weight:600; color:#1e293b;">₹0</span></div>
                         </div>
                     </div>
                 </div>
@@ -404,16 +404,17 @@
 
             document.getElementById('revRealizedBadge').textContent = '₹' + realized.toLocaleString() + ' realized';
             // Removed old KPI updates since elements are swapped out.
-            document.getElementById('revLabelRealized').textContent = '₹' + realized.toLocaleString();
-            document.getElementById('revLabelBooked').textContent = '₹' + booked.toLocaleString();
-            document.getElementById('revLabelLost').textContent = '₹' + lost.toLocaleString();
-            document.getElementById('revDonutCenter').textContent = '₹' + (realized + booked + lost).toLocaleString();
+            document.getElementById('revLabelServices').textContent = '₹' + servicesRev.toLocaleString('en-IN');
+            document.getElementById('revLabelProducts').textContent = '₹' + productsRev.toLocaleString('en-IN');
+            document.getElementById('revLabelMemberships').textContent = '₹' + membershipsRev.toLocaleString('en-IN');
+            document.getElementById('revDonutCenter').textContent = '₹' + totalRev.toLocaleString('en-IN');
 
-            const total = realized + booked + lost;
-            if (total > 0) {
-                const p1 = Math.round((realized / total) * 100);
-                const p2 = Math.round((booked / total) * 100);
-                document.getElementById('revChartDonut').style.background = `conic-gradient(#10b981 0% ${p1}%, #6366f1 ${p1}% ${p1+p2}%, #f43f5e ${p1+p2}% 100%)`;
+            if (totalRev > 0) {
+                const p1 = Math.round((servicesRev / totalRev) * 100);
+                const p2 = Math.round((productsRev / totalRev) * 100);
+                document.getElementById('revChartDonut').style.background = `conic-gradient(#10b981 0% ${p1}%, #3b82f6 ${p1}% ${p1+p2}%, #a855f7 ${p1+p2}% 100%)`;
+            } else {
+                document.getElementById('revChartDonut').style.background = `conic-gradient(#e2e8f0 0% 100%)`;
             }
 
             const staffContainer = document.getElementById('revStaffBars');
