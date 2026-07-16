@@ -203,7 +203,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
             const aggregated = Object.values(productMap)
                 .sort((a, b) => b.count - a.count)
-                .slice(0, 5);
+                .slice(0, 4);
 
             if (aggregated.length > 0) {
                 const maxCount = aggregated[0].count; // Used for progress bar max width
