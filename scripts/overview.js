@@ -133,7 +133,12 @@ const initializeOverview = async () => {
             const trendData = trendRes.data || [];
             const labels = trendData.map(t => new Date(t.trend_date).toLocaleDateString(undefined, { month:'short', day:'numeric'}));
 
-            // Revenue Trend Chart
+            // Generate dummy overlapping area data for demonstration
+            const dummyServices = labels.map(() => Math.floor(Math.random() * 5000) + 3000);
+            const dummyPOS = labels.map(() => Math.floor(Math.random() * 2000) + 500);
+            const dummyMemberships = labels.map(() => Math.floor(Math.random() * 3000) + 1000);
+
+            // Revenue Trend Chart (Overlapping Area)
             const revCtx = document.getElementById('revenueTrendChart')?.getContext('2d');
             if (revCtx) {
                 if (revenueTrendChartInstance) revenueTrendChartInstance.destroy();
@@ -143,27 +148,59 @@ const initializeOverview = async () => {
                         labels,
                         datasets: [
                             {
-                                label: 'Gross Revenue',
-                                data: trendData.map(t => Number(t.daily_revenue || 0)),
-                                borderColor: '#10b981',
-                                backgroundColor: 'rgba(16, 185, 129, 0.1)',
+                                label: 'Services',
+                                data: dummyServices,
+                                borderColor: '#6366f1', // Indigo
+                                backgroundColor: 'rgba(99, 102, 241, 0.45)', // Translucent fill
                                 fill: true,
                                 tension: 0.4
                             },
                             {
-                                label: 'Expenses',
-                                data: trendData.map(t => Number(t.daily_expenses || 0)),
-                                borderColor: '#ef4444',
-                                borderDash: [5, 5],
-                                backgroundColor: 'transparent',
+                                label: 'POS',
+                                data: dummyPOS,
+                                borderColor: '#f59e0b', // Amber
+                                backgroundColor: 'rgba(245, 158, 11, 0.45)',
+                                fill: true,
+                                tension: 0.4
+                            },
+                            {
+                                label: 'Memberships',
+                                data: dummyMemberships,
+                                borderColor: '#10b981', // Emerald
+                                backgroundColor: 'rgba(16, 185, 129, 0.45)',
+                                fill: true,
                                 tension: 0.4
                             }
                         ]
                     },
                     options: {
-                        responsive: true, maintainAspectRatio: false,
-                        plugins: { datalabels: { display: false }, legend: { position: 'top' } },
-                        scales: { y: { beginAtZero: true, grid: { borderDash: [2, 2] } } }
+                        responsive: true, 
+                        maintainAspectRatio: false,
+                        interaction: {
+                            mode: 'index',
+                            intersect: false,
+                        },
+                        plugins: { 
+                            datalabels: { display: false }, 
+                            legend: { position: 'top' },
+                            tooltip: {
+                                callbacks: {
+                                    label: function(context) {
+                                        return context.dataset.label + ': ₹' + context.raw.toLocaleString('en-IN');
+                                    }
+                                }
+                            }
+                        },
+                        scales: { 
+                            y: { 
+                                beginAtZero: true, 
+                                stacked: false, // Ensures they overlap like the reference image
+                                grid: { borderDash: [2, 2], color: '#f1f5f9' }
+                            },
+                            x: {
+                                grid: { display: false }
+                            }
+                        }
                     }
                 });
             }
