@@ -545,7 +545,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 const color = colors[idx % colors.length];
                 
                 return `
-                    <li class="services-today-item" style="padding: 12px 0;">
+                    <li class="services-today-item">
                         <div class="sti-info" style="align-items: center; margin-right: 15px;">
                             <span class="sti-dot" style="background:${color};"></span>
                             <span class="sti-name" style="line-height: 1.2;">${s.name}</span>
