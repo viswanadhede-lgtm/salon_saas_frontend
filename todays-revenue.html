@@ -303,7 +303,7 @@
                                 <th style="padding:14px 20px; text-align:left; color:#64748b; font-weight:600; width:19%;">Customer</th>
                                 <th style="padding:14px 20px; text-align:left; color:#64748b; font-weight:600; width:26%;">Item</th>
                                 <th style="padding:14px 20px; text-align:left; color:#64748b; font-weight:600; width:19%;">Staff</th>
-                                <th style="padding:14px 20px; text-align:right; color:#64748b; font-weight:600; width:20%;">Amount</th>
+                                <th style="padding:14px 20px; text-align:left; color:#64748b; font-weight:600; width:20%;">Amount</th>
                             </tr>
                         </thead>
                         <tbody id="revTableBody"></tbody>
@@ -529,7 +529,7 @@
                             <td style="padding:14px 20px; color:#1e293b; font-weight:500;">${row.customer}</td>
                             <td style="padding:14px 20px;" id="${cellId}"><div style="display:flex; flex-wrap:wrap; gap:4px; align-items:center;">${firstPill + plusBadge}</div></td>
                             <td style="padding:14px 20px; color:#475569;">${row.staff}</td>
-                            <td style="padding:14px 20px; text-align:right; font-weight:700; color:#10b981;">₹${Number(row.amount).toLocaleString('en-IN')}</td>
+                            <td style="padding:14px 20px; text-align:left; font-weight:700; color:#10b981;">₹${Number(row.amount).toLocaleString('en-IN')}</td>
                         `;
                         // Store items safely as data attribute AFTER appending innerHTML
                         tableBody.appendChild(tr);
