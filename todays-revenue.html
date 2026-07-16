@@ -451,6 +451,7 @@
                 todaysBookingsData.forEach(b => {
                     unifiedRows.push({
                         type: 'Service',
+                        customer_id: b.customer_id,
                         customer: b.customer_name || 'Walk-in Customer',
                         items: Array.isArray(b.service_names) && b.service_names.length > 0
                             ? b.service_names
@@ -473,6 +474,7 @@
                 (salesData || []).forEach(s => {
                     unifiedRows.push({
                         type: 'Product',
+                        customer_id: s.customer_id,
                         customer: s.customer_name || 'Walk-in Customer',
                         items: s.product_names || [],
                         staff: s.staff_name || 'Unassigned',
@@ -492,6 +494,7 @@
                 (memberData || []).forEach(m => {
                     unifiedRows.push({
                         type: 'Membership',
+                        customer_id: m.customer_id,
                         customer: m.customer_name || 'Walk-in Customer',
                         items: [m.plan_name || 'Membership Plan'],
                         staff: m.assigned_by_user_name || 'Unassigned',
@@ -527,7 +530,7 @@
                                 <span style="display:inline-block; background:${s.bg}; color:${s.color}; border-radius:20px; padding:3px 12px; font-size:0.78rem; font-weight:600;">${row.type}</span>
                             </td>
                             <td style="padding:14px 20px;">
-                                <a href="#" onclick="viewCustomerProfile('${row.customer}'); return false;" style="color:#4f46e5; text-decoration:none; font-weight:600;" onmouseover="this.style.textDecoration='underline'" onmouseout="this.style.textDecoration='none'">${row.customer}</a>
+                                <a href="#" onclick="if(window.viewCustomerProfile) window.viewCustomerProfile('${row.customer_id || ''}', '${(row.customer||'').replace(/'/g, "\\'")}'); return false;" style="color:#4f46e5; text-decoration:none; font-weight:600;" onmouseover="this.style.textDecoration='underline'" onmouseout="this.style.textDecoration='none'">${row.customer}</a>
                             </td>
                             <td style="padding:14px 20px;" id="${cellId}"><div style="display:flex; flex-wrap:wrap; gap:4px; align-items:center;">${firstPill + plusBadge}</div></td>
                             <td style="padding:14px 20px; color:#475569;">${row.staff}</td>
@@ -576,8 +579,6 @@
             });
             if (sorted.length === 0) staffContainer.innerHTML = '<p style="text-align:center; color:#64748b; padding:20px;">No completed revenue data yet.</p>';
         }
-
-        function viewCustomerProfile(n) { alert('Viewing details for: ' + n + '\n(Customer profiles coming soon!)'); }
 
         function revToggleItems(cellId) {
             const cell = document.getElementById(cellId);
@@ -1277,6 +1278,7 @@
     <script src="dashboard.js"></script>
 <script src="logout.js"></script><script src="change-password.js"></script>    <script type="module" src="scripts/global-auth-guard.js"></script>
     <script type="module" src="scripts/sub-features/sub-feature-gate.js"></script>
+    <script type="module" src="scripts/global-customer-profile-modal.js"></script>
 </body>
 </html>
 
