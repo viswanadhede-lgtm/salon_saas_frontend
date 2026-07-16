@@ -163,7 +163,7 @@
                 </div>
             </div>
             <div style="display:flex; align-items:center; gap:10px; margin-right:32px;">
-                <div id="revRealizedBadge" style="background:#f0fdf4; border-radius:8px; padding:6px 14px; font-size:0.82rem; color:#166534; font-weight:600;">&#8377;0 realized</div>
+                <div id="revRealizedBadge" style="background:#f1f5f9; border-radius:8px; padding:6px 14px; font-size:0.82rem; color:#475569; font-weight:500;">Updated --:--</div>
             </div>
             <a href="dashboard.html" title="Close" style="position:absolute; top:0; right:0; display:flex; align-items:center; justify-content:center; width:36px; height:36px; background:#f8fafc; color:#64748b; transition:all 0.2s; text-decoration:none;" onmouseover="this.style.background='#fee2e2'; this.style.color='#ef4444';" onmouseout="this.style.background='#f8fafc'; this.style.color='#64748b';"><i data-feather="x" style="width:18px; height:18px;"></i></a>
         </div>
@@ -546,7 +546,8 @@
             const totalForecast = realized + booked;
             const captureRate = totalForecast > 0 ? Math.round((realized / totalForecast) * 100) : 0;
 
-            document.getElementById('revRealizedBadge').textContent = '₹' + realized.toLocaleString() + ' realized';
+            const formattedTime = new Date().toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true });
+            document.getElementById('revRealizedBadge').textContent = 'Updated ' + formattedTime;
             // Removed old KPI updates since elements are swapped out.
             document.getElementById('revLabelServices').textContent = '₹' + servicesRev.toLocaleString('en-IN');
             document.getElementById('revLabelProducts').textContent = '₹' + productsRev.toLocaleString('en-IN');
