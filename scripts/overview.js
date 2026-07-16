@@ -255,7 +255,16 @@ const initializeOverview = async () => {
                     options: {
                         responsive: true, maintainAspectRatio: false,
                         plugins: { datalabels: { display: false }, legend: { position: 'top' } },
-                        scales: { y: { beginAtZero: true, grid: { borderDash: [2, 2] } } }
+                        scales: { 
+                            y: { 
+                                beginAtZero: true, 
+                                grid: { borderDash: [2, 2], color: '#f1f5f9' },
+                                ticks: { precision: 0 } // Forces 1, 2, 3 instead of 0.5, 1.5
+                            },
+                            x: {
+                                grid: { display: false }
+                            }
+                        }
                     }
                 });
             }
