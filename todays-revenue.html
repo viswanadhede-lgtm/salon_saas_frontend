@@ -297,6 +297,7 @@
 
         window.calculateAndRenderRevenue = async function() {
             let realized = 0, booked = 0, lost = 0;
+            let servicesRev = 0, productsRev = 0, membershipsRev = 0, totalRev = 0;
             const staffRevenue = {};
             const tableBody = document.getElementById('revTableBody');
             tableBody.innerHTML = '<tr><td colspan="4" style="text-align:center; padding:24px; color:#94a3b8;">Loading live data...</td></tr>';
@@ -319,7 +320,6 @@
 
                 if (trxError) throw trxError;
 
-                let servicesRev = 0, productsRev = 0, membershipsRev = 0;
                 const trxMap = {};
                 
                 (trxData || []).forEach(trx => {
@@ -345,7 +345,7 @@
                     }
                 });
 
-                const totalRev = servicesRev + productsRev + membershipsRev;
+                totalRev = servicesRev + productsRev + membershipsRev;
 
                 document.getElementById('kpiServicesRev').textContent = '₹' + servicesRev.toLocaleString('en-IN');
                 document.getElementById('kpiProductsRev').textContent = '₹' + productsRev.toLocaleString('en-IN');
