@@ -524,21 +524,23 @@ document.addEventListener('DOMContentLoaded', () => {
             });
 
             const allCounts = [...new Set(Object.values(serviceMap).map(s => s.count))].sort((a, b) => b - a);
-            const top3Counts = allCounts.slice(0, 3);
             
-            const finalServices = [];
-            top3Counts.forEach(count => {
+            // We just sort by frequencies then revenue, and cap strictly at 5 rows
+            const allTiedServices = [];
+            allCounts.forEach(count => {
                 const tiedServices = Object.values(serviceMap)
                     .filter(s => s.count === count)
                     .sort((a, b) => b.revenue - a.revenue);
-                finalServices.push(...tiedServices);
+                allTiedServices.push(...tiedServices);
             });
+
+            const finalServices = allTiedServices.slice(0, 5);
 
             // Revert any inline styles injected for the grid
             listContainer.style = '';
 
             const colors = ['#a78bfa', '#34d399', '#60a5fa', '#fb923c', '#f472b6', '#818cf8', '#fb7185'];
-            const maxCount = top3Counts[0] || 1;
+            const maxCount = finalServices.length > 0 ? finalServices[0].count : 1;
 
             listContainer.innerHTML = finalServices.map((s, idx) => {
                 const percentage = Math.round((s.count / maxCount) * 100);
