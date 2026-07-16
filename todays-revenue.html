@@ -294,15 +294,16 @@
 
             <!-- Details Table -->
             <div class="card">
-                <div class="card-header"><h2>Completed Bookings Revenue Details</h2></div>
+                <div class="card-header"><h2>Today's Revenue Details</h2></div>
                 <div class="card-body" style="padding:0;">
                     <table style="width:100%; border-collapse:collapse; font-size:0.875rem;">
                         <thead>
                             <tr style="background:#f8fafc; border-bottom:1px solid #e2e8f0;">
-                                <th style="padding:16px 24px; text-align:left; color:#64748b; font-weight:600;">Customer</th>
-                                <th style="padding:16px 24px; text-align:left; color:#64748b; font-weight:600;">Service</th>
-                                <th style="padding:16px 24px; text-align:left; color:#64748b; font-weight:600;">Staff</th>
-                                <th style="padding:16px 24px; text-align:right; color:#64748b; font-weight:600;">Amount</th>
+                                <th style="padding:14px 20px; text-align:left; color:#64748b; font-weight:600; width:10%;">Type</th>
+                                <th style="padding:14px 20px; text-align:left; color:#64748b; font-weight:600; width:18%;">Customer</th>
+                                <th style="padding:14px 20px; text-align:left; color:#64748b; font-weight:600; width:30%;">Item</th>
+                                <th style="padding:14px 20px; text-align:left; color:#64748b; font-weight:600; width:18%;">Staff</th>
+                                <th style="padding:14px 20px; text-align:right; color:#64748b; font-weight:600; width:14%;">Amount</th>
                             </tr>
                         </thead>
                         <tbody id="revTableBody"></tbody>
@@ -434,45 +435,106 @@
                 document.getElementById('snapDigital').textContent = '₹' + digitalTotal.toLocaleString('en-IN');
 
 
-                // --- 2. EXISTING CHART/TABLE LOGIC (bookings_for_business_transaction) ---
+                // --- 2. UNIFIED TABLE: Services + Products + Memberships ---
+                const unifiedRows = [];
+
+                // 2a. SERVICES (completed bookings)
                 const { data: bookingsData, error: bookingsError } = await supabase
                     .from('bookings_for_business_transaction')
                     .select('*')
                     .eq('branch_id', branchId)
-                    .eq('booking_date', localISOTime);
+                    .eq('booking_date', localISOTime)
+                    .eq('status', 'completed');
 
                 if (bookingsError) throw bookingsError;
-
                 todaysBookingsData = bookingsData || [];
-                tableBody.innerHTML = '';
-
                 todaysBookingsData.forEach(b => {
-                    const amount = b.total_price || 0;
-                    const status = (b.status || 'booked').toLowerCase();
-                    const staffName = b.staff_name || 'Unassigned';
-                    const customerName = b.customer_name || 'Walk-in Customer';
+                    unifiedRows.push({
+                        type: 'Service',
+                        customer: b.customer_name || 'Walk-in Customer',
+                        items: Array.isArray(b.service_names) && b.service_names.length > 0
+                            ? b.service_names
+                            : (b.service_name ? b.service_name.split(',').map(s => s.trim()) : ['N/A']),
+                        staff: b.staff_name || 'Unassigned',
+                        amount: b.total_price || 0
+                    });
+                });
 
-                    if (status === 'completed') {
-                        realized += amount;
-                        staffRevenue[staffName] = (staffRevenue[staffName] || 0) + amount;
+                // 2b. PRODUCTS (paid POS sales)
+                const { data: salesData, error: salesError } = await supabase
+                    .from('sales_for_business_transactions')
+                    .select('*')
+                    .eq('branch_id', branchId)
+                    .eq('payment_status', 'paid')
+                    .gte('created_at', `${localISOTime}T00:00:00`)
+                    .lte('created_at', `${localISOTime}T23:59:59`);
+
+                if (salesError) throw salesError;
+                (salesData || []).forEach(s => {
+                    unifiedRows.push({
+                        type: 'Product',
+                        customer: s.customer_name || 'Walk-in Customer',
+                        items: s.product_names || [],
+                        staff: s.staff_name || 'Unassigned',
+                        amount: s.final_amount || s.total_price || 0
+                    });
+                });
+
+                // 2c. MEMBERSHIPS (paid today)
+                const { data: memberData, error: memberError } = await supabase
+                    .from('membership_purchases')
+                    .select('*')
+                    .eq('branch_id', branchId)
+                    .eq('payment_status', 'paid')
+                    .eq('purchase_date', localISOTime);
+
+                if (memberError) throw memberError;
+                (memberData || []).forEach(m => {
+                    unifiedRows.push({
+                        type: 'Membership',
+                        customer: m.customer_name || 'Walk-in Customer',
+                        items: [m.plan_name || 'Membership Plan'],
+                        staff: m.assigned_by_user_name || 'Unassigned',
+                        amount: m.final_amount || m.price || 0
+                    });
+                });
+
+                // Render unified rows
+                tableBody.innerHTML = '';
+                if (unifiedRows.length === 0) {
+                    tableBody.innerHTML = '<tr><td colspan="5" style="text-align:center; padding:32px; color:#94a3b8;">No completed transactions found for today.</td></tr>';
+                } else {
+                    const typeStyles = {
+                        'Service':    { color: '#059669', bg: '#d1fae5' },
+                        'Product':    { color: '#0284c7', bg: '#e0f2fe' },
+                        'Membership': { color: '#7c3aed', bg: '#ede9fe' }
+                    };
+                    unifiedRows.forEach(row => {
+                        const s = typeStyles[row.type] || { color: '#64748b', bg: '#f1f5f9' };
+                        // +N pill logic for items
+                        const maxVisible = 1;
+                        const visibleItems = row.items.slice(0, maxVisible);
+                        const extraCount = row.items.length - maxVisible;
+                        let itemsHtml = visibleItems.map(name =>
+                            `<span style="display:inline-block; background:#f1f5f9; color:#334155; border-radius:20px; padding:2px 10px; font-size:0.78rem; font-weight:500; margin-right:4px;">${name}</span>`
+                        ).join('');
+                        if (extraCount > 0) {
+                            itemsHtml += `<span style="display:inline-block; background:#e0e7ff; color:#4f46e5; border-radius:20px; padding:2px 10px; font-size:0.78rem; font-weight:600;">+${extraCount}</span>`;
+                        }
+
                         const tr = document.createElement('tr');
                         tr.style.borderBottom = '1px solid #f1f5f9';
                         tr.innerHTML = `
-                            <td style="padding:16px 24px;"><span class="customer-link" onclick="viewCustomerProfile('${customerName}')">${customerName}</span></td>
-                            <td style="padding:16px 24px; color:#475569;">${b.service_name || 'N/A'}</td>
-                            <td style="padding:16px 24px;"><span class="badge">${staffName}</span></td>
-                            <td style="padding:16px 24px; text-align:right; font-weight:700; color:#10b981;">₹${amount.toLocaleString('en-IN')}</td>
+                            <td style="padding:14px 20px;">
+                                <span style="display:inline-block; background:${s.bg}; color:${s.color}; border-radius:20px; padding:3px 12px; font-size:0.78rem; font-weight:600;">${row.type}</span>
+                            </td>
+                            <td style="padding:14px 20px; color:#1e293b; font-weight:500;">${row.customer}</td>
+                            <td style="padding:14px 20px;">${itemsHtml}</td>
+                            <td style="padding:14px 20px; color:#475569;">${row.staff}</td>
+                            <td style="padding:14px 20px; text-align:right; font-weight:700; color:#10b981;">₹${Number(row.amount).toLocaleString('en-IN')}</td>
                         `;
                         tableBody.appendChild(tr);
-                    } else if (status === 'booked') {
-                        booked += amount;
-                    } else if (status === 'no-show' || status === 'cancelled') {
-                        lost += amount;
-                    }
-                });
-
-                if (todaysBookingsData.filter(b => b.status === 'completed').length === 0) {
-                    tableBody.innerHTML = '<tr><td colspan="4" style="text-align:center; padding:32px; color:#94a3b8;">No completed transactions found for today.</td></tr>';
+                    });
                 }
 
             } catch (err) {
