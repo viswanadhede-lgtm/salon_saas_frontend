@@ -1260,6 +1260,13 @@
     overflow-y: auto;
 }
 
+/* Product Sales Today reuses services-today-list but should not have a fixed height */
+.product-sales-card .services-today-list {
+    min-height: unset;
+    max-height: unset;
+    overflow-y: visible;
+}
+
 .services-today-item {
     display: flex;
     align-items: center;
