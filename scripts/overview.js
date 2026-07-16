@@ -142,6 +142,20 @@ const initializeOverview = async () => {
             const revCtx = document.getElementById('revenueTrendChart')?.getContext('2d');
             if (revCtx) {
                 if (revenueTrendChartInstance) revenueTrendChartInstance.destroy();
+
+                // Create rich, glowing gradient fills
+                const gradServices = revCtx.createLinearGradient(0, 0, 0, 400);
+                gradServices.addColorStop(0, 'rgba(79, 70, 229, 0.7)'); // Vibrant Indigo
+                gradServices.addColorStop(1, 'rgba(79, 70, 229, 0.05)');
+
+                const gradPOS = revCtx.createLinearGradient(0, 0, 0, 400);
+                gradPOS.addColorStop(0, 'rgba(245, 158, 11, 0.7)'); // Vibrant Amber
+                gradPOS.addColorStop(1, 'rgba(245, 158, 11, 0.05)');
+
+                const gradMember = revCtx.createLinearGradient(0, 0, 0, 400);
+                gradMember.addColorStop(0, 'rgba(16, 185, 129, 0.7)'); // Vibrant Emerald
+                gradMember.addColorStop(1, 'rgba(16, 185, 129, 0.05)');
+
                 revenueTrendChartInstance = new Chart(revCtx, {
                     type: 'line',
                     data: {
@@ -150,24 +164,42 @@ const initializeOverview = async () => {
                             {
                                 label: 'Services',
                                 data: dummyServices,
-                                borderColor: '#6366f1', // Indigo
-                                backgroundColor: 'rgba(99, 102, 241, 0.45)', // Translucent fill
+                                borderColor: '#4f46e5',
+                                borderWidth: 3,
+                                backgroundColor: gradServices,
+                                pointBackgroundColor: '#ffffff',
+                                pointBorderColor: '#4f46e5',
+                                pointBorderWidth: 2,
+                                pointRadius: 0,
+                                pointHoverRadius: 6,
                                 fill: true,
                                 tension: 0.4
                             },
                             {
                                 label: 'POS',
                                 data: dummyPOS,
-                                borderColor: '#f59e0b', // Amber
-                                backgroundColor: 'rgba(245, 158, 11, 0.45)',
+                                borderColor: '#f59e0b',
+                                borderWidth: 3,
+                                backgroundColor: gradPOS,
+                                pointBackgroundColor: '#ffffff',
+                                pointBorderColor: '#f59e0b',
+                                pointBorderWidth: 2,
+                                pointRadius: 0,
+                                pointHoverRadius: 6,
                                 fill: true,
                                 tension: 0.4
                             },
                             {
                                 label: 'Memberships',
                                 data: dummyMemberships,
-                                borderColor: '#10b981', // Emerald
-                                backgroundColor: 'rgba(16, 185, 129, 0.45)',
+                                borderColor: '#10b981',
+                                borderWidth: 3,
+                                backgroundColor: gradMember,
+                                pointBackgroundColor: '#ffffff',
+                                pointBorderColor: '#10b981',
+                                pointBorderWidth: 2,
+                                pointRadius: 0,
+                                pointHoverRadius: 6,
                                 fill: true,
                                 tension: 0.4
                             }
