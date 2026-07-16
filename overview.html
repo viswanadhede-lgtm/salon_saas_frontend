@@ -532,12 +532,24 @@
                 <div class="content-actions" style="display: flex; gap: 12px; align-items: center;">
                     <div class="date-filter-wrap" style="position: relative;">
                         <i data-feather="calendar" style="position: absolute; left: 12px; top: 50%; transform: translateY(-50%); width: 14px; color: #64748b;"></i>
-                        <select id="overviewDateRange" class="form-select" style="padding: 0 12px 0 36px; height: 40px; border-radius: 8px; font-size: 0.875rem; border: 1px solid #e2e8f0; background: #fff; cursor: pointer;">
-                            <option value="30days">Last 30 Days</option>
+                        <select id="overviewDateRange" class="form-select" style="padding: 0 12px 0 36px; height: 40px; border-radius: 8px; font-size: 0.875rem; border: 1px solid #e2e8f0; background: #fff; cursor: pointer; outline: none; transition: border-color 0.2s;">
+                            <option value="today">Today</option>
+                            <option value="this_week">This Week</option>
+                            <option value="30days" selected>Last 30 Days</option>
                             <option value="3months">Last 3 Months</option>
                             <option value="6months">Last 6 Months</option>
                             <option value="12months">Last 12 Months</option>
+                            <option disabled>────────────</option>
+                            <option value="custom">Custom Range...</option>
                         </select>
+                    </div>
+                    <!-- Hidden Custom Date Inputs -->
+                    <div id="customDateWrap" style="display: none; align-items: center; gap: 8px;">
+                        <input type="date" id="customStartDate" style="height: 40px; padding: 0 12px; border: 1px solid #e2e8f0; border-radius: 8px; font-size: 0.875rem; outline: none;">
+                        <span style="color: #64748b; font-size: 0.875rem;">to</span>
+                        <input type="date" id="customEndDate" style="height: 40px; padding: 0 12px; border: 1px solid #e2e8f0; border-radius: 8px; font-size: 0.875rem; outline: none;">
+                        <button id="btnApplyDate" style="height: 40px; background: #6366f1; color: white; border: none; border-radius: 8px; padding: 0 16px; font-size: 0.875rem; font-weight: 600; cursor: pointer;">Apply</button>
+                        <button id="btnResetDate" style="height: 40px; background: #f1f5f9; color: #64748b; border: 1px solid #e2e8f0; border-radius: 8px; padding: 0 16px; font-size: 0.875rem; font-weight: 600; cursor: pointer;">Reset</button>
                     </div>
                 </div>
             </div>

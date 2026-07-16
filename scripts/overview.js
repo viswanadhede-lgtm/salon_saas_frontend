@@ -32,14 +32,31 @@ const initializeOverview = async () => {
         const val = dateRange ? dateRange.value : '30days';
         const now = new Date();
         const start = new Date(now);
-        if (val === '30days') start.setDate(now.getDate() - 30);
-        else if (val === '3months') start.setMonth(now.getMonth() - 3);
-        else if (val === '6months') start.setMonth(now.getMonth() - 6);
-        else if (val === '12months') start.setMonth(now.getMonth() - 12);
+        const end = new Date(now);
+
+        if (val === 'today') {
+            // Both start and end remain today
+        } else if (val === 'this_week') {
+            start.setDate(now.getDate() - 6); // Last 7 days including today
+        } else if (val === '30days') {
+            start.setDate(now.getDate() - 30);
+        } else if (val === '3months') {
+            start.setMonth(now.getMonth() - 3);
+        } else if (val === '6months') {
+            start.setMonth(now.getMonth() - 6);
+        } else if (val === '12months') {
+            start.setMonth(now.getMonth() - 12);
+        } else if (val === 'custom') {
+            const cs = document.getElementById('customStartDate').value;
+            const ce = document.getElementById('customEndDate').value;
+            if (cs && ce) {
+                return { start: cs, end: ce };
+            }
+        }
         
         return {
             start: start.toISOString().split('T')[0],
-            end: now.toISOString().split('T')[0]
+            end: end.toISOString().split('T')[0]
         };
     };
 
@@ -375,7 +392,41 @@ const initializeOverview = async () => {
 
     // 3. Attach Listeners
     if (branchSelect) branchSelect.addEventListener('change', loadOverviewData);
-    if (dateRange) dateRange.addEventListener('change', loadOverviewData);
+    
+    if (dateRange) {
+        dateRange.addEventListener('change', () => {
+            const customWrap = document.getElementById('customDateWrap');
+            if (dateRange.value === 'custom') {
+                if(customWrap) customWrap.style.display = 'flex';
+                // Do not load data immediately; wait for user to click Apply
+            } else {
+                if(customWrap) customWrap.style.display = 'none';
+                loadOverviewData();
+            }
+        });
+    }
+
+    const btnApply = document.getElementById('btnApplyDate');
+    const btnReset = document.getElementById('btnResetDate');
+    
+    if (btnApply) {
+        btnApply.addEventListener('click', () => {
+            const s = document.getElementById('customStartDate').value;
+            const e = document.getElementById('customEndDate').value;
+            if (s && e) loadOverviewData();
+            else alert("Please select both start and end dates.");
+        });
+    }
+
+    if (btnReset) {
+        btnReset.addEventListener('click', () => {
+            document.getElementById('customStartDate').value = '';
+            document.getElementById('customEndDate').value = '';
+            dateRange.value = '30days';
+            document.getElementById('customDateWrap').style.display = 'none';
+            loadOverviewData();
+        });
+    }
 
     // Initial Load
     loadOverviewData();
