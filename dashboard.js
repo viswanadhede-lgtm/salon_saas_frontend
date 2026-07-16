@@ -349,11 +349,13 @@ document.addEventListener('DOMContentLoaded', () => {
             const { supabase } = await import('./lib/supabase.js');
             const now = new Date();
             const today = new Date(now.getTime() - (now.getTimezoneOffset() * 60000)).toISOString().split('T')[0];
+            const companyId = localStorage.getItem('company_id');
 
             // Fetch today's bookings for this branch
             const { data: bookings, error } = await supabase
-                .from('bookings_for_business_transaction')
-                .select('service_name')
+                .from('bookings')
+                .select('service_name, price')
+                .eq('company_id', companyId)
                 .eq('branch_id', currentBranchId)
                 .eq('booking_date', today)
                 .not('status', 'in', '("cancelled","no-show")');
@@ -366,34 +368,45 @@ document.addEventListener('DOMContentLoaded', () => {
             }
 
             // Aggregate counts
-            const serviceCounts = {};
+            const serviceMap = {};
             bookings.forEach(b => {
                 const name = b.service_name || 'Other';
-                serviceCounts[name] = (serviceCounts[name] || 0) + 1;
+                if (!serviceMap[name]) {
+                    serviceMap[name] = { name, count: 0, revenue: 0 };
+                }
+                serviceMap[name].count++;
+                serviceMap[name].revenue += Number(b.price || 0);
             });
 
-            const sorted = Object.entries(serviceCounts)
-                .map(([name, count]) => ({ name, count }))
-                .sort((a, b) => b.count - a.count)
-                .slice(0, 5);
+            const allCounts = [...new Set(Object.values(serviceMap).map(s => s.count))].sort((a, b) => b - a);
+            
+            // We just sort by frequencies then revenue, and cap strictly at 5 rows
+            const allTiedServices = [];
+            allCounts.forEach(count => {
+                const tiedServices = Object.values(serviceMap)
+                    .filter(s => s.count === count)
+                    .sort((a, b) => b.revenue - a.revenue);
+                allTiedServices.push(...tiedServices);
+            });
 
-            const maxCount = sorted[0].count;
+            const finalServices = allTiedServices.slice(0, 5);
+            const maxCount = finalServices.length > 0 ? finalServices[0].count : 1;
             const colors = ['#a78bfa', '#34d399', '#60a5fa', '#fb923c', '#f472b6', '#818cf8', '#fb7185'];
 
-            listContainer.innerHTML = sorted.map((s, idx) => {
+            listContainer.innerHTML = finalServices.map((s, idx) => {
                 const percentage = Math.round((s.count / maxCount) * 100);
                 const color = colors[idx % colors.length];
                 return `
                     <li class="services-today-item">
-                        <div class="sti-info">
-                            <span class="sti-dot" style="background:${color}"></span>
-                            <span class="sti-name">${s.name}</span>
+                        <div class="sti-info" style="align-items: center; margin-right: 15px;">
+                            <span class="sti-dot" style="background:${color};"></span>
+                            <span class="sti-name" style="line-height: 1.2;">${s.name}</span>
                         </div>
                         <div class="sti-right">
                             <div class="sti-bar-track">
                                 <div class="sti-bar" style="width:${percentage}%; background:${color}"></div>
                             </div>
-                            <span class="sti-count">${s.count}</span>
+                            <span class="sti-count" style="width: 25px; text-align: right; font-weight: 700;">${s.count}</span>
                         </div>
                     </li>
                 `;
