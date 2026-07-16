@@ -208,8 +208,10 @@ document.addEventListener('DOMContentLoaded', () => {
             if (aggregated.length > 0) {
                 const maxCount = aggregated[0].count; // Used for progress bar max width
                 const colors = ['#6366f1', '#10b981', '#3b82f6', '#f59e0b', '#ec4899']; // Indigo, emerald, blue, amber, pink
-                
                 listContainer.className = 'services-today-list'; // Match the styling used in top services
+                listContainer.style.listStyle = 'none';
+                listContainer.style.padding = '0';
+                listContainer.style.margin = '0';
                 
                 listContainer.innerHTML = aggregated.map((p, idx) => {
                     const percentage = Math.round((p.count / maxCount) * 100);
