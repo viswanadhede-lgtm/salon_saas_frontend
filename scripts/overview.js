@@ -433,28 +433,84 @@ const initializeOverview = async () => {
                 }
             }
 
-            // Branch Performance Chart
+            // Branch Performance Chart (Time-series line chart with dummy data)
             const branchCtx = document.getElementById('branchPerformanceChart')?.getContext('2d');
-            const branchData = branchRes?.data || [];
-            if (branchCtx && branchData.length > 0) {
-                // Destroy old dummy inline branch chart if it somehow exists (this chart does not have an instance variable yet)
+            if (branchCtx) {
                 if (window.branchPerformanceChartInstance) window.branchPerformanceChartInstance.destroy();
-                
+
+                // Dummy time labels (last 14 days)
+                const branchLabels = [];
+                for (let i = 13; i >= 0; i--) {
+                    const d = new Date();
+                    d.setDate(d.getDate() - i);
+                    branchLabels.push(d.toLocaleDateString(undefined, { month: 'short', day: 'numeric' }));
+                }
+
+                const dummyBranch1 = branchLabels.map(() => Math.floor(Math.random() * 8000) + 2000);
+                const dummyBranch2 = branchLabels.map(() => Math.floor(Math.random() * 6000) + 1000);
+
+                // Gradients
+                const gradB1 = branchCtx.createLinearGradient(0, 0, 0, 300);
+                gradB1.addColorStop(0, 'rgba(139, 92, 246, 0.6)');
+                gradB1.addColorStop(1, 'rgba(139, 92, 246, 0.05)');
+
+                const gradB2 = branchCtx.createLinearGradient(0, 0, 0, 300);
+                gradB2.addColorStop(0, 'rgba(236, 72, 153, 0.6)');
+                gradB2.addColorStop(1, 'rgba(236, 72, 153, 0.05)');
+
                 window.branchPerformanceChartInstance = new Chart(branchCtx, {
-                    type: 'bar',
+                    type: 'line',
                     data: {
-                        labels: branchData.map(b => b.branch_name || 'Unknown'),
-                        datasets: [{
-                            data: branchData.map(b => Number(b.revenue || 0)),
-                            backgroundColor: '#8b5cf6',
-                            borderRadius: 6,
-                            hoverBackgroundColor: '#7c3aed'
-                        }]
+                        labels: branchLabels,
+                        datasets: [
+                            {
+                                label: 'Main Branch',
+                                data: dummyBranch1,
+                                borderColor: '#8b5cf6',
+                                borderWidth: 3,
+                                backgroundColor: gradB1,
+                                pointRadius: 0,
+                                pointHoverRadius: 6,
+                                pointBackgroundColor: '#ffffff',
+                                pointBorderColor: '#8b5cf6',
+                                pointBorderWidth: 2,
+                                fill: true,
+                                tension: 0.4
+                            },
+                            {
+                                label: 'Branch 2',
+                                data: dummyBranch2,
+                                borderColor: '#ec4899',
+                                borderWidth: 3,
+                                backgroundColor: gradB2,
+                                pointRadius: 0,
+                                pointHoverRadius: 6,
+                                pointBackgroundColor: '#ffffff',
+                                pointBorderColor: '#ec4899',
+                                pointBorderWidth: 2,
+                                fill: true,
+                                tension: 0.4
+                            }
+                        ]
                     },
                     options: {
                         responsive: true, maintainAspectRatio: false,
-                        plugins: { legend: { display: false }, datalabels: { display: false } },
-                        scales: { y: { display: false }, x: { display: true, grid: {display: false} } }
+                        interaction: { mode: 'index', intersect: false },
+                        plugins: {
+                            datalabels: { display: false },
+                            legend: { position: 'top' },
+                            tooltip: {
+                                callbacks: {
+                                    label: function(context) {
+                                        return context.dataset.label + ': ₹' + context.raw.toLocaleString('en-IN');
+                                    }
+                                }
+                            }
+                        },
+                        scales: {
+                            y: { beginAtZero: true, grid: { borderDash: [2, 2], color: '#f1f5f9' } },
+                            x: { grid: { display: false } }
+                        }
                     }
                 });
             }
