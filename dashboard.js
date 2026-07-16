@@ -223,10 +223,10 @@ document.addEventListener('DOMContentLoaded', () => {
                                 <span class="sti-name" style="font-weight:600;">${p.name}</span>
                             </div>
                             <div class="sti-right" style="flex:1.2; justify-content:flex-end; gap:12px;">
+                                <span style="background:${color}15; color:${color}; padding:3px 10px; border-radius:12px; font-size:0.75rem; font-weight:700; white-space:nowrap;">${p.count} sold</span>
                                 <div class="sti-bar-track" style="flex:1; max-width:80px;">
                                     <div class="sti-bar" style="width:${percentage}%; background:${color}"></div>
                                 </div>
-                                <span style="background:${color}15; color:${color}; padding:3px 10px; border-radius:12px; font-size:0.75rem; font-weight:700; white-space:nowrap;">${p.count} sold</span>
                                 <span style="font-weight:700; color:#059669; font-size:0.9rem; min-width:60px; text-align:right;">₹${p.revenue.toLocaleString('en-IN')}</span>
                             </div>
                         </li>
