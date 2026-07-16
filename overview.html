@@ -630,7 +630,31 @@
                     </div>
                 </div>
             </div>
-
+            </div>
+            
+            <!-- Section 3: Staff & Product Performance -->
+            <div class="dashboard-grid" style="grid-template-columns: 1fr 1fr; gap: 1.5rem; margin-bottom: 1.5rem;">
+                <!-- Staff Performance -->
+                <div class="card chart-card">
+                    <div class="card-header">
+                        <h2>Staff Performance</h2>
+                        <i data-feather="more-horizontal" class="text-muted" style="cursor: pointer;"></i>
+                    </div>
+                    <div style="height: 300px;">
+                        <canvas id="newStaffPerformanceChart"></canvas>
+                    </div>
+                </div>
+                <!-- Product Performance -->
+                <div class="card chart-card">
+                    <div class="card-header">
+                        <h2>Product Performance</h2>
+                        <i data-feather="more-horizontal" class="text-muted" style="cursor: pointer;"></i>
+                    </div>
+                    <div style="height: 300px;">
+                        <canvas id="newProductPerformanceChart"></canvas>
+                    </div>
+                </div>
+            </div>
 
 
             <!-- Section 4 & 5: Insights & Revenue Split -->

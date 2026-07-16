@@ -268,6 +268,60 @@ const initializeOverview = async () => {
                 });
             }
 
+            // ── NEW CARDS: Staff & Product Performance dummy charts ──
+            
+            // Staff Performance Chart
+            const staffLabels = ['Rahul', 'Priya', 'Amit', 'Neha', 'Vikram'];
+            const staffData = staffLabels.map(() => Math.floor(Math.random() * 50000) + 10000);
+            const nStaffCtx = document.getElementById('newStaffPerformanceChart')?.getContext('2d');
+            if (nStaffCtx) {
+                if (window.newStaffPerformanceChartInstance) window.newStaffPerformanceChartInstance.destroy();
+                window.newStaffPerformanceChartInstance = new Chart(nStaffCtx, {
+                    type: 'bar',
+                    data: {
+                        labels: staffLabels,
+                        datasets: [{
+                            label: 'Revenue',
+                            data: staffData,
+                            backgroundColor: '#3b82f6',
+                            borderRadius: 4
+                        }]
+                    },
+                    options: {
+                        indexAxis: 'y',
+                        responsive: true, maintainAspectRatio: false,
+                        plugins: { datalabels: { display: false }, legend: { display: false } },
+                        scales: { x: { beginAtZero: true, grid: { borderDash: [2, 2], color: '#f1f5f9' } }, y: { grid: { display: false } } }
+                    }
+                });
+            }
+
+            // Product Performance Chart
+            const productLabels = ['Hair Serum', 'Shampoo', 'Styling Gel', 'Face Pack', 'Conditioner'];
+            const productData = productLabels.map(() => Math.floor(Math.random() * 20000) + 5000);
+            const nProdCtx = document.getElementById('newProductPerformanceChart')?.getContext('2d');
+            if (nProdCtx) {
+                if (window.newProductPerformanceChartInstance) window.newProductPerformanceChartInstance.destroy();
+                window.newProductPerformanceChartInstance = new Chart(nProdCtx, {
+                    type: 'bar',
+                    data: {
+                        labels: productLabels,
+                        datasets: [{
+                            label: 'Sales Revenue',
+                            data: productData,
+                            backgroundColor: '#f59e0b',
+                            borderRadius: 4
+                        }]
+                    },
+                    options: {
+                        indexAxis: 'y',
+                        responsive: true, maintainAspectRatio: false,
+                        plugins: { datalabels: { display: false }, legend: { display: false } },
+                        scales: { x: { beginAtZero: true, grid: { borderDash: [2, 2], color: '#f1f5f9' } }, y: { grid: { display: false } } }
+                    }
+                });
+            }
+
 
 
             // ── D. Render Revenue Split (Donut Chart) ──
