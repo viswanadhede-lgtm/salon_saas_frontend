@@ -490,14 +490,16 @@ document.addEventListener('DOMContentLoaded', () => {
 
         try {
             const { supabase } = await import('./lib/supabase.js');
+            const companyId = localStorage.getItem('company_id');
             const now = new Date();
             const endDate = new Date(now.getTime() - (now.getTimezoneOffset() * 60000)).toISOString().split('T')[0];
             const startDate = new Date(now.getTime() - (now.getTimezoneOffset() * 60000) - (6 * 24 * 60 * 60 * 1000)).toISOString().split('T')[0];
 
             // Fetch bookings for the last 7 days
             const { data: bookings, error } = await supabase
-                .from('bookings_for_business_transaction')
-                .select('service_name, total_price')
+                .from('bookings')
+                .select('service_name, price')
+                .eq('company_id', companyId)
                 .eq('branch_id', currentBranchId)
                 .gte('booking_date', startDate)
                 .lte('booking_date', endDate)
@@ -518,22 +520,43 @@ document.addEventListener('DOMContentLoaded', () => {
                     serviceMap[name] = { name, count: 0, revenue: 0 };
                 }
                 serviceMap[name].count++;
-                serviceMap[name].revenue += Number(b.total_price || 0);
+                serviceMap[name].revenue += Number(b.price || 0);
             });
 
-            const sorted = Object.values(serviceMap)
-                .sort((a, b) => b.count - a.count)
-                .slice(0, 3);
+            const allCounts = [...new Set(Object.values(serviceMap).map(s => s.count))].sort((a, b) => b - a);
+            const top3Counts = allCounts.slice(0, 3);
+            
+            const groupedByCount = {};
+            top3Counts.forEach(count => {
+                // For a tie-break inside the same rank, you might want to sort by revenue
+                groupedByCount[count] = Object.values(serviceMap)
+                    .filter(s => s.count === count)
+                    .sort((a, b) => b.revenue - a.revenue);
+            });
 
-            listContainer.innerHTML = sorted.map(s => `
-                <li>
-                    <div class="service-info">
-                        <span class="service-name">${s.name}</span>
-                        <span class="service-count">${s.count} bookings</span>
-                    </div>
-                    <div class="service-revenue">₹${s.revenue.toLocaleString('en-IN')}</div>
-                </li>
-            `).join('');
+            // Adjust list styling for complex wrap layout
+            listContainer.style.display = 'flex';
+            listContainer.style.flexDirection = 'column';
+            listContainer.style.gap = '16px';
+            listContainer.style.listStyle = 'none';
+            listContainer.style.padding = '0';
+
+            listContainer.innerHTML = top3Counts.map(count => {
+                const grouped = groupedByCount[count];
+                return `
+                    <li style="display: flex; flex-direction: column; gap: 8px; border-bottom: none; padding: 0;">
+                        <span style="font-size: 0.75rem; color: #4f46e5; font-weight: 700; text-transform: uppercase;">${count} Booking${count > 1 ? 's' : ''}</span>
+                        <div style="display: flex; flex-wrap: wrap; gap: 12px;">
+                            ${grouped.map(s => `
+                                <div style="flex: 1 1 calc(33.333% - 12px); min-width: 130px; background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 12px; display: flex; flex-direction: column; justify-content: space-between; box-shadow: 0 1px 2px rgba(0,0,0,0.02);">
+                                    <div style="font-weight: 600; color: #1e293b; font-size: 0.85rem; line-height: 1.2; margin-bottom: 6px;">${s.name}</div>
+                                    <div style="color: #059669; font-weight: 700; font-size: 0.9rem;">₹${s.revenue.toLocaleString('en-IN')}</div>
+                                </div>
+                            `).join('')}
+                        </div>
+                    </li>
+                `;
+            }).join('');
 
         } catch (err) {
             console.error("Error fetching Weekly Top Services:", err);
