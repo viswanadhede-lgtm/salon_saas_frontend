@@ -206,34 +206,32 @@ document.addEventListener('DOMContentLoaded', () => {
                 .slice(0, 5);
 
             if (aggregated.length > 0) {
-                const maxCount = aggregated[0].count;
-                const colors = ['#6366f1', '#10b981', '#3b82f6', '#f59e0b', '#ec4899'];
+                const maxCount = aggregated[0].count; // Used for progress bar max width
+                const colors = ['#6366f1', '#10b981', '#3b82f6', '#f59e0b', '#ec4899']; // Indigo, emerald, blue, amber, pink
                 
-                // Keep service-list class (resets margin/padding) but override gap and min-height
-                listContainer.className = 'service-list';
-                listContainer.style.gap = '0';
-                listContainer.style.minHeight = '0';
+                listContainer.className = 'services-today-list'; // Match the styling used in top services
                 
                 listContainer.innerHTML = aggregated.map((p, idx) => {
                     const percentage = Math.round((p.count / maxCount) * 100);
                     const color = colors[idx % colors.length];
                     return `
-                        <li style="display:flex; align-items:center; gap:10px; padding:9px 2px; border-bottom:1px solid #f1f5f9;">
-                            <div style="width:28px; height:28px; border-radius:6px; background:${color}15; display:flex; align-items:center; justify-content:center; flex-shrink:0;">
-                                <i data-feather="package" style="width:13px; height:13px; color:${color};"></i>
+                        <li class="services-today-item" style="padding-top: 14px; padding-bottom: 14px;">
+                            <div class="sti-info" style="flex:1;">
+                                <div style="width:30px; height:30px; border-radius:8px; background:${color}15; display:flex; align-items:center; justify-content:center; flex-shrink:0;">
+                                    <i data-feather="package" style="width:14px; height:14px; color:${color};"></i>
+                                </div>
+                                <span class="sti-name" style="font-weight:600;">${p.name}</span>
                             </div>
-                            <span style="flex:1; font-weight:600; font-size:0.82rem; color:#1e293b; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">${p.name}</span>
-                            <div style="width:50px; height:4px; background:#f1f5f9; border-radius:4px; flex-shrink:0;">
-                                <div style="width:${percentage}%; height:100%; background:${color}; border-radius:4px;"></div>
+                            <div class="sti-right" style="flex:1.2; justify-content:flex-end; gap:12px;">
+                                <div class="sti-bar-track" style="flex:1; max-width:80px;">
+                                    <div class="sti-bar" style="width:${percentage}%; background:${color}"></div>
+                                </div>
+                                <span style="background:${color}15; color:${color}; padding:3px 10px; border-radius:12px; font-size:0.75rem; font-weight:700; white-space:nowrap;">${p.count} sold</span>
+                                <span style="font-weight:700; color:#059669; font-size:0.9rem; min-width:60px; text-align:right;">₹${p.revenue.toLocaleString('en-IN')}</span>
                             </div>
-                            <span style="background:${color}15; color:${color}; padding:2px 7px; border-radius:10px; font-size:0.68rem; font-weight:700; white-space:nowrap; flex-shrink:0;">${p.count} sold</span>
-                            <span style="font-weight:700; color:#059669; font-size:0.82rem; min-width:50px; text-align:right; flex-shrink:0;">₹${p.revenue.toLocaleString('en-IN')}</span>
                         </li>
                     `;
                 }).join('');
-
-                // Re-initialise feather icons for dynamically added elements
-                if (window.feather) feather.replace();
             } else {
                 listContainer.innerHTML = '<li class="centered-placeholder">No product sales today.</li>';
             }
