@@ -137,23 +137,10 @@ const initializeOverview = async () => {
             const dummyPOS = labels.map(() => Math.floor(Math.random() * 2000) + 500);
             const dummyMemberships = labels.map(() => Math.floor(Math.random() * 3000) + 1000);
 
-            // Revenue Trend Chart (Overlapping Area)
+            // Revenue Trend Chart (Clean Lines Style)
             const revCtx = document.getElementById('revenueTrendChart')?.getContext('2d');
             if (revCtx) {
                 if (revenueTrendChartInstance) revenueTrendChartInstance.destroy();
-
-                // Create rich, glowing gradient fills
-                const gradServices = revCtx.createLinearGradient(0, 0, 0, 400);
-                gradServices.addColorStop(0, 'rgba(79, 70, 229, 0.7)'); // Vibrant Indigo
-                gradServices.addColorStop(1, 'rgba(79, 70, 229, 0.05)');
-
-                const gradPOS = revCtx.createLinearGradient(0, 0, 0, 400);
-                gradPOS.addColorStop(0, 'rgba(245, 158, 11, 0.7)'); // Vibrant Amber
-                gradPOS.addColorStop(1, 'rgba(245, 158, 11, 0.05)');
-
-                const gradMember = revCtx.createLinearGradient(0, 0, 0, 400);
-                gradMember.addColorStop(0, 'rgba(16, 185, 129, 0.7)'); // Vibrant Emerald
-                gradMember.addColorStop(1, 'rgba(16, 185, 129, 0.05)');
 
                 revenueTrendChartInstance = new Chart(revCtx, {
                     type: 'line',
@@ -163,44 +150,44 @@ const initializeOverview = async () => {
                             {
                                 label: 'Services',
                                 data: dummyServices,
-                                borderColor: '#4f46e5',
-                                borderWidth: 3,
-                                backgroundColor: gradServices,
-                                pointBackgroundColor: '#ffffff',
-                                pointBorderColor: '#4f46e5',
+                                borderColor: '#4338ca',
+                                borderWidth: 2.5,
+                                backgroundColor: '#ffffff',
+                                pointBackgroundColor: '#4338ca',
+                                pointBorderColor: '#ffffff',
                                 pointBorderWidth: 2,
-                                pointRadius: 0,
-                                pointHoverRadius: 6,
-                                fill: true,
-                                tension: 0.4
+                                pointRadius: 4,
+                                pointHoverRadius: 7,
+                                fill: false,
+                                tension: 0.35
                             },
                             {
                                 label: 'POS',
                                 data: dummyPOS,
                                 borderColor: '#f59e0b',
-                                borderWidth: 3,
-                                backgroundColor: gradPOS,
-                                pointBackgroundColor: '#ffffff',
-                                pointBorderColor: '#f59e0b',
+                                borderWidth: 2.5,
+                                backgroundColor: '#ffffff',
+                                pointBackgroundColor: '#f59e0b',
+                                pointBorderColor: '#ffffff',
                                 pointBorderWidth: 2,
-                                pointRadius: 0,
-                                pointHoverRadius: 6,
-                                fill: true,
-                                tension: 0.4
+                                pointRadius: 4,
+                                pointHoverRadius: 7,
+                                fill: false,
+                                tension: 0.35
                             },
                             {
                                 label: 'Memberships',
                                 data: dummyMemberships,
-                                borderColor: '#10b981',
-                                borderWidth: 3,
-                                backgroundColor: gradMember,
-                                pointBackgroundColor: '#ffffff',
-                                pointBorderColor: '#10b981',
+                                borderColor: '#059669',
+                                borderWidth: 2.5,
+                                backgroundColor: '#ffffff',
+                                pointBackgroundColor: '#059669',
+                                pointBorderColor: '#ffffff',
                                 pointBorderWidth: 2,
-                                pointRadius: 0,
-                                pointHoverRadius: 6,
-                                fill: true,
-                                tension: 0.4
+                                pointRadius: 4,
+                                pointHoverRadius: 7,
+                                fill: false,
+                                tension: 0.35
                             }
                         ]
                     },
@@ -213,11 +200,26 @@ const initializeOverview = async () => {
                         },
                         plugins: { 
                             datalabels: { display: false }, 
-                            legend: { position: 'top' },
+                            legend: { 
+                                position: 'top',
+                                labels: {
+                                    usePointStyle: true,
+                                    pointStyle: 'circle',
+                                    padding: 20,
+                                    font: { size: 12, weight: '600' }
+                                }
+                            },
                             tooltip: {
+                                backgroundColor: '#1e293b',
+                                titleColor: '#f8fafc',
+                                bodyColor: '#e2e8f0',
+                                borderColor: '#334155',
+                                borderWidth: 1,
+                                cornerRadius: 8,
+                                padding: 12,
                                 callbacks: {
                                     label: function(context) {
-                                        return context.dataset.label + ': ₹' + context.raw.toLocaleString('en-IN');
+                                        return ' ' + context.dataset.label + ': ₹' + context.raw.toLocaleString('en-IN');
                                     }
                                 }
                             }
@@ -225,11 +227,19 @@ const initializeOverview = async () => {
                         scales: { 
                             y: { 
                                 beginAtZero: true, 
-                                stacked: false, // Ensures they overlap like the reference image
-                                grid: { borderDash: [2, 2], color: '#f1f5f9' }
+                                grid: { color: '#f1f5f9', drawBorder: false },
+                                ticks: {
+                                    callback: function(value) {
+                                        if (value >= 1000) return '₹' + (value / 1000) + 'k';
+                                        return '₹' + value;
+                                    },
+                                    font: { size: 11 },
+                                    color: '#94a3b8'
+                                }
                             },
                             x: {
-                                grid: { display: false }
+                                grid: { display: false },
+                                ticks: { font: { size: 11 }, color: '#94a3b8' }
                             }
                         }
                     }
