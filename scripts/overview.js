@@ -78,13 +78,15 @@ const initializeOverview = async () => {
         if (window.feather) feather.replace();
 
         try {
-            const [kpiRes, revTrendRes, bookTrendRes, splitRes, insightsRes, branchRes] = await Promise.all([
+            const [kpiRes, revTrendRes, bookTrendRes, splitRes, insightsRes, branchRes, staffRes, productRes] = await Promise.all([
                 supabase.rpc('get_overview_kpis', args),
                 supabase.rpc('get_overview_revenue_trend', args),
                 supabase.rpc('get_overview_booking_trend', args),
                 supabase.rpc('get_overview_revenue_split', args),
                 supabase.rpc('get_overview_insights', args),
-                supabase.rpc('get_overview_branch_performance', args) // Branch logic ignores p_branch_id globally
+                supabase.rpc('get_overview_branch_performance', args), // Branch logic ignores p_branch_id globally
+                supabase.rpc('get_overview_staff_performance', args),
+                supabase.rpc('get_overview_product_performance', args)
             ]);
 
             // ── A. Render KPIs ──
@@ -318,9 +320,12 @@ const initializeOverview = async () => {
 
             // ── NEW CARDS: Staff & Product Performance dummy charts ──
             
-            // Staff Performance Chart
-            const staffLabels = ['Rahul', 'Priya', 'Amit', 'Neha', 'Vikram'];
-            const staffData = staffLabels.map(() => Math.floor(Math.random() * 50000) + 10000);
+            // Staff Performance Chart - Now fueled by real data!
+            const staffRawData = staffRes?.data || [];
+            
+            // If empty, supply placeholder text so chart doesn't totally break
+            let staffLabels = staffRawData.length > 0 ? staffRawData.map(s => s.staff_name || 'Unknown') : ['No Staff Data'];
+            let staffData = staffRawData.length > 0 ? staffRawData.map(s => Number(s.revenue || 0)) : [0];
             const nStaffCtx = document.getElementById('newStaffPerformanceChart')?.getContext('2d');
             if (nStaffCtx) {
                 if (window.newStaffPerformanceChartInstance) window.newStaffPerformanceChartInstance.destroy();
@@ -356,9 +361,11 @@ const initializeOverview = async () => {
                 });
             }
 
-            // Product Performance Chart
-            const productLabels = ['Hair Serum', 'Shampoo', 'Styling Gel', 'Face Pack', 'Conditioner'];
-            const productData = productLabels.map(() => Math.floor(Math.random() * 20000) + 5000);
+            // Product Performance Chart - Now fueled by real data (Units Sold)!
+            const productRawData = productRes?.data || [];
+            let productLabels = productRawData.length > 0 ? productRawData.map(p => p.product_name || 'Unknown') : ['No Product Sales'];
+            let productData = productRawData.length > 0 ? productRawData.map(p => Number(p.items_sold || 0)) : [0];
+
             const nProdCtx = document.getElementById('newProductPerformanceChart')?.getContext('2d');
             if (nProdCtx) {
                 if (window.newProductPerformanceChartInstance) window.newProductPerformanceChartInstance.destroy();
@@ -367,7 +374,7 @@ const initializeOverview = async () => {
                     data: {
                         labels: productLabels,
                         datasets: [{
-                            label: 'Sales Revenue',
+                            label: 'Units Sold',
                             data: productData,
                             backgroundColor: '#f59e0b',
                             borderRadius: 4
@@ -382,9 +389,10 @@ const initializeOverview = async () => {
                                 beginAtZero: true, 
                                 grid: { borderDash: [2, 2], color: '#f1f5f9' },
                                 ticks: {
+                                    precision: 0,
                                     callback: function(value) {
-                                        if (value >= 1000) return '₹' + (value / 1000) + 'k';
-                                        return '₹' + value;
+                                        if (value >= 1000) return (value / 1000) + 'k';
+                                        return value;
                                     }
                                 }
                             }, 
