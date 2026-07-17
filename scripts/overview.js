@@ -78,9 +78,10 @@ const initializeOverview = async () => {
         if (window.feather) feather.replace();
 
         try {
-            const [kpiRes, trendRes, splitRes, insightsRes, branchRes] = await Promise.all([
+            const [kpiRes, revTrendRes, bookTrendRes, splitRes, insightsRes, branchRes] = await Promise.all([
                 supabase.rpc('get_overview_kpis', args),
-                supabase.rpc('get_overview_trends', args),
+                supabase.rpc('get_overview_revenue_trend', args),
+                supabase.rpc('get_overview_booking_trend', args),
                 supabase.rpc('get_overview_revenue_split', args),
                 supabase.rpc('get_overview_insights', args),
                 supabase.rpc('get_overview_branch_performance', args) // Branch logic ignores p_branch_id globally
@@ -129,34 +130,37 @@ const initializeOverview = async () => {
             }
 
             // ── B. Render Trends (Line Chart) ──
-            const trendData = trendRes.data || [];
+            const revenueTrendData = revTrendRes?.data || [];
             let labels = [];
             
             const isSingleDay = args.p_start_date && args.p_end_date && args.p_start_date === args.p_end_date;
             let singleDayStr = '';
 
             if (isSingleDay) {
-                // Generate Hourly Labels: 6 AM to 11 PM
-                for (let i = 6; i <= 23; i++) {
-                    const ampm = i >= 12 ? 'PM' : 'AM';
-                    const hour = i > 12 ? i - 12 : i;
-                    labels.push(`${hour} ${ampm}`);
-                }
-                
-                // Parse date safely to avoid timezone shift
                 const [y, m, d] = args.p_start_date.split('-');
                 const selectedDate = new Date(y, m - 1, d);
                 singleDayStr = selectedDate.toLocaleDateString(undefined, { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' });
+                
+                // Map the 24h SQL string ('14:00') into nice 12h labels ('2 PM')
+                labels = revenueTrendData.map(d => {
+                    const [hour] = (d.trend_label || '00').split(':');
+                    let h = parseInt(hour, 10);
+                    const ampm = h >= 12 ? 'PM' : 'AM';
+                    if (h > 12) h -= 12;
+                    if (h === 0) h = 12;
+                    return `${h} ${ampm}`;
+                });
             } else {
-                labels = trendData.length > 0 
-                  ? trendData.map(t => new Date(t.trend_date).toLocaleDateString(undefined, { month:'short', day:'numeric'}))
+                labels = revenueTrendData.length > 0 
+                  ? revenueTrendData.map(t => new Date(t.trend_label).toLocaleDateString(undefined, { month:'short', day:'numeric'}))
                   : ['No Data'];
             }
+            if (labels.length === 0) labels = ['No Data'];
 
-            // Generate dummy overlapping area data for demonstration
-            const dummyServices = labels.map(() => Math.floor(Math.random() * 5000) + 3000);
-            const dummyPOS = labels.map(() => Math.floor(Math.random() * 2000) + 500);
-            const dummyMemberships = labels.map(() => Math.floor(Math.random() * 3000) + 1000);
+            // Extract the real revenue data directly from the backend response
+            const realServices = revenueTrendData.map(d => Number(d.services_revenue || 0));
+            const realPOS = revenueTrendData.map(d => Number(d.pos_revenue || 0));
+            const realMemberships = revenueTrendData.map(d => Number(d.memberships_revenue || 0));
 
             // Revenue Trend Chart (Clean Lines Style)
             const revCtx = document.getElementById('revenueTrendChart')?.getContext('2d');
@@ -170,7 +174,7 @@ const initializeOverview = async () => {
                         datasets: [
                             {
                                 label: 'Services',
-                                data: dummyServices,
+                                data: realServices,
                                 borderColor: '#4338ca',
                                 borderWidth: 2.5,
                                 backgroundColor: '#ffffff',
@@ -184,7 +188,7 @@ const initializeOverview = async () => {
                             },
                             {
                                 label: 'POS',
-                                data: dummyPOS,
+                                data: realPOS,
                                 borderColor: '#f59e0b',
                                 borderWidth: 2.5,
                                 backgroundColor: '#ffffff',
@@ -198,7 +202,7 @@ const initializeOverview = async () => {
                             },
                             {
                                 label: 'Memberships',
-                                data: dummyMemberships,
+                                data: realMemberships,
                                 borderColor: '#059669',
                                 borderWidth: 2.5,
                                 backgroundColor: '#ffffff',
@@ -277,9 +281,10 @@ const initializeOverview = async () => {
             // Booking Volume Chart
             const bookCtx = document.getElementById('bookingTrendChart')?.getContext('2d');
             if (bookCtx) {
-                // Booking Trend uses real database data, so we don't apply the hourly zoom
-                const bookingLabels = trendData.length > 0 
-                  ? trendData.map(t => new Date(t.trend_date).toLocaleDateString(undefined, { month:'short', day:'numeric'}))
+                // Booking Trend uses real database data, so we don't apply the hourly zoom here
+                const bookingTrendData = bookTrendRes?.data || [];
+                const bookingLabels = bookingTrendData.length > 0 
+                  ? bookingTrendData.map(t => new Date(t.trend_label).toLocaleDateString(undefined, { month:'short', day:'numeric'}))
                   : ['No Data'];
 
                 if (bookingTrendChartInstance) bookingTrendChartInstance.destroy();
@@ -289,7 +294,7 @@ const initializeOverview = async () => {
                         labels: bookingLabels,
                         datasets: [{
                             label: 'Completed Bookings',
-                            data: trendData.map(t => Number(t.daily_bookings || 0)),
+                            data: bookingTrendData.map(t => Number(t.daily_bookings || 0)),
                             backgroundColor: '#6366f1',
                             borderRadius: 4
                         }]
