@@ -277,11 +277,16 @@ const initializeOverview = async () => {
             // Booking Volume Chart
             const bookCtx = document.getElementById('bookingTrendChart')?.getContext('2d');
             if (bookCtx) {
+                // Booking Trend uses real database data, so we don't apply the hourly zoom
+                const bookingLabels = trendData.length > 0 
+                  ? trendData.map(t => new Date(t.trend_date).toLocaleDateString(undefined, { month:'short', day:'numeric'}))
+                  : ['No Data'];
+
                 if (bookingTrendChartInstance) bookingTrendChartInstance.destroy();
                 bookingTrendChartInstance = new Chart(bookCtx, {
                     type: 'bar',
                     data: {
-                        labels,
+                        labels: bookingLabels,
                         datasets: [{
                             label: 'Completed Bookings',
                             data: trendData.map(t => Number(t.daily_bookings || 0)),
@@ -299,14 +304,7 @@ const initializeOverview = async () => {
                                 ticks: { precision: 0 } // Forces 1, 2, 3 instead of 0.5, 1.5
                             },
                             x: {
-                                grid: { display: false },
-                                title: {
-                                    display: isSingleDay,
-                                    text: singleDayStr,
-                                    color: '#64748b',
-                                    font: { size: 13, weight: '500' },
-                                    padding: { top: 10 }
-                                }
+                                grid: { display: false }
                             }
                         }
                     }
