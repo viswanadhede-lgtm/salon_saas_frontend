@@ -82,8 +82,8 @@ const initializeOverview = async () => {
                 supabase.rpc('get_overview_kpis', args),
                 supabase.rpc('get_overview_revenue_trend', args),
                 supabase.rpc('get_overview_booking_trend', args),
-                supabase.rpc('get_overview_revenue_split', args),
-                supabase.rpc('get_overview_insights', args),
+                supabase.rpc('get_overview_revenue_distribution', args),
+                supabase.rpc('get_overview_customer_insights', args),
                 supabase.rpc('get_overview_branch_performance', args), // Branch logic ignores p_branch_id globally
                 supabase.rpc('get_overview_staff_performance', args),
                 supabase.rpc('get_overview_product_performance', args)
