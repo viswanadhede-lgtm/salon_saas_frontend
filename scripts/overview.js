@@ -339,7 +339,19 @@ const initializeOverview = async () => {
                         indexAxis: 'y',
                         responsive: true, maintainAspectRatio: false,
                         plugins: { datalabels: { display: false }, legend: { display: false } },
-                        scales: { x: { beginAtZero: true, grid: { borderDash: [2, 2], color: '#f1f5f9' } }, y: { grid: { display: false } } }
+                        scales: { 
+                            x: { 
+                                beginAtZero: true, 
+                                grid: { borderDash: [2, 2], color: '#f1f5f9' },
+                                ticks: {
+                                    callback: function(value) {
+                                        if (value >= 1000) return '₹' + (value / 1000) + 'k';
+                                        return '₹' + value;
+                                    }
+                                }
+                            }, 
+                            y: { grid: { display: false } } 
+                        }
                     }
                 });
             }
@@ -365,7 +377,19 @@ const initializeOverview = async () => {
                         indexAxis: 'y',
                         responsive: true, maintainAspectRatio: false,
                         plugins: { datalabels: { display: false }, legend: { display: false } },
-                        scales: { x: { beginAtZero: true, grid: { borderDash: [2, 2], color: '#f1f5f9' } }, y: { grid: { display: false } } }
+                        scales: { 
+                            x: { 
+                                beginAtZero: true, 
+                                grid: { borderDash: [2, 2], color: '#f1f5f9' },
+                                ticks: {
+                                    callback: function(value) {
+                                        if (value >= 1000) return '₹' + (value / 1000) + 'k';
+                                        return '₹' + value;
+                                    }
+                                }
+                            }, 
+                            y: { grid: { display: false } } 
+                        }
                     }
                 });
             }
