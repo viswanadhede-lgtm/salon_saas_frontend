@@ -130,7 +130,28 @@ const initializeOverview = async () => {
 
             // ── B. Render Trends (Line Chart) ──
             const trendData = trendRes.data || [];
-            const labels = trendData.map(t => new Date(t.trend_date).toLocaleDateString(undefined, { month:'short', day:'numeric'}));
+            let labels = [];
+            
+            const isSingleDay = args.p_start_date && args.p_end_date && args.p_start_date === args.p_end_date;
+            let singleDayStr = '';
+
+            if (isSingleDay) {
+                // Generate Hourly Labels: 6 AM to 11 PM
+                for (let i = 6; i <= 23; i++) {
+                    const ampm = i >= 12 ? 'PM' : 'AM';
+                    const hour = i > 12 ? i - 12 : i;
+                    labels.push(`${hour} ${ampm}`);
+                }
+                
+                // Parse date safely to avoid timezone shift
+                const [y, m, d] = args.p_start_date.split('-');
+                const selectedDate = new Date(y, m - 1, d);
+                singleDayStr = selectedDate.toLocaleDateString(undefined, { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' });
+            } else {
+                labels = trendData.length > 0 
+                  ? trendData.map(t => new Date(t.trend_date).toLocaleDateString(undefined, { month:'short', day:'numeric'}))
+                  : ['No Data'];
+            }
 
             // Generate dummy overlapping area data for demonstration
             const dummyServices = labels.map(() => Math.floor(Math.random() * 5000) + 3000);
@@ -239,7 +260,14 @@ const initializeOverview = async () => {
                             },
                             x: {
                                 grid: { display: false },
-                                ticks: { font: { size: 11 }, color: '#94a3b8' }
+                                ticks: { font: { size: 11 }, color: '#94a3b8' },
+                                title: {
+                                    display: isSingleDay,
+                                    text: singleDayStr,
+                                    color: '#64748b',
+                                    font: { size: 13, weight: '500' },
+                                    padding: { top: 10 }
+                                }
                             }
                         }
                     }
@@ -271,7 +299,14 @@ const initializeOverview = async () => {
                                 ticks: { precision: 0 } // Forces 1, 2, 3 instead of 0.5, 1.5
                             },
                             x: {
-                                grid: { display: false }
+                                grid: { display: false },
+                                title: {
+                                    display: isSingleDay,
+                                    text: singleDayStr,
+                                    color: '#64748b',
+                                    font: { size: 13, weight: '500' },
+                                    padding: { top: 10 }
+                                }
                             }
                         }
                     }
