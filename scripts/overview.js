@@ -97,10 +97,10 @@ const initializeOverview = async () => {
             const cards = document.querySelectorAll('.stat-card');
             
             if (cards.length >= 4) {
-                // Card 1: Gross Revenue
+                // Card 1: Gross Revenue (Total)
                 const lbl1 = cards[0].querySelector('.stat-label');
                 const val1 = cards[0].querySelector('.stat-value');
-                if (lbl1) lbl1.textContent = 'Gross Revenue';
+                if (lbl1) lbl1.textContent = 'Gross Revenue (Total)';
                 if (val1) val1.textContent = `₹${Number(kpi.gross_revenue || 0).toLocaleString('en-IN')}`;
                 
                 // Card 2: Expenses
