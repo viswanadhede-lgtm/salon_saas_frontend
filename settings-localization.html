@@ -1,0 +1,194 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <script src="scripts/auth-loader.js"></script>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Localization Settings - Currency, timezone, date/time format and language.">
+    <title>Localization Settings - BharathBots</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="styles.css">
+    <link rel="stylesheet" href="dashboard.css">
+    <link rel="stylesheet" href="submenu.css">
+    <link rel="stylesheet" href="settings-shared.css">
+    <script src="https://unpkg.com/feather-icons"></script>
+</head>
+<body class="dashboard-body">
+    <aside class="sidebar" id="sidebar">
+        <div class="sidebar-header">
+            <div class="logo"><svg width="24" height="24" viewBox="0 0 32 32" fill="none"><rect x="2" y="6" width="28" height="20" rx="4" stroke="currentColor" stroke-width="2"/><path d="M8 12C8 12 11 16 16 16C21 16 24 12 24 12" stroke="currentColor" stroke-width="2" stroke-linecap="round"/><circle cx="16" cy="16" r="2" fill="currentColor"/></svg><span class="logo-text">BharathBots</span></div>
+            <button class="toggle-btn" id="sidebarToggle"><i data-feather="sidebar" class="toggle-icon"></i></button>
+        </div>
+        <nav class="sidebar-nav"><ul class="nav-list">
+            <li class="nav-item"><a href="dashboard.html" class="nav-link"><i data-feather="home" class="nav-icon"></i><span class="nav-text">Dashboard</span></a></li>
+            <li class="nav-item"><a href="bookings.html" class="nav-link"><i data-feather="calendar" class="nav-icon"></i><span class="nav-text">Bookings</span></a></li>
+            <li class="nav-item has-submenu active">
+                <div class="nav-link submenu-toggle"><i data-feather="settings" class="nav-icon"></i><span class="nav-text">Settings</span><i data-feather="chevron-down" class="submenu-arrow"></i></div>
+                <ul class="submenu">
+                    <li><a href="company.html" class="submenu-link active"><span class="submenu-bullet">&bull;</span><span class="nav-text">Company</span></a></li>
+                    <li><a href="branches.html" class="submenu-link"><span class="submenu-bullet">&bull;</span><span class="nav-text">Branches</span></a></li>
+                    <li><a href="users.html" class="submenu-link"><span class="submenu-bullet">&bull;</span><span class="nav-text">Users</span></a></li>
+                    <li><a href="roles-permissions.html" class="submenu-link"><span class="submenu-bullet">&bull;</span><span class="nav-text">Roles &amp; Permissions</span></a></li>
+                    <li><a href="billing-subscription.html" class="submenu-link"><span class="submenu-bullet">&bull;</span><span class="nav-text">Billing &amp; Subscription</span></a></li>
+                </ul>
+            </li>
+        </ul></nav>
+    </aside>
+
+    <div class="main-wrapper" id="mainWrapper">
+        <header class="top-header">
+            <div class="header-left"><div class="branch-switcher"><i data-feather="map-pin" class="branch-icon"></i><select class="branch-select"><option>Downtown Branch</option><option>Uptown Spa</option></select></div></div>
+            <div class="header-center"><div class="search-bar"><i data-feather="search" class="search-icon"></i><input type="text" placeholder="Search..." class="search-input"></div></div>
+            <div class="header-right">
+                <div class="plan-badge">Growth</div>
+                <button class="icon-btn"><i data-feather="bell"></i><span class="notification-dot"></span></button>
+                <div class="user-profile" id="userProfileDropdown">
+                    <div class="avatar" id="avatarBtn"><img src="https://ui-avatars.com/api/?name=Admin+User&background=1E3A8A&color=fff" alt="User"></div>
+                    <div class="profile-dropdown" id="profileMenu">
+                        <div class="dropdown-header"><p class="dropdown-name">Admin User</p><p class="dropdown-role">Owner</p></div>
+                        <div class="dropdown-divider"></div>
+                        <ul class="dropdown-list"><li><a href="#" class="dropdown-item text-danger"><i data-feather="log-out"></i><span>Logout</span></a></li></ul>
+                    </div>
+                </div>
+            </div>
+        </header>
+        <div id="profileBackdrop" class="profile-backdrop"></div>
+
+        <main class="content-area">
+            <div class="sp-breadcrumb">
+                <a href="company.html" class="sp-back"><i data-feather="arrow-left"></i> Company Settings</a>
+                <span class="sp-sep">/</span><span class="sp-current">Localization</span>
+            </div>
+            <div class="sp-header">
+                <h1>Localization</h1>
+                <p>Control how currency, dates, times and language are displayed across the platform</p>
+            </div>
+
+            <div class="sp-card">
+                <div class="sp-card-header">
+                    <h2>Region</h2>
+                    <p>Your country and primary currency</p>
+                </div>
+                <div class="sp-card-body">
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label class="form-label" for="country">Country</label>
+                            <select id="country" class="form-select">
+                                <option value="India" selected>India</option>
+                                <option value="UAE">UAE</option>
+                                <option value="USA">USA</option>
+                                <option value="UK">United Kingdom</option>
+                                <option value="Australia">Australia</option>
+                                <option value="Canada">Canada</option>
+                                <option value="Singapore">Singapore</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label" for="currency">Currency</label>
+                            <select id="currency" class="form-select">
+                                <option value="INR" selected>Indian Rupee (₹)</option>
+                                <option value="USD">US Dollar ($)</option>
+                                <option value="EUR">Euro (€)</option>
+                                <option value="GBP">British Pound (£)</option>
+                                <option value="AED">UAE Dirham (AED)</option>
+                                <option value="AUD">Australian Dollar (A$)</option>
+                                <option value="CAD">Canadian Dollar (C$)</option>
+                                <option value="SGD">Singapore Dollar (S$)</option>
+                            </select>
+                            <p class="form-hint">Changing currency affects how amounts are displayed across the platform</p>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="sp-card-header" style="border-top:1px solid #f1f5f9;">
+                    <h2>Date &amp; Time</h2>
+                    <p>Controls how dates and times are displayed globally</p>
+                </div>
+                <div class="sp-card-body">
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label class="form-label" for="timezone">Timezone</label>
+                            <select id="timezone" class="form-select">
+                                <option value="Asia/Kolkata" selected>India Standard Time (IST, UTC+5:30)</option>
+                                <option value="Asia/Dubai">Gulf Standard Time (GST, UTC+4)</option>
+                                <option value="America/New_York">Eastern Time (ET, UTC-5)</option>
+                                <option value="America/Chicago">Central Time (CT, UTC-6)</option>
+                                <option value="America/Los_Angeles">Pacific Time (PT, UTC-8)</option>
+                                <option value="Europe/London">Greenwich Mean Time (GMT, UTC+0)</option>
+                                <option value="Europe/Paris">Central European Time (CET, UTC+1)</option>
+                                <option value="Australia/Sydney">Australian Eastern Time (AEST, UTC+10)</option>
+                                <option value="Asia/Singapore">Singapore Standard Time (SGT, UTC+8)</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label" for="language">Language</label>
+                            <select id="language" class="form-select">
+                                <option value="en" selected>English</option>
+                                <option value="hi">Hindi</option>
+                                <option value="ta">Tamil</option>
+                                <option value="te">Telugu</option>
+                                <option value="kn">Kannada</option>
+                                <option value="mr">Marathi</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label class="form-label" for="dateFormat">Date Format</label>
+                            <select id="dateFormat" class="form-select">
+                                <option value="DD-MM-YYYY" selected>DD-MM-YYYY (31-12-2025)</option>
+                                <option value="MM-DD-YYYY">MM-DD-YYYY (12-31-2025)</option>
+                                <option value="YYYY-MM-DD">YYYY-MM-DD (2025-12-31)</option>
+                                <option value="DD/MM/YYYY">DD/MM/YYYY (31/12/2025)</option>
+                                <option value="MMM DD, YYYY">MMM DD, YYYY (Dec 31, 2025)</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label" for="timeFormat">Time Format</label>
+                            <select id="timeFormat" class="form-select">
+                                <option value="12h" selected>12-hour (9:00 AM)</option>
+                                <option value="24h">24-hour (09:00)</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="sp-savebar" id="savebar">
+                    <button class="btn btn-secondary" onclick="cancelLocalization()">Cancel</button>
+                    <button class="btn btn-primary" id="btnSave" onclick="saveLocalizationSettings()">
+                        <i data-feather="save" style="width:15px;height:15px;"></i> Save Changes
+                    </button>
+                </div>
+            </div>
+
+            <div id="toastNotification" class="sp-toast"></div>
+        </main>
+    </div>
+
+    <script src="logout.js"></script>
+    <script type="module" src="scripts/global-auth-guard.js"></script>
+    <script type="module" src="scripts/settings-localization.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            if (typeof feather !== 'undefined') feather.replace();
+            document.getElementById('sidebarToggle')?.addEventListener('click', () => { document.getElementById('sidebar').classList.toggle('collapsed'); document.getElementById('mainWrapper').classList.toggle('sidebar-collapsed'); });
+            document.querySelectorAll('.submenu-toggle').forEach(t => t.addEventListener('click', () => t.closest('.nav-item').classList.toggle('open')));
+            document.querySelectorAll('.nav-item.active').forEach(li => li.classList.add('open'));
+            document.getElementById('avatarBtn')?.addEventListener('click', e => { e.stopPropagation(); document.getElementById('profileMenu').classList.toggle('show'); document.getElementById('profileBackdrop').classList.toggle('show'); });
+            document.getElementById('profileBackdrop')?.addEventListener('click', () => { document.getElementById('profileMenu').classList.remove('show'); document.getElementById('profileBackdrop').classList.remove('show'); });
+            document.querySelectorAll('.form-select').forEach(el => el.addEventListener('change', markDirty));
+        });
+        let isDirty = false;
+        function markDirty() { if (!isDirty) { isDirty = true; document.getElementById('savebar').classList.add('visible'); if (typeof feather !== 'undefined') feather.replace(); } }
+        function cancelLocalization() { isDirty = false; document.getElementById('savebar').classList.remove('visible'); if (typeof loadLocalizationData === 'function') loadLocalizationData(); }
+        window.addEventListener('beforeunload', e => { if (isDirty) { e.preventDefault(); e.returnValue = ''; } });
+        function showToast(msg, type = 'success') {
+            const t = document.getElementById('toastNotification');
+            t.textContent = msg; t.style.background = type === 'error' ? '#dc2626' : '#1e293b';
+            t.classList.add('visible'); setTimeout(() => t.classList.remove('visible'), 3500);
+        }
+    </script>
+</body>
+</html>

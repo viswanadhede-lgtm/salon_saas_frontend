@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <script src="scripts/auth-loader.js"></script>
+    <meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Business Hours - BharathBots</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="styles.css"><link rel="stylesheet" href="dashboard.css"><link rel="stylesheet" href="submenu.css"><link rel="stylesheet" href="settings-shared.css">
+    <script src="https://unpkg.com/feather-icons"></script>
+    <style>
+        .hours-row { display: grid; grid-template-columns: 120px 1fr 1fr 80px; align-items: center; gap: 12px; padding: 12px 0; border-bottom: 1px solid #f1f5f9; }
+        .hours-row:last-child { border-bottom: none; }
+        .hours-day { font-size: 0.9rem; font-weight: 600; color: #374151; }
+        .hours-closed { font-size: 0.85rem; color: #94a3b8; font-weight: 500; }
+    </style>
+</head>
+<body class="dashboard-body">
+    <aside class="sidebar" id="sidebar">
+        <div class="sidebar-header"><div class="logo"><svg width="24" height="24" viewBox="0 0 32 32" fill="none"><rect x="2" y="6" width="28" height="20" rx="4" stroke="currentColor" stroke-width="2"/><path d="M8 12C8 12 11 16 16 16C21 16 24 12 24 12" stroke="currentColor" stroke-width="2" stroke-linecap="round"/><circle cx="16" cy="16" r="2" fill="currentColor"/></svg><span class="logo-text">BharathBots</span></div><button class="toggle-btn" id="sidebarToggle"><i data-feather="sidebar" class="toggle-icon"></i></button></div>
+        <nav class="sidebar-nav"><ul class="nav-list"><li class="nav-item has-submenu active"><div class="nav-link submenu-toggle"><i data-feather="settings" class="nav-icon"></i><span class="nav-text">Settings</span><i data-feather="chevron-down" class="submenu-arrow"></i></div><ul class="submenu"><li><a href="company.html" class="submenu-link active"><span class="submenu-bullet">&bull;</span><span class="nav-text">Company</span></a></li></ul></li></ul></nav>
+    </aside>
+    <div class="main-wrapper" id="mainWrapper">
+        <header class="top-header"><div class="header-left"><div class="branch-switcher"><i data-feather="map-pin" class="branch-icon"></i><select class="branch-select"><option>Downtown Branch</option></select></div></div><div class="header-center"><div class="search-bar"><i data-feather="search" class="search-icon"></i><input type="text" placeholder="Search..." class="search-input"></div></div><div class="header-right"><div class="plan-badge">Growth</div><button class="icon-btn"><i data-feather="bell"></i></button></div></header>
+        <main class="content-area">
+            <div class="sp-breadcrumb"><a href="company.html" class="sp-back"><i data-feather="arrow-left"></i> Company Settings</a><span class="sp-sep">/</span><span class="sp-current">Hours</span></div>
+            <div class="sp-header"><h1>Business Hours</h1><p>Set your regular opening hours for each day of the week</p></div>
+            <div class="sp-card">
+                <div class="sp-card-header"><h2>Weekly Schedule</h2><p>Toggle days open/closed and set opening and closing times</p></div>
+                <div class="sp-card-body" id="hoursContainer">
+                    <!-- Rendered by JS -->
+                </div>
+                <div class="sp-savebar" id="savebar"><button class="btn btn-secondary" onclick="document.getElementById('savebar').classList.remove('visible')">Cancel</button><button class="btn btn-primary" id="btnSave"><i data-feather="save" style="width:15px;height:15px;"></i> Save Changes</button></div>
+            </div>
+        </main>
+    </div>
+    <script>
+        const DAYS = ['Monday','Tuesday','Wednesday','Thursday','Friday','Saturday','Sunday'];
+        const defaults = { Monday:{open:true,from:'09:00',to:'18:00'}, Tuesday:{open:true,from:'09:00',to:'18:00'}, Wednesday:{open:true,from:'09:00',to:'18:00'}, Thursday:{open:true,from:'09:00',to:'18:00'}, Friday:{open:true,from:'09:00',to:'18:00'}, Saturday:{open:true,from:'09:00',to:'17:00'}, Sunday:{open:false,from:'09:00',to:'17:00'} };
+        document.addEventListener('DOMContentLoaded', () => {
+            if (typeof feather !== 'undefined') feather.replace();
+            document.getElementById('sidebarToggle')?.addEventListener('click', () => { document.getElementById('sidebar').classList.toggle('collapsed'); document.getElementById('mainWrapper').classList.toggle('sidebar-collapsed'); });
+            document.querySelectorAll('.nav-item.active').forEach(li => li.classList.add('open'));
+            renderHours();
+        });
+        function markDirty() { document.getElementById('savebar').classList.add('visible'); if (typeof feather !== 'undefined') feather.replace(); }
+        function renderHours() {
+            const container = document.getElementById('hoursContainer');
+            container.innerHTML = DAYS.map(day => {
+                const d = defaults[day];
+                return `<div class="hours-row">
+                    <div class="hours-day">${day}</div>
+                    <select class="form-select" id="from_${day}" ${d.open ? '' : 'disabled'} onchange="markDirty()">${timeOptions(d.from)}</select>
+                    <select class="form-select" id="to_${day}" ${d.open ? '' : 'disabled'} onchange="markDirty()">${timeOptions(d.to)}</select>
+                    <label class="toggle-switch" style="margin:auto;">
+                        <input type="checkbox" id="open_${day}" ${d.open ? 'checked' : ''} onchange="toggleDay('${day}', this.checked); markDirty();">
+                        <span class="toggle-track"></span>
+                    </label>
+                </div>`;
+            }).join('');
+            if (typeof feather !== 'undefined') feather.replace();
+        }
+        function toggleDay(day, open) {
+            document.getElementById('from_'+day).disabled = !open;
+            document.getElementById('to_'+day).disabled   = !open;
+        }
+        function timeOptions(selected) {
+            let opts = '';
+            for (let h = 0; h < 24; h++) {
+                for (let m of ['00','30']) {
+                    const val = `${String(h).padStart(2,'0')}:${m}`;
+                    const label = formatTime(val);
+                    opts += `<option value="${val}" ${val===selected?'selected':''}>${label}</option>`;
+                }
+            }
+            return opts;
+        }
+        function formatTime(t) {
+            const [h, m] = t.split(':').map(Number);
+            const suffix = h < 12 ? 'AM' : 'PM';
+            const hour12 = h === 0 ? 12 : h > 12 ? h - 12 : h;
+            return `${hour12}:${String(m).padStart(2,'0')} ${suffix}`;
+        }
+    </script>
+</body></html>

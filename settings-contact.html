@@ -1,0 +1,213 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <script src="scripts/auth-loader.js"></script>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Contact Settings - Manage your business contact details.">
+    <title>Contact Settings - BharathBots</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="styles.css">
+    <link rel="stylesheet" href="dashboard.css">
+    <link rel="stylesheet" href="submenu.css">
+    <script src="https://unpkg.com/feather-icons"></script>
+    <link rel="stylesheet" href="settings-shared.css">
+</head>
+<body class="dashboard-body">
+    <!-- Sidebar (identical pattern) -->
+    <aside class="sidebar" id="sidebar">
+        <div class="sidebar-header">
+            <div class="logo">
+                <svg width="24" height="24" viewBox="0 0 32 32" fill="none"><rect x="2" y="6" width="28" height="20" rx="4" stroke="currentColor" stroke-width="2"/><path d="M8 12C8 12 11 16 16 16C21 16 24 12 24 12" stroke="currentColor" stroke-width="2" stroke-linecap="round"/><circle cx="16" cy="16" r="2" fill="currentColor"/></svg>
+                <span class="logo-text">BharathBots</span>
+            </div>
+            <button class="toggle-btn" id="sidebarToggle"><i data-feather="sidebar" class="toggle-icon"></i></button>
+        </div>
+        <nav class="sidebar-nav">
+            <ul class="nav-list">
+                <li class="nav-item"><a href="dashboard.html" class="nav-link"><i data-feather="home" class="nav-icon"></i><span class="nav-text">Dashboard</span></a></li>
+                <li class="nav-item"><a href="bookings.html" class="nav-link"><i data-feather="calendar" class="nav-icon"></i><span class="nav-text">Bookings</span></a></li>
+                <li class="nav-item"><a href="customers.html" class="nav-link"><i data-feather="users" class="nav-icon"></i><span class="nav-text">Customers</span></a></li>
+                <li class="nav-item"><a href="services.html" class="nav-link"><i data-feather="scissors" class="nav-icon"></i><span class="nav-text">Services</span></a></li>
+                <li class="nav-item has-submenu active">
+                    <div class="nav-link submenu-toggle"><i data-feather="settings" class="nav-icon"></i><span class="nav-text">Settings</span><i data-feather="chevron-down" class="submenu-arrow"></i></div>
+                    <ul class="submenu">
+                        <li><a href="company.html" class="submenu-link active"><span class="submenu-bullet">&bull;</span><span class="nav-text">Company</span></a></li>
+                        <li><a href="branches.html" class="submenu-link"><span class="submenu-bullet">&bull;</span><span class="nav-text">Branches</span></a></li>
+                        <li><a href="users.html" class="submenu-link"><span class="submenu-bullet">&bull;</span><span class="nav-text">Users</span></a></li>
+                        <li><a href="roles-permissions.html" class="submenu-link"><span class="submenu-bullet">&bull;</span><span class="nav-text">Roles &amp; Permissions</span></a></li>
+                        <li><a href="custom-fields.html" class="submenu-link"><span class="submenu-bullet">&bull;</span><span class="nav-text">Custom Fields</span></a></li>
+                        <li><a href="billing-subscription.html" class="submenu-link"><span class="submenu-bullet">&bull;</span><span class="nav-text">Billing &amp; Subscription</span></a></li>
+                    </ul>
+                </li>
+            </ul>
+        </nav>
+    </aside>
+
+    <div class="main-wrapper" id="mainWrapper">
+        <header class="top-header">
+            <div class="header-left"><div class="branch-switcher"><i data-feather="map-pin" class="branch-icon"></i><select class="branch-select"><option>Downtown Branch</option><option>Uptown Spa</option></select></div></div>
+            <div class="header-center"><div class="search-bar"><i data-feather="search" class="search-icon"></i><input type="text" placeholder="Search..." class="search-input"></div></div>
+            <div class="header-right">
+                <div class="plan-badge">Growth</div>
+                <button class="icon-btn"><i data-feather="bell"></i><span class="notification-dot"></span></button>
+                <div class="user-profile" id="userProfileDropdown">
+                    <div class="avatar" id="avatarBtn"><img src="https://ui-avatars.com/api/?name=Admin+User&background=1E3A8A&color=fff" alt="User"></div>
+                    <div class="profile-dropdown" id="profileMenu">
+                        <div class="dropdown-header"><p class="dropdown-name">Admin User</p><p class="dropdown-role">Owner</p></div>
+                        <div class="dropdown-divider"></div>
+                        <ul class="dropdown-list"><li><a href="#" class="dropdown-item text-danger"><i data-feather="log-out"></i><span>Logout</span></a></li></ul>
+                    </div>
+                </div>
+            </div>
+        </header>
+        <div id="profileBackdrop" class="profile-backdrop"></div>
+
+        <main class="content-area">
+            <div class="sp-breadcrumb">
+                <a href="company.html" class="sp-back"><i data-feather="arrow-left"></i> Company Settings</a>
+                <span class="sp-sep">/</span>
+                <span class="sp-current">Contact</span>
+            </div>
+            <div class="sp-header">
+                <h1>Contact</h1>
+                <p>Manage your business contact details and address</p>
+            </div>
+
+            <div class="sp-card">
+                <div class="sp-card-header">
+                    <h2>Phone &amp; Online</h2>
+                    <p>Primary contact channels for customers and staff</p>
+                </div>
+                <div class="sp-card-body">
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label class="form-label" for="contactPhone">Phone Number <span class="required">*</span></label>
+                            <div class="input-prefix-wrap">
+                                <span class="input-prefix"><i data-feather="phone" style="width:14px;height:14px;"></i></span>
+                                <input type="tel" id="contactPhone" class="form-input with-prefix" placeholder="+91 98765 43210">
+                            </div>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label" for="contactWhatsApp">WhatsApp Number <span class="optional">(Optional)</span></label>
+                            <div class="input-prefix-wrap">
+                                <span class="input-prefix">📱</span>
+                                <input type="tel" id="contactWhatsApp" class="form-input with-prefix" placeholder="+91 98765 43210">
+                            </div>
+                            <p class="form-hint">Used for appointment reminders via WhatsApp</p>
+                        </div>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label class="form-label" for="contactEmail">Email Address <span class="required">*</span></label>
+                            <div class="input-prefix-wrap">
+                                <span class="input-prefix"><i data-feather="mail" style="width:14px;height:14px;"></i></span>
+                                <input type="email" id="contactEmail" class="form-input with-prefix" placeholder="contact@example.com">
+                            </div>
+                        </div>
+                        <div class="form-group">
+                            <!-- placeholder for future field -->
+                        </div>
+                    </div>
+                </div>
+
+                <div class="sp-card-header" style="border-top:1px solid #f1f5f9;">
+                    <h2>Address</h2>
+                    <p>Used on invoices, receipts and the booking page</p>
+                </div>
+                <div class="sp-card-body">
+                    <div class="form-group">
+                        <label class="form-label" for="addressLine1">Address Line 1 <span class="required">*</span></label>
+                        <input type="text" id="addressLine1" class="form-input" placeholder="Street address, building name">
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label" for="addressLine2">Address Line 2 <span class="optional">(Optional)</span></label>
+                        <input type="text" id="addressLine2" class="form-input" placeholder="Area, locality, landmark">
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label class="form-label" for="addressCity">City <span class="required">*</span></label>
+                            <input type="text" id="addressCity" class="form-input" placeholder="e.g., Bangalore">
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label" for="addressState">State <span class="required">*</span></label>
+                            <input type="text" id="addressState" class="form-input" placeholder="e.g., Karnataka">
+                        </div>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label class="form-label" for="addressPincode">Pincode <span class="required">*</span></label>
+                            <input type="text" id="addressPincode" class="form-input" placeholder="e.g., 560001" maxlength="6">
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label" for="addressCountry">Country</label>
+                            <select id="addressCountry" class="form-select">
+                                <option value="India" selected>India</option>
+                                <option value="UAE">UAE</option>
+                                <option value="USA">USA</option>
+                                <option value="UK">UK</option>
+                                <option value="Other">Other</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label" for="mapLink">Google Maps Link <span class="optional">(Optional)</span></label>
+                        <div class="input-prefix-wrap">
+                            <span class="input-prefix"><i data-feather="map-pin" style="width:14px;height:14px;"></i></span>
+                            <input type="url" id="mapLink" class="form-input with-prefix" placeholder="https://maps.google.com/...">
+                        </div>
+                        <p class="form-hint">A direct link to your location on Google Maps shown on the booking page</p>
+                    </div>
+                </div>
+
+                <!-- Save Bar -->
+                <div class="sp-savebar" id="savebar">
+                    <button class="btn btn-secondary" onclick="cancelContact()">Cancel</button>
+                    <button class="btn btn-primary" id="btnSave" onclick="saveContactSettings()">
+                        <i data-feather="save" style="width:15px;height:15px;"></i> Save Changes
+                    </button>
+                </div>
+            </div>
+
+            <div id="toastNotification" class="sp-toast"></div>
+        </main>
+    </div>
+
+    <script src="logout.js"></script>
+    <script type="module" src="scripts/global-auth-guard.js"></script>
+    <script type="module" src="scripts/settings-contact.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            if (typeof feather !== 'undefined') feather.replace();
+            document.getElementById('sidebarToggle')?.addEventListener('click', () => {
+                document.getElementById('sidebar').classList.toggle('collapsed');
+                document.getElementById('mainWrapper').classList.toggle('sidebar-collapsed');
+            });
+            document.querySelectorAll('.submenu-toggle').forEach(t => t.addEventListener('click', () => t.closest('.nav-item').classList.toggle('open')));
+            document.querySelectorAll('.nav-item.active').forEach(li => li.classList.add('open'));
+            document.getElementById('avatarBtn')?.addEventListener('click', e => {
+                e.stopPropagation();
+                document.getElementById('profileMenu').classList.toggle('show');
+                document.getElementById('profileBackdrop').classList.toggle('show');
+            });
+            document.getElementById('profileBackdrop')?.addEventListener('click', () => {
+                document.getElementById('profileMenu').classList.remove('show');
+                document.getElementById('profileBackdrop').classList.remove('show');
+            });
+            document.querySelectorAll('.form-input, .form-select').forEach(el => el.addEventListener('input', markDirty));
+        });
+        let isDirty = false;
+        function markDirty() { if (!isDirty) { isDirty = true; document.getElementById('savebar').classList.add('visible'); if (typeof feather !== 'undefined') feather.replace(); } }
+        function cancelContact() { isDirty = false; document.getElementById('savebar').classList.remove('visible'); if (typeof loadContactData === 'function') loadContactData(); }
+        window.addEventListener('beforeunload', e => { if (isDirty) { e.preventDefault(); e.returnValue = ''; } });
+        function showToast(msg, type = 'success') {
+            const t = document.getElementById('toastNotification');
+            t.textContent = msg; t.style.background = type === 'error' ? '#dc2626' : '#1e293b';
+            t.classList.add('visible');
+            setTimeout(() => t.classList.remove('visible'), 3500);
+        }
+    </script>
+</body>
+</html>

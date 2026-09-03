@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <script src="scripts/auth-loader.js"></script>
+    <meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Branding Settings - BharathBots</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="styles.css"><link rel="stylesheet" href="dashboard.css"><link rel="stylesheet" href="submenu.css"><link rel="stylesheet" href="settings-shared.css">
+    <script src="https://unpkg.com/feather-icons"></script>
+    <style>
+        .color-row { display: flex; align-items: center; gap: 14px; margin-bottom: 18px; }
+        .color-row label.form-label { margin: 0; min-width: 160px; }
+        .color-input-wrap { display: flex; align-items: center; gap: 10px; }
+        input[type="color"] { width: 44px; height: 36px; border: 1px solid #d1d5db; border-radius: 8px; cursor: pointer; padding: 2px 4px; background: none; }
+        .color-hex { width: 110px; font-size: 0.88rem; padding: 7px 10px; border: 1px solid #d1d5db; border-radius: 8px; font-family: 'Inter', sans-serif; color: #374151; }
+    </style>
+</head>
+<body class="dashboard-body">
+    <aside class="sidebar" id="sidebar">
+        <div class="sidebar-header"><div class="logo"><svg width="24" height="24" viewBox="0 0 32 32" fill="none"><rect x="2" y="6" width="28" height="20" rx="4" stroke="currentColor" stroke-width="2"/><path d="M8 12C8 12 11 16 16 16C21 16 24 12 24 12" stroke="currentColor" stroke-width="2" stroke-linecap="round"/><circle cx="16" cy="16" r="2" fill="currentColor"/></svg><span class="logo-text">BharathBots</span></div><button class="toggle-btn" id="sidebarToggle"><i data-feather="sidebar" class="toggle-icon"></i></button></div>
+        <nav class="sidebar-nav"><ul class="nav-list"><li class="nav-item has-submenu active"><div class="nav-link submenu-toggle"><i data-feather="settings" class="nav-icon"></i><span class="nav-text">Settings</span><i data-feather="chevron-down" class="submenu-arrow"></i></div><ul class="submenu"><li><a href="company.html" class="submenu-link active"><span class="submenu-bullet">&bull;</span><span class="nav-text">Company</span></a></li></ul></li></ul></nav>
+    </aside>
+    <div class="main-wrapper" id="mainWrapper">
+        <header class="top-header"><div class="header-left"><div class="branch-switcher"><i data-feather="map-pin" class="branch-icon"></i><select class="branch-select"><option>Downtown Branch</option></select></div></div><div class="header-center"><div class="search-bar"><i data-feather="search" class="search-icon"></i><input type="text" placeholder="Search..." class="search-input"></div></div><div class="header-right"><div class="plan-badge">Growth</div><button class="icon-btn"><i data-feather="bell"></i></button></div></header>
+        <main class="content-area">
+            <div class="sp-breadcrumb"><a href="company.html" class="sp-back"><i data-feather="arrow-left"></i> Company Settings</a><span class="sp-sep">/</span><span class="sp-current">Branding</span></div>
+            <div class="sp-header"><h1>Branding</h1><p>Customize your brand colors and customer-facing identity</p></div>
+            <div class="sp-card">
+                <div class="sp-card-header"><h2>Brand Colors</h2><p>Used on customer receipts, booking pages and email templates</p></div>
+                <div class="sp-card-body">
+                    <div class="color-row">
+                        <label class="form-label">Primary Color</label>
+                        <div class="color-input-wrap">
+                            <input type="color" id="primaryColor" value="#1e3a8a" onchange="syncHex('primaryColor','primaryHex');markDirty();">
+                            <input type="text" id="primaryHex" class="color-hex" value="#1e3a8a" placeholder="#000000" oninput="syncColor('primaryHex','primaryColor');markDirty();">
+                        </div>
+                    </div>
+                    <div class="color-row">
+                        <label class="form-label">Accent / Secondary Color</label>
+                        <div class="color-input-wrap">
+                            <input type="color" id="accentColor" value="#3b82f6" onchange="syncHex('accentColor','accentHex');markDirty();">
+                            <input type="text" id="accentHex" class="color-hex" value="#3b82f6" placeholder="#000000" oninput="syncColor('accentHex','accentColor');markDirty();">
+                        </div>
+                    </div>
+                    <p class="form-hint">These colors appear on your customer booking page, email templates and printed receipts.</p>
+                </div>
+                <div class="sp-card-header" style="border-top:1px solid #f1f5f9;"><h2>Tagline / Slogan <span class="optional">(Optional)</span></h2><p>Shown below your logo on receipts and the booking page</p></div>
+                <div class="sp-card-body">
+                    <div class="form-group"><input type="text" id="brandTagline" class="form-input" placeholder="e.g., Look good, feel great." oninput="markDirty();"></div>
+                </div>
+                <div class="sp-savebar" id="savebar"><button class="btn btn-secondary" onclick="document.getElementById('savebar').classList.remove('visible')">Cancel</button><button class="btn btn-primary" id="btnSave"><i data-feather="save" style="width:15px;height:15px;"></i> Save Changes</button></div>
+            </div>
+        </main>
+    </div>
+    <script>
+        function markDirty() { document.getElementById('savebar').classList.add('visible'); if (typeof feather !== 'undefined') feather.replace(); }
+        function syncHex(colorId, hexId) { document.getElementById(hexId).value = document.getElementById(colorId).value; }
+        function syncColor(hexId, colorId) { const v = document.getElementById(hexId).value; if (/^#[0-9a-fA-F]{6}$/.test(v)) document.getElementById(colorId).value = v; }
+        document.addEventListener('DOMContentLoaded', () => {
+            if (typeof feather !== 'undefined') feather.replace();
+            document.getElementById('sidebarToggle')?.addEventListener('click', () => { document.getElementById('sidebar').classList.toggle('collapsed'); document.getElementById('mainWrapper').classList.toggle('sidebar-collapsed'); });
+            document.querySelectorAll('.nav-item.active').forEach(li => li.classList.add('open'));
+        });
+    </script>
+</body></html>

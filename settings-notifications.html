@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <script src="scripts/auth-loader.js"></script>
+    <meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Notifications Settings - BharathBots</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="styles.css"><link rel="stylesheet" href="dashboard.css"><link rel="stylesheet" href="submenu.css"><link rel="stylesheet" href="settings-shared.css">
+    <script src="https://unpkg.com/feather-icons"></script>
+</head>
+<body class="dashboard-body">
+    <aside class="sidebar" id="sidebar">
+        <div class="sidebar-header"><div class="logo"><svg width="24" height="24" viewBox="0 0 32 32" fill="none"><rect x="2" y="6" width="28" height="20" rx="4" stroke="currentColor" stroke-width="2"/><path d="M8 12C8 12 11 16 16 16C21 16 24 12 24 12" stroke="currentColor" stroke-width="2" stroke-linecap="round"/><circle cx="16" cy="16" r="2" fill="currentColor"/></svg><span class="logo-text">BharathBots</span></div><button class="toggle-btn" id="sidebarToggle"><i data-feather="sidebar" class="toggle-icon"></i></button></div>
+        <nav class="sidebar-nav"><ul class="nav-list"><li class="nav-item has-submenu active"><div class="nav-link submenu-toggle"><i data-feather="settings" class="nav-icon"></i><span class="nav-text">Settings</span><i data-feather="chevron-down" class="submenu-arrow"></i></div><ul class="submenu"><li><a href="company.html" class="submenu-link active"><span class="submenu-bullet">&bull;</span><span class="nav-text">Company</span></a></li></ul></li></ul></nav>
+    </aside>
+    <div class="main-wrapper" id="mainWrapper">
+        <header class="top-header"><div class="header-left"><div class="branch-switcher"><i data-feather="map-pin" class="branch-icon"></i><select class="branch-select"><option>Downtown Branch</option></select></div></div><div class="header-center"><div class="search-bar"><i data-feather="search" class="search-icon"></i><input type="text" placeholder="Search..." class="search-input"></div></div><div class="header-right"><div class="plan-badge">Growth</div><button class="icon-btn"><i data-feather="bell"></i></button></div></header>
+        <main class="content-area">
+            <div class="sp-breadcrumb"><a href="company.html" class="sp-back"><i data-feather="arrow-left"></i> Company Settings</a><span class="sp-sep">/</span><span class="sp-current">Notifications</span></div>
+            <div class="sp-header"><h1>Notifications</h1><p>Configure SMS, WhatsApp and email notifications for customers and staff</p></div>
+            <div class="sp-card">
+                <div class="sp-card-header"><h2>Appointment Reminders (Customer)</h2><p>Automatic reminders sent to customers before their appointment</p></div>
+                <div class="sp-card-body">
+                    <div class="toggle-row"><div><div class="toggle-label">📱 WhatsApp Reminder</div><div class="toggle-hint">Send a WhatsApp message to customers before their appointment</div></div><label class="toggle-switch"><input type="checkbox" id="whatsappReminder" checked><span class="toggle-track"></span></label></div>
+                    <div class="toggle-row"><div><div class="toggle-label">💬 SMS Reminder</div><div class="toggle-hint">Send an SMS to customers before their appointment</div></div><label class="toggle-switch"><input type="checkbox" id="smsReminder"><span class="toggle-track"></span></label></div>
+                    <div class="toggle-row"><div><div class="toggle-label">📧 Email Reminder</div><div class="toggle-hint">Send an email to customers before their appointment</div></div><label class="toggle-switch"><input type="checkbox" id="emailReminder" checked><span class="toggle-track"></span></label></div>
+                    <div class="form-group" style="margin-top:20px;"><label class="form-label" for="reminderHours">Send reminder how many hours before?</label><select id="reminderHours" class="form-select" style="max-width:240px;"><option value="1">1 hour before</option><option value="2" selected>2 hours before</option><option value="4">4 hours before</option><option value="12">12 hours before</option><option value="24">24 hours before</option></select></div>
+                </div>
+                <div class="sp-card-header" style="border-top:1px solid #f1f5f9;"><h2>Booking Confirmations (Customer)</h2><p>Confirmation messages sent immediately after booking</p></div>
+                <div class="sp-card-body">
+                    <div class="toggle-row"><div><div class="toggle-label">📱 WhatsApp Confirmation</div></div><label class="toggle-switch"><input type="checkbox" id="whatsappConfirm" checked><span class="toggle-track"></span></label></div>
+                    <div class="toggle-row"><div><div class="toggle-label">📧 Email Confirmation</div></div><label class="toggle-switch"><input type="checkbox" id="emailConfirm" checked><span class="toggle-track"></span></label></div>
+                </div>
+                <div class="sp-card-header" style="border-top:1px solid #f1f5f9;"><h2>Staff Notifications</h2><p>Alerts sent to staff members</p></div>
+                <div class="sp-card-body">
+                    <div class="toggle-row"><div><div class="toggle-label">Notify staff on new booking</div><div class="toggle-hint">Staff receive an alert when a new appointment is assigned to them</div></div><label class="toggle-switch"><input type="checkbox" id="staffNewBooking" checked><span class="toggle-track"></span></label></div>
+                    <div class="toggle-row"><div><div class="toggle-label">Notify staff on cancellation</div></div><label class="toggle-switch"><input type="checkbox" id="staffCancellation" checked><span class="toggle-track"></span></label></div>
+                </div>
+                <div class="sp-savebar" id="savebar"><button class="btn btn-secondary" onclick="document.getElementById('savebar').classList.remove('visible')">Cancel</button><button class="btn btn-primary" id="btnSave"><i data-feather="save" style="width:15px;height:15px;"></i> Save Changes</button></div>
+            </div>
+        </main>
+    </div>
+    <script>document.addEventListener('DOMContentLoaded',()=>{if(typeof feather!=='undefined')feather.replace();document.getElementById('sidebarToggle')?.addEventListener('click',()=>{document.getElementById('sidebar').classList.toggle('collapsed');document.getElementById('mainWrapper').classList.toggle('sidebar-collapsed');});document.querySelectorAll('.nav-item.active').forEach(li=>li.classList.add('open'));document.querySelectorAll('input[type=checkbox],.form-select').forEach(el=>el.addEventListener(el.type==='checkbox'?'change':'change',()=>{document.getElementById('savebar').classList.add('visible');if(typeof feather!=='undefined')feather.replace();}));});</script>
+</body></html>
