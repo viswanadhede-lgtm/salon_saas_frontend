@@ -27,11 +27,34 @@ const ROUTE_MAP = {
     '/report-detail.html':         FEATURES.REPORTS_ACCESS,
     '/expenses.html':              FEATURES.ANALYTICS_EXPENSES,
     '/company.html':               FEATURES.COMPANY_SETTINGS,
+    '/settings-business.html':     FEATURES.COMPANY_SETTINGS,
+    '/settings-contact.html':      FEATURES.COMPANY_SETTINGS,
+    '/settings-tax.html':          FEATURES.COMPANY_SETTINGS,
+    '/settings-billing.html':      FEATURES.COMPANY_SETTINGS,
+    '/settings-hours.html':        FEATURES.COMPANY_SETTINGS,
+    '/settings-booking.html':      FEATURES.COMPANY_SETTINGS,
+    '/settings-payments.html':     FEATURES.COMPANY_SETTINGS,
+    '/settings-notifications.html':FEATURES.COMPANY_SETTINGS,
+    '/settings-branding.html':     FEATURES.COMPANY_SETTINGS,
+    '/settings-localization.html': FEATURES.COMPANY_SETTINGS,
     '/branches.html':              FEATURES.BRANCH_MANAGEMENT,
     '/users.html':                 FEATURES.USER_MANAGEMENT,
     '/roles-permissions.html':     FEATURES.ROLES_PERMISSIONS,
     '/custom-fields.html':         FEATURES.CUSTOM_FIELDS,
     '/billing-subscription.html':  FEATURES.BILLING_SUBSCRIPTION_MANAGEMENT
+};
+
+const SUB_ROUTE_MAP = {
+    '/settings-business.html':      'settings_business',
+    '/settings-contact.html':       'settings_contact',
+    '/settings-tax.html':           'settings_tax',
+    '/settings-billing.html':       'settings_billing',
+    '/settings-hours.html':         'settings_hours',
+    '/settings-booking.html':       'settings_booking',
+    '/settings-payments.html':      'settings_payments',
+    '/settings-notifications.html': 'settings_notifications',
+    '/settings-branding.html':      'settings_branding',
+    '/settings-localization.html':  'settings_localization',
 };
 
 // ─── Plan → Feature access map ────────────────────────────────────────────────
@@ -220,6 +243,15 @@ function setupHourlyHeartbeat() {
                 return;
             }
 
+            const currentSubFeat = SUB_ROUTE_MAP[filename];
+            if (currentSubFeat && !userSubFeatures.includes(currentSubFeat)) {
+                clearInterval(heartbeatInterval);
+                showAuthBlockModal('FEATURE_NOT_ALLOWED',
+                    "Your role no longer has permission to access this settings section.",
+                    'Back to Settings', 'company.html');
+                return;
+            }
+
             // 7. Re-apply sub-feature gates with refreshed permissions
             initSubFeatures();
             applySubFeatureGates();
@@ -267,6 +299,17 @@ export async function runGlobalAuthGuard() {
                         "You currently don't have access to this feature. Please upgrade your plan.",
                         'Upgrade', 'plans.html?flow=upgrade');
                     return;
+                }
+
+                const requiredSubFeature = SUB_ROUTE_MAP[filename];
+                if (requiredSubFeature) {
+                    const cachedSubFeatures = JSON.parse(localStorage.getItem('userSubFeatures') || '[]');
+                    if (Array.isArray(cachedSubFeatures) && !cachedSubFeatures.includes(requiredSubFeature)) {
+                        showAuthBlockModal('FEATURE_NOT_ALLOWED',
+                            "Your role does not have permission to access this settings section.",
+                            'Back to Settings', 'company.html');
+                        return;
+                    }
                 }
 
                 populateGlobalHeader();
@@ -386,6 +429,14 @@ export async function runGlobalAuthGuard() {
             showAuthBlockModal('FEATURE_NOT_ALLOWED',
                 "You currently don't have access to this feature. Please upgrade your plan.",
                 'Upgrade', 'plans.html?flow=upgrade');
+            return;
+        }
+
+        const requiredSubFeature = SUB_ROUTE_MAP[filename];
+        if (requiredSubFeature && !userSubFeatures.includes(requiredSubFeature)) {
+            showAuthBlockModal('FEATURE_NOT_ALLOWED',
+                "Your role does not have permission to access this settings section.",
+                'Back to Settings', 'company.html');
             return;
         }
 

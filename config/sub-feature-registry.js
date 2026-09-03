@@ -114,6 +114,16 @@ export const SUB_FEATURES = {
     SETTINGS_MANAGE_COMPANY: 'settings_manage_company',
     COMPANY_UPDATE: 'company_update',
     COMPANY_CREATE_BOOKING: 'company_create_booking',
+    SETTINGS_BUSINESS: 'settings_business',
+    SETTINGS_CONTACT: 'settings_contact',
+    SETTINGS_TAX: 'settings_tax',
+    SETTINGS_BILLING: 'settings_billing',
+    SETTINGS_HOURS: 'settings_hours',
+    SETTINGS_BOOKING: 'settings_booking',
+    SETTINGS_PAYMENTS: 'settings_payments',
+    SETTINGS_NOTIFICATIONS: 'settings_notifications',
+    SETTINGS_BRANDING: 'settings_branding',
+    SETTINGS_LOCALIZATION: 'settings_localization',
 
     // ---- SETTINGS / BRANCHES ----
     BRANCH_CREATE: 'branch_create',
@@ -259,6 +269,16 @@ export const SUB_FEATURES_MAP = {
     [FEATURES.COMPANY_SETTINGS]: [
         { key: SUB_FEATURES.SETTINGS_MANAGE_COMPANY, label: 'Manage Settings' },
         { key: SUB_FEATURES.COMPANY_UPDATE, label: 'Update Settings' },
+        { key: SUB_FEATURES.SETTINGS_BUSINESS, label: 'Business Profile' },
+        { key: SUB_FEATURES.SETTINGS_CONTACT, label: 'Contact Details' },
+        { key: SUB_FEATURES.SETTINGS_TAX, label: 'Tax & Compliance' },
+        { key: SUB_FEATURES.SETTINGS_BILLING, label: 'Billing Preferences' },
+        { key: SUB_FEATURES.SETTINGS_HOURS, label: 'Business Hours' },
+        { key: SUB_FEATURES.SETTINGS_BOOKING, label: 'Booking Rules' },
+        { key: SUB_FEATURES.SETTINGS_PAYMENTS, label: 'Payment Methods' },
+        { key: SUB_FEATURES.SETTINGS_NOTIFICATIONS, label: 'Notifications & Reminders' },
+        { key: SUB_FEATURES.SETTINGS_BRANDING, label: 'Branding & Identity' },
+        { key: SUB_FEATURES.SETTINGS_LOCALIZATION, label: 'Localization & Region' },
         { key: SUB_FEATURES.COMPANY_CREATE_BOOKING, label: 'Create Booking (Quick Action)' }
     ],
     [FEATURES.BRANCH_MANAGEMENT]: [
