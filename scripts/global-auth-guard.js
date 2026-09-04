@@ -32,10 +32,8 @@ const ROUTE_MAP = {
     '/settings-tax.html':          FEATURES.COMPANY_SETTINGS,
     '/settings-billing.html':      FEATURES.COMPANY_SETTINGS,
     '/settings-hours.html':        FEATURES.COMPANY_SETTINGS,
-    '/settings-booking.html':      FEATURES.COMPANY_SETTINGS,
     '/settings-payments.html':     FEATURES.COMPANY_SETTINGS,
     '/settings-notifications.html':FEATURES.COMPANY_SETTINGS,
-    '/settings-branding.html':     FEATURES.COMPANY_SETTINGS,
     '/settings-localization.html': FEATURES.COMPANY_SETTINGS,
     '/branches.html':              FEATURES.BRANCH_MANAGEMENT,
     '/users.html':                 FEATURES.USER_MANAGEMENT,
@@ -50,10 +48,8 @@ const SUB_ROUTE_MAP = {
     '/settings-tax.html':           'settings_tax',
     '/settings-billing.html':       'settings_billing',
     '/settings-hours.html':         'settings_hours',
-    '/settings-booking.html':       'settings_booking',
     '/settings-payments.html':      'settings_payments',
     '/settings-notifications.html': 'settings_notifications',
-    '/settings-branding.html':      'settings_branding',
     '/settings-localization.html':  'settings_localization',
 };
 
