@@ -1,6 +1,3 @@
-import { SUB_FEATURES_MAP } from '../../config/sub-feature-registry.js';
-import { FEATURES } from '../../config/feature-registry.js';
-
 let userSubFeatures = [];
 
 /**
@@ -14,44 +11,6 @@ export function initSubFeatures() {
     } catch (e) {
         userSubFeatures = [];
     }
-
-    try {
-        const appContext = JSON.parse(localStorage.getItem('appContext') || '{}');
-        const userFeatures = JSON.parse(localStorage.getItem('userFeatures') || '[]');
-        const isOwner = appContext.user?.role_name?.toLowerCase() === 'owner'
-                     || userFeatures.includes('ALL')
-                     || userSubFeatures.includes('ALL');
-
-        if (isOwner) {
-            // Re-derive all sub-features from SUB_FEATURES_MAP for any features the salon/role has
-            userFeatures.forEach(feat => {
-                const children = SUB_FEATURES_MAP[feat] || [];
-                children.forEach(sf => {
-                    if (!userSubFeatures.includes(sf.key)) {
-                        userSubFeatures.push(sf.key);
-                    }
-                });
-            });
-            localStorage.setItem('userSubFeatures', JSON.stringify(userSubFeatures));
-        } else if (userFeatures.includes(FEATURES.COMPANY_SETTINGS) && userSubFeatures.includes('settings_manage_company')) {
-            // Existing roles that already had general company settings management permission
-            // should also have access to the settings cards unless explicitly restricted
-            const settingsChildren = SUB_FEATURES_MAP[FEATURES.COMPANY_SETTINGS] || [];
-            let updated = false;
-            settingsChildren.forEach(sf => {
-                if (!userSubFeatures.includes(sf.key)) {
-                    userSubFeatures.push(sf.key);
-                    updated = true;
-                }
-            });
-            if (updated) {
-                localStorage.setItem('userSubFeatures', JSON.stringify(userSubFeatures));
-            }
-        }
-    } catch (e) {
-        console.warn('[Sub-Feature Manager] Auto-sync error:', e);
-    }
-
     console.log(`[Sub-Feature Manager] Initialized tracking matrix with ${userSubFeatures.length} authenticated micro-permissions.`);
 }
 
@@ -62,17 +21,10 @@ export function initSubFeatures() {
  */
 export function hasSubFeature(featureKey) {
     if (!featureKey) return true;
-    if (userSubFeatures.includes('ALL')) return true;
-
-    try {
-        const appContext = JSON.parse(localStorage.getItem('appContext') || '{}');
-        if (appContext.user?.role_name?.toLowerCase() === 'owner') return true;
-        const userFeatures = JSON.parse(localStorage.getItem('userFeatures') || '[]');
-        if (userFeatures.includes('ALL')) return true;
-    } catch (e) {}
-
     return userSubFeatures.includes(featureKey);
 }
 
-// Auto-initialize instantly.
+// Auto-initialize instantly. Because auth-guard makes an async call, this executes
+// securely *before* the API returns. The UI starts in a perfectly hardened locked state!
+// Once the auth network response completes, it manually re-calls initSubFeatures() and the UI magically unlocks.
 initSubFeatures();
