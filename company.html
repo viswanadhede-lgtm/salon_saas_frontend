@@ -44,13 +44,16 @@
             .settings-cards-grid { grid-template-columns: 1fr; }
         }
 
-        .settings-card {
+        .settings-card,
+        .settings-card:link,
+        .settings-card:visited {
             background: #fff;
             border: 1px solid #e2e8f0;
             border-radius: 14px;
             padding: 24px;
             cursor: pointer;
-            text-decoration: none;
+            text-decoration: none !important;
+            color: inherit;
             display: flex;
             align-items: flex-start;
             gap: 18px;
@@ -66,13 +69,21 @@
             border: 2px solid transparent;
             transition: border-color 0.22s;
         }
-        .settings-card:hover {
+        .settings-card:hover,
+        .settings-card:focus,
+        .settings-card:active {
             box-shadow: 0 8px 30px rgba(30, 58, 138, 0.10);
             transform: translateY(-2px);
             border-color: #c7d7f4;
+            text-decoration: none !important;
+            color: inherit;
         }
         .settings-card:hover::after {
             border-color: #3b82f6;
+        }
+        .settings-card *,
+        .settings-card:hover * {
+            text-decoration: none !important;
         }
 
         .settings-card-icon {
