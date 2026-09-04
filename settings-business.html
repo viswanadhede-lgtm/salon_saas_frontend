@@ -70,6 +70,9 @@
             font-weight: 650;
             color: #0f172a;
             margin: 0 0 3px 0;
+            display: flex;
+            align-items: center;
+            gap: 8px;
         }
         .settings-form-card-header p {
             font-size: 0.83rem;
@@ -118,69 +121,155 @@
             border-color: #3b82f6;
             box-shadow: 0 0 0 3px rgba(59,130,246,0.12);
         }
-        .form-textarea { min-height: 90px; resize: vertical; line-height: 1.5; }
+        .form-textarea { min-height: 95px; resize: vertical; line-height: 1.5; }
         .form-hint { font-size: 0.8rem; color: #94a3b8; margin-top: 5px; }
 
-        /* Logo upload */
+        /* Branding Upload Grid */
+        .branding-upload-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 20px;
+        }
+        @media (max-width: 860px) {
+            .branding-upload-grid { grid-template-columns: 1fr; }
+        }
+        .logo-upload-card {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+        .upload-badge-label {
+            font-size: 0.82rem;
+            font-weight: 650;
+            color: #475569;
+            text-transform: uppercase;
+            letter-spacing: 0.04em;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
         .logo-upload-area {
             display: flex;
             align-items: center;
-            gap: 20px;
-            padding: 20px;
-            border: 2px dashed #e2e8f0;
+            gap: 18px;
+            padding: 18px 20px;
+            border: 1.5px dashed #cbd5e1;
             border-radius: 12px;
             background: #f8fafc;
-            transition: border-color 0.2s;
+            transition: all 0.2s ease;
+            height: 100%;
+            box-sizing: border-box;
         }
-        .logo-upload-area:hover { border-color: #93c5fd; }
+        .logo-upload-area:hover {
+            border-color: #3b82f6;
+            background: #f0f7ff;
+        }
         .logo-preview-box {
-            width: 80px;
-            height: 80px;
+            width: 76px;
+            height: 76px;
             border-radius: 12px;
-            background: #e2e8f0;
+            background: #ffffff;
+            border: 1px solid #e2e8f0;
+            box-shadow: 0 2px 6px rgba(0,0,0,0.04);
             display: flex;
             align-items: center;
             justify-content: center;
             overflow: hidden;
             flex-shrink: 0;
         }
-        .logo-preview-box img { width: 100%; height: 100%; object-fit: cover; }
-        .logo-preview-box .logo-placeholder-icon { color: #94a3b8; }
-        .logo-upload-info h4 { font-size: 0.9rem; font-weight: 600; color: #374151; margin: 0 0 4px 0; }
-        .logo-upload-info p { font-size: 0.8rem; color: #6b7280; margin: 0 0 10px 0; }
+        .logo-preview-box.favicon-preview-box {
+            width: 64px;
+            height: 64px;
+            border-radius: 10px;
+        }
+        .logo-preview-box img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+        .logo-preview-box .logo-placeholder-icon {
+            color: #94a3b8;
+            width: 28px;
+            height: 28px;
+        }
+        .logo-upload-info {
+            flex: 1;
+            min-width: 0;
+        }
+        .logo-upload-info h4 {
+            font-size: 0.88rem;
+            font-weight: 650;
+            color: #1e293b;
+            margin: 0 0 4px 0;
+        }
+        .logo-upload-info p {
+            font-size: 0.78rem;
+            color: #64748b;
+            margin: 0 0 10px 0;
+            line-height: 1.35;
+        }
+        .upload-btn-group {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            flex-wrap: wrap;
+        }
         .btn-upload-logo {
             display: inline-flex;
             align-items: center;
             gap: 6px;
-            padding: 7px 14px;
-            font-size: 0.83rem;
+            padding: 6px 13px;
+            font-size: 0.82rem;
             font-weight: 600;
             background: #fff;
-            border: 1px solid #d1d5db;
+            border: 1px solid #cbd5e1;
             border-radius: 7px;
-            color: #374151;
+            color: #334155;
             cursor: pointer;
             transition: all 0.15s;
         }
-        .btn-upload-logo:hover { border-color: #3b82f6; color: #3b82f6; background: #eff6ff; }
+        .btn-upload-logo:hover {
+            border-color: #3b82f6;
+            color: #3b82f6;
+            background: #eff6ff;
+        }
+        .btn-remove-upload {
+            display: inline-flex;
+            align-items: center;
+            gap: 5px;
+            padding: 6px 10px;
+            font-size: 0.78rem;
+            font-weight: 500;
+            background: transparent;
+            border: 1px solid transparent;
+            border-radius: 7px;
+            color: #ef4444;
+            cursor: pointer;
+            transition: all 0.15s;
+        }
+        .btn-remove-upload:hover {
+            background: #fef2f2;
+            border-color: #fecaca;
+        }
 
         /* Sticky Save Bar */
         .settings-save-bar {
             position: sticky;
-            bottom: 0;
-            background: #fff;
-            border-top: 1px solid #e2e8f0;
-            padding: 16px 28px;
+            bottom: 20px;
+            background: #ffffff;
+            border: 1px solid #e2e8f0;
+            border-radius: 12px;
+            padding: 14px 24px;
             display: flex;
             justify-content: flex-end;
             gap: 12px;
             z-index: 100;
-            box-shadow: 0 -4px 20px rgba(0,0,0,0.06);
-            border-radius: 0 0 14px 14px;
+            box-shadow: 0 10px 30px rgba(15, 23, 42, 0.12);
             opacity: 0;
-            transform: translateY(10px);
+            transform: translateY(15px);
             transition: opacity 0.25s, transform 0.25s;
             pointer-events: none;
+            margin-top: 24px;
         }
         .settings-save-bar.visible {
             opacity: 1;
@@ -334,81 +423,183 @@
                 <p>Manage your business identity and profile information</p>
             </div>
 
-            <!-- Section 1: Logo & Identity -->
+            <!-- Section 1: Logo & Branding -->
             <div class="settings-form-card">
                 <div class="settings-form-card-header">
-                    <h2>Logo &amp; Identity</h2>
-                    <p>Your logo appears on invoices, receipts and customer communications</p>
+                    <h2><i data-feather="image" style="width:18px;height:18px;color:#3b82f6;"></i> Logo &amp; Branding</h2>
+                    <p>Upload your primary company logo and browser favicon / brand icon</p>
                 </div>
                 <div class="settings-form-card-body">
-                    <div class="form-group">
-                        <label class="form-label">Company Logo</label>
-                        <div class="logo-upload-area">
-                            <div class="logo-preview-box" id="logoPreviewBox">
-                                <i data-feather="image" class="logo-placeholder-icon"></i>
+                    <div class="branding-upload-grid">
+                        <!-- Company Logo -->
+                        <div class="logo-upload-card">
+                            <div class="upload-badge-label">
+                                <i data-feather="image" style="width:14px;height:14px;"></i> Company Logo
                             </div>
-                            <div class="logo-upload-info">
-                                <h4>Upload your logo</h4>
-                                <p>Recommended: 512×512px, PNG or JPG, max 2MB</p>
-                                <label for="logoFileInput" class="btn-upload-logo">
-                                    <i data-feather="upload" style="width:14px;height:14px;"></i>
-                                    Choose File
-                                </label>
-                                <input type="file" id="logoFileInput" accept="image/*" style="display:none;">
+                            <div class="logo-upload-area">
+                                <div class="logo-preview-box" id="logoPreviewBox">
+                                    <i data-feather="image" class="logo-placeholder-icon"></i>
+                                </div>
+                                <div class="logo-upload-info">
+                                    <h4>Primary Logo</h4>
+                                    <p>Appears on invoices, receipts &amp; portal. Rec: 512×512px, PNG or JPG, max 2MB</p>
+                                    <div class="upload-btn-group">
+                                        <label for="logoFileInput" class="btn-upload-logo">
+                                            <i data-feather="upload" style="width:14px;height:14px;"></i>
+                                            Choose File
+                                        </label>
+                                        <input type="file" id="logoFileInput" accept="image/*" style="display:none;">
+                                        <button type="button" class="btn-remove-upload" id="btnRemoveLogo" style="display:none;" onclick="removeLogo()">
+                                            <i data-feather="trash-2" style="width:13px;height:13px;"></i> Remove
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Brand Icon / Favicon -->
+                        <div class="logo-upload-card">
+                            <div class="upload-badge-label">
+                                <i data-feather="star" style="width:14px;height:14px;"></i> Brand Icon / Favicon
+                            </div>
+                            <div class="logo-upload-area">
+                                <div class="logo-preview-box favicon-preview-box" id="faviconPreviewBox">
+                                    <i data-feather="star" class="logo-placeholder-icon"></i>
+                                </div>
+                                <div class="logo-upload-info">
+                                    <h4>Square Icon / Favicon</h4>
+                                    <p>Used for browser tabs, app icons &amp; mobile. Rec: 64×64px or 32×32px PNG/ICO</p>
+                                    <div class="upload-btn-group">
+                                        <label for="faviconFileInput" class="btn-upload-logo">
+                                            <i data-feather="upload" style="width:14px;height:14px;"></i>
+                                            Choose File
+                                        </label>
+                                        <input type="file" id="faviconFileInput" accept="image/*,.ico" style="display:none;">
+                                        <button type="button" class="btn-remove-upload" id="btnRemoveFavicon" style="display:none;" onclick="removeFavicon()">
+                                            <i data-feather="trash-2" style="width:13px;height:13px;"></i> Remove
+                                        </button>
+                                    </div>
+                                </div>
                             </div>
                         </div>
                     </div>
                 </div>
+            </div>
 
-                <!-- Basic Info -->
-                <div class="settings-form-card-header" style="border-top: 1px solid #f1f5f9;">
-                    <h2>Basic Information</h2>
-                    <p>Core details used across the platform and customer-facing pages</p>
+            <!-- Section 2: Business Identity -->
+            <div class="settings-form-card">
+                <div class="settings-form-card-header">
+                    <h2><i data-feather="briefcase" style="width:18px;height:18px;color:#3b82f6;"></i> Business Identity</h2>
+                    <p>Core legal and display profile details for your establishment</p>
                 </div>
                 <div class="settings-form-card-body">
                     <div class="form-row">
                         <div class="form-group">
-                            <label class="form-label" for="companyName">Company Name <span class="required">*</span></label>
-                            <input type="text" id="companyName" class="form-input" placeholder="e.g., Shubha Beauty Salon">
+                            <label class="form-label" for="companyName">Legal Business Name <span class="required">*</span></label>
+                            <input type="text" id="companyName" class="form-input" placeholder="e.g., Shubha Beauty Salon Pvt Ltd" required>
+                            <p class="form-hint">Official registered name used for legal invoices &amp; taxes</p>
                         </div>
                         <div class="form-group">
-                            <label class="form-label" for="displayName">Display Name <span class="optional">(Optional)</span></label>
-                            <input type="text" id="displayName" class="form-input" placeholder="Short name shown to customers">
-                            <p class="form-hint">Shown on receipts and booking confirmations</p>
+                            <label class="form-label" for="displayName">Display / Brand Name <span class="required">*</span></label>
+                            <input type="text" id="displayName" class="form-input" placeholder="e.g., Shubha Salon &amp; Spa" required>
+                            <p class="form-hint">Public brand name shown to customers and staff</p>
                         </div>
                     </div>
 
                     <div class="form-row">
                         <div class="form-group">
-                            <label class="form-label" for="businessType">Business Type</label>
-                            <select id="businessType" class="form-select">
-                                <option value="salon">Salon &amp; Spa</option>
+                            <label class="form-label" for="businessCategory">Business Category <span class="required">*</span></label>
+                            <select id="businessCategory" class="form-select" required>
+                                <option value="salon_spa">Salon &amp; Spa</option>
+                                <option value="hair_salon">Hair Salon &amp; Studio</option>
                                 <option value="barbershop">Barbershop</option>
-                                <option value="wellness">Wellness Center</option>
-                                <option value="clinic">Aesthetics Clinic</option>
+                                <option value="beauty_parlour">Beauty Parlour</option>
+                                <option value="nail_salon">Nail Bar &amp; Lash Studio</option>
+                                <option value="skin_clinic">Aesthetics &amp; Skin Clinic</option>
+                                <option value="wellness_massage">Wellness &amp; Massage Therapy</option>
+                                <option value="bridal_studio">Bridal &amp; Makeup Studio</option>
+                                <option value="tattoo_piercing">Tattoo &amp; Piercing</option>
+                                <option value="pet_grooming">Pet Grooming</option>
                                 <option value="other">Other</option>
                             </select>
+                            <p class="form-hint">Primary industry classification</p>
                         </div>
                         <div class="form-group">
-                            <label class="form-label" for="companyWebsite">Website <span class="optional">(Optional)</span></label>
-                            <input type="url" id="companyWebsite" class="form-input" placeholder="https://www.example.com">
+                            <label class="form-label" for="businessType">Business Type <span class="required">*</span></label>
+                            <select id="businessType" class="form-select" required>
+                                <option value="single_location">Single Location / Standalone</option>
+                                <option value="multi_branch">Multi-Branch Chain</option>
+                                <option value="franchise">Franchise</option>
+                                <option value="independent_stylist">Booth Rental / Independent Stylist</option>
+                                <option value="mobile_service">Mobile / Home-Service Salon</option>
+                                <option value="other">Other</option>
+                            </select>
+                            <p class="form-hint">Operational model &amp; branch structure</p>
                         </div>
                     </div>
 
                     <div class="form-group">
                         <label class="form-label" for="businessDescription">Business Description <span class="optional">(Optional)</span></label>
-                        <textarea id="businessDescription" class="form-input form-textarea" placeholder="A short description of your business that may appear on customer-facing pages..."></textarea>
+                        <textarea id="businessDescription" class="form-input form-textarea" placeholder="Tell customers about your salon services, experience, specialties, and ambiance..."></textarea>
+                        <p class="form-hint">A brief description shown on your customer-facing booking portals</p>
                     </div>
                 </div>
+            </div>
 
-                <!-- Sticky Save Bar -->
-                <div class="settings-save-bar" id="savebar">
-                    <button class="btn btn-secondary" id="btnCancel" onclick="cancelChanges()">Cancel</button>
-                    <button class="btn btn-primary" id="btnSave" onclick="saveBusinessSettings()">
-                        <i data-feather="save" style="width:15px;height:15px;"></i>
-                        Save Changes
-                    </button>
+            <!-- Section 3: Online Presence -->
+            <div class="settings-form-card">
+                <div class="settings-form-card-header">
+                    <h2><i data-feather="globe" style="width:18px;height:18px;color:#3b82f6;"></i> Online Presence</h2>
+                    <p>Links to your website and public social media profiles</p>
                 </div>
+                <div class="settings-form-card-body">
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label class="form-label" for="companyWebsite">Website <span class="optional">(Optional)</span></label>
+                            <div class="input-prefix-wrap">
+                                <span class="input-prefix"><i data-feather="globe" style="width:15px;height:15px;"></i></span>
+                                <input type="url" id="companyWebsite" class="form-input with-prefix" placeholder="https://www.yourdomain.com">
+                            </div>
+                            <p class="form-hint">Your official salon website</p>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label" for="googleBusinessUrl">Google Business Profile <span class="optional">(Optional)</span></label>
+                            <div class="input-prefix-wrap">
+                                <span class="input-prefix"><i data-feather="map-pin" style="width:15px;height:15px;"></i></span>
+                                <input type="url" id="googleBusinessUrl" class="form-input with-prefix" placeholder="https://maps.google.com/...">
+                            </div>
+                            <p class="form-hint">Google Maps / GMB location URL</p>
+                        </div>
+                    </div>
+
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label class="form-label" for="instagramUrl">Instagram <span class="optional">(Optional)</span></label>
+                            <div class="input-prefix-wrap">
+                                <span class="input-prefix"><i data-feather="instagram" style="width:15px;height:15px;"></i></span>
+                                <input type="url" id="instagramUrl" class="form-input with-prefix" placeholder="https://instagram.com/your_salon">
+                            </div>
+                            <p class="form-hint">Instagram profile or handle</p>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label" for="facebookUrl">Facebook <span class="optional">(Optional)</span></label>
+                            <div class="input-prefix-wrap">
+                                <span class="input-prefix"><i data-feather="facebook" style="width:15px;height:15px;"></i></span>
+                                <input type="url" id="facebookUrl" class="form-input with-prefix" placeholder="https://facebook.com/your_page">
+                            </div>
+                            <p class="form-hint">Official Facebook page</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Sticky Save Bar -->
+            <div class="settings-save-bar" id="savebar">
+                <button class="btn btn-secondary" id="btnCancel" onclick="cancelChanges()">Cancel</button>
+                <button class="btn btn-primary" id="btnSave" onclick="saveBusinessSettings()">
+                    <i data-feather="save" style="width:15px;height:15px;"></i>
+                    Save Changes
+                </button>
             </div>
 
             <!-- Toast -->
@@ -452,6 +643,22 @@
                     const reader = new FileReader();
                     reader.onload = ev => {
                         document.getElementById('logoPreviewBox').innerHTML = `<img src="${ev.target.result}" alt="Logo">`;
+                        document.getElementById('btnRemoveLogo').style.display = 'inline-flex';
+                        if (typeof feather !== 'undefined') feather.replace();
+                        markDirty();
+                    };
+                    reader.readAsDataURL(e.target.files[0]);
+                }
+            });
+
+            // Favicon preview
+            document.getElementById('faviconFileInput')?.addEventListener('change', function(e) {
+                if (e.target.files?.[0]) {
+                    const reader = new FileReader();
+                    reader.onload = ev => {
+                        document.getElementById('faviconPreviewBox').innerHTML = `<img src="${ev.target.result}" alt="Favicon">`;
+                        document.getElementById('btnRemoveFavicon').style.display = 'inline-flex';
+                        if (typeof feather !== 'undefined') feather.replace();
                         markDirty();
                     };
                     reader.readAsDataURL(e.target.files[0]);
@@ -461,6 +668,7 @@
             // Unsaved changes guard
             const inputs = document.querySelectorAll('.form-input, .form-select, .form-textarea');
             inputs.forEach(el => el.addEventListener('input', markDirty));
+            inputs.forEach(el => el.addEventListener('change', markDirty));
         });
 
         let isDirty = false;
@@ -474,7 +682,6 @@
         function cancelChanges() {
             isDirty = false;
             document.getElementById('savebar').classList.remove('visible');
-            // Reload the original data
             if (typeof loadBusinessData === 'function') loadBusinessData();
         }
 
