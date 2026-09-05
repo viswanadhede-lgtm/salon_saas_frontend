@@ -270,7 +270,7 @@ export const SUB_FEATURES_MAP = {
         { key: SUB_FEATURES.SETTINGS_BUSINESS, label: 'Business Profile' },
         { key: SUB_FEATURES.SETTINGS_CONTACT, label: 'Contact Details' },
         { key: SUB_FEATURES.SETTINGS_TAX, label: 'Tax & Compliance' },
-        { key: SUB_FEATURES.SETTINGS_BILLING, label: 'Billing Preferences' },
+        { key: SUB_FEATURES.SETTINGS_BILLING, label: 'Invoice Settings' },
         { key: SUB_FEATURES.SETTINGS_HOURS, label: 'Business Hours' },
         { key: SUB_FEATURES.SETTINGS_PAYMENTS, label: 'Payment Methods' },
         { key: SUB_FEATURES.SETTINGS_NOTIFICATIONS, label: 'Notifications & Reminders' },

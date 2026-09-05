@@ -1,0 +1,235 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <script src="scripts/auth-loader.js"></script>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Invoice Settings - Configure invoices for your different revenue sources.">
+    <title>Invoice Settings - BharathBots</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="styles.css">
+    <link rel="stylesheet" href="dashboard.css">
+    <link rel="stylesheet" href="submenu.css">
+    <link rel="stylesheet" href="settings-shared.css">
+    <link rel="stylesheet" href="invoice-designer.css">
+    <script src="https://unpkg.com/feather-icons"></script>
+</head>
+<body class="dashboard-body">
+    <!-- Collapsible Sidebar -->
+    <aside class="sidebar" id="sidebar">
+        <div class="sidebar-header">
+            <div class="logo">
+                <svg width="24" height="24" viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <rect x="2" y="6" width="28" height="20" rx="4" stroke="currentColor" stroke-width="2"/>
+                    <path d="M8 12C8 12 11 16 16 16C21 16 24 12 24 12" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+                    <circle cx="16" cy="16" r="2" fill="currentColor"/>
+                </svg>
+                <span class="logo-text">BharathBots</span>
+            </div>
+            <button class="toggle-btn" id="sidebarToggle" title="Close sidebar">
+                <i data-feather="sidebar" class="toggle-icon"></i>
+            </button>
+        </div>
+        <nav class="sidebar-nav">
+            <ul class="nav-list">
+                <li class="nav-item" title="Dashboard"><a href="dashboard.html" class="nav-link" data-feature="dashboard_access"><i data-feather="home" class="nav-icon"></i><span class="nav-text">Dashboard</span></a></li>
+                <li class="nav-item" title="Bookings"><a href="bookings.html" class="nav-link" data-feature="bookings_management"><i data-feather="calendar" class="nav-icon"></i><span class="nav-text">Bookings</span></a></li>
+                <li class="nav-item" title="Customers"><a href="customers.html" class="nav-link" data-feature="customers_management"><i data-feather="users" class="nav-icon"></i><span class="nav-text">Customers</span></a></li>
+                <li class="nav-item has-submenu" title="Staff">
+                    <div class="nav-link submenu-toggle"><i data-feather="user-check" class="nav-icon"></i><span class="nav-text">Staff</span><i data-feather="chevron-down" class="submenu-arrow"></i></div>
+                    <ul class="submenu">
+                        <li><a href="staff.html" class="submenu-link" data-feature="staff_management"><span class="submenu-bullet">&bull;</span><span class="nav-text">Staff</span></a></li>
+                        <li><a href="staff-schedule.html" class="submenu-link" data-feature="staff_schedules"><span class="submenu-bullet">&bull;</span><span class="nav-text">Staff Schedules</span></a></li>
+                    </ul>
+                </li>
+                <li class="nav-item" title="Services"><a href="services.html" class="nav-link" data-feature="services_management"><i data-feather="scissors" class="nav-icon"></i><span class="nav-text">Services</span></a></li>
+                <li class="nav-item has-submenu" title="Sales">
+                    <div class="nav-link submenu-toggle"><i data-feather="dollar-sign" class="nav-icon"></i><span class="nav-text">Sales</span><i data-feather="chevron-down" class="submenu-arrow"></i></div>
+                    <ul class="submenu">
+                        <li><a href="pos.html" class="submenu-link" data-feature="pos_system"><span class="submenu-bullet">&bull;</span><span class="nav-text">Point of Sale</span></a></li>
+                        <li><a href="products.html" class="submenu-link" data-feature="product_management"><span class="submenu-bullet">&bull;</span><span class="nav-text">Products</span></a></li>
+                        <li><a href="sales-history.html" class="submenu-link" data-feature="sales_history"><span class="submenu-bullet">&bull;</span><span class="nav-text">Sales History</span></a></li>
+                    </ul>
+                </li>
+                <li class="nav-item has-submenu" title="Payments">
+                    <div class="nav-link submenu-toggle"><i data-feather="credit-card" class="nav-icon"></i><span class="nav-text">Payments</span><i data-feather="chevron-down" class="submenu-arrow"></i></div>
+                    <ul class="submenu">
+                        <li><a href="pending-payments.html" class="submenu-link" data-feature="pending_payments"><span class="submenu-bullet">&bull;</span><span class="nav-text">Pending Payments</span></a></li>
+                        <li><a href="payments-history.html" class="submenu-link" data-feature="payments_history"><span class="submenu-bullet">&bull;</span><span class="nav-text">Payments History</span></a></li>
+                    </ul>
+                </li>
+                <li class="nav-item has-submenu" title="Marketing">
+                    <div class="nav-link submenu-toggle"><i data-feather="gift" class="nav-icon"></i><span class="nav-text">Marketing</span><i data-feather="chevron-down" class="submenu-arrow"></i></div>
+                    <ul class="submenu">
+                        <li><a href="offers.html" class="submenu-link" data-feature="marketing_offers"><span class="submenu-bullet">&bull;</span><span class="nav-text">Offers</span></a></li>
+                        <li><a href="coupons.html" class="submenu-link" data-feature="marketing_coupons"><span class="submenu-bullet">&bull;</span><span class="nav-text">Coupons</span></a></li>
+                        <li><a href="memberships.html" class="submenu-link" data-feature="marketing_memberships"><span class="submenu-bullet">&bull;</span><span class="nav-text">Memberships</span></a></li>
+                        <li><a href="ad-campaigns.html" class="submenu-link" data-feature="marketing_campaigns"><span class="submenu-bullet">&bull;</span><span class="nav-text">Ad Campaigns</span></a></li>
+                    </ul>
+                </li>
+                <li class="nav-item has-submenu" title="Analytics">
+                    <div class="nav-link submenu-toggle"><i data-feather="bar-chart-2" class="nav-icon"></i><span class="nav-text">Analytics</span><i data-feather="chevron-down" class="submenu-arrow"></i></div>
+                    <ul class="submenu">
+                        <li><a href="overview.html" class="submenu-link" data-feature="analytics_overview"><span class="submenu-bullet">&bull;</span><span class="nav-text">Overview</span></a></li>
+                        <li><a href="reports.html" class="submenu-link" data-feature="reports_access"><span class="submenu-bullet">&bull;</span><span class="nav-text">Reports</span></a></li>
+                        <li><a href="expenses.html" class="submenu-link" data-feature="analytics_expenses"><span class="submenu-bullet">&bull;</span><span class="nav-text">Expenses</span></a></li>
+                    </ul>
+                </li>
+                <li class="nav-item has-submenu active" title="Settings">
+                    <div class="nav-link submenu-toggle"><i data-feather="settings" class="nav-icon"></i><span class="nav-text">Settings</span><i data-feather="chevron-down" class="submenu-arrow"></i></div>
+                    <ul class="submenu">
+                        <li><a href="company.html" class="submenu-link active"><span class="submenu-bullet">&bull;</span><span class="nav-text">Company</span></a></li>
+                        <li><a href="branches.html" class="submenu-link" data-feature="branch_management"><span class="submenu-bullet">&bull;</span><span class="nav-text">Branches</span></a></li>
+                        <li><a href="users.html" class="submenu-link" data-feature="user_management"><span class="submenu-bullet">&bull;</span><span class="nav-text">Users</span></a></li>
+                        <li><a href="roles-permissions.html" class="submenu-link" data-feature="roles_permissions"><span class="submenu-bullet">&bull;</span><span class="nav-text">Roles &amp; Permissions</span></a></li>
+                        <li><a href="custom-fields.html" class="submenu-link" data-feature="custom_fields"><span class="submenu-bullet">&bull;</span><span class="nav-text">Custom Fields</span></a></li>
+                        <li><a href="billing-subscription.html" class="submenu-link" data-feature="billing_subscription_management"><span class="submenu-bullet">&bull;</span><span class="nav-text">Billing &amp; Subscription</span></a></li>
+                    </ul>
+                </li>
+            </ul>
+        </nav>
+    </aside>
+
+    <div class="main-wrapper" id="mainWrapper">
+        <header class="top-header">
+            <div class="header-left"><div class="branch-switcher"><i data-feather="map-pin" class="branch-icon"></i><select class="branch-select"><option>Downtown Branch</option><option>Uptown Spa</option></select></div></div>
+            <div class="header-center"><div class="search-bar"><i data-feather="search" class="search-icon"></i><input type="text" placeholder="Search..." class="search-input"></div></div>
+            <div class="header-right">
+                <div class="plan-badge">Growth</div>
+                <button class="icon-btn"><i data-feather="bell"></i><span class="notification-dot"></span></button>
+                <div class="user-profile" id="userProfileDropdown">
+                    <div class="avatar" id="avatarBtn"><img src="https://ui-avatars.com/api/?name=Admin+User&background=1E3A8A&color=fff" alt="User"></div>
+                    <div class="profile-dropdown" id="profileMenu">
+                        <div class="dropdown-header"><p class="dropdown-name">Admin User</p><p class="dropdown-role">Owner</p></div>
+                        <div class="dropdown-divider"></div>
+                        <ul class="dropdown-list"><li><a href="#" class="dropdown-item text-danger"><i data-feather="log-out"></i><span>Logout</span></a></li></ul>
+                    </div>
+                </div>
+            </div>
+        </header>
+        <div id="profileBackdrop" class="profile-backdrop"></div>
+
+        <main class="content-area">
+            <div class="invoice-hub-container">
+                <!-- Breadcrumb -->
+                <div class="sp-breadcrumb">
+                    <a href="company.html" class="sp-back"><i data-feather="arrow-left"></i> Company Settings</a>
+                    <span class="sp-sep">/</span>
+                    <span class="sp-current">Invoice</span>
+                </div>
+
+                <!-- Page Header -->
+                <div class="invoice-hub-header">
+                    <h1>Invoice Settings</h1>
+                    <p>Configure invoices for your different revenue sources</p>
+                </div>
+
+                <!-- Card 1: Common Invoice (Top Prominent Hero Card) -->
+                <a href="settings-invoice-common.html" class="common-invoice-hero-card">
+                    <div class="common-hero-icon">
+                        <i data-feather="file-text"></i>
+                    </div>
+                    <div class="common-hero-body">
+                        <div class="common-hero-title-row">
+                            <h2 class="common-hero-title">Common Invoice</h2>
+                            <span class="common-hero-badge">Base Template</span>
+                        </div>
+                        <p class="common-hero-desc">
+                            Shared invoice branding, numbering, tax, header and footer settings applied across all invoices.
+                        </p>
+                        <div class="common-hero-action">
+                            <span>Configure Common Template</span>
+                            <i data-feather="arrow-right" style="width:16px;height:16px;"></i>
+                        </div>
+                    </div>
+                </a>
+
+                <!-- Bottom 3-Card Row: Revenue Sources -->
+                <div class="invoice-sources-grid">
+                    <!-- Card 2: Booking Invoice -->
+                    <a href="settings-invoice-booking.html" class="source-card">
+                        <div class="source-card-header">
+                            <div class="source-card-icon icon-booking">
+                                <i data-feather="calendar"></i>
+                            </div>
+                            <div>
+                                <h3 class="source-card-title">Booking Invoice</h3>
+                            </div>
+                        </div>
+                        <p class="source-card-desc">
+                            Appointment invoices &bull; Service duration, stylist details, notes, and appointment schedule.
+                        </p>
+                        <div class="source-card-footer">
+                            <span class="source-card-inherit-tag">Inherits Common</span>
+                            <i data-feather="arrow-right" style="width:16px;height:16px;"></i>
+                        </div>
+                    </a>
+
+                    <!-- Card 3: POS Invoice -->
+                    <a href="settings-invoice-pos.html" class="source-card">
+                        <div class="source-card-header">
+                            <div class="source-card-icon icon-pos">
+                                <i data-feather="shopping-cart"></i>
+                            </div>
+                            <div>
+                                <h3 class="source-card-title">POS Invoice</h3>
+                            </div>
+                        </div>
+                        <p class="source-card-desc">
+                            Products &amp; sales invoices &bull; Product SKU, quantity, unit price, and cashier transaction ID.
+                        </p>
+                        <div class="source-card-footer">
+                            <span class="source-card-inherit-tag">Inherits Common</span>
+                            <i data-feather="arrow-right" style="width:16px;height:16px;"></i>
+                        </div>
+                    </a>
+
+                    <!-- Card 4: Membership Invoice -->
+                    <a href="settings-invoice-membership.html" class="source-card">
+                        <div class="source-card-header">
+                            <div class="source-card-icon icon-membership">
+                                <i data-feather="credit-card"></i>
+                            </div>
+                            <div>
+                                <h3 class="source-card-title">Membership Invoice</h3>
+                            </div>
+                        </div>
+                        <p class="source-card-desc">
+                            Membership invoices &bull; Subscription plan, validity, start date, expiry date, and benefits.
+                        </p>
+                        <div class="source-card-footer">
+                            <span class="source-card-inherit-tag">Inherits Common</span>
+                            <i data-feather="arrow-right" style="width:16px;height:16px;"></i>
+                        </div>
+                    </a>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <script src="logout.js"></script>
+    <script type="module" src="scripts/global-auth-guard.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            if (typeof feather !== 'undefined') feather.replace();
+            document.getElementById('sidebarToggle')?.addEventListener('click', () => {
+                document.getElementById('sidebar').classList.toggle('collapsed');
+                document.getElementById('mainWrapper').classList.toggle('sidebar-collapsed');
+            });
+            document.querySelectorAll('.submenu-toggle').forEach(t => t.addEventListener('click', () => t.closest('.nav-item').classList.toggle('open')));
+            document.querySelectorAll('.nav-item.active').forEach(li => li.classList.add('open'));
+            document.getElementById('avatarBtn')?.addEventListener('click', e => {
+                e.stopPropagation();
+                document.getElementById('profileMenu').classList.toggle('show');
+                document.getElementById('profileBackdrop').classList.toggle('show');
+            });
+            document.getElementById('profileBackdrop')?.addEventListener('click', () => {
+                document.getElementById('profileMenu').classList.remove('show');
+                document.getElementById('profileBackdrop').classList.remove('show');
+            });
+        });
+    </script>
+</body>
+</html>

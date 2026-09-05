@@ -1,0 +1,300 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <script src="scripts/auth-loader.js"></script>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Booking Invoice Settings - Configure appointment-specific invoice details.">
+    <title>Booking Invoice Settings - BharathBots</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="styles.css">
+    <link rel="stylesheet" href="dashboard.css">
+    <link rel="stylesheet" href="submenu.css">
+    <link rel="stylesheet" href="settings-shared.css">
+    <link rel="stylesheet" href="invoice-designer.css">
+    <script src="https://unpkg.com/feather-icons"></script>
+</head>
+<body class="dashboard-body">
+    <!-- Collapsible Sidebar -->
+    <aside class="sidebar" id="sidebar">
+        <div class="sidebar-header">
+            <div class="logo">
+                <svg width="24" height="24" viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <rect x="2" y="6" width="28" height="20" rx="4" stroke="currentColor" stroke-width="2"/>
+                    <path d="M8 12C8 12 11 16 16 16C21 16 24 12 24 12" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+                    <circle cx="16" cy="16" r="2" fill="currentColor"/>
+                </svg>
+                <span class="logo-text">BharathBots</span>
+            </div>
+            <button class="toggle-btn" id="sidebarToggle" title="Close sidebar">
+                <i data-feather="sidebar" class="toggle-icon"></i>
+            </button>
+        </div>
+        <nav class="sidebar-nav">
+            <ul class="nav-list">
+                <li class="nav-item" title="Dashboard"><a href="dashboard.html" class="nav-link" data-feature="dashboard_access"><i data-feather="home" class="nav-icon"></i><span class="nav-text">Dashboard</span></a></li>
+                <li class="nav-item" title="Bookings"><a href="bookings.html" class="nav-link" data-feature="bookings_management"><i data-feather="calendar" class="nav-icon"></i><span class="nav-text">Bookings</span></a></li>
+                <li class="nav-item" title="Customers"><a href="customers.html" class="nav-link" data-feature="customers_management"><i data-feather="users" class="nav-icon"></i><span class="nav-text">Customers</span></a></li>
+                <li class="nav-item has-submenu" title="Staff">
+                    <div class="nav-link submenu-toggle"><i data-feather="user-check" class="nav-icon"></i><span class="nav-text">Staff</span><i data-feather="chevron-down" class="submenu-arrow"></i></div>
+                    <ul class="submenu">
+                        <li><a href="staff.html" class="submenu-link" data-feature="staff_management"><span class="submenu-bullet">&bull;</span><span class="nav-text">Staff</span></a></li>
+                        <li><a href="staff-schedule.html" class="submenu-link" data-feature="staff_schedules"><span class="submenu-bullet">&bull;</span><span class="nav-text">Staff Schedules</span></a></li>
+                    </ul>
+                </li>
+                <li class="nav-item" title="Services"><a href="services.html" class="nav-link" data-feature="services_management"><i data-feather="scissors" class="nav-icon"></i><span class="nav-text">Services</span></a></li>
+                <li class="nav-item has-submenu" title="Sales">
+                    <div class="nav-link submenu-toggle"><i data-feather="dollar-sign" class="nav-icon"></i><span class="nav-text">Sales</span><i data-feather="chevron-down" class="submenu-arrow"></i></div>
+                    <ul class="submenu">
+                        <li><a href="pos.html" class="submenu-link" data-feature="pos_system"><span class="submenu-bullet">&bull;</span><span class="nav-text">Point of Sale</span></a></li>
+                        <li><a href="products.html" class="submenu-link" data-feature="product_management"><span class="submenu-bullet">&bull;</span><span class="nav-text">Products</span></a></li>
+                        <li><a href="sales-history.html" class="submenu-link" data-feature="sales_history"><span class="submenu-bullet">&bull;</span><span class="nav-text">Sales History</span></a></li>
+                    </ul>
+                </li>
+                <li class="nav-item has-submenu" title="Payments">
+                    <div class="nav-link submenu-toggle"><i data-feather="credit-card" class="nav-icon"></i><span class="nav-text">Payments</span><i data-feather="chevron-down" class="submenu-arrow"></i></div>
+                    <ul class="submenu">
+                        <li><a href="pending-payments.html" class="submenu-link" data-feature="pending_payments"><span class="submenu-bullet">&bull;</span><span class="nav-text">Pending Payments</span></a></li>
+                        <li><a href="payments-history.html" class="submenu-link" data-feature="payments_history"><span class="submenu-bullet">&bull;</span><span class="nav-text">Payments History</span></a></li>
+                    </ul>
+                </li>
+                <li class="nav-item has-submenu" title="Marketing">
+                    <div class="nav-link submenu-toggle"><i data-feather="gift" class="nav-icon"></i><span class="nav-text">Marketing</span><i data-feather="chevron-down" class="submenu-arrow"></i></div>
+                    <ul class="submenu">
+                        <li><a href="offers.html" class="submenu-link" data-feature="marketing_offers"><span class="submenu-bullet">&bull;</span><span class="nav-text">Offers</span></a></li>
+                        <li><a href="coupons.html" class="submenu-link" data-feature="marketing_coupons"><span class="submenu-bullet">&bull;</span><span class="nav-text">Coupons</span></a></li>
+                        <li><a href="memberships.html" class="submenu-link" data-feature="marketing_memberships"><span class="submenu-bullet">&bull;</span><span class="nav-text">Memberships</span></a></li>
+                        <li><a href="ad-campaigns.html" class="submenu-link" data-feature="marketing_campaigns"><span class="submenu-bullet">&bull;</span><span class="nav-text">Ad Campaigns</span></a></li>
+                    </ul>
+                </li>
+                <li class="nav-item has-submenu" title="Analytics">
+                    <div class="nav-link submenu-toggle"><i data-feather="bar-chart-2" class="nav-icon"></i><span class="nav-text">Analytics</span><i data-feather="chevron-down" class="submenu-arrow"></i></div>
+                    <ul class="submenu">
+                        <li><a href="overview.html" class="submenu-link" data-feature="analytics_overview"><span class="submenu-bullet">&bull;</span><span class="nav-text">Overview</span></a></li>
+                        <li><a href="reports.html" class="submenu-link" data-feature="reports_access"><span class="submenu-bullet">&bull;</span><span class="nav-text">Reports</span></a></li>
+                        <li><a href="expenses.html" class="submenu-link" data-feature="analytics_expenses"><span class="submenu-bullet">&bull;</span><span class="nav-text">Expenses</span></a></li>
+                    </ul>
+                </li>
+                <li class="nav-item has-submenu active" title="Settings">
+                    <div class="nav-link submenu-toggle"><i data-feather="settings" class="nav-icon"></i><span class="nav-text">Settings</span><i data-feather="chevron-down" class="submenu-arrow"></i></div>
+                    <ul class="submenu">
+                        <li><a href="company.html" class="submenu-link active"><span class="submenu-bullet">&bull;</span><span class="nav-text">Company</span></a></li>
+                        <li><a href="branches.html" class="submenu-link" data-feature="branch_management"><span class="submenu-bullet">&bull;</span><span class="nav-text">Branches</span></a></li>
+                        <li><a href="users.html" class="submenu-link" data-feature="user_management"><span class="submenu-bullet">&bull;</span><span class="nav-text">Users</span></a></li>
+                        <li><a href="roles-permissions.html" class="submenu-link" data-feature="roles_permissions"><span class="submenu-bullet">&bull;</span><span class="nav-text">Roles &amp; Permissions</span></a></li>
+                        <li><a href="custom-fields.html" class="submenu-link" data-feature="custom_fields"><span class="submenu-bullet">&bull;</span><span class="nav-text">Custom Fields</span></a></li>
+                        <li><a href="billing-subscription.html" class="submenu-link" data-feature="billing_subscription_management"><span class="submenu-bullet">&bull;</span><span class="nav-text">Billing &amp; Subscription</span></a></li>
+                    </ul>
+                </li>
+            </ul>
+        </nav>
+    </aside>
+
+    <div class="main-wrapper" id="mainWrapper">
+        <header class="top-header">
+            <div class="header-left"><div class="branch-switcher"><i data-feather="map-pin" class="branch-icon"></i><select class="branch-select"><option>Downtown Branch</option><option>Uptown Spa</option></select></div></div>
+            <div class="header-center"><div class="search-bar"><i data-feather="search" class="search-icon"></i><input type="text" placeholder="Search..." class="search-input"></div></div>
+            <div class="header-right">
+                <div class="plan-badge">Growth</div>
+                <button class="icon-btn"><i data-feather="bell"></i><span class="notification-dot"></span></button>
+                <div class="user-profile" id="userProfileDropdown">
+                    <div class="avatar" id="avatarBtn"><img src="https://ui-avatars.com/api/?name=Admin+User&background=1E3A8A&color=fff" alt="User"></div>
+                    <div class="profile-dropdown" id="profileMenu">
+                        <div class="dropdown-header"><p class="dropdown-name">Admin User</p><p class="dropdown-role">Owner</p></div>
+                        <div class="dropdown-divider"></div>
+                        <ul class="dropdown-list"><li><a href="#" class="dropdown-item text-danger"><i data-feather="log-out"></i><span>Logout</span></a></li></ul>
+                    </div>
+                </div>
+            </div>
+        </header>
+        <div id="profileBackdrop" class="profile-backdrop"></div>
+
+        <main class="content-area">
+            <!-- Breadcrumb -->
+            <div class="sp-breadcrumb">
+                <a href="company.html" class="sp-back"><i data-feather="arrow-left"></i> Company Settings</a>
+                <span class="sp-sep">/</span>
+                <a href="settings-invoice.html" class="sp-back">Invoice</a>
+                <span class="sp-sep">/</span>
+                <span class="sp-current">Booking Invoice</span>
+            </div>
+
+            <!-- Page Header -->
+            <div class="sp-header">
+                <h1>Booking Invoice</h1>
+                <p>Configure information specific to invoices generated from appointment bookings</p>
+            </div>
+
+            <!-- 2-Column Designer Layout -->
+            <div class="invoice-designer-layout">
+                <!-- Left Column: Controls -->
+                <div class="designer-controls-col">
+
+                    <!-- Inheritance Notice Banner -->
+                    <div style="background:#eff6ff;border:1px solid #bfdbfe;border-radius:12px;padding:16px 20px;margin-bottom:20px;display:flex;align-items:center;justify-content:space-between;gap:16px;">
+                        <div style="display:flex;align-items:center;gap:12px;">
+                            <div style="width:36px;height:36px;border-radius:8px;background:#dbeafe;color:#1d4ed8;display:flex;align-items:center;justify-content:center;flex-shrink:0;">
+                                <i data-feather="check-circle" style="width:18px;height:18px;"></i>
+                            </div>
+                            <div style="font-size:0.84rem;color:#1e40af;line-height:1.4;">
+                                <strong>Common Invoice Inherited</strong><br>
+                                Branding, logo, tax rules, and footers automatically cascade from Common Invoice.
+                            </div>
+                        </div>
+                        <a href="settings-invoice-common.html" class="btn btn-secondary" style="font-size:0.8rem;padding:6px 14px;white-space:nowrap;">
+                            Edit Common
+                        </a>
+                    </div>
+
+                    <!-- Booking-Specific Settings Card -->
+                    <div class="sp-card">
+                        <div class="sp-card-header">
+                            <h2><i data-feather="calendar" style="width:18px;height:18px;color:#3b82f6;"></i> Appointment &amp; Booking Details</h2>
+                            <p>Fields displayed specifically for service appointments and stylist sessions</p>
+                        </div>
+                        <div class="sp-card-body">
+                            <div class="toggle-row">
+                                <div><div class="toggle-label">Appointment / Booking Number</div><div class="toggle-hint">Unique appointment code (e.g. #BK-9021)</div></div>
+                                <label class="toggle-switch"><input type="checkbox" id="bkApptNum" checked><span class="toggle-track"></span></label>
+                            </div>
+                            <div class="toggle-row">
+                                <div><div class="toggle-label">Appointment Date</div><div class="toggle-hint">Scheduled appointment date</div></div>
+                                <label class="toggle-switch"><input type="checkbox" id="bkApptDate" checked><span class="toggle-track"></span></label>
+                            </div>
+                            <div class="toggle-row">
+                                <div><div class="toggle-label">Appointment Time</div><div class="toggle-hint">Start time of the booked session</div></div>
+                                <label class="toggle-switch"><input type="checkbox" id="bkApptTime" checked><span class="toggle-track"></span></label>
+                            </div>
+                            <div class="toggle-row">
+                                <div><div class="toggle-label">Service Duration</div><div class="toggle-hint">Display service time (e.g. 45 mins, 60 mins)</div></div>
+                                <label class="toggle-switch"><input type="checkbox" id="bkDuration" checked><span class="toggle-track"></span></label>
+                            </div>
+                            <div class="toggle-row">
+                                <div><div class="toggle-label">Staff / Stylist Name</div><div class="toggle-hint">Show assigned service specialist</div></div>
+                                <label class="toggle-switch"><input type="checkbox" id="bkStylist" checked><span class="toggle-track"></span></label>
+                            </div>
+                            <div class="toggle-row">
+                                <div><div class="toggle-label">Branch Name</div><div class="toggle-hint">Display salon location branch</div></div>
+                                <label class="toggle-switch"><input type="checkbox" id="bkBranch" checked><span class="toggle-track"></span></label>
+                            </div>
+                            <div class="toggle-row">
+                                <div><div class="toggle-label">Booking Notes</div><div class="toggle-hint">Special instructions or arrival notes</div></div>
+                                <label class="toggle-switch"><input type="checkbox" id="bkNotes"><span class="toggle-track"></span></label>
+                            </div>
+                            <div class="form-group" id="bkNotesGroup" style="margin-top:12px;display:none;">
+                                <label class="form-label" for="bkNotesText">Default Booking Note</label>
+                                <textarea id="bkNotesText" class="form-input form-textarea" placeholder="Please arrive 10 minutes prior to appointment time.">Please arrive 10 minutes prior to appointment time.</textarea>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Save Bar -->
+                    <div class="sp-savebar" id="savebar">
+                        <a href="settings-invoice.html" class="btn btn-secondary">Cancel</a>
+                        <button class="btn btn-primary" id="btnSave" onclick="saveBookingConfig()">
+                            <i data-feather="save" style="width:15px;height:15px;"></i> Save Booking Invoice
+                        </button>
+                    </div>
+
+                </div>
+
+                <!-- Right Column: Live Preview -->
+                <div class="designer-preview-col">
+                    <div class="preview-sticky-wrap">
+                        <div class="preview-top-bar">
+                            <span class="preview-badge"><span class="pulse-dot"></span> Live Preview</span>
+                            <span class="preview-type-title">Booking Invoice Sample</span>
+                        </div>
+                        <div id="bookingInvoicePreview">
+                            <!-- Injected by invoice-state.js -->
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div id="toastNotification" class="sp-toast"></div>
+        </main>
+    </div>
+
+    <script src="logout.js"></script>
+    <script type="module" src="scripts/global-auth-guard.js"></script>
+    <script type="module">
+        import { getInvoiceConfig, saveInvoiceConfig, renderLiveInvoicePreview } from './scripts/invoice-state.js';
+
+        let config = getInvoiceConfig();
+
+        function syncUIFromConfig() {
+            setChecked('bkApptNum', config.booking.showAppointmentNumber);
+            setChecked('bkApptDate', config.booking.showAppointmentDate);
+            setChecked('bkApptTime', config.booking.showAppointmentTime);
+            setChecked('bkDuration', config.booking.showServiceDuration);
+            setChecked('bkStylist', config.booking.showStylistName);
+            setChecked('bkBranch', config.booking.showBranchName);
+            setChecked('bkNotes', config.booking.showBookingNotes);
+            setVal('bkNotesText', config.booking.bookingNotesText || '');
+
+            updateNotesVisibility();
+            renderPreview();
+        }
+
+        function syncConfigFromUI() {
+            config.booking.showAppointmentNumber = isChecked('bkApptNum');
+            config.booking.showAppointmentDate = isChecked('bkApptDate');
+            config.booking.showAppointmentTime = isChecked('bkApptTime');
+            config.booking.showServiceDuration = isChecked('bkDuration');
+            config.booking.showStylistName = isChecked('bkStylist');
+            config.booking.showBranchName = isChecked('bkBranch');
+            config.booking.showBookingNotes = isChecked('bkNotes');
+            config.booking.bookingNotesText = getVal('bkNotesText');
+
+            updateNotesVisibility();
+            renderPreview();
+            markDirty();
+        }
+
+        function updateNotesVisibility() {
+            const el = document.getElementById('bkNotesGroup');
+            if (el) el.style.display = isChecked('bkNotes') ? 'block' : 'none';
+        }
+
+        function renderPreview() {
+            renderLiveInvoicePreview('booking', 'bookingInvoicePreview', config);
+        }
+
+        window.saveBookingConfig = function() {
+            saveInvoiceConfig(config);
+            showToast('Booking invoice settings saved successfully!', 'success');
+            document.getElementById('savebar')?.classList.remove('visible');
+        };
+
+        function setVal(id, val) { const el = document.getElementById(id); if (el) el.value = val; }
+        function getVal(id) { const el = document.getElementById(id); return el ? el.value.trim() : ''; }
+        function setChecked(id, val) { const el = document.getElementById(id); if (el) el.checked = !!val; }
+        function isChecked(id) { const el = document.getElementById(id); return el ? el.checked : false; }
+
+        function markDirty() {
+            document.getElementById('savebar')?.classList.add('visible');
+            if (typeof feather !== 'undefined') feather.replace();
+        }
+
+        function showToast(msg, type = 'success') {
+            const t = document.getElementById('toastNotification');
+            t.textContent = msg;
+            t.style.background = type === 'error' ? '#dc2626' : '#1e293b';
+            t.classList.add('visible');
+            setTimeout(() => t.classList.remove('visible'), 3500);
+        }
+
+        document.addEventListener('DOMContentLoaded', () => {
+            if (typeof feather !== 'undefined') feather.replace();
+            syncUIFromConfig();
+
+            document.querySelectorAll('.form-input, .form-textarea, input[type=checkbox]').forEach(el => {
+                el.addEventListener(el.type === 'checkbox' ? 'change' : 'input', syncConfigFromUI);
+            });
+        });
+    </script>
+</body>
+</html>

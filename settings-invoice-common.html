@@ -1,0 +1,573 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <script src="scripts/auth-loader.js"></script>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Common Invoice Settings - Configure shared invoice layout, numbering, and header/footer rules.">
+    <title>Common Invoice Settings - BharathBots</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="styles.css">
+    <link rel="stylesheet" href="dashboard.css">
+    <link rel="stylesheet" href="submenu.css">
+    <link rel="stylesheet" href="settings-shared.css">
+    <link rel="stylesheet" href="invoice-designer.css">
+    <script src="https://unpkg.com/feather-icons"></script>
+</head>
+<body class="dashboard-body">
+    <!-- Collapsible Sidebar -->
+    <aside class="sidebar" id="sidebar">
+        <div class="sidebar-header">
+            <div class="logo">
+                <svg width="24" height="24" viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <rect x="2" y="6" width="28" height="20" rx="4" stroke="currentColor" stroke-width="2"/>
+                    <path d="M8 12C8 12 11 16 16 16C21 16 24 12 24 12" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+                    <circle cx="16" cy="16" r="2" fill="currentColor"/>
+                </svg>
+                <span class="logo-text">BharathBots</span>
+            </div>
+            <button class="toggle-btn" id="sidebarToggle" title="Close sidebar">
+                <i data-feather="sidebar" class="toggle-icon"></i>
+            </button>
+        </div>
+        <nav class="sidebar-nav">
+            <ul class="nav-list">
+                <li class="nav-item" title="Dashboard"><a href="dashboard.html" class="nav-link" data-feature="dashboard_access"><i data-feather="home" class="nav-icon"></i><span class="nav-text">Dashboard</span></a></li>
+                <li class="nav-item" title="Bookings"><a href="bookings.html" class="nav-link" data-feature="bookings_management"><i data-feather="calendar" class="nav-icon"></i><span class="nav-text">Bookings</span></a></li>
+                <li class="nav-item" title="Customers"><a href="customers.html" class="nav-link" data-feature="customers_management"><i data-feather="users" class="nav-icon"></i><span class="nav-text">Customers</span></a></li>
+                <li class="nav-item has-submenu" title="Staff">
+                    <div class="nav-link submenu-toggle"><i data-feather="user-check" class="nav-icon"></i><span class="nav-text">Staff</span><i data-feather="chevron-down" class="submenu-arrow"></i></div>
+                    <ul class="submenu">
+                        <li><a href="staff.html" class="submenu-link" data-feature="staff_management"><span class="submenu-bullet">&bull;</span><span class="nav-text">Staff</span></a></li>
+                        <li><a href="staff-schedule.html" class="submenu-link" data-feature="staff_schedules"><span class="submenu-bullet">&bull;</span><span class="nav-text">Staff Schedules</span></a></li>
+                    </ul>
+                </li>
+                <li class="nav-item" title="Services"><a href="services.html" class="nav-link" data-feature="services_management"><i data-feather="scissors" class="nav-icon"></i><span class="nav-text">Services</span></a></li>
+                <li class="nav-item has-submenu" title="Sales">
+                    <div class="nav-link submenu-toggle"><i data-feather="dollar-sign" class="nav-icon"></i><span class="nav-text">Sales</span><i data-feather="chevron-down" class="submenu-arrow"></i></div>
+                    <ul class="submenu">
+                        <li><a href="pos.html" class="submenu-link" data-feature="pos_system"><span class="submenu-bullet">&bull;</span><span class="nav-text">Point of Sale</span></a></li>
+                        <li><a href="products.html" class="submenu-link" data-feature="product_management"><span class="submenu-bullet">&bull;</span><span class="nav-text">Products</span></a></li>
+                        <li><a href="sales-history.html" class="submenu-link" data-feature="sales_history"><span class="submenu-bullet">&bull;</span><span class="nav-text">Sales History</span></a></li>
+                    </ul>
+                </li>
+                <li class="nav-item has-submenu" title="Payments">
+                    <div class="nav-link submenu-toggle"><i data-feather="credit-card" class="nav-icon"></i><span class="nav-text">Payments</span><i data-feather="chevron-down" class="submenu-arrow"></i></div>
+                    <ul class="submenu">
+                        <li><a href="pending-payments.html" class="submenu-link" data-feature="pending_payments"><span class="submenu-bullet">&bull;</span><span class="nav-text">Pending Payments</span></a></li>
+                        <li><a href="payments-history.html" class="submenu-link" data-feature="payments_history"><span class="submenu-bullet">&bull;</span><span class="nav-text">Payments History</span></a></li>
+                    </ul>
+                </li>
+                <li class="nav-item has-submenu" title="Marketing">
+                    <div class="nav-link submenu-toggle"><i data-feather="gift" class="nav-icon"></i><span class="nav-text">Marketing</span><i data-feather="chevron-down" class="submenu-arrow"></i></div>
+                    <ul class="submenu">
+                        <li><a href="offers.html" class="submenu-link" data-feature="marketing_offers"><span class="submenu-bullet">&bull;</span><span class="nav-text">Offers</span></a></li>
+                        <li><a href="coupons.html" class="submenu-link" data-feature="marketing_coupons"><span class="submenu-bullet">&bull;</span><span class="nav-text">Coupons</span></a></li>
+                        <li><a href="memberships.html" class="submenu-link" data-feature="marketing_memberships"><span class="submenu-bullet">&bull;</span><span class="nav-text">Memberships</span></a></li>
+                        <li><a href="ad-campaigns.html" class="submenu-link" data-feature="marketing_campaigns"><span class="submenu-bullet">&bull;</span><span class="nav-text">Ad Campaigns</span></a></li>
+                    </ul>
+                </li>
+                <li class="nav-item has-submenu" title="Analytics">
+                    <div class="nav-link submenu-toggle"><i data-feather="bar-chart-2" class="nav-icon"></i><span class="nav-text">Analytics</span><i data-feather="chevron-down" class="submenu-arrow"></i></div>
+                    <ul class="submenu">
+                        <li><a href="overview.html" class="submenu-link" data-feature="analytics_overview"><span class="submenu-bullet">&bull;</span><span class="nav-text">Overview</span></a></li>
+                        <li><a href="reports.html" class="submenu-link" data-feature="reports_access"><span class="submenu-bullet">&bull;</span><span class="nav-text">Reports</span></a></li>
+                        <li><a href="expenses.html" class="submenu-link" data-feature="analytics_expenses"><span class="submenu-bullet">&bull;</span><span class="nav-text">Expenses</span></a></li>
+                    </ul>
+                </li>
+                <li class="nav-item has-submenu active" title="Settings">
+                    <div class="nav-link submenu-toggle"><i data-feather="settings" class="nav-icon"></i><span class="nav-text">Settings</span><i data-feather="chevron-down" class="submenu-arrow"></i></div>
+                    <ul class="submenu">
+                        <li><a href="company.html" class="submenu-link active"><span class="submenu-bullet">&bull;</span><span class="nav-text">Company</span></a></li>
+                        <li><a href="branches.html" class="submenu-link" data-feature="branch_management"><span class="submenu-bullet">&bull;</span><span class="nav-text">Branches</span></a></li>
+                        <li><a href="users.html" class="submenu-link" data-feature="user_management"><span class="submenu-bullet">&bull;</span><span class="nav-text">Users</span></a></li>
+                        <li><a href="roles-permissions.html" class="submenu-link" data-feature="roles_permissions"><span class="submenu-bullet">&bull;</span><span class="nav-text">Roles &amp; Permissions</span></a></li>
+                        <li><a href="custom-fields.html" class="submenu-link" data-feature="custom_fields"><span class="submenu-bullet">&bull;</span><span class="nav-text">Custom Fields</span></a></li>
+                        <li><a href="billing-subscription.html" class="submenu-link" data-feature="billing_subscription_management"><span class="submenu-bullet">&bull;</span><span class="nav-text">Billing &amp; Subscription</span></a></li>
+                    </ul>
+                </li>
+            </ul>
+        </nav>
+    </aside>
+
+    <div class="main-wrapper" id="mainWrapper">
+        <header class="top-header">
+            <div class="header-left"><div class="branch-switcher"><i data-feather="map-pin" class="branch-icon"></i><select class="branch-select"><option>Downtown Branch</option><option>Uptown Spa</option></select></div></div>
+            <div class="header-center"><div class="search-bar"><i data-feather="search" class="search-icon"></i><input type="text" placeholder="Search..." class="search-input"></div></div>
+            <div class="header-right">
+                <div class="plan-badge">Growth</div>
+                <button class="icon-btn"><i data-feather="bell"></i><span class="notification-dot"></span></button>
+                <div class="user-profile" id="userProfileDropdown">
+                    <div class="avatar" id="avatarBtn"><img src="https://ui-avatars.com/api/?name=Admin+User&background=1E3A8A&color=fff" alt="User"></div>
+                    <div class="profile-dropdown" id="profileMenu">
+                        <div class="dropdown-header"><p class="dropdown-name">Admin User</p><p class="dropdown-role">Owner</p></div>
+                        <div class="dropdown-divider"></div>
+                        <ul class="dropdown-list"><li><a href="#" class="dropdown-item text-danger"><i data-feather="log-out"></i><span>Logout</span></a></li></ul>
+                    </div>
+                </div>
+            </div>
+        </header>
+        <div id="profileBackdrop" class="profile-backdrop"></div>
+
+        <main class="content-area">
+            <!-- Breadcrumb -->
+            <div class="sp-breadcrumb">
+                <a href="company.html" class="sp-back"><i data-feather="arrow-left"></i> Company Settings</a>
+                <span class="sp-sep">/</span>
+                <a href="settings-invoice.html" class="sp-back">Invoice</a>
+                <span class="sp-sep">/</span>
+                <span class="sp-current">Common Invoice</span>
+            </div>
+
+            <!-- Page Header -->
+            <div class="sp-header">
+                <h1>Common Invoice</h1>
+                <p>Configure information and styling shared across all invoices (Bookings, POS &amp; Memberships)</p>
+            </div>
+
+            <!-- 2-Column Designer Layout -->
+            <div class="invoice-designer-layout">
+                <!-- Left Column: Controls -->
+                <div class="designer-controls-col">
+
+                    <!-- 4A. Invoice Numbering -->
+                    <div class="sp-card">
+                        <div class="sp-card-header">
+                            <h2><i data-feather="hash" style="width:18px;height:18px;color:#3b82f6;"></i> Invoice Numbering</h2>
+                            <p>One unified numbering sequence shared by Bookings, POS, and Memberships</p>
+                        </div>
+                        <div class="sp-card-body">
+                            <div class="form-row">
+                                <div class="form-group">
+                                    <label class="form-label" for="cfgPrefix">Invoice Prefix <span class="optional">(Optional)</span></label>
+                                    <input type="text" id="cfgPrefix" class="form-input" placeholder="e.g., INV-" value="INV-">
+                                    <p class="form-hint">Appears before the sequential number</p>
+                                </div>
+                                <div class="form-group">
+                                    <label class="form-label" for="cfgStartingNumber">Starting Invoice Number <span class="optional">(Optional)</span></label>
+                                    <input type="number" id="cfgStartingNumber" class="form-input" placeholder="e.g., 1001" value="1001" min="1">
+                                    <p class="form-hint">Next generated invoice will begin here</p>
+                                </div>
+                            </div>
+                            <div class="numbering-format-box">
+                                <span style="font-size:0.8rem;color:#64748b;font-family:'Inter',sans-serif;font-weight:500;">Format Preview:</span>
+                                <span id="numberingPreviewText" style="color:#1e3a8a;">INV-001001 &bull; INV-001002 &bull; INV-001003</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 4B. Common Header Content -->
+                    <div class="sp-card">
+                        <div class="sp-card-header">
+                            <h2><i data-feather="layout" style="width:18px;height:18px;color:#3b82f6;"></i> Invoice Header</h2>
+                            <p>Choose which business information appears at the top of your invoices</p>
+                        </div>
+                        <div class="sp-card-body">
+                            <div class="toggle-row">
+                                <div><div class="toggle-label">Company Logo</div><div class="toggle-hint">Show your primary salon branding logo</div></div>
+                                <label class="toggle-switch"><input type="checkbox" id="hdrLogo" checked><span class="toggle-track"></span></label>
+                            </div>
+                            <div class="toggle-row">
+                                <div><div class="toggle-label">Display / Brand Name</div><div class="toggle-hint">Display name shown to customers (e.g. Glow Salon)</div></div>
+                                <label class="toggle-switch"><input type="checkbox" id="hdrDisplayName" checked><span class="toggle-track"></span></label>
+                            </div>
+                            <div class="toggle-row">
+                                <div><div class="toggle-label">Legal Business Name</div><div class="toggle-hint">Registered corporate entity name</div></div>
+                                <label class="toggle-switch"><input type="checkbox" id="hdrLegalName"><span class="toggle-track"></span></label>
+                            </div>
+                            <div class="toggle-row">
+                                <div><div class="toggle-label">Branch Name</div><div class="toggle-hint">Location where service or sale took place</div></div>
+                                <label class="toggle-switch"><input type="checkbox" id="hdrBranchName" checked><span class="toggle-track"></span></label>
+                            </div>
+                            <div class="toggle-row">
+                                <div><div class="toggle-label">Business Address</div><div class="toggle-hint">Physical salon street address and pincode</div></div>
+                                <label class="toggle-switch"><input type="checkbox" id="hdrAddress" checked><span class="toggle-track"></span></label>
+                            </div>
+                            <div class="toggle-row">
+                                <div><div class="toggle-label">Phone Number</div><div class="toggle-hint">Primary salon contact telephone</div></div>
+                                <label class="toggle-switch"><input type="checkbox" id="hdrPhone" checked><span class="toggle-track"></span></label>
+                            </div>
+                            <div class="toggle-row">
+                                <div><div class="toggle-label">Email Address</div><div class="toggle-hint">Official salon billing email</div></div>
+                                <label class="toggle-switch"><input type="checkbox" id="hdrEmail"><span class="toggle-track"></span></label>
+                            </div>
+                            <div class="toggle-row">
+                                <div><div class="toggle-label">Website</div><div class="toggle-hint">Official website URL</div></div>
+                                <label class="toggle-switch"><input type="checkbox" id="hdrWebsite"><span class="toggle-track"></span></label>
+                            </div>
+                            <div class="toggle-row">
+                                <div><div class="toggle-label">GSTIN</div><div class="toggle-hint">Goods and Services Tax Identification Number</div></div>
+                                <label class="toggle-switch"><input type="checkbox" id="hdrGstin" checked><span class="toggle-track"></span></label>
+                            </div>
+                            <div class="toggle-row">
+                                <div><div class="toggle-label">PAN</div><div class="toggle-hint">Permanent Account Number for tax filing</div></div>
+                                <label class="toggle-switch"><input type="checkbox" id="hdrPan"><span class="toggle-track"></span></label>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 4C. Customer Information -->
+                    <div class="sp-card">
+                        <div class="sp-card-header">
+                            <h2><i data-feather="user" style="width:18px;height:18px;color:#3b82f6;"></i> Customer Information</h2>
+                            <p>Information displayed in the customer billing box</p>
+                        </div>
+                        <div class="sp-card-body">
+                            <div class="toggle-row">
+                                <div><div class="toggle-label">Customer Name</div><div class="toggle-hint">Full name of the client</div></div>
+                                <label class="toggle-switch"><input type="checkbox" id="custName" checked><span class="toggle-track"></span></label>
+                            </div>
+                            <div class="toggle-row">
+                                <div><div class="toggle-label">Phone Number</div><div class="toggle-hint">Customer contact mobile number</div></div>
+                                <label class="toggle-switch"><input type="checkbox" id="custPhone" checked><span class="toggle-track"></span></label>
+                            </div>
+                            <div class="toggle-row">
+                                <div><div class="toggle-label">Email Address</div><div class="toggle-hint">Customer email address</div></div>
+                                <label class="toggle-switch"><input type="checkbox" id="custEmail"><span class="toggle-track"></span></label>
+                            </div>
+                            <div class="toggle-row">
+                                <div><div class="toggle-label">Customer Address</div><div class="toggle-hint">Client delivery or home address</div></div>
+                                <label class="toggle-switch"><input type="checkbox" id="custAddress"><span class="toggle-track"></span></label>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 4D. Transaction Information -->
+                    <div class="sp-card">
+                        <div class="sp-card-header">
+                            <h2><i data-feather="file" style="width:18px;height:18px;color:#3b82f6;"></i> Transaction Information</h2>
+                            <p>Core transaction metadata shown on the invoice</p>
+                        </div>
+                        <div class="sp-card-body">
+                            <div class="toggle-row">
+                                <div><div class="toggle-label">Invoice Number</div><div class="toggle-hint">Sequential invoice identifier</div></div>
+                                <label class="toggle-switch"><input type="checkbox" id="txnInvNum" checked><span class="toggle-track"></span></label>
+                            </div>
+                            <div class="toggle-row">
+                                <div><div class="toggle-label">Invoice Date</div><div class="toggle-hint">Issue date of the invoice</div></div>
+                                <label class="toggle-switch"><input type="checkbox" id="txnInvDate" checked><span class="toggle-track"></span></label>
+                            </div>
+                            <div class="toggle-row">
+                                <div><div class="toggle-label">Payment Date</div><div class="toggle-hint">Date payment was successfully collected</div></div>
+                                <label class="toggle-switch"><input type="checkbox" id="txnPayDate"><span class="toggle-track"></span></label>
+                            </div>
+                            <div class="toggle-row">
+                                <div><div class="toggle-label">Staff / Stylist Name</div><div class="toggle-hint">Staff member or stylist associated with the ticket</div></div>
+                                <label class="toggle-switch"><input type="checkbox" id="txnStaff" checked><span class="toggle-track"></span></label>
+                            </div>
+                            <div class="toggle-row">
+                                <div><div class="toggle-label">Payment Method</div><div class="toggle-hint">Cash, UPI, Card, or Online payment mode</div></div>
+                                <label class="toggle-switch"><input type="checkbox" id="txnPayMethod" checked><span class="toggle-track"></span></label>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 4E. Items & Services -->
+                    <div class="sp-card">
+                        <div class="sp-card-header">
+                            <h2><i data-feather="list" style="width:18px;height:18px;color:#3b82f6;"></i> Items &amp; Services Table</h2>
+                            <p>Columns to display in the invoice line item breakdown</p>
+                        </div>
+                        <div class="sp-card-body">
+                            <div class="toggle-row">
+                                <div><div class="toggle-label">Item / Service Name</div><div class="toggle-hint">Description of the line item</div></div>
+                                <label class="toggle-switch"><input type="checkbox" id="itmName" checked disabled><span class="toggle-track"></span></label>
+                            </div>
+                            <div class="toggle-row">
+                                <div><div class="toggle-label">Quantity</div><div class="toggle-hint">Number of units or services</div></div>
+                                <label class="toggle-switch"><input type="checkbox" id="itmQty" checked><span class="toggle-track"></span></label>
+                            </div>
+                            <div class="toggle-row">
+                                <div><div class="toggle-label">Unit Price</div><div class="toggle-hint">Price per item or rate per service</div></div>
+                                <label class="toggle-switch"><input type="checkbox" id="itmUnitPrice" checked><span class="toggle-track"></span></label>
+                            </div>
+                            <div class="toggle-row">
+                                <div><div class="toggle-label">Tax Amount</div><div class="toggle-hint">Show tax charged per line item</div></div>
+                                <label class="toggle-switch"><input type="checkbox" id="itmTax" checked><span class="toggle-track"></span></label>
+                            </div>
+                            <div class="toggle-row">
+                                <div><div class="toggle-label">Tax Rate (%)</div><div class="toggle-hint">Show tax percentage (e.g., 18%) per item</div></div>
+                                <label class="toggle-switch"><input type="checkbox" id="itmTaxRate"><span class="toggle-track"></span></label>
+                            </div>
+                            <div class="toggle-row">
+                                <div><div class="toggle-label">Line Total</div><div class="toggle-hint">Total amount for the line item</div></div>
+                                <label class="toggle-switch"><input type="checkbox" id="itmLineTotal" checked><span class="toggle-track"></span></label>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 4F. Totals & Payment -->
+                    <div class="sp-card">
+                        <div class="sp-card-header">
+                            <h2><i data-feather="dollar-sign" style="width:18px;height:18px;color:#3b82f6;"></i> Totals &amp; Payment</h2>
+                            <p>Summary breakdown calculated at the bottom of the invoice</p>
+                        </div>
+                        <div class="sp-card-body">
+                            <div class="toggle-row">
+                                <div><div class="toggle-label">Subtotal</div><div class="toggle-hint">Sum of item amounts before tax and discount</div></div>
+                                <label class="toggle-switch"><input type="checkbox" id="totSubtotal" checked><span class="toggle-track"></span></label>
+                            </div>
+                            <div class="toggle-row">
+                                <div><div class="toggle-label">Tax Total (GST)</div><div class="toggle-hint">Total tax amount applied</div></div>
+                                <label class="toggle-switch"><input type="checkbox" id="totTax" checked><span class="toggle-track"></span></label>
+                            </div>
+                            <div class="toggle-row">
+                                <div><div class="toggle-label">Round-off</div><div class="toggle-hint">Adjustment for cash currency rounding</div></div>
+                                <label class="toggle-switch"><input type="checkbox" id="totRoundoff"><span class="toggle-track"></span></label>
+                            </div>
+                            <div class="toggle-row">
+                                <div><div class="toggle-label">Grand Total</div><div class="toggle-hint">Final payable invoice amount</div></div>
+                                <label class="toggle-switch"><input type="checkbox" id="totGrandTotal" checked disabled><span class="toggle-track"></span></label>
+                            </div>
+                            <div class="toggle-row">
+                                <div><div class="toggle-label">Amount Paid</div><div class="toggle-hint">Total payment collected from the client</div></div>
+                                <label class="toggle-switch"><input type="checkbox" id="totAmtPaid" checked><span class="toggle-track"></span></label>
+                            </div>
+                            <div class="toggle-row">
+                                <div><div class="toggle-label">Balance Due</div><div class="toggle-hint">Remaining outstanding balance</div></div>
+                                <label class="toggle-switch"><input type="checkbox" id="totBalanceDue" checked><span class="toggle-track"></span></label>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 4G. Common Footer -->
+                    <div class="sp-card">
+                        <div class="sp-card-header">
+                            <h2><i data-feather="message-square" style="width:18px;height:18px;color:#3b82f6;"></i> Invoice Footer</h2>
+                            <p>Optional messages, policies, and terms displayed at the base of the invoice</p>
+                        </div>
+                        <div class="sp-card-body">
+                            <div class="toggle-row">
+                                <div><div class="toggle-label">Thank You Message</div><div class="toggle-hint">Warm closing message to the customer</div></div>
+                                <label class="toggle-switch"><input type="checkbox" id="ftrThankYou" checked><span class="toggle-track"></span></label>
+                            </div>
+                            <div class="form-group" style="margin-top:10px;">
+                                <input type="text" id="ftrThankYouText" class="form-input" placeholder="Thank you for visiting us. We look forward to seeing you again!" value="Thank you for visiting us. We look forward to seeing you again!">
+                            </div>
+
+                            <div class="toggle-row" style="margin-top:16px;">
+                                <div><div class="toggle-label">Terms &amp; Conditions</div><div class="toggle-hint">Standard legal terms and warranty disclaimers</div></div>
+                                <label class="toggle-switch"><input type="checkbox" id="ftrTerms"><span class="toggle-track"></span></label>
+                            </div>
+                            <div class="form-group" id="ftrTermsGroup" style="margin-top:10px;display:none;">
+                                <textarea id="ftrTermsText" class="form-input form-textarea" placeholder="Payment is due upon receipt. Goods/Services once sold are non-refundable.">Payment is due upon receipt. Goods/Services once sold are non-refundable.</textarea>
+                            </div>
+
+                            <div class="toggle-row" style="margin-top:16px;">
+                                <div><div class="toggle-label">Payment Instructions</div><div class="toggle-hint">Bank account, UPI ID, or remittance details</div></div>
+                                <label class="toggle-switch"><input type="checkbox" id="ftrPayInstr"><span class="toggle-track"></span></label>
+                            </div>
+                            <div class="form-group" id="ftrPayInstrGroup" style="margin-top:10px;display:none;">
+                                <textarea id="ftrPayInstrText" class="form-input form-textarea" placeholder="UPI ID: glowsalon@upi | Bank: HDFC Bank A/C 50200012345678">UPI ID: glowsalon@upi | Bank: HDFC Bank A/C 50200012345678</textarea>
+                            </div>
+
+                            <div class="form-group" style="margin-top:20px;">
+                                <label class="form-label" for="ftrCustomNote">Custom Footer Note <span class="optional">(Optional)</span></label>
+                                <input type="text" id="ftrCustomNote" class="form-input" placeholder="e.g., Follow us on Instagram @glowsalon_official">
+                                <p class="form-hint">Additional text printed at the bottom of the invoice</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Floating Save Bar -->
+                    <div class="sp-savebar" id="savebar">
+                        <a href="settings-invoice.html" class="btn btn-secondary">Cancel</a>
+                        <button class="btn btn-primary" id="btnSave" onclick="saveCommonConfig()">
+                            <i data-feather="save" style="width:15px;height:15px;"></i> Save Common Invoice
+                        </button>
+                    </div>
+
+                </div>
+
+                <!-- Right Column: Live Paper Preview -->
+                <div class="designer-preview-col">
+                    <div class="preview-sticky-wrap">
+                        <div class="preview-top-bar">
+                            <span class="preview-badge"><span class="pulse-dot"></span> Live Preview</span>
+                            <span class="preview-type-title">Common Invoice Sample</span>
+                        </div>
+                        <div id="invoicePreviewContainer">
+                            <!-- Injected by invoice-state.js -->
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div id="toastNotification" class="sp-toast"></div>
+        </main>
+    </div>
+
+    <script src="logout.js"></script>
+    <script type="module" src="scripts/global-auth-guard.js"></script>
+    <script type="module">
+        import { getInvoiceConfig, saveInvoiceConfig, renderLiveInvoicePreview } from './scripts/invoice-state.js';
+
+        let config = getInvoiceConfig();
+
+        function syncUIFromConfig() {
+            // Numbering
+            setVal('cfgPrefix', config.prefix || 'INV-');
+            setVal('cfgStartingNumber', config.startingNumber || '1001');
+
+            // Header
+            setChecked('hdrLogo', config.header.showLogo);
+            setChecked('hdrDisplayName', config.header.showDisplayName);
+            setChecked('hdrLegalName', config.header.showLegalName);
+            setChecked('hdrBranchName', config.header.showBranchName);
+            setChecked('hdrAddress', config.header.showAddress);
+            setChecked('hdrPhone', config.header.showPhone);
+            setChecked('hdrEmail', config.header.showEmail);
+            setChecked('hdrWebsite', config.header.showWebsite);
+            setChecked('hdrGstin', config.header.showGstin);
+            setChecked('hdrPan', config.header.showPan);
+
+            // Customer
+            setChecked('custName', config.customer.showName);
+            setChecked('custPhone', config.customer.showPhone);
+            setChecked('custEmail', config.customer.showEmail);
+            setChecked('custAddress', config.customer.showAddress);
+
+            // Transaction
+            setChecked('txnInvNum', config.transaction.showInvoiceNumber);
+            setChecked('txnInvDate', config.transaction.showInvoiceDate);
+            setChecked('txnPayDate', config.transaction.showPaymentDate);
+            setChecked('txnStaff', config.transaction.showStaffName);
+            setChecked('txnPayMethod', config.transaction.showPaymentMethod);
+
+            // Items
+            setChecked('itmQty', config.items.showQuantity);
+            setChecked('itmUnitPrice', config.items.showUnitPrice);
+            setChecked('itmTax', config.items.showTax);
+            setChecked('itmTaxRate', config.items.showTaxRate);
+            setChecked('itmLineTotal', config.items.showLineTotal);
+
+            // Totals
+            setChecked('totSubtotal', config.totals.showSubtotal);
+            setChecked('totTax', config.totals.showTax);
+            setChecked('totRoundoff', config.totals.showRoundoff);
+            setChecked('totAmtPaid', config.totals.showAmountPaid);
+            setChecked('totBalanceDue', config.totals.showBalanceDue);
+
+            // Footer
+            setChecked('ftrThankYou', config.footer.showThankYou);
+            setVal('ftrThankYouText', config.footer.thankYouMessage || '');
+            setChecked('ftrTerms', config.footer.showTerms);
+            setVal('ftrTermsText', config.footer.termsText || '');
+            setChecked('ftrPayInstr', config.footer.showPaymentInstructions);
+            setVal('ftrPayInstrText', config.footer.paymentInstructionsText || '');
+            setVal('ftrCustomNote', config.footer.customFooterMessage || '');
+
+            updateFooterVisibility();
+            updateNumberingPreview();
+            renderPreview();
+        }
+
+        function syncConfigFromUI() {
+            config.prefix = getVal('cfgPrefix');
+            config.startingNumber = getVal('cfgStartingNumber');
+
+            config.header.showLogo = isChecked('hdrLogo');
+            config.header.showDisplayName = isChecked('hdrDisplayName');
+            config.header.showLegalName = isChecked('hdrLegalName');
+            config.header.showBranchName = isChecked('hdrBranchName');
+            config.header.showAddress = isChecked('hdrAddress');
+            config.header.showPhone = isChecked('hdrPhone');
+            config.header.showEmail = isChecked('hdrEmail');
+            config.header.showWebsite = isChecked('hdrWebsite');
+            config.header.showGstin = isChecked('hdrGstin');
+            config.header.showPan = isChecked('hdrPan');
+
+            config.customer.showName = isChecked('custName');
+            config.customer.showPhone = isChecked('custPhone');
+            config.customer.showEmail = isChecked('custEmail');
+            config.customer.showAddress = isChecked('custAddress');
+
+            config.transaction.showInvoiceNumber = isChecked('txnInvNum');
+            config.transaction.showInvoiceDate = isChecked('txnInvDate');
+            config.transaction.showPaymentDate = isChecked('txnPayDate');
+            config.transaction.showStaffName = isChecked('txnStaff');
+            config.transaction.showPaymentMethod = isChecked('txnPayMethod');
+
+            config.items.showQuantity = isChecked('itmQty');
+            config.items.showUnitPrice = isChecked('itmUnitPrice');
+            config.items.showTax = isChecked('itmTax');
+            config.items.showTaxRate = isChecked('itmTaxRate');
+            config.items.showLineTotal = isChecked('itmLineTotal');
+
+            config.totals.showSubtotal = isChecked('totSubtotal');
+            config.totals.showTax = isChecked('totTax');
+            config.totals.showRoundoff = isChecked('totRoundoff');
+            config.totals.showAmountPaid = isChecked('totAmtPaid');
+            config.totals.showBalanceDue = isChecked('totBalanceDue');
+
+            config.footer.showThankYou = isChecked('ftrThankYou');
+            config.footer.thankYouMessage = getVal('ftrThankYouText');
+            config.footer.showTerms = isChecked('ftrTerms');
+            config.footer.termsText = getVal('ftrTermsText');
+            config.footer.showPaymentInstructions = isChecked('ftrPayInstr');
+            config.footer.paymentInstructionsText = getVal('ftrPayInstrText');
+            config.footer.customFooterMessage = getVal('ftrCustomNote');
+
+            updateNumberingPreview();
+            updateFooterVisibility();
+            renderPreview();
+            markDirty();
+        }
+
+        function updateFooterVisibility() {
+            const termsBox = document.getElementById('ftrTermsGroup');
+            if (termsBox) termsBox.style.display = isChecked('ftrTerms') ? 'block' : 'none';
+            const payBox = document.getElementById('ftrPayInstrGroup');
+            if (payBox) payBox.style.display = isChecked('ftrPayInstr') ? 'block' : 'none';
+        }
+
+        function updateNumberingPreview() {
+            const pfx = getVal('cfgPrefix') || 'INV-';
+            const start = parseInt(getVal('cfgStartingNumber'), 10) || 1001;
+            const previewEl = document.getElementById('numberingPreviewText');
+            if (previewEl) {
+                previewEl.textContent = `${pfx}00${start} • ${pfx}00${start+1} • ${pfx}00${start+2}`;
+            }
+        }
+
+        function renderPreview() {
+            renderLiveInvoicePreview('common', 'invoicePreviewContainer', config);
+        }
+
+        window.saveCommonConfig = function() {
+            saveInvoiceConfig(config);
+            showToast('Common invoice settings saved successfully!', 'success');
+            document.getElementById('savebar')?.classList.remove('visible');
+        };
+
+        function setVal(id, val) { const el = document.getElementById(id); if (el) el.value = val; }
+        function getVal(id) { const el = document.getElementById(id); return el ? el.value.trim() : ''; }
+        function setChecked(id, val) { const el = document.getElementById(id); if (el) el.checked = !!val; }
+        function isChecked(id) { const el = document.getElementById(id); return el ? el.checked : false; }
+
+        function markDirty() {
+            document.getElementById('savebar')?.classList.add('visible');
+            if (typeof feather !== 'undefined') feather.replace();
+        }
+
+        function showToast(msg, type = 'success') {
+            const t = document.getElementById('toastNotification');
+            t.textContent = msg;
+            t.style.background = type === 'error' ? '#dc2626' : '#1e293b';
+            t.classList.add('visible');
+            setTimeout(() => t.classList.remove('visible'), 3500);
+        }
+
+        document.addEventListener('DOMContentLoaded', () => {
+            if (typeof feather !== 'undefined') feather.replace();
+            syncUIFromConfig();
+
+            document.querySelectorAll('.form-input, .form-textarea, input[type=checkbox]').forEach(el => {
+                el.addEventListener(el.type === 'checkbox' ? 'change' : 'input', syncConfigFromUI);
+            });
+        });
+    </script>
+</body>
+</html>
