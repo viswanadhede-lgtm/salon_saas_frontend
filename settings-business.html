@@ -177,8 +177,8 @@
             overflow: hidden;
             flex-shrink: 0;
         }
-        .logo-preview-box.favicon-preview-box {
-            width: 64px;
+        .logo-preview-box.cover-preview-box {
+            width: 96px;
             height: 64px;
             border-radius: 10px;
         }
@@ -427,7 +427,7 @@
             <div class="settings-form-card">
                 <div class="settings-form-card-header">
                     <h2><i data-feather="image" style="width:18px;height:18px;color:#3b82f6;"></i> Logo &amp; Branding</h2>
-                    <p>Upload your primary company logo and browser favicon / brand icon</p>
+                    <p>Upload your primary company logo and business cover banner image</p>
                 </div>
                 <div class="settings-form-card-body">
                     <div class="branding-upload-grid">
@@ -457,25 +457,25 @@
                             </div>
                         </div>
 
-                        <!-- Brand Icon / Favicon -->
+                        <!-- Business Cover Image -->
                         <div class="logo-upload-card">
                             <div class="upload-badge-label">
-                                <i data-feather="star" style="width:14px;height:14px;"></i> Brand Icon / Favicon
+                                <i data-feather="layout" style="width:14px;height:14px;"></i> Business Cover Image
                             </div>
                             <div class="logo-upload-area">
-                                <div class="logo-preview-box favicon-preview-box" id="faviconPreviewBox">
-                                    <i data-feather="star" class="logo-placeholder-icon"></i>
+                                <div class="logo-preview-box cover-preview-box" id="coverPreviewBox">
+                                    <i data-feather="image" class="logo-placeholder-icon"></i>
                                 </div>
                                 <div class="logo-upload-info">
-                                    <h4>Square Icon / Favicon</h4>
-                                    <p>Used for browser tabs, app icons &amp; mobile. Rec: 64×64px or 32×32px PNG/ICO</p>
+                                    <h4>Cover / Hero Banner</h4>
+                                    <p>Appears on customer booking portal &amp; banners. Rec: 1200×400px or 16:9, max 5MB</p>
                                     <div class="upload-btn-group">
-                                        <label for="faviconFileInput" class="btn-upload-logo">
+                                        <label for="coverFileInput" class="btn-upload-logo">
                                             <i data-feather="upload" style="width:14px;height:14px;"></i>
                                             Choose File
                                         </label>
-                                        <input type="file" id="faviconFileInput" accept="image/*,.ico" style="display:none;">
-                                        <button type="button" class="btn-remove-upload" id="btnRemoveFavicon" style="display:none;" onclick="removeFavicon()">
+                                        <input type="file" id="coverFileInput" accept="image/*" style="display:none;">
+                                        <button type="button" class="btn-remove-upload" id="btnRemoveCover" style="display:none;" onclick="removeCover()">
                                             <i data-feather="trash-2" style="width:13px;height:13px;"></i> Remove
                                         </button>
                                     </div>
@@ -651,13 +651,13 @@
                 }
             });
 
-            // Favicon preview
-            document.getElementById('faviconFileInput')?.addEventListener('change', function(e) {
+            // Cover image preview
+            document.getElementById('coverFileInput')?.addEventListener('change', function(e) {
                 if (e.target.files?.[0]) {
                     const reader = new FileReader();
                     reader.onload = ev => {
-                        document.getElementById('faviconPreviewBox').innerHTML = `<img src="${ev.target.result}" alt="Favicon">`;
-                        document.getElementById('btnRemoveFavicon').style.display = 'inline-flex';
+                        document.getElementById('coverPreviewBox').innerHTML = `<img src="${ev.target.result}" alt="Cover">`;
+                        document.getElementById('btnRemoveCover').style.display = 'inline-flex';
                         if (typeof feather !== 'undefined') feather.replace();
                         markDirty();
                     };

@@ -3,7 +3,7 @@ import { supabase } from './lib/supabase.js';
 const companyId = localStorage.getItem('company_id');
 
 let currentLogoUrl = null;
-let currentFaviconUrl = null;
+let currentCoverUrl = null;
 
 // ── Load ────────────────────────────────────────────────────────────────────
 export async function loadBusinessData() {
@@ -46,17 +46,17 @@ export async function loadBusinessData() {
             }
         }
 
-        // Favicon / Brand Icon
-        currentFaviconUrl = data.favicon_url || data.icon_url || null;
-        const faviconBox = document.getElementById('faviconPreviewBox');
-        const btnRemoveFavicon = document.getElementById('btnRemoveFavicon');
-        if (faviconBox) {
-            if (currentFaviconUrl) {
-                faviconBox.innerHTML = `<img src="${currentFaviconUrl}" alt="Favicon" style="width:100%;height:100%;object-fit:cover;">`;
-                if (btnRemoveFavicon) btnRemoveFavicon.style.display = 'inline-flex';
+        // Business Cover Image
+        currentCoverUrl = data.cover_url || data.cover_image_url || data.banner_url || null;
+        const coverBox = document.getElementById('coverPreviewBox');
+        const btnRemoveCover = document.getElementById('btnRemoveCover');
+        if (coverBox) {
+            if (currentCoverUrl) {
+                coverBox.innerHTML = `<img src="${currentCoverUrl}" alt="Cover" style="width:100%;height:100%;object-fit:cover;">`;
+                if (btnRemoveCover) btnRemoveCover.style.display = 'inline-flex';
             } else {
-                faviconBox.innerHTML = `<i data-feather="star" class="logo-placeholder-icon"></i>`;
-                if (btnRemoveFavicon) btnRemoveFavicon.style.display = 'none';
+                coverBox.innerHTML = `<i data-feather="image" class="logo-placeholder-icon"></i>`;
+                if (btnRemoveCover) btnRemoveCover.style.display = 'none';
             }
         }
 
@@ -112,20 +112,20 @@ window.saveBusinessSettings = async function () {
             }
         }
 
-        // 2. Upload Favicon if changed
-        const faviconInput = document.getElementById('faviconFileInput');
-        let faviconUrl = currentFaviconUrl;
-        if (faviconInput?.files?.[0]) {
-            const file = faviconInput.files[0];
+        // 2. Upload Cover Image if changed
+        const coverInput = document.getElementById('coverFileInput');
+        let coverUrl = currentCoverUrl;
+        if (coverInput?.files?.[0]) {
+            const file = coverInput.files[0];
             const ext = file.name.split('.').pop();
-            const path = `icons/${companyId}/favicon_${Date.now()}.${ext}`;
+            const path = `covers/${companyId}/cover_${Date.now()}.${ext}`;
             const { error: uploadErr } = await supabase.storage
                 .from('company-assets')
                 .upload(path, file, { upsert: true });
             if (!uploadErr) {
                 const { data: urlData } = supabase.storage.from('company-assets').getPublicUrl(path);
-                faviconUrl = urlData?.publicUrl || faviconUrl;
-                currentFaviconUrl = faviconUrl;
+                coverUrl = urlData?.publicUrl || coverUrl;
+                currentCoverUrl = coverUrl;
             }
         }
 
@@ -143,7 +143,10 @@ window.saveBusinessSettings = async function () {
             updated_at:          new Date().toISOString(),
         };
         if (logoUrl !== undefined) payload.logo_url = logoUrl;
-        if (faviconUrl !== undefined) payload.favicon_url = faviconUrl;
+        if (coverUrl !== undefined) {
+            payload.cover_url = coverUrl;
+            payload.cover_image_url = coverUrl;
+        }
 
         let { error } = await supabase
             .from('companies')
@@ -207,13 +210,13 @@ window.removeLogo = function () {
     if (typeof markDirty === 'function') markDirty();
 };
 
-window.removeFavicon = function () {
-    currentFaviconUrl = null;
-    const fileInput = document.getElementById('faviconFileInput');
+window.removeCover = function () {
+    currentCoverUrl = null;
+    const fileInput = document.getElementById('coverFileInput');
     if (fileInput) fileInput.value = '';
-    const faviconBox = document.getElementById('faviconPreviewBox');
-    if (faviconBox) faviconBox.innerHTML = `<i data-feather="star" class="logo-placeholder-icon"></i>`;
-    const btnRemove = document.getElementById('btnRemoveFavicon');
+    const coverBox = document.getElementById('coverPreviewBox');
+    if (coverBox) coverBox.innerHTML = `<i data-feather="image" class="logo-placeholder-icon"></i>`;
+    const btnRemove = document.getElementById('btnRemoveCover');
     if (btnRemove) btnRemove.style.display = 'none';
     if (typeof feather !== 'undefined') feather.replace();
     if (typeof markDirty === 'function') markDirty();
