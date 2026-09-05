@@ -1,14 +1,19 @@
-/* dashboard.css - Specific styling for the SaaS admin dashboard layout */
-
 /* Base Layout Config */
+html:has(.dashboard-body) {
+    overflow: hidden;
+    height: 100%;
+}
+
 .dashboard-body {
     background-color: #f1f5f9;
     /* Slate 50 */
     margin: 0;
     padding: 0;
     display: flex;
-    min-height: calc(100vh / 0.93);
-    overflow: auto;
+    height: 100vh;
+    height: calc(100vh / 0.93);
+    max-height: calc(100vh / 0.93);
+    overflow: hidden;
     color: var(--text-main);
     zoom: 0.93;
 }
