@@ -121,16 +121,22 @@
 
 /* Save bar */
 .sp-savebar {
-    padding: 16px 28px;
-    border-top: 1px solid #f1f5f9;
+    position: sticky;
+    bottom: 20px;
+    background: #ffffff;
+    border: 1px solid #e2e8f0;
+    border-radius: 12px;
+    padding: 14px 24px;
     display: flex;
     justify-content: flex-end;
     gap: 12px;
-    background: #fafbfc;
+    z-index: 100;
+    box-shadow: 0 10px 30px rgba(15, 23, 42, 0.12);
     opacity: 0;
-    transform: translateY(6px);
+    transform: translateY(15px);
     transition: opacity 0.25s, transform 0.25s;
     pointer-events: none;
+    margin-top: 24px;
 }
 .sp-savebar.visible {
     opacity: 1;

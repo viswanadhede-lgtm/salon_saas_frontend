@@ -76,99 +76,210 @@
                 <p>Manage your business contact details and address</p>
             </div>
 
+            <!-- Section 1: Communication Details -->
             <div class="sp-card">
                 <div class="sp-card-header">
-                    <h2>Phone &amp; Online</h2>
-                    <p>Primary contact channels for customers and staff</p>
+                    <h2><i data-feather="phone-call" style="width:18px;height:18px;color:#3b82f6;"></i> Communication Details</h2>
+                    <p>Primary communication and support channels for customers and staff</p>
                 </div>
                 <div class="sp-card-body">
                     <div class="form-row">
                         <div class="form-group">
-                            <label class="form-label" for="contactPhone">Phone Number <span class="required">*</span></label>
+                            <label class="form-label" for="contactPhone">Primary Phone Number <span class="required">*</span></label>
                             <div class="input-prefix-wrap">
                                 <span class="input-prefix"><i data-feather="phone" style="width:14px;height:14px;"></i></span>
-                                <input type="tel" id="contactPhone" class="form-input with-prefix" placeholder="+91 98765 43210">
+                                <input type="tel" id="contactPhone" class="form-input with-prefix" placeholder="+91 98765 43210" required>
                             </div>
+                            <p class="form-hint">Main business phone number</p>
                         </div>
                         <div class="form-group">
                             <label class="form-label" for="contactWhatsApp">WhatsApp Number <span class="optional">(Optional)</span></label>
                             <div class="input-prefix-wrap">
-                                <span class="input-prefix">📱</span>
+                                <span class="input-prefix"><i data-feather="message-circle" style="width:14px;height:14px;"></i></span>
                                 <input type="tel" id="contactWhatsApp" class="form-input with-prefix" placeholder="+91 98765 43210">
                             </div>
-                            <p class="form-hint">Used for appointment reminders via WhatsApp</p>
+                            <p class="form-hint">Used for appointment confirmations &amp; reminders via WhatsApp</p>
                         </div>
                     </div>
+
                     <div class="form-row">
                         <div class="form-group">
                             <label class="form-label" for="contactEmail">Email Address <span class="required">*</span></label>
                             <div class="input-prefix-wrap">
                                 <span class="input-prefix"><i data-feather="mail" style="width:14px;height:14px;"></i></span>
-                                <input type="email" id="contactEmail" class="form-input with-prefix" placeholder="contact@example.com">
+                                <input type="email" id="contactEmail" class="form-input with-prefix" placeholder="contact@example.com" required>
                             </div>
+                            <p class="form-hint">Official business inquiries email</p>
                         </div>
                         <div class="form-group">
-                            <!-- placeholder for future field -->
+                            <label class="form-label" for="contactAlternatePhone">Alternate Phone Number <span class="optional">(Optional)</span></label>
+                            <div class="input-prefix-wrap">
+                                <span class="input-prefix"><i data-feather="phone-forwarded" style="width:14px;height:14px;"></i></span>
+                                <input type="tel" id="contactAlternatePhone" class="form-input with-prefix" placeholder="+91 98765 43211">
+                            </div>
+                            <p class="form-hint">Secondary fallback phone number</p>
+                        </div>
+                    </div>
+
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label class="form-label" for="contactSupportPhone">Support Phone <span class="optional">(Optional)</span></label>
+                            <div class="input-prefix-wrap">
+                                <span class="input-prefix"><i data-feather="headphones" style="width:14px;height:14px;"></i></span>
+                                <input type="tel" id="contactSupportPhone" class="form-input with-prefix" placeholder="+91 1800 123 4567">
+                            </div>
+                            <p class="form-hint">Customer support / helpdesk phone</p>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label" for="contactSupportEmail">Support Email <span class="optional">(Optional)</span></label>
+                            <div class="input-prefix-wrap">
+                                <span class="input-prefix"><i data-feather="help-circle" style="width:14px;height:14px;"></i></span>
+                                <input type="email" id="contactSupportEmail" class="form-input with-prefix" placeholder="support@example.com">
+                            </div>
+                            <p class="form-hint">Customer care / ticketing email</p>
                         </div>
                     </div>
                 </div>
+            </div>
 
-                <div class="sp-card-header" style="border-top:1px solid #f1f5f9;">
-                    <h2>Address</h2>
-                    <p>Used on invoices, receipts and the booking page</p>
+            <!-- Section 2: Company Address -->
+            <div class="sp-card">
+                <div class="sp-card-header">
+                    <h2><i data-feather="map-pin" style="width:18px;height:18px;color:#3b82f6;"></i> Company Address</h2>
+                    <p>Official location and physical address used on invoices, receipts and customer booking pages</p>
                 </div>
                 <div class="sp-card-body">
                     <div class="form-group">
                         <label class="form-label" for="addressLine1">Address Line 1 <span class="required">*</span></label>
-                        <input type="text" id="addressLine1" class="form-input" placeholder="Street address, building name">
+                        <input type="text" id="addressLine1" class="form-input" placeholder="Flat / Door / Building No., Street, Road" required>
                     </div>
-                    <div class="form-group">
-                        <label class="form-label" for="addressLine2">Address Line 2 <span class="optional">(Optional)</span></label>
-                        <input type="text" id="addressLine2" class="form-input" placeholder="Area, locality, landmark">
-                    </div>
+
                     <div class="form-row">
+                        <div class="form-group">
+                            <label class="form-label" for="addressLine2">Address Line 2 <span class="optional">(Optional)</span></label>
+                            <input type="text" id="addressLine2" class="form-input" placeholder="Suite, Floor, Complex">
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label" for="addressLocality">Locality / Area <span class="optional">(Optional)</span></label>
+                            <input type="text" id="addressLocality" class="form-input" placeholder="e.g., Indiranagar, Koramangala">
+                        </div>
+                    </div>
+
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label class="form-label" for="addressLandmark">Landmark <span class="optional">(Optional)</span></label>
+                            <input type="text" id="addressLandmark" class="form-input" placeholder="e.g., Near Metro Station, Opp. City Mall">
+                        </div>
                         <div class="form-group">
                             <label class="form-label" for="addressCity">City <span class="required">*</span></label>
-                            <input type="text" id="addressCity" class="form-input" placeholder="e.g., Bangalore">
-                        </div>
-                        <div class="form-group">
-                            <label class="form-label" for="addressState">State <span class="required">*</span></label>
-                            <input type="text" id="addressState" class="form-input" placeholder="e.g., Karnataka">
+                            <input type="text" id="addressCity" class="form-input" placeholder="e.g., Bengaluru" required>
                         </div>
                     </div>
+
                     <div class="form-row">
                         <div class="form-group">
-                            <label class="form-label" for="addressPincode">Pincode <span class="required">*</span></label>
-                            <input type="text" id="addressPincode" class="form-input" placeholder="e.g., 560001" maxlength="6">
+                            <label class="form-label" for="addressDistrict">District <span class="optional">(Optional)</span></label>
+                            <input type="text" id="addressDistrict" class="form-input" placeholder="e.g., Bengaluru Urban">
                         </div>
                         <div class="form-group">
-                            <label class="form-label" for="addressCountry">Country</label>
-                            <select id="addressCountry" class="form-select">
+                            <label class="form-label" for="addressState">State / Province <span class="required">*</span></label>
+                            <input type="text" id="addressState" class="form-input" placeholder="e.g., Karnataka" required>
+                        </div>
+                    </div>
+
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label class="form-label" for="addressPincode">PIN / Postal Code <span class="required">*</span></label>
+                            <input type="text" id="addressPincode" class="form-input" placeholder="e.g., 560038" maxlength="10" required>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label" for="addressCountry">Country <span class="required">*</span></label>
+                            <select id="addressCountry" class="form-select" required>
                                 <option value="India" selected>India</option>
-                                <option value="UAE">UAE</option>
-                                <option value="USA">USA</option>
-                                <option value="UK">UK</option>
+                                <option value="UAE">United Arab Emirates (UAE)</option>
+                                <option value="USA">United States (USA)</option>
+                                <option value="UK">United Kingdom (UK)</option>
+                                <option value="Canada">Canada</option>
+                                <option value="Australia">Australia</option>
+                                <option value="Singapore">Singapore</option>
                                 <option value="Other">Other</option>
                             </select>
                         </div>
                     </div>
+
                     <div class="form-group">
-                        <label class="form-label" for="mapLink">Google Maps Link <span class="optional">(Optional)</span></label>
+                        <label class="form-label" for="mapLink">Google Maps URL <span class="optional">(Optional)</span></label>
                         <div class="input-prefix-wrap">
                             <span class="input-prefix"><i data-feather="map-pin" style="width:14px;height:14px;"></i></span>
-                            <input type="url" id="mapLink" class="form-input with-prefix" placeholder="https://maps.google.com/...">
+                            <input type="url" id="mapLink" class="form-input with-prefix" placeholder="https://maps.google.com/?q=...">
                         </div>
-                        <p class="form-hint">A direct link to your location on Google Maps shown on the booking page</p>
+                        <p class="form-hint">A direct Google Maps link for directions shown on customer booking confirmation</p>
+                    </div>
+
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label class="form-label" for="addressLatitude">Latitude <span class="optional">(Optional)</span></label>
+                            <div class="input-prefix-wrap">
+                                <span class="input-prefix"><i data-feather="crosshair" style="width:14px;height:14px;"></i></span>
+                                <input type="number" step="any" id="addressLatitude" class="form-input with-prefix" placeholder="e.g., 12.9716">
+                            </div>
+                            <p class="form-hint">Geographical latitude coordinate</p>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label" for="addressLongitude">Longitude <span class="optional">(Optional)</span></label>
+                            <div class="input-prefix-wrap">
+                                <span class="input-prefix"><i data-feather="crosshair" style="width:14px;height:14px;"></i></span>
+                                <input type="number" step="any" id="addressLongitude" class="form-input with-prefix" placeholder="e.g., 77.5946">
+                            </div>
+                            <p class="form-hint">Geographical longitude coordinate</p>
+                        </div>
                     </div>
                 </div>
+            </div>
 
-                <!-- Save Bar -->
-                <div class="sp-savebar" id="savebar">
-                    <button class="btn btn-secondary" onclick="cancelContact()">Cancel</button>
-                    <button class="btn btn-primary" id="btnSave" onclick="saveContactSettings()">
-                        <i data-feather="save" style="width:15px;height:15px;"></i> Save Changes
-                    </button>
+            <!-- Section 3: Primary Contact Person -->
+            <div class="sp-card">
+                <div class="sp-card-header">
+                    <h2><i data-feather="user" style="width:18px;height:18px;color:#3b82f6;"></i> Primary Contact Person</h2>
+                    <p>Key representative for partner communications, vendor notices and administrative inquiries</p>
                 </div>
+                <div class="sp-card-body">
+                    <div class="form-group">
+                        <label class="form-label" for="primaryContactName">Contact Person Name <span class="optional">(Optional)</span></label>
+                        <div class="input-prefix-wrap">
+                            <span class="input-prefix"><i data-feather="user" style="width:14px;height:14px;"></i></span>
+                            <input type="text" id="primaryContactName" class="form-input with-prefix" placeholder="e.g., Rahul Sharma">
+                        </div>
+                        <p class="form-hint">Full name of business owner or general manager</p>
+                    </div>
+
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label class="form-label" for="primaryContactPhone">Contact Person Phone <span class="optional">(Optional)</span></label>
+                            <div class="input-prefix-wrap">
+                                <span class="input-prefix"><i data-feather="phone" style="width:14px;height:14px;"></i></span>
+                                <input type="tel" id="primaryContactPhone" class="form-input with-prefix" placeholder="+91 98765 43210">
+                            </div>
+                            <p class="form-hint">Direct personal contact number</p>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label" for="primaryContactEmail">Contact Person Email <span class="optional">(Optional)</span></label>
+                            <div class="input-prefix-wrap">
+                                <span class="input-prefix"><i data-feather="mail" style="width:14px;height:14px;"></i></span>
+                                <input type="email" id="primaryContactEmail" class="form-input with-prefix" placeholder="rahul@example.com">
+                            </div>
+                            <p class="form-hint">Direct personal email address</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Save Bar -->
+            <div class="sp-savebar" id="savebar">
+                <button class="btn btn-secondary" onclick="cancelContact()">Cancel</button>
+                <button class="btn btn-primary" id="btnSave" onclick="saveContactSettings()">
+                    <i data-feather="save" style="width:15px;height:15px;"></i> Save Changes
+                </button>
             </div>
 
             <div id="toastNotification" class="sp-toast"></div>
