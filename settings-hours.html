@@ -47,15 +47,15 @@
         .hours-toggle-wrap {
             display: flex;
             align-items: center;
-            justify-content: flex-end;
+            justify-content: flex-start;
             gap: 10px;
         }
         .hours-status-text {
             font-size: 0.82rem;
             font-weight: 650;
             letter-spacing: 0.02em;
-            min-width: 48px;
-            text-align: right;
+            min-width: 52px;
+            text-align: left;
             transition: all 0.2s ease;
         }
         .hours-status-text.status-open {
@@ -258,11 +258,11 @@
                     <select class="form-select" id="from_${day}" ${d.open ? '' : 'disabled'} onchange="markDirty()">${timeOptions(d.from)}</select>
                     <select class="form-select" id="to_${day}" ${d.open ? '' : 'disabled'} onchange="markDirty()">${timeOptions(d.to)}</select>
                     <div class="hours-toggle-wrap">
-                        <span class="hours-status-text ${statusClass}" id="status_${day}">${statusLabel}</span>
                         <label class="toggle-switch">
                             <input type="checkbox" id="open_${day}" ${d.open ? 'checked' : ''} onchange="toggleDay('${day}', this.checked); markDirty();">
                             <span class="toggle-track"></span>
                         </label>
+                        <span class="hours-status-text ${statusClass}" id="status_${day}">${statusLabel}</span>
                     </div>
                 </div>`;
             }).join('');
