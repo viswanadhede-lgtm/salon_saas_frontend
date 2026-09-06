@@ -2,71 +2,293 @@
 <html lang="en">
 <head>
     <script src="scripts/auth-loader.js"></script>
-    <meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Business Hours - Set your regular opening hours for each day of the week.">
     <title>Business Hours - BharathBots</title>
-    <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="styles.css"><link rel="stylesheet" href="dashboard.css"><link rel="stylesheet" href="submenu.css"><link rel="stylesheet" href="settings-shared.css">
+    <link rel="stylesheet" href="styles.css">
+    <link rel="stylesheet" href="dashboard.css">
+    <link rel="stylesheet" href="submenu.css">
+    <link rel="stylesheet" href="settings-shared.css">
     <script src="https://unpkg.com/feather-icons"></script>
     <style>
-        .hours-row { display: grid; grid-template-columns: 120px 1fr 1fr 80px; align-items: center; gap: 12px; padding: 12px 0; border-bottom: 1px solid #f1f5f9; }
-        .hours-row:last-child { border-bottom: none; }
-        .hours-day { font-size: 0.9rem; font-weight: 600; color: #374151; }
-        .hours-closed { font-size: 0.85rem; color: #94a3b8; font-weight: 500; }
+        .hours-row {
+            display: grid;
+            grid-template-columns: 140px 1fr 1fr 130px;
+            align-items: center;
+            gap: 16px;
+            padding: 14px 0;
+            border-bottom: 1px solid #f1f5f9;
+            transition: opacity 0.2s ease;
+        }
+        .hours-row:last-child {
+            border-bottom: none;
+        }
+        .hours-row.is-closed {
+            opacity: 0.55;
+        }
+        .hours-row.is-closed select {
+            background-color: #f8fafc;
+            border-color: #e2e8f0;
+            color: #94a3b8;
+            cursor: not-allowed;
+        }
+        .hours-day {
+            font-size: 0.92rem;
+            font-weight: 600;
+            color: #1e293b;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .hours-toggle-wrap {
+            display: flex;
+            align-items: center;
+            justify-content: flex-end;
+            gap: 10px;
+        }
+        .hours-status-text {
+            font-size: 0.82rem;
+            font-weight: 650;
+            letter-spacing: 0.02em;
+            min-width: 48px;
+            text-align: right;
+            transition: all 0.2s ease;
+        }
+        .hours-status-text.status-open {
+            color: #16a34a;
+        }
+        .hours-status-text.status-closed {
+            color: #94a3b8;
+        }
+        @media (max-width: 680px) {
+            .hours-row {
+                grid-template-columns: 1fr 1fr;
+                gap: 10px;
+            }
+            .hours-day {
+                grid-column: span 1;
+            }
+            .hours-toggle-wrap {
+                grid-column: span 1;
+            }
+        }
     </style>
 </head>
 <body class="dashboard-body">
+    <!-- Collapsible Sidebar -->
     <aside class="sidebar" id="sidebar">
-        <div class="sidebar-header"><div class="logo"><svg width="24" height="24" viewBox="0 0 32 32" fill="none"><rect x="2" y="6" width="28" height="20" rx="4" stroke="currentColor" stroke-width="2"/><path d="M8 12C8 12 11 16 16 16C21 16 24 12 24 12" stroke="currentColor" stroke-width="2" stroke-linecap="round"/><circle cx="16" cy="16" r="2" fill="currentColor"/></svg><span class="logo-text">BharathBots</span></div><button class="toggle-btn" id="sidebarToggle"><i data-feather="sidebar" class="toggle-icon"></i></button></div>
-        <nav class="sidebar-nav"><ul class="nav-list"><li class="nav-item has-submenu active"><div class="nav-link submenu-toggle"><i data-feather="settings" class="nav-icon"></i><span class="nav-text">Settings</span><i data-feather="chevron-down" class="submenu-arrow"></i></div><ul class="submenu"><li><a href="company.html" class="submenu-link active"><span class="submenu-bullet">&bull;</span><span class="nav-text">Company</span></a></li></ul></li></ul></nav>
+        <div class="sidebar-header">
+            <div class="logo">
+                <svg width="24" height="24" viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <rect x="2" y="6" width="28" height="20" rx="4" stroke="currentColor" stroke-width="2"/>
+                    <path d="M8 12C8 12 11 16 16 16C21 16 24 12 24 12" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+                    <circle cx="16" cy="16" r="2" fill="currentColor"/>
+                </svg>
+                <span class="logo-text">BharathBots</span>
+            </div>
+            <button class="toggle-btn" id="sidebarToggle" title="Close sidebar">
+                <i data-feather="sidebar" class="toggle-icon"></i>
+            </button>
+        </div>
+        <nav class="sidebar-nav">
+            <ul class="nav-list">
+                <li class="nav-item" title="Dashboard"><a href="dashboard.html" class="nav-link" data-feature="dashboard_access"><i data-feather="home" class="nav-icon"></i><span class="nav-text">Dashboard</span></a></li>
+                <li class="nav-item" title="Bookings"><a href="bookings.html" class="nav-link" data-feature="bookings_management"><i data-feather="calendar" class="nav-icon"></i><span class="nav-text">Bookings</span></a></li>
+                <li class="nav-item" title="Customers"><a href="customers.html" class="nav-link" data-feature="customers_management"><i data-feather="users" class="nav-icon"></i><span class="nav-text">Customers</span></a></li>
+                <li class="nav-item has-submenu" title="Staff">
+                    <div class="nav-link submenu-toggle"><i data-feather="user-check" class="nav-icon"></i><span class="nav-text">Staff</span><i data-feather="chevron-down" class="submenu-arrow"></i></div>
+                    <ul class="submenu">
+                        <li><a href="staff.html" class="submenu-link" data-feature="staff_management"><span class="submenu-bullet">&bull;</span><span class="nav-text">Staff</span></a></li>
+                        <li><a href="staff-schedule.html" class="submenu-link" data-feature="staff_schedules"><span class="submenu-bullet">&bull;</span><span class="nav-text">Staff Schedules</span></a></li>
+                    </ul>
+                </li>
+                <li class="nav-item" title="Services"><a href="services.html" class="nav-link" data-feature="services_management"><i data-feather="scissors" class="nav-icon"></i><span class="nav-text">Services</span></a></li>
+                <li class="nav-item has-submenu" title="Sales">
+                    <div class="nav-link submenu-toggle"><i data-feather="dollar-sign" class="nav-icon"></i><span class="nav-text">Sales</span><i data-feather="chevron-down" class="submenu-arrow"></i></div>
+                    <ul class="submenu">
+                        <li><a href="pos.html" class="submenu-link" data-feature="pos_system"><span class="submenu-bullet">&bull;</span><span class="nav-text">Point of Sale</span></a></li>
+                        <li><a href="products.html" class="submenu-link" data-feature="product_management"><span class="submenu-bullet">&bull;</span><span class="nav-text">Products</span></a></li>
+                        <li><a href="sales-history.html" class="submenu-link" data-feature="sales_history"><span class="submenu-bullet">&bull;</span><span class="nav-text">Sales History</span></a></li>
+                    </ul>
+                </li>
+                <li class="nav-item has-submenu" title="Payments">
+                    <div class="nav-link submenu-toggle"><i data-feather="credit-card" class="nav-icon"></i><span class="nav-text">Payments</span><i data-feather="chevron-down" class="submenu-arrow"></i></div>
+                    <ul class="submenu">
+                        <li><a href="pending-payments.html" class="submenu-link" data-feature="pending_payments"><span class="submenu-bullet">&bull;</span><span class="nav-text">Pending Payments</span></a></li>
+                        <li><a href="payments-history.html" class="submenu-link" data-feature="payments_history"><span class="submenu-bullet">&bull;</span><span class="nav-text">Payments History</span></a></li>
+                    </ul>
+                </li>
+                <li class="nav-item has-submenu" title="Marketing">
+                    <div class="nav-link submenu-toggle"><i data-feather="gift" class="nav-icon"></i><span class="nav-text">Marketing</span><i data-feather="chevron-down" class="submenu-arrow"></i></div>
+                    <ul class="submenu">
+                        <li><a href="offers.html" class="submenu-link" data-feature="marketing_offers"><span class="submenu-bullet">&bull;</span><span class="nav-text">Offers</span></a></li>
+                        <li><a href="coupons.html" class="submenu-link" data-feature="marketing_coupons"><span class="submenu-bullet">&bull;</span><span class="nav-text">Coupons</span></a></li>
+                        <li><a href="memberships.html" class="submenu-link" data-feature="marketing_memberships"><span class="submenu-bullet">&bull;</span><span class="nav-text">Memberships</span></a></li>
+                        <li><a href="ad-campaigns.html" class="submenu-link" data-feature="marketing_campaigns"><span class="submenu-bullet">&bull;</span><span class="nav-text">Ad Campaigns</span></a></li>
+                    </ul>
+                </li>
+                <li class="nav-item has-submenu" title="Analytics">
+                    <div class="nav-link submenu-toggle"><i data-feather="bar-chart-2" class="nav-icon"></i><span class="nav-text">Analytics</span><i data-feather="chevron-down" class="submenu-arrow"></i></div>
+                    <ul class="submenu">
+                        <li><a href="overview.html" class="submenu-link" data-feature="analytics_overview"><span class="submenu-bullet">&bull;</span><span class="nav-text">Overview</span></a></li>
+                        <li><a href="reports.html" class="submenu-link" data-feature="reports_access"><span class="submenu-bullet">&bull;</span><span class="nav-text">Reports</span></a></li>
+                        <li><a href="expenses.html" class="submenu-link" data-feature="analytics_expenses"><span class="submenu-bullet">&bull;</span><span class="nav-text">Expenses</span></a></li>
+                    </ul>
+                </li>
+                <li class="nav-item has-submenu active" title="Settings">
+                    <div class="nav-link submenu-toggle"><i data-feather="settings" class="nav-icon"></i><span class="nav-text">Settings</span><i data-feather="chevron-down" class="submenu-arrow"></i></div>
+                    <ul class="submenu">
+                        <li><a href="company.html" class="submenu-link active"><span class="submenu-bullet">&bull;</span><span class="nav-text">Company</span></a></li>
+                        <li><a href="branches.html" class="submenu-link" data-feature="branch_management"><span class="submenu-bullet">&bull;</span><span class="nav-text">Branches</span></a></li>
+                        <li><a href="users.html" class="submenu-link" data-feature="user_management"><span class="submenu-bullet">&bull;</span><span class="nav-text">Users</span></a></li>
+                        <li><a href="roles-permissions.html" class="submenu-link" data-feature="roles_permissions"><span class="submenu-bullet">&bull;</span><span class="nav-text">Roles &amp; Permissions</span></a></li>
+                        <li><a href="custom-fields.html" class="submenu-link" data-feature="custom_fields"><span class="submenu-bullet">&bull;</span><span class="nav-text">Custom Fields</span></a></li>
+                        <li><a href="billing-subscription.html" class="submenu-link" data-feature="billing_subscription_management"><span class="submenu-bullet">&bull;</span><span class="nav-text">Billing &amp; Subscription</span></a></li>
+                    </ul>
+                </li>
+            </ul>
+        </nav>
     </aside>
+
     <div class="main-wrapper" id="mainWrapper">
-        <header class="top-header"><div class="header-left"><div class="branch-switcher"><i data-feather="map-pin" class="branch-icon"></i><select class="branch-select"><option>Downtown Branch</option></select></div></div><div class="header-center"><div class="search-bar"><i data-feather="search" class="search-icon"></i><input type="text" placeholder="Search..." class="search-input"></div></div><div class="header-right"><div class="plan-badge">Growth</div><button class="icon-btn"><i data-feather="bell"></i></button></div></header>
+        <header class="top-header">
+            <div class="header-left"><div class="branch-switcher"><i data-feather="map-pin" class="branch-icon"></i><select class="branch-select"><option>Downtown Branch</option><option>Uptown Spa</option></select></div></div>
+            <div class="header-center"><div class="search-bar"><i data-feather="search" class="search-icon"></i><input type="text" placeholder="Search..." class="search-input"></div></div>
+            <div class="header-right">
+                <div class="plan-badge">Growth</div>
+                <button class="icon-btn"><i data-feather="bell"></i><span class="notification-dot"></span></button>
+                <div class="user-profile" id="userProfileDropdown">
+                    <div class="avatar" id="avatarBtn"><img src="https://ui-avatars.com/api/?name=Admin+User&background=1E3A8A&color=fff" alt="User"></div>
+                    <div class="profile-dropdown" id="profileMenu">
+                        <div class="dropdown-header"><p class="dropdown-name">Admin User</p><p class="dropdown-role">Owner</p></div>
+                        <div class="dropdown-divider"></div>
+                        <ul class="dropdown-list"><li><a href="#" class="dropdown-item text-danger"><i data-feather="log-out"></i><span>Logout</span></a></li></ul>
+                    </div>
+                </div>
+            </div>
+        </header>
+        <div id="profileBackdrop" class="profile-backdrop"></div>
+
         <main class="content-area">
-            <div class="sp-breadcrumb"><a href="company.html" class="sp-back"><i data-feather="arrow-left"></i> Company Settings</a><span class="sp-sep">/</span><span class="sp-current">Hours</span></div>
-            <div class="sp-header"><h1>Business Hours</h1><p>Set your regular opening hours for each day of the week</p></div>
+            <div class="sp-breadcrumb">
+                <a href="company.html" class="sp-back"><i data-feather="arrow-left"></i> Company Settings</a>
+                <span class="sp-sep">/</span>
+                <span class="sp-current">Hours</span>
+            </div>
+            <div class="sp-header">
+                <h1>Business Hours</h1>
+                <p>Set your regular opening hours for each day of the week</p>
+            </div>
+
             <div class="sp-card">
-                <div class="sp-card-header"><h2>Weekly Schedule</h2><p>Toggle days open/closed and set opening and closing times</p></div>
+                <div class="sp-card-header">
+                    <h2><i data-feather="clock" style="width:18px;height:18px;color:#3b82f6;"></i> Weekly Schedule</h2>
+                    <p>Toggle days open/closed and set opening and closing times</p>
+                </div>
                 <div class="sp-card-body" id="hoursContainer">
                     <!-- Rendered by JS -->
                 </div>
-                <div class="sp-savebar" id="savebar"><button class="btn btn-secondary" onclick="document.getElementById('savebar').classList.remove('visible')">Cancel</button><button class="btn btn-primary" id="btnSave"><i data-feather="save" style="width:15px;height:15px;"></i> Save Changes</button></div>
+                <div class="sp-savebar" id="savebar">
+                    <button class="btn btn-secondary" onclick="document.getElementById('savebar').classList.remove('visible')">Cancel</button>
+                    <button class="btn btn-primary" id="btnSave" onclick="saveHours()">
+                        <i data-feather="save" style="width:15px;height:15px;"></i> Save Changes
+                    </button>
+                </div>
             </div>
+
+            <div id="toastNotification" class="sp-toast"></div>
         </main>
     </div>
+
     <script src="logout.js"></script>
     <script type="module" src="scripts/global-auth-guard.js"></script>
-    <script type="module" src="scripts/sub-features/sub-feature-gate.js"></script>
     <script>
         const DAYS = ['Monday','Tuesday','Wednesday','Thursday','Friday','Saturday','Sunday'];
-        const defaults = { Monday:{open:true,from:'09:00',to:'18:00'}, Tuesday:{open:true,from:'09:00',to:'18:00'}, Wednesday:{open:true,from:'09:00',to:'18:00'}, Thursday:{open:true,from:'09:00',to:'18:00'}, Friday:{open:true,from:'09:00',to:'18:00'}, Saturday:{open:true,from:'09:00',to:'17:00'}, Sunday:{open:false,from:'09:00',to:'17:00'} };
+        const defaults = {
+            Monday:    { open: true,  from: '09:00', to: '18:00' },
+            Tuesday:   { open: true,  from: '09:00', to: '18:00' },
+            Wednesday: { open: true,  from: '09:00', to: '18:00' },
+            Thursday:  { open: true,  from: '09:00', to: '18:00' },
+            Friday:    { open: true,  from: '09:00', to: '18:00' },
+            Saturday:  { open: true,  from: '09:00', to: '17:00' },
+            Sunday:    { open: false, from: '09:00', to: '17:00' }
+        };
+
         document.addEventListener('DOMContentLoaded', () => {
             if (typeof feather !== 'undefined') feather.replace();
-            document.getElementById('sidebarToggle')?.addEventListener('click', () => { document.getElementById('sidebar').classList.toggle('collapsed'); document.getElementById('mainWrapper').classList.toggle('sidebar-collapsed'); });
+            document.getElementById('sidebarToggle')?.addEventListener('click', () => {
+                document.getElementById('sidebar').classList.toggle('collapsed');
+                document.getElementById('mainWrapper').classList.toggle('sidebar-collapsed');
+            });
+            document.querySelectorAll('.submenu-toggle').forEach(t => t.addEventListener('click', () => t.closest('.nav-item').classList.toggle('open')));
             document.querySelectorAll('.nav-item.active').forEach(li => li.classList.add('open'));
+            document.getElementById('avatarBtn')?.addEventListener('click', e => {
+                e.stopPropagation();
+                document.getElementById('profileMenu').classList.toggle('show');
+                document.getElementById('profileBackdrop').classList.toggle('show');
+            });
+            document.getElementById('profileBackdrop')?.addEventListener('click', () => {
+                document.getElementById('profileMenu').classList.remove('show');
+                document.getElementById('profileBackdrop').classList.remove('show');
+            });
             renderHours();
         });
-        function markDirty() { document.getElementById('savebar').classList.add('visible'); if (typeof feather !== 'undefined') feather.replace(); }
+
+        function markDirty() {
+            document.getElementById('savebar').classList.add('visible');
+            if (typeof feather !== 'undefined') feather.replace();
+        }
+
         function renderHours() {
             const container = document.getElementById('hoursContainer');
             container.innerHTML = DAYS.map(day => {
                 const d = defaults[day];
-                return `<div class="hours-row">
-                    <div class="hours-day">${day}</div>
+                const isClosedClass = d.open ? '' : 'is-closed';
+                const statusLabel = d.open ? 'Open' : 'Closed';
+                const statusClass = d.open ? 'status-open' : 'status-closed';
+
+                return `<div class="hours-row ${isClosedClass}" id="row_${day}">
+                    <div class="hours-day">
+                        <span>${day}</span>
+                    </div>
                     <select class="form-select" id="from_${day}" ${d.open ? '' : 'disabled'} onchange="markDirty()">${timeOptions(d.from)}</select>
                     <select class="form-select" id="to_${day}" ${d.open ? '' : 'disabled'} onchange="markDirty()">${timeOptions(d.to)}</select>
-                    <label class="toggle-switch" style="margin:auto;">
-                        <input type="checkbox" id="open_${day}" ${d.open ? 'checked' : ''} onchange="toggleDay('${day}', this.checked); markDirty();">
-                        <span class="toggle-track"></span>
-                    </label>
+                    <div class="hours-toggle-wrap">
+                        <span class="hours-status-text ${statusClass}" id="status_${day}">${statusLabel}</span>
+                        <label class="toggle-switch">
+                            <input type="checkbox" id="open_${day}" ${d.open ? 'checked' : ''} onchange="toggleDay('${day}', this.checked); markDirty();">
+                            <span class="toggle-track"></span>
+                        </label>
+                    </div>
                 </div>`;
             }).join('');
             if (typeof feather !== 'undefined') feather.replace();
         }
+
         function toggleDay(day, open) {
-            document.getElementById('from_'+day).disabled = !open;
-            document.getElementById('to_'+day).disabled   = !open;
+            const fromEl = document.getElementById('from_' + day);
+            const toEl = document.getElementById('to_' + day);
+            const statusEl = document.getElementById('status_' + day);
+            const rowEl = document.getElementById('row_' + day);
+
+            if (fromEl) fromEl.disabled = !open;
+            if (toEl) toEl.disabled = !open;
+
+            if (statusEl) {
+                statusEl.textContent = open ? 'Open' : 'Closed';
+                statusEl.className = `hours-status-text ${open ? 'status-open' : 'status-closed'}`;
+            }
+
+            if (rowEl) {
+                if (open) rowEl.classList.remove('is-closed');
+                else rowEl.classList.add('is-closed');
+            }
         }
+
         function timeOptions(selected) {
             let opts = '';
             for (let h = 0; h < 24; h++) {
@@ -78,11 +300,26 @@
             }
             return opts;
         }
+
         function formatTime(t) {
             const [h, m] = t.split(':').map(Number);
             const suffix = h < 12 ? 'AM' : 'PM';
             const hour12 = h === 0 ? 12 : h > 12 ? h - 12 : h;
             return `${hour12}:${String(m).padStart(2,'0')} ${suffix}`;
         }
+
+        window.saveHours = function() {
+            showToast('Business hours saved successfully!', 'success');
+            document.getElementById('savebar')?.classList.remove('visible');
+        };
+
+        function showToast(msg, type = 'success') {
+            const t = document.getElementById('toastNotification');
+            t.textContent = msg;
+            t.style.background = type === 'error' ? '#dc2626' : '#1e293b';
+            t.classList.add('visible');
+            setTimeout(() => t.classList.remove('visible'), 3500);
+        }
     </script>
-</body></html>
+</body>
+</html>
