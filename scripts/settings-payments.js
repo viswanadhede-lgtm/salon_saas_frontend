@@ -18,6 +18,12 @@ export async function loadPaymentSettings() {
             setVal('upiId',        parsed.upi_id || '');
             setVal('paymentNote',  parsed.payment_instructions || parsed.payment_note || '');
             setVal('defaultPaymentMethod', parsed.default_payment_method || 'cash');
+
+            // Restore QR preview
+            const savedQr = localStorage.getItem('salon_upi_qr_' + companyId);
+            if (savedQr && typeof window.setQrDataUrl === 'function') {
+                window.setQrDataUrl(savedQr);
+            }
         }
     } catch (e) {
         console.warn('[settings-payments] cache read warning:', e);
@@ -94,7 +100,15 @@ window.savePaymentSettings = async function () {
             console.warn('[settings-payments] DB schema fallback, saving locally:', error.message);
         }
 
-        // Save in localStorage cache as well
+        // Save QR code image (base64) in its own localStorage key
+        if (typeof window.getQrDataUrl === 'function') {
+            const qrData = window.getQrDataUrl();
+            if (qrData) {
+                localStorage.setItem('salon_upi_qr_' + companyId, qrData);
+            }
+        }
+
+        // Save other settings in localStorage cache
         localStorage.setItem('salon_payment_settings_' + companyId, JSON.stringify(payload));
 
         showToast('Payment settings saved successfully!', 'success');

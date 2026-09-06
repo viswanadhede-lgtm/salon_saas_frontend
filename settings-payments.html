@@ -181,18 +181,54 @@
             <div class="sp-card">
                 <div class="sp-card-header">
                     <h2><i data-feather="file-text" style="width:18px;height:18px;color:#3b82f6;"></i> Payment Details</h2>
-                    <p>UPI configuration and custom payment instructions</p>
+                    <p>UPI configuration, QR scanner upload, and custom payment instructions</p>
                 </div>
                 <div class="sp-card-body">
+                    <!-- UPI ID -->
                     <div class="form-group">
                         <label class="form-label" for="upiId">UPI ID <span class="optional">(Optional)</span></label>
                         <div class="input-prefix-wrap">
                             <span class="input-prefix"><i data-feather="smartphone" style="width:14px;height:14px;"></i></span>
                             <input type="text" id="upiId" class="form-input with-prefix" placeholder="e.g., salonname@okaxis or business@upi">
                         </div>
-                        <p class="form-hint">Used to display QR codes for UPI payments and printed on invoices</p>
+                        <p class="form-hint">Used for direct UPI payments and printed on customer receipts</p>
                     </div>
 
+                    <!-- UPI QR Code / Scanner Upload -->
+                    <div class="form-group">
+                        <label class="form-label">UPI QR Code <span class="optional">(Optional)</span></label>
+                        <div class="qr-upload-area">
+                            <div class="qr-preview-box" id="qrPreviewBox">
+                                <svg id="qrPlaceholderSvg" width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="#94a3b8" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" class="qr-placeholder-icon">
+                                    <rect x="3" y="3" width="7" height="7"></rect>
+                                    <rect x="14" y="3" width="7" height="7"></rect>
+                                    <rect x="14" y="14" width="7" height="7"></rect>
+                                    <rect x="3" y="14" width="7" height="7"></rect>
+                                    <path d="M7 7h.01"></path>
+                                    <path d="M17 7h.01"></path>
+                                    <path d="M7 17h.01"></path>
+                                    <path d="M17 17h.01"></path>
+                                </svg>
+                                <img id="qrPreviewImg" src="" alt="UPI QR Code" style="display:none;">
+                            </div>
+                            <div class="qr-upload-info">
+                                <h4>UPI Scanner QR Code</h4>
+                                <p>Upload your UPI QR code scanner image (GPay, PhonePe, Paytm, BHIM). Displayed on invoices and POS checkout screen.</p>
+                                <div class="upload-btn-group">
+                                    <label for="qrFileInput" class="btn-upload-qr">
+                                        <i data-feather="upload" style="width:14px;height:14px;"></i>
+                                        Upload QR Code
+                                    </label>
+                                    <input type="file" id="qrFileInput" accept="image/*" style="display:none;">
+                                    <button type="button" class="btn-remove-qr" id="btnRemoveQr" style="display:none;" onclick="removeQrCode()">
+                                        <i data-feather="trash-2" style="width:13px;height:13px;"></i> Remove
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Payment Note -->
                     <div class="form-group">
                         <label class="form-label" for="paymentNote">Payment Note <span class="optional">(Optional)</span></label>
                         <textarea id="paymentNote" class="form-input form-textarea" placeholder="e.g., We accept Google Pay, PhonePe, and all major cards. Cheques are not accepted."></textarea>
@@ -258,6 +294,65 @@
             document.querySelectorAll('.form-input, .form-select, .form-textarea, input[type=checkbox]').forEach(el => {
                 el.addEventListener(el.type === 'checkbox' ? 'change' : 'input', markDirty);
             });
+
+            // ── QR Code Upload ──────────────────────────────────────────────
+            const qrInput   = document.getElementById('qrFileInput');
+            const qrImg     = document.getElementById('qrPreviewImg');
+            const qrSvg     = document.getElementById('qrPlaceholderSvg');
+            const btnRemQr  = document.getElementById('btnRemoveQr');
+            const companyId = localStorage.getItem('company_id');
+
+            // Restore saved QR on load
+            if (companyId) {
+                const saved = localStorage.getItem('salon_upi_qr_' + companyId);
+                if (saved) { applyQrPreview(saved); }
+            }
+
+            qrInput?.addEventListener('change', (e) => {
+                const file = e.target.files?.[0];
+                if (!file) return;
+                if (!file.type.startsWith('image/')) {
+                    showToast('Please select an image file.', 'error');
+                    return;
+                }
+                if (file.size > 3 * 1024 * 1024) {
+                    showToast('QR image must be under 3 MB.', 'error');
+                    return;
+                }
+                const reader = new FileReader();
+                reader.onload = (ev) => {
+                    applyQrPreview(ev.target.result);
+                    markDirty();
+                };
+                reader.readAsDataURL(file);
+            });
+
+            function applyQrPreview(dataUrl) {
+                qrImg.src = dataUrl;
+                qrImg.style.display = 'block';
+                qrSvg.style.display = 'none';
+                btnRemQr.style.display = 'inline-flex';
+                if (typeof feather !== 'undefined') feather.replace();
+            }
+
+            window.removeQrCode = function() {
+                qrImg.src = '';
+                qrImg.style.display = 'none';
+                qrSvg.style.display = 'block';
+                btnRemQr.style.display = 'none';
+                qrInput.value = '';
+                if (companyId) localStorage.removeItem('salon_upi_qr_' + companyId);
+                markDirty();
+            };
+
+            // Expose QR data for savePaymentSettings to read
+            window.getQrDataUrl = function() {
+                return (qrImg.style.display !== 'none' && qrImg.src) ? qrImg.src : null;
+            };
+
+            window.setQrDataUrl = function(url) {
+                if (url) applyQrPreview(url);
+            };
         });
 
         let isDirty = false;
