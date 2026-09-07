@@ -469,6 +469,127 @@
                 </div>
             </div>
             
+            <!-- Card 3: Marketing Notifications -->
+            <div class="sp-card" id="marketingNotificationCard">
+                <div class="sp-card-header">
+                    <div style="display: flex; align-items: center; gap: 14px;">
+                        <div class="ah-icon-wrap" style="background:#fdf2f8; color:#db2777; width:38px; height:38px; border-radius:10px; display:flex; align-items:center; justify-content:center;">
+                            <i data-feather="trending-up"></i>
+                        </div>
+                        <div>
+                            <h2 style="font-size:1rem; font-weight:650; color:#0f172a; margin:0 0 3px;">Marketing Notifications</h2>
+                            <p style="font-size:0.83rem; color:#64748b; margin:0;">Send offers, discounts and business updates to your customers</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Section 1: Offers & Discounts -->
+                <div class="accordion-item expanded" data-mkt-category="offers">
+                    <div class="accordion-header">
+                        <div class="ah-left">
+                            <div class="ah-icon-wrap" style="background:#fff7ed; color:#f97316;">
+                                <i data-feather="tag"></i>
+                            </div>
+                            <div class="ah-text">
+                                <h3>Offers &amp; Discounts</h3>
+                                <p>Notify customers about new offers and discounts</p>
+                            </div>
+                        </div>
+                        <div class="ah-right">
+                            <label class="toggle-switch mkt-master-toggle" onclick="event.stopPropagation()">
+                                <input type="checkbox" id="mkt_master_offers" checked>
+                                <span class="toggle-track"></span>
+                            </label>
+                            <i data-feather="chevron-down" class="ah-chevron"></i>
+                        </div>
+                    </div>
+                    <div class="accordion-body" style="padding: 0;">
+                        <div class="cn-table-wrap">
+                            <table class="cn-table" data-mkt-section="offers">
+                                <thead>
+                                    <tr>
+                                        <th class="col-event">Event</th>
+                                        <th style="width: 15%;">Select All</th>
+                                        <th style="width: 15%;"><span class="th-channel"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#22c55e" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"/></svg> WhatsApp</span></th>
+                                        <th style="width: 15%;"><span class="th-channel"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#3b82f6" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg> SMS</span></th>
+                                        <th style="width: 15%;"><span class="th-channel"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#8b5cf6" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg> Email</span></th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr data-event-key="new_offer">
+                                        <td class="col-event">New Offer</td>
+                                        <td><input type="checkbox" class="cn-checkbox select-all-chk"></td>
+                                        <td><input type="checkbox" class="cn-checkbox whatsapp-chk" data-channel="whatsapp" id="mkt_offer_wa" checked></td>
+                                        <td><input type="checkbox" class="cn-checkbox sms-chk" data-channel="sms" id="mkt_offer_sms" checked></td>
+                                        <td><input type="checkbox" class="cn-checkbox email-chk" data-channel="email" id="mkt_offer_em" checked></td>
+                                    </tr>
+                                    <tr data-event-key="new_discount">
+                                        <td class="col-event">New Discount</td>
+                                        <td><input type="checkbox" class="cn-checkbox select-all-chk"></td>
+                                        <td><input type="checkbox" class="cn-checkbox whatsapp-chk" data-channel="whatsapp" id="mkt_discount_wa" checked></td>
+                                        <td><input type="checkbox" class="cn-checkbox sms-chk" data-channel="sms" id="mkt_discount_sms" checked></td>
+                                        <td><input type="checkbox" class="cn-checkbox email-chk" data-channel="email" id="mkt_discount_em"></td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Section 2: Business Updates -->
+                <div class="accordion-item expanded" data-mkt-category="business">
+                    <div class="accordion-header">
+                        <div class="ah-left">
+                            <div class="ah-icon-wrap" style="background:#f0fdfa; color:#0d9488;">
+                                <i data-feather="briefcase"></i>
+                            </div>
+                            <div class="ah-text">
+                                <h3>Business Updates</h3>
+                                <p>Notify customers about new services and products</p>
+                            </div>
+                        </div>
+                        <div class="ah-right">
+                            <label class="toggle-switch mkt-master-toggle" onclick="event.stopPropagation()">
+                                <input type="checkbox" id="mkt_master_business" checked>
+                                <span class="toggle-track"></span>
+                            </label>
+                            <i data-feather="chevron-down" class="ah-chevron"></i>
+                        </div>
+                    </div>
+                    <div class="accordion-body" style="padding: 0;">
+                        <div class="cn-table-wrap">
+                            <table class="cn-table" data-mkt-section="business">
+                                <thead>
+                                    <tr>
+                                        <th class="col-event">Event</th>
+                                        <th style="width: 15%;">Select All</th>
+                                        <th style="width: 15%;"><span class="th-channel"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#22c55e" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"/></svg> WhatsApp</span></th>
+                                        <th style="width: 15%;"><span class="th-channel"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#3b82f6" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg> SMS</span></th>
+                                        <th style="width: 15%;"><span class="th-channel"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#8b5cf6" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg> Email</span></th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr data-event-key="new_service_added">
+                                        <td class="col-event">New Service Added</td>
+                                        <td><input type="checkbox" class="cn-checkbox select-all-chk"></td>
+                                        <td><input type="checkbox" class="cn-checkbox whatsapp-chk" data-channel="whatsapp" id="mkt_svc_wa" checked></td>
+                                        <td><input type="checkbox" class="cn-checkbox sms-chk" data-channel="sms" id="mkt_svc_sms"></td>
+                                        <td><input type="checkbox" class="cn-checkbox email-chk" data-channel="email" id="mkt_svc_em" checked></td>
+                                    </tr>
+                                    <tr data-event-key="new_product_added">
+                                        <td class="col-event">New Product Added</td>
+                                        <td><input type="checkbox" class="cn-checkbox select-all-chk"></td>
+                                        <td><input type="checkbox" class="cn-checkbox whatsapp-chk" data-channel="whatsapp" id="mkt_prod_wa" checked></td>
+                                        <td><input type="checkbox" class="cn-checkbox sms-chk" data-channel="sms" id="mkt_prod_sms" checked></td>
+                                        <td><input type="checkbox" class="cn-checkbox email-chk" data-channel="email" id="mkt_prod_em"></td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
             <!-- Floating Save Bar -->
             <div class="sp-savebar" id="savebar">
                 <button class="btn btn-secondary" onclick="window.cancelNotificationSettings()">Cancel</button>

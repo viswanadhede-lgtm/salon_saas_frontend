@@ -96,6 +96,46 @@ document.addEventListener('DOMContentLoaded', () => {
 
     initCustomerMatrixEvents();
 
+    // ── Marketing Notifications: Section toggles ──
+    document.querySelectorAll('.mkt-master-toggle input[type="checkbox"]').forEach(toggle => {
+        toggle.addEventListener('change', (e) => {
+            const isChecked = e.target.checked;
+            const table = e.target.closest('.accordion-item').querySelector('.cn-table');
+            if (table) {
+                table.classList.toggle('disabled-matrix', !isChecked);
+                table.querySelectorAll('input[type="checkbox"]').forEach(cb => {
+                    cb.disabled = !isChecked;
+                });
+            }
+            showSaveBar();
+        });
+    });
+
+    // ── Marketing Notifications: 5-Column Matrix & Row "Select All" ──
+    function initMarketingMatrixEvents() {
+        document.querySelectorAll('.cn-table[data-mkt-section] tbody tr').forEach(row => {
+            syncRowSelectAll(row);
+
+            const selectAllChk = row.querySelector('.select-all-chk');
+            selectAllChk?.addEventListener('change', (e) => {
+                const isChecked = e.target.checked;
+                row.querySelectorAll('.whatsapp-chk, .sms-chk, .email-chk').forEach(cb => {
+                    cb.checked = isChecked;
+                });
+                showSaveBar();
+            });
+
+            row.querySelectorAll('.whatsapp-chk, .sms-chk, .email-chk').forEach(cb => {
+                cb.addEventListener('change', () => {
+                    syncRowSelectAll(row);
+                    showSaveBar();
+                });
+            });
+        });
+    }
+
+    initMarketingMatrixEvents();
+
     function showSaveBar() { if (savebar) savebar.classList.add('visible'); }
     function hideSaveBar() { if (savebar) savebar.classList.remove('visible'); }
 
@@ -160,6 +200,22 @@ document.addEventListener('DOMContentLoaded', () => {
             evt_marketing_membership: false,
             evt_marketing_membership_purchased: true,
             evt_marketing_membership_expired_renewed: true
+        },
+        marketing_notifications: {
+            offers: {
+                master: true,
+                events: {
+                    new_offer:    { whatsapp: true,  sms: true,  email: true },
+                    new_discount: { whatsapp: true,  sms: true,  email: false }
+                }
+            },
+            business: {
+                master: true,
+                events: {
+                    new_service_added: { whatsapp: true,  sms: false, email: true },
+                    new_product_added: { whatsapp: true,  sms: true,  email: false }
+                }
+            }
         },
         customer_notifications: {
             booking: {
@@ -274,6 +330,41 @@ document.addEventListener('DOMContentLoaded', () => {
                 }
             });
 
+            // Apply Marketing Notifications to UI
+            const mktPrefs = prefs.marketing_notifications || defaultPrefs.marketing_notifications;
+            ['offers', 'business'].forEach(sec => {
+                const secData = mktPrefs[sec] || defaultPrefs.marketing_notifications[sec];
+                if (!secData) return;
+
+                const masterEl = document.getElementById(`mkt_master_${sec}`);
+                const table = document.querySelector(`.cn-table[data-mkt-section="${sec}"]`);
+                if (masterEl) {
+                    masterEl.checked = !!secData.master;
+                    if (table) {
+                        table.classList.toggle('disabled-matrix', !secData.master);
+                        table.querySelectorAll('input[type="checkbox"]').forEach(cb => {
+                            cb.disabled = !secData.master;
+                        });
+                    }
+                }
+
+                if (table && secData.events) {
+                    table.querySelectorAll('tbody tr[data-event-key]').forEach(row => {
+                        const evKey = row.getAttribute('data-event-key');
+                        const evData = secData.events[evKey];
+                        if (evData) {
+                            const wa  = row.querySelector('.whatsapp-chk');
+                            const sms = row.querySelector('.sms-chk');
+                            const em  = row.querySelector('.email-chk');
+                            if (wa  && typeof evData.whatsapp !== 'undefined') wa.checked  = !!evData.whatsapp;
+                            if (sms && typeof evData.sms     !== 'undefined') sms.checked = !!evData.sms;
+                            if (em  && typeof evData.email   !== 'undefined') em.checked  = !!evData.email;
+                        }
+                        syncRowSelectAll(row);
+                    });
+                }
+            });
+
             if (typeof feather !== 'undefined') feather.replace();
         } catch (e) {
             console.error(e);
@@ -327,6 +418,28 @@ document.addEventListener('DOMContentLoaded', () => {
                 }
             });
             newPrefs.customer_notifications = custPrefs;
+
+            // 3. Collect Marketing Notifications
+            const mktPrefs = {};
+            ['offers', 'business'].forEach(sec => {
+                const masterToggle = document.getElementById(`mkt_master_${sec}`);
+                mktPrefs[sec] = {
+                    master: masterToggle ? masterToggle.checked : true,
+                    events: {}
+                };
+                const table = document.querySelector(`.cn-table[data-mkt-section="${sec}"]`);
+                if (table) {
+                    table.querySelectorAll('tbody tr[data-event-key]').forEach(row => {
+                        const evKey = row.getAttribute('data-event-key');
+                        mktPrefs[sec].events[evKey] = {
+                            whatsapp: !!row.querySelector('.whatsapp-chk')?.checked,
+                            sms:      !!row.querySelector('.sms-chk')?.checked,
+                            email:    !!row.querySelector('.email-chk')?.checked
+                        };
+                    });
+                }
+            });
+            newPrefs.marketing_notifications = mktPrefs;
 
             try {
                 const { error } = await supabase
