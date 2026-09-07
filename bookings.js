@@ -1110,6 +1110,7 @@ function attachEventListeners() {
             if (summaryErr) console.error('[EditBooking] summary update error:', summaryErr);
 
             window.toast && window.toast('Booking updated successfully!');
+            if (window.notifyEvent) window.notifyEvent('bookings', 'evt_booking_modified', { title: 'Booking Modified', message: `Booking #${bookingId} was updated.` });
             editModal.classList.remove('active');
             await fetchBookings();
 
@@ -1215,6 +1216,12 @@ function attachEventListeners() {
             }
 
             window.toast && window.toast(`Booking status updated to ${newStatus}`);
+            // Fire notification based on the new status
+            if (window.notifyEvent) {
+                const statusEventMap = { 'confirmed': 'evt_booking_confirmed', 'cancelled': 'evt_booking_cancelled', 'completed': 'evt_booking_completed', 'no-show': 'evt_booking_noshow' };
+                const evtKey = statusEventMap[newStatus.toLowerCase()];
+                if (evtKey) window.notifyEvent('bookings', evtKey, { title: `Booking ${newStatus}`, message: `Booking status changed to ${newStatus}.` });
+            }
             await fetchBookings();
         } catch (err) {
             console.error(err);

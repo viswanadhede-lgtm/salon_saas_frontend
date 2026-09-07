@@ -347,6 +347,12 @@ function setupEventListeners() {
                     // Auto-select the newly created customer
                     if (newCustomer) {
                         selectedCustomer = newCustomer;
+                        if (window.notifyEvent) {
+                            window.notifyEvent('pos', 'evt_pos_customer_added', {
+                                title: 'New Customer Added via POS',
+                                message: `${newCustomer.customer_name || 'Customer'} was added via POS.`
+                            });
+                        }
                         const fullName = newCustomer.customer_name || '';
                         const phone = newCustomer.customer_phone || '';
 
@@ -563,19 +569,33 @@ function setupEventListeners() {
                 // Fetch current stock
                 const { data: prodRows } = await supabase
                     .from('products')
-                    .select('stock_quantity')
+                    .select('stock_quantity, min_stock_alert, product_name')
                     .eq('product_id', productId);
 
                 const currentStock = prodRows && prodRows.length > 0 ? (Number(prodRows[0].stock_quantity) || 0) : 0;
+                const minStock = prodRows && prodRows.length > 0 ? (Number(prodRows[0].min_stock_alert) || 5) : 5;
                 const newStock = Math.max(0, currentStock - soldQty);
 
                 await supabase
                     .from('products')
                     .eq('product_id', productId)
                     .update({ stock_quantity: newStock });
+
+                if (newStock <= minStock && window.notifyEvent) {
+                    window.notifyEvent('pos', 'evt_pos_low_stock', {
+                        title: 'Low Stock Alert',
+                        message: `${item.name} stock dropped to ${newStock} (threshold: ${minStock}).`
+                    });
+                }
             }
 
             showToast('✓ Sale completed successfully!');
+            if (window.notifyEvent) {
+                window.notifyEvent('pos', 'evt_pos_sale_completed', {
+                    title: 'Sale Completed',
+                    message: `Sale of ₹${amountCollected} completed for ${customerName || 'Walk-in'}.`
+                });
+            }
 
             // Reset state
             cart = [];

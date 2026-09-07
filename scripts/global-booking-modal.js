@@ -692,6 +692,23 @@ export function initGlobalBookingModal() {
 
                 const label = payloads.length > 1 ? `${payloads.length} bookings` : 'Booking';
                 showMsg(`${label} created successfully!`);
+                if (window.notifyEvent) {
+                    window.notifyEvent('bookings', 'evt_booking_created', {
+                        title: 'New Booking Created',
+                        message: `${payloads[0]?.customer_name || 'Customer'} booked ${payloads.map(p => p.service_name).filter(Boolean).join(', ') || 'service'}.`
+                    });
+                    const staffNames = [...new Set(payloads.map(p => p.staff_name).filter(Boolean))].join(', ');
+                    if (staffNames) {
+                        window.notifyEvent('staff', 'evt_staff_booking_assigned', {
+                            title: 'Booking Assigned to Staff',
+                            message: `Assigned to ${staffNames}.`
+                        });
+                    }
+                    window.notifyEvent('payments', 'evt_payment_pending', {
+                        title: 'Payment Pending',
+                        message: `Pending payment of ₹${totalPrice} for ${payloads[0]?.customer_name || 'Customer'}.`
+                    });
+                }
                 overrideOverlay?.classList.remove('active');
                 closeModal();
                 if (window.fetchBookings) await window.fetchBookings();
@@ -757,6 +774,12 @@ export function initGlobalBookingModal() {
                 if (newCust && newCust.length > 0) {
                     targetId = newCust[0].customer_id;
                     if (window.liveCustomersDB) window.liveCustomersDB.push(newCust[0]);
+                    if (window.notifyEvent) {
+                        window.notifyEvent('customers', 'evt_customer_added', {
+                            title: 'New Customer Added',
+                            message: `${targetName || typedPhone} was added.`
+                        });
+                    }
                 }
             } catch (err) {
                 console.error('[Booking] Error creating customer:', err);

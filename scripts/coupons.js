@@ -457,6 +457,12 @@ async function executeDeleteCoupon(id) {
         if (error) throw error;
 
         showToast('Coupon deleted successfully');
+        if (window.notifyEvent) {
+            window.notifyEvent('marketing', 'evt_marketing_coupon', {
+                title: 'Coupon Deleted',
+                message: 'A coupon was deleted.'
+            });
+        }
         await loadCoupons();
     } catch (err) {
         console.error(err);
@@ -562,6 +568,12 @@ async function handleSaveCoupon() {
         }
 
         showToast(isEditing ? 'Coupon updated successfully' : 'Coupon created successfully');
+        if (window.notifyEvent) {
+            window.notifyEvent('marketing', 'evt_marketing_coupon', {
+                title: isEditing ? 'Coupon Modified' : 'New Coupon Created',
+                message: `Coupon "${coupon_code}" was ${isEditing ? 'updated' : 'created'}.`
+            });
+        }
         closeModal();
         await loadCoupons();
     } catch (err) {

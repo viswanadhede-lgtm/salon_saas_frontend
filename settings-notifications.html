@@ -18,31 +18,219 @@
         <header class="top-header"><div class="header-left"><div class="branch-switcher"><i data-feather="map-pin" class="branch-icon"></i><select class="branch-select"><option>Downtown Branch</option></select></div></div><div class="header-center"><div class="search-bar"><i data-feather="search" class="search-icon"></i><input type="text" placeholder="Search..." class="search-input"></div></div><div class="header-right"><div class="plan-badge">Growth</div><button class="icon-btn"><i data-feather="bell"></i></button></div></header>
         <main class="content-area">
             <div class="sp-breadcrumb"><a href="company.html" class="sp-back"><i data-feather="arrow-left"></i> Company Settings</a><span class="sp-sep">/</span><span class="sp-current">Notifications</span></div>
-            <div class="sp-header"><h1>Notifications</h1><p>Configure SMS, WhatsApp and email notifications for customers and staff</p></div>
-            <div class="sp-card">
-                <div class="sp-card-header"><h2>Appointment Reminders (Customer)</h2><p>Automatic reminders sent to customers before their appointment</p></div>
-                <div class="sp-card-body">
-                    <div class="toggle-row"><div><div class="toggle-label">📱 WhatsApp Reminder</div><div class="toggle-hint">Send a WhatsApp message to customers before their appointment</div></div><label class="toggle-switch"><input type="checkbox" id="whatsappReminder" checked><span class="toggle-track"></span></label></div>
-                    <div class="toggle-row"><div><div class="toggle-label">💬 SMS Reminder</div><div class="toggle-hint">Send an SMS to customers before their appointment</div></div><label class="toggle-switch"><input type="checkbox" id="smsReminder"><span class="toggle-track"></span></label></div>
-                    <div class="toggle-row"><div><div class="toggle-label">📧 Email Reminder</div><div class="toggle-hint">Send an email to customers before their appointment</div></div><label class="toggle-switch"><input type="checkbox" id="emailReminder" checked><span class="toggle-track"></span></label></div>
-                    <div class="form-group" style="margin-top:20px;"><label class="form-label" for="reminderHours">Send reminder how many hours before?</label><select id="reminderHours" class="form-select" style="max-width:240px;"><option value="1">1 hour before</option><option value="2" selected>2 hours before</option><option value="4">4 hours before</option><option value="12">12 hours before</option><option value="24">24 hours before</option></select></div>
+            <div class="sp-header">
+                <h1>Notification Events</h1>
+                <p>Control which internal events trigger notifications across your system.</p>
+            </div>
+            
+            <div class="sp-card" id="notificationAccordionGroup">
+                <!-- Bookings -->
+                <div class="accordion-item expanded" data-category="bookings">
+                    <div class="accordion-header">
+                        <div class="ah-left">
+                            <div class="ah-icon-wrap" style="background:#eff6ff; color:#3b82f6;"><i data-feather="calendar"></i></div>
+                            <div class="ah-text">
+                                <h3>Bookings</h3>
+                                <p>Booking lifecycle events</p>
+                            </div>
+                        </div>
+                        <div class="ah-right">
+                            <label class="toggle-switch master-toggle" onclick="event.stopPropagation()">
+                                <input type="checkbox" id="master_bookings" checked>
+                                <span class="toggle-track"></span>
+                            </label>
+                            <i data-feather="chevron-down" class="ah-chevron"></i>
+                        </div>
+                    </div>
+                    <div class="accordion-body">
+                        <div class="sub-event-list">
+                            <label class="sub-event-row"><div class="se-checkbox"><input type="checkbox" id="evt_booking_created" checked></div><div class="se-text"><div class="se-title">New Booking Created</div><div class="se-hint">Also triggers when a booking is rebooked</div></div></label>
+                            <label class="sub-event-row"><div class="se-checkbox"><input type="checkbox" id="evt_booking_confirmed" checked></div><div class="se-text"><div class="se-title">Booking Confirmed</div></div></label>
+                            <label class="sub-event-row"><div class="se-checkbox"><input type="checkbox" id="evt_booking_modified" checked></div><div class="se-text"><div class="se-title">Booking Modified</div></div></label>
+                            <label class="sub-event-row"><div class="se-checkbox"><input type="checkbox" id="evt_booking_cancelled"></div><div class="se-text"><div class="se-title">Booking Cancelled</div></div></label>
+                            <label class="sub-event-row"><div class="se-checkbox"><input type="checkbox" id="evt_booking_completed" checked></div><div class="se-text"><div class="se-title">Booking Completed</div></div></label>
+                            <label class="sub-event-row"><div class="se-checkbox"><input type="checkbox" id="evt_booking_noshow"></div><div class="se-text"><div class="se-title">No-Show Marked</div></div></label>
+                        </div>
+                    </div>
                 </div>
-                <div class="sp-card-header" style="border-top:1px solid #f1f5f9;"><h2>Booking Confirmations (Customer)</h2><p>Confirmation messages sent immediately after booking</p></div>
-                <div class="sp-card-body">
-                    <div class="toggle-row"><div><div class="toggle-label">📱 WhatsApp Confirmation</div></div><label class="toggle-switch"><input type="checkbox" id="whatsappConfirm" checked><span class="toggle-track"></span></label></div>
-                    <div class="toggle-row"><div><div class="toggle-label">📧 Email Confirmation</div></div><label class="toggle-switch"><input type="checkbox" id="emailConfirm" checked><span class="toggle-track"></span></label></div>
+
+                <!-- Customers -->
+                <div class="accordion-item" data-category="customers">
+                    <div class="accordion-header">
+                        <div class="ah-left">
+                            <div class="ah-icon-wrap" style="background:#dcfce7; color:#22c55e;"><i data-feather="users"></i></div>
+                            <div class="ah-text">
+                                <h3>Customers</h3>
+                                <p>Customer account events</p>
+                            </div>
+                        </div>
+                        <div class="ah-right">
+                            <label class="toggle-switch master-toggle" onclick="event.stopPropagation()">
+                                <input type="checkbox" id="master_customers">
+                                <span class="toggle-track"></span>
+                            </label>
+                            <i data-feather="chevron-down" class="ah-chevron"></i>
+                        </div>
+                    </div>
+                    <div class="accordion-body">
+                        <div class="sub-event-list">
+                            <label class="sub-event-row"><div class="se-checkbox"><input type="checkbox" id="evt_customer_added"></div><div class="se-text"><div class="se-title">New Customer Added</div></div></label>
+                            <label class="sub-event-row"><div class="se-checkbox"><input type="checkbox" id="evt_customer_updated"></div><div class="se-text"><div class="se-title">Customer Profile Updated</div></div></label>
+                            <label class="sub-event-row"><div class="se-checkbox"><input type="checkbox" id="evt_customer_deleted"></div><div class="se-text"><div class="se-title">Customer Deleted</div></div></label>
+                        </div>
+                    </div>
                 </div>
-                <div class="sp-card-header" style="border-top:1px solid #f1f5f9;"><h2>Staff Notifications</h2><p>Alerts sent to staff members</p></div>
-                <div class="sp-card-body">
-                    <div class="toggle-row"><div><div class="toggle-label">Notify staff on new booking</div><div class="toggle-hint">Staff receive an alert when a new appointment is assigned to them</div></div><label class="toggle-switch"><input type="checkbox" id="staffNewBooking" checked><span class="toggle-track"></span></label></div>
-                    <div class="toggle-row"><div><div class="toggle-label">Notify staff on cancellation</div></div><label class="toggle-switch"><input type="checkbox" id="staffCancellation" checked><span class="toggle-track"></span></label></div>
+
+                <!-- Staff -->
+                <div class="accordion-item" data-category="staff">
+                    <div class="accordion-header">
+                        <div class="ah-left">
+                            <div class="ah-icon-wrap" style="background:#f3e8ff; color:#a855f7;"><i data-feather="user"></i></div>
+                            <div class="ah-text">
+                                <h3>Staff</h3>
+                                <p>Staff management events</p>
+                            </div>
+                        </div>
+                        <div class="ah-right">
+                            <label class="toggle-switch master-toggle" onclick="event.stopPropagation()">
+                                <input type="checkbox" id="master_staff" checked>
+                                <span class="toggle-track"></span>
+                            </label>
+                            <i data-feather="chevron-down" class="ah-chevron"></i>
+                        </div>
+                    </div>
+                    <div class="accordion-body">
+                        <div class="sub-event-list">
+                            <label class="sub-event-row"><div class="se-checkbox"><input type="checkbox" id="evt_staff_added" checked></div><div class="se-text"><div class="se-title">New Staff Added</div></div></label>
+                            <label class="sub-event-row"><div class="se-checkbox"><input type="checkbox" id="evt_staff_updated" checked></div><div class="se-text"><div class="se-title">Staff Details Updated</div></div></label>
+                            <label class="sub-event-row"><div class="se-checkbox"><input type="checkbox" id="evt_staff_deleted"></div><div class="se-text"><div class="se-title">Staff Deleted</div></div></label>
+                            <label class="sub-event-row"><div class="se-checkbox"><input type="checkbox" id="evt_staff_booking_assigned" checked></div><div class="se-text"><div class="se-title">New Booking Assigned to Staff</div></div></label>
+                        </div>
+                    </div>
                 </div>
-                <div class="sp-savebar" id="savebar"><button class="btn btn-secondary" onclick="document.getElementById('savebar').classList.remove('visible')">Cancel</button><button class="btn btn-primary" id="btnSave"><i data-feather="save" style="width:15px;height:15px;"></i> Save Changes</button></div>
+
+                <!-- Services -->
+                <div class="accordion-item" data-category="services">
+                    <div class="accordion-header">
+                        <div class="ah-left">
+                            <div class="ah-icon-wrap" style="background:#ffedd5; color:#f97316;"><i data-feather="scissors"></i></div>
+                            <div class="ah-text">
+                                <h3>Services</h3>
+                                <p>Service and package updates</p>
+                            </div>
+                        </div>
+                        <div class="ah-right">
+                            <label class="toggle-switch master-toggle" onclick="event.stopPropagation()">
+                                <input type="checkbox" id="master_services">
+                                <span class="toggle-track"></span>
+                            </label>
+                            <i data-feather="chevron-down" class="ah-chevron"></i>
+                        </div>
+                    </div>
+                    <div class="accordion-body">
+                        <div class="sub-event-list">
+                            <label class="sub-event-row"><div class="se-checkbox"><input type="checkbox" id="evt_service_created"></div><div class="se-text"><div class="se-title">New Service Created</div></div></label>
+                            <label class="sub-event-row"><div class="se-checkbox"><input type="checkbox" id="evt_service_updated"></div><div class="se-text"><div class="se-title">Service Updated (price, duration, category)</div></div></label>
+                            <label class="sub-event-row"><div class="se-checkbox"><input type="checkbox" id="evt_service_deleted"></div><div class="se-text"><div class="se-title">Service Deleted</div></div></label>
+                            <label class="sub-event-row"><div class="se-checkbox"><input type="checkbox" id="evt_package_created"></div><div class="se-text"><div class="se-title">New Package Created</div></div></label>
+                            <label class="sub-event-row"><div class="se-checkbox"><input type="checkbox" id="evt_package_updated_deleted"></div><div class="se-text"><div class="se-title">Package Updated / Deleted</div></div></label>
+                            <label class="sub-event-row"><div class="se-checkbox"><input type="checkbox" id="evt_service_category_created"></div><div class="se-text"><div class="se-title">Service Category Created</div></div></label>
+                            <label class="sub-event-row"><div class="se-checkbox"><input type="checkbox" id="evt_service_category_updated"></div><div class="se-text"><div class="se-title">Service Category Updated</div></div></label>
+                            <label class="sub-event-row"><div class="se-checkbox"><input type="checkbox" id="evt_service_category_deleted"></div><div class="se-text"><div class="se-title">Service Category Deleted</div></div></label>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Sales / POS -->
+                <div class="accordion-item" data-category="pos">
+                    <div class="accordion-header">
+                        <div class="ah-left">
+                            <div class="ah-icon-wrap" style="background:#e0e7ff; color:#4f46e5;"><i data-feather="shopping-cart"></i></div>
+                            <div class="ah-text">
+                                <h3>Sales / POS</h3>
+                                <p>Point of sale and inventory events</p>
+                            </div>
+                        </div>
+                        <div class="ah-right">
+                            <label class="toggle-switch master-toggle" onclick="event.stopPropagation()">
+                                <input type="checkbox" id="master_pos">
+                                <span class="toggle-track"></span>
+                            </label>
+                            <i data-feather="chevron-down" class="ah-chevron"></i>
+                        </div>
+                    </div>
+                    <div class="accordion-body">
+                        <div class="sub-event-list">
+                            <label class="sub-event-row"><div class="se-checkbox"><input type="checkbox" id="evt_pos_sale_completed"></div><div class="se-text"><div class="se-title">Sale Completed (POS checkout)</div></div></label>
+                            <label class="sub-event-row"><div class="se-checkbox"><input type="checkbox" id="evt_pos_low_stock"></div><div class="se-text"><div class="se-title">Low Stock Alert</div><div class="se-hint">Triggers when stock decrements below threshold</div></div></label>
+                            <label class="sub-event-row"><div class="se-checkbox"><input type="checkbox" id="evt_pos_customer_added"></div><div class="se-text"><div class="se-title">New Customer Added via POS</div></div></label>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Payments -->
+                <div class="accordion-item" data-category="payments">
+                    <div class="accordion-header">
+                        <div class="ah-left">
+                            <div class="ah-icon-wrap" style="background:#dbeafe; color:#2563eb;"><i data-feather="credit-card"></i></div>
+                            <div class="ah-text">
+                                <h3>Payments</h3>
+                                <p>Transactions and collection statuses</p>
+                            </div>
+                        </div>
+                        <div class="ah-right">
+                            <label class="toggle-switch master-toggle" onclick="event.stopPropagation()">
+                                <input type="checkbox" id="master_payments" checked>
+                                <span class="toggle-track"></span>
+                            </label>
+                            <i data-feather="chevron-down" class="ah-chevron"></i>
+                        </div>
+                    </div>
+                    <div class="accordion-body">
+                        <div class="sub-event-list">
+                            <label class="sub-event-row"><div class="se-checkbox"><input type="checkbox" id="evt_payment_collected" checked></div><div class="se-text"><div class="se-title">Payment Collected (Paid)</div></div></label>
+                            <label class="sub-event-row"><div class="se-checkbox"><input type="checkbox" id="evt_payment_pending"></div><div class="se-text"><div class="se-title">Payment Pending</div><div class="se-hint">Unpaid booking created</div></div></label>
+                            <label class="sub-event-row"><div class="se-checkbox"><input type="checkbox" id="evt_payment_refunded"></div><div class="se-text"><div class="se-title">Payment Refunded</div></div></label>
+                            <label class="sub-event-row"><div class="se-checkbox"><input type="checkbox" id="evt_payment_overdue"></div><div class="se-text"><div class="se-title">Overdue Payment Alert</div></div></label>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Marketing -->
+                <div class="accordion-item" data-category="marketing">
+                    <div class="accordion-header">
+                        <div class="ah-left">
+                            <div class="ah-icon-wrap" style="background:#fce7f3; color:#db2777;"><i data-feather="gift"></i></div>
+                            <div class="ah-text">
+                                <h3>Marketing</h3>
+                                <p>Offers, coupons, and memberships</p>
+                            </div>
+                        </div>
+                        <div class="ah-right">
+                            <label class="toggle-switch master-toggle" onclick="event.stopPropagation()">
+                                <input type="checkbox" id="master_marketing">
+                                <span class="toggle-track"></span>
+                            </label>
+                            <i data-feather="chevron-down" class="ah-chevron"></i>
+                        </div>
+                    </div>
+                    <div class="accordion-body">
+                        <div class="sub-event-list">
+                            <label class="sub-event-row"><div class="se-checkbox"><input type="checkbox" id="evt_marketing_offer"></div><div class="se-text"><div class="se-title">Offer Event (Created / Modified / Deleted)</div></div></label>
+                            <label class="sub-event-row"><div class="se-checkbox"><input type="checkbox" id="evt_marketing_coupon"></div><div class="se-text"><div class="se-title">Coupon Event (Created / Modified / Deleted)</div></div></label>
+                            <label class="sub-event-row"><div class="se-checkbox"><input type="checkbox" id="evt_marketing_membership"></div><div class="se-text"><div class="se-title">Membership Config (Created / Updated / Deleted)</div></div></label>
+                            <label class="sub-event-row"><div class="se-checkbox"><input type="checkbox" id="evt_marketing_membership_purchased"></div><div class="se-text"><div class="se-title">Membership Purchased</div></div></label>
+                            <label class="sub-event-row"><div class="se-checkbox"><input type="checkbox" id="evt_marketing_membership_expired_renewed"></div><div class="se-text"><div class="se-title">Membership Expired / Renewed</div></div></label>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="sp-savebar" id="savebar"><button class="btn btn-secondary" onclick="window.cancelNotificationSettings()">Cancel</button><button class="btn btn-primary" id="btnSave"><i data-feather="save" style="width:15px;height:15px;"></i> Save Changes</button></div>
             </div>
         </main>
     </div>
+    <div id="toastNotification" class="sp-toast"></div>
     <script src="logout.js"></script>
     <script type="module" src="scripts/global-auth-guard.js"></script>
-    <script type="module" src="scripts/sub-features/sub-feature-gate.js"></script>
-    <script>document.addEventListener('DOMContentLoaded',()=>{if(typeof feather!=='undefined')feather.replace();document.getElementById('sidebarToggle')?.addEventListener('click',()=>{document.getElementById('sidebar').classList.toggle('collapsed');document.getElementById('mainWrapper').classList.toggle('sidebar-collapsed');});document.querySelectorAll('.nav-item.active').forEach(li=>li.classList.add('open'));document.querySelectorAll('input[type=checkbox],.form-select').forEach(el=>el.addEventListener(el.type==='checkbox'?'change':'change',()=>{document.getElementById('savebar').classList.add('visible');if(typeof feather!=='undefined')feather.replace();}));});</script>
+    <script type="module" src="scripts/settings-notifications.js"></script>
 </body></html>

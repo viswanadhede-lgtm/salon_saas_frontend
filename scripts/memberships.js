@@ -726,6 +726,12 @@ async function executeDeletePlan(id) {
 
         if (error) throw error;
         showToast('Membership plan deleted successfully.');
+        if (window.notifyEvent) {
+            window.notifyEvent('marketing', 'evt_marketing_membership', {
+                title: 'Membership Plan Deleted',
+                message: 'A membership plan was deleted.'
+            });
+        }
         await loadPlans();
     } catch (err) {
         console.error('executeDeletePlan:', err);
@@ -828,6 +834,12 @@ async function handleSavePlan() {
         }
 
         showToast(isEditing ? 'Plan updated successfully.' : 'Plan created successfully.');
+        if (window.notifyEvent) {
+            window.notifyEvent('marketing', 'evt_marketing_membership', {
+                title: isEditing ? 'Membership Plan Updated' : 'New Membership Plan Created',
+                message: `Plan "${plan_name}" was ${isEditing ? 'updated' : 'created'}.`
+            });
+        }
         closePlanModal();
         await loadPlans();
     } catch (err) {
@@ -867,6 +879,16 @@ async function loadPurchases() {
         if (error) throw error;
         currentPurchases = data || [];
         renderPurchases();
+
+        // Check for expired memberships
+        const todayStr = new Date().toISOString().split('T')[0];
+        const expiredCount = currentPurchases.filter(p => p.expiry_date && p.expiry_date < todayStr && p.status === 'active').length;
+        if (expiredCount > 0 && window.notifyEvent) {
+            window.notifyEvent('marketing', 'evt_marketing_membership_expired_renewed', {
+                title: 'Membership Expired',
+                message: `${expiredCount} membership(s) have expired.`
+            });
+        }
     } catch (err) {
         console.error('loadPurchases:', err);
         tbody.innerHTML = `<tr><td colspan="8" style="text-align:center;padding:32px;color:#ef4444;">Failed to load membership purchases: ${err.message || ''}</td></tr>`;
@@ -1302,6 +1324,12 @@ async function executeMembershipAssignment(payload, newPurchaseId) {
         // 2. The database trigger 'trg_membership_transaction' handles logging to business_transactions natively.
 
         showToast('Membership assigned successfully!');
+        if (window.notifyEvent) {
+            window.notifyEvent('marketing', 'evt_marketing_membership_purchased', {
+                title: 'Membership Purchased',
+                message: `${finalCustomerName} purchased ${selectedPlan ? (selectedPlan.plan_name || selectedPlan.name) : 'membership'}.`
+            });
+        }
         
         // Reset form
         if (window.resetAssignMembershipForm) window.resetAssignMembershipForm();
@@ -1926,6 +1954,13 @@ window.renewMembershipPurchase = function(purchaseId) {
     if (!purchase) {
         showToast('Purchase details not found.');
         return;
+    }
+
+    if (window.notifyEvent) {
+        window.notifyEvent('marketing', 'evt_marketing_membership_expired_renewed', {
+            title: 'Membership Renewed',
+            message: `Renewal initiated for ${purchase.customer_name || 'Customer'}.`
+        });
     }
 
     const assignModal = document.getElementById('assignModalOverlay');

@@ -1107,6 +1107,12 @@ document.addEventListener('DOMContentLoaded', () => {
 
             // Success!
             showToast(`Successfully returned ${checkedBoxes.length} partial/full item(s).`, '#dc2626');
+            if (window.notifyEvent) {
+                window.notifyEvent('payments', 'evt_payment_refunded', {
+                    title: 'Payment Refunded',
+                    message: `Refund processed for ${checkedBoxes.length} item(s).`
+                });
+            }
             document.getElementById('refundSummaryOverlay').classList.remove('active');
             
             // Re-fetch to sync table badges and metrics

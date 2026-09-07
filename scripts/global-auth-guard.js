@@ -5,6 +5,16 @@ import { initSubFeatures } from './sub-features/sub-feature-manager.js';
 import { applySubFeatureGates } from './sub-features/sub-feature-gate.js';
 import { initGlobalBookingModal } from './global-booking-modal.js';
 
+// ─── Load notification manager globally ───────────────────────────────────────
+(function loadNotificationManager() {
+    if (window.__notifManagerLoaded) return;
+    window.__notifManagerLoaded = true;
+    const s = document.createElement('script');
+    s.src = 'scripts/notification-manager.js';
+    document.head.appendChild(s);
+})();
+
+
 // ─── Route → Feature mapping ──────────────────────────────────────────────────
 const ROUTE_MAP = {
     '/dashboard.html':             FEATURES.DASHBOARD_ACCESS,

@@ -518,6 +518,12 @@ document.addEventListener('DOMContentLoaded', () => {
             }
 
             closeModal();
+            if (window.notifyEvent) {
+                window.notifyEvent('marketing', 'evt_marketing_offer', {
+                    title: isEditMode ? 'Offer Modified' : 'New Offer Created',
+                    message: `Offer "${offerNameEl.value.trim()}" was ${isEditMode ? 'updated' : 'created'}.`
+                });
+            }
             await loadOffers();
         } catch (error) {
             console.error('Save Offer Error:', error);
@@ -543,6 +549,12 @@ document.addEventListener('DOMContentLoaded', () => {
                 .update({ status: 'deleted' });
 
             if (error) throw error;
+            if (window.notifyEvent) {
+                window.notifyEvent('marketing', 'evt_marketing_offer', {
+                    title: 'Offer Deleted',
+                    message: 'An offer was deleted.'
+                });
+            }
             await loadOffers();
         } catch (err) {
             console.error('Delete error:', err);

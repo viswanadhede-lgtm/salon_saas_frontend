@@ -536,6 +536,19 @@ if (btnSaveCustomer) {
 
             closeModal();
             showToast(isEditing ? 'Customer updated successfully!' : 'Customer created successfully!');
+            if (window.notifyEvent) {
+                if (isEditing) {
+                    window.notifyEvent('customers', 'evt_customer_updated', {
+                        title: 'Customer Profile Updated',
+                        message: `${name}'s profile was updated.`
+                    });
+                } else {
+                    window.notifyEvent('customers', 'evt_customer_added', {
+                        title: 'New Customer Added',
+                        message: `${name} was added to customers.`
+                    });
+                }
+            }
             await fetchCustomers(); // Refresh the list
         } catch (err) {
             console.error('Error saving customer:', err);
@@ -557,6 +570,12 @@ async function deleteCustomer(id) {
         if (error) throw error;
 
         showToast('Customer deleted successfully.');
+        if (window.notifyEvent) {
+            window.notifyEvent('customers', 'evt_customer_deleted', {
+                title: 'Customer Deleted',
+                message: 'A customer profile was deleted.'
+            });
+        }
         await fetchCustomers();
         return true;
     } catch (err) {

@@ -131,6 +131,12 @@ function attachEventListeners() {
                 
                 if (!error) {
                     window.toast && window.toast('Category added successfully!');
+                    if (window.notifyEvent) {
+                        window.notifyEvent('services', 'evt_service_category_created', {
+                            title: 'Service Category Created',
+                            message: `${payload.category_name} was created.`
+                        });
+                    }
                     document.getElementById('addCategoryModal').classList.remove('active');
                     addCatForm.reset();
                     await fetchCategories();
@@ -214,6 +220,12 @@ function attachEventListeners() {
                 }
 
                 window.toast && window.toast('Category updated successfully!');
+                if (window.notifyEvent) {
+                    window.notifyEvent('services', 'evt_service_category_updated', {
+                        title: 'Service Category Updated',
+                        message: `${newCategoryName} was updated.`
+                    });
+                }
                 editCatModal.classList.remove('active');
                 await fetchCategories();
             } else {
@@ -268,6 +280,12 @@ function attachEventListeners() {
 
             if (!deleteError) {
                 window.toast && window.toast('Category deleted successfully!');
+                if (window.notifyEvent) {
+                    window.notifyEvent('services', 'evt_service_category_deleted', {
+                        title: 'Service Category Deleted',
+                        message: `${categoryToDelete?.name || 'Category'} was deleted.`
+                    });
+                }
                 await fetchCategories();
             } else {
                 console.error('Delete failed:', deleteError);

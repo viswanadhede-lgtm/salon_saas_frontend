@@ -394,6 +394,12 @@ function attachEventListeners() {
                     toast.classList.add('show'); 
                     setTimeout(() => toast.classList.remove('show'), 3000); 
                 }
+                if (window.notifyEvent) {
+                    window.notifyEvent('staff', 'evt_staff_added', {
+                        title: 'New Staff Added',
+                        message: `${payload.staff_name} has been added to the team.`
+                    });
+                }
                 
                 addStaffModal.classList.remove('active');
                 this.reset();
@@ -472,6 +478,12 @@ function attachEventListeners() {
                     toast.classList.add('show');
                     setTimeout(() => toast.classList.remove('show'), 3000);
                 }
+                if (window.notifyEvent) {
+                    window.notifyEvent('staff', 'evt_staff_updated', {
+                        title: 'Staff Details Updated',
+                        message: `${payload.staff_name}'s details were updated.`
+                    });
+                }
 
                 editStaffModal.classList.remove('active');
                 await window.fetchStaff();
@@ -534,6 +546,7 @@ function attachEventListeners() {
                 }
 
                 fullScreenLoader.classList.remove('active');
+                const deletedName = staffToDelete.name || 'Staff member';
                 staffToDelete = null;
 
                 const toast = document.getElementById('toastNotification');
@@ -541,6 +554,12 @@ function attachEventListeners() {
                     toast.textContent = 'Staff member deleted successfully';
                     toast.classList.add('show');
                     setTimeout(() => toast.classList.remove('show'), 3000);
+                }
+                if (window.notifyEvent) {
+                    window.notifyEvent('staff', 'evt_staff_deleted', {
+                        title: 'Staff Deleted',
+                        message: `${deletedName} was removed.`
+                    });
                 }
 
                 await window.fetchStaff();

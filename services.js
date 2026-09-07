@@ -178,6 +178,12 @@ function attachEventListeners() {
                 
                 if (!error) {
                     window.toast && window.toast('Service added successfully!');
+                    if (window.notifyEvent) {
+                        window.notifyEvent('services', 'evt_service_created', {
+                            title: 'New Service Created',
+                            message: `${payload.service_name} was created.`
+                        });
+                    }
                     document.getElementById('addServiceModal').classList.remove('active');
                     addSvcForm.reset();
                     await fetchServices();
@@ -249,6 +255,12 @@ function attachEventListeners() {
 
             if (!updateError) {
                 window.toast && window.toast('Service updated successfully!');
+                if (window.notifyEvent) {
+                    window.notifyEvent('services', 'evt_service_updated', {
+                        title: 'Service Updated',
+                        message: `${payload.service_name} details were updated.`
+                    });
+                }
                 editSvcModal.classList.remove('active');
                 await fetchServices();
             } else {
@@ -303,6 +315,12 @@ function attachEventListeners() {
 
             if (!deleteError) {
                 window.toast && window.toast('Service deleted successfully!');
+                if (window.notifyEvent) {
+                    window.notifyEvent('services', 'evt_service_deleted', {
+                        title: 'Service Deleted',
+                        message: `${serviceToDelete?.name || 'Service'} was deleted.`
+                    });
+                }
                 await fetchServices();
             } else {
                 console.error('Delete failed:', deleteError);
@@ -520,6 +538,12 @@ function attachEventListeners() {
                     if (psError) throw psError;
 
                     window.toast && window.toast('Package added successfully!');
+                    if (window.notifyEvent) {
+                        window.notifyEvent('services', 'evt_package_created', {
+                            title: 'New Package Created',
+                            message: `${payload.package_name} was created.`
+                        });
+                    }
                     document.getElementById('addPackageModal').classList.remove('active');
                     addPkgForm.reset();
                     selectedPackageServices.clear();
@@ -758,6 +782,12 @@ function attachEventListeners() {
                 if (psError) throw psError;
 
                 window.toast && window.toast('Package updated successfully!');
+                if (window.notifyEvent) {
+                    window.notifyEvent('services', 'evt_package_updated_deleted', {
+                        title: 'Package Updated',
+                        message: `${payload.package_name} was updated.`
+                    });
+                }
                 document.getElementById('editPackageModal').classList.remove('active');
                 if (window.fetchPackages) await window.fetchPackages();
             } catch (err) {
@@ -801,6 +831,12 @@ function attachEventListeners() {
 
                 if (!deleteError) {
                     window.toast && window.toast('Package deleted successfully!');
+                    if (window.notifyEvent) {
+                        window.notifyEvent('services', 'evt_package_updated_deleted', {
+                            title: 'Package Deleted',
+                            message: `${packageToDelete?.name || 'Package'} was deleted.`
+                        });
+                    }
                     if (window.fetchPackages) await window.fetchPackages();
                 } else {
                     window.toast && window.toast('Error deleting package: ' + deleteError.message);

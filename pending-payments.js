@@ -120,6 +120,16 @@ document.addEventListener('DOMContentLoaded', async () => {
             allPayments.sort((a, b) => new Date(b.booking_date) - new Date(a.booking_date));
             applyAllFilters();
 
+            // Check for overdue payments
+            const todayStr = new Date().toISOString().split('T')[0];
+            const overdueCount = allPayments.filter(p => p.booking_date && p.booking_date < todayStr).length;
+            if (overdueCount > 0 && window.notifyEvent) {
+                window.notifyEvent('payments', 'evt_payment_overdue', {
+                    title: 'Overdue Payment Alert',
+                    message: `You have ${overdueCount} overdue pending payment(s).`
+                });
+            }
+
         } catch (err) {
             console.error('[PP] Critical Fetch Error:', err);
             ppShowToast('Failed to load payments', true);
@@ -515,6 +525,12 @@ document.addEventListener('DOMContentLoaded', async () => {
             }
 
             ppShowToast('Payment recorded successfully!');
+            if (window.notifyEvent) {
+                window.notifyEvent('payments', 'evt_payment_collected', {
+                    title: 'Payment Collected',
+                    message: `₹${amount} recorded for ${row.customer_name || 'Customer'}.`
+                });
+            }
             activeBookingId = null;
             
             // Re-fetch data to update the view

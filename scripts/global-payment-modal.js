@@ -917,6 +917,12 @@ async function finalizePayment() {
 
     try {
         await globalPaymentConfig.onComplete(resultPayload);
+        if (window.notifyEvent) {
+            window.notifyEvent('payments', 'evt_payment_collected', {
+                title: 'Payment Collected',
+                message: `₹${resultPayload.amountCollected} collected from ${globalPaymentConfig.customerName || 'Customer'}.`
+            });
+        }
         closeGlobalPaymentModal();
     } catch (err) {
         console.error("Payment failed:", err);

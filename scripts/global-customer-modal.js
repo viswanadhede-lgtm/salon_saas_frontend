@@ -174,6 +174,12 @@ document.getElementById('btnSaveNewCustomer')?.addEventListener('click', async (
 
         closeGlobalAddCustomerModal();
         showGlobalToast('Customer created successfully!');
+        if (window.notifyEvent) {
+            window.notifyEvent('customers', 'evt_customer_added', {
+                title: 'New Customer Added',
+                message: `${name} was added to customers.`
+            });
+        }
         if (onSuccessCallback) {
             onSuccessCallback(newCustomer);
         }

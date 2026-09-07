@@ -299,3 +299,111 @@ html, body.dashboard-body {
     border-color: #fca5a5;
     color: #dc2626;
 }
+
+/* Accordion Settings */
+.accordion-item {
+    border-bottom: 1px solid #f1f5f9;
+}
+.accordion-item:last-child {
+    border-bottom: none;
+}
+.accordion-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 16px 24px;
+    cursor: pointer;
+    user-select: none;
+    transition: background 0.2s;
+}
+.accordion-header:hover {
+    background: #f8fafc;
+}
+.ah-left {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+}
+.ah-icon-wrap {
+    width: 40px;
+    height: 40px;
+    border-radius: 10px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+.ah-icon-wrap i {
+    width: 20px;
+    height: 20px;
+}
+.ah-text h3 {
+    font-size: 1rem;
+    font-weight: 600;
+    color: #0f172a;
+    margin: 0 0 2px;
+}
+.ah-text p {
+    font-size: 0.85rem;
+    color: #64748b;
+    margin: 0;
+}
+.ah-right {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+}
+.ah-chevron {
+    color: #94a3b8;
+    transition: transform 0.3s ease;
+}
+.accordion-item.expanded .ah-chevron {
+    transform: rotate(-180deg);
+}
+.accordion-body {
+    max-height: 0;
+    overflow: hidden;
+    transition: max-height 0.3s ease;
+    background: #f8fafc;
+}
+.accordion-item.expanded .accordion-body {
+    max-height: 800px; /* Large enough to hold contents */
+}
+.sub-event-list {
+    padding: 16px 24px 24px 80px;
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+}
+.sub-event-row {
+    display: flex;
+    align-items: flex-start;
+    gap: 12px;
+    cursor: pointer;
+    user-select: none;
+}
+.sub-event-row.disabled {
+    opacity: 0.5;
+    pointer-events: none;
+}
+.se-checkbox {
+    padding-top: 2px;
+}
+.se-checkbox input[type="checkbox"] {
+    width: 16px;
+    height: 16px;
+    accent-color: #3b82f6;
+    cursor: pointer;
+}
+.se-text {
+    flex: 1;
+}
+.se-title {
+    font-size: 0.9rem;
+    font-weight: 500;
+    color: #374151;
+}
+.se-hint {
+    font-size: 0.8rem;
+    color: #94a3b8;
+    margin-top: 2px;
+}
