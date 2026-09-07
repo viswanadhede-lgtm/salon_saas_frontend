@@ -783,7 +783,7 @@ function attachEventListeners() {
 
                 window.toast && window.toast('Package updated successfully!');
                 if (window.notifyEvent) {
-                    window.notifyEvent('services', 'evt_package_updated_deleted', {
+                    window.notifyEvent('services', 'evt_package_updated', {
                         title: 'Package Updated',
                         message: `${payload.package_name} was updated.`
                     });
@@ -832,7 +832,7 @@ function attachEventListeners() {
                 if (!deleteError) {
                     window.toast && window.toast('Package deleted successfully!');
                     if (window.notifyEvent) {
-                        window.notifyEvent('services', 'evt_package_updated_deleted', {
+                        window.notifyEvent('services', 'evt_package_deleted', {
                             title: 'Package Deleted',
                             message: `${packageToDelete?.name || 'Package'} was deleted.`
                         });

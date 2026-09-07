@@ -84,7 +84,8 @@ document.addEventListener('DOMContentLoaded', () => {
             evt_service_updated: false,
             evt_service_deleted: false,
             evt_package_created: false,
-            evt_package_updated_deleted: false,
+            evt_package_updated: false,
+            evt_package_deleted: false,
             evt_service_category_created: false,
             evt_service_category_updated: false,
             evt_service_category_deleted: false
