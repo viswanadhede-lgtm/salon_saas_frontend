@@ -524,6 +524,20 @@ document.addEventListener('DOMContentLoaded', () => {
                     message: `Offer "${offerNameEl.value.trim()}" was ${isEditMode ? 'updated' : 'created'}.`
                 });
             }
+            // ── Marketing Notifications: notify customers ──
+            if (!isEditMode && window.notifyCustomer) {
+                const offerName = offerNameEl.value.trim();
+                window.notifyCustomer('new_offer', {
+                    title: 'New Offer Available!',
+                    message: `Check out our new offer: ${offerName}`,
+                    offerName
+                });
+                window.notifyCustomer('new_discount', {
+                    title: 'New Discount Available!',
+                    message: `Save more with our latest discount: ${offerName}`,
+                    offerName
+                });
+            }
             await loadOffers();
         } catch (error) {
             console.error('Save Offer Error:', error);

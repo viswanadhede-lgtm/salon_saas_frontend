@@ -184,6 +184,14 @@ function attachEventListeners() {
                             message: `${payload.service_name} was created.`
                         });
                     }
+                    // ── Marketing Notifications: notify customers ──
+                    if (window.notifyCustomer) {
+                        window.notifyCustomer('new_service_added', {
+                            title: 'New Service Available!',
+                            message: `We just added a new service: ${payload.service_name}`,
+                            serviceName: payload.service_name
+                        });
+                    }
                     document.getElementById('addServiceModal').classList.remove('active');
                     addSvcForm.reset();
                     await fetchServices();

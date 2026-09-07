@@ -20,7 +20,27 @@ document.addEventListener('DOMContentLoaded', () => {
     });
     document.querySelectorAll('.nav-item.active').forEach(li => li.classList.add('open'));
 
-    // ── Accordion expand / collapse ──
+    // ── Top-level 3-card Single-Open Accordion ──
+    const topPanels = document.querySelectorAll('.notif-top-panel');
+    document.querySelectorAll('.notif-top-header').forEach(header => {
+        header.addEventListener('click', () => {
+            const currentPanel = header.closest('.notif-top-panel');
+            if (!currentPanel) return;
+
+            const isOpen = currentPanel.classList.contains('open');
+
+            // Single-open behavior: collapse all top panels first
+            topPanels.forEach(p => p.classList.remove('open'));
+
+            // If the clicked card was previously closed, expand it
+            if (!isOpen) {
+                currentPanel.classList.add('open');
+                if (typeof feather !== 'undefined') feather.replace();
+            }
+        });
+    });
+
+    // ── Sub-category accordion expand / collapse ──
     document.querySelectorAll('.accordion-header').forEach(header => {
         header.addEventListener('click', () => {
             header.parentElement.classList.toggle('expanded');

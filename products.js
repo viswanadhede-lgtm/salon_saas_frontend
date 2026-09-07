@@ -812,6 +812,15 @@ function attachGlobalEventListeners() {
                 if (error) throw error;
 
                 showToast('Product created');
+                // ── Marketing Notifications: notify customers ──
+                if (window.notifyCustomer) {
+                    const pName = document.getElementById('productName')?.value?.trim() || 'New Product';
+                    window.notifyCustomer('new_product_added', {
+                        title: 'New Product Available!',
+                        message: `We just added a new product: ${pName}`,
+                        productName: pName
+                    });
+                }
                 
                 ['productName','productPrice','productStock','productDescription'].forEach(id => {
                     const el = document.getElementById(id); if (el) el.value = '';

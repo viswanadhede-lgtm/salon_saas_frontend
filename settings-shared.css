@@ -486,3 +486,69 @@ html, body.dashboard-body {
     opacity: 0.45;
     pointer-events: none;
 }
+
+/* ── Top-level Notification Accordion (3 cards) ──────────────────────────── */
+.notif-top-panel {
+    border: 1.5px solid #e2e8f0;
+    border-radius: 14px;
+    overflow: hidden;
+    transition: border-color 0.2s ease, box-shadow 0.2s ease;
+    margin-bottom: 12px;
+}
+.notif-top-panel.open {
+    border-color: #c7d2fe;
+    box-shadow: 0 4px 20px rgba(99,102,241,0.08);
+}
+
+/* Clickable header row */
+.notif-top-header {
+    display: flex !important;
+    align-items: center !important;
+    justify-content: space-between !important;
+    cursor: pointer;
+    padding: 18px 22px !important;
+    user-select: none;
+    transition: background 0.15s ease;
+    border-bottom: none !important;
+}
+.notif-top-header:hover {
+    background: #f8fafc;
+}
+.notif-top-panel.open .notif-top-header {
+    background: #f8faff;
+    border-bottom: 1px solid #e8ecf8 !important;
+}
+
+/* Rotating chevron */
+.top-panel-chevron {
+    width: 18px;
+    height: 18px;
+    color: #94a3b8;
+    flex-shrink: 0;
+    transition: transform 0.25s cubic-bezier(0.4,0,0.2,1), color 0.2s ease;
+}
+.notif-top-panel.open .top-panel-chevron {
+    transform: rotate(180deg);
+    color: #4f46e5;
+}
+
+/* Collapsible body */
+.notif-panel-body {
+    display: none;
+    padding: 0;
+}
+.notif-top-panel.open .notif-panel-body {
+    display: block;
+    animation: notifPanelSlideDown 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+}
+@keyframes notifPanelSlideDown {
+    from {
+        opacity: 0;
+        transform: translateY(-6px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+

@@ -19,15 +19,24 @@
         <main class="content-area">
             <div class="sp-breadcrumb"><a href="company.html" class="sp-back"><i data-feather="arrow-left"></i> Company Settings</a><span class="sp-sep">/</span><span class="sp-current">Notifications</span></div>
             <div class="sp-header">
-                <h1>Notification Events</h1>
-                <p>Control which internal events trigger notifications across your system.</p>
+                <h1>Notifications</h1>
+                <p>Configure how BharathBots handles system alerts and customer communications.</p>
             </div>
             
-            <div class="sp-card" id="notificationAccordionGroup">
-                <div class="sp-card-header">
-                    <h2><i data-feather="bell" style="width:18px;height:18px;color:#3b82f6;"></i> System Notifications</h2>
-                    <p>Choose which system events trigger notifications</p>
+            <div class="sp-card notif-top-panel" id="notificationAccordionGroup" data-panel="system">
+                <div class="sp-card-header notif-top-header" data-panel="system">
+                    <div style="display:flex;align-items:center;gap:14px;">
+                        <div class="ah-icon-wrap" style="background:#eff6ff;color:#3b82f6;width:38px;height:38px;border-radius:10px;display:flex;align-items:center;justify-content:center;flex-shrink:0;">
+                            <i data-feather="bell"></i>
+                        </div>
+                        <div>
+                            <h2 style="font-size:1rem;font-weight:650;color:#0f172a;margin:0 0 3px;">System Notifications</h2>
+                            <p style="font-size:0.83rem;color:#64748b;margin:0;">Internal alerts and activity updates</p>
+                        </div>
+                    </div>
+                    <i data-feather="chevron-down" class="top-panel-chevron"></i>
                 </div>
+                <div class="notif-panel-body">
 
                 <!-- Bookings -->
                 <div class="accordion-item expanded" data-category="bookings">
@@ -230,21 +239,24 @@
                         </div>
                     </div>
                 </div>
-            </div>
+                </div><!-- /notif-panel-body -->
+            </div><!-- /card system -->
 
             <!-- Card 2: Customer Notifications -->
-            <div class="sp-card" id="customerNotificationCard">
-                <div class="sp-card-header">
-                    <div style="display: flex; align-items: center; gap: 14px;">
-                        <div class="ah-icon-wrap" style="background:#ecfdf5; color:#10b981; width:38px; height:38px; border-radius:10px; display:flex; align-items:center; justify-content:center;">
+            <div class="sp-card notif-top-panel" id="customerNotificationCard" data-panel="customer">
+                <div class="sp-card-header notif-top-header" data-panel="customer">
+                    <div style="display:flex;align-items:center;gap:14px;">
+                        <div class="ah-icon-wrap" style="background:#ecfdf5;color:#10b981;width:38px;height:38px;border-radius:10px;display:flex;align-items:center;justify-content:center;flex-shrink:0;">
                             <i data-feather="users"></i>
                         </div>
                         <div>
-                            <h2 style="font-size:1rem; font-weight:650; color:#0f172a; margin:0 0 3px;">Customer Notifications</h2>
-                            <p style="font-size:0.83rem; color:#64748b; margin:0;">Send booking, purchase and membership updates to customers</p>
+                            <h2 style="font-size:1rem;font-weight:650;color:#0f172a;margin:0 0 3px;">Customer Notifications</h2>
+                            <p style="font-size:0.83rem;color:#64748b;margin:0;">Send booking, purchase and membership updates to customers</p>
                         </div>
                     </div>
+                    <i data-feather="chevron-down" class="top-panel-chevron"></i>
                 </div>
+                <div class="notif-panel-body">
 
                 <!-- 1. Booking & Service Notifications -->
                 <div class="accordion-item expanded" data-cust-category="booking">
@@ -467,21 +479,24 @@
                         </div>
                     </div>
                 </div>
-            </div>
-            
+                </div><!-- /notif-panel-body -->
+            </div><!-- /card customer -->
+
             <!-- Card 3: Marketing Notifications -->
-            <div class="sp-card" id="marketingNotificationCard">
-                <div class="sp-card-header">
-                    <div style="display: flex; align-items: center; gap: 14px;">
-                        <div class="ah-icon-wrap" style="background:#fdf2f8; color:#db2777; width:38px; height:38px; border-radius:10px; display:flex; align-items:center; justify-content:center;">
+            <div class="sp-card notif-top-panel" id="marketingNotificationCard" data-panel="marketing">
+                <div class="sp-card-header notif-top-header" data-panel="marketing">
+                    <div style="display:flex;align-items:center;gap:14px;">
+                        <div class="ah-icon-wrap" style="background:#fdf2f8;color:#db2777;width:38px;height:38px;border-radius:10px;display:flex;align-items:center;justify-content:center;flex-shrink:0;">
                             <i data-feather="trending-up"></i>
                         </div>
                         <div>
-                            <h2 style="font-size:1rem; font-weight:650; color:#0f172a; margin:0 0 3px;">Marketing Notifications</h2>
-                            <p style="font-size:0.83rem; color:#64748b; margin:0;">Send offers, discounts and business updates to your customers</p>
+                            <h2 style="font-size:1rem;font-weight:650;color:#0f172a;margin:0 0 3px;">Marketing Notifications</h2>
+                            <p style="font-size:0.83rem;color:#64748b;margin:0;">Send offers, discounts and business updates to your customers</p>
                         </div>
                     </div>
+                    <i data-feather="chevron-down" class="top-panel-chevron"></i>
                 </div>
+                <div class="notif-panel-body">
 
                 <!-- Section 1: Offers & Discounts -->
                 <div class="accordion-item expanded" data-mkt-category="offers">
@@ -588,7 +603,8 @@
                         </div>
                     </div>
                 </div>
-            </div>
+                </div><!-- /notif-panel-body -->
+            </div><!-- /card marketing -->
 
             <!-- Floating Save Bar -->
             <div class="sp-savebar" id="savebar">

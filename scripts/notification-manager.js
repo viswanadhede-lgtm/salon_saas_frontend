@@ -810,6 +810,82 @@
         return { dispatched: true, channels, payload };
     }
 
+    /**
+     * Resolves the active delivery channels for a specific marketing notification event.
+     */
+    function getMarketingNotificationChannels(section, eventKey) {
+        const prefs = getPrefs();
+        const mktPrefs = prefs?.marketing_notifications;
+
+        const defaults = {
+            offers: {
+                master: true,
+                events: {
+                    new_offer:    { whatsapp: true,  sms: true,  email: true },
+                    new_discount: { whatsapp: true,  sms: true,  email: false }
+                }
+            },
+            business: {
+                master: true,
+                events: {
+                    new_service_added: { whatsapp: true,  sms: false, email: true },
+                    new_product_added: { whatsapp: true,  sms: true,  email: false }
+                }
+            }
+        };
+
+        const secConfig = mktPrefs ? mktPrefs[section] : defaults[section];
+        if (!secConfig || secConfig.master === false) return [];
+
+        const evConfig = secConfig.events ? secConfig.events[eventKey] : defaults[section]?.events?.[eventKey];
+        if (!evConfig) return [];
+
+        return Object.keys(evConfig).filter(ch => !!evConfig[ch]);
+    }
+
+    /**
+     * Internal marketing notification dispatcher.
+     * Evaluates channel preferences, dispatches event, and logs to marketing delivery queue.
+     */
+    function notifyMarketing(section, eventKey, data = {}) {
+        const channels = getMarketingNotificationChannels(section, eventKey);
+        if (!channels || channels.length === 0) {
+            return { dispatched: false, reason: 'no_channels_enabled' };
+        }
+
+        const payload = {
+            section,
+            eventKey,
+            channels,
+            data: data || {},
+            timestamp: new Date().toISOString()
+        };
+
+        try {
+            const companyId = getCompanyId() || 'default';
+            const logKey = `marketing_dispatch_queue_${companyId}`;
+            const queue = JSON.parse(localStorage.getItem(logKey) || '[]');
+            queue.unshift(payload);
+            if (queue.length > 50) queue.length = 50;
+            localStorage.setItem(logKey, JSON.stringify(queue));
+        } catch (e) {
+            console.warn('Could not store marketing notification in queue:', e);
+        }
+
+        window.dispatchEvent(new CustomEvent('marketing_notification_dispatched', { detail: payload }));
+
+        if (typeof window.onMarketingNotificationDelivery === 'function') {
+            try {
+                window.onMarketingNotificationDelivery(payload);
+            } catch (err) {
+                console.error('Error in onMarketingNotificationDelivery handler:', err);
+            }
+        }
+
+        console.log(`[Marketing Notification Dispatch] [${channels.join(', ').toUpperCase()}]`, payload);
+        return { dispatched: true, channels, payload };
+    }
+
     // ── Auto-initialize on load ──
     if (document.readyState === 'loading') {
         document.addEventListener('DOMContentLoaded', initBellDropdown);
@@ -826,5 +902,7 @@
     window.notifyEvent = notifyEvent;
     window.notifyCustomer = notifyCustomer;
     window.getCustomerNotificationChannels = getCustomerNotificationChannels;
+    window.getMarketingNotificationChannels = getMarketingNotificationChannels;
+    window.notifyMarketing = notifyMarketing;
     window.initNotificationBell = initBellDropdown;
 })();
