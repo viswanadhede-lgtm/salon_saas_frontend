@@ -34,6 +34,10 @@ document.addEventListener('DOMContentLoaded', () => {
 
             // If the clicked card was previously closed, expand it
             if (!isOpen) {
+                // Ensure all sub-level accordion items inside start collapsed
+                currentPanel.querySelectorAll('.accordion-item').forEach(item => {
+                    item.classList.remove('expanded');
+                });
                 currentPanel.classList.add('open');
                 if (typeof feather !== 'undefined') feather.replace();
             }
