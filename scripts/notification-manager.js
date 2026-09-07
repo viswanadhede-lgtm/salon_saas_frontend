@@ -705,6 +705,111 @@
         }
     }
 
+    /**
+     * Get active channels for a customer event.
+     * @param {string} section  'booking' | 'purchase' | 'membership'
+     * @param {string} eventKey e.g. 'booking_confirm'
+     * @returns {string[]}      e.g. ['whatsapp', 'sms']
+     */
+    function getCustomerNotificationChannels(section, eventKey) {
+        const prefs = getPrefs();
+        const custPrefs = prefs?.customer_notifications;
+
+        // Fallback default matrix
+        const defaults = {
+            booking: {
+                master: true,
+                events: {
+                    booking_confirm:   { whatsapp: true, sms: true, email: true },
+                    booking_modify:    { whatsapp: true, sms: true, email: false },
+                    booking_cancel:    { whatsapp: true, sms: true, email: true },
+                    booking_reminder:  { whatsapp: true, sms: true, email: false },
+                    booking_complete:  { whatsapp: true, sms: false, email: false },
+                    booking_noshow:    { whatsapp: false, sms: true, email: false }
+                }
+            },
+            purchase: {
+                master: true,
+                events: {
+                    purchase_confirm:  { whatsapp: true, sms: true, email: false },
+                    payment_confirm:   { whatsapp: true, sms: true, email: true },
+                    invoice_receipt:   { whatsapp: true, sms: false, email: true },
+                    refund_confirm:    { whatsapp: true, sms: true, email: true }
+                }
+            },
+            membership: {
+                master: true,
+                events: {
+                    member_purchase:   { whatsapp: true, sms: true, email: true },
+                    member_activate:   { whatsapp: true, sms: false, email: false },
+                    member_expiring:   { whatsapp: true, sms: true, email: true },
+                    member_expired:    { whatsapp: true, sms: true, email: true },
+                    member_renewed:    { whatsapp: true, sms: true, email: true }
+                }
+            }
+        };
+
+        const secConfig = custPrefs ? custPrefs[section] : defaults[section];
+        if (!secConfig || secConfig.master === false) return [];
+
+        const evConfig = secConfig.events ? secConfig.events[eventKey] : defaults[section]?.events?.[eventKey];
+        if (!evConfig) return [];
+
+        return Object.keys(evConfig).filter(ch => !!evConfig[ch]);
+    }
+
+    /**
+     * Internal customer notification dispatcher.
+     * Evaluates channel preferences, dispatches event, and logs to customer delivery queue.
+     */
+    function notifyCustomer(section, eventKey, customer = {}, data = {}) {
+        const channels = getCustomerNotificationChannels(section, eventKey);
+        if (!channels || channels.length === 0) {
+            return { dispatched: false, reason: 'no_channels_enabled' };
+        }
+
+        const payload = {
+            section,
+            eventKey,
+            customer: {
+                id: customer.id || customer.customer_id || null,
+                name: customer.name || customer.customer_name || 'Customer',
+                phone: customer.phone || customer.customer_phone || '',
+                email: customer.email || customer.customer_email || ''
+            },
+            channels,
+            data: data || {},
+            timestamp: new Date().toISOString()
+        };
+
+        // 1. Store in local customer delivery queue (for logging & resilient retry)
+        try {
+            const companyId = getCompanyId() || 'default';
+            const logKey = `customer_dispatch_queue_${companyId}`;
+            const queue = JSON.parse(localStorage.getItem(logKey) || '[]');
+            queue.unshift(payload);
+            if (queue.length > 50) queue.length = 50;
+            localStorage.setItem(logKey, JSON.stringify(queue));
+        } catch (e) {
+            console.warn('Could not store customer notification in queue:', e);
+        }
+
+        // 2. Broadcast browser event for real-time listeners / extensions
+        window.dispatchEvent(new CustomEvent('customer_notification_dispatched', { detail: payload }));
+
+        // 3. Trigger delivery provider adapter callback if registered
+        if (typeof window.onCustomerNotificationDelivery === 'function') {
+            try {
+                window.onCustomerNotificationDelivery(payload);
+            } catch (err) {
+                console.error('Error in onCustomerNotificationDelivery handler:', err);
+            }
+        }
+
+        console.log(`[Customer Notification Dispatch] [${channels.join(', ').toUpperCase()}]`, payload);
+        return { dispatched: true, channels, payload };
+    }
+
     // ── Auto-initialize on load ──
     if (document.readyState === 'loading') {
         document.addEventListener('DOMContentLoaded', initBellDropdown);
@@ -719,5 +824,7 @@
     // Expose globally
     window.shouldShowNotification = shouldShowNotification;
     window.notifyEvent = notifyEvent;
+    window.notifyCustomer = notifyCustomer;
+    window.getCustomerNotificationChannels = getCustomerNotificationChannels;
     window.initNotificationBell = initBellDropdown;
 })();

@@ -1111,6 +1111,18 @@ function attachEventListeners() {
 
             window.toast && window.toast('Booking updated successfully!');
             if (window.notifyEvent) window.notifyEvent('bookings', 'evt_booking_modified', { title: 'Booking Modified', message: `Booking #${bookingId} was updated.` });
+            if (window.notifyCustomer) {
+                const b = liveBookingsData.find(x => (x.booking_id || x.id) == bookingId);
+                window.notifyCustomer('booking', 'booking_modify', {
+                    name: b?.customer_name,
+                    phone: b?.customer_phone || b?.phone,
+                    email: b?.customer_email || b?.email
+                }, {
+                    bookingId,
+                    date: document.getElementById('editBookingDate')?.value,
+                    time: document.getElementById('editBookingTime')?.value
+                });
+            }
             editModal.classList.remove('active');
             await fetchBookings();
 
@@ -1221,6 +1233,29 @@ function attachEventListeners() {
                 const statusEventMap = { 'confirmed': 'evt_booking_confirmed', 'cancelled': 'evt_booking_cancelled', 'completed': 'evt_booking_completed', 'no-show': 'evt_booking_noshow' };
                 const evtKey = statusEventMap[newStatus.toLowerCase()];
                 if (evtKey) window.notifyEvent('bookings', evtKey, { title: `Booking ${newStatus}`, message: `Booking status changed to ${newStatus}.` });
+            }
+            if (window.notifyCustomer) {
+                const customerEvtMap = {
+                    'confirmed': 'booking_confirm',
+                    'cancelled': 'booking_cancel',
+                    'completed': 'booking_complete',
+                    'no-show': 'booking_noshow'
+                };
+                const custEvtKey = customerEvtMap[newStatus.toLowerCase()];
+                if (custEvtKey) {
+                    const b = liveBookingsData.find(x => (x.booking_id || x.id) == statusUpdateBookingId);
+                    window.notifyCustomer('booking', custEvtKey, {
+                        name: b?.customer_name,
+                        phone: b?.customer_phone || b?.phone,
+                        email: b?.customer_email || b?.email
+                    }, {
+                        bookingId: statusUpdateBookingId,
+                        status: newStatus,
+                        service: b?.service_name,
+                        date: b?.booking_date,
+                        time: b?.booking_time
+                    });
+                }
             }
             await fetchBookings();
         } catch (err) {

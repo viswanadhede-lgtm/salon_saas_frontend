@@ -1113,6 +1113,17 @@ document.addEventListener('DOMContentLoaded', () => {
                     message: `Refund processed for ${checkedBoxes.length} item(s).`
                 });
             }
+            if (window.notifyCustomer && currentActionData?.sale) {
+                const s = currentActionData.sale;
+                window.notifyCustomer('purchase', 'refund_confirm', {
+                    name: s.customer,
+                    phone: s.customer_phone || s.phone || '',
+                    email: s.customer_email || s.email || ''
+                }, {
+                    saleId: s.id,
+                    itemsReturned: checkedBoxes.length
+                });
+            }
             document.getElementById('refundSummaryOverlay').classList.remove('active');
             
             // Re-fetch to sync table badges and metrics

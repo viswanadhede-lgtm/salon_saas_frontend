@@ -709,6 +709,19 @@ export function initGlobalBookingModal() {
                         message: `Pending payment of ₹${totalPrice} for ${payloads[0]?.customer_name || 'Customer'}.`
                     });
                 }
+                if (window.notifyCustomer) {
+                    window.notifyCustomer('booking', 'booking_confirm', {
+                        name: payloads[0]?.customer_name,
+                        phone: targetCust?.phone || document.getElementById('phoneSearch')?.value || '',
+                        email: targetCust?.email || ''
+                    }, {
+                        bookingId: payloads[0]?.booking_id,
+                        date: payloads[0]?.booking_date,
+                        time: payloads[0]?.booking_time,
+                        services: payloads.map(p => p.service_name).filter(Boolean),
+                        totalPrice
+                    });
+                }
                 overrideOverlay?.classList.remove('active');
                 closeModal();
                 if (window.fetchBookings) await window.fetchBookings();

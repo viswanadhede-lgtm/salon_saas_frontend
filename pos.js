@@ -596,6 +596,27 @@ function setupEventListeners() {
                     message: `Sale of ₹${amountCollected} completed for ${customerName || 'Walk-in'}.`
                 });
             }
+            if (window.notifyCustomer && customerName) {
+                const custInfo = {
+                    id: selectedCustomer?.customer_id || selectedCustomer?.id,
+                    name: customerName,
+                    phone: customerPhone,
+                    email: selectedCustomer?.email || ''
+                };
+                window.notifyCustomer('purchase', 'purchase_confirm', custInfo, {
+                    amount: amountCollected,
+                    itemsCount: cart.length,
+                    paymentMethod: paymentMethod
+                });
+                window.notifyCustomer('purchase', 'payment_confirm', custInfo, {
+                    amount: amountCollected,
+                    paymentMethod: paymentMethod
+                });
+                window.notifyCustomer('purchase', 'invoice_receipt', custInfo, {
+                    amount: amountCollected,
+                    paymentMethod: paymentMethod
+                });
+            }
 
             // Reset state
             cart = [];
