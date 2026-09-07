@@ -27,7 +27,7 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     });
 
-    // ── Master toggles ──
+    // ── System Notifications: Master toggles ──
     document.querySelectorAll('.master-toggle input[type="checkbox"]').forEach(toggle => {
         toggle.addEventListener('change', (e) => {
             const isChecked = e.target.checked;
@@ -41,10 +41,60 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     });
 
-    // ── Sub-event checkboxes ──
+    // ── System Notifications: Sub-event checkboxes ──
     document.querySelectorAll('.sub-event-list input[type="checkbox"]').forEach(cb => {
         cb.addEventListener('change', () => showSaveBar());
     });
+
+    // ── Customer Notifications: Master toggles ──
+    document.querySelectorAll('.cust-master-toggle input[type="checkbox"]').forEach(toggle => {
+        toggle.addEventListener('change', (e) => {
+            const isChecked = e.target.checked;
+            const table = e.target.closest('.accordion-item').querySelector('.cn-table');
+            if (table) {
+                table.classList.toggle('disabled-matrix', !isChecked);
+                table.querySelectorAll('input[type="checkbox"]').forEach(cb => {
+                    cb.disabled = !isChecked;
+                });
+            }
+            showSaveBar();
+        });
+    });
+
+    // ── Customer Notifications: 5-Column Matrix & Row "Select All" ──
+    function syncRowSelectAll(row) {
+        const channelCheckboxes = row.querySelectorAll('.whatsapp-chk, .sms-chk, .email-chk');
+        const selectAllChk = row.querySelector('.select-all-chk');
+        if (!selectAllChk || channelCheckboxes.length === 0) return;
+        const allChecked = Array.from(channelCheckboxes).every(cb => cb.checked);
+        selectAllChk.checked = allChecked;
+    }
+
+    function initCustomerMatrixEvents() {
+        document.querySelectorAll('.cn-table tbody tr').forEach(row => {
+            syncRowSelectAll(row);
+
+            // Row-level Select All checkbox
+            const selectAllChk = row.querySelector('.select-all-chk');
+            selectAllChk?.addEventListener('change', (e) => {
+                const isChecked = e.target.checked;
+                row.querySelectorAll('.whatsapp-chk, .sms-chk, .email-chk').forEach(cb => {
+                    cb.checked = isChecked;
+                });
+                showSaveBar();
+            });
+
+            // Individual delivery channel checkboxes
+            row.querySelectorAll('.whatsapp-chk, .sms-chk, .email-chk').forEach(cb => {
+                cb.addEventListener('change', () => {
+                    syncRowSelectAll(row);
+                    showSaveBar();
+                });
+            });
+        });
+    }
+
+    initCustomerMatrixEvents();
 
     function showSaveBar() { if (savebar) savebar.classList.add('visible'); }
     function hideSaveBar() { if (savebar) savebar.classList.remove('visible'); }
@@ -110,6 +160,38 @@ document.addEventListener('DOMContentLoaded', () => {
             evt_marketing_membership: false,
             evt_marketing_membership_purchased: true,
             evt_marketing_membership_expired_renewed: true
+        },
+        customer_notifications: {
+            booking: {
+                master: true,
+                events: {
+                    booking_confirm: { whatsapp: true, sms: true, email: true },
+                    booking_modify: { whatsapp: true, sms: true, email: false },
+                    booking_cancel: { whatsapp: true, sms: true, email: true },
+                    booking_reminder: { whatsapp: true, sms: true, email: false },
+                    booking_complete: { whatsapp: true, sms: false, email: false },
+                    booking_noshow: { whatsapp: false, sms: true, email: false }
+                }
+            },
+            purchase: {
+                master: true,
+                events: {
+                    purchase_confirm: { whatsapp: true, sms: true, email: false },
+                    payment_confirm: { whatsapp: true, sms: true, email: true },
+                    invoice_receipt: { whatsapp: true, sms: false, email: true },
+                    refund_confirm: { whatsapp: true, sms: true, email: true }
+                }
+            },
+            membership: {
+                master: true,
+                events: {
+                    member_purchase: { whatsapp: true, sms: true, email: true },
+                    member_activate: { whatsapp: true, sms: false, email: false },
+                    member_expiring: { whatsapp: true, sms: true, email: true },
+                    member_expired: { whatsapp: true, sms: true, email: true },
+                    member_renewed: { whatsapp: true, sms: true, email: true }
+                }
+            }
         }
     };
 
@@ -134,14 +216,15 @@ document.addEventListener('DOMContentLoaded', () => {
             // Also cache locally for the notification-manager to read
             localStorage.setItem(`notification_prefs_${companyId}`, JSON.stringify(prefs));
 
-            // Apply to UI
-            Object.keys(prefs).forEach(category => {
-                const catData = prefs[category];
+            // Apply System Notifications to UI
+            const systemCategories = ['bookings', 'customers', 'staff', 'services', 'pos', 'payments', 'marketing'];
+            systemCategories.forEach(category => {
+                const catData = prefs[category] || defaultPrefs[category];
+                if (!catData) return;
 
                 const masterEl = document.getElementById(`master_${category}`);
                 if (masterEl) {
                     masterEl.checked = !!catData.master;
-                    // Apply disabled state for sub-events
                     const body = masterEl.closest('.accordion-item').querySelector('.accordion-body');
                     body.querySelectorAll('input[type="checkbox"]').forEach(cb => {
                         cb.disabled = !catData.master;
@@ -154,6 +237,41 @@ document.addEventListener('DOMContentLoaded', () => {
                     const cb = document.getElementById(key);
                     if (cb) cb.checked = !!catData[key];
                 });
+            });
+
+            // Apply Customer Notifications to UI
+            const custPrefs = prefs.customer_notifications || defaultPrefs.customer_notifications;
+            ['booking', 'purchase', 'membership'].forEach(sec => {
+                const secData = custPrefs[sec] || defaultPrefs.customer_notifications[sec];
+                if (!secData) return;
+
+                const masterEl = document.getElementById(`cust_master_${sec}`);
+                const table = document.querySelector(`.cn-table[data-section="${sec}"]`);
+                if (masterEl) {
+                    masterEl.checked = !!secData.master;
+                    if (table) {
+                        table.classList.toggle('disabled-matrix', !secData.master);
+                        table.querySelectorAll('input[type="checkbox"]').forEach(cb => {
+                            cb.disabled = !secData.master;
+                        });
+                    }
+                }
+
+                if (table && secData.events) {
+                    table.querySelectorAll('tbody tr[data-event-key]').forEach(row => {
+                        const evKey = row.getAttribute('data-event-key');
+                        const evData = secData.events[evKey];
+                        if (evData) {
+                            const wa = row.querySelector('.whatsapp-chk');
+                            const sms = row.querySelector('.sms-chk');
+                            const em = row.querySelector('.email-chk');
+                            if (wa && typeof evData.whatsapp !== 'undefined') wa.checked = !!evData.whatsapp;
+                            if (sms && typeof evData.sms !== 'undefined') sms.checked = !!evData.sms;
+                            if (em && typeof evData.email !== 'undefined') em.checked = !!evData.email;
+                        }
+                        syncRowSelectAll(row);
+                    });
+                }
             });
 
             if (typeof feather !== 'undefined') feather.replace();
@@ -172,8 +290,9 @@ document.addEventListener('DOMContentLoaded', () => {
             btnSave.innerHTML = '<div style="width:14px;height:14px;border:2px solid rgba(255,255,255,0.3);border-top-color:#fff;border-radius:50%;animation:spin 1s linear infinite;display:inline-block;"></div> Saving...';
 
             const newPrefs = {};
-            const categories = ['bookings', 'customers', 'staff', 'services', 'pos', 'payments', 'marketing'];
 
+            // 1. Collect System Notifications
+            const categories = ['bookings', 'customers', 'staff', 'services', 'pos', 'payments', 'marketing'];
             categories.forEach(cat => {
                 newPrefs[cat] = {};
                 const masterEl = document.getElementById(`master_${cat}`);
@@ -186,6 +305,28 @@ document.addEventListener('DOMContentLoaded', () => {
                     });
                 }
             });
+
+            // 2. Collect Customer Notifications
+            const custPrefs = {};
+            ['booking', 'purchase', 'membership'].forEach(sec => {
+                const masterToggle = document.getElementById(`cust_master_${sec}`);
+                custPrefs[sec] = {
+                    master: masterToggle ? masterToggle.checked : true,
+                    events: {}
+                };
+                const table = document.querySelector(`.cn-table[data-section="${sec}"]`);
+                if (table) {
+                    table.querySelectorAll('tbody tr[data-event-key]').forEach(row => {
+                        const evKey = row.getAttribute('data-event-key');
+                        custPrefs[sec].events[evKey] = {
+                            whatsapp: !!row.querySelector('.whatsapp-chk')?.checked,
+                            sms: !!row.querySelector('.sms-chk')?.checked,
+                            email: !!row.querySelector('.email-chk')?.checked
+                        };
+                    });
+                }
+            });
+            newPrefs.customer_notifications = custPrefs;
 
             try {
                 const { error } = await supabase
