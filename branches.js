@@ -78,7 +78,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
             tr.innerHTML = `
                 <td style="padding:14px 16px; font-weight:600; color:#1e293b;">${branch.branch_name || 'N/A'}</td>
-                <td style="padding:14px 16px; color:#475569;">${branch.branch_address || 'N/A'}</td>
+                <td style="padding:14px 16px; text-align:center; color:#475569;">${branch.branch_address || 'N/A'}</td>
                 <td style="padding:14px 16px; color:#475569;">Assigned Manager</td>
                 <td style="padding:14px 16px; color:#475569;">${branch.branch_phone || 'N/A'}</td>
                 <td style="padding:14px 16px;">
