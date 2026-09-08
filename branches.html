@@ -307,7 +307,7 @@
 
     <!-- Full Width Add / Edit Branch Modal -->
     <div class="modal-overlay" id="branchPanelOverlay">
-        <div class="modal-container" id="branchPanel" style="width: 85%; max-width: 1200px;">
+        <div class="modal-container" id="branchPanel" style="width: 680px; max-width: 95vw;">
             <div class="modal-header">
                 <div>
                     <h2 id="panelTitle">Add Branch</h2>
@@ -316,105 +316,91 @@
                 <button class="modal-close" id="btnClosePanel"><i data-feather="x"></i></button>
             </div>
             
-            <div class="modal-body" style="padding: 1.5rem 2rem; overflow-y: auto;">
-                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 2rem;">
-                    <!-- Left Column -->
-                    <div>
-                        <!-- Section 1: Information -->
-                        <div class="form-section">
-                            <h3 style="font-size: 0.95rem; font-weight: 700; color: #1e293b; margin-bottom: 12px; border-bottom: 1px solid #e2e8f0; padding-bottom: 8px;">1. Branch Information</h3>
-                            <div class="form-group">
-                                <label class="form-label">Branch Name <span class="text-rose">*</span></label>
-                                <input type="text" id="branchName" class="form-input" placeholder="e.g., Downtown Branch">
-                            </div>
-                            <div class="form-grid" style="grid-template-columns: 1fr 1fr; gap: 1rem;">
-                                <div class="form-group">
-                                    <label class="form-label">Branch Code <span class="text-muted">(Optional)</span></label>
-                                    <input type="text" id="branchCode" class="form-input" placeholder="e.g., BLR-01">
-                                </div>
-                                <div class="form-group">
-                                    <label class="form-label">Manager</label>
-                                    <select id="branchManager" class="form-select">
-                                        <option value="" disabled selected>Select manager</option>
-                                        <option value="rahul">Rahul Sharma</option>
-                                        <option value="priya">Priya Singh</option>
-                                        <option value="anil">Anil Kumar</option>
-                                    </select>
-                                </div>
-                            </div>
-                            <div class="form-grid" style="grid-template-columns: 1fr 1fr; gap: 1rem; margin-top: 1rem;">
-                                <div class="form-group">
-                                    <label class="form-label">Phone Number <span class="text-rose">*</span></label>
-                                    <input type="tel" id="branchPhone" class="form-input" placeholder="+91 0000 000000">
-                                </div>
-                                <div class="form-group">
-                                    <label class="form-label">Email <span class="text-muted">(Optional)</span></label>
-                                    <input type="email" id="branchEmail" class="form-input" placeholder="branch@example.com">
-                                </div>
-                            </div>
+            <div class="modal-body" style="padding: 1.5rem 2rem; max-height: 75vh; overflow-y: auto; display: flex; flex-direction: column; gap: 1.5rem;">
+                <!-- Section 1: Information -->
+                <div class="form-section" style="border-bottom: none; padding-bottom: 0;">
+                    <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 14px; padding-bottom: 8px; border-bottom: 1px solid #e2e8f0;">
+                        <span style="display: flex; align-items: center; justify-content: center; width: 22px; height: 22px; border-radius: 50%; background: #eff6ff; color: #3b82f6; font-size: 0.75rem; font-weight: 700;">1</span>
+                        <h3 style="font-size: 0.95rem; font-weight: 700; color: #1e293b; margin: 0;">Branch Information</h3>
+                    </div>
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
+                        <div class="form-group" style="grid-column: span 2; margin-bottom: 0;">
+                            <label class="form-label" style="font-weight: 600; font-size: 0.8rem; color: #334155; margin-bottom: 6px;">Branch Name <span class="text-rose" style="color: #ef4444;">*</span></label>
+                            <input type="text" id="branchName" class="form-input" placeholder="e.g., Downtown Branch" style="width: 100%; box-sizing: border-box;">
                         </div>
-
-                        <!-- Section 2: Address -->
-                        <div class="form-section">
-                            <h3 style="font-size: 0.95rem; font-weight: 700; color: #1e293b; margin-bottom: 12px; border-bottom: 1px solid #e2e8f0; padding-bottom: 8px;">2. Branch Address</h3>
-                            <div class="form-group">
-                                <label class="form-label">Address Line <span class="text-rose">*</span></label>
-                                <input type="text" id="branchAddress" class="form-input" placeholder="e.g., 123 MG Road, 1st Floor">
-                            </div>
-                            <div class="form-grid" style="grid-template-columns: 1fr 1fr; gap: 1rem; margin-top: 1rem;">
-                                <div class="form-group">
-                                    <label class="form-label">City <span class="text-rose">*</span></label>
-                                    <input type="text" id="branchCity" class="form-input" placeholder="e.g., Bangalore">
-                                </div>
-                                <div class="form-group">
-                                    <label class="form-label">State</label>
-                                    <input type="text" id="branchState" class="form-input" placeholder="e.g., Karnataka">
-                                </div>
-                            </div>
-                            <div class="form-grid" style="grid-template-columns: 1fr 1fr; gap: 1rem; margin-top: 1rem;">
-                                <div class="form-group">
-                                    <label class="form-label">Postal Code</label>
-                                    <input type="text" id="branchZip" class="form-input" placeholder="e.g., 560001">
-                                </div>
-                                <div class="form-group">
-                                    <label class="form-label">Country</label>
-                                    <select id="branchCountry" class="form-select">
-                                        <option value="India" selected>India</option>
-                                        <option value="USA">United States</option>
-                                        <option value="UK">United Kingdom</option>
-                                    </select>
-                                </div>
-                            </div>
+                        <div class="form-group" style="margin-bottom: 0;">
+                            <label class="form-label" style="font-weight: 600; font-size: 0.8rem; color: #334155; margin-bottom: 6px;">Branch Code <span class="text-muted" style="color: #94a3b8; font-weight: 400;">(Optional)</span></label>
+                            <input type="text" id="branchCode" class="form-input" placeholder="e.g., BLR-01" style="width: 100%; box-sizing: border-box;">
+                        </div>
+                        <div class="form-group" style="margin-bottom: 0;">
+                            <label class="form-label" style="font-weight: 600; font-size: 0.8rem; color: #334155; margin-bottom: 6px;">Manager</label>
+                            <select id="branchManager" class="form-select" style="width: 100%; box-sizing: border-box;">
+                                <option value="" disabled selected>Select manager</option>
+                                <option value="rahul">Rahul Sharma</option>
+                                <option value="priya">Priya Singh</option>
+                                <option value="anil">Anil Kumar</option>
+                            </select>
+                        </div>
+                        <div class="form-group" style="margin-bottom: 0;">
+                            <label class="form-label" style="font-weight: 600; font-size: 0.8rem; color: #334155; margin-bottom: 6px;">Phone Number <span class="text-rose" style="color: #ef4444;">*</span></label>
+                            <input type="tel" id="branchPhone" class="form-input" placeholder="+91 0000 000000" style="width: 100%; box-sizing: border-box;">
+                        </div>
+                        <div class="form-group" style="margin-bottom: 0;">
+                            <label class="form-label" style="font-weight: 600; font-size: 0.8rem; color: #334155; margin-bottom: 6px;">Email <span class="text-muted" style="color: #94a3b8; font-weight: 400;">(Optional)</span></label>
+                            <input type="email" id="branchEmail" class="form-input" placeholder="branch@example.com" style="width: 100%; box-sizing: border-box;">
                         </div>
                     </div>
+                </div>
 
-                    <!-- Right Column -->
-                    <div>
-                        <!-- Section 3: Operating Hours -->
-                        <div class="form-section">
-                            <h3 style="font-size: 0.95rem; font-weight: 700; color: #1e293b; margin-bottom: 12px; border-bottom: 1px solid #e2e8f0; padding-bottom: 8px;">3. Operating Hours</h3>
-                            <p style="font-size: 0.85rem; color: #64748b; margin-bottom: 1rem;">Define when the branch is open for bookings.</p>
-                            
-                            <div class="hours-container" id="hoursContainer">
-                                <!-- Populated by JS for Monday-Sunday -->
-                            </div>
+                <!-- Section 2: Address -->
+                <div class="form-section" style="border-bottom: none; padding-bottom: 0;">
+                    <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 14px; padding-bottom: 8px; border-bottom: 1px solid #e2e8f0;">
+                        <span style="display: flex; align-items: center; justify-content: center; width: 22px; height: 22px; border-radius: 50%; background: #eff6ff; color: #3b82f6; font-size: 0.75rem; font-weight: 700;">2</span>
+                        <h3 style="font-size: 0.95rem; font-weight: 700; color: #1e293b; margin: 0;">Branch Address</h3>
+                    </div>
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
+                        <div class="form-group" style="grid-column: span 2; margin-bottom: 0;">
+                            <label class="form-label" style="font-weight: 600; font-size: 0.8rem; color: #334155; margin-bottom: 6px;">Address Line <span class="text-rose" style="color: #ef4444;">*</span></label>
+                            <input type="text" id="branchAddress" class="form-input" placeholder="e.g., 123 MG Road, 1st Floor" style="width: 100%; box-sizing: border-box;">
                         </div>
+                        <div class="form-group" style="margin-bottom: 0;">
+                            <label class="form-label" style="font-weight: 600; font-size: 0.8rem; color: #334155; margin-bottom: 6px;">City <span class="text-rose" style="color: #ef4444;">*</span></label>
+                            <input type="text" id="branchCity" class="form-input" placeholder="e.g., Bangalore" style="width: 100%; box-sizing: border-box;">
+                        </div>
+                        <div class="form-group" style="margin-bottom: 0;">
+                            <label class="form-label" style="font-weight: 600; font-size: 0.8rem; color: #334155; margin-bottom: 6px;">State</label>
+                            <input type="text" id="branchState" class="form-input" placeholder="e.g., Karnataka" style="width: 100%; box-sizing: border-box;">
+                        </div>
+                        <div class="form-group" style="margin-bottom: 0;">
+                            <label class="form-label" style="font-weight: 600; font-size: 0.8rem; color: #334155; margin-bottom: 6px;">Postal Code</label>
+                            <input type="text" id="branchZip" class="form-input" placeholder="e.g., 560001" style="width: 100%; box-sizing: border-box;">
+                        </div>
+                        <div class="form-group" style="margin-bottom: 0;">
+                            <label class="form-label" style="font-weight: 600; font-size: 0.8rem; color: #334155; margin-bottom: 6px;">Country</label>
+                            <select id="branchCountry" class="form-select" style="width: 100%; box-sizing: border-box;">
+                                <option value="India" selected>India</option>
+                                <option value="USA">United States</option>
+                                <option value="UK">United Kingdom</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
 
-                        <!-- Section 4: Status -->
-                        <div class="form-section" style="border-bottom: none; margin-bottom: 0;">
-                            <h3 style="font-size: 0.95rem; font-weight: 700; color: #1e293b; margin-bottom: 12px; border-bottom: 1px solid #e2e8f0; padding-bottom: 8px;">4. Branch Status</h3>
-                            
-                            <div class="status-toggle-wrapper">
-                                <div>
-                                    <h4 style="margin: 0; font-size: 0.95rem; color: #1e293b;">Active Branch</h4>
-                                    <p style="margin: 4px 0 0 0; font-size: 0.8rem; color: #64748b;">Inactive branches cannot accept bookings and are hidden from lists.</p>
-                                </div>
-                                <label class="switch">
-                                    <input type="checkbox" id="branchStatusToggle" checked>
-                                    <span class="slider round"></span>
-                                </label>
-                            </div>
+                <!-- Section 3: Status -->
+                <div class="form-section" style="border-bottom: none; padding-bottom: 0;">
+                    <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 14px; padding-bottom: 8px; border-bottom: 1px solid #e2e8f0;">
+                        <span style="display: flex; align-items: center; justify-content: center; width: 22px; height: 22px; border-radius: 50%; background: #eff6ff; color: #3b82f6; font-size: 0.75rem; font-weight: 700;">3</span>
+                        <h3 style="font-size: 0.95rem; font-weight: 700; color: #1e293b; margin: 0;">Branch Status</h3>
+                    </div>
+                    <div class="status-toggle-wrapper" style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 10px; padding: 14px 18px; display: flex; justify-content: space-between; align-items: center;">
+                        <div>
+                            <h4 style="margin: 0; font-size: 0.92rem; font-weight: 600; color: #1e293b;">Active Branch</h4>
+                            <p style="margin: 4px 0 0 0; font-size: 0.8rem; color: #64748b;">Inactive branches cannot accept bookings and are hidden from lists.</p>
                         </div>
+                        <label class="switch" style="margin-left: 1rem; flex-shrink: 0;">
+                            <input type="checkbox" id="branchStatusToggle" checked>
+                            <span class="slider round"></span>
+                        </label>
                     </div>
                 </div>
             </div>
