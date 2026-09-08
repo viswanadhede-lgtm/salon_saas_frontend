@@ -1,4 +1,4 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="en">
 <head>
     <script src="scripts/auth-loader.js"></script>
@@ -116,13 +116,13 @@
                 <span class="sp-sep">/</span>
                 <a href="settings-invoice.html" class="sp-back">Invoice</a>
                 <span class="sp-sep">/</span>
-                <span class="sp-current">POS Invoice</span>
+                <span class="sp-current">POS Invoice Settings</span>
             </div>
 
             <!-- Page Header -->
             <div class="sp-header">
-                <h1>POS Invoice</h1>
-                <p>Configure information specific to retail products and point-of-sale invoices</p>
+                <h1>POS Invoice Settings</h1>
+                <p>Configure information specific to POS sales and retail products</p>
             </div>
 
             <!-- 2-Column Designer Layout -->
@@ -137,8 +137,8 @@
                                 <i data-feather="check-circle" style="width:18px;height:18px;"></i>
                             </div>
                             <div style="font-size:0.84rem;color:#166534;line-height:1.4;">
-                                <strong>Common Invoice Inherited</strong><br>
-                                Store logo, tax GSTIN, payment totals, and thank-you notes cascade from Common Invoice.
+                                <strong>Common Invoice Settings Applied</strong><br>
+                                Branding, tax details, payment totals, and footer settings are automatically inherited from Common Invoice.
                             </div>
                         </div>
                         <a href="settings-invoice-common.html" class="btn btn-secondary" style="font-size:0.8rem;padding:6px 14px;white-space:nowrap;">
@@ -149,28 +149,28 @@
                     <!-- POS-Specific Settings Card -->
                     <div class="sp-card">
                         <div class="sp-card-header">
-                            <h2><i data-feather="shopping-cart" style="width:18px;height:18px;color:#16a34a;"></i> POS &amp; Retail Product Fields</h2>
-                            <p>Information displayed specifically for counter sales and product purchases</p>
+                            <h2><i data-feather="shopping-cart" style="width:18px;height:18px;color:#16a34a;"></i> POS &amp; Product Details</h2>
+                            <p>Information displayed for POS sales and retail products</p>
                         </div>
                         <div class="sp-card-body">
                             <div class="toggle-row">
-                                <div><div class="toggle-label">Product Name</div><div class="toggle-hint">Title and variant of purchased item</div></div>
+                                <div><div class="toggle-label">Product Name</div><div class="toggle-hint">Name of the purchased product</div></div>
                                 <label class="toggle-switch"><input type="checkbox" id="posProdName" checked disabled><span class="toggle-track"></span></label>
                             </div>
                             <div class="toggle-row">
-                                <div><div class="toggle-label">Product SKU / Barcode</div><div class="toggle-hint">Inventory stock keeping unit code</div></div>
+                                <div><div class="toggle-label">Product SKU / Barcode</div><div class="toggle-hint">SKU or barcode of the purchased product</div></div>
                                 <label class="toggle-switch"><input type="checkbox" id="posSku" checked><span class="toggle-track"></span></label>
                             </div>
                             <div class="toggle-row">
-                                <div><div class="toggle-label">Cashier / Staff Name</div><div class="toggle-hint">Show counter terminal or operator name</div></div>
+                                <div><div class="toggle-label">Cashier / Staff Name</div><div class="toggle-hint">Staff member who processed the sale</div></div>
                                 <label class="toggle-switch"><input type="checkbox" id="posCashier" checked><span class="toggle-track"></span></label>
                             </div>
                             <div class="toggle-row">
-                                <div><div class="toggle-label">POS Transaction Number</div><div class="toggle-hint">Counter terminal receipt transaction sequence</div></div>
+                                <div><div class="toggle-label">POS Transaction Number</div><div class="toggle-hint">Unique transaction number for the POS sale</div></div>
                                 <label class="toggle-switch"><input type="checkbox" id="posTxnNum" checked><span class="toggle-track"></span></label>
                             </div>
                             <div class="toggle-row">
-                                <div><div class="toggle-label">Payment Reference Number</div><div class="toggle-hint">Card machine / UPI gateway reference ID</div></div>
+                                <div><div class="toggle-label">Payment Reference Number</div><div class="toggle-hint">Reference number from the payment provider</div></div>
                                 <label class="toggle-switch"><input type="checkbox" id="posPayRef"><span class="toggle-track"></span></label>
                             </div>
                         </div>
