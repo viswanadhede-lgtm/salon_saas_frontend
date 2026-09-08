@@ -13,6 +13,7 @@
     <link rel="stylesheet" href="styles.css">
     <link rel="stylesheet" href="dashboard.css">
     <link rel="stylesheet" href="submenu.css">
+    <link rel="stylesheet" href="settings-shared.css">
     <!-- Feather Icons for a clean SaaS look -->
     <script src="https://unpkg.com/feather-icons"></script>
     <style>
@@ -271,10 +272,11 @@
 
         <!-- Page Content -->
         <main class="content-area">
-            <div class="content-header" style="display: flex; justify-content: space-between; align-items: center;">
+            <div class="sp-breadcrumb"><a href="company.html" class="sp-back"><i data-feather="arrow-left"></i> Company Settings</a><span class="sp-sep">/</span><span class="sp-current">Branches</span></div>
+            <div class="content-header" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px;">
                 <div class="header-title">
-                    <h1 id="pageTitle">Branches</h1>
-                    <p class="subtitle">Manage your salon locations</p>
+                    <h1 id="pageTitle" style="font-size: 1.5rem; font-weight: 700; color: #0f172a; margin: 4px 0 6px;">Branches</h1>
+                    <p class="subtitle" style="font-size: 0.95rem; color: #64748b; margin: 0;">Manage your salon locations</p>
                 </div>
                 <button class="qa-btn qa-primary" id="btnAddBranch" data-sub-feature="branch_create">
                     <i data-feather="plus" class="qa-icon"></i>
