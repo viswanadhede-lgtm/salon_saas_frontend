@@ -1,4 +1,4 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="en">
 <head>
     <script src="scripts/auth-loader.js"></script>
@@ -122,7 +122,7 @@
             <!-- Page Header -->
             <div class="sp-header">
                 <h1>Common Invoice</h1>
-                <p>Configure information and styling shared across all invoices (Bookings, POS &amp; Memberships)</p>
+                <p>Configure information and styling shared across all invoices</p>
             </div>
 
             <!-- 2-Column Designer Layout -->
@@ -134,7 +134,7 @@
                     <div class="sp-card">
                         <div class="sp-card-header">
                             <h2><i data-feather="hash" style="width:18px;height:18px;color:#3b82f6;"></i> Invoice Numbering</h2>
-                            <p>One unified numbering sequence shared by Bookings, POS, and Memberships</p>
+                            <p>Set the invoice numbering format and starting number</p>
                         </div>
                         <div class="sp-card-body">
                             <div class="form-row">
@@ -146,7 +146,7 @@
                                 <div class="form-group">
                                     <label class="form-label" for="cfgStartingNumber">Starting Invoice Number <span class="optional">(Optional)</span></label>
                                     <input type="number" id="cfgStartingNumber" class="form-input" placeholder="e.g., 1001" value="1001" min="1">
-                                    <p class="form-hint">Next generated invoice will begin here</p>
+                                    <p class="form-hint">Next invoice will start with this number</p>
                                 </div>
                             </div>
                             <div class="numbering-format-box">
@@ -164,31 +164,31 @@
                         </div>
                         <div class="sp-card-body">
                             <div class="toggle-row">
-                                <div><div class="toggle-label">Company Logo</div><div class="toggle-hint">Show your primary salon branding logo</div></div>
+                                <div><div class="toggle-label">Business Logo</div><div class="toggle-hint">Show your primary business logo</div></div>
                                 <label class="toggle-switch"><input type="checkbox" id="hdrLogo" checked><span class="toggle-track"></span></label>
                             </div>
                             <div class="toggle-row">
-                                <div><div class="toggle-label">Display / Brand Name</div><div class="toggle-hint">Display name shown to customers (e.g. Glow Salon)</div></div>
+                                <div><div class="toggle-label">Display / Brand Name</div><div class="toggle-hint">Business name shown to customers</div></div>
                                 <label class="toggle-switch"><input type="checkbox" id="hdrDisplayName" checked><span class="toggle-track"></span></label>
                             </div>
                             <div class="toggle-row">
-                                <div><div class="toggle-label">Legal Business Name</div><div class="toggle-hint">Registered corporate entity name</div></div>
+                                <div><div class="toggle-label">Legal Business Name</div><div class="toggle-hint">Legal business name used on invoices</div></div>
                                 <label class="toggle-switch"><input type="checkbox" id="hdrLegalName"><span class="toggle-track"></span></label>
                             </div>
                             <div class="toggle-row">
-                                <div><div class="toggle-label">Branch Name</div><div class="toggle-hint">Location where service or sale took place</div></div>
+                                <div><div class="toggle-label">Branch Name</div><div class="toggle-hint">Branch where the service or sale took place</div></div>
                                 <label class="toggle-switch"><input type="checkbox" id="hdrBranchName" checked><span class="toggle-track"></span></label>
                             </div>
                             <div class="toggle-row">
-                                <div><div class="toggle-label">Business Address</div><div class="toggle-hint">Physical salon street address and pincode</div></div>
+                                <div><div class="toggle-label">Business Address</div><div class="toggle-hint">Business address and PIN code</div></div>
                                 <label class="toggle-switch"><input type="checkbox" id="hdrAddress" checked><span class="toggle-track"></span></label>
                             </div>
                             <div class="toggle-row">
-                                <div><div class="toggle-label">Phone Number</div><div class="toggle-hint">Primary salon contact telephone</div></div>
+                                <div><div class="toggle-label">Business Phone Number</div><div class="toggle-hint">Primary business phone number</div></div>
                                 <label class="toggle-switch"><input type="checkbox" id="hdrPhone" checked><span class="toggle-track"></span></label>
                             </div>
                             <div class="toggle-row">
-                                <div><div class="toggle-label">Email Address</div><div class="toggle-hint">Official salon billing email</div></div>
+                                <div><div class="toggle-label">Email Address</div><div class="toggle-hint">Business email address</div></div>
                                 <label class="toggle-switch"><input type="checkbox" id="hdrEmail"><span class="toggle-track"></span></label>
                             </div>
                             <div class="toggle-row">
@@ -196,11 +196,11 @@
                                 <label class="toggle-switch"><input type="checkbox" id="hdrWebsite"><span class="toggle-track"></span></label>
                             </div>
                             <div class="toggle-row">
-                                <div><div class="toggle-label">GSTIN</div><div class="toggle-hint">Goods and Services Tax Identification Number</div></div>
+                                <div><div class="toggle-label">GSTIN</div><div class="toggle-hint">Business GSTIN</div></div>
                                 <label class="toggle-switch"><input type="checkbox" id="hdrGstin" checked><span class="toggle-track"></span></label>
                             </div>
                             <div class="toggle-row">
-                                <div><div class="toggle-label">PAN</div><div class="toggle-hint">Permanent Account Number for tax filing</div></div>
+                                <div><div class="toggle-label">PAN</div><div class="toggle-hint">Business PAN</div></div>
                                 <label class="toggle-switch"><input type="checkbox" id="hdrPan"><span class="toggle-track"></span></label>
                             </div>
                         </div>
@@ -210,15 +210,15 @@
                     <div class="sp-card">
                         <div class="sp-card-header">
                             <h2><i data-feather="user" style="width:18px;height:18px;color:#3b82f6;"></i> Customer Information</h2>
-                            <p>Information displayed in the customer billing box</p>
+                            <p>Choose which customer details appear on the invoice</p>
                         </div>
                         <div class="sp-card-body">
                             <div class="toggle-row">
-                                <div><div class="toggle-label">Customer Name</div><div class="toggle-hint">Full name of the client</div></div>
+                                <div><div class="toggle-label">Customer Name</div><div class="toggle-hint">Customer's full name</div></div>
                                 <label class="toggle-switch"><input type="checkbox" id="custName" checked><span class="toggle-track"></span></label>
                             </div>
                             <div class="toggle-row">
-                                <div><div class="toggle-label">Phone Number</div><div class="toggle-hint">Customer contact mobile number</div></div>
+                                <div><div class="toggle-label">Phone Number</div><div class="toggle-hint">Customer's phone number</div></div>
                                 <label class="toggle-switch"><input type="checkbox" id="custPhone" checked><span class="toggle-track"></span></label>
                             </div>
                             <div class="toggle-row">
@@ -226,7 +226,7 @@
                                 <label class="toggle-switch"><input type="checkbox" id="custEmail"><span class="toggle-track"></span></label>
                             </div>
                             <div class="toggle-row">
-                                <div><div class="toggle-label">Customer Address</div><div class="toggle-hint">Client delivery or home address</div></div>
+                                <div><div class="toggle-label">Customer Address</div><div class="toggle-hint">Customer's billing address</div></div>
                                 <label class="toggle-switch"><input type="checkbox" id="custAddress"><span class="toggle-track"></span></label>
                             </div>
                         </div>
@@ -236,27 +236,27 @@
                     <div class="sp-card">
                         <div class="sp-card-header">
                             <h2><i data-feather="file" style="width:18px;height:18px;color:#3b82f6;"></i> Transaction Information</h2>
-                            <p>Core transaction metadata shown on the invoice</p>
+                            <p>Choose which transaction details appear on the invoice</p>
                         </div>
                         <div class="sp-card-body">
                             <div class="toggle-row">
-                                <div><div class="toggle-label">Invoice Number</div><div class="toggle-hint">Sequential invoice identifier</div></div>
+                                <div><div class="toggle-label">Invoice Number</div><div class="toggle-hint">Invoice number</div></div>
                                 <label class="toggle-switch"><input type="checkbox" id="txnInvNum" checked><span class="toggle-track"></span></label>
                             </div>
                             <div class="toggle-row">
-                                <div><div class="toggle-label">Invoice Date</div><div class="toggle-hint">Issue date of the invoice</div></div>
+                                <div><div class="toggle-label">Invoice Date</div><div class="toggle-hint">Date the invoice was issued</div></div>
                                 <label class="toggle-switch"><input type="checkbox" id="txnInvDate" checked><span class="toggle-track"></span></label>
                             </div>
                             <div class="toggle-row">
-                                <div><div class="toggle-label">Payment Date</div><div class="toggle-hint">Date payment was successfully collected</div></div>
+                                <div><div class="toggle-label">Payment Date</div><div class="toggle-hint">Date the payment was received</div></div>
                                 <label class="toggle-switch"><input type="checkbox" id="txnPayDate"><span class="toggle-track"></span></label>
                             </div>
                             <div class="toggle-row">
-                                <div><div class="toggle-label">Staff / Stylist Name</div><div class="toggle-hint">Staff member or stylist associated with the ticket</div></div>
+                                <div><div class="toggle-label">Staff / Stylist Name</div><div class="toggle-hint">Staff member associated with the transaction</div></div>
                                 <label class="toggle-switch"><input type="checkbox" id="txnStaff" checked><span class="toggle-track"></span></label>
                             </div>
                             <div class="toggle-row">
-                                <div><div class="toggle-label">Payment Method</div><div class="toggle-hint">Cash, UPI, Card, or Online payment mode</div></div>
+                                <div><div class="toggle-label">Payment Method</div><div class="toggle-hint">Payment method used for the transaction</div></div>
                                 <label class="toggle-switch"><input type="checkbox" id="txnPayMethod" checked><span class="toggle-track"></span></label>
                             </div>
                         </div>
@@ -266,31 +266,31 @@
                     <div class="sp-card">
                         <div class="sp-card-header">
                             <h2><i data-feather="list" style="width:18px;height:18px;color:#3b82f6;"></i> Items &amp; Services Table</h2>
-                            <p>Columns to display in the invoice line item breakdown</p>
+                            <p>Choose which details appear in the invoice item list</p>
                         </div>
                         <div class="sp-card-body">
                             <div class="toggle-row">
-                                <div><div class="toggle-label">Item / Service Name</div><div class="toggle-hint">Description of the line item</div></div>
+                                <div><div class="toggle-label">Item / Service Name</div><div class="toggle-hint">Name of the product or service</div></div>
                                 <label class="toggle-switch"><input type="checkbox" id="itmName" checked disabled><span class="toggle-track"></span></label>
                             </div>
                             <div class="toggle-row">
-                                <div><div class="toggle-label">Quantity</div><div class="toggle-hint">Number of units or services</div></div>
+                                <div><div class="toggle-label">Quantity</div><div class="toggle-hint">Number of units</div></div>
                                 <label class="toggle-switch"><input type="checkbox" id="itmQty" checked><span class="toggle-track"></span></label>
                             </div>
                             <div class="toggle-row">
-                                <div><div class="toggle-label">Unit Price</div><div class="toggle-hint">Price per item or rate per service</div></div>
+                                <div><div class="toggle-label">Unit Price</div><div class="toggle-hint">Price per unit or service</div></div>
                                 <label class="toggle-switch"><input type="checkbox" id="itmUnitPrice" checked><span class="toggle-track"></span></label>
                             </div>
                             <div class="toggle-row">
-                                <div><div class="toggle-label">Tax Amount</div><div class="toggle-hint">Show tax charged per line item</div></div>
+                                <div><div class="toggle-label">Tax Amount</div><div class="toggle-hint">Tax amount for each item</div></div>
                                 <label class="toggle-switch"><input type="checkbox" id="itmTax" checked><span class="toggle-track"></span></label>
                             </div>
                             <div class="toggle-row">
-                                <div><div class="toggle-label">Tax Rate (%)</div><div class="toggle-hint">Show tax percentage (e.g., 18%) per item</div></div>
+                                <div><div class="toggle-label">Tax Rate (%)</div><div class="toggle-hint">Tax rate applied to each item</div></div>
                                 <label class="toggle-switch"><input type="checkbox" id="itmTaxRate"><span class="toggle-track"></span></label>
                             </div>
                             <div class="toggle-row">
-                                <div><div class="toggle-label">Line Total</div><div class="toggle-hint">Total amount for the line item</div></div>
+                                <div><div class="toggle-label">Line Total</div><div class="toggle-hint">Total amount for each item</div></div>
                                 <label class="toggle-switch"><input type="checkbox" id="itmLineTotal" checked><span class="toggle-track"></span></label>
                             </div>
                         </div>
@@ -300,7 +300,7 @@
                     <div class="sp-card">
                         <div class="sp-card-header">
                             <h2><i data-feather="dollar-sign" style="width:18px;height:18px;color:#3b82f6;"></i> Totals &amp; Payment</h2>
-                            <p>Summary breakdown calculated at the bottom of the invoice</p>
+                            <p>Choose which totals and payment details appear on the invoice</p>
                         </div>
                         <div class="sp-card-body">
                             <div class="toggle-row">
@@ -308,23 +308,23 @@
                                 <label class="toggle-switch"><input type="checkbox" id="totSubtotal" checked><span class="toggle-track"></span></label>
                             </div>
                             <div class="toggle-row">
-                                <div><div class="toggle-label">Tax Total (GST)</div><div class="toggle-hint">Total tax amount applied</div></div>
+                                <div><div class="toggle-label">Total Tax</div><div class="toggle-hint">Total tax amount applied</div></div>
                                 <label class="toggle-switch"><input type="checkbox" id="totTax" checked><span class="toggle-track"></span></label>
                             </div>
                             <div class="toggle-row">
-                                <div><div class="toggle-label">Round-off</div><div class="toggle-hint">Adjustment for cash currency rounding</div></div>
+                                <div><div class="toggle-label">Round-off</div><div class="toggle-hint">Rounding adjustment applied to the total</div></div>
                                 <label class="toggle-switch"><input type="checkbox" id="totRoundoff"><span class="toggle-track"></span></label>
                             </div>
                             <div class="toggle-row">
-                                <div><div class="toggle-label">Grand Total</div><div class="toggle-hint">Final payable invoice amount</div></div>
+                                <div><div class="toggle-label">Grand Total</div><div class="toggle-hint">Total amount payable</div></div>
                                 <label class="toggle-switch"><input type="checkbox" id="totGrandTotal" checked disabled><span class="toggle-track"></span></label>
                             </div>
                             <div class="toggle-row">
-                                <div><div class="toggle-label">Amount Paid</div><div class="toggle-hint">Total payment collected from the client</div></div>
+                                <div><div class="toggle-label">Amount Paid</div><div class="toggle-hint">Total amount paid</div></div>
                                 <label class="toggle-switch"><input type="checkbox" id="totAmtPaid" checked><span class="toggle-track"></span></label>
                             </div>
                             <div class="toggle-row">
-                                <div><div class="toggle-label">Balance Due</div><div class="toggle-hint">Remaining outstanding balance</div></div>
+                                <div><div class="toggle-label">Balance Due</div><div class="toggle-hint">Amount remaining to be paid</div></div>
                                 <label class="toggle-switch"><input type="checkbox" id="totBalanceDue" checked><span class="toggle-track"></span></label>
                             </div>
                         </div>
@@ -334,11 +334,11 @@
                     <div class="sp-card">
                         <div class="sp-card-header">
                             <h2><i data-feather="message-square" style="width:18px;height:18px;color:#3b82f6;"></i> Invoice Footer</h2>
-                            <p>Optional messages, policies, and terms displayed at the base of the invoice</p>
+                            <p>Add messages, payment instructions and terms to the bottom of the invoice</p>
                         </div>
                         <div class="sp-card-body">
                             <div class="toggle-row">
-                                <div><div class="toggle-label">Thank You Message</div><div class="toggle-hint">Warm closing message to the customer</div></div>
+                                <div><div class="toggle-label">Thank You Message</div><div class="toggle-hint">Message shown to the customer at the end of the invoice</div></div>
                                 <label class="toggle-switch"><input type="checkbox" id="ftrThankYou" checked><span class="toggle-track"></span></label>
                             </div>
                             <div class="form-group" style="margin-top:10px;">
@@ -346,7 +346,7 @@
                             </div>
 
                             <div class="toggle-row" style="margin-top:16px;">
-                                <div><div class="toggle-label">Terms &amp; Conditions</div><div class="toggle-hint">Standard legal terms and warranty disclaimers</div></div>
+                                <div><div class="toggle-label">Terms &amp; Conditions</div><div class="toggle-hint">Terms and conditions shown on the invoice</div></div>
                                 <label class="toggle-switch"><input type="checkbox" id="ftrTerms"><span class="toggle-track"></span></label>
                             </div>
                             <div class="form-group" id="ftrTermsGroup" style="margin-top:10px;display:none;">
@@ -354,7 +354,7 @@
                             </div>
 
                             <div class="toggle-row" style="margin-top:16px;">
-                                <div><div class="toggle-label">Payment Instructions</div><div class="toggle-hint">Bank account, UPI ID, or remittance details</div></div>
+                                <div><div class="toggle-label">Payment Instructions</div><div class="toggle-hint">Instructions for making a payment</div></div>
                                 <label class="toggle-switch"><input type="checkbox" id="ftrPayInstr"><span class="toggle-track"></span></label>
                             </div>
                             <div class="form-group" id="ftrPayInstrGroup" style="margin-top:10px;display:none;">
@@ -364,7 +364,7 @@
                             <div class="form-group" style="margin-top:20px;">
                                 <label class="form-label" for="ftrCustomNote">Custom Footer Note <span class="optional">(Optional)</span></label>
                                 <input type="text" id="ftrCustomNote" class="form-input" placeholder="e.g., Follow us on Instagram @glowsalon_official">
-                                <p class="form-hint">Additional text printed at the bottom of the invoice</p>
+                                <p class="form-hint">Additional message shown at the bottom of the invoice</p>
                             </div>
                         </div>
                     </div>
