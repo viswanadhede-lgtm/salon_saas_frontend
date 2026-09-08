@@ -300,29 +300,28 @@
                     </tbody>
                 </table>
             </div>
-            
-            <!-- Full Width Add / Edit Branch Modal -->
+<!-- Full Width Add / Edit Branch Modal -->
         </main>
     </div> <!-- /main-wrapper -->
 
-    <!-- Full Width Add / Edit Branch Modal -->
-    <div class="modal-overlay" id="branchPanelOverlay">
-        <div class="modal-container" id="branchPanel" style="width: 1000px; max-width: 95vw; border-radius: 16px;">
-            <div class="modal-header" style="padding: 1.25rem 2rem; border-bottom: 1px solid #f1f5f9; display: flex; justify-content: space-between; align-items: flex-start;">
-                <div>
-                    <h2 id="panelTitle" style="font-size: 1.35rem; font-weight: 700; color: #0f172a; margin: 0;">Add Branch</h2>
-                    <p class="subtitle" style="margin: 4px 0 0 0; font-size: 0.85rem; color: #64748b;" id="panelSubtitle">Create a new physical location.</p>
-                </div>
-                <button class="modal-close" id="btnClosePanel" style="background: none; border: none; color: #94a3b8; cursor: pointer; padding: 4px;"><i data-feather="x"></i></button>
+<!-- Add / Edit Branch Modal -->
+<div class="modal-overlay" id="branchPanelOverlay" style="position:fixed; inset:0; background:rgba(0,0,0,0.4); display:flex; justify-content:center; align-items:center; z-index:1000;">
+    <div id="branchPanel" style="background:#fff; width:960px; max-width:95vw; border-radius:16px; box-shadow:0 25px 60px rgba(0,0,0,0.18); display:flex; flex-direction:column; max-height:95vh; overflow:hidden;">
+        <!-- Header -->
+        <div style="padding:1.4rem 2rem; border-bottom:1px solid #f1f5f9; display:flex; justify-content:space-between; align-items:flex-start;">
+            <div>
+                <h2 id="panelTitle" style="font-size:1.4rem; font-weight:700; color:#0f172a; margin:0;">Add Branch</h2>
+                <p id="panelSubtitle" style="margin:4px 0 0; font-size:0.85rem; color:#64748b;">Create a new physical location.</p>
             </div>
-            
-            <div class="modal-body" style="padding: 1.5rem 2rem; max-height: 80vh; overflow-y: auto; display: flex; flex-direction: column; gap: 1.5rem;">
+            <button id="btnClosePanel" style="background:none; border:none; color:#94a3b8; cursor:pointer; padding:4px;"><i data-feather="x"></i></button>
+        </div>
+        <div class="modal-body" style="padding:1.5rem 2rem; max-height:80vh; overflow-y:auto; display:flex; flex-direction:column; gap:1.5rem;">
 
                 <!-- Top two-column row (Section 1 & Section 2) -->
                 <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 2.25rem; align-items: start;">
 
                     <!-- Section 1: Information -->
-                    <div class="form-section" style="border-bottom: none; padding-bottom: 0;">
+                    <div style="border-bottom: none; padding-bottom: 0;">
                         <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 1.25rem;">
                             <span style="display: flex; align-items: center; justify-content: center; width: 28px; height: 28px; border-radius: 50%; background: #eff6ff; color: #2563eb; font-size: 0.85rem; font-weight: 700; flex-shrink: 0;">1</span>
                             <div>
@@ -361,7 +360,7 @@
                     </div>
 
                     <!-- Section 2: Address -->
-                    <div class="form-section" style="border-bottom: none; padding-bottom: 0;">
+                    <div style="border-bottom: none; padding-bottom: 0;">
                         <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 1.25rem;">
                             <span style="display: flex; align-items: center; justify-content: center; width: 28px; height: 28px; border-radius: 50%; background: #eff6ff; color: #2563eb; font-size: 0.85rem; font-weight: 700; flex-shrink: 0;">2</span>
                             <div>
@@ -401,7 +400,7 @@
                 </div>
 
                 <!-- Section 3: Status — full width at bottom -->
-                <div class="form-section" style="border-bottom: none; padding-bottom: 0;">
+                <div style="border-bottom: none; padding-bottom: 0;">
                     <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 0.75rem;">
                         <span style="display: flex; align-items: center; justify-content: center; width: 28px; height: 28px; border-radius: 50%; background: #eff6ff; color: #2563eb; font-size: 0.85rem; font-weight: 700; flex-shrink: 0;">3</span>
                         <div>
