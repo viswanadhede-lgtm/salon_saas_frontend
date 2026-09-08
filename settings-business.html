@@ -1,11 +1,11 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="en">
 
 <head>
     <script src="scripts/auth-loader.js"></script>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta name="description" content="Business Settings - Manage your business identity and profile.">
+    <meta name="description" content="Business Settings - Manage your business information, branding and profile.">
     <title>Business Settings - BharathBots</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -417,22 +417,22 @@
 
             <!-- Page Header -->
             <div class="settings-subpage-header">
-                <h1>Business</h1>
-                <p>Manage your business identity and profile information</p>
+                <h1>Business Settings</h1>
+                <p>Manage your business information, branding and profile</p>
             </div>
 
             <!-- Section 1: Logo & Branding -->
             <div class="settings-form-card">
                 <div class="settings-form-card-header">
                     <h2><i data-feather="image" style="width:18px;height:18px;color:#3b82f6;"></i> Logo &amp; Branding</h2>
-                    <p>Upload your primary company logo and business cover banner image</p>
+                    <p>Manage your business logo and cover image</p>
                 </div>
                 <div class="settings-form-card-body">
                     <div class="branding-upload-grid">
                         <!-- Company Logo -->
                         <div class="logo-upload-card">
                             <div class="upload-badge-label">
-                                <i data-feather="image" style="width:14px;height:14px;"></i> Company Logo
+                                <i data-feather="image" style="width:14px;height:14px;"></i> Business Logo
                             </div>
                             <div class="logo-upload-area">
                                 <div class="logo-preview-box" id="logoPreviewBox">
@@ -440,7 +440,7 @@
                                 </div>
                                 <div class="logo-upload-info">
                                     <h4>Primary Logo</h4>
-                                    <p>Appears on invoices, receipts &amp; portal. Rec: 512×512px, PNG or JPG, max 2MB</p>
+                                    <p>Used on invoices, receipts and customer portals. Recommended: 512×512px. PNG or JPG, max 2 MB.</p>
                                     <div class="upload-btn-group">
                                         <label for="logoFileInput" class="btn-upload-logo">
                                             <i data-feather="upload" style="width:14px;height:14px;"></i>
@@ -465,8 +465,8 @@
                                     <i data-feather="image" class="logo-placeholder-icon"></i>
                                 </div>
                                 <div class="logo-upload-info">
-                                    <h4>Cover / Hero Banner</h4>
-                                    <p>Appears on customer booking portal &amp; banners. Rec: 1200×400px or 16:9, max 5MB</p>
+                                    <h4>Business Cover Image</h4>
+                                    <p>Used on the customer booking portal. Recommended: 1200×400px or 16:9. PNG or JPG, max 5 MB.</p>
                                     <div class="upload-btn-group">
                                         <label for="coverFileInput" class="btn-upload-logo">
                                             <i data-feather="upload" style="width:14px;height:14px;"></i>
@@ -484,21 +484,21 @@
                 </div>
             </div>
 
-            <!-- Section 2: Business Identity -->
+            <!-- Section 2: Business Information -->
             <div class="settings-form-card">
                 <div class="settings-form-card-header">
-                    <h2><i data-feather="briefcase" style="width:18px;height:18px;color:#3b82f6;"></i> Business Identity</h2>
-                    <p>Core legal and display profile details for your establishment</p>
+                    <h2><i data-feather="briefcase" style="width:18px;height:18px;color:#3b82f6;"></i> Business Information</h2>
+                    <p>Basic information about your business</p>
                 </div>
                 <div class="settings-form-card-body">
                     <div class="form-row">
                         <div class="form-group">
                             <label class="form-label" for="companyName">Legal Business Name <span class="required">*</span></label>
                             <input type="text" id="companyName" class="form-input" placeholder="e.g., Shubha Beauty Salon Pvt Ltd" required>
-                            <p class="form-hint">Official registered name used for legal invoices &amp; taxes</p>
+                            <p class="form-hint">Official business name used on invoices and tax documents</p>
                         </div>
                         <div class="form-group">
-                            <label class="form-label" for="displayName">Display / Brand Name <span class="required">*</span></label>
+                            <label class="form-label" for="displayName">Display Name / Brand Name <span class="required">*</span></label>
                             <input type="text" id="displayName" class="form-input" placeholder="e.g., Shubha Salon &amp; Spa" required>
                             <p class="form-hint">Public brand name shown to customers and staff</p>
                         </div>
@@ -520,26 +520,22 @@
                                 <option value="pet_grooming">Pet Grooming</option>
                                 <option value="other">Other</option>
                             </select>
-                            <p class="form-hint">Primary industry classification</p>
+                            <p class="form-hint">Select your business category</p>
                         </div>
                         <div class="form-group">
-                            <label class="form-label" for="businessType">Business Model <span class="required">*</span></label>
+                            <label class="form-label" for="businessType">Business Structure <span class="required">*</span></label>
                             <select id="businessType" class="form-select" required>
-                                <option value="single_location">Single Location / Standalone</option>
-                                <option value="multi_branch">Multi-Branch Chain</option>
-                                <option value="franchise">Franchise</option>
-                                <option value="independent_stylist">Booth Rental / Independent Stylist</option>
-                                <option value="mobile_service">Mobile / Home-Service Salon</option>
-                                <option value="other">Other</option>
+                                <option value="single_location">Single Location</option>
+                                <option value="multi_branch">Multiple Locations</option>
                             </select>
-                            <p class="form-hint">Operational model &amp; branch structure</p>
+                            <p class="form-hint">Defines how your business locations are organized</p>
                         </div>
                     </div>
 
                     <div class="form-group">
                         <label class="form-label" for="businessDescription">Business Description <span class="optional">(Optional)</span></label>
                         <textarea id="businessDescription" class="form-input form-textarea" placeholder="Tell customers about your salon services, experience, specialties, and ambiance..."></textarea>
-                        <p class="form-hint">A brief description shown on your customer-facing booking portals</p>
+                        <p class="form-hint">A brief description shown to customers on your booking portal</p>
                     </div>
                 </div>
             </div>
@@ -558,7 +554,7 @@
                                 <span class="input-prefix"><i data-feather="globe" style="width:15px;height:15px;"></i></span>
                                 <input type="url" id="companyWebsite" class="form-input with-prefix" placeholder="https://www.yourdomain.com">
                             </div>
-                            <p class="form-hint">Your official salon website</p>
+                            <p class="form-hint">Your official business website</p>
                         </div>
                         <div class="form-group">
                             <label class="form-label" for="googleBusinessUrl">Google Business Profile <span class="optional">(Optional)</span></label>
@@ -566,7 +562,7 @@
                                 <span class="input-prefix"><i data-feather="map-pin" style="width:15px;height:15px;"></i></span>
                                 <input type="url" id="googleBusinessUrl" class="form-input with-prefix" placeholder="https://maps.google.com/...">
                             </div>
-                            <p class="form-hint">Google Maps / GMB location URL</p>
+                            <p class="form-hint">Google Business Profile / Maps link</p>
                         </div>
                     </div>
 
@@ -577,7 +573,7 @@
                                 <span class="input-prefix"><i data-feather="instagram" style="width:15px;height:15px;"></i></span>
                                 <input type="url" id="instagramUrl" class="form-input with-prefix" placeholder="https://instagram.com/your_salon">
                             </div>
-                            <p class="form-hint">Instagram profile or handle</p>
+                            <p class="form-hint">Your Instagram profile or handle</p>
                         </div>
                         <div class="form-group">
                             <label class="form-label" for="facebookUrl">Facebook <span class="optional">(Optional)</span></label>
