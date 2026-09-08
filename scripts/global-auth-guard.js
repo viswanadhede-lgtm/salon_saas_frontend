@@ -52,7 +52,6 @@ const ROUTE_MAP = {
     '/branches.html':              FEATURES.BRANCH_MANAGEMENT,
     '/users.html':                 FEATURES.USER_MANAGEMENT,
     '/roles-permissions.html':     FEATURES.ROLES_PERMISSIONS,
-    '/custom-fields.html':         FEATURES.CUSTOM_FIELDS,
     '/billing-subscription.html':  FEATURES.BILLING_SUBSCRIPTION_MANAGEMENT
 };
 
