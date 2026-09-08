@@ -148,6 +148,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             const branch = branchesData.find(b => b.branch_id === branchId);
             title.textContent = 'Edit Branch';
             subtitle.textContent = `Update details for ${branch.branch_name}`;
+            document.getElementById('btnSaveBranch').textContent = 'Update Branch';
             
             document.getElementById('branchName').value = branch.branch_name || '';
             document.getElementById('branchAddress').value = branch.branch_address || '';
@@ -160,6 +161,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             title.textContent = 'Add Branch';
             subtitle.textContent = 'Create a new physical location.';
             document.getElementById('branchStatusToggle').checked = true;
+            document.getElementById('btnSaveBranch').textContent = 'Save Branch';
         }
 
         overlay.classList.add('active');
