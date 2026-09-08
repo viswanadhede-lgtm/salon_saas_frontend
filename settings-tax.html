@@ -1,4 +1,4 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="en">
 <head>
     <script src="scripts/auth-loader.js"></script>
@@ -115,20 +115,20 @@
                 <span class="sp-current">Tax</span>
             </div>
             <div class="sp-header">
-                <h1>Tax</h1>
-                <p>Manage your tax registration details and invoice tax rules</p>
+                <h1>Tax Settings</h1>
+                <p>Manage your tax registration details and invoice tax settings</p>
             </div>
 
             <!-- Section 1: Tax Registration -->
             <div class="sp-card">
                 <div class="sp-card-header">
                     <h2><i data-feather="file-text" style="width:18px;height:18px;color:#3b82f6;"></i> Tax Registration</h2>
-                    <p>Official legal registration numbers and government tax identifiers</p>
+                    <p>Manage your business tax and registration details</p>
                 </div>
                 <div class="sp-card-body">
                     <div class="form-row">
                         <div class="form-group">
-                            <label class="form-label" for="companyName">Legal Company Name <span class="required">*</span></label>
+                            <label class="form-label" for="companyName">Legal Business Name <span class="required">*</span></label>
                             <div class="input-prefix-wrap">
                                 <span class="input-prefix"><i data-feather="briefcase" style="width:14px;height:14px;"></i></span>
                                 <input type="text" id="companyName" class="form-input with-prefix" placeholder="e.g., Shubha Beauty Salon Pvt Ltd" required>
@@ -141,7 +141,7 @@
                                 <span class="input-prefix"><i data-feather="award" style="width:14px;height:14px;"></i></span>
                                 <input type="text" id="regNumber" class="form-input with-prefix" placeholder="e.g., U12345KA2024PTC123456">
                             </div>
-                            <p class="form-hint">CIN, LLPIN, MSME, or Business Registration No.</p>
+                            <p class="form-hint">CIN, LLPIN, Udyam Registration Number, or other business registration number</p>
                         </div>
                     </div>
 
@@ -152,7 +152,7 @@
                                 <span class="input-prefix"><i data-feather="hash" style="width:14px;height:14px;"></i></span>
                                 <input type="text" id="gstin" class="form-input with-prefix" placeholder="e.g., 29ABCDE1234F1Z5" maxlength="15" style="text-transform:uppercase;">
                             </div>
-                            <p class="form-hint">15-character Goods and Services Tax Identification Number</p>
+                            <p class="form-hint">15-digit GST Identification Number</p>
                         </div>
                         <div class="form-group">
                             <label class="form-label" for="pan">PAN <span class="optional">(Optional)</span></label>
@@ -160,7 +160,7 @@
                                 <span class="input-prefix"><i data-feather="credit-card" style="width:14px;height:14px;"></i></span>
                                 <input type="text" id="pan" class="form-input with-prefix" placeholder="e.g., ABCDE1234F" maxlength="10" style="text-transform:uppercase;">
                             </div>
-                            <p class="form-hint">10-character Permanent Account Number for income tax</p>
+                            <p class="form-hint">10-character PAN used for tax purposes</p>
                         </div>
                     </div>
 
@@ -170,7 +170,7 @@
                             <span class="input-prefix"><i data-feather="map-pin" style="width:14px;height:14px;"></i></span>
                             <input type="text" id="taxState" class="form-input with-prefix" placeholder="e.g., Karnataka" required>
                         </div>
-                        <p class="form-hint">State of primary GST registration and place of supply</p>
+                        <p class="form-hint">State of GST Registration</p>
                     </div>
                 </div>
             </div>
@@ -179,7 +179,7 @@
             <div class="sp-card">
                 <div class="sp-card-header">
                     <h2><i data-feather="sliders" style="width:18px;height:18px;color:#3b82f6;"></i> Tax Configuration</h2>
-                    <p>Control default tax rates, invoice display labels and tax calculation rules</p>
+                    <p>Set default tax rates and how taxes appear on invoices</p>
                 </div>
                 <div class="sp-card-body">
                     <div class="form-row">
@@ -189,13 +189,13 @@
                                 <span class="input-prefix"><i data-feather="percent" style="width:14px;height:14px;"></i></span>
                                 <input type="number" id="defaultTaxRate" class="form-input with-prefix" placeholder="e.g., 18" min="0" max="100" step="0.01">
                             </div>
-                            <p class="form-hint">Applied to services and products without a specific tax rate</p>
+                            <p class="form-hint">Used when a service or product does not have its own tax rate</p>
                         </div>
                         <div class="form-group">
                             <label class="form-label" for="taxLabel">Tax Label on Invoice <span class="optional">(Optional)</span></label>
                             <div class="input-prefix-wrap">
                                 <span class="input-prefix"><i data-feather="tag" style="width:14px;height:14px;"></i></span>
-                                <input type="text" id="taxLabel" class="form-input with-prefix" placeholder="e.g., GST, VAT, Sales Tax">
+                                <input type="text" id="taxLabel" class="form-input with-prefix" placeholder="e.g., GST">
                             </div>
                             <p class="form-hint">Label displayed next to the tax amount on invoices</p>
                         </div>
@@ -204,7 +204,7 @@
                     <div class="toggle-row">
                         <div>
                             <div class="toggle-label">Prices Include Tax</div>
-                            <div class="toggle-hint">When ON, entered catalog/service prices are tax-inclusive. When OFF, tax is added on top.</div>
+                            <div class="toggle-hint">When ON, prices include tax. When OFF, tax is added separately.</div>
                         </div>
                         <label class="toggle-switch">
                             <input type="checkbox" id="taxInclusive">
