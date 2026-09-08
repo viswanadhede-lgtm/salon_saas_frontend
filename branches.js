@@ -87,8 +87,8 @@ document.addEventListener('DOMContentLoaded', async () => {
                         ${isActive ? 'Active' : 'Inactive'}
                     </span>
                 </td>
-                <td style="padding:14px 24px 14px 16px; text-align:right;">
-                    <div style="display:flex; gap:8px; justify-content:flex-end;">
+                <td style="padding:14px 16px; text-align:center;">
+                    <div style="display:flex; gap:8px; justify-content:center;">
                         <button class="hover-lift" onclick="openPanel('edit', '${branch.branch_id}')" data-sub-feature="branch_update" title="Edit Branch" style="display:flex; flex-direction:column; align-items:center; justify-content:center; padding:4px 8px; border-radius:8px; border:1px solid #e0e7ff; background:#eff6ff; cursor:pointer; color:#3b82f6; min-width:54px;">
                             <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="margin-bottom:2px;"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path></svg>
                             <span style="font-size:10px; font-weight:600;">Edit</span>
