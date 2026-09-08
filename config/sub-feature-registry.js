@@ -121,7 +121,6 @@ export const SUB_FEATURES = {
     SETTINGS_HOURS: 'settings_hours',
     SETTINGS_PAYMENTS: 'settings_payments',
     SETTINGS_NOTIFICATIONS: 'settings_notifications',
-    SETTINGS_LOCALIZATION: 'settings_localization',
 
     // ---- SETTINGS / BRANCHES ----
     BRANCH_CREATE: 'branch_create',
@@ -274,7 +273,6 @@ export const SUB_FEATURES_MAP = {
         { key: SUB_FEATURES.SETTINGS_HOURS, label: 'Business Hours' },
         { key: SUB_FEATURES.SETTINGS_PAYMENTS, label: 'Payment Methods' },
         { key: SUB_FEATURES.SETTINGS_NOTIFICATIONS, label: 'Notifications & Reminders' },
-        { key: SUB_FEATURES.SETTINGS_LOCALIZATION, label: 'Localization & Region' },
         { key: SUB_FEATURES.COMPANY_CREATE_BOOKING, label: 'Create Booking (Quick Action)' }
     ],
     [FEATURES.BRANCH_MANAGEMENT]: [

@@ -49,7 +49,6 @@ const ROUTE_MAP = {
     '/settings-hours.html':        FEATURES.COMPANY_SETTINGS,
     '/settings-payments.html':     FEATURES.COMPANY_SETTINGS,
     '/settings-notifications.html':FEATURES.COMPANY_SETTINGS,
-    '/settings-localization.html': FEATURES.COMPANY_SETTINGS,
     '/branches.html':              FEATURES.BRANCH_MANAGEMENT,
     '/users.html':                 FEATURES.USER_MANAGEMENT,
     '/roles-permissions.html':     FEATURES.ROLES_PERMISSIONS,
@@ -70,7 +69,6 @@ const SUB_ROUTE_MAP = {
     '/settings-hours.html':         'settings_hours',
     '/settings-payments.html':      'settings_payments',
     '/settings-notifications.html': 'settings_notifications',
-    '/settings-localization.html':  'settings_localization',
 };
 
 // ─── Plan → Feature access map ────────────────────────────────────────────────
