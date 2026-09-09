@@ -272,10 +272,9 @@ import { supabase } from './lib/supabase.js';
                 const hh = String(d.getHours()).padStart(2,'0');
                 const min = String(d.getMinutes()).padStart(2,'0');
                 lastLoginHtml = `
-                    <div style="display:flex;flex-direction:column;gap:1px;line-height:1.35;">
+                    <div style="display:flex;flex-direction:column;gap:2px;line-height:1.3;">
                         <span style="font-weight:600;color:#1e293b;font-size:0.8125rem;">${dayName}</span>
-                        <span style="color:#475569;font-size:0.8125rem;">${dd}-${mm}-${yyyy}</span>
-                        <span style="color:#64748b;font-size:0.775rem;">${hh}:${min}</span>
+                        <span style="color:#64748b;font-size:0.775rem;">${hh}:${min}, ${dd}-${mm}-${yyyy}</span>
                     </div>
                 `;
             }
