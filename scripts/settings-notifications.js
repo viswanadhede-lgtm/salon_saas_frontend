@@ -509,7 +509,7 @@ function buildRowsFromUI(companyId, branchId) {
             try {
                 const { error } = await supabase
                     .from('notification_settings')
-                    .upsert(rows, { onConflict: 'company_id,branch_id,category,group_key,event_key,channel' });
+                    .upsert(rows, { onConflict: 'company_id,branch_id,category,group_key,event_key' });
 
                 if (error) throw error;
 
