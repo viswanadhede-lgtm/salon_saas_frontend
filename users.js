@@ -557,6 +557,21 @@ import { supabase } from './lib/supabase.js';
             }
 
             if (editingId !== null) {
+                // If a new password was provided for existing user, update Supabase Auth via RPC
+                if (password) {
+                    const rpcRes = await supabase.rpc('admin_update_user_password', {
+                        target_user_id: editingId,
+                        new_password: password
+                    });
+                    if (rpcRes.error) {
+                        const errMsg = rpcRes.error.message || JSON.stringify(rpcRes.error);
+                        throw new Error(`Failed to update login password: ${errMsg}`);
+                    }
+                    if (rpcRes.data && rpcRes.data.success === false) {
+                        throw new Error(rpcRes.data.error || 'Failed to update login password');
+                    }
+                }
+
                 payload.updated_at = new Date().toISOString();
                 const targetCol = String(editingId).length > 10 ? 'user_id' : 'id';
                 const { error } = await supabase
