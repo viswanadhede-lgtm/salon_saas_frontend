@@ -1,4 +1,4 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="en">
 <head>
     <script src="scripts/auth-loader.js"></script>
@@ -154,7 +154,7 @@
 
     <div class="main-wrapper" id="mainWrapper">
         <header class="top-header">
-            <div class="header-left"><div class="branch-switcher"><i data-feather="map-pin" class="branch-icon"></i><select class="branch-select"><option>Downtown Branch</option><option>Uptown Spa</option></select></div></div>
+            <div class="header-left"><div class="branch-switcher"><i data-feather="map-pin" class="branch-icon"></i><select id="branchSelect" class="branch-select"><option>Downtown Branch</option><option>Uptown Spa</option></select></div></div>
             <div class="header-center"><div class="search-bar"><i data-feather="search" class="search-icon"></i><input type="text" placeholder="Search..." class="search-input"></div></div>
             <div class="header-right">
                 <div class="plan-badge">Growth</div>
@@ -191,7 +191,7 @@
                     <!-- Rendered by JS -->
                 </div>
                 <div class="sp-savebar" id="savebar">
-                    <button class="btn btn-secondary" onclick="document.getElementById('savebar').classList.remove('visible')">Cancel</button>
+                    <button class="btn btn-secondary" onclick="cancelHours()">Cancel</button>
                     <button class="btn btn-primary" id="btnSave" onclick="saveHours()">
                         <i data-feather="save" style="width:15px;height:15px;"></i> Save Changes
                     </button>
@@ -204,18 +204,8 @@
 
     <script src="logout.js"></script>
     <script type="module" src="scripts/global-auth-guard.js"></script>
+    <script type="module" src="scripts/settings-hours.js"></script>
     <script>
-        const DAYS = ['Monday','Tuesday','Wednesday','Thursday','Friday','Saturday','Sunday'];
-        const defaults = {
-            Monday:    { open: true,  from: '09:00', to: '18:00' },
-            Tuesday:   { open: true,  from: '09:00', to: '18:00' },
-            Wednesday: { open: true,  from: '09:00', to: '18:00' },
-            Thursday:  { open: true,  from: '09:00', to: '18:00' },
-            Friday:    { open: true,  from: '09:00', to: '18:00' },
-            Saturday:  { open: true,  from: '09:00', to: '17:00' },
-            Sunday:    { open: false, from: '09:00', to: '17:00' }
-        };
-
         document.addEventListener('DOMContentLoaded', () => {
             if (typeof feather !== 'undefined') feather.replace();
             document.getElementById('sidebarToggle')?.addEventListener('click', () => {
@@ -233,91 +223,40 @@
                 document.getElementById('profileMenu').classList.remove('show');
                 document.getElementById('profileBackdrop').classList.remove('show');
             });
-            renderHours();
         });
 
+        let isDirty = false;
+        window.isDirty = false;
         function markDirty() {
-            document.getElementById('savebar').classList.add('visible');
+            isDirty = true;
+            window.isDirty = true;
+            document.getElementById('savebar')?.classList.add('visible');
             if (typeof feather !== 'undefined') feather.replace();
         }
+        window.markDirty = markDirty;
 
-        function renderHours() {
-            const container = document.getElementById('hoursContainer');
-            container.innerHTML = DAYS.map(day => {
-                const d = defaults[day];
-                const isClosedClass = d.open ? '' : 'is-closed';
-                const statusLabel = d.open ? 'Open' : 'Closed';
-                const statusClass = d.open ? 'status-open' : 'status-closed';
-
-                return `<div class="hours-row ${isClosedClass}" id="row_${day}">
-                    <div class="hours-day">
-                        <span>${day}</span>
-                    </div>
-                    <select class="form-select" id="from_${day}" ${d.open ? '' : 'disabled'} onchange="markDirty()">${timeOptions(d.from)}</select>
-                    <select class="form-select" id="to_${day}" ${d.open ? '' : 'disabled'} onchange="markDirty()">${timeOptions(d.to)}</select>
-                    <div class="hours-toggle-wrap">
-                        <label class="toggle-switch">
-                            <input type="checkbox" id="open_${day}" ${d.open ? 'checked' : ''} onchange="toggleDay('${day}', this.checked); markDirty();">
-                            <span class="toggle-track"></span>
-                        </label>
-                        <span class="hours-status-text ${statusClass}" id="status_${day}">${statusLabel}</span>
-                    </div>
-                </div>`;
-            }).join('');
-            if (typeof feather !== 'undefined') feather.replace();
-        }
-
-        function toggleDay(day, open) {
-            const fromEl = document.getElementById('from_' + day);
-            const toEl = document.getElementById('to_' + day);
-            const statusEl = document.getElementById('status_' + day);
-            const rowEl = document.getElementById('row_' + day);
-
-            if (fromEl) fromEl.disabled = !open;
-            if (toEl) toEl.disabled = !open;
-
-            if (statusEl) {
-                statusEl.textContent = open ? 'Open' : 'Closed';
-                statusEl.className = `hours-status-text ${open ? 'status-open' : 'status-closed'}`;
-            }
-
-            if (rowEl) {
-                if (open) rowEl.classList.remove('is-closed');
-                else rowEl.classList.add('is-closed');
+        function cancelHours() {
+            if (typeof window.cancelHours === 'function') {
+                window.cancelHours();
+            } else {
+                isDirty = false;
+                window.isDirty = false;
+                document.getElementById('savebar')?.classList.remove('visible');
             }
         }
+        window.cancelHours = cancelHours;
 
-        function timeOptions(selected) {
-            let opts = '';
-            for (let h = 0; h < 24; h++) {
-                for (let m of ['00','30']) {
-                    const val = `${String(h).padStart(2,'0')}:${m}`;
-                    const label = formatTime(val);
-                    opts += `<option value="${val}" ${val===selected?'selected':''}>${label}</option>`;
-                }
-            }
-            return opts;
-        }
-
-        function formatTime(t) {
-            const [h, m] = t.split(':').map(Number);
-            const suffix = h < 12 ? 'AM' : 'PM';
-            const hour12 = h === 0 ? 12 : h > 12 ? h - 12 : h;
-            return `${hour12}:${String(m).padStart(2,'0')} ${suffix}`;
-        }
-
-        window.saveHours = function() {
-            showToast('Business hours saved successfully!', 'success');
-            document.getElementById('savebar')?.classList.remove('visible');
-        };
+        window.addEventListener('beforeunload', e => { if (isDirty) { e.preventDefault(); e.returnValue = ''; } });
 
         function showToast(msg, type = 'success') {
             const t = document.getElementById('toastNotification');
+            if (!t) return;
             t.textContent = msg;
             t.style.background = type === 'error' ? '#dc2626' : '#1e293b';
             t.classList.add('visible');
             setTimeout(() => t.classList.remove('visible'), 3500);
         }
+        window.showToast = showToast;
     </script>
 </body>
 </html>
