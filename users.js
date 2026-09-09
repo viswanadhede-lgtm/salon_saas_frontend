@@ -533,18 +533,24 @@ import { supabase } from './lib/supabase.js';
             };
 
             if (password) {
-                // If a new plain English password was typed, hash it using SHA-256
+                // When a new plain English password is typed, convert it to SHA-256 hash
                 const msgBuffer = new TextEncoder().encode(password);
                 const hashBuffer = await crypto.subtle.digest('SHA-256', msgBuffer);
                 const hashArray = Array.from(new Uint8Array(hashBuffer));
                 payload.password_hash = hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
             } else if (editingId !== null && editingOriginalPasswordHash) {
-                // Keep the existing hash unchanged
+                // Keep the existing hash unchanged if password field was left blank
                 payload.password_hash = editingOriginalPasswordHash;
             }
 
             if (editingId !== null) {
-                const { error } = await supabase.from('users').eq(String(editingId).length > 10 ? 'user_id' : 'id', editingId).update(payload);
+                payload.updated_at = new Date().toISOString();
+                const targetCol = String(editingId).length > 10 ? 'user_id' : 'id';
+                const { error } = await supabase
+                    .from('users')
+                    .update(payload)
+                    .eq(targetCol, editingId);
+
                 if (error) throw error;
                 showToast('User updated successfully!');
             } else {
