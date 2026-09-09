@@ -309,7 +309,11 @@
                         </div>
                         <button class="modal-close" id="closeUserModal"><i data-feather="x"></i></button>
                     </div>
-                    <div class="modal-body" style="padding:2.5rem 3rem;overflow-y:auto;">
+                    <style>
+                        #userModal .modal-body { padding: 2.5rem 3rem !important; }
+                        #userModal .modal-body > div { padding: 0 !important; }
+                    </style>
+                    <div class="modal-body" style="overflow-y:auto;">
                         <div style="display:grid;grid-template-columns:1fr 1fr;gap:48px;">
                             <div style="display:flex;flex-direction:column;gap:22px;">
                                 <p style="font-size:0.72rem;font-weight:700;color:#94a3b8;text-transform:uppercase;letter-spacing:.06em;margin-bottom:0;">Identity</p>
