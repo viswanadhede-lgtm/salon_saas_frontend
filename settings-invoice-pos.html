@@ -178,7 +178,7 @@
 
                     <!-- Save Bar -->
                     <div class="sp-savebar" id="savebar">
-                        <a href="settings-invoice.html" class="btn btn-secondary">Cancel</a>
+                        <button type="button" class="btn btn-secondary" onclick="cancelPosConfig()">Cancel</button>
                         <button class="btn btn-primary" id="btnSave" onclick="savePosConfig()">
                             <i data-feather="save" style="width:15px;height:15px;"></i> Save POS Invoice
                         </button>
@@ -207,7 +207,14 @@
     <script src="logout.js"></script>
     <script type="module" src="scripts/global-auth-guard.js"></script>
     <script type="module">
-        import { getInvoiceConfig, saveInvoiceConfig, renderLiveInvoicePreview } from './scripts/invoice-state.js';
+        import { 
+            getInvoiceConfig, 
+            saveInvoiceConfig, 
+            renderLiveInvoicePreview,
+            loadInvoiceSettingsFromDB,
+            saveInvoiceSettingsToDB,
+            loadBusinessPreviewData
+        } from './scripts/invoice-state.js';
 
         let config = getInvoiceConfig();
 
@@ -232,9 +239,32 @@
             renderLiveInvoicePreview('pos', 'posInvoicePreview', config);
         }
 
-        window.savePosConfig = function() {
-            saveInvoiceConfig(config);
-            showToast('POS invoice settings saved successfully!', 'success');
+        window.savePosConfig = async function() {
+            const btn = document.getElementById('btnSave');
+            if (btn) {
+                btn.disabled = true;
+                btn.innerHTML = '<div style="width:14px;height:14px;border:2px solid rgba(255,255,255,0.3);border-top-color:#fff;border-radius:50%;animation:spin 1s linear infinite;display:inline-block;"></div> Saving...';
+            }
+
+            try {
+                await saveInvoiceSettingsToDB('pos', config);
+                showToast('✓ POS invoice settings saved!', 'success');
+                document.getElementById('savebar')?.classList.remove('visible');
+            } catch (err) {
+                console.error('Error saving POS invoice settings:', err);
+                showToast(err.message || 'Failed to save. Please try again.', 'error');
+            } finally {
+                if (btn) {
+                    btn.disabled = false;
+                    btn.innerHTML = '<i data-feather="save" style="width:15px;height:15px;"></i> Save POS Invoice';
+                    if (typeof feather !== 'undefined') feather.replace();
+                }
+            }
+        };
+
+        window.cancelPosConfig = async function() {
+            config = await loadInvoiceSettingsFromDB('pos');
+            syncUIFromConfig();
             document.getElementById('savebar')?.classList.remove('visible');
         };
 
@@ -248,14 +278,18 @@
 
         function showToast(msg, type = 'success') {
             const t = document.getElementById('toastNotification');
+            if (!t) return;
             t.textContent = msg;
-            t.style.background = type === 'error' ? '#dc2626' : '#1e293b';
+            t.style.background = type === 'error' ? '#ef4444' : '#22c55e';
             t.classList.add('visible');
-            setTimeout(() => t.classList.remove('visible'), 3500);
+            setTimeout(() => { t.classList.remove('visible'); t.style.background = ''; }, 3500);
         }
 
-        document.addEventListener('DOMContentLoaded', () => {
+        document.addEventListener('DOMContentLoaded', async () => {
             if (typeof feather !== 'undefined') feather.replace();
+            
+            await loadBusinessPreviewData();
+            config = await loadInvoiceSettingsFromDB('pos');
             syncUIFromConfig();
 
             document.querySelectorAll('input[type=checkbox]').forEach(el => {

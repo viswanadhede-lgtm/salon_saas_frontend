@@ -400,7 +400,13 @@
     <script src="logout.js"></script>
     <script type="module" src="scripts/global-auth-guard.js"></script>
     <script type="module">
-        import { getInvoiceConfig, saveInvoiceConfig, renderLiveInvoicePreview } from './scripts/invoice-state.js';
+        import { 
+            getInvoiceConfig, 
+            loadInvoiceSettingsFromDB, 
+            saveInvoiceSettingsToDB, 
+            renderLiveInvoicePreview, 
+            loadBusinessPreviewData 
+        } from './scripts/invoice-state.js';
 
         let config = getInvoiceConfig();
 
@@ -463,8 +469,8 @@
         }
 
         function syncConfigFromUI() {
-            config.prefix = getVal('cfgPrefix');
-            config.startingNumber = getVal('cfgStartingNumber');
+            config.prefix = getVal('cfgPrefix') || 'INV-';
+            config.startingNumber = getVal('cfgStartingNumber') || '1001';
 
             config.header.showLogo = isChecked('hdrLogo');
             config.header.showDisplayName = isChecked('hdrDisplayName');
@@ -534,9 +540,32 @@
             renderLiveInvoicePreview('common', 'invoicePreviewContainer', config);
         }
 
-        window.saveCommonConfig = function() {
-            saveInvoiceConfig(config);
-            showToast('Common invoice settings saved successfully!', 'success');
+        window.saveCommonConfig = async function() {
+            const btn = document.getElementById('btnSave');
+            if (btn) {
+                btn.disabled = true;
+                btn.innerHTML = '<div style="width:14px;height:14px;border:2px solid rgba(255,255,255,0.3);border-top-color:#fff;border-radius:50%;animation:spin 1s linear infinite;display:inline-block;"></div> Saving...';
+            }
+
+            try {
+                await saveInvoiceSettingsToDB('common', config);
+                showToast('✓ Common invoice settings saved!', 'success');
+                document.getElementById('savebar')?.classList.remove('visible');
+            } catch (err) {
+                console.error('Error saving common invoice settings:', err);
+                showToast(err.message || 'Failed to save. Please try again.', 'error');
+            } finally {
+                if (btn) {
+                    btn.disabled = false;
+                    btn.innerHTML = '<i data-feather="save" style="width:15px;height:15px;"></i> Save Common Invoice';
+                    if (typeof feather !== 'undefined') feather.replace();
+                }
+            }
+        };
+
+        window.cancelCommonConfig = async function() {
+            config = await loadInvoiceSettingsFromDB('common');
+            syncUIFromConfig();
             document.getElementById('savebar')?.classList.remove('visible');
         };
 
@@ -552,14 +581,19 @@
 
         function showToast(msg, type = 'success') {
             const t = document.getElementById('toastNotification');
+            if (!t) return;
             t.textContent = msg;
-            t.style.background = type === 'error' ? '#dc2626' : '#1e293b';
+            t.style.background = type === 'error' ? '#ef4444' : '#22c55e';
             t.classList.add('visible');
-            setTimeout(() => t.classList.remove('visible'), 3500);
+            setTimeout(() => { t.classList.remove('visible'); t.style.background = ''; }, 3500);
         }
 
-        document.addEventListener('DOMContentLoaded', () => {
+        document.addEventListener('DOMContentLoaded', async () => {
             if (typeof feather !== 'undefined') feather.replace();
+            
+            // Load live company info for preview and settings from Supabase
+            await loadBusinessPreviewData();
+            config = await loadInvoiceSettingsFromDB('common');
             syncUIFromConfig();
 
             document.querySelectorAll('.form-input, .form-textarea, input[type=checkbox]').forEach(el => {
