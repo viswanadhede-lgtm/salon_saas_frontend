@@ -301,7 +301,7 @@
 
             <!-- Add / Edit User Modal -->
             <div class="modal-overlay" id="userModalOverlay">
-                <div class="modal-container" id="userModal" style="width:920px;max-width:94vw;">
+                <div class="modal-container" id="userModal" style="width:1040px;max-width:95vw;">
                     <div class="modal-header">
                         <div class="header-titles">
                             <h2 id="userModalTitle">Add User</h2>
@@ -310,13 +310,69 @@
                         <button class="modal-close" id="closeUserModal"><i data-feather="x"></i></button>
                     </div>
                     <style>
-                        #userModal .modal-body { padding: 2.5rem 3rem !important; }
-                        #userModal .modal-body > div { padding: 0 !important; }
+                        #userModal {
+                            width: 1040px !important;
+                            max-width: 95vw !important;
+                            border-radius: 16px !important;
+                        }
+                        #userModal .modal-header {
+                            padding: 1.6rem 2.75rem !important;
+                        }
+                        #userModal .modal-header h2 {
+                            font-size: 1.35rem !important;
+                        }
+                        #userModal .modal-header .subtitle {
+                            font-size: 0.875rem !important;
+                        }
+                        #userModal .modal-body {
+                            padding: 2.25rem 2.75rem !important;
+                        }
+                        #userModal .modal-body > div {
+                            padding: 0 !important;
+                        }
+                        #userModal .form-group {
+                            margin-bottom: 0 !important;
+                        }
+                        #userModal .form-label {
+                            font-size: 0.85rem !important;
+                            font-weight: 600 !important;
+                            color: #334155 !important;
+                            margin-bottom: 6px !important;
+                            display: block !important;
+                        }
+                        #userModal .form-input,
+                        #userModal .form-select {
+                            height: 46px !important;
+                            padding: 10px 14px !important;
+                            font-size: 0.925rem !important;
+                            border-radius: 10px !important;
+                            border: 1.5px solid #e2e8f0 !important;
+                            transition: all 0.2s ease !important;
+                            background-color: #fff !important;
+                            width: 100% !important;
+                            box-sizing: border-box !important;
+                        }
+                        #userModal .form-input:focus,
+                        #userModal .form-select:focus {
+                            border-color: #8b5cf6 !important;
+                            box-shadow: 0 0 0 3px rgba(139, 92, 246, 0.15) !important;
+                            outline: none !important;
+                        }
+                        #userModal .modal-footer {
+                            padding: 1.25rem 2.75rem !important;
+                        }
+                        #userModal .modal-footer .btn {
+                            padding: 11px 24px !important;
+                            font-size: 0.925rem !important;
+                            font-weight: 600 !important;
+                            border-radius: 10px !important;
+                            height: 44px !important;
+                        }
                     </style>
                     <div class="modal-body" style="overflow-y:auto;">
-                        <div style="display:grid;grid-template-columns:1fr 1fr;gap:48px;">
-                            <div style="display:flex;flex-direction:column;gap:22px;">
-                                <p style="font-size:0.72rem;font-weight:700;color:#94a3b8;text-transform:uppercase;letter-spacing:.06em;margin-bottom:0;">Identity</p>
+                        <div style="display:grid;grid-template-columns:1fr 1fr;gap:56px;">
+                            <div style="display:flex;flex-direction:column;gap:24px;">
+                                <p style="font-size:0.75rem;font-weight:700;color:#94a3b8;text-transform:uppercase;letter-spacing:.08em;margin-bottom:0;">Identity</p>
                                 <div class="form-group" style="margin-bottom:0;">
                                     <label class="form-label">Full Name <span class="text-rose">*</span></label>
                                     <input type="text" id="uFullName" class="form-input" placeholder="e.g., Rahul Sharma">
@@ -334,8 +390,8 @@
                                     <input type="password" id="uPassword" class="form-input" placeholder="Min 6 characters">
                                 </div>
                             </div>
-                            <div style="display:flex;flex-direction:column;gap:22px;">
-                                <p style="font-size:0.72rem;font-weight:700;color:#94a3b8;text-transform:uppercase;letter-spacing:.06em;margin-bottom:0;">Access Control</p>
+                            <div style="display:flex;flex-direction:column;gap:24px;">
+                                <p style="font-size:0.75rem;font-weight:700;color:#94a3b8;text-transform:uppercase;letter-spacing:.08em;margin-bottom:0;">Access Control</p>
                                 <div class="form-group" style="margin-bottom:0;">
                                     <label class="form-label">Role <span class="text-rose">*</span></label>
                                     <select id="uRole" class="form-select">
@@ -359,10 +415,10 @@
                                 </div>
                                 <div class="form-group" style="margin-bottom:0;">
                                     <label class="form-label">Account Status</label>
-                                    <div style="display:flex;align-items:center;justify-content:space-between;padding:14px 18px;background:#f8fafc;border:1px solid #e2e8f0;border-radius:8px;">
+                                    <div style="display:flex;align-items:center;justify-content:space-between;padding:16px 20px;background:#f8fafc;border:1.5px solid #e2e8f0;border-radius:10px;margin-top:2px;">
                                         <div>
-                                            <p style="margin:0;font-size:0.9rem;font-weight:500;color:#1e293b;">Active Account</p>
-                                            <p style="margin:3px 0 0;font-size:0.78rem;color:#64748b;">User can log in and use the system.</p>
+                                            <p style="margin:0;font-size:0.95rem;font-weight:600;color:#1e293b;">Active Account</p>
+                                            <p style="margin:3px 0 0;font-size:0.8rem;color:#64748b;">User can log in and use the system.</p>
                                         </div>
                                         <label class="switch"><input type="checkbox" id="uStatus" checked><span class="slider round"></span></label>
                                     </div>
