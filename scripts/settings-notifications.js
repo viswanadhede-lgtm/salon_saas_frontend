@@ -4,7 +4,18 @@ document.addEventListener('DOMContentLoaded', () => {
     const savebar = document.getElementById('savebar');
     const btnSave = document.getElementById('btnSave');
 
-    // Helper to get company ID
+// Helper to get company ID
+    function getCompanyId() {
+        try {
+            const ctx = JSON.parse(localStorage.getItem('appContext') || '{}');
+            return ctx.company?.id || localStorage.getItem('company_id') || null;
+        } catch { return localStorage.getItem('company_id') || null; }
+    }
+
+    // Helper to get branch ID (fallback to select element)
+    function getBranchId() {
+        return localStorage.getItem('active_branch_id') || document.querySelector('.branch-select')?.value || null;
+    }
     function getCompanyId() {
         try {
             const ctx = JSON.parse(localStorage.getItem('appContext') || '{}');
@@ -400,7 +411,7 @@ document.addEventListener('DOMContentLoaded', () => {
     // ── Helper Functions ──
 function mapRowsToPrefs(rows) {
     if (!Array.isArray(rows) || rows.length === 0) return null;
-    const prefs = JSON.parse(JSON.stringify(defaultPrefs)); // deep copy
+    const prefs = JSON.parse(JSON.stringify(defaultPrefs));
     rows.forEach(r => {
         const { category, group_key, event_key, channel, enabled } = r;
         if (category === 'marketing') {
@@ -416,13 +427,10 @@ function mapRowsToPrefs(rows) {
             if (!prefs.customer_notifications[sec].events[event_key]) prefs.customer_notifications[sec].events[event_key] = {};
             prefs.customer_notifications[sec].events[event_key][channel] = enabled;
         } else {
-            // System categories (bookings, customers, staff, services, pos, payments, marketing)
             if (!prefs[category]) prefs[category] = { master: true };
             if (event_key) {
-                // Individual event toggle
                 prefs[category][event_key] = enabled;
             } else {
-                // Master toggle for the category
                 prefs[category].master = enabled;
             }
         }
@@ -432,103 +440,49 @@ function mapRowsToPrefs(rows) {
 
 function buildRowsFromUI(companyId, branchId) {
     const rows = [];
-    // System categories
     const systemCategories = ['bookings','customers','staff','services','pos','payments','marketing'];
     systemCategories.forEach(cat => {
         const masterEl = document.getElementById(`master_${cat}`);
         if (masterEl) {
-            rows.push({
-                company_id: companyId,
-                branch_id: branchId,
-                category: cat,
-                group_key: null,
-                event_key: null,
-                channel: null,
-                enabled: masterEl.checked
-            });
+            rows.push({ company_id: companyId, branch_id: branchId, category: cat, group_key: cat, event_key: null, channel: null, enabled: masterEl.checked });
         }
-        // Sub‑events for system categories
         const catPrefs = defaultPrefs[cat] || {};
         Object.keys(catPrefs).forEach(key => {
             if (key === 'master') return;
             const cb = document.getElementById(key);
             if (cb) {
-                rows.push({
-                    company_id: companyId,
-                    branch_id: branchId,
-                    category: cat,
-                    group_key: null,
-                    event_key: key,
-                    channel: null,
-                    enabled: cb.checked
-                });
+                rows.push({ company_id: companyId, branch_id: branchId, category: cat, group_key: cat, event_key: key, channel: null, enabled: cb.checked });
             }
         });
     });
-    // Customer notifications (booking, purchase, membership)
     ['booking','purchase','membership'].forEach(sec => {
         const masterEl = document.getElementById(`cust_master_${sec}`);
         if (masterEl) {
-            rows.push({
-                company_id: companyId,
-                branch_id: branchId,
-                category: 'customer',
-                group_key: sec,
-                event_key: null,
-                channel: null,
-                enabled: masterEl.checked
-            });
+            rows.push({ company_id: companyId, branch_id: branchId, category: 'customer', group_key: sec, event_key: null, channel: null, enabled: masterEl.checked });
         }
         const table = document.querySelector(`.cn-table[data-section="${sec}"]`);
         if (table) {
             table.querySelectorAll('tbody tr[data-event-key]').forEach(row => {
                 const evKey = row.getAttribute('data-event-key');
                 row.querySelectorAll('.whatsapp-chk,.sms-chk,.email-chk').forEach(cb => {
-                    const channel = cb.classList.contains('whatsapp-chk') ? 'whatsapp' :
-                                    cb.classList.contains('sms-chk') ? 'sms' : 'email';
-                    rows.push({
-                        company_id: companyId,
-                        branch_id: branchId,
-                        category: 'customer',
-                        group_key: sec,
-                        event_key: evKey,
-                        channel: channel,
-                        enabled: cb.checked
-                    });
+                    const channel = cb.classList.contains('whatsapp-chk') ? 'whatsapp' : cb.classList.contains('sms-chk') ? 'sms' : 'email';
+                    rows.push({ company_id: companyId, branch_id: branchId, category: 'customer', group_key: sec, event_key: evKey, channel: channel, enabled: cb.checked });
                 });
             });
         }
     });
-    // Marketing notifications (offers, business)
     ['offers','business'].forEach(sec => {
         const masterEl = document.getElementById(`mkt_master_${sec}`);
         if (masterEl) {
-            rows.push({
-                company_id: companyId,
-                branch_id: branchId,
-                category: 'marketing',
-                group_key: sec,
-                event_key: null,
-                channel: null,
-                enabled: masterEl.checked
-            });
+            rows.push({ company_id: companyId, branch_id: branchId, category: 'marketing', group_key: sec, event_key: null, channel: null, enabled: masterEl.checked });
         }
         const table = document.querySelector(`.cn-table[data-mkt-section="${sec}"]`);
         if (table) {
             table.querySelectorAll('tbody tr[data-event-key]').forEach(row => {
                 const evKey = row.getAttribute('data-event-key');
                 row.querySelectorAll('.whatsapp-chk,.sms-chk,.email-chk').forEach(cb => {
-                    const channel = cb.classList.contains('whatsapp-chk') ? 'whatsapp' :
-                                    cb.classList.contains('sms-chk') ? 'sms' : 'email';
-                    rows.push({
-                        company_id: companyId,
-                        branch_id: branchId,
-                        category: 'marketing',
-                        group_key: sec,
-                        event_key: evKey,
-                        channel: channel,
-                        enabled: cb.checked
-                    });
+                    const channel = cb.classList.contains('whatsapp-chk') ? 'whatsapp' : cb.classList.contains('sms-chk') ? 'sms' : 'email';
+                    rows.push({ company_id: companyId, branch_id: branchId, category: 'marketing', group_key: sec, event_key: evKey, channel: channel, enabled: cb.checked });
                 });
             });
         }
