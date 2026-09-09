@@ -12,11 +12,30 @@ document.addEventListener('DOMContentLoaded', () => {
         } catch { return localStorage.getItem('company_id') || null; }
     }
 
-    // Helper to get branch ID (fallback to select element)
-    function getBranchId() {
-        return localStorage.getItem('active_branch_id') || document.querySelector('.branch-select')?.value || null;
+    // Helper to get branch ID (with fallback to context and branches query)
+    async function getBranchId(companyId) {
+        let bId = localStorage.getItem('active_branch_id');
+        if (bId && bId !== 'Downtown Branch' && bId !== 'all') return bId;
+        try {
+            const ctx = JSON.parse(localStorage.getItem('appContext') || '{}');
+            if (ctx.current_branch_id) return ctx.current_branch_id;
+            if (ctx.branches && ctx.branches.length > 0 && (ctx.branches[0].id || ctx.branches[0].branch_id)) {
+                return ctx.branches[0].id || ctx.branches[0].branch_id;
+            }
+        } catch {}
+        if (companyId) {
+            const { data: bList } = await supabase
+                .from('branches')
+                .select('branch_id')
+                .eq('company_id', companyId)
+                .limit(1);
+            if (bList && bList.length > 0 && bList[0].branch_id) {
+                localStorage.setItem('active_branch_id', bList[0].branch_id);
+                return bList[0].branch_id;
+            }
+        }
+        return null;
     }
-// Duplicate getCompanyId removed
 
     // ── Feather icons + sidebar ──
     if (typeof feather !== 'undefined') feather.replace();
@@ -287,12 +306,18 @@ document.addEventListener('DOMContentLoaded', () => {
         if (!companyId) return;
 
         try {
+            const branchId = await getBranchId(companyId);
             // Fetch all notification rows for this company/branch
-            const { data: rows, error } = await supabase
+            let query = supabase
                 .from('notification_settings')
                 .select('*')
-                .eq('company_id', companyId)
-                .eq('branch_id', getBranchId ? getBranchId() : null); // fallback if getBranchId not defined
+                .eq('company_id', companyId);
+
+            if (branchId) {
+                query = query.eq('branch_id', branchId);
+            }
+
+            const { data: rows, error } = await query;
 
             if (error) {
                 console.error('Error loading notification settings:', error);
@@ -303,6 +328,9 @@ document.addEventListener('DOMContentLoaded', () => {
 
             // Also cache locally for the notification-manager to read
             localStorage.setItem(`notification_prefs_${companyId}`, JSON.stringify(prefs));
+            if (branchId) {
+                localStorage.setItem(`notification_prefs_${companyId}_${branchId}`, JSON.stringify(prefs));
+            }
 
             // Apply System Notifications to UI
             const systemCategories = ['bookings', 'customers', 'staff', 'services', 'pos', 'payments', 'marketing'];
@@ -404,135 +432,213 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     // ── Helper Functions ──
-function mapRowsToPrefs(rows) {
-    if (!Array.isArray(rows) || rows.length === 0) return JSON.parse(JSON.stringify(defaultPrefs));
-    const prefs = JSON.parse(JSON.stringify(defaultPrefs));
-    rows.forEach(r => {
-        const { category, group_key, event_key, channel, enabled } = r;
-        if (category === 'marketing') {
-            if (!prefs.marketing_notifications) prefs.marketing_notifications = {};
-            const sec = group_key;
-            if (!prefs.marketing_notifications[sec]) prefs.marketing_notifications[sec] = { master: true, events: {} };
-            if (event_key) {
-                if (!prefs.marketing_notifications[sec].events[event_key]) prefs.marketing_notifications[sec].events[event_key] = {};
-                prefs.marketing_notifications[sec].events[event_key][channel] = enabled;
+    function mapRowsToPrefs(rows) {
+        if (!Array.isArray(rows) || rows.length === 0) return JSON.parse(JSON.stringify(defaultPrefs));
+        const prefs = JSON.parse(JSON.stringify(defaultPrefs));
+        rows.forEach(r => {
+            const { category, group_key, event_key, channel, enabled } = r;
+            if (category === 'marketing') {
+                if (!prefs.marketing_notifications) prefs.marketing_notifications = {};
+                const sec = group_key;
+                if (!prefs.marketing_notifications[sec]) prefs.marketing_notifications[sec] = { master: true, events: {} };
+                if (event_key) {
+                    if (!prefs.marketing_notifications[sec].events[event_key]) prefs.marketing_notifications[sec].events[event_key] = {};
+                    prefs.marketing_notifications[sec].events[event_key][channel] = enabled;
+                } else {
+                    prefs.marketing_notifications[sec].master = enabled;
+                }
+            } else if (category === 'customer') {
+                if (!prefs.customer_notifications) prefs.customer_notifications = {};
+                const sec = group_key;
+                if (!prefs.customer_notifications[sec]) prefs.customer_notifications[sec] = { master: true, events: {} };
+                if (event_key) {
+                    if (!prefs.customer_notifications[sec].events[event_key]) prefs.customer_notifications[sec].events[event_key] = {};
+                    prefs.customer_notifications[sec].events[event_key][channel] = enabled;
+                } else {
+                    prefs.customer_notifications[sec].master = enabled;
+                }
             } else {
-                prefs.marketing_notifications[sec].master = enabled;
-            }
-        } else if (category === 'customer') {
-            if (!prefs.customer_notifications) prefs.customer_notifications = {};
-            const sec = group_key;
-            if (!prefs.customer_notifications[sec]) prefs.customer_notifications[sec] = { master: true, events: {} };
-            if (event_key) {
-                if (!prefs.customer_notifications[sec].events[event_key]) prefs.customer_notifications[sec].events[event_key] = {};
-                prefs.customer_notifications[sec].events[event_key][channel] = enabled;
-            } else {
-                prefs.customer_notifications[sec].master = enabled;
-            }
-        } else {
-            if (!prefs[category]) prefs[category] = { master: true };
-            if (event_key) {
-                prefs[category][event_key] = enabled;
-            } else {
-                prefs[category].master = enabled;
-            }
-        }
-    });
-    return prefs;
-}
-
-function buildRowsFromUI(companyId, branchId) {
-    const rows = [];
-    const systemCategories = ['bookings','customers','staff','services','pos','payments','marketing'];
-    systemCategories.forEach(cat => {
-        const masterEl = document.getElementById(`master_${cat}`);
-        if (masterEl) {
-            rows.push({ company_id: companyId, branch_id: branchId, category: cat, group_key: cat, event_key: null, channel: 'email', enabled: masterEl.checked });
-        }
-        const catPrefs = defaultPrefs[cat] || {};
-        Object.keys(catPrefs).forEach(key => {
-            if (key === 'master') return;
-            const cb = document.getElementById(key);
-            if (cb) {
-                rows.push({ company_id: companyId, branch_id: branchId, category: cat, group_key: cat, event_key: key, channel: 'email', enabled: cb.checked });
+                // System categories: category === 'system' with group_key (e.g. 'bookings', 'customers', etc.)
+                const sec = group_key || category;
+                if (prefs[sec]) {
+                    if (event_key) {
+                        prefs[sec][event_key] = enabled;
+                    } else {
+                        prefs[sec].master = enabled;
+                    }
+                }
             }
         });
-    });
-    ['booking','purchase','membership'].forEach(sec => {
-        const masterEl = document.getElementById(`cust_master_${sec}`);
-        if (masterEl) {
-            rows.push({ company_id: companyId, branch_id: branchId, category: 'customer', group_key: sec, event_key: null, channel: 'email', enabled: masterEl.checked });
-        }
-        const table = document.querySelector(`.cn-table[data-section="${sec}"]`);
-        if (table) {
-            table.querySelectorAll('tbody tr[data-event-key]').forEach(row => {
-                const evKey = row.getAttribute('data-event-key');
-                row.querySelectorAll('.whatsapp-chk,.sms-chk,.email-chk').forEach(cb => {
-                    const channel = cb.classList.contains('whatsapp-chk') ? 'whatsapp' : cb.classList.contains('sms-chk') ? 'sms' : 'email';
-                    rows.push({ company_id: companyId, branch_id: branchId, category: 'customer', group_key: sec, event_key: evKey, channel: channel, enabled: cb.checked });
-                });
-            });
-        }
-    });
-    ['offers','business'].forEach(sec => {
-        const masterEl = document.getElementById(`mkt_master_${sec}`);
-        if (masterEl) {
-            rows.push({ company_id: companyId, branch_id: branchId, category: 'marketing', group_key: sec, event_key: null, channel: 'email', enabled: masterEl.checked });
-        }
-        const table = document.querySelector(`.cn-table[data-mkt-section="${sec}"]`);
-        if (table) {
-            table.querySelectorAll('tbody tr[data-event-key]').forEach(row => {
-                const evKey = row.getAttribute('data-event-key');
-                row.querySelectorAll('.whatsapp-chk,.sms-chk,.email-chk').forEach(cb => {
-                    const channel = cb.classList.contains('whatsapp-chk') ? 'whatsapp' : cb.classList.contains('sms-chk') ? 'sms' : 'email';
-                    rows.push({ company_id: companyId, branch_id: branchId, category: 'marketing', group_key: sec, event_key: evKey, channel: channel, enabled: cb.checked });
-                });
-            });
-        }
-    });
-    return rows;
-}
+        return prefs;
+    }
 
-// ── Save to DB ──
+    function buildRowsFromUI(companyId, branchId) {
+        const rows = [];
+        const systemCategories = ['bookings','customers','staff','services','pos','payments','marketing'];
+        systemCategories.forEach(cat => {
+            const masterEl = document.getElementById(`master_${cat}`);
+            if (masterEl) {
+                rows.push({
+                    company_id: companyId,
+                    branch_id: branchId,
+                    category: 'system',
+                    group_key: cat,
+                    event_key: null,
+                    channel: 'in_app',
+                    enabled: masterEl.checked
+                });
+            }
+            const catPrefs = defaultPrefs[cat] || {};
+            Object.keys(catPrefs).forEach(key => {
+                if (key === 'master') return;
+                const cb = document.getElementById(key);
+                if (cb) {
+                    rows.push({
+                        company_id: companyId,
+                        branch_id: branchId,
+                        category: 'system',
+                        group_key: cat,
+                        event_key: key,
+                        channel: 'in_app',
+                        enabled: cb.checked
+                    });
+                }
+            });
+        });
+
+        ['booking','purchase','membership'].forEach(sec => {
+            const masterEl = document.getElementById(`cust_master_${sec}`);
+            if (masterEl) {
+                rows.push({
+                    company_id: companyId,
+                    branch_id: branchId,
+                    category: 'customer',
+                    group_key: sec,
+                    event_key: null,
+                    channel: null,
+                    enabled: masterEl.checked
+                });
+            }
+            const table = document.querySelector(`.cn-table[data-section="${sec}"]`);
+            if (table) {
+                table.querySelectorAll('tbody tr[data-event-key]').forEach(row => {
+                    const evKey = row.getAttribute('data-event-key');
+                    row.querySelectorAll('.whatsapp-chk,.sms-chk,.email-chk').forEach(cb => {
+                        const channel = cb.classList.contains('whatsapp-chk') ? 'whatsapp' : cb.classList.contains('sms-chk') ? 'sms' : 'email';
+                        rows.push({
+                            company_id: companyId,
+                            branch_id: branchId,
+                            category: 'customer',
+                            group_key: sec,
+                            event_key: evKey,
+                            channel: channel,
+                            enabled: cb.checked
+                        });
+                    });
+                });
+            }
+        });
+
+        ['offers','business'].forEach(sec => {
+            const masterEl = document.getElementById(`mkt_master_${sec}`);
+            if (masterEl) {
+                rows.push({
+                    company_id: companyId,
+                    branch_id: branchId,
+                    category: 'marketing',
+                    group_key: sec,
+                    event_key: null,
+                    channel: null,
+                    enabled: masterEl.checked
+                });
+            }
+            const table = document.querySelector(`.cn-table[data-mkt-section="${sec}"]`);
+            if (table) {
+                table.querySelectorAll('tbody tr[data-event-key]').forEach(row => {
+                    const evKey = row.getAttribute('data-event-key');
+                    row.querySelectorAll('.whatsapp-chk,.sms-chk,.email-chk').forEach(cb => {
+                        const channel = cb.classList.contains('whatsapp-chk') ? 'whatsapp' : cb.classList.contains('sms-chk') ? 'sms' : 'email';
+                        rows.push({
+                            company_id: companyId,
+                            branch_id: branchId,
+                            category: 'marketing',
+                            group_key: sec,
+                            event_key: evKey,
+                            channel: channel,
+                            enabled: cb.checked
+                        });
+                    });
+                });
+            }
+        });
+        return rows;
+    }
+
+    // ── Save to DB ──
     if (btnSave) {
         btnSave.addEventListener('click', async () => {
             const companyId = getCompanyId();
-            if (!companyId) return;
+            if (!companyId) {
+                alert('No active company found. Please sign in again.');
+                return;
+            }
 
             btnSave.disabled = true;
             btnSave.innerHTML = '<div style="width:14px;height:14px;border:2px solid rgba(255,255,255,0.3);border-top-color:#fff;border-radius:50%;animation:spin 1s linear infinite;display:inline-block;"></div> Saving...';
 
-            // Build rows for upsert using utility function
-            const rows = buildRowsFromUI(companyId, getBranchId ? getBranchId() : null);
-            console.log('Rows to upsert:', rows);
-
             try {
-                const { error } = await supabase
-                    .from('notification_settings')
-                    .upsert(rows, { onConflict: 'company_id,branch_id,category,group_key,event_key' });
+                const branchId = await getBranchId(companyId);
+                if (!branchId) {
+                    throw new Error('No branch ID found. Please make sure a branch is configured.');
+                }
 
-                if (error) throw error;
+                // Build rows for insertion
+                const rows = buildRowsFromUI(companyId, branchId);
+                console.log(`Saving ${rows.length} notification settings rows for branch:`, branchId);
+
+                // 1. Delete previous settings for this company & branch
+                const { error: delErr } = await supabase
+                    .from('notification_settings')
+                    .delete()
+                    .eq('company_id', companyId)
+                    .eq('branch_id', branchId);
+
+                if (delErr) {
+                    console.error('Error clearing old settings:', delErr);
+                    throw delErr;
+                }
+
+                // 2. Insert new settings rows
+                const { error: insErr } = await supabase
+                    .from('notification_settings')
+                    .insert(rows);
+
+                if (insErr) {
+                    console.error('Error inserting settings:', insErr);
+                    throw insErr;
+                }
 
                 // Update local cache for notification-manager
                 const prefs = mapRowsToPrefs(rows);
-                const branchId = getBranchId ? getBranchId() : null;
-                localStorage.setItem(`notification_prefs_${companyId}_${branchId || 'global'}`, JSON.stringify(prefs));
+                localStorage.setItem(`notification_prefs_${companyId}`, JSON.stringify(prefs));
+                localStorage.setItem(`notification_prefs_${companyId}_${branchId}`, JSON.stringify(prefs));
 
                 const toast = document.getElementById('toastNotification');
                 if (toast) {
                     toast.textContent = '✓ Notification settings saved!';
+                    toast.style.background = '#22c55e';
                     toast.classList.add('visible');
-                    setTimeout(() => toast.classList.remove('visible'), 3000);
+                    setTimeout(() => { toast.classList.remove('visible'); toast.style.background = ''; }, 3000);
                 }
                 hideSaveBar();
             } catch (err) {
                 console.error('Error saving notification settings:', err);
                 const toast = document.getElementById('toastNotification');
                 if (toast) {
-                    toast.textContent = 'Failed to save. Please try again.';
+                    toast.textContent = err.message ? `Failed to save: ${err.message}` : 'Failed to save. Please try again.';
                     toast.style.background = '#ef4444';
                     toast.classList.add('visible');
-                    setTimeout(() => { toast.classList.remove('visible'); toast.style.background = ''; }, 3000);
+                    setTimeout(() => { toast.classList.remove('visible'); toast.style.background = ''; }, 4000);
                 }
             } finally {
                 btnSave.disabled = false;
