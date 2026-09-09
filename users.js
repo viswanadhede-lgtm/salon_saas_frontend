@@ -188,7 +188,13 @@ import { supabase } from './lib/supabase.js';
                 rData.forEach(r => {
                     const opt = document.createElement('option');
                     opt.value = r.role_id;
-                    opt.textContent = r.role_name;
+                    const isOwnerRole = (r.role_name || '').toLowerCase() === 'owner';
+                    if (isOwnerRole) {
+                        opt.textContent = `${r.role_name} (Protected)`;
+                        opt.disabled = true;
+                    } else {
+                        opt.textContent = r.role_name;
+                    }
                     uRole.appendChild(opt);
                 });
             }
@@ -517,6 +523,13 @@ import { supabase } from './lib/supabase.js';
             // Find role name to cache on the user row for convenience
             const rObj = availableRoles.find(r => String(r.role_id) === String(role_id));
             const role_name = rObj ? rObj.role_name : null;
+
+            if ((role_name || '').toLowerCase() === 'owner') {
+                showToast('Owner is a protected role and cannot be assigned.', true);
+                saveBtn.disabled = false;
+                saveBtn.textContent = editingId !== null ? 'Save Changes' : 'Create User';
+                return;
+            }
             
             const branch_id = branch_v === 'all' ? null : branch_v;
             const status = active ? 'active' : 'inactive';
