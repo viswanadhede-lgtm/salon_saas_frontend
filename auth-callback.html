@@ -122,6 +122,9 @@
                     if (profile.branch_id)  localStorage.setItem('active_branch_id', profile.branch_id);
                     if (profile.role_id)    localStorage.setItem('role_id', profile.role_id);
 
+                    // Update last login timestamp (fire-and-forget)
+                    supabase.from('users').update({ last_login_at: new Date().toISOString() }).eq('user_id', user.id);
+
                     // Clear stale caches
                     localStorage.removeItem('userFeatures');
                     localStorage.removeItem('userSubFeatures');

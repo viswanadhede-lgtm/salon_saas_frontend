@@ -598,6 +598,9 @@ document.addEventListener('DOMContentLoaded', () => {
                     if (profile.company_id) localStorage.setItem('company_id', profile.company_id);
                     if (profile.branch_id) localStorage.setItem('active_branch_id', profile.branch_id); // Ensures app pulls correctly
                     if (profile.role_id) localStorage.setItem('role_id', profile.role_id);
+
+                    // Update last login timestamp (fire-and-forget)
+                    supabase.from('users').update({ last_login_at: new Date().toISOString() }).eq('user_id', user_id);
                 }
 
                 // Clear any stale feature caches to guarantee a fresh fetch on the dashboard loader

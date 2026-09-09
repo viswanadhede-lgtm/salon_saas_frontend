@@ -261,7 +261,17 @@ import { supabase } from './lib/supabase.js';
             const isOwner   = roleDisplay.toLowerCase() === 'owner';
             
             // Safe fallback for UI missing timestamps
-            const lastLoginText = u.last_login_at ? new Date(u.last_login_at).toLocaleDateString() : 'Never';
+            let lastLoginText = 'Never';
+            if (u.last_login_at) {
+                const d = new Date(u.last_login_at);
+                const days = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
+                const dd = String(d.getDate()).padStart(2,'0');
+                const mm = String(d.getMonth()+1).padStart(2,'0');
+                const yyyy = d.getFullYear();
+                const hh = String(d.getHours()).padStart(2,'0');
+                const min = String(d.getMinutes()).padStart(2,'0');
+                lastLoginText = `${days[d.getDay()]}, ${dd}-${mm}-${yyyy}, ${hh}:${min}`;
+            }
 
             const tr = document.createElement('tr');
             tr.style.cssText = `background:${rowBg};border-bottom:1px solid #f1f5f9;transition:background .15s;`;
