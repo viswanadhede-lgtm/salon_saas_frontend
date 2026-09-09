@@ -5,22 +5,73 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     const tbody = document.getElementById('branchesTableBody');
     let branchesData = [];
+    let companyUsers = [];
 
-    const companyId = localStorage.getItem('company_id');
+    function getCompanyId() {
+        try {
+            const ctx = JSON.parse(localStorage.getItem('appContext') || '{}');
+            if (ctx.company?.company_id) return ctx.company.company_id;
+            if (ctx.company?.id) return ctx.company.id;
+        } catch (e) {}
+        return localStorage.getItem('company_id') || null;
+    }
+
+    let companyId = getCompanyId();
+    if (!companyId) {
+        // Wait slightly if auth guard is initializing
+        await new Promise(r => setTimeout(r, 150));
+        companyId = getCompanyId();
+    }
+
     if (!companyId) {
         console.warn('No company_id found in localStorage');
         showToast('Please sign in to view branches', 'error');
         return;
     }
 
-    // ── Fetch from Supabase ────────────────────────────────────────────────
+    // ── Fetch Company Users for Manager selection ───────────────────────────
+    async function loadCompanyUsers() {
+        try {
+            const { data, error } = await supabase
+                .from('users')
+                .select('user_id, id, name, role_name, email')
+                .eq('company_id', companyId)
+                .neq('status', 'deleted');
+
+            if (!error && data) {
+                companyUsers = data;
+                populateManagerDropdown();
+            }
+        } catch (err) {
+            console.warn('Error loading company users for managers:', err);
+        }
+    }
+
+    function populateManagerDropdown(selectedManagerId = '') {
+        const select = document.getElementById('branchManager');
+        if (!select) return;
+        select.innerHTML = '<option value="">Unassigned / None</option>';
+        companyUsers.forEach(u => {
+            const uid = u.user_id || u.id;
+            const opt = document.createElement('option');
+            opt.value = uid;
+            opt.textContent = `${u.name || 'User'} (${u.role_name || 'Staff'})`;
+            if (selectedManagerId && String(selectedManagerId) === String(uid)) {
+                opt.selected = true;
+            }
+            select.appendChild(opt);
+        });
+    }
+
+    // ── Fetch Branches from Supabase ───────────────────────────────────────
     async function loadBranches() {
         try {
             const { data, error } = await supabase
                 .from('branches')
-                .select('branch_id, branch_name, branch_address, branch_phone, status')
+                .select('*')
                 .eq('company_id', companyId)
-                .neq('status', 'deleted');
+                .neq('status', 'deleted')
+                .order('created_at', { ascending: true });
 
             if (error) throw error;
             branchesData = data || [];
@@ -49,7 +100,9 @@ document.addEventListener('DOMContentLoaded', async () => {
             }));
 
             localStorage.setItem('appContext', JSON.stringify(context));
-            populateGlobalHeader(); // Instantly update header dropdown
+            if (typeof populateGlobalHeader === 'function') {
+                populateGlobalHeader(); // Instantly update header dropdown
+            }
         } catch (e) {
             console.error('Failed to sync global context:', e);
         }
@@ -71,16 +124,39 @@ document.addEventListener('DOMContentLoaded', async () => {
             const dotColor = isActive ? '#22c55e' : '#94a3b8';
             const rowBg = i % 2 === 0 ? '#fff' : '#fafafa';
 
+            // Find assigned manager name
+            let managerDisplay = 'Unassigned';
+            if (branch.manager_user_id) {
+                const mgr = companyUsers.find(u => String(u.user_id || u.id) === String(branch.manager_user_id));
+                if (mgr) {
+                    managerDisplay = mgr.name || 'Assigned';
+                }
+            }
+
+            // Formatted address display
+            const displayAddress = branch.branch_address || 
+                [branch.address_line_1, branch.city, branch.state].filter(Boolean).join(', ') || 
+                'N/A';
+
             const tr = document.createElement('tr');
             tr.style.cssText = `background:${rowBg}; border-bottom:1px solid #f1f5f9; transition:background 0.15s;`;
             tr.addEventListener('mouseenter', () => tr.style.background = '#f8fafc');
             tr.addEventListener('mouseleave', () => tr.style.background = rowBg);
 
             tr.innerHTML = `
-                <td style="padding:14px 16px; font-weight:600; color:#1e293b;">${branch.branch_name || 'N/A'}</td>
-                <td style="padding:14px 16px; text-align:center; color:#475569;">${branch.branch_address || 'N/A'}</td>
-                <td style="padding:14px 16px; color:#475569;">Assigned Manager</td>
-                <td style="padding:14px 16px; color:#475569;">${branch.branch_phone || 'N/A'}</td>
+                <td style="padding:14px 16px; font-weight:600; color:#1e293b;">
+                    <div>${escapeHtml(branch.branch_name || 'Unnamed Branch')}</div>
+                    ${branch.branch_code ? `<div style="font-size:0.75rem; color:#94a3b8; font-weight:400;">Code: ${escapeHtml(branch.branch_code)}</div>` : ''}
+                </td>
+                <td style="padding:14px 16px; text-align:center; color:#475569; max-width:240px; word-break:break-word;">
+                    ${escapeHtml(displayAddress)}
+                    ${branch.google_maps_url ? `<div><a href="${escapeHtml(branch.google_maps_url)}" target="_blank" rel="noopener noreferrer" style="font-size:0.75rem; color:#3b82f6; text-decoration:none;">View Map &rarr;</a></div>` : ''}
+                </td>
+                <td style="padding:14px 16px; color:#475569;">${escapeHtml(managerDisplay)}</td>
+                <td style="padding:14px 16px; color:#475569;">
+                    <div>${escapeHtml(branch.branch_phone || 'N/A')}</div>
+                    ${branch.branch_email ? `<div style="font-size:0.75rem; color:#94a3b8;">${escapeHtml(branch.branch_email)}</div>` : ''}
+                </td>
                 <td style="padding:14px 16px;">
                     <span style="${statusStyle}">
                         <span style="width:6px;height:6px;border-radius:50%;background:${dotColor};display:inline-block;"></span>
@@ -120,10 +196,11 @@ document.addEventListener('DOMContentLoaded', async () => {
         }
     }
 
-    loadBranches(); // Initial load
+    // Initial sequence
+    await loadCompanyUsers();
+    await loadBranches();
 
     // ── Panel Logic ─────────────────────────────────────────────────────────
-    const panel = document.getElementById('branchPanel');
     const overlay = document.getElementById('branchPanelOverlay');
     const btnAdd = document.getElementById('btnAddBranch');
     const btnClose = document.getElementById('btnClosePanel');
@@ -138,30 +215,45 @@ document.addEventListener('DOMContentLoaded', async () => {
         currentEditId = branchId;
 
         // Reset form
-        document.getElementById('branchName').value = '';
-        document.getElementById('branchAddress').value = '';
-        document.getElementById('branchPhone').value = '';
-        document.getElementById('branchEmail').value = '';
-        document.getElementById('branchCity').value = '';
+        setVal('branchName', '');
+        setVal('branchCode', '');
+        setVal('branchPhone', '');
+        setVal('branchEmail', '');
+        setVal('branchAddress', '');
+        setVal('branchCity', '');
+        setVal('branchState', '');
+        setVal('branchZip', '');
+        setVal('branchCountry', 'India');
+        setVal('branchMapsUrl', '');
 
         if (mode === 'edit' && branchId !== null) {
             const branch = branchesData.find(b => b.branch_id === branchId);
+            if (!branch) return;
+
             title.textContent = 'Edit Branch';
             subtitle.textContent = `Update details for ${branch.branch_name}`;
-            document.getElementById('btnSaveBranch').textContent = 'Update Branch';
-            
-            document.getElementById('branchName').value = branch.branch_name || '';
-            document.getElementById('branchAddress').value = branch.branch_address || '';
-            document.getElementById('branchPhone').value = branch.branch_phone || '';
+            btnSave.textContent = 'Update Branch';
+
+            setVal('branchName', branch.branch_name || '');
+            setVal('branchCode', branch.branch_code || '');
+            setVal('branchPhone', branch.branch_phone || '');
+            setVal('branchEmail', branch.branch_email || '');
+            setVal('branchAddress', branch.address_line_1 || branch.branch_address || '');
+            setVal('branchCity', branch.city || '');
+            setVal('branchState', branch.state || '');
+            setVal('branchZip', branch.pin_code || '');
+            setVal('branchCountry', branch.country || 'India');
+            setVal('branchMapsUrl', branch.google_maps_url || '');
+
+            populateManagerDropdown(branch.manager_user_id || '');
             document.getElementById('branchStatusToggle').checked = (branch.status === 'active');
-            // Assuming branchCity might be parsed from address later, leaving as mapped to address
-            document.getElementById('branchCity').value = branch.branch_address ? branch.branch_address.split(',')[0] : '';
-            
+
         } else {
             title.textContent = 'Add Branch';
             subtitle.textContent = 'Create a new physical location.';
+            populateManagerDropdown('');
             document.getElementById('branchStatusToggle').checked = true;
-            document.getElementById('btnSaveBranch').textContent = 'Save Branch';
+            btnSave.textContent = 'Save Branch';
         }
 
         overlay.classList.add('active');
@@ -172,17 +264,23 @@ document.addEventListener('DOMContentLoaded', async () => {
         const branch = branchesData.find(b => b.branch_id === id);
         if (branch) {
             const newStatus = branch.status === 'active' ? 'inactive' : 'active';
-            
+            const now = new Date().toISOString();
+
             try {
                 const { error } = await supabase
                     .from('branches')
                     .eq('branch_id', id)
-                    .update({ status: newStatus });
-                    
+                    .update({ 
+                        status: newStatus,
+                        updated_at: now
+                    });
+
                 if (error) throw error;
-                
+
                 branch.status = newStatus;
+                branch.updated_at = now;
                 renderTable();
+                updateGlobalContext();
                 showToast(`Branch "${branch.branch_name}" is now ${newStatus}.`, 'success');
             } catch (err) {
                 console.error("Error toggling branch status:", err);
@@ -237,7 +335,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
 
     function closeDeleteModal() {
-        document.getElementById('deleteBranchBackdrop').classList.remove('active');
+        document.getElementById('deleteBranchBackdrop')?.classList.remove('active');
         branchToDeleteId = null;
     }
 
@@ -253,10 +351,14 @@ document.addEventListener('DOMContentLoaded', async () => {
         closeDeleteModal();
         
         try {
+            const now = new Date().toISOString();
             const { error } = await supabase
                 .from('branches')
                 .eq('branch_id', id)
-                .update({ status: 'deleted' });
+                .update({ 
+                    status: 'deleted',
+                    updated_at: now
+                });
                 
             if (error) throw error;
             
@@ -275,77 +377,139 @@ document.addEventListener('DOMContentLoaded', async () => {
         currentEditId = null;
     }
 
-    btnAdd.addEventListener('click', () => openPanel('add'));
-    btnClose.addEventListener('click', closePanel);
-    btnCancel.addEventListener('click', closePanel);
-    overlay.addEventListener('click', (e) => {
-        if (e.target === overlay) {
-            closePanel();
-        }
-    });
+    if (btnAdd) btnAdd.addEventListener('click', () => openPanel('add'));
+    if (btnClose) btnClose.addEventListener('click', closePanel);
+    if (btnCancel) btnCancel.addEventListener('click', closePanel);
+    if (overlay) {
+        overlay.addEventListener('click', (e) => {
+            if (e.target === overlay) {
+                closePanel();
+            }
+        });
+    }
 
-    btnSave.addEventListener('click', async () => {
-        const btn = document.getElementById('btnSaveBranch');
-        const oText = btn.textContent;
-        btn.textContent = 'Saving...';
-        btn.disabled = true;
-        
-        try {
-            const name = document.getElementById('branchName').value.trim();
-            const address = document.getElementById('branchAddress').value.trim();
-            const phone = document.getElementById('branchPhone').value.trim();
-            const email = document.getElementById('branchEmail').value.trim();
-            const isActive = document.getElementById('branchStatusToggle').checked;
-            
+    if (btnSave) {
+        btnSave.addEventListener('click', async () => {
+            const name = getVal('branchName');
+            const phone = getVal('branchPhone');
+            const address = getVal('branchAddress');
+            const city = getVal('branchCity');
+            const state = getVal('branchState');
+            const zip = getVal('branchZip');
+            const country = getVal('branchCountry') || 'India';
+            const email = getVal('branchEmail');
+            const code = getVal('branchCode');
+            const managerId = getVal('branchManager');
+            const mapsUrl = getVal('branchMapsUrl');
+            const isActive = document.getElementById('branchStatusToggle')?.checked ?? true;
+
             if (!name) {
                 showToast('Branch name is required', 'error');
+                document.getElementById('branchName')?.focus();
+                return;
+            }
+            if (!phone) {
+                showToast('Phone number is required', 'error');
+                document.getElementById('branchPhone')?.focus();
+                return;
+            }
+            if (!address) {
+                showToast('Address line is required', 'error');
+                document.getElementById('branchAddress')?.focus();
                 return;
             }
 
-            const payload = {
-                branch_name: name,
-                branch_address: address,
-                branch_phone: phone,
-                branch_email: email,
-                status: isActive ? 'active' : 'inactive'
-            };
+            const oText = btnSave.textContent;
+            btnSave.textContent = 'Saving...';
+            btnSave.disabled = true;
 
-            if (currentEditId) {
-                // Update
-                const { error } = await supabase
-                    .from('branches')
-                    .eq('branch_id', currentEditId)
-                    .update({ ...payload, updated_at: new Date().toISOString() });
-                if (error) throw error;
-                showToast('Branch updated successfully!', 'success');
-            } else {
-                // Insert
-                payload.company_id = companyId;
-                const { error } = await supabase
-                    .from('branches')
-                    .insert(payload);
-                if (error) throw error;
-                showToast('Branch added successfully!', 'success');
+            try {
+                const now = new Date().toISOString();
+                const compositeAddress = [address, city, state, zip, country !== 'India' ? country : ''].filter(Boolean).join(', ');
+
+                const commonPayload = {
+                    branch_name:     name,
+                    branch_code:     code || null,
+                    manager_user_id: managerId || null,
+                    branch_phone:    phone,
+                    branch_email:    email || null,
+                    address_line_1:  address,
+                    branch_address:  compositeAddress || address,
+                    city:            city || null,
+                    state:           state || null,
+                    pin_code:        zip || null,
+                    country:         country || 'India',
+                    google_maps_url: mapsUrl || null,
+                    status:          isActive ? 'active' : 'inactive',
+                    updated_at:      now
+                };
+
+                if (currentEditId) {
+                    // Update existing branch (preserve created_at)
+                    const { error } = await supabase
+                        .from('branches')
+                        .eq('branch_id', currentEditId)
+                        .update(commonPayload);
+
+                    if (error) throw error;
+                    showToast('Branch updated successfully!', 'success');
+                } else {
+                    // Insert new branch (write created_at & updated_at)
+                    const insertPayload = {
+                        company_id: companyId,
+                        ...commonPayload,
+                        created_at: now
+                    };
+
+                    const { error } = await supabase
+                        .from('branches')
+                        .insert(insertPayload);
+
+                    if (error) throw error;
+                    showToast('Branch added successfully!', 'success');
+                }
+
+                closePanel();
+                await loadBranches(); // reload table & global context
+
+            } catch (err) {
+                console.error('Save error:', err);
+                showToast(err.message || 'Failed to save branch.', 'error');
+            } finally {
+                btnSave.textContent = oText;
+                btnSave.disabled = false;
             }
-            
-            closePanel();
-            await loadBranches(); // reload table
-            
-        } catch (err) {
-            console.error('Save error:', err);
-            showToast('Failed to save branch.', 'error');
-        } finally {
-            btn.textContent = oText;
-            btn.disabled = false;
-        }
-    });
+        });
+    }
 
-    function showToast(msg, type='success') {
-        const toast = document.getElementById('toastNotification');
-        if (toast) {
-            toast.textContent = msg;
-            toast.className = `toast-notification show ${type === 'error' ? 'toast-error' : ''}`;
-            setTimeout(() => { toast.className = 'toast-notification'; }, 3000);
+    // ── Helpers ─────────────────────────────────────────────────────────────
+    function getVal(id) {
+        const el = document.getElementById(id);
+        return el ? el.value.trim() : '';
+    }
+
+    function setVal(id, val) {
+        const el = document.getElementById(id);
+        if (el) el.value = val;
+    }
+
+    function escapeHtml(str) {
+        if (!str) return '';
+        const div = document.createElement('div');
+        div.textContent = str;
+        return div.innerHTML;
+    }
+
+    function showToast(msg, type = 'success') {
+        let toast = document.getElementById('toastNotification');
+        if (!toast) {
+            toast = document.createElement('div');
+            toast.id = 'toastNotification';
+            toast.className = 'toast-notification';
+            document.body.appendChild(toast);
         }
+        toast.textContent = msg;
+        toast.className = `toast-notification show ${type === 'error' ? 'toast-error' : ''}`;
+        setTimeout(() => { toast.className = 'toast-notification'; }, 3200);
     }
 });
