@@ -666,18 +666,22 @@
         });
 
         let isDirty = false;
+        window.isDirty = false;
         function markDirty() {
-            if (!isDirty) {
-                isDirty = true;
-                document.getElementById('savebar').classList.add('visible');
-                if (typeof feather !== 'undefined') feather.replace();
-            }
+            isDirty = true;
+            window.isDirty = true;
+            document.getElementById('savebar')?.classList.add('visible');
+            if (typeof feather !== 'undefined') feather.replace();
         }
+        window.markDirty = markDirty;
+
         function cancelChanges() {
             isDirty = false;
-            document.getElementById('savebar').classList.remove('visible');
-            if (typeof loadBusinessData === 'function') loadBusinessData();
+            window.isDirty = false;
+            document.getElementById('savebar')?.classList.remove('visible');
+            if (typeof window.loadBusinessData === 'function') window.loadBusinessData();
         }
+        window.cancelChanges = cancelChanges;
 
         window.addEventListener('beforeunload', e => {
             if (isDirty) { e.preventDefault(); e.returnValue = ''; }

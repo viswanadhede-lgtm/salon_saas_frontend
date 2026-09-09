@@ -1,39 +1,83 @@
-import { supabase } from './lib/supabase.js';
-
-const companyId = localStorage.getItem('company_id');
+import { supabase } from '../lib/supabase.js';
 
 let currentLogoUrl = null;
 let currentCoverUrl = null;
 
+// ── Resolve Company ID ───────────────────────────────────────────────────────
+export function getCompanyId() {
+    try {
+        const ctx = JSON.parse(localStorage.getItem('appContext') || '{}');
+        if (ctx.company?.company_id) return ctx.company.company_id;
+        if (ctx.company?.id) return ctx.company.id;
+    } catch (e) {}
+    return localStorage.getItem('company_id') || null;
+}
+
 // ── Load ────────────────────────────────────────────────────────────────────
 export async function loadBusinessData() {
-    if (!companyId) return;
+    let companyId = getCompanyId();
+    if (!companyId) {
+        // Retry shortly in case auth guard is still writing appContext
+        await new Promise(r => setTimeout(r, 150));
+        companyId = getCompanyId();
+    }
+
+    if (!companyId) {
+        console.warn('[settings-business] No company_id found.');
+        return;
+    }
+
     try {
-        const { data, error } = await supabase
-            .from('companies')
+        // 1. Fetch from company_settings table
+        const { data: settingsData, error: settingsErr } = await supabase
+            .from('company_settings')
             .select('*')
             .eq('company_id', companyId)
-            .single();
+            .maybeSingle();
 
-        if (error) {
-            console.error('[settings-business] load error:', error);
-            return;
+        if (settingsErr) {
+            console.error('[settings-business] Error loading company_settings:', settingsErr);
         }
-        if (!data) return;
 
-        // Populate fields
-        setVal('companyName',         data.company_name        || '');
-        setVal('displayName',         data.display_name        || '');
-        setVal('businessCategory',    data.business_category   || data.category || 'salon_spa');
-        setVal('businessType',        data.business_type       || 'single_location');
-        setVal('businessDescription', data.description         || '');
-        setVal('companyWebsite',      data.website             || '');
-        setVal('facebookUrl',         data.facebook_url        || data.facebook || '');
-        setVal('instagramUrl',        data.instagram_url       || data.instagram || '');
-        setVal('googleBusinessUrl',   data.google_business_url || data.google_business || data.gmb_url || '');
+        if (settingsData) {
+            // Populate from company_settings
+            setVal('companyName',         settingsData.legal_business_name || '');
+            setVal('displayName',         settingsData.display_name        || '');
+            setVal('businessCategory',    settingsData.business_category   || 'salon_spa');
+            setVal('businessType',        settingsData.business_structure  || 'single_location');
+            setVal('businessDescription', settingsData.business_description || '');
+            setVal('companyWebsite',      settingsData.website             || '');
+            setVal('googleBusinessUrl',   settingsData.google_business_profile_url || '');
+            setVal('instagramUrl',        settingsData.instagram_url       || '');
+            setVal('facebookUrl',         settingsData.facebook_url        || '');
 
-        // Logo
-        currentLogoUrl = data.logo_url || null;
+            currentLogoUrl = settingsData.logo_url || null;
+            currentCoverUrl = settingsData.cover_image_url || null;
+        } else {
+            // Fallback: row not yet created in company_settings, prefill defaults from companies table
+            const { data: comp, error: compErr } = await supabase
+                .from('companies')
+                .select('*')
+                .eq('company_id', companyId)
+                .maybeSingle();
+
+            if (!compErr && comp) {
+                setVal('companyName',         comp.company_name || comp.name || comp.email || '');
+                setVal('displayName',         comp.display_name || comp.name || '');
+                setVal('businessCategory',    comp.business_category || comp.category || 'salon_spa');
+                setVal('businessType',        comp.business_structure || comp.business_type || 'single_location');
+                setVal('businessDescription', comp.description || comp.business_description || '');
+                setVal('companyWebsite',      comp.website || '');
+                setVal('googleBusinessUrl',   comp.google_business_url || comp.google_business_profile_url || comp.gmb_url || '');
+                setVal('instagramUrl',        comp.instagram_url || comp.instagram || '');
+                setVal('facebookUrl',         comp.facebook_url || comp.facebook || '');
+
+                currentLogoUrl = comp.logo_url || null;
+                currentCoverUrl = comp.cover_image_url || comp.cover_url || null;
+            }
+        }
+
+        // Render Logo preview
         const logoBox = document.getElementById('logoPreviewBox');
         const btnRemoveLogo = document.getElementById('btnRemoveLogo');
         if (logoBox) {
@@ -46,8 +90,7 @@ export async function loadBusinessData() {
             }
         }
 
-        // Business Cover Image
-        currentCoverUrl = data.cover_url || data.cover_image_url || data.banner_url || null;
+        // Render Cover Image preview
         const coverBox = document.getElementById('coverPreviewBox');
         const btnRemoveCover = document.getElementById('btnRemoveCover');
         if (coverBox) {
@@ -62,15 +105,20 @@ export async function loadBusinessData() {
 
         if (typeof feather !== 'undefined') feather.replace();
 
+        // Reset dirty indicator
+        window.isDirty = false;
+        document.getElementById('savebar')?.classList.remove('visible');
+
     } catch (err) {
-        console.error('[settings-business] unexpected error:', err);
+        console.error('[settings-business] unexpected load error:', err);
     }
 }
 
 // ── Save ────────────────────────────────────────────────────────────────────
 window.saveBusinessSettings = async function () {
+    const companyId = getCompanyId();
     if (!companyId) {
-        showToast('No company session. Please sign in.', 'error');
+        showToast('No company session found. Please sign in.', 'error');
         return;
     }
 
@@ -95,87 +143,117 @@ window.saveBusinessSettings = async function () {
     }
 
     try {
-        // 1. Upload Logo if changed
+        // 1. Upload Logo if a new file was chosen
         const logoInput = document.getElementById('logoFileInput');
         let logoUrl = currentLogoUrl;
         if (logoInput?.files?.[0]) {
             const file = logoInput.files[0];
-            const ext = file.name.split('.').pop();
+            const ext = file.name.split('.').pop() || 'png';
             const path = `logos/${companyId}/logo_${Date.now()}.${ext}`;
             const { error: uploadErr } = await supabase.storage
                 .from('company-assets')
                 .upload(path, file, { upsert: true });
-            if (!uploadErr) {
+
+            if (uploadErr) {
+                console.warn('[settings-business] Logo upload error:', uploadErr);
+            } else {
                 const { data: urlData } = supabase.storage.from('company-assets').getPublicUrl(path);
-                logoUrl = urlData?.publicUrl || logoUrl;
-                currentLogoUrl = logoUrl;
+                if (urlData?.publicUrl) {
+                    logoUrl = urlData.publicUrl;
+                    currentLogoUrl = logoUrl;
+                }
             }
         }
 
-        // 2. Upload Cover Image if changed
+        // 2. Upload Cover Image if a new file was chosen
         const coverInput = document.getElementById('coverFileInput');
         let coverUrl = currentCoverUrl;
         if (coverInput?.files?.[0]) {
             const file = coverInput.files[0];
-            const ext = file.name.split('.').pop();
+            const ext = file.name.split('.').pop() || 'png';
             const path = `covers/${companyId}/cover_${Date.now()}.${ext}`;
             const { error: uploadErr } = await supabase.storage
                 .from('company-assets')
                 .upload(path, file, { upsert: true });
-            if (!uploadErr) {
+
+            if (uploadErr) {
+                console.warn('[settings-business] Cover upload error:', uploadErr);
+            } else {
                 const { data: urlData } = supabase.storage.from('company-assets').getPublicUrl(path);
-                coverUrl = urlData?.publicUrl || coverUrl;
-                currentCoverUrl = coverUrl;
+                if (urlData?.publicUrl) {
+                    coverUrl = urlData.publicUrl;
+                    currentCoverUrl = coverUrl;
+                }
             }
         }
 
-        // 3. Build payload
-        const payload = {
-            company_name:        companyName,
-            display_name:        displayName,
-            business_category:   getVal('businessCategory'),
-            business_type:       getVal('businessType'),
-            website:             getVal('companyWebsite'),
-            description:         getVal('businessDescription'),
-            facebook_url:        getVal('facebookUrl'),
-            instagram_url:       getVal('instagramUrl'),
-            google_business_url: getVal('googleBusinessUrl'),
-            updated_at:          new Date().toISOString(),
+        // 3. Check if record already exists in company_settings
+        const { data: existingRows, error: checkErr } = await supabase
+            .from('company_settings')
+            .select('company_id')
+            .eq('company_id', companyId);
+
+        if (checkErr) {
+            console.warn('[settings-business] Check existing error:', checkErr);
+        }
+
+        const recordExists = Array.isArray(existingRows) && existingRows.length > 0;
+        const now = new Date().toISOString();
+
+        const commonPayload = {
+            legal_business_name:         companyName,
+            display_name:                displayName,
+            logo_url:                    logoUrl || null,
+            cover_image_url:             coverUrl || null,
+            business_category:           getVal('businessCategory'),
+            business_structure:          getVal('businessType'),
+            business_description:       getVal('businessDescription'),
+            website:                     getVal('companyWebsite'),
+            google_business_profile_url: getVal('googleBusinessUrl'),
+            instagram_url:               getVal('instagramUrl'),
+            facebook_url:                getVal('facebookUrl'),
+            updated_at:                  now
         };
-        if (logoUrl !== undefined) payload.logo_url = logoUrl;
-        if (coverUrl !== undefined) {
-            payload.cover_url = coverUrl;
-            payload.cover_image_url = coverUrl;
-        }
 
-        let { error } = await supabase
-            .from('companies')
-            .eq('company_id', companyId)
-            .update(payload);
+        if (recordExists) {
+            // Update existing record (preserve created_at)
+            const { error: updateErr } = await supabase
+                .from('company_settings')
+                .eq('company_id', companyId)
+                .update(commonPayload);
 
-        // Fallback: If DB schema doesn't have extended columns yet, fallback gracefully to core columns
-        if (error && error.message) {
-            console.warn('[settings-business] update with extended columns failed, falling back to core columns:', error.message);
-            const corePayload = {
-                company_name:  companyName,
-                display_name:  displayName,
-                business_type: getVal('businessType'),
-                website:       getVal('companyWebsite'),
-                description:   getVal('businessDescription'),
-                updated_at:    new Date().toISOString(),
+            if (updateErr) throw new Error(updateErr.message || 'Failed to update company settings');
+        } else {
+            // Insert new record (write created_at and updated_at)
+            const insertPayload = {
+                company_id: companyId,
+                ...commonPayload,
+                created_at: now
             };
-            if (logoUrl !== undefined) corePayload.logo_url = logoUrl;
-            const res = await supabase.from('companies').eq('company_id', companyId).update(corePayload);
-            error = res.error;
+
+            const { error: insertErr } = await supabase
+                .from('company_settings')
+                .insert(insertPayload);
+
+            if (insertErr) throw new Error(insertErr.message || 'Failed to create company settings');
         }
 
-        if (error) throw new Error(error.message);
+        // 4. Best-effort sync with companies table for cross-app consistency
+        try {
+            await supabase
+                .from('companies')
+                .eq('company_id', companyId)
+                .update({
+                    company_name:  companyName,
+                    display_name:  displayName,
+                    logo_url:      logoUrl || null,
+                    updated_at:    now
+                });
+        } catch (syncErr) {
+            console.warn('[settings-business] companies table sync note:', syncErr);
+        }
 
-        showToast('Business settings saved successfully!', 'success');
-        if (typeof isDirty !== 'undefined') isDirty = false;
-        document.getElementById('savebar')?.classList.remove('visible');
-
-        // Update local session context if present
+        // 5. Update cached appContext in localStorage
         try {
             const appContext = JSON.parse(localStorage.getItem('appContext') || '{}');
             if (appContext.company) {
@@ -185,6 +263,13 @@ window.saveBusinessSettings = async function () {
                 localStorage.setItem('appContext', JSON.stringify(appContext));
             }
         } catch (e) {}
+
+        showToast('Business settings saved successfully!', 'success');
+        window.isDirty = false;
+        document.getElementById('savebar')?.classList.remove('visible');
+
+        // Reload data to reflect clean saved state
+        await loadBusinessData();
 
     } catch (err) {
         console.error('[settings-business] save error:', err);
@@ -222,9 +307,16 @@ window.removeCover = function () {
     if (typeof markDirty === 'function') markDirty();
 };
 
+// Expose loadBusinessData for cancel button
+window.loadBusinessData = loadBusinessData;
+
 // ── Helpers ──────────────────────────────────────────────────────────────────
 function getVal(id) { const el = document.getElementById(id); return el ? el.value.trim() : ''; }
 function setVal(id, val) { const el = document.getElementById(id); if (el) el.value = val; }
 
 // ── Init ────────────────────────────────────────────────────────────────────
-document.addEventListener('DOMContentLoaded', () => loadBusinessData());
+if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', () => loadBusinessData());
+} else {
+    loadBusinessData();
+}
