@@ -447,12 +447,13 @@ import { supabase } from './lib/supabase.js';
             modalTitle.textContent = 'Edit User';
             modalSub.textContent   = "Update this user's account and access details";
             saveBtn.textContent    = 'Save Changes';
-            if (pwdLabel) pwdLabel.innerHTML = 'Update Password <span class="text-rose">*</span>';
+            if (pwdLabel) pwdLabel.innerHTML = 'Update Password <span style="font-weight:400;color:#64748b;font-size:0.75rem;">(Leave blank to keep unchanged)</span>';
             
             document.getElementById('uFullName').value = user.name || '';
             document.getElementById('uEmail').value    = user.email || '';
             document.getElementById('uPhone').value    = user.phone || '';
-            document.getElementById('uPassword').value = user.password_hash || '';
+            document.getElementById('uPassword').value = '';
+            document.getElementById('uPassword').placeholder = '•••••••• (Leave blank to keep current)';
             
             if (user.role_id) document.getElementById('uRole').value = user.role_id;
             if (user.branch_id === null || user.branch_id === 'all') {
@@ -467,6 +468,7 @@ import { supabase } from './lib/supabase.js';
             modalSub.textContent   = 'Create a new system account.';
             saveBtn.textContent    = 'Create User';
             if (pwdLabel) pwdLabel.innerHTML = 'Create Password <span class="text-rose">*</span>';
+            document.getElementById('uPassword').placeholder = 'Min 6 characters';
         }
 
         overlay.classList.add('active');
@@ -475,7 +477,11 @@ import { supabase } from './lib/supabase.js';
 
     function closeModal() {
         overlay.classList.remove('active');
-        if (pwdInput) pwdInput.type = 'password';
+        if (pwdInput) {
+            pwdInput.type = 'password';
+            pwdInput.value = '';
+            pwdInput.placeholder = 'Min 6 characters';
+        }
         updateEyeIcon(false);
     }
 
@@ -488,7 +494,7 @@ import { supabase } from './lib/supabase.js';
         const name     = document.getElementById('uFullName').value.trim();
         const email    = document.getElementById('uEmail').value.trim();
         const phone    = document.getElementById('uPhone').value.trim();
-        const password = document.getElementById('uPassword').value;
+        const password = document.getElementById('uPassword').value.trim();
         const role_id  = document.getElementById('uRole').value;
         const branch_v = document.getElementById('uBranch').value;
         const active   = document.getElementById('uStatus').checked;
@@ -527,14 +533,14 @@ import { supabase } from './lib/supabase.js';
             };
 
             if (password) {
-                if (editingId !== null && editingOriginalPasswordHash && password === editingOriginalPasswordHash) {
-                    payload.password_hash = editingOriginalPasswordHash;
-                } else {
-                    const msgBuffer = new TextEncoder().encode(password);
-                    const hashBuffer = await crypto.subtle.digest('SHA-256', msgBuffer);
-                    const hashArray = Array.from(new Uint8Array(hashBuffer));
-                    payload.password_hash = hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
-                }
+                // If a new plain English password was typed, hash it using SHA-256
+                const msgBuffer = new TextEncoder().encode(password);
+                const hashBuffer = await crypto.subtle.digest('SHA-256', msgBuffer);
+                const hashArray = Array.from(new Uint8Array(hashBuffer));
+                payload.password_hash = hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
+            } else if (editingId !== null && editingOriginalPasswordHash) {
+                // Keep the existing hash unchanged
+                payload.password_hash = editingOriginalPasswordHash;
             }
 
             if (editingId !== null) {
