@@ -281,17 +281,19 @@ document.addEventListener('DOMContentLoaded', () => {
         if (!companyId) return;
 
         try {
-            const { data, error } = await supabase
-                .from('company_settings')
-                .select('notification_prefs')
+            // Fetch all notification rows for this company/branch
+            const { data: rows, error } = await supabase
+                .from('notification_settings')
+                .select('*')
                 .eq('company_id', companyId)
-                .single();
+                .eq('branch_id', getBranchId ? getBranchId() : null); // fallback if getBranchId not defined
 
-            if (error && error.code !== 'PGRST116') {
-                console.error('Error loading notification prefs:', error);
+            if (error) {
+                console.error('Error loading notification settings:', error);
             }
 
-            const prefs = (data && data.notification_prefs) ? data.notification_prefs : defaultPrefs;
+            // Transform rows into the nested prefs structure expected by the UI
+            const prefs = mapRowsToPrefs(rows) || defaultPrefs;
 
             // Also cache locally for the notification-manager to read
             localStorage.setItem(`notification_prefs_${companyId}`, JSON.stringify(prefs));
@@ -395,7 +397,146 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
-    // ── Save to DB ──
+    // ── Helper Functions ──
+function mapRowsToPrefs(rows) {
+    if (!Array.isArray(rows) || rows.length === 0) return null;
+    const prefs = JSON.parse(JSON.stringify(defaultPrefs)); // deep copy
+    rows.forEach(r => {
+        const { category, group_key, event_key, channel, enabled } = r;
+        if (category === 'marketing') {
+            if (!prefs.marketing_notifications) prefs.marketing_notifications = {};
+            const sec = group_key;
+            if (!prefs.marketing_notifications[sec]) prefs.marketing_notifications[sec] = { master: true, events: {} };
+            if (!prefs.marketing_notifications[sec].events[event_key]) prefs.marketing_notifications[sec].events[event_key] = {};
+            prefs.marketing_notifications[sec].events[event_key][channel] = enabled;
+        } else if (category === 'customer') {
+            if (!prefs.customer_notifications) prefs.customer_notifications = {};
+            const sec = group_key;
+            if (!prefs.customer_notifications[sec]) prefs.customer_notifications[sec] = { master: true, events: {} };
+            if (!prefs.customer_notifications[sec].events[event_key]) prefs.customer_notifications[sec].events[event_key] = {};
+            prefs.customer_notifications[sec].events[event_key][channel] = enabled;
+        } else {
+            // System categories (bookings, customers, staff, services, pos, payments, marketing)
+            if (!prefs[category]) prefs[category] = { master: true };
+            if (event_key) {
+                // Individual event toggle
+                prefs[category][event_key] = enabled;
+            } else {
+                // Master toggle for the category
+                prefs[category].master = enabled;
+            }
+        }
+    });
+    return prefs;
+}
+
+function buildRowsFromUI(companyId, branchId) {
+    const rows = [];
+    // System categories
+    const systemCategories = ['bookings','customers','staff','services','pos','payments','marketing'];
+    systemCategories.forEach(cat => {
+        const masterEl = document.getElementById(`master_${cat}`);
+        if (masterEl) {
+            rows.push({
+                company_id: companyId,
+                branch_id: branchId,
+                category: cat,
+                group_key: null,
+                event_key: null,
+                channel: null,
+                enabled: masterEl.checked
+            });
+        }
+        // Sub‑events for system categories
+        const catPrefs = defaultPrefs[cat] || {};
+        Object.keys(catPrefs).forEach(key => {
+            if (key === 'master') return;
+            const cb = document.getElementById(key);
+            if (cb) {
+                rows.push({
+                    company_id: companyId,
+                    branch_id: branchId,
+                    category: cat,
+                    group_key: null,
+                    event_key: key,
+                    channel: null,
+                    enabled: cb.checked
+                });
+            }
+        });
+    });
+    // Customer notifications (booking, purchase, membership)
+    ['booking','purchase','membership'].forEach(sec => {
+        const masterEl = document.getElementById(`cust_master_${sec}`);
+        if (masterEl) {
+            rows.push({
+                company_id: companyId,
+                branch_id: branchId,
+                category: 'customer',
+                group_key: sec,
+                event_key: null,
+                channel: null,
+                enabled: masterEl.checked
+            });
+        }
+        const table = document.querySelector(`.cn-table[data-section="${sec}"]`);
+        if (table) {
+            table.querySelectorAll('tbody tr[data-event-key]').forEach(row => {
+                const evKey = row.getAttribute('data-event-key');
+                row.querySelectorAll('.whatsapp-chk,.sms-chk,.email-chk').forEach(cb => {
+                    const channel = cb.classList.contains('whatsapp-chk') ? 'whatsapp' :
+                                    cb.classList.contains('sms-chk') ? 'sms' : 'email';
+                    rows.push({
+                        company_id: companyId,
+                        branch_id: branchId,
+                        category: 'customer',
+                        group_key: sec,
+                        event_key: evKey,
+                        channel: channel,
+                        enabled: cb.checked
+                    });
+                });
+            });
+        }
+    });
+    // Marketing notifications (offers, business)
+    ['offers','business'].forEach(sec => {
+        const masterEl = document.getElementById(`mkt_master_${sec}`);
+        if (masterEl) {
+            rows.push({
+                company_id: companyId,
+                branch_id: branchId,
+                category: 'marketing',
+                group_key: sec,
+                event_key: null,
+                channel: null,
+                enabled: masterEl.checked
+            });
+        }
+        const table = document.querySelector(`.cn-table[data-mkt-section="${sec}"]`);
+        if (table) {
+            table.querySelectorAll('tbody tr[data-event-key]').forEach(row => {
+                const evKey = row.getAttribute('data-event-key');
+                row.querySelectorAll('.whatsapp-chk,.sms-chk,.email-chk').forEach(cb => {
+                    const channel = cb.classList.contains('whatsapp-chk') ? 'whatsapp' :
+                                    cb.classList.contains('sms-chk') ? 'sms' : 'email';
+                    rows.push({
+                        company_id: companyId,
+                        branch_id: branchId,
+                        category: 'marketing',
+                        group_key: sec,
+                        event_key: evKey,
+                        channel: channel,
+                        enabled: cb.checked
+                    });
+                });
+            });
+        }
+    });
+    return rows;
+}
+
+// ── Save to DB ──
     if (btnSave) {
         btnSave.addEventListener('click', async () => {
             const companyId = getCompanyId();
@@ -404,76 +545,20 @@ document.addEventListener('DOMContentLoaded', () => {
             btnSave.disabled = true;
             btnSave.innerHTML = '<div style="width:14px;height:14px;border:2px solid rgba(255,255,255,0.3);border-top-color:#fff;border-radius:50%;animation:spin 1s linear infinite;display:inline-block;"></div> Saving...';
 
-            const newPrefs = {};
-
-            // 1. Collect System Notifications
-            const categories = ['bookings', 'customers', 'staff', 'services', 'pos', 'payments', 'marketing'];
-            categories.forEach(cat => {
-                newPrefs[cat] = {};
-                const masterEl = document.getElementById(`master_${cat}`);
-                newPrefs[cat].master = masterEl ? masterEl.checked : true;
-
-                const item = document.querySelector(`.accordion-item[data-category="${cat}"]`);
-                if (item) {
-                    item.querySelectorAll('.sub-event-list input[type="checkbox"]').forEach(cb => {
-                        newPrefs[cat][cb.id] = cb.checked;
-                    });
-                }
-            });
-
-            // 2. Collect Customer Notifications
-            const custPrefs = {};
-            ['booking', 'purchase', 'membership'].forEach(sec => {
-                const masterToggle = document.getElementById(`cust_master_${sec}`);
-                custPrefs[sec] = {
-                    master: masterToggle ? masterToggle.checked : true,
-                    events: {}
-                };
-                const table = document.querySelector(`.cn-table[data-section="${sec}"]`);
-                if (table) {
-                    table.querySelectorAll('tbody tr[data-event-key]').forEach(row => {
-                        const evKey = row.getAttribute('data-event-key');
-                        custPrefs[sec].events[evKey] = {
-                            whatsapp: !!row.querySelector('.whatsapp-chk')?.checked,
-                            sms: !!row.querySelector('.sms-chk')?.checked,
-                            email: !!row.querySelector('.email-chk')?.checked
-                        };
-                    });
-                }
-            });
-            newPrefs.customer_notifications = custPrefs;
-
-            // 3. Collect Marketing Notifications
-            const mktPrefs = {};
-            ['offers', 'business'].forEach(sec => {
-                const masterToggle = document.getElementById(`mkt_master_${sec}`);
-                mktPrefs[sec] = {
-                    master: masterToggle ? masterToggle.checked : true,
-                    events: {}
-                };
-                const table = document.querySelector(`.cn-table[data-mkt-section="${sec}"]`);
-                if (table) {
-                    table.querySelectorAll('tbody tr[data-event-key]').forEach(row => {
-                        const evKey = row.getAttribute('data-event-key');
-                        mktPrefs[sec].events[evKey] = {
-                            whatsapp: !!row.querySelector('.whatsapp-chk')?.checked,
-                            sms:      !!row.querySelector('.sms-chk')?.checked,
-                            email:    !!row.querySelector('.email-chk')?.checked
-                        };
-                    });
-                }
-            });
-            newPrefs.marketing_notifications = mktPrefs;
+            // Build rows for upsert using utility function
+            const rows = buildRowsFromUI(companyId, getBranchId ? getBranchId() : null);
 
             try {
                 const { error } = await supabase
-                    .from('company_settings')
-                    .update({ notification_prefs: newPrefs })
-                    .eq('company_id', companyId);
+                    .from('notification_settings')
+                    .upsert(rows, { onConflict: 'company_id,branch_id,category,group_key,event_key,channel' });
 
                 if (error) throw error;
 
-                localStorage.setItem(`notification_prefs_${companyId}`, JSON.stringify(newPrefs));
+                // Update local cache for notification-manager
+                const prefs = mapRowsToPrefs(rows);
+                const branchId = getBranchId ? getBranchId() : null;
+                localStorage.setItem(`notification_prefs_${companyId}_${branchId || 'global'}`, JSON.stringify(prefs));
 
                 const toast = document.getElementById('toastNotification');
                 if (toast) {
@@ -483,7 +568,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 }
                 hideSaveBar();
             } catch (err) {
-                console.error('Error saving notification prefs:', err);
+                console.error('Error saving notification settings:', err);
                 const toast = document.getElementById('toastNotification');
                 if (toast) {
                     toast.textContent = 'Failed to save. Please try again.';
