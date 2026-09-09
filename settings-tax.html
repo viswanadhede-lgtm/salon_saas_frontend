@@ -128,12 +128,12 @@
                 <div class="sp-card-body">
                     <div class="form-row">
                         <div class="form-group">
-                            <label class="form-label" for="companyName">Legal Business Name <span class="required">*</span></label>
+                            <label class="form-label" for="companyName">Legal Business Name <span class="optional">(From Business Settings)</span></label>
                             <div class="input-prefix-wrap">
                                 <span class="input-prefix"><i data-feather="briefcase" style="width:14px;height:14px;"></i></span>
-                                <input type="text" id="companyName" class="form-input with-prefix" placeholder="e.g., Shubha Beauty Salon Pvt Ltd" required>
+                                <input type="text" id="companyName" class="form-input with-prefix" placeholder="Configured in Business Settings" readonly style="background-color: #f8fafc; color: #475569; cursor: not-allowed;">
                             </div>
-                            <p class="form-hint">Official registered name for tax identification and compliance</p>
+                            <p class="form-hint">Official registered name from Business Settings (read-only)</p>
                         </div>
                         <div class="form-group">
                             <label class="form-label" for="regNumber">Business Registration Number <span class="optional">(Optional)</span></label>
@@ -259,30 +259,39 @@
                 document.getElementById('profileBackdrop').classList.remove('show');
             });
             document.querySelectorAll('.form-input, .form-select, input[type=checkbox]').forEach(el => {
+                if (el.id === 'companyName') return;
                 el.addEventListener(el.type === 'checkbox' ? 'change' : 'input', markDirty);
             });
         });
         let isDirty = false;
+        window.isDirty = false;
         function markDirty() {
-            if (!isDirty) {
-                isDirty = true;
-                document.getElementById('savebar').classList.add('visible');
-                if (typeof feather !== 'undefined') feather.replace();
-            }
+            isDirty = true;
+            window.isDirty = true;
+            document.getElementById('savebar')?.classList.add('visible');
+            if (typeof feather !== 'undefined') feather.replace();
         }
+        window.markDirty = markDirty;
+
         function cancelTax() {
             isDirty = false;
-            document.getElementById('savebar').classList.remove('visible');
-            if (typeof loadTaxData === 'function') loadTaxData();
+            window.isDirty = false;
+            document.getElementById('savebar')?.classList.remove('visible');
+            if (typeof window.loadTaxData === 'function') window.loadTaxData();
         }
+        window.cancelTax = cancelTax;
+
         window.addEventListener('beforeunload', e => { if (isDirty) { e.preventDefault(); e.returnValue = ''; } });
+
         function showToast(msg, type = 'success') {
             const t = document.getElementById('toastNotification');
+            if (!t) return;
             t.textContent = msg;
             t.style.background = type === 'error' ? '#dc2626' : '#1e293b';
             t.classList.add('visible');
             setTimeout(() => t.classList.remove('visible'), 3500);
         }
+        window.showToast = showToast;
     </script>
 </body>
 </html>
