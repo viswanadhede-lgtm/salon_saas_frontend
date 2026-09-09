@@ -299,15 +299,34 @@
             document.querySelectorAll('.form-input, .form-select').forEach(el => el.addEventListener('input', markDirty));
         });
         let isDirty = false;
-        function markDirty() { if (!isDirty) { isDirty = true; document.getElementById('savebar').classList.add('visible'); if (typeof feather !== 'undefined') feather.replace(); } }
-        function cancelContact() { isDirty = false; document.getElementById('savebar').classList.remove('visible'); if (typeof loadContactData === 'function') loadContactData(); }
+        window.isDirty = false;
+        function markDirty() { 
+            isDirty = true; 
+            window.isDirty = true;
+            document.getElementById('savebar')?.classList.add('visible'); 
+            if (typeof feather !== 'undefined') feather.replace(); 
+        }
+        window.markDirty = markDirty;
+
+        function cancelContact() { 
+            isDirty = false; 
+            window.isDirty = false;
+            document.getElementById('savebar')?.classList.remove('visible'); 
+            if (typeof window.loadContactData === 'function') window.loadContactData(); 
+        }
+        window.cancelContact = cancelContact;
+
         window.addEventListener('beforeunload', e => { if (isDirty) { e.preventDefault(); e.returnValue = ''; } });
+        
         function showToast(msg, type = 'success') {
             const t = document.getElementById('toastNotification');
-            t.textContent = msg; t.style.background = type === 'error' ? '#dc2626' : '#1e293b';
+            if (!t) return;
+            t.textContent = msg; 
+            t.style.background = type === 'error' ? '#dc2626' : '#1e293b';
             t.classList.add('visible');
             setTimeout(() => t.classList.remove('visible'), 3500);
         }
+        window.showToast = showToast;
     </script>
 </body>
 </html>
