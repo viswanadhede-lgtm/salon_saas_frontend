@@ -292,15 +292,28 @@ import { supabase } from './lib/supabase.js';
                     </span>
                 </td>
                 <td style="padding:13px 16px;color:#94a3b8;font-size:0.875rem;">${lastLoginText}</td>
-                <td style="padding:13px 24px 13px 16px;text-align:right;">
-                    <div style="display:flex; justify-content:flex-end; gap:6px;">
-                        <button class="icon-btn" onclick="window.userAction('edit', '${u.user_id || u.id}')" data-sub-feature="user_update" title="Edit User" style="width:32px;height:32px;border-radius:8px;border:1px solid #e2e8f0;background:#f8fafc;display:inline-flex;align-items:center;justify-content:center;cursor:pointer;color:#64748b;transition:all .2s;" onmouseover="this.style.background='#f1f5f9';this.style.color='#1e293b';" onmouseout="this.style.background='#f8fafc';this.style.color='#64748b';"><i data-feather="edit-2" style="width:14px;height:14px;"></i></button>
-                        
-                        <button class="icon-btn" onclick="window.userAction('reset', '${u.user_id || u.id}')" data-sub-feature="user_update" title="Reset Password" style="width:32px;height:32px;border-radius:8px;border:1px solid #e2e8f0;background:#f8fafc;display:inline-flex;align-items:center;justify-content:center;cursor:pointer;color:#64748b;transition:all .2s;" onmouseover="this.style.background='#f1f5f9';this.style.color='#1e293b';" onmouseout="this.style.background='#f8fafc';this.style.color='#64748b';"><i data-feather="key" style="width:14px;height:14px;"></i></button>
-                        
-                        <button class="icon-btn" onclick="window.userAction('toggle', '${u.user_id || u.id}')" data-sub-feature="user_update" title="${isActive ? 'Deactivate' : 'Activate'}" style="width:32px;height:32px;border-radius:8px;border:1px solid #e2e8f0;background:#f8fafc;display:inline-flex;align-items:center;justify-content:center;cursor:pointer;color:${isActive ? '#22c55e' : '#94a3b8'};transition:all .2s;" onmouseover="this.style.background='#f1f5f9';" onmouseout="this.style.background='#f8fafc';"><i data-feather="power" style="width:14px;height:14px;"></i></button>
-                        
-                        ${!isOwner ? `<button class="icon-btn" onclick="window.userAction('delete', '${u.user_id || u.id}')" data-sub-feature="user_delete" title="Delete User" style="width:32px;height:32px;border-radius:8px;border:1px solid #fee2e2;background:#fef2f2;display:inline-flex;align-items:center;justify-content:center;cursor:pointer;color:#ef4444;transition:all .2s;" onmouseover="this.style.background='#fee2e2';" onmouseout="this.style.background='#fef2f2';"><i data-feather="trash-2" style="width:14px;height:14px;"></i></button>` : ''}
+                <td style="padding:13px 16px; text-align:center;">
+                    <div style="display:flex; gap:8px; justify-content:center;">
+                        <button class="hover-lift" onclick="window.userAction('edit', '${u.user_id || u.id}')" data-sub-feature="user_update" title="Edit User" style="display:flex; flex-direction:column; align-items:center; justify-content:center; padding:4px 8px; border-radius:8px; border:1px solid #e0e7ff; background:#eff6ff; cursor:pointer; color:#3b82f6; min-width:54px; transition:all .2s;">
+                            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="margin-bottom:2px;"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path></svg>
+                            <span style="font-size:10px; font-weight:600;">Edit</span>
+                        </button>
+                        ${isActive ? `
+                        <button class="hover-lift" onclick="window.userAction('toggle', '${u.user_id || u.id}')" data-sub-feature="user_update" title="Deactivate User" style="display:flex; flex-direction:column; align-items:center; justify-content:center; padding:4px 8px; border-radius:8px; border:1px solid #fef3c7; background:#fffbeb; cursor:pointer; color:#b45309; min-width:64px; transition:all .2s;">
+                            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="margin-bottom:2px;"><path d="M18.36 6.64a9 9 0 1 1-12.73 0"></path><line x1="12" y1="2" x2="12" y2="12"></line></svg>
+                            <span style="font-size:10px; font-weight:600;">Deactivate</span>
+                        </button>
+                        ` : `
+                        <button class="hover-lift" onclick="window.userAction('toggle', '${u.user_id || u.id}')" data-sub-feature="user_update" title="Activate User" style="display:flex; flex-direction:column; align-items:center; justify-content:center; padding:4px 8px; border-radius:8px; border:1px solid #bbf7d0; background:#f0fdf4; cursor:pointer; color:#16a34a; min-width:64px; transition:all .2s;">
+                            <svg width="15" height="15" viewBox="0 0 24 24" fill="currentColor" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="margin-bottom:2px;"><polygon points="5 3 19 12 5 21 5 3"></polygon></svg>
+                            <span style="font-size:10px; font-weight:600;">Activate</span>
+                        </button>
+                        `}
+                        ${!isOwner ? `
+                        <button class="hover-lift" onclick="window.userAction('delete', '${u.user_id || u.id}')" data-sub-feature="user_delete" title="Delete User" style="display:flex; flex-direction:column; align-items:center; justify-content:center; padding:4px 8px; border-radius:8px; border:1px solid #fee2e2; background:#fef2f2; cursor:pointer; color:#ef4444; min-width:54px; transition:all .2s;">
+                            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="margin-bottom:2px;"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path><line x1="10" y1="11" x2="10" y2="17"></line><line x1="14" y1="11" x2="14" y2="17"></line></svg>
+                            <span style="font-size:10px; font-weight:600;">Delete</span>
+                        </button>` : ''}
                     </div>
                 </td>`;
             tbody.appendChild(tr);
