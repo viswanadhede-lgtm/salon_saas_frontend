@@ -16,12 +16,7 @@ document.addEventListener('DOMContentLoaded', () => {
     function getBranchId() {
         return localStorage.getItem('active_branch_id') || document.querySelector('.branch-select')?.value || null;
     }
-    function getCompanyId() {
-        try {
-            const ctx = JSON.parse(localStorage.getItem('appContext') || '{}');
-            return ctx.company?.id || localStorage.getItem('company_id') || null;
-        } catch { return localStorage.getItem('company_id') || null; }
-    }
+// Duplicate getCompanyId removed
 
     // ── Feather icons + sidebar ──
     if (typeof feather !== 'undefined') feather.replace();
@@ -410,7 +405,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // ── Helper Functions ──
 function mapRowsToPrefs(rows) {
-    if (!Array.isArray(rows) || rows.length === 0) return null;
+    if (!Array.isArray(rows) || rows.length === 0) return JSON.parse(JSON.stringify(defaultPrefs));
     const prefs = JSON.parse(JSON.stringify(defaultPrefs));
     rows.forEach(r => {
         const { category, group_key, event_key, channel, enabled } = r;
@@ -418,14 +413,22 @@ function mapRowsToPrefs(rows) {
             if (!prefs.marketing_notifications) prefs.marketing_notifications = {};
             const sec = group_key;
             if (!prefs.marketing_notifications[sec]) prefs.marketing_notifications[sec] = { master: true, events: {} };
-            if (!prefs.marketing_notifications[sec].events[event_key]) prefs.marketing_notifications[sec].events[event_key] = {};
-            prefs.marketing_notifications[sec].events[event_key][channel] = enabled;
+            if (event_key) {
+                if (!prefs.marketing_notifications[sec].events[event_key]) prefs.marketing_notifications[sec].events[event_key] = {};
+                prefs.marketing_notifications[sec].events[event_key][channel] = enabled;
+            } else {
+                prefs.marketing_notifications[sec].master = enabled;
+            }
         } else if (category === 'customer') {
             if (!prefs.customer_notifications) prefs.customer_notifications = {};
             const sec = group_key;
             if (!prefs.customer_notifications[sec]) prefs.customer_notifications[sec] = { master: true, events: {} };
-            if (!prefs.customer_notifications[sec].events[event_key]) prefs.customer_notifications[sec].events[event_key] = {};
-            prefs.customer_notifications[sec].events[event_key][channel] = enabled;
+            if (event_key) {
+                if (!prefs.customer_notifications[sec].events[event_key]) prefs.customer_notifications[sec].events[event_key] = {};
+                prefs.customer_notifications[sec].events[event_key][channel] = enabled;
+            } else {
+                prefs.customer_notifications[sec].master = enabled;
+            }
         } else {
             if (!prefs[category]) prefs[category] = { master: true };
             if (event_key) {
@@ -444,21 +447,21 @@ function buildRowsFromUI(companyId, branchId) {
     systemCategories.forEach(cat => {
         const masterEl = document.getElementById(`master_${cat}`);
         if (masterEl) {
-            rows.push({ company_id: companyId, branch_id: branchId, category: cat, group_key: cat, event_key: null, channel: null, enabled: masterEl.checked });
+            rows.push({ company_id: companyId, branch_id: branchId, category: cat, group_key: cat, event_key: null, channel: 'email', enabled: masterEl.checked });
         }
         const catPrefs = defaultPrefs[cat] || {};
         Object.keys(catPrefs).forEach(key => {
             if (key === 'master') return;
             const cb = document.getElementById(key);
             if (cb) {
-                rows.push({ company_id: companyId, branch_id: branchId, category: cat, group_key: cat, event_key: key, channel: null, enabled: cb.checked });
+                rows.push({ company_id: companyId, branch_id: branchId, category: cat, group_key: cat, event_key: key, channel: 'email', enabled: cb.checked });
             }
         });
     });
     ['booking','purchase','membership'].forEach(sec => {
         const masterEl = document.getElementById(`cust_master_${sec}`);
         if (masterEl) {
-            rows.push({ company_id: companyId, branch_id: branchId, category: 'customer', group_key: sec, event_key: null, channel: null, enabled: masterEl.checked });
+            rows.push({ company_id: companyId, branch_id: branchId, category: 'customer', group_key: sec, event_key: null, channel: 'email', enabled: masterEl.checked });
         }
         const table = document.querySelector(`.cn-table[data-section="${sec}"]`);
         if (table) {
@@ -474,7 +477,7 @@ function buildRowsFromUI(companyId, branchId) {
     ['offers','business'].forEach(sec => {
         const masterEl = document.getElementById(`mkt_master_${sec}`);
         if (masterEl) {
-            rows.push({ company_id: companyId, branch_id: branchId, category: 'marketing', group_key: sec, event_key: null, channel: null, enabled: masterEl.checked });
+            rows.push({ company_id: companyId, branch_id: branchId, category: 'marketing', group_key: sec, event_key: null, channel: 'email', enabled: masterEl.checked });
         }
         const table = document.querySelector(`.cn-table[data-mkt-section="${sec}"]`);
         if (table) {
@@ -501,6 +504,7 @@ function buildRowsFromUI(companyId, branchId) {
 
             // Build rows for upsert using utility function
             const rows = buildRowsFromUI(companyId, getBranchId ? getBranchId() : null);
+            console.log('Rows to upsert:', rows);
 
             try {
                 const { error } = await supabase
