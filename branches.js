@@ -134,9 +134,19 @@ document.addEventListener('DOMContentLoaded', async () => {
             }
 
             // Formatted address display
+            const addressParts = [
+                branch.address_line_1,
+                branch.address_line_2,
+                branch.locality_area,
+                branch.landmark ? `Near ${branch.landmark}` : '',
+                branch.city,
+                branch.district && branch.district !== branch.city ? branch.district : '',
+                branch.state,
+                branch.pin_code
+            ].filter(Boolean);
+
             const displayAddress = branch.branch_address || 
-                [branch.address_line_1, branch.city, branch.state].filter(Boolean).join(', ') || 
-                'N/A';
+                (addressParts.length ? addressParts.join(', ') : 'N/A');
 
             const tr = document.createElement('tr');
             tr.style.cssText = `background:${rowBg}; border-bottom:1px solid #f1f5f9; transition:background 0.15s;`;
@@ -219,12 +229,18 @@ document.addEventListener('DOMContentLoaded', async () => {
         setVal('branchCode', '');
         setVal('branchPhone', '');
         setVal('branchEmail', '');
-        setVal('branchAddress', '');
+        setVal('branchAddressLine1', '');
+        setVal('branchAddressLine2', '');
+        setVal('branchLocality', '');
+        setVal('branchLandmark', '');
         setVal('branchCity', '');
+        setVal('branchDistrict', '');
         setVal('branchState', '');
-        setVal('branchZip', '');
+        setVal('branchPincode', '');
         setVal('branchCountry', 'India');
-        setVal('branchMapsUrl', '');
+        setVal('branchMapLink', '');
+        setVal('branchLatitude', '');
+        setVal('branchLongitude', '');
 
         if (mode === 'edit' && branchId !== null) {
             const branch = branchesData.find(b => b.branch_id === branchId);
@@ -238,12 +254,18 @@ document.addEventListener('DOMContentLoaded', async () => {
             setVal('branchCode', branch.branch_code || '');
             setVal('branchPhone', branch.branch_phone || '');
             setVal('branchEmail', branch.branch_email || '');
-            setVal('branchAddress', branch.address_line_1 || branch.branch_address || '');
+            setVal('branchAddressLine1', branch.address_line_1 || '');
+            setVal('branchAddressLine2', branch.address_line_2 || '');
+            setVal('branchLocality', branch.locality_area || '');
+            setVal('branchLandmark', branch.landmark || '');
             setVal('branchCity', branch.city || '');
+            setVal('branchDistrict', branch.district || '');
             setVal('branchState', branch.state || '');
-            setVal('branchZip', branch.pin_code || '');
+            setVal('branchPincode', branch.pin_code || '');
             setVal('branchCountry', branch.country || 'India');
-            setVal('branchMapsUrl', branch.google_maps_url || '');
+            setVal('branchMapLink', branch.google_maps_url || '');
+            setVal('branchLatitude', branch.latitude != null ? branch.latitude : '');
+            setVal('branchLongitude', branch.longitude != null ? branch.longitude : '');
 
             populateManagerDropdown(branch.manager_user_id || '');
             document.getElementById('branchStatusToggle').checked = (branch.status === 'active');
@@ -391,16 +413,22 @@ document.addEventListener('DOMContentLoaded', async () => {
     if (btnSave) {
         btnSave.addEventListener('click', async () => {
             const name = getVal('branchName');
-            const phone = getVal('branchPhone');
-            const address = getVal('branchAddress');
-            const city = getVal('branchCity');
-            const state = getVal('branchState');
-            const zip = getVal('branchZip');
-            const country = getVal('branchCountry') || 'India';
-            const email = getVal('branchEmail');
             const code = getVal('branchCode');
             const managerId = getVal('branchManager');
-            const mapsUrl = getVal('branchMapsUrl');
+            const phone = getVal('branchPhone');
+            const email = getVal('branchEmail');
+            const addressLine1 = getVal('branchAddressLine1');
+            const addressLine2 = getVal('branchAddressLine2');
+            const localityArea = getVal('branchLocality');
+            const landmark = getVal('branchLandmark');
+            const city = getVal('branchCity');
+            const district = getVal('branchDistrict');
+            const state = getVal('branchState');
+            const pinCode = getVal('branchPincode');
+            const country = getVal('branchCountry') || 'India';
+            const mapsUrl = getVal('branchMapLink');
+            const latStr = getVal('branchLatitude');
+            const lngStr = getVal('branchLongitude');
             const isActive = document.getElementById('branchStatusToggle')?.checked ?? true;
 
             if (!name) {
@@ -413,9 +441,24 @@ document.addEventListener('DOMContentLoaded', async () => {
                 document.getElementById('branchPhone')?.focus();
                 return;
             }
-            if (!address) {
-                showToast('Address line is required', 'error');
-                document.getElementById('branchAddress')?.focus();
+            if (!addressLine1) {
+                showToast('Address Line 1 is required', 'error');
+                document.getElementById('branchAddressLine1')?.focus();
+                return;
+            }
+            if (!city) {
+                showToast('City is required', 'error');
+                document.getElementById('branchCity')?.focus();
+                return;
+            }
+            if (!state) {
+                showToast('State is required', 'error');
+                document.getElementById('branchState')?.focus();
+                return;
+            }
+            if (!pinCode) {
+                showToast('PIN Code is required', 'error');
+                document.getElementById('branchPincode')?.focus();
                 return;
             }
 
@@ -425,7 +468,21 @@ document.addEventListener('DOMContentLoaded', async () => {
 
             try {
                 const now = new Date().toISOString();
-                const compositeAddress = [address, city, state, zip, country !== 'India' ? country : ''].filter(Boolean).join(', ');
+                const addressParts = [
+                    addressLine1,
+                    addressLine2,
+                    localityArea,
+                    landmark ? `Near ${landmark}` : '',
+                    city,
+                    district && district !== city ? district : '',
+                    state,
+                    pinCode,
+                    country !== 'India' ? country : ''
+                ].filter(Boolean);
+                const branchAddress = addressParts.join(', ');
+
+                const latNum = latStr !== '' && !isNaN(Number(latStr)) ? Number(latStr) : null;
+                const lngNum = lngStr !== '' && !isNaN(Number(lngStr)) ? Number(lngStr) : null;
 
                 const commonPayload = {
                     branch_name:     name,
@@ -433,13 +490,19 @@ document.addEventListener('DOMContentLoaded', async () => {
                     manager_user_id: managerId || null,
                     branch_phone:    phone,
                     branch_email:    email || null,
-                    address_line_1:  address,
-                    branch_address:  compositeAddress || address,
-                    city:            city || null,
-                    state:           state || null,
-                    pin_code:        zip || null,
+                    address_line_1:  addressLine1,
+                    address_line_2:  addressLine2 || null,
+                    locality_area:   localityArea || null,
+                    landmark:        landmark || null,
+                    city:            city,
+                    district:        district || null,
+                    state:           state,
+                    pin_code:        pinCode,
                     country:         country || 'India',
+                    branch_address:  branchAddress,
                     google_maps_url: mapsUrl || null,
+                    latitude:        latNum,
+                    longitude:       lngNum,
                     status:          isActive ? 'active' : 'inactive',
                     updated_at:      now
                 };

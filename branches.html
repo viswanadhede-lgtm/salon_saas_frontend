@@ -313,113 +313,154 @@
             </div>
             <button id="btnClosePanel" style="background:none; border:none; color:#94a3b8; cursor:pointer; padding:4px;"><i data-feather="x"></i></button>
         </div>
-        <div class="modal-body" style="padding:1.5rem 2rem; max-height:80vh; overflow-y:auto; display:flex; flex-direction:column; gap:1.5rem;">
+        <div class="modal-body" style="padding:1.5rem 2rem; max-height:80vh; overflow-y:auto; display:flex; flex-direction:column; gap:1.75rem;">
 
-                <!-- Top two-column row (Section 1 & Section 2) -->
-                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 2.25rem; align-items: start;">
-
-                    <!-- Section 1: Information -->
-                    <div style="border-bottom: none; padding-bottom: 0;">
-                        <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 1.25rem;">
-                            <span style="display: flex; align-items: center; justify-content: center; width: 28px; height: 28px; border-radius: 50%; background: #eff6ff; color: #2563eb; font-size: 0.85rem; font-weight: 700; flex-shrink: 0;">1</span>
-                            <div>
-                                <h3 style="font-size: 1rem; font-weight: 700; color: #0f172a; margin: 0; line-height: 1.2;">Branch Information</h3>
-                                <p style="font-size: 0.8rem; color: #64748b; margin: 2px 0 0 0; line-height: 1.2;">Basic details about this branch.</p>
-                            </div>
-                        </div>
-
-                        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
-                            <div class="form-group" style="grid-column: span 2; margin-bottom: 0;">
-                                <label class="form-label" style="display: block; font-weight: 600; font-size: 0.82rem; color: #1e293b; margin-bottom: 6px;">Branch Name <span style="color: #ef4444;">*</span></label>
-                                <input type="text" id="branchName" class="form-input" placeholder="e.g., Downtown Branch" style="width: 100%; height: 42px; border: 1px solid #e2e8f0; border-radius: 8px; padding: 0 14px; font-size: 0.88rem; box-sizing: border-box;">
-                            </div>
-                            <div class="form-group" style="margin-bottom: 0;">
-                                <label class="form-label" style="display: block; font-weight: 600; font-size: 0.82rem; color: #1e293b; margin-bottom: 6px;">Branch Code <span style="color: #94a3b8; font-weight: 400;">(Optional)</span></label>
-                                <input type="text" id="branchCode" class="form-input" placeholder="e.g., BLR-01" style="width: 100%; height: 42px; border: 1px solid #e2e8f0; border-radius: 8px; padding: 0 14px; font-size: 0.88rem; box-sizing: border-box;">
-                            </div>
-                            <div class="form-group" style="margin-bottom: 0;">
-                                <label class="form-label" style="display: block; font-weight: 600; font-size: 0.82rem; color: #1e293b; margin-bottom: 6px;">Manager <span style="color: #94a3b8; font-weight: 400;">(Optional)</span></label>
-                                <select id="branchManager" class="form-select" style="width: 100%; height: 42px; border: 1px solid #e2e8f0; border-radius: 8px; padding: 0 14px; font-size: 0.88rem; box-sizing: border-box; background-color: #fff;">
-                                    <option value="" selected>Unassigned / None</option>
-                                </select>
-                            </div>
-                            <div class="form-group" style="margin-bottom: 0;">
-                                <label class="form-label" style="display: block; font-weight: 600; font-size: 0.82rem; color: #1e293b; margin-bottom: 6px;">Phone Number <span style="color: #ef4444;">*</span></label>
-                                <input type="tel" id="branchPhone" class="form-input" placeholder="+91 0000 000000" style="width: 100%; height: 42px; border: 1px solid #e2e8f0; border-radius: 8px; padding: 0 14px; font-size: 0.88rem; box-sizing: border-box;">
-                            </div>
-                            <div class="form-group" style="margin-bottom: 0;">
-                                <label class="form-label" style="display: block; font-weight: 600; font-size: 0.82rem; color: #1e293b; margin-bottom: 6px;">Email <span style="color: #94a3b8; font-weight: 400;">(Optional)</span></label>
-                                <input type="email" id="branchEmail" class="form-input" placeholder="branch@example.com" style="width: 100%; height: 42px; border: 1px solid #e2e8f0; border-radius: 8px; padding: 0 14px; font-size: 0.88rem; box-sizing: border-box;">
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- Section 2: Address -->
-                    <div style="border-bottom: none; padding-bottom: 0;">
-                        <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 1.25rem;">
-                            <span style="display: flex; align-items: center; justify-content: center; width: 28px; height: 28px; border-radius: 50%; background: #eff6ff; color: #2563eb; font-size: 0.85rem; font-weight: 700; flex-shrink: 0;">2</span>
-                            <div>
-                                <h3 style="font-size: 1rem; font-weight: 700; color: #0f172a; margin: 0; line-height: 1.2;">Branch Address</h3>
-                                <p style="font-size: 0.8rem; color: #64748b; margin: 2px 0 0 0; line-height: 1.2;">Location details for this branch.</p>
-                            </div>
-                        </div>
-
-                        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
-                            <div class="form-group" style="grid-column: span 2; margin-bottom: 0;">
-                                <label class="form-label" style="display: block; font-weight: 600; font-size: 0.82rem; color: #1e293b; margin-bottom: 6px;">Address Line <span style="color: #ef4444;">*</span></label>
-                                <input type="text" id="branchAddress" class="form-input" placeholder="e.g., 123 MG Road, 1st Floor" style="width: 100%; height: 42px; border: 1px solid #e2e8f0; border-radius: 8px; padding: 0 14px; font-size: 0.88rem; box-sizing: border-box;">
-                            </div>
-                            <div class="form-group" style="margin-bottom: 0;">
-                                <label class="form-label" style="display: block; font-weight: 600; font-size: 0.82rem; color: #1e293b; margin-bottom: 6px;">City <span style="color: #ef4444;">*</span></label>
-                                <input type="text" id="branchCity" class="form-input" placeholder="e.g., Bangalore" style="width: 100%; height: 42px; border: 1px solid #e2e8f0; border-radius: 8px; padding: 0 14px; font-size: 0.88rem; box-sizing: border-box;">
-                            </div>
-                            <div class="form-group" style="margin-bottom: 0;">
-                                <label class="form-label" style="display: block; font-weight: 600; font-size: 0.82rem; color: #1e293b; margin-bottom: 6px;">State <span style="color: #ef4444;">*</span></label>
-                                <input type="text" id="branchState" class="form-input" placeholder="e.g., Karnataka" style="width: 100%; height: 42px; border: 1px solid #e2e8f0; border-radius: 8px; padding: 0 14px; font-size: 0.88rem; box-sizing: border-box;">
-                            </div>
-                            <div class="form-group" style="margin-bottom: 0;">
-                                <label class="form-label" style="display: block; font-weight: 600; font-size: 0.82rem; color: #1e293b; margin-bottom: 6px;">Postal Code <span style="color: #ef4444;">*</span></label>
-                                <input type="text" id="branchZip" class="form-input" placeholder="e.g., 560001" style="width: 100%; height: 42px; border: 1px solid #e2e8f0; border-radius: 8px; padding: 0 14px; font-size: 0.88rem; box-sizing: border-box;">
-                            </div>
-                            <div class="form-group" style="margin-bottom: 0;">
-                                <label class="form-label" style="display: block; font-weight: 600; font-size: 0.82rem; color: #1e293b; margin-bottom: 6px;">Country</label>
-                                <select id="branchCountry" class="form-select" style="width: 100%; height: 42px; border: 1px solid #e2e8f0; border-radius: 8px; padding: 0 14px; font-size: 0.88rem; box-sizing: border-box; background-color: #fff;">
-                                    <option value="India" selected>India</option>
-                                    <option value="USA">United States</option>
-                                    <option value="UK">United Kingdom</option>
-                                </select>
-                            </div>
-                            <div class="form-group" style="grid-column: span 2; margin-bottom: 0;">
-                                <label class="form-label" style="display: block; font-weight: 600; font-size: 0.82rem; color: #1e293b; margin-bottom: 6px;">Google Maps Link <span style="color: #94a3b8; font-weight: 400;">(Optional)</span></label>
-                                <input type="url" id="branchMapsUrl" class="form-input" placeholder="https://maps.google.com/..." style="width: 100%; height: 42px; border: 1px solid #e2e8f0; border-radius: 8px; padding: 0 14px; font-size: 0.88rem; box-sizing: border-box;">
-                            </div>
-                        </div>
-                    </div>
-
-                </div>
-
-                <!-- Section 3: Status — full width at bottom -->
-                <div style="border-bottom: none; padding-bottom: 0;">
-                    <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 0.75rem;">
-                        <span style="display: flex; align-items: center; justify-content: center; width: 28px; height: 28px; border-radius: 50%; background: #eff6ff; color: #2563eb; font-size: 0.85rem; font-weight: 700; flex-shrink: 0;">3</span>
-                        <div>
-                            <h3 style="font-size: 1rem; font-weight: 700; color: #0f172a; margin: 0; line-height: 1.2;">Branch Status</h3>
-                            <p style="font-size: 0.8rem; color: #64748b; margin: 2px 0 0 0; line-height: 1.2;">Set the operational status for this branch.</p>
-                        </div>
-                    </div>
-                    <div class="status-toggle-wrapper" style="background: #f8fafc; border: 1px solid #f1f5f9; border-radius: 12px; padding: 1.1rem 1.4rem; display: flex; justify-content: space-between; align-items: center;">
-                        <div>
-                            <h4 style="margin: 0; font-size: 0.95rem; font-weight: 700; color: #0f172a;">Active Branch</h4>
-                            <p style="margin: 4px 0 0 0; font-size: 0.82rem; color: #64748b;">Inactive branches cannot accept new bookings or transactions.</p>
-                        </div>
-                        <label class="switch" style="margin-left: 1rem; flex-shrink: 0;">
-                            <input type="checkbox" id="branchStatusToggle" checked>
-                            <span class="slider round"></span>
-                        </label>
+            <!-- Section 1: Branch Information -->
+            <div style="border-bottom: 1px solid #f1f5f9; padding-bottom: 1.5rem;">
+                <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 1.25rem;">
+                    <span style="display: flex; align-items: center; justify-content: center; width: 28px; height: 28px; border-radius: 50%; background: #eff6ff; color: #2563eb; font-size: 0.85rem; font-weight: 700; flex-shrink: 0;">1</span>
+                    <div>
+                        <h3 style="font-size: 1rem; font-weight: 700; color: #0f172a; margin: 0; line-height: 1.2;">Branch Information</h3>
+                        <p style="font-size: 0.8rem; color: #64748b; margin: 2px 0 0 0; line-height: 1.2;">Basic details about this branch.</p>
                     </div>
                 </div>
 
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1.25rem;">
+                    <div class="form-group" style="margin-bottom: 0;">
+                        <label class="form-label" for="branchName">Branch Name <span class="required">*</span></label>
+                        <input type="text" id="branchName" class="form-input" placeholder="e.g., Downtown Branch" required>
+                    </div>
+                    <div class="form-group" style="margin-bottom: 0;">
+                        <label class="form-label" for="branchCode">Branch Code <span class="optional">(Optional)</span></label>
+                        <input type="text" id="branchCode" class="form-input" placeholder="e.g., BLR-01">
+                    </div>
+                    <div class="form-group" style="margin-bottom: 0;">
+                        <label class="form-label" for="branchManager">Manager <span class="optional">(Optional)</span></label>
+                        <select id="branchManager" class="form-select">
+                            <option value="" selected>Unassigned / None</option>
+                        </select>
+                    </div>
+                    <div class="form-group" style="margin-bottom: 0;">
+                        <label class="form-label" for="branchPhone">Phone Number <span class="required">*</span></label>
+                        <input type="tel" id="branchPhone" class="form-input" placeholder="+91 0000 000000" required>
+                    </div>
+                    <div class="form-group" style="grid-column: span 2; margin-bottom: 0;">
+                        <label class="form-label" for="branchEmail">Email <span class="optional">(Optional)</span></label>
+                        <input type="email" id="branchEmail" class="form-input" placeholder="branch@example.com">
+                    </div>
+                </div>
             </div>
+
+            <!-- Section 2: Branch Address (Full Address Layout) -->
+            <div style="border-bottom: 1px solid #f1f5f9; padding-bottom: 1.5rem;">
+                <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 1.25rem;">
+                    <span style="display: flex; align-items: center; justify-content: center; width: 28px; height: 28px; border-radius: 50%; background: #eff6ff; color: #2563eb; font-size: 0.85rem; font-weight: 700; flex-shrink: 0;">2</span>
+                    <div>
+                        <h3 style="font-size: 1rem; font-weight: 700; color: #0f172a; margin: 0; line-height: 1.2;">Branch Address</h3>
+                        <p style="font-size: 0.8rem; color: #64748b; margin: 2px 0 0 0; line-height: 1.2;">Location details for this branch.</p>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label" for="branchAddressLine1">Address Line 1 <span class="required">*</span></label>
+                    <input type="text" id="branchAddressLine1" class="form-input" placeholder="Flat / Door / Building No., Street, Road" required>
+                </div>
+
+                <div class="form-row">
+                    <div class="form-group">
+                        <label class="form-label" for="branchAddressLine2">Address Line 2 <span class="optional">(Optional)</span></label>
+                        <input type="text" id="branchAddressLine2" class="form-input" placeholder="Suite, Floor, Complex">
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label" for="branchLocality">Locality / Area <span class="optional">(Optional)</span></label>
+                        <input type="text" id="branchLocality" class="form-input" placeholder="e.g., Indiranagar, Koramangala">
+                    </div>
+                </div>
+
+                <div class="form-row">
+                    <div class="form-group">
+                        <label class="form-label" for="branchLandmark">Landmark <span class="optional">(Optional)</span></label>
+                        <input type="text" id="branchLandmark" class="form-input" placeholder="e.g., Near Metro Station, Opp. City Mall">
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label" for="branchCity">City <span class="required">*</span></label>
+                        <input type="text" id="branchCity" class="form-input" placeholder="e.g., Bengaluru" required>
+                    </div>
+                </div>
+
+                <div class="form-row">
+                    <div class="form-group">
+                        <label class="form-label" for="branchDistrict">District <span class="optional">(Optional)</span></label>
+                        <input type="text" id="branchDistrict" class="form-input" placeholder="e.g., Bengaluru Urban">
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label" for="branchState">State <span class="required">*</span></label>
+                        <input type="text" id="branchState" class="form-input" placeholder="e.g., Karnataka" required>
+                    </div>
+                </div>
+
+                <div class="form-row">
+                    <div class="form-group">
+                        <label class="form-label" for="branchPincode">PIN Code <span class="required">*</span></label>
+                        <input type="text" id="branchPincode" class="form-input" placeholder="e.g., 560038" maxlength="10" required>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label" for="branchCountry">Country <span class="required">*</span></label>
+                        <input type="text" id="branchCountry" class="form-input" value="India" readonly style="background-color: #f8fafc; color: #475569; cursor: default;">
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label" for="branchMapLink">Google Maps URL <span class="optional">(Optional)</span></label>
+                    <div class="input-prefix-wrap">
+                        <span class="input-prefix"><i data-feather="map-pin" style="width:14px;height:14px;"></i></span>
+                        <input type="url" id="branchMapLink" class="form-input with-prefix" placeholder="https://maps.google.com/?q=...">
+                    </div>
+                    <p class="form-hint">Google Maps link shown to customers for directions</p>
+                </div>
+
+                <div class="form-row">
+                    <div class="form-group">
+                        <label class="form-label" for="branchLatitude">Latitude <span class="optional">(Optional)</span></label>
+                        <div class="input-prefix-wrap">
+                            <span class="input-prefix"><i data-feather="crosshair" style="width:14px;height:14px;"></i></span>
+                            <input type="number" step="any" id="branchLatitude" class="form-input with-prefix" placeholder="e.g., 12.9716">
+                        </div>
+                        <p class="form-hint">Location latitude</p>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label" for="branchLongitude">Longitude <span class="optional">(Optional)</span></label>
+                        <div class="input-prefix-wrap">
+                            <span class="input-prefix"><i data-feather="crosshair" style="width:14px;height:14px;"></i></span>
+                            <input type="number" step="any" id="branchLongitude" class="form-input with-prefix" placeholder="e.g., 77.5946">
+                        </div>
+                        <p class="form-hint">Location longitude</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Section 3: Branch Status -->
+            <div>
+                <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 0.75rem;">
+                    <span style="display: flex; align-items: center; justify-content: center; width: 28px; height: 28px; border-radius: 50%; background: #eff6ff; color: #2563eb; font-size: 0.85rem; font-weight: 700; flex-shrink: 0;">3</span>
+                    <div>
+                        <h3 style="font-size: 1rem; font-weight: 700; color: #0f172a; margin: 0; line-height: 1.2;">Branch Status</h3>
+                        <p style="font-size: 0.8rem; color: #64748b; margin: 2px 0 0 0; line-height: 1.2;">Set the operational status for this branch.</p>
+                    </div>
+                </div>
+                <div class="status-toggle-wrapper" style="background: #f8fafc; border: 1px solid #f1f5f9; border-radius: 12px; padding: 1.1rem 1.4rem; display: flex; justify-content: space-between; align-items: center;">
+                    <div>
+                        <h4 style="margin: 0; font-size: 0.95rem; font-weight: 700; color: #0f172a;">Active Branch</h4>
+                        <p style="margin: 4px 0 0 0; font-size: 0.82rem; color: #64748b;">Inactive branches cannot accept new bookings or transactions.</p>
+                    </div>
+                    <label class="switch" style="margin-left: 1rem; flex-shrink: 0;">
+                        <input type="checkbox" id="branchStatusToggle" checked>
+                        <span class="slider round"></span>
+                    </label>
+                </div>
+            </div>
+
+        </div>
 
             <div class="modal-footer" style="padding: 1.25rem 2rem; border-top: 1px solid #f1f5f9; display: flex; align-items: center; gap: 1rem; background-color: #ffffff;">
                 <button class="btn btn-secondary" id="btnCancelBranch" style="padding: 0.75rem 1.75rem; font-size: 0.9rem; font-weight: 600; border-radius: 8px; border: 1px solid #e2e8f0; background: #ffffff; color: #1e293b; cursor: pointer;">Cancel</button>
