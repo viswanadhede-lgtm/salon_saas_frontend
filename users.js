@@ -399,13 +399,40 @@ import { supabase } from './lib/supabase.js';
     };
 
     // ── Modal ─────────────────────────────────────────────────────
-    const overlay  = document.getElementById('userModalOverlay');
+    const overlay    = document.getElementById('userModalOverlay');
     const modalTitle = document.getElementById('userModalTitle');
     const modalSub   = document.getElementById('userModalSubtitle');
     const saveBtn    = document.getElementById('btnSaveUser');
+    const togglePwdBtn = document.getElementById('togglePasswordVisibility');
+    const pwdInput   = document.getElementById('uPassword');
+    const eyeIcon    = document.getElementById('eyeIcon');
+    let editingOriginalPasswordHash = null;
+
+    function updateEyeIcon(visible) {
+        if (!eyeIcon) return;
+        if (visible) {
+            eyeIcon.innerHTML = '<path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"></path><line x1="1" y1="1" x2="23" y2="23"></line>';
+        } else {
+            eyeIcon.innerHTML = '<path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path><circle cx="12" cy="12" r="3"></circle>';
+        }
+    }
+
+    if (togglePwdBtn && pwdInput) {
+        togglePwdBtn.addEventListener('click', (e) => {
+            e.preventDefault();
+            const isPassword = pwdInput.type === 'password';
+            pwdInput.type = isPassword ? 'text' : 'password';
+            updateEyeIcon(isPassword);
+        });
+    }
 
     function openModal(mode, user = null) {
         editingId = null;
+        editingOriginalPasswordHash = null;
+        const pwdLabel = document.getElementById('uPasswordLabel');
+        if (pwdInput) pwdInput.type = 'password';
+        updateEyeIcon(false);
+
         document.getElementById('uFullName').value = '';
         document.getElementById('uEmail').value    = '';
         document.getElementById('uPhone').value    = '';
@@ -416,13 +443,16 @@ import { supabase } from './lib/supabase.js';
 
         if (mode === 'edit' && user) {
             editingId = user.user_id || user.id;
+            editingOriginalPasswordHash = user.password_hash || '';
             modalTitle.textContent = 'Edit User';
             modalSub.textContent   = "Update this user's account and access details";
             saveBtn.textContent    = 'Save Changes';
+            if (pwdLabel) pwdLabel.innerHTML = 'Update Password <span class="text-rose">*</span>';
             
             document.getElementById('uFullName').value = user.name || '';
             document.getElementById('uEmail').value    = user.email || '';
             document.getElementById('uPhone').value    = user.phone || '';
+            document.getElementById('uPassword').value = user.password_hash || '';
             
             if (user.role_id) document.getElementById('uRole').value = user.role_id;
             if (user.branch_id === null || user.branch_id === 'all') {
@@ -436,6 +466,7 @@ import { supabase } from './lib/supabase.js';
             modalTitle.textContent = 'Add User';
             modalSub.textContent   = 'Create a new system account.';
             saveBtn.textContent    = 'Create User';
+            if (pwdLabel) pwdLabel.innerHTML = 'Create Password <span class="text-rose">*</span>';
         }
 
         overlay.classList.add('active');
@@ -444,6 +475,8 @@ import { supabase } from './lib/supabase.js';
 
     function closeModal() {
         overlay.classList.remove('active');
+        if (pwdInput) pwdInput.type = 'password';
+        updateEyeIcon(false);
     }
 
     document.getElementById('btnAddUser').addEventListener('click', () => openModal('add'));
@@ -494,10 +527,14 @@ import { supabase } from './lib/supabase.js';
             };
 
             if (password) {
-                const msgBuffer = new TextEncoder().encode(password);
-                const hashBuffer = await crypto.subtle.digest('SHA-256', msgBuffer);
-                const hashArray = Array.from(new Uint8Array(hashBuffer));
-                payload.password_hash = hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
+                if (editingId !== null && editingOriginalPasswordHash && password === editingOriginalPasswordHash) {
+                    payload.password_hash = editingOriginalPasswordHash;
+                } else {
+                    const msgBuffer = new TextEncoder().encode(password);
+                    const hashBuffer = await crypto.subtle.digest('SHA-256', msgBuffer);
+                    const hashArray = Array.from(new Uint8Array(hashBuffer));
+                    payload.password_hash = hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
+                }
             }
 
             if (editingId !== null) {
