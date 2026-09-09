@@ -258,7 +258,7 @@ import { supabase } from './lib/supabase.js';
             const statusDisplay = isActive ? 'Active' : 'Inactive';
             const rowBg     = i % 2 === 0 ? '#fff' : '#fafafa';
             const av        = avatarColors(u.name);
-            const isOwner   = roleDisplay.toLowerCase() === 'owner';
+            const isOwner   = roleDisplay.toLowerCase() === 'owner' || (u.role_name && u.role_name.toLowerCase() === 'owner');
             
             // Safe fallback for UI missing timestamps
             let lastLoginHtml = '<span style="color:#94a3b8;font-size:0.875rem;">Never</span>';
@@ -310,6 +310,20 @@ import { supabase } from './lib/supabase.js';
                 <td style="padding:12px 16px;vertical-align:middle;">${lastLoginHtml}</td>
                 <td style="padding:13px 16px; text-align:center;">
                     <div style="display:flex; gap:8px; justify-content:center;">
+                        ${isOwner ? `
+                        <button disabled title="Owner is a protected role" style="display:flex; flex-direction:column; align-items:center; justify-content:center; padding:4px 8px; border-radius:8px; border:1px solid #e2e8f0; background:#f1f5f9; cursor:not-allowed; color:#94a3b8; min-width:54px; opacity:0.6;">
+                            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="margin-bottom:2px;"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path></svg>
+                            <span style="font-size:10px; font-weight:600;">Edit</span>
+                        </button>
+                        <button disabled title="Owner is a protected role" style="display:flex; flex-direction:column; align-items:center; justify-content:center; padding:4px 8px; border-radius:8px; border:1px solid #e2e8f0; background:#f1f5f9; cursor:not-allowed; color:#94a3b8; min-width:64px; opacity:0.6;">
+                            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="margin-bottom:2px;"><path d="M18.36 6.64a9 9 0 1 1-12.73 0"></path><line x1="12" y1="2" x2="12" y2="12"></line></svg>
+                            <span style="font-size:10px; font-weight:600;">Deactivate</span>
+                        </button>
+                        <button disabled title="Owner is a protected role" style="display:flex; flex-direction:column; align-items:center; justify-content:center; padding:4px 8px; border-radius:8px; border:1px solid #e2e8f0; background:#f1f5f9; cursor:not-allowed; color:#94a3b8; min-width:54px; opacity:0.6;">
+                            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="margin-bottom:2px;"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path><line x1="10" y1="11" x2="10" y2="17"></line><line x1="14" y1="11" x2="14" y2="17"></line></svg>
+                            <span style="font-size:10px; font-weight:600;">Delete</span>
+                        </button>
+                        ` : `
                         <button class="hover-lift" onclick="window.userAction('edit', '${u.user_id || u.id}')" data-sub-feature="user_update" title="Edit User" style="display:flex; flex-direction:column; align-items:center; justify-content:center; padding:4px 8px; border-radius:8px; border:1px solid #e0e7ff; background:#eff6ff; cursor:pointer; color:#3b82f6; min-width:54px; transition:all .2s;">
                             <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="margin-bottom:2px;"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path></svg>
                             <span style="font-size:10px; font-weight:600;">Edit</span>
@@ -325,12 +339,6 @@ import { supabase } from './lib/supabase.js';
                             <span style="font-size:10px; font-weight:600;">Activate</span>
                         </button>
                         `}
-                        ${isOwner ? `
-                        <button class="hover-lift" disabled title="Delete is disabled — Owner is a protected role" style="display:flex; flex-direction:column; align-items:center; justify-content:center; padding:4px 8px; border-radius:8px; border:1px solid #e2e8f0; background:#f1f5f9; cursor:not-allowed; color:#94a3b8; min-width:54px; opacity:0.6;">
-                            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="margin-bottom:2px;"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path><line x1="10" y1="11" x2="10" y2="17"></line><line x1="14" y1="11" x2="14" y2="17"></line></svg>
-                            <span style="font-size:10px; font-weight:600;">Delete</span>
-                        </button>
-                        ` : `
                         <button class="hover-lift" onclick="window.userAction('delete', '${u.user_id || u.id}')" data-sub-feature="user_delete" title="Delete User" style="display:flex; flex-direction:column; align-items:center; justify-content:center; padding:4px 8px; border-radius:8px; border:1px solid #fee2e2; background:#fef2f2; cursor:pointer; color:#ef4444; min-width:54px; transition:all .2s;">
                             <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="margin-bottom:2px;"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path><line x1="10" y1="11" x2="10" y2="17"></line><line x1="14" y1="11" x2="14" y2="17"></line></svg>
                             <span style="font-size:10px; font-weight:600;">Delete</span>
@@ -352,6 +360,13 @@ import { supabase } from './lib/supabase.js';
     window.userAction = async function (action, id) {
         const user = users.find(u => String(u.user_id || u.id) === String(id));
         if (!user) return; 
+
+        // Protect Owner role against any action
+        const role = (user.role_name || roleMap[user.role_id] || '').toLowerCase();
+        if (role === 'owner') {
+            showToast('Owner is a protected role and cannot be modified.', true);
+            return;
+        } 
 
         if (action === 'edit') {
             openModal('edit', user);
