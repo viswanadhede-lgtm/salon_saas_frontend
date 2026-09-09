@@ -1,27 +1,15 @@
 import { supabase } from '../lib/supabase.js';
 
-// ── Constants & Day Mappings ────────────────────────────────────────────────
-export const DAYS = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
-
-export const DAY_TO_NUM = {
-    'Sunday': 0,
-    'Monday': 1,
-    'Tuesday': 2,
-    'Wednesday': 3,
-    'Thursday': 4,
-    'Friday': 5,
-    'Saturday': 6
-};
-
-export const NUM_TO_DAY = {
-    0: 'Sunday',
-    1: 'Monday',
-    2: 'Tuesday',
-    3: 'Wednesday',
-    4: 'Thursday',
-    5: 'Friday',
-    6: 'Saturday'
-};
+// ── Constants & Day Definitions ─────────────────────────────────────────────
+export const DAYS = [
+    'Monday',
+    'Tuesday',
+    'Wednesday',
+    'Thursday',
+    'Friday',
+    'Saturday',
+    'Sunday'
+];
 
 export const DEFAULT_HOURS = {
     Monday:    { open: true,  from: '09:00', to: '18:00' },
@@ -197,8 +185,8 @@ export async function loadHoursData(overrideBranchId = null) {
         if (Array.isArray(rows) && rows.length > 0) {
             const merged = { ...DEFAULT_HOURS };
             rows.forEach(r => {
-                const dayName = NUM_TO_DAY[r.day_of_week];
-                if (dayName) {
+                const dayName = r.day_of_week;
+                if (dayName && merged[dayName] !== undefined) {
                     merged[dayName] = {
                         open: Boolean(r.is_open),
                         from: r.opening_time ? r.opening_time.slice(0, 5) : '09:00',
@@ -262,9 +250,8 @@ window.saveHours = async function () {
             });
         }
 
-        // 2. Process all 7 days
+        // 2. Process all 7 days using exact day names
         for (const day of DAYS) {
-            const dayNum  = DAY_TO_NUM[day];
             const isOpen  = document.getElementById('open_' + day)?.checked ?? true;
             const fromVal = document.getElementById('from_' + day)?.value || '09:00';
             const toVal   = document.getElementById('to_' + day)?.value || '18:00';
@@ -272,7 +259,7 @@ window.saveHours = async function () {
             const openingTime = `${fromVal}:00`;
             const closingTime = `${toVal}:00`;
 
-            const existingId = existingMap[dayNum];
+            const existingId = existingMap[day];
 
             if (existingId) {
                 // Update existing day record (preserve created_at)
@@ -294,7 +281,7 @@ window.saveHours = async function () {
                     .insert({
                         company_id:   companyId,
                         branch_id:    branchId,
-                        day_of_week:  dayNum,
+                        day_of_week:  day,
                         opening_time: openingTime,
                         closing_time: closingTime,
                         is_open:      isOpen,
