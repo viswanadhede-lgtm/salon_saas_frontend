@@ -301,7 +301,7 @@ import { supabase } from './lib/supabase.js';
                         ${statusDisplay}
                     </span>
                 </td>
-                <td style="padding:13px 16px;color:#94a3b8;font-size:0.875rem;">${lastLoginText}</td>
+                <td style="padding:13px 16px;color:${u.last_login_at ? '#334155' : '#94a3b8'};font-size:0.875rem;font-weight:${u.last_login_at ? '500' : '400'};">${lastLoginText}</td>
                 <td style="padding:13px 16px; text-align:center;">
                     <div style="display:flex; gap:8px; justify-content:center;">
                         <button class="hover-lift" onclick="window.userAction('edit', '${u.user_id || u.id}')" data-sub-feature="user_update" title="Edit User" style="display:flex; flex-direction:column; align-items:center; justify-content:center; padding:4px 8px; border-radius:8px; border:1px solid #e0e7ff; background:#eff6ff; cursor:pointer; color:#3b82f6; min-width:54px; transition:all .2s;">

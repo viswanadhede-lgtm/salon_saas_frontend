@@ -584,12 +584,28 @@ document.addEventListener('DOMContentLoaded', () => {
                     localStorage.setItem('refresh_token', data.session.refresh_token);
                 }
 
-                // Step 2: Grab the user mapping from our actual users table
-                const { data: userData, error: userError } = await supabase.from('users')
-                    .select('company_id, branch_id, role_id, status')
-                    .eq('user_id', user_id);
+                // Step 2: Grab the user mapping from our actual users table by email (with user_id fallback)
+                const userEmail = (data.user?.email || email || '').trim().toLowerCase();
+                let userData = null;
 
-                if (!userError && userData && userData.length > 0) {
+                if (userEmail) {
+                    const emailRes = await supabase.from('users')
+                        .select('user_id, company_id, branch_id, role_id, status, email')
+                        .eq('email', userEmail);
+                    if (emailRes.data && emailRes.data.length > 0) {
+                        userData = emailRes.data;
+                    }
+                }
+                if (!userData && user_id) {
+                    const idRes = await supabase.from('users')
+                        .select('user_id, company_id, branch_id, role_id, status, email')
+                        .eq('user_id', user_id);
+                    if (idRes.data && idRes.data.length > 0) {
+                        userData = idRes.data;
+                    }
+                }
+
+                if (userData && userData.length > 0) {
                     const profile = userData[0];
                     if (profile.status === 'deleted' || profile.status === 'inactive') {
                         localStorage.removeItem('token');
@@ -598,9 +614,22 @@ document.addEventListener('DOMContentLoaded', () => {
                     if (profile.company_id) localStorage.setItem('company_id', profile.company_id);
                     if (profile.branch_id) localStorage.setItem('active_branch_id', profile.branch_id); // Ensures app pulls correctly
                     if (profile.role_id) localStorage.setItem('role_id', profile.role_id);
+                }
 
-                    // Update last login timestamp (fire-and-forget)
-                    supabase.from('users').update({ last_login_at: new Date().toISOString() }).eq('user_id', user_id);
+                // Step 3: Match user by email and update last_login_at
+                try {
+                    const loginTimestamp = new Date().toISOString();
+                    if (userEmail) {
+                        await supabase.from('users')
+                            .update({ last_login_at: loginTimestamp })
+                            .eq('email', userEmail);
+                    } else if (user_id) {
+                        await supabase.from('users')
+                            .update({ last_login_at: loginTimestamp })
+                            .eq('user_id', user_id);
+                    }
+                } catch (updateErr) {
+                    console.warn('[signin] Failed to update last_login_at:', updateErr);
                 }
 
                 // Clear any stale feature caches to guarantee a fresh fetch on the dashboard loader

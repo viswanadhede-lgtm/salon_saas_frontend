@@ -104,11 +104,28 @@
                     localStorage.setItem('signup_data', JSON.stringify(signupData));
                 }
 
-                // Check if user already exists in our users table (existing user)
-                const { data: userData } = await supabase
-                    .from('users')
-                    .select('company_id, branch_id, role_id, status')
-                    .eq('user_id', user.id);
+                // Check if user already exists in our users table (existing user by email, with user.id fallback)
+                const userEmail = (user.email || '').trim().toLowerCase();
+                let userData = null;
+
+                if (userEmail) {
+                    const emailRes = await supabase
+                        .from('users')
+                        .select('user_id, company_id, branch_id, role_id, status, email')
+                        .eq('email', userEmail);
+                    if (emailRes.data && emailRes.data.length > 0) {
+                        userData = emailRes.data;
+                    }
+                }
+                if (!userData && user.id) {
+                    const idRes = await supabase
+                        .from('users')
+                        .select('user_id, company_id, branch_id, role_id, status, email')
+                        .eq('user_id', user.id);
+                    if (idRes.data && idRes.data.length > 0) {
+                        userData = idRes.data;
+                    }
+                }
 
                 if (userData && userData.length > 0) {
                     // ── Existing user — set context and go to dashboard ──
@@ -122,8 +139,17 @@
                     if (profile.branch_id)  localStorage.setItem('active_branch_id', profile.branch_id);
                     if (profile.role_id)    localStorage.setItem('role_id', profile.role_id);
 
-                    // Update last login timestamp (fire-and-forget)
-                    supabase.from('users').update({ last_login_at: new Date().toISOString() }).eq('user_id', user.id);
+                    // Update last login timestamp by email
+                    try {
+                        const loginTimestamp = new Date().toISOString();
+                        if (userEmail) {
+                            await supabase.from('users').update({ last_login_at: loginTimestamp }).eq('email', userEmail);
+                        } else if (user.id) {
+                            await supabase.from('users').update({ last_login_at: loginTimestamp }).eq('user_id', user.id);
+                        }
+                    } catch (updateErr) {
+                        console.warn('[auth-callback] Failed to update last_login_at:', updateErr);
+                    }
 
                     // Clear stale caches
                     localStorage.removeItem('userFeatures');
