@@ -261,16 +261,23 @@ import { supabase } from './lib/supabase.js';
             const isOwner   = roleDisplay.toLowerCase() === 'owner';
             
             // Safe fallback for UI missing timestamps
-            let lastLoginText = 'Never';
+            let lastLoginHtml = '<span style="color:#94a3b8;font-size:0.875rem;">Never</span>';
             if (u.last_login_at) {
                 const d = new Date(u.last_login_at);
-                const days = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
+                const fullDays = ['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
+                const dayName = fullDays[d.getDay()];
                 const dd = String(d.getDate()).padStart(2,'0');
                 const mm = String(d.getMonth()+1).padStart(2,'0');
                 const yyyy = d.getFullYear();
                 const hh = String(d.getHours()).padStart(2,'0');
                 const min = String(d.getMinutes()).padStart(2,'0');
-                lastLoginText = `${days[d.getDay()]}, ${dd}-${mm}-${yyyy}, ${hh}:${min}`;
+                lastLoginHtml = `
+                    <div style="display:flex;flex-direction:column;gap:1px;line-height:1.35;">
+                        <span style="font-weight:600;color:#1e293b;font-size:0.8125rem;">${dayName}</span>
+                        <span style="color:#475569;font-size:0.8125rem;">${dd}-${mm}-${yyyy}</span>
+                        <span style="color:#64748b;font-size:0.775rem;">${hh}:${min}</span>
+                    </div>
+                `;
             }
 
             const tr = document.createElement('tr');
@@ -301,7 +308,7 @@ import { supabase } from './lib/supabase.js';
                         ${statusDisplay}
                     </span>
                 </td>
-                <td style="padding:13px 16px;color:${u.last_login_at ? '#334155' : '#94a3b8'};font-size:0.875rem;font-weight:${u.last_login_at ? '500' : '400'};">${lastLoginText}</td>
+                <td style="padding:12px 16px;vertical-align:middle;">${lastLoginHtml}</td>
                 <td style="padding:13px 16px; text-align:center;">
                     <div style="display:flex; gap:8px; justify-content:center;">
                         <button class="hover-lift" onclick="window.userAction('edit', '${u.user_id || u.id}')" data-sub-feature="user_update" title="Edit User" style="display:flex; flex-direction:column; align-items:center; justify-content:center; padding:4px 8px; border-radius:8px; border:1px solid #e0e7ff; background:#eff6ff; cursor:pointer; color:#3b82f6; min-width:54px; transition:all .2s;">
