@@ -402,7 +402,7 @@ import { supabase } from './lib/supabase.js';
         if (mode === 'edit' && user) {
             editingId = user.user_id || user.id;
             modalTitle.textContent = 'Edit User';
-            modalSub.textContent   = `Update account details for \${user.name}`;
+            modalSub.textContent   = "Update this user's account and access details";
             saveBtn.textContent    = 'Save Changes';
             
             document.getElementById('uFullName').value = user.name || '';
