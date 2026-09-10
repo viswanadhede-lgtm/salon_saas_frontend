@@ -386,7 +386,7 @@
         const spec = PLAN_SPECS[state.plan.name] || PLAN_SPECS['Growth'];
         const planNameLabel = state.currentMode === 'noplan' ? 'Starter' : spec.name;
 
-        featuresCardSubtitle.textContent = `Everything included in your ${planNameLabel} plan`;
+        featuresCardSubtitle.textContent = 'Features included in your Current Plan';
         featuresIncludedCountBadge.textContent = `${spec.included.length} Included`;
 
         featuresIncludedList.innerHTML = spec.included.map(item => `
