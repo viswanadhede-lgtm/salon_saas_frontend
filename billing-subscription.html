@@ -706,13 +706,13 @@
             <div class="billing-modal-header">
                 <div>
                     <h3 class="billing-modal-title">Change Payment Method</h3>
-                    <p class="billing-modal-subtitle" style="margin: 4px 0 0 0; font-size: 0.85rem; color: var(--text-muted);">
+                    <p class="billing-modal-subtitle">
                         Choose how your monthly subscription auto-renews.
                     </p>
                 </div>
                 <button type="button" class="billing-modal-close" data-close-modal><i data-feather="x"></i></button>
             </div>
-            <div class="billing-modal-body" style="padding: 1.5rem 1.6rem;">
+            <div class="billing-modal-body">
                 <!-- Payment Method Selector Tabs -->
                 <div class="payment-method-tabs" id="paymentMethodTabs">
                     <button type="button" class="payment-method-tab is-active" data-tab="card">
@@ -744,7 +744,7 @@
                             <input type="text" id="inputCardNumber" class="modal-form-input" placeholder="4242 •••• •••• 4242" maxlength="19">
                         </div>
                     </div>
-                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.75rem;">
+                    <div class="payment-form-row-2col">
                         <div class="modal-form-group">
                             <label class="modal-form-label" for="inputCardExpiry">Expiry (MM/YY)</label>
                             <input type="text" id="inputCardExpiry" class="modal-form-input" placeholder="09/28" maxlength="5">
