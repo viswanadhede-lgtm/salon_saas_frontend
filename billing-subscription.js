@@ -313,10 +313,6 @@
                     <i data-feather="refresh-cw"></i>
                     <span>Reactivate Subscription</span>
                 </button>
-                <button type="button" class="btn-plain btn-plain-secondary" id="btnManageAddonsTop">
-                    <i data-feather="package"></i>
-                    <span>Manage Add-ons</span>
-                </button>
             `;
 
             const btnReactivate = document.getElementById('btnReactivateSub');
@@ -345,16 +341,7 @@
                     <i data-feather="refresh-cw"></i>
                     <span>Change Plan</span>
                 </button>
-                <button type="button" class="btn-plain btn-plain-secondary" id="btnManageAddonsTop">
-                    <i data-feather="package"></i>
-                    <span>Manage Add-ons</span>
-                </button>
             `;
-        }
-
-        const btnManageAddonsTop = document.getElementById('btnManageAddonsTop');
-        if (btnManageAddonsTop) {
-            btnManageAddonsTop.onclick = openManageAddonsModal;
         }
     }
 
