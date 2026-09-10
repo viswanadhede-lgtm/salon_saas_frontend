@@ -1,203 +1,850 @@
-// billing-subscription.js — Live data loader for Billing & Subscription page
-import { supabase } from './lib/supabase.js';
+// billing-subscription.js — Frontend State & Interaction Controller
+// BharathBots Salon Management SaaS (Frontend-First, Plain & Neutral Design)
 
-(async function () {
+(function () {
+    'use strict';
 
-    // ── Helpers ────────────────────────────────────────────────────
-    const getCompanyId = () => {
-        try {
-            const ctx = JSON.parse(localStorage.getItem('appContext') || '{}');
-            return ctx.company?.id || localStorage.getItem('company_id') || null;
-        } catch { return localStorage.getItem('company_id') || null; }
-    };
-
-    const fmt = (iso) => {
-        if (!iso) return '—';
-        return new Date(iso).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' });
-    };
-
-    const fmtAmount = (n) => {
-        if (n == null) return '—';
+    // ── Helper Formatter Functions ─────────────────────────────────
+    const fmtCurrency = (n) => {
+        if (n == null || isNaN(n)) return '—';
         return '₹' + Number(n).toLocaleString('en-IN');
     };
 
-    // ── Plan features map ───────────────────────────────────────────
-    const PLAN_FEATURES = {
-        'Basic':      { icon: 'zap',         included: ['1 Branch', 'Up to 5 staff members', 'Basic bookings', 'Customer database', 'Payment tracking'], excluded: ['Multi-branch support', 'Marketing tools', 'Priority support', 'Dedicated account manager'] },
-        'Advance':    { icon: 'trending-up', included: ['Up to 3 branches', 'Up to 12 staff accounts', 'POS & Product sales', 'Offers & coupons', 'Advanced reports'], excluded: ['Unlimited staff', 'Dedicated account manager', 'Custom API integrations'] },
-        'Pro':        { icon: 'award',       included: ['Up to 10 branches', 'Unlimited staff accounts', 'Membership programs', 'Online booking page', 'Deep analytics dashboard'], excluded: [] },
-        'Enterprise': { icon: 'briefcase',   included: ['Unlimited branches', 'AI receptionist included', 'WhatsApp booking automation', 'Custom integrations', 'Dedicated support & SLA'], excluded: [] }
+    const showToast = (msg) => {
+        const toast = document.getElementById('billingToast');
+        const toastMsg = document.getElementById('billingToastMsg');
+        if (!toast || !toastMsg) return;
+        toastMsg.textContent = msg;
+        toast.classList.add('is-visible');
+        clearTimeout(toast._timeout);
+        toast._timeout = setTimeout(() => {
+            toast.classList.remove('is-visible');
+        }, 3200);
     };
 
-    // ── DOM refs ───────────────────────────────────────────────────
-    const planBadgeEl      = document.querySelector('.billing-plan-card--compact .plan-badge');
-    const planPriceEl      = document.querySelector('.plan-price');
-    const planPeriodEl     = document.querySelector('.plan-period');
-    const planStatusEl     = document.querySelector('.meta-value.status-active');
-    const planMetaItems    = document.querySelectorAll('.plan-meta-item .meta-value');
-    const payHistoryBody   = document.querySelector('.payment-table tbody');
-    const featureCardTitle = document.querySelector('.billing-card--features .section-sub');
-    const featuresGrid     = document.querySelector('.features-grid');
-    const featuresCountBadge = document.querySelector('.features-count-badge');
-    const featuresExGrid   = document.querySelector('.features-grid--excluded');
-    const headerPlanBadge  = document.getElementById('headerPlanBadge');
-
-    // ── Fetch subscription ─────────────────────────────────────────
-    const cid = getCompanyId();
-    if (!cid) {
-        console.warn('[billing] No company_id found.');
-        return;
-    }
-
-    const { data: subs, error: subErr } = await supabase
-        .from('subscriptions')
-        .select('*')
-        .eq('company_id', cid)
-        .order('created_at', { ascending: false });
-
-    if (subErr) {
-        console.error('[billing] subscriptions fetch error:', subErr);
-        return;
-    }
-
-    const sub = subs?.[0]; // Most recent active subscription
-
-    if (sub) {
-        // ── Read plan_name directly from subscriptions row ─────────────
-        const rawPlanName = sub.plan_name || 'Unknown';
-        const featureKey  = Object.keys(PLAN_FEATURES).find(k => rawPlanName.toLowerCase().includes(k.toLowerCase())) || rawPlanName;
-        const plan = {
-            name: rawPlanName,
-            icon: (PLAN_FEATURES[featureKey] || {}).icon || 'zap'
-        };
-
-        const isAnnual = sub.billing_cycle === 'annual';
-        const price = sub.billing_amount || (isAnnual ? plan.annual : plan.monthly);
-        const period = isAnnual ? '/ year' : '/ month';
-
-        // ── Plan card ──────────────────────────────────────────────
-        if (planBadgeEl) {
-            planBadgeEl.innerHTML = `<i data-feather="${plan.icon}"></i> ${plan.name} Plan`;
+    // ── Catalog Data & Plan Definitions ───────────────────────────
+    const CATALOG_ADDONS = [
+        {
+            id: 'whatsapp',
+            name: 'WhatsApp Reminders',
+            desc: 'Automated appointment reminders via WhatsApp',
+            price: 499
+        },
+        {
+            id: 'ai_receptionist',
+            name: 'AI Receptionist',
+            desc: 'AI-powered call handling & booking assistant',
+            price: 999
+        },
+        {
+            id: 'advanced_reports',
+            name: 'Advanced Reports',
+            desc: 'Deep-dive revenue, staff & service analytics',
+            price: 299
+        },
+        {
+            id: 'smart_notifications',
+            name: 'Smart Notifications',
+            desc: 'Push & SMS alerts for bookings and updates',
+            price: 199
         }
-        if (planPriceEl) planPriceEl.textContent = fmtAmount(price);
-        if (planPeriodEl) planPeriodEl.textContent = period;
-        if (headerPlanBadge) headerPlanBadge.textContent = plan.name;
+    ];
 
-        // Status
-        const isActive = sub.status === 'active';
-        const isTrial  = sub.status === 'trialing' || sub.subscription_type === 'trial';
-        let statusLabel = isActive ? (isTrial ? 'Trial Active' : 'Active') : (sub.status || 'Unknown');
-        let statusColor = isActive ? '#166534' : '#92400e';
-        let statusBg    = isActive ? '#dcfce7' : '#fef3c7';
-        let dotColor    = isActive ? '#22c55e' : '#f59e0b';
+    const PLAN_SPECS = {
+        'Growth': {
+            name: 'Growth',
+            monthlyPrice: 4999,
+            included: [
+                'Unlimited bookings',
+                'Staff management (up to 20)',
+                'Customer database CRM',
+                'Sales reports & analytics',
+                'Marketing tools',
+                'Multi-branch support',
+                'Priority email support'
+            ],
+            excluded: [
+                'Dedicated account manager',
+                'Custom API integrations'
+            ]
+        },
+        'Basic': {
+            name: 'Basic',
+            monthlyPrice: 1999,
+            included: [
+                '1 Branch',
+                'Up to 5 staff accounts',
+                'Basic bookings management',
+                'Customer database',
+                'Payment tracking'
+            ],
+            excluded: [
+                'Multi-branch support',
+                'Marketing tools',
+                'Priority support',
+                'Dedicated account manager'
+            ]
+        }
+    };
 
-        if (planStatusEl) {
-            planStatusEl.style.background = statusBg;
-            planStatusEl.style.color = statusColor;
-            planStatusEl.querySelector('.status-dot').style.background = dotColor;
-            planStatusEl.lastChild.textContent = statusLabel;
+    // ── Application State ──────────────────────────────────────────
+    const state = {
+        currentMode: 'active', // 'active' | 'noplan' | 'cancelled'
+        plan: {
+            name: 'Growth',
+            cycle: 'monthly',
+            price: 4999,
+            startDate: '10 Sep 2026',
+            validUntil: '09 Oct 2026',
+            nextBillingDate: '10 Oct 2026',
+            status: 'Active'
+        },
+        activeAddonIds: ['whatsapp', 'ai_receptionist'],
+        paymentMethod: {
+            cardMask: '•••• •••• •••• 4242',
+            holder: 'Admin User',
+            expiry: '09 / 2028',
+            network: 'VISA / MASTERCARD'
+        },
+        billingInfo: {
+            legalName: 'BharathBots Technologies',
+            gstin: '37AAAAA0000A1Z5',
+            email: 'billing@example.com',
+            address: 'Machilipatnam, Andhra Pradesh, India'
+        },
+        paymentHistory: [
+            {
+                id: 'INV-2026-09',
+                date: '10 Sep 2026',
+                description: 'Growth Plan',
+                amount: 4999,
+                method: 'UPI',
+                status: 'Paid'
+            },
+            {
+                id: 'INV-2026-08',
+                date: '10 Aug 2026',
+                description: 'Growth Plan',
+                amount: 4999,
+                method: 'Card',
+                status: 'Paid'
+            },
+            {
+                id: 'INV-2026-07',
+                date: '10 Jul 2026',
+                description: 'Growth Plan + Add-on',
+                amount: 5498,
+                method: 'Card',
+                status: 'Paid'
+            },
+            {
+                id: 'INV-2026-06',
+                date: '10 Jun 2026',
+                description: 'Growth Plan',
+                amount: 4999,
+                method: 'Card',
+                status: 'Refunded'
+            }
+        ],
+        pendingAddonId: null
+    };
+
+    // ── DOM References ─────────────────────────────────────────────
+    // State preview pills
+    const statePillsGroup = document.getElementById('statePillsGroup');
+
+    // Row 1: Plan & Add-ons
+    const planNameBadge = document.getElementById('planNameBadge');
+    const planStatusPill = document.getElementById('planStatusPill');
+    const planStatusText = document.getElementById('planStatusText');
+    const planPriceBlock = document.getElementById('planPriceBlock');
+    const planPriceAmount = document.getElementById('planPriceAmount');
+    const planPricePeriod = document.getElementById('planPricePeriod');
+    const planSubNotice = document.getElementById('planSubNotice');
+    const planMetaGrid = document.getElementById('planMetaGrid');
+    const metaStatus = document.getElementById('metaStatus');
+    const metaStartDate = document.getElementById('metaStartDate');
+    const metaValidUntil = document.getElementById('metaValidUntil');
+    const metaNextBilling = document.getElementById('metaNextBilling');
+    const planActionsContainer = document.getElementById('planActionsContainer');
+
+    const activeAddonsList = document.getElementById('activeAddonsList');
+    const activeAddonsCountBadge = document.getElementById('activeAddonsCountBadge');
+    const activeAddonsTotalVal = document.getElementById('activeAddonsTotalVal');
+
+    // Row 2: Features & Available
+    const featuresCardSubtitle = document.getElementById('featuresCardSubtitle');
+    const featuresIncludedCountBadge = document.getElementById('featuresIncludedCountBadge');
+    const featuresIncludedList = document.getElementById('featuresIncludedList');
+    const featuresExcludedList = document.getElementById('featuresExcludedList');
+    const featuresExcludedDivider = document.getElementById('featuresExcludedDivider');
+    const availableAddonsList = document.getElementById('availableAddonsList');
+    const availableAddonsBadge = document.getElementById('availableAddonsBadge');
+
+    // Row 3: Payment Method & Summary
+    const cardMaskDisplay = document.getElementById('cardMaskDisplay');
+    const cardHolderDisplay = document.getElementById('cardHolderDisplay');
+    const cardExpiryDisplay = document.getElementById('cardExpiryDisplay');
+    const cardNetworkLabel = document.getElementById('cardNetworkLabel');
+
+    const summaryLineItems = document.getElementById('summaryLineItems');
+    const summarySubtotal = document.getElementById('summarySubtotal');
+    const summaryGst = document.getElementById('summaryGst');
+    const summaryTotalAmount = document.getElementById('summaryTotalAmount');
+    const summaryBillingDateNote = document.getElementById('summaryBillingDateNote');
+
+    // Row 4: History
+    const paymentHistoryBody = document.getElementById('paymentHistoryBody');
+
+    // Row 5: Billing Info
+    const infoBusinessName = document.getElementById('infoBusinessName');
+    const infoGstin = document.getElementById('infoGstin');
+    const infoBillingEmail = document.getElementById('infoBillingEmail');
+    const infoBillingAddress = document.getElementById('infoBillingAddress');
+
+    // Bottom
+    const subscriptionManagementSection = document.getElementById('subscriptionManagementSection');
+
+    // Modals
+    const modalAddAddon = document.getElementById('modalAddAddon');
+    const addAddonModalTitle = document.getElementById('addAddonModalTitle');
+    const addAddonModalPrice = document.getElementById('addAddonModalPrice');
+    const addAddonModalDesc = document.getElementById('addAddonModalDesc');
+    const btnConfirmAddAddon = document.getElementById('btnConfirmAddAddon');
+
+    const modalManageAddons = document.getElementById('modalManageAddons');
+    const modalManageAddonsList = document.getElementById('modalManageAddonsList');
+
+    const modalCancelSub = document.getElementById('modalCancelSub');
+    const cancelModalPlanName = document.getElementById('cancelModalPlanName');
+    const cancelModalNotice = document.getElementById('cancelModalNotice');
+    const btnConfirmCancelSubscription = document.getElementById('btnConfirmCancelSubscription');
+
+    const modalEditBilling = document.getElementById('modalEditBilling');
+    const inputLegalName = document.getElementById('inputLegalName');
+    const inputGstin = document.getElementById('inputGstin');
+    const inputBillingEmail = document.getElementById('inputBillingEmail');
+    const inputBillingAddress = document.getElementById('inputBillingAddress');
+    const btnSaveBillingInfo = document.getElementById('btnSaveBillingInfo');
+
+    const modalChangePayment = document.getElementById('modalChangePayment');
+    const inputCardHolder = document.getElementById('inputCardHolder');
+    const inputCardNumber = document.getElementById('inputCardNumber');
+    const inputCardExpiry = document.getElementById('inputCardExpiry');
+    const btnSavePaymentMethod = document.getElementById('btnSavePaymentMethod');
+
+    const modalViewInvoice = document.getElementById('modalViewInvoice');
+    const invoiceModalTitle = document.getElementById('invoiceModalTitle');
+    const invoiceModalBody = document.getElementById('invoiceModalBody');
+    const btnDownloadInvoicePdf = document.getElementById('btnDownloadInvoicePdf');
+
+    // Header badge
+    const headerPlanBadge = document.getElementById('headerPlanBadge');
+
+    // ── Render Functions ───────────────────────────────────────────
+
+    function renderCurrentPlan() {
+        if (state.currentMode === 'noplan') {
+            planNameBadge.textContent = 'NO ACTIVE PLAN';
+            if (headerPlanBadge) headerPlanBadge.textContent = 'No Plan';
+
+            planStatusPill.className = 'status-pill is-unsubscribed';
+            planStatusText.textContent = 'Not subscribed';
+
+            planPriceBlock.innerHTML = `
+                <span class="plan-price-amount">—</span>
+                <span class="plan-price-frequency" style="color: var(--text-muted);">No subscription</span>
+            `;
+
+            planSubNotice.style.display = 'block';
+            planSubNotice.textContent = 'Choose a plan to start managing your salon digital operations.';
+
+            planMetaGrid.style.display = 'none';
+
+            planActionsContainer.innerHTML = `
+                <button type="button" class="btn-plain btn-plain-primary" onclick="window.location.href='plans.html'">
+                    <i data-feather="check-circle"></i>
+                    <span>Choose Plan</span>
+                </button>
+            `;
+            return;
         }
 
-        // Meta grid: Status | Start Date | Next Renewal | Next Billing
-        if (planMetaItems && planMetaItems.length >= 4) {
-            // planMetaItems[0] is status — already handled above
-            planMetaItems[1].textContent = fmt(sub.current_period_start);
-            planMetaItems[2].textContent = fmt(sub.current_period_end);
-            planMetaItems[3].textContent = fmtAmount(price);
-        }
+        // Active or Cancelled
+        planMetaGrid.style.display = 'grid';
+        planNameBadge.textContent = `${state.plan.name} Plan`;
+        if (headerPlanBadge) headerPlanBadge.textContent = state.plan.name;
 
-        // Upgrade button link
-        const upgradeBtn = document.querySelector('.btn-billing-primary');
-        const changeBtn  = document.querySelector('.btn-billing-secondary');
-        if (upgradeBtn) upgradeBtn.onclick = () => window.location.href = `plans.html?current=${plan.name.toLowerCase()}`;
-        if (changeBtn)  changeBtn.onclick  = () => window.location.href = `plans.html?current=${plan.name.toLowerCase()}`;
+        planPriceBlock.innerHTML = `
+            <span class="plan-price-amount">${fmtCurrency(state.plan.price)}</span>
+            <span class="plan-price-frequency">/ month</span>
+        `;
 
-        // ── Plan Features ──────────────────────────────────────────
-        // Match plan name loosely (e.g. "Advance" matches "Advance")
-        const features = PLAN_FEATURES[featureKey] || { included: ['Standard features included'], excluded: [] };
-        if (featureCardTitle) featureCardTitle.textContent = `Everything included in your ${plan.name} plan`;
-        if (featuresCountBadge) featuresCountBadge.textContent = `${features.included.length} included`;
+        if (state.currentMode === 'cancelled') {
+            planStatusPill.className = 'status-pill is-cancelling';
+            planStatusText.textContent = `Cancels on ${state.plan.validUntil}`;
 
-        if (featuresGrid) {
-            featuresGrid.innerHTML = features.included.map(f => `
-                <div class="feature-row feature-row--included">
-                    <span class="feature-check"><i data-feather="check"></i></span>
-                    <span class="feature-label">${f}</span>
-                </div>`).join('');
-        }
-        if (featuresExGrid) {
-            featuresExGrid.innerHTML = features.excluded.length
-                ? features.excluded.map(f => `
-                    <div class="feature-row feature-row--excluded">
-                        <span class="feature-check feature-check--no"><i data-feather="x"></i></span>
-                        <span class="feature-label">${f}</span>
-                    </div>`).join('')
-                : '<p style="color:#64748b;font-size:0.85rem;padding:0.5rem 0;">All features included! 🎉</p>';
+            planSubNotice.style.display = 'block';
+            planSubNotice.textContent = `Your subscription remains active until ${state.plan.validUntil}.`;
 
-            // Hide the "Not included" divider if nothing excluded
-            const divider = document.querySelector('.features-divider');
-            if (divider) divider.style.display = features.excluded.length ? '' : 'none';
-        }
-    } else {
-        // No subscription found
-        if (planBadgeEl) planBadgeEl.innerHTML = `<i data-feather="alert-circle"></i> No Active Plan`;
-        if (planPriceEl) planPriceEl.textContent = '—';
-        if (headerPlanBadge) headerPlanBadge.textContent = 'No Plan';
-    }
+            metaStatus.textContent = 'Cancels at end of cycle';
+            metaStartDate.textContent = state.plan.startDate;
+            metaValidUntil.textContent = state.plan.validUntil;
+            metaNextBilling.textContent = 'None';
 
-    // ── Fetch payment history ──────────────────────────────────────
-    const { data: payments, error: payErr } = await supabase
-        .from('payments')
-        .select('*')
-        .eq('company_id', cid)
-        .order('created_at', { ascending: false });
+            planActionsContainer.innerHTML = `
+                <button type="button" class="btn-plain btn-plain-primary" id="btnReactivateSub">
+                    <i data-feather="refresh-cw"></i>
+                    <span>Reactivate Subscription</span>
+                </button>
+                <button type="button" class="btn-plain btn-plain-secondary" id="btnManageAddonsTop">
+                    <i data-feather="package"></i>
+                    <span>Manage Add-ons</span>
+                </button>
+            `;
 
-    if (payErr) {
-        console.error('[billing] payments fetch error:', payErr);
-    }
-
-    if (payHistoryBody) {
-        if (!payments || payments.length === 0) {
-            payHistoryBody.innerHTML = `
-                <tr>
-                    <td colspan="5" style="text-align:center;padding:2.5rem;color:#94a3b8;font-size:0.875rem;">
-                        <i data-feather="inbox" style="display:block;margin:0 auto 8px;width:28px;height:28px;"></i>
-                        No payment history yet.
-                    </td>
-                </tr>`;
+            const btnReactivate = document.getElementById('btnReactivateSub');
+            if (btnReactivate) {
+                btnReactivate.onclick = () => {
+                    state.currentMode = 'active';
+                    renderAll();
+                    showToast('Subscription reactivated successfully!');
+                };
+            }
         } else {
-            payHistoryBody.innerHTML = payments.map(p => {
-                const isPaid = p.status === 'active' || p.status === 'charged' || p.status === 'captured';
-                const isDue  = p.status === 'pending' || p.status === 'due';
-                const statusHtml = isPaid
-                    ? `<span class="status-pill status-pill--paid">Paid</span>`
-                    : isDue
-                    ? `<span class="status-pill status-pill--due">Payment Due</span>`
-                    : `<span class="status-pill" style="background:#f1f5f9;color:#475569;">${p.status || 'Unknown'}</span>`;
+            // State: Active
+            planStatusPill.className = 'status-pill is-active';
+            planStatusText.textContent = 'Active';
 
-                const actionHtml = isDue
-                    ? `<button class="btn-invoice btn-pay-now" onclick="alert('Redirecting to payment...')">
-                            <i data-feather="alert-circle" style="width:14px;height:14px;"></i> Pay Now
-                       </button>`
-                    : `<button class="btn-invoice" title="Invoice ${p.payment_id || ''}">
-                            <i data-feather="download" style="width:14px;height:14px;"></i> Download
-                       </button>`;
+            planSubNotice.style.display = 'none';
 
-                const desc = `${p.plan_name || 'Subscription'} Plan${p.billing_cycle === 'annual' ? ' (Annual)' : ''}`;
+            metaStatus.textContent = 'Active';
+            metaStartDate.textContent = state.plan.startDate;
+            metaValidUntil.textContent = state.plan.validUntil;
+            metaNextBilling.textContent = state.plan.nextBillingDate;
 
-                return `
-                    <tr>
-                        <td class="td-date">${fmt(p.created_at)}</td>
-                        <td class="td-desc">${desc}</td>
-                        <td class="td-amount">${fmtAmount(p.amount)}</td>
-                        <td>${statusHtml}</td>
-                        <td>${actionHtml}</td>
-                    </tr>`;
-            }).join('');
+            planActionsContainer.innerHTML = `
+                <button type="button" class="btn-plain btn-plain-primary" id="btnChangePlan" onclick="window.location.href='plans.html?current=growth'">
+                    <i data-feather="refresh-cw"></i>
+                    <span>Change Plan</span>
+                </button>
+                <button type="button" class="btn-plain btn-plain-secondary" id="btnManageAddonsTop">
+                    <i data-feather="package"></i>
+                    <span>Manage Add-ons</span>
+                </button>
+            `;
+        }
+
+        const btnManageAddonsTop = document.getElementById('btnManageAddonsTop');
+        if (btnManageAddonsTop) {
+            btnManageAddonsTop.onclick = openManageAddonsModal;
         }
     }
 
-    // ── Re-render Feather icons ────────────────────────────────────
-    if (window.feather) feather.replace();
+    function getActiveAddons() {
+        if (state.currentMode === 'noplan') return [];
+        return CATALOG_ADDONS.filter(a => state.activeAddonIds.includes(a.id));
+    }
+
+    function renderActiveAddons() {
+        const activeItems = getActiveAddons();
+        activeAddonsCountBadge.textContent = `${activeItems.length} Active`;
+
+        if (activeItems.length === 0) {
+            activeAddonsList.innerHTML = `
+                <div class="empty-neutral-state">
+                    ${state.currentMode === 'noplan' ? 'No active add-ons. Choose a plan to activate add-ons.' : 'No active add-ons currently.'}
+                </div>
+            `;
+            activeAddonsTotalVal.textContent = '₹0 / month';
+            return;
+        }
+
+        activeAddonsList.innerHTML = activeItems.map(item => `
+            <div class="active-addon-row">
+                <div class="active-addon-info">
+                    <p class="active-addon-name">${item.name}</p>
+                    <p class="active-addon-price">${fmtCurrency(item.price)} / month</p>
+                </div>
+                <span class="neutral-badge">ACTIVE</span>
+            </div>
+        `).join('');
+
+        const totalAddonPrice = activeItems.reduce((acc, cur) => acc + cur.price, 0);
+        activeAddonsTotalVal.textContent = `${fmtCurrency(totalAddonPrice)} / month`;
+    }
+
+    function renderPlanFeatures() {
+        const spec = PLAN_SPECS[state.plan.name] || PLAN_SPECS['Growth'];
+        const planNameLabel = state.currentMode === 'noplan' ? 'Starter' : spec.name;
+
+        featuresCardSubtitle.textContent = `Everything included in your ${planNameLabel} plan`;
+        featuresIncludedCountBadge.textContent = `${spec.included.length} Included`;
+
+        featuresIncludedList.innerHTML = spec.included.map(item => `
+            <div class="feature-item">
+                <span class="feature-check-icon"><i data-feather="check"></i></span>
+                <span>${item}</span>
+            </div>
+        `).join('');
+
+        if (spec.excluded.length > 0) {
+            featuresExcludedDivider.style.display = 'flex';
+            featuresExcludedList.innerHTML = spec.excluded.map(item => `
+                <div class="feature-item feature-item--excluded">
+                    <span class="feature-check-icon"><i data-feather="x"></i></span>
+                    <span>${item}</span>
+                </div>
+            `).join('');
+        } else {
+            featuresExcludedDivider.style.display = 'none';
+            featuresExcludedList.innerHTML = '';
+        }
+    }
+
+    function renderAvailableAddons() {
+        availableAddonsBadge.textContent = `${CATALOG_ADDONS.length} Available`;
+
+        availableAddonsList.innerHTML = CATALOG_ADDONS.map(addon => {
+            const isActive = state.currentMode !== 'noplan' && state.activeAddonIds.includes(addon.id);
+            const buttonHtml = isActive
+                ? `<button type="button" class="btn-plain btn-plain-ghost btn-plain-sm" disabled style="opacity: 0.85;">
+                       <i data-feather="check"></i> <span>Active</span>
+                   </button>`
+                : `<button type="button" class="btn-plain btn-plain-secondary btn-plain-sm btn-add-addon" data-addon-id="${addon.id}">
+                       <i data-feather="plus"></i> <span>Add</span>
+                   </button>`;
+
+            return `
+                <div class="available-addon-card">
+                    <div class="available-addon-main">
+                        <div class="available-addon-title-row">
+                            <h4 class="available-addon-title">${addon.name}</h4>
+                        </div>
+                        <p class="available-addon-desc">${addon.desc}</p>
+                        <p class="available-addon-price">${fmtCurrency(addon.price)} / month</p>
+                    </div>
+                    <div>
+                        ${buttonHtml}
+                    </div>
+                </div>
+            `;
+        }).join('');
+
+        // Bind Add-on click interactions
+        document.querySelectorAll('.btn-add-addon').forEach(btn => {
+            btn.addEventListener('click', function () {
+                if (state.currentMode === 'noplan') {
+                    showToast('Please select a base subscription plan first.');
+                    return;
+                }
+                const addonId = this.getAttribute('data-addon-id');
+                openAddAddonModal(addonId);
+            });
+        });
+    }
+
+    function renderBillingSummary() {
+        const activeItems = getActiveAddons();
+        const basePlanCost = state.currentMode === 'noplan' ? 0 : state.plan.price;
+
+        let itemsHtml = `
+            <div class="summary-row summary-row--highlight">
+                <span class="summary-row-label">${state.currentMode === 'noplan' ? 'No Plan Active' : `${state.plan.name} Plan`}</span>
+                <span class="summary-row-value">${fmtCurrency(basePlanCost)}</span>
+            </div>
+        `;
+
+        activeItems.forEach(item => {
+            itemsHtml += `
+                <div class="summary-row">
+                    <span class="summary-row-label">${item.name}</span>
+                    <span class="summary-row-value">${fmtCurrency(item.price)}</span>
+                </div>
+            `;
+        });
+
+        summaryLineItems.innerHTML = itemsHtml;
+
+        const subtotal = basePlanCost + activeItems.reduce((acc, cur) => acc + cur.price, 0);
+        const gst = Math.round(subtotal * 0.18);
+        const total = subtotal + gst;
+
+        summarySubtotal.textContent = fmtCurrency(subtotal);
+        summaryGst.textContent = fmtCurrency(gst);
+        summaryTotalAmount.textContent = fmtCurrency(total);
+
+        if (state.currentMode === 'noplan') {
+            summaryBillingDateNote.textContent = 'No recurring subscription active.';
+        } else if (state.currentMode === 'cancelled') {
+            summaryBillingDateNote.textContent = `Subscription cancels on ${state.plan.validUntil}. No further renewal.`;
+        } else {
+            summaryBillingDateNote.textContent = `Auto-renews on ${state.plan.nextBillingDate}.`;
+        }
+    }
+
+    function renderPaymentMethod() {
+        cardMaskDisplay.textContent = state.paymentMethod.cardMask;
+        cardHolderDisplay.textContent = state.paymentMethod.holder;
+        cardExpiryDisplay.textContent = state.paymentMethod.expiry;
+        cardNetworkLabel.textContent = state.paymentMethod.network;
+    }
+
+    function renderPaymentHistory() {
+        paymentHistoryBody.innerHTML = state.paymentHistory.map(row => {
+            let statusPillClass = 'status-paid';
+            if (row.status === 'Pending') statusPillClass = 'status-pending';
+            else if (row.status === 'Failed') statusPillClass = 'status-failed';
+            else if (row.status === 'Refunded') statusPillClass = 'status-refunded';
+
+            return `
+                <tr>
+                    <td style="font-weight: 500; color: var(--text-secondary);">${row.date}</td>
+                    <td style="font-weight: 600; color: var(--text-primary);">${row.description}</td>
+                    <td style="font-weight: 700; color: var(--text-primary);">${fmtCurrency(row.amount)}</td>
+                    <td style="color: var(--text-secondary);">${row.method}</td>
+                    <td>
+                        <span class="table-status-pill ${statusPillClass}">
+                            <span class="status-indicator-dot"></span>
+                            ${row.status}
+                        </span>
+                    </td>
+                    <td>
+                        <button type="button" class="btn-plain btn-plain-ghost btn-plain-sm btn-view-invoice" data-invoice-id="${row.id}">
+                            View
+                        </button>
+                    </td>
+                </tr>
+            `;
+        }).join('');
+
+        // Bind invoice view buttons
+        document.querySelectorAll('.btn-view-invoice').forEach(btn => {
+            btn.addEventListener('click', function () {
+                const invoiceId = this.getAttribute('data-invoice-id');
+                openInvoiceModal(invoiceId);
+            });
+        });
+    }
+
+    function renderBillingInfo() {
+        infoBusinessName.textContent = state.billingInfo.legalName;
+        infoGstin.textContent = state.billingInfo.gstin;
+        infoBillingEmail.textContent = state.billingInfo.email;
+        infoBillingAddress.textContent = state.billingInfo.address;
+    }
+
+    function renderSubscriptionManagement() {
+        if (state.currentMode === 'noplan') {
+            subscriptionManagementSection.style.display = 'none';
+        } else {
+            subscriptionManagementSection.style.display = 'flex';
+            const btnCancel = document.getElementById('btnTriggerCancelModal');
+            if (btnCancel) {
+                btnCancel.textContent = state.currentMode === 'cancelled'
+                    ? 'Subscription Scheduled for Cancellation'
+                    : 'Cancel Subscription';
+                btnCancel.disabled = (state.currentMode === 'cancelled');
+            }
+        }
+    }
+
+    function renderAll() {
+        renderCurrentPlan();
+        renderActiveAddons();
+        renderPlanFeatures();
+        renderAvailableAddons();
+        renderBillingSummary();
+        renderPaymentMethod();
+        renderPaymentHistory();
+        renderBillingInfo();
+        renderSubscriptionManagement();
+
+        // Update preview switcher pills
+        if (statePillsGroup) {
+            statePillsGroup.querySelectorAll('.state-pill-btn').forEach(btn => {
+                if (btn.getAttribute('data-state') === state.currentMode) {
+                    btn.classList.add('active');
+                } else {
+                    btn.classList.remove('active');
+                }
+            });
+        }
+
+        // Re-run feather icons
+        if (window.feather) {
+            feather.replace();
+        }
+    }
+
+    // ── Modal Handlers ─────────────────────────────────────────────
+
+    function closeModal(modalEl) {
+        if (modalEl) modalEl.classList.remove('is-open');
+    }
+
+    function openModal(modalEl) {
+        if (modalEl) {
+            modalEl.classList.add('is-open');
+            if (window.feather) feather.replace();
+        }
+    }
+
+    // Modal 1: Add Add-on Confirmation
+    function openAddAddonModal(addonId) {
+        const addon = CATALOG_ADDONS.find(a => a.id === addonId);
+        if (!addon) return;
+
+        state.pendingAddonId = addonId;
+        addAddonModalTitle.textContent = `Add ${addon.name}?`;
+        addAddonModalPrice.textContent = `${fmtCurrency(addon.price)} / month`;
+        addAddonModalDesc.textContent = addon.desc;
+
+        openModal(modalAddAddon);
+    }
+
+    if (btnConfirmAddAddon) {
+        btnConfirmAddAddon.addEventListener('click', function () {
+            if (state.pendingAddonId && !state.activeAddonIds.includes(state.pendingAddonId)) {
+                state.activeAddonIds.push(state.pendingAddonId);
+                const addon = CATALOG_ADDONS.find(a => a.id === state.pendingAddonId);
+                closeModal(modalAddAddon);
+                renderAll();
+                showToast(`✓ ${addon ? addon.name : 'Add-on'} activated!`);
+            }
+            state.pendingAddonId = null;
+        });
+    }
+
+    // Modal 2: Manage Active Add-ons
+    function openManageAddonsModal() {
+        const activeItems = getActiveAddons();
+
+        if (activeItems.length === 0) {
+            modalManageAddonsList.innerHTML = `
+                <div class="empty-neutral-state">
+                    No active add-ons to manage.
+                </div>
+            `;
+        } else {
+            modalManageAddonsList.innerHTML = activeItems.map(item => `
+                <div class="active-addon-row">
+                    <div class="active-addon-info">
+                        <p class="active-addon-name">${item.name}</p>
+                        <p class="active-addon-price">${fmtCurrency(item.price)} / month</p>
+                    </div>
+                    <button type="button" class="btn-plain btn-plain-ghost btn-plain-sm btn-remove-addon" data-remove-id="${item.id}">
+                        Remove
+                    </button>
+                </div>
+            `).join('');
+
+            modalManageAddonsList.querySelectorAll('.btn-remove-addon').forEach(btn => {
+                btn.addEventListener('click', function () {
+                    const removeId = this.getAttribute('data-remove-id');
+                    state.activeAddonIds = state.activeAddonIds.filter(id => id !== removeId);
+                    renderAll();
+                    openManageAddonsModal(); // re-render modal list
+                    showToast('Add-on removed.');
+                });
+            });
+        }
+
+        openModal(modalManageAddons);
+    }
+
+    const btnManageAddonsBottom = document.getElementById('btnManageAddonsBottom');
+    if (btnManageAddonsBottom) {
+        btnManageAddonsBottom.onclick = openManageAddonsModal;
+    }
+
+    // Modal 3: Cancel Subscription
+    const btnTriggerCancelModal = document.getElementById('btnTriggerCancelModal');
+    if (btnTriggerCancelModal) {
+        btnTriggerCancelModal.addEventListener('click', function () {
+            cancelModalPlanName.textContent = `${state.plan.name} Plan`;
+            cancelModalNotice.innerHTML = `Your subscription will remain active until <strong>${state.plan.validUntil}</strong>. You will continue to have full access until then.`;
+            openModal(modalCancelSub);
+        });
+    }
+
+    if (btnConfirmCancelSubscription) {
+        btnConfirmCancelSubscription.addEventListener('click', function () {
+            state.currentMode = 'cancelled';
+            closeModal(modalCancelSub);
+            renderAll();
+            showToast('Subscription scheduled for cancellation.');
+        });
+    }
+
+    // Modal 4: Edit Billing Info
+    const btnOpenEditBilling = document.getElementById('btnOpenEditBilling');
+    if (btnOpenEditBilling) {
+        btnOpenEditBilling.addEventListener('click', function () {
+            inputLegalName.value = state.billingInfo.legalName;
+            inputGstin.value = state.billingInfo.gstin;
+            inputBillingEmail.value = state.billingInfo.email;
+            inputBillingAddress.value = state.billingInfo.address;
+            openModal(modalEditBilling);
+        });
+    }
+
+    if (btnSaveBillingInfo) {
+        btnSaveBillingInfo.addEventListener('click', function () {
+            state.billingInfo.legalName = inputLegalName.value.trim() || state.billingInfo.legalName;
+            state.billingInfo.gstin = inputGstin.value.trim() || state.billingInfo.gstin;
+            state.billingInfo.email = inputBillingEmail.value.trim() || state.billingInfo.email;
+            state.billingInfo.address = inputBillingAddress.value.trim() || state.billingInfo.address;
+
+            closeModal(modalEditBilling);
+            renderBillingInfo();
+            showToast('Billing information saved.');
+        });
+    }
+
+    // Modal 5: Change Payment Method
+    const btnChangePaymentMethod = document.getElementById('btnChangePaymentMethod');
+    if (btnChangePaymentMethod) {
+        btnChangePaymentMethod.addEventListener('click', function () {
+            inputCardHolder.value = state.paymentMethod.holder;
+            inputCardNumber.value = '';
+            inputCardExpiry.value = state.paymentMethod.expiry.replace(/\s+/g, '');
+            openModal(modalChangePayment);
+        });
+    }
+
+    if (btnSavePaymentMethod) {
+        btnSavePaymentMethod.addEventListener('click', function () {
+            const rawCard = inputCardNumber.value.trim();
+            const holder = inputCardHolder.value.trim() || 'Admin User';
+            const expiry = inputCardExpiry.value.trim() || '09 / 2028';
+
+            let mask = state.paymentMethod.cardMask;
+            if (rawCard.length >= 4) {
+                mask = `•••• •••• •••• ${rawCard.slice(-4)}`;
+            }
+
+            state.paymentMethod.holder = holder;
+            state.paymentMethod.cardMask = mask;
+            state.paymentMethod.expiry = expiry;
+
+            closeModal(modalChangePayment);
+            renderPaymentMethod();
+            showToast('Payment method updated.');
+        });
+    }
+
+    // Modal 6: View Invoice Preview
+    function openInvoiceModal(invoiceId) {
+        const item = state.paymentHistory.find(h => h.id === invoiceId) || state.paymentHistory[0];
+        invoiceModalTitle.textContent = `Invoice #${item.id}`;
+
+        const baseAmount = item.amount;
+        const subtotal = Math.round(baseAmount / 1.18);
+        const gst = baseAmount - subtotal;
+
+        invoiceModalBody.innerHTML = `
+            <div style="display: flex; justify-content: space-between; border-bottom: 1px solid var(--border-subtle); padding-bottom: 0.75rem;">
+                <div>
+                    <p style="margin: 0; font-weight: 700; color: var(--text-primary);">${state.billingInfo.legalName}</p>
+                    <p style="margin: 2px 0 0 0; font-size: 0.8rem; color: var(--text-muted);">GSTIN: ${state.billingInfo.gstin}</p>
+                    <p style="margin: 2px 0 0 0; font-size: 0.8rem; color: var(--text-muted);">${state.billingInfo.address}</p>
+                </div>
+                <div style="text-align: right;">
+                    <p style="margin: 0; font-size: 0.8rem; color: var(--text-muted);">Date: <strong>${item.date}</strong></p>
+                    <p style="margin: 2px 0 0 0; font-size: 0.8rem; color: var(--text-muted);">Payment: <strong>${item.method}</strong></p>
+                    <p style="margin: 2px 0 0 0; font-size: 0.8rem; color: var(--text-muted);">Status: <strong>${item.status}</strong></p>
+                </div>
+            </div>
+
+            <table class="plain-table" style="margin-top: 0.5rem;">
+                <thead>
+                    <tr>
+                        <th>Item</th>
+                        <th style="text-align: right;">Amount</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td>${item.description}</td>
+                        <td style="text-align: right; font-weight: 600;">${fmtCurrency(subtotal)}</td>
+                    </tr>
+                    <tr>
+                        <td>Integrated GST (18%)</td>
+                        <td style="text-align: right; font-weight: 600;">${fmtCurrency(gst)}</td>
+                    </tr>
+                    <tr style="border-top: 2px solid var(--border-strong);">
+                        <td style="font-weight: 700;">Total Paid</td>
+                        <td style="text-align: right; font-weight: 800; font-size: 1rem;">${fmtCurrency(item.amount)}</td>
+                    </tr>
+                </tbody>
+            </table>
+        `;
+
+        openModal(modalViewInvoice);
+    }
+
+    if (btnDownloadInvoicePdf) {
+        btnDownloadInvoicePdf.addEventListener('click', function () {
+            closeModal(modalViewInvoice);
+            showToast('Downloading invoice PDF...');
+        });
+    }
+
+    // Export All History Button
+    const btnExportAllHistory = document.getElementById('btnExportAllHistory');
+    if (btnExportAllHistory) {
+        btnExportAllHistory.addEventListener('click', function () {
+            const rows = [
+                ['Invoice ID', 'Date', 'Description', 'Amount', 'Payment Method', 'Status'],
+                ...state.paymentHistory.map(h => [h.id, h.date, h.description, h.amount, h.method, h.status])
+            ];
+            const csvContent = 'data:text/csv;charset=utf-8,' + rows.map(e => e.join(',')).join('\n');
+            const encodedUri = encodeURI(csvContent);
+            const link = document.createElement('a');
+            link.setAttribute('href', encodedUri);
+            link.setAttribute('download', `bharathbots_billing_history.csv`);
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+            showToast('Payment history exported.');
+        });
+    }
+
+    // Global Modal Close Listeners (Backdrop + data-close-modal)
+    document.querySelectorAll('[data-close-modal]').forEach(btn => {
+        btn.addEventListener('click', function () {
+            const modal = this.closest('.billing-modal-overlay');
+            closeModal(modal);
+        });
+    });
+
+    document.querySelectorAll('.billing-modal-overlay').forEach(overlay => {
+        overlay.addEventListener('click', function (e) {
+            if (e.target === overlay) {
+                closeModal(overlay);
+            }
+        });
+    });
+
+    // ── State Preview Switcher Toolbar ─────────────────────────────
+    if (statePillsGroup) {
+        statePillsGroup.querySelectorAll('.state-pill-btn').forEach(btn => {
+            btn.addEventListener('click', function () {
+                const targetState = this.getAttribute('data-state');
+                state.currentMode = targetState;
+                renderAll();
+                showToast(`Switched preview to ${this.textContent}`);
+            });
+        });
+    }
+
+    // ── Initial Render ─────────────────────────────────────────────
+    document.addEventListener('DOMContentLoaded', () => {
+        renderAll();
+    });
+
+    // Also execute immediately in case DOM is already parsed
+    renderAll();
 
 })();

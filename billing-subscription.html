@@ -1,4 +1,4 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="en">
 
 <head>
@@ -272,321 +272,478 @@
             </div>
             <div class="billing-page" id="billingPage">
 
-            <!-- SECTION 1: Current Plan + Active Add-ons row -->
-            <section class="billing-section">
-                <div class="plan-row">
-
-                    <!-- Current Plan card (reduced) -->
-                    <div class="billing-plan-card billing-plan-card--compact">
-                        <div class="plan-info">
-                            <div class="plan-badge">
-                                <i data-feather="zap"></i>
-                                <span id="planNameBadge">Loading...</span>
-                            </div>
-                            <div class="plan-price-row">
-                                <span class="plan-price">—</span>
-                                <span class="plan-period">/ month</span>
-                            </div>
-                            <div class="plan-meta-grid">
-                                <div class="plan-meta-item">
-                                    <span class="meta-label">Status</span>
-                                    <span class="meta-value status-active">
-                                        <span class="status-dot"></span>Active
-                                    </span>
-                                </div>
-                                <div class="plan-meta-item">
-                                    <span class="meta-label">Start Date</span>
-                                    <span class="meta-value">—</span>
-                                </div>
-                                <div class="plan-meta-item">
-                                    <span class="meta-label">Next Renewal</span>
-                                    <span class="meta-value">—</span>
-                                </div>
-                                <div class="plan-meta-item">
-                                    <span class="meta-label">Next Billing</span>
-                                    <span class="meta-value">—</span>
-                                </div>
-                            </div>
-                        </div>
-                        <div class="plan-actions">
-                            <button class="btn-billing btn-billing-primary" data-sub-feature="billing_upgrade_plan" onclick="window.location.href='plans.html?current=growth'">
-                                <i data-feather="arrow-up-circle"></i>
-                                Upgrade Plan
-                            </button>
-                            <button class="btn-billing btn-billing-secondary" data-sub-feature="billing_change_plan" onclick="window.location.href='plans.html?current=growth'">
-                                <i data-feather="refresh-cw"></i>
-                                Change Plan
-                            </button>
-                        </div>
+                <!-- Interactive State Switcher for Frontend Review -->
+                <div class="state-preview-bar">
+                    <div class="state-preview-label">
+                        <i data-feather="sliders"></i>
+                        <span>Frontend State Preview:</span>
                     </div>
-
-                    <!-- Active Add-ons mini card -->
-                    <div class="billing-plan-card billing-plan-card--addons">
-                        <div class="plan-info" style="width:100%;">
-                            <div class="plan-badge plan-badge--addons">
-                                <i data-feather="package"></i>
-                                Active Add-ons
-                            </div>
-                            <div class="addons-mini-list">
-                                <div class="addon-mini-item">
-                                    <div class="addon-mini-icon addon-mini-icon--green">
-                                        <i data-feather="message-circle"></i>
-                                    </div>
-                                    <div class="addon-mini-info">
-                                        <p class="addon-mini-name">WhatsApp Reminders</p>
-                                        <p class="addon-mini-price">₹499 / month</p>
-                                    </div>
-                                    <span class="addon-mini-badge">Active</span>
-                                </div>
-                                <div class="addon-mini-item">
-                                    <div class="addon-mini-icon addon-mini-icon--purple">
-                                        <i data-feather="cpu"></i>
-                                    </div>
-                                    <div class="addon-mini-info">
-                                        <p class="addon-mini-name">AI Receptionist</p>
-                                        <p class="addon-mini-price">₹999 / month</p>
-                                    </div>
-                                    <span class="addon-mini-badge">Active</span>
-                                </div>
-                            </div>
-                            <div class="addon-mini-total">
-                                <span class="addon-mini-total-label">Add-ons Total</span>
-                                <span class="addon-mini-total-value">₹1,498 / month</span>
-                            </div>
-                        </div>
+                    <div class="state-pills-group" id="statePillsGroup">
+                        <button type="button" class="state-pill-btn active" data-state="active">Active Plan</button>
+                        <button type="button" class="state-pill-btn" data-state="noplan">No Plan</button>
+                        <button type="button" class="state-pill-btn" data-state="cancelled">Cancelled / Expiring</button>
                     </div>
-
                 </div>
-            </section>
 
-            <!-- TWO-COLUMN GRID -->
-            <div class="billing-grid">
-
-                <!-- SECTION 2: Plan Features -->
-                <section class="billing-section billing-card billing-card--features billing-plan-card--features-theme">
-                    <div class="features-card-header">
-                        <div class="features-card-header-icon">
-                            <i data-feather="zap"></i>
-                        </div>
+                <!-- ROW 1: Current Plan + Active Add-ons -->
+                <div class="billing-row-2col">
+                    <!-- Current Plan Card -->
+                    <div class="billing-plan-card" id="currentPlanCard">
                         <div>
-                            <h2 class="section-title" style="color:#0f172a;">Plan Features</h2>
-                            <p class="section-sub">Everything included in your Growth plan</p>
-                        </div>
-                        <span class="features-count-badge">7 included</span>
-                    </div>
-                    <div class="features-grid">
-                        <div class="feature-row feature-row--included">
-                            <span class="feature-check"><i data-feather="check"></i></span>
-                            <span class="feature-label">Unlimited bookings</span>
-                        </div>
-                        <div class="feature-row feature-row--included">
-                            <span class="feature-check"><i data-feather="check"></i></span>
-                            <span class="feature-label">Staff management (up to 20)</span>
-                        </div>
-                        <div class="feature-row feature-row--included">
-                            <span class="feature-check"><i data-feather="check"></i></span>
-                            <span class="feature-label">Customer database</span>
-                        </div>
-                        <div class="feature-row feature-row--included">
-                            <span class="feature-check"><i data-feather="check"></i></span>
-                            <span class="feature-label">Sales reports &amp; analytics</span>
-                        </div>
-                        <div class="feature-row feature-row--included">
-                            <span class="feature-check"><i data-feather="check"></i></span>
-                            <span class="feature-label">Marketing tools</span>
-                        </div>
-                        <div class="feature-row feature-row--included">
-                            <span class="feature-check"><i data-feather="check"></i></span>
-                            <span class="feature-label">Multi-branch support</span>
-                        </div>
-                        <div class="feature-row feature-row--included">
-                            <span class="feature-check"><i data-feather="check"></i></span>
-                            <span class="feature-label">Priority email support</span>
-                        </div>
-                    </div>
-                    <div class="features-divider"><span>Not included</span></div>
-                    <div class="features-grid features-grid--excluded">
-                        <div class="feature-row feature-row--excluded">
-                            <span class="feature-check feature-check--no"><i data-feather="x"></i></span>
-                            <span class="feature-label">Dedicated account manager</span>
-                        </div>
-                        <div class="feature-row feature-row--excluded">
-                            <span class="feature-check feature-check--no"><i data-feather="x"></i></span>
-                            <span class="feature-label">Custom API integrations</span>
-                        </div>
-                    </div>
-                </section>
+                            <div class="plan-header-top">
+                                <div class="plan-badge" id="planBadge">
+                                    <i data-feather="zap"></i>
+                                    <span id="planNameBadge">Growth Plan</span>
+                                </div>
+                                <span class="status-pill is-active" id="planStatusPill">
+                                    <span class="status-indicator-dot"></span>
+                                    <span id="planStatusText">Active</span>
+                                </span>
+                            </div>
 
-                <!-- SECTION 3: Available Add-ons -->
-                <section class="billing-section billing-card billing-card--addons-list billing-plan-card--addons-theme">
-                    <div class="section-header" style="margin-bottom:1rem;">
+                            <div class="plan-price-block" id="planPriceBlock">
+                                <span class="plan-price-amount" id="planPriceAmount">₹4,999</span>
+                                <span class="plan-price-frequency" id="planPricePeriod">/ month</span>
+                            </div>
+
+                            <p class="billing-card-subtitle" id="planSubNotice" style="display: none; margin-top: 0.5rem;"></p>
+
+                            <div class="plan-meta-grid" id="planMetaGrid">
+                                <div class="meta-field-item">
+                                    <span class="meta-field-label">Status</span>
+                                    <span class="meta-field-value" id="metaStatus">Active</span>
+                                </div>
+                                <div class="meta-field-item">
+                                    <span class="meta-field-label">Start Date</span>
+                                    <span class="meta-field-value" id="metaStartDate">10 Sep 2026</span>
+                                </div>
+                                <div class="meta-field-item">
+                                    <span class="meta-field-label">Valid Until</span>
+                                    <span class="meta-field-value" id="metaValidUntil">09 Oct 2026</span>
+                                </div>
+                                <div class="meta-field-item">
+                                    <span class="meta-field-label">Next Billing</span>
+                                    <span class="meta-field-value" id="metaNextBilling">10 Oct 2026</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="plan-card-actions" id="planActionsContainer">
+                            <button type="button" class="btn-plain btn-plain-primary" id="btnChangePlan" onclick="window.location.href='plans.html?current=growth'">
+                                <i data-feather="refresh-cw"></i>
+                                <span>Change Plan</span>
+                            </button>
+                            <button type="button" class="btn-plain btn-plain-secondary" id="btnManageAddonsTop">
+                                <i data-feather="package"></i>
+                                <span>Manage Add-ons</span>
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Active Add-ons Card -->
+                    <div class="billing-card active-addons-card" id="activeAddonsCard">
                         <div>
-                            <h2 class="section-title">Available Add-ons</h2>
-                            <p class="section-sub">Supercharge your plan with extras</p>
-                        </div>
-                        <span class="addon-count-badge" style="background:#eff6ff;color:#2563eb;">4 available</span>
-                    </div>
-                    <div class="addon-list addon-list--rich">
-                        <!-- Active -->
-                        <div class="addon-item addon-item--rich addon-item--active">
-                            <div class="addon-icon addon-icon--green">
-                                <i data-feather="message-circle"></i>
+                            <div class="billing-card-header">
+                                <div>
+                                    <h3 class="billing-card-title">Active Add-ons</h3>
+                                    <p class="billing-card-subtitle">Active extensions on your salon account</p>
+                                </div>
+                                <span class="neutral-badge" id="activeAddonsCountBadge">2 Active</span>
                             </div>
-                            <div class="addon-info">
-                                <p class="addon-name">WhatsApp Reminders</p>
-                                <p class="addon-desc">Automated appointment reminders via WhatsApp</p>
-                                <p class="addon-price">₹499 / month</p>
-                            </div>
-                            <button class="btn-addon-add btn-addon-active-state" disabled title="Already active">
-                                <i data-feather="check-circle"></i>
-                                Active
-                            </button>
-                        </div>
-                        <div class="addon-item addon-item--rich addon-item--active">
-                            <div class="addon-icon addon-icon--purple">
-                                <i data-feather="cpu"></i>
-                            </div>
-                            <div class="addon-info">
-                                <p class="addon-name">AI Receptionist</p>
-                                <p class="addon-desc">AI-powered call handling & booking assistant</p>
-                                <p class="addon-price">₹999 / month</p>
-                            </div>
-                            <button class="btn-addon-add btn-addon-active-state" disabled title="Already active">
-                                <i data-feather="check-circle"></i>
-                                Active
-                            </button>
-                        </div>
-                        <!-- Available -->
-                        <div class="addon-item addon-item--rich">
-                            <div class="addon-icon addon-icon--blue">
-                                <i data-feather="bar-chart-2"></i>
-                            </div>
-                            <div class="addon-info">
-                                <p class="addon-name">Advanced Reports</p>
-                                <p class="addon-desc">Deep-dive revenue, staff & service analytics</p>
-                                <p class="addon-price">₹299 / month</p>
-                            </div>
-                            <button class="btn-addon-add btn-addon-cta" data-sub-feature="billing_add_addon">
-                                <i data-feather="plus"></i>
-                                Add
-                            </button>
-                        </div>
-                        <div class="addon-item addon-item--rich">
-                            <div class="addon-icon addon-icon--orange">
-                                <i data-feather="bell"></i>
-                            </div>
-                            <div class="addon-info">
-                                <p class="addon-name">Smart Notifications</p>
-                                <p class="addon-desc">Push & SMS alerts for bookings and updates</p>
-                                <p class="addon-price">₹199 / month</p>
-                            </div>
-                            <button class="btn-addon-add btn-addon-cta" data-sub-feature="billing_add_addon">
-                                <i data-feather="plus"></i>
-                                Add
-                            </button>
-                        </div>
-                    </div>
-                </section>
 
+                            <div class="active-addons-list" id="activeAddonsList">
+                                <!-- Populated dynamically by JS -->
+                            </div>
+                        </div>
 
-                <!-- SECTION 4: Payment Method -->
-                <section class="billing-section billing-card billing-plan-card--payment-theme">
-                    <div class="section-header">
-                        <div>
-                            <h2 class="section-title">Payment Method</h2>
-                            <p class="section-sub">Your saved payment details</p>
+                        <div class="active-addons-footer">
+                            <div class="addons-total-row">
+                                <span class="addons-total-label">Add-ons Total</span>
+                                <span class="addons-total-val" id="activeAddonsTotalVal">₹1,498 / month</span>
+                            </div>
+                            <button type="button" class="btn-plain btn-plain-secondary btn-plain-full" id="btnManageAddonsBottom" style="margin-top: 0.5rem;">
+                                <i data-feather="sliders"></i>
+                                <span>Manage Add-ons</span>
+                            </button>
                         </div>
                     </div>
-                    <div class="payment-method-card">
-                        <div class="card-chip"></div>
-                        <div class="card-network">
-                            <svg viewBox="0 0 38 24" xmlns="http://www.w3.org/2000/svg" height="24">
-                                <rect width="38" height="24" rx="4" fill="#1a1f71" />
-                                <circle cx="15" cy="12" r="7" fill="#e31837" opacity="0.9" />
-                                <circle cx="23" cy="12" r="7" fill="#f9a01b" opacity="0.9" />
-                            </svg>
-                        </div>
-                        <div class="card-number">•••• •••• •••• 4242</div>
-                        <div class="card-meta">
+                </div>
+
+                <!-- ROW 2: Plan Features + Available Add-ons -->
+                <div class="billing-row-2col">
+                    <!-- Plan Features Card -->
+                    <div class="billing-card" id="planFeaturesCard">
+                        <div class="billing-card-header">
                             <div>
-                                <p class="card-meta-label">Card Holder</p>
-                                <p class="card-meta-value">Admin User</p>
+                                <h3 class="billing-card-title">Plan Features</h3>
+                                <p class="billing-card-subtitle" id="featuresCardSubtitle">Everything included in your Growth plan</p>
                             </div>
-                            <div>
-                                <p class="card-meta-label">Expires</p>
-                                <p class="card-meta-value">09 / 2028</p>
-                            </div>
+                            <span class="neutral-badge" id="featuresIncludedCountBadge">7 Included</span>
+                        </div>
+
+                        <div class="features-list" id="featuresIncludedList">
+                            <!-- Populated dynamically by JS -->
+                        </div>
+
+                        <div class="features-section-divider" id="featuresExcludedDivider">
+                            <span>Not Included</span>
+                        </div>
+
+                        <div class="features-list" id="featuresExcludedList">
+                            <!-- Populated dynamically by JS -->
                         </div>
                     </div>
-                    <button class="btn-billing btn-billing-secondary btn-full-width" data-sub-feature="billing_update_payment" style="margin-top: 1rem;">
-                        <i data-feather="edit-2"></i>
-                        Update Payment Method
+
+                    <!-- Available Add-ons Card -->
+                    <div class="billing-card" id="availableAddonsCard">
+                        <div class="billing-card-header">
+                            <div>
+                                <h3 class="billing-card-title">Available Add-ons</h3>
+                                <p class="billing-card-subtitle">Supercharge your plan with extras</p>
+                            </div>
+                            <span class="neutral-badge" id="availableAddonsBadge">4 Available</span>
+                        </div>
+
+                        <div class="available-addons-list" id="availableAddonsList">
+                            <!-- Populated dynamically by JS -->
+                        </div>
+                    </div>
+                </div>
+
+                <!-- ROW 3: Payment Method + Billing Summary -->
+                <div class="billing-row-2col">
+                    <!-- Payment Method Card -->
+                    <div class="billing-card" id="paymentMethodCard">
+                        <div class="billing-card-header">
+                            <div>
+                                <h3 class="billing-card-title">Payment Method</h3>
+                                <p class="billing-card-subtitle">Your saved payment details</p>
+                            </div>
+                        </div>
+
+                        <div class="payment-card-visual" id="paymentCardVisual">
+                            <div class="payment-card-top">
+                                <div class="card-chip-plain"></div>
+                                <span class="card-network-label" id="cardNetworkLabel">VISA / MASTERCARD</span>
+                            </div>
+                            <div class="payment-card-number" id="cardMaskDisplay">•••• •••• •••• 4242</div>
+                            <div class="payment-card-meta">
+                                <div>
+                                    <span class="meta-field-label">Card Holder</span>
+                                    <span class="meta-field-value" id="cardHolderDisplay">Admin User</span>
+                                </div>
+                                <div style="text-align: right;">
+                                    <span class="meta-field-label">Expires</span>
+                                    <span class="meta-field-value" id="cardExpiryDisplay">09 / 2028</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <button type="button" class="btn-plain btn-plain-secondary btn-plain-full" id="btnChangePaymentMethod">
+                            <i data-feather="edit-2"></i>
+                            <span>Change Payment Method</span>
+                        </button>
+
+                        <div class="payment-trust-notice">
+                            <i data-feather="lock"></i>
+                            <span>Payment details are securely handled by our payment provider.</span>
+                        </div>
+                    </div>
+
+                    <!-- Billing Summary Card -->
+                    <div class="billing-card billing-summary-card" id="billingSummaryCard">
+                        <div class="billing-card-header">
+                            <div>
+                                <h3 class="billing-card-title">Billing Summary</h3>
+                                <p class="billing-card-subtitle">Next estimated billing breakdown</p>
+                            </div>
+                            <span class="neutral-badge" id="summaryCycleBadge">Monthly</span>
+                        </div>
+
+                        <div class="summary-line-items" id="summaryLineItems">
+                            <!-- Populated dynamically by JS -->
+                        </div>
+
+                        <div class="summary-divider"></div>
+
+                        <div class="summary-line-items">
+                            <div class="summary-row">
+                                <span>Monthly Subtotal</span>
+                                <span class="summary-row-value" id="summarySubtotal">₹6,497</span>
+                            </div>
+                            <div class="summary-row">
+                                <span>GST (18%)</span>
+                                <span class="summary-row-value" id="summaryGst">₹1,169</span>
+                            </div>
+                        </div>
+
+                        <div class="summary-divider"></div>
+
+                        <div class="summary-row summary-row--total">
+                            <span>Next Billing Amount</span>
+                            <span class="summary-row-value" id="summaryTotalAmount">₹7,666</span>
+                        </div>
+                        <p class="billing-card-subtitle" id="summaryBillingDateNote" style="margin-top: 6px; font-size: 0.78rem;">
+                            Auto-renews on 10 Oct 2026.
+                        </p>
+                    </div>
+                </div>
+
+                <!-- ROW 4: Payment History (Full Width) -->
+                <div class="billing-card billing-row-full" id="paymentHistoryCard">
+                    <div class="billing-card-header">
+                        <div>
+                            <h3 class="billing-card-title">Payment History</h3>
+                            <p class="billing-card-subtitle">Your past transactions and receipts</p>
+                        </div>
+                        <button type="button" class="btn-plain btn-plain-ghost" id="btnExportAllHistory">
+                            <i data-feather="download"></i>
+                            <span>Export All</span>
+                        </button>
+                    </div>
+
+                    <div class="payment-table-wrap">
+                        <table class="plain-table" id="paymentHistoryTable">
+                            <thead>
+                                <tr>
+                                    <th>Date</th>
+                                    <th>Description</th>
+                                    <th>Amount</th>
+                                    <th>Payment Method</th>
+                                    <th>Status</th>
+                                    <th>Invoice</th>
+                                </tr>
+                            </thead>
+                            <tbody id="paymentHistoryBody">
+                                <!-- Populated dynamically by JS -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <!-- ROW 5: Billing Information (Full Width) -->
+                <div class="billing-card billing-row-full" id="billingInformationCard">
+                    <div class="billing-card-header">
+                        <div>
+                            <h3 class="billing-card-title">Billing Information</h3>
+                            <p class="billing-card-subtitle">Company tax and invoice information for receipts</p>
+                        </div>
+                        <button type="button" class="btn-plain btn-plain-secondary" id="btnOpenEditBilling">
+                            <i data-feather="edit-3"></i>
+                            <span>Edit Billing Information</span>
+                        </button>
+                    </div>
+
+                    <div class="billing-info-grid">
+                        <div class="billing-info-field">
+                            <span class="billing-info-label">Legal Business Name</span>
+                            <span class="billing-info-value" id="infoBusinessName">BharathBots Technologies</span>
+                        </div>
+                        <div class="billing-info-field">
+                            <span class="billing-info-label">GSTIN</span>
+                            <span class="billing-info-value" id="infoGstin">37AAAAA0000A1Z5</span>
+                        </div>
+                        <div class="billing-info-field">
+                            <span class="billing-info-label">Billing Email</span>
+                            <span class="billing-info-value" id="infoBillingEmail">billing@example.com</span>
+                        </div>
+                        <div class="billing-info-field">
+                            <span class="billing-info-label">Billing Address</span>
+                            <span class="billing-info-value" id="infoBillingAddress">Machilipatnam, Andhra Pradesh, India</span>
+                        </div>
+                    </div>
+
+                    <p class="billing-info-footer-note">
+                        <i data-feather="info" style="width: 12px; height: 12px; vertical-align: -1px;"></i>
+                        Billing information will appear on all generated tax invoices and receipts.
+                    </p>
+                </div>
+
+                <!-- BOTTOM: Subscription Management -->
+                <div class="subscription-management-section" id="subscriptionManagementSection">
+                    <div class="sub-manage-text">
+                        <h4>Subscription Management</h4>
+                        <p>Need to leave BharatBots or review cancellation options?</p>
+                    </div>
+                    <button type="button" class="btn-cancel-plain" id="btnTriggerCancelModal">
+                        Cancel Subscription
                     </button>
-                    <p class="secure-note"><i data-feather="lock"></i> Secured with 256-bit SSL encryption</p>
-                </section>
+                </div>
 
             </div>
-
-            <!-- SECTION 5: Payment History -->
-            <section class="billing-section billing-card billing-plan-card--history-theme" style="margin-bottom: 2rem;">
-                <div class="section-header" style="margin-bottom: 1.5rem;">
-                    <div>
-                        <h2 class="section-title">Payment History</h2>
-                        <p class="section-sub">Your past transactions</p>
-                    </div>
-                    <button class="btn-billing btn-billing-ghost" data-sub-feature="billing_export">
-                        <i data-feather="download"></i>
-                        Export All
-                    </button>
-                </div>
-                <div class="payment-table-wrap">
-                    <table class="payment-table">
-                        <thead>
-                            <tr>
-                                <th>Date</th>
-                                <th>Description</th>
-                                <th>Amount</th>
-                                <th>Status</th>
-                                <th>Invoice</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            <tr>
-                                <td colspan="5" style="text-align:center;padding:2.5rem;color:#94a3b8;font-size:0.875rem;">
-                                    Loading payment history...
-                                </td>
-                            </tr>
-                        </tbody>
-                    </table>
-                </div>
-            </section>
-
-        </div>
     
         </main>
     </div>
 
     <script src="dashboard.js"></script>
-    <script type="module" src="billing-subscription.js"></script>
+    <script src="billing-subscription.js"></script>
     <script type="module" src="scripts/sub-features/sub-feature-gate.js"></script>
-    <script>
-        // Init Feather Icons
-        feather.replace();
+    <!-- Modals for Billing & Subscription Interactions -->
 
-        // Subscription scripts
-        // Add-on button interactions
-        document.querySelectorAll('.btn-addon-add:not([disabled])').forEach(btn => {
-            btn.addEventListener('click', function () {
-                const item = this.closest('.addon-item');
-                const name = item.querySelector('.addon-name').textContent;
-                this.innerHTML = `<i data-feather="check"></i> Added`;
-                this.classList.add('btn-addon-added');
-                this.disabled = true;
-                feather.replace();
-                showToast(`✓ ${name} activated!`);
-            });
-        });
-    </script>
+    <!-- Modal 1: Add Add-on Confirmation Modal -->
+    <div class="billing-modal-overlay" id="modalAddAddon">
+        <div class="billing-modal-box">
+            <div class="billing-modal-header">
+                <h3 class="billing-modal-title" id="addAddonModalTitle">Add Add-on?</h3>
+                <button type="button" class="billing-modal-close" data-close-modal><i data-feather="x"></i></button>
+            </div>
+            <div class="billing-modal-body">
+                <div class="modal-callout-box">
+                    <p style="margin: 0; font-weight: 600; font-size: 1rem; color: var(--text-primary);" id="addAddonModalPrice">₹299 / month</p>
+                    <p style="margin: 4px 0 0 0; font-size: 0.82rem; color: var(--text-muted);" id="addAddonModalDesc">Deep-dive revenue, staff & service analytics</p>
+                </div>
+                <p style="margin: 0; font-size: 0.88rem; color: var(--text-secondary);">
+                    You'll be charged according to your current subscription billing cycle.
+                </p>
+            </div>
+            <div class="billing-modal-footer">
+                <button type="button" class="btn-plain btn-plain-secondary" data-close-modal>Cancel</button>
+                <button type="button" class="btn-plain btn-plain-primary" id="btnConfirmAddAddon">Add Add-on</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal 2: Manage Add-ons Modal -->
+    <div class="billing-modal-overlay" id="modalManageAddons">
+        <div class="billing-modal-box billing-modal-box--wide">
+            <div class="billing-modal-header">
+                <h3 class="billing-modal-title">Manage Active Add-ons</h3>
+                <button type="button" class="billing-modal-close" data-close-modal><i data-feather="x"></i></button>
+            </div>
+            <div class="billing-modal-body">
+                <p style="margin: 0; font-size: 0.85rem; color: var(--text-muted);">
+                    View and manage optional features activated on your account.
+                </p>
+                <div class="active-addons-list" id="modalManageAddonsList" style="margin-top: 0.5rem;">
+                    <!-- Populated by JS -->
+                </div>
+            </div>
+            <div class="billing-modal-footer">
+                <button type="button" class="btn-plain btn-plain-primary" data-close-modal>Done</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal 3: Cancel Subscription Confirmation Modal -->
+    <div class="billing-modal-overlay" id="modalCancelSub">
+        <div class="billing-modal-box">
+            <div class="billing-modal-header">
+                <h3 class="billing-modal-title">Cancel Subscription?</h3>
+                <button type="button" class="billing-modal-close" data-close-modal><i data-feather="x"></i></button>
+            </div>
+            <div class="billing-modal-body">
+                <div class="modal-callout-box">
+                    <p style="margin: 0; font-weight: 600; color: var(--text-primary);" id="cancelModalPlanName">Growth Plan</p>
+                    <p style="margin: 4px 0 0 0; font-size: 0.84rem; color: var(--text-secondary);" id="cancelModalNotice">
+                        Your subscription will remain active until <strong>09 October 2026</strong>. You will continue to have full access until then.
+                    </p>
+                </div>
+                <p style="margin: 0; font-size: 0.85rem; color: var(--text-muted);">
+                    After this period, your salon account will revert to the free/limited tier. You can reactivate anytime before this date.
+                </p>
+            </div>
+            <div class="billing-modal-footer">
+                <button type="button" class="btn-plain btn-plain-primary" data-close-modal>Keep Subscription</button>
+                <button type="button" class="btn-plain btn-plain-secondary" id="btnConfirmCancelSubscription" style="color: #64748b;">Confirm Cancellation</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal 4: Edit Billing Information Modal -->
+    <div class="billing-modal-overlay" id="modalEditBilling">
+        <div class="billing-modal-box billing-modal-box--wide">
+            <div class="billing-modal-header">
+                <h3 class="billing-modal-title">Edit Billing Information</h3>
+                <button type="button" class="billing-modal-close" data-close-modal><i data-feather="x"></i></button>
+            </div>
+            <div class="billing-modal-body">
+                <div class="modal-form-group">
+                    <label class="modal-form-label" for="inputLegalName">Legal Business Name</label>
+                    <input type="text" id="inputLegalName" class="modal-form-input" placeholder="e.g. BharathBots Technologies">
+                </div>
+                <div class="modal-form-group">
+                    <label class="modal-form-label" for="inputGstin">GSTIN</label>
+                    <input type="text" id="inputGstin" class="modal-form-input" placeholder="e.g. 37AAAAA0000A1Z5">
+                </div>
+                <div class="modal-form-group">
+                    <label class="modal-form-label" for="inputBillingEmail">Billing Email</label>
+                    <input type="email" id="inputBillingEmail" class="modal-form-input" placeholder="e.g. billing@example.com">
+                </div>
+                <div class="modal-form-group">
+                    <label class="modal-form-label" for="inputBillingAddress">Billing Address</label>
+                    <textarea id="inputBillingAddress" class="modal-form-input" style="min-height: 80px; resize: vertical;" placeholder="Enter legal business address"></textarea>
+                </div>
+            </div>
+            <div class="billing-modal-footer">
+                <button type="button" class="btn-plain btn-plain-secondary" data-close-modal>Cancel</button>
+                <button type="button" class="btn-plain btn-plain-primary" id="btnSaveBillingInfo">Save Changes</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal 5: Change Payment Method Modal -->
+    <div class="billing-modal-overlay" id="modalChangePayment">
+        <div class="billing-modal-box">
+            <div class="billing-modal-header">
+                <h3 class="billing-modal-title">Change Payment Method</h3>
+                <button type="button" class="billing-modal-close" data-close-modal><i data-feather="x"></i></button>
+            </div>
+            <div class="billing-modal-body">
+                <div class="modal-form-group">
+                    <label class="modal-form-label" for="inputCardHolder">Cardholder Name</label>
+                    <input type="text" id="inputCardHolder" class="modal-form-input" value="Admin User">
+                </div>
+                <div class="modal-form-group">
+                    <label class="modal-form-label" for="inputCardNumber">Card Number</label>
+                    <input type="text" id="inputCardNumber" class="modal-form-input" placeholder="•••• •••• •••• 4242" maxlength="19">
+                </div>
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.75rem;">
+                    <div class="modal-form-group">
+                        <label class="modal-form-label" for="inputCardExpiry">Expiry (MM/YY)</label>
+                        <input type="text" id="inputCardExpiry" class="modal-form-input" placeholder="09/28" maxlength="5">
+                    </div>
+                    <div class="modal-form-group">
+                        <label class="modal-form-label" for="inputCardCvv">CVV</label>
+                        <input type="password" id="inputCardCvv" class="modal-form-input" placeholder="•••" maxlength="4">
+                    </div>
+                </div>
+                <div class="payment-trust-notice" style="margin-top: 0.25rem;">
+                    <i data-feather="lock"></i>
+                    <span>Payment details are securely handled by our payment provider.</span>
+                </div>
+            </div>
+            <div class="billing-modal-footer">
+                <button type="button" class="btn-plain btn-plain-secondary" data-close-modal>Cancel</button>
+                <button type="button" class="btn-plain btn-plain-primary" id="btnSavePaymentMethod">Save Payment Method</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal 6: Invoice Detail Preview Modal -->
+    <div class="billing-modal-overlay" id="modalViewInvoice">
+        <div class="billing-modal-box billing-modal-box--wide">
+            <div class="billing-modal-header">
+                <h3 class="billing-modal-title" id="invoiceModalTitle">Invoice #INV-2026-09</h3>
+                <button type="button" class="billing-modal-close" data-close-modal><i data-feather="x"></i></button>
+            </div>
+            <div class="billing-modal-body" id="invoiceModalBody">
+                <!-- Populated dynamically by JS -->
+            </div>
+            <div class="billing-modal-footer">
+                <button type="button" class="btn-plain btn-plain-secondary" data-close-modal>Close</button>
+                <button type="button" class="btn-plain btn-plain-primary" id="btnDownloadInvoicePdf">
+                    <i data-feather="download"></i>
+                    <span>Download Invoice</span>
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Toast Notification -->
+    <div class="billing-toast" id="billingToast">
+        <i data-feather="check"></i>
+        <span id="billingToastMsg">Action completed successfully.</span>
+    </div>
 
     <!-- Premium New Booking Modal -->
     <div class="modal-overlay" id="bookingModalOverlay">
