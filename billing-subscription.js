@@ -125,43 +125,61 @@
             bankName: 'HDFC Bank'
         },
         billingInfo: {
-            legalName: 'BharathBots Technologies',
-            gstin: '37AAAAA0000A1Z5',
-            email: 'billing@example.com',
-            address: 'Machilipatnam, Andhra Pradesh, India'
+            legalName: 'Salon ABC',
+            gstin: '37ABCDE1234F1Z5',
+            email: 'billing@salonabc.com',
+            address: 'Main Road, Machilipatnam, Andhra Pradesh - 521001, India'
         },
         paymentHistory: [
             {
-                id: 'INV-2026-09',
+                id: 'INV-2026-00009',
                 date: '10 Sep 2026',
                 description: 'Growth Plan',
                 amount: 4999,
                 method: 'UPI',
-                status: 'Paid'
+                paymentRef: 'UPI/3294829104',
+                status: 'Paid',
+                items: [
+                    { name: 'Growth Plan — Monthly Subscription', amount: 4236 }
+                ]
             },
             {
-                id: 'INV-2026-08',
+                id: 'INV-2026-00008',
                 date: '10 Aug 2026',
                 description: 'Growth Plan',
                 amount: 4999,
                 method: 'Card',
-                status: 'Paid'
+                paymentRef: 'TXN-8492019482',
+                status: 'Paid',
+                items: [
+                    { name: 'Growth Plan — Monthly Subscription', amount: 4236 }
+                ]
             },
             {
-                id: 'INV-2026-07',
+                id: 'INV-2026-00007',
                 date: '10 Jul 2026',
                 description: 'Growth Plan + Add-on',
-                amount: 5498,
+                amount: 6766,
                 method: 'Card',
-                status: 'Paid'
+                paymentRef: 'TXN-7391048201',
+                status: 'Paid',
+                items: [
+                    { name: 'Growth Plan — Monthly Subscription', amount: 4236 },
+                    { name: 'WhatsApp Reminders Add-on', amount: 499 },
+                    { name: 'AI Receptionist Add-on', amount: 999 }
+                ]
             },
             {
-                id: 'INV-2026-06',
+                id: 'INV-2026-00006',
                 date: '10 Jun 2026',
                 description: 'Growth Plan',
                 amount: 4999,
                 method: 'Card',
-                status: 'Refunded'
+                paymentRef: 'TXN-6192849102',
+                status: 'Refunded',
+                items: [
+                    { name: 'Growth Plan — Monthly Subscription', amount: 4236 }
+                ]
             }
         ],
         pendingAddonId: null
@@ -1206,48 +1224,125 @@
         const item = state.paymentHistory.find(h => h.id === invoiceId) || state.paymentHistory[0];
         invoiceModalTitle.textContent = `Invoice #${item.id}`;
 
-        const baseAmount = item.amount;
-        const subtotal = Math.round(baseAmount / 1.18);
-        const gst = baseAmount - subtotal;
+        let statusBadgeClass = 'is-paid';
+        if (item.status === 'Pending') statusBadgeClass = 'is-pending';
+        else if (item.status === 'Failed') statusBadgeClass = 'is-failed';
+        else if (item.status === 'Refunded') statusBadgeClass = 'is-refunded';
+
+        const statusBadge = document.getElementById('invoiceModalStatusBadge');
+        if (statusBadge) {
+            statusBadge.className = `invoice-status-badge ${statusBadgeClass}`;
+            statusBadge.textContent = item.status.toUpperCase();
+        }
+
+        // Calculate Subtotal & GST from itemized list or total amount
+        let items = item.items;
+        let subtotal = 0;
+        if (items && items.length > 0) {
+            subtotal = items.reduce((acc, cur) => acc + cur.amount, 0);
+        } else {
+            subtotal = Math.round(item.amount / 1.18);
+            items = [{ name: `${item.description} — Monthly Subscription`, amount: subtotal }];
+        }
+        const gst = Math.round(subtotal * 0.18);
+        const total = subtotal + gst;
+
+        const itemsRowsHtml = items.map(line => `
+            <tr>
+                <td class="invoice-item-desc">${line.name}</td>
+                <td class="invoice-item-amount">${fmtCurrency(line.amount)}</td>
+            </tr>
+        `).join('');
 
         invoiceModalBody.innerHTML = `
-            <div style="display: flex; justify-content: space-between; border-bottom: 1px solid var(--border-subtle); padding-bottom: 0.75rem;">
-                <div>
-                    <p style="margin: 0; font-weight: 700; color: var(--text-primary);">${state.billingInfo.legalName}</p>
-                    <p style="margin: 2px 0 0 0; font-size: 0.8rem; color: var(--text-muted);">GSTIN: ${state.billingInfo.gstin}</p>
-                    <p style="margin: 2px 0 0 0; font-size: 0.8rem; color: var(--text-muted);">${state.billingInfo.address}</p>
+            <!-- Top Section: Issuer Details (Left) & Transaction Meta (Right) -->
+            <div class="invoice-header-grid">
+                <div class="invoice-issuer-block">
+                    <p class="invoice-company-name">BharathBots Technologies</p>
+                    <p class="invoice-meta-text">GSTIN: <span class="invoice-text-bold">37AAAAA0000A1Z5</span></p>
+                    <p class="invoice-meta-text">Machilipatnam, Andhra Pradesh, India</p>
+                    <p class="invoice-meta-text">support@bharathbots.com</p>
                 </div>
-                <div style="text-align: right;">
-                    <p style="margin: 0; font-size: 0.8rem; color: var(--text-muted);">Date: <strong>${item.date}</strong></p>
-                    <p style="margin: 2px 0 0 0; font-size: 0.8rem; color: var(--text-muted);">Payment: <strong>${item.method}</strong></p>
-                    <p style="margin: 2px 0 0 0; font-size: 0.8rem; color: var(--text-muted);">Status: <strong>${item.status}</strong></p>
+                <div class="invoice-meta-block">
+                    <div class="invoice-meta-row">
+                        <span class="invoice-meta-label">Date:</span>
+                        <span class="invoice-meta-value">${item.date}</span>
+                    </div>
+                    <div class="invoice-meta-row">
+                        <span class="invoice-meta-label">Payment Method:</span>
+                        <span class="invoice-meta-value">${item.method}</span>
+                    </div>
+                    <div class="invoice-meta-row">
+                        <span class="invoice-meta-label">Payment Ref:</span>
+                        <span class="invoice-meta-value invoice-meta-value--mono">${item.paymentRef || 'TXN-8492019482'}</span>
+                    </div>
+                    <div class="invoice-meta-row">
+                        <span class="invoice-meta-label">Status:</span>
+                        <span class="invoice-status-pill ${statusBadgeClass}">${item.status.toUpperCase()}</span>
+                    </div>
                 </div>
             </div>
 
-            <table class="plain-table" style="margin-top: 0.5rem;">
-                <thead>
-                    <tr>
-                        <th>Item</th>
-                        <th style="text-align: right;">Amount</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    <tr>
-                        <td>${item.description}</td>
-                        <td style="text-align: right; font-weight: 600;">${fmtCurrency(subtotal)}</td>
-                    </tr>
-                    <tr>
-                        <td>Integrated GST (18%)</td>
-                        <td style="text-align: right; font-weight: 600;">${fmtCurrency(gst)}</td>
-                    </tr>
-                    <tr style="border-top: 2px solid var(--border-strong);">
-                        <td style="font-weight: 700;">Total Paid</td>
-                        <td style="text-align: right; font-weight: 800; font-size: 1rem;">${fmtCurrency(item.amount)}</td>
-                    </tr>
-                </tbody>
-            </table>
+            <div class="invoice-divider"></div>
+
+            <!-- Middle Section: BILL TO Customer Block -->
+            <div class="invoice-bill-to-card">
+                <div class="invoice-bill-to-header">
+                    <span class="invoice-bill-to-label">BILL TO</span>
+                </div>
+                <p class="invoice-customer-name">${state.billingInfo.legalName || 'Salon ABC'}</p>
+                <p class="invoice-customer-detail">${state.billingInfo.address || 'Machilipatnam, Andhra Pradesh, India'}</p>
+                <div class="invoice-customer-meta-row">
+                    <span>GSTIN: <strong>${state.billingInfo.gstin || '37ABCDE1234F1Z5'}</strong></span>
+                    ${state.billingInfo.email ? `<span style="margin-left: 14px;">Email: <strong>${state.billingInfo.email}</strong></span>` : ''}
+                </div>
+            </div>
+
+            <div class="invoice-divider"></div>
+
+            <!-- Items Table: Billable services only (No GST item) -->
+            <div class="invoice-table-wrap">
+                <table class="invoice-preview-table">
+                    <thead>
+                        <tr>
+                            <th class="col-desc">DESCRIPTION</th>
+                            <th class="col-amt">AMOUNT</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        ${itemsRowsHtml}
+                    </tbody>
+                </table>
+            </div>
+
+            <!-- Financial Summary Breakdown -->
+            <div class="invoice-summary-section">
+                <div class="invoice-summary-spacer"></div>
+                <div class="invoice-summary-box">
+                    <div class="invoice-summary-row">
+                        <span class="summary-label">Subtotal</span>
+                        <span class="summary-val">${fmtCurrency(subtotal)}</span>
+                    </div>
+                    <div class="invoice-summary-row">
+                        <span class="summary-label">GST (18%)</span>
+                        <span class="summary-val">${fmtCurrency(gst)}</span>
+                    </div>
+                    <div class="invoice-summary-divider"></div>
+                    <div class="invoice-summary-row invoice-summary-row--total">
+                        <span class="summary-label-total">TOTAL PAID</span>
+                        <span class="summary-val-total">${fmtCurrency(item.amount)}</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Footer Reference Note -->
+            <div class="invoice-reference-footer">
+                <i data-feather="check-circle" style="width: 14px; height: 14px; stroke: #10b981; flex-shrink: 0;"></i>
+                <span>Payment received via <strong>${item.method}</strong> &bull; Ref: <code class="invoice-code">${item.paymentRef || 'TXN-8492019482'}</code></span>
+            </div>
         `;
 
+        if (window.feather) feather.replace();
         openModal(modalViewInvoice);
     }
 

@@ -2071,6 +2071,312 @@
     background: linear-gradient(135deg, #064e3b 0%, #065f46 50%, #047857 100%) !important;
 }
 
+/* ------------------------------------------------------------
+   INVOICE PREVIEW MODAL STYLES (ENTERPRISE B2B SAAS DOCUMENT)
+   ------------------------------------------------------------ */
+
+.billing-modal-box--invoice {
+    max-width: 680px;
+    width: 95vw;
+    animation: modal-pop 0.2s ease-out;
+}
+
+.billing-modal-box--invoice .billing-modal-header {
+    padding: 1.5rem 2rem;
+}
+
+.invoice-status-badge {
+    font-size: 0.72rem;
+    font-weight: 800;
+    letter-spacing: 0.06em;
+    padding: 3px 9px;
+    border-radius: 9999px;
+    text-transform: uppercase;
+    white-space: nowrap;
+}
+
+.invoice-status-badge.is-paid,
+.invoice-status-pill.is-paid {
+    background: #dcfce7;
+    color: #15803d;
+    border: 1px solid rgba(22, 163, 74, 0.25);
+}
+
+.invoice-status-badge.is-pending,
+.invoice-status-pill.is-pending {
+    background: #fef3c7;
+    color: #b45309;
+    border: 1px solid rgba(217, 119, 6, 0.25);
+}
+
+.invoice-status-badge.is-failed,
+.invoice-status-pill.is-failed {
+    background: #fee2e2;
+    color: #b91c1c;
+    border: 1px solid rgba(239, 68, 68, 0.25);
+}
+
+.invoice-status-badge.is-refunded,
+.invoice-status-pill.is-refunded {
+    background: #f1f5f9;
+    color: #475569;
+    border: 1px solid rgba(100, 116, 139, 0.25);
+}
+
+.invoice-status-pill {
+    font-size: 0.72rem;
+    font-weight: 700;
+    padding: 2px 8px;
+    border-radius: 9999px;
+    display: inline-block;
+}
+
+.billing-modal-box--invoice .billing-modal-body {
+    padding: 1.6rem 2rem;
+    display: flex;
+    flex-direction: column;
+    gap: 1.15rem;
+}
+
+.invoice-header-grid {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: 1.5rem;
+}
+
+.invoice-issuer-block {
+    display: flex;
+    flex-direction: column;
+}
+
+.invoice-company-name {
+    font-size: 1.1rem;
+    font-weight: 800;
+    color: var(--text-primary);
+    margin: 0 0 4px 0;
+    letter-spacing: -0.01em;
+}
+
+.invoice-meta-text {
+    font-size: 0.82rem;
+    color: var(--text-muted);
+    margin: 2px 0 0 0;
+    line-height: 1.4;
+}
+
+.invoice-text-bold {
+    color: var(--text-primary);
+    font-weight: 600;
+}
+
+.invoice-meta-block {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    text-align: right;
+}
+
+.invoice-meta-row {
+    font-size: 0.83rem;
+    display: flex;
+    justify-content: flex-end;
+    align-items: center;
+    gap: 8px;
+}
+
+.invoice-meta-label {
+    color: var(--text-muted);
+    font-weight: 500;
+}
+
+.invoice-meta-value {
+    color: var(--text-primary);
+    font-weight: 600;
+}
+
+.invoice-meta-value--mono {
+    font-family: monospace;
+    font-size: 0.8rem;
+    background: #f1f5f9;
+    padding: 2px 6px;
+    border-radius: 4px;
+    letter-spacing: 0.03em;
+}
+
+.invoice-divider {
+    height: 1px;
+    background: var(--border-subtle);
+    margin: 0.15rem 0;
+}
+
+.invoice-bill-to-card {
+    background: #f8fafc;
+    border: 1.5px solid var(--border-subtle);
+    border-radius: var(--radius-sm);
+    padding: 1.05rem 1.25rem;
+    display: flex;
+    flex-direction: column;
+    gap: 3px;
+}
+
+.invoice-bill-to-header {
+    margin-bottom: 3px;
+}
+
+.invoice-bill-to-label {
+    font-size: 0.74rem;
+    font-weight: 800;
+    letter-spacing: 0.08em;
+    color: var(--brand-blue);
+    text-transform: uppercase;
+}
+
+.invoice-customer-name {
+    font-size: 1rem;
+    font-weight: 700;
+    color: var(--text-primary);
+    margin: 0;
+}
+
+.invoice-customer-detail {
+    font-size: 0.84rem;
+    color: var(--text-secondary);
+    margin: 2px 0;
+    line-height: 1.4;
+}
+
+.invoice-customer-meta-row {
+    font-size: 0.82rem;
+    color: var(--text-muted);
+    margin-top: 4px;
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+}
+
+.invoice-customer-meta-row strong {
+    color: var(--text-primary);
+    font-weight: 600;
+}
+
+.invoice-table-wrap {
+    width: 100%;
+}
+
+.invoice-preview-table {
+    width: 100%;
+    border-collapse: collapse;
+}
+
+.invoice-preview-table th {
+    text-align: left;
+    font-size: 0.76rem;
+    font-weight: 700;
+    letter-spacing: 0.06em;
+    color: var(--text-muted);
+    border-bottom: 1.5px solid var(--border-strong);
+    padding: 8px 4px;
+    text-transform: uppercase;
+}
+
+.invoice-preview-table th.col-amt {
+    text-align: right;
+}
+
+.invoice-preview-table td {
+    padding: 11px 4px;
+    font-size: 0.9rem;
+    border-bottom: 1px solid var(--border-subtle);
+}
+
+.invoice-item-desc {
+    color: var(--text-primary);
+    font-weight: 600;
+}
+
+.invoice-item-amount {
+    text-align: right;
+    font-weight: 600;
+    color: var(--text-primary);
+}
+
+.invoice-summary-section {
+    display: flex;
+    justify-content: flex-end;
+    margin-top: 0.2rem;
+}
+
+.invoice-summary-box {
+    width: 280px;
+    display: flex;
+    flex-direction: column;
+    gap: 7px;
+}
+
+.invoice-summary-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-size: 0.88rem;
+}
+
+.summary-label {
+    color: var(--text-muted);
+    font-weight: 500;
+}
+
+.summary-val {
+    color: var(--text-primary);
+    font-weight: 600;
+}
+
+.invoice-summary-divider {
+    height: 1px;
+    background: var(--border-strong);
+    margin: 4px 0;
+}
+
+.invoice-summary-row--total {
+    font-size: 1.02rem;
+    font-weight: 800;
+    color: var(--text-primary);
+    padding-top: 3px;
+}
+
+.summary-label-total {
+    letter-spacing: 0.03em;
+}
+
+.summary-val-total {
+    color: var(--brand-blue);
+    font-size: 1.22rem;
+    font-weight: 800;
+}
+
+.invoice-reference-footer {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 0.8rem;
+    color: var(--text-muted);
+    background: #f8fafc;
+    border: 1px solid var(--border-subtle);
+    border-radius: var(--radius-sm);
+    padding: 9px 13px;
+    margin-top: 0.35rem;
+}
+
+.invoice-code {
+    font-family: monospace;
+    font-weight: 700;
+    color: var(--text-primary);
+    background: #ffffff;
+    border: 1px solid var(--border-subtle);
+    padding: 1px 5px;
+    border-radius: 3px;
+}
+
 /* Toast Notification */
 
 .billing-toast {

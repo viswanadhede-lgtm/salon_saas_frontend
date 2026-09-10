@@ -541,15 +541,15 @@
                     <div class="billing-info-grid">
                         <div class="billing-info-field">
                             <span class="billing-info-label">Legal Business Name</span>
-                            <span class="billing-info-value" id="infoBusinessName">BharathBots Technologies</span>
+                            <span class="billing-info-value" id="infoBusinessName">Salon ABC</span>
                         </div>
                         <div class="billing-info-field">
                             <span class="billing-info-label">GSTIN</span>
-                            <span class="billing-info-value" id="infoGstin">37AAAAA0000A1Z5</span>
+                            <span class="billing-info-value" id="infoGstin">37ABCDE1234F1Z5</span>
                         </div>
                         <div class="billing-info-field">
                             <span class="billing-info-label">Billing Email</span>
-                            <span class="billing-info-value" id="infoBillingEmail">billing@example.com</span>
+                            <span class="billing-info-value" id="infoBillingEmail">billing@salonabc.com</span>
                         </div>
                         <div class="billing-info-field">
                             <span class="billing-info-label">Billing Address</span>
@@ -918,9 +918,12 @@
 
     <!-- Modal 6: Invoice Detail Preview Modal -->
     <div class="billing-modal-overlay" id="modalViewInvoice">
-        <div class="billing-modal-box billing-modal-box--wide">
-            <div class="billing-modal-header">
-                <h3 class="billing-modal-title" id="invoiceModalTitle">Invoice #INV-2026-09</h3>
+        <div class="billing-modal-box billing-modal-box--invoice">
+            <div class="billing-modal-header" style="align-items: center;">
+                <div style="display: flex; align-items: center; gap: 12px;">
+                    <h3 class="billing-modal-title" id="invoiceModalTitle">Invoice #INV-2026-00009</h3>
+                    <span class="invoice-status-badge is-paid" id="invoiceModalStatusBadge">PAID</span>
+                </div>
                 <button type="button" class="billing-modal-close" data-close-modal><i data-feather="x"></i></button>
             </div>
             <div class="billing-modal-body" id="invoiceModalBody">
