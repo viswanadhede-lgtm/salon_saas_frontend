@@ -700,35 +700,157 @@
         </div>
     </div>
 
-    <!-- Modal 5: Change Payment Method Modal -->
+    <!-- Modal 5: Change Payment Method Modal (Multiple Payment Types) -->
     <div class="billing-modal-overlay" id="modalChangePayment">
-        <div class="billing-modal-box">
+        <div class="billing-modal-box billing-modal-box--payment">
             <div class="billing-modal-header">
-                <h3 class="billing-modal-title">Change Payment Method</h3>
+                <div>
+                    <h3 class="billing-modal-title">Change Payment Method</h3>
+                    <p class="billing-modal-subtitle" style="margin: 4px 0 0 0; font-size: 0.85rem; color: var(--text-muted);">
+                        Choose how your monthly subscription auto-renews.
+                    </p>
+                </div>
                 <button type="button" class="billing-modal-close" data-close-modal><i data-feather="x"></i></button>
             </div>
-            <div class="billing-modal-body">
-                <div class="modal-form-group">
-                    <label class="modal-form-label" for="inputCardHolder">Cardholder Name</label>
-                    <input type="text" id="inputCardHolder" class="modal-form-input" value="Admin User">
+            <div class="billing-modal-body" style="padding: 1.5rem 1.6rem;">
+                <!-- Payment Method Selector Tabs -->
+                <div class="payment-method-tabs" id="paymentMethodTabs">
+                    <button type="button" class="payment-method-tab is-active" data-tab="card">
+                        <i data-feather="credit-card"></i>
+                        <span>Card</span>
+                    </button>
+                    <button type="button" class="payment-method-tab" data-tab="upi">
+                        <i data-feather="smartphone"></i>
+                        <span>UPI AutoPay</span>
+                    </button>
+                    <button type="button" class="payment-method-tab" data-tab="netbanking">
+                        <i data-feather="home"></i>
+                        <span>Net Banking</span>
+                    </button>
                 </div>
-                <div class="modal-form-group">
-                    <label class="modal-form-label" for="inputCardNumber">Card Number</label>
-                    <input type="text" id="inputCardNumber" class="modal-form-input" placeholder="•••• •••• •••• 4242" maxlength="19">
-                </div>
-                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.75rem;">
+
+                <!-- Tab Panel 1: Card -->
+                <div class="payment-tab-panel is-active" id="panelPaymentCard">
                     <div class="modal-form-group">
-                        <label class="modal-form-label" for="inputCardExpiry">Expiry (MM/YY)</label>
-                        <input type="text" id="inputCardExpiry" class="modal-form-input" placeholder="09/28" maxlength="5">
+                        <label class="modal-form-label" for="inputCardHolder">Cardholder Name</label>
+                        <input type="text" id="inputCardHolder" class="modal-form-input" placeholder="e.g. Ramesh Kumar" value="Admin User">
                     </div>
                     <div class="modal-form-group">
-                        <label class="modal-form-label" for="inputCardCvv">CVV</label>
-                        <input type="password" id="inputCardCvv" class="modal-form-input" placeholder="•••" maxlength="4">
+                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 2px;">
+                            <label class="modal-form-label" for="inputCardNumber">Card Number</label>
+                            <span class="card-brand-pill" id="inputCardBrandBadge">VISA</span>
+                        </div>
+                        <div class="input-with-icon-wrap">
+                            <input type="text" id="inputCardNumber" class="modal-form-input" placeholder="4242 •••• •••• 4242" maxlength="19">
+                        </div>
+                    </div>
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.75rem;">
+                        <div class="modal-form-group">
+                            <label class="modal-form-label" for="inputCardExpiry">Expiry (MM/YY)</label>
+                            <input type="text" id="inputCardExpiry" class="modal-form-input" placeholder="09/28" maxlength="5">
+                        </div>
+                        <div class="modal-form-group">
+                            <label class="modal-form-label" for="inputCardCvv">CVV / CVC</label>
+                            <input type="password" id="inputCardCvv" class="modal-form-input" placeholder="•••" maxlength="4">
+                        </div>
+                    </div>
+                    <div class="payment-method-notice">
+                        <i data-feather="check-circle"></i>
+                        <span>Cards will be securely tokenized according to RBI guidelines.</span>
                     </div>
                 </div>
-                <div class="payment-trust-notice" style="margin-top: 0.25rem;">
+
+                <!-- Tab Panel 2: UPI AutoPay -->
+                <div class="payment-tab-panel" id="panelPaymentUpi">
+                    <div class="upi-app-selector-title">Select UPI App</div>
+                    <div class="upi-app-grid" id="upiAppGrid">
+                        <div class="upi-app-pill is-selected" data-app="Google Pay">
+                            <span class="upi-app-dot upi-app-dot--gpay"></span>
+                            <span>Google Pay</span>
+                        </div>
+                        <div class="upi-app-pill" data-app="PhonePe">
+                            <span class="upi-app-dot upi-app-dot--phonepe"></span>
+                            <span>PhonePe</span>
+                        </div>
+                        <div class="upi-app-pill" data-app="Paytm">
+                            <span class="upi-app-dot upi-app-dot--paytm"></span>
+                            <span>Paytm</span>
+                        </div>
+                        <div class="upi-app-pill" data-app="BHIM / Other">
+                            <span class="upi-app-dot upi-app-dot--bhim"></span>
+                            <span>BHIM / Other</span>
+                        </div>
+                    </div>
+
+                    <div class="modal-form-group" style="margin-top: 1rem;">
+                        <label class="modal-form-label" for="inputUpiId">UPI ID / Virtual Payment Address (VPA)</label>
+                        <input type="text" id="inputUpiId" class="modal-form-input" placeholder="e.g. username@okhdfcbank or 9876543210@paytm">
+                    </div>
+
+                    <div class="upi-handles-row" id="upiHandlesRow">
+                        <span class="upi-handle-chip" data-handle="@okhdfcbank">@okhdfcbank</span>
+                        <span class="upi-handle-chip" data-handle="@okaxis">@okaxis</span>
+                        <span class="upi-handle-chip" data-handle="@ybl">@ybl</span>
+                        <span class="upi-handle-chip" data-handle="@paytm">@paytm</span>
+                        <span class="upi-handle-chip" data-handle="@upi">@upi</span>
+                    </div>
+
+                    <div class="payment-method-notice" style="margin-top: 0.85rem;">
+                        <i data-feather="zap"></i>
+                        <span>Instant mandate setup. You will receive an approval notification in your UPI app.</span>
+                    </div>
+                </div>
+
+                <!-- Tab Panel 3: Net Banking -->
+                <div class="payment-tab-panel" id="panelPaymentNetbanking">
+                    <div class="upi-app-selector-title">Popular Banks</div>
+                    <div class="bank-selector-grid" id="bankSelectorGrid">
+                        <div class="bank-pill is-selected" data-bank="HDFC Bank">
+                            <span class="bank-badge-code">HDFC</span>
+                            <span class="bank-name">HDFC Bank</span>
+                        </div>
+                        <div class="bank-pill" data-bank="ICICI Bank">
+                            <span class="bank-badge-code">ICICI</span>
+                            <span class="bank-name">ICICI Bank</span>
+                        </div>
+                        <div class="bank-pill" data-bank="State Bank of India">
+                            <span class="bank-badge-code">SBI</span>
+                            <span class="bank-name">SBI</span>
+                        </div>
+                        <div class="bank-pill" data-bank="Axis Bank">
+                            <span class="bank-badge-code">AXIS</span>
+                            <span class="bank-name">Axis Bank</span>
+                        </div>
+                        <div class="bank-pill" data-bank="Kotak Mahindra Bank">
+                            <span class="bank-badge-code">KOTAK</span>
+                            <span class="bank-name">Kotak Bank</span>
+                        </div>
+                    </div>
+
+                    <div class="modal-form-group" style="margin-top: 1rem;">
+                        <label class="modal-form-label" for="selectOtherBank">Or Choose Another Bank</label>
+                        <select id="selectOtherBank" class="modal-form-input">
+                            <option value="">-- Select Bank --</option>
+                            <option value="Bank of Baroda">Bank of Baroda</option>
+                            <option value="Canara Bank">Canara Bank</option>
+                            <option value="IndusInd Bank">IndusInd Bank</option>
+                            <option value="Punjab National Bank">Punjab National Bank</option>
+                            <option value="Union Bank of India">Union Bank of India</option>
+                            <option value="Yes Bank">Yes Bank</option>
+                            <option value="Federal Bank">Federal Bank</option>
+                            <option value="IDBI Bank">IDBI Bank</option>
+                        </select>
+                    </div>
+
+                    <div class="payment-method-notice" style="margin-top: 0.85rem;">
+                        <i data-feather="shield"></i>
+                        <span>Auto-debit will be established securely via RBI's e-NACH mandate system.</span>
+                    </div>
+                </div>
+
+                <div class="payment-trust-notice" style="margin-top: 1rem;">
                     <i data-feather="lock"></i>
-                    <span>Payment details are securely handled by our payment provider.</span>
+                    <span>256-bit encrypted &amp; PCI-DSS compliant secure payment vault.</span>
                 </div>
             </div>
             <div class="billing-modal-footer">
@@ -737,6 +859,7 @@
             </div>
         </div>
     </div>
+
 
     <!-- Modal 6: Invoice Detail Preview Modal -->
     <div class="billing-modal-overlay" id="modalViewInvoice">

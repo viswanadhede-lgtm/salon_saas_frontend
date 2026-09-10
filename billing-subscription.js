@@ -114,10 +114,15 @@
         },
         activeAddonIds: ['whatsapp', 'ai_receptionist'],
         paymentMethod: {
+            type: 'card',
             cardMask: '•••• •••• •••• 4242',
             holder: 'Admin User',
             expiry: '09 / 2028',
-            network: 'VISA / MASTERCARD'
+            network: 'VISA / MASTERCARD',
+            brand: 'MASTERCARD',
+            upiId: 'salonadmin@okhdfcbank',
+            upiApp: 'Google Pay',
+            bankName: 'HDFC Bank'
         },
         billingInfo: {
             legalName: 'BharathBots Technologies',
@@ -249,6 +254,14 @@
     const inputCardHolder = document.getElementById('inputCardHolder');
     const inputCardNumber = document.getElementById('inputCardNumber');
     const inputCardExpiry = document.getElementById('inputCardExpiry');
+    const inputCardCvv = document.getElementById('inputCardCvv');
+    const inputCardBrandBadge = document.getElementById('inputCardBrandBadge');
+    const paymentMethodTabs = document.getElementById('paymentMethodTabs');
+    const inputUpiId = document.getElementById('inputUpiId');
+    const upiAppGrid = document.getElementById('upiAppGrid');
+    const upiHandlesRow = document.getElementById('upiHandlesRow');
+    const bankSelectorGrid = document.getElementById('bankSelectorGrid');
+    const selectOtherBank = document.getElementById('selectOtherBank');
     const btnSavePaymentMethod = document.getElementById('btnSavePaymentMethod');
 
     const modalViewInvoice = document.getElementById('modalViewInvoice');
@@ -499,11 +512,97 @@
     }
 
     function renderPaymentMethod() {
-        cardMaskDisplay.textContent = state.paymentMethod.cardMask;
-        cardHolderDisplay.textContent = state.paymentMethod.holder;
-        cardExpiryDisplay.textContent = state.paymentMethod.expiry;
-        cardNetworkLabel.textContent = state.paymentMethod.network;
+        const visual = document.getElementById('paymentCardVisual');
+        const pm = state.paymentMethod;
+
+        if (pm.type === 'upi') {
+            if (cardNetworkLabel) cardNetworkLabel.textContent = 'UPI AUTOPAY';
+            if (visual) {
+                visual.className = 'payment-card-visual payment-card-visual--upi';
+                visual.innerHTML = `
+                    <div class="payment-card-top">
+                        <div style="display: flex; align-items: center; gap: 8px;">
+                            <span style="font-size: 1.15rem; font-weight: 800; letter-spacing: 0.05em; color: #ffffff;">UPI</span>
+                            <span style="font-size: 0.76rem; background: rgba(255,255,255,0.2); padding: 2px 7px; border-radius: 4px; font-weight: 600;">AUTOPAY</span>
+                        </div>
+                        <span class="card-network-label" style="background: rgba(255,255,255,0.15); color: #ffffff; padding: 2px 8px; border-radius: 4px;">${pm.upiApp || 'Google Pay'}</span>
+                    </div>
+                    <div class="payment-card-number" style="font-family: inherit; font-size: 1.15rem; letter-spacing: 0.03em; word-break: break-all;">
+                        ${pm.upiId || 'salonadmin@okhdfcbank'}
+                    </div>
+                    <div class="payment-card-meta">
+                        <div>
+                            <span class="meta-field-label">Account Holder</span>
+                            <span class="meta-field-value">${pm.holder || 'Admin User'}</span>
+                        </div>
+                        <div style="text-align: right;">
+                            <span class="meta-field-label">Status</span>
+                            <span class="meta-field-value" style="color: #4ade80; font-weight: 700;">Active Mandate</span>
+                        </div>
+                    </div>
+                `;
+            }
+        } else if (pm.type === 'netbanking') {
+            if (cardNetworkLabel) cardNetworkLabel.textContent = 'NET BANKING (e-NACH)';
+            if (visual) {
+                visual.className = 'payment-card-visual payment-card-visual--netbanking';
+                visual.innerHTML = `
+                    <div class="payment-card-top">
+                        <div style="display: flex; align-items: center; gap: 8px;">
+                            <i data-feather="home" style="width: 18px; height: 18px; color: #ffffff;"></i>
+                            <span style="font-size: 1.05rem; font-weight: 800; letter-spacing: 0.04em; color: #ffffff;">${pm.bankName || 'HDFC Bank'}</span>
+                        </div>
+                        <span class="card-network-label" style="background: rgba(255,255,255,0.15); color: #ffffff; padding: 2px 8px; border-radius: 4px;">e-Mandate</span>
+                    </div>
+                    <div class="payment-card-number" style="font-family: inherit; font-size: 1.05rem; letter-spacing: 0.05em;">
+                        Mandate ID: •••• 8492
+                    </div>
+                    <div class="payment-card-meta">
+                        <div>
+                            <span class="meta-field-label">Account Holder</span>
+                            <span class="meta-field-value">${pm.holder || 'Admin User'}</span>
+                        </div>
+                        <div style="text-align: right;">
+                            <span class="meta-field-label">Auto-Debit</span>
+                            <span class="meta-field-value" style="color: #4ade80; font-weight: 700;">e-NACH Verified</span>
+                        </div>
+                    </div>
+                `;
+                if (window.feather) feather.replace();
+            }
+        } else {
+            // Default Card
+            if (cardNetworkLabel) cardNetworkLabel.textContent = (pm.brand || 'VISA') + ' / MASTERCARD';
+            if (visual) {
+                visual.className = 'payment-card-visual';
+                visual.innerHTML = `
+                    <div class="payment-card-top">
+                        <div class="card-chip-plain"></div>
+                        <div style="display: flex; align-items: center; gap: 8px;">
+                            <svg viewBox="0 0 38 24" height="20" xmlns="http://www.w3.org/2000/svg">
+                                <circle cx="14" cy="12" r="9" fill="#ef4444" opacity="0.9" />
+                                <circle cx="24" cy="12" r="9" fill="#f59e0b" opacity="0.9" />
+                            </svg>
+                            <span class="card-network-label">${pm.brand || 'MASTERCARD'}</span>
+                        </div>
+                    </div>
+                    <div class="payment-card-number">${pm.cardMask || '•••• •••• •••• 4242'}</div>
+                    <div class="payment-card-meta">
+                        <div>
+                            <span class="meta-field-label">Card Holder</span>
+                            <span class="meta-field-value">${pm.holder || 'Admin User'}</span>
+                        </div>
+                        <div style="text-align: right;">
+                            <span class="meta-field-label">Expires</span>
+                            <span class="meta-field-value">${pm.expiry || '09 / 2028'}</span>
+                        </div>
+                    </div>
+                `;
+            }
+        }
+        if (window.feather) feather.replace();
     }
+
 
     function renderPaymentHistory() {
         paymentHistoryBody.innerHTML = state.paymentHistory.map(row => {
@@ -892,35 +991,189 @@
         });
     }
 
-    // Modal 5: Change Payment Method
+    // Modal 5: Change Payment Method (Multiple Payment Types)
+    let activePaymentTab = 'card';
+    let selectedUpiApp = 'Google Pay';
+    let selectedBank = 'HDFC Bank';
+
+    function setPaymentTab(tabName) {
+        activePaymentTab = tabName;
+        if (paymentMethodTabs) {
+            paymentMethodTabs.querySelectorAll('.payment-method-tab').forEach(btn => {
+                btn.classList.toggle('is-active', btn.getAttribute('data-tab') === tabName);
+            });
+        }
+        const panels = {
+            card: document.getElementById('panelPaymentCard'),
+            upi: document.getElementById('panelPaymentUpi'),
+            netbanking: document.getElementById('panelPaymentNetbanking')
+        };
+        Object.keys(panels).forEach(key => {
+            if (panels[key]) {
+                panels[key].classList.toggle('is-active', key === tabName);
+            }
+        });
+        if (window.feather) feather.replace();
+    }
+
+    if (paymentMethodTabs) {
+        paymentMethodTabs.querySelectorAll('.payment-method-tab').forEach(btn => {
+            btn.addEventListener('click', function () {
+                const tab = this.getAttribute('data-tab');
+                setPaymentTab(tab);
+            });
+        });
+    }
+
+    // Card brand detection & auto-formatting
+    function detectCardBrand(num) {
+        const clean = (num || '').replace(/\D/g, '');
+        if (/^4/.test(clean)) return 'VISA';
+        if (/^(5[1-5]|222[1-9]|22[3-9]|2[3-6]|27[01]|2720)/.test(clean)) return 'MASTERCARD';
+        if (/^(60|65|81|82|508)/.test(clean)) return 'RUPAY';
+        if (/^3[47]/.test(clean)) return 'AMEX';
+        return 'CARD';
+    }
+
+    if (inputCardNumber) {
+        inputCardNumber.addEventListener('input', function () {
+            let val = this.value.replace(/\D/g, '').slice(0, 16);
+            let formatted = val.match(/.{1,4}/g)?.join(' ') || val;
+            this.value = formatted;
+
+            const brand = detectCardBrand(val);
+            if (inputCardBrandBadge) {
+                inputCardBrandBadge.textContent = brand;
+            }
+        });
+    }
+
+    if (inputCardExpiry) {
+        inputCardExpiry.addEventListener('input', function () {
+            let val = this.value.replace(/\D/g, '').slice(0, 4);
+            if (val.length >= 3) {
+                this.value = val.slice(0, 2) + '/' + val.slice(2);
+            } else {
+                this.value = val;
+            }
+        });
+    }
+
+    // UPI App Selector
+    if (upiAppGrid) {
+        upiAppGrid.querySelectorAll('.upi-app-pill').forEach(pill => {
+            pill.addEventListener('click', function () {
+                upiAppGrid.querySelectorAll('.upi-app-pill').forEach(p => p.classList.remove('is-selected'));
+                this.classList.add('is-selected');
+                selectedUpiApp = this.getAttribute('data-app') || 'Google Pay';
+            });
+        });
+    }
+
+    // UPI Handle Chips
+    if (upiHandlesRow && inputUpiId) {
+        upiHandlesRow.querySelectorAll('.upi-handle-chip').forEach(chip => {
+            chip.addEventListener('click', function () {
+                const handle = this.getAttribute('data-handle');
+                let currentVal = inputUpiId.value.trim();
+                if (!currentVal) {
+                    inputUpiId.value = 'username' + handle;
+                } else if (currentVal.includes('@')) {
+                    inputUpiId.value = currentVal.split('@')[0] + handle;
+                } else {
+                    inputUpiId.value = currentVal + handle;
+                }
+                inputUpiId.focus();
+            });
+        });
+    }
+
+    // Bank Selector Grid
+    if (bankSelectorGrid) {
+        bankSelectorGrid.querySelectorAll('.bank-pill').forEach(pill => {
+            pill.addEventListener('click', function () {
+                bankSelectorGrid.querySelectorAll('.bank-pill').forEach(p => p.classList.remove('is-selected'));
+                this.classList.add('is-selected');
+                selectedBank = this.getAttribute('data-bank') || 'HDFC Bank';
+                if (selectOtherBank) selectOtherBank.value = '';
+            });
+        });
+    }
+
+    if (selectOtherBank) {
+        selectOtherBank.addEventListener('change', function () {
+            if (this.value) {
+                if (bankSelectorGrid) {
+                    bankSelectorGrid.querySelectorAll('.bank-pill').forEach(p => p.classList.remove('is-selected'));
+                }
+                selectedBank = this.value;
+            }
+        });
+    }
+
     const btnChangePaymentMethod = document.getElementById('btnChangePaymentMethod');
     if (btnChangePaymentMethod) {
         btnChangePaymentMethod.addEventListener('click', function () {
-            inputCardHolder.value = state.paymentMethod.holder;
-            inputCardNumber.value = '';
-            inputCardExpiry.value = state.paymentMethod.expiry.replace(/\s+/g, '');
+            const pm = state.paymentMethod;
+            setPaymentTab(pm.type || 'card');
+
+            if (inputCardHolder) inputCardHolder.value = pm.holder || 'Admin User';
+            if (inputCardNumber) inputCardNumber.value = '';
+            if (inputCardExpiry) inputCardExpiry.value = (pm.expiry || '09/28').replace(/\s+/g, '');
+            if (inputCardCvv) inputCardCvv.value = '';
+            if (inputUpiId) inputUpiId.value = pm.upiId || 'salonadmin@okhdfcbank';
+
             openModal(modalChangePayment);
         });
     }
 
     if (btnSavePaymentMethod) {
         btnSavePaymentMethod.addEventListener('click', function () {
-            const rawCard = inputCardNumber.value.trim();
-            const holder = inputCardHolder.value.trim() || 'Admin User';
-            const expiry = inputCardExpiry.value.trim() || '09 / 2028';
+            if (activePaymentTab === 'upi') {
+                const upiVal = inputUpiId ? inputUpiId.value.trim() : '';
+                const finalUpi = upiVal && upiVal.includes('@') ? upiVal : (upiVal ? upiVal + '@okhdfcbank' : 'salonadmin@okhdfcbank');
 
-            let mask = state.paymentMethod.cardMask;
-            if (rawCard.length >= 4) {
-                mask = `•••• •••• •••• ${rawCard.slice(-4)}`;
+                state.paymentMethod.type = 'upi';
+                state.paymentMethod.upiId = finalUpi;
+                state.paymentMethod.upiApp = selectedUpiApp || 'Google Pay';
+                state.paymentMethod.holder = inputCardHolder ? inputCardHolder.value.trim() || 'Admin User' : 'Admin User';
+
+                closeModal(modalChangePayment);
+                renderPaymentMethod();
+                showToast(`Payment method updated to UPI AutoPay (${selectedUpiApp}).`);
+            } else if (activePaymentTab === 'netbanking') {
+                const finalBank = selectedBank || 'HDFC Bank';
+
+                state.paymentMethod.type = 'netbanking';
+                state.paymentMethod.bankName = finalBank;
+                state.paymentMethod.holder = inputCardHolder ? inputCardHolder.value.trim() || 'Admin User' : 'Admin User';
+
+                closeModal(modalChangePayment);
+                renderPaymentMethod();
+                showToast(`Payment method updated to ${finalBank} e-Mandate.`);
+            } else {
+                // Card tab
+                const rawCard = inputCardNumber ? inputCardNumber.value.trim().replace(/\s+/g, '') : '';
+                const holder = (inputCardHolder && inputCardHolder.value.trim()) || 'Admin User';
+                const expiry = (inputCardExpiry && inputCardExpiry.value.trim()) || '09 / 2028';
+                const brand = detectCardBrand(rawCard);
+
+                let mask = state.paymentMethod.cardMask || '•••• •••• •••• 4242';
+                if (rawCard.length >= 4) {
+                    mask = `•••• •••• •••• ${rawCard.slice(-4)}`;
+                }
+
+                state.paymentMethod.type = 'card';
+                state.paymentMethod.holder = holder;
+                state.paymentMethod.cardMask = mask;
+                state.paymentMethod.expiry = expiry.includes('/') ? expiry : '09 / 2028';
+                state.paymentMethod.brand = brand;
+                state.paymentMethod.network = `${brand} / MASTERCARD`;
+
+                closeModal(modalChangePayment);
+                renderPaymentMethod();
+                showToast(`Payment method updated to ${brand} Card.`);
             }
-
-            state.paymentMethod.holder = holder;
-            state.paymentMethod.cardMask = mask;
-            state.paymentMethod.expiry = expiry;
-
-            closeModal(modalChangePayment);
-            renderPaymentMethod();
-            showToast('Payment method updated.');
         });
     }
 
