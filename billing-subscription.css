@@ -1299,6 +1299,158 @@
 }
 
 /* ============================================================
+   CARD HEIGHT LOCKING & HOVER-ONLY THIN SCROLLBARS
+   ============================================================ */
+
+/* Base Card Flex Structure for clean internal scrolling */
+.billing-card {
+    display: flex;
+    flex-direction: column;
+}
+
+.billing-card-header {
+    flex-shrink: 0;
+}
+
+/* Row 1 Height Locking: Current Plan and Active Add-ons */
+.billing-plan-card,
+#activeAddonsCard {
+    height: 380px;
+    box-sizing: border-box;
+}
+
+#activeAddonsCard > div:first-child {
+    display: flex;
+    flex-direction: column;
+    flex: 1;
+    min-height: 0;
+    overflow: hidden;
+}
+
+#activeAddonsList {
+    flex: 1;
+    min-height: 0;
+    overflow-y: auto;
+    padding-right: 4px;
+}
+
+.active-addons-footer {
+    flex-shrink: 0;
+    margin-top: auto;
+}
+
+/* Row 2 Height Locking: Plan Features and Available Add-ons */
+#planFeaturesCard,
+#availableAddonsCard {
+    height: 480px;
+    box-sizing: border-box;
+}
+
+#planFeaturesCard .plan-features-columns {
+    flex: 1;
+    min-height: 0;
+    overflow-y: auto;
+    padding-right: 6px;
+}
+
+#availableAddonsList {
+    flex: 1;
+    min-height: 0;
+    overflow-y: auto;
+    padding-right: 4px;
+}
+
+/* Row 3 Height Locking: Payment Method and Billing Summary */
+#paymentMethodCard,
+#billingSummaryCard {
+    height: 480px;
+    box-sizing: border-box;
+}
+
+#billingSummaryCard .summary-line-items:first-of-type {
+    flex: 1;
+    min-height: 0;
+    max-height: 140px;
+    overflow-y: auto;
+    padding-right: 4px;
+}
+
+/* Row 4 Height Locking: Payment History Table */
+#paymentHistoryCard .payment-table-wrap {
+    max-height: 320px;
+    overflow-y: auto;
+    overflow-x: auto;
+}
+
+/* ------------------------------------------------------------
+   HOVER-TRIGGERED THIN SCROLLBAR DESIGN
+   Invisible by default, sleek thin scrollbar appears on card hover
+   ------------------------------------------------------------ */
+
+/* Firefox standard thin scrollbar */
+#activeAddonsList,
+#planFeaturesCard .plan-features-columns,
+#availableAddonsList,
+#billingSummaryCard .summary-line-items:first-of-type,
+#paymentHistoryCard .payment-table-wrap {
+    scrollbar-width: thin;
+    scrollbar-color: transparent transparent;
+    transition: scrollbar-color 0.25s ease;
+}
+
+.billing-card:hover #activeAddonsList,
+.billing-card:hover .plan-features-columns,
+.billing-card:hover #availableAddonsList,
+.billing-card:hover .summary-line-items:first-of-type,
+.billing-card:hover .payment-table-wrap {
+    scrollbar-color: #cbd5e1 transparent;
+}
+
+/* WebKit (Chrome, Edge, Safari) */
+#activeAddonsList::-webkit-scrollbar,
+#planFeaturesCard .plan-features-columns::-webkit-scrollbar,
+#availableAddonsList::-webkit-scrollbar,
+#billingSummaryCard .summary-line-items:first-of-type::-webkit-scrollbar,
+#paymentHistoryCard .payment-table-wrap::-webkit-scrollbar {
+    width: 5px;
+    height: 5px;
+}
+
+#activeAddonsList::-webkit-scrollbar-track,
+#planFeaturesCard .plan-features-columns::-webkit-scrollbar-track,
+#availableAddonsList::-webkit-scrollbar-track,
+#billingSummaryCard .summary-line-items:first-of-type::-webkit-scrollbar-track,
+#paymentHistoryCard .payment-table-wrap::-webkit-scrollbar-track {
+    background: transparent;
+}
+
+#activeAddonsList::-webkit-scrollbar-thumb,
+#planFeaturesCard .plan-features-columns::-webkit-scrollbar-thumb,
+#availableAddonsList::-webkit-scrollbar-thumb,
+#billingSummaryCard .summary-line-items:first-of-type::-webkit-scrollbar-thumb,
+#paymentHistoryCard .payment-table-wrap::-webkit-scrollbar-thumb {
+    background: transparent;
+    border-radius: 9999px;
+    transition: background 0.25s ease;
+}
+
+.billing-card:hover #activeAddonsList::-webkit-scrollbar-thumb,
+.billing-card:hover .plan-features-columns::-webkit-scrollbar-thumb,
+.billing-card:hover #availableAddonsList::-webkit-scrollbar-thumb,
+.billing-card:hover .summary-line-items:first-of-type::-webkit-scrollbar-thumb,
+.billing-card:hover .payment-table-wrap::-webkit-scrollbar-thumb {
+    background: #cbd5e1;
+}
+
+.billing-card:hover #activeAddonsList::-webkit-scrollbar-thumb:hover,
+.billing-card:hover .plan-features-columns::-webkit-scrollbar-thumb:hover,
+.billing-card:hover #availableAddonsList::-webkit-scrollbar-thumb:hover,
+.billing-card:hover .summary-line-items:first-of-type::-webkit-scrollbar-thumb:hover,
+.billing-card:hover .payment-table-wrap::-webkit-scrollbar-thumb:hover {
+    background: #94a3b8;
+}
+
+/* ============================================================
    RESPONSIVENESS
    ============================================================ */
 
@@ -1311,6 +1463,15 @@
     }
     .billing-info-grid {
         grid-template-columns: repeat(2, 1fr);
+    }
+    .billing-plan-card,
+    #activeAddonsCard,
+    #planFeaturesCard,
+    #availableAddonsCard,
+    #paymentMethodCard,
+    #billingSummaryCard {
+        height: auto;
+        min-height: 380px;
     }
 }
 
