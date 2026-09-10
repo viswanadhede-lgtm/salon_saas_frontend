@@ -1104,6 +1104,30 @@
     color: #991b1b;
 }
 
+.btn-plain-danger-outline {
+    background: #ffffff;
+    color: #dc2626;
+    border: 1px solid #fca5a5;
+    font-weight: 600;
+}
+
+.btn-plain-danger-outline:hover:not(:disabled) {
+    background: #fef2f2;
+    border-color: #dc2626;
+    color: #b91c1c;
+    box-shadow: 0 2px 8px rgba(220, 38, 38, 0.12);
+}
+
+.btn-plain-danger-outline:disabled {
+    opacity: 0.45;
+    cursor: not-allowed;
+    border-color: var(--border-subtle, #e2e8f0);
+    color: var(--text-muted, #94a3b8);
+    background: #f8fafc;
+    box-shadow: none;
+    transform: none !important;
+}
+
 .btn-plain-sm {
     padding: 6px 12px;
     font-size: 0.8rem;
@@ -1276,6 +1300,152 @@
     font-weight: 500;
     margin: 4px 0 0 0;
     line-height: 1.4;
+}
+
+/* ── Cancel Subscription Modal ────────────────────────────── */
+
+.billing-modal-box--cancel-sub {
+    max-width: 540px;
+    width: 95vw;
+}
+
+.billing-modal-box--cancel-sub .billing-modal-header {
+    padding: 1.25rem 1.6rem;
+}
+
+.billing-modal-box--cancel-sub .billing-modal-body {
+    max-height: calc(88vh - 160px);
+    overflow-y: auto;
+    padding: 1.35rem 1.6rem;
+    gap: 1.15rem;
+}
+
+.cancel-modal-section {
+    display: flex;
+    flex-direction: column;
+}
+
+.cancel-section-title {
+    font-size: 0.92rem;
+    font-weight: 700;
+    color: var(--text-primary);
+    margin: 0 0 0.75rem 0;
+    letter-spacing: -0.01em;
+}
+
+/* Radio options list */
+.cancel-reason-group {
+    display: flex;
+    flex-direction: column;
+    gap: 0.35rem;
+}
+
+.cancel-reason-option {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 7px 10px;
+    border-radius: var(--radius-sm, 8px);
+    cursor: pointer;
+    transition: background 0.15s ease;
+    user-select: none;
+}
+
+.cancel-reason-option:hover {
+    background: #f1f5f9;
+}
+
+.cancel-reason-radio {
+    accent-color: var(--brand-blue, #2563eb);
+    width: 17px;
+    height: 17px;
+    margin: 0;
+    cursor: pointer;
+    flex-shrink: 0;
+}
+
+.cancel-reason-label {
+    font-size: 0.88rem;
+    color: var(--text-primary);
+    font-weight: 500;
+    line-height: 1.35;
+}
+
+/* Conditional Textarea for 'Other' */
+.cancel-other-feedback {
+    margin-top: 0.65rem;
+    padding-left: 1.7rem;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    animation: cancelFadeIn 0.2s ease-out;
+}
+
+@keyframes cancelFadeIn {
+    from {
+        opacity: 0;
+        transform: translateY(-4px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.cancel-other-textarea {
+    resize: vertical;
+    min-height: 70px;
+    font-family: inherit;
+    font-size: 0.86rem;
+    line-height: 1.45;
+}
+
+/* Subtle divider */
+.cancel-modal-divider {
+    height: 1px;
+    background: var(--border-subtle, #e2e8f0);
+    margin: 0.15rem 0;
+}
+
+/* Informational box for 'What happens after cancellation' */
+.cancel-info-card {
+    background: #f8fafc;
+    border: 1px solid var(--border-subtle, #e2e8f0);
+    border-radius: 10px;
+    padding: 1rem 1.25rem;
+}
+
+.cancel-info-card .cancel-section-title {
+    font-size: 0.88rem;
+    margin-bottom: 0.55rem;
+    color: var(--text-primary);
+}
+
+.cancel-info-list {
+    margin: 0;
+    padding-left: 1.2rem;
+    list-style-type: disc;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+
+.cancel-info-list li {
+    font-size: 0.83rem;
+    color: var(--text-secondary, #475569);
+    line-height: 1.45;
+}
+
+.cancel-info-list li strong {
+    color: var(--text-primary, #0f172a);
+    font-weight: 600;
+}
+
+.billing-modal-box--cancel-sub .billing-modal-footer {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 1.1rem 1.6rem;
 }
 
 /* ── Edit Billing Information Modal ────────────────────────── */

@@ -272,9 +272,12 @@
     const btnCloseManageAddons = document.getElementById('btnCloseManageAddons');
 
     const modalCancelSub = document.getElementById('modalCancelSub');
-    const cancelModalPlanName = document.getElementById('cancelModalPlanName');
-    const cancelModalNotice = document.getElementById('cancelModalNotice');
+    const cancelModalSubtitle = document.getElementById('cancelModalSubtitle');
+    const cancelInfoActiveDate = document.getElementById('cancelInfoActiveDate');
     const btnConfirmCancelSubscription = document.getElementById('btnConfirmCancelSubscription');
+    const cancelReasonGroup = document.getElementById('cancelReasonGroup');
+    const cancelOtherFeedback = document.getElementById('cancelOtherFeedback');
+    const cancelOtherTextarea = document.getElementById('cancelOtherTextarea');
 
     const modalEditBilling = document.getElementById('modalEditBilling');
     const inputLegalName = document.getElementById('inputLegalName');
@@ -1052,20 +1055,71 @@
 
     // Modal 3: Cancel Subscription
     const btnTriggerCancelModal = document.getElementById('btnTriggerCancelModal');
+
+    function resetCancelModalForm() {
+        if (cancelReasonGroup) {
+            const radios = cancelReasonGroup.querySelectorAll('input[name="cancelReason"]');
+            radios.forEach(radio => radio.checked = false);
+        }
+        if (cancelOtherFeedback) {
+            cancelOtherFeedback.style.display = 'none';
+        }
+        if (cancelOtherTextarea) {
+            cancelOtherTextarea.value = '';
+        }
+        if (btnConfirmCancelSubscription) {
+            btnConfirmCancelSubscription.disabled = true;
+        }
+    }
+
     if (btnTriggerCancelModal) {
         btnTriggerCancelModal.addEventListener('click', function () {
-            cancelModalPlanName.textContent = `${state.plan.name} Plan`;
-            cancelModalNotice.innerHTML = `Your subscription will remain active until <strong>${state.plan.validUntil}</strong>. You will continue to have full access until then.`;
+            const planName = state.plan.name || 'Growth';
+            const validUntil = state.plan.validUntil || '09 Oct 2026';
+            if (cancelModalSubtitle) {
+                cancelModalSubtitle.textContent = `Your ${planName} Plan will remain active until ${validUntil}. Your subscription will not renew after this date.`;
+            }
+            if (cancelInfoActiveDate) {
+                cancelInfoActiveDate.textContent = validUntil;
+            }
+            resetCancelModalForm();
             openModal(modalCancelSub);
+        });
+    }
+
+    // Handle cancellation reason selection and conditional 'Other' feedback textarea
+    if (cancelReasonGroup) {
+        cancelReasonGroup.addEventListener('change', function (e) {
+            if (e.target && e.target.name === 'cancelReason') {
+                const selectedValue = e.target.value;
+                if (btnConfirmCancelSubscription) {
+                    btnConfirmCancelSubscription.disabled = false;
+                }
+                if (selectedValue === 'other') {
+                    if (cancelOtherFeedback) cancelOtherFeedback.style.display = 'flex';
+                    if (cancelOtherTextarea) cancelOtherTextarea.focus();
+                } else {
+                    if (cancelOtherFeedback) cancelOtherFeedback.style.display = 'none';
+                }
+            }
         });
     }
 
     if (btnConfirmCancelSubscription) {
         btnConfirmCancelSubscription.addEventListener('click', function () {
+            if (btnConfirmCancelSubscription.disabled) return;
+
+            const selectedRadio = document.querySelector('input[name="cancelReason"]:checked');
+            if (!selectedRadio) return;
+
+            const validUntil = state.plan.validUntil || '09 Oct 2026';
+
+            // Dummy frontend simulation state
             state.currentMode = 'cancelled';
             closeModal(modalCancelSub);
+            resetCancelModalForm();
             renderAll();
-            showToast('Subscription scheduled for cancellation.');
+            showToast(`Cancellation scheduled. Your subscription will remain active until ${validUntil}.`);
         });
     }
 

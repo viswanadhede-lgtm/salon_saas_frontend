@@ -653,25 +653,75 @@
 
     <!-- Modal 3: Cancel Subscription Confirmation Modal -->
     <div class="billing-modal-overlay" id="modalCancelSub">
-        <div class="billing-modal-box">
+        <div class="billing-modal-box billing-modal-box--cancel-sub">
             <div class="billing-modal-header">
-                <h3 class="billing-modal-title">Cancel Subscription?</h3>
+                <div>
+                    <h3 class="billing-modal-title">Cancel Subscription?</h3>
+                    <p class="billing-modal-subtitle" id="cancelModalSubtitle">
+                        Your Growth Plan will remain active until 09 Oct 2026. Your subscription will not renew after this date.
+                    </p>
+                </div>
                 <button type="button" class="billing-modal-close" data-close-modal><i data-feather="x"></i></button>
             </div>
             <div class="billing-modal-body">
-                <div class="modal-callout-box">
-                    <p style="margin: 0; font-weight: 600; color: var(--text-primary);" id="cancelModalPlanName">Growth Plan</p>
-                    <p style="margin: 4px 0 0 0; font-size: 0.84rem; color: var(--text-secondary);" id="cancelModalNotice">
-                        Your subscription will remain active until <strong>09 October 2026</strong>. You will continue to have full access until then.
-                    </p>
+                <!-- Section 1: Cancellation Reason -->
+                <div class="cancel-modal-section">
+                    <h4 class="cancel-section-title">Why are you cancelling? <span class="required-star">*</span></h4>
+                    <div class="cancel-reason-group" id="cancelReasonGroup">
+                        <label class="cancel-reason-option">
+                            <input type="radio" name="cancelReason" value="too_expensive" class="cancel-reason-radio">
+                            <span class="cancel-reason-label">Too expensive</span>
+                        </label>
+                        <label class="cancel-reason-option">
+                            <input type="radio" name="cancelReason" value="not_using_enough" class="cancel-reason-radio">
+                            <span class="cancel-reason-label">Not using BharatBots enough</span>
+                        </label>
+                        <label class="cancel-reason-option">
+                            <input type="radio" name="cancelReason" value="missing_features" class="cancel-reason-radio">
+                            <span class="cancel-reason-label">Missing features I need</span>
+                        </label>
+                        <label class="cancel-reason-option">
+                            <input type="radio" name="cancelReason" value="technical_issues" class="cancel-reason-radio">
+                            <span class="cancel-reason-label">Technical issues</span>
+                        </label>
+                        <label class="cancel-reason-option">
+                            <input type="radio" name="cancelReason" value="moving_to_another_solution" class="cancel-reason-radio">
+                            <span class="cancel-reason-label">Moving to another solution</span>
+                        </label>
+                        <label class="cancel-reason-option">
+                            <input type="radio" name="cancelReason" value="business_temporarily_closed" class="cancel-reason-radio">
+                            <span class="cancel-reason-label">Business temporarily closed</span>
+                        </label>
+                        <label class="cancel-reason-option">
+                            <input type="radio" name="cancelReason" value="other" class="cancel-reason-radio" id="cancelReasonOtherRadio">
+                            <span class="cancel-reason-label">Other</span>
+                        </label>
+                    </div>
+
+                    <!-- Conditional Feedback Textarea for 'Other' -->
+                    <div class="cancel-other-feedback" id="cancelOtherFeedback" style="display: none;">
+                        <label class="modal-form-label" for="cancelOtherTextarea">Tell us more (optional)</label>
+                        <textarea id="cancelOtherTextarea" class="modal-form-input cancel-other-textarea" rows="3" placeholder="Please tell us why you're cancelling..."></textarea>
+                    </div>
                 </div>
-                <p style="margin: 0; font-size: 0.85rem; color: var(--text-muted);">
-                    After this period, your salon account will revert to the free/limited tier. You can reactivate anytime before this date.
-                </p>
+
+                <div class="cancel-modal-divider"></div>
+
+                <!-- Section 2: What happens after cancellation -->
+                <div class="cancel-modal-section cancel-info-card">
+                    <h4 class="cancel-section-title">What happens after cancellation?</h4>
+                    <ul class="cancel-info-list" id="cancelInfoList">
+                        <li>Your subscription remains active until <strong id="cancelInfoActiveDate">09 Oct 2026</strong>.</li>
+                        <li>It will not renew after that date.</li>
+                        <li>No further subscription payment will be charged after cancellation.</li>
+                        <li>Your active add-ons will also end when your subscription ends.</li>
+                        <li>You can reactivate your subscription before the end date.</li>
+                    </ul>
+                </div>
             </div>
             <div class="billing-modal-footer">
                 <button type="button" class="btn-plain btn-plain-primary" data-close-modal>Keep Subscription</button>
-                <button type="button" class="btn-plain btn-plain-secondary" id="btnConfirmCancelSubscription" style="color: #64748b;">Confirm Cancellation</button>
+                <button type="button" class="btn-plain btn-plain-danger-outline" id="btnConfirmCancelSubscription" disabled>Confirm Cancellation</button>
             </div>
         </div>
     </div>
