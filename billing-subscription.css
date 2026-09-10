@@ -1281,7 +1281,7 @@
 /* ── Edit Billing Information Modal ────────────────────────── */
 
 .billing-modal-box--edit-billing {
-    max-width: 680px;
+    max-width: 1060px;
     width: 95vw;
 }
 
@@ -1290,6 +1290,31 @@
     overflow-y: auto;
     gap: 0;
     padding: 0;
+}
+
+/* Two-column layout */
+.edit-billing-layout {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    min-height: 0;
+}
+
+.edit-billing-col {
+    display: flex;
+    flex-direction: column;
+}
+
+.edit-billing-col--left {
+    border-right: 1px solid var(--border-subtle);
+}
+
+.edit-billing-col--right {
+    background: #f8fafc;
+}
+
+.edit-billing-col--right .modal-form-section {
+    border-bottom: none;
+    flex: 1;
 }
 
 /* Section grouping */
@@ -1337,6 +1362,16 @@
     display: grid;
     grid-template-columns: 1fr 1fr 1fr;
     gap: 0.85rem;
+}
+
+@media (max-width: 800px) {
+    .edit-billing-layout {
+        grid-template-columns: 1fr;
+    }
+    .edit-billing-col--left {
+        border-right: none;
+        border-bottom: 1px solid var(--border-subtle);
+    }
 }
 
 @media (max-width: 600px) {
