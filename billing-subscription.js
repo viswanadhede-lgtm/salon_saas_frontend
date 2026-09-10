@@ -228,19 +228,10 @@
 
     const modalManageAddons = document.getElementById('modalManageAddons');
     const modalManageAddonsList = document.getElementById('modalManageAddonsList');
-    const modalCurrentAddonsTotal = document.getElementById('modalCurrentAddonsTotal');
-    const modalSelectedAddonsTotal = document.getElementById('modalSelectedAddonsTotal');
+    const modalManageAddonsSummary = document.getElementById('modalManageAddonsSummary');
     const btnCancelManageAddons = document.getElementById('btnCancelManageAddons');
     const btnSaveManageAddons = document.getElementById('btnSaveManageAddons');
     const btnCloseManageAddons = document.getElementById('btnCloseManageAddons');
-
-    const modalReviewAddons = document.getElementById('modalReviewAddons');
-    const reviewAddonsChangesContainer = document.getElementById('reviewAddonsChangesContainer');
-    const reviewCurrentAddonsTotal = document.getElementById('reviewCurrentAddonsTotal');
-    const reviewNewAddonsTotal = document.getElementById('reviewNewAddonsTotal');
-    const btnBackReviewAddons = document.getElementById('btnBackReviewAddons');
-    const btnConfirmReviewChanges = document.getElementById('btnConfirmReviewChanges');
-    const btnCloseReviewAddons = document.getElementById('btnCloseReviewAddons');
 
     const modalCancelSub = document.getElementById('modalCancelSub');
     const cancelModalPlanName = document.getElementById('cancelModalPlanName');
@@ -640,7 +631,7 @@
         });
     }
 
-    // ── Modal 2 & 2B: Manage Add-ons & Review Changes (Frontend-Only Prototype) ───
+    // ── Modal 2: Manage Add-ons (Two-Column Layout with Real-Time Billing Preview) ───
     let localSelectedAddonIds = [];
     let initialActiveAddonIds = [];
 
@@ -656,40 +647,26 @@
 
         modalManageAddonsList.innerHTML = CATALOG_ADDONS.map(addon => {
             const isSelected = localSelectedAddonIds.includes(addon.id);
-            const isOriginallyActive = initialActiveAddonIds.includes(addon.id);
-            const statusLabel = isOriginallyActive ? 'Active' : 'Available';
-            const statusPillClass = isOriginallyActive ? 'manage-addon-status-pill--active' : 'manage-addon-status-pill--available';
 
             return `
-                <div class="manage-addon-item ${isSelected ? 'is-selected' : ''}" data-addon-id="${addon.id}">
-                    <div class="manage-addon-checkbox-wrap">
+                <div class="manage-addon-card ${isSelected ? 'is-selected' : ''}" data-addon-id="${addon.id}">
+                    <div class="manage-addon-card-check">
                         <input type="checkbox" class="manage-addon-checkbox" id="chk_addon_${addon.id}" ${isSelected ? 'checked' : ''} data-addon-id="${addon.id}">
                     </div>
-                    <div class="addon-icon-tile addon-icon-tile--${addon.theme || 'blue'}">
-                        <i data-feather="${addon.icon || 'package'}"></i>
-                    </div>
-                    <div class="manage-addon-content">
-                        <div class="manage-addon-header-row">
-                            <label for="chk_addon_${addon.id}" class="manage-addon-name" style="cursor: pointer;">${addon.name}</label>
-                            <span class="manage-addon-status-pill ${statusPillClass}">${statusLabel}</span>
-                        </div>
-                        <p class="manage-addon-desc">${addon.desc}</p>
-                        <div class="manage-addon-meta-row">
-                            <span class="manage-addon-price">${fmtCurrency(addon.price)} / month</span>
-                        </div>
+                    <div class="manage-addon-card-info">
+                        <label for="chk_addon_${addon.id}" class="manage-addon-card-title">${addon.name}</label>
+                        <span class="manage-addon-card-price">${fmtCurrency(addon.price)} / month</span>
                     </div>
                 </div>
             `;
         }).join('');
 
-        if (window.feather) feather.replace();
+        // Attach click listeners to cards and checkboxes
+        modalManageAddonsList.querySelectorAll('.manage-addon-card').forEach(cardEl => {
+            const addonId = cardEl.getAttribute('data-addon-id');
+            const checkbox = cardEl.querySelector('.manage-addon-checkbox');
 
-        // Attach click listener to row & checkbox
-        modalManageAddonsList.querySelectorAll('.manage-addon-item').forEach(itemEl => {
-            const addonId = itemEl.getAttribute('data-addon-id');
-            const checkbox = itemEl.querySelector('.manage-addon-checkbox');
-
-            itemEl.addEventListener('click', function (e) {
+            cardEl.addEventListener('click', function (e) {
                 if (e.target !== checkbox && e.target.tagName !== 'LABEL') {
                     checkbox.checked = !checkbox.checked;
                     toggleAddonSelection(addonId, checkbox.checked);
@@ -701,7 +678,7 @@
             });
         });
 
-        updateManageModalTotals();
+        renderManageAddonsSummary();
     }
 
     function toggleAddonSelection(addonId, isChecked) {
@@ -712,19 +689,109 @@
         } else {
             localSelectedAddonIds = localSelectedAddonIds.filter(id => id !== addonId);
         }
-        renderManageAddonsList();
+
+        // Update card visual state immediately
+        const card = modalManageAddonsList.querySelector(`.manage-addon-card[data-addon-id="${addonId}"]`);
+        if (card) {
+            const chk = card.querySelector('.manage-addon-checkbox');
+            if (chk) chk.checked = isChecked;
+            if (isChecked) {
+                card.classList.add('is-selected');
+            } else {
+                card.classList.remove('is-selected');
+            }
+        }
+
+        renderManageAddonsSummary();
     }
 
-    function updateManageModalTotals() {
-        const currentTotal = calcAddonsTotal(initialActiveAddonIds);
-        const selectedTotal = calcAddonsTotal(localSelectedAddonIds);
+    function renderManageAddonsSummary() {
+        if (!modalManageAddonsSummary) return;
 
-        if (modalCurrentAddonsTotal) {
-            modalCurrentAddonsTotal.textContent = `${fmtCurrency(currentTotal)} / month`;
+        // Current Add-ons snapshot
+        const currentAddons = initialActiveAddonIds.map(id => CATALOG_ADDONS.find(a => a.id === id)).filter(Boolean);
+        const currentTotal = calcAddonsTotal(initialActiveAddonIds);
+
+        // New additions (currently selected, but not originally active)
+        const addedIds = localSelectedAddonIds.filter(id => !initialActiveAddonIds.includes(id));
+        const addedAddons = addedIds.map(id => CATALOG_ADDONS.find(a => a.id === id)).filter(Boolean);
+
+        // Removals (originally active, but unselected)
+        const removedIds = initialActiveAddonIds.filter(id => !localSelectedAddonIds.includes(id));
+        const removedAddons = removedIds.map(id => CATALOG_ADDONS.find(a => a.id === id)).filter(Boolean);
+
+        // New total
+        const newTotal = calcAddonsTotal(localSelectedAddonIds);
+
+        let currentAddonsHtml = '';
+        if (currentAddons.length > 0) {
+            currentAddonsHtml = currentAddons.map(a => `
+                <div class="billing-summary-row">
+                    <span class="item-name">${a.name}</span>
+                    <span class="item-price">${fmtCurrency(a.price)}</span>
+                </div>
+            `).join('');
+        } else {
+            currentAddonsHtml = '<div class="billing-summary-empty">—</div>';
         }
-        if (modalSelectedAddonsTotal) {
-            modalSelectedAddonsTotal.textContent = `${fmtCurrency(selectedTotal)} / month`;
+
+        let additionsHtml = '';
+        if (addedAddons.length > 0) {
+            additionsHtml = addedAddons.map(a => `
+                <div class="billing-summary-row">
+                    <span class="item-name">${a.name}</span>
+                    <span class="item-price item-price--add">+${fmtCurrency(a.price)}</span>
+                </div>
+            `).join('');
+        } else {
+            additionsHtml = '<div class="billing-summary-empty">—</div>';
         }
+
+        let removalsHtml = '';
+        if (removedAddons.length > 0) {
+            removalsHtml = removedAddons.map(a => `
+                <div class="billing-summary-row">
+                    <span class="item-name">${a.name}</span>
+                    <span class="item-price item-price--remove">-${fmtCurrency(a.price)}</span>
+                </div>
+            `).join('');
+        } else {
+            removalsHtml = '<div class="billing-summary-empty">—</div>';
+        }
+
+        modalManageAddonsSummary.innerHTML = `
+            <!-- Current Add-ons Block -->
+            <div class="billing-summary-block">
+                <div class="billing-summary-subheading">CURRENT ADD-ONS</div>
+                ${currentAddonsHtml}
+                <hr class="billing-summary-divider">
+                <div class="billing-summary-row billing-summary-row--subtotal">
+                    <span class="item-name">Current Total</span>
+                    <span class="item-price">${fmtCurrency(currentTotal)}</span>
+                </div>
+            </div>
+
+            <!-- New Additions Block -->
+            <div class="billing-summary-block">
+                <div class="billing-summary-subheading">NEW ADDITIONS</div>
+                ${additionsHtml}
+            </div>
+
+            <!-- Removals Block -->
+            <div class="billing-summary-block">
+                <div class="billing-summary-subheading">REMOVALS</div>
+                ${removalsHtml}
+            </div>
+
+            <!-- New Total Block -->
+            <div class="billing-summary-block" style="margin-top: auto;">
+                <hr class="billing-summary-divider">
+                <div class="billing-summary-row billing-summary-row--total">
+                    <span class="item-name">NEW ADD-ONS TOTAL</span>
+                    <span class="item-price">${fmtCurrency(newTotal)}</span>
+                </div>
+            </div>
+        `;
     }
 
     function openManageAddonsModal() {
@@ -737,7 +804,6 @@
     }
 
     function closeManageAddonsModal() {
-        // Discard local changes and reset
         localSelectedAddonIds = [...initialActiveAddonIds];
         closeModal(modalManageAddons);
     }
@@ -750,109 +816,12 @@
         btnCloseManageAddons.addEventListener('click', closeManageAddonsModal);
     }
 
-    // Save Changes: Check if changes exist -> if none close, if yes open Review modal
+    // Save Changes: directly commit changes to state and refresh UI
     if (btnSaveManageAddons) {
         btnSaveManageAddons.addEventListener('click', function () {
-            const addedIds = localSelectedAddonIds.filter(id => !initialActiveAddonIds.includes(id));
-            const removedIds = initialActiveAddonIds.filter(id => !localSelectedAddonIds.includes(id));
-
-            if (addedIds.length === 0 && removedIds.length === 0) {
-                // No changes made
-                closeModal(modalManageAddons);
-                return;
-            }
-
-            openReviewAddonsModal(addedIds, removedIds);
-        });
-    }
-
-    // Review Modal Open & Actions
-    function openReviewAddonsModal(addedIds, removedIds) {
-        if (!reviewAddonsChangesContainer) return;
-
-        let contentHtml = '';
-
-        if (addedIds.length > 0) {
-            contentHtml += `
-                <div class="review-change-section">
-                    <span class="review-section-badge review-section-badge--add">Add</span>
-                    ${addedIds.map(id => {
-                        const addon = CATALOG_ADDONS.find(a => a.id === id);
-                        return `
-                            <div class="review-addon-row">
-                                <span class="review-addon-name">${addon ? addon.name : id}</span>
-                                <span class="review-addon-price-delta review-addon-price-delta--add">+${fmtCurrency(addon ? addon.price : 0)} / month</span>
-                            </div>
-                        `;
-                    }).join('')}
-                </div>
-            `;
-        }
-
-        if (removedIds.length > 0) {
-            contentHtml += `
-                <div class="review-change-section">
-                    <span class="review-section-badge review-section-badge--remove">Remove</span>
-                    ${removedIds.map(id => {
-                        const addon = CATALOG_ADDONS.find(a => a.id === id);
-                        return `
-                            <div class="review-addon-row">
-                                <span class="review-addon-name">${addon ? addon.name : id}</span>
-                                <span class="review-addon-price-delta review-addon-price-delta--remove">-${fmtCurrency(addon ? addon.price : 0)} / month</span>
-                            </div>
-                        `;
-                    }).join('')}
-                </div>
-            `;
-        }
-
-        reviewAddonsChangesContainer.innerHTML = contentHtml;
-
-        const currentTotal = calcAddonsTotal(initialActiveAddonIds);
-        const newTotal = calcAddonsTotal(localSelectedAddonIds);
-
-        if (reviewCurrentAddonsTotal) {
-            reviewCurrentAddonsTotal.textContent = `${fmtCurrency(currentTotal)} / month`;
-        }
-        if (reviewNewAddonsTotal) {
-            reviewNewAddonsTotal.textContent = `${fmtCurrency(newTotal)} / month`;
-        }
-
-        // Close Manage modal, open Review modal
-        closeModal(modalManageAddons);
-        openModal(modalReviewAddons);
-    }
-
-    // Review modal: Back button returns to Manage modal with selections preserved
-    if (btnBackReviewAddons) {
-        btnBackReviewAddons.addEventListener('click', function () {
-            closeModal(modalReviewAddons);
-            renderManageAddonsList();
-            openModal(modalManageAddons);
-        });
-    }
-
-    if (btnCloseReviewAddons) {
-        btnCloseReviewAddons.addEventListener('click', function () {
-            closeModal(modalReviewAddons);
-            // reset local state to initial
-            localSelectedAddonIds = [...initialActiveAddonIds];
-        });
-    }
-
-    // Review modal: Confirm Changes
-    if (btnConfirmReviewChanges) {
-        btnConfirmReviewChanges.addEventListener('click', function () {
-            // Apply changes to frontend state
             state.activeAddonIds = [...localSelectedAddonIds];
-
-            closeModal(modalReviewAddons);
             closeModal(modalManageAddons);
-
-            // Re-render main page UI with new dummy state
             renderAll();
-
-            // Show success toast
             showToast('Add-on changes saved successfully.');
         });
     }
@@ -861,6 +830,7 @@
     if (btnManageAddonsBottom) {
         btnManageAddonsBottom.onclick = openManageAddonsModal;
     }
+
 
     // Modal 3: Cancel Subscription
     const btnTriggerCancelModal = document.getElementById('btnTriggerCancelModal');
