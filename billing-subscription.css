@@ -1288,15 +1288,17 @@
 .billing-modal-box--edit-billing .billing-modal-body {
     max-height: calc(92vh - 160px);
     overflow-y: auto;
-    gap: 0;
-    padding: 0;
+    background: #f8fafc;
+    padding: 1.35rem 1.5rem;
 }
 
-/* Two-column layout */
+/* Two-column layout with 3 cards */
 .edit-billing-layout {
     display: grid;
     grid-template-columns: 1fr 1fr;
+    gap: 1.25rem;
     min-height: 0;
+    align-items: stretch;
 }
 
 .edit-billing-col {
@@ -1305,29 +1307,34 @@
 }
 
 .edit-billing-col--left {
-    border-right: 1px solid var(--border-subtle);
+    gap: 1.25rem;
 }
 
 .edit-billing-col--right {
-    background: #f8fafc;
+    display: flex;
+    flex-direction: column;
 }
 
-.edit-billing-col--right .modal-form-section {
-    border-bottom: none;
-    flex: 1;
-}
-
-/* Section grouping */
-.modal-form-section {
+/* 3-Card layout styling */
+.modal-form-card {
+    background: #ffffff;
+    border: 1px solid var(--border-subtle, #e2e8f0);
+    border-radius: 12px;
+    padding: 1.25rem 1.35rem;
     display: flex;
     flex-direction: column;
     gap: 0.85rem;
-    padding: 1.35rem 1.6rem;
-    border-bottom: 1px solid var(--border-subtle);
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
+    transition: border-color 0.15s ease, box-shadow 0.15s ease;
 }
 
-.modal-form-section:last-child {
-    border-bottom: none;
+.modal-form-card:hover {
+    border-color: #cbd5e1;
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.06);
+}
+
+.modal-form-card--stretch {
+    flex: 1;
 }
 
 .modal-form-section-header {
@@ -1367,10 +1374,13 @@
 @media (max-width: 800px) {
     .edit-billing-layout {
         grid-template-columns: 1fr;
+        gap: 1rem;
     }
     .edit-billing-col--left {
-        border-right: none;
-        border-bottom: 1px solid var(--border-subtle);
+        gap: 1rem;
+    }
+    .billing-modal-box--edit-billing .billing-modal-body {
+        padding: 1rem;
     }
 }
 
