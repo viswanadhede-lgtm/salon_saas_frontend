@@ -1602,24 +1602,24 @@
    ------------------------------------------------------------ */
 
 .billing-modal-box--payment {
-    max-width: 1080px;
+    max-width: 1260px;
     width: 95vw;
     animation: modal-pop 0.22s ease-out;
 }
 
 .billing-modal-box--payment .billing-modal-header {
-    padding: 1.8rem 2.4rem;
+    padding: 2rem 2.8rem;
 }
 
 .billing-modal-box--payment .billing-modal-title {
-    font-size: 1.38rem;
+    font-size: 1.45rem;
     font-weight: 700;
 }
 
 .billing-modal-box--payment .billing-modal-subtitle {
-    font-size: 0.98rem;
+    font-size: 1.02rem;
     color: var(--text-muted);
-    margin-top: 5px;
+    margin-top: 6px;
 }
 
 .billing-modal-box--payment .billing-modal-close {
@@ -1627,43 +1627,43 @@
 }
 
 .billing-modal-box--payment .billing-modal-close svg {
-    width: 22px;
-    height: 22px;
+    width: 24px;
+    height: 24px;
 }
 
 .billing-modal-box--payment .billing-modal-body {
-    padding: 2rem 2.4rem !important;
-    gap: 1.25rem;
+    padding: 2.2rem 2.8rem !important;
+    gap: 1.4rem;
 }
 
 .billing-modal-box--payment .billing-modal-footer {
-    padding: 1.4rem 2.4rem;
+    padding: 1.5rem 2.8rem;
 }
 
 .billing-modal-box--payment .billing-modal-footer .btn-plain {
-    padding: 11px 22px;
-    font-size: 0.95rem;
+    padding: 12px 24px;
+    font-size: 0.96rem;
 }
 
 /* Two-Column Payment Modal Layout */
 .payment-modal-layout {
     display: grid;
-    grid-template-columns: 360px 1fr;
-    gap: 2.2rem;
+    grid-template-columns: 420px 1fr;
+    gap: 2.8rem;
     align-items: start;
 }
 
 .payment-modal-col {
     display: flex;
     flex-direction: column;
-    gap: 1.15rem;
+    gap: 1.25rem;
 }
 
 .payment-modal-col--current {
     background: #f8fafc;
     border: 1.5px solid var(--border-subtle);
     border-radius: var(--radius-md);
-    padding: 1.35rem 1.4rem;
+    padding: 1.6rem 1.65rem;
 }
 
 .payment-modal-col-header {
@@ -1671,18 +1671,18 @@
     justify-content: space-between;
     align-items: flex-start;
     gap: 0.75rem;
-    margin-bottom: 0.25rem;
+    margin-bottom: 0.35rem;
 }
 
 .payment-col-title {
-    font-size: 1.05rem;
+    font-size: 1.12rem;
     font-weight: 700;
     color: var(--text-primary);
     margin: 0;
 }
 
 .payment-col-subtitle {
-    font-size: 0.82rem;
+    font-size: 0.86rem;
     color: var(--text-muted);
     margin: 3px 0 0 0;
     line-height: 1.35;
@@ -1691,9 +1691,9 @@
 .payment-status-badge {
     background: #dcfce7;
     color: #15803d;
-    font-size: 0.7rem;
+    font-size: 0.72rem;
     font-weight: 800;
-    padding: 4px 9px;
+    padding: 4px 10px;
     border-radius: 9999px;
     letter-spacing: 0.04em;
     text-transform: uppercase;
@@ -1707,25 +1707,26 @@
 }
 
 .modal-current-card-wrap .payment-card-visual {
-    box-shadow: 0 8px 20px rgba(15, 23, 42, 0.12);
-    min-height: 175px;
+    box-shadow: 0 10px 24px rgba(15, 23, 42, 0.14);
+    min-height: 195px;
+    padding: 1.4rem;
 }
 
 .current-payment-meta-box {
     background: #ffffff;
     border: 1px solid var(--border-subtle);
     border-radius: var(--radius-sm);
-    padding: 0.9rem 1.1rem;
+    padding: 1.05rem 1.25rem;
     display: flex;
     flex-direction: column;
-    gap: 0.65rem;
+    gap: 0.75rem;
 }
 
 .current-meta-row {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    font-size: 0.85rem;
+    font-size: 0.88rem;
 }
 
 .current-meta-label {
@@ -1747,18 +1748,18 @@
     background: var(--brand-blue-subtle);
     border: 1px solid var(--brand-blue-border);
     border-radius: var(--radius-sm);
-    padding: 0.85rem 1rem;
-    font-size: 0.82rem;
+    padding: 0.95rem 1.15rem;
+    font-size: 0.86rem;
     color: var(--text-secondary);
     display: flex;
-    gap: 8px;
+    gap: 10px;
     align-items: flex-start;
-    line-height: 1.4;
+    line-height: 1.45;
 }
 
 .current-payment-notice svg {
-    width: 15px;
-    height: 15px;
+    width: 16px;
+    height: 16px;
     stroke: var(--brand-blue);
     flex-shrink: 0;
     margin-top: 2px;
