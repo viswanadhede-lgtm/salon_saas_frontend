@@ -750,6 +750,12 @@
         btnCloseManageAddons.addEventListener('click', closeManageAddonsModal);
     }
 
+    // Bind Manage Add‑ons button to open the modal
+    const btnManageAddonsBottom = document.getElementById('btnManageAddonsBottom');
+    if (btnManageAddonsBottom) {
+        btnManageAddonsBottom.addEventListener('click', openManageAddonsModal);
+    }
+
     // Save Changes: Check if changes exist -> if none close, if yes open Review modal
     if (btnSaveManageAddons) {
         btnSaveManageAddons.addEventListener('click', function () {
