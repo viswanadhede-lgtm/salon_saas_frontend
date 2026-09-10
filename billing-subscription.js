@@ -88,8 +88,13 @@
     };
 
     // ── Application State ──────────────────────────────────────────
+    const urlParams = new URLSearchParams(window.location.search);
+    const paramState = urlParams.get('state');
+    const validModes = ['active', 'noplan', 'cancelled'];
+    const initialMode = validModes.includes(paramState) ? paramState : 'active';
+
     const state = {
-        currentMode: 'active', // 'active' | 'noplan' | 'cancelled'
+        currentMode: initialMode, // 'active' | 'noplan' | 'cancelled'
         plan: {
             name: 'Growth',
             cycle: 'monthly',
@@ -827,17 +832,16 @@
         });
     });
 
-    // ── State Preview Switcher Toolbar ─────────────────────────────
-    if (statePillsGroup) {
-        statePillsGroup.querySelectorAll('.state-pill-btn').forEach(btn => {
-            btn.addEventListener('click', function () {
-                const targetState = this.getAttribute('data-state');
-                state.currentMode = targetState;
-                renderAll();
-                showToast(`Switched preview to ${this.textContent}`);
-            });
-        });
-    }
+    // ── Developer Preview Helper (Accessible via console or URL query ?state=...) ─────
+    window.setBillingState = function (mode) {
+        if (validModes.includes(mode)) {
+            state.currentMode = mode;
+            renderAll();
+            showToast(`Billing preview switched to: ${mode}`);
+        } else {
+            console.warn(`[Billing] Unknown mode: "${mode}". Valid modes: ${validModes.join(', ')}`);
+        }
+    };
 
     // ── Initial Render ─────────────────────────────────────────────
     document.addEventListener('DOMContentLoaded', () => {
