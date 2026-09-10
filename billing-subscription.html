@@ -369,16 +369,30 @@
                             <span class="neutral-badge" id="featuresIncludedCountBadge">7 Included</span>
                         </div>
 
-                        <div class="features-list" id="featuresIncludedList">
-                            <!-- Populated dynamically by JS -->
-                        </div>
+                        <div class="plan-features-columns">
+                            <!-- Allowed / Included Column -->
+                            <div class="features-column">
+                                <div class="features-col-header">
+                                    <span class="features-col-label features-col-label--included">
+                                        <i data-feather="check-circle"></i> Included
+                                    </span>
+                                </div>
+                                <div class="features-list" id="featuresIncludedList">
+                                    <!-- Populated dynamically by JS -->
+                                </div>
+                            </div>
 
-                        <div class="features-section-divider" id="featuresExcludedDivider">
-                            <span>Not Included</span>
-                        </div>
-
-                        <div class="features-list" id="featuresExcludedList">
-                            <!-- Populated dynamically by JS -->
+                            <!-- Not Allowed / Excluded Column -->
+                            <div class="features-column" id="featuresExcludedCol">
+                                <div class="features-col-header">
+                                    <span class="features-col-label features-col-label--excluded">
+                                        <i data-feather="x-circle"></i> Not Included
+                                    </span>
+                                </div>
+                                <div class="features-list" id="featuresExcludedList">
+                                    <!-- Populated dynamically by JS -->
+                                </div>
+                            </div>
                         </div>
                     </div>
 

@@ -191,7 +191,7 @@
     const featuresIncludedCountBadge = document.getElementById('featuresIncludedCountBadge');
     const featuresIncludedList = document.getElementById('featuresIncludedList');
     const featuresExcludedList = document.getElementById('featuresExcludedList');
-    const featuresExcludedDivider = document.getElementById('featuresExcludedDivider');
+    const featuresExcludedCol = document.getElementById('featuresExcludedCol');
     const availableAddonsList = document.getElementById('availableAddonsList');
     const availableAddonsBadge = document.getElementById('availableAddonsBadge');
 
@@ -408,8 +408,8 @@
             </div>
         `).join('');
 
-        if (spec.excluded.length > 0) {
-            featuresExcludedDivider.style.display = 'flex';
+        if (spec.excluded && spec.excluded.length > 0) {
+            if (featuresExcludedCol) featuresExcludedCol.style.display = 'flex';
             featuresExcludedList.innerHTML = spec.excluded.map(item => `
                 <div class="feature-item feature-item--excluded">
                     <span class="feature-check-icon"><i data-feather="x"></i></span>
@@ -417,7 +417,7 @@
                 </div>
             `).join('');
         } else {
-            featuresExcludedDivider.style.display = 'none';
+            if (featuresExcludedCol) featuresExcludedCol.style.display = 'none';
             featuresExcludedList.innerHTML = '';
         }
     }
