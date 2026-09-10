@@ -28,25 +28,33 @@
             id: 'whatsapp',
             name: 'WhatsApp Reminders',
             desc: 'Automated appointment reminders via WhatsApp',
-            price: 499
+            price: 499,
+            icon: 'message-circle',
+            theme: 'green'
         },
         {
             id: 'ai_receptionist',
             name: 'AI Receptionist',
             desc: 'AI-powered call handling & booking assistant',
-            price: 999
+            price: 999,
+            icon: 'cpu',
+            theme: 'purple'
         },
         {
             id: 'advanced_reports',
             name: 'Advanced Reports',
             desc: 'Deep-dive revenue, staff & service analytics',
-            price: 299
+            price: 299,
+            icon: 'bar-chart-2',
+            theme: 'blue'
         },
         {
             id: 'smart_notifications',
             name: 'Smart Notifications',
             desc: 'Push & SMS alerts for bookings and updates',
-            price: 199
+            price: 199,
+            icon: 'bell',
+            theme: 'amber'
         }
     ];
 
@@ -159,6 +167,7 @@
     const statePillsGroup = document.getElementById('statePillsGroup');
 
     // Row 1: Plan & Add-ons
+    const currentPlanCard = document.getElementById('currentPlanCard');
     const planNameBadge = document.getElementById('planNameBadge');
     const planStatusPill = document.getElementById('planStatusPill');
     const planStatusText = document.getElementById('planStatusText');
@@ -250,6 +259,7 @@
 
     function renderCurrentPlan() {
         if (state.currentMode === 'noplan') {
+            if (currentPlanCard) currentPlanCard.className = 'billing-plan-card billing-plan-card--noplan';
             planNameBadge.textContent = 'NO ACTIVE PLAN';
             if (headerPlanBadge) headerPlanBadge.textContent = 'No Plan';
 
@@ -286,6 +296,7 @@
         `;
 
         if (state.currentMode === 'cancelled') {
+            if (currentPlanCard) currentPlanCard.className = 'billing-plan-card billing-plan-card--cancelled';
             planStatusPill.className = 'status-pill is-cancelling';
             planStatusText.textContent = `Cancels on ${state.plan.validUntil}`;
 
@@ -318,6 +329,7 @@
             }
         } else {
             // State: Active
+            if (currentPlanCard) currentPlanCard.className = 'billing-plan-card billing-plan-card--active';
             planStatusPill.className = 'status-pill is-active';
             planStatusText.textContent = 'Active';
 
@@ -367,11 +379,14 @@
 
         activeAddonsList.innerHTML = activeItems.map(item => `
             <div class="active-addon-row">
+                <div class="addon-icon-tile addon-icon-tile--${item.theme || 'blue'}">
+                    <i data-feather="${item.icon || 'package'}"></i>
+                </div>
                 <div class="active-addon-info">
                     <p class="active-addon-name">${item.name}</p>
                     <p class="active-addon-price">${fmtCurrency(item.price)} / month</p>
                 </div>
-                <span class="neutral-badge">ACTIVE</span>
+                <span class="badge-status-active">ACTIVE</span>
             </div>
         `).join('');
 
@@ -416,12 +431,15 @@
                 ? `<button type="button" class="btn-plain btn-plain-ghost btn-plain-sm" disabled style="opacity: 0.85;">
                        <i data-feather="check"></i> <span>Active</span>
                    </button>`
-                : `<button type="button" class="btn-plain btn-plain-secondary btn-plain-sm btn-add-addon" data-addon-id="${addon.id}">
+                : `<button type="button" class="btn-plain btn-plain-accent btn-plain-sm btn-add-addon" data-addon-id="${addon.id}">
                        <i data-feather="plus"></i> <span>Add</span>
                    </button>`;
 
             return `
                 <div class="available-addon-card">
+                    <div class="addon-icon-tile addon-icon-tile--${addon.theme || 'blue'}">
+                        <i data-feather="${addon.icon || 'package'}"></i>
+                    </div>
                     <div class="available-addon-main">
                         <div class="available-addon-title-row">
                             <h4 class="available-addon-title">${addon.name}</h4>
@@ -634,11 +652,14 @@
         } else {
             modalManageAddonsList.innerHTML = activeItems.map(item => `
                 <div class="active-addon-row">
+                    <div class="addon-icon-tile addon-icon-tile--${item.theme || 'blue'}">
+                        <i data-feather="${item.icon || 'package'}"></i>
+                    </div>
                     <div class="active-addon-info">
                         <p class="active-addon-name">${item.name}</p>
                         <p class="active-addon-price">${fmtCurrency(item.price)} / month</p>
                     </div>
-                    <button type="button" class="btn-plain btn-plain-ghost btn-plain-sm btn-remove-addon" data-remove-id="${item.id}">
+                    <button type="button" class="btn-plain btn-plain-danger-ghost btn-plain-sm btn-remove-addon" data-remove-id="${item.id}">
                         Remove
                     </button>
                 </div>
