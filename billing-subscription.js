@@ -513,93 +513,116 @@
 
     function renderPaymentMethod() {
         const visual = document.getElementById('paymentCardVisual');
+        const modalVisual = document.getElementById('modalCurrentPaymentCardVisual');
         const pm = state.paymentMethod;
+
+        let visualClass = 'payment-card-visual';
+        let visualHtml = '';
 
         if (pm.type === 'upi') {
             if (cardNetworkLabel) cardNetworkLabel.textContent = 'UPI AUTOPAY';
-            if (visual) {
-                visual.className = 'payment-card-visual payment-card-visual--upi';
-                visual.innerHTML = `
-                    <div class="payment-card-top">
-                        <div style="display: flex; align-items: center; gap: 8px;">
-                            <span style="font-size: 1.15rem; font-weight: 800; letter-spacing: 0.05em; color: #ffffff;">UPI</span>
-                            <span style="font-size: 0.76rem; background: rgba(255,255,255,0.2); padding: 2px 7px; border-radius: 4px; font-weight: 600;">AUTOPAY</span>
-                        </div>
-                        <span class="card-network-label" style="background: rgba(255,255,255,0.15); color: #ffffff; padding: 2px 8px; border-radius: 4px;">${pm.upiApp || 'Google Pay'}</span>
+            visualClass = 'payment-card-visual payment-card-visual--upi';
+            visualHtml = `
+                <div class="payment-card-top">
+                    <div style="display: flex; align-items: center; gap: 8px;">
+                        <span style="font-size: 1.15rem; font-weight: 800; letter-spacing: 0.05em; color: #ffffff;">UPI</span>
+                        <span style="font-size: 0.76rem; background: rgba(255,255,255,0.2); padding: 2px 7px; border-radius: 4px; font-weight: 600;">AUTOPAY</span>
                     </div>
-                    <div class="payment-card-number" style="font-family: inherit; font-size: 1.15rem; letter-spacing: 0.03em; word-break: break-all;">
-                        ${pm.upiId || 'salonadmin@okhdfcbank'}
+                    <span class="card-network-label" style="background: rgba(255,255,255,0.15); color: #ffffff; padding: 2px 8px; border-radius: 4px;">${pm.upiApp || 'Google Pay'}</span>
+                </div>
+                <div class="payment-card-number" style="font-family: inherit; font-size: 1.15rem; letter-spacing: 0.03em; word-break: break-all;">
+                    ${pm.upiId || 'salonadmin@okhdfcbank'}
+                </div>
+                <div class="payment-card-meta">
+                    <div>
+                        <span class="meta-field-label">Account Holder</span>
+                        <span class="meta-field-value">${pm.holder || 'Admin User'}</span>
                     </div>
-                    <div class="payment-card-meta">
-                        <div>
-                            <span class="meta-field-label">Account Holder</span>
-                            <span class="meta-field-value">${pm.holder || 'Admin User'}</span>
-                        </div>
-                        <div style="text-align: right;">
-                            <span class="meta-field-label">Status</span>
-                            <span class="meta-field-value" style="color: #4ade80; font-weight: 700;">Active Mandate</span>
-                        </div>
+                    <div style="text-align: right;">
+                        <span class="meta-field-label">Status</span>
+                        <span class="meta-field-value" style="color: #4ade80; font-weight: 700;">Active Mandate</span>
                     </div>
-                `;
-            }
+                </div>
+            `;
         } else if (pm.type === 'netbanking') {
             if (cardNetworkLabel) cardNetworkLabel.textContent = 'NET BANKING (e-NACH)';
-            if (visual) {
-                visual.className = 'payment-card-visual payment-card-visual--netbanking';
-                visual.innerHTML = `
-                    <div class="payment-card-top">
-                        <div style="display: flex; align-items: center; gap: 8px;">
-                            <i data-feather="home" style="width: 18px; height: 18px; color: #ffffff;"></i>
-                            <span style="font-size: 1.05rem; font-weight: 800; letter-spacing: 0.04em; color: #ffffff;">${pm.bankName || 'HDFC Bank'}</span>
-                        </div>
-                        <span class="card-network-label" style="background: rgba(255,255,255,0.15); color: #ffffff; padding: 2px 8px; border-radius: 4px;">e-Mandate</span>
+            visualClass = 'payment-card-visual payment-card-visual--netbanking';
+            visualHtml = `
+                <div class="payment-card-top">
+                    <div style="display: flex; align-items: center; gap: 8px;">
+                        <i data-feather="home" style="width: 18px; height: 18px; color: #ffffff;"></i>
+                        <span style="font-size: 1.05rem; font-weight: 800; letter-spacing: 0.04em; color: #ffffff;">${pm.bankName || 'HDFC Bank'}</span>
                     </div>
-                    <div class="payment-card-number" style="font-family: inherit; font-size: 1.05rem; letter-spacing: 0.05em;">
-                        Mandate ID: •••• 8492
+                    <span class="card-network-label" style="background: rgba(255,255,255,0.15); color: #ffffff; padding: 2px 8px; border-radius: 4px;">e-Mandate</span>
+                </div>
+                <div class="payment-card-number" style="font-family: inherit; font-size: 1.05rem; letter-spacing: 0.05em;">
+                    Mandate ID: •••• 8492
+                </div>
+                <div class="payment-card-meta">
+                    <div>
+                        <span class="meta-field-label">Account Holder</span>
+                        <span class="meta-field-value">${pm.holder || 'Admin User'}</span>
                     </div>
-                    <div class="payment-card-meta">
-                        <div>
-                            <span class="meta-field-label">Account Holder</span>
-                            <span class="meta-field-value">${pm.holder || 'Admin User'}</span>
-                        </div>
-                        <div style="text-align: right;">
-                            <span class="meta-field-label">Auto-Debit</span>
-                            <span class="meta-field-value" style="color: #4ade80; font-weight: 700;">e-NACH Verified</span>
-                        </div>
+                    <div style="text-align: right;">
+                        <span class="meta-field-label">Auto-Debit</span>
+                        <span class="meta-field-value" style="color: #4ade80; font-weight: 700;">e-NACH Verified</span>
                     </div>
-                `;
-                if (window.feather) feather.replace();
-            }
+                </div>
+            `;
         } else {
             // Default Card
             if (cardNetworkLabel) cardNetworkLabel.textContent = (pm.brand || 'VISA') + ' / MASTERCARD';
-            if (visual) {
-                visual.className = 'payment-card-visual';
-                visual.innerHTML = `
-                    <div class="payment-card-top">
-                        <div class="card-chip-plain"></div>
-                        <div style="display: flex; align-items: center; gap: 8px;">
-                            <svg viewBox="0 0 38 24" height="20" xmlns="http://www.w3.org/2000/svg">
-                                <circle cx="14" cy="12" r="9" fill="#ef4444" opacity="0.9" />
-                                <circle cx="24" cy="12" r="9" fill="#f59e0b" opacity="0.9" />
-                            </svg>
-                            <span class="card-network-label">${pm.brand || 'MASTERCARD'}</span>
-                        </div>
+            visualClass = 'payment-card-visual';
+            visualHtml = `
+                <div class="payment-card-top">
+                    <div class="card-chip-plain"></div>
+                    <div style="display: flex; align-items: center; gap: 8px;">
+                        <svg viewBox="0 0 38 24" height="20" xmlns="http://www.w3.org/2000/svg">
+                            <circle cx="14" cy="12" r="9" fill="#ef4444" opacity="0.9" />
+                            <circle cx="24" cy="12" r="9" fill="#f59e0b" opacity="0.9" />
+                        </svg>
+                        <span class="card-network-label">${pm.brand || 'MASTERCARD'}</span>
                     </div>
-                    <div class="payment-card-number">${pm.cardMask || '•••• •••• •••• 4242'}</div>
-                    <div class="payment-card-meta">
-                        <div>
-                            <span class="meta-field-label">Card Holder</span>
-                            <span class="meta-field-value">${pm.holder || 'Admin User'}</span>
-                        </div>
-                        <div style="text-align: right;">
-                            <span class="meta-field-label">Expires</span>
-                            <span class="meta-field-value">${pm.expiry || '09 / 2028'}</span>
-                        </div>
+                </div>
+                <div class="payment-card-number">${pm.cardMask || '•••• •••• •••• 4242'}</div>
+                <div class="payment-card-meta">
+                    <div>
+                        <span class="meta-field-label">Card Holder</span>
+                        <span class="meta-field-value">${pm.holder || 'Admin User'}</span>
                     </div>
-                `;
-            }
+                    <div style="text-align: right;">
+                        <span class="meta-field-label">Expires</span>
+                        <span class="meta-field-value">${pm.expiry || '09 / 2028'}</span>
+                    </div>
+                </div>
+            `;
         }
+
+        if (visual) {
+            visual.className = visualClass;
+            visual.innerHTML = visualHtml;
+        }
+
+        if (modalVisual) {
+            modalVisual.className = visualClass;
+            modalVisual.innerHTML = visualHtml;
+        }
+
+        // Update modal left-column metadata
+        const modalCurrentPlanName = document.getElementById('modalCurrentPlanName');
+        const modalCurrentNextBilling = document.getElementById('modalCurrentNextBilling');
+        const modalCurrentAmount = document.getElementById('modalCurrentAmount');
+
+        if (modalCurrentPlanName) modalCurrentPlanName.textContent = `${state.plan.name} Plan`;
+        if (modalCurrentNextBilling) modalCurrentNextBilling.textContent = state.plan.nextBillingDate || '09 Oct 2026';
+        if (modalCurrentAmount) {
+            const activeItems = getActiveAddons();
+            const basePlanCost = state.currentMode === 'noplan' ? 0 : state.plan.price;
+            const subtotal = basePlanCost + activeItems.reduce((acc, cur) => acc + cur.price, 0);
+            const total = subtotal + Math.round(subtotal * 0.18);
+            modalCurrentAmount.textContent = `${fmtCurrency(total)} / mo`;
+        }
+
         if (window.feather) feather.replace();
     }
 
@@ -1123,6 +1146,7 @@
             if (inputCardCvv) inputCardCvv.value = '';
             if (inputUpiId) inputUpiId.value = pm.upiId || 'salonadmin@okhdfcbank';
 
+            renderPaymentMethod();
             openModal(modalChangePayment);
         });
     }

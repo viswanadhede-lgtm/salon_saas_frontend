@@ -1602,8 +1602,8 @@
    ------------------------------------------------------------ */
 
 .billing-modal-box--payment {
-    max-width: 880px;
-    width: 92vw;
+    max-width: 1080px;
+    width: 95vw;
     animation: modal-pop 0.22s ease-out;
 }
 
@@ -1643,6 +1643,130 @@
 .billing-modal-box--payment .billing-modal-footer .btn-plain {
     padding: 11px 22px;
     font-size: 0.95rem;
+}
+
+/* Two-Column Payment Modal Layout */
+.payment-modal-layout {
+    display: grid;
+    grid-template-columns: 360px 1fr;
+    gap: 2.2rem;
+    align-items: start;
+}
+
+.payment-modal-col {
+    display: flex;
+    flex-direction: column;
+    gap: 1.15rem;
+}
+
+.payment-modal-col--current {
+    background: #f8fafc;
+    border: 1.5px solid var(--border-subtle);
+    border-radius: var(--radius-md);
+    padding: 1.35rem 1.4rem;
+}
+
+.payment-modal-col-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: 0.75rem;
+    margin-bottom: 0.25rem;
+}
+
+.payment-col-title {
+    font-size: 1.05rem;
+    font-weight: 700;
+    color: var(--text-primary);
+    margin: 0;
+}
+
+.payment-col-subtitle {
+    font-size: 0.82rem;
+    color: var(--text-muted);
+    margin: 3px 0 0 0;
+    line-height: 1.35;
+}
+
+.payment-status-badge {
+    background: #dcfce7;
+    color: #15803d;
+    font-size: 0.7rem;
+    font-weight: 800;
+    padding: 4px 9px;
+    border-radius: 9999px;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    white-space: nowrap;
+    border: 1px solid rgba(22, 163, 74, 0.25);
+    flex-shrink: 0;
+}
+
+.modal-current-card-wrap {
+    width: 100%;
+}
+
+.modal-current-card-wrap .payment-card-visual {
+    box-shadow: 0 8px 20px rgba(15, 23, 42, 0.12);
+    min-height: 175px;
+}
+
+.current-payment-meta-box {
+    background: #ffffff;
+    border: 1px solid var(--border-subtle);
+    border-radius: var(--radius-sm);
+    padding: 0.9rem 1.1rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.65rem;
+}
+
+.current-meta-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-size: 0.85rem;
+}
+
+.current-meta-label {
+    color: var(--text-muted);
+    font-weight: 500;
+}
+
+.current-meta-val {
+    color: var(--text-primary);
+    font-weight: 600;
+}
+
+.current-meta-val--price {
+    color: var(--brand-blue);
+    font-weight: 700;
+}
+
+.current-payment-notice {
+    background: var(--brand-blue-subtle);
+    border: 1px solid var(--brand-blue-border);
+    border-radius: var(--radius-sm);
+    padding: 0.85rem 1rem;
+    font-size: 0.82rem;
+    color: var(--text-secondary);
+    display: flex;
+    gap: 8px;
+    align-items: flex-start;
+    line-height: 1.4;
+}
+
+.current-payment-notice svg {
+    width: 15px;
+    height: 15px;
+    stroke: var(--brand-blue);
+    flex-shrink: 0;
+    margin-top: 2px;
+}
+
+.payment-modal-col--new {
+    display: flex;
+    flex-direction: column;
 }
 
 .payment-method-tabs {
@@ -1920,10 +2044,14 @@
     flex-shrink: 0;
 }
 
-@media (max-width: 860px) {
+@media (max-width: 980px) {
     .billing-modal-box--payment {
         max-width: 100%;
-        width: 95vw;
+        width: 96vw;
+    }
+    .payment-modal-layout {
+        grid-template-columns: 1fr;
+        gap: 1.5rem;
     }
     .bank-selector-grid {
         grid-template-columns: repeat(3, 1fr);
