@@ -548,12 +548,20 @@
                             <span class="billing-info-value" id="infoGstin">37ABCDE1234F1Z5</span>
                         </div>
                         <div class="billing-info-field">
+                            <span class="billing-info-label">PAN</span>
+                            <span class="billing-info-value" id="infoPan">ABCDE1234F</span>
+                        </div>
+                        <div class="billing-info-field">
                             <span class="billing-info-label">Billing Email</span>
                             <span class="billing-info-value" id="infoBillingEmail">billing@salonabc.com</span>
                         </div>
                         <div class="billing-info-field">
+                            <span class="billing-info-label">Billing Phone</span>
+                            <span class="billing-info-value" id="infoBillingPhone">+91 98765 43210</span>
+                        </div>
+                        <div class="billing-info-field billing-info-field--full">
                             <span class="billing-info-label">Billing Address</span>
-                            <span class="billing-info-value" id="infoBillingAddress">Machilipatnam, Andhra Pradesh, India</span>
+                            <span class="billing-info-value" id="infoBillingAddress">Main Road, Machilipatnam, Andhra Pradesh - 521001, India</span>
                         </div>
                     </div>
 
@@ -670,27 +678,113 @@
 
     <!-- Modal 4: Edit Billing Information Modal -->
     <div class="billing-modal-overlay" id="modalEditBilling">
-        <div class="billing-modal-box billing-modal-box--wide">
+        <div class="billing-modal-box billing-modal-box--edit-billing">
             <div class="billing-modal-header">
-                <h3 class="billing-modal-title">Edit Billing Information</h3>
+                <div>
+                    <h3 class="billing-modal-title">Edit Billing Information</h3>
+                    <p class="billing-modal-subtitle">
+                        Update the business and tax information used for subscription invoices and receipts.
+                    </p>
+                </div>
                 <button type="button" class="billing-modal-close" data-close-modal><i data-feather="x"></i></button>
             </div>
             <div class="billing-modal-body">
-                <div class="modal-form-group">
-                    <label class="modal-form-label" for="inputLegalName">Legal Business Name</label>
-                    <input type="text" id="inputLegalName" class="modal-form-input" placeholder="e.g. BharathBots Technologies">
+                <!-- Section 1: Business & Tax -->
+                <div class="modal-form-section">
+                    <div class="modal-form-section-header">
+                        <span class="modal-form-section-title">Business &amp; Tax</span>
+                        <span class="modal-form-section-hint">Used for GST compliance &amp; B2B invoices</span>
+                    </div>
+                    <div class="modal-form-group">
+                        <label class="modal-form-label" for="inputLegalName">
+                            Legal Business Name <span class="required-star">*</span>
+                        </label>
+                        <input type="text" id="inputLegalName" class="modal-form-input" placeholder="e.g. Salon ABC Private Limited" required>
+                    </div>
+                    <div class="modal-form-row-2col">
+                        <div class="modal-form-group">
+                            <label class="modal-form-label" for="inputGstin">GSTIN</label>
+                            <input type="text" id="inputGstin" class="modal-form-input modal-form-input--mono" placeholder="e.g. 37ABCDE1234F1Z5" maxlength="15">
+                        </div>
+                        <div class="modal-form-group">
+                            <label class="modal-form-label" for="inputPan">PAN</label>
+                            <input type="text" id="inputPan" class="modal-form-input modal-form-input--mono" placeholder="e.g. ABCDE1234F" maxlength="10">
+                        </div>
+                    </div>
                 </div>
-                <div class="modal-form-group">
-                    <label class="modal-form-label" for="inputGstin">GSTIN</label>
-                    <input type="text" id="inputGstin" class="modal-form-input" placeholder="e.g. 37AAAAA0000A1Z5">
+
+                <!-- Section 2: Billing Contact -->
+                <div class="modal-form-section">
+                    <div class="modal-form-section-header">
+                        <span class="modal-form-section-title">Billing Contact</span>
+                        <span class="modal-form-section-hint">Recipients for renewal invoices &amp; alerts</span>
+                    </div>
+                    <div class="modal-form-row-2col">
+                        <div class="modal-form-group">
+                            <label class="modal-form-label" for="inputBillingEmail">
+                                Billing Email <span class="required-star">*</span>
+                            </label>
+                            <input type="email" id="inputBillingEmail" class="modal-form-input" placeholder="e.g. billing@salonabc.com" required>
+                        </div>
+                        <div class="modal-form-group">
+                            <label class="modal-form-label" for="inputBillingPhone">
+                                Billing Phone
+                            </label>
+                            <input type="tel" id="inputBillingPhone" class="modal-form-input" placeholder="e.g. +91 98765 43210">
+                        </div>
+                    </div>
                 </div>
-                <div class="modal-form-group">
-                    <label class="modal-form-label" for="inputBillingEmail">Billing Email</label>
-                    <input type="email" id="inputBillingEmail" class="modal-form-input" placeholder="e.g. billing@example.com">
-                </div>
-                <div class="modal-form-group">
-                    <label class="modal-form-label" for="inputBillingAddress">Billing Address</label>
-                    <textarea id="inputBillingAddress" class="modal-form-input" style="min-height: 80px; resize: vertical;" placeholder="Enter legal business address"></textarea>
+
+                <!-- Section 3: Billing Address -->
+                <div class="modal-form-section">
+                    <div class="modal-form-section-header">
+                        <span class="modal-form-section-title">Billing Address</span>
+                        <span class="modal-form-section-hint">Structured fields for invoice formatting</span>
+                    </div>
+                    <div class="modal-form-group">
+                        <label class="modal-form-label" for="inputAddressLine1">
+                            Address Line 1 <span class="required-star">*</span>
+                        </label>
+                        <input type="text" id="inputAddressLine1" class="modal-form-input" placeholder="Shop / suite / building number, main road" required>
+                    </div>
+                    <div class="modal-form-group">
+                        <label class="modal-form-label" for="inputAddressLine2">
+                            Address Line 2
+                        </label>
+                        <input type="text" id="inputAddressLine2" class="modal-form-input" placeholder="Near landmark, sector, floor (optional)">
+                    </div>
+                    <div class="modal-form-row-2col">
+                        <div class="modal-form-group">
+                            <label class="modal-form-label" for="inputCity">
+                                City <span class="required-star">*</span>
+                            </label>
+                            <input type="text" id="inputCity" class="modal-form-input" placeholder="e.g. Machilipatnam" required>
+                        </div>
+                        <div class="modal-form-group">
+                            <label class="modal-form-label" for="inputDistrict">
+                                District
+                            </label>
+                            <input type="text" id="inputDistrict" class="modal-form-input" placeholder="e.g. Krishna">
+                        </div>
+                    </div>
+                    <div class="modal-form-row-3col">
+                        <div class="modal-form-group">
+                            <label class="modal-form-label" for="inputState">
+                                State <span class="required-star">*</span>
+                            </label>
+                            <input type="text" id="inputState" class="modal-form-input" placeholder="e.g. Andhra Pradesh" required>
+                        </div>
+                        <div class="modal-form-group">
+                            <label class="modal-form-label" for="inputPincode">
+                                PIN Code <span class="required-star">*</span>
+                            </label>
+                            <input type="text" id="inputPincode" class="modal-form-input modal-form-input--mono" placeholder="521001" maxlength="6" required>
+                        </div>
+                        <div class="modal-form-group">
+                            <label class="modal-form-label" for="inputCountry">Country</label>
+                            <input type="text" id="inputCountry" class="modal-form-input" value="India" readonly style="background: #f8fafc; color: var(--text-secondary); cursor: not-allowed;">
+                        </div>
+                    </div>
                 </div>
             </div>
             <div class="billing-modal-footer">

@@ -938,8 +938,8 @@
 
 .billing-info-grid {
     display: grid;
-    grid-template-columns: repeat(4, 1fr);
-    gap: 1.25rem;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 1.25rem 1.6rem;
     background: #f8fafc;
     border: 1px solid var(--border-subtle);
     border-radius: var(--radius-md);
@@ -950,6 +950,13 @@
     display: flex;
     flex-direction: column;
     gap: 5px;
+}
+
+.billing-info-field--full {
+    grid-column: 1 / -1;
+    border-top: 1px dashed var(--border-strong);
+    padding-top: 0.85rem;
+    margin-top: 0.25rem;
 }
 
 .billing-info-label {
@@ -1246,6 +1253,100 @@
     outline: none;
     border-color: var(--brand-blue);
     box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.12);
+}
+
+/* Monospace modifier for GSTIN / PAN / Pincode */
+.modal-form-input--mono {
+    font-family: 'SF Mono', 'Fira Mono', 'Consolas', monospace;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+}
+
+/* Required field red asterisk */
+.required-star {
+    color: #ef4444;
+    font-weight: 700;
+    margin-left: 1px;
+}
+
+/* Billing Modal Subtitle */
+.billing-modal-subtitle {
+    font-size: 0.84rem;
+    color: var(--text-muted);
+    font-weight: 500;
+    margin: 4px 0 0 0;
+    line-height: 1.4;
+}
+
+/* ── Edit Billing Information Modal ────────────────────────── */
+
+.billing-modal-box--edit-billing {
+    max-width: 680px;
+    width: 95vw;
+}
+
+.billing-modal-box--edit-billing .billing-modal-body {
+    max-height: calc(80vh - 160px);
+    overflow-y: auto;
+    gap: 0;
+    padding: 0;
+}
+
+/* Section grouping */
+.modal-form-section {
+    display: flex;
+    flex-direction: column;
+    gap: 0.85rem;
+    padding: 1.35rem 1.6rem;
+    border-bottom: 1px solid var(--border-subtle);
+}
+
+.modal-form-section:last-child {
+    border-bottom: none;
+}
+
+.modal-form-section-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    margin-bottom: 0.25rem;
+}
+
+.modal-form-section-title {
+    font-size: 0.88rem;
+    font-weight: 700;
+    color: var(--text-primary);
+    letter-spacing: -0.01em;
+}
+
+.modal-form-section-hint {
+    font-size: 0.74rem;
+    font-weight: 500;
+    color: var(--text-muted);
+    font-style: italic;
+}
+
+/* Multi-column form rows */
+.modal-form-row-2col {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 0.85rem;
+}
+
+.modal-form-row-3col {
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr;
+    gap: 0.85rem;
+}
+
+@media (max-width: 600px) {
+    .modal-form-row-2col,
+    .modal-form-row-3col {
+        grid-template-columns: 1fr;
+    }
+    .billing-info-grid {
+        grid-template-columns: 1fr;
+    }
 }
 
 /* Modal callout info */

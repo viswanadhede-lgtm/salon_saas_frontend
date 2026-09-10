@@ -127,8 +127,16 @@
         billingInfo: {
             legalName: 'Salon ABC',
             gstin: '37ABCDE1234F1Z5',
+            pan: 'ABCDE1234F',
             email: 'billing@salonabc.com',
-            address: 'Main Road, Machilipatnam, Andhra Pradesh - 521001, India'
+            phone: '+91 98765 43210',
+            addressLine1: 'Main Road',
+            addressLine2: '',
+            city: 'Machilipatnam',
+            district: 'Krishna',
+            state: 'Andhra Pradesh',
+            pincode: '521001',
+            country: 'India'
         },
         paymentHistory: [
             {
@@ -241,7 +249,9 @@
     // Row 5: Billing Info
     const infoBusinessName = document.getElementById('infoBusinessName');
     const infoGstin = document.getElementById('infoGstin');
+    const infoPan = document.getElementById('infoPan');
     const infoBillingEmail = document.getElementById('infoBillingEmail');
+    const infoBillingPhone = document.getElementById('infoBillingPhone');
     const infoBillingAddress = document.getElementById('infoBillingAddress');
 
     // Bottom
@@ -269,8 +279,16 @@
     const modalEditBilling = document.getElementById('modalEditBilling');
     const inputLegalName = document.getElementById('inputLegalName');
     const inputGstin = document.getElementById('inputGstin');
+    const inputPan = document.getElementById('inputPan');
     const inputBillingEmail = document.getElementById('inputBillingEmail');
-    const inputBillingAddress = document.getElementById('inputBillingAddress');
+    const inputBillingPhone = document.getElementById('inputBillingPhone');
+    const inputAddressLine1 = document.getElementById('inputAddressLine1');
+    const inputAddressLine2 = document.getElementById('inputAddressLine2');
+    const inputCity = document.getElementById('inputCity');
+    const inputDistrict = document.getElementById('inputDistrict');
+    const inputState = document.getElementById('inputState');
+    const inputPincode = document.getElementById('inputPincode');
+    const inputCountry = document.getElementById('inputCountry');
     const btnSaveBillingInfo = document.getElementById('btnSaveBillingInfo');
 
     const modalChangePayment = document.getElementById('modalChangePayment');
@@ -710,11 +728,27 @@
         });
     }
 
+    function formatBillingAddress(info) {
+        const parts = [];
+        if (info.addressLine1) parts.push(info.addressLine1);
+        if (info.addressLine2) parts.push(info.addressLine2);
+        if (info.city) parts.push(info.city);
+        if (info.district) parts.push(info.district);
+        let statePin = '';
+        if (info.state) statePin = info.state;
+        if (info.pincode) statePin += ` - ${info.pincode}`;
+        if (statePin) parts.push(statePin);
+        if (info.country) parts.push(info.country);
+        return parts.join(', ');
+    }
+
     function renderBillingInfo() {
-        infoBusinessName.textContent = state.billingInfo.legalName;
-        infoGstin.textContent = state.billingInfo.gstin;
-        infoBillingEmail.textContent = state.billingInfo.email;
-        infoBillingAddress.textContent = state.billingInfo.address;
+        if (infoBusinessName) infoBusinessName.textContent = state.billingInfo.legalName;
+        if (infoGstin) infoGstin.textContent = state.billingInfo.gstin;
+        if (infoPan) infoPan.textContent = state.billingInfo.pan || '—';
+        if (infoBillingEmail) infoBillingEmail.textContent = state.billingInfo.email;
+        if (infoBillingPhone) infoBillingPhone.textContent = state.billingInfo.phone || '—';
+        if (infoBillingAddress) infoBillingAddress.textContent = formatBillingAddress(state.billingInfo);
     }
 
     function renderSubscriptionManagement() {
@@ -1039,20 +1073,36 @@
     const btnOpenEditBilling = document.getElementById('btnOpenEditBilling');
     if (btnOpenEditBilling) {
         btnOpenEditBilling.addEventListener('click', function () {
-            inputLegalName.value = state.billingInfo.legalName;
-            inputGstin.value = state.billingInfo.gstin;
-            inputBillingEmail.value = state.billingInfo.email;
-            inputBillingAddress.value = state.billingInfo.address;
+            if (inputLegalName) inputLegalName.value = state.billingInfo.legalName || '';
+            if (inputGstin) inputGstin.value = state.billingInfo.gstin || '';
+            if (inputPan) inputPan.value = state.billingInfo.pan || '';
+            if (inputBillingEmail) inputBillingEmail.value = state.billingInfo.email || '';
+            if (inputBillingPhone) inputBillingPhone.value = state.billingInfo.phone || '';
+            if (inputAddressLine1) inputAddressLine1.value = state.billingInfo.addressLine1 || '';
+            if (inputAddressLine2) inputAddressLine2.value = state.billingInfo.addressLine2 || '';
+            if (inputCity) inputCity.value = state.billingInfo.city || '';
+            if (inputDistrict) inputDistrict.value = state.billingInfo.district || '';
+            if (inputState) inputState.value = state.billingInfo.state || '';
+            if (inputPincode) inputPincode.value = state.billingInfo.pincode || '';
+            if (inputCountry) inputCountry.value = state.billingInfo.country || 'India';
             openModal(modalEditBilling);
         });
     }
 
     if (btnSaveBillingInfo) {
         btnSaveBillingInfo.addEventListener('click', function () {
-            state.billingInfo.legalName = inputLegalName.value.trim() || state.billingInfo.legalName;
-            state.billingInfo.gstin = inputGstin.value.trim() || state.billingInfo.gstin;
-            state.billingInfo.email = inputBillingEmail.value.trim() || state.billingInfo.email;
-            state.billingInfo.address = inputBillingAddress.value.trim() || state.billingInfo.address;
+            state.billingInfo.legalName = (inputLegalName && inputLegalName.value.trim()) || state.billingInfo.legalName;
+            state.billingInfo.gstin = (inputGstin && inputGstin.value.trim()) || state.billingInfo.gstin;
+            state.billingInfo.pan = inputPan ? inputPan.value.trim().toUpperCase() : state.billingInfo.pan;
+            state.billingInfo.email = (inputBillingEmail && inputBillingEmail.value.trim()) || state.billingInfo.email;
+            state.billingInfo.phone = inputBillingPhone ? inputBillingPhone.value.trim() : state.billingInfo.phone;
+            state.billingInfo.addressLine1 = (inputAddressLine1 && inputAddressLine1.value.trim()) || state.billingInfo.addressLine1;
+            state.billingInfo.addressLine2 = inputAddressLine2 ? inputAddressLine2.value.trim() : '';
+            state.billingInfo.city = (inputCity && inputCity.value.trim()) || state.billingInfo.city;
+            state.billingInfo.district = inputDistrict ? inputDistrict.value.trim() : '';
+            state.billingInfo.state = (inputState && inputState.value.trim()) || state.billingInfo.state;
+            state.billingInfo.pincode = (inputPincode && inputPincode.value.trim()) || state.billingInfo.pincode;
+            state.billingInfo.country = (inputCountry && inputCountry.value.trim()) || 'India';
 
             closeModal(modalEditBilling);
             renderBillingInfo();
@@ -1347,7 +1397,7 @@
                     <span class="invoice-bill-to-label">BILL TO</span>
                 </div>
                 <p class="invoice-customer-name">${state.billingInfo.legalName || 'Salon ABC'}</p>
-                <p class="invoice-customer-detail">${state.billingInfo.address || 'Machilipatnam, Andhra Pradesh, India'}</p>
+                <p class="invoice-customer-detail">${formatBillingAddress(state.billingInfo)}</p>
                 <div class="invoice-customer-meta-row">
                     <span>GSTIN: <strong>${state.billingInfo.gstin || '37ABCDE1234F1Z5'}</strong></span>
                     ${state.billingInfo.email ? `<span style="margin-left: 14px;">Email: <strong>${state.billingInfo.email}</strong></span>` : ''}
