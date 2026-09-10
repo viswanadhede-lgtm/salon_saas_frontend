@@ -1286,7 +1286,7 @@
 }
 
 .billing-modal-box--edit-billing .billing-modal-body {
-    max-height: calc(80vh - 160px);
+    max-height: calc(88vh - 160px);
     overflow-y: auto;
     gap: 0;
     padding: 0;
