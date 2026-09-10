@@ -329,7 +329,8 @@
             planStatusPill.className = 'status-pill is-active';
             planStatusText.textContent = 'Active';
 
-            planSubNotice.style.display = 'none';
+            planSubNotice.style.display = 'block';
+            planSubNotice.textContent = 'Your current plan and subscription details';
 
             metaStatus.textContent = 'Active';
             metaStartDate.textContent = state.plan.startDate;
