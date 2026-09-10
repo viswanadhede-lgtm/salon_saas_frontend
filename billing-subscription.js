@@ -228,6 +228,19 @@
 
     const modalManageAddons = document.getElementById('modalManageAddons');
     const modalManageAddonsList = document.getElementById('modalManageAddonsList');
+    const modalCurrentAddonsTotal = document.getElementById('modalCurrentAddonsTotal');
+    const modalSelectedAddonsTotal = document.getElementById('modalSelectedAddonsTotal');
+    const btnCancelManageAddons = document.getElementById('btnCancelManageAddons');
+    const btnSaveManageAddons = document.getElementById('btnSaveManageAddons');
+    const btnCloseManageAddons = document.getElementById('btnCloseManageAddons');
+
+    const modalReviewAddons = document.getElementById('modalReviewAddons');
+    const reviewAddonsChangesContainer = document.getElementById('reviewAddonsChangesContainer');
+    const reviewCurrentAddonsTotal = document.getElementById('reviewCurrentAddonsTotal');
+    const reviewNewAddonsTotal = document.getElementById('reviewNewAddonsTotal');
+    const btnBackReviewAddons = document.getElementById('btnBackReviewAddons');
+    const btnConfirmReviewChanges = document.getElementById('btnConfirmReviewChanges');
+    const btnCloseReviewAddons = document.getElementById('btnCloseReviewAddons');
 
     const modalCancelSub = document.getElementById('modalCancelSub');
     const cancelModalPlanName = document.getElementById('cancelModalPlanName');
@@ -627,44 +640,221 @@
         });
     }
 
-    // Modal 2: Manage Active Add-ons
-    function openManageAddonsModal() {
-        const activeItems = getActiveAddons();
+    // ── Modal 2 & 2B: Manage Add-ons & Review Changes (Frontend-Only Prototype) ───
+    let localSelectedAddonIds = [];
+    let initialActiveAddonIds = [];
 
-        if (activeItems.length === 0) {
-            modalManageAddonsList.innerHTML = `
-                <div class="empty-neutral-state">
-                    No active add-ons to manage.
+    function calcAddonsTotal(addonIdList) {
+        return addonIdList.reduce((acc, id) => {
+            const addon = CATALOG_ADDONS.find(a => a.id === id);
+            return acc + (addon ? addon.price : 0);
+        }, 0);
+    }
+
+    function renderManageAddonsList() {
+        if (!modalManageAddonsList) return;
+
+        modalManageAddonsList.innerHTML = CATALOG_ADDONS.map(addon => {
+            const isSelected = localSelectedAddonIds.includes(addon.id);
+            const isOriginallyActive = initialActiveAddonIds.includes(addon.id);
+            const statusLabel = isOriginallyActive ? 'Active' : 'Available';
+            const statusPillClass = isOriginallyActive ? 'manage-addon-status-pill--active' : 'manage-addon-status-pill--available';
+
+            return `
+                <div class="manage-addon-item ${isSelected ? 'is-selected' : ''}" data-addon-id="${addon.id}">
+                    <div class="manage-addon-checkbox-wrap">
+                        <input type="checkbox" class="manage-addon-checkbox" id="chk_addon_${addon.id}" ${isSelected ? 'checked' : ''} data-addon-id="${addon.id}">
+                    </div>
+                    <div class="addon-icon-tile addon-icon-tile--${addon.theme || 'blue'}">
+                        <i data-feather="${addon.icon || 'package'}"></i>
+                    </div>
+                    <div class="manage-addon-content">
+                        <div class="manage-addon-header-row">
+                            <label for="chk_addon_${addon.id}" class="manage-addon-name" style="cursor: pointer;">${addon.name}</label>
+                            <span class="manage-addon-status-pill ${statusPillClass}">${statusLabel}</span>
+                        </div>
+                        <p class="manage-addon-desc">${addon.desc}</p>
+                        <div class="manage-addon-meta-row">
+                            <span class="manage-addon-price">${fmtCurrency(addon.price)} / month</span>
+                        </div>
+                    </div>
                 </div>
             `;
-        } else {
-            modalManageAddonsList.innerHTML = activeItems.map(item => `
-                <div class="active-addon-row">
-                    <div class="addon-icon-tile addon-icon-tile--${item.theme || 'blue'}">
-                        <i data-feather="${item.icon || 'package'}"></i>
-                    </div>
-                    <div class="active-addon-info">
-                        <p class="active-addon-name">${item.name}</p>
-                        <p class="active-addon-price">${fmtCurrency(item.price)} / month</p>
-                    </div>
-                    <button type="button" class="btn-plain btn-plain-danger-ghost btn-plain-sm btn-remove-addon" data-remove-id="${item.id}">
-                        Remove
-                    </button>
-                </div>
-            `).join('');
+        }).join('');
 
-            modalManageAddonsList.querySelectorAll('.btn-remove-addon').forEach(btn => {
-                btn.addEventListener('click', function () {
-                    const removeId = this.getAttribute('data-remove-id');
-                    state.activeAddonIds = state.activeAddonIds.filter(id => id !== removeId);
-                    renderAll();
-                    openManageAddonsModal(); // re-render modal list
-                    showToast('Add-on removed.');
-                });
+        if (window.feather) feather.replace();
+
+        // Attach click listener to row & checkbox
+        modalManageAddonsList.querySelectorAll('.manage-addon-item').forEach(itemEl => {
+            const addonId = itemEl.getAttribute('data-addon-id');
+            const checkbox = itemEl.querySelector('.manage-addon-checkbox');
+
+            itemEl.addEventListener('click', function (e) {
+                if (e.target !== checkbox && e.target.tagName !== 'LABEL') {
+                    checkbox.checked = !checkbox.checked;
+                    toggleAddonSelection(addonId, checkbox.checked);
+                }
             });
+
+            checkbox.addEventListener('change', function () {
+                toggleAddonSelection(addonId, this.checked);
+            });
+        });
+
+        updateManageModalTotals();
+    }
+
+    function toggleAddonSelection(addonId, isChecked) {
+        if (isChecked) {
+            if (!localSelectedAddonIds.includes(addonId)) {
+                localSelectedAddonIds.push(addonId);
+            }
+        } else {
+            localSelectedAddonIds = localSelectedAddonIds.filter(id => id !== addonId);
+        }
+        renderManageAddonsList();
+    }
+
+    function updateManageModalTotals() {
+        const currentTotal = calcAddonsTotal(initialActiveAddonIds);
+        const selectedTotal = calcAddonsTotal(localSelectedAddonIds);
+
+        if (modalCurrentAddonsTotal) {
+            modalCurrentAddonsTotal.textContent = `${fmtCurrency(currentTotal)} / month`;
+        }
+        if (modalSelectedAddonsTotal) {
+            modalSelectedAddonsTotal.textContent = `${fmtCurrency(selectedTotal)} / month`;
+        }
+    }
+
+    function openManageAddonsModal() {
+        // Snapshot the current active add-ons
+        initialActiveAddonIds = [...state.activeAddonIds];
+        localSelectedAddonIds = [...state.activeAddonIds];
+
+        renderManageAddonsList();
+        openModal(modalManageAddons);
+    }
+
+    function closeManageAddonsModal() {
+        // Discard local changes and reset
+        localSelectedAddonIds = [...initialActiveAddonIds];
+        closeModal(modalManageAddons);
+    }
+
+    // Cancel and Close buttons for Manage Add-ons
+    if (btnCancelManageAddons) {
+        btnCancelManageAddons.addEventListener('click', closeManageAddonsModal);
+    }
+    if (btnCloseManageAddons) {
+        btnCloseManageAddons.addEventListener('click', closeManageAddonsModal);
+    }
+
+    // Save Changes: Check if changes exist -> if none close, if yes open Review modal
+    if (btnSaveManageAddons) {
+        btnSaveManageAddons.addEventListener('click', function () {
+            const addedIds = localSelectedAddonIds.filter(id => !initialActiveAddonIds.includes(id));
+            const removedIds = initialActiveAddonIds.filter(id => !localSelectedAddonIds.includes(id));
+
+            if (addedIds.length === 0 && removedIds.length === 0) {
+                // No changes made
+                closeModal(modalManageAddons);
+                return;
+            }
+
+            openReviewAddonsModal(addedIds, removedIds);
+        });
+    }
+
+    // Review Modal Open & Actions
+    function openReviewAddonsModal(addedIds, removedIds) {
+        if (!reviewAddonsChangesContainer) return;
+
+        let contentHtml = '';
+
+        if (addedIds.length > 0) {
+            contentHtml += `
+                <div class="review-change-section">
+                    <span class="review-section-badge review-section-badge--add">Add</span>
+                    ${addedIds.map(id => {
+                        const addon = CATALOG_ADDONS.find(a => a.id === id);
+                        return `
+                            <div class="review-addon-row">
+                                <span class="review-addon-name">${addon ? addon.name : id}</span>
+                                <span class="review-addon-price-delta review-addon-price-delta--add">+${fmtCurrency(addon ? addon.price : 0)} / month</span>
+                            </div>
+                        `;
+                    }).join('')}
+                </div>
+            `;
         }
 
-        openModal(modalManageAddons);
+        if (removedIds.length > 0) {
+            contentHtml += `
+                <div class="review-change-section">
+                    <span class="review-section-badge review-section-badge--remove">Remove</span>
+                    ${removedIds.map(id => {
+                        const addon = CATALOG_ADDONS.find(a => a.id === id);
+                        return `
+                            <div class="review-addon-row">
+                                <span class="review-addon-name">${addon ? addon.name : id}</span>
+                                <span class="review-addon-price-delta review-addon-price-delta--remove">-${fmtCurrency(addon ? addon.price : 0)} / month</span>
+                            </div>
+                        `;
+                    }).join('')}
+                </div>
+            `;
+        }
+
+        reviewAddonsChangesContainer.innerHTML = contentHtml;
+
+        const currentTotal = calcAddonsTotal(initialActiveAddonIds);
+        const newTotal = calcAddonsTotal(localSelectedAddonIds);
+
+        if (reviewCurrentAddonsTotal) {
+            reviewCurrentAddonsTotal.textContent = `${fmtCurrency(currentTotal)} / month`;
+        }
+        if (reviewNewAddonsTotal) {
+            reviewNewAddonsTotal.textContent = `${fmtCurrency(newTotal)} / month`;
+        }
+
+        // Close Manage modal, open Review modal
+        closeModal(modalManageAddons);
+        openModal(modalReviewAddons);
+    }
+
+    // Review modal: Back button returns to Manage modal with selections preserved
+    if (btnBackReviewAddons) {
+        btnBackReviewAddons.addEventListener('click', function () {
+            closeModal(modalReviewAddons);
+            renderManageAddonsList();
+            openModal(modalManageAddons);
+        });
+    }
+
+    if (btnCloseReviewAddons) {
+        btnCloseReviewAddons.addEventListener('click', function () {
+            closeModal(modalReviewAddons);
+            // reset local state to initial
+            localSelectedAddonIds = [...initialActiveAddonIds];
+        });
+    }
+
+    // Review modal: Confirm Changes
+    if (btnConfirmReviewChanges) {
+        btnConfirmReviewChanges.addEventListener('click', function () {
+            // Apply changes to frontend state
+            state.activeAddonIds = [...localSelectedAddonIds];
+
+            closeModal(modalReviewAddons);
+            closeModal(modalManageAddons);
+
+            // Re-render main page UI with new dummy state
+            renderAll();
+
+            // Show success toast
+            showToast('Add-on changes saved successfully.');
+        });
     }
 
     const btnManageAddonsBottom = document.getElementById('btnManageAddonsBottom');
