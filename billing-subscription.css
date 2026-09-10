@@ -2292,13 +2292,48 @@
 
 .invoice-item-desc {
     color: var(--text-primary);
+}
+
+.invoice-item-header-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.invoice-item-name {
+    font-size: 0.92rem;
     font-weight: 600;
+    color: var(--text-primary);
+}
+
+.invoice-addon-tag {
+    display: inline-flex;
+    align-items: center;
+    font-size: 0.72rem;
+    font-weight: 700;
+    color: #0369a1;
+    background: #e0f2fe;
+    border: 1px solid #bae6fd;
+    padding: 1px 7px;
+    border-radius: 9999px;
+    letter-spacing: 0.02em;
+}
+
+.invoice-item-sub {
+    font-size: 0.78rem;
+    color: var(--text-muted);
+    font-weight: 400;
+    margin-top: 2px;
+    line-height: 1.35;
 }
 
 .invoice-item-amount {
     text-align: right;
-    font-weight: 600;
+    font-weight: 700;
     color: var(--text-primary);
+    font-size: 0.94rem;
+    vertical-align: top;
+    padding-top: 12px;
 }
 
 .invoice-summary-section {

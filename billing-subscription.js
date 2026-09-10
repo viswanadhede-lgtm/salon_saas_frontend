@@ -135,12 +135,15 @@
                 id: 'INV-2026-00009',
                 date: '10 Sep 2026',
                 description: 'Growth Plan',
-                amount: 4999,
+                amount: 6766,
                 method: 'UPI',
                 paymentRef: 'UPI/3294829104',
                 status: 'Paid',
+                addons: ['whatsapp', 'ai_receptionist'],
                 items: [
-                    { name: 'Growth Plan — Monthly Subscription', amount: 4236 }
+                    { name: 'Growth Plan — Monthly Subscription', subtitle: 'Core salon management, bookings & multi-staff CRM', amount: 4236, isPlan: true },
+                    { name: 'WhatsApp Reminders', subtitle: 'Automated 24h & 2h appointment reminders via WhatsApp', amount: 499, isAddon: true },
+                    { name: 'AI Receptionist', subtitle: '24/7 intelligent voice & chat booking assistant', amount: 999, isAddon: true }
                 ]
             },
             {
@@ -151,22 +154,23 @@
                 method: 'Card',
                 paymentRef: 'TXN-8492019482',
                 status: 'Paid',
+                addons: [],
                 items: [
-                    { name: 'Growth Plan — Monthly Subscription', amount: 4236 }
+                    { name: 'Growth Plan — Monthly Subscription', subtitle: 'Core salon management, bookings & multi-staff CRM', amount: 4236, isPlan: true }
                 ]
             },
             {
                 id: 'INV-2026-00007',
                 date: '10 Jul 2026',
-                description: 'Growth Plan + Add-on',
-                amount: 6766,
+                description: 'Growth Plan',
+                amount: 5587,
                 method: 'Card',
                 paymentRef: 'TXN-7391048201',
                 status: 'Paid',
+                addons: ['whatsapp'],
                 items: [
-                    { name: 'Growth Plan — Monthly Subscription', amount: 4236 },
-                    { name: 'WhatsApp Reminders Add-on', amount: 499 },
-                    { name: 'AI Receptionist Add-on', amount: 999 }
+                    { name: 'Growth Plan — Monthly Subscription', subtitle: 'Core salon management, bookings & multi-staff CRM', amount: 4236, isPlan: true },
+                    { name: 'WhatsApp Reminders', subtitle: 'Automated 24h & 2h appointment reminders via WhatsApp', amount: 499, isAddon: true }
                 ]
             },
             {
@@ -177,8 +181,9 @@
                 method: 'Card',
                 paymentRef: 'TXN-6192849102',
                 status: 'Refunded',
+                addons: [],
                 items: [
-                    { name: 'Growth Plan — Monthly Subscription', amount: 4236 }
+                    { name: 'Growth Plan — Monthly Subscription', subtitle: 'Core salon management, bookings & multi-staff CRM', amount: 4236, isPlan: true }
                 ]
             }
         ],
@@ -652,11 +657,34 @@
             else if (row.status === 'Failed') statusPillClass = 'status-failed';
             else if (row.status === 'Refunded') statusPillClass = 'status-refunded';
 
+            let planTitle = `${state.plan.name} Plan`;
+            let addonSubtitle = '';
+            let amount = row.amount;
+
+            if (row.id === 'INV-2026-00009') {
+                const activeAddons = state.activeAddonIds.map(id => CATALOG_ADDONS.find(a => a.id === id)).filter(Boolean);
+                if (activeAddons.length > 0) {
+                    addonSubtitle = `+ ${activeAddons.map(a => a.name).join(', ')}`;
+                    const subtotal = 4236 + activeAddons.reduce((acc, cur) => acc + cur.price, 0);
+                    amount = subtotal + Math.round(subtotal * 0.18);
+                } else {
+                    amount = 4999;
+                }
+            } else if (row.addons && row.addons.length > 0) {
+                const addonsList = row.addons.map(id => CATALOG_ADDONS.find(a => a.id === id)).filter(Boolean);
+                if (addonsList.length > 0) {
+                    addonSubtitle = `+ ${addonsList.map(a => a.name).join(', ')}`;
+                }
+            }
+
             return `
                 <tr>
                     <td style="font-weight: 500; color: var(--text-secondary);">${row.date}</td>
-                    <td style="font-weight: 600; color: var(--text-primary);">${row.description}</td>
-                    <td style="font-weight: 700; color: var(--text-primary);">${fmtCurrency(row.amount)}</td>
+                    <td class="table-desc-cell">
+                        <div style="font-weight: 600; color: var(--text-primary);">${planTitle}</div>
+                        ${addonSubtitle ? `<div style="font-size: 0.78rem; color: #2563eb; font-weight: 600; margin-top: 2px;">${addonSubtitle}</div>` : ''}
+                    </td>
+                    <td style="font-weight: 700; color: var(--text-primary);">${fmtCurrency(amount)}</td>
                     <td style="color: var(--text-secondary);">${row.method}</td>
                     <td>
                         <span class="table-status-pill ${statusPillClass}">
@@ -1235,21 +1263,49 @@
             statusBadge.textContent = item.status.toUpperCase();
         }
 
-        // Calculate Subtotal & GST from itemized list or total amount
+        // Calculate Subtotal & GST from itemized list or active state
         let items = item.items;
+        if (item.id === 'INV-2026-00009') {
+            const activeAddons = state.activeAddonIds.map(id => CATALOG_ADDONS.find(a => a.id === id)).filter(Boolean);
+            items = [
+                {
+                    name: `${state.plan.name} Plan — Monthly Subscription`,
+                    subtitle: 'Core salon management, bookings & multi-staff CRM',
+                    amount: 4236,
+                    isPlan: true
+                },
+                ...activeAddons.map(a => ({
+                    name: `${a.name} Add-on`,
+                    subtitle: a.desc || `${a.name} active feature bundle`,
+                    amount: a.price,
+                    isAddon: true
+                }))
+            ];
+        }
+
         let subtotal = 0;
         if (items && items.length > 0) {
             subtotal = items.reduce((acc, cur) => acc + cur.amount, 0);
         } else {
             subtotal = Math.round(item.amount / 1.18);
-            items = [{ name: `${item.description} — Monthly Subscription`, amount: subtotal }];
+            items = [{
+                name: `${item.description} — Monthly Subscription`,
+                subtitle: 'Core salon management & features',
+                amount: subtotal
+            }];
         }
         const gst = Math.round(subtotal * 0.18);
         const total = subtotal + gst;
 
         const itemsRowsHtml = items.map(line => `
             <tr>
-                <td class="invoice-item-desc">${line.name}</td>
+                <td class="invoice-item-desc">
+                    <div class="invoice-item-header-row">
+                        <span class="invoice-item-name">${line.name}</span>
+                        ${line.isAddon ? '<span class="invoice-addon-tag">Add-on</span>' : ''}
+                    </div>
+                    ${line.subtitle ? `<div class="invoice-item-sub">${line.subtitle}</div>` : ''}
+                </td>
                 <td class="invoice-item-amount">${fmtCurrency(line.amount)}</td>
             </tr>
         `).join('');
@@ -1330,7 +1386,7 @@
                     <div class="invoice-summary-divider"></div>
                     <div class="invoice-summary-row invoice-summary-row--total">
                         <span class="summary-label-total">TOTAL PAID</span>
-                        <span class="summary-val-total">${fmtCurrency(item.amount)}</span>
+                        <span class="summary-val-total">${fmtCurrency(total)}</span>
                     </div>
                 </div>
             </div>
