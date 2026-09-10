@@ -726,73 +726,89 @@
         let currentAddonsHtml = '';
         if (currentAddons.length > 0) {
             currentAddonsHtml = currentAddons.map(a => `
-                <div class="billing-summary-row">
+                <div class="billing-card-row">
                     <span class="item-name">${a.name}</span>
                     <span class="item-price">${fmtCurrency(a.price)}</span>
                 </div>
             `).join('');
         } else {
-            currentAddonsHtml = '<div class="billing-summary-empty">—</div>';
+            currentAddonsHtml = '<div class="billing-card-empty">— None</div>';
         }
 
         let additionsHtml = '';
         if (addedAddons.length > 0) {
             additionsHtml = addedAddons.map(a => `
-                <div class="billing-summary-row">
+                <div class="billing-card-row">
                     <span class="item-name">${a.name}</span>
                     <span class="item-price item-price--add">+${fmtCurrency(a.price)}</span>
                 </div>
             `).join('');
         } else {
-            additionsHtml = '<div class="billing-summary-empty">—</div>';
+            additionsHtml = '<div class="billing-card-empty">— None</div>';
         }
 
         let removalsHtml = '';
         if (removedAddons.length > 0) {
             removalsHtml = removedAddons.map(a => `
-                <div class="billing-summary-row">
+                <div class="billing-card-row">
                     <span class="item-name">${a.name}</span>
                     <span class="item-price item-price--remove">-${fmtCurrency(a.price)}</span>
                 </div>
             `).join('');
         } else {
-            removalsHtml = '<div class="billing-summary-empty">—</div>';
+            removalsHtml = '<div class="billing-card-empty">— None</div>';
         }
 
         modalManageAddonsSummary.innerHTML = `
-            <!-- Current Add-ons Block -->
-            <div class="billing-summary-block">
-                <div class="billing-summary-subheading">CURRENT ADD-ONS</div>
-                ${currentAddonsHtml}
-                <hr class="billing-summary-divider">
-                <div class="billing-summary-row billing-summary-row--subtotal">
+            <!-- Card 1: Current Add-ons -->
+            <div class="billing-card billing-card--current">
+                <div class="billing-card-header">
+                    <span class="billing-card-title">CURRENT ADD-ONS</span>
+                </div>
+                <div class="billing-card-body">
+                    ${currentAddonsHtml}
+                </div>
+                <div class="billing-card-subtotal">
                     <span class="item-name">Current Total</span>
                     <span class="item-price">${fmtCurrency(currentTotal)}</span>
                 </div>
             </div>
 
-            <!-- New Additions Block -->
-            <div class="billing-summary-block">
-                <div class="billing-summary-subheading">NEW ADDITIONS</div>
-                ${additionsHtml}
+            <!-- Card 2: New Additions -->
+            <div class="billing-card billing-card--additions ${addedAddons.length > 0 ? 'is-active' : ''}">
+                <div class="billing-card-header">
+                    <span class="billing-card-title">NEW ADDITIONS</span>
+                    ${addedAddons.length > 0 ? `<span class="billing-card-badge billing-card-badge--green">+${addedAddons.length}</span>` : ''}
+                </div>
+                <div class="billing-card-body">
+                    ${additionsHtml}
+                </div>
             </div>
 
-            <!-- Removals Block -->
-            <div class="billing-summary-block">
-                <div class="billing-summary-subheading">REMOVALS</div>
-                ${removalsHtml}
+            <!-- Card 3: Removals -->
+            <div class="billing-card billing-card--removals ${removedAddons.length > 0 ? 'is-active' : ''}">
+                <div class="billing-card-header">
+                    <span class="billing-card-title">REMOVALS</span>
+                    ${removedAddons.length > 0 ? `<span class="billing-card-badge billing-card-badge--red">-${removedAddons.length}</span>` : ''}
+                </div>
+                <div class="billing-card-body">
+                    ${removalsHtml}
+                </div>
             </div>
 
-            <!-- New Total Block -->
-            <div class="billing-summary-block" style="margin-top: auto;">
-                <hr class="billing-summary-divider">
-                <div class="billing-summary-row billing-summary-row--total">
-                    <span class="item-name">NEW ADD-ONS TOTAL</span>
-                    <span class="item-price">${fmtCurrency(newTotal)}</span>
+            <!-- Card 4: New Total Card -->
+            <div class="billing-card billing-card--total">
+                <div class="billing-total-row">
+                    <span class="billing-total-label">NEW ADD-ONS TOTAL</span>
+                    <div class="billing-total-value-wrap">
+                        <span class="billing-total-val">${fmtCurrency(newTotal)}</span>
+                        <span class="billing-total-freq">/ month</span>
+                    </div>
                 </div>
             </div>
         `;
     }
+
 
     function openManageAddonsModal() {
         // Snapshot the current active add-ons
