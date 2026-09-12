@@ -90,6 +90,9 @@
 
     const state = {
         currentMode: initialMode, // 'active' | 'noplan' | 'cancelled'
+        subscriptionId: null,
+        activeAddons: [],
+        addonsLoaded: false,
         planId: null,
         features: {
             included: [],
@@ -416,26 +419,69 @@
         if (window.feather) feather.replace();
     }
 
+    function getAddonVisualMeta(name) {
+        const lower = (name || '').toLowerCase();
+        if (lower.includes('whatsapp') || lower.includes('chat')) {
+            return { icon: 'message-circle', theme: 'green' };
+        }
+        if (lower.includes('ai') || lower.includes('receptionist') || lower.includes('call') || lower.includes('voice')) {
+            return { icon: 'cpu', theme: 'purple' };
+        }
+        if (lower.includes('report') || lower.includes('analytic')) {
+            return { icon: 'bar-chart-2', theme: 'blue' };
+        }
+        if (lower.includes('notification') || lower.includes('reminder') || lower.includes('alert') || lower.includes('sms')) {
+            return { icon: 'bell', theme: 'amber' };
+        }
+        return { icon: 'package', theme: 'blue' };
+    }
+
     function getActiveAddons() {
         if (state.currentMode === 'noplan') return [];
-        return CATALOG_ADDONS.filter(a => state.activeAddonIds.includes(a.id));
+        return state.activeAddons || [];
     }
 
     function renderActiveAddons() {
-        const activeItems = getActiveAddons();
-        activeAddonsCountBadge.textContent = `${activeItems.length} Active`;
-
-        if (activeItems.length === 0) {
+        if (state.currentMode === 'noplan' || (!state.subscriptionId && state.addonsLoaded)) {
+            activeAddonsCountBadge.textContent = '0 Active';
             activeAddonsList.innerHTML = `
                 <div class="empty-neutral-state">
                     ${state.currentMode === 'noplan' ? 'No active add-ons. Choose a plan to activate add-ons.' : 'No active add-ons currently.'}
                 </div>
             `;
             activeAddonsTotalVal.textContent = '₹0 / month';
+            if (window.feather) feather.replace();
             return;
         }
 
-        activeAddonsList.innerHTML = activeItems.map(item => `
+        if (!state.addonsLoaded) {
+            activeAddonsCountBadge.textContent = 'Loading...';
+            activeAddonsList.innerHTML = `
+                <div style="padding: 1rem 0; color: #94a3b8; font-size: 0.9rem;">
+                    Loading active add-ons...
+                </div>
+            `;
+            activeAddonsTotalVal.textContent = '—';
+            return;
+        }
+
+        const activeItems = state.activeAddons || [];
+        activeAddonsCountBadge.textContent = `${activeItems.length} Active`;
+
+        if (activeItems.length === 0) {
+            activeAddonsList.innerHTML = `
+                <div class="empty-neutral-state">
+                    No active add-ons currently.
+                </div>
+            `;
+            activeAddonsTotalVal.textContent = '₹0 / month';
+            if (window.feather) feather.replace();
+            return;
+        }
+
+        activeAddonsList.innerHTML = activeItems.map(item => {
+            const rawStatus = (item.status || 'Active').toUpperCase();
+            return `
             <div class="active-addon-row">
                 <div class="addon-icon-tile addon-icon-tile--${item.theme || 'blue'}">
                     <i data-feather="${item.icon || 'package'}"></i>
@@ -444,12 +490,15 @@
                     <p class="active-addon-name">${item.name}</p>
                     <p class="active-addon-price">${fmtCurrency(item.price)} / month</p>
                 </div>
-                <span class="badge-status-active">ACTIVE</span>
+                <span class="badge-status-active">${rawStatus}</span>
             </div>
-        `).join('');
+            `;
+        }).join('');
 
-        const totalAddonPrice = activeItems.reduce((acc, cur) => acc + cur.price, 0);
+        const totalAddonPrice = activeItems.reduce((acc, cur) => acc + (Number(cur.price) || 0), 0);
         activeAddonsTotalVal.textContent = `${fmtCurrency(totalAddonPrice)} / month`;
+
+        if (window.feather) feather.replace();
     }
 
     function renderPlanFeatures() {
@@ -1591,8 +1640,63 @@
         });
     });
 
-    // ── Backend Integration: Active Plan & Features Loader ──────────
+    // ── Backend Integration: Active Plan, Features & Add-ons Loader ─
     let isSubLoading = false;
+
+    async function loadActiveAddons(supabase, subscriptionId) {
+        if (!subscriptionId) {
+            state.activeAddons = [];
+            state.activeAddonIds = [];
+            state.addonsLoaded = true;
+            renderActiveAddons();
+            return;
+        }
+
+        try {
+            // Query subscription_add_ons for current subscription where status = 'active'
+            const { data: addOnsData, error: addOnsErr } = await supabase
+                .from('subscription_add_ons')
+                .select('id, subscription_id, company_id, addon_id, addon_name, price, status, started_at, ended_at')
+                .eq('subscription_id', subscriptionId)
+                .eq('status', 'active');
+
+            if (addOnsErr) {
+                console.error('[Billing] Error fetching active add-ons:', addOnsErr);
+                state.activeAddons = [];
+                state.activeAddonIds = [];
+                state.addonsLoaded = true;
+                renderActiveAddons();
+                return;
+            }
+
+            const items = (addOnsData || []).map(row => {
+                const visual = getAddonVisualMeta(row.addon_name);
+                return {
+                    id: row.addon_id,
+                    subAddonId: row.id,
+                    name: row.addon_name || 'Add-on',
+                    price: Number(row.price) || 0,
+                    status: row.status || 'active',
+                    startedAt: row.started_at,
+                    endedAt: row.ended_at,
+                    icon: visual.icon,
+                    theme: visual.theme
+                };
+            });
+
+            state.activeAddons = items;
+            state.activeAddonIds = items.map(item => item.id);
+            state.addonsLoaded = true;
+
+            renderActiveAddons();
+        } catch (err) {
+            console.error('[Billing] Failed to load active add-ons:', err);
+            state.activeAddons = [];
+            state.activeAddonIds = [];
+            state.addonsLoaded = true;
+            renderActiveAddons();
+        }
+    }
 
     async function loadPlanFeatures(supabase, planId) {
         if (!planId) {
@@ -1672,7 +1776,11 @@
             console.log('[Billing] Dev mode override active:', paramState);
             if (paramState === 'noplan') {
                 state.features = { included: [], excluded: [], loaded: true };
+                state.activeAddons = [];
+                state.activeAddonIds = [];
+                state.addonsLoaded = true;
                 renderPlanFeatures();
+                renderActiveAddons();
             }
             return;
         }
@@ -1681,10 +1789,15 @@
         if (!companyId) {
             console.warn('[Billing] No active company detected. Showing empty plan state.');
             state.currentMode = 'noplan';
+            state.subscriptionId = null;
             state.planId = null;
             state.features = { included: [], excluded: [], loaded: true };
+            state.activeAddons = [];
+            state.activeAddonIds = [];
+            state.addonsLoaded = true;
             renderCurrentPlan();
             renderPlanFeatures();
+            renderActiveAddons();
             return;
         }
 
@@ -1721,14 +1834,20 @@
             if (!subRows || subRows.length === 0) {
                 console.log('[Billing] No subscription record found for company:', companyId);
                 state.currentMode = 'noplan';
+                state.subscriptionId = null;
                 state.planId = null;
                 state.features = { included: [], excluded: [], loaded: true };
+                state.activeAddons = [];
+                state.activeAddonIds = [];
+                state.addonsLoaded = true;
                 renderCurrentPlan();
                 renderPlanFeatures();
+                renderActiveAddons();
                 return;
             }
 
             const sub = subRows[0];
+            state.subscriptionId = sub.subscription_id || null;
             state.planId = sub.plan_id || null;
             let planName = sub.plan_name;
 
@@ -1766,7 +1885,13 @@
             };
 
             renderCurrentPlan();
-            await loadPlanFeatures(supabase, sub.plan_id);
+
+            // Load features and active add-ons in parallel
+            await Promise.all([
+                loadPlanFeatures(supabase, sub.plan_id),
+                loadActiveAddons(supabase, sub.subscription_id)
+            ]);
+
             if (window.feather) feather.replace();
         } catch (err) {
             console.error('[Billing] Error loading subscription:', err);
