@@ -91,15 +91,11 @@
     const state = {
         currentMode: initialMode, // 'active' | 'noplan' | 'cancelled'
         planId: null,
-        subscriptionId: null,
         features: {
             included: [],
             excluded: [],
             loaded: false
         },
-        activeAddons: [],
-        activeAddonsLoaded: false,
-        activeAddonIds: [],
         plan: {
             name: 'Growth',
             cycle: 'monthly',
@@ -110,6 +106,7 @@
             status: 'Active',
             autoRenew: true
         },
+        activeAddonIds: ['whatsapp', 'ai_receptionist'],
         paymentMethod: {
             type: 'card',
             cardMask: '•••• •••• •••• 4242',
@@ -419,80 +416,40 @@
         if (window.feather) feather.replace();
     }
 
-    function getAddonThemeAndIcon(name = '') {
-        const n = String(name).toLowerCase();
-        if (n.includes('whatsapp') || n.includes('reminder')) return { theme: 'green', icon: 'message-circle' };
-        if (n.includes('ai') || n.includes('receptionist') || n.includes('call') || n.includes('voice') || n.includes('phone')) return { theme: 'purple', icon: 'cpu' };
-        if (n.includes('report') || n.includes('analytic')) return { theme: 'blue', icon: 'bar-chart-2' };
-        if (n.includes('notification') || n.includes('alert') || n.includes('sms')) return { theme: 'amber', icon: 'bell' };
-        return { theme: 'blue', icon: 'package' };
-    }
-
     function getActiveAddons() {
         if (state.currentMode === 'noplan') return [];
-        return state.activeAddons || [];
+        return CATALOG_ADDONS.filter(a => state.activeAddonIds.includes(a.id));
     }
 
     function renderActiveAddons() {
-        if (state.currentMode === 'noplan') {
-            activeAddonsCountBadge.textContent = '0 Active';
-            activeAddonsList.innerHTML = `
-                <div class="empty-neutral-state">
-                    No active add-ons. Choose a plan to activate add-ons.
-                </div>
-            `;
-            activeAddonsTotalVal.textContent = '₹0 / month';
-            if (window.feather) feather.replace();
-            return;
-        }
-
-        if (!state.activeAddonsLoaded) {
-            activeAddonsCountBadge.textContent = 'Loading...';
-            activeAddonsList.innerHTML = `
-                <div style="padding: 1rem 0; color: #94a3b8; font-size: 0.9rem;">
-                    Loading active add-ons...
-                </div>
-            `;
-            activeAddonsTotalVal.textContent = '— / month';
-            return;
-        }
-
-        const activeItems = state.activeAddons || [];
+        const activeItems = getActiveAddons();
         activeAddonsCountBadge.textContent = `${activeItems.length} Active`;
 
         if (activeItems.length === 0) {
             activeAddonsList.innerHTML = `
                 <div class="empty-neutral-state">
-                    No active add-ons currently.
+                    ${state.currentMode === 'noplan' ? 'No active add-ons. Choose a plan to activate add-ons.' : 'No active add-ons currently.'}
                 </div>
             `;
             activeAddonsTotalVal.textContent = '₹0 / month';
-            if (window.feather) feather.replace();
             return;
         }
 
-        activeAddonsList.innerHTML = activeItems.map(item => {
-            const displayName = item.name || item.addon_name || 'Add-on';
-            const visual = (item.theme && item.icon) ? item : getAddonThemeAndIcon(displayName);
-            const statusLabel = (item.status || 'active').toUpperCase();
-            return `
-                <div class="active-addon-row">
-                    <div class="addon-icon-tile addon-icon-tile--${visual.theme || 'blue'}">
-                        <i data-feather="${visual.icon || 'package'}"></i>
-                    </div>
-                    <div class="active-addon-info">
-                        <p class="active-addon-name">${displayName}</p>
-                        <p class="active-addon-price">${fmtCurrency(item.price)} / month</p>
-                    </div>
-                    <span class="badge-status-active">${statusLabel}</span>
+        activeAddonsList.innerHTML = activeItems.map(item => `
+            <div class="active-addon-row">
+                <div class="addon-icon-tile addon-icon-tile--${item.theme || 'blue'}">
+                    <i data-feather="${item.icon || 'package'}"></i>
                 </div>
-            `;
-        }).join('');
+                <div class="active-addon-info">
+                    <p class="active-addon-name">${item.name}</p>
+                    <p class="active-addon-price">${fmtCurrency(item.price)} / month</p>
+                </div>
+                <span class="badge-status-active">ACTIVE</span>
+            </div>
+        `).join('');
 
-        const totalAddonPrice = activeItems.reduce((acc, cur) => acc + (Number(cur.price) || 0), 0);
+        const totalAddonPrice = activeItems.reduce((acc, cur) => acc + cur.price, 0);
         activeAddonsTotalVal.textContent = `${fmtCurrency(totalAddonPrice)} / month`;
-
-        if (window.feather) feather.replace();
     }
 
     function renderPlanFeatures() {
@@ -1710,81 +1667,12 @@
         }
     }
 
-    async function loadActiveAddons(supabase, subscriptionId) {
-        if (!subscriptionId) {
-            state.activeAddons = [];
-            state.activeAddonIds = [];
-            state.activeAddonsLoaded = true;
-            renderActiveAddons();
-            return;
-        }
-
-        try {
-            // 1. Fetch active add-ons for the current subscription
-            const { data: subAddonRows, error: subAddonErr } = await supabase
-                .from('subscription_add_ons')
-                .select('id, subscription_id, company_id, addon_id, addon_name, price, status, started_at, ended_at')
-                .eq('subscription_id', subscriptionId)
-                .eq('status', 'active');
-
-            if (subAddonErr) {
-                console.error('[Billing] Error fetching subscription_add_ons:', subAddonErr);
-            }
-
-            // 2. Fetch catalog add-ons to cross-reference catalog info if needed
-            const { data: catalogRows, error: catalogErr } = await supabase
-                .from('add_ons')
-                .select('addon_id, name, description, status');
-
-            if (catalogErr) {
-                console.warn('[Billing] Warning fetching add_ons catalog:', catalogErr);
-            }
-
-            const catalogMap = new Map((catalogRows || []).map(c => [c.addon_id, c]));
-
-            const activeList = (subAddonRows || []).map(item => {
-                const catalogInfo = catalogMap.get(item.addon_id);
-                // Use subscription_add_ons.addon_name and price as the primary source of truth
-                const name = item.addon_name || catalogInfo?.name || 'Add-on';
-                const visual = getAddonThemeAndIcon(name);
-
-                return {
-                    id: item.id,
-                    addon_id: item.addon_id,
-                    name: name,
-                    addon_name: name,
-                    price: item.price != null ? Number(item.price) : (catalogInfo?.price != null ? Number(catalogInfo.price) : 0),
-                    status: item.status || 'active',
-                    started_at: item.started_at,
-                    ended_at: item.ended_at,
-                    theme: visual.theme,
-                    icon: visual.icon
-                };
-            });
-
-            state.activeAddons = activeList;
-            state.activeAddonIds = activeList.map(a => a.addon_id);
-            state.activeAddonsLoaded = true;
-            renderActiveAddons();
-        } catch (err) {
-            console.error('[Billing] Failed to load active add-ons:', err);
-            state.activeAddons = [];
-            state.activeAddonIds = [];
-            state.activeAddonsLoaded = true;
-            renderActiveAddons();
-        }
-    }
-
     async function loadActiveSubscription() {
         if (paramState && validModes.includes(paramState)) {
             console.log('[Billing] Dev mode override active:', paramState);
             if (paramState === 'noplan') {
                 state.features = { included: [], excluded: [], loaded: true };
-                state.activeAddons = [];
-                state.activeAddonIds = [];
-                state.activeAddonsLoaded = true;
                 renderPlanFeatures();
-                renderActiveAddons();
             }
             return;
         }
@@ -1794,14 +1682,9 @@
             console.warn('[Billing] No active company detected. Showing empty plan state.');
             state.currentMode = 'noplan';
             state.planId = null;
-            state.subscriptionId = null;
             state.features = { included: [], excluded: [], loaded: true };
-            state.activeAddons = [];
-            state.activeAddonIds = [];
-            state.activeAddonsLoaded = true;
             renderCurrentPlan();
             renderPlanFeatures();
-            renderActiveAddons();
             return;
         }
 
@@ -1839,20 +1722,14 @@
                 console.log('[Billing] No subscription record found for company:', companyId);
                 state.currentMode = 'noplan';
                 state.planId = null;
-                state.subscriptionId = null;
                 state.features = { included: [], excluded: [], loaded: true };
-                state.activeAddons = [];
-                state.activeAddonIds = [];
-                state.activeAddonsLoaded = true;
                 renderCurrentPlan();
                 renderPlanFeatures();
-                renderActiveAddons();
                 return;
             }
 
             const sub = subRows[0];
             state.planId = sub.plan_id || null;
-            state.subscriptionId = sub.subscription_id || null;
             let planName = sub.plan_name;
 
             // 2. Fetch plan_name from plans table if plan_id exists
@@ -1889,10 +1766,7 @@
             };
 
             renderCurrentPlan();
-            await Promise.all([
-                loadPlanFeatures(supabase, sub.plan_id),
-                loadActiveAddons(supabase, sub.subscription_id)
-            ]);
+            await loadPlanFeatures(supabase, sub.plan_id);
             if (window.feather) feather.replace();
         } catch (err) {
             console.error('[Billing] Error loading subscription:', err);
