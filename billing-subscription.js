@@ -920,15 +920,38 @@
 
     function renderSubscriptionManagement() {
         if (state.currentMode === 'noplan') {
-            subscriptionManagementSection.style.display = 'none';
+            if (subscriptionManagementSection) subscriptionManagementSection.style.display = 'none';
         } else {
-            subscriptionManagementSection.style.display = 'flex';
+            if (subscriptionManagementSection) subscriptionManagementSection.style.display = 'flex';
+            const subManageTitle = document.getElementById('subManageTitle');
+            const subManageDesc = document.getElementById('subManageDesc');
             const btnCancel = document.getElementById('btnTriggerCancelModal');
-            if (btnCancel) {
-                btnCancel.textContent = state.currentMode === 'cancelled'
-                    ? 'Subscription Scheduled for Cancellation'
-                    : 'Cancel Subscription';
-                btnCancel.disabled = (state.currentMode === 'cancelled');
+
+            const isCancelled = state.currentMode === 'cancelled' ||
+                                (state.plan.status && state.plan.status.toLowerCase() === 'cancelled') ||
+                                state.plan.autoRenew === false;
+
+            if (isCancelled) {
+                if (subManageTitle) subManageTitle.textContent = 'Subscription Scheduled for Cancellation';
+                if (subManageDesc) {
+                    const validDate = state.plan.validUntil && state.plan.validUntil !== '—' ? state.plan.validUntil : 'the end of your billing cycle';
+                    subManageDesc.textContent = `Your plan remains active and fully usable until ${validDate}. Auto-renewal is disabled.`;
+                }
+                if (btnCancel) {
+                    btnCancel.textContent = 'Cancellation Scheduled';
+                    btnCancel.disabled = true;
+                    btnCancel.style.opacity = '0.6';
+                    btnCancel.style.cursor = 'not-allowed';
+                }
+            } else {
+                if (subManageTitle) subManageTitle.textContent = 'Subscription Management';
+                if (subManageDesc) subManageDesc.textContent = 'Manage your subscription or cancel your plan.';
+                if (btnCancel) {
+                    btnCancel.textContent = 'Cancel Subscription';
+                    btnCancel.disabled = false;
+                    btnCancel.style.opacity = '1';
+                    btnCancel.style.cursor = 'pointer';
+                }
             }
         }
     }
@@ -1363,6 +1386,31 @@
     // Modal 3: Cancel Subscription
     const btnTriggerCancelModal = document.getElementById('btnTriggerCancelModal');
 
+    const CANCELLATION_REASONS = {
+        'too_expensive': 'Too expensive',
+        'not_using_enough': 'Not using BharatBots enough',
+        'missing_features': 'Missing features I need',
+        'technical_issues': 'Technical issues',
+        'moving_to_another_solution': 'Moving to another solution',
+        'business_temporarily_closed': 'Business temporarily closed',
+        'other': 'Other'
+    };
+
+    function updateCancelButtonState() {
+        if (!btnConfirmCancelSubscription) return;
+        const selectedRadio = cancelReasonGroup ? cancelReasonGroup.querySelector('input[name="cancelReason"]:checked') : null;
+        if (!selectedRadio) {
+            btnConfirmCancelSubscription.disabled = true;
+            return;
+        }
+        if (selectedRadio.value === 'other') {
+            const hasText = cancelOtherTextarea && cancelOtherTextarea.value.trim().length > 0;
+            btnConfirmCancelSubscription.disabled = !hasText;
+        } else {
+            btnConfirmCancelSubscription.disabled = false;
+        }
+    }
+
     function resetCancelModalForm() {
         if (cancelReasonGroup) {
             const radios = cancelReasonGroup.querySelectorAll('input[name="cancelReason"]');
@@ -1381,13 +1429,25 @@
 
     if (btnTriggerCancelModal) {
         btnTriggerCancelModal.addEventListener('click', function () {
-            const planName = state.plan.name || 'Growth';
-            const validUntil = state.plan.validUntil || '09 Oct 2026';
+            const isCancelled = state.currentMode === 'cancelled' ||
+                                (state.plan.status && state.plan.status.toLowerCase() === 'cancelled') ||
+                                state.plan.autoRenew === false;
+            if (isCancelled) {
+                showToast('Subscription is already scheduled for cancellation.');
+                return;
+            }
+
+            const rawPlanName = state.plan.name || 'Growth';
+            const planDisplay = rawPlanName.toLowerCase().includes('plan') ? rawPlanName : `${rawPlanName} Plan`;
+            const validUntil = state.plan.validUntil && state.plan.validUntil !== '—' ? state.plan.validUntil : '';
+
             if (cancelModalSubtitle) {
-                cancelModalSubtitle.textContent = `Your ${planName} Plan will remain active until ${validUntil}. Your subscription will not renew after this date.`;
+                cancelModalSubtitle.textContent = validUntil
+                    ? `Your ${planDisplay} will remain active until ${validUntil}. Your subscription will not renew after this date.`
+                    : `Your ${planDisplay} will remain active until the end of your billing cycle. Your subscription will not renew after this date.`;
             }
             if (cancelInfoActiveDate) {
-                cancelInfoActiveDate.textContent = validUntil;
+                cancelInfoActiveDate.textContent = validUntil || 'the end of your billing cycle';
             }
             resetCancelModalForm();
             openModal(modalCancelSub);
@@ -1399,34 +1459,87 @@
         cancelReasonGroup.addEventListener('change', function (e) {
             if (e.target && e.target.name === 'cancelReason') {
                 const selectedValue = e.target.value;
-                if (btnConfirmCancelSubscription) {
-                    btnConfirmCancelSubscription.disabled = false;
-                }
                 if (selectedValue === 'other') {
                     if (cancelOtherFeedback) cancelOtherFeedback.style.display = 'flex';
                     if (cancelOtherTextarea) cancelOtherTextarea.focus();
                 } else {
                     if (cancelOtherFeedback) cancelOtherFeedback.style.display = 'none';
                 }
+                updateCancelButtonState();
             }
         });
     }
 
+    if (cancelOtherTextarea) {
+        cancelOtherTextarea.addEventListener('input', updateCancelButtonState);
+    }
+
     if (btnConfirmCancelSubscription) {
-        btnConfirmCancelSubscription.addEventListener('click', function () {
+        btnConfirmCancelSubscription.addEventListener('click', async function () {
             if (btnConfirmCancelSubscription.disabled) return;
 
-            const selectedRadio = document.querySelector('input[name="cancelReason"]:checked');
-            if (!selectedRadio) return;
+            const selectedRadio = cancelReasonGroup ? cancelReasonGroup.querySelector('input[name="cancelReason"]:checked') : null;
+            if (!selectedRadio) {
+                showToast('Please select a cancellation reason.');
+                return;
+            }
 
-            const validUntil = state.plan.validUntil || '09 Oct 2026';
+            let remarks = CANCELLATION_REASONS[selectedRadio.value] || selectedRadio.value;
+            if (selectedRadio.value === 'other') {
+                const customText = cancelOtherTextarea ? cancelOtherTextarea.value.trim() : '';
+                if (!customText) {
+                    showToast('Please enter your cancellation reason.');
+                    if (cancelOtherTextarea) cancelOtherTextarea.focus();
+                    return;
+                }
+                remarks = customText;
+            }
 
-            // Dummy frontend simulation state
-            state.currentMode = 'cancelled';
-            closeModal(modalCancelSub);
-            resetCancelModalForm();
-            renderAll();
-            showToast(`Cancellation scheduled. Your subscription will remain active until ${validUntil}.`);
+            if (!state.subscriptionId) {
+                console.warn('[Billing] No active subscription_id in state to cancel.');
+                showToast('No active subscription found to cancel.');
+                return;
+            }
+
+            const prevHtml = btnConfirmCancelSubscription.innerHTML;
+            btnConfirmCancelSubscription.disabled = true;
+            btnConfirmCancelSubscription.innerHTML = '<span class="btn-spinner"></span> <span>Cancelling...</span>';
+
+            try {
+                const { supabase } = await import('./lib/supabase.js');
+                if (!supabase) throw new Error('Supabase client unavailable');
+
+                const { error: cancelErr } = await supabase
+                    .from('subscriptions')
+                    .update({
+                        status: 'cancelled',
+                        auto_renew: false,
+                        remarks: remarks,
+                        updated_at: new Date().toISOString()
+                    })
+                    .eq('subscription_id', state.subscriptionId);
+
+                if (cancelErr) {
+                    console.error('[Billing] Error cancelling subscription in Supabase:', cancelErr);
+                    throw cancelErr;
+                }
+
+                // Close modal and reset form
+                closeModal(modalCancelSub);
+                resetCancelModalForm();
+
+                // Refresh live subscription from DB
+                await loadActiveSubscription();
+
+                const validUntil = state.plan.validUntil && state.plan.validUntil !== '—' ? state.plan.validUntil : 'the end of your billing cycle';
+                showToast(`Subscription cancellation scheduled. Your plan remains active until ${validUntil}.`);
+            } catch (err) {
+                console.error('[Billing] Failed to cancel subscription:', err);
+                showToast('Failed to cancel subscription. Please try again.');
+            } finally {
+                btnConfirmCancelSubscription.disabled = false;
+                btnConfirmCancelSubscription.innerHTML = prevHtml;
+            }
         });
     }
 
@@ -2334,12 +2447,12 @@
         try {
             const { supabase } = await import('./lib/supabase.js');
 
-            // 1. Fetch subscription for current company (prefer active/trial/past_due status)
+            // 1. Fetch subscription for current company (prefer active/trial/past_due/cancelled status)
             let { data: subRows, error: subErr } = await supabase
                 .from('subscriptions')
                 .select('subscription_id, company_id, plan_id, billing_cycle, billing_amount, status, subscription_start_date, subscription_end_date, next_billing_at, auto_renew, plan_name, created_at')
                 .eq('company_id', companyId)
-                .in('status', ['active', 'trial', 'past_due'])
+                .in('status', ['active', 'trial', 'past_due', 'cancelled'])
                 .order('created_at', { ascending: false })
                 .limit(1);
 
