@@ -50,7 +50,7 @@
     };
 
     // ── Catalog Data & Plan Definitions ───────────────────────────
-    const CATALOG_ADDONS = [
+    let CATALOG_ADDONS = [
         {
             id: 'whatsapp',
             name: 'WhatsApp Reminders',
@@ -85,6 +85,36 @@
         }
     ];
 
+    function getAddonById(id) {
+        if (!id) return null;
+        const fromActive = (state.activeAddons || []).find(a => a.id === id);
+        if (fromActive) return fromActive;
+        return CATALOG_ADDONS.find(a => a.id === id) || null;
+    }
+
+    function syncCatalogWithActiveAddons() {
+        if (!state.activeAddons || state.activeAddons.length === 0) return;
+        state.activeAddons.forEach(activeItem => {
+            if (!activeItem || !activeItem.id) return;
+            const existing = CATALOG_ADDONS.find(a => a.id === activeItem.id);
+            if (existing) {
+                if (activeItem.name) existing.name = activeItem.name;
+                if (activeItem.price != null) existing.price = activeItem.price;
+                if (activeItem.icon) existing.icon = activeItem.icon;
+                if (activeItem.theme) existing.theme = activeItem.theme;
+            } else {
+                CATALOG_ADDONS.unshift({
+                    id: activeItem.id,
+                    name: activeItem.name,
+                    desc: activeItem.description || '',
+                    price: Number(activeItem.price) || 0,
+                    icon: activeItem.icon || 'package',
+                    theme: activeItem.theme || 'blue'
+                });
+            }
+        });
+    }
+
     // ── Application State ──────────────────────────────────────────
     const urlParams = new URLSearchParams(window.location.search);
     const paramState = urlParams.get('state');
@@ -112,7 +142,7 @@
             status: 'Active',
             autoRenew: true
         },
-        activeAddonIds: ['whatsapp', 'ai_receptionist'],
+        activeAddonIds: [],
         paymentMethod: {
             type: 'card',
             cardMask: '•••• •••• •••• 4242',
@@ -906,22 +936,54 @@
 
     // Modal 1: Add Add-on Confirmation
     function openAddAddonModal(addonId) {
-        const addon = CATALOG_ADDONS.find(a => a.id === addonId);
+        const addon = getAddonById(addonId);
         if (!addon) return;
 
         state.pendingAddonId = addonId;
         addAddonModalTitle.textContent = `Add ${addon.name}?`;
         addAddonModalPrice.textContent = `${fmtCurrency(addon.price)} / month`;
-        addAddonModalDesc.textContent = addon.desc;
+        addAddonModalDesc.textContent = addon.desc || '';
 
         openModal(modalAddAddon);
     }
 
     if (btnConfirmAddAddon) {
-        btnConfirmAddAddon.addEventListener('click', function () {
+        btnConfirmAddAddon.addEventListener('click', async function () {
             if (state.pendingAddonId && !state.activeAddonIds.includes(state.pendingAddonId)) {
-                state.activeAddonIds.push(state.pendingAddonId);
-                const addon = CATALOG_ADDONS.find(a => a.id === state.pendingAddonId);
+                const addId = state.pendingAddonId;
+                const addon = getAddonById(addId);
+
+                if (state.subscriptionId && addon) {
+                    try {
+                        const { supabase } = await import('./lib/supabase.js');
+                        await supabase
+                            .from('subscription_add_ons')
+                            .insert({
+                                subscription_id: state.subscriptionId,
+                                company_id: getCompanyId(),
+                                addon_id: addon.id,
+                                addon_name: addon.name,
+                                price: addon.price,
+                                status: 'active',
+                                started_at: new Date().toISOString()
+                            });
+                    } catch (err) {
+                        console.error('[Billing] Error activating add-on in DB:', err);
+                    }
+                }
+
+                state.activeAddonIds.push(addId);
+                if (addon) {
+                    state.activeAddons.push({
+                        id: addon.id,
+                        name: addon.name,
+                        price: addon.price,
+                        status: 'active',
+                        icon: addon.icon || 'package',
+                        theme: addon.theme || 'blue'
+                    });
+                }
+                syncCatalogWithActiveAddons();
                 closeModal(modalAddAddon);
                 renderAll();
                 showToast(`✓ ${addon ? addon.name : 'Add-on'} activated!`);
@@ -935,25 +997,38 @@
     let initialActiveAddonIds = [];
 
     function calcAddonsTotal(addonIdList) {
-        return addonIdList.reduce((acc, id) => {
-            const addon = CATALOG_ADDONS.find(a => a.id === id);
-            return acc + (addon ? addon.price : 0);
+        return (addonIdList || []).reduce((acc, id) => {
+            const addon = getAddonById(id);
+            return acc + (addon ? (Number(addon.price) || 0) : 0);
         }, 0);
     }
 
     function renderManageAddonsList() {
         if (!modalManageAddonsList) return;
 
+        syncCatalogWithActiveAddons();
+
+        if (!CATALOG_ADDONS || CATALOG_ADDONS.length === 0) {
+            modalManageAddonsList.innerHTML = `
+                <div style="padding: 2rem 1rem; text-align: center; color: #94a3b8;">
+                    No add-ons currently available.
+                </div>
+            `;
+            renderManageAddonsSummary();
+            return;
+        }
+
         modalManageAddonsList.innerHTML = CATALOG_ADDONS.map(addon => {
             const isSelected = localSelectedAddonIds.includes(addon.id);
+            const safeInputId = 'chk_addon_' + String(addon.id).replace(/[^a-zA-Z0-9_-]/g, '_');
 
             return `
                 <div class="manage-addon-card ${isSelected ? 'is-selected' : ''}" data-addon-id="${addon.id}">
                     <div class="manage-addon-card-check">
-                        <input type="checkbox" class="manage-addon-checkbox" id="chk_addon_${addon.id}" ${isSelected ? 'checked' : ''} data-addon-id="${addon.id}">
+                        <input type="checkbox" class="manage-addon-checkbox" id="${safeInputId}" ${isSelected ? 'checked' : ''} data-addon-id="${addon.id}">
                     </div>
                     <div class="manage-addon-card-info">
-                        <label for="chk_addon_${addon.id}" class="manage-addon-card-title">${addon.name}</label>
+                        <label for="${safeInputId}" class="manage-addon-card-title">${addon.name}</label>
                         <span class="manage-addon-card-price">${fmtCurrency(addon.price)} / month</span>
                     </div>
                 </div>
@@ -990,7 +1065,8 @@
         }
 
         // Update card visual state immediately
-        const card = modalManageAddonsList.querySelector(`.manage-addon-card[data-addon-id="${addonId}"]`);
+        const escapedId = window.CSS && CSS.escape ? CSS.escape(addonId) : addonId;
+        const card = modalManageAddonsList.querySelector(`.manage-addon-card[data-addon-id="${escapedId}"]`);
         if (card) {
             const chk = card.querySelector('.manage-addon-checkbox');
             if (chk) chk.checked = isChecked;
@@ -1008,16 +1084,16 @@
         if (!modalManageAddonsSummary) return;
 
         // Current Add-ons snapshot
-        const currentAddons = initialActiveAddonIds.map(id => CATALOG_ADDONS.find(a => a.id === id)).filter(Boolean);
+        const currentAddons = initialActiveAddonIds.map(id => getAddonById(id)).filter(Boolean);
         const currentTotal = calcAddonsTotal(initialActiveAddonIds);
 
         // New additions (currently selected, but not originally active)
         const addedIds = localSelectedAddonIds.filter(id => !initialActiveAddonIds.includes(id));
-        const addedAddons = addedIds.map(id => CATALOG_ADDONS.find(a => a.id === id)).filter(Boolean);
+        const addedAddons = addedIds.map(id => getAddonById(id)).filter(Boolean);
 
         // Removals (originally active, but unselected)
         const removedIds = initialActiveAddonIds.filter(id => !localSelectedAddonIds.includes(id));
-        const removedAddons = removedIds.map(id => CATALOG_ADDONS.find(a => a.id === id)).filter(Boolean);
+        const removedAddons = removedIds.map(id => getAddonById(id)).filter(Boolean);
 
         // New total
         const newTotal = calcAddonsTotal(localSelectedAddonIds);
@@ -1110,6 +1186,7 @@
 
 
     function openManageAddonsModal() {
+        syncCatalogWithActiveAddons();
         // Snapshot the current active add-ons
         initialActiveAddonIds = [...state.activeAddonIds];
         localSelectedAddonIds = [...state.activeAddonIds];
@@ -1131,13 +1208,83 @@
         btnCloseManageAddons.addEventListener('click', closeManageAddonsModal);
     }
 
-    // Save Changes: directly commit changes to state and refresh UI
+    // Save Changes: commit changes to state and database
     if (btnSaveManageAddons) {
-        btnSaveManageAddons.addEventListener('click', function () {
-            state.activeAddonIds = [...localSelectedAddonIds];
-            closeModal(modalManageAddons);
-            renderAll();
-            showToast('Add-on changes saved successfully.');
+        btnSaveManageAddons.addEventListener('click', async function () {
+            const prevText = btnSaveManageAddons.textContent;
+            btnSaveManageAddons.disabled = true;
+            btnSaveManageAddons.textContent = 'Saving...';
+
+            try {
+                // Determine additions and removals
+                const addedIds = localSelectedAddonIds.filter(id => !initialActiveAddonIds.includes(id));
+                const removedIds = initialActiveAddonIds.filter(id => !localSelectedAddonIds.includes(id));
+
+                // Save to database if subscription exists
+                if (state.subscriptionId) {
+                    try {
+                        const { supabase } = await import('./lib/supabase.js');
+                        const companyId = getCompanyId();
+
+                        // Cancel removed add-ons in Supabase
+                        for (const remId of removedIds) {
+                            await supabase
+                                .from('subscription_add_ons')
+                                .update({ status: 'cancelled', ended_at: new Date().toISOString() })
+                                .eq('subscription_id', state.subscriptionId)
+                                .eq('addon_id', remId)
+                                .eq('status', 'active');
+                        }
+
+                        // Insert new additions in Supabase
+                        for (const addId of addedIds) {
+                            const addonMeta = getAddonById(addId);
+                            if (addonMeta) {
+                                await supabase
+                                    .from('subscription_add_ons')
+                                    .insert({
+                                        subscription_id: state.subscriptionId,
+                                        company_id: companyId,
+                                        addon_id: addonMeta.id,
+                                        addon_name: addonMeta.name,
+                                        price: addonMeta.price,
+                                        status: 'active',
+                                        started_at: new Date().toISOString()
+                                    });
+                            }
+                        }
+                    } catch (dbErr) {
+                        console.error('[Billing] Error updating subscription_add_ons in DB:', dbErr);
+                    }
+                }
+
+                // Update local state active add-ons
+                state.activeAddons = localSelectedAddonIds.map(id => {
+                    const existing = (state.activeAddons || []).find(a => a.id === id);
+                    if (existing) return existing;
+                    const cat = getAddonById(id);
+                    if (cat) {
+                        return {
+                            id: cat.id,
+                            name: cat.name,
+                            price: cat.price,
+                            status: 'active',
+                            icon: cat.icon || 'package',
+                            theme: cat.theme || 'blue'
+                        };
+                    }
+                    return { id, name: 'Add-on', price: 0, status: 'active', icon: 'package', theme: 'blue' };
+                });
+                state.activeAddonIds = [...localSelectedAddonIds];
+                syncCatalogWithActiveAddons();
+
+                closeModal(modalManageAddons);
+                renderAll();
+                showToast('Add-on changes saved successfully.');
+            } finally {
+                btnSaveManageAddons.disabled = false;
+                btnSaveManageAddons.textContent = prevText;
+            }
         });
     }
 
@@ -1755,13 +1902,59 @@
             state.activeAddonIds = items.map(item => item.id);
             state.addonsLoaded = true;
 
+            syncCatalogWithActiveAddons();
             renderActiveAddons();
+            renderAvailableAddons();
         } catch (err) {
             console.error('[Billing] Failed to load active add-ons:', err);
             state.activeAddons = [];
             state.activeAddonIds = [];
             state.addonsLoaded = true;
+            syncCatalogWithActiveAddons();
             renderActiveAddons();
+        }
+    }
+
+    async function loadAvailableAddonsCatalog(supabase) {
+        if (!supabase) return;
+        try {
+            let { data, error } = await supabase
+                .from('add_ons')
+                .select('*')
+                .eq('status', 'active');
+
+            if (error || !data || data.length === 0) {
+                const fallbackRes = await supabase
+                    .from('add_ons')
+                    .select('*');
+                if (!fallbackRes.error && fallbackRes.data && fallbackRes.data.length > 0) {
+                    data = fallbackRes.data;
+                }
+            }
+
+            if (data && data.length > 0) {
+                const dynamicList = data.map(item => {
+                    const rawName = item.name || 'Add-on';
+                    const displayName = rawName.charAt(0).toUpperCase() + rawName.slice(1);
+                    const visual = getAddonVisualMeta(rawName + ' ' + (item.description || ''));
+                    return {
+                        id: item.addon_id || item.id,
+                        name: displayName,
+                        desc: item.description || '',
+                        price: Number(item.price) != null ? Number(item.price) : 0,
+                        icon: visual.icon,
+                        theme: visual.theme
+                    };
+                });
+
+                CATALOG_ADDONS = dynamicList;
+            }
+            // Always ensure active add-ons remain in the catalog
+            syncCatalogWithActiveAddons();
+            renderAvailableAddons();
+        } catch (err) {
+            console.error('[Billing] Failed to load available add-ons catalog:', err);
+            syncCatalogWithActiveAddons();
         }
     }
 
@@ -1864,6 +2057,10 @@
             state.activeAddons = [];
             state.activeAddonIds = [];
             state.addonsLoaded = true;
+            try {
+                const { supabase } = await import('./lib/supabase.js');
+                await loadAvailableAddonsCatalog(supabase);
+            } catch (_) {}
             renderCurrentPlan();
             renderPlanFeatures();
             renderActiveAddons();
@@ -1928,6 +2125,7 @@
                 state.activeAddons = [];
                 state.activeAddonIds = [];
                 state.addonsLoaded = true;
+                await loadAvailableAddonsCatalog(supabase);
                 renderCurrentPlan();
                 renderPlanFeatures();
                 renderActiveAddons();
@@ -1979,10 +2177,11 @@
 
             renderCurrentPlan();
 
-            // Load features and active add-ons in parallel
+            // Load features, active add-ons, and available add-ons catalog in parallel
             await Promise.all([
                 loadPlanFeatures(supabase, sub.plan_id),
-                loadActiveAddons(supabase, sub.subscription_id)
+                loadActiveAddons(supabase, sub.subscription_id),
+                loadAvailableAddonsCatalog(supabase)
             ]);
 
             if (window.feather) feather.replace();
