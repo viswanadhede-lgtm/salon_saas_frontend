@@ -127,6 +127,12 @@
         activeAddons: [],
         addonsLoaded: false,
         planId: null,
+        taxSettings: {
+            taxName: 'GST',
+            taxRate: 0,
+            isActive: false,
+            loaded: false
+        },
         features: {
             included: [],
             excluded: [],
@@ -660,27 +666,54 @@
             `;
         });
 
-        summaryLineItems.innerHTML = itemsHtml;
+        if (summaryLineItems) {
+            summaryLineItems.innerHTML = itemsHtml;
+        }
 
         const summaryCycleBadge = document.getElementById('summaryCycleBadge');
         if (summaryCycleBadge) {
             summaryCycleBadge.textContent = state.plan.cycle === 'annual' ? 'Annual' : 'Monthly';
         }
 
-        const subtotal = basePlanCost + activeItems.reduce((acc, cur) => acc + cur.price, 0);
-        const gst = Math.round(subtotal * 0.18);
-        const total = subtotal + gst;
+        const summarySubtotalLabel = document.getElementById('summarySubtotalLabel');
+        if (summarySubtotalLabel) {
+            summarySubtotalLabel.textContent = state.plan.cycle === 'annual' ? 'Annual Subtotal' : 'Monthly Subtotal';
+        }
 
-        summarySubtotal.textContent = fmtCurrency(subtotal);
-        summaryGst.textContent = fmtCurrency(gst);
-        summaryTotalAmount.textContent = fmtCurrency(total);
+        const subtotal = basePlanCost + activeItems.reduce((acc, cur) => acc + (Number(cur.price) || 0), 0);
 
-        if (state.currentMode === 'noplan') {
-            summaryBillingDateNote.textContent = 'No recurring subscription active.';
-        } else if (state.currentMode === 'cancelled') {
-            summaryBillingDateNote.textContent = `Subscription cancels on ${state.plan.validUntil}. No further renewal.`;
+        // Live tax from billing_settings
+        const taxSettings = state.taxSettings || {};
+        const taxRate = (taxSettings.isActive && Number(taxSettings.taxRate) > 0) ? Number(taxSettings.taxRate) : 0;
+        const taxName = taxSettings.taxName || 'GST';
+
+        const summaryTaxRow = document.getElementById('summaryTaxRow');
+        const summaryTaxLabel = document.getElementById('summaryTaxLabel');
+
+        let taxAmount = 0;
+        if (taxRate > 0) {
+            taxAmount = Math.round(subtotal * (taxRate / 100));
+            if (summaryTaxRow) summaryTaxRow.style.display = 'flex';
+            if (summaryTaxLabel) summaryTaxLabel.textContent = `${taxName} (${taxRate}%)`;
+            if (summaryGst) summaryGst.textContent = fmtCurrency(taxAmount);
         } else {
-            summaryBillingDateNote.textContent = `Auto-renews on ${state.plan.nextBillingDate}.`;
+            // When tax rate is zero or inactive: show only monthly subtotal and do NOT show tax name = 0%
+            if (summaryTaxRow) summaryTaxRow.style.display = 'none';
+        }
+
+        const total = subtotal + taxAmount;
+
+        if (summarySubtotal) summarySubtotal.textContent = fmtCurrency(subtotal);
+        if (summaryTotalAmount) summaryTotalAmount.textContent = fmtCurrency(total);
+
+        if (summaryBillingDateNote) {
+            if (state.currentMode === 'noplan') {
+                summaryBillingDateNote.textContent = 'No recurring subscription active.';
+            } else if (state.currentMode === 'cancelled') {
+                summaryBillingDateNote.textContent = `Subscription cancels on ${state.plan.validUntil}. No further renewal.`;
+            } else {
+                summaryBillingDateNote.textContent = `Auto-renews on ${state.plan.nextBillingDate}.`;
+            }
         }
     }
 
@@ -1991,6 +2024,43 @@
         }
     }
 
+    async function loadBillingSettings(supabase, companyId) {
+        if (!supabase || !companyId) return;
+        try {
+            const { data, error } = await supabase
+                .from('billing_settings')
+                .select('tax_name, tax_rate, is_active')
+                .eq('company_id', companyId)
+                .order('created_at', { ascending: false })
+                .limit(1);
+
+            if (error) {
+                console.warn('[Billing] Notice fetching billing_settings:', error.message || error);
+                return;
+            }
+
+            if (data && data.length > 0) {
+                const setting = data[0];
+                const rateNum = setting.tax_rate != null ? Number(setting.tax_rate) : 0;
+                state.taxSettings = {
+                    taxName: (setting.tax_name || 'GST').trim(),
+                    taxRate: (!isNaN(rateNum) && rateNum > 0) ? rateNum : 0,
+                    isActive: setting.is_active !== false,
+                    loaded: true
+                };
+            } else {
+                state.taxSettings = {
+                    taxName: 'GST',
+                    taxRate: 0,
+                    isActive: false,
+                    loaded: true
+                };
+            }
+        } catch (err) {
+            console.warn('[Billing] Non-blocking warning in loadBillingSettings:', err);
+        }
+    }
+
     async function loadPlanFeatures(supabase, planId) {
         if (!planId) {
             state.features = { included: [], excluded: [], loaded: true };
@@ -2158,10 +2228,14 @@
                 state.activeAddons = [];
                 state.activeAddonIds = [];
                 state.addonsLoaded = true;
-                await loadAvailableAddonsCatalog(supabase);
+                await Promise.all([
+                    loadAvailableAddonsCatalog(supabase),
+                    loadBillingSettings(supabase, companyId)
+                ]);
                 renderCurrentPlan();
                 renderPlanFeatures();
                 renderActiveAddons();
+                renderBillingSummary();
                 return;
             }
 
@@ -2210,11 +2284,12 @@
 
             renderCurrentPlan();
 
-            // Load features, active add-ons, and available add-ons catalog in parallel
+            // Load features, active add-ons, available add-ons catalog, and billing settings in parallel
             await Promise.all([
                 loadPlanFeatures(supabase, sub.plan_id),
                 loadActiveAddons(supabase, sub.subscription_id),
-                loadAvailableAddonsCatalog(supabase)
+                loadAvailableAddonsCatalog(supabase),
+                loadBillingSettings(supabase, companyId)
             ]);
 
             renderBillingSummary();
