@@ -1031,6 +1031,57 @@
     box-shadow: 0 2px 8px rgba(239, 68, 68, 0.2);
 }
 
+.sub-manage-actions {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    flex-wrap: wrap;
+}
+
+.status-badge-scheduled {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    background: #fee2e2;
+    border: 1.5px solid #fca5a5;
+    color: #991b1b;
+    font-size: 0.83rem;
+    font-weight: 700;
+    padding: 8px 14px;
+    border-radius: var(--radius-sm);
+    user-select: none;
+    cursor: default;
+}
+
+.btn-renew-sub {
+    background: var(--brand-blue);
+    color: #ffffff;
+    border: 1px solid var(--brand-blue);
+    font-size: 0.85rem;
+    font-weight: 700;
+    padding: 9px 18px;
+    border-radius: var(--radius-sm);
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    transition: all 0.2s ease;
+    box-shadow: 0 2px 8px rgba(37, 99, 235, 0.25);
+}
+
+.btn-renew-sub:hover {
+    background: var(--brand-blue-hover);
+    border-color: var(--brand-blue-hover);
+    box-shadow: 0 4px 14px rgba(37, 99, 235, 0.35);
+    transform: translateY(-1px);
+}
+
+.btn-renew-sub:disabled {
+    opacity: 0.65;
+    cursor: not-allowed;
+    transform: none;
+}
+
 /* ============================================================
    BUTTONS
    ============================================================ */

@@ -419,11 +419,7 @@
 
             const btnReactivate = document.getElementById('btnReactivateSub');
             if (btnReactivate) {
-                btnReactivate.onclick = () => {
-                    state.currentMode = 'active';
-                    renderAll();
-                    showToast('Subscription reactivated successfully!');
-                };
+                btnReactivate.onclick = handleRenewSubscription;
             }
         } else {
             // State: Active (or other status)
@@ -921,39 +917,58 @@
     function renderSubscriptionManagement() {
         if (state.currentMode === 'noplan') {
             if (subscriptionManagementSection) subscriptionManagementSection.style.display = 'none';
+            return;
+        }
+
+        if (subscriptionManagementSection) subscriptionManagementSection.style.display = 'flex';
+        const subManageTitle = document.getElementById('subManageTitle');
+        const subManageDesc = document.getElementById('subManageDesc');
+        const subManageActions = document.getElementById('subManageActions');
+
+        const isScheduledCancellation = state.plan.autoRenew === false ||
+                                        state.currentMode === 'cancelled' ||
+                                        (state.plan.status && state.plan.status.toLowerCase() === 'cancelled');
+
+        const planDisplayName = state.plan.name || 'Plan';
+        const validUntil = state.plan.validUntil && state.plan.validUntil !== '—' ? state.plan.validUntil : 'the end of your billing cycle';
+
+        if (isScheduledCancellation) {
+            if (subManageTitle) subManageTitle.textContent = 'Subscription Management';
+            if (subManageDesc) {
+                subManageDesc.innerHTML = `Your subscription is scheduled for cancellation. Your <strong>${planDisplayName}</strong> remains active until <strong>${validUntil}</strong> and will not renew after that date.`;
+            }
+            if (subManageActions) {
+                subManageActions.innerHTML = `
+                    <span class="status-badge-scheduled">Scheduled for Cancellation</span>
+                    <button type="button" class="btn-renew-sub" id="btnRenewSubscription">
+                        <i data-feather="refresh-cw"></i>
+                        <span>Renew Subscription</span>
+                    </button>
+                `;
+                const btnRenew = document.getElementById('btnRenewSubscription');
+                if (btnRenew) {
+                    btnRenew.onclick = handleRenewSubscription;
+                }
+            }
         } else {
-            if (subscriptionManagementSection) subscriptionManagementSection.style.display = 'flex';
-            const subManageTitle = document.getElementById('subManageTitle');
-            const subManageDesc = document.getElementById('subManageDesc');
-            const btnCancel = document.getElementById('btnTriggerCancelModal');
-
-            const isCancelled = state.currentMode === 'cancelled' ||
-                                (state.plan.status && state.plan.status.toLowerCase() === 'cancelled') ||
-                                state.plan.autoRenew === false;
-
-            if (isCancelled) {
-                if (subManageTitle) subManageTitle.textContent = 'Subscription Scheduled for Cancellation';
-                if (subManageDesc) {
-                    const validDate = state.plan.validUntil && state.plan.validUntil !== '—' ? state.plan.validUntil : 'the end of your billing cycle';
-                    subManageDesc.textContent = `Your plan remains active and fully usable until ${validDate}. Auto-renewal is disabled.`;
-                }
+            if (subManageTitle) subManageTitle.textContent = 'Subscription Management';
+            if (subManageDesc) {
+                subManageDesc.textContent = 'Manage your subscription or cancel your plan.';
+            }
+            if (subManageActions) {
+                subManageActions.innerHTML = `
+                    <button type="button" class="btn-cancel-plain" id="btnTriggerCancelModal">
+                        Cancel Subscription
+                    </button>
+                `;
+                const btnCancel = document.getElementById('btnTriggerCancelModal');
                 if (btnCancel) {
-                    btnCancel.textContent = 'Cancellation Scheduled';
-                    btnCancel.disabled = true;
-                    btnCancel.style.opacity = '0.6';
-                    btnCancel.style.cursor = 'not-allowed';
-                }
-            } else {
-                if (subManageTitle) subManageTitle.textContent = 'Subscription Management';
-                if (subManageDesc) subManageDesc.textContent = 'Manage your subscription or cancel your plan.';
-                if (btnCancel) {
-                    btnCancel.textContent = 'Cancel Subscription';
-                    btnCancel.disabled = false;
-                    btnCancel.style.opacity = '1';
-                    btnCancel.style.cursor = 'pointer';
+                    btnCancel.onclick = openCancelSubscriptionModal;
                 }
             }
         }
+
+        if (window.feather) feather.replace();
     }
 
     function renderAll() {
@@ -1427,31 +1442,80 @@
         }
     }
 
+    function openCancelSubscriptionModal() {
+        const isScheduledCancellation = state.plan.autoRenew === false ||
+                                        state.currentMode === 'cancelled' ||
+                                        (state.plan.status && state.plan.status.toLowerCase() === 'cancelled');
+        if (isScheduledCancellation) {
+            showToast('Subscription is already scheduled for cancellation.');
+            return;
+        }
+
+        const rawPlanName = state.plan.name || 'Growth';
+        const planDisplay = rawPlanName.toLowerCase().includes('plan') ? rawPlanName : `${rawPlanName} Plan`;
+        const validUntil = state.plan.validUntil && state.plan.validUntil !== '—' ? state.plan.validUntil : '';
+
+        if (cancelModalSubtitle) {
+            cancelModalSubtitle.textContent = validUntil
+                ? `Your ${planDisplay} will remain active until ${validUntil}. Your subscription will not renew after this date.`
+                : `Your ${planDisplay} will remain active until the end of your billing cycle. Your subscription will not renew after this date.`;
+        }
+        if (cancelInfoActiveDate) {
+            cancelInfoActiveDate.textContent = validUntil || 'the end of your billing cycle';
+        }
+        resetCancelModalForm();
+        openModal(modalCancelSub);
+    }
+
+    async function handleRenewSubscription() {
+        if (!state.subscriptionId) {
+            showToast('No active subscription found to renew.');
+            return;
+        }
+
+        const btnRenew = document.getElementById('btnRenewSubscription') || document.getElementById('btnReactivateSub');
+        const prevHtml = btnRenew ? btnRenew.innerHTML : '';
+        if (btnRenew) {
+            btnRenew.disabled = true;
+            btnRenew.innerHTML = '<span class="btn-spinner"></span> <span>Renewing...</span>';
+        }
+
+        try {
+            const { supabase } = await import('./lib/supabase.js');
+            if (!supabase) throw new Error('Supabase client unavailable');
+
+            const { error: renewErr } = await supabase
+                .from('subscriptions')
+                .update({
+                    status: 'active',
+                    auto_renew: true,
+                    remarks: null,
+                    updated_at: new Date().toISOString()
+                })
+                .eq('subscription_id', state.subscriptionId);
+
+            if (renewErr) {
+                console.error('[Billing] Error renewing subscription in Supabase:', renewErr);
+                throw renewErr;
+            }
+
+            // Refresh live subscription from DB
+            await loadActiveSubscription();
+
+            showToast('Subscription renewed successfully. Auto-renewal has been re-enabled.');
+        } catch (err) {
+            console.error('[Billing] Failed to renew subscription:', err);
+            showToast('Failed to renew subscription. Please try again.');
+        } finally {
+            if (btnRenew) {
+                btnRenew.disabled = false;
+                btnRenew.innerHTML = prevHtml;
+            }
+        }
+    }
+
     if (btnTriggerCancelModal) {
-        btnTriggerCancelModal.addEventListener('click', function () {
-            const isCancelled = state.currentMode === 'cancelled' ||
-                                (state.plan.status && state.plan.status.toLowerCase() === 'cancelled') ||
-                                state.plan.autoRenew === false;
-            if (isCancelled) {
-                showToast('Subscription is already scheduled for cancellation.');
-                return;
-            }
-
-            const rawPlanName = state.plan.name || 'Growth';
-            const planDisplay = rawPlanName.toLowerCase().includes('plan') ? rawPlanName : `${rawPlanName} Plan`;
-            const validUntil = state.plan.validUntil && state.plan.validUntil !== '—' ? state.plan.validUntil : '';
-
-            if (cancelModalSubtitle) {
-                cancelModalSubtitle.textContent = validUntil
-                    ? `Your ${planDisplay} will remain active until ${validUntil}. Your subscription will not renew after this date.`
-                    : `Your ${planDisplay} will remain active until the end of your billing cycle. Your subscription will not renew after this date.`;
-            }
-            if (cancelInfoActiveDate) {
-                cancelInfoActiveDate.textContent = validUntil || 'the end of your billing cycle';
-            }
-            resetCancelModalForm();
-            openModal(modalCancelSub);
-        });
+        btnTriggerCancelModal.addEventListener('click', openCancelSubscriptionModal);
     }
 
     // Handle cancellation reason selection and conditional 'Other' feedback textarea
@@ -1509,10 +1573,11 @@
                 const { supabase } = await import('./lib/supabase.js');
                 if (!supabase) throw new Error('Supabase client unavailable');
 
+                // IMPORTANT: Subscription remains ACTIVE during paid period, only auto_renew is set to false
                 const { error: cancelErr } = await supabase
                     .from('subscriptions')
                     .update({
-                        status: 'cancelled',
+                        status: 'active',
                         auto_renew: false,
                         remarks: remarks,
                         updated_at: new Date().toISOString()
@@ -2533,9 +2598,18 @@
                 }
             }
 
-            const rawStatus = (sub.status || 'Active').trim();
-            const isCancelled = rawStatus.toLowerCase() === 'cancelled';
-            state.currentMode = isCancelled ? 'cancelled' : 'active';
+            const rawStatus = (sub.status || 'Active').trim().toLowerCase();
+            const isAutoRenew = sub.auto_renew !== false;
+            const isExpired = rawStatus === 'expired';
+            const isScheduledCancellation = (rawStatus === 'active' || rawStatus === 'trial' || rawStatus === 'past_due' || rawStatus === 'cancelled') && !isAutoRenew;
+
+            if (isExpired) {
+                state.currentMode = 'noplan';
+            } else if (isScheduledCancellation || rawStatus === 'cancelled') {
+                state.currentMode = 'cancelled';
+            } else {
+                state.currentMode = 'active';
+            }
 
             const rawCycle = (sub.billing_cycle || 'monthly').toLowerCase().trim();
             const cycleKey = (rawCycle === 'annual' || rawCycle === 'annually' || rawCycle === 'yearly') ? 'annual' : 'monthly';
@@ -2551,11 +2625,11 @@
                 price: sub.billing_amount != null ? Number(sub.billing_amount) : 0,
                 startDate: formatDateDisplay(sub.subscription_start_date),
                 validUntil: formatDateDisplay(sub.subscription_end_date),
-                nextBillingDate: (sub.auto_renew === false || isCancelled)
+                nextBillingDate: (!isAutoRenew || isScheduledCancellation || rawStatus === 'cancelled')
                     ? 'None'
                     : (sub.next_billing_at ? formatDateDisplay(sub.next_billing_at) : 'None'),
-                status: rawStatus.charAt(0).toUpperCase() + rawStatus.slice(1).toLowerCase(),
-                autoRenew: sub.auto_renew !== false
+                status: isScheduledCancellation ? 'Active' : (rawStatus.charAt(0).toUpperCase() + rawStatus.slice(1)),
+                autoRenew: isAutoRenew
             };
 
             renderCurrentPlan();
