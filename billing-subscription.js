@@ -143,6 +143,12 @@
             autoRenew: true
         },
         activeAddonIds: [],
+        taxSettings: {
+            taxName: 'GST',
+            taxRate: 0,
+            isActive: false,
+            loaded: false
+        },
         paymentMethod: {
             type: 'card',
             cardMask: '•••• •••• •••• 4242',
@@ -269,6 +275,9 @@
 
     const summaryLineItems = document.getElementById('summaryLineItems');
     const summarySubtotal = document.getElementById('summarySubtotal');
+    const summarySubtotalLabel = document.getElementById('summarySubtotalLabel');
+    const summaryTaxRow = document.getElementById('summaryTaxRow');
+    const summaryTaxLabel = document.getElementById('summaryTaxLabel');
     const summaryGst = document.getElementById('summaryGst');
     const summaryTotalAmount = document.getElementById('summaryTotalAmount');
     const summaryBillingDateNote = document.getElementById('summaryBillingDateNote');
@@ -662,12 +671,37 @@
 
         summaryLineItems.innerHTML = itemsHtml;
 
+        const summaryCycleBadge = document.getElementById('summaryCycleBadge');
+        if (summaryCycleBadge) {
+            summaryCycleBadge.textContent = state.plan.cycle === 'annual' ? 'Annual' : 'Monthly';
+        }
+
+        if (summarySubtotalLabel) {
+            summarySubtotalLabel.textContent = state.plan.cycle === 'annual' ? 'Annual Subtotal' : 'Monthly Subtotal';
+        }
+
         const subtotal = basePlanCost + activeItems.reduce((acc, cur) => acc + cur.price, 0);
-        const gst = Math.round(subtotal * 0.18);
-        const total = subtotal + gst;
+
+        // Dynamic tax calculation from billing_settings
+        const taxName = (state.taxSettings && state.taxSettings.taxName) || 'GST';
+        const taxRate = (state.taxSettings && state.taxSettings.isActive && state.taxSettings.taxRate != null)
+            ? Number(state.taxSettings.taxRate)
+            : 0;
+
+        let taxAmount = 0;
+        if (taxRate > 0) {
+            taxAmount = Math.round(subtotal * (taxRate / 100));
+            if (summaryTaxRow) summaryTaxRow.style.display = 'flex';
+            if (summaryTaxLabel) summaryTaxLabel.textContent = `${taxName} (${taxRate}%)`;
+            if (summaryGst) summaryGst.textContent = fmtCurrency(taxAmount);
+        } else {
+            // When tax rate is zero, hide the tax row completely and show only subtotal
+            if (summaryTaxRow) summaryTaxRow.style.display = 'none';
+        }
+
+        const total = subtotal + taxAmount;
 
         summarySubtotal.textContent = fmtCurrency(subtotal);
-        summaryGst.textContent = fmtCurrency(gst);
         summaryTotalAmount.textContent = fmtCurrency(total);
 
         if (state.currentMode === 'noplan') {
@@ -1931,6 +1965,7 @@
             syncCatalogWithActiveAddons();
             renderActiveAddons();
             renderAvailableAddons();
+            renderBillingSummary();
         } catch (err) {
             console.error('[Billing] Failed to load active add-ons:', err);
             state.activeAddons = [];
@@ -1938,6 +1973,7 @@
             state.addonsLoaded = true;
             syncCatalogWithActiveAddons();
             renderActiveAddons();
+            renderBillingSummary();
         }
     }
 
@@ -2057,6 +2093,64 @@
         }
     }
 
+    async function loadBillingSettings(supabase, companyId) {
+        if (!companyId || !supabase) return;
+        try {
+            const { data, error } = await supabase
+                .from('billing_settings')
+                .select('tax_name, tax_rate, is_active')
+                .eq('company_id', companyId)
+                .eq('is_active', true)
+                .order('created_at', { ascending: false })
+                .limit(1);
+
+            if (!error && data && data.length > 0) {
+                const setting = data[0];
+                const rate = setting.tax_rate != null ? Number(setting.tax_rate) : 0;
+                state.taxSettings = {
+                    taxName: (setting.tax_name || 'Tax').trim(),
+                    taxRate: isNaN(rate) ? 0 : rate,
+                    isActive: setting.is_active !== false,
+                    loaded: true
+                };
+            } else {
+                // Fallback check if any setting exists for this company
+                const fallbackRes = await supabase
+                    .from('billing_settings')
+                    .select('tax_name, tax_rate, is_active')
+                    .eq('company_id', companyId)
+                    .order('created_at', { ascending: false })
+                    .limit(1);
+
+                if (!fallbackRes.error && fallbackRes.data && fallbackRes.data.length > 0) {
+                    const setting = fallbackRes.data[0];
+                    const rate = setting.tax_rate != null ? Number(setting.tax_rate) : 0;
+                    state.taxSettings = {
+                        taxName: (setting.tax_name || 'Tax').trim(),
+                        taxRate: isNaN(rate) ? 0 : rate,
+                        isActive: setting.is_active === true,
+                        loaded: true
+                    };
+                } else {
+                    state.taxSettings = {
+                        taxName: 'GST',
+                        taxRate: 0,
+                        isActive: false,
+                        loaded: true
+                    };
+                }
+            }
+        } catch (err) {
+            console.error('[Billing] Error loading billing_settings:', err);
+            state.taxSettings = {
+                taxName: 'GST',
+                taxRate: 0,
+                isActive: false,
+                loaded: true
+            };
+        }
+    }
+
     async function loadActiveSubscription() {
         const urlParams = new URLSearchParams(window.location.search);
         const paramState = urlParams.get('state');
@@ -2085,11 +2179,15 @@
             state.addonsLoaded = true;
             try {
                 const { supabase } = await import('./lib/supabase.js');
-                await loadAvailableAddonsCatalog(supabase);
+                await Promise.all([
+                    loadAvailableAddonsCatalog(supabase),
+                    loadBillingSettings(supabase, companyId)
+                ]);
             } catch (_) {}
             renderCurrentPlan();
             renderPlanFeatures();
             renderActiveAddons();
+            renderBillingSummary();
             return;
         }
 
@@ -2151,10 +2249,14 @@
                 state.activeAddons = [];
                 state.activeAddonIds = [];
                 state.addonsLoaded = true;
-                await loadAvailableAddonsCatalog(supabase);
+                await Promise.all([
+                    loadAvailableAddonsCatalog(supabase),
+                    loadBillingSettings(supabase, companyId)
+                ]);
                 renderCurrentPlan();
                 renderPlanFeatures();
                 renderActiveAddons();
+                renderBillingSummary();
                 return;
             }
 
@@ -2203,12 +2305,15 @@
 
             renderCurrentPlan();
 
-            // Load features, active add-ons, and available add-ons catalog in parallel
+            // Load features, active add-ons, available add-ons catalog, and live billing settings in parallel
             await Promise.all([
                 loadPlanFeatures(supabase, sub.plan_id),
                 loadActiveAddons(supabase, sub.subscription_id),
-                loadAvailableAddonsCatalog(supabase)
+                loadAvailableAddonsCatalog(supabase),
+                loadBillingSettings(supabase, companyId)
             ]);
+
+            renderBillingSummary();
 
             if (window.feather) feather.replace();
         } catch (err) {
