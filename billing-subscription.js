@@ -944,15 +944,33 @@
         addAddonModalPrice.textContent = `${fmtCurrency(addon.price)} / month`;
         addAddonModalDesc.textContent = addon.desc || '';
 
+        if (btnConfirmAddAddon) {
+            btnConfirmAddAddon.disabled = false;
+            btnConfirmAddAddon.innerHTML = 'Add Add-on';
+        }
+
+        const closeButtons = modalAddAddon.querySelectorAll('[data-close-modal], .billing-modal-close');
+        closeButtons.forEach(btn => btn.disabled = false);
+
         openModal(modalAddAddon);
     }
 
     if (btnConfirmAddAddon) {
         btnConfirmAddAddon.addEventListener('click', async function () {
-            if (state.pendingAddonId && !state.activeAddonIds.includes(state.pendingAddonId)) {
-                const addId = state.pendingAddonId;
-                const addon = getAddonById(addId);
+            if (!state.pendingAddonId) return;
 
+            const addId = state.pendingAddonId;
+            const addon = getAddonById(addId);
+
+            // Disable button and show buffer circle
+            const prevHtml = btnConfirmAddAddon.innerHTML;
+            btnConfirmAddAddon.disabled = true;
+            btnConfirmAddAddon.innerHTML = '<span class="btn-spinner"></span> <span>Adding...</span>';
+
+            const closeButtons = modalAddAddon.querySelectorAll('[data-close-modal], .billing-modal-close');
+            closeButtons.forEach(btn => btn.disabled = true);
+
+            try {
                 if (state.subscriptionId && addon) {
                     try {
                         const { supabase } = await import('./lib/supabase.js');
@@ -972,8 +990,11 @@
                     }
                 }
 
-                state.activeAddonIds.push(addId);
-                if (addon) {
+                if (!state.activeAddonIds.includes(addId)) {
+                    state.activeAddonIds.push(addId);
+                }
+
+                if (addon && !state.activeAddons.some(a => a.id === addon.id)) {
                     state.activeAddons.push({
                         id: addon.id,
                         name: addon.name,
@@ -983,12 +1004,17 @@
                         theme: addon.theme || 'blue'
                     });
                 }
+
                 syncCatalogWithActiveAddons();
                 closeModal(modalAddAddon);
                 renderAll();
                 showToast(`✓ ${addon ? addon.name : 'Add-on'} activated!`);
+            } finally {
+                btnConfirmAddAddon.disabled = false;
+                btnConfirmAddAddon.innerHTML = prevHtml;
+                closeButtons.forEach(btn => btn.disabled = false);
+                state.pendingAddonId = null;
             }
-            state.pendingAddonId = null;
         });
     }
 
@@ -1211,9 +1237,9 @@
     // Save Changes: commit changes to state and database
     if (btnSaveManageAddons) {
         btnSaveManageAddons.addEventListener('click', async function () {
-            const prevText = btnSaveManageAddons.textContent;
+            const prevHtml = btnSaveManageAddons.innerHTML;
             btnSaveManageAddons.disabled = true;
-            btnSaveManageAddons.textContent = 'Saving...';
+            btnSaveManageAddons.innerHTML = '<span class="btn-spinner"></span> <span>Saving...</span>';
 
             try {
                 // Determine additions and removals
@@ -1283,7 +1309,7 @@
                 showToast('Add-on changes saved successfully.');
             } finally {
                 btnSaveManageAddons.disabled = false;
-                btnSaveManageAddons.textContent = prevText;
+                btnSaveManageAddons.innerHTML = prevHtml;
             }
         });
     }
