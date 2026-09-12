@@ -28,10 +28,13 @@
     const getCompanyId = () => {
         try {
             const ctx = JSON.parse(localStorage.getItem('appContext') || '{}');
-            return ctx.company?.id || localStorage.getItem('company_id') || null;
-        } catch {
-            return localStorage.getItem('company_id') || null;
-        }
+            if (ctx.company?.company_id) return ctx.company.company_id;
+            if (ctx.company?.id) return ctx.company.id;
+        } catch (_) {}
+        return localStorage.getItem('company_id') ||
+               localStorage.getItem('current_company_id') ||
+               localStorage.getItem('tenant_id') ||
+               null;
     };
 
     const showToast = (msg) => {
@@ -1643,6 +1646,51 @@
     // ── Backend Integration: Active Plan, Features & Add-ons Loader ─
     let isSubLoading = false;
 
+    async function resolveCompanyId() {
+        // 1. Direct check in appContext or standard storage keys
+        let compId = getCompanyId();
+        if (compId) return compId;
+
+        // 2. Auth guard might be completing cold start; poll briefly
+        for (let i = 0; i < 8; i++) {
+            await new Promise(r => setTimeout(r, 150));
+            compId = getCompanyId();
+            if (compId) return compId;
+        }
+
+        // 3. Fallback: Lookup company_id via logged in user token
+        try {
+            const token = localStorage.getItem('token');
+            if (token) {
+                const { supabase } = await import('./lib/supabase.js');
+                const SUPABASE_URL = supabase._url || 'https://qxmgyxjwpxkdbgldpdil.supabase.co';
+                const SUPABASE_ANON = supabase._key || 'sb_publishable_aqCSbMiVxH5cSZxgssdNqw_jQZvzmA0';
+                const userRes = await fetch(`${SUPABASE_URL}/auth/v1/user`, {
+                    headers: { 'apikey': SUPABASE_ANON, 'Authorization': `Bearer ${token}` }
+                });
+                if (userRes.ok) {
+                    const authUser = await userRes.json().catch(() => null);
+                    if (authUser?.id) {
+                        const { data: uRows } = await supabase
+                            .from('users')
+                            .select('company_id')
+                            .eq('user_id', authUser.id)
+                            .limit(1);
+                        if (uRows && uRows[0]?.company_id) {
+                            compId = uRows[0].company_id;
+                            try { localStorage.setItem('company_id', compId); } catch (_) {}
+                            return compId;
+                        }
+                    }
+                }
+            }
+        } catch (e) {
+            console.warn('[Billing] Fallback company resolution error:', e);
+        }
+
+        return null;
+    }
+
     async function loadActiveAddons(supabase, subscriptionId) {
         if (!subscriptionId) {
             state.activeAddons = [];
@@ -1669,13 +1717,32 @@
                 return;
             }
 
+            // Also query add_ons table to resolve master metadata
+            const addonIds = [...new Set((addOnsData || []).map(r => r.addon_id).filter(Boolean))];
+            let masterMap = {};
+            if (addonIds.length > 0) {
+                try {
+                    const { data: masterRows } = await supabase
+                        .from('add_ons')
+                        .select('addon_id, name, description')
+                        .in('addon_id', addonIds);
+                    (masterRows || []).forEach(m => {
+                        masterMap[m.addon_id] = m;
+                    });
+                } catch (_) {}
+            }
+
             const items = (addOnsData || []).map(row => {
-                const visual = getAddonVisualMeta(row.addon_name);
+                const master = masterMap[row.addon_id] || {};
+                const rawName = row.addon_name || master.name || 'Add-on';
+                // Capitalize add-on names nicely (e.g. "add-on 1" -> "Add-on 1")
+                const displayName = rawName.charAt(0).toUpperCase() + rawName.slice(1);
+                const visual = getAddonVisualMeta(rawName + ' ' + (master.description || ''));
                 return {
                     id: row.addon_id,
                     subAddonId: row.id,
-                    name: row.addon_name || 'Add-on',
-                    price: Number(row.price) || 0,
+                    name: displayName,
+                    price: Number(row.price) != null ? Number(row.price) : (Number(master.price) || 0),
                     status: row.status || 'active',
                     startedAt: row.started_at,
                     endedAt: row.ended_at,
@@ -1772,6 +1839,8 @@
     }
 
     async function loadActiveSubscription() {
+        const urlParams = new URLSearchParams(window.location.search);
+        const paramState = urlParams.get('state');
         if (paramState && validModes.includes(paramState)) {
             console.log('[Billing] Dev mode override active:', paramState);
             if (paramState === 'noplan') {
@@ -1785,7 +1854,7 @@
             return;
         }
 
-        const companyId = getCompanyId();
+        const companyId = await resolveCompanyId();
         if (!companyId) {
             console.warn('[Billing] No active company detected. Showing empty plan state.');
             state.currentMode = 'noplan';
@@ -1817,7 +1886,7 @@
                 console.error('[Billing] Subscription fetch error:', subErr);
             }
 
-            // Fallback to most recent subscription row if no active row exists
+            // Fallback to most recent subscription row for company
             if (!subRows || subRows.length === 0) {
                 const { data: recentRows, error: recentErr } = await supabase
                     .from('subscriptions')
@@ -1829,6 +1898,25 @@
                 if (!recentErr && recentRows && recentRows.length > 0) {
                     subRows = recentRows;
                 }
+            }
+
+            // Secondary Fallback: Lookup by current user_id if company has no subscription
+            if (!subRows || subRows.length === 0) {
+                try {
+                    const ctx = JSON.parse(localStorage.getItem('appContext') || '{}');
+                    const userId = ctx.user?.user_id || ctx.user?.id;
+                    if (userId) {
+                        const { data: userSubRows } = await supabase
+                            .from('subscriptions')
+                            .select('subscription_id, company_id, plan_id, billing_cycle, billing_amount, status, subscription_start_date, subscription_end_date, next_billing_at, auto_renew, plan_name, created_at')
+                            .eq('user_id', userId)
+                            .order('created_at', { ascending: false })
+                            .limit(1);
+                        if (userSubRows && userSubRows.length > 0) {
+                            subRows = userSubRows;
+                        }
+                    }
+                } catch (_) {}
             }
 
             if (!subRows || subRows.length === 0) {
@@ -1871,8 +1959,13 @@
             const rawCycle = (sub.billing_cycle || 'monthly').toLowerCase().trim();
             const cycleKey = (rawCycle === 'annual' || rawCycle === 'annually' || rawCycle === 'yearly') ? 'annual' : 'monthly';
 
+            // Clean plan display name (e.g., "advance" -> "Advance")
+            const formattedPlanName = planName
+                ? planName.charAt(0).toUpperCase() + planName.slice(1)
+                : 'Growth';
+
             state.plan = {
-                name: planName || 'Growth',
+                name: formattedPlanName,
                 cycle: cycleKey,
                 price: sub.billing_amount != null ? Number(sub.billing_amount) : 0,
                 startDate: formatDateDisplay(sub.subscription_start_date),
@@ -1901,8 +1994,25 @@
     async function loadActiveSubscriptionOnce() {
         if (isSubLoading) return;
         isSubLoading = true;
-        await loadActiveSubscription();
+        try {
+            await loadActiveSubscription();
+        } catch (err) {
+            console.error('[Billing] Error in subscription load runner:', err);
+        } finally {
+            isSubLoading = false;
+        }
     }
+
+    // Intercept header population from global-auth-guard to trigger reload if needed
+    const prevPopulateHeader = window.populateGlobalHeader;
+    window.populateGlobalHeader = function () {
+        if (typeof prevPopulateHeader === 'function') {
+            try { prevPopulateHeader.apply(this, arguments); } catch (_) {}
+        }
+        if (!state.subscriptionId || state.currentMode === 'noplan') {
+            loadActiveSubscriptionOnce();
+        }
+    };
 
     // ── Developer Preview Helper (Accessible via console or URL query ?state=...) ─────
     window.setBillingState = function (mode) {
