@@ -161,6 +161,7 @@
             bankName: 'HDFC Bank'
         },
         billingInfo: {
+            id: null,
             legalName: 'Salon ABC',
             gstin: '37ABCDE1234F1Z5',
             pan: 'ABCDE1234F',
@@ -172,7 +173,8 @@
             district: 'Krishna',
             state: 'Andhra Pradesh',
             pincode: '521001',
-            country: 'India'
+            country: 'India',
+            loaded: false
         },
         paymentHistory: [
             {
@@ -1449,23 +1451,142 @@
     }
 
     if (btnSaveBillingInfo) {
-        btnSaveBillingInfo.addEventListener('click', function () {
-            state.billingInfo.legalName = (inputLegalName && inputLegalName.value.trim()) || state.billingInfo.legalName;
-            state.billingInfo.gstin = (inputGstin && inputGstin.value.trim()) || state.billingInfo.gstin;
-            state.billingInfo.pan = inputPan ? inputPan.value.trim().toUpperCase() : state.billingInfo.pan;
-            state.billingInfo.email = (inputBillingEmail && inputBillingEmail.value.trim()) || state.billingInfo.email;
-            state.billingInfo.phone = inputBillingPhone ? inputBillingPhone.value.trim() : state.billingInfo.phone;
-            state.billingInfo.addressLine1 = (inputAddressLine1 && inputAddressLine1.value.trim()) || state.billingInfo.addressLine1;
-            state.billingInfo.addressLine2 = inputAddressLine2 ? inputAddressLine2.value.trim() : '';
-            state.billingInfo.city = (inputCity && inputCity.value.trim()) || state.billingInfo.city;
-            state.billingInfo.district = inputDistrict ? inputDistrict.value.trim() : '';
-            state.billingInfo.state = (inputState && inputState.value.trim()) || state.billingInfo.state;
-            state.billingInfo.pincode = (inputPincode && inputPincode.value.trim()) || state.billingInfo.pincode;
-            state.billingInfo.country = (inputCountry && inputCountry.value.trim()) || 'India';
+        btnSaveBillingInfo.addEventListener('click', async function () {
+            const legalName = (inputLegalName && inputLegalName.value.trim()) || '';
+            const email = (inputBillingEmail && inputBillingEmail.value.trim()) || '';
+            const addressLine1 = (inputAddressLine1 && inputAddressLine1.value.trim()) || '';
+            const city = (inputCity && inputCity.value.trim()) || '';
+            const stateVal = (inputState && inputState.value.trim()) || '';
+            const pincode = (inputPincode && inputPincode.value.trim()) || '';
+            const gstin = inputGstin ? inputGstin.value.trim().toUpperCase() : '';
+            const pan = inputPan ? inputPan.value.trim().toUpperCase() : '';
+            const phone = inputBillingPhone ? inputBillingPhone.value.trim() : '';
+            const addressLine2 = inputAddressLine2 ? inputAddressLine2.value.trim() : '';
+            const district = inputDistrict ? inputDistrict.value.trim() : '';
+            const country = (inputCountry && inputCountry.value.trim()) || 'India';
 
-            closeModal(modalEditBilling);
-            renderBillingInfo();
-            showToast('Billing information saved.');
+            if (!legalName) {
+                showToast('Please enter legal business name.');
+                if (inputLegalName) inputLegalName.focus();
+                return;
+            }
+            if (!email) {
+                showToast('Please enter billing email.');
+                if (inputBillingEmail) inputBillingEmail.focus();
+                return;
+            }
+            if (!addressLine1) {
+                showToast('Please enter address line 1.');
+                if (inputAddressLine1) inputAddressLine1.focus();
+                return;
+            }
+            if (!city) {
+                showToast('Please enter city.');
+                if (inputCity) inputCity.focus();
+                return;
+            }
+            if (!stateVal) {
+                showToast('Please enter state.');
+                if (inputState) inputState.focus();
+                return;
+            }
+            if (!pincode) {
+                showToast('Please enter PIN code.');
+                if (inputPincode) inputPincode.focus();
+                return;
+            }
+
+            const prevHtml = btnSaveBillingInfo.innerHTML;
+            btnSaveBillingInfo.disabled = true;
+            btnSaveBillingInfo.innerHTML = '<span class="btn-spinner"></span> <span>Saving...</span>';
+
+            try {
+                const companyId = await resolveCompanyId();
+                if (companyId) {
+                    const { supabase } = await import('./lib/supabase.js');
+                    if (supabase) {
+                        let rowId = state.billingInfo.id;
+                        if (!rowId) {
+                            const { data: existingRows } = await supabase
+                                .from('company_billing_information')
+                                .select('id')
+                                .eq('company_id', companyId)
+                                .order('created_at', { ascending: false })
+                                .limit(1);
+                            if (existingRows && existingRows.length > 0) {
+                                rowId = existingRows[0].id;
+                            }
+                        }
+
+                        const payload = {
+                            company_id: companyId,
+                            legal_business_name: legalName,
+                            gstin: gstin,
+                            pan: pan,
+                            billing_email: email,
+                            billing_phone: phone,
+                            address_line_1: addressLine1,
+                            address_line_2: addressLine2,
+                            city: city,
+                            district: district,
+                            state: stateVal,
+                            pin_code: pincode,
+                            country: country,
+                            updated_at: new Date().toISOString()
+                        };
+
+                        if (rowId) {
+                            const { error: updErr } = await supabase
+                                .from('company_billing_information')
+                                .update(payload)
+                                .eq('id', rowId);
+                            if (updErr) {
+                                console.error('[Billing] Error updating billing information:', updErr);
+                                throw updErr;
+                            }
+                            state.billingInfo.id = rowId;
+                        } else {
+                            payload.created_at = new Date().toISOString();
+                            const { data: insData, error: insErr } = await supabase
+                                .from('company_billing_information')
+                                .insert([payload])
+                                .select('id')
+                                .maybeSingle();
+                            if (insErr) {
+                                console.error('[Billing] Error inserting billing information:', insErr);
+                                throw insErr;
+                            }
+                            if (insData?.id) {
+                                state.billingInfo.id = insData.id;
+                            }
+                        }
+                    }
+                }
+
+                state.billingInfo.legalName = legalName;
+                state.billingInfo.gstin = gstin;
+                state.billingInfo.pan = pan;
+                state.billingInfo.email = email;
+                state.billingInfo.phone = phone;
+                state.billingInfo.addressLine1 = addressLine1;
+                state.billingInfo.addressLine2 = addressLine2;
+                state.billingInfo.city = city;
+                state.billingInfo.district = district;
+                state.billingInfo.state = stateVal;
+                state.billingInfo.pincode = pincode;
+                state.billingInfo.country = country;
+                state.billingInfo.loaded = true;
+
+                closeModal(modalEditBilling);
+                renderBillingInfo();
+                showToast('Billing information saved successfully.');
+            } catch (err) {
+                console.error('[Billing] Failed to save billing information:', err);
+                showToast('Failed to save billing information. Please try again.');
+            } finally {
+                btnSaveBillingInfo.disabled = false;
+                btnSaveBillingInfo.innerHTML = prevHtml;
+            }
         });
     }
 
@@ -2061,6 +2182,46 @@
         }
     }
 
+    async function loadBillingInformation(supabase, companyId) {
+        if (!supabase || !companyId) return;
+        try {
+            const { data, error } = await supabase
+                .from('company_billing_information')
+                .select('*')
+                .eq('company_id', companyId)
+                .order('created_at', { ascending: false })
+                .limit(1);
+
+            if (error) {
+                console.warn('[Billing] Notice fetching company_billing_information:', error.message || error);
+                return;
+            }
+
+            if (data && data.length > 0) {
+                const row = data[0];
+                state.billingInfo = {
+                    id: row.id,
+                    legalName: row.legal_business_name || '',
+                    gstin: row.gstin || '',
+                    pan: row.pan || '',
+                    email: row.billing_email || '',
+                    phone: row.billing_phone || '',
+                    addressLine1: row.address_line_1 || '',
+                    addressLine2: row.address_line_2 || '',
+                    city: row.city || '',
+                    district: row.district || '',
+                    state: row.state || '',
+                    pincode: row.pin_code || '',
+                    country: row.country || 'India',
+                    loaded: true
+                };
+                renderBillingInfo();
+            }
+        } catch (err) {
+            console.warn('[Billing] Non-blocking warning in loadBillingInformation:', err);
+        }
+    }
+
     async function loadPlanFeatures(supabase, planId) {
         if (!planId) {
             state.features = { included: [], excluded: [], loaded: true };
@@ -2230,12 +2391,14 @@
                 state.addonsLoaded = true;
                 await Promise.all([
                     loadAvailableAddonsCatalog(supabase),
-                    loadBillingSettings(supabase, companyId)
+                    loadBillingSettings(supabase, companyId),
+                    loadBillingInformation(supabase, companyId)
                 ]);
                 renderCurrentPlan();
                 renderPlanFeatures();
                 renderActiveAddons();
                 renderBillingSummary();
+                renderBillingInfo();
                 return;
             }
 
@@ -2284,15 +2447,17 @@
 
             renderCurrentPlan();
 
-            // Load features, active add-ons, available add-ons catalog, and billing settings in parallel
+            // Load features, active add-ons, available add-ons catalog, billing settings, and billing information in parallel
             await Promise.all([
                 loadPlanFeatures(supabase, sub.plan_id),
                 loadActiveAddons(supabase, sub.subscription_id),
                 loadAvailableAddonsCatalog(supabase),
-                loadBillingSettings(supabase, companyId)
+                loadBillingSettings(supabase, companyId),
+                loadBillingInformation(supabase, companyId)
             ]);
 
             renderBillingSummary();
+            renderBillingInfo();
 
             if (window.feather) feather.replace();
         } catch (err) {
