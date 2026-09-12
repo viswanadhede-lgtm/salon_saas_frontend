@@ -82,43 +82,6 @@
         }
     ];
 
-    const PLAN_SPECS = {
-        'Growth': {
-            name: 'Growth',
-            monthlyPrice: 4999,
-            included: [
-                'Unlimited bookings',
-                'Staff management (up to 20)',
-                'Customer database CRM',
-                'Sales reports & analytics',
-                'Marketing tools',
-                'Multi-branch support',
-                'Priority email support'
-            ],
-            excluded: [
-                'Dedicated account manager',
-                'Custom API integrations'
-            ]
-        },
-        'Basic': {
-            name: 'Basic',
-            monthlyPrice: 1999,
-            included: [
-                '1 Branch',
-                'Up to 5 staff accounts',
-                'Basic bookings management',
-                'Customer database',
-                'Payment tracking'
-            ],
-            excluded: [
-                'Multi-branch support',
-                'Marketing tools',
-                'Priority support',
-                'Dedicated account manager'
-            ]
-        }
-    };
-
     // ── Application State ──────────────────────────────────────────
     const urlParams = new URLSearchParams(window.location.search);
     const paramState = urlParams.get('state');
@@ -127,6 +90,12 @@
 
     const state = {
         currentMode: initialMode, // 'active' | 'noplan' | 'cancelled'
+        planId: null,
+        features: {
+            included: [],
+            excluded: [],
+            loaded: false
+        },
         plan: {
             name: 'Growth',
             cycle: 'monthly',
@@ -484,22 +453,53 @@
     }
 
     function renderPlanFeatures() {
-        const spec = PLAN_SPECS[state.plan.name] || PLAN_SPECS['Growth'];
-        const planNameLabel = state.currentMode === 'noplan' ? 'Starter' : spec.name;
-
         featuresCardSubtitle.textContent = 'Features included in your Current Plan';
-        featuresIncludedCountBadge.textContent = `${spec.included.length} Included`;
 
-        featuresIncludedList.innerHTML = spec.included.map(item => `
-            <div class="feature-item">
-                <span class="feature-check-icon"><i data-feather="check"></i></span>
-                <span>${item}</span>
-            </div>
-        `).join('');
+        if (state.currentMode === 'noplan' || (!state.planId && state.features.loaded)) {
+            featuresIncludedCountBadge.textContent = '0 Included';
+            featuresIncludedList.innerHTML = `
+                <div class="empty-neutral-state" style="padding: 1rem 0; color: #94a3b8;">
+                    No active plan. Choose a plan to view included features.
+                </div>
+            `;
+            if (featuresExcludedCol) featuresExcludedCol.style.display = 'none';
+            featuresExcludedList.innerHTML = '';
+            if (window.feather) feather.replace();
+            return;
+        }
 
-        if (spec.excluded && spec.excluded.length > 0) {
+        if (!state.features.loaded) {
+            featuresIncludedCountBadge.textContent = 'Loading...';
+            featuresIncludedList.innerHTML = `
+                <div style="padding: 1rem 0; color: #94a3b8; font-size: 0.9rem;">
+                    Loading plan features...
+                </div>
+            `;
+            if (featuresExcludedCol) featuresExcludedCol.style.display = 'none';
+            featuresExcludedList.innerHTML = '';
+            return;
+        }
+
+        featuresIncludedCountBadge.textContent = `${state.features.included.length} Included`;
+
+        if (state.features.included.length === 0) {
+            featuresIncludedList.innerHTML = `
+                <div class="empty-neutral-state" style="padding: 1rem 0; color: #94a3b8;">
+                    No features assigned to this plan.
+                </div>
+            `;
+        } else {
+            featuresIncludedList.innerHTML = state.features.included.map(item => `
+                <div class="feature-item">
+                    <span class="feature-check-icon"><i data-feather="check"></i></span>
+                    <span>${item}</span>
+                </div>
+            `).join('');
+        }
+
+        if (state.features.excluded && state.features.excluded.length > 0) {
             if (featuresExcludedCol) featuresExcludedCol.style.display = 'flex';
-            featuresExcludedList.innerHTML = spec.excluded.map(item => `
+            featuresExcludedList.innerHTML = state.features.excluded.map(item => `
                 <div class="feature-item feature-item--excluded">
                     <span class="feature-check-icon"><i data-feather="x"></i></span>
                     <span>${item}</span>
@@ -509,6 +509,8 @@
             if (featuresExcludedCol) featuresExcludedCol.style.display = 'none';
             featuresExcludedList.innerHTML = '';
         }
+
+        if (window.feather) feather.replace();
     }
 
     function renderAvailableAddons() {
@@ -1589,11 +1591,89 @@
         });
     });
 
-    // ── Backend Integration: Active Plan Loader ───────────────────
+    // ── Backend Integration: Active Plan & Features Loader ──────────
     let isSubLoading = false;
+
+    async function loadPlanFeatures(supabase, planId) {
+        if (!planId) {
+            state.features = { included: [], excluded: [], loaded: true };
+            renderPlanFeatures();
+            return;
+        }
+
+        try {
+            // Import MODULES_META for existing ordering and human-readable feature labels
+            let modulesMeta = [];
+            try {
+                const mod = await import('./config/feature-registry.js');
+                if (mod && mod.MODULES_META) modulesMeta = mod.MODULES_META;
+            } catch (metaErr) {
+                console.warn('[Billing] Could not import feature-registry.js:', metaErr);
+            }
+
+            const metaMap = new Map((modulesMeta || []).map((m, idx) => [m.key, { label: m.label, order: idx }]));
+
+            function getFeatureInfo(key) {
+                if (metaMap.has(key)) {
+                    return metaMap.get(key);
+                }
+                const label = key
+                    .split('_')
+                    .map(w => w.charAt(0).toUpperCase() + w.slice(1).toLowerCase())
+                    .join(' ');
+                return { label, order: 999 };
+            }
+
+            // 1. Fetch all distinct feature keys across plan_features (master catalog)
+            // 2. Fetch feature keys for the current plan_id
+            const [allRes, planRes] = await Promise.all([
+                supabase.from('plan_features').select('feature_key'),
+                supabase.from('plan_features').select('feature_key').eq('plan_id', planId)
+            ]);
+
+            if (allRes.error) {
+                console.error('[Billing] Error fetching plan_features catalog:', allRes.error);
+            }
+            if (planRes.error) {
+                console.error('[Billing] Error fetching plan-specific features:', planRes.error);
+            }
+
+            const allFeatureKeys = [...new Set((allRes.data || []).map(r => r.feature_key).filter(Boolean))];
+            const includedKeySet = new Set((planRes.data || []).map(r => r.feature_key).filter(Boolean));
+
+            const includedKeys = allFeatureKeys.filter(k => includedKeySet.has(k));
+            const notIncludedKeys = allFeatureKeys.filter(k => !includedKeySet.has(k));
+
+            const sortFeatures = (keys) => {
+                return [...keys].sort((a, b) => {
+                    const orderA = getFeatureInfo(a).order;
+                    const orderB = getFeatureInfo(b).order;
+                    if (orderA !== orderB) return orderA - orderB;
+                    return a.localeCompare(b);
+                });
+            };
+
+            state.features = {
+                included: sortFeatures(includedKeys).map(k => getFeatureInfo(k).label),
+                excluded: sortFeatures(notIncludedKeys).map(k => getFeatureInfo(k).label),
+                loaded: true
+            };
+
+            renderPlanFeatures();
+        } catch (err) {
+            console.error('[Billing] Failed to load plan features:', err);
+            state.features.loaded = true;
+            renderPlanFeatures();
+        }
+    }
+
     async function loadActiveSubscription() {
         if (paramState && validModes.includes(paramState)) {
             console.log('[Billing] Dev mode override active:', paramState);
+            if (paramState === 'noplan') {
+                state.features = { included: [], excluded: [], loaded: true };
+                renderPlanFeatures();
+            }
             return;
         }
 
@@ -1601,7 +1681,10 @@
         if (!companyId) {
             console.warn('[Billing] No active company detected. Showing empty plan state.');
             state.currentMode = 'noplan';
+            state.planId = null;
+            state.features = { included: [], excluded: [], loaded: true };
             renderCurrentPlan();
+            renderPlanFeatures();
             return;
         }
 
@@ -1638,11 +1721,15 @@
             if (!subRows || subRows.length === 0) {
                 console.log('[Billing] No subscription record found for company:', companyId);
                 state.currentMode = 'noplan';
+                state.planId = null;
+                state.features = { included: [], excluded: [], loaded: true };
                 renderCurrentPlan();
+                renderPlanFeatures();
                 return;
             }
 
             const sub = subRows[0];
+            state.planId = sub.plan_id || null;
             let planName = sub.plan_name;
 
             // 2. Fetch plan_name from plans table if plan_id exists
@@ -1679,6 +1766,7 @@
             };
 
             renderCurrentPlan();
+            await loadPlanFeatures(supabase, sub.plan_id);
             if (window.feather) feather.replace();
         } catch (err) {
             console.error('[Billing] Error loading subscription:', err);
