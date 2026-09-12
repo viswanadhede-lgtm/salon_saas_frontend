@@ -10,6 +10,30 @@
         return '₹' + Number(n).toLocaleString('en-IN');
     };
 
+    const formatDateDisplay = (val) => {
+        if (!val) return '—';
+        try {
+            const d = new Date(val);
+            if (isNaN(d.getTime())) return val;
+            return d.toLocaleDateString('en-GB', {
+                day: '2-digit',
+                month: 'short',
+                year: 'numeric'
+            });
+        } catch {
+            return val;
+        }
+    };
+
+    const getCompanyId = () => {
+        try {
+            const ctx = JSON.parse(localStorage.getItem('appContext') || '{}');
+            return ctx.company?.id || localStorage.getItem('company_id') || null;
+        } catch {
+            return localStorage.getItem('company_id') || null;
+        }
+    };
+
     const showToast = (msg) => {
         const toast = document.getElementById('billingToast');
         const toastMsg = document.getElementById('billingToastMsg');
@@ -110,7 +134,8 @@
             startDate: '10 Sep 2026',
             validUntil: '09 Oct 2026',
             nextBillingDate: '10 Oct 2026',
-            status: 'Active'
+            status: 'Active',
+            autoRenew: true
         },
         activeAddonIds: ['whatsapp', 'ai_receptionist'],
         paymentMethod: {
@@ -343,20 +368,23 @@
                     <span>Choose Plan</span>
                 </button>
             `;
+            if (window.feather) feather.replace();
             return;
         }
 
         // Active or Cancelled
         planMetaGrid.style.display = 'grid';
-        planNameBadge.textContent = `${state.plan.name} Plan`;
-        if (headerPlanBadge) headerPlanBadge.textContent = state.plan.name;
+        const planDisplayName = state.plan.name || 'Growth';
+        planNameBadge.textContent = planDisplayName.toLowerCase().includes('plan') ? planDisplayName : `${planDisplayName} Plan`;
+        if (headerPlanBadge) headerPlanBadge.textContent = planDisplayName;
 
+        const cycleLabel = (state.plan.cycle === 'annual' || state.plan.cycle === 'annually' || state.plan.cycle === 'yearly') ? '/ year' : '/ month';
         planPriceBlock.innerHTML = `
             <span class="plan-price-amount">${fmtCurrency(state.plan.price)}</span>
-            <span class="plan-price-frequency">/ month</span>
+            <span class="plan-price-frequency">${cycleLabel}</span>
         `;
 
-        if (state.currentMode === 'cancelled') {
+        if (state.currentMode === 'cancelled' || state.plan.status?.toLowerCase() === 'cancelled') {
             if (currentPlanCard) currentPlanCard.className = 'billing-plan-card billing-plan-card--cancelled';
             planStatusPill.className = 'status-pill is-cancelling';
             planStatusText.textContent = `Cancels on ${state.plan.validUntil}`;
@@ -385,26 +413,38 @@
                 };
             }
         } else {
-            // State: Active
+            // State: Active (or other status)
             if (currentPlanCard) currentPlanCard.className = 'billing-plan-card billing-plan-card--active';
             planStatusPill.className = 'status-pill is-active';
-            planStatusText.textContent = 'Active';
+            planStatusText.textContent = state.plan.status || 'Active';
 
             planSubNotice.style.display = 'block';
-            planSubNotice.textContent = 'Your current plan and subscription details';
+            planSubNotice.textContent = state.plan.autoRenew === false
+                ? 'Your current plan and subscription details (Auto-renew disabled)'
+                : 'Your current plan and subscription details';
 
-            metaStatus.textContent = 'Active';
+            metaStatus.textContent = state.plan.status || 'Active';
             metaStartDate.textContent = state.plan.startDate;
             metaValidUntil.textContent = state.plan.validUntil;
-            metaNextBilling.textContent = state.plan.nextBillingDate;
+            metaNextBilling.textContent = state.plan.autoRenew === false
+                ? (state.plan.nextBillingDate && state.plan.nextBillingDate !== 'None' ? `${state.plan.nextBillingDate} (No renewal)` : 'None')
+                : (state.plan.nextBillingDate || '—');
 
+            const currentPlanParam = encodeURIComponent((state.plan.name || 'growth').toLowerCase().replace(/\s+plan$/, ''));
             planActionsContainer.innerHTML = `
-                <button type="button" class="btn-plain btn-plain-primary" id="btnChangePlan" onclick="window.location.href='plans.html?current=growth'">
+                <button type="button" class="btn-plain btn-plain-primary" id="btnChangePlan" onclick="window.location.href='plans.html?current=${currentPlanParam}'">
                     <i data-feather="refresh-cw"></i>
                     <span>Change Plan</span>
                 </button>
             `;
         }
+
+        const metaAutoRenew = document.getElementById('metaAutoRenew');
+        if (metaAutoRenew) {
+            metaAutoRenew.textContent = state.plan.autoRenew ? 'Auto-renew enabled' : 'Auto-renew disabled';
+        }
+
+        if (window.feather) feather.replace();
     }
 
     function getActiveAddons() {
@@ -1549,6 +1589,108 @@
         });
     });
 
+    // ── Backend Integration: Active Plan Loader ───────────────────
+    let isSubLoading = false;
+    async function loadActiveSubscription() {
+        if (paramState && validModes.includes(paramState)) {
+            console.log('[Billing] Dev mode override active:', paramState);
+            return;
+        }
+
+        const companyId = getCompanyId();
+        if (!companyId) {
+            console.warn('[Billing] No active company detected. Showing empty plan state.');
+            state.currentMode = 'noplan';
+            renderCurrentPlan();
+            return;
+        }
+
+        try {
+            const { supabase } = await import('./lib/supabase.js');
+
+            // 1. Fetch subscription for current company (prefer active/trial/past_due status)
+            let { data: subRows, error: subErr } = await supabase
+                .from('subscriptions')
+                .select('subscription_id, company_id, plan_id, billing_cycle, billing_amount, status, subscription_start_date, subscription_end_date, next_billing_at, auto_renew, plan_name, created_at')
+                .eq('company_id', companyId)
+                .in('status', ['active', 'trial', 'past_due'])
+                .order('created_at', { ascending: false })
+                .limit(1);
+
+            if (subErr) {
+                console.error('[Billing] Subscription fetch error:', subErr);
+            }
+
+            // Fallback to most recent subscription row if no active row exists
+            if (!subRows || subRows.length === 0) {
+                const { data: recentRows, error: recentErr } = await supabase
+                    .from('subscriptions')
+                    .select('subscription_id, company_id, plan_id, billing_cycle, billing_amount, status, subscription_start_date, subscription_end_date, next_billing_at, auto_renew, plan_name, created_at')
+                    .eq('company_id', companyId)
+                    .order('created_at', { ascending: false })
+                    .limit(1);
+
+                if (!recentErr && recentRows && recentRows.length > 0) {
+                    subRows = recentRows;
+                }
+            }
+
+            if (!subRows || subRows.length === 0) {
+                console.log('[Billing] No subscription record found for company:', companyId);
+                state.currentMode = 'noplan';
+                renderCurrentPlan();
+                return;
+            }
+
+            const sub = subRows[0];
+            let planName = sub.plan_name;
+
+            // 2. Fetch plan_name from plans table if plan_id exists
+            if (sub.plan_id) {
+                const { data: planData, error: planErr } = await supabase
+                    .from('plans')
+                    .select('plan_name')
+                    .eq('plan_id', sub.plan_id)
+                    .maybeSingle();
+
+                if (!planErr && planData?.plan_name) {
+                    planName = planData.plan_name;
+                }
+            }
+
+            const rawStatus = (sub.status || 'Active').trim();
+            const isCancelled = rawStatus.toLowerCase() === 'cancelled';
+            state.currentMode = isCancelled ? 'cancelled' : 'active';
+
+            const rawCycle = (sub.billing_cycle || 'monthly').toLowerCase().trim();
+            const cycleKey = (rawCycle === 'annual' || rawCycle === 'annually' || rawCycle === 'yearly') ? 'annual' : 'monthly';
+
+            state.plan = {
+                name: planName || 'Growth',
+                cycle: cycleKey,
+                price: sub.billing_amount != null ? Number(sub.billing_amount) : 0,
+                startDate: formatDateDisplay(sub.subscription_start_date),
+                validUntil: formatDateDisplay(sub.subscription_end_date),
+                nextBillingDate: (sub.auto_renew === false || isCancelled)
+                    ? 'None'
+                    : (sub.next_billing_at ? formatDateDisplay(sub.next_billing_at) : 'None'),
+                status: rawStatus.charAt(0).toUpperCase() + rawStatus.slice(1).toLowerCase(),
+                autoRenew: sub.auto_renew !== false
+            };
+
+            renderCurrentPlan();
+            if (window.feather) feather.replace();
+        } catch (err) {
+            console.error('[Billing] Error loading subscription:', err);
+        }
+    }
+
+    async function loadActiveSubscriptionOnce() {
+        if (isSubLoading) return;
+        isSubLoading = true;
+        await loadActiveSubscription();
+    }
+
     // ── Developer Preview Helper (Accessible via console or URL query ?state=...) ─────
     window.setBillingState = function (mode) {
         if (validModes.includes(mode)) {
@@ -1560,12 +1702,16 @@
         }
     };
 
+    window.reloadActiveSubscription = loadActiveSubscriptionOnce;
+
     // ── Initial Render ─────────────────────────────────────────────
     document.addEventListener('DOMContentLoaded', () => {
         renderAll();
+        loadActiveSubscriptionOnce();
     });
 
     // Also execute immediately in case DOM is already parsed
     renderAll();
+    loadActiveSubscriptionOnce();
 
 })();
