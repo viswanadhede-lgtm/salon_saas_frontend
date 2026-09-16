@@ -94,7 +94,7 @@ function buildRow(b, includeDate = false) {
     const timeOnly     = b.start_time   || '';
     const amount       = b.final_amount != null ? `₹${Number(b.final_amount).toLocaleString('en-IN')}` : (b.total_price != null ? `₹${Number(b.total_price).toLocaleString('en-IN')}` : '—');
     const status       = b.status || '';
-    const payment      = b.payment_status || '';
+    const payment      = b.payment_status || b.payment || '';
 
     // Multi-service support: flatMap splits each element by comma, handles both
     // ["Hair Trimming, Nail Trimming"] and ["Hair Trimming", "Nail Trimming"]
@@ -191,11 +191,17 @@ function buildRow(b, includeDate = false) {
         <td style="padding:14px 8px;font-size:0.85rem;${cellStyle}">
             ${(() => {
                 const p = (payment || '').toLowerCase();
-                const label = payment ? payment.charAt(0).toUpperCase() + payment.slice(1) : '—';
-                if (p === 'paid') return `<span style="color:#059669;font-weight:700;">${label}</span>`;
-                if (p === 'pending') return `<span style="color:#b45309;opacity:0.85;">${label}</span>`;
-                if (p === 'unpaid') return `<span style="color:#dc2626;opacity:0.75;">${label}</span>`;
-                return `<span style="color:#334155;">${label}</span>`;
+                if (p === 'paid') {
+                    return `<span style="color:#059669;font-weight:700;font-size:0.85rem;">Paid</span>`;
+                }
+                return `
+                <button onclick="window.openBookingPayment('${bookingId}')"
+                    data-sub-feature="collect_payment"
+                    style="background:#4f46e5;border:none;border-radius:6px;cursor:pointer;color:#fff;padding:5px 12px;transition:all 0.2s;display:inline-flex;align-items:center;justify-content:center;gap:6px;font-size:0.78rem;font-weight:600;white-space:nowrap;box-shadow:0 1px 2px rgba(79,70,229,0.2);"
+                    onmouseover="this.style.background='#4338ca';" onmouseout="this.style.background='#4f46e5';">
+                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="1" y="4" width="22" height="16" rx="2" ry="2"></rect><line x1="1" y1="10" x2="23" y2="10"></line></svg>
+                    Collect
+                </button>`;
             })()}
         </td>
         <td style="padding:14px 8px 14px 24px;">
@@ -1397,6 +1403,143 @@ function attachEventListeners() {
         }
     };
 
+    // ── Collect Payment Handler ────────────────────────────────────────────────
+    window.openBookingPayment = function(bookingId) {
+        const row = (liveBookingsData || []).find(x => (x.booking_id || x.id) === bookingId);
+        if (!row) {
+            console.error('[BookingPayment] Booking not found for ID:', bookingId);
+            return;
+        }
+
+        const rawVal = row.final_amount ?? row.total_price ?? row.price ?? 0;
+        const total = typeof rawVal === 'string' ? (parseInt(rawVal.replace(/[^0-9]/g, ''), 10) || 0) : Number(rawVal);
+        const due = total > 0 ? total : 0;
+
+        if (window.openGlobalPaymentModal) {
+            // Close edit modal if open so payment modal is clear
+            document.getElementById('editBookingModal')?.classList.remove('active');
+
+            window.openGlobalPaymentModal({
+                saleId: row.booking_id || row.id,
+                customerId: row.customer_id || null,
+                customerName: row.customer_name || 'Walk-in Customer',
+                totalAmount: due,
+                amountDue: due,
+                isMembershipPurchase: false,
+                onComplete: async (payload) => {
+                    await processBookingPaymentCallback(payload, row);
+                }
+            });
+        } else {
+            const msg = 'Global payment modal is loading, please try again in a moment.';
+            window.toast ? window.toast(msg) : alert(msg);
+        }
+    };
+
+    async function processBookingPaymentCallback(payload, row) {
+        const amount = payload.amountCollected;
+        const payMethod = payload.paymentMethod;
+
+        try {
+            const companyId = getCompanyId();
+            const branchId  = getBranchId();
+            const paidAt    = new Date().toISOString().replace('Z', '');
+            const bookingId = row.booking_id || row.id;
+
+            const rawVal = row.final_amount ?? row.total_price ?? row.price ?? 0;
+            const totalOriginal = typeof rawVal === 'string' ? (parseInt(rawVal.replace(/[^0-9]/g, ''), 10) || 0) : Number(rawVal);
+            const totalDiscount = totalOriginal - amount;
+            const d = payload.discounts || {};
+            let discountType = null;
+            let discountName = null;
+            if (d.couponCode) { discountType = 'coupon'; discountName = d.couponCode; }
+            else if (d.offerName) { discountType = 'offer'; discountName = d.offerName; }
+            else if (d.membershipName) { discountType = 'membership'; discountName = d.membershipName; }
+            else if (d.manualValue > 0) { discountType = 'manual'; discountName = d.manualType === 'percent' ? `${d.manualValue}% off` : `₹${d.manualValue} off`; }
+
+            // 1. Insert into business_transactions
+            const { error: txError } = await supabase
+                .from('business_transactions')
+                .insert({
+                    company_id:     companyId,
+                    branch_id:      branchId,
+                    reference_id:   bookingId,
+                    reference_type: 'booking',
+                    amount:         amount,
+                    currency:       'INR',
+                    payment_method: (payMethod || 'cash').toLowerCase(),
+                    status:         'paid',
+                    notes:          `Payment for booking ${String(bookingId).substring(0, 8)}`,
+                    paid_at:        paidAt,
+                    final_amount:   amount,
+                    discount_type:  discountType,
+                    discount_name:  discountName,
+                    discount_amount: totalDiscount > 0 ? totalDiscount : null
+                });
+            if (txError) console.error('[BookingPayment] tx error:', txError);
+
+            // 2. Update bookings_for_business_transaction
+            const { error: bftError } = await supabase
+                .from('bookings_for_business_transaction')
+                .update({
+                    payment_status:  'paid',
+                    final_amount:    amount,
+                    discount_amount: totalDiscount > 0 ? totalDiscount : null,
+                    discount_type:   discountType,
+                    discount_name:   discountName,
+                    updated_at:      new Date().toISOString()
+                })
+                .eq('booking_id', bookingId);
+            if (bftError) console.error('[BookingPayment] bft error:', bftError);
+
+            // 3. Update bookings table
+            const { error: bkError } = await supabase
+                .from('bookings')
+                .update({
+                    payment:    'paid',
+                    updated_at: new Date().toISOString()
+                })
+                .eq('booking_id', bookingId);
+            if (bkError) {
+                await supabase
+                    .from('bookings')
+                    .update({
+                        payment:    'paid',
+                        updated_at: new Date().toISOString()
+                    })
+                    .eq('id', bookingId);
+            }
+
+            // Toast notification
+            const successMsg = 'Payment recorded successfully!';
+            const toastEl = document.getElementById('toastNotification');
+            if (toastEl) {
+                toastEl.textContent = successMsg;
+                toastEl.style.background = '#10b981';
+                toastEl.classList.add('show');
+                setTimeout(() => toastEl.classList.remove('show'), 3000);
+            } else if (window.toast) {
+                window.toast(successMsg);
+            }
+
+            // 4. Refresh bookings list
+            await fetchBookings();
+
+        } catch (err) {
+            console.error('[BookingPayment] Callback error:', err);
+            const errEl = document.getElementById('toastNotification');
+            if (errEl) {
+                errEl.textContent = 'Failed to record payment: ' + (err.message || 'Unknown error');
+                errEl.style.background = '#ef4444';
+                errEl.classList.add('show');
+                setTimeout(() => errEl.classList.remove('show'), 3000);
+            } else {
+                alert('Failed to record payment: ' + (err.message || 'Unknown error'));
+            }
+            throw err;
+        }
+    }
+
     // ── Global window helpers (called from row buttons) ────────────────────────
     window.openEditBookingModal = async (bookingId) => {
         const b = liveBookingsData.find(x => (x.booking_id || x.id) === bookingId);
@@ -1462,7 +1605,12 @@ function attachEventListeners() {
         if (quickActions) {
             const status = (b.status || '').toLowerCase();
             const payment = (b.payment_status || b.payment || '').toLowerCase();
-            let html = '';
+            if (payment !== 'paid' && !['cancelled', 'no-show', 'no_show'].includes(status)) {
+                html += `<button type="button" onclick="window.openBookingPayment('${bookingId}')" data-sub-feature="collect_payment" style="width:100%;padding:7px 12px;border-radius:6px;border:1px solid #c7d2fe;background:#eef2ff;color:#4338ca;font-size:0.8rem;font-weight:600;cursor:pointer;display:flex;align-items:center;gap:6px;justify-content:center;transition:all 0.2s;" onmouseover="this.style.background='#e0e7ff'" onmouseout="this.style.background='#eef2ff'">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="1" y="4" width="22" height="16" rx="2" ry="2"></rect><line x1="1" y1="10" x2="23" y2="10"></line></svg>
+                    Collect Payment
+                </button>`;
+            }
 
             if (status === 'completed') {
                 html += `<button onclick="window.triggerInvoice('${bookingId}')" style="width:100%;padding:7px 12px;border-radius:6px;border:1px solid #e0e7ff;background:#eef2ff;color:#4f46e5;font-size:0.8rem;font-weight:600;cursor:pointer;display:flex;align-items:center;gap:6px;justify-content:center;transition:all 0.2s;" onmouseover="this.style.background='#e0e7ff'" onmouseout="this.style.background='#eef2ff'">
