@@ -1302,7 +1302,13 @@ async function loadBranches(storedBranchId) {
     if (!branchSelect) return;
 
     try {
-        const companyId = localStorage.getItem('company_id');
+        let companyId = localStorage.getItem('company_id');
+        if (!companyId) {
+            try {
+                const ctx = JSON.parse(localStorage.getItem('appContext') || '{}');
+                companyId = ctx.company?.company_id || ctx.company?.id;
+            } catch (_) {}
+        }
         if (!companyId) {
             console.warn("No company_id found in localStorage. Cannot filter branches.");
             return;
@@ -1325,6 +1331,7 @@ async function loadBranches(storedBranchId) {
             const exists = branches.some(b => b.branch_id === storedBranchId);
             if (exists) {
                 branchSelect.value = storedBranchId;
+                refreshAllData(storedBranchId);
             } else {
                 // Default to first branch if no match
                 const firstId = branches[0].branch_id;
@@ -1365,6 +1372,10 @@ function refreshAllData(branchId) {
     // 3. Revenue sub-page
     if (typeof window.calculateAndRenderRevenue === 'function') {
         window.calculateAndRenderRevenue();
+    }
+    // 4. Bookings page
+    if (typeof window.fetchBookings === 'function') {
+        window.fetchBookings();
     }
 }
 

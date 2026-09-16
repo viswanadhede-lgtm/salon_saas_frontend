@@ -17,16 +17,22 @@ let originalServiceRowIds = new Set(); // tracks DB row ids fetched when modal o
 function getCompanyId() {
     try {
         const ctx = JSON.parse(localStorage.getItem('appContext') || '{}');
-        return ctx.company?.id || localStorage.getItem('company_id') || null;
+        return ctx.company?.company_id || ctx.company?.id || localStorage.getItem('company_id') || null;
     } catch { return localStorage.getItem('company_id') || null; }
 }
 
 function getBranchId() {
-    return localStorage.getItem('active_branch_id') || null;
+    const fromDom = document.getElementById('branchSelect')?.value;
+    const fromStorage = localStorage.getItem('branch_id') || localStorage.getItem('active_branch_id');
+    const bId = (fromDom && fromDom !== 'branch_1' && fromDom !== 'branch_2' && fromDom !== 'all')
+        ? fromDom
+        : (fromStorage && fromStorage !== 'branch_1' && fromStorage !== 'branch_2' && fromStorage !== 'all' ? fromStorage : null);
+    return bId || null;
 }
 
 function todayISO() {
-    return new Date().toISOString().slice(0, 10);
+    const now = new Date();
+    return new Date(now.getTime() - (now.getTimezoneOffset() * 60000)).toISOString().slice(0, 10);
 }
 
 // ─── Status Badge HTML ────────────────────────────────────────────────────────
@@ -944,6 +950,18 @@ window.viewCustomerProfile = async function(customerId, customerName) {
 
 function attachEventListeners() {
 
+    const branchSelect = document.getElementById('branchSelect');
+    if (branchSelect) {
+        branchSelect.addEventListener('change', async (e) => {
+            const val = e.target.value;
+            if (val && val !== 'branch_1' && val !== 'branch_2' && val !== 'all') {
+                localStorage.setItem('branch_id', val);
+                localStorage.setItem('active_branch_id', val);
+            }
+            await fetchBookings();
+        });
+    }
+
     const searchInput = document.getElementById('bookingsPageSearch');
     if (searchInput) {
         searchInput.addEventListener('input', (e) => {
@@ -1509,7 +1527,9 @@ export async function fetchBookings() {
             .order('booking_date', { ascending: false });
 
         if (companyId) query = query.eq('company_id', companyId);
-        if (branchId)  query = query.eq('branch_id', branchId);
+        if (branchId && branchId !== 'branch_1' && branchId !== 'branch_2' && branchId !== 'all') {
+            query = query.eq('branch_id', branchId);
+        }
 
         const { data, error } = await query;
 
@@ -1544,6 +1564,13 @@ export async function initBookings() {
     });
 
     await fetchBookings();
+
+    // Catch any delayed branch or auth context population
+    setTimeout(() => {
+        if (!window.liveBookingsData || window.liveBookingsData.length === 0) {
+            fetchBookings();
+        }
+    }, 600);
 }
 
 // ─── Refund Logic ─────────────────────────────────────────────────────────────
@@ -1735,7 +1762,7 @@ function renderCalendar() {
         cell.appendChild(numEl);
 
         // Find bookings for this day
-        const dayBookings = window.liveBookingsData.filter(b => b.booking_date === dateStr);
+        const dayBookings = (window.liveBookingsData || []).filter(b => (b.booking_date || '').slice(0, 10) === dateStr);
 
         if (dayBookings.length > 0) {
             // Group by normalised status
