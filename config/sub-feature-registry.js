@@ -224,6 +224,7 @@ export const SUB_FEATURES_MAP = {
         { key: SUB_FEATURES.PAYMENTS_HISTORY_EXPORT, label: 'Export Payments History' },
         { key: SUB_FEATURES.PAYMENTS_HISTORY_CREATE_BOOKING, label: 'Create Booking (Quick Action)' }
     ],
+
     [FEATURES.MARKETING_OFFERS]: [
         { key: SUB_FEATURES.CREATE_OFFER, label: 'Create Offer' },
         { key: SUB_FEATURES.UPDATE_OFFER, label: 'Edit Offer' },

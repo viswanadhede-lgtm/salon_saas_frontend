@@ -19,11 +19,13 @@ import { initGlobalBookingModal } from './global-booking-modal.js';
 const ROUTE_MAP = {
     '/dashboard.html':             FEATURES.DASHBOARD_ACCESS,
     '/bookings.html':              FEATURES.BOOKINGS_MANAGEMENT,
+    '/payment-booking.html':       FEATURES.PAYMENT_BOOKINGS,
     '/customers.html':             FEATURES.CUSTOMERS_MANAGEMENT,
     '/staff.html':                 FEATURES.STAFF_MANAGEMENT,
     '/staff-schedule.html':        FEATURES.STAFF_SCHEDULES,
     '/services.html':              FEATURES.SERVICES_MANAGEMENT,
     '/pos.html':                   FEATURES.POS_SYSTEM,
+    '/payment-pos.html':           FEATURES.PAYMENT_POS,
     '/products.html':              FEATURES.PRODUCT_MANAGEMENT,
     '/sales-history.html':         FEATURES.SALES_HISTORY,
     '/pending-payments.html':      FEATURES.PENDING_PAYMENTS,
@@ -31,6 +33,7 @@ const ROUTE_MAP = {
     '/offers.html':                FEATURES.MARKETING_OFFERS,
     '/coupons.html':               FEATURES.MARKETING_COUPONS,
     '/memberships.html':           FEATURES.MARKETING_MEMBERSHIPS,
+    '/payment-membership.html':    FEATURES.PAYMENT_MEMBERSHIPS,
     '/ad-campaigns.html':          FEATURES.MARKETING_CAMPAIGNS,
     '/overview.html':              FEATURES.ANALYTICS_OVERVIEW,
     '/reports.html':               FEATURES.REPORTS_ACCESS,
@@ -88,6 +91,7 @@ const PLAN_FEATURES = {
         FEATURES.SERVICES_MANAGEMENT,
         FEATURES.PENDING_PAYMENTS,
         FEATURES.PAYMENTS_HISTORY,
+        FEATURES.PAYMENT_BOOKINGS,
         FEATURES.ANALYTICS_OVERVIEW,
         FEATURES.COMPANY_SETTINGS,
         FEATURES.BRANCH_MANAGEMENT,
@@ -108,6 +112,8 @@ const PLAN_FEATURES = {
         FEATURES.SALES_HISTORY,
         FEATURES.PENDING_PAYMENTS,
         FEATURES.PAYMENTS_HISTORY,
+        FEATURES.PAYMENT_BOOKINGS,
+        FEATURES.PAYMENT_POS,
         FEATURES.MARKETING_OFFERS,
         FEATURES.MARKETING_COUPONS,
         FEATURES.ANALYTICS_OVERVIEW,
@@ -307,7 +313,16 @@ export async function runGlobalAuthGuard() {
                 setupTokenRefresh();
                 setupHourlyHeartbeat();
 
-                if (!cachedFeatures.includes(featureKey)) {
+                function hasFeatureAccess(featList, fKey) {
+                    if (!fKey) return true;
+                    if (featList.includes(fKey)) return true;
+                    if (fKey === FEATURES.PAYMENT_BOOKINGS && featList.includes(FEATURES.BOOKINGS_MANAGEMENT)) return true;
+                    if (fKey === FEATURES.PAYMENT_POS && featList.includes(FEATURES.POS_SYSTEM)) return true;
+                    if (fKey === FEATURES.PAYMENT_MEMBERSHIPS && featList.includes(FEATURES.MARKETING_MEMBERSHIPS)) return true;
+                    return false;
+                }
+
+                if (!hasFeatureAccess(cachedFeatures, featureKey)) {
                     showAuthBlockModal('FEATURE_NOT_ALLOWED',
                         "You currently don't have access to this feature. Please upgrade your plan.",
                         'Upgrade', 'plans.html?flow=upgrade');
@@ -438,7 +453,16 @@ export async function runGlobalAuthGuard() {
         }
 
         // 8. Check if current page's feature is allowed
-        if (!userFeatures.includes(featureKey)) {
+        function hasFeatureAccess(featList, fKey) {
+            if (!fKey) return true;
+            if (featList.includes(fKey)) return true;
+            if (fKey === FEATURES.PAYMENT_BOOKINGS && featList.includes(FEATURES.BOOKINGS_MANAGEMENT)) return true;
+            if (fKey === FEATURES.PAYMENT_POS && featList.includes(FEATURES.POS_SYSTEM)) return true;
+            if (fKey === FEATURES.PAYMENT_MEMBERSHIPS && featList.includes(FEATURES.MARKETING_MEMBERSHIPS)) return true;
+            return false;
+        }
+
+        if (!hasFeatureAccess(userFeatures, featureKey)) {
             showAuthBlockModal('FEATURE_NOT_ALLOWED',
                 "You currently don't have access to this feature. Please upgrade your plan.",
                 'Upgrade', 'plans.html?flow=upgrade');
