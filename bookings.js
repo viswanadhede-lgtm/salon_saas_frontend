@@ -35,6 +35,16 @@ function todayISO() {
     return new Date(now.getTime() - (now.getTimezoneOffset() * 60000)).toISOString().slice(0, 10);
 }
 
+function formatTime12(timeStr) {
+    if (!timeStr) return '—';
+    try {
+        const [hh, mm] = timeStr.split(':').map(Number);
+        const ampm = hh >= 12 ? 'PM' : 'AM';
+        const displayH = hh > 12 ? hh - 12 : (hh === 0 ? 12 : hh);
+        return `${String(displayH).padStart(2, '0')}:${String(mm).padStart(2, '0')} ${ampm}`;
+    } catch { return timeStr; }
+}
+
 // ─── Status Badge HTML ────────────────────────────────────────────────────────
 function statusBadge(status) {
     const map = {
@@ -190,47 +200,14 @@ function buildRow(b, includeDate = false) {
             })()}
         </td>
         <td style="padding:14px 8px 14px 24px;">
-            <div style="display:flex;gap:6px;flex-wrap:nowrap;">
-                ${['booked', 'confirmed'].includes(status.toLowerCase()) ? `
-                <button onclick="window.openEditBookingModal('${bookingId}')"
-                    data-sub-feature="update_booking"
-                    style="padding:4px 10px;border-radius:6px;border:1px solid #e2e8f0;background:#fff;color:#475569;font-size:0.75rem;font-weight:600;cursor:pointer;white-space:nowrap;transition:all 0.2s;"
-                    onmouseover="this.style.borderColor='#94a3b8'" onmouseout="this.style.borderColor='#e2e8f0'">
-                    Edit
-                </button>
-                <div style="position:relative; display:inline-block;" data-sub-feature="update_booking">
-                    <select onchange="window.updateBookingStatus('${bookingId}', this.value); this.value='';" 
-                        style="appearance:none; padding:4px 24px 4px 10px; border-radius:6px; border:1px solid #e2e8f0; background:#fff url(&quot;data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23475569' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3e%3cpolyline points='6 9 12 15 18 9'%3e%3c/polyline%3e%3c/svg%3e&quot;) no-repeat right 6px center / 12px; color:#475569; font-size:0.75rem; font-weight:600; cursor:pointer; min-width:130px; outline:none; transition:all 0.2s;"
-                        onmouseover="this.style.borderColor='#94a3b8'" onmouseout="this.style.borderColor='#e2e8f0'">
-                        <option value="" disabled selected>Update Status</option>
-                        <option value="completed">Completed</option>
-                        <option value="cancelled">Cancelled</option>
-                        <option value="no-show">No-Show</option>
-                    </select>
-                </div>` : ''}
-                ${status.toLowerCase() === 'completed' ? `
-                <button onclick="window.triggerInvoice('${bookingId}')"
-                    style="padding:4px 10px;border-radius:6px;border:1px solid #e0e7ff;background:#eef2ff;color:#4f46e5;font-size:0.75rem;font-weight:600;cursor:pointer;white-space:nowrap;transition:all 0.2s;"
-                    onmouseover="this.style.background='#e0e7ff'" onmouseout="this.style.background='#eef2ff'">
-                    Invoice
-                </button>` : ''}
-                ${['cancelled', 'no-show', 'no_show'].includes(status.toLowerCase()) ? `
-                <button onclick="window.triggerRebook('${bookingId}')"
-                    data-sub-feature="create_booking"
-                    style="padding:4px 10px;border-radius:6px;border:1px solid #ffedd5;background:#fff7ed;color:#ea580c;font-size:0.75rem;font-weight:600;cursor:pointer;white-space:nowrap;transition:all 0.2s;margin-right:6px;"
-                    onmouseover="this.style.background='#ffedd5'" onmouseout="this.style.background='#fff7ed'">
-                    Re-Book
-                </button>` : ''}
-                
-                ${['cancelled', 'no-show', 'no_show'].includes(status.toLowerCase()) && ['paid', 'partial'].includes(payment.toLowerCase()) ? `
-                <button onclick="window.triggerRefund('${bookingId}')"
-                    data-sub-feature="update_booking" 
-                    style="padding:4px 10px;border-radius:6px;border:1px solid #fecdd3;background:#fff1f2;color:#dc2626;font-size:0.75rem;font-weight:600;cursor:pointer;white-space:nowrap;transition:all 0.2s;"
-                    onmouseover="this.style.background='#ffe4e6'" onmouseout="this.style.background='#fff1f2'">
-                    Refund
-                </button>
-                ` : ''}
-            </div>
+            <button onclick="window.openEditBookingModal('${bookingId}')"
+                data-sub-feature="update_booking"
+                style="padding:5px 14px;border-radius:6px;border:1px solid #e2e8f0;background:#ffffff;color:#1e293b;font-size:0.78rem;font-weight:600;cursor:pointer;white-space:nowrap;transition:all 0.2s;box-shadow:0 1px 2px rgba(0,0,0,0.04);display:inline-flex;align-items:center;gap:6px;"
+                onmouseover="this.style.background='#f8fafc';this.style.borderColor='#cbd5e1'" 
+                onmouseout="this.style.background='#ffffff';this.style.borderColor='#e2e8f0'">
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#64748b" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path></svg>
+                Update
+            </button>
         </td>
     </tr>`;
 }
@@ -404,49 +381,147 @@ function setupModals() {
 
     if (!document.getElementById('editBookingModal')) {
         document.body.insertAdjacentHTML('beforeend', `
-        <div class="modal-overlay" id="editBookingModal">
-            <div class="modal-container" style="width:984px;max-width:95vw;">
-                <div class="modal-header">
+        <style id="editBookingModalStyles">
+            @media (max-width: 820px) {
+                #editBookingModalGrid { grid-template-columns: 1fr !important; }
+            }
+        </style>
+        <div class="modal-overlay" id="editBookingModal" style="z-index:9999;">
+            <div class="modal-container" style="width:1040px;max-width:96vw;max-height:90vh;display:flex;flex-direction:column;border-radius:14px;box-shadow:0 25px 50px -12px rgba(0,0,0,0.25);">
+                <div class="modal-header" style="padding:18px 24px;border-bottom:1px solid #e2e8f0;display:flex;justify-content:space-between;align-items:center;">
                     <div class="header-titles">
-                        <h2>Edit Booking</h2>
-                        <p class="subtitle">Update booking details.</p>
+                        <h2 style="font-size:1.25rem;font-weight:700;color:#0f172a;margin:0;">Manage Booking</h2>
+                        <p class="subtitle" style="font-size:0.85rem;color:#64748b;margin:2px 0 0 0;">View booking details and update schedule, services, or status.</p>
                     </div>
-                    <button class="modal-close" id="btnCloseEditBookingModal">
+                    <button class="modal-close" id="btnCloseEditBookingModal" style="border:none;background:transparent;cursor:pointer;color:#64748b;padding:4px;display:flex;align-items:center;justify-content:center;">
                         <i data-feather="x"></i>
                     </button>
                 </div>
-                <div class="modal-body" style="padding:1.5rem;overflow-y:auto;max-height:70vh;">
+                
+                <div class="modal-body" style="padding:22px 24px;overflow-y:auto;flex:1;">
                     <form id="editBookingForm">
                         <input type="hidden" id="editBookingId">
-                        <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px 24px;margin-bottom:16px;">
-                            <div class="form-group" style="margin:0;">
-                                <label class="form-label" for="editBkDate">Date <span class="text-rose">*</span></label>
-                                <input type="date" id="editBkDate" class="form-input" required>
-                            </div>
-                            <div class="form-group" style="margin:0;">
-                                <label class="form-label" for="editBkTime">Time <span class="text-rose">*</span></label>
-                                <input type="time" id="editBkTime" class="form-input" required>
-                            </div>
-                        </div>
-
-                        <div id="editServiceRowsContainer" style="display:flex;flex-direction:column;gap:16px;margin-bottom:16px;"></div>
                         
-                        <div style="text-align:right; margin-bottom:16px;">
-                            <button type="button" id="btnEditAddService" style="font-size:0.8rem;padding:6px 16px;border-radius:6px;border:1.5px solid var(--accent,#d946ef);background:var(--accent,#d946ef);color:#fff;font-weight:600;cursor:pointer; display:inline-flex; align-items:center; gap:6px;">
-                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg> 
-                                Add Another Service
-                            </button>
-                        </div>
+                        <div id="editBookingModalGrid" style="display:grid;grid-template-columns:310px 1fr;gap:24px;align-items:start;">
+                            
+                            <!-- LEFT COLUMN: Read-only Booking Details Card -->
+                            <div style="background:#f8fafc;border:1px solid #e2e8f0;border-radius:12px;padding:18px;display:flex;flex-direction:column;gap:14px;">
+                                <div style="display:flex;justify-content:space-between;align-items:center;border-bottom:1px solid #e2e8f0;padding-bottom:10px;">
+                                    <span style="font-size:0.75rem;font-weight:700;color:#64748b;text-transform:uppercase;letter-spacing:0.05em;">Booking Details</span>
+                                    <span id="viewBkIdBadge" style="font-family:monospace;font-size:0.75rem;font-weight:700;background:#e0e7ff;color:#4338ca;padding:2px 8px;border-radius:6px;">#ID</span>
+                                </div>
+                                
+                                <div>
+                                    <div style="font-size:0.72rem;font-weight:600;color:#94a3b8;text-transform:uppercase;letter-spacing:0.04em;margin-bottom:2px;">Customer</div>
+                                    <div id="viewBkCustomer" style="font-weight:600;color:#0f172a;font-size:0.92rem;">—</div>
+                                    <div id="viewBkPhone" style="font-size:0.8rem;color:#64748b;margin-top:2px;">—</div>
+                                </div>
 
-                        <div class="form-group" style="margin:0;">
-                            <label class="form-label" for="editBkNotes">Notes <span style="font-weight:400;color:#94a3b8;">(Optional)</span></label>
-                            <textarea id="editBkNotes" class="form-input form-textarea" style="min-height:70px;"></textarea>
+                                <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
+                                    <div>
+                                        <div style="font-size:0.72rem;font-weight:600;color:#94a3b8;text-transform:uppercase;letter-spacing:0.04em;margin-bottom:2px;">Date</div>
+                                        <div id="viewBkDate" style="font-size:0.86rem;font-weight:600;color:#334155;">—</div>
+                                    </div>
+                                    <div>
+                                        <div style="font-size:0.72rem;font-weight:600;color:#94a3b8;text-transform:uppercase;letter-spacing:0.04em;margin-bottom:2px;">Time</div>
+                                        <div id="viewBkTime" style="font-size:0.86rem;font-weight:600;color:#334155;">—</div>
+                                    </div>
+                                </div>
+
+                                <div>
+                                    <div style="font-size:0.72rem;font-weight:600;color:#94a3b8;text-transform:uppercase;letter-spacing:0.04em;margin-bottom:2px;">Service</div>
+                                    <div id="viewBkService" style="font-size:0.86rem;font-weight:500;color:#334155;word-break:break-word;">—</div>
+                                </div>
+
+                                <div>
+                                    <div style="font-size:0.72rem;font-weight:600;color:#94a3b8;text-transform:uppercase;letter-spacing:0.04em;margin-bottom:2px;">Staff</div>
+                                    <div id="viewBkStaff" style="font-size:0.86rem;font-weight:500;color:#334155;word-break:break-word;">—</div>
+                                </div>
+
+                                <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
+                                    <div>
+                                        <div style="font-size:0.72rem;font-weight:600;color:#94a3b8;text-transform:uppercase;letter-spacing:0.04em;margin-bottom:2px;">Booking Type</div>
+                                        <div id="viewBkType" style="font-size:0.85rem;font-weight:600;color:#475569;text-transform:capitalize;">—</div>
+                                    </div>
+                                    <div>
+                                        <div style="font-size:0.72rem;font-weight:600;color:#94a3b8;text-transform:uppercase;letter-spacing:0.04em;margin-bottom:2px;">Amount</div>
+                                        <div id="viewBkAmount" style="font-size:0.92rem;font-weight:700;color:#059669;">—</div>
+                                    </div>
+                                </div>
+
+                                <div>
+                                    <div style="font-size:0.72rem;font-weight:600;color:#94a3b8;text-transform:uppercase;letter-spacing:0.04em;margin-bottom:4px;">Status & Payment</div>
+                                    <div style="display:flex;gap:6px;align-items:center;flex-wrap:wrap;">
+                                        <span id="viewBkStatusBadge"></span>
+                                        <span id="viewBkPaymentBadge"></span>
+                                    </div>
+                                </div>
+
+                                <!-- Contextual Quick Actions (Invoice, Re-Book, Refund) -->
+                                <div id="viewBkQuickActions" style="margin-top:4px;padding-top:12px;border-top:1px dashed #cbd5e1;display:flex;flex-direction:column;gap:8px;"></div>
+                            </div>
+
+                            <!-- RIGHT COLUMN: Update Booking Form -->
+                            <div style="display:flex;flex-direction:column;gap:16px;">
+                                <div style="font-size:0.78rem;font-weight:700;color:#1e293b;text-transform:uppercase;letter-spacing:0.05em;border-bottom:1px solid #e2e8f0;padding-bottom:10px;">
+                                    Update Booking
+                                </div>
+
+                                <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;">
+                                    <div class="form-group" style="margin:0;">
+                                        <label class="form-label" for="editBkDate">Date <span class="text-rose">*</span></label>
+                                        <input type="date" id="editBkDate" class="form-input" required>
+                                    </div>
+                                    <div class="form-group" style="margin:0;">
+                                        <label class="form-label" for="editBkTime">Time <span class="text-rose">*</span></label>
+                                        <input type="time" id="editBkTime" class="form-input" required>
+                                    </div>
+                                </div>
+
+                                <div>
+                                    <label class="form-label" style="display:block;margin-bottom:8px;">Services & Assigned Staff <span class="text-rose">*</span></label>
+                                    <div id="editServiceRowsContainer" style="display:flex;flex-direction:column;gap:12px;margin-bottom:10px;"></div>
+                                    <div style="text-align:right;">
+                                        <button type="button" id="btnEditAddService" style="font-size:0.8rem;padding:6px 14px;border-radius:6px;border:1px solid #cbd5e1;background:#fff;color:#475569;font-weight:600;cursor:pointer;display:inline-flex;align-items:center;gap:6px;transition:all 0.2s;" onmouseover="this.style.background='#f1f5f9'" onmouseout="this.style.background='#fff'">
+                                            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg> 
+                                            Add Another Service
+                                        </button>
+                                    </div>
+                                </div>
+
+                                <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;">
+                                    <div class="form-group" style="margin:0;">
+                                        <label class="form-label" for="editBkStatus">Status <span class="text-rose">*</span></label>
+                                        <select id="editBkStatus" class="form-select" style="font-weight:600;">
+                                            <option value="booked">Booked</option>
+                                            <option value="confirmed">Confirmed</option>
+                                            <option value="completed">Completed</option>
+                                            <option value="cancelled">Cancelled</option>
+                                            <option value="no-show">No-Show</option>
+                                        </select>
+                                    </div>
+                                    <div class="form-group" style="margin:0;">
+                                        <label class="form-label" for="editBkNotes">Notes <span style="font-weight:400;color:#94a3b8;">(Optional)</span></label>
+                                        <input type="text" id="editBkNotes" class="form-input" placeholder="Add note or instruction...">
+                                    </div>
+                                </div>
+                            </div>
+
                         </div>
                     </form>
                 </div>
-                <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" id="btnCancelEditBooking">Cancel</button>
-                    <button type="submit" class="btn btn-primary" form="editBookingForm">Update Booking</button>
+
+                <div class="modal-footer" style="padding:16px 24px;border-top:1px solid #e2e8f0;display:flex;justify-content:space-between;align-items:center;background:#f8fafc;border-radius:0 0 14px 14px;">
+                    <div>
+                        <button type="button" id="btnCancelThisBooking" style="padding:8px 16px;border-radius:6px;border:1px solid #fca5a5;background:#fff5f5;color:#dc2626;font-size:0.85rem;font-weight:600;cursor:pointer;display:inline-flex;align-items:center;gap:6px;transition:all 0.2s;" onmouseover="this.style.background='#fee2e2'" onmouseout="this.style.background='#fff5f5'">
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><line x1="15" y1="9" x2="9" y2="15"></line><line x1="9" y1="9" x2="15" y2="15"></line></svg>
+                            Cancel Booking
+                        </button>
+                    </div>
+                    <div style="display:flex;gap:10px;align-items:center;">
+                        <button type="button" class="btn btn-secondary" id="btnCancelEditBooking" style="padding:8px 18px;">Close</button>
+                        <button type="submit" class="btn btn-primary" form="editBookingForm" id="btnSaveBookingChanges" style="padding:8px 22px;background:#4f46e5;border-color:#4f46e5;color:#fff;font-weight:600;">Save Changes</button>
+                    </div>
                 </div>
             </div>
         </div>`);
@@ -1012,7 +1087,7 @@ function attachEventListeners() {
         const bookingId = document.getElementById('editBookingId').value;
         const date      = document.getElementById('editBkDate').value;
         const time      = document.getElementById('editBkTime').value;
-        const status    = editActiveBooking?.status || 'booked';
+        const status    = document.getElementById('editBkStatus')?.value || editActiveBooking?.status || 'booked';
         const notes     = document.getElementById('editBkNotes').value.trim();
 
         const container = document.getElementById('editServiceRowsContainer');
@@ -1137,8 +1212,8 @@ function attachEventListeners() {
                     email: b?.customer_email || b?.email
                 }, {
                     bookingId,
-                    date: document.getElementById('editBookingDate')?.value,
-                    time: document.getElementById('editBookingTime')?.value
+                    date: date,
+                    time: time
                 });
             }
             editModal.classList.remove('active');
@@ -1331,7 +1406,92 @@ function attachEventListeners() {
         editActiveBooking     = b;
         originalServiceRowIds = new Set();
 
-        // Prefill shared fields
+        // ── Populate LEFT PANEL (read-only booking details) ──────────────────
+        const idBadge = document.getElementById('viewBkIdBadge');
+        if (idBadge) idBadge.textContent = '#' + (bookingId || '').slice(0, 8).toUpperCase();
+
+        const viewCustomer = document.getElementById('viewBkCustomer');
+        if (viewCustomer) viewCustomer.textContent = b.customer_name || 'Walk-in Customer';
+
+        const viewPhone = document.getElementById('viewBkPhone');
+        if (viewPhone) viewPhone.textContent = b.customer_phone || '—';
+
+        const viewDate = document.getElementById('viewBkDate');
+        if (viewDate) {
+            try {
+                const d = new Date(`${b.booking_date}T00:00`);
+                viewDate.textContent = d.toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' });
+            } catch { viewDate.textContent = b.booking_date || '—'; }
+        }
+
+        const viewTime = document.getElementById('viewBkTime');
+        if (viewTime) viewTime.textContent = formatTime12((b.start_time || '').slice(0, 5));
+
+        const viewService = document.getElementById('viewBkService');
+        if (viewService) viewService.textContent = b.service_name || '—';
+
+        const viewStaff = document.getElementById('viewBkStaff');
+        if (viewStaff) viewStaff.textContent = b.staff_name || '—';
+
+        const viewType = document.getElementById('viewBkType');
+        if (viewType) viewType.textContent = b.booking_type || 'walk-in';
+
+        const viewAmount = document.getElementById('viewBkAmount');
+        if (viewAmount) viewAmount.textContent = '₹' + (Number(b.total_price || b.price || 0)).toLocaleString('en-IN');
+
+        // Status badge
+        const viewStatusBadge = document.getElementById('viewBkStatusBadge');
+        if (viewStatusBadge) viewStatusBadge.innerHTML = statusBadge(b.status || 'booked');
+
+        // Payment badge
+        const viewPaymentBadge = document.getElementById('viewBkPaymentBadge');
+        if (viewPaymentBadge) {
+            const pay = (b.payment_status || b.payment || '').toLowerCase();
+            const payLabel = pay ? pay.charAt(0).toUpperCase() + pay.slice(1) : '—';
+            const payColors = {
+                paid:    { color: '#059669', bg: '#d1fae5' },
+                pending: { color: '#b45309', bg: '#fef3c7' },
+                unpaid:  { color: '#dc2626', bg: '#fee2e2' },
+                partial: { color: '#7c3aed', bg: '#ede9fe' },
+            };
+            const pc = payColors[pay] || { color: '#475569', bg: '#f1f5f9' };
+            viewPaymentBadge.innerHTML = `<span style="display:inline-block;padding:2px 10px;border-radius:20px;font-size:0.75rem;font-weight:600;background:${pc.bg};color:${pc.color};">${payLabel}</span>`;
+        }
+
+        // ── Quick Actions (contextual) ───────────────────────────────────────
+        const quickActions = document.getElementById('viewBkQuickActions');
+        if (quickActions) {
+            const status = (b.status || '').toLowerCase();
+            const payment = (b.payment_status || b.payment || '').toLowerCase();
+            let html = '';
+
+            if (status === 'completed') {
+                html += `<button onclick="window.triggerInvoice('${bookingId}')" style="width:100%;padding:7px 12px;border-radius:6px;border:1px solid #e0e7ff;background:#eef2ff;color:#4f46e5;font-size:0.8rem;font-weight:600;cursor:pointer;display:flex;align-items:center;gap:6px;justify-content:center;transition:all 0.2s;" onmouseover="this.style.background='#e0e7ff'" onmouseout="this.style.background='#eef2ff'">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line></svg>
+                    Generate Invoice
+                </button>`;
+            }
+
+            if (['cancelled', 'no-show', 'no_show'].includes(status)) {
+                html += `<button onclick="window.triggerRebook('${bookingId}')" data-sub-feature="create_booking" style="width:100%;padding:7px 12px;border-radius:6px;border:1px solid #ffedd5;background:#fff7ed;color:#ea580c;font-size:0.8rem;font-weight:600;cursor:pointer;display:flex;align-items:center;gap:6px;justify-content:center;transition:all 0.2s;" onmouseover="this.style.background='#ffedd5'" onmouseout="this.style.background='#fff7ed'">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="17 1 21 5 17 9"></polyline><path d="M3 11V9a4 4 0 0 1 4-4h14"></path><polyline points="7 23 3 19 7 15"></polyline><path d="M21 13v2a4 4 0 0 1-4 4H3"></path></svg>
+                    Re-Book This Customer
+                </button>`;
+            }
+
+            if (['cancelled', 'no-show', 'no_show'].includes(status) && ['paid', 'partial'].includes(payment)) {
+                html += `<button onclick="window.triggerRefund('${bookingId}')" data-sub-feature="update_booking" style="width:100%;padding:7px 12px;border-radius:6px;border:1px solid #fecdd3;background:#fff1f2;color:#dc2626;font-size:0.8rem;font-weight:600;cursor:pointer;display:flex;align-items:center;gap:6px;justify-content:center;transition:all 0.2s;" onmouseover="this.style.background='#fee2e2'" onmouseout="this.style.background='#fff1f2'">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="1" x2="12" y2="23"></line><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"></path></svg>
+                    Process Refund
+                </button>`;
+            }
+
+            // Hide container if no quick actions
+            quickActions.innerHTML = html;
+            quickActions.style.display = html ? 'flex' : 'none';
+        }
+
+        // ── Populate RIGHT PANEL (editable fields) ───────────────────────────
         document.getElementById('editBookingId').value = bookingId;
         const dateInput = document.getElementById('editBkDate');
         const timeInput = document.getElementById('editBkTime');
@@ -1339,6 +1499,10 @@ function attachEventListeners() {
         dateInput.value = b.booking_date || '';
         timeInput.value = (b.start_time || '').slice(0, 5);
         document.getElementById('editBkNotes').value = b.notes || '';
+
+        // Set the status dropdown
+        const statusSelect = document.getElementById('editBkStatus');
+        if (statusSelect) statusSelect.value = (b.status || 'booked').toLowerCase();
 
         // Restrict Date & Time to Future
         const todayStr = todayISO();
@@ -1356,6 +1520,19 @@ function attachEventListeners() {
         };
         dateInput.addEventListener('change', restrictTime);
         restrictTime();
+
+        // ── Cancel Booking footer button ─────────────────────────────────────
+        const cancelBtn = document.getElementById('btnCancelThisBooking');
+        if (cancelBtn) {
+            const isCancellable = !['cancelled', 'completed', 'no-show', 'no_show'].includes((b.status || '').toLowerCase());
+            cancelBtn.style.display = isCancellable ? 'inline-flex' : 'none';
+            cancelBtn.onclick = () => {
+                if (!confirm('Are you sure you want to cancel this booking?')) return;
+                if (statusSelect) statusSelect.value = 'cancelled';
+                // Auto-submit the form with cancelled status
+                document.getElementById('editBookingForm')?.requestSubmit();
+            };
+        }
 
         // Open modal & show loading state
         const editModal = document.getElementById('editBookingModal');
@@ -1380,6 +1557,14 @@ function attachEventListeners() {
             container.innerHTML = '';
             editRowCounter = 0;
             const rows = (allRows && allRows.length > 0) ? allRows : [b];
+
+            // Update details panel with all services & staff if available
+            if (allRows && allRows.length > 0) {
+                const svcNames = allRows.map(r => r.service_name).filter(Boolean);
+                if (svcNames.length > 0 && viewService) viewService.textContent = svcNames.join(', ');
+                const staffNames = [...new Set(allRows.map(r => r.staff_name).filter(Boolean))];
+                if (staffNames.length > 0 && viewStaff) viewStaff.textContent = staffNames.join(', ');
+            }
 
             rows.forEach((row, i) => {
                 // Track original DB row ids so we can DELETE removed ones on save
