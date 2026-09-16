@@ -693,34 +693,42 @@ export function initGlobalBookingModal() {
                 const label = payloads.length > 1 ? `${payloads.length} bookings` : 'Booking';
                 showMsg(`${label} created successfully!`);
                 if (window.notifyEvent) {
-                    window.notifyEvent('bookings', 'evt_booking_created', {
-                        title: 'New Booking Created',
-                        message: `${payloads[0]?.customer_name || 'Customer'} booked ${payloads.map(p => p.service_name).filter(Boolean).join(', ') || 'service'}.`
-                    });
-                    const staffNames = [...new Set(payloads.map(p => p.staff_name).filter(Boolean))].join(', ');
-                    if (staffNames) {
-                        window.notifyEvent('staff', 'evt_staff_booking_assigned', {
-                            title: 'Booking Assigned to Staff',
-                            message: `Assigned to ${staffNames}.`
+                    try {
+                        window.notifyEvent('bookings', 'evt_booking_created', {
+                            title: 'New Booking Created',
+                            message: `${payloads[0]?.customer_name || 'Customer'} booked ${payloads.map(p => p.service_name).filter(Boolean).join(', ') || 'service'}.`
                         });
+                        const staffNames = [...new Set(payloads.map(p => p.staff_name).filter(Boolean))].join(', ');
+                        if (staffNames) {
+                            window.notifyEvent('staff', 'evt_staff_booking_assigned', {
+                                title: 'Booking Assigned to Staff',
+                                message: `Assigned to ${staffNames}.`
+                            });
+                        }
+                        window.notifyEvent('payments', 'evt_payment_pending', {
+                            title: 'Payment Pending',
+                            message: `Pending payment of ₹${totalPrice} for ${payloads[0]?.customer_name || 'Customer'}.`
+                        });
+                    } catch (eventErr) {
+                        console.error('[createBookings] notifyEvent error:', eventErr);
                     }
-                    window.notifyEvent('payments', 'evt_payment_pending', {
-                        title: 'Payment Pending',
-                        message: `Pending payment of ₹${totalPrice} for ${payloads[0]?.customer_name || 'Customer'}.`
-                    });
                 }
                 if (window.notifyCustomer) {
-                    window.notifyCustomer('booking', 'booking_confirm', {
-                        name: payloads[0]?.customer_name,
-                        phone: targetCust?.phone || document.getElementById('phoneSearch')?.value || '',
-                        email: targetCust?.email || ''
-                    }, {
-                        bookingId: payloads[0]?.booking_id,
-                        date: payloads[0]?.booking_date,
-                        time: payloads[0]?.booking_time,
-                        services: payloads.map(p => p.service_name).filter(Boolean),
-                        totalPrice
-                    });
+                    try {
+                        window.notifyCustomer('booking', 'booking_confirm', {
+                            name: payloads[0]?.customer_name || customerName?.value?.trim() || '',
+                            phone: payloads[0]?.customer_phone || phoneSearch?.value?.trim() || '',
+                            email: payloads[0]?.customer_mail || customerEmail?.value?.trim() || ''
+                        }, {
+                            bookingId: payloads[0]?.booking_id,
+                            date: payloads[0]?.booking_date,
+                            time: payloads[0]?.booking_time,
+                            services: payloads.map(p => p.service_name).filter(Boolean),
+                            totalPrice
+                        });
+                    } catch (custNotifyErr) {
+                        console.error('[createBookings] notifyCustomer error:', custNotifyErr);
+                    }
                 }
                 overrideOverlay?.classList.remove('active');
                 closeModal();
