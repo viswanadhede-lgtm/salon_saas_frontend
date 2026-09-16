@@ -186,7 +186,6 @@ function buildRow(b, includeDate = false) {
         <td style="padding:14px 8px;font-size:0.85rem;color:#334155;${cellStyle}">${timeDisplay}</td>
         <td style="padding:14px 8px; max-width:200px;">${serviceCell}</td>
         <td style="padding:14px 8px;font-size:0.85rem;color:#334155;${cellStyle}">${staffCell}</td>
-        <td style="padding:14px 8px;font-size:0.85rem;color:#334155;${cellStyle}">${bookingType}</td>
         <td style="padding:14px 8px;">${statusBadge(status)}</td>
         <td style="padding:14px 8px;font-size:0.85rem;font-weight:600;color:#059669;${cellStyle}">${amount}</td>
         <td style="padding:14px 8px;font-size:0.85rem;${cellStyle}">
