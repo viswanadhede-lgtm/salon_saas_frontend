@@ -1163,22 +1163,23 @@ async function preValidateAndShowCollect() {
 
     // Generate purchase ID ahead of time so we have a reference
     const newPurchaseId = crypto.randomUUID();
+    const assignDate = document.getElementById('assignDateInput')?.value || new Date().toISOString().split('T')[0];
+    const expiryDate = document.getElementById('assignExpiryInput')?.value || null;
 
-    if (window.openGlobalPaymentModal) {
-        window.openGlobalPaymentModal({
-            saleId: newPurchaseId,
-            customerId: finalCustomerId,
-            customerName: selectedCustomer ? (selectedCustomer.customer_name || `${selectedCustomer.first_name || ''} ${selectedCustomer.last_name || ''}`).trim() : custNameValue,
-            totalAmount: price,
-            amountDue: price,
-            isMembershipPurchase: true, // Show membership perks in the modal if applicable
-            onComplete: async (payload) => {
-                await executeMembershipAssignment(payload, newPurchaseId);
-            }
-        });
-    } else {
-        showToast('Global payment modal not loaded', '#ef4444');
-    }
+    const checkoutData = {
+        selectedPlan: selectedPlan,
+        selectedCustomer: selectedCustomer,
+        finalCustomerId: finalCustomerId,
+        custSearchValue: custSearchValue,
+        custNameValue: custNameValue,
+        custEmailValue: custEmailValue,
+        assignDate: assignDate,
+        expiryDate: expiryDate,
+        newPurchaseId: newPurchaseId
+    };
+
+    sessionStorage.setItem('membership_checkout_data', JSON.stringify(checkoutData));
+    window.location.href = 'payment-membership.html';
 }
 
 async function executeMembershipAssignment(payload, newPurchaseId) {

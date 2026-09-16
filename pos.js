@@ -39,10 +39,15 @@ function showToast(msg, isError = false) {
 // --- Boot ---
 document.addEventListener('DOMContentLoaded', () => {
     // Standardize initialization - if POS grid exists, we are on POS page
-    if (document.getElementById('posProductGrid')) {
+        if (localStorage.getItem('pos_cart_reset_flag') === 'true') {
+            localStorage.removeItem('pos_cart_reset_flag');
+            cart = [];
+            selectedCustomer = null;
+        }
         setupEventListeners();
         fetchProducts();
         fetchCustomers();
+        if (typeof updateCartUI === 'function') updateCartUI();
     }
 });
 
@@ -422,28 +427,19 @@ function setupEventListeners() {
         const shortDisplayId = Math.random().toString(36).substring(2, 10).toUpperCase();
         const saleGroupUUID = crypto.randomUUID();
 
-        if (window.openGlobalPaymentModal) {
-            // Collect service IDs from cart for coupon service-matching
-            const serviceIds = cart
-                .filter(item => item.type === 'service' || item.service_id)
-                .map(item => item.service_id || item.id)
-                .filter(Boolean);
-
-            window.openGlobalPaymentModal({
-                saleId: shortDisplayId,
-                customerId: customerId,
-                customerName: customerName,
-                totalAmount: total,
-                amountDue: total,
-                serviceIds: serviceIds,
-                isMembershipPurchase: false,
-                onComplete: async (payload) => {
-                    await finalizeSale(payload, saleGroupUUID);
-                }
-            });
-        } else {
-            showToast('Global payment modal not loaded', true);
-        }
+        const checkoutData = {
+            cart: cart,
+            selectedCustomer: {
+                ...(selectedCustomer || {}),
+                customer_id: customerId,
+                customer_name: customerName,
+                customer_phone: customerPhone
+            },
+            saleGroupId: saleGroupUUID,
+            shortDisplayId: shortDisplayId
+        };
+        sessionStorage.setItem('pos_checkout_data', JSON.stringify(checkoutData));
+        window.location.href = 'payment-pos.html';
     };
 
     if (btnCollect) btnCollect.addEventListener('click', openCollectModal);

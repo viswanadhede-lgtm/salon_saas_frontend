@@ -1406,34 +1406,18 @@ function attachEventListeners() {
     // ── Collect Payment Handler ────────────────────────────────────────────────
     window.openBookingPayment = function(bookingId) {
         const row = (liveBookingsData || []).find(x => (x.booking_id || x.id) === bookingId);
-        if (!row) {
+        const targetId = row ? (row.booking_id || row.id) : bookingId;
+        if (!targetId) {
             console.error('[BookingPayment] Booking not found for ID:', bookingId);
             return;
         }
 
-        const rawVal = row.final_amount ?? row.total_price ?? row.price ?? 0;
-        const total = typeof rawVal === 'string' ? (parseInt(rawVal.replace(/[^0-9]/g, ''), 10) || 0) : Number(rawVal);
-        const due = total > 0 ? total : 0;
+        // Close edit modal if open
+        document.getElementById('editBookingModal')?.classList.remove('active');
 
-        if (window.openGlobalPaymentModal) {
-            // Close edit modal if open so payment modal is clear
-            document.getElementById('editBookingModal')?.classList.remove('active');
-
-            window.openGlobalPaymentModal({
-                saleId: row.booking_id || row.id,
-                customerId: row.customer_id || null,
-                customerName: row.customer_name || 'Walk-in Customer',
-                totalAmount: due,
-                amountDue: due,
-                isMembershipPurchase: false,
-                onComplete: async (payload) => {
-                    await processBookingPaymentCallback(payload, row);
-                }
-            });
-        } else {
-            const msg = 'Global payment modal is loading, please try again in a moment.';
-            window.toast ? window.toast(msg) : alert(msg);
-        }
+        // Store fallback and redirect to dedicated booking payment collection page
+        sessionStorage.setItem('pay_booking_id', targetId);
+        window.location.href = `payment-booking.html?bookingId=${encodeURIComponent(targetId)}`;
     };
 
     async function processBookingPaymentCallback(payload, row) {

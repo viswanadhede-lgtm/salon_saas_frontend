@@ -1,4 +1,4 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="en">
 
 <head>
@@ -1612,26 +1612,11 @@
         // ================================================================
         window.openRowPayment = function(bookingId) {
             const row = todaysBookingsData.find(p => p.raw_id === bookingId);
-            if (!row) return;
+            const targetId = row ? row.raw_id : bookingId;
+            if (!targetId) return;
 
-            const total = parseInt(row.amount.replace(/[^0-9]/g, ''), 10) || 0;
-            const due = total; // Pending payments usually collect the remaining due
-
-            if (window.openGlobalPaymentModal) {
-                window.openGlobalPaymentModal({
-                    saleId: row.raw_id,
-                    customerId: null, // If explicit DB id exists, pass it here
-                    customerName: row.customer || 'Guest',
-                    totalAmount: due,
-                    amountDue: due,
-                    isMembershipPurchase: false,
-                    onComplete: async (payload) => {
-                        await processPaymentCallback(payload, row);
-                    }
-                });
-            } else {
-                showToast('Global payment modal not loaded', '#ef4444');
-            }
+            sessionStorage.setItem('pay_booking_id', targetId);
+            window.location.href = `payment-booking.html?bookingId=${encodeURIComponent(targetId)}`;
         };
 
         async function processPaymentCallback(payload, row) {
