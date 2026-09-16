@@ -2217,18 +2217,14 @@ html:has(.dashboard-body) {
 .tb-row:nth-child(even) { background: #ffffff; }
 .tb-row:hover { background: #dce9f1f5; }
 
-/* Bookings table zebra striping */
-#tbTableAll tbody tr:nth-child(odd),
-#tbTableToday tbody tr:nth-child(odd) {
+/* Bookings table uniform row background */
+#tbTableAll tbody tr,
+#tbTableToday tbody tr {
     background: #ffffff;
-}
-#tbTableAll tbody tr:nth-child(even),
-#tbTableToday tbody tr:nth-child(even) {
-    background: #f4f7fb;
 }
 #tbTableAll tbody tr:hover,
 #tbTableToday tbody tr:hover {
-    background: #e8f0fb !important;
+    background: #f8fafc !important;
 }
 
 /* Status Pills */
