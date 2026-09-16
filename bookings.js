@@ -1603,6 +1603,7 @@ function attachEventListeners() {
         // ── Quick Actions (contextual) ───────────────────────────────────────
         const quickActions = document.getElementById('viewBkQuickActions');
         if (quickActions) {
+            let html = '';
             const status = (b.status || '').toLowerCase();
             const payment = (b.payment_status || b.payment || '').toLowerCase();
             if (payment !== 'paid' && !['cancelled', 'no-show', 'no_show'].includes(status)) {
