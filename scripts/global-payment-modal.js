@@ -45,7 +45,7 @@ function injectGlobalPaymentModalStyles() {
     const style = document.createElement('style');
     style.id = 'global-payment-modal-styles';
     style.textContent = `
-        /* Premium Broad Payment Modal Styling (1050px) */
+        /* Premium Broad Payment Modal Styling (95% viewport) */
         #gpmOverlay {
             display: none;
             position: fixed;
@@ -58,7 +58,7 @@ function injectGlobalPaymentModalStyles() {
             justify-content: center;
             opacity: 0;
             transition: opacity 0.25s ease;
-            padding: 16px;
+            padding: 2.5vh 2.5vw;
         }
         #gpmOverlay.active {
             display: flex;
@@ -66,14 +66,13 @@ function injectGlobalPaymentModalStyles() {
         }
         #gpmContent {
             background: #ffffff;
-            max-width: 1050px;
-            width: 100%;
+            width: 95vw;
+            height: 95vh;
             border-radius: 20px;
             overflow: hidden;
             box-shadow: 0 25px 60px -15px rgba(15, 23, 42, 0.35);
             transform: translateY(16px) scale(0.98);
             transition: transform 0.25s cubic-bezier(0.16, 1, 0.3, 1);
-            max-height: 92vh;
             display: flex;
             flex-direction: column;
             border: 1px solid #e2e8f0;
