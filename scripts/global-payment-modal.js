@@ -466,10 +466,11 @@ function injectGlobalPaymentModalStyles() {
             color: #16a34a;
         }
         .gpm-summary-total-box {
-            margin-top: 12px;
-            padding: 12px 14px;
-            background: #f1f5f9;
-            border-radius: 8px;
+            margin-top: 14px;
+            padding: 14px 18px;
+            background: #eff6ff;
+            border: 1px solid #dbeafe;
+            border-radius: 10px;
             display: flex;
             justify-content: space-between;
             align-items: center;
@@ -477,12 +478,13 @@ function injectGlobalPaymentModalStyles() {
         .gpm-summary-total-box .lbl {
             font-weight: 700;
             font-size: 0.95rem;
-            color: #0f172a;
+            color: #1e40af;
         }
         .gpm-summary-total-box .val {
-            font-weight: 800;
-            font-size: 1.15rem;
+            font-weight: 900;
+            font-size: 1.4rem;
             color: #0f172a;
+            letter-spacing: -0.02em;
         }
 
         /* Right Column Hero & Methods */
@@ -854,38 +856,7 @@ function injectGlobalPaymentModalHTML() {
 
                 <!-- RIGHT COLUMN: Payment Methods & Collection -->
                 <div class="gpm-right-col">
-                    <!-- Total Payable Hero Card -->
-                    <div class="gpm-total-card">
-                        <div>
-                            <div class="label">Total Payable</div>
-                            <div class="val" id="gpmStatDue">₹0</div>
-                        </div>
-                        <div class="meta-right">
-                            <div class="items-count" id="gpmStatItemsCount">1 item</div>
-                            <div class="tax-note">Incl. all taxes</div>
-                        </div>
-                    </div>
-
-                    <!-- Select Payment Method -->
-                    <div>
-                        <div style="font-size:0.88rem; font-weight:700; color:#0f172a; margin-bottom:10px;">Select Payment Method</div>
-                        <div class="gpm-methods-grid">
-                            <button type="button" class="gpm-method-card active" data-method="cash">
-                                <i data-feather="dollar-sign"></i>
-                                <span>Cash</span>
-                            </button>
-                            <button type="button" class="gpm-method-card" data-method="upi">
-                                <i data-feather="grid"></i>
-                                <span>UPI / QR</span>
-                            </button>
-                            <button type="button" class="gpm-method-card" data-method="card">
-                                <i data-feather="credit-card"></i>
-                                <span>Card</span>
-                            </button>
-                        </div>
-                    </div>
-
-                    <!-- Bill Summary Card (Moved from LHS) -->
+                    <!-- Bill Summary Card (Top Field) -->
                     <div class="gpm-card">
                         <div style="font-size:0.88rem; font-weight:700; color:#0f172a; margin-bottom:12px;">Bill Summary</div>
                         <div class="gpm-summary-row">
@@ -905,8 +876,30 @@ function injectGlobalPaymentModalHTML() {
                             <span class="val" id="gpmBillManual">- ₹0</span>
                         </div>
                         <div class="gpm-summary-total-box">
-                            <span class="lbl">Total Payable</span>
+                            <div>
+                                <span class="lbl">Total Payable</span>
+                                <div style="font-size:0.75rem; color:#64748b; font-weight:500; margin-top:2px;" id="gpmStatItemsCount">1 item • Incl. all taxes</div>
+                            </div>
                             <span class="val" id="gpmBillTotal">₹0</span>
+                        </div>
+                    </div>
+
+                    <!-- Select Payment Method -->
+                    <div>
+                        <div style="font-size:0.88rem; font-weight:700; color:#0f172a; margin-bottom:10px;">Select Payment Method</div>
+                        <div class="gpm-methods-grid">
+                            <button type="button" class="gpm-method-card active" data-method="cash">
+                                <i data-feather="dollar-sign"></i>
+                                <span>Cash</span>
+                            </button>
+                            <button type="button" class="gpm-method-card" data-method="upi">
+                                <i data-feather="grid"></i>
+                                <span>UPI / QR</span>
+                            </button>
+                            <button type="button" class="gpm-method-card" data-method="card">
+                                <i data-feather="credit-card"></i>
+                                <span>Card</span>
+                            </button>
                         </div>
                     </div>
                 </div>
