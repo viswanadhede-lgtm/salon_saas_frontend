@@ -1157,23 +1157,34 @@ async function preValidateAndShowCollect() {
 
         // Generate purchase ID ahead of time so we have a reference
         const newPurchaseId = crypto.randomUUID();
-        const assignDate = document.getElementById('assignDateInput')?.value || new Date().toISOString().split('T')[0];
-        const expiryDate = document.getElementById('assignExpiryInput')?.value || null;
+        const price = selectedPlan ? Number(selectedPlan.price || 0) : 0;
+        const planName = selectedPlan ? (selectedPlan.plan_name || selectedPlan.name) : 'Membership';
+        const duration = selectedPlan?.duration_months || selectedPlan?.duration || 12;
 
-        const checkoutData = {
-            selectedPlan: selectedPlan,
-            selectedCustomer: selectedCustomer,
-            finalCustomerId: finalCustomerId,
-            custSearchValue: custSearchValue,
-            custNameValue: custNameValue,
-            custEmailValue: custEmailValue,
-            assignDate: assignDate,
-            expiryDate: expiryDate,
-            newPurchaseId: newPurchaseId
-        };
-
-        sessionStorage.setItem('membership_checkout_data', JSON.stringify(checkoutData));
-        window.location.href = 'payment-membership.html';
+        if (window.openGlobalPaymentModal) {
+            window.openGlobalPaymentModal({
+                type: 'membership',
+                title: 'Membership Payment',
+                saleId: newPurchaseId.slice(0, 8).toUpperCase(),
+                customerId: finalCustomerId,
+                customerName: selectedCustomer ? (selectedCustomer.customer_name || `${selectedCustomer.first_name || ''} ${selectedCustomer.last_name || ''}`).trim() : custNameValue,
+                customerPhone: custSearchValue,
+                totalAmount: price,
+                amountDue: price,
+                isMembershipPurchase: true,
+                items: [{
+                    name: planName,
+                    subtitle: `${duration} Months Validity`,
+                    quantity: 1,
+                    price: price
+                }],
+                onComplete: async (payload) => {
+                    await executeMembershipAssignment(payload, newPurchaseId);
+                }
+            });
+        } else {
+            showToast('Payment modal not loaded', true);
+        }
     } catch (err) {
         console.error('preValidateAndShowCollect error:', err);
         showToast('Error: ' + (err.message || 'Verification failed. Assignment aborted.'));

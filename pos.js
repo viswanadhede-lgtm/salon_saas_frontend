@@ -445,19 +445,34 @@ function setupEventListeners() {
         const shortDisplayId = Math.random().toString(36).substring(2, 10).toUpperCase();
         const saleGroupUUID = crypto.randomUUID();
 
-        const checkoutData = {
-            cart: cart,
-            selectedCustomer: {
-                ...(selectedCustomer || {}),
-                customer_id: customerId,
-                customer_name: customerName,
-                customer_phone: customerPhone
-            },
-            saleGroupId: saleGroupUUID,
-            shortDisplayId: shortDisplayId
-        };
-        sessionStorage.setItem('pos_checkout_data', JSON.stringify(checkoutData));
-        window.location.href = 'payment-pos.html';
+        const serviceIds = cart
+            .filter(item => item.type === 'service' || item.service_id)
+            .map(item => item.service_id || item.id)
+            .filter(Boolean);
+
+        if (window.openGlobalPaymentModal) {
+            window.openGlobalPaymentModal({
+                type: 'pos',
+                saleId: shortDisplayId,
+                customerId: customerId,
+                customerName: customerName,
+                customerPhone: customerPhone,
+                totalAmount: total,
+                amountDue: total,
+                serviceIds: serviceIds,
+                items: cart.map(item => ({
+                    name: item.name,
+                    category: item.category_name,
+                    quantity: item.quantity,
+                    price: item.price
+                })),
+                onComplete: async (payload) => {
+                    await finalizeSale(payload, saleGroupUUID);
+                }
+            });
+        } else {
+            showToast('Payment modal not loaded', true);
+        }
     };
 
     if (btnCollect) btnCollect.addEventListener('click', openCollectModal);

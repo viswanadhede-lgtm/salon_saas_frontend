@@ -1613,10 +1613,33 @@
         window.openRowPayment = function(bookingId) {
             const row = todaysBookingsData.find(p => p.raw_id === bookingId);
             const targetId = row ? row.raw_id : bookingId;
-            if (!targetId) return;
+            if (!targetId || !row) return;
 
-            sessionStorage.setItem('pay_booking_id', targetId);
-            window.location.href = `payment-booking.html?bookingId=${encodeURIComponent(targetId)}`;
+            const totalOriginal = parseInt(String(row.amount || '0').replace(/[^0-9]/g, ''), 10) || 0;
+
+            if (window.openGlobalPaymentModal) {
+                window.openGlobalPaymentModal({
+                    type: 'booking',
+                    title: 'Appointment Payment',
+                    saleId: String(targetId).slice(0, 8).toUpperCase(),
+                    customerId: row.customer_id || null,
+                    customerName: row.customer || 'Customer',
+                    customerPhone: row.phone || '',
+                    totalAmount: totalOriginal,
+                    amountDue: totalOriginal,
+                    items: [{
+                        name: row.service || 'Service Appointment',
+                        subtitle: `${row.time || ''} · Staff: ${row.staff || 'Assigned'}`,
+                        quantity: 1,
+                        price: totalOriginal
+                    }],
+                    onComplete: async (payload) => {
+                        await processPaymentCallback(payload, row);
+                    }
+                });
+            } else {
+                alert('Payment modal not loaded');
+            }
         };
 
         async function processPaymentCallback(payload, row) {

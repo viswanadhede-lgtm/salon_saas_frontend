@@ -1412,12 +1412,48 @@ function attachEventListeners() {
             return;
         }
 
-        // Close edit modal if open
-        document.getElementById('editBookingModal')?.classList.remove('active');
+        const rawVal = row.final_amount ?? row.total_price ?? row.price ?? 0;
+        const totalOriginal = typeof rawVal === 'string' ? (parseInt(rawVal.replace(/[^0-9]/g, ''), 10) || 0) : Number(rawVal);
+        const customerName = row.customer_name || row.customer || 'Walk-in Customer';
+        const customerPhone = row.customer_phone || row.phone || '';
 
-        // Store fallback and redirect to dedicated booking payment collection page
-        sessionStorage.setItem('pay_booking_id', targetId);
-        window.location.href = `payment-booking.html?bookingId=${encodeURIComponent(targetId)}`;
+        // Extract services list from booking
+        let items = [];
+        if (row.service_name || row.services) {
+            const svcNames = (row.service_name || row.services || '').split(',');
+            items = svcNames.map(s => ({
+                name: s.trim(),
+                subtitle: `${row.appointment_date || row.date || 'Today'} at ${row.appointment_time || row.time || ''}`,
+                quantity: 1,
+                price: Math.round(totalOriginal / Math.max(1, svcNames.length))
+            }));
+        } else {
+            items = [{
+                name: 'Salon Service Appointment',
+                subtitle: `${row.appointment_date || row.date || 'Today'} · Staff: ${row.staff_name || 'Assigned'}`,
+                quantity: 1,
+                price: totalOriginal
+            }];
+        }
+
+        if (window.openGlobalPaymentModal) {
+            window.openGlobalPaymentModal({
+                type: 'booking',
+                title: 'Booking Payment',
+                saleId: String(targetId).slice(0, 8).toUpperCase(),
+                customerId: row.customer_id || null,
+                customerName: customerName,
+                customerPhone: customerPhone,
+                totalAmount: totalOriginal,
+                amountDue: totalOriginal,
+                items: items,
+                onComplete: async (payload) => {
+                    await processBookingPaymentCallback(payload, row);
+                }
+            });
+        } else {
+            alert('Payment modal not loaded');
+        }
     };
 
     async function processBookingPaymentCallback(payload, row) {
