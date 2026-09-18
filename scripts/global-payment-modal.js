@@ -850,31 +850,6 @@ function injectGlobalPaymentModalHTML() {
                             </div>
                         </div>
                     </div>
-
-                    <!-- Bill Summary Card -->
-                    <div class="gpm-card">
-                        <div style="font-size:0.88rem; font-weight:700; color:#0f172a; margin-bottom:12px;">Bill Summary</div>
-                        <div class="gpm-summary-row">
-                            <span>Subtotal</span>
-                            <span class="val" id="gpmBillSubtotal">₹0</span>
-                        </div>
-                        <div class="gpm-summary-row discount">
-                            <span>Membership Discount</span>
-                            <span class="val" id="gpmBillMembership">- ₹0</span>
-                        </div>
-                        <div class="gpm-summary-row discount">
-                            <span>Coupon Discount</span>
-                            <span class="val" id="gpmBillCoupon">- ₹0</span>
-                        </div>
-                        <div class="gpm-summary-row discount">
-                            <span>Manual Discount</span>
-                            <span class="val" id="gpmBillManual">- ₹0</span>
-                        </div>
-                        <div class="gpm-summary-total-box">
-                            <span class="lbl">Total Payable</span>
-                            <span class="val" id="gpmBillTotal">₹0</span>
-                        </div>
-                    </div>
                 </div>
 
                 <!-- RIGHT COLUMN: Payment Methods & Collection -->
@@ -910,31 +885,28 @@ function injectGlobalPaymentModalHTML() {
                         </div>
                     </div>
 
-                    <!-- Cash Calculation Box -->
-                    <div class="gpm-cash-box" id="gpmCashBox">
-                        <label style="font-size:0.82rem; font-weight:700; color:#334155; margin-bottom:6px;">Cash Tendered</label>
-                        <div class="gpm-cash-input-wrap">
-                            <span class="gpm-cash-prefix">₹</span>
-                            <input type="number" id="gpmCashReceived" placeholder="0" min="0">
+                    <!-- Bill Summary Card (Moved from LHS) -->
+                    <div class="gpm-card">
+                        <div style="font-size:0.88rem; font-weight:700; color:#0f172a; margin-bottom:12px;">Bill Summary</div>
+                        <div class="gpm-summary-row">
+                            <span>Subtotal</span>
+                            <span class="val" id="gpmBillSubtotal">₹0</span>
                         </div>
-                        <div class="gpm-change-due-row change" id="gpmChangeDueRow" style="display:none; margin-top:10px;">
-                            <span id="gpmChangeLabel" style="font-weight:700;">Change Due</span>
-                            <span id="gpmChangeAmount" style="font-weight:800;">₹0</span>
+                        <div class="gpm-summary-row discount">
+                            <span>Membership Discount</span>
+                            <span class="val" id="gpmBillMembership">- ₹0</span>
                         </div>
-                        <div class="gpm-chips">
-                            <button type="button" class="gpm-chip-btn" id="gpmChipExact">Exact</button>
-                            <button type="button" class="gpm-chip-btn" data-add="500">₹500</button>
-                            <button type="button" class="gpm-chip-btn" data-add="1000">₹1,000</button>
-                            <button type="button" class="gpm-chip-btn" data-add="2000">₹2,000</button>
+                        <div class="gpm-summary-row discount">
+                            <span>Coupon Discount</span>
+                            <span class="val" id="gpmBillCoupon">- ₹0</span>
                         </div>
-                    </div>
-
-                    <!-- Notes / Reference -->
-                    <div>
-                        <div style="font-size:0.82rem; font-weight:700; color:#334155; margin-bottom:6px;">Reference / Note (Optional)</div>
-                        <div class="gpm-textarea-wrap">
-                            <textarea id="gpmPaymentNote" class="gpm-textarea" maxlength="100" placeholder="e.g., UPI ID, Card Slip #, or any note..."></textarea>
-                            <div class="gpm-textarea-counter" id="gpmNoteCounter">0/100</div>
+                        <div class="gpm-summary-row discount">
+                            <span>Manual Discount</span>
+                            <span class="val" id="gpmBillManual">- ₹0</span>
+                        </div>
+                        <div class="gpm-summary-total-box">
+                            <span class="lbl">Total Payable</span>
+                            <span class="val" id="gpmBillTotal">₹0</span>
                         </div>
                     </div>
                 </div>
@@ -988,11 +960,6 @@ function bindGlobalPaymentModalEvents() {
             const target = e.currentTarget;
             target.classList.add('active');
             paymentState.method = target.dataset.method;
-
-            const cashBox = document.getElementById('gpmCashBox');
-            if (cashBox) {
-                cashBox.style.display = paymentState.method === 'cash' ? 'flex' : 'none';
-            }
         });
     });
 
@@ -1036,35 +1003,6 @@ function bindGlobalPaymentModalEvents() {
 
     // Coupon Apply / Remove
     document.getElementById('gpmBtnApplyCoupon')?.addEventListener('click', applyCouponCode);
-
-    // Cash Calculator Chips & Input
-    document.getElementById('gpmChipExact')?.addEventListener('click', () => {
-        const cashIn = document.getElementById('gpmCashReceived');
-        if (cashIn) {
-            cashIn.value = paymentState.finalDue;
-            updateCashChange();
-        }
-    });
-    document.querySelectorAll('.gpm-chip-btn[data-add]').forEach(chip => {
-        chip.addEventListener('click', (e) => {
-            const val = Number(e.currentTarget.dataset.add) || 0;
-            const cashIn = document.getElementById('gpmCashReceived');
-            if (cashIn) {
-                cashIn.value = val;
-                updateCashChange();
-            }
-        });
-    });
-    document.getElementById('gpmCashReceived')?.addEventListener('input', updateCashChange);
-
-    // Note counter
-    const noteInput = document.getElementById('gpmPaymentNote');
-    const noteCounter = document.getElementById('gpmNoteCounter');
-    if (noteInput && noteCounter) {
-        noteInput.addEventListener('input', () => {
-            noteCounter.textContent = `${noteInput.value.length}/100`;
-        });
-    }
 
     // Proceed
     document.getElementById('gpmBtnProceed')?.addEventListener('click', finalizePayment);
@@ -1146,12 +1084,6 @@ window.openGlobalPaymentModal = async function(config) {
     // Payment methods
     document.querySelectorAll('.gpm-method-card').forEach(b => b.classList.remove('active'));
     document.querySelector('.gpm-method-card[data-method="cash"]')?.classList.add('active');
-    const cashBox = document.getElementById('gpmCashBox');
-    if (cashBox) cashBox.style.display = 'flex';
-    if (document.getElementById('gpmCashReceived')) document.getElementById('gpmCashReceived').value = '';
-    if (document.getElementById('gpmChangeDueRow')) document.getElementById('gpmChangeDueRow').style.display = 'none';
-    if (document.getElementById('gpmPaymentNote')) document.getElementById('gpmPaymentNote').value = '';
-    if (document.getElementById('gpmNoteCounter')) document.getElementById('gpmNoteCounter').textContent = '0/100';
 
     // Context & Header
     const type = (config.type || 'pos').toLowerCase();
