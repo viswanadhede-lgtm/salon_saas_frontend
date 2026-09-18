@@ -67,7 +67,7 @@ function injectGlobalPaymentModalStyles() {
         #gpmContent {
             background: #ffffff;
             width: 95vw;
-            height: 95vh;
+            height: 98vh;
             border-radius: 20px;
             overflow: hidden;
             box-shadow: 0 25px 60px -15px rgba(15, 23, 42, 0.35);
