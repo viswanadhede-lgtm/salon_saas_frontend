@@ -1404,36 +1404,49 @@ function attachEventListeners() {
     };
 
     // ── Collect Payment Handler ────────────────────────────────────────────────
-    window.openBookingPayment = function(bookingId) {
-        const row = (liveBookingsData || []).find(x => (x.booking_id || x.id) === bookingId);
+    window.openBookingPayment = async function(bookingId) {
+        let row = (liveBookingsData || []).find(x => (x.booking_id || x.id) === bookingId);
+        if (!row) {
+            row = (liveBookingsData || []).find(x => String(x.booking_id || x.id || '').toLowerCase() === String(bookingId || '').toLowerCase());
+        }
         const targetId = row ? (row.booking_id || row.id) : bookingId;
         if (!targetId) {
             console.error('[BookingPayment] Booking not found for ID:', bookingId);
             return;
         }
 
-        const rawVal = row.final_amount ?? row.total_price ?? row.price ?? 0;
+        const rawVal = row ? (row.final_amount ?? row.total_price ?? row.price ?? 0) : 0;
         const totalOriginal = typeof rawVal === 'string' ? (parseInt(rawVal.replace(/[^0-9]/g, ''), 10) || 0) : Number(rawVal);
-        const customerName = row.customer_name || row.customer || 'Walk-in Customer';
-        const customerPhone = row.customer_phone || row.phone || '';
+        const customerName = (row && (row.customer_name || row.customer)) || 'Walk-in Customer';
+        const customerPhone = (row && (row.customer_phone || row.phone)) || '';
 
         // Extract services list from booking
         let items = [];
-        if (row.service_name || row.services) {
+        if (row && (row.service_name || row.services)) {
             const svcNames = (row.service_name || row.services || '').split(',');
             items = svcNames.map(s => ({
                 name: s.trim(),
-                subtitle: `${row.appointment_date || row.date || 'Today'} at ${row.appointment_time || row.time || ''}`,
+                subtitle: `${(row && (row.appointment_date || row.date)) || 'Today'} at ${(row && (row.appointment_time || row.time)) || ''}`,
                 quantity: 1,
                 price: Math.round(totalOriginal / Math.max(1, svcNames.length))
             }));
         } else {
             items = [{
                 name: 'Salon Service Appointment',
-                subtitle: `${row.appointment_date || row.date || 'Today'} · Staff: ${row.staff_name || 'Assigned'}`,
+                subtitle: `${(row && (row.appointment_date || row.date)) || 'Today'} · Staff: ${(row && row.staff_name) || 'Assigned'}`,
                 quantity: 1,
                 price: totalOriginal
             }];
+        }
+
+        if (!window.openGlobalPaymentModal) {
+            await new Promise((resolve) => {
+                const s = document.createElement('script');
+                s.src = 'scripts/global-payment-modal.js';
+                s.onload = resolve;
+                s.onerror = resolve;
+                document.head.appendChild(s);
+            });
         }
 
         if (window.openGlobalPaymentModal) {
@@ -1441,18 +1454,18 @@ function attachEventListeners() {
                 type: 'booking',
                 title: 'Booking Payment',
                 saleId: String(targetId).slice(0, 8).toUpperCase(),
-                customerId: row.customer_id || null,
+                customerId: (row && row.customer_id) || null,
                 customerName: customerName,
                 customerPhone: customerPhone,
                 totalAmount: totalOriginal,
                 amountDue: totalOriginal,
                 items: items,
                 onComplete: async (payload) => {
-                    await processBookingPaymentCallback(payload, row);
+                    await processBookingPaymentCallback(payload, row || { booking_id: targetId, final_amount: totalOriginal });
                 }
             });
         } else {
-            alert('Payment modal not loaded');
+            alert('Payment modal not loaded. Please refresh the page.');
         }
     };
 

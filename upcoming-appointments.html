@@ -1617,6 +1617,16 @@
 
             const totalOriginal = parseInt(String(row.amount || '0').replace(/[^0-9]/g, ''), 10) || 0;
 
+            if (!window.openGlobalPaymentModal) {
+                await new Promise((resolve) => {
+                    const s = document.createElement('script');
+                    s.src = 'scripts/global-payment-modal.js';
+                    s.onload = resolve;
+                    s.onerror = resolve;
+                    document.head.appendChild(s);
+                });
+            }
+
             if (window.openGlobalPaymentModal) {
                 window.openGlobalPaymentModal({
                     type: 'booking',
@@ -1638,7 +1648,7 @@
                     }
                 });
             } else {
-                alert('Payment modal not loaded');
+                alert('Payment modal not loaded. Please refresh the page.');
             }
         };
 
@@ -1729,7 +1739,7 @@
     <script src="dashboard.js"></script>
 <script src="logout.js"></script><script src="change-password.js"></script>    <script type="module" src="scripts/global-auth-guard.js"></script>
     <script type="module" src="scripts/sub-features/sub-feature-gate.js"></script>
-    <script type="module" src="scripts/global-payment-modal.js"></script>
+    <script src="scripts/global-payment-modal.js"></script>
 </body>
 </html>
 
