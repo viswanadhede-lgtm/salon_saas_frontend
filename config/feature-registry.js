@@ -16,6 +16,9 @@ export const FEATURES = {
     // Payments
     PENDING_PAYMENTS: 'pending_payments',
     PAYMENTS_HISTORY: 'payments_history',
+    PAYMENT_BOOKINGS: 'payment_bookings',
+    PAYMENT_POS: 'payment_pos',
+    PAYMENT_MEMBERSHIPS: 'payment_memberships',
 
     // Marketing
     MARKETING_OFFERS: 'marketing_offers',

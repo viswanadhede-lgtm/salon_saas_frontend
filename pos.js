@@ -37,8 +37,9 @@ function showToast(msg, isError = false) {
 }
 
 // --- Boot ---
-document.addEventListener('DOMContentLoaded', () => {
+function initPos() {
     // Standardize initialization - if POS grid exists, we are on POS page
+    if (document.getElementById('posProductGrid')) {
         if (localStorage.getItem('pos_cart_reset_flag') === 'true') {
             localStorage.removeItem('pos_cart_reset_flag');
             cart = [];
@@ -49,7 +50,13 @@ document.addEventListener('DOMContentLoaded', () => {
         fetchCustomers();
         if (typeof updateCartUI === 'function') updateCartUI();
     }
-});
+}
+
+if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', initPos);
+} else {
+    initPos();
+}
 
 // --- Supabase: Fetch Products ---
 async function fetchProducts() {
@@ -78,18 +85,26 @@ async function fetchProducts() {
         const companyId = getCompanyId();
         const branchId = getBranchId();
 
-        const { data, error } = await supabase
+        let query = supabase
             .from('products')
-            .select('*')
-            .eq('company_id', companyId)
-            .eq('branch_id', branchId);
+            .select('*');
+
+        if (companyId) {
+            query = query.eq('company_id', companyId);
+        }
+        if (branchId) {
+            query = query.eq('branch_id', branchId);
+        }
+
+        const { data, error } = await query;
 
         if (error) throw error;
 
         // Only show Active products
-        liveProducts = (data || []).filter(p =>
-            (p.status || '').toLowerCase() === 'active'
-        );
+        liveProducts = (data || []).filter(p => {
+            const status = (p.status || 'active').toLowerCase();
+            return status === 'active';
+        });
 
         renderProducts(liveProducts);
     } catch (err) {
@@ -112,11 +127,14 @@ async function fetchCustomers() {
         const companyId = getCompanyId();
         const branchId = getBranchId();
 
-        const { data, error } = await supabase
+        let query = supabase
             .from('customers')
-            .select('*')
-            .eq('company_id', companyId)
-            .eq('branch_id', branchId);
+            .select('*');
+
+        if (companyId) query = query.eq('company_id', companyId);
+        if (branchId) query = query.eq('branch_id', branchId);
+
+        const { data, error } = await query;
 
         if (error) throw error;
         allCustomers = data || [];
