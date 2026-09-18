@@ -133,6 +133,16 @@ const PLAN_FEATURES = {
 // Default: any unrecognized plan_id gets all features (fail-open for trials)
 const DEFAULT_FEATURES = ALL_FEATURES;
 
+function hasFeatureAccess(featList, fKey) {
+    if (!fKey) return true;
+    if (!Array.isArray(featList)) return false;
+    if (featList.includes(fKey)) return true;
+    if (fKey === FEATURES.PAYMENT_BOOKINGS && featList.includes(FEATURES.BOOKINGS_MANAGEMENT)) return true;
+    if (fKey === FEATURES.PAYMENT_POS && featList.includes(FEATURES.POS_SYSTEM)) return true;
+    if (fKey === FEATURES.PAYMENT_MEMBERSHIPS && featList.includes(FEATURES.MARKETING_MEMBERSHIPS)) return true;
+    return false;
+}
+
 // ─── Token Refresh ────────────────────────────────────────────────────────────
 const SUPABASE_URL  = 'https://qxmgyxjwpxkdbgldpdil.supabase.co';
 const SUPABASE_ANON = 'sb_publishable_aqCSbMiVxH5cSZxgssdNqw_jQZvzmA0';
@@ -253,7 +263,7 @@ function setupHourlyHeartbeat() {
             const filename = path.substring(path.lastIndexOf('/')) || '/';
             const currentFeatureKey = ROUTE_MAP[filename] || null;
 
-            if (currentFeatureKey && !userFeatures.includes(currentFeatureKey)) {
+            if (currentFeatureKey && !hasFeatureAccess(userFeatures, currentFeatureKey)) {
                 clearInterval(heartbeatInterval);
                 console.warn('[Auth Guard] Heartbeat: current page no longer allowed.');
                 showAuthBlockModal('FEATURE_NOT_ALLOWED',

@@ -1086,11 +1086,12 @@ window.viewMembershipSummary = function(purchaseId) {
 };
 
 async function preValidateAndShowCollect() {
-    const planValue = document.getElementById('assignPlanInput').value;
+    const planValue = document.getElementById('assignPlanInput')?.value;
     const selectedPlan = currentPlans.find(p => (p.membership_id || p.id) === planValue);
 
-    const custSearchValue = document.getElementById('custSearchInput').value.trim();
-    const custNameValue = document.getElementById('assignCustomerName')?.value.trim();
+    const custSearchValue = document.getElementById('custSearchInput')?.value?.trim() || '';
+    const custNameValue = document.getElementById('assignCustomerName')?.value?.trim() || '';
+    const custEmailValue = document.getElementById('assignCustomerEmail')?.value?.trim() || selectedCustomer?.email || selectedCustomer?.customer_email || selectedCustomer?.customer_mail || '';
 
     if (!custSearchValue || custSearchValue.length < 10) {
         showToast('Please enter a valid 10-digit phone number.');
@@ -1113,23 +1114,28 @@ async function preValidateAndShowCollect() {
         if (window.feather) feather.replace();
     }
 
-    // ── Duplicate Check BEFORE creating DB records ──
-    const finalCustomerId = selectedCustomer ? (selectedCustomer.id || selectedCustomer.customer_id) : null;
     try {
+        // ── Duplicate Check BEFORE creating DB records ──
+        const finalCustomerId = selectedCustomer ? (selectedCustomer.id || selectedCustomer.customer_id) : null;
         if (finalCustomerId && planValue) {
-            const { data: existing, error: checkErr } = await supabase
+            let dupQuery = supabase
                 .from('membership_purchases')
                 .select('*')
-                .eq('company_id', getCompanyId())
-                .eq('branch_id', getBranchId())
                 .eq('customer_id', finalCustomerId)
                 .eq('membership_id', planValue)
                 .eq('status', 'active');
 
+            const compId = getCompanyId();
+            const brId = getBranchId();
+            if (compId) dupQuery = dupQuery.eq('company_id', compId);
+            if (brId) dupQuery = dupQuery.eq('branch_id', brId);
+
+            const { data: existing, error: checkErr } = await dupQuery;
+
             if (checkErr) throw checkErr;
 
             if (existing && existing.length > 0) {
-                showToast('membership is already assigned to this customer');
+                showToast('Membership is already assigned to this customer');
                 if (btn) {
                     btn.innerHTML = origText;
                     btn.disabled = false;
@@ -1138,48 +1144,45 @@ async function preValidateAndShowCollect() {
                 return;
             }
         }
-    } catch (err) {
-        console.error('Duplicate check error:', err);
-        showToast('DB Error: ' + (err.message || 'Verification failed. Assignment aborted.'));
+
+        // If validations pass, show Collect Payment Modal
         if (btn) {
             btn.innerHTML = origText;
             btn.disabled = false;
             if (window.feather) feather.replace();
         }
-        return;
+
+        // Hide the assign modal
+        document.getElementById('assignModalOverlay')?.classList.remove('active');
+
+        // Generate purchase ID ahead of time so we have a reference
+        const newPurchaseId = crypto.randomUUID();
+        const assignDate = document.getElementById('assignDateInput')?.value || new Date().toISOString().split('T')[0];
+        const expiryDate = document.getElementById('assignExpiryInput')?.value || null;
+
+        const checkoutData = {
+            selectedPlan: selectedPlan,
+            selectedCustomer: selectedCustomer,
+            finalCustomerId: finalCustomerId,
+            custSearchValue: custSearchValue,
+            custNameValue: custNameValue,
+            custEmailValue: custEmailValue,
+            assignDate: assignDate,
+            expiryDate: expiryDate,
+            newPurchaseId: newPurchaseId
+        };
+
+        sessionStorage.setItem('membership_checkout_data', JSON.stringify(checkoutData));
+        window.location.href = 'payment-membership.html';
+    } catch (err) {
+        console.error('preValidateAndShowCollect error:', err);
+        showToast('Error: ' + (err.message || 'Verification failed. Assignment aborted.'));
+        if (btn) {
+            btn.innerHTML = origText;
+            btn.disabled = false;
+            if (window.feather) feather.replace();
+        }
     }
-
-    // If validations pass, show Collect Payment Modal
-    if (btn) {
-        btn.innerHTML = origText;
-        btn.disabled = false;
-        if (window.feather) feather.replace();
-    }
-
-    const price = selectedPlan ? Number(selectedPlan.price || 0) : 0;
-    
-    // Hide the assign modal
-    document.getElementById('assignModalOverlay')?.classList.remove('active');
-
-    // Generate purchase ID ahead of time so we have a reference
-    const newPurchaseId = crypto.randomUUID();
-    const assignDate = document.getElementById('assignDateInput')?.value || new Date().toISOString().split('T')[0];
-    const expiryDate = document.getElementById('assignExpiryInput')?.value || null;
-
-    const checkoutData = {
-        selectedPlan: selectedPlan,
-        selectedCustomer: selectedCustomer,
-        finalCustomerId: finalCustomerId,
-        custSearchValue: custSearchValue,
-        custNameValue: custNameValue,
-        custEmailValue: custEmailValue,
-        assignDate: assignDate,
-        expiryDate: expiryDate,
-        newPurchaseId: newPurchaseId
-    };
-
-    sessionStorage.setItem('membership_checkout_data', JSON.stringify(checkoutData));
-    window.location.href = 'payment-membership.html';
 }
 
 async function executeMembershipAssignment(payload, newPurchaseId) {
