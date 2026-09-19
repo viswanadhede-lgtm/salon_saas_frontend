@@ -327,11 +327,14 @@ function injectGlobalPaymentModalStyles() {
             border-color: #86efac;
         }
         .gpm-offer-box-header {
-            display: flex;
-            align-items: center;
-            gap: 12px;
-            width: 100%;
-        }
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    width: 100%;
+    padding-bottom: 8px;
+    margin-bottom: 8px;
+    border-bottom: 1px solid #e2e8f0;
+}
         .gpm-offer-item {
             display: flex;
             align-items: center;
