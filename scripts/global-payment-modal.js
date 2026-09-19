@@ -26,21 +26,6 @@ function gpmFormatCurrency(amt) {
     return '₹' + Math.round(n).toLocaleString('en-IN');
 }
 
-function gpmFormatDate(dateStr) {
-    if (!dateStr) return '';
-    try {
-        const d = new Date(dateStr.includes('T') ? dateStr : dateStr + 'T00:00:00');
-        if (isNaN(d.getTime())) return dateStr;
-        const day = d.getDate();
-        const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
-        const month = months[d.getMonth()];
-        const year = d.getFullYear();
-        return `${day} ${month} ${year}`;
-    } catch {
-        return dateStr;
-    }
-}
-
 // ── Inject Styles & HTML on DOMContentLoaded ─────────────────────────────────
 if (document.readyState === 'loading') {
     document.addEventListener('DOMContentLoaded', initGlobalPaymentModal);
@@ -60,7 +45,7 @@ function injectGlobalPaymentModalStyles() {
     const style = document.createElement('style');
     style.id = 'global-payment-modal-styles';
     style.textContent = `
-        /* Premium Broad Payment Modal Styling (95% viewport) */
+        /* Premium Broad Payment Modal Styling (1050px) */
         #gpmOverlay {
             display: none;
             position: fixed;
@@ -73,7 +58,7 @@ function injectGlobalPaymentModalStyles() {
             justify-content: center;
             opacity: 0;
             transition: opacity 0.25s ease;
-            padding: 2vh 2.5vw;
+            padding: 16px;
         }
         #gpmOverlay.active {
             display: flex;
@@ -81,13 +66,14 @@ function injectGlobalPaymentModalStyles() {
         }
         #gpmContent {
             background: #ffffff;
-            width: 95vw;
-            height: 98vh;
+            max-width: 1050px;
+            width: 100%;
             border-radius: 20px;
             overflow: hidden;
             box-shadow: 0 25px 60px -15px rgba(15, 23, 42, 0.35);
             transform: translateY(16px) scale(0.98);
             transition: transform 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+            max-height: 92vh;
             display: flex;
             flex-direction: column;
             border: 1px solid #e2e8f0;
@@ -97,7 +83,7 @@ function injectGlobalPaymentModalStyles() {
         }
 
         .gpm-header {
-            padding: 16px 28px;
+            padding: 20px 28px;
             background: #ffffff;
             border-bottom: 1px solid #f1f5f9;
             display: flex;
@@ -107,35 +93,33 @@ function injectGlobalPaymentModalStyles() {
         .gpm-header-left {
             display: flex;
             align-items: center;
-            gap: 14px;
+            gap: 12px;
         }
-        .gpm-header-icon-box {
-            width: 44px;
-            height: 44px;
-            border-radius: 12px;
-            background: #eff6ff;
-            border: 1px solid #dbeafe;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            flex-shrink: 0;
-            color: #2563eb;
+        .gpm-type-badge {
+            display: inline-block;
+            padding: 4px 10px;
+            border-radius: 6px;
+            font-size: 0.72rem;
+            font-weight: 700;
+            letter-spacing: 0.05em;
+            text-transform: uppercase;
+            background: #e0e7ff;
+            color: #4338ca;
         }
         .gpm-header h2 {
-            font-size: 1.3rem;
+            font-size: 1.35rem;
             font-weight: 800;
             color: #0f172a;
             margin: 0;
-            line-height: 1.2;
         }
         .gpm-subtitle {
             font-size: 0.82rem;
             color: #64748b;
-            margin: 3px 0 0 0;
+            margin: 2px 0 0 0;
             font-weight: 500;
         }
         .gpm-close-btn {
-            background: #ffffff;
+            background: #f8fafc;
             border: 1px solid #e2e8f0;
             color: #64748b;
             cursor: pointer;
@@ -155,13 +139,13 @@ function injectGlobalPaymentModalStyles() {
 
         .gpm-body {
             padding: 0;
-            background: #f8fafc;
+            background: #ffffff;
             flex: 1;
             overflow: hidden;
             display: grid;
-            grid-template-columns: 1.18fr 0.82fr;
+            grid-template-columns: 1.15fr 0.85fr;
         }
-        @media (max-width: 860px) {
+        @media (max-width: 840px) {
             .gpm-body {
                 grid-template-columns: 1fr;
                 overflow-y: auto;
@@ -171,7 +155,7 @@ function injectGlobalPaymentModalStyles() {
         .gpm-left-col {
             display: flex;
             flex-direction: column;
-            border-right: 1px solid #e2e8f0;
+            border-right: 1px solid #f1f5f9;
             overflow-y: auto;
             padding: 20px 24px;
             gap: 16px;
@@ -186,177 +170,103 @@ function injectGlobalPaymentModalStyles() {
             background: #ffffff;
         }
 
-        /* Card Container */
+        /* Customer Box */
         .gpm-card {
             background: #ffffff;
             border: 1px solid #e2e8f0;
             border-radius: 12px;
-            padding: 16px 18px;
-            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.02);
+            padding: 14px 16px;
         }
-
-        /* Customer Section */
-        .gpm-avatar {
-            width: 42px;
-            height: 42px;
-            border-radius: 50%;
-            background: #dbeafe;
-            color: #2563eb;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-weight: 700;
-            font-size: 1.05rem;
-            flex-shrink: 0;
-        }
-        .gpm-btn-secondary-outline {
-            display: inline-flex;
-            align-items: center;
-            gap: 6px;
-            padding: 6px 14px;
-            border: 1.5px solid #e2e8f0;
-            border-radius: 8px;
-            background: #ffffff;
-            color: #334155;
-            font-size: 0.8rem;
-            font-weight: 600;
-            cursor: pointer;
-            transition: all 0.15s;
-        }
-        .gpm-btn-secondary-outline:hover {
-            background: #f8fafc;
-            border-color: #cbd5e1;
-            color: #0f172a;
-        }
-
-        /* Booked Services Table */
-        .gpm-services-table {
-            width: 100%;
-            border-collapse: collapse;
-            font-size: 0.84rem;
-        }
-        .gpm-services-table th {
-            text-align: left;
-            padding: 8px 8px;
-            font-size: 0.72rem;
-            font-weight: 700;
-            color: #64748b;
-            border-bottom: 1px solid #f1f5f9;
-        }
-        .gpm-services-table td {
-            padding: 10px 8px;
-            border-bottom: 1px solid #f8fafc;
-            color: #334155;
-            vertical-align: middle;
-        }
-        .gpm-services-table td.svc-idx {
-            font-weight: 700;
-            color: #0f172a;
-            width: 24px;
-        }
-        .gpm-services-table td.svc-name {
-            font-weight: 700;
-            color: #0f172a;
-        }
-        .gpm-services-table td.svc-staff {
-            color: #475569;
-        }
-        .gpm-services-table td.svc-time {
-            color: #475569;
-        }
-        .gpm-services-table td.svc-price {
-            font-weight: 700;
-            color: #0f172a;
-            text-align: right;
-        }
-        .gpm-link-btn {
-            background: none;
-            border: none;
-            color: #2563eb;
-            font-size: 0.82rem;
-            font-weight: 600;
-            cursor: pointer;
-            display: inline-flex;
-            align-items: center;
-            gap: 4px;
-            padding: 2px 4px;
-            border-radius: 4px;
-            transition: opacity 0.15s;
-        }
-        .gpm-link-btn:hover {
-            text-decoration: underline;
-        }
-
-        /* Discounts & Offers Styling */
-        .gpm-offer-item {
+        .gpm-customer-bar {
             display: flex;
             align-items: center;
             gap: 12px;
-            margin-bottom: 14px;
         }
-        .gpm-offer-item:last-child {
-            margin-bottom: 0;
-        }
-        .gpm-offer-badge {
-            width: 34px;
-            height: 34px;
-            border-radius: 50%;
+        .gpm-avatar {
+            width: 42px;
+            height: 42px;
+            border-radius: 10px;
+            background: #4f46e5;
+            color: #ffffff;
             display: flex;
             align-items: center;
             justify-content: center;
+            font-weight: 700;
+            font-size: 1.1rem;
             flex-shrink: 0;
         }
-        .gpm-offer-badge.crown {
-            background: #fef3c7;
-            color: #d97706;
-        }
-        .gpm-offer-badge.tag {
-            background: #dcfce7;
-            color: #16a34a;
-        }
-        .gpm-offer-badge.percent {
-            background: #ffe4e6;
-            color: #e11d48;
-            font-weight: 800;
+        .gpm-cust-details h4 {
+            margin: 0 0 2px 0;
             font-size: 0.95rem;
+            font-weight: 700;
+            color: #1e293b;
         }
-        .gpm-offer-label {
-            font-size: 0.88rem;
+        .gpm-cust-details p {
+            margin: 0;
+            font-size: 0.8rem;
+            color: #64748b;
+        }
+
+        /* Itemized Items */
+        .gpm-items-list {
+            max-height: 180px;
+            overflow-y: auto;
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            margin-top: 8px;
+        }
+        .gpm-item-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 8px 10px;
+            background: #f8fafc;
+            border: 1px solid #f1f5f9;
+            border-radius: 8px;
+            font-size: 0.85rem;
+        }
+        .gpm-item-name {
+            font-weight: 600;
+            color: #334155;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+        .gpm-item-sub {
+            font-size: 0.75rem;
+            color: #94a3b8;
+        }
+        .gpm-item-price {
             font-weight: 700;
             color: #0f172a;
         }
-        .gpm-offer-sub {
-            font-size: 0.76rem;
+        .gpm-item-qty {
+            font-size: 0.75rem;
             color: #64748b;
-            margin-top: 1px;
-        }
-        .gpm-coupon-row {
-            display: flex;
-            gap: 8px;
-            flex: 1;
-        }
-        .gpm-btn-apply-blue {
-            height: 38px;
-            padding: 0 18px;
-            background: #eff6ff;
-            color: #2563eb;
-            border: 1px solid #bfdbfe;
-            border-radius: 8px;
-            font-weight: 700;
-            font-size: 0.85rem;
-            cursor: pointer;
-            transition: all 0.15s;
-            flex-shrink: 0;
-        }
-        .gpm-btn-apply-blue:hover {
-            background: #2563eb;
-            color: #ffffff;
         }
 
+        /* Discounts & Perks */
+        .gpm-section-label {
+            font-size: 0.76rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            color: #475569;
+            margin-bottom: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .gpm-discount-row {
+            display: flex;
+            gap: 8px;
+            align-items: center;
+        }
         .gpm-discount-toggle {
             display: flex;
             background: #f1f5f9;
-            border: 1px solid #e2e8f0;
             border-radius: 8px;
             overflow: hidden;
             height: 38px;
@@ -365,18 +275,17 @@ function injectGlobalPaymentModalStyles() {
         .gpm-discount-toggle button {
             border: none;
             background: transparent;
-            padding: 0 14px;
+            padding: 0 12px;
             font-weight: 700;
-            font-size: 0.9rem;
+            font-size: 0.85rem;
             color: #64748b;
             cursor: pointer;
             transition: all 0.15s;
         }
         .gpm-discount-toggle button.active {
-            background: #2563eb;
+            background: #4f46e5;
             color: #ffffff;
         }
-
         .gpm-input {
             height: 38px;
             border: 1.5px solid #e2e8f0;
@@ -391,13 +300,43 @@ function injectGlobalPaymentModalStyles() {
             background: #ffffff;
         }
         .gpm-input:focus {
-            border-color: #2563eb;
+            border-color: #4f46e5;
         }
 
+        .gpm-coupon-row {
+            display: flex;
+            gap: 8px;
+        }
+        .gpm-btn-apply {
+            height: 38px;
+            padding: 0 16px;
+            background: #1e293b;
+            color: #ffffff;
+            border: none;
+            border-radius: 8px;
+            font-weight: 600;
+            font-size: 0.85rem;
+            cursor: pointer;
+            transition: background 0.15s;
+            flex-shrink: 0;
+        }
+        .gpm-btn-apply:hover {
+            background: #0f172a;
+        }
+
+        .gpm-membership-toggle-row {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 10px 14px;
+            background: #fefce8;
+            border: 1px solid #fef08a;
+            border-radius: 10px;
+        }
         .gpm-toggle-switch {
             position: relative;
-            width: 38px;
-            height: 20px;
+            width: 40px;
+            height: 22px;
             flex-shrink: 0;
         }
         .gpm-toggle-switch input {
@@ -416,8 +355,8 @@ function injectGlobalPaymentModalStyles() {
         .gpm-toggle-slider:before {
             position: absolute;
             content: '';
-            height: 14px;
-            width: 14px;
+            height: 16px;
+            width: 16px;
             left: 3px;
             bottom: 3px;
             background: white;
@@ -425,7 +364,7 @@ function injectGlobalPaymentModalStyles() {
             transition: 0.2s;
         }
         .gpm-toggle-switch input:checked + .gpm-toggle-slider {
-            background: #2563eb;
+            background: #eab308;
         }
         .gpm-toggle-switch input:checked + .gpm-toggle-slider:before {
             transform: translateX(18px);
@@ -449,92 +388,66 @@ function injectGlobalPaymentModalStyles() {
             display: block;
         }
 
-        /* Bill Summary Card */
-        .gpm-summary-row {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
+        .gpm-breakdown {
             font-size: 0.85rem;
-            color: #475569;
-            margin-bottom: 8px;
+            color: #64748b;
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+            margin-top: 10px;
+            padding-top: 10px;
+            border-top: 1px dashed #e2e8f0;
         }
-        .gpm-summary-row .val {
-            font-weight: 600;
-            color: #0f172a;
-        }
-        .gpm-summary-row.discount .val {
-            color: #16a34a;
-        }
-        .gpm-summary-total-box {
-            margin-top: 14px;
-            padding: 14px 18px;
-            background: #eff6ff;
-            border: 1px solid #dbeafe;
-            border-radius: 10px;
+        .gpm-breakdown-row {
             display: flex;
             justify-content: space-between;
-            align-items: center;
         }
-        .gpm-summary-total-box .lbl {
-            font-weight: 700;
-            font-size: 0.95rem;
-            color: #1e40af;
+        .gpm-breakdown-row.discount {
+            color: #10b981;
+            font-weight: 600;
         }
-        .gpm-summary-total-box .val {
-            font-weight: 900;
-            font-size: 1.4rem;
+        .gpm-breakdown-row.total {
+            border-top: 1px solid #e2e8f0;
+            padding-top: 6px;
+            font-weight: 800;
             color: #0f172a;
-            letter-spacing: -0.02em;
+            font-size: 1rem;
         }
 
-        /* Right Column Hero & Methods */
+        /* Right Column Payment Methods & Tendered Amount */
         .gpm-total-card {
-            background: #eff6ff;
-            border: 1px solid #dbeafe;
-            border-radius: 12px;
+            background: linear-gradient(135deg, #1e3a8a 0%, #4338ca 100%);
+            border-radius: 14px;
             padding: 18px 22px;
+            color: #ffffff;
             display: flex;
             justify-content: space-between;
             align-items: center;
         }
         .gpm-total-card .label {
-            font-size: 0.8rem;
+            font-size: 0.75rem;
+            text-transform: uppercase;
+            letter-spacing: 0.08em;
+            color: rgba(255, 255, 255, 0.75);
             font-weight: 700;
-            color: #1e40af;
-            margin-bottom: 4px;
         }
         .gpm-total-card .val {
-            font-size: 2.1rem;
+            font-size: 1.75rem;
             font-weight: 900;
-            color: #0f172a;
-            letter-spacing: -0.02em;
-            line-height: 1;
-        }
-        .gpm-total-card .meta-right {
-            text-align: right;
-        }
-        .gpm-total-card .meta-right .items-count {
-            font-size: 0.82rem;
-            font-weight: 600;
-            color: #334155;
-        }
-        .gpm-total-card .meta-right .tax-note {
-            font-size: 0.72rem;
-            color: #64748b;
-            margin-top: 2px;
+            color: #ffffff;
         }
 
         .gpm-methods-grid {
             display: grid;
             grid-template-columns: repeat(3, 1fr);
-            gap: 12px;
+            gap: 10px;
         }
         .gpm-method-card {
-            border: 1.5px solid #e2e8f0;
+            border: 2px solid #f1f5f9;
             background: #ffffff;
-            color: #475569;
+            color: #64748b;
             border-radius: 12px;
-            padding: 16px 10px;
+            padding: 12px 8px;
             font-weight: 700;
             font-size: 0.88rem;
             cursor: pointer;
@@ -543,132 +456,70 @@ function injectGlobalPaymentModalStyles() {
             flex-direction: column;
             align-items: center;
             justify-content: center;
-            gap: 8px;
+            gap: 6px;
         }
         .gpm-method-card:hover {
-            border-color: #cbd5e1;
-            background: #f8fafc;
+            border-color: #c7d2fe;
+            background: #f8faff;
         }
         .gpm-method-card.active {
-            border-color: #2563eb;
-            background: #f0f7ff;
-            color: #2563eb;
-            box-shadow: 0 0 0 1px #2563eb;
+            border-color: #4f46e5;
+            background: #eef2ff;
+            color: #4338ca;
+            box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.12);
         }
         .gpm-method-card i {
-            width: 22px;
-            height: 22px;
+            width: 20px;
+            height: 20px;
         }
 
-        /* Cash Calculator Box */
+        /* Cash Calculator */
         .gpm-cash-box {
-            background: transparent;
-            border: none;
-            padding: 0;
+            background: #f8fafc;
+            border: 1px solid #e2e8f0;
+            border-radius: 12px;
+            padding: 14px;
             display: flex;
             flex-direction: column;
-            gap: 8px;
+            gap: 10px;
         }
-        .gpm-cash-input-wrap {
-            display: flex;
-            align-items: center;
-            border: 1.5px solid #e2e8f0;
-            border-radius: 8px;
-            background: #ffffff;
-            padding: 0 14px;
-            height: 44px;
-            transition: border-color 0.2s;
-        }
-        .gpm-cash-input-wrap:focus-within {
-            border-color: #2563eb;
-        }
-        .gpm-cash-prefix {
-            font-size: 1.1rem;
-            font-weight: 600;
-            color: #64748b;
-            margin-right: 8px;
-        }
-        .gpm-cash-input-wrap input {
-            border: none;
-            outline: none;
-            width: 100%;
-            font-size: 1.1rem;
-            font-weight: 700;
-            color: #0f172a;
-            background: transparent;
-        }
-
-        .gpm-change-due-row {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            padding: 10px 14px;
-            border-radius: 8px;
-            font-size: 0.9rem;
-        }
-        .gpm-change-due-row.change {
-            background: #f0fdf4;
-            color: #16a34a;
-            border: 1px solid #bbf7d0;
-        }
-        .gpm-change-due-row.due {
-            background: #fef2f2;
-            color: #dc2626;
-            border: 1px solid #fecaca;
-        }
-
         .gpm-chips {
             display: flex;
-            gap: 8px;
-            margin-top: 4px;
+            gap: 6px;
+            flex-wrap: wrap;
         }
         .gpm-chip-btn {
-            flex: 1;
             background: #ffffff;
             border: 1px solid #cbd5e1;
             border-radius: 6px;
-            padding: 8px 10px;
-            font-size: 0.8rem;
+            padding: 4px 10px;
+            font-size: 0.78rem;
             font-weight: 600;
             color: #334155;
             cursor: pointer;
-            text-align: center;
             transition: all 0.15s;
         }
         .gpm-chip-btn:hover {
-            background: #f1f5f9;
-            border-color: #94a3b8;
-            color: #0f172a;
+            background: #eef2ff;
+            border-color: #818cf8;
+            color: #4338ca;
         }
-
-        /* Textarea / Note */
-        .gpm-textarea-wrap {
-            position: relative;
-        }
-        .gpm-textarea {
-            width: 100%;
-            min-height: 74px;
-            border: 1.5px solid #e2e8f0;
+        .gpm-change-pill {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 8px 12px;
             border-radius: 8px;
-            padding: 10px 12px 24px 12px;
             font-size: 0.85rem;
-            color: #1e293b;
-            font-family: inherit;
-            outline: none;
-            resize: vertical;
-            box-sizing: border-box;
-            transition: border-color 0.2s;
+            font-weight: 700;
         }
-        .gpm-textarea:focus {
-            border-color: #2563eb;
+        .gpm-change-pill.change {
+            background: #dcfce7;
+            color: #15803d;
         }
-        .gpm-textarea-counter {
-            position: absolute;
-            bottom: 8px;
-            right: 12px;
-            font-size: 0.72rem;
-            color: #94a3b8;
-            pointer-events: none;
+        .gpm-change-pill.due {
+            background: #fee2e2;
+            color: #b91c1c;
         }
 
         /* Footer */
@@ -676,38 +527,35 @@ function injectGlobalPaymentModalStyles() {
             padding: 16px 28px;
             background: #ffffff;
             display: flex;
-            gap: 14px;
+            gap: 12px;
             border-top: 1px solid #f1f5f9;
-            justify-content: space-between;
-            align-items: center;
         }
         .gpm-btn-cancel {
-            height: 46px;
-            padding: 0 32px;
-            border-radius: 8px;
-            font-weight: 600;
-            font-size: 0.92rem;
-            border: 1.5px solid #cbd5e1;
+            flex: 1;
+            height: 48px;
+            border-radius: 10px;
+            font-weight: 700;
+            font-size: 0.95rem;
+            border: 1.5px solid #e2e8f0;
             background: #ffffff;
-            color: #334155;
+            color: #64748b;
             cursor: pointer;
             transition: all 0.15s;
         }
         .gpm-btn-cancel:hover {
             background: #f8fafc;
-            border-color: #94a3b8;
             color: #0f172a;
         }
         .gpm-btn-proceed {
-            flex: 1;
-            height: 46px;
-            border-radius: 8px;
+            flex: 2;
+            height: 48px;
+            border-radius: 10px;
             font-weight: 700;
-            font-size: 0.95rem;
-            background: #2563eb;
+            font-size: 1rem;
+            background: linear-gradient(135deg, #1e3a8a 0%, #4f46e5 100%);
             color: #ffffff;
             border: none;
-            box-shadow: 0 2px 6px rgba(37, 99, 235, 0.25);
+            box-shadow: 0 4px 12px rgba(79, 70, 229, 0.25);
             cursor: pointer;
             transition: all 0.15s;
             display: flex;
@@ -716,13 +564,14 @@ function injectGlobalPaymentModalStyles() {
             gap: 8px;
         }
         .gpm-btn-proceed:hover {
-            background: #1d4ed8;
-            box-shadow: 0 4px 12px rgba(37, 99, 235, 0.35);
+            box-shadow: 0 6px 16px rgba(79, 70, 229, 0.35);
+            transform: translateY(-1px);
         }
         .gpm-btn-proceed:disabled {
             background: #94a3b8;
             cursor: not-allowed;
             box-shadow: none;
+            transform: none;
         }
     `;
     document.head.appendChild(style);
@@ -738,12 +587,10 @@ function injectGlobalPaymentModalHTML() {
             <!-- Header -->
             <div class="gpm-header">
                 <div class="gpm-header-left">
-                    <div class="gpm-header-icon-box" id="gpmHeaderIcon">
-                        <i data-feather="calendar" style="width:22px; height:22px;"></i>
-                    </div>
+                    <span id="gpmTypeBadge" class="gpm-type-badge">CHECKOUT</span>
                     <div>
-                        <h2 id="gpmTitle">Booking Payment</h2>
-                        <p id="gpmSubtitle" class="gpm-subtitle">#49D13DF4 • 18 Sep 2026, 10:00 AM • Main Branch</p>
+                        <h2 id="gpmTitle">Collect Payment</h2>
+                        <p id="gpmSubtitle" class="gpm-subtitle">Select payment method and confirm</p>
                     </div>
                 </div>
                 <button class="gpm-close-btn" id="gpmBtnClose" title="Close"><i data-feather="x"></i></button>
@@ -753,147 +600,93 @@ function injectGlobalPaymentModalHTML() {
             <div class="gpm-body">
                 <!-- LEFT COLUMN: Order & Breakdown -->
                 <div class="gpm-left-col">
-                    <!-- Customer Card -->
+                    <!-- Customer Bar -->
                     <div class="gpm-card">
-                        <div style="font-size:0.78rem; font-weight:700; color:#475569; margin-bottom:10px;">Customer</div>
-                        <div style="display:flex; justify-content:space-between; align-items:center;">
-                            <div style="display:flex; align-items:center; gap:12px;">
-                                <div class="gpm-avatar" id="gpmCustAvatar">D</div>
-                                <div>
-                                    <h4 id="gpmCustName" style="margin:0 0 2px 0; font-size:0.95rem; font-weight:700; color:#0f172a;">Walk-in Customer</h4>
-                                    <p id="gpmCustPhone" style="margin:0; font-size:0.82rem; color:#64748b;">+91 --</p>
-                                </div>
+                        <div class="gpm-customer-bar">
+                            <div class="gpm-avatar" id="gpmCustAvatar">C</div>
+                            <div class="gpm-cust-details">
+                                <h4 id="gpmCustName">Walk-in Customer</h4>
+                                <p id="gpmCustPhone">+91 --</p>
                             </div>
-                            <button type="button" id="gpmBtnViewProfile" class="gpm-btn-secondary-outline">
-                                <i data-feather="user" style="width:14px; height:14px;"></i>
-                                <span>View Profile</span>
-                            </button>
                         </div>
                     </div>
 
-                    <!-- Booked Services Table Card -->
-                    <div class="gpm-card" id="gpmItemsCard">
-                        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
-                            <span style="font-size:0.88rem; font-weight:700; color:#0f172a;" id="gpmItemsHeader">Booked Services (1)</span>
-                            <button type="button" id="gpmBtnEditBooking" class="gpm-link-btn">
-                                <i data-feather="edit-2" style="width:13px; height:13px;"></i>
-                                <span>Edit</span>
-                            </button>
+                    <!-- Itemized Items Card -->
+                    <div class="gpm-card" id="gpmItemsCard" style="display:none;">
+                        <div class="gpm-section-label">
+                            <span id="gpmItemsTitle">Order Items</span>
+                            <span id="gpmItemsCount" style="color:#64748b; font-size:0.75rem;">0 items</span>
                         </div>
-                        <div style="overflow-x:auto;">
-                            <table class="gpm-services-table" id="gpmServicesTable">
-                                <thead>
-                                    <tr>
-                                        <th style="width:28px;">#</th>
-                                        <th>Service</th>
-                                        <th>Staff</th>
-                                        <th>Time</th>
-                                        <th style="text-align:right;">Price</th>
-                                    </tr>
-                                </thead>
-                                <tbody id="gpmServicesTbody"></tbody>
-                            </table>
-                        </div>
-                        <div style="display:flex; justify-content:space-between; align-items:center; margin-top:10px; padding-top:10px; border-top:1px solid #f1f5f9; font-size:0.8rem;">
-                            <div id="gpmServiceNote" style="color:#64748b; display:flex; align-items:center; gap:6px;">
-                                <i data-feather="file-text" style="width:14px; height:14px; color:#64748b;"></i>
-                                <span id="gpmServiceNoteText">Includes multiple services</span>
-                            </div>
-                            <div style="font-weight:700; color:#0f172a;">
-                                <span style="color:#64748b; font-weight:600; margin-right:8px;">Subtotal</span>
-                                <span id="gpmServicesSubtotal">₹0</span>
-                            </div>
-                        </div>
+                        <div class="gpm-items-list" id="gpmItemsList"></div>
                     </div>
 
                     <!-- Discounts & Offers Card -->
                     <div class="gpm-card">
-                        <div style="font-size:0.88rem; font-weight:700; color:#0f172a; margin-bottom:14px;">Discounts &amp; Offers</div>
+                        <div class="gpm-section-label">Discounts &amp; Loyalty</div>
 
-                        <!-- Membership Discount Row -->
-                        <div class="gpm-offer-item" id="gpmMembershipSection">
-                            <div class="gpm-offer-badge crown">
-                                <i data-feather="award" style="width:18px; height:18px;"></i>
-                            </div>
-                            <div style="flex:1;">
-                                <div class="gpm-offer-label">Membership Discount</div>
-                                <div class="gpm-offer-sub" id="gpmMembershipSubtitle">No active membership found.</div>
-                            </div>
-                            <label class="gpm-toggle-switch">
-                                <input type="checkbox" id="gpmMembershipToggle">
-                                <span class="gpm-toggle-slider"></span>
-                            </label>
-                        </div>
-                        <div class="gpm-membership-result" id="gpmMembershipResult" style="display:none; margin:-6px 0 10px 46px;"></div>
-
-                        <!-- Coupon Code Row -->
-                        <div class="gpm-offer-item">
-                            <div class="gpm-offer-badge tag">
-                                <i data-feather="tag" style="width:18px; height:18px;"></i>
-                            </div>
-                            <div class="gpm-offer-label" style="width:110px; flex-shrink:0;">Coupon Code</div>
-                            <div class="gpm-coupon-row">
-                                <input type="text" id="gpmCouponInput" class="gpm-input" placeholder="Enter coupon code" style="text-transform: uppercase;">
-                                <button type="button" id="gpmBtnApplyCoupon" class="gpm-btn-apply-blue">Apply</button>
-                            </div>
-                        </div>
-                        <p id="gpmCouponMsg" style="font-size:0.75rem; margin:-6px 0 10px 156px; display:none;"></p>
-
-                        <!-- Manual Discount Row -->
-                        <div class="gpm-offer-item">
-                            <div class="gpm-offer-badge percent">%</div>
-                            <div class="gpm-offer-label" style="width:110px; flex-shrink:0;">Manual Discount</div>
-                            <div style="display:flex; gap:8px; flex:1;">
-                                <div class="gpm-discount-toggle">
-                                    <button type="button" id="gpmToggleFlat" class="active">₹</button>
-                                    <button type="button" id="gpmTogglePct">%</button>
+                        <!-- Membership Discount Toggle -->
+                        <div id="gpmMembershipSection" style="margin-bottom:12px;">
+                            <div class="gpm-membership-toggle-row">
+                                <div>
+                                    <strong style="font-size:0.85rem; color:#854d0e; display:block;">Membership Perk</strong>
+                                    <span id="gpmMembershipSubtitle" style="font-size:0.75rem; color:#a16207;">Auto-check customer discount</span>
                                 </div>
-                                <input type="number" id="gpmDiscountInput" class="gpm-input" placeholder="0" min="0" value="0">
+                                <label class="gpm-toggle-switch">
+                                    <input type="checkbox" id="gpmMembershipToggle">
+                                    <span class="gpm-toggle-slider"></span>
+                                </label>
+                            </div>
+                            <div class="gpm-membership-result" id="gpmMembershipResult"></div>
+                        </div>
+
+                        <!-- Coupon Code -->
+                        <div style="margin-bottom:12px;">
+                            <div class="gpm-coupon-row">
+                                <input type="text" id="gpmCouponInput" class="gpm-input" placeholder="COUPON CODE" style="text-transform: uppercase;">
+                                <button type="button" id="gpmBtnApplyCoupon" class="gpm-btn-apply">Apply</button>
+                            </div>
+                            <p id="gpmCouponMsg" style="font-size:0.75rem; margin:4px 0 0 0; display:none;"></p>
+                        </div>
+
+                        <!-- Manual Discount -->
+                        <div>
+                            <div class="gpm-discount-row">
+                                <div class="gpm-discount-toggle">
+                                    <button type="button" id="gpmToggleFlat" class="active">₹ Flat</button>
+                                    <button type="button" id="gpmTogglePct">% Pct</button>
+                                </div>
+                                <input type="number" id="gpmDiscountInput" class="gpm-input" placeholder="Manual discount value" min="0">
                             </div>
                         </div>
+
+                        <!-- Breakdown -->
+                        <div class="gpm-breakdown" id="gpmBreakdown"></div>
                     </div>
                 </div>
 
                 <!-- RIGHT COLUMN: Payment Methods & Collection -->
                 <div class="gpm-right-col">
-                    <!-- Bill Summary Card (Top Field) -->
-                    <div class="gpm-card">
-                        <div style="font-size:0.88rem; font-weight:700; color:#0f172a; margin-bottom:12px;">Bill Summary</div>
-                        <div class="gpm-summary-row">
-                            <span>Subtotal</span>
-                            <span class="val" id="gpmBillSubtotal">₹0</span>
+                    <!-- Prominent Due Card -->
+                    <div class="gpm-total-card">
+                        <div>
+                            <div class="label">Total Payable</div>
+                            <div class="val" id="gpmStatDue">₹0</div>
                         </div>
-                        <div class="gpm-summary-row discount">
-                            <span>Membership Discount</span>
-                            <span class="val" id="gpmBillMembership">- ₹0</span>
-                        </div>
-                        <div class="gpm-summary-row discount">
-                            <span>Coupon Discount</span>
-                            <span class="val" id="gpmBillCoupon">- ₹0</span>
-                        </div>
-                        <div class="gpm-summary-row discount">
-                            <span>Manual Discount</span>
-                            <span class="val" id="gpmBillManual">- ₹0</span>
-                        </div>
-                        <div class="gpm-summary-total-box">
-                            <div>
-                                <span class="lbl">Total Payable</span>
-                                <div style="font-size:0.75rem; color:#64748b; font-weight:500; margin-top:2px;" id="gpmStatItemsCount">1 item • Incl. all taxes</div>
-                            </div>
-                            <span class="val" id="gpmBillTotal">₹0</span>
+                        <div style="text-align:right;">
+                            <span id="gpmStatSubtotalLabel" style="font-size:0.78rem; opacity:0.8;">Subtotal: ₹0</span>
                         </div>
                     </div>
 
-                    <!-- Select Payment Method -->
+                    <!-- Payment Method Selector -->
                     <div>
-                        <div style="font-size:0.88rem; font-weight:700; color:#0f172a; margin-bottom:10px;">Select Payment Method</div>
+                        <div class="gpm-section-label">Select Payment Method</div>
                         <div class="gpm-methods-grid">
                             <button type="button" class="gpm-method-card active" data-method="cash">
                                 <i data-feather="dollar-sign"></i>
                                 <span>Cash</span>
                             </button>
                             <button type="button" class="gpm-method-card" data-method="upi">
-                                <i data-feather="grid"></i>
+                                <i data-feather="smartphone"></i>
                                 <span>UPI / QR</span>
                             </button>
                             <button type="button" class="gpm-method-card" data-method="card">
@@ -901,6 +694,31 @@ function injectGlobalPaymentModalHTML() {
                                 <span>Card</span>
                             </button>
                         </div>
+                    </div>
+
+                    <!-- Cash Calculation Box -->
+                    <div class="gpm-cash-box" id="gpmCashBox">
+                        <div style="display:flex; justify-content:space-between; align-items:center;">
+                            <label style="font-size:0.8rem; font-weight:700; color:#334155;">Cash Tendered</label>
+                            <span style="font-size:0.75rem; color:#64748b;">Quick Select</span>
+                        </div>
+                        <div class="gpm-chips">
+                            <button type="button" class="gpm-chip-btn" id="gpmChipExact">Exact</button>
+                            <button type="button" class="gpm-chip-btn" data-add="500">₹500</button>
+                            <button type="button" class="gpm-chip-btn" data-add="1000">₹1,000</button>
+                            <button type="button" class="gpm-chip-btn" data-add="2000">₹2,000</button>
+                        </div>
+                        <input type="number" id="gpmCashReceived" class="gpm-input" placeholder="Amount received from customer" min="0">
+                        <div class="gpm-change-pill change" id="gpmChangePill" style="display:none;">
+                            <span>Change to Return</span>
+                            <span id="gpmChangeAmount">₹0</span>
+                        </div>
+                    </div>
+
+                    <!-- Notes / Reference -->
+                    <div>
+                        <div class="gpm-section-label">Reference / Note (Optional)</div>
+                        <input type="text" id="gpmPaymentNote" class="gpm-input" placeholder="e.g., UPI Transaction ID, Card Slip #">
                     </div>
                 </div>
             </div>
@@ -910,12 +728,12 @@ function injectGlobalPaymentModalHTML() {
                 <button type="button" class="gpm-btn-cancel" id="gpmBtnCancel">Cancel</button>
                 <button type="button" class="gpm-btn-proceed" id="gpmBtnProceed">
                     <span>Collect Payment (₹0)</span>
-                    <i data-feather="arrow-right" style="width:18px;height:18px;"></i>
                 </button>
             </div>
         </div>
     `;
     document.body.appendChild(overlay);
+    if (window.feather) feather.replace();
 }
 
 function bindGlobalPaymentModalEvents() {
@@ -927,25 +745,6 @@ function bindGlobalPaymentModalEvents() {
         if (e.target.id === 'gpmOverlay') closeGlobalPaymentModal();
     });
 
-    // Customer View Profile
-    document.getElementById('gpmBtnViewProfile')?.addEventListener('click', () => {
-        if (globalPaymentConfig?.customerId && window.viewCustomerProfile) {
-            window.viewCustomerProfile(globalPaymentConfig.customerId, globalPaymentConfig.customerName);
-        } else {
-            alert('Customer profile not available for walk-in customer.');
-        }
-    });
-
-    // Edit Booking
-    document.getElementById('gpmBtnEditBooking')?.addEventListener('click', () => {
-        if (globalPaymentConfig?.bookingId && window.openEditBookingModal) {
-            window.closeGlobalPaymentModal();
-            window.openEditBookingModal(globalPaymentConfig.bookingId);
-        } else {
-            alert('Edit booking is not available for this appointment.');
-        }
-    });
-
     // Payment Methods
     document.querySelectorAll('.gpm-method-card').forEach(btn => {
         btn.addEventListener('click', (e) => {
@@ -953,6 +752,11 @@ function bindGlobalPaymentModalEvents() {
             const target = e.currentTarget;
             target.classList.add('active');
             paymentState.method = target.dataset.method;
+
+            const cashBox = document.getElementById('gpmCashBox');
+            if (cashBox) {
+                cashBox.style.display = paymentState.method === 'cash' ? 'flex' : 'none';
+            }
         });
     });
 
@@ -968,10 +772,7 @@ function bindGlobalPaymentModalEvents() {
             if (resEl) {
                 resEl.className = 'gpm-membership-result';
                 resEl.textContent = '';
-                resEl.style.display = 'none';
             }
-            const sub = document.getElementById('gpmMembershipSubtitle');
-            if (sub) sub.textContent = 'No active membership found.';
             calculateFinalDue();
         }
     });
@@ -997,41 +798,60 @@ function bindGlobalPaymentModalEvents() {
     // Coupon Apply / Remove
     document.getElementById('gpmBtnApplyCoupon')?.addEventListener('click', applyCouponCode);
 
+    // Cash Calculator Chips & Input
+    document.getElementById('gpmChipExact')?.addEventListener('click', () => {
+        const cashIn = document.getElementById('gpmCashReceived');
+        if (cashIn) {
+            cashIn.value = paymentState.finalDue;
+            updateCashChange();
+        }
+    });
+    document.querySelectorAll('.gpm-chip-btn[data-add]').forEach(chip => {
+        chip.addEventListener('click', (e) => {
+            const val = Number(e.currentTarget.dataset.add) || 0;
+            const cashIn = document.getElementById('gpmCashReceived');
+            if (cashIn) {
+                cashIn.value = val;
+                updateCashChange();
+            }
+        });
+    });
+    document.getElementById('gpmCashReceived')?.addEventListener('input', updateCashChange);
+
     // Proceed
     document.getElementById('gpmBtnProceed')?.addEventListener('click', finalizePayment);
 }
 
 function updateCashChange() {
     const cashInput = document.getElementById('gpmCashReceived');
-    const row = document.getElementById('gpmChangeDueRow');
-    const lbl = document.getElementById('gpmChangeLabel');
+    const pill = document.getElementById('gpmChangePill');
     const amtEl = document.getElementById('gpmChangeAmount');
-    if (!cashInput || !row || !amtEl) return;
+    if (!cashInput || !pill || !amtEl) return;
 
     const tendered = parseFloat(cashInput.value) || 0;
     const due = paymentState.finalDue || 0;
 
     if (tendered <= 0) {
-        row.style.display = 'none';
+        pill.style.display = 'none';
         paymentState.cashReceived = 0;
         paymentState.changeReturned = 0;
         return;
     }
 
-    row.style.display = 'flex';
+    pill.style.display = 'flex';
     paymentState.cashReceived = tendered;
 
     if (tendered >= due) {
         const change = tendered - due;
         paymentState.changeReturned = change;
-        row.className = 'gpm-change-due-row change';
-        if (lbl) lbl.textContent = 'Change Due';
+        pill.className = 'gpm-change-pill change';
+        pill.firstElementChild.textContent = 'Change to Return';
         amtEl.textContent = gpmFormatCurrency(change);
     } else {
         const remaining = due - tendered;
         paymentState.changeReturned = 0;
-        row.className = 'gpm-change-due-row due';
-        if (lbl) lbl.textContent = 'Remaining Due';
+        pill.className = 'gpm-change-pill due';
+        pill.firstElementChild.textContent = 'Remaining Due';
         amtEl.textContent = gpmFormatCurrency(remaining);
     }
 }
@@ -1061,7 +881,7 @@ window.openGlobalPaymentModal = async function(config) {
     // Reset UI Inputs
     document.getElementById('gpmToggleFlat')?.classList.add('active');
     document.getElementById('gpmTogglePct')?.classList.remove('active');
-    if (document.getElementById('gpmDiscountInput')) document.getElementById('gpmDiscountInput').value = '0';
+    if (document.getElementById('gpmDiscountInput')) document.getElementById('gpmDiscountInput').value = '';
     if (document.getElementById('gpmCouponInput')) {
         const cIn = document.getElementById('gpmCouponInput');
         cIn.value = '';
@@ -1071,19 +891,40 @@ window.openGlobalPaymentModal = async function(config) {
         const btn = document.getElementById('gpmBtnApplyCoupon');
         btn.disabled = false;
         btn.textContent = 'Apply';
+        btn.style.background = '#1e293b';
     }
     if (document.getElementById('gpmCouponMsg')) document.getElementById('gpmCouponMsg').style.display = 'none';
 
     // Payment methods
     document.querySelectorAll('.gpm-method-card').forEach(b => b.classList.remove('active'));
     document.querySelector('.gpm-method-card[data-method="cash"]')?.classList.add('active');
+    const cashBox = document.getElementById('gpmCashBox');
+    if (cashBox) cashBox.style.display = 'flex';
+    if (document.getElementById('gpmCashReceived')) document.getElementById('gpmCashReceived').value = '';
+    if (document.getElementById('gpmChangePill')) document.getElementById('gpmChangePill').style.display = 'none';
+    if (document.getElementById('gpmPaymentNote')) document.getElementById('gpmPaymentNote').value = '';
 
     // Context & Header
     const type = (config.type || 'pos').toLowerCase();
-    const titleEl = document.getElementById('gpmTitle');
-    if (titleEl) {
-        titleEl.textContent = config.title || (type === 'booking' ? 'Booking Payment' : (type === 'membership' ? 'Membership Purchase' : 'POS Checkout'));
+    const typeBadge = document.getElementById('gpmTypeBadge');
+    if (typeBadge) {
+        if (type === 'booking') {
+            typeBadge.textContent = 'APPOINTMENT BOOKING';
+            typeBadge.style.background = '#dbeafe';
+            typeBadge.style.color = '#1e40af';
+        } else if (type === 'membership') {
+            typeBadge.textContent = 'MEMBERSHIP PLAN';
+            typeBadge.style.background = '#fef3c7';
+            typeBadge.style.color = '#92400e';
+        } else {
+            typeBadge.textContent = 'POS CHECKOUT';
+            typeBadge.style.background = '#e0e7ff';
+            typeBadge.style.color = '#4338ca';
+        }
     }
+
+    const titleEl = document.getElementById('gpmTitle');
+    if (titleEl) titleEl.textContent = config.title || 'Collect Payment';
 
     const custName = (config.customerName || 'Walk-in Customer').trim();
     const custPhone = config.customerPhone || 'N/A';
@@ -1093,84 +934,56 @@ window.openGlobalPaymentModal = async function(config) {
 
     const subtitleEl = document.getElementById('gpmSubtitle');
     if (subtitleEl) {
-        const saleIdStr = config.saleId ? `#${config.saleId}` : (config.bookingId ? `#${String(config.bookingId).slice(0, 8).toUpperCase()}` : '');
-        const dateStr = gpmFormatDate(config.bookingDate);
-        const timeStr = config.bookingTime ? `, ${config.bookingTime}` : '';
-        const dateTimeStr = (dateStr || timeStr) ? `${dateStr}${timeStr}` : '';
-        const branchStr = config.branchName || 'Main Branch';
-        const parts = [saleIdStr, dateTimeStr, branchStr].filter(Boolean);
-        subtitleEl.textContent = parts.length > 0 ? parts.join(' • ') : custName;
+        subtitleEl.textContent = `${config.saleId ? `#${config.saleId} · ` : ''}${custName}`;
     }
 
-    // Render Services Table
-    const itemsHeader = document.getElementById('gpmItemsHeader');
-    const tbody = document.getElementById('gpmServicesTbody');
-    const subtotalEl = document.getElementById('gpmServicesSubtotal');
-    const noteEl = document.getElementById('gpmServiceNote');
-    const statItemsCount = document.getElementById('gpmStatItemsCount');
+    // Render Itemized Items if provided
+    const itemsCard = document.getElementById('gpmItemsCard');
+    const itemsList = document.getElementById('gpmItemsList');
+    const itemsTitle = document.getElementById('gpmItemsTitle');
+    const itemsCount = document.getElementById('gpmItemsCount');
 
-    const items = config.items || [];
-    const itemsCount = items.length || 1;
-
-    if (itemsHeader) {
-        itemsHeader.textContent = type === 'booking' ? `Booked Services (${itemsCount})` : `Order Items (${itemsCount})`;
-    }
-    if (statItemsCount) {
-        statItemsCount.textContent = `${itemsCount} item${itemsCount !== 1 ? 's' : ''}`;
-    }
-    if (subtotalEl) {
-        subtotalEl.textContent = gpmFormatCurrency(config.totalAmount || 0);
-    }
-    if (noteEl) {
-        noteEl.style.display = (config.hasMultipleServices || itemsCount > 1) ? 'flex' : 'none';
-    }
-
-    if (tbody) {
-        if (items.length > 0) {
-            tbody.innerHTML = items.map((it, idx) => `
-                <tr>
-                    <td class="svc-idx">${it.index || (idx + 1)}</td>
-                    <td class="svc-name">${it.name || 'Service'}</td>
-                    <td class="svc-staff">${it.staff || it.staff_name || 'Assigned'}</td>
-                    <td class="svc-time">${it.time || it.start_time || config.bookingTime || ''}</td>
-                    <td class="svc-price">${gpmFormatCurrency(it.price || 0)}</td>
-                </tr>
-            `).join('');
-        } else {
-            tbody.innerHTML = `
-                <tr>
-                    <td class="svc-idx">1</td>
-                    <td class="svc-name">${config.title || 'Service Appointment'}</td>
-                    <td class="svc-staff">Assigned</td>
-                    <td class="svc-time">${config.bookingTime || ''}</td>
-                    <td class="svc-price">${gpmFormatCurrency(config.totalAmount || 0)}</td>
-                </tr>
-            `;
+    if (config.items && config.items.length > 0 && itemsCard && itemsList) {
+        itemsCard.style.display = 'block';
+        if (itemsTitle) {
+            itemsTitle.textContent = type === 'booking' ? 'Booked Services' : (type === 'membership' ? 'Membership Details' : 'Cart Products');
         }
+        if (itemsCount) {
+            itemsCount.textContent = `${config.items.length} item${config.items.length !== 1 ? 's' : ''}`;
+        }
+        itemsList.innerHTML = config.items.map(it => `
+            <div class="gpm-item-row">
+                <div style="flex:1; min-width:0;">
+                    <div class="gpm-item-name">${it.name || 'Item'}</div>
+                    ${it.category || it.subtitle ? `<div class="gpm-item-sub">${it.category || it.subtitle}</div>` : ''}
+                </div>
+                <div style="text-align:right; flex-shrink:0;">
+                    <div class="gpm-item-price">${gpmFormatCurrency((Number(it.price) || 0) * (Number(it.quantity) || 1))}</div>
+                    <div class="gpm-item-qty">${it.quantity ? `${it.quantity} × ${gpmFormatCurrency(it.price || 0)}` : ''}</div>
+                </div>
+            </div>
+        `).join('');
+    } else if (itemsCard) {
+        itemsCard.style.display = 'none';
     }
 
     // Show/hide membership perk toggle
     const memSection = document.getElementById('gpmMembershipSection');
     const memToggle = document.getElementById('gpmMembershipToggle');
-    const memSub = document.getElementById('gpmMembershipSubtitle');
     if (config.customerId && !config.isMembershipPurchase) {
-        if (memSection) memSection.style.display = 'flex';
+        if (memSection) memSection.style.display = 'block';
         if (memToggle) memToggle.checked = false;
-        if (memSub) memSub.textContent = 'Checking membership...';
         const resEl = document.getElementById('gpmMembershipResult');
         if (resEl) {
             resEl.className = 'gpm-membership-result';
             resEl.textContent = '';
-            resEl.style.display = 'none';
         }
         // Auto-check customer membership
         fetchCustomerMembership(config.customerId).then(found => {
             if (found && memToggle) memToggle.checked = true;
         });
     } else {
-        if (memSection) memSection.style.display = 'flex';
-        if (memToggle) memToggle.checked = false;
-        if (memSub) memSub.textContent = 'No active membership found.';
+        if (memSection) memSection.style.display = 'none';
     }
 
     calculateFinalDue();
@@ -1191,13 +1004,18 @@ function calculateFinalDue() {
     const baseAmount = Number(globalPaymentConfig.totalAmount || 0);
     let runningAmount = baseAmount;
     let totalDiscount = 0;
+    const breakdownHtml = [];
 
-    let memDiscount = 0;
-    let coupDiscount = 0;
-    let manDiscount = 0;
+    breakdownHtml.push(`
+        <div class="gpm-breakdown-row">
+            <span>Subtotal</span>
+            <span style="font-weight:600;color:#0f172a;">${gpmFormatCurrency(baseAmount)}</span>
+        </div>
+    `);
 
     // 1. Membership Discount
     if (paymentState.appliedMembership && paymentState.appliedMembership.value > 0) {
+        let memDiscount = 0;
         if (paymentState.appliedMembership.type === 'percentage') {
             memDiscount = runningAmount * (paymentState.appliedMembership.value / 100);
         } else {
@@ -1206,10 +1024,22 @@ function calculateFinalDue() {
         if (memDiscount > runningAmount) memDiscount = runningAmount;
         totalDiscount += memDiscount;
         runningAmount -= memDiscount;
+
+        const valLabel = paymentState.appliedMembership.type === 'percentage'
+            ? `${paymentState.appliedMembership.value}%`
+            : gpmFormatCurrency(paymentState.appliedMembership.value);
+
+        breakdownHtml.push(`
+            <div class="gpm-breakdown-row discount">
+                <span>Membership Perk (${paymentState.appliedMembership.name})</span>
+                <span>-${gpmFormatCurrency(memDiscount)}</span>
+            </div>
+        `);
     }
 
     // 2. Coupon Discount
     if (paymentState.appliedCoupon && paymentState.appliedCoupon.value > 0) {
+        let coupDiscount = 0;
         if (paymentState.appliedCoupon.type === 'percentage') {
             coupDiscount = runningAmount * (paymentState.appliedCoupon.value / 100);
         } else {
@@ -1218,10 +1048,18 @@ function calculateFinalDue() {
         if (coupDiscount > runningAmount) coupDiscount = runningAmount;
         totalDiscount += coupDiscount;
         runningAmount -= coupDiscount;
+
+        breakdownHtml.push(`
+            <div class="gpm-breakdown-row discount">
+                <span>Coupon (${paymentState.appliedCoupon.code})</span>
+                <span>-${gpmFormatCurrency(coupDiscount)}</span>
+            </div>
+        `);
     }
 
     // 3. Manual Discount
     if (paymentState.discountValue > 0) {
+        let manDiscount = 0;
         if (paymentState.discountType === 'percent') {
             manDiscount = runningAmount * (paymentState.discountValue / 100);
         } else {
@@ -1230,35 +1068,41 @@ function calculateFinalDue() {
         if (manDiscount > runningAmount) manDiscount = runningAmount;
         totalDiscount += manDiscount;
         runningAmount -= manDiscount;
+
+        const valLabel = paymentState.discountType === 'percent'
+            ? `${paymentState.discountValue}%`
+            : gpmFormatCurrency(paymentState.discountValue);
+
+        breakdownHtml.push(`
+            <div class="gpm-breakdown-row discount">
+                <span>Manual Discount (${valLabel})</span>
+                <span>-${gpmFormatCurrency(manDiscount)}</span>
+            </div>
+        `);
     }
 
     const finalDue = Math.max(0, Math.round(baseAmount - totalDiscount));
     paymentState.finalDue = finalDue;
 
-    // Update Bill Summary Card
-    const billSub = document.getElementById('gpmBillSubtotal');
-    if (billSub) billSub.textContent = gpmFormatCurrency(baseAmount);
+    breakdownHtml.push(`
+        <div class="gpm-breakdown-row total">
+            <span>Final Amount</span>
+            <span style="color:#4f46e5;">${gpmFormatCurrency(finalDue)}</span>
+        </div>
+    `);
 
-    const billMem = document.getElementById('gpmBillMembership');
-    if (billMem) billMem.textContent = memDiscount > 0 ? `- ${gpmFormatCurrency(memDiscount)}` : '- ₹0';
+    const breakdownEl = document.getElementById('gpmBreakdown');
+    if (breakdownEl) breakdownEl.innerHTML = breakdownHtml.join('');
 
-    const billCoup = document.getElementById('gpmBillCoupon');
-    if (billCoup) billCoup.textContent = coupDiscount > 0 ? `- ${gpmFormatCurrency(coupDiscount)}` : '- ₹0';
-
-    const billMan = document.getElementById('gpmBillManual');
-    if (billMan) billMan.textContent = manDiscount > 0 ? `- ${gpmFormatCurrency(manDiscount)}` : '- ₹0';
-
-    const billTot = document.getElementById('gpmBillTotal');
-    if (billTot) billTot.textContent = gpmFormatCurrency(finalDue);
-
-    // Update Right Column Hero & Proceed Button
     const statDue = document.getElementById('gpmStatDue');
     if (statDue) statDue.textContent = gpmFormatCurrency(finalDue);
 
+    const subLabel = document.getElementById('gpmStatSubtotalLabel');
+    if (subLabel) subLabel.textContent = `Subtotal: ${gpmFormatCurrency(baseAmount)}`;
+
     const btnProceed = document.getElementById('gpmBtnProceed');
     if (btnProceed) {
-        btnProceed.innerHTML = `<span>Collect Payment (${gpmFormatCurrency(finalDue)})</span> <i data-feather="arrow-right" style="width:18px;height:18px;"></i>`;
-        if (window.feather) feather.replace();
+        btnProceed.innerHTML = `<span>Collect Payment (${gpmFormatCurrency(finalDue)})</span>`;
     }
 
     updateCashChange();
