@@ -839,18 +839,6 @@ function injectGlobalPaymentModalHTML() {
                         </div>
                         <p id="gpmCouponMsg" style="font-size:0.75rem; margin:-6px 0 10px 156px; display:none;"></p>
 
-                        <!-- Manual Discount Row -->
-                        <div class="gpm-offer-item">
-                            <div class="gpm-offer-badge percent">%</div>
-                            <div class="gpm-offer-label" style="width:110px; flex-shrink:0;">Manual Discount</div>
-                            <div style="display:flex; gap:8px; flex:1;">
-                                <div class="gpm-discount-toggle">
-                                    <button type="button" id="gpmToggleFlat" class="active">₹</button>
-                                    <button type="button" id="gpmTogglePct">%</button>
-                                </div>
-                                <input type="number" id="gpmDiscountInput" class="gpm-input" placeholder="0" min="0" value="0">
-                            </div>
-                        </div>
                     </div>
                 </div>
 
@@ -871,10 +859,7 @@ function injectGlobalPaymentModalHTML() {
                             <span>Coupon Discount</span>
                             <span class="val" id="gpmBillCoupon">- ₹0</span>
                         </div>
-                        <div class="gpm-summary-row discount">
-                            <span>Manual Discount</span>
-                            <span class="val" id="gpmBillManual">- ₹0</span>
-                        </div>
+
                         <div class="gpm-summary-total-box">
                             <div>
                                 <span class="lbl">Total Payable</span>
@@ -976,23 +961,7 @@ function bindGlobalPaymentModalEvents() {
         }
     });
 
-    // Manual Discount toggle & input
-    document.getElementById('gpmToggleFlat')?.addEventListener('click', () => {
-        document.getElementById('gpmToggleFlat').classList.add('active');
-        document.getElementById('gpmTogglePct').classList.remove('active');
-        paymentState.discountType = 'flat';
-        calculateFinalDue();
-    });
-    document.getElementById('gpmTogglePct')?.addEventListener('click', () => {
-        document.getElementById('gpmTogglePct').classList.add('active');
-        document.getElementById('gpmToggleFlat').classList.remove('active');
-        paymentState.discountType = 'percent';
-        calculateFinalDue();
-    });
-    document.getElementById('gpmDiscountInput')?.addEventListener('input', (e) => {
-        paymentState.discountValue = parseFloat(e.target.value) || 0;
-        calculateFinalDue();
-    });
+
 
     // Coupon Apply / Remove
     document.getElementById('gpmBtnApplyCoupon')?.addEventListener('click', applyCouponCode);
@@ -1220,17 +1189,7 @@ function calculateFinalDue() {
         runningAmount -= coupDiscount;
     }
 
-    // 3. Manual Discount
-    if (paymentState.discountValue > 0) {
-        if (paymentState.discountType === 'percent') {
-            manDiscount = runningAmount * (paymentState.discountValue / 100);
-        } else {
-            manDiscount = Number(paymentState.discountValue);
-        }
-        if (manDiscount > runningAmount) manDiscount = runningAmount;
-        totalDiscount += manDiscount;
-        runningAmount -= manDiscount;
-    }
+
 
     const finalDue = Math.max(0, Math.round(baseAmount - totalDiscount));
     paymentState.finalDue = finalDue;
@@ -1245,8 +1204,7 @@ function calculateFinalDue() {
     const billCoup = document.getElementById('gpmBillCoupon');
     if (billCoup) billCoup.textContent = coupDiscount > 0 ? `- ${gpmFormatCurrency(coupDiscount)}` : '- ₹0';
 
-    const billMan = document.getElementById('gpmBillManual');
-    if (billMan) billMan.textContent = manDiscount > 0 ? `- ${gpmFormatCurrency(manDiscount)}` : '- ₹0';
+
 
     const billTot = document.getElementById('gpmBillTotal');
     if (billTot) billTot.textContent = gpmFormatCurrency(finalDue);
@@ -1462,8 +1420,8 @@ async function finalizePayment() {
         changeReturned: paymentState.method === 'cash' ? (paymentState.changeReturned || 0) : 0,
         note: note,
         discounts: {
-            manualType: paymentState.discountValue > 0 ? paymentState.discountType : null,
-            manualValue: paymentState.discountValue > 0 ? paymentState.discountValue : 0,
+            manualType: null,
+            manualValue: 0,
             couponId: paymentState.appliedCoupon ? paymentState.appliedCoupon.id : null,
             couponCode: paymentState.appliedCoupon ? paymentState.appliedCoupon.code : null,
             membershipName: paymentState.appliedMembership ? paymentState.appliedMembership.name : null,
