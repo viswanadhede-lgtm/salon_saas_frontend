@@ -13,6 +13,7 @@ let paymentState = {
     appliedCoupon: null,     // { id, code, type, value }
     appliedMembership: null, // { name, type, value }
     appliedOffer: null,      // { id, name, type, value }
+    offerDiscount: 0,
     finalDue: 0,
     cashReceived: 0,
     changeReturned: 0
@@ -314,6 +315,7 @@ function injectGlobalPaymentModalStyles() {
             background: #dcfce7;
             color: #16a34a;
         }
+        .gpm-offer-badge.gift,
         .gpm-offer-badge.percent {
             background: #ffe4e6;
             color: #e11d48;
@@ -839,6 +841,21 @@ function injectGlobalPaymentModalHTML() {
                         </div>
                         <p id="gpmCouponMsg" style="font-size:0.75rem; margin:-6px 0 10px 156px; display:none;"></p>
 
+                        <!-- Special Offers Row -->
+                        <div class="gpm-offer-item" id="gpmOffersSection">
+                            <div class="gpm-offer-badge gift">
+                                <i data-feather="gift" style="width:18px; height:18px;"></i>
+                            </div>
+                            <div class="gpm-offer-label" style="width:110px; flex-shrink:0;">Offers</div>
+                            <div style="display:flex; gap:8px; flex:1; align-items:center;">
+                                <select id="gpmOfferSelect" class="gpm-input" style="cursor:pointer; appearance:auto;">
+                                    <option value="">Select an offer...</option>
+                                </select>
+                                <button type="button" id="gpmBtnClearOffer" class="gpm-btn-apply-blue" style="display:none; color:#ef4444; border-color:#fca5a5; background:#fff1f2; padding:0 12px;">Clear</button>
+                            </div>
+                        </div>
+                        <p id="gpmOfferMsg" style="font-size:0.75rem; margin:-6px 0 10px 156px; display:none; font-weight:600;"></p>
+
                     </div>
                 </div>
 
@@ -858,6 +875,10 @@ function injectGlobalPaymentModalHTML() {
                         <div class="gpm-summary-row discount">
                             <span>Coupon Discount</span>
                             <span class="val" id="gpmBillCoupon">- ₹0</span>
+                        </div>
+                        <div class="gpm-summary-row discount">
+                            <span id="gpmBillOfferLabel">Offer Discount</span>
+                            <span class="val" id="gpmBillOffer">- ₹0</span>
                         </div>
 
                         <div class="gpm-summary-total-box">
@@ -963,6 +984,16 @@ function bindGlobalPaymentModalEvents() {
 
 
 
+    // Offers Select & Clear
+    document.getElementById('gpmOfferSelect')?.addEventListener('change', (e) => {
+        applySelectedOffer(e.target.value);
+    });
+    document.getElementById('gpmBtnClearOffer')?.addEventListener('click', () => {
+        const sel = document.getElementById('gpmOfferSelect');
+        if (sel) sel.value = '';
+        applySelectedOffer('');
+    });
+
     // Coupon Apply / Remove
     document.getElementById('gpmBtnApplyCoupon')?.addEventListener('click', applyCouponCode);
 
@@ -1022,15 +1053,20 @@ window.openGlobalPaymentModal = async function(config) {
         appliedCoupon: null,
         appliedMembership: null,
         appliedOffer: null,
+        offerDiscount: 0,
         finalDue: Number(config.totalAmount || 0),
         cashReceived: 0,
         changeReturned: 0
     };
 
     // Reset UI Inputs
-    document.getElementById('gpmToggleFlat')?.classList.add('active');
-    document.getElementById('gpmTogglePct')?.classList.remove('active');
-    if (document.getElementById('gpmDiscountInput')) document.getElementById('gpmDiscountInput').value = '0';
+    const oSelect = document.getElementById('gpmOfferSelect');
+    if (oSelect) oSelect.value = '';
+    const oBtnClear = document.getElementById('gpmBtnClearOffer');
+    if (oBtnClear) oBtnClear.style.display = 'none';
+    const oMsg = document.getElementById('gpmOfferMsg');
+    if (oMsg) oMsg.style.display = 'none';
+
     if (document.getElementById('gpmCouponInput')) {
         const cIn = document.getElementById('gpmCouponInput');
         cIn.value = '';
@@ -1142,6 +1178,9 @@ window.openGlobalPaymentModal = async function(config) {
         if (memSub) memSub.textContent = 'No active membership found.';
     }
 
+    // Fetch active offers for branch
+    loadAvailableOffers();
+
     calculateFinalDue();
 
     // Reveal Modal
@@ -1191,6 +1230,20 @@ function calculateFinalDue() {
 
 
 
+    // 3. Offer Discount
+    let offerDiscount = 0;
+    if (paymentState.appliedOffer && paymentState.appliedOffer.value > 0) {
+        if (paymentState.appliedOffer.type === 'percentage') {
+            offerDiscount = runningAmount * (paymentState.appliedOffer.value / 100);
+        } else {
+            offerDiscount = Number(paymentState.appliedOffer.value);
+        }
+        if (offerDiscount > runningAmount) offerDiscount = runningAmount;
+        totalDiscount += offerDiscount;
+        runningAmount -= offerDiscount;
+    }
+    paymentState.offerDiscount = offerDiscount;
+
     const finalDue = Math.max(0, Math.round(baseAmount - totalDiscount));
     paymentState.finalDue = finalDue;
 
@@ -1204,7 +1257,13 @@ function calculateFinalDue() {
     const billCoup = document.getElementById('gpmBillCoupon');
     if (billCoup) billCoup.textContent = coupDiscount > 0 ? `- ${gpmFormatCurrency(coupDiscount)}` : '- ₹0';
 
+    const billOffer = document.getElementById('gpmBillOffer');
+    if (billOffer) billOffer.textContent = offerDiscount > 0 ? `- ${gpmFormatCurrency(offerDiscount)}` : '- ₹0';
 
+    const billOfferLabel = document.getElementById('gpmBillOfferLabel');
+    if (billOfferLabel) {
+        billOfferLabel.textContent = paymentState.appliedOffer ? `Offer (${paymentState.appliedOffer.name})` : 'Offer Discount';
+    }
 
     const billTot = document.getElementById('gpmBillTotal');
     if (billTot) billTot.textContent = gpmFormatCurrency(finalDue);
@@ -1397,6 +1456,138 @@ async function applyCouponCode() {
     }
 }
 
+// ── Offers Management ────────────────────────────────────────────────────────
+async function loadAvailableOffers() {
+    const offerSelect = document.getElementById('gpmOfferSelect');
+    const offerMsg = document.getElementById('gpmOfferMsg');
+    const btnClear = document.getElementById('gpmBtnClearOffer');
+    if (!offerSelect) return;
+
+    offerSelect.innerHTML = '<option value="">Loading offers...</option>';
+    offerSelect.disabled = true;
+    if (offerMsg) offerMsg.style.display = 'none';
+    if (btnClear) btnClear.style.display = 'none';
+
+    try {
+        let companyId;
+        try {
+            const ctx = JSON.parse(localStorage.getItem('appContext') || '{}');
+            companyId = ctx.company?.id || localStorage.getItem('company_id') || null;
+        } catch {
+            companyId = localStorage.getItem('company_id') || null;
+        }
+
+        const branchId = localStorage.getItem('active_branch_id')
+            || document.getElementById('branchSelect')?.value
+            || null;
+
+        const { supabase } = await import('../lib/supabase.js');
+
+        let query = supabase
+            .from('offers')
+            .select('offer_id, offer_name, discount_type, discount_value, min_bill_amount, start_date, end_date')
+            .eq('status', 'active');
+
+        if (companyId) query = query.eq('company_id', companyId);
+        if (branchId) query = query.eq('branch_id', branchId);
+
+        const { data, error } = await query;
+        if (error) throw error;
+
+        const seen = new Map();
+        const todayStr = new Date().toISOString().split('T')[0];
+
+        (data || []).forEach(o => {
+            if (!seen.has(o.offer_id)) {
+                if (o.start_date && o.start_date > todayStr) return;
+                if (o.end_date && o.end_date < todayStr) return;
+
+                seen.set(o.offer_id, {
+                    offer_id: o.offer_id,
+                    offer_name: o.offer_name,
+                    discount_type: o.discount_type,
+                    discount_value: Number(o.discount_value),
+                    min_bill_amount: Number(o.min_bill_amount || 0)
+                });
+            }
+        });
+
+        liveOffersDB = Array.from(seen.values());
+
+        if (liveOffersDB.length === 0) {
+            offerSelect.innerHTML = '<option value="">No active offers available</option>';
+            offerSelect.disabled = true;
+        } else {
+            offerSelect.disabled = false;
+            let optionsHtml = '<option value="">Select an offer...</option>';
+            liveOffersDB.forEach(o => {
+                const badge = o.discount_type === 'percentage' ? `${o.discount_value}% OFF` : `₹${o.discount_value} OFF`;
+                const minStr = o.min_bill_amount > 0 ? ` (Min ₹${o.min_bill_amount})` : '';
+                optionsHtml += `<option value="${o.offer_id}">${o.offer_name} — ${badge}${minStr}</option>`;
+            });
+            offerSelect.innerHTML = optionsHtml;
+        }
+    } catch (err) {
+        console.warn('Failed to fetch offers in payment modal:', err);
+        offerSelect.innerHTML = '<option value="">No offers available</option>';
+        offerSelect.disabled = true;
+    }
+}
+
+function applySelectedOffer(offerId) {
+    const offerSelect = document.getElementById('gpmOfferSelect');
+    const btnClear = document.getElementById('gpmBtnClearOffer');
+    const msgEl = document.getElementById('gpmOfferMsg');
+
+    if (!offerId) {
+        paymentState.appliedOffer = null;
+        if (msgEl) msgEl.style.display = 'none';
+        if (btnClear) btnClear.style.display = 'none';
+        calculateFinalDue();
+        return;
+    }
+
+    const found = liveOffersDB.find(x => x.offer_id === offerId);
+    if (!found) {
+        paymentState.appliedOffer = null;
+        if (msgEl) msgEl.style.display = 'none';
+        if (btnClear) btnClear.style.display = 'none';
+        calculateFinalDue();
+        return;
+    }
+
+    const baseAmount = Number(globalPaymentConfig?.totalAmount || 0);
+    if (found.min_bill_amount && baseAmount < found.min_bill_amount) {
+        paymentState.appliedOffer = null;
+        if (offerSelect) offerSelect.value = '';
+        if (btnClear) btnClear.style.display = 'none';
+        if (msgEl) {
+            msgEl.textContent = `Offer requires a minimum bill of ₹${found.min_bill_amount}.`;
+            msgEl.style.color = '#ef4444';
+            msgEl.style.display = 'block';
+        }
+        calculateFinalDue();
+        return;
+    }
+
+    paymentState.appliedOffer = {
+        id: found.offer_id,
+        name: found.offer_name,
+        type: found.discount_type,
+        value: found.discount_value
+    };
+
+    if (btnClear) btnClear.style.display = 'inline-flex';
+    if (msgEl) {
+        const valStr = found.discount_type === 'percentage' ? `${found.discount_value}% OFF` : `₹${found.discount_value} OFF`;
+        msgEl.textContent = `✓ Offer applied: ${found.offer_name} (${valStr})`;
+        msgEl.style.color = '#10b981';
+        msgEl.style.display = 'block';
+    }
+
+    calculateFinalDue();
+}
+
 // ── Finalize Payment ─────────────────────────────────────────────────────────
 async function finalizePayment() {
     if (!globalPaymentConfig || typeof globalPaymentConfig.onComplete !== 'function') return;
@@ -1424,6 +1615,9 @@ async function finalizePayment() {
             manualValue: 0,
             couponId: paymentState.appliedCoupon ? paymentState.appliedCoupon.id : null,
             couponCode: paymentState.appliedCoupon ? paymentState.appliedCoupon.code : null,
+            offerId: paymentState.appliedOffer ? paymentState.appliedOffer.id : null,
+            offerName: paymentState.appliedOffer ? paymentState.appliedOffer.name : null,
+            offerDiscount: paymentState.offerDiscount || 0,
             membershipName: paymentState.appliedMembership ? paymentState.appliedMembership.name : null,
             membershipDiscountPct: paymentState.appliedMembership ? paymentState.appliedMembership.value : 0
         }
