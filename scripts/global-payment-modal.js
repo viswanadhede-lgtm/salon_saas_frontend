@@ -289,14 +289,39 @@ function injectGlobalPaymentModalStyles() {
         }
 
         /* Discounts & Offers Styling */
+        .gpm-offers-stack {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+        .gpm-offer-box {
+            background: #f8fafc;
+            border: 1.5px solid #e2e8f0;
+            border-radius: 12px;
+            padding: 12px 14px;
+            transition: all 0.2s ease;
+            display: flex;
+            flex-direction: column;
+        }
+        .gpm-offer-box:hover {
+            border-color: #cbd5e1;
+            background: #ffffff;
+            box-shadow: 0 2px 6px rgba(15, 23, 42, 0.03);
+        }
+        .gpm-offer-box.applied {
+            background: #f0fdf4;
+            border-color: #86efac;
+        }
+        .gpm-offer-box-header {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            width: 100%;
+        }
         .gpm-offer-item {
             display: flex;
             align-items: center;
             gap: 12px;
-            margin-bottom: 14px;
-        }
-        .gpm-offer-item:last-child {
-            margin-bottom: 0;
         }
         .gpm-offer-badge {
             width: 34px;
@@ -810,51 +835,59 @@ function injectGlobalPaymentModalHTML() {
 
                     <!-- Discounts & Offers Card -->
                     <div class="gpm-card">
-                        <div style="font-size:0.88rem; font-weight:700; color:#0f172a; margin-bottom:14px;">Discounts &amp; Offers</div>
+                        <div style="font-size:0.88rem; font-weight:700; color:#0f172a; margin-bottom:12px;">Discounts &amp; Offers</div>
 
-                        <!-- Membership Discount Row -->
-                        <div class="gpm-offer-item" id="gpmMembershipSection">
-                            <div class="gpm-offer-badge crown">
-                                <i data-feather="award" style="width:18px; height:18px;"></i>
+                        <div class="gpm-offers-stack">
+                            <!-- Box 1: Membership Discount -->
+                            <div class="gpm-offer-box" id="gpmMembershipSection">
+                                <div class="gpm-offer-box-header">
+                                    <div class="gpm-offer-badge crown">
+                                        <i data-feather="award" style="width:18px; height:18px;"></i>
+                                    </div>
+                                    <div style="flex:1; min-width:0;">
+                                        <div class="gpm-offer-label">Membership Discount</div>
+                                        <div class="gpm-offer-sub" id="gpmMembershipSubtitle">No active membership found.</div>
+                                    </div>
+                                    <label class="gpm-toggle-switch">
+                                        <input type="checkbox" id="gpmMembershipToggle">
+                                        <span class="gpm-toggle-slider"></span>
+                                    </label>
+                                </div>
+                                <div class="gpm-membership-result" id="gpmMembershipResult" style="display:none; margin-top:8px; margin-left:46px;"></div>
                             </div>
-                            <div style="flex:1;">
-                                <div class="gpm-offer-label">Membership Discount</div>
-                                <div class="gpm-offer-sub" id="gpmMembershipSubtitle">No active membership found.</div>
-                            </div>
-                            <label class="gpm-toggle-switch">
-                                <input type="checkbox" id="gpmMembershipToggle">
-                                <span class="gpm-toggle-slider"></span>
-                            </label>
-                        </div>
-                        <div class="gpm-membership-result" id="gpmMembershipResult" style="display:none; margin:-6px 0 10px 46px;"></div>
 
-                        <!-- Coupon Code Row -->
-                        <div class="gpm-offer-item">
-                            <div class="gpm-offer-badge tag">
-                                <i data-feather="tag" style="width:18px; height:18px;"></i>
+                            <!-- Box 2: Coupon Code -->
+                            <div class="gpm-offer-box" id="gpmCouponSection">
+                                <div class="gpm-offer-box-header">
+                                    <div class="gpm-offer-badge tag">
+                                        <i data-feather="tag" style="width:18px; height:18px;"></i>
+                                    </div>
+                                    <div class="gpm-offer-label" style="width:110px; flex-shrink:0;">Coupon Code</div>
+                                    <div class="gpm-coupon-row">
+                                        <input type="text" id="gpmCouponInput" class="gpm-input" placeholder="Enter coupon code" style="text-transform: uppercase;">
+                                        <button type="button" id="gpmBtnApplyCoupon" class="gpm-btn-apply-blue">Apply</button>
+                                    </div>
+                                </div>
+                                <p id="gpmCouponMsg" style="font-size:0.75rem; margin-top:8px; margin-bottom:0; margin-left:46px; display:none;"></p>
                             </div>
-                            <div class="gpm-offer-label" style="width:110px; flex-shrink:0;">Coupon Code</div>
-                            <div class="gpm-coupon-row">
-                                <input type="text" id="gpmCouponInput" class="gpm-input" placeholder="Enter coupon code" style="text-transform: uppercase;">
-                                <button type="button" id="gpmBtnApplyCoupon" class="gpm-btn-apply-blue">Apply</button>
-                            </div>
-                        </div>
-                        <p id="gpmCouponMsg" style="font-size:0.75rem; margin:-6px 0 10px 156px; display:none;"></p>
 
-                        <!-- Special Offers Row -->
-                        <div class="gpm-offer-item" id="gpmOffersSection">
-                            <div class="gpm-offer-badge gift">
-                                <i data-feather="gift" style="width:18px; height:18px;"></i>
-                            </div>
-                            <div class="gpm-offer-label" style="width:110px; flex-shrink:0;">Offers</div>
-                            <div style="display:flex; gap:8px; flex:1; align-items:center;">
-                                <select id="gpmOfferSelect" class="gpm-input" style="cursor:pointer; appearance:auto;">
-                                    <option value="">Select an offer...</option>
-                                </select>
-                                <button type="button" id="gpmBtnClearOffer" class="gpm-btn-apply-blue" style="display:none; color:#ef4444; border-color:#fca5a5; background:#fff1f2; padding:0 12px;">Clear</button>
+                            <!-- Box 3: Special Offers -->
+                            <div class="gpm-offer-box" id="gpmOffersSection">
+                                <div class="gpm-offer-box-header">
+                                    <div class="gpm-offer-badge gift">
+                                        <i data-feather="gift" style="width:18px; height:18px;"></i>
+                                    </div>
+                                    <div class="gpm-offer-label" style="width:110px; flex-shrink:0;">Offers</div>
+                                    <div style="display:flex; gap:8px; flex:1; align-items:center;">
+                                        <select id="gpmOfferSelect" class="gpm-input" style="cursor:pointer; appearance:auto;">
+                                            <option value="">Select an offer...</option>
+                                        </select>
+                                        <button type="button" id="gpmBtnClearOffer" class="gpm-btn-apply-blue" style="display:none; color:#ef4444; border-color:#fca5a5; background:#fff1f2; padding:0 12px;">Clear</button>
+                                    </div>
+                                </div>
+                                <p id="gpmOfferMsg" style="font-size:0.75rem; margin-top:8px; margin-bottom:0; margin-left:46px; display:none; font-weight:600;"></p>
                             </div>
                         </div>
-                        <p id="gpmOfferMsg" style="font-size:0.75rem; margin:-6px 0 10px 156px; display:none; font-weight:600;"></p>
 
                     </div>
                 </div>
@@ -970,6 +1003,7 @@ function bindGlobalPaymentModalEvents() {
             }
         } else {
             paymentState.appliedMembership = null;
+            document.getElementById('gpmMembershipSection')?.classList.remove('applied');
             const resEl = document.getElementById('gpmMembershipResult');
             if (resEl) {
                 resEl.className = 'gpm-membership-result';
@@ -1059,7 +1093,11 @@ window.openGlobalPaymentModal = async function(config) {
         changeReturned: 0
     };
 
-    // Reset UI Inputs
+    // Reset UI Inputs & Box States
+    document.getElementById('gpmMembershipSection')?.classList.remove('applied');
+    document.getElementById('gpmCouponSection')?.classList.remove('applied');
+    document.getElementById('gpmOffersSection')?.classList.remove('applied');
+
     const oSelect = document.getElementById('gpmOfferSelect');
     if (oSelect) oSelect.value = '';
     const oBtnClear = document.getElementById('gpmBtnClearOffer');
@@ -1305,6 +1343,7 @@ async function fetchCustomerMembership(customerId) {
 
         if (pErr || !purchases || purchases.length === 0) {
             paymentState.appliedMembership = null;
+            document.getElementById('gpmMembershipSection')?.classList.remove('applied');
             resultEl.className = 'gpm-membership-result not-found';
             resultEl.textContent = 'No active membership found.';
             if (subtitleEl) subtitleEl.textContent = 'No active membership';
@@ -1322,6 +1361,7 @@ async function fetchCustomerMembership(customerId) {
 
         if (mErr || !membership || !membership.discount_value) {
             paymentState.appliedMembership = null;
+            document.getElementById('gpmMembershipSection')?.classList.remove('applied');
             resultEl.className = 'gpm-membership-result not-found';
             resultEl.textContent = 'Active membership has no discount.';
             calculateFinalDue();
@@ -1341,12 +1381,14 @@ async function fetchCustomerMembership(customerId) {
         resultEl.className = 'gpm-membership-result found';
         resultEl.textContent = `✓ ${paymentState.appliedMembership.name} (${valStr}) applied!`;
         if (subtitleEl) subtitleEl.textContent = `${paymentState.appliedMembership.name} active`;
+        document.getElementById('gpmMembershipSection')?.classList.add('applied');
 
         calculateFinalDue();
         return true;
     } catch (err) {
         console.error('Error checking customer membership:', err);
         paymentState.appliedMembership = null;
+        document.getElementById('gpmMembershipSection')?.classList.remove('applied');
         resultEl.className = 'gpm-membership-result not-found';
         resultEl.textContent = 'Error checking membership.';
         calculateFinalDue();
@@ -1366,6 +1408,7 @@ async function applyCouponCode() {
     if (paymentState.appliedCoupon) {
         // Toggle to Remove
         paymentState.appliedCoupon = null;
+        document.getElementById('gpmCouponSection')?.classList.remove('applied');
         codeInput.value = '';
         codeInput.disabled = false;
         btnApply.textContent = 'Apply';
@@ -1444,10 +1487,12 @@ async function applyCouponCode() {
         btnApply.textContent = 'Remove';
         btnApply.style.background = '#ef4444';
         btnApply.disabled = false;
+        document.getElementById('gpmCouponSection')?.classList.add('applied');
 
         calculateFinalDue();
     } catch (err) {
         console.error('Coupon validation error:', err);
+        document.getElementById('gpmCouponSection')?.classList.remove('applied');
         msgEl.textContent = err.message || 'Failed to apply coupon.';
         msgEl.style.color = '#ef4444';
         msgEl.style.display = 'block';
@@ -1567,6 +1612,7 @@ function applySelectedOffer(offerId) {
 
     if (!offerId) {
         paymentState.appliedOffer = null;
+        document.getElementById('gpmOffersSection')?.classList.remove('applied');
         if (msgEl) msgEl.style.display = 'none';
         if (btnClear) btnClear.style.display = 'none';
         calculateFinalDue();
@@ -1576,6 +1622,7 @@ function applySelectedOffer(offerId) {
     const found = liveOffersDB.find(x => x.offer_id === offerId);
     if (!found) {
         paymentState.appliedOffer = null;
+        document.getElementById('gpmOffersSection')?.classList.remove('applied');
         if (msgEl) msgEl.style.display = 'none';
         if (btnClear) btnClear.style.display = 'none';
         calculateFinalDue();
@@ -1585,6 +1632,7 @@ function applySelectedOffer(offerId) {
     const baseAmount = Number(globalPaymentConfig?.totalAmount || 0);
     if (found.min_bill_amount && baseAmount < found.min_bill_amount) {
         paymentState.appliedOffer = null;
+        document.getElementById('gpmOffersSection')?.classList.remove('applied');
         if (offerSelect) offerSelect.value = '';
         if (btnClear) btnClear.style.display = 'none';
         if (msgEl) {
@@ -1610,6 +1658,7 @@ function applySelectedOffer(offerId) {
         msgEl.style.color = '#10b981';
         msgEl.style.display = 'block';
     }
+    document.getElementById('gpmOffersSection')?.classList.add('applied');
 
     calculateFinalDue();
 }
