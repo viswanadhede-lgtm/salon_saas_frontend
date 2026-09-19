@@ -309,7 +309,7 @@ function injectGlobalPaymentModalStyles() {
             gap: 10px;
         }
         .gpm-offer-box {
-            background: #f8fafc;
+            background: #ffffff;
             border: 1.5px solid #e2e8f0;
             border-radius: 12px;
             padding: 12px 14px;
@@ -319,7 +319,6 @@ function injectGlobalPaymentModalStyles() {
         }
         .gpm-offer-box:hover {
             border-color: #cbd5e1;
-            background: #ffffff;
             box-shadow: 0 2px 6px rgba(15, 23, 42, 0.03);
         }
         .gpm-offer-box.applied {
