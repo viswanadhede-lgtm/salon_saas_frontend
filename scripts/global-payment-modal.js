@@ -1485,7 +1485,7 @@ async function loadAvailableOffers() {
 
         let query = supabase
             .from('offers')
-            .select('offer_id, offer_name, discount_type, discount_value, min_bill_amount, start_date, end_date')
+            .select('offer_id, offer_name, discount_type, discount_value, min_bill_amount, valid_from, valid_to, service_id, service_name, total_usage_limit, current_usage_count')
             .eq('status', 'active');
 
         if (companyId) query = query.eq('company_id', companyId);
@@ -1498,21 +1498,47 @@ async function loadAvailableOffers() {
         const todayStr = new Date().toISOString().split('T')[0];
 
         (data || []).forEach(o => {
-            if (!seen.has(o.offer_id)) {
-                if (o.start_date && o.start_date > todayStr) return;
-                if (o.end_date && o.end_date < todayStr) return;
+            // Check validity period
+            if (o.valid_from && o.valid_from > todayStr) return;
+            if (o.valid_to && o.valid_to < todayStr) return;
 
+            // Check overall usage limit
+            if (o.total_usage_limit && Number(o.current_usage_count || 0) >= Number(o.total_usage_limit)) return;
+
+            if (!seen.has(o.offer_id)) {
                 seen.set(o.offer_id, {
                     offer_id: o.offer_id,
                     offer_name: o.offer_name,
-                    discount_type: o.discount_type,
-                    discount_value: Number(o.discount_value),
-                    min_bill_amount: Number(o.min_bill_amount || 0)
+                    discount_type: (o.discount_type || 'percentage').toLowerCase(),
+                    discount_value: Number(o.discount_value || 0),
+                    min_bill_amount: Number(o.min_bill_amount || 0),
+                    applicable_services: []
+                });
+            }
+
+            if (o.service_id) {
+                seen.get(o.offer_id).applicable_services.push({
+                    service_id: o.service_id,
+                    service_name: o.service_name || ''
                 });
             }
         });
 
-        liveOffersDB = Array.from(seen.values());
+        // Filter offers based on service applicability if current checkout has services
+        const currentServiceIds = [
+            ...(globalPaymentConfig?.serviceIds || []),
+            ...(globalPaymentConfig?.items || []).map(it => it.service_id || it.serviceId || it.id).filter(Boolean)
+        ];
+
+        const validOffers = Array.from(seen.values()).filter(o => {
+            if (!o.applicable_services || o.applicable_services.length === 0) return true;
+            if (currentServiceIds.length > 0) {
+                return o.applicable_services.some(s => currentServiceIds.includes(s.service_id));
+            }
+            return true;
+        });
+
+        liveOffersDB = validOffers;
 
         if (liveOffersDB.length === 0) {
             offerSelect.innerHTML = '<option value="">No active offers available</option>';
@@ -1625,6 +1651,28 @@ async function finalizePayment() {
 
     try {
         await globalPaymentConfig.onComplete(resultPayload);
+
+        // Increment current_usage_count for the redeemed offer
+        if (paymentState.appliedOffer?.id) {
+            try {
+                const { supabase } = await import('../lib/supabase.js');
+                const { data: offerRows } = await supabase
+                    .from('offers')
+                    .select('id, current_usage_count')
+                    .eq('offer_id', paymentState.appliedOffer.id);
+                if (offerRows && offerRows.length > 0) {
+                    for (const r of offerRows) {
+                        await supabase
+                            .from('offers')
+                            .update({ current_usage_count: (Number(r.current_usage_count) || 0) + 1 })
+                            .eq('id', r.id);
+                    }
+                }
+            } catch (uErr) {
+                console.warn('[PaymentModal] Error updating offer usage count:', uErr);
+            }
+        }
+
         closeGlobalPaymentModal();
     } catch (err) {
         console.error('Payment processing failed in onComplete:', err);

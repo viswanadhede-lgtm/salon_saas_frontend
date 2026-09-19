@@ -256,22 +256,29 @@ export async function fetchActiveOffers(companyId, branchId, supabaseClient) {
 
         const { data, error } = await supabase
             .from('offers')
-            .select('offer_id, offer_name, discount_type, discount_value')
+            .select('offer_id, offer_name, discount_type, discount_value, min_bill_amount, valid_from, valid_to, service_id, service_name, total_usage_limit, current_usage_count')
             .eq('company_id', companyId)
             .eq('branch_id', branchId)
             .eq('status', 'active');
 
         if (error) throw error;
 
-        // Dedup — group by offer_id
+        // Dedup — group by offer_id and check validity
         const seen = new Map();
+        const todayStr = new Date().toISOString().split('T')[0];
+
         (data || []).forEach(o => {
+            if (o.valid_from && o.valid_from > todayStr) return;
+            if (o.valid_to && o.valid_to < todayStr) return;
+            if (o.total_usage_limit && Number(o.current_usage_count || 0) >= Number(o.total_usage_limit)) return;
+
             if (!seen.has(o.offer_id)) {
                 seen.set(o.offer_id, {
                     offer_id: o.offer_id,
                     offer_name: o.offer_name,
-                    discount_type: o.discount_type,
-                    discount_value: Number(o.discount_value)
+                    discount_type: (o.discount_type || 'percentage').toLowerCase(),
+                    discount_value: Number(o.discount_value || 0),
+                    min_bill_amount: Number(o.min_bill_amount || 0)
                 });
             }
         });
