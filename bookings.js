@@ -1543,20 +1543,62 @@ function attachEventListeners() {
                     .eq('id', bookingId);
             }
 
-            // Toast notification
-            const successMsg = 'Payment recorded successfully!';
-            const toastEl = document.getElementById('toastNotification');
-            if (toastEl) {
-                toastEl.textContent = successMsg;
-                toastEl.style.background = '#10b981';
-                toastEl.classList.add('show');
-                setTimeout(() => toastEl.classList.remove('show'), 3000);
-            } else if (window.toast) {
-                window.toast(successMsg);
-            }
+            // Open post-payment confirmation modal (booking flow only)
+            const bookingRef = '#' + String(bookingId).slice(0, 8).toUpperCase();
+            window.openBookingConfirmModal?.({
+                amountCollected: amount,
+                customerName: row.customer_name || globalPaymentConfig?.customerName || 'Customer',
+                bookingRef: bookingRef,
+                onMarkComplete: async () => {
+                    // Update booking status → completed in both tables
+                    const updatedAt = new Date().toISOString();
 
-            // 4. Refresh bookings list
-            await fetchBookings();
+                    const { error: statusErr } = await supabase
+                        .from('bookings')
+                        .update({ status: 'completed', updated_at: updatedAt })
+                        .eq('booking_id', bookingId);
+
+                    if (statusErr) {
+                        // Fallback: try with generic 'id' column
+                        await supabase
+                            .from('bookings')
+                            .update({ status: 'completed', updated_at: updatedAt })
+                            .eq('id', bookingId);
+                    }
+
+                    await supabase
+                        .from('bookings_for_business_transaction')
+                        .update({ status: 'completed', updated_at: updatedAt })
+                        .eq('booking_id', bookingId);
+
+                    // Show completion toast
+                    const msg = `Booking ${bookingRef} marked as completed`;
+                    const toastEl = document.getElementById('toastNotification');
+                    if (toastEl) {
+                        toastEl.textContent = msg;
+                        toastEl.style.background = '#10b981';
+                        toastEl.classList.add('show');
+                        setTimeout(() => toastEl.classList.remove('show'), 3500);
+                    } else if (window.toast) {
+                        window.toast(msg);
+                    }
+
+                    await fetchBookings();
+                },
+                onExit: async () => {
+                    // Payment is already saved — just refresh and show payment toast
+                    const toastEl = document.getElementById('toastNotification');
+                    if (toastEl) {
+                        toastEl.textContent = 'Payment recorded successfully!';
+                        toastEl.style.background = '#10b981';
+                        toastEl.classList.add('show');
+                        setTimeout(() => toastEl.classList.remove('show'), 3000);
+                    } else if (window.toast) {
+                        window.toast('Payment recorded successfully!');
+                    }
+                    await fetchBookings();
+                }
+            });
 
         } catch (err) {
             console.error('[BookingPayment] Callback error:', err);
@@ -1572,6 +1614,7 @@ function attachEventListeners() {
             throw err;
         }
     }
+
 
     // ── Global window helpers (called from row buttons) ────────────────────────
     window.openEditBookingModal = async (bookingId) => {

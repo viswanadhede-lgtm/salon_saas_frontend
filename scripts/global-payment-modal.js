@@ -52,6 +52,7 @@ if (document.readyState === 'loading') {
 function initGlobalPaymentModal() {
     injectGlobalPaymentModalStyles();
     injectGlobalPaymentModalHTML();
+    injectBookingConfirmModalHTML();
     bindGlobalPaymentModalEvents();
 }
 
@@ -764,6 +765,165 @@ function injectGlobalPaymentModalStyles() {
             cursor: not-allowed;
             box-shadow: none;
         }
+
+        /* ── Booking Confirmation Modal ─────────────────────────────────── */
+        #gpmConfirmOverlay {
+            display: none;
+            position: fixed;
+            inset: 0;
+            background: rgba(15, 23, 42, 0.55);
+            backdrop-filter: blur(6px);
+            -webkit-backdrop-filter: blur(6px);
+            z-index: 10001;
+            align-items: center;
+            justify-content: center;
+            opacity: 0;
+            transition: opacity 0.22s ease;
+        }
+        #gpmConfirmOverlay.active {
+            display: flex;
+            opacity: 1;
+        }
+        #gpmConfirmBox {
+            background: #ffffff;
+            border-radius: 20px;
+            box-shadow: 0 25px 60px -15px rgba(15, 23, 42, 0.3);
+            width: 560px;
+            max-width: 95vw;
+            padding: 32px;
+            transform: translateY(14px) scale(0.97);
+            transition: transform 0.22s cubic-bezier(0.16, 1, 0.3, 1);
+            border: 1px solid #e2e8f0;
+        }
+        #gpmConfirmOverlay.active #gpmConfirmBox {
+            transform: translateY(0) scale(1);
+        }
+        .gpm-confirm-banner {
+            background: linear-gradient(135deg, #eff6ff 0%, #f0fdf4 100%);
+            border: 1px solid #dbeafe;
+            border-radius: 14px;
+            padding: 20px 22px;
+            margin-bottom: 24px;
+            display: flex;
+            align-items: center;
+            gap: 16px;
+        }
+        .gpm-confirm-banner-icon {
+            width: 52px;
+            height: 52px;
+            background: #dcfce7;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #16a34a;
+            flex-shrink: 0;
+        }
+        .gpm-confirm-banner-text .gpm-confirm-amount {
+            font-size: 1.4rem;
+            font-weight: 900;
+            color: #0f172a;
+            line-height: 1.2;
+            letter-spacing: -0.02em;
+        }
+        .gpm-confirm-banner-text .gpm-confirm-from {
+            font-size: 0.84rem;
+            color: #475569;
+            font-weight: 500;
+            margin-top: 4px;
+        }
+        .gpm-confirm-actions {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 14px;
+            margin-bottom: 24px;
+        }
+        .gpm-confirm-card {
+            border: 1.5px solid #e2e8f0;
+            border-radius: 14px;
+            padding: 26px 16px;
+            cursor: pointer;
+            text-align: center;
+            transition: all 0.18s ease;
+            background: #ffffff;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 10px;
+            width: 100%;
+        }
+        .gpm-confirm-card:not(:disabled):hover {
+            box-shadow: 0 4px 16px rgba(15, 23, 42, 0.08);
+            transform: translateY(-2px);
+        }
+        .gpm-confirm-card:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+        }
+        .gpm-confirm-card.print {
+            color: #64748b;
+        }
+        .gpm-confirm-card.print:not(:disabled):hover {
+            border-color: #94a3b8;
+            background: #f8fafc;
+        }
+        .gpm-confirm-card.complete {
+            border-color: #86efac;
+            background: #f0fdf4;
+            color: #15803d;
+        }
+        .gpm-confirm-card.complete:not(:disabled):hover {
+            border-color: #4ade80;
+            background: #dcfce7;
+            box-shadow: 0 4px 16px rgba(22, 163, 74, 0.14);
+        }
+        .gpm-confirm-card-icon {
+            width: 54px;
+            height: 54px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .gpm-confirm-card.print .gpm-confirm-card-icon {
+            background: #f1f5f9;
+            color: #64748b;
+        }
+        .gpm-confirm-card.complete .gpm-confirm-card-icon {
+            background: #dcfce7;
+            color: #16a34a;
+        }
+        .gpm-confirm-card-label {
+            font-size: 0.92rem;
+            font-weight: 700;
+            line-height: 1.35;
+        }
+        .gpm-confirm-card-sub {
+            font-size: 0.76rem;
+            font-weight: 500;
+            opacity: 0.65;
+        }
+        .gpm-confirm-footer {
+            display: flex;
+            justify-content: flex-end;
+        }
+        .gpm-confirm-exit-btn {
+            height: 42px;
+            padding: 0 30px;
+            border: 1.5px solid #e2e8f0;
+            background: #ffffff;
+            color: #475569;
+            border-radius: 10px;
+            font-size: 0.9rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.15s;
+        }
+        .gpm-confirm-exit-btn:hover {
+            background: #f8fafc;
+            border-color: #94a3b8;
+            color: #0f172a;
+        }
     `;
     document.head.appendChild(style);
 }
@@ -976,6 +1136,51 @@ function injectGlobalPaymentModalHTML() {
         </div>
     `;
     document.body.appendChild(overlay);
+}
+
+function injectBookingConfirmModalHTML() {
+    if (document.getElementById('gpmConfirmOverlay')) return;
+
+    const el = document.createElement('div');
+    el.id = 'gpmConfirmOverlay';
+    el.innerHTML = `
+        <div id="gpmConfirmBox">
+            <!-- Payment received banner -->
+            <div class="gpm-confirm-banner">
+                <div class="gpm-confirm-banner-icon">
+                    <i data-feather="check-circle" style="width:26px;height:26px;"></i>
+                </div>
+                <div class="gpm-confirm-banner-text">
+                    <div class="gpm-confirm-amount" id="gpmConfirmAmount">&#8377;0 received</div>
+                    <div class="gpm-confirm-from" id="gpmConfirmFrom">from Customer</div>
+                </div>
+            </div>
+
+            <!-- Action Cards -->
+            <div class="gpm-confirm-actions">
+                <button class="gpm-confirm-card print" id="gpmConfirmPrintBtn" disabled title="Coming soon">
+                    <div class="gpm-confirm-card-icon">
+                        <i data-feather="printer" style="width:24px;height:24px;"></i>
+                    </div>
+                    <div class="gpm-confirm-card-label">Print Invoice</div>
+                    <div class="gpm-confirm-card-sub">Coming soon</div>
+                </button>
+                <button class="gpm-confirm-card complete" id="gpmConfirmCompleteBtn">
+                    <div class="gpm-confirm-card-icon">
+                        <i data-feather="check-circle" style="width:24px;height:24px;"></i>
+                    </div>
+                    <div class="gpm-confirm-card-label" id="gpmConfirmCompleteLbl">Mark Booking<br>as Completed</div>
+                    <div class="gpm-confirm-card-sub" id="gpmConfirmCompleteSub">Update booking status</div>
+                </button>
+            </div>
+
+            <!-- Footer -->
+            <div class="gpm-confirm-footer">
+                <button class="gpm-confirm-exit-btn" id="gpmConfirmExitBtn">Exit</button>
+            </div>
+        </div>
+    `;
+    document.body.appendChild(el);
 }
 
 function bindGlobalPaymentModalEvents() {
@@ -1754,3 +1959,68 @@ async function finalizePayment() {
         }
     }
 }
+
+// ── Booking Confirmation Modal API ───────────────────────────────────────────
+// Called by bookings.js after payment is saved to open the post-payment modal.
+// opts: { amountCollected, customerName, bookingRef, onMarkComplete, onExit }
+window.openBookingConfirmModal = function(opts) {
+    const overlay = document.getElementById('gpmConfirmOverlay');
+    if (!overlay) return;
+
+    // Populate banner
+    const amountEl = document.getElementById('gpmConfirmAmount');
+    const fromEl   = document.getElementById('gpmConfirmFrom');
+    if (amountEl) amountEl.textContent = gpmFormatCurrency(opts.amountCollected || 0) + ' received';
+    if (fromEl)   fromEl.textContent   = 'from ' + (opts.customerName || 'Customer');
+
+    // Reset "Mark as Completed" button state
+    const lbl = document.getElementById('gpmConfirmCompleteLbl');
+    const sub = document.getElementById('gpmConfirmCompleteSub');
+    const completeBtn = document.getElementById('gpmConfirmCompleteBtn');
+    if (lbl) lbl.innerHTML = 'Mark Booking<br>as Completed';
+    if (sub) sub.textContent = 'Update booking status';
+    if (completeBtn) completeBtn.disabled = false;
+
+    // Clone buttons to clear stale listeners
+    function rebind(id) {
+        const old = document.getElementById(id);
+        if (!old) return null;
+        const clone = old.cloneNode(true);
+        old.parentNode.replaceChild(clone, old);
+        return clone;
+    }
+
+    const newCompleteBtn = rebind('gpmConfirmCompleteBtn');
+    const newExitBtn     = rebind('gpmConfirmExitBtn');
+
+    // "Mark as Completed" handler
+    newCompleteBtn?.addEventListener('click', async () => {
+        if (newCompleteBtn.disabled) return;
+        newCompleteBtn.disabled = true;
+        const lbl2 = document.getElementById('gpmConfirmCompleteLbl');
+        const sub2 = document.getElementById('gpmConfirmCompleteSub');
+        if (lbl2) lbl2.innerHTML = 'Updating...';
+        if (sub2) sub2.textContent = 'Please wait';
+
+        try {
+            if (typeof opts.onMarkComplete === 'function') {
+                await opts.onMarkComplete();
+            }
+            overlay.classList.remove('active');
+        } catch (err) {
+            console.error('[BookingConfirm] Mark complete error:', err);
+            if (lbl2) lbl2.innerHTML = 'Mark Booking<br>as Completed';
+            if (sub2) sub2.textContent = 'Failed — try again';
+            newCompleteBtn.disabled = false;
+        }
+    });
+
+    // "Exit" handler — payment already saved, just close and refresh
+    newExitBtn?.addEventListener('click', () => {
+        overlay.classList.remove('active');
+        if (typeof opts.onExit === 'function') opts.onExit();
+    });
+
+    overlay.classList.add('active');
+    if (window.feather) feather.replace();
+};
