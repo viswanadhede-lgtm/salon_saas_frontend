@@ -1442,7 +1442,7 @@ function attachEventListeners() {
         if (!window.openGlobalPaymentModal) {
             await new Promise((resolve) => {
                 const s = document.createElement('script');
-                s.src = 'scripts/global-payment-modal.js';
+                s.src = 'scripts/global-payment-modal.js?v=2.2.0';
                 s.onload = resolve;
                 s.onerror = resolve;
                 document.head.appendChild(s);

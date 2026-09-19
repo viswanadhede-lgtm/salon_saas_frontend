@@ -1,4 +1,4 @@
-// scripts/global-payment-modal.js
+// scripts/global-payment-modal.js (v2.2.0 - 3 sub-boxes layout)
 
 /**
  * Global Payment Modal (Adaptive Broad Modal - 1050px)
