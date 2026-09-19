@@ -195,6 +195,20 @@ function injectGlobalPaymentModalStyles() {
             padding: 16px 18px;
             box-shadow: 0 1px 3px rgba(0, 0, 0, 0.02);
         }
+        .gpm-card-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding-bottom: 10px;
+            margin-bottom: 14px;
+            border-bottom: 1px solid #e2e8f0;
+        }
+        .gpm-card-title {
+            font-size: 0.88rem;
+            font-weight: 700;
+            color: #0f172a;
+            margin: 0;
+        }
 
         /* Customer Section */
         .gpm-avatar {
@@ -782,7 +796,9 @@ function injectGlobalPaymentModalHTML() {
                 <div class="gpm-left-col">
                     <!-- Customer Card -->
                     <div class="gpm-card">
-                        <div style="font-size:0.78rem; font-weight:700; color:#475569; margin-bottom:10px;">Customer</div>
+                        <div class="gpm-card-header">
+                            <span class="gpm-card-title">Customer</span>
+                        </div>
                         <div style="display:flex; justify-content:space-between; align-items:center;">
                             <div style="display:flex; align-items:center; gap:12px;">
                                 <div class="gpm-avatar" id="gpmCustAvatar">D</div>
@@ -800,8 +816,8 @@ function injectGlobalPaymentModalHTML() {
 
                     <!-- Booked Services Table Card -->
                     <div class="gpm-card" id="gpmItemsCard">
-                        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
-                            <span style="font-size:0.88rem; font-weight:700; color:#0f172a;" id="gpmItemsHeader">Booked Services (1)</span>
+                        <div class="gpm-card-header">
+                            <span class="gpm-card-title" id="gpmItemsHeader">Booked Services (1)</span>
                             <button type="button" id="gpmBtnEditBooking" class="gpm-link-btn">
                                 <i data-feather="edit-2" style="width:13px; height:13px;"></i>
                                 <span>Edit</span>
@@ -835,7 +851,9 @@ function injectGlobalPaymentModalHTML() {
 
                     <!-- Discounts & Offers Card -->
                     <div class="gpm-card">
-                        <div style="font-size:0.88rem; font-weight:700; color:#0f172a; margin-bottom:12px;">Discounts &amp; Offers</div>
+                        <div class="gpm-card-header">
+                            <span class="gpm-card-title">Discounts &amp; Offers</span>
+                        </div>
 
                         <div class="gpm-offers-stack">
                             <!-- Box 1: Membership Discount -->
@@ -896,7 +914,9 @@ function injectGlobalPaymentModalHTML() {
                 <div class="gpm-right-col">
                     <!-- Bill Summary Card (Top Field) -->
                     <div class="gpm-card">
-                        <div style="font-size:0.88rem; font-weight:700; color:#0f172a; margin-bottom:12px;">Bill Summary</div>
+                        <div class="gpm-card-header">
+                            <span class="gpm-card-title">Bill Summary</span>
+                        </div>
                         <div class="gpm-summary-row">
                             <span>Subtotal</span>
                             <span class="val" id="gpmBillSubtotal">₹0</span>
@@ -925,7 +945,9 @@ function injectGlobalPaymentModalHTML() {
 
                     <!-- Select Payment Method -->
                     <div>
-                        <div style="font-size:0.88rem; font-weight:700; color:#0f172a; margin-bottom:10px;">Select Payment Method</div>
+                        <div class="gpm-card-header">
+                            <span class="gpm-card-title">Select Payment Method</span>
+                        </div>
                         <div class="gpm-methods-grid">
                             <button type="button" class="gpm-method-card active" data-method="cash">
                                 <i data-feather="dollar-sign"></i>
