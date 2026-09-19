@@ -1324,6 +1324,11 @@ window.openGlobalPaymentModal = async function(config) {
     document.getElementById('gpmCouponSection')?.classList.remove('applied');
     document.getElementById('gpmOffersSection')?.classList.remove('applied');
 
+    // Re-enable the proceed button (may have been disabled by a previous payment)
+    const proceedBtn = document.getElementById('gpmBtnProceed');
+    if (proceedBtn) proceedBtn.disabled = false;
+
+
     const oSelect = document.getElementById('gpmOfferSelect');
     if (oSelect) oSelect.value = '';
     const oBtnClear = document.getElementById('gpmBtnClearOffer');
