@@ -209,7 +209,7 @@ function buildRow(b, includeDate = false) {
         <td style="padding:14px 8px 14px 24px;">
             ${(status || '').toLowerCase() === 'completed' ? `
             <button onclick="window.openViewBookingModal('${bookingId}')"
-                style="padding:5px 14px;border-radius:6px;border:1px solid #e2e8f0;background:#ffffff;color:#1e293b;font-size:0.78rem;font-weight:600;cursor:pointer;white-space:nowrap;transition:all 0.2s;box-shadow:0 1px 2px rgba(0,0,0,0.04);display:inline-flex;align-items:center;gap:6px;"
+                style="width:90px;padding:5px 8px;border-radius:6px;border:1px solid #e2e8f0;background:#ffffff;color:#1e293b;font-size:0.78rem;font-weight:600;cursor:pointer;white-space:nowrap;transition:all 0.2s;box-shadow:0 1px 2px rgba(0,0,0,0.04);display:inline-flex;align-items:center;justify-content:center;gap:6px;"
                 onmouseover="this.style.background='#f8fafc';this.style.borderColor='#cbd5e1'" 
                 onmouseout="this.style.background='#ffffff';this.style.borderColor='#e2e8f0'">
                 <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#64748b" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path><circle cx="12" cy="12" r="3"></circle></svg>
@@ -217,7 +217,7 @@ function buildRow(b, includeDate = false) {
             </button>
             ` : ['cancelled', 'no-show', 'noshow', 'no_show'].includes((status || '').toLowerCase().trim()) ? `
             <button onclick="window.openCancelledBookingModal('${bookingId}')"
-                style="padding:5px 14px;border-radius:6px;border:1px solid #e2e8f0;background:#ffffff;color:#1e293b;font-size:0.78rem;font-weight:600;cursor:pointer;white-space:nowrap;transition:all 0.2s;box-shadow:0 1px 2px rgba(0,0,0,0.04);display:inline-flex;align-items:center;gap:6px;"
+                style="width:90px;padding:5px 8px;border-radius:6px;border:1px solid #e2e8f0;background:#ffffff;color:#1e293b;font-size:0.78rem;font-weight:600;cursor:pointer;white-space:nowrap;transition:all 0.2s;box-shadow:0 1px 2px rgba(0,0,0,0.04);display:inline-flex;align-items:center;justify-content:center;gap:6px;"
                 onmouseover="this.style.background='#f8fafc';this.style.borderColor='#cbd5e1'" 
                 onmouseout="this.style.background='#ffffff';this.style.borderColor='#e2e8f0'">
                 <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#64748b" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M17 1l4 4-4 4"/><path d="M3 11V9a4 4 0 0 1 4-4h14"/><path d="M7 23l-4-4 4-4"/><path d="M21 13v2a4 4 0 0 1-4 4H3"/></svg>
@@ -226,7 +226,7 @@ function buildRow(b, includeDate = false) {
             ` : `
             <button onclick="window.openEditBookingModal('${bookingId}')"
                 data-sub-feature="update_booking"
-                style="padding:5px 14px;border-radius:6px;border:1px solid #e2e8f0;background:#ffffff;color:#1e293b;font-size:0.78rem;font-weight:600;cursor:pointer;white-space:nowrap;transition:all 0.2s;box-shadow:0 1px 2px rgba(0,0,0,0.04);display:inline-flex;align-items:center;gap:6px;"
+                style="width:90px;padding:5px 8px;border-radius:6px;border:1px solid #e2e8f0;background:#ffffff;color:#1e293b;font-size:0.78rem;font-weight:600;cursor:pointer;white-space:nowrap;transition:all 0.2s;box-shadow:0 1px 2px rgba(0,0,0,0.04);display:inline-flex;align-items:center;justify-content:center;gap:6px;"
                 onmouseover="this.style.background='#f8fafc';this.style.borderColor='#cbd5e1'" 
                 onmouseout="this.style.background='#ffffff';this.style.borderColor='#e2e8f0'">
                 <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#64748b" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path></svg>
