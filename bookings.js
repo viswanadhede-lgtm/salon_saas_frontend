@@ -207,6 +207,15 @@ function buildRow(b, includeDate = false) {
             })()}
         </td>
         <td style="padding:14px 8px 14px 24px;">
+            ${(status || '').toLowerCase() === 'completed' ? `
+            <button onclick="window.openViewBookingModal('${bookingId}')"
+                style="padding:5px 14px;border-radius:6px;border:1px solid #e2e8f0;background:#ffffff;color:#1e293b;font-size:0.78rem;font-weight:600;cursor:pointer;white-space:nowrap;transition:all 0.2s;box-shadow:0 1px 2px rgba(0,0,0,0.04);display:inline-flex;align-items:center;gap:6px;"
+                onmouseover="this.style.background='#f8fafc';this.style.borderColor='#cbd5e1'" 
+                onmouseout="this.style.background='#ffffff';this.style.borderColor='#e2e8f0'">
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#64748b" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path><circle cx="12" cy="12" r="3"></circle></svg>
+                View
+            </button>
+            ` : `
             <button onclick="window.openEditBookingModal('${bookingId}')"
                 data-sub-feature="update_booking"
                 style="padding:5px 14px;border-radius:6px;border:1px solid #e2e8f0;background:#ffffff;color:#1e293b;font-size:0.78rem;font-weight:600;cursor:pointer;white-space:nowrap;transition:all 0.2s;box-shadow:0 1px 2px rgba(0,0,0,0.04);display:inline-flex;align-items:center;gap:6px;"
@@ -215,6 +224,7 @@ function buildRow(b, includeDate = false) {
                 <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#64748b" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path></svg>
                 Update
             </button>
+            `}
         </td>
     </tr>`;
 }
@@ -577,6 +587,93 @@ function setupModals() {
                     <button type="button" id="btnPncCollectPayment" style="background:#dcfce7;color:#15803d;border:1px solid #bbf7d0;border-radius:20px;padding:7px 18px;font-size:0.85rem;font-weight:600;cursor:pointer;transition:all 0.15s;" onmouseover="this.style.background='#bbf7d0'" onmouseout="this.style.background='#dcfce7'">Collect Payment</button>
                     <button type="button" id="btnPncCompleteWithoutPayment" style="background:#f1f5f9;color:#334155;border:1px solid #e2e8f0;border-radius:20px;padding:7px 18px;font-size:0.85rem;font-weight:500;cursor:pointer;transition:all 0.15s;" onmouseover="this.style.background='#e2e8f0'" onmouseout="this.style.background='#f1f5f9'">Complete Without Payment</button>
                     <button type="button" id="btnPncGoBack" style="background:#f1f5f9;color:#334155;border:1px solid #e2e8f0;border-radius:20px;padding:7px 18px;font-size:0.85rem;font-weight:500;cursor:pointer;transition:all 0.15s;" onmouseover="this.style.background='#e2e8f0'" onmouseout="this.style.background='#f1f5f9'">Go Back</button>
+                </div>
+            </div>
+        </div>`);
+    }
+
+    if (!document.getElementById('viewBookingInvoiceModal')) {
+        document.body.insertAdjacentHTML('beforeend', `
+        <div class="modal-overlay" id="viewBookingInvoiceModal" style="z-index:10002;backdrop-filter:blur(6px);">
+            <div class="modal-container" style="width:820px !important;max-width:94vw !important;background:#ffffff;border-radius:14px;box-shadow:0 25px 50px -12px rgba(0,0,0,0.25);border:1px solid #e2e8f0;overflow:hidden;display:flex;flex-direction:column;max-height:90vh;">
+                <!-- Header -->
+                <div style="padding:16px 24px;border-bottom:1px solid #e2e8f0;display:flex;justify-content:space-between;align-items:center;background:#fff;">
+                    <div>
+                        <h2 style="font-size:1.15rem;font-weight:700;color:#0f172a;margin:0;">Booking Invoice</h2>
+                        <p style="font-size:0.82rem;color:#64748b;margin:2px 0 0 0;">View completed appointment invoice details.</p>
+                    </div>
+                    <button class="modal-close" id="btnCloseViewInvoiceModal" style="border:none;background:transparent;cursor:pointer;color:#64748b;padding:4px;display:flex;align-items:center;justify-content:center;">
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+                    </button>
+                </div>
+
+                <!-- Body: 2-Column Grid matching Wireframe -->
+                <div style="display:grid;grid-template-columns:1fr 240px;gap:20px;padding:24px;flex:1;overflow-y:auto;background:#f8fafc;" id="viewBookingInvoiceGrid">
+                    <!-- LEFT BOX: Booking Details / Invoice -->
+                    <div id="viewBookingInvoicePrintArea" style="background:#ffffff;border:1px solid #e2e8f0;border-radius:12px;padding:20px;box-shadow:0 1px 3px rgba(0,0,0,0.04);display:flex;flex-direction:column;gap:14px;">
+                        <div style="display:flex;justify-content:space-between;align-items:flex-start;border-bottom:1px dashed #e2e8f0;padding-bottom:12px;">
+                            <div>
+                                <div style="font-size:0.72rem;font-weight:700;color:#64748b;text-transform:uppercase;letter-spacing:0.05em;">Invoice / Booking ID</div>
+                                <div id="vbiId" style="font-family:monospace;font-size:1rem;font-weight:700;color:#1e293b;margin-top:2px;">#00000000</div>
+                            </div>
+                            <div style="text-align:right;">
+                                <span id="vbiStatusBadge" style="display:inline-block;padding:2px 10px;border-radius:20px;font-size:0.75rem;font-weight:600;background:#dcfce7;color:#15803d;">Completed</span>
+                                <div id="vbiPaymentBadge" style="margin-top:4px;"></div>
+                            </div>
+                        </div>
+
+                        <!-- Customer & Schedule Info -->
+                        <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;background:#f8fafc;padding:12px;border-radius:8px;border:1px solid #f1f5f9;">
+                            <div>
+                                <div style="font-size:0.7rem;font-weight:600;color:#94a3b8;text-transform:uppercase;letter-spacing:0.04em;">Customer</div>
+                                <div id="vbiCustomer" style="font-size:0.88rem;font-weight:600;color:#0f172a;margin-top:2px;">—</div>
+                                <div id="vbiPhone" style="font-size:0.78rem;color:#64748b;">—</div>
+                            </div>
+                            <div>
+                                <div style="font-size:0.7rem;font-weight:600;color:#94a3b8;text-transform:uppercase;letter-spacing:0.04em;">Appointment</div>
+                                <div id="vbiDate" style="font-size:0.86rem;font-weight:600;color:#334155;margin-top:2px;">—</div>
+                                <div id="vbiTime" style="font-size:0.78rem;color:#64748b;">—</div>
+                            </div>
+                        </div>
+
+                        <!-- Services List -->
+                        <div>
+                            <div style="font-size:0.72rem;font-weight:700;color:#475569;text-transform:uppercase;letter-spacing:0.04em;margin-bottom:6px;">Service Details</div>
+                            <div id="vbiServicesList" style="border:1px solid #e2e8f0;border-radius:8px;overflow:hidden;"></div>
+                        </div>
+
+                        <!-- Total Amount -->
+                        <div style="margin-top:auto;padding-top:12px;border-top:1px dashed #e2e8f0;display:flex;justify-content:space-between;align-items:center;">
+                            <span style="font-size:0.85rem;font-weight:600;color:#64748b;">Total Amount</span>
+                            <span id="vbiTotalAmount" style="font-size:1.2rem;font-weight:700;color:#059669;">₹0</span>
+                        </div>
+                    </div>
+
+                    <!-- RIGHT BOX: Actions Sidebar Matching Wireframe -->
+                    <div style="display:flex;flex-direction:column;justify-content:space-between;gap:16px;">
+                        <!-- TOP BOX: Print Invoice -->
+                        <div style="background:#ffffff;border:1px solid #e2e8f0;border-radius:12px;padding:20px;box-shadow:0 1px 3px rgba(0,0,0,0.04);display:flex;flex-direction:column;align-items:center;text-align:center;gap:12px;">
+                            <div style="width:46px;height:46px;border-radius:50%;background:#e0e7ff;display:flex;align-items:center;justify-content:center;color:#4f46e5;">
+                                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 6 2 18 2 18 9"></polyline><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"></path><rect x="6" y="14" width="12" height="8"></rect></svg>
+                            </div>
+                            <div>
+                                <div style="font-weight:600;color:#0f172a;font-size:0.9rem;">Print Invoice</div>
+                                <div style="font-size:0.75rem;color:#64748b;margin-top:2px;">Generate receipt</div>
+                            </div>
+                            <button type="button" id="btnVbiPrint" style="width:100%;padding:9px 14px;background:#4f46e5;color:#ffffff;border:none;border-radius:8px;font-size:0.82rem;font-weight:600;cursor:pointer;display:inline-flex;align-items:center;justify-content:center;gap:6px;transition:all 0.15s;box-shadow:0 1px 2px rgba(79,70,229,0.2);" onmouseover="this.style.background='#4338ca'" onmouseout="this.style.background='#4f46e5'">
+                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 6 2 18 2 18 9"></polyline><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"></path><rect x="6" y="14" width="12" height="8"></rect></svg>
+                                Print Invoice
+                            </button>
+                        </div>
+
+                        <!-- BOTTOM BOX: Go Back -->
+                        <div style="background:#ffffff;border:1px solid #e2e8f0;border-radius:12px;padding:16px;box-shadow:0 1px 3px rgba(0,0,0,0.04);">
+                            <button type="button" id="btnVbiGoBack" style="width:100%;padding:9px 14px;background:#f1f5f9;color:#334155;border:1px solid #e2e8f0;border-radius:8px;font-size:0.82rem;font-weight:600;cursor:pointer;display:inline-flex;align-items:center;justify-content:center;gap:6px;transition:all 0.15s;" onmouseover="this.style.background='#e2e8f0'" onmouseout="this.style.background='#f1f5f9'">
+                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="19" y1="12" x2="5" y2="12"></line><polyline points="12 19 5 12 12 5"></polyline></svg>
+                                Go Back
+                            </button>
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>`);
@@ -1112,6 +1209,48 @@ function attachEventListeners() {
     const profModal = document.getElementById('customerProfileBookingModal');
     profModal?.addEventListener('click', (e) => { if (e.target === profModal) profModal.classList.remove('active'); });
 
+    // ── View Booking Invoice Modal Handlers ─────────────────────────────────
+    const viewInvModal = document.getElementById('viewBookingInvoiceModal');
+    const closeViewInv = () => viewInvModal?.classList.remove('active');
+
+    document.getElementById('btnCloseViewInvoiceModal')?.addEventListener('click', closeViewInv);
+    document.getElementById('btnVbiGoBack')?.addEventListener('click', closeViewInv);
+    viewInvModal?.addEventListener('click', (e) => {
+        if (e.target === viewInvModal) closeViewInv();
+    });
+
+    document.getElementById('btnVbiPrint')?.addEventListener('click', () => {
+        const printArea = document.getElementById('viewBookingInvoicePrintArea');
+        if (!printArea) return;
+        const printWindow = window.open('', '_blank', 'width=800,height=650');
+        if (!printWindow) {
+            window.print();
+            return;
+        }
+        printWindow.document.write(`
+            <!DOCTYPE html>
+            <html>
+            <head>
+                <title>Booking Invoice - ${document.getElementById('vbiId')?.textContent || ''}</title>
+                <style>
+                    body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; padding: 30px; color: #1e293b; background: #fff; }
+                    * { box-sizing: border-box; }
+                    table { width: 100%; border-collapse: collapse; margin-top: 10px; }
+                    th, td { padding: 8px 10px; border-bottom: 1px solid #e2e8f0; text-align: left; }
+                    th { background: #f8fafc; font-size: 11px; text-transform: uppercase; color: #64748b; }
+                </style>
+            </head>
+            <body>
+                ${printArea.innerHTML}
+                <script>
+                    window.onload = function() { window.print(); window.close(); };
+                <\/script>
+            </body>
+            </html>
+        `);
+        printWindow.document.close();
+    });
+
     // ── Payment Not Completed Modal Handlers ────────────────────────────────
     function showPaymentNotCompletedModal() {
         const container = document.getElementById('editServiceRowsContainer');
@@ -1476,8 +1615,115 @@ function attachEventListeners() {
         }
     };
 
+    window.openViewBookingModal = (bookingId) => {
+        let b = (liveBookingsData || []).find(x => (x.booking_id || x.id) === bookingId);
+        if (!b) {
+            b = (liveBookingsData || []).find(x => String(x.booking_id || x.id || '').toLowerCase() === String(bookingId || '').toLowerCase());
+        }
+        if (!b) return;
+
+        // ID
+        const vbiId = document.getElementById('vbiId');
+        if (vbiId) vbiId.textContent = '#' + (bookingId || '').slice(0, 8).toUpperCase();
+
+        // Customer
+        const vbiCustomer = document.getElementById('vbiCustomer');
+        if (vbiCustomer) vbiCustomer.textContent = b.customer_name || 'Walk-in Customer';
+        const vbiPhone = document.getElementById('vbiPhone');
+        if (vbiPhone) vbiPhone.textContent = b.customer_phone || '—';
+
+        // Appointment Date & Time
+        const vbiDate = document.getElementById('vbiDate');
+        if (vbiDate) {
+            try {
+                const d = new Date(`${b.booking_date}T00:00`);
+                vbiDate.textContent = d.toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' });
+            } catch { vbiDate.textContent = b.booking_date || '—'; }
+        }
+        const vbiTime = document.getElementById('vbiTime');
+        if (vbiTime) vbiTime.textContent = formatTime12((b.start_time || '').slice(0, 5));
+
+        // Status badge
+        const vbiStatusBadge = document.getElementById('vbiStatusBadge');
+        if (vbiStatusBadge) vbiStatusBadge.innerHTML = statusBadge(b.status || 'completed');
+
+        // Payment badge
+        const vbiPaymentBadge = document.getElementById('vbiPaymentBadge');
+        if (vbiPaymentBadge) {
+            const pay = (b.payment_status || b.payment || '').toLowerCase();
+            const payLabel = pay ? pay.charAt(0).toUpperCase() + pay.slice(1) : '—';
+            const payColors = {
+                paid:    { color: '#059669', bg: '#d1fae5' },
+                pending: { color: '#b45309', bg: '#fef3c7' },
+                unpaid:  { color: '#dc2626', bg: '#fee2e2' },
+                partial: { color: '#7c3aed', bg: '#ede9fe' },
+            };
+            const pc = payColors[pay] || { color: '#475569', bg: '#f1f5f9' };
+            vbiPaymentBadge.innerHTML = `<span style="display:inline-block;padding:2px 8px;border-radius:20px;font-size:0.72rem;font-weight:600;background:${pc.bg};color:${pc.color};">${payLabel}</span>`;
+        }
+
+        // Services list
+        const servicesListEl = document.getElementById('vbiServicesList');
+        if (servicesListEl) {
+            const svcNames = (Array.isArray(b.service_names) ? b.service_names : [b.service_name])
+                .filter(Boolean)
+                .flatMap(s => String(s).split(',').map(item => item.trim()))
+                .filter(Boolean);
+            const staffNames = (Array.isArray(b.staff_names) ? b.staff_names : [b.staff_name])
+                .filter(Boolean)
+                .flatMap(s => String(s).split(',').map(item => item.trim()))
+                .filter(Boolean);
+
+            const prices = Array.isArray(b.service_prices) ? b.service_prices : [b.total_price || b.price || 0];
+
+            let html = `
+            <table style="width:100%;border-collapse:collapse;font-size:0.85rem;">
+                <thead>
+                    <tr style="background:#f8fafc;border-bottom:1px solid #e2e8f0;">
+                        <th style="padding:8px 12px;text-align:left;font-size:0.72rem;font-weight:600;color:#64748b;text-transform:uppercase;">Service</th>
+                        <th style="padding:8px 12px;text-align:left;font-size:0.72rem;font-weight:600;color:#64748b;text-transform:uppercase;">Staff</th>
+                        <th style="padding:8px 12px;text-align:right;font-size:0.72rem;font-weight:600;color:#64748b;text-transform:uppercase;">Price</th>
+                    </tr>
+                </thead>
+                <tbody>`;
+
+            if (svcNames.length > 0) {
+                svcNames.forEach((svc, i) => {
+                    const staff = staffNames[i] || staffNames[0] || '—';
+                    const p = prices[i] !== undefined ? prices[i] : (prices[0] || 0);
+                    html += `
+                    <tr style="border-bottom:1px solid #f1f5f9;">
+                        <td style="padding:10px 12px;font-weight:500;color:#1e293b;">${svc}</td>
+                        <td style="padding:10px 12px;color:#64748b;">${staff}</td>
+                        <td style="padding:10px 12px;text-align:right;font-weight:600;color:#0f172a;">₹${Number(p).toLocaleString('en-IN')}</td>
+                    </tr>`;
+                });
+            } else {
+                html += `
+                <tr>
+                    <td style="padding:10px 12px;font-weight:500;color:#1e293b;">${b.service_name || 'Salon Service'}</td>
+                    <td style="padding:10px 12px;color:#64748b;">${b.staff_name || '—'}</td>
+                    <td style="padding:10px 12px;text-align:right;font-weight:600;color:#0f172a;">₹${Number(b.total_price || b.price || 0).toLocaleString('en-IN')}</td>
+                </tr>`;
+            }
+
+            html += `</tbody></table>`;
+            servicesListEl.innerHTML = html;
+        }
+
+        // Total Amount
+        const vbiTotal = document.getElementById('vbiTotalAmount');
+        if (vbiTotal) {
+            vbiTotal.textContent = '₹' + Number(b.total_price || b.price || 0).toLocaleString('en-IN');
+        }
+
+        // Show modal
+        const modal = document.getElementById('viewBookingInvoiceModal');
+        if (modal) modal.classList.add('active');
+    };
+
     window.triggerInvoice = (bookingId) => {
-        alert('Invoice generation placeholder for Booking ' + bookingId);
+        window.openViewBookingModal(bookingId);
     };
 
     window.triggerRebook = async (bookingId) => {
