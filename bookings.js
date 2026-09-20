@@ -215,6 +215,14 @@ function buildRow(b, includeDate = false) {
                 <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#64748b" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path><circle cx="12" cy="12" r="3"></circle></svg>
                 View
             </button>
+            ` : (status || '').toLowerCase() === 'cancelled' ? `
+            <button onclick="window.openCancelledBookingModal('${bookingId}')"
+                style="padding:5px 14px;border-radius:6px;border:1px solid #e2e8f0;background:#ffffff;color:#1e293b;font-size:0.78rem;font-weight:600;cursor:pointer;white-space:nowrap;transition:all 0.2s;box-shadow:0 1px 2px rgba(0,0,0,0.04);display:inline-flex;align-items:center;gap:6px;"
+                onmouseover="this.style.background='#f8fafc';this.style.borderColor='#cbd5e1'" 
+                onmouseout="this.style.background='#ffffff';this.style.borderColor='#e2e8f0'">
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#64748b" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M17 1l4 4-4 4"/><path d="M3 11V9a4 4 0 0 1 4-4h14"/><path d="M7 23l-4-4 4-4"/><path d="M21 13v2a4 4 0 0 1-4 4H3"/></svg>
+                Rebook
+            </button>
             ` : `
             <button onclick="window.openEditBookingModal('${bookingId}')"
                 data-sub-feature="update_booking"
@@ -717,6 +725,121 @@ function setupModals() {
         wireRefundModal();
     }
 
+    // ── Cancelled Booking Modal ───────────────────────────────────────────────
+    if (!document.getElementById('cancelledBookingModal')) {
+        document.body.insertAdjacentHTML('beforeend', `
+        <div class="modal-overlay" id="cancelledBookingModal" style="z-index:10003;backdrop-filter:blur(6px);">
+            <div class="modal-container" style="width:860px !important;max-width:94vw !important;background:#ffffff;border-radius:14px;box-shadow:0 25px 50px -12px rgba(0,0,0,0.25);border:1px solid #e2e8f0;overflow:hidden;display:flex;flex-direction:column;max-height:90vh;">
+                <!-- Header -->
+                <div style="padding:16px 24px;border-bottom:1px solid #e2e8f0;display:flex;justify-content:space-between;align-items:center;background:#fff;">
+                    <div>
+                        <h2 style="font-size:1.15rem;font-weight:700;color:#0f172a;margin:0;">Cancelled Booking</h2>
+                        <p style="font-size:0.82rem;color:#64748b;margin:2px 0 0 0;">Review details and choose your next action.</p>
+                    </div>
+                    <button id="btnCloseCancelledBookingModal" style="border:none;background:transparent;cursor:pointer;color:#64748b;padding:4px;display:flex;align-items:center;justify-content:center;border-radius:6px;" onmouseover="this.style.background='#f1f5f9'" onmouseout="this.style.background='transparent'">
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+                    </button>
+                </div>
+
+                <!-- Body: 2-Column Layout -->
+                <div style="display:grid;grid-template-columns:1fr 260px;gap:20px;padding:24px;flex:1;overflow-y:auto;background:#f8fafc;">
+
+                    <!-- LEFT: Booking Details -->
+                    <div style="background:#ffffff;border:1px solid #e2e8f0;border-radius:12px;padding:20px;box-shadow:0 1px 3px rgba(0,0,0,0.04);display:flex;flex-direction:column;gap:14px;">
+                        <!-- ID + Badges -->
+                        <div style="display:flex;justify-content:space-between;align-items:flex-start;border-bottom:1px dashed #e2e8f0;padding-bottom:12px;">
+                            <div>
+                                <div style="font-size:0.72rem;font-weight:700;color:#64748b;text-transform:uppercase;letter-spacing:0.05em;">Booking ID</div>
+                                <div id="cbmId" style="font-family:monospace;font-size:1rem;font-weight:700;color:#1e293b;margin-top:2px;">#--------</div>
+                            </div>
+                            <div style="text-align:right;display:flex;flex-direction:column;gap:4px;align-items:flex-end;">
+                                <span style="display:inline-block;padding:2px 10px;border-radius:20px;font-size:0.75rem;font-weight:600;color:#991b1b;background:#fee2e2;">Cancelled</span>
+                                <div id="cbmPaymentBadge"></div>
+                            </div>
+                        </div>
+
+                        <!-- Customer & Appointment -->
+                        <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;background:#f8fafc;padding:12px;border-radius:8px;border:1px solid #f1f5f9;">
+                            <div>
+                                <div style="font-size:0.7rem;font-weight:600;color:#94a3b8;text-transform:uppercase;letter-spacing:0.04em;">Customer</div>
+                                <div id="cbmCustomer" style="font-size:0.88rem;font-weight:600;color:#0f172a;margin-top:2px;">—</div>
+                                <div id="cbmPhone" style="font-size:0.78rem;color:#64748b;">—</div>
+                            </div>
+                            <div>
+                                <div style="font-size:0.7rem;font-weight:600;color:#94a3b8;text-transform:uppercase;letter-spacing:0.04em;">Original Appointment</div>
+                                <div id="cbmDate" style="font-size:0.86rem;font-weight:600;color:#334155;margin-top:2px;">—</div>
+                                <div id="cbmTime" style="font-size:0.78rem;color:#64748b;">—</div>
+                            </div>
+                        </div>
+
+                        <!-- Services List -->
+                        <div>
+                            <div style="font-size:0.72rem;font-weight:700;color:#475569;text-transform:uppercase;letter-spacing:0.04em;margin-bottom:6px;">Service Details</div>
+                            <div id="cbmServicesList" style="border:1px solid #e2e8f0;border-radius:8px;overflow:hidden;"></div>
+                        </div>
+
+                        <!-- Total -->
+                        <div style="margin-top:auto;padding-top:12px;border-top:1px dashed #e2e8f0;display:flex;justify-content:space-between;align-items:center;">
+                            <span style="font-size:0.85rem;font-weight:600;color:#64748b;">Total Amount</span>
+                            <span id="cbmTotal" style="font-size:1.2rem;font-weight:700;color:#0f172a;">₹0</span>
+                        </div>
+                    </div>
+
+                    <!-- RIGHT: Action Buttons -->
+                    <div style="display:flex;flex-direction:column;gap:14px;">
+
+                        <!-- Refund button — only shown when payment was made -->
+                        <div id="cbmRefundSection" style="display:none;">
+                            <div style="background:#ffffff;border:1px solid #fecdd3;border-radius:12px;padding:20px;box-shadow:0 1px 3px rgba(0,0,0,0.04);display:flex;flex-direction:column;align-items:center;text-align:center;gap:12px;">
+                                <div style="width:42px;height:42px;border-radius:50%;background:#fff1f2;display:flex;align-items:center;justify-content:center;color:#e11d48;">
+                                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="1 4 1 10 7 10"></polyline><path d="M3.51 15a9 9 0 1 0 .49-3.5"></path></svg>
+                                </div>
+                                <div>
+                                    <div style="font-weight:600;color:#0f172a;font-size:0.9rem;">Process Refund</div>
+                                    <div style="font-size:0.74rem;color:#64748b;margin-top:2px;">Return the payment to customer</div>
+                                </div>
+                                <button type="button" id="btnCbmRefund"
+                                    style="width:100%;padding:10px 14px;background:#e11d48;color:#ffffff;border:none;border-radius:8px;font-size:0.85rem;font-weight:700;cursor:pointer;display:inline-flex;align-items:center;justify-content:center;gap:6px;transition:all 0.15s;box-shadow:0 1px 2px rgba(225,29,72,0.2);"
+                                    onmouseover="this.style.background='#be123c'" onmouseout="this.style.background='#e11d48'">
+                                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="1 4 1 10 7 10"></polyline><path d="M3.51 15a9 9 0 1 0 .49-3.5"></path></svg>
+                                    Refund
+                                </button>
+                            </div>
+                        </div>
+
+                        <!-- Rebook (big, always shown) -->
+                        <div style="background:#ffffff;border:1px solid #c7d2fe;border-radius:12px;padding:20px;box-shadow:0 1px 3px rgba(0,0,0,0.04);display:flex;flex-direction:column;align-items:center;text-align:center;gap:12px;flex:1;">
+                            <div style="width:42px;height:42px;border-radius:50%;background:#e0e7ff;display:flex;align-items:center;justify-content:center;color:#4f46e5;">
+                                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 1l4 4-4 4"/><path d="M3 11V9a4 4 0 0 1 4-4h14"/><path d="M7 23l-4-4 4-4"/><path d="M21 13v2a4 4 0 0 1-4 4H3"/></svg>
+                            </div>
+                            <div>
+                                <div style="font-weight:600;color:#0f172a;font-size:0.9rem;">Rebook Appointment</div>
+                                <div style="font-size:0.74rem;color:#64748b;margin-top:2px;">Create a new booking for this customer</div>
+                            </div>
+                            <button type="button" id="btnCbmRebook"
+                                style="width:100%;padding:12px 14px;background:#4f46e5;color:#ffffff;border:none;border-radius:8px;font-size:0.88rem;font-weight:700;cursor:pointer;display:inline-flex;align-items:center;justify-content:center;gap:8px;transition:all 0.15s;box-shadow:0 2px 4px rgba(79,70,229,0.25);"
+                                onmouseover="this.style.background='#4338ca'" onmouseout="this.style.background='#4f46e5'">
+                                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 1l4 4-4 4"/><path d="M3 11V9a4 4 0 0 1 4-4h14"/><path d="M7 23l-4-4 4-4"/><path d="M21 13v2a4 4 0 0 1-4 4H3"/></svg>
+                                Rebook
+                            </button>
+                        </div>
+
+                        <!-- Close button (bottom, always shown) -->
+                        <div style="background:#ffffff;border:1px solid #e2e8f0;border-radius:12px;padding:14px;box-shadow:0 1px 3px rgba(0,0,0,0.04);">
+                            <button type="button" id="btnCbmClose"
+                                style="width:100%;padding:9px 14px;background:#f1f5f9;color:#334155;border:1px solid #e2e8f0;border-radius:8px;font-size:0.82rem;font-weight:600;cursor:pointer;display:inline-flex;align-items:center;justify-content:center;gap:6px;transition:all 0.15s;"
+                                onmouseover="this.style.background='#e2e8f0'" onmouseout="this.style.background='#f1f5f9'">
+                                Close
+                            </button>
+                        </div>
+
+                    </div>
+                </div>
+            </div>
+        </div>`);
+    }
+
+
     if (!document.getElementById('customerProfileBookingModal')) {
         document.body.insertAdjacentHTML('beforeend', `
         <div class="modal-overlay" id="customerProfileBookingModal" style="z-index:9999;">
@@ -1218,6 +1341,16 @@ function attachEventListeners() {
     viewInvModal?.addEventListener('click', (e) => {
         if (e.target === viewInvModal) closeViewInv();
     });
+
+    // ── Cancelled Booking Modal Handlers ──────────────────────────────────────
+    const cancelledModal = document.getElementById('cancelledBookingModal');
+    const closeCancelledModal = () => cancelledModal?.classList.remove('active');
+    document.getElementById('btnCloseCancelledBookingModal')?.addEventListener('click', closeCancelledModal);
+    document.getElementById('btnCbmClose')?.addEventListener('click', closeCancelledModal);
+    cancelledModal?.addEventListener('click', (e) => {
+        if (e.target === cancelledModal) closeCancelledModal();
+    });
+
 
     document.getElementById('btnVbiPrint')?.addEventListener('click', () => {
         const printArea = document.getElementById('viewBookingInvoicePrintArea');
@@ -1757,6 +1890,114 @@ function attachEventListeners() {
             const btnNewBooking = document.getElementById('btnNewBooking') || document.getElementById('btnNewBookingPage');
             if (btnNewBooking) btnNewBooking.click();
         }
+    };
+
+    // ── Cancelled Booking Modal Handler ───────────────────────────────────────
+    window.openCancelledBookingModal = function(bookingId) {
+        let b = (liveBookingsData || []).find(x => (x.booking_id || x.id) === bookingId);
+        if (!b) {
+            b = (liveBookingsData || []).find(x => String(x.booking_id || x.id || '').toLowerCase() === String(bookingId || '').toLowerCase());
+        }
+        if (!b) return;
+
+        // Booking ID
+        const el = (id) => document.getElementById(id);
+        if (el('cbmId')) el('cbmId').textContent = '#' + (bookingId || '').slice(0, 8).toUpperCase();
+
+        // Customer
+        if (el('cbmCustomer')) el('cbmCustomer').textContent = b.customer_name || 'Walk-in Customer';
+        if (el('cbmPhone'))    el('cbmPhone').textContent    = b.customer_phone || '—';
+
+        // Date & Time
+        if (el('cbmDate')) {
+            try {
+                const d = new Date(`${b.booking_date}T00:00`);
+                el('cbmDate').textContent = d.toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' });
+            } catch { el('cbmDate').textContent = b.booking_date || '—'; }
+        }
+        if (el('cbmTime')) el('cbmTime').textContent = formatTime12((b.start_time || '').slice(0, 5));
+
+        // Payment badge
+        const payRaw = (b.payment_status || b.payment || '').toLowerCase();
+        if (el('cbmPaymentBadge')) {
+            const payLabel = payRaw ? payRaw.charAt(0).toUpperCase() + payRaw.slice(1) : '—';
+            const payColors = {
+                paid:    { color: '#059669', bg: '#d1fae5' },
+                pending: { color: '#b45309', bg: '#fef3c7' },
+                unpaid:  { color: '#dc2626', bg: '#fee2e2' },
+                partial: { color: '#7c3aed', bg: '#ede9fe' },
+            };
+            const pc = payColors[payRaw] || { color: '#475569', bg: '#f1f5f9' };
+            el('cbmPaymentBadge').innerHTML = `<span style="display:inline-block;padding:2px 8px;border-radius:20px;font-size:0.72rem;font-weight:600;background:${pc.bg};color:${pc.color};">${payLabel}</span>`;
+        }
+
+        // Show/hide refund section based on payment status
+        const isPaid = ['paid', 'partial'].includes(payRaw);
+        if (el('cbmRefundSection')) el('cbmRefundSection').style.display = isPaid ? 'block' : 'none';
+
+        // Services list
+        const svcNames = (Array.isArray(b.service_names) ? b.service_names : [b.service_name])
+            .filter(Boolean).flatMap(s => String(s).split(',').map(i => i.trim())).filter(Boolean);
+        const staffNames = (Array.isArray(b.staff_names) ? b.staff_names : [b.staff_name])
+            .filter(Boolean).flatMap(s => String(s).split(',').map(i => i.trim())).filter(Boolean);
+        const prices = Array.isArray(b.service_prices) ? b.service_prices : [b.total_price || b.price || 0];
+
+        if (el('cbmServicesList')) {
+            let html = `<table style="width:100%;border-collapse:collapse;font-size:0.85rem;">
+                <thead><tr style="background:#f8fafc;border-bottom:1px solid #e2e8f0;">
+                    <th style="padding:8px 12px;text-align:left;font-size:0.72rem;font-weight:600;color:#64748b;text-transform:uppercase;">Service</th>
+                    <th style="padding:8px 12px;text-align:left;font-size:0.72rem;font-weight:600;color:#64748b;text-transform:uppercase;">Staff</th>
+                    <th style="padding:8px 12px;text-align:right;font-size:0.72rem;font-weight:600;color:#64748b;text-transform:uppercase;">Price</th>
+                </tr></thead><tbody>`;
+            if (svcNames.length > 0) {
+                svcNames.forEach((svc, i) => {
+                    const staff = staffNames[i] || staffNames[0] || '—';
+                    const p = prices[i] !== undefined ? prices[i] : (prices[0] || 0);
+                    html += `<tr style="border-bottom:1px solid #f1f5f9;">
+                        <td style="padding:10px 12px;font-weight:500;color:#1e293b;">${svc}</td>
+                        <td style="padding:10px 12px;color:#64748b;">${staff}</td>
+                        <td style="padding:10px 12px;text-align:right;font-weight:600;color:#0f172a;">₹${Number(p).toLocaleString('en-IN')}</td>
+                    </tr>`;
+                });
+            } else {
+                html += `<tr><td style="padding:10px 12px;font-weight:500;color:#1e293b;">${b.service_name || 'Salon Service'}</td>
+                    <td style="padding:10px 12px;color:#64748b;">${b.staff_name || '—'}</td>
+                    <td style="padding:10px 12px;text-align:right;font-weight:600;color:#0f172a;">₹${Number(b.total_price || b.price || 0).toLocaleString('en-IN')}</td></tr>`;
+            }
+            html += `</tbody></table>`;
+            el('cbmServicesList').innerHTML = html;
+        }
+
+        // Total
+        if (el('cbmTotal')) {
+            const tot = b.final_amount != null ? b.final_amount : (b.total_price || b.price || 0);
+            el('cbmTotal').textContent = '₹' + Number(tot).toLocaleString('en-IN');
+        }
+
+        // Wire Rebook button — close modal then trigger rebook prefill
+        const btnRebook = el('btnCbmRebook');
+        if (btnRebook) {
+            const newBtn = btnRebook.cloneNode(true);
+            btnRebook.parentNode.replaceChild(newBtn, btnRebook);
+            newBtn.addEventListener('click', async () => {
+                el('cancelledBookingModal')?.classList.remove('active');
+                await window.triggerRebook(bookingId);
+            });
+        }
+
+        // Wire Refund button — close this modal, open refund modal
+        const btnRefund = el('btnCbmRefund');
+        if (btnRefund) {
+            const newBtn = btnRefund.cloneNode(true);
+            btnRefund.parentNode.replaceChild(newBtn, btnRefund);
+            newBtn.addEventListener('click', () => {
+                el('cancelledBookingModal')?.classList.remove('active');
+                if (window.openRefundModal) window.openRefundModal(bookingId);
+            });
+        }
+
+        // Show modal
+        el('cancelledBookingModal')?.classList.add('active');
     };
 
     // ── Collect Payment Handler ────────────────────────────────────────────────
