@@ -1527,9 +1527,54 @@ async function executeCancelMembershipPurchase(purchaseId, notes = null) {
 let refundableMembershipAmount = 0;
 let purchaseToRefundObj = null;
 
+function handleMemRefundAmountChange(val) {
+    const input = document.getElementById('rfMemAmountInput');
+    const badge = document.getElementById('rfMemRefundTypeBadge');
+    const confirmBtn = document.getElementById('confirmMemRefundBtn');
+    let num = parseFloat(val);
+
+    if (isNaN(num) || num <= 0) {
+        if (badge) {
+            badge.textContent = 'Invalid';
+            badge.style.background = '#f1f5f9';
+            badge.style.color = '#64748b';
+        }
+        if (confirmBtn) {
+            confirmBtn.disabled = true;
+            confirmBtn.style.opacity = '0.5';
+        }
+        return;
+    }
+
+    if (num > refundableMembershipAmount) {
+        num = refundableMembershipAmount;
+        if (input) input.value = num;
+        showToast(`Refund amount cannot exceed paid limit of ₹${refundableMembershipAmount.toLocaleString('en-IN')}`, '#f59e0b');
+    }
+
+    if (num >= refundableMembershipAmount) {
+        if (badge) {
+            badge.textContent = 'Full Refund';
+            badge.style.background = '#ffe4e6';
+            badge.style.color = '#e11d48';
+        }
+    } else {
+        if (badge) {
+            badge.textContent = 'Partial Refund';
+            badge.style.background = '#fef3c7';
+            badge.style.color = '#d97706';
+        }
+    }
+
+    if (confirmBtn) {
+        confirmBtn.disabled = (num <= 0);
+        confirmBtn.style.opacity = (num <= 0) ? '0.5' : '1';
+    }
+}
+
 function setupRefundPurchaseModal() {
     const existingModal = document.getElementById('refundMembershipAdvancedOverlay');
-    if (existingModal && (!existingModal.querySelector('.rf-mem-divided') || !existingModal.querySelector('#rfMemOrigPaidAmount'))) {
+    if (existingModal && (!existingModal.querySelector('.rf-mem-divided') || !existingModal.querySelector('#rfMemOrigPaidAmount') || !existingModal.querySelector('#rfMemAmountInput'))) {
         existingModal.remove();
     }
 
@@ -1644,14 +1689,21 @@ function setupRefundPurchaseModal() {
                     <!-- RIGHT COLUMN: REFUND FORM CONTROLS -->
                     <div style="display:flex;flex-direction:column;gap:16px;padding:24px;overflow-y:auto;min-height:0;height:100%;box-sizing:border-box;">
                         
-                        <!-- Refund Amount Card -->
-                        <div style="background:#fff1f2;border:1px solid #fecdd3;border-radius:12px;padding:18px;display:flex;flex-direction:column;gap:4px;">
+                        <!-- Refund Amount Card (Editable) -->
+                        <div style="background:#fff1f2;border:1px solid #fecdd3;border-radius:12px;padding:16px 18px;display:flex;flex-direction:column;gap:8px;">
                             <div style="display:flex;justify-content:space-between;align-items:center;">
                                 <span style="font-size:0.72rem;font-weight:800;color:#991b1b;text-transform:uppercase;letter-spacing:0.05em;">REFUND AMOUNT</span>
-                                <span id="rfMemRefundTypeBadge" style="background:#ffe4e6;color:#e11d48;font-size:0.72rem;font-weight:700;padding:3px 10px;border-radius:20px;">Full Refund</span>
+                                <span id="rfMemRefundTypeBadge" style="background:#ffe4e6;color:#e11d48;font-size:0.72rem;font-weight:700;padding:3px 10px;border-radius:20px;transition:all 0.2s;">Full Refund</span>
                             </div>
-                            <div id="rfMemAmountDisplay" style="font-size:2.25rem;font-weight:800;color:#e11d48;margin:2px 0;">₹0</div>
-                            <div style="font-size:0.78rem;color:#64748b;">Maximum refundable amount: <span id="rfMemMaxRefundText" style="font-weight:600;color:#475569;">₹0</span></div>
+                            <div id="rfMemAmountInputWrapper" style="display:flex;align-items:center;background:#fff;border:1.5px solid #fecdd3;border-radius:10px;padding:4px 12px;transition:all 0.15s;">
+                                <span style="font-size:1.6rem;font-weight:800;color:#e11d48;line-height:1;margin-right:6px;user-select:none;">₹</span>
+                                <input type="number" id="rfMemAmountInput" min="1" step="any" placeholder="0" 
+                                       style="width:100%;font-size:1.6rem;font-weight:800;color:#e11d48;border:none;background:transparent;outline:none;padding:4px 0;line-height:1;font-family:inherit;" />
+                            </div>
+                            <div style="font-size:0.78rem;color:#64748b;display:flex;justify-content:space-between;align-items:center;">
+                                <span>Maximum refundable: <strong id="rfMemMaxRefundText" style="font-weight:700;color:#475569;">₹0</strong></span>
+                                <button type="button" id="rfMemSetFullRefundBtn" style="background:none;border:none;color:#e11d48;font-size:0.75rem;font-weight:700;cursor:pointer;padding:0;text-decoration:underline;">Reset Full</button>
+                            </div>
                         </div>
 
                         <!-- Refund Payment Method Select -->
@@ -1723,6 +1775,30 @@ function setupRefundPurchaseModal() {
             if (e.target === overlay) close();
         });
 
+        const amountInput = document.getElementById('rfMemAmountInput');
+        const inputWrapper = document.getElementById('rfMemAmountInputWrapper');
+        if (amountInput && inputWrapper) {
+            amountInput.addEventListener('focus', () => {
+                inputWrapper.style.borderColor = '#e11d48';
+                inputWrapper.style.boxShadow = '0 0 0 3px rgba(225,29,72,0.12)';
+            });
+            amountInput.addEventListener('blur', () => {
+                inputWrapper.style.borderColor = '#fecdd3';
+                inputWrapper.style.boxShadow = 'none';
+            });
+            amountInput.addEventListener('input', (e) => {
+                handleMemRefundAmountChange(e.target.value);
+            });
+        }
+
+        const resetBtn = document.getElementById('rfMemSetFullRefundBtn');
+        if (resetBtn && amountInput) {
+            resetBtn.addEventListener('click', () => {
+                amountInput.value = refundableMembershipAmount;
+                handleMemRefundAmountChange(refundableMembershipAmount);
+            });
+        }
+
         document.getElementById('confirmMemRefundBtn').addEventListener('click', processMembershipRefund);
     }
 }
@@ -1760,7 +1836,7 @@ window.refundMembershipPurchase = async function(purchaseId) {
     const origDateEl = document.getElementById('rfMemOrigDate');
     const origPaidAmountEl = document.getElementById('rfMemOrigPaidAmount');
 
-    const amountDisplay = document.getElementById('rfMemAmountDisplay');
+    const amountInput = document.getElementById('rfMemAmountInput');
     const maxRefundEl = document.getElementById('rfMemMaxRefundText');
     const methodSelect = document.getElementById('rfMemMethodDisplay');
     const reasonSelect = document.getElementById('rfMemReasonSelect');
@@ -1827,7 +1903,11 @@ window.refundMembershipPurchase = async function(purchaseId) {
     if (origPaidAmountEl) origPaidAmountEl.textContent = `₹${initialPaidAmount.toLocaleString('en-IN')}`;
 
     // 4. Right Column Form Skeletons
-    if (amountDisplay) amountDisplay.textContent = '₹...';
+    if (amountInput) {
+        amountInput.value = '';
+        amountInput.placeholder = '...';
+        amountInput.disabled = true;
+    }
     if (maxRefundEl) maxRefundEl.textContent = '₹...';
     if (reasonSelect) {
         reasonSelect.value = '';
@@ -1899,8 +1979,13 @@ window.refundMembershipPurchase = async function(purchaseId) {
         const finalOrigPaid = originalTx && Number(originalTx.amount) > 0 ? Number(originalTx.amount) : ledgerPaid;
         if (origPaidAmountEl) origPaidAmountEl.textContent = `₹${finalOrigPaid.toLocaleString('en-IN')}`;
 
-        if (amountDisplay) amountDisplay.textContent = `₹${refundableMembershipAmount.toLocaleString('en-IN')}`;
+        if (amountInput) {
+            amountInput.disabled = (refundableMembershipAmount <= 0);
+            amountInput.value = refundableMembershipAmount;
+            amountInput.max = refundableMembershipAmount;
+        }
         if (maxRefundEl) maxRefundEl.textContent = `₹${refundableMembershipAmount.toLocaleString('en-IN')}`;
+        handleMemRefundAmountChange(refundableMembershipAmount);
 
         if (originalTx) {
             if (origMethodEl) origMethodEl.textContent = (originalTx.payment_method || 'cash').toUpperCase();
@@ -1921,13 +2006,31 @@ window.refundMembershipPurchase = async function(purchaseId) {
 
     } catch (err) {
         console.error('Error fetching ledger for refund:', err);
-        if (amountDisplay) amountDisplay.textContent = '₹0';
+        if (amountInput) {
+            amountInput.value = 0;
+            amountInput.disabled = true;
+        }
+        handleMemRefundAmountChange(0);
     }
 };
 
 async function processMembershipRefund() {
-    if (!purchaseToRefundObj || refundableMembershipAmount <= 0) {
+    const amountInput = document.getElementById('rfMemAmountInput');
+    const enteredRefundAmount = Math.abs(parseFloat(amountInput?.value || '0'));
+
+    if (!purchaseToRefundObj || isNaN(enteredRefundAmount) || enteredRefundAmount <= 0) {
         showToast('Please enter a valid refund amount higher than 0.', '#dc2626');
+        if (amountInput) amountInput.focus();
+        return;
+    }
+
+    if (enteredRefundAmount > refundableMembershipAmount) {
+        showToast(`Refund amount cannot exceed paid limit of ₹${refundableMembershipAmount.toLocaleString('en-IN')}`, '#dc2626');
+        if (amountInput) {
+            amountInput.value = refundableMembershipAmount;
+            handleMemRefundAmountChange(refundableMembershipAmount);
+            amountInput.focus();
+        }
         return;
     }
 
@@ -1963,7 +2066,7 @@ async function processMembershipRefund() {
                 branch_id: getBranchId(),
                 reference_id: purchaseId,
                 reference_type: 'membership',
-                amount: refundableMembershipAmount,
+                amount: enteredRefundAmount,
                 status: 'refunded',
                 payment_method: method,
                 notes: fullNotes || `Refund processed for membership ${purchaseId}`,
@@ -1987,7 +2090,7 @@ async function processMembershipRefund() {
         if (window.notifyEvent) {
             window.notifyEvent('payments', 'evt_payment_refunded', {
                 title: 'Membership Refunded',
-                message: `Refund of ₹${refundableMembershipAmount.toLocaleString('en-IN')} processed.`
+                message: `Refund of ₹${enteredRefundAmount.toLocaleString('en-IN')} processed.`
             });
         }
 
