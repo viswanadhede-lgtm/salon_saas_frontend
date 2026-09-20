@@ -663,7 +663,7 @@ document.addEventListener('DOMContentLoaded', () => {
     // 7.2. REFUND MODAL
     // ----------------------------------------------------------------------
     // ----------------------------------------------------------------------
-    // 7.2. RETURN MODAL (Itemized)
+    // 7.2. RETURN MODAL (Itemized 2-Column Layout)
     // ----------------------------------------------------------------------
     let currentRefundItems = [];
     
@@ -672,24 +672,129 @@ document.addEventListener('DOMContentLoaded', () => {
         const modal = document.getElementById('refundSummaryOverlay');
         if (!modal) return;
         
+        currentActionData = { action: 'refund', sale };
         modal.classList.add('active');
 
-        const subtitle = document.getElementById('rfModalSubtitle');
+        // 1. Customer Details Card
+        const custNameEl = document.getElementById('rfCustomerName');
+        const custPhoneEl = document.getElementById('rfCustomerPhone');
+        const custEmailEl = document.getElementById('rfCustomerEmail');
+        const custAvatarEl = document.getElementById('rfCustomerAvatar');
+        const viewProfBtn = document.getElementById('rfCustomerViewProfileBtn');
+
+        let custName = sale.customer || 'Walk-in';
+        let custPhone = sale.customer_phone || '—';
+        let custEmail = sale.customer_email || '—';
+
+        if (custNameEl) custNameEl.textContent = custName;
+        if (custPhoneEl) custPhoneEl.textContent = custPhone;
+        if (custEmailEl) custEmailEl.textContent = custEmail;
+
+        const initials = (custName || 'CU').split(' ').map(n => n[0]).filter(Boolean).slice(0, 2).join('').toUpperCase() || 'CU';
+        if (custAvatarEl) custAvatarEl.textContent = initials;
+
+        if (viewProfBtn) {
+            if (sale.customer_id) {
+                viewProfBtn.style.display = 'inline-flex';
+                viewProfBtn.onclick = async (e) => {
+                    e.preventDefault();
+                    if (!window.viewCustomerProfile) {
+                        try { await import('./scripts/global-customer-profile-modal.js'); } catch(e) {}
+                    }
+                    if (window.viewCustomerProfile) {
+                        window.viewCustomerProfile(sale.customer_id, custName);
+                    }
+                };
+            } else {
+                viewProfBtn.style.display = 'none';
+            }
+        }
+
+        // 2. Sale Details Card
+        const saleBadge = document.getElementById('rfSaleBadge');
+        const saleDateEl = document.getElementById('rfSaleDate');
+        const cashierEl = document.getElementById('rfCashier');
+
+        const shortId = sale.id ? String(sale.id).slice(0, 8).toUpperCase() : '—';
+        if (saleBadge) saleBadge.textContent = `#${shortId}`;
+        if (saleDateEl) saleDateEl.textContent = sale.date || '—';
+        if (cashierEl) cashierEl.textContent = sale.staff || 'System';
+
+        // 3. Products in this Sale Card
+        const itemsCountBadge = document.getElementById('rfItemsCountBadge');
         const productList = document.getElementById('rfProductList');
+        if (itemsCountBadge) itemsCountBadge.textContent = 'Loading...';
+        if (productList) productList.innerHTML = `<div style="padding: 20px; text-align: center; color: #64748b; font-size: 0.85rem;">Loading items...</div>`;
+
+        // 4. Original Payment Card
+        const origMethodEl = document.getElementById('rfOrigMethod');
+        const origTxnEl = document.getElementById('rfOrigTxnRef');
+        if (origMethodEl) {
+            const m = (sale.payment || 'cash').toLowerCase();
+            origMethodEl.textContent = m.charAt(0).toUpperCase() + m.slice(1);
+        }
+        if (origTxnEl) origTxnEl.textContent = `#${shortId}`;
+
+        // Right Column: Form Controls
         const amountDisplay = document.getElementById('rfAmountDisplay');
-        const methodDisplay = document.getElementById('rfMethodDisplay');
+        const maxRefundEl = document.getElementById('rfMaxRefundText');
+        const typeBadge = document.getElementById('rfRefundTypeBadge');
+        const methodSelect = document.getElementById('rfMethodSelect');
+        const reasonSelect = document.getElementById('rfReasonSelect');
         const noteField = document.getElementById('rfNote');
         const confirmBtn = document.getElementById('confirmRefundBtn');
 
-        // Clear UI config
-        if (subtitle) subtitle.textContent = `${sale.customer || 'Customer'} • ${sale.products_summary || 'Sale'}`;
-        if (productList) productList.innerHTML = `<div style="padding: 20px; text-align: center; color: #64748b; font-size: 0.85rem;">Loading items...</div>`;
-        if (amountDisplay) amountDisplay.textContent = '₹0';
-        if (methodDisplay) methodDisplay.value = 'Loading...';
+        if (amountDisplay) amountDisplay.textContent = '₹0.00';
+        if (maxRefundEl) maxRefundEl.textContent = '₹0';
+        if (typeBadge) {
+            typeBadge.textContent = 'Full Amount';
+            typeBadge.style.background = '#ffe4e6';
+            typeBadge.style.color = '#e11d48';
+        }
+        if (methodSelect) {
+            let m = (sale.payment || 'cash').toLowerCase();
+            if (!['cash', 'card', 'upi', 'bank_transfer'].includes(m)) m = 'cash';
+            methodSelect.value = m;
+        }
+        if (reasonSelect) {
+            reasonSelect.value = '';
+            reasonSelect.style.borderColor = '#cbd5e1';
+        }
         if (noteField) noteField.value = '';
-        if (confirmBtn) { confirmBtn.disabled = true; confirmBtn.textContent = 'Process Refund'; }
+        if (confirmBtn) {
+            confirmBtn.disabled = true;
+            confirmBtn.innerHTML = `
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="1 4 1 10 7 10"></polyline><path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10"></path></svg>
+                <span>Issue Refund</span>
+            `;
+        }
 
         try {
+            // Asynchronously fetch fresh customer record if customer_id is available
+            if (sale.customer_id) {
+                supabase.from('customers').select('*').eq('customer_id', sale.customer_id).maybeSingle()
+                    .then(({ data: c }) => {
+                        if (c) {
+                            if (c.customer_name && custNameEl) custNameEl.textContent = c.customer_name;
+                            if ((c.customer_phone || c.phone) && custPhoneEl) custPhoneEl.textContent = c.customer_phone || c.phone;
+                            if ((c.customer_email || c.email) && custEmailEl) custEmailEl.textContent = c.customer_email || c.email;
+                            const newInitials = ((c.customer_name || custName) || 'CU').split(' ').map(n => n[0]).filter(Boolean).slice(0, 2).join('').toUpperCase() || 'CU';
+                            if (custAvatarEl) custAvatarEl.textContent = newInitials;
+                        }
+                    }).catch(() => {});
+            }
+
+            // Asynchronously fetch transaction ref if available
+            supabase.from('business_transactions').select('id, payment_method')
+                .eq('reference_id', sale.id)
+                .order('paid_at', { ascending: true })
+                .limit(1)
+                .then(({ data: txs }) => {
+                    if (txs && txs.length > 0 && txs[0].id && origTxnEl) {
+                        origTxnEl.textContent = `#TXN-${String(txs[0].id).slice(0, 8).toUpperCase()}`;
+                    }
+                }).catch(() => {});
+
             // Fetch individual items comprising this sale group
             const { data: items, error } = await supabase
                 .from('sales')
@@ -698,15 +803,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
             if (error) throw error;
             currentRefundItems = items || [];
-
-            if (methodDisplay) {
-                // Payment method is stored directly on the consolidated table
-                let inferredMethod = (sale.payment || 'cash').toLowerCase();
-                if (!['cash', 'card', 'upi'].includes(inferredMethod)) {
-                    inferredMethod = 'cash';
-                }
-                methodDisplay.value = inferredMethod.charAt(0).toUpperCase() + inferredMethod.slice(1);
-            }
+            if (itemsCountBadge) itemsCountBadge.textContent = `${currentRefundItems.length} item${currentRefundItems.length === 1 ? '' : 's'}`;
 
             // Render right away
             renderRefundItems();
@@ -735,37 +832,43 @@ document.addEventListener('DOMContentLoaded', () => {
         currentRefundItems.forEach(item => {
             const isRefunded = (item.status === 'refunded');
             const itemPrice = Number(item.price || 0);
+            const initialQty = item.quantity || 1;
             
-            const row = document.createElement('div');
-            row.style.cssText = `display: flex; align-items: center; justify-content: space-between; padding: 14px 16px; min-height: 60px; flex-shrink: 0; border-bottom: 1px solid #f1f5f9; ${isRefunded ? 'background: #f8fafc; opacity: 0.6;' : ''}`;
+            const card = document.createElement('div');
+            card.className = 'rf-product-card';
+            card.dataset.id = item.id;
+            card.style.cssText = `border:1px solid ${isRefunded ? '#f1f5f9' : '#e2e8f0'}; border-radius:10px; background:${isRefunded ? '#f8fafc' : '#fff'}; padding:12px 14px; display:flex; align-items:center; justify-content:space-between; gap:12px; transition:all 0.15s; ${isRefunded ? 'opacity:0.6;' : ''}`;
             
-            row.innerHTML = `
-                <div style="display: flex; align-items: center; gap: 12px; flex: 1;">
+            card.innerHTML = `
+                <div style="display:flex; align-items:center; gap:12px; flex:1; min-width:0;">
                     <input type="checkbox" class="rf-item-cb" data-id="${item.id}" 
-                        style="width: 18px; height: 18px; flex-shrink: 0; accent-color: #dc2626; cursor: ${isRefunded ? 'not-allowed' : 'pointer'};" 
-                        ${isRefunded ? 'checked disabled' : ''}>
-                    <div style="display: flex; flex-direction: column; justify-content: center;">
-                        <p style="margin: 0 0 2px 0; font-size: 0.9rem; font-weight: 600; line-height: 1.2; color: #1e293b; text-decoration: ${isRefunded ? 'line-through' : 'none'};">${item.product_name || 'Product'}</p>
+                        style="width:19px; height:19px; flex-shrink:0; accent-color:#dc2626; cursor:${isRefunded ? 'not-allowed' : 'pointer'}; border-radius:4px;" 
+                        ${isRefunded ? 'disabled' : 'checked'}>
+                    <div style="display:flex; flex-direction:column; gap:2px; min-width:0;">
+                        <div style="font-size:0.92rem; font-weight:600; color:#0f172a; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; ${isRefunded ? 'text-decoration:line-through; color:#94a3b8;' : ''}">
+                            ${item.product_name || 'Product'}
+                        </div>
                         ${isRefunded 
-                            ? `<p style="margin: 0; font-size: 0.75rem; color: #64748b; line-height: 1;">Qty: ${item.quantity || 1}</p>`
-                            : `<div style="display: flex; align-items: center; gap: 6px; margin-top: 4px;">
-                                 <span style="font-size: 0.75rem; color: #64748b;">Return Qty:</span>
-                                 <div style="display: flex; align-items: center; border: 1px solid #cbd5e1; border-radius: 4px; overflow: hidden; height: 22px;">
-                                     <button type="button" class="rf-qty-btn minus" data-id="${item.id}" style="width: 22px; height: 100%; display: flex; align-items: center; justify-content: center; background: #f8fafc; border: none; border-right: 1px solid #cbd5e1; color: #475569; font-weight: 600; cursor: pointer;">-</button>
-                                     <input type="text" class="rf-qty-input" data-id="${item.id}" value="${item.quantity || 1}" data-max="${item.quantity || 1}" readonly style="width: 28px; height: 100%; border: none; text-align: center; font-size: 0.75rem; color: #1e293b; background: white; pointer-events: none; padding: 0;">
-                                     <button type="button" class="rf-qty-btn plus" data-id="${item.id}" style="width: 22px; height: 100%; display: flex; align-items: center; justify-content: center; background: #f8fafc; border: none; border-left: 1px solid #cbd5e1; color: #475569; font-weight: 600; cursor: pointer;">+</button>
+                            ? `<div style="font-size:0.75rem; color:#dc2626; font-weight:600;">Returned (Qty: ${initialQty})</div>`
+                            : `<div style="display:flex; align-items:center; gap:8px; font-size:0.78rem; color:#64748b;">
+                                 <span>Return quantity:</span>
+                                 <div style="display:inline-flex; align-items:center; border:1px solid #cbd5e1; border-radius:6px; overflow:hidden; height:24px; background:#fff;">
+                                     <button type="button" class="rf-qty-btn minus" data-id="${item.id}" style="width:24px; height:100%; display:flex; align-items:center; justify-content:center; background:#f8fafc; border:none; border-right:1px solid #cbd5e1; color:#475569; font-weight:700; cursor:pointer; font-size:0.85rem;" onmouseover="this.style.background='#f1f5f9'" onmouseout="this.style.background='#f8fafc'">−</button>
+                                     <input type="text" class="rf-qty-input" data-id="${item.id}" value="${initialQty}" data-max="${initialQty}" readonly style="width:32px; height:100%; border:none; text-align:center; font-size:0.78rem; font-weight:600; color:#0f172a; background:#fff; pointer-events:none; padding:0;">
+                                     <button type="button" class="rf-qty-btn plus" data-id="${item.id}" style="width:24px; height:100%; display:flex; align-items:center; justify-content:center; background:#f8fafc; border:none; border-left:1px solid #cbd5e1; color:#475569; font-weight:700; cursor:pointer; font-size:0.85rem;" onmouseover="this.style.background='#f1f5f9'" onmouseout="this.style.background='#f8fafc'">+</button>
                                  </div>
-                                 <span style="font-size: 0.7rem; color: #94a3b8;">/ ${item.quantity || 1}</span>
+                                 <span style="font-size:0.75rem; color:#94a3b8;">of ${initialQty}</span>
                                </div>`
                         }
                     </div>
                 </div>
-                <div style="font-weight: 600; color: #1e293b; white-space: nowrap; flex-shrink: 0; display: flex; flex-direction: column; align-items: flex-end;">
-                    ${isRefunded ? `<span style="color: #dc2626; font-size: 0.75rem; text-transform: uppercase;">Returned</span>` : ''}
-                    <div class="rf-row-price" data-id="${item.id}" style="margin-top: 2px;"></div>
+                <div style="text-align:right; flex-shrink:0;">
+                    <div class="rf-row-price" data-id="${item.id}" style="font-size:0.95rem; font-weight:700; color:#0f172a;">
+                        ₹0
+                    </div>
                 </div>
             `;
-            list.appendChild(row);
+            list.appendChild(card);
         });
 
         // Attach recalculation
@@ -790,7 +893,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 
                 input.value = val;
                 
-                // If they interact with quantity, instinctively they want to return it. Auto-check the combo.
+                // If they interact with quantity, auto-check the row
                 const cb = document.querySelector(`.rf-item-cb[data-id="${id}"]`);
                 if (cb && !cb.checked) {
                     cb.checked = true;
@@ -806,46 +909,85 @@ document.addEventListener('DOMContentLoaded', () => {
     function calculateRefundTotal() {
         let total = 0;
         let selectedCount = 0;
+        let unrefundedTotal = 0;
+        let unrefundedCount = 0;
         
-        // Update individual row prices and calculate global total
         currentRefundItems.forEach(item => {
             const isRefunded = (item.status === 'refunded');
             const price = Number(item.price || 0);
             
-            let displayVal = 0;
-            
             if (isRefunded) {
-                displayVal = Number(item.total_amount || 0);
+                const priceDisplay = document.querySelector(`.rf-row-price[data-id="${item.id}"]`);
+                if (priceDisplay) {
+                    priceDisplay.textContent = `₹${Number(item.total_amount || 0).toLocaleString('en-IN')}`;
+                    priceDisplay.style.color = '#94a3b8';
+                }
             } else {
+                unrefundedCount++;
+                const maxQty = item.quantity || 1;
+                unrefundedTotal += price * maxQty;
+
                 const cb = document.querySelector(`.rf-item-cb[data-id="${item.id}"]`);
                 const qtyInput = document.querySelector(`.rf-qty-input[data-id="${item.id}"]`);
+                const card = document.querySelector(`.rf-product-card[data-id="${item.id}"]`);
                 
-                let qty = qtyInput ? parseInt(qtyInput.value) || 1 : (item.quantity || 1);
-                
-                // Bounds enforcement
-                if (qty > (item.quantity || 1)) qty = item.quantity || 1;
+                let qty = qtyInput ? parseInt(qtyInput.value) || 1 : maxQty;
+                if (qty > maxQty) qty = maxQty;
                 if (qty < 1) qty = 1;
                 if (qtyInput && parseInt(qtyInput.value) !== qty) qtyInput.value = qty;
                 
-                displayVal = price * qty;
+                const displayVal = price * qty;
+                const priceDisplay = document.querySelector(`.rf-row-price[data-id="${item.id}"]`);
+                if (priceDisplay) {
+                    priceDisplay.textContent = `₹${displayVal.toLocaleString('en-IN')}`;
+                    priceDisplay.style.color = (cb && cb.checked) ? '#0f172a' : '#94a3b8';
+                }
+
+                if (card) {
+                    card.style.borderColor = (cb && cb.checked) ? '#fca5a5' : '#e2e8f0';
+                    card.style.background = (cb && cb.checked) ? '#fff' : '#fafafa';
+                }
                 
                 if (cb && cb.checked) {
                     total += displayVal;
                     selectedCount++;
                 }
             }
-            
-            const priceDisplay = document.querySelector(`.rf-row-price[data-id="${item.id}"]`);
-            if (priceDisplay) {
-                priceDisplay.textContent = `₹${displayVal.toLocaleString('en-IN')}`;
-            }
         });
         
         const amountDisplay = document.getElementById('rfAmountDisplay');
-        if (amountDisplay) amountDisplay.textContent = `₹${total.toLocaleString('en-IN')}`;
+        if (amountDisplay) {
+            amountDisplay.textContent = `₹${total.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+        }
+
+        const maxRefundText = document.getElementById('rfMaxRefundText');
+        if (maxRefundText) {
+            maxRefundText.textContent = `₹${unrefundedTotal.toLocaleString('en-IN')}`;
+        }
+
+        const typeBadge = document.getElementById('rfRefundTypeBadge');
+        if (typeBadge) {
+            if (selectedCount === 0) {
+                typeBadge.textContent = 'No Items';
+                typeBadge.style.background = '#f1f5f9';
+                typeBadge.style.color = '#64748b';
+            } else if (total === unrefundedTotal && selectedCount === unrefundedCount) {
+                typeBadge.textContent = 'Full Amount';
+                typeBadge.style.background = '#ffe4e6';
+                typeBadge.style.color = '#e11d48';
+            } else {
+                typeBadge.textContent = 'Partial Refund';
+                typeBadge.style.background = '#fef3c7';
+                typeBadge.style.color = '#d97706';
+            }
+        }
         
         const btn = document.getElementById('confirmRefundBtn');
-        if (btn) btn.disabled = (selectedCount === 0);
+        if (btn) {
+            btn.disabled = (selectedCount === 0 || total <= 0);
+            btn.style.opacity = (selectedCount === 0 || total <= 0) ? '0.5' : '1';
+            btn.style.cursor = (selectedCount === 0 || total <= 0) ? 'not-allowed' : 'pointer';
+        }
     }
 
     // ----------------------------------------------------------------------
@@ -1011,24 +1153,40 @@ document.addEventListener('DOMContentLoaded', () => {
     async function processRefund() {
         if (!currentActionData || !currentActionData.sale) return;
 
+        const reasonSelect = document.getElementById('rfReasonSelect');
+        const reason = reasonSelect ? reasonSelect.value.trim() : '';
+        if (!reason) {
+            showToast('Please select a refund reason.', '#dc2626');
+            if (reasonSelect) {
+                reasonSelect.focus();
+                reasonSelect.style.borderColor = '#ef4444';
+                setTimeout(() => { if (reasonSelect) reasonSelect.style.borderColor = '#cbd5e1'; }, 2500);
+            }
+            return;
+        }
+
         const checkedBoxes = Array.from(document.querySelectorAll('.rf-item-cb:not(:disabled):checked'));
-        if (checkedBoxes.length === 0) return;
+        if (checkedBoxes.length === 0) {
+            showToast('Please select at least one item to return.', '#dc2626');
+            return;
+        }
 
         const confirmBtn = document.getElementById('confirmRefundBtn');
         if (confirmBtn) {
-            confirmBtn.textContent = 'Processing...';
             confirmBtn.disabled = true;
+            confirmBtn.innerHTML = `<span>Processing...</span>`;
         }
 
         try {
             const saleId = currentActionData.sale.id; // The Parent Group ID
             const note = document.getElementById('rfNote')?.value.trim();
-            const methodDisplay = document.getElementById('rfMethodDisplay');
-            let method = methodDisplay ? methodDisplay.value.toLowerCase() : 'cash';
+            const methodSelect = document.getElementById('rfMethodSelect');
+            let method = methodSelect ? methodSelect.value.toLowerCase() : 'cash';
             
             // ENSURE CHECK CONSTRAINT COMPLIANCE
-            if (!['cash', 'card', 'upi'].includes(method)) method = 'cash';
+            if (!['cash', 'card', 'upi', 'bank_transfer'].includes(method)) method = 'cash';
 
+            const fullNotes = reason + (note ? ` - ${note}` : '');
             const ledgerRows = [];
             const saleUpdatePromises = [];
             
@@ -1091,7 +1249,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     amount: Math.abs(refundAmount),
                     status: 'refunded',
                     payment_method: method,
-                    notes: note || `Returned: ${itemObj.product_name || 'Item'} (Qty: ${refundQty})`,
+                    notes: fullNotes ? `${fullNotes} (Returned: ${itemObj.product_name || 'Item'} x${refundQty})` : `Returned: ${itemObj.product_name || 'Item'} (Qty: ${refundQty})`,
                     paid_at: new Date().toISOString()
                 });
             }
@@ -1124,7 +1282,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     itemsReturned: checkedBoxes.length
                 });
             }
-            document.getElementById('refundSummaryOverlay').classList.remove('active');
+            closeRefundModal();
             
             // Re-fetch to sync table badges and metrics
             await fetchSalesHistory();
@@ -1137,8 +1295,11 @@ document.addEventListener('DOMContentLoaded', () => {
             showToast('Failed to process return: ' + (err.message || 'Unknown error'), '#dc2626');
         } finally {
             if (confirmBtn) {
-                confirmBtn.textContent = 'Process Refund';
                 confirmBtn.disabled = false;
+                confirmBtn.innerHTML = `
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="1 4 1 10 7 10"></polyline><path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10"></path></svg>
+                    <span>Issue Refund</span>
+                `;
             }
         }
     }
