@@ -10,8 +10,10 @@ let editLiveServices      = [];
 let editLivePackages      = [];
 let editLiveStaff         = [];
 let editRowCounter        = 0;
-let editActiveBooking     = null;   // the grouped booking record from liveBookingsData
-let originalServiceRowIds = new Set(); // tracks DB row ids fetched when modal opened
+let editActiveBooking           = null;   // the grouped booking record from liveBookingsData
+let originalServiceRowIds       = new Set(); // tracks DB row ids fetched when modal opened
+let allowCompleteWithoutPayment = false;
+let previousEditBkStatus        = 'booked';
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
 function getCompanyId() {
@@ -556,6 +558,30 @@ function setupModals() {
         </div>`);
     }
 
+    if (!document.getElementById('paymentNotCompletedModal')) {
+        document.body.insertAdjacentHTML('beforeend', `
+        <div class="modal-overlay" id="paymentNotCompletedModal" style="z-index:10005;backdrop-filter:blur(6px);">
+            <div class="modal-container" style="background:#fff;border-radius:14px;padding:24px 28px;width:580px !important;max-width:92vw !important;box-shadow:0 25px 50px -12px rgba(0,0,0,0.25);border:1px solid #e2e8f0;text-align:left;">
+                <div style="display:flex;align-items:center;gap:10px;">
+                    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#ea580c" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0;">
+                        <circle cx="12" cy="12" r="10"></circle>
+                        <line x1="12" y1="8" x2="12" y2="12"></line>
+                        <line x1="12" y1="16" x2="12.01" y2="16"></line>
+                    </svg>
+                    <h3 style="font-size:1.1rem;font-weight:700;color:#0f172a;margin:0;">Payment not completed</h3>
+                </div>
+                <p style="margin:14px 0 22px 0;font-size:0.92rem;color:#334155;line-height:1.55;">
+                    This booking has an outstanding payment of <strong id="pncModalAmount" style="color:#0f172a;font-weight:700;">₹0</strong>. You can collect the payment now or mark the service as completed and collect it later.
+                </p>
+                <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;">
+                    <button type="button" id="btnPncCollectPayment" style="background:#dcfce7;color:#15803d;border:1px solid #bbf7d0;border-radius:20px;padding:7px 18px;font-size:0.85rem;font-weight:600;cursor:pointer;transition:all 0.15s;" onmouseover="this.style.background='#bbf7d0'" onmouseout="this.style.background='#dcfce7'">Collect Payment</button>
+                    <button type="button" id="btnPncCompleteWithoutPayment" style="background:#f1f5f9;color:#334155;border:1px solid #e2e8f0;border-radius:20px;padding:7px 18px;font-size:0.85rem;font-weight:500;cursor:pointer;transition:all 0.15s;" onmouseover="this.style.background='#e2e8f0'" onmouseout="this.style.background='#f1f5f9'">Complete Without Payment</button>
+                    <button type="button" id="btnPncGoBack" style="background:#f1f5f9;color:#334155;border:1px solid #e2e8f0;border-radius:20px;padding:7px 18px;font-size:0.85rem;font-weight:500;cursor:pointer;transition:all 0.15s;" onmouseover="this.style.background='#e2e8f0'" onmouseout="this.style.background='#f1f5f9'">Go Back</button>
+                </div>
+            </div>
+        </div>`);
+    }
+
     if (!document.getElementById('refundBookingModal')) {
         document.body.insertAdjacentHTML('beforeend', `
         <div class="modal-overlay" id="refundBookingModal" style="z-index:9999;">
@@ -1086,6 +1112,82 @@ function attachEventListeners() {
     const profModal = document.getElementById('customerProfileBookingModal');
     profModal?.addEventListener('click', (e) => { if (e.target === profModal) profModal.classList.remove('active'); });
 
+    // ── Payment Not Completed Modal Handlers ────────────────────────────────
+    function showPaymentNotCompletedModal() {
+        const container = document.getElementById('editServiceRowsContainer');
+        const svcRowEls = container?.querySelectorAll('.edit-service-row');
+        let totalAmount = 0;
+        if (svcRowEls && svcRowEls.length > 0) {
+            svcRowEls.forEach(r => {
+                totalAmount += Number(r.querySelector('.edit-svc-price')?.value || 0);
+            });
+        }
+        if (!totalAmount) {
+            totalAmount = Number(editActiveBooking?.total_price || editActiveBooking?.price || 0);
+        }
+
+        const amountEl = document.getElementById('pncModalAmount');
+        if (amountEl) {
+            amountEl.textContent = '₹' + totalAmount.toLocaleString('en-IN');
+        }
+
+        const modal = document.getElementById('paymentNotCompletedModal');
+        if (modal) {
+            modal.classList.add('active');
+        }
+    }
+
+    const pncModal = document.getElementById('paymentNotCompletedModal');
+
+    document.getElementById('btnPncCollectPayment')?.addEventListener('click', () => {
+        pncModal?.classList.remove('active');
+        editModal?.classList.remove('active');
+        const bookingId = document.getElementById('editBookingId')?.value || editActiveBooking?.booking_id || editActiveBooking?.id;
+        if (bookingId && window.openBookingPayment) {
+            window.openBookingPayment(bookingId);
+        }
+    });
+
+    document.getElementById('btnPncCompleteWithoutPayment')?.addEventListener('click', () => {
+        pncModal?.classList.remove('active');
+        allowCompleteWithoutPayment = true;
+        const statusSelect = document.getElementById('editBkStatus');
+        if (statusSelect) statusSelect.value = 'completed';
+        if (editForm) {
+            if (typeof editForm.requestSubmit === 'function') {
+                editForm.requestSubmit();
+            } else {
+                editForm.dispatchEvent(new Event('submit', { cancelable: true, bubbles: true }));
+            }
+        }
+    });
+
+    const revertStatusAndClosePnc = () => {
+        pncModal?.classList.remove('active');
+        const statusSelect = document.getElementById('editBkStatus');
+        if (statusSelect) {
+            statusSelect.value = previousEditBkStatus || (editActiveBooking?.status || 'booked').toLowerCase();
+        }
+    };
+
+    document.getElementById('btnPncGoBack')?.addEventListener('click', revertStatusAndClosePnc);
+    pncModal?.addEventListener('click', (e) => {
+        if (e.target === pncModal) revertStatusAndClosePnc();
+    });
+
+    const editBkStatusSelect = document.getElementById('editBkStatus');
+    editBkStatusSelect?.addEventListener('change', (e) => {
+        const newStatus = e.target.value.toLowerCase();
+        if (newStatus === 'completed' && previousEditBkStatus !== 'completed') {
+            const payment = (editActiveBooking?.payment_status || editActiveBooking?.payment || '').toLowerCase();
+            if (payment !== 'paid' && !allowCompleteWithoutPayment) {
+                showPaymentNotCompletedModal();
+                return;
+            }
+        }
+        previousEditBkStatus = newStatus;
+    });
+
     // ── Update Booking → Supabase PATCH ──────────────────────────────────────
     editForm?.addEventListener('submit', async (e) => {
         e.preventDefault();
@@ -1094,6 +1196,13 @@ function attachEventListeners() {
         const time      = document.getElementById('editBkTime').value;
         const status    = document.getElementById('editBkStatus')?.value || editActiveBooking?.status || 'booked';
         const notes     = document.getElementById('editBkNotes').value.trim();
+
+        // Check if completing an unpaid booking
+        const payment   = (editActiveBooking?.payment_status || editActiveBooking?.payment || '').toLowerCase();
+        if (status.toLowerCase() === 'completed' && previousEditBkStatus !== 'completed' && payment !== 'paid' && !allowCompleteWithoutPayment) {
+            showPaymentNotCompletedModal();
+            return;
+        }
 
         const container = document.getElementById('editServiceRowsContainer');
         const svcRowEls = container?.querySelectorAll('.edit-service-row');
@@ -1228,6 +1337,7 @@ function attachEventListeners() {
             console.error('[EditBooking] Update error:', err);
             window.toast && window.toast('Error updating booking: ' + (err.message || 'Unknown error'));
         } finally {
+            allowCompleteWithoutPayment = false;
             if (btn) { btn.textContent = orig; btn.disabled = false; }
         }
     });
@@ -1725,8 +1835,10 @@ function attachEventListeners() {
         document.getElementById('editBkNotes').value = b.notes || '';
 
         // Set the status dropdown
+        allowCompleteWithoutPayment = false;
+        previousEditBkStatus = (b.status || 'booked').toLowerCase();
         const statusSelect = document.getElementById('editBkStatus');
-        if (statusSelect) statusSelect.value = (b.status || 'booked').toLowerCase();
+        if (statusSelect) statusSelect.value = previousEditBkStatus;
 
         // Restrict Date & Time to Future
         const todayStr = todayISO();
