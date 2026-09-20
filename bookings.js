@@ -687,43 +687,7 @@ function setupModals() {
         </div>`);
     }
 
-    if (!document.getElementById('refundBookingModal')) {
-        document.body.insertAdjacentHTML('beforeend', `
-        <div class="modal-overlay" id="refundBookingModal" style="z-index:9999;">
-            <div class="modal-container" style="width:400px;max-width:95vw;">
-                <div class="modal-header">
-                    <div class="header-titles">
-                        <h2 style="color:#e11d48;">Process Refund</h2>
-                        <p class="subtitle" id="refundModalSubtitle">Loading booking details...</p>
-                    </div>
-                    <button class="modal-close" id="btnCloseRefundModal">
-                        <i data-feather="x"></i>
-                    </button>
-                </div>
-                <div class="modal-body" style="padding:1.5rem;">
-                    <div style="background:#fff1f2; border:1px solid #fecdd3; border-radius:12px; padding:16px; margin-bottom:20px; display:flex; flex-direction:column; gap:8px;">
-                        <div style="display:flex; justify-content:space-between; align-items:center;">
-                            <span style="font-size:0.85rem; color:#9f1239; font-weight:600; text-transform:uppercase; letter-spacing:0.02em;">Refundable Amount</span>
-                            <span style="font-size:1.25rem; color:#e11d48; font-weight:700;" id="refundAmountDisplay">₹0</span>
-                        </div>
-                    </div>
-                    <div class="form-group">
-                        <label class="form-label">Payment Method Used</label>
-                        <input type="text" id="refundMethodDisplay" class="form-input" readonly style="background:#f8fafc; cursor:not-allowed;">
-                    </div>
-                    <div class="form-group">
-                        <label class="form-label">Refund Note</label>
-                        <textarea id="refundNote" class="form-input" placeholder="Optional notes about the refund..." style="min-height:80px;"></textarea>
-                    </div>
-                </div>
-                <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" id="btnCancelRefund">Cancel</button>
-                    <button type="button" class="btn btn-primary" id="btnConfirmRefund" style="background:#e11d48; border-color:#e11d48;">Issue Refund</button>
-                </div>
-            </div>
-        </div>`);
-        wireRefundModal();
-    }
+    // Note: #refundBookingModal is injected and managed by scripts/rebook-refund-modal.js
 
     // ── Cancelled Booking Modal ───────────────────────────────────────────────
     if (!document.getElementById('cancelledBookingModal')) {
@@ -995,127 +959,19 @@ function syncEditServiceDropdowns() {
 }
 
 // ─── Refund Logic ────────────────────────────────────────────────────────────
-let activeRefundBookingId = null;
-let refundableAmount = 0;
-
-window.openRefundModal = async function(bookingId) {
-    activeRefundBookingId = bookingId;
-    const b = (window.liveBookingsData || []).find(x => (x.booking_id || x.id) == bookingId);
-    if (!b) return;
-
-    const modal = document.getElementById('refundBookingModal');
-    const subtitle = document.getElementById('refundModalSubtitle');
-    const amountDisp = document.getElementById('refundAmountDisplay');
-    const methodDisp = document.getElementById('refundMethodDisplay');
-    const noteField = document.getElementById('refundNote');
-
-    subtitle.textContent = `${b.customer_name || 'Customer'} • ${b.service_name || 'Service'}`;
-    amountDisp.textContent = 'Calculating...';
-    methodDisp.value = 'Loading...';
-    noteField.value = '';
-
-    modal.classList.add('active');
-
-    try {
-        // Fetch transactions for this booking
-        const { data, error } = await supabase
-            .from('business_transactions')
-            .select('amount, payment_method, status')
-            .eq('reference_id', bookingId)
-            .eq('reference_type', 'booking');
-
-        if (error) throw error;
-
-        // Sum up only actual payments and subtract refunds
-        refundableAmount = (data || []).reduce((sum, tx) => {
-            const val = Number(tx.amount || 0);
-            const status = (tx.status || '').toLowerCase().trim();
-            
-            if (status === 'paid') return sum + val;
-            if (status === 'refunded') return sum - val;
-            return sum; // Ignore 'pending' or other statuses
-        }, 0);
-        
-        if (refundableAmount < 0) refundableAmount = 0; // Safeguard
-
-        amountDisp.textContent = `₹${refundableAmount.toLocaleString('en-IN')}`;
-        
-        // Use the last payment method as a hint
-        const lastMethod = data && data.length > 0 ? data[data.length - 1].payment_method : 'Multiple';
-        methodDisp.value = lastMethod || 'N/A';
-
-        const confirmBtn = document.getElementById('btnConfirmRefund');
-        if (refundableAmount <= 0) {
-            amountDisp.style.color = '#94a3b8';
-            if (confirmBtn) {
-                confirmBtn.disabled = true;
-                confirmBtn.textContent = 'Nothing to Refund';
+// Handled by shared scripts/rebook-refund-modal.js with modern 2-column layout.
+if (!window.openRefundModal) {
+    window.openRefundModal = async function(bookingId, optBookingObj) {
+        try {
+            await import('./scripts/rebook-refund-modal.js');
+            if (window.openRefundModal) {
+                return window.openRefundModal(bookingId, optBookingObj);
             }
-        } else {
-            amountDisp.style.color = '#e11d48';
-            if (confirmBtn) {
-                confirmBtn.disabled = false;
-                confirmBtn.textContent = 'Issue Refund';
-            }
+        } catch (err) {
+            console.error('[Refund] Failed to load rebook-refund-modal.js:', err);
         }
-    } catch (err) {
-        console.error('[Refund] Error fetching transaction total:', err);
-        amountDisp.textContent = 'Error';
-        amountDisp.style.color = '#ef4444';
-    }
-};
-
-window.processRefund = async function() {
-    if (!activeRefundBookingId || refundableAmount <= 0) return;
-
-    const btn = document.getElementById('btnConfirmRefund');
-    const originalText = btn.textContent;
-    btn.disabled = true;
-    btn.textContent = 'Processing...';
-
-    try {
-        const companyId = getCompanyId();
-        const branchId = getBranchId();
-        const note = document.getElementById('refundNote').value.trim();
-
-        // Record a negative transaction
-        const { error } = await supabase
-            .from('business_transactions')
-            .insert({
-                company_id: companyId,
-                branch_id: branchId,
-                reference_id: activeRefundBookingId,
-                reference_type: 'booking',
-                amount: Math.abs(refundableAmount), // Positive amount for refund as requested by user
-                currency: 'INR',
-                payment_method: (document.getElementById('refundMethodDisplay')?.value || 'cash').toLowerCase(),
-                status: 'refunded',
-                notes: note || 'Refund processed for cancelled booking',
-                paid_at: new Date().toISOString()
-            });
-
-        if (error) throw error;
-
-        // Success!
-        document.getElementById('refundBookingModal').classList.remove('active');
-        if (window.toast) {
-            window.toast('✓ Refund processed successfully');
-        } else {
-            alert('Refund processed successfully');
-        }
-
-        // Trigger refresh
-        document.dispatchEvent(new CustomEvent('payment-recorded', {
-            detail: { bookingId: activeRefundBookingId, amount: -refundableAmount }
-        }));
-
-    } catch (err) {
-        console.error('[Refund] Failed to process refund:', err);
-        alert('Failed to process refund: ' + (err.message || 'Unknown error'));
-        btn.disabled = false;
-        btn.textContent = originalText;
-    }
-};
+    };
+}
 
 // ─── Attach Event Listeners ───────────────────────────────────────────────────
 
@@ -1307,20 +1163,7 @@ function attachEventListeners() {
         }
     });
 
-    // Refund Modal Listeners
-    const refundModal = document.getElementById('refundBookingModal');
-    const btnCancelRefund = document.getElementById('btnCancelRefund');
-    const btnCloseRefund = document.getElementById('btnCloseRefundModal');
-    const btnConfirmRefund = document.getElementById('btnConfirmRefund');
-
-    const closeRefund = () => refundModal?.classList.remove('active');
-    
-    btnCancelRefund?.addEventListener('click', closeRefund);
-    btnCloseRefund?.addEventListener('click', closeRefund);
-    btnConfirmRefund?.addEventListener('click', window.processRefund);
-    refundModal?.addEventListener('click', (e) => {
-        if (e.target === refundModal) closeRefund();
-    });
+    // Refund Modal Listeners — close/confirm wired inside scripts/rebook-refund-modal.js
 
     const editModal = document.getElementById('editBookingModal');
     const editForm  = document.getElementById('editBookingForm');
@@ -2643,137 +2486,14 @@ export async function initBookings() {
 }
 
 // ─── Refund Logic ─────────────────────────────────────────────────────────────
-let currentRefundBookingId = null;
-let currentRefundAmount = 0;
-
+// triggerRefund delegates to the shared premium 2-column modal (rebook-refund-modal.js)
 window.triggerRefund = async function(bookingId) {
-    const b = liveBookingsData.find(x => String(x.booking_id) === String(bookingId));
-    if (!b) {
-        console.error("No booking found for", bookingId, liveBookingsData.slice(0,2));
-        return;
+    if (typeof window.openRefundModal === 'function') {
+        const b = (window.liveBookingsData || []).find(x => String(x.booking_id || x.id) === String(bookingId));
+        return window.openRefundModal(bookingId, b || null);
     }
-
-    currentRefundBookingId = bookingId;
-    currentRefundAmount = 0;
-
-    const modal = document.getElementById('refundBookingModal');
-    if (modal) modal.classList.add('active');
-
-    const btn = document.getElementById('btnConfirmRefund');
-    if (btn) { btn.textContent = 'Issue Refund'; btn.disabled = true; }
-
-    const amountDisplay = document.getElementById('refundAmountDisplay');
-    if (amountDisplay) amountDisplay.textContent = 'Calculating...';
-
-    const methodDisplay = document.getElementById('refundMethodDisplay');
-    if (methodDisplay) methodDisplay.value = 'Loading...';
-
-    try {
-        const { data: txs, error } = await supabase
-            .from('business_transactions')
-            .select('amount, payment_method')
-            .eq('reference_id', bookingId)
-            .in('status', ['paid', 'completed']);
-
-        if (error) throw error;
-
-        let totalPaid = 0;
-        let lastMethod = 'cash';
-        if (txs && txs.length > 0) {
-            txs.forEach(t => { totalPaid += Number(t.amount || 0); });
-            lastMethod = txs[0].payment_method || 'cash';
-        }
-
-        currentRefundAmount = totalPaid;
-        
-        if (amountDisplay) {
-            amountDisplay.textContent = `₹${currentRefundAmount.toLocaleString('en-IN')}`;
-        }
-
-        if (methodDisplay) {
-            let inferred = lastMethod.toLowerCase();
-            if (!['cash', 'card', 'upi'].includes(inferred)) inferred = 'cash';
-            methodDisplay.value = inferred.charAt(0).toUpperCase() + inferred.slice(1);
-        }
-
-        if (btn) btn.disabled = (currentRefundAmount <= 0);
-
-    } catch (err) {
-        console.error('Error fetching refund amount:', err);
-        if (amountDisplay) amountDisplay.textContent = 'Error';
-    }
+    console.error('[Refund] openRefundModal not available — rebook-refund-modal.js may not be loaded.');
 };
-
-const closeRefundModal = () => {
-    const modal = document.getElementById('refundBookingModal');
-    if (modal) modal.classList.remove('active');
-    currentRefundBookingId = null;
-};
-
-function wireRefundModal() {
-    const btnCancelRefund = document.getElementById('btnCancelRefund');
-    if (btnCancelRefund) btnCancelRefund.addEventListener('click', closeRefundModal);
-
-    const btnCloseRefundModal = document.getElementById('btnCloseRefundModal');
-    if (btnCloseRefundModal) btnCloseRefundModal.addEventListener('click', closeRefundModal);
-
-    const btnConfirmRefund = document.getElementById('btnConfirmRefund');
-    if (btnConfirmRefund) {
-        btnConfirmRefund.addEventListener('click', async () => {
-            if (!currentRefundBookingId) return;
-
-            const btn = document.getElementById('btnConfirmRefund');
-            if (btn) { btn.textContent = 'Processing...'; btn.disabled = true; }
-
-            const noteEl = document.getElementById('refundNote');
-            const note = noteEl ? noteEl.value.trim() : '';
-
-            const methodEl = document.getElementById('refundMethodDisplay');
-            let method = methodEl ? methodEl.value.toLowerCase() : 'cash';
-            if (!['cash', 'card', 'upi'].includes(method)) method = 'cash';
-
-            try {
-                const { error: txError } = await supabase.from('business_transactions').insert([{
-                    company_id: getCompanyId(),
-                    branch_id: getBranchId(),
-                    reference_id: currentRefundBookingId,
-                    reference_type: 'booking',
-                    amount: Math.abs(currentRefundAmount),
-                    status: 'refunded',
-                    payment_method: method,
-                    notes: note || 'Refund for cancelled/no-show booking',
-                    paid_at: new Date().toISOString()
-                }]);
-
-                if (txError) throw txError;
-                // payment_status is computed from the view — no separate update needed
-
-                const toast = document.getElementById('toastNotification');
-                if (toast) {
-                    toast.textContent = 'Refund processed successfully!';
-                    toast.style.background = '#10b981';
-                    toast.classList.add('show');
-                    setTimeout(() => toast.classList.remove('show'), 3000);
-                }
-
-                closeRefundModal();
-                await fetchBookings();
-
-            } catch (err) {
-                console.error('Refund Error:', err);
-                const toast = document.getElementById('toastNotification');
-                if (toast) {
-                    toast.textContent = 'Failed to process refund.';
-                    toast.style.background = '#ef4444';
-                    toast.classList.add('show');
-                    setTimeout(() => toast.classList.remove('show'), 3000);
-                }
-            } finally {
-                if (btn) { btn.textContent = 'Issue Refund'; btn.disabled = false; }
-            }
-        });
-    }
-}
 
 // ─── Calendar Logic ───────────────────────────────────────────────────────────
 let currentCalDate = new Date(); // tracks the viewed month/year in the calendar tab
