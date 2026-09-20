@@ -204,10 +204,11 @@ html:has(.dashboard-body) {
     flex-shrink: 0;
 }
 
-/* Header Left (Branch Switcher) */
+/* Header Left (Branch Switcher + Date Chip) */
 .header-left {
     display: flex;
     align-items: center;
+    gap: 0.75rem;
 }
 
 .branch-switcher {
