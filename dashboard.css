@@ -213,25 +213,32 @@ html:has(.dashboard-body) {
 .branch-switcher {
     display: flex;
     align-items: center;
-    gap: 0.5rem;
-    padding: 0.35rem 0.75rem;
+    gap: 0.6rem;
+    padding: 0.5rem 0.95rem;
     background-color: #f8fafc;
     border: 1px solid var(--border);
-    border-radius: 0.5rem;
+    border-radius: 0.6rem;
     color: var(--text-main);
+    transition: all 0.2s ease;
+}
+
+.branch-switcher:hover {
+    background-color: #f1f5f9;
+    border-color: #cbd5e1;
 }
 
 .branch-icon {
-    width: 16px;
-    height: 16px;
+    width: 18px;
+    height: 18px;
     color: var(--text-muted);
+    flex-shrink: 0;
 }
 
 .branch-select {
     border: none;
     background: transparent;
-    font-weight: 500;
-    font-size: 0.9rem;
+    font-weight: 600;
+    font-size: 0.95rem;
     font-family: inherit;
     color: var(--text-main);
     cursor: pointer;
@@ -239,9 +246,11 @@ html:has(.dashboard-body) {
     padding-right: 0.5rem;
 }
 
-/* Header Center (Search) */
-.header-center {
-    flex: 0 1 400px;
+/* Header Center (Search Bar) - Removed globally */
+.top-header .header-center,
+.top-header .search-bar,
+.header-center:has(.search-bar) {
+    display: none !important;
 }
 
 .search-bar {
@@ -279,20 +288,25 @@ html:has(.dashboard-body) {
 .header-right {
     display: flex;
     align-items: center;
-    gap: 1.25rem;
+    gap: 1.15rem;
 }
 
-.plan-badge {
+.plan-badge,
+.top-header .plan-badge,
+#headerPlanBadge {
     background-color: #fdf4ff;
     /* Fuchsia 50 */
     color: var(--accent);
-    font-size: 0.75rem;
-    font-weight: 600;
-    padding: 0.25rem 0.75rem;
-    border-radius: 1rem;
+    font-size: 0.8rem;
+    font-weight: 700;
+    padding: 0.38rem 0.95rem;
+    border-radius: 1.25rem;
     border: 1px solid #fae8ff;
     text-transform: uppercase;
-    letter-spacing: 0.05em;
+    letter-spacing: 0.06em;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
 }
 
 .icon-btn {
@@ -301,35 +315,68 @@ html:has(.dashboard-body) {
     color: var(--text-muted);
     cursor: pointer;
     position: relative;
-    display: flex;
+    display: inline-flex;
     align-items: center;
     justify-content: center;
-    padding: 0.25rem;
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    padding: 0;
+    transition: all 0.2s ease;
 }
 
 .icon-btn:hover {
     color: var(--text-main);
+    background-color: #f1f5f9;
 }
 
-.icon-btn i {
-    width: 20px;
-    height: 20px;
+.icon-btn i,
+.icon-btn svg {
+    width: 22px;
+    height: 22px;
 }
 
 .notification-dot {
     position: absolute;
-    top: 2px;
-    right: 4px;
-    width: 6px;
-    height: 6px;
+    top: 6px;
+    right: 6px;
+    width: 8px;
+    height: 8px;
     background-color: #ef4444;
     /* Red */
     border-radius: 50%;
+    border: 2px solid #ffffff;
 }
 
-.avatar {
-    width: 36px;
-    height: 36px;
+.notif-badge {
+    position: absolute;
+    top: -2px;
+    right: -3px;
+    background: #ef4444;
+    color: #ffffff;
+    font-size: 0.72rem;
+    font-weight: 700;
+    min-width: 18px;
+    height: 18px;
+    border-radius: 9px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0 4px;
+    border: 2px solid #ffffff;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.15);
+    pointer-events: none;
+    z-index: 2;
+    box-sizing: border-box;
+    line-height: 1;
+}
+
+.avatar,
+.top-header .avatar,
+.user-profile .avatar,
+#avatarBtn {
+    width: 42px;
+    height: 42px;
     border-radius: 50%;
     overflow: hidden;
     cursor: pointer;
@@ -341,6 +388,7 @@ html:has(.dashboard-body) {
     -webkit-mask-image: -webkit-radial-gradient(white, black);
     mask-image: radial-gradient(white, black);
     backface-visibility: hidden;
+    flex-shrink: 0;
 }
 
 .avatar:hover {
@@ -1086,10 +1134,10 @@ html:has(.dashboard-body) {
 .qa-btn {
     display: inline-flex;
     align-items: center;
-    gap: 0.4rem;
-    padding: 0.4rem 0.85rem;
-    border-radius: 0.5rem;
-    font-size: 0.8rem;
+    gap: 0.5rem;
+    padding: 0.52rem 1.1rem;
+    border-radius: 0.6rem;
+    font-size: 0.88rem;
     font-weight: 600;
     font-family: inherit;
     cursor: pointer;
@@ -1099,8 +1147,8 @@ html:has(.dashboard-body) {
 }
 
 .qa-icon {
-    width: 14px;
-    height: 14px;
+    width: 16px;
+    height: 16px;
     flex-shrink: 0;
 }
 

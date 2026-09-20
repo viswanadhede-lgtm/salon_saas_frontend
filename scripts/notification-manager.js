@@ -158,15 +158,15 @@
             }
             .notif-badge {
                 position: absolute;
-                top: -3px;
-                right: -4px;
+                top: -2px;
+                right: -3px;
                 background: #ef4444;
                 color: #ffffff;
-                font-size: 0.65rem;
+                font-size: 0.72rem;
                 font-weight: 700;
-                min-width: 16px;
-                height: 16px;
-                border-radius: 8px;
+                min-width: 18px;
+                height: 18px;
+                border-radius: 9px;
                 display: flex;
                 align-items: center;
                 justify-content: center;
