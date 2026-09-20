@@ -632,10 +632,37 @@ export function populateGlobalHeader() {
             });
         }
 
+        // Date chip — populate with today's date (e.g. "Saturday, 20 Sep 2026")
+        populateDateChip();
+
     } catch (e) {
         console.error('[Auth Guard] Failed to hydrate header:', e);
     }
 }
+
+// ─── Date Chip ────────────────────────────────────────────────────────────────
+// Called both from populateGlobalHeader() and on DOMContentLoaded so the chip
+// shows even on pages that don't wait for auth context (e.g. fast loads).
+export function populateDateChip() {
+    const chip = document.getElementById('headerDateChip');
+    if (!chip) return;
+    const textEl = chip.querySelector('.date-chip-text');
+    if (!textEl) return;
+
+    const now = new Date();
+    const formatted = now.toLocaleDateString('en-GB', {
+        weekday: 'long',
+        day:     'numeric',
+        month:   'short',
+        year:    'numeric'
+    });
+    textEl.textContent = formatted;     // e.g. "Saturday, 20 Sep 2026"
+}
+
+// Run on DOM ready so the date chip is visible as early as possible
+document.addEventListener('DOMContentLoaded', () => {
+    populateDateChip();
+});
 
 // ─── Auth Spinner ─────────────────────────────────────────────────────────────
 function removeAuthSpinner() {
