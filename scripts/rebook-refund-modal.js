@@ -178,7 +178,7 @@ function ensureModalsInjected() {
 
     // 2. Refund Modal (2-Column Premium Layout)
     const existingRefModal = document.getElementById('refundBookingModal');
-    if (existingRefModal && !existingRefModal.querySelector('#rfBookingBadge')) {
+    if (existingRefModal && !existingRefModal.querySelector('.rf-col-divided')) {
         existingRefModal.remove();
     }
 
@@ -205,11 +205,11 @@ function ensureModalsInjected() {
                     </button>
                 </div>
 
-                <!-- Body: 2 Columns -->
-                <div class="modal-body" style="padding:24px;overflow-y:auto;display:grid;grid-template-columns:1.15fr 1fr;gap:24px;background:#fff;flex:1;">
+                <!-- Body: 2 Columns with independent scrolling and subtle divider line -->
+                <div class="modal-body" style="padding:0;overflow:hidden;display:grid;grid-template-columns:1.15fr 1fr;background:#fff;flex:1;min-height:0;">
                     
                     <!-- LEFT COLUMN: 4 CARDS -->
-                    <div style="display:flex;flex-direction:column;gap:14px;">
+                    <div class="rf-col-divided" style="display:flex;flex-direction:column;gap:14px;padding:24px;overflow-y:auto;min-height:0;height:100%;box-sizing:border-box;border-right:1px solid #e2e8f0;">
                         
                         <!-- CARD 1: Customer Details -->
                         <div style="background:#f8fafc;border:1px solid #e2e8f0;border-radius:12px;padding:16px;display:flex;flex-direction:column;gap:12px;">
@@ -344,7 +344,7 @@ function ensureModalsInjected() {
                     </div>
 
                     <!-- RIGHT COLUMN: REFUND FORM CONTROLS -->
-                    <div style="display:flex;flex-direction:column;gap:16px;">
+                    <div style="display:flex;flex-direction:column;gap:16px;padding:24px;overflow-y:auto;min-height:0;height:100%;box-sizing:border-box;">
                         
                         <!-- Refund Amount Card -->
                         <div style="background:#fff1f2;border:1px solid #fecdd3;border-radius:12px;padding:18px;display:flex;flex-direction:column;gap:4px;">
