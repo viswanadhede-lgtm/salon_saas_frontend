@@ -398,19 +398,23 @@ function ensureModalsInjected() {
                             </div>
                         </div>
 
-                        <!-- Footer Buttons -->
-                        <div style="display:flex;justify-content:flex-end;align-items:center;gap:12px;margin-top:auto;padding-top:10px;">
-                            <button type="button" class="btn btn-secondary" id="btnCancelRefund" style="height:44px;padding:0 22px;font-size:0.88rem;font-weight:600;border-radius:10px;background:#fff;border:1px solid #cbd5e1;cursor:pointer;transition:all 0.15s;" onmouseover="this.style.background='#f8fafc'" onmouseout="this.style.background='#fff'">Cancel</button>
-                            <button type="button" class="btn btn-primary" id="btnConfirmRefund" style="height:44px;padding:0 22px;font-size:0.88rem;font-weight:700;border-radius:10px;background:#e11d48;border:none;color:#fff;cursor:pointer;display:inline-flex;align-items:center;gap:8px;box-shadow:0 4px 6px -1px rgba(225,29,72,0.25);transition:all 0.15s;" onmouseover="this.style.background='#be123c'" onmouseout="this.style.background='#e11d48'">
-                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="1 4 1 10 7 10"></polyline><path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10"></path></svg>
-                                <span>Issue Refund</span>
-                            </button>
-                        </div>
-
                     </div>
+
                 </div>
             </div>
-        </div>`);
+
+
+
+            <!-- Sticky Footer -->
+            <div style="padding:16px 28px;border-top:1px solid #e2e8f0;background:#fff;display:flex;justify-content:flex-end;align-items:center;gap:12px;flex-shrink:0;">
+                <button type="button" class="btn btn-secondary" id="btnCancelRefund" style="height:44px;padding:0 24px;font-size:0.88rem;font-weight:600;border-radius:10px;background:#fff;border:1px solid #cbd5e1;cursor:pointer;transition:all 0.15s;" onmouseover="this.style.background='#f8fafc'" onmouseout="this.style.background='#fff'">Cancel</button>
+                <button type="button" class="btn btn-primary" id="btnConfirmRefund" style="height:44px;padding:0 24px;font-size:0.88rem;font-weight:700;border-radius:10px;background:#e11d48;border:none;color:#fff;cursor:pointer;display:inline-flex;align-items:center;gap:8px;box-shadow:0 4px 6px -1px rgba(225,29,72,0.25);transition:all 0.15s;" onmouseover="this.style.background='#be123c'" onmouseout="this.style.background='#e11d48'">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="1 4 1 10 7 10"></polyline><path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10"></path></svg>
+                    <span>Issue Refund</span>
+                </button>
+            </div>
+        </div>
+    </div>`);
 
         const refModal = document.getElementById('refundBookingModal');
         const closeRefModal = () => refModal?.classList.remove('active');
