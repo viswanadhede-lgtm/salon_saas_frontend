@@ -1535,7 +1535,7 @@ function handleMemRefundAmountChange(val) {
 
     if (isNaN(num) || num <= 0) {
         if (badge) {
-            badge.textContent = 'Invalid';
+            badge.textContent = 'Enter Amount';
             badge.style.background = '#f1f5f9';
             badge.style.color = '#64748b';
         }
@@ -1546,29 +1546,37 @@ function handleMemRefundAmountChange(val) {
         return;
     }
 
-    if (num > refundableMembershipAmount) {
+    if (refundableMembershipAmount > 0 && num > refundableMembershipAmount) {
         num = refundableMembershipAmount;
         if (input) input.value = num;
         showToast(`Refund amount cannot exceed paid limit of ₹${refundableMembershipAmount.toLocaleString('en-IN')}`, '#f59e0b');
     }
 
-    if (num >= refundableMembershipAmount) {
-        if (badge) {
-            badge.textContent = 'Full Refund';
-            badge.style.background = '#ffe4e6';
-            badge.style.color = '#e11d48';
+    if (refundableMembershipAmount > 0) {
+        if (num >= refundableMembershipAmount) {
+            if (badge) {
+                badge.textContent = 'Full Refund';
+                badge.style.background = '#ffe4e6';
+                badge.style.color = '#e11d48';
+            }
+        } else {
+            if (badge) {
+                badge.textContent = 'Partial Refund';
+                badge.style.background = '#fef3c7';
+                badge.style.color = '#d97706';
+            }
         }
     } else {
         if (badge) {
-            badge.textContent = 'Partial Refund';
-            badge.style.background = '#fef3c7';
-            badge.style.color = '#d97706';
+            badge.textContent = 'Custom Refund';
+            badge.style.background = '#eff6ff';
+            badge.style.color = '#2563eb';
         }
     }
 
     if (confirmBtn) {
-        confirmBtn.disabled = (num <= 0);
-        confirmBtn.style.opacity = (num <= 0) ? '0.5' : '1';
+        confirmBtn.disabled = false;
+        confirmBtn.style.opacity = '1';
     }
 }
 
@@ -1896,122 +1904,126 @@ window.refundMembershipPurchase = async function(purchaseId) {
         statusBadgeEl.style.color = '#991b1b';
     }
 
-    // 3. Original Payment Skeletons
-    const initialPaidAmount = Number(purchaseToRefundObj.final_amount != null ? purchaseToRefundObj.final_amount : (purchaseToRefundObj.price || purchaseToRefundObj.amount || 0));
+    // 3. Calculate reliable initial paid amount from purchase fields or matching plan
+    let planPrice = 0;
+    if (typeof currentPlans !== 'undefined' && Array.isArray(currentPlans)) {
+        const planRecord = currentPlans.find(p => 
+            (p.membership_id && p.membership_id === purchaseToRefundObj.membership_id) || 
+            (p.id && p.id === purchaseToRefundObj.membership_id) ||
+            (p.plan_name && purchaseToRefundObj.plan_name && p.plan_name.toLowerCase() === purchaseToRefundObj.plan_name.toLowerCase()) ||
+            (p.name && purchaseToRefundObj.name && p.name.toLowerCase() === purchaseToRefundObj.name.toLowerCase())
+        );
+        if (planRecord) {
+            planPrice = Number(planRecord.price || planRecord.final_amount || 0);
+        }
+    }
+
+    const fallbackPaid = Number(
+        purchaseToRefundObj.final_amount != null && Number(purchaseToRefundObj.final_amount) > 0 ? purchaseToRefundObj.final_amount :
+        (purchaseToRefundObj.price != null && Number(purchaseToRefundObj.price) > 0 ? purchaseToRefundObj.price :
+        (purchaseToRefundObj.amount != null && Number(purchaseToRefundObj.amount) > 0 ? purchaseToRefundObj.amount :
+        (purchaseToRefundObj.amount_paid != null && Number(purchaseToRefundObj.amount_paid) > 0 ? purchaseToRefundObj.amount_paid :
+        planPrice)))
+    ) || 0;
+
+    refundableMembershipAmount = fallbackPaid;
+
     if (origMethodEl) origMethodEl.textContent = (purchaseToRefundObj.payment_method || 'UPI').toUpperCase();
     if (origDateEl) origDateEl.textContent = formattedStartDate;
-    if (origPaidAmountEl) origPaidAmountEl.textContent = `₹${initialPaidAmount.toLocaleString('en-IN')}`;
+    if (origPaidAmountEl) origPaidAmountEl.textContent = `₹${fallbackPaid.toLocaleString('en-IN')}`;
 
-    // 4. Right Column Form Skeletons
+    // 4. Right Column Form - Always keep amountInput editable!
     if (amountInput) {
-        amountInput.value = '';
-        amountInput.placeholder = '...';
-        amountInput.disabled = true;
+        amountInput.disabled = false;
+        amountInput.value = fallbackPaid > 0 ? fallbackPaid : '';
+        amountInput.placeholder = 'Enter amount';
+        if (fallbackPaid > 0) amountInput.max = fallbackPaid;
     }
-    if (maxRefundEl) maxRefundEl.textContent = '₹...';
+    if (maxRefundEl) maxRefundEl.textContent = `₹${fallbackPaid.toLocaleString('en-IN')}`;
+    handleMemRefundAmountChange(fallbackPaid > 0 ? fallbackPaid : 0);
+
     if (reasonSelect) {
         reasonSelect.value = '';
         reasonSelect.style.borderColor = '#cbd5e1';
     }
     if (noteField) noteField.value = '';
     if (confirmBtn) { 
-        confirmBtn.disabled = true; 
+        confirmBtn.disabled = (fallbackPaid <= 0);
+        confirmBtn.style.opacity = (fallbackPaid <= 0) ? '0.5' : '1';
         confirmBtn.innerHTML = `
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="1 4 1 10 7 10"></polyline><path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10"></path></svg>
             <span>Issue Refund</span>
         `;
     }
 
-    // Fetch ledger data from business_transactions
-    try {
-        // Query fresh customer details asynchronously if available
-        if (purchaseToRefundObj.customer_id) {
-            supabase.from('customers').select('*').eq('customer_id', purchaseToRefundObj.customer_id).maybeSingle()
-                .then(({ data: c }) => {
-                    if (c) {
-                        if (c.customer_name && custNameEl) custNameEl.textContent = c.customer_name;
-                        if ((c.customer_phone || c.phone) && custPhoneEl) custPhoneEl.textContent = c.customer_phone || c.phone;
-                        if ((c.customer_email || c.email) && custEmailEl) custEmailEl.textContent = c.customer_email || c.email;
-                        const newInitials = ((c.customer_name || custName) || 'CU').split(' ').map(n => n[0]).filter(Boolean).slice(0, 2).join('').toUpperCase() || 'CU';
-                        if (custAvatarEl) custAvatarEl.textContent = newInitials;
+    // Fetch customer details and ledger asynchronously without blocking or crashing the modal
+    (async () => {
+        try {
+            if (purchaseToRefundObj.customer_id) {
+                supabase.from('customers').select('*').eq('customer_id', purchaseToRefundObj.customer_id).maybeSingle()
+                    .then(({ data: c }) => {
+                        if (c) {
+                            if (c.customer_name && custNameEl) custNameEl.textContent = c.customer_name;
+                            if ((c.customer_phone || c.phone) && custPhoneEl) custPhoneEl.textContent = c.customer_phone || c.phone;
+                            if ((c.customer_email || c.email) && custEmailEl) custEmailEl.textContent = c.customer_email || c.email;
+                            const newInitials = ((c.customer_name || custName) || 'CU').split(' ').map(n => n[0]).filter(Boolean).slice(0, 2).join('').toUpperCase() || 'CU';
+                            if (custAvatarEl) custAvatarEl.textContent = newInitials;
+                        }
+                    }).catch(() => {});
+            }
+
+            const { data, error } = await supabase
+                .from('business_transactions')
+                .select('*')
+                .eq('reference_id', purchaseId)
+                .eq('reference_type', 'membership');
+
+            if (!error && Array.isArray(data) && data.length > 0) {
+                let ledgerPaid = 0;
+                let ledgerRefunded = 0;
+                let originalTx = null;
+
+                data.forEach(tx => {
+                    const val = Math.abs(Number(tx.amount || 0));
+                    const stat = (tx.status || '').toLowerCase().trim();
+                    if (stat === 'paid') {
+                        ledgerPaid += val;
+                        if (!originalTx) originalTx = tx;
                     }
-                }).catch(() => {});
-        }
+                    if (stat === 'refunded') ledgerRefunded += val;
+                });
 
-        const { data, error } = await supabase
-            .from('business_transactions')
-            .select('id, amount, payment_method, status, paid_at')
-            .eq('reference_id', purchaseId)
-            .eq('reference_type', 'membership')
-            .order('paid_at', { ascending: true });
+                if (ledgerPaid === 0) ledgerPaid = fallbackPaid;
+                const ledgerNet = Math.max(0, ledgerPaid - ledgerRefunded);
+                refundableMembershipAmount = ledgerNet > 0 ? ledgerNet : fallbackPaid;
 
-        if (error) throw error;
+                const finalOrigPaid = originalTx && Number(originalTx.amount) > 0 ? Number(originalTx.amount) : ledgerPaid;
+                if (origPaidAmountEl) origPaidAmountEl.textContent = `₹${finalOrigPaid.toLocaleString('en-IN')}`;
 
-        let ledgerPaid = 0;
-        let ledgerRefunded = 0;
-        let originalTx = null;
+                if (amountInput) {
+                    amountInput.disabled = false;
+                    amountInput.value = refundableMembershipAmount > 0 ? refundableMembershipAmount : '';
+                    if (refundableMembershipAmount > 0) amountInput.max = refundableMembershipAmount;
+                }
+                if (maxRefundEl) maxRefundEl.textContent = `₹${refundableMembershipAmount.toLocaleString('en-IN')}`;
+                handleMemRefundAmountChange(refundableMembershipAmount > 0 ? refundableMembershipAmount : 0);
 
-        (data || []).forEach(tx => {
-            const val = Math.abs(Number(tx.amount || 0));
-            const stat = (tx.status || '').toLowerCase().trim();
-            if (stat === 'paid') {
-                ledgerPaid += val;
-                if (!originalTx) originalTx = tx;
+                if (originalTx) {
+                    if (origMethodEl && originalTx.payment_method) origMethodEl.textContent = originalTx.payment_method.toUpperCase();
+                    if (origDateEl && (originalTx.paid_at || originalTx.created_at)) {
+                        origDateEl.textContent = new Date(originalTx.paid_at || originalTx.created_at).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' });
+                    }
+                }
+
+                const lastMethod = (originalTx?.payment_method || purchaseToRefundObj.payment_method || 'cash').toLowerCase();
+                if (methodSelect) {
+                    methodSelect.value = ['cash', 'upi', 'card', 'bank_transfer'].includes(lastMethod) ? lastMethod : 'cash';
+                }
             }
-            if (stat === 'refunded') ledgerRefunded += val;
-        });
-
-        // Fallback for legacy items without an explicit 'paid' ledger record
-        const fallbackPaid = Number(purchaseToRefundObj.final_amount != null ? purchaseToRefundObj.final_amount : (purchaseToRefundObj.price || purchaseToRefundObj.amount || 0));
-        if (ledgerPaid === 0) {
-            ledgerPaid = fallbackPaid;
+        } catch (err) {
+            console.warn('Ledger query error (fallback used):', err);
         }
-
-        const ledgerNet = ledgerPaid - ledgerRefunded;
-        refundableMembershipAmount = Math.max(0, ledgerNet);
-
-        if (refundableMembershipAmount === 0 && fallbackPaid > 0 && ledgerRefunded === 0) {
-            refundableMembershipAmount = fallbackPaid;
-            if (ledgerPaid === 0) ledgerPaid = fallbackPaid;
-        }
-
-        // Display Paid Amount in Original Payment Details
-        const finalOrigPaid = originalTx && Number(originalTx.amount) > 0 ? Number(originalTx.amount) : ledgerPaid;
-        if (origPaidAmountEl) origPaidAmountEl.textContent = `₹${finalOrigPaid.toLocaleString('en-IN')}`;
-
-        if (amountInput) {
-            amountInput.disabled = (refundableMembershipAmount <= 0);
-            amountInput.value = refundableMembershipAmount;
-            amountInput.max = refundableMembershipAmount;
-        }
-        if (maxRefundEl) maxRefundEl.textContent = `₹${refundableMembershipAmount.toLocaleString('en-IN')}`;
-        handleMemRefundAmountChange(refundableMembershipAmount);
-
-        if (originalTx) {
-            if (origMethodEl) origMethodEl.textContent = (originalTx.payment_method || 'cash').toUpperCase();
-            if (origDateEl && originalTx.paid_at) {
-                origDateEl.textContent = new Date(originalTx.paid_at).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' });
-            }
-        }
-
-        const lastMethod = (originalTx?.payment_method || purchaseToRefundObj.payment_method || 'cash').toLowerCase();
-        if (methodSelect) {
-            methodSelect.value = ['cash', 'upi', 'card', 'bank_transfer'].includes(lastMethod) ? lastMethod : 'cash';
-        }
-
-        if (confirmBtn) {
-            confirmBtn.disabled = (refundableMembershipAmount <= 0);
-            confirmBtn.style.opacity = (refundableMembershipAmount <= 0) ? '0.5' : '1';
-        }
-
-    } catch (err) {
-        console.error('Error fetching ledger for refund:', err);
-        if (amountInput) {
-            amountInput.value = 0;
-            amountInput.disabled = true;
-        }
-        handleMemRefundAmountChange(0);
-    }
+    })();
 };
 
 async function processMembershipRefund() {
