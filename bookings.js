@@ -215,7 +215,7 @@ function buildRow(b, includeDate = false) {
                 <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#64748b" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path><circle cx="12" cy="12" r="3"></circle></svg>
                 View
             </button>
-            ` : (status || '').toLowerCase() === 'cancelled' ? `
+            ` : ['cancelled', 'no-show', 'noshow', 'no_show'].includes((status || '').toLowerCase().trim()) ? `
             <button onclick="window.openCancelledBookingModal('${bookingId}')"
                 style="padding:5px 14px;border-radius:6px;border:1px solid #e2e8f0;background:#ffffff;color:#1e293b;font-size:0.78rem;font-weight:600;cursor:pointer;white-space:nowrap;transition:all 0.2s;box-shadow:0 1px 2px rgba(0,0,0,0.04);display:inline-flex;align-items:center;gap:6px;"
                 onmouseover="this.style.background='#f8fafc';this.style.borderColor='#cbd5e1'" 
@@ -733,8 +733,8 @@ function setupModals() {
                 <!-- Header -->
                 <div style="padding:16px 24px;border-bottom:1px solid #e2e8f0;display:flex;justify-content:space-between;align-items:center;background:#fff;">
                     <div>
-                        <h2 style="font-size:1.15rem;font-weight:700;color:#0f172a;margin:0;">Cancelled Booking</h2>
-                        <p style="font-size:0.82rem;color:#64748b;margin:2px 0 0 0;">Review details and choose your next action.</p>
+                        <h2 id="cbmModalTitle" style="font-size:1.15rem;font-weight:700;color:#0f172a;margin:0;">Cancelled Booking</h2>
+                        <p id="cbmModalSubtitle" style="font-size:0.82rem;color:#64748b;margin:2px 0 0 0;">Review details and choose your next action.</p>
                     </div>
                     <button id="btnCloseCancelledBookingModal" style="border:none;background:transparent;cursor:pointer;color:#64748b;padding:4px;display:flex;align-items:center;justify-content:center;border-radius:6px;" onmouseover="this.style.background='#f1f5f9'" onmouseout="this.style.background='transparent'">
                         <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
@@ -753,7 +753,7 @@ function setupModals() {
                                 <div id="cbmId" style="font-family:monospace;font-size:1rem;font-weight:700;color:#1e293b;margin-top:2px;">#--------</div>
                             </div>
                             <div style="text-align:right;display:flex;flex-direction:column;gap:4px;align-items:flex-end;">
-                                <span style="display:inline-block;padding:2px 10px;border-radius:20px;font-size:0.75rem;font-weight:600;color:#991b1b;background:#fee2e2;">Cancelled</span>
+                                <span id="cbmStatusBadge" style="display:inline-block;padding:2px 10px;border-radius:20px;font-size:0.75rem;font-weight:600;color:#991b1b;background:#fee2e2;">Cancelled</span>
                                 <div id="cbmPaymentBadge"></div>
                             </div>
                         </div>
@@ -1860,7 +1860,7 @@ function attachEventListeners() {
     };
 
     window.triggerRebook = async (bookingId) => {
-        const b = liveBookingsData.find(x => (x.booking_id || x.id) == bookingId);
+        let b = liveBookingsData.find(x => (x.booking_id || x.id) == bookingId);
         if (!b) return;
 
         // Try to fetch the email if missing from view payload
@@ -1872,18 +1872,30 @@ function attachEventListeners() {
             } catch(e) { console.error('Failed to grab customer_email for prefill', e); }
         }
 
-        const serviceIds = String(b.service_id || '').split(',').map(s => s.trim()).filter(Boolean);
-        const staffIds   = String(b.staff_id   || '').split(',').map(s => s.trim()).filter(Boolean);
+        let serviceIds = String(b.service_id || b.service_ids || '').split(',').map(s => s.trim()).filter(Boolean);
+        let staffIds   = String(b.staff_id   || b.staff_ids   || '').split(',').map(s => s.trim()).filter(Boolean);
+
+        if (serviceIds.length === 0 && bookingId) {
+            try {
+                const { data: rows } = await supabase.from('bookings').select('service_id, package_id, staff_id').eq('booking_id', bookingId);
+                if (rows && rows.length > 0) {
+                    serviceIds = rows.map(r => r.service_id || r.package_id).filter(Boolean);
+                    staffIds   = rows.map(r => r.staff_id).filter(Boolean);
+                }
+            } catch(e) { console.error('Failed to fetch booking items for rebook', e); }
+        }
 
         if (window.openAndPrefillBooking) {
             // This awaits dropdown population BEFORE filling values — fixes race condition
+            // Leaves date and time for the user to pick in the new booking modal
             await window.openAndPrefillBooking({
                 customerId: b.customer_id,
                 name:       b.customer_name,
                 phone:      b.customer_phone,
                 email:      cEmail,
                 serviceIds,
-                staffIds
+                staffIds,
+                notes:      b.notes || ''
             });
         } else {
             // Fallback: just open the modal normally
@@ -1892,16 +1904,52 @@ function attachEventListeners() {
         }
     };
 
-    // ── Cancelled Booking Modal Handler ───────────────────────────────────────
-    window.openCancelledBookingModal = function(bookingId) {
+    // ── Cancelled / No-show Booking Modal Handler ─────────────────────────────
+    window.openCancelledBookingModal = async function(bookingId) {
         let b = (liveBookingsData || []).find(x => (x.booking_id || x.id) === bookingId);
         if (!b) {
             b = (liveBookingsData || []).find(x => String(x.booking_id || x.id || '').toLowerCase() === String(bookingId || '').toLowerCase());
         }
+        if (!b) {
+            try {
+                const { data } = await supabase
+                    .from('bookings_for_business_transaction')
+                    .select('*')
+                    .eq('booking_id', bookingId)
+                    .maybeSingle();
+                if (data) b = data;
+            } catch (err) { console.error('Failed to fetch booking:', err); }
+        }
         if (!b) return;
 
-        // Booking ID
         const el = (id) => document.getElementById(id);
+
+        // Dynamic Title & Status Badge based on status
+        const rawStatus = (b.status || '').toLowerCase().trim();
+        const isNoShow = ['no-show', 'noshow', 'no_show'].includes(rawStatus);
+
+        if (el('cbmModalTitle')) {
+            el('cbmModalTitle').textContent = isNoShow ? 'No-Show Booking' : 'Cancelled Booking';
+        }
+        if (el('cbmModalSubtitle')) {
+            el('cbmModalSubtitle').textContent = isNoShow
+                ? 'Review no-show appointment details and choose your next action.'
+                : 'Review cancelled appointment details and choose your next action.';
+        }
+
+        if (el('cbmStatusBadge')) {
+            if (isNoShow) {
+                el('cbmStatusBadge').textContent = 'No-show';
+                el('cbmStatusBadge').style.background = '#fee2e2';
+                el('cbmStatusBadge').style.color = '#991b1b';
+            } else {
+                el('cbmStatusBadge').textContent = 'Cancelled';
+                el('cbmStatusBadge').style.background = '#fef9c3';
+                el('cbmStatusBadge').style.color = '#92400e';
+            }
+        }
+
+        // Booking ID
         if (el('cbmId')) el('cbmId').textContent = '#' + (bookingId || '').slice(0, 8).toUpperCase();
 
         // Customer
@@ -1932,8 +1980,21 @@ function attachEventListeners() {
         }
 
         // Show/hide refund section based on payment status
-        const isPaid = ['paid', 'partial'].includes(payRaw);
+        let isPaid = ['paid', 'partial'].includes(payRaw);
         if (el('cbmRefundSection')) el('cbmRefundSection').style.display = isPaid ? 'block' : 'none';
+
+        // Check transactions asynchronously to ensure accurate refund button visibility
+        try {
+            const { data: txs } = await supabase
+                .from('business_transactions')
+                .select('amount, status')
+                .eq('reference_id', bookingId)
+                .eq('reference_type', 'booking');
+            if (txs && txs.some(t => (t.status || '').toLowerCase().trim() === 'paid')) {
+                isPaid = true;
+                if (el('cbmRefundSection')) el('cbmRefundSection').style.display = 'block';
+            }
+        } catch(e) { /* ignore */ }
 
         // Services list
         const svcNames = (Array.isArray(b.service_names) ? b.service_names : [b.service_name])
