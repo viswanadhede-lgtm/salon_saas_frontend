@@ -1210,10 +1210,17 @@
         window.initPage = async function() {
             const now = new Date();
             const opts = { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' };
-            document.getElementById('tbDateLabel').textContent = now.toLocaleDateString('en-IN', opts);
+            const dateLabel = document.getElementById('tbDateLabel');
+            if (dateLabel) dateLabel.textContent = now.toLocaleDateString('en-IN', opts);
             
             try {
-                const branchId = localStorage.getItem('branch_id');
+                let branchId = localStorage.getItem('branch_id') || localStorage.getItem('active_branch_id');
+                if (!branchId) {
+                    try {
+                        const ctx = JSON.parse(localStorage.getItem('appContext') || '{}');
+                        branchId = ctx.branch?.branch_id || ctx.branch?.id || null;
+                    } catch {}
+                }
                 if (!branchId) throw new Error("No branch selected.");
 
                 const { supabase } = await import('./lib/supabase.js');
@@ -1225,18 +1232,21 @@
                     .select('*')
                     .eq('branch_id', branchId)
                     .eq('booking_date', localISOTime)
-                    .eq('status', 'booked')
                     .order('start_time', { ascending: true });
-                    
-                
 
                 const { data, error } = await query;
                 if (error) throw error;
 
-                todaysBookingsData = (data || []).map((b, i) => {
+                // Match dashboard logic: any booking for today not completed, cancelled, or no-show
+                const upcomingData = (data || []).filter(b => {
+                    const st = (b.status || '').toLowerCase().trim();
+                    return !['completed', 'cancelled', 'no-show', 'noshow'].includes(st);
+                });
+
+                todaysBookingsData = upcomingData.map((b, i) => {
                     const parsedStart = b.start_time ? b.start_time.split(':') : ['09', '00'];
-                    let hours = parseInt(parsedStart[0]);
-                    const minutes = parsedStart[1];
+                    let hours = parseInt(parsedStart[0]) || 9;
+                    const minutes = parsedStart[1] || '00';
                     const ampm = hours >= 12 ? 'PM' : 'AM';
                     hours = hours % 12 || 12;
                     const formattedTime = `${String(hours).padStart(2, '0')}:${minutes} ${ampm}`;
@@ -1304,7 +1314,19 @@
         // ================================================================
         function renderBookingsTable() {
             const tbody = document.getElementById('tbTableBody');
+            if (!tbody) return;
             tbody.innerHTML = '';
+
+            if (todaysBookingsData.length === 0) {
+                tbody.innerHTML = `
+                    <tr>
+                        <td colspan="8" style="padding: 48px 16px; text-align: center; color: #94a3b8; font-size: 0.95rem;">
+                            No upcoming appointments for today.
+                        </td>
+                    </tr>
+                `;
+                return;
+            }
             todaysBookingsData.forEach((b, idx) => {
                 const statusClass = 'tb-status-' + b.status;
                 const statusLabel = b.status === 'noshow' ? 'No-show' : b.status.charAt(0).toUpperCase() + b.status.slice(1);
@@ -1610,7 +1632,7 @@
         // ================================================================
         // COLLECT PAYMENT
         // ================================================================
-        window.openRowPayment = function(bookingId) {
+        window.openRowPayment = async function(bookingId) {
             const row = todaysBookingsData.find(p => p.raw_id === bookingId);
             const targetId = row ? row.raw_id : bookingId;
             if (!targetId || !row) return;
@@ -1739,6 +1761,7 @@
     <script src="dashboard.js"></script>
 <script src="logout.js"></script><script src="change-password.js"></script>    <script type="module" src="scripts/global-auth-guard.js"></script>
     <script type="module" src="scripts/sub-features/sub-feature-gate.js"></script>
+    <script type="module" src="scripts/global-customer-profile-modal.js"></script>
     <script src="scripts/global-payment-modal.js?v=2.2.0"></script>
 </body>
 </html>
