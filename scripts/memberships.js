@@ -1529,7 +1529,7 @@ let purchaseToRefundObj = null;
 
 function setupRefundPurchaseModal() {
     const existingModal = document.getElementById('refundMembershipAdvancedOverlay');
-    if (existingModal && !existingModal.querySelector('.rf-mem-divided')) {
+    if (existingModal && (!existingModal.querySelector('.rf-mem-divided') || !existingModal.querySelector('#rfMemOrigPaidAmount'))) {
         existingModal.remove();
     }
 
@@ -1633,8 +1633,8 @@ function setupRefundPurchaseModal() {
                                     <span id="rfMemOrigDate" style="font-weight:600;color:#0f172a;">—</span>
                                 </div>
                                 <div style="display:flex;justify-content:space-between;align-items:center;font-size:0.84rem;padding:6px 0;">
-                                    <span style="color:#64748b;">Transaction ID</span>
-                                    <span id="rfMemOrigTxnId" style="font-weight:600;color:#0f172a;font-family:monospace;font-size:0.8rem;">—</span>
+                                    <span style="color:#64748b;">Paid Amount</span>
+                                    <span id="rfMemOrigPaidAmount" style="font-weight:700;color:#0f172a;">₹0</span>
                                 </div>
                             </div>
                         </div>
@@ -1758,7 +1758,7 @@ window.refundMembershipPurchase = async function(purchaseId) {
 
     const origMethodEl = document.getElementById('rfMemOrigMethod');
     const origDateEl = document.getElementById('rfMemOrigDate');
-    const origTxnEl = document.getElementById('rfMemOrigTxnId');
+    const origPaidAmountEl = document.getElementById('rfMemOrigPaidAmount');
 
     const amountDisplay = document.getElementById('rfMemAmountDisplay');
     const maxRefundEl = document.getElementById('rfMemMaxRefundText');
@@ -1821,9 +1821,10 @@ window.refundMembershipPurchase = async function(purchaseId) {
     }
 
     // 3. Original Payment Skeletons
+    const initialPaidAmount = Number(purchaseToRefundObj.final_amount != null ? purchaseToRefundObj.final_amount : (purchaseToRefundObj.price || purchaseToRefundObj.amount || 0));
     if (origMethodEl) origMethodEl.textContent = (purchaseToRefundObj.payment_method || 'UPI').toUpperCase();
     if (origDateEl) origDateEl.textContent = formattedStartDate;
-    if (origTxnEl) origTxnEl.textContent = '—';
+    if (origPaidAmountEl) origPaidAmountEl.textContent = `₹${initialPaidAmount.toLocaleString('en-IN')}`;
 
     // 4. Right Column Form Skeletons
     if (amountDisplay) amountDisplay.textContent = '₹...';
@@ -1881,16 +1882,22 @@ window.refundMembershipPurchase = async function(purchaseId) {
         });
 
         // Fallback for legacy items without an explicit 'paid' ledger record
+        const fallbackPaid = Number(purchaseToRefundObj.final_amount != null ? purchaseToRefundObj.final_amount : (purchaseToRefundObj.price || purchaseToRefundObj.amount || 0));
         if (ledgerPaid === 0) {
-            ledgerPaid = Number(purchaseToRefundObj.price || 0);
+            ledgerPaid = fallbackPaid;
         }
 
         const ledgerNet = ledgerPaid - ledgerRefunded;
         refundableMembershipAmount = Math.max(0, ledgerNet);
 
-        if (refundableMembershipAmount === 0 && Number(purchaseToRefundObj.price) > 0 && ledgerRefunded === 0) {
-            refundableMembershipAmount = Number(purchaseToRefundObj.price);
+        if (refundableMembershipAmount === 0 && fallbackPaid > 0 && ledgerRefunded === 0) {
+            refundableMembershipAmount = fallbackPaid;
+            if (ledgerPaid === 0) ledgerPaid = fallbackPaid;
         }
+
+        // Display Paid Amount in Original Payment Details
+        const finalOrigPaid = originalTx && Number(originalTx.amount) > 0 ? Number(originalTx.amount) : ledgerPaid;
+        if (origPaidAmountEl) origPaidAmountEl.textContent = `₹${finalOrigPaid.toLocaleString('en-IN')}`;
 
         if (amountDisplay) amountDisplay.textContent = `₹${refundableMembershipAmount.toLocaleString('en-IN')}`;
         if (maxRefundEl) maxRefundEl.textContent = `₹${refundableMembershipAmount.toLocaleString('en-IN')}`;
@@ -1899,9 +1906,6 @@ window.refundMembershipPurchase = async function(purchaseId) {
             if (origMethodEl) origMethodEl.textContent = (originalTx.payment_method || 'cash').toUpperCase();
             if (origDateEl && originalTx.paid_at) {
                 origDateEl.textContent = new Date(originalTx.paid_at).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' });
-            }
-            if (origTxnEl && originalTx.id) {
-                origTxnEl.textContent = `#TXN-${String(originalTx.id).slice(0, 8).toUpperCase()}`;
             }
         }
 
