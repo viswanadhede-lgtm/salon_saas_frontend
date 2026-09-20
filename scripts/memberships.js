@@ -1528,46 +1528,190 @@ let refundableMembershipAmount = 0;
 let purchaseToRefundObj = null;
 
 function setupRefundPurchaseModal() {
+    const existingModal = document.getElementById('refundMembershipAdvancedOverlay');
+    if (existingModal && !existingModal.querySelector('.rf-mem-divided')) {
+        existingModal.remove();
+    }
+
     if (!document.getElementById('refundMembershipAdvancedOverlay')) {
         const modalHtml = `
-        <div class="modal-overlay" id="refundMembershipAdvancedOverlay" style="z-index:9999;">
-            <div class="modal-container" style="width: 480px; border-radius: 16px; padding: 0; overflow: hidden; box-shadow: 0 20px 25px -5px rgba(0,0,0,0.1);">
-                <div class="modal-header" style="border-bottom: 1px solid #fee2e2; background: #fff1f2; padding: 20px 24px;">
-                    <div class="header-titles">
-                        <h2 style="color: #991b1b; font-size: 1.25rem; margin:0;">Process Refund</h2>
-                        <p class="subtitle" id="rfMemModalSubtitle" style="color: #b91c1c; font-size: 0.85rem; margin:4px 0 0 0;">Customer Name • Plan Name</p>
+        <div class="modal-overlay" id="refundMembershipAdvancedOverlay" style="z-index:10005;backdrop-filter:blur(6px);">
+            <div class="modal-container" style="width:1160px;max-width:98vw;max-height:96vh;background:#fff;border-radius:16px;box-shadow:0 25px 50px -12px rgba(0,0,0,0.25);border:1px solid #e2e8f0;display:flex;flex-direction:column;overflow:hidden;">
+                <!-- Header -->
+                <div class="modal-header" style="padding:18px 24px;border-bottom:1px solid #f1f5f9;display:flex;justify-content:space-between;align-items:center;background:#fff;">
+                    <div style="display:flex;align-items:center;gap:12px;">
+                        <div style="width:42px;height:42px;border-radius:50%;background:#fee2e2;display:flex;align-items:center;justify-content:center;color:#e11d48;flex-shrink:0;">
+                            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                                <polyline points="1 4 1 10 7 10"></polyline>
+                                <path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10"></path>
+                            </svg>
+                        </div>
+                        <div>
+                            <h2 style="font-size:1.25rem;font-weight:700;color:#0f172a;margin:0;line-height:1.2;">Process Membership Refund</h2>
+                            <p class="subtitle" style="font-size:0.82rem;color:#64748b;margin:3px 0 0 0;">Review membership details and process the refund.</p>
+                        </div>
                     </div>
-                    <button class="modal-close" id="cancelMemRefundBtn"><i data-feather="x" style="color: #991b1b;"></i></button>
+                    <button class="modal-close" id="cancelMemRefundBtn" style="border:none;background:transparent;cursor:pointer;color:#64748b;padding:6px;border-radius:8px;display:flex;align-items:center;justify-content:center;transition:all 0.15s;" onmouseover="this.style.background='#f1f5f9'" onmouseout="this.style.background='transparent'">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+                    </button>
                 </div>
-                <div class="modal-body" style="padding: 24px; background: #fff;">
-                    <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 12px; padding: 20px; margin-bottom: 24px; text-align: center; display: flex; flex-direction: column; align-items: center;">
-                        <p style="font-size: 0.75rem; color: #64748b; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 12px;">Refundable Amount (₹)</p>
-                        <input type="number" id="rfMemAmountDisplay" style="font-size: 2.25rem; font-weight: 800; color: #dc2626; margin: 0; text-align: center; border: 1px solid #fca5a5; border-radius: 8px; width: 100%; max-width: 250px; background: white; padding: 8px; outline: none;" value="0" min="0">
-                    </div>
 
-                    <div class="form-group" style="margin-bottom: 24px;">
-                        <label class="form-label" style="font-size: 0.85rem; font-weight: 600; color: #475569;">Refund Method</label>
-                        <select id="rfMemMethodDisplay" class="form-input" style="width: 100%; border: 1px solid #e2e8f0; border-radius: 8px; padding: 10px 12px; font-size: 0.95rem; outline: none; background: #fff; color: #1e293b; cursor: pointer;">
-                            <option value="cash">Cash</option>
-                            <option value="upi">UPI</option>
-                            <option value="card">Card</option>
-                        </select>
-                    </div>
+                <!-- Body: 2 Columns with independent scrolling and subtle divider line -->
+                <div class="modal-body" style="padding:0;overflow:hidden;display:grid;grid-template-columns:1.15fr 1fr;background:#fff;flex:1;min-height:0;">
                     
-                    <p style="font-size: 0.825rem; color: #64748b; line-height: 1.5; margin-bottom: 24px;">
-                        This will record a <strong style="color: #dc2626;">Refund</strong> transaction in the financial ledger and update the membership status.
-                    </p>
+                    <!-- LEFT COLUMN: 3 CARDS -->
+                    <div class="rf-mem-divided" style="display:flex;flex-direction:column;gap:14px;padding:24px;overflow-y:auto;min-height:0;height:100%;box-sizing:border-box;border-right:1px solid #e2e8f0;">
+                        
+                        <!-- CARD 1: Member Details -->
+                        <div style="background:#f8fafc;border:1px solid #e2e8f0;border-radius:12px;padding:16px;display:flex;flex-direction:column;gap:12px;">
+                            <div style="display:flex;justify-content:space-between;align-items:center;">
+                                <span style="font-size:0.88rem;font-weight:700;color:#0f172a;">Member Details</span>
+                                <button type="button" id="rfMemCustomerViewProfileBtn" style="background:none;border:none;color:#2563eb;font-size:0.8rem;font-weight:600;cursor:pointer;display:inline-flex;align-items:center;gap:4px;padding:3px 8px;border-radius:6px;transition:background 0.15s;" onmouseover="this.style.background='#eff6ff'" onmouseout="this.style.background='none'">
+                                    View Profile
+                                </button>
+                            </div>
+                            <div style="display:flex;align-items:center;gap:14px;">
+                                <div id="rfMemCustomerAvatar" style="width:44px;height:44px;border-radius:50%;background:#dbeafe;color:#1e40af;font-weight:700;font-size:0.95rem;display:flex;align-items:center;justify-content:center;flex-shrink:0;text-transform:uppercase;">
+                                    --
+                                </div>
+                                <div style="display:flex;flex-direction:column;gap:4px;overflow:hidden;flex:1;">
+                                    <div id="rfMemCustomerName" style="font-weight:700;color:#0f172a;font-size:1.05rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">Member Name</div>
+                                    <div style="display:flex;align-items:center;gap:16px;flex-wrap:wrap;">
+                                        <span style="display:inline-flex;align-items:center;gap:5px;font-size:0.8rem;color:#475569;">
+                                            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#64748b" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"></path></svg>
+                                            <span id="rfMemCustomerPhone">—</span>
+                                        </span>
+                                        <span style="display:inline-flex;align-items:center;gap:5px;font-size:0.8rem;color:#475569;">
+                                            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#64748b" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"></path><polyline points="22,6 12,13 2,6"></polyline></svg>
+                                            <span id="rfMemCustomerEmail">—</span>
+                                        </span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
 
-                    <div style="display: flex; gap: 12px;">
-                        <button class="btn btn-secondary" id="closeMemRefundBtn" style="flex: 1; height: 48px; font-weight: 600; border-radius: 10px;">Cancel</button>
-                        <button class="btn" id="confirmMemRefundBtn" style="flex: 1.5; height: 48px; background: #dc2626; color: white; border: none; font-weight: 700; border-radius: 10px; box-shadow: 0 4px 6px -1px rgba(220, 38, 38, 0.2);">Issue Refund</button>
+                        <!-- CARD 2: Membership Details -->
+                        <div style="background:#f8fafc;border:1px solid #e2e8f0;border-radius:12px;padding:16px;display:flex;flex-direction:column;gap:12px;">
+                            <div style="display:flex;justify-content:space-between;align-items:center;">
+                                <span style="font-size:0.88rem;font-weight:700;color:#0f172a;">Membership Details</span>
+                                <span id="rfMemBadge" style="background:#eff6ff;color:#2563eb;border:1px solid #bfdbfe;font-size:0.75rem;font-weight:700;padding:3px 10px;border-radius:20px;font-family:monospace;">#MEM-001</span>
+                            </div>
+                            <div style="display:flex;flex-direction:column;gap:10px;">
+                                <div style="display:flex;justify-content:space-between;align-items:center;font-size:0.84rem;padding:6px 0;border-bottom:1px solid #f1f5f9;">
+                                    <span style="color:#64748b;">Plan</span>
+                                    <span id="rfMemPlanName" style="font-weight:700;color:#0f172a;">—</span>
+                                </div>
+                                <div style="display:flex;justify-content:space-between;align-items:center;font-size:0.84rem;padding:6px 0;border-bottom:1px solid #f1f5f9;">
+                                    <span style="color:#64748b;">Membership ID</span>
+                                    <span id="rfMemIdText" style="font-weight:600;color:#0f172a;font-family:monospace;">—</span>
+                                </div>
+                                <div style="display:flex;justify-content:space-between;align-items:center;font-size:0.84rem;padding:6px 0;border-bottom:1px solid #f1f5f9;">
+                                    <span style="color:#64748b;">Start Date</span>
+                                    <span id="rfMemStartDate" style="font-weight:600;color:#0f172a;">—</span>
+                                </div>
+                                <div style="display:flex;justify-content:space-between;align-items:center;font-size:0.84rem;padding:6px 0;border-bottom:1px solid #f1f5f9;">
+                                    <span style="color:#64748b;">Cancelled On</span>
+                                    <span id="rfMemCancelledDate" style="font-weight:700;color:#dc2626;">—</span>
+                                </div>
+                                <div style="display:flex;justify-content:space-between;align-items:center;font-size:0.84rem;padding:6px 0;">
+                                    <span style="color:#64748b;">Status</span>
+                                    <span id="rfMemStatusBadge" style="background:#fee2e2;color:#991b1b;border:1px solid #fecdd3;font-size:0.75rem;font-weight:700;padding:2px 10px;border-radius:20px;">Cancelled</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- CARD 3: Original Payment Details -->
+                        <div style="background:#f8fafc;border:1px solid #e2e8f0;border-radius:12px;padding:16px;display:flex;flex-direction:column;gap:12px;">
+                            <span style="font-size:0.88rem;font-weight:700;color:#0f172a;">Original Payment Details</span>
+                            <div style="display:flex;flex-direction:column;gap:10px;">
+                                <div style="display:flex;justify-content:space-between;align-items:center;font-size:0.84rem;padding:6px 0;border-bottom:1px solid #f1f5f9;">
+                                    <span style="color:#64748b;">Payment Method</span>
+                                    <span id="rfMemOrigMethod" style="font-weight:700;color:#0f172a;text-transform:uppercase;">—</span>
+                                </div>
+                                <div style="display:flex;justify-content:space-between;align-items:center;font-size:0.84rem;padding:6px 0;border-bottom:1px solid #f1f5f9;">
+                                    <span style="color:#64748b;">Payment Date</span>
+                                    <span id="rfMemOrigDate" style="font-weight:600;color:#0f172a;">—</span>
+                                </div>
+                                <div style="display:flex;justify-content:space-between;align-items:center;font-size:0.84rem;padding:6px 0;">
+                                    <span style="color:#64748b;">Transaction ID</span>
+                                    <span id="rfMemOrigTxnId" style="font-weight:600;color:#0f172a;font-family:monospace;font-size:0.8rem;">—</span>
+                                </div>
+                            </div>
+                        </div>
+
                     </div>
+
+                    <!-- RIGHT COLUMN: REFUND FORM CONTROLS -->
+                    <div style="display:flex;flex-direction:column;gap:16px;padding:24px;overflow-y:auto;min-height:0;height:100%;box-sizing:border-box;">
+                        
+                        <!-- Refund Amount Card -->
+                        <div style="background:#fff1f2;border:1px solid #fecdd3;border-radius:12px;padding:18px;display:flex;flex-direction:column;gap:4px;">
+                            <div style="display:flex;justify-content:space-between;align-items:center;">
+                                <span style="font-size:0.72rem;font-weight:800;color:#991b1b;text-transform:uppercase;letter-spacing:0.05em;">REFUND AMOUNT</span>
+                                <span id="rfMemRefundTypeBadge" style="background:#ffe4e6;color:#e11d48;font-size:0.72rem;font-weight:700;padding:3px 10px;border-radius:20px;">Full Refund</span>
+                            </div>
+                            <div id="rfMemAmountDisplay" style="font-size:2.25rem;font-weight:800;color:#e11d48;margin:2px 0;">₹0</div>
+                            <div style="font-size:0.78rem;color:#64748b;">Maximum refundable amount: <span id="rfMemMaxRefundText" style="font-weight:600;color:#475569;">₹0</span></div>
+                        </div>
+
+                        <!-- Refund Payment Method Select -->
+                        <div>
+                            <label style="font-size:0.82rem;font-weight:700;color:#334155;margin-bottom:6px;display:block;">Refund Payment Method <span style="color:#ef4444;">*</span></label>
+                            <select id="rfMemMethodDisplay" class="form-input" style="height:44px;border-radius:10px;border:1px solid #cbd5e1;font-weight:500;font-size:0.88rem;width:100%;background:#fff;padding:0 12px;cursor:pointer;">
+                                <option value="cash" selected>Cash</option>
+                                <option value="card">Card</option>
+                                <option value="upi">UPI</option>
+                                <option value="bank_transfer">Bank Transfer</option>
+                            </select>
+                        </div>
+
+                        <!-- Refund Reason Select -->
+                        <div>
+                            <label style="font-size:0.82rem;font-weight:700;color:#334155;margin-bottom:6px;display:block;">Refund Reason <span style="color:#ef4444;">*</span></label>
+                            <select id="rfMemReasonSelect" class="form-input" style="height:44px;border-radius:10px;border:1px solid #cbd5e1;font-weight:500;font-size:0.88rem;width:100%;background:#fff;padding:0 12px;cursor:pointer;">
+                                <option value="" disabled selected>Select a reason</option>
+                                <option value="Customer Request">Customer Request</option>
+                                <option value="Membership Cancelled">Membership Cancelled</option>
+                                <option value="Service Dissatisfaction">Service Dissatisfaction</option>
+                                <option value="Relocation / Moving">Relocation / Moving</option>
+                                <option value="Duplicate Payment">Duplicate Payment</option>
+                                <option value="Other">Other</option>
+                            </select>
+                        </div>
+
+                        <!-- Additional Note -->
+                        <div>
+                            <label style="font-size:0.82rem;font-weight:700;color:#334155;margin-bottom:6px;display:block;">Additional Note <span style="font-weight:400;color:#64748b;">(Optional)</span></label>
+                            <textarea id="rfMemNote" placeholder="Enter additional details..." style="min-height:95px;width:100%;border-radius:10px;border:1px solid #cbd5e1;font-size:0.85rem;padding:10px 12px;resize:vertical;font-family:inherit;box-sizing:border-box;"></textarea>
+                        </div>
+
+                        <!-- Please Confirm Box -->
+                        <div style="background:#eff6ff;border:1px solid #bfdbfe;border-radius:10px;padding:12px 14px;display:flex;gap:10px;align-items:flex-start;">
+                            <div style="color:#2563eb;margin-top:2px;flex-shrink:0;">
+                                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="16" x2="12" y2="12"></line><line x1="12" y1="8" x2="12.01" y2="8"></line></svg>
+                            </div>
+                            <div>
+                                <div style="font-size:0.82rem;font-weight:700;color:#1e3a8a;">Please confirm</div>
+                                <div style="font-size:0.78rem;color:#2563eb;margin-top:2px;line-height:1.4;">This will record a refund transaction and update the membership according to your refund policy.</div>
+                            </div>
+                        </div>
+
+                    </div>
+
+                </div>
+
+                <!-- Sticky Footer -->
+                <div style="padding:16px 28px;border-top:1px solid #e2e8f0;background:#fff;display:flex;justify-content:flex-end;align-items:center;gap:12px;flex-shrink:0;">
+                    <button type="button" class="btn btn-secondary" id="closeMemRefundBtn" style="height:44px;padding:0 24px;font-size:0.88rem;font-weight:600;border-radius:10px;background:#fff;border:1px solid #cbd5e1;cursor:pointer;transition:all 0.15s;" onmouseover="this.style.background='#f8fafc'" onmouseout="this.style.background='#fff'">Cancel</button>
+                    <button type="button" class="btn btn-primary" id="confirmMemRefundBtn" style="height:44px;padding:0 28px;font-size:0.88rem;font-weight:700;border-radius:10px;background:#dc2626;border:none;color:#fff;cursor:pointer;display:inline-flex;align-items:center;gap:8px;box-shadow:0 4px 6px -1px rgba(220,38,38,0.25);transition:all 0.15s;" onmouseover="this.style.background='#b91c1c'" onmouseout="this.style.background='#dc2626'">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="1 4 1 10 7 10"></polyline><path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10"></path></svg>
+                        <span>Issue Refund</span>
+                    </button>
                 </div>
             </div>
         </div>
         `;
         document.body.insertAdjacentHTML('beforeend', modalHtml);
-        if (window.feather) feather.replace();
 
         const overlay = document.getElementById('refundMembershipAdvancedOverlay');
         const close = () => { overlay.classList.remove('active'); purchaseToRefundObj = null; };
@@ -1598,38 +1742,141 @@ window.refundMembershipPurchase = async function(purchaseId) {
     const overlay = document.getElementById('refundMembershipAdvancedOverlay');
     overlay.classList.add('active');
 
-    const subtitle = document.getElementById('rfMemModalSubtitle');
+    // Reset / Populate UI Elements
+    const custNameEl = document.getElementById('rfMemCustomerName');
+    const custPhoneEl = document.getElementById('rfMemCustomerPhone');
+    const custEmailEl = document.getElementById('rfMemCustomerEmail');
+    const custAvatarEl = document.getElementById('rfMemCustomerAvatar');
+    const viewProfBtn = document.getElementById('rfMemCustomerViewProfileBtn');
+
+    const memBadgeEl = document.getElementById('rfMemBadge');
+    const planNameEl = document.getElementById('rfMemPlanName');
+    const memIdTextEl = document.getElementById('rfMemIdText');
+    const startDateEl = document.getElementById('rfMemStartDate');
+    const cancelledDateEl = document.getElementById('rfMemCancelledDate');
+    const statusBadgeEl = document.getElementById('rfMemStatusBadge');
+
+    const origMethodEl = document.getElementById('rfMemOrigMethod');
+    const origDateEl = document.getElementById('rfMemOrigDate');
+    const origTxnEl = document.getElementById('rfMemOrigTxnId');
+
     const amountDisplay = document.getElementById('rfMemAmountDisplay');
-    const methodDisplay = document.getElementById('rfMemMethodDisplay');
+    const maxRefundEl = document.getElementById('rfMemMaxRefundText');
+    const methodSelect = document.getElementById('rfMemMethodDisplay');
+    const reasonSelect = document.getElementById('rfMemReasonSelect');
     const noteField = document.getElementById('rfMemNote');
     const confirmBtn = document.getElementById('confirmMemRefundBtn');
 
-    // Reset UI
+    // 1. Member Details
     const custName = purchaseToRefundObj.customer_name || `${purchaseToRefundObj.first_name || ''} ${purchaseToRefundObj.last_name || ''}`.trim() || 'Customer';
+    const custPhone = purchaseToRefundObj.customer_phone || purchaseToRefundObj.phone || '—';
+    const custEmail = purchaseToRefundObj.customer_email || purchaseToRefundObj.email || '—';
+
+    if (custNameEl) custNameEl.textContent = custName;
+    if (custPhoneEl) custPhoneEl.textContent = custPhone;
+    if (custEmailEl) custEmailEl.textContent = custEmail;
+
+    const initials = custName.split(' ').map(n => n[0]).filter(Boolean).slice(0, 2).join('').toUpperCase() || 'CU';
+    if (custAvatarEl) custAvatarEl.textContent = initials;
+
+    if (viewProfBtn) {
+        if (purchaseToRefundObj.customer_id) {
+            viewProfBtn.style.display = 'inline-flex';
+            viewProfBtn.onclick = async (e) => {
+                e.preventDefault();
+                if (!window.viewCustomerProfile) {
+                    try { await import('./scripts/global-customer-profile-modal.js'); } catch(e) {}
+                }
+                if (window.viewCustomerProfile) {
+                    window.viewCustomerProfile(purchaseToRefundObj.customer_id, custName);
+                }
+            };
+        } else {
+            viewProfBtn.style.display = 'none';
+        }
+    }
+
+    // 2. Membership Details
     const planName = purchaseToRefundObj.plan_name || purchaseToRefundObj.membership_name || purchaseToRefundObj.name || 'Plan';
-    subtitle.textContent = `${custName} • ${planName}`;
-    amountDisplay.value = 'Loading...';
-    methodDisplay.value = 'Loading...';
+    const shortMemId = purchaseToRefundObj.membership_number 
+        ? `#MEM-${purchaseToRefundObj.membership_number}` 
+        : `#MEM-${String(purchaseToRefundObj.purchase_id || purchaseToRefundObj.id || '').slice(0, 6).toUpperCase()}`;
+
+    if (memBadgeEl) memBadgeEl.textContent = shortMemId;
+    if (memIdTextEl) memIdTextEl.textContent = shortMemId;
+    if (planNameEl) planNameEl.textContent = planName;
+
+    const rawStart = purchaseToRefundObj.purchase_date || purchaseToRefundObj.start_date || purchaseToRefundObj.created_at;
+    const formattedStartDate = rawStart ? new Date(rawStart).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' }) : '—';
+    if (startDateEl) startDateEl.textContent = formattedStartDate;
+
+    const rawCancelled = purchaseToRefundObj.cancelled_date || purchaseToRefundObj.updated_at || new Date().toISOString().split('T')[0];
+    const formattedCancelledDate = rawCancelled ? new Date(rawCancelled).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' }) : '—';
+    if (cancelledDateEl) cancelledDateEl.textContent = formattedCancelledDate;
+
+    if (statusBadgeEl) {
+        statusBadgeEl.textContent = 'Cancelled';
+        statusBadgeEl.style.background = '#fee2e2';
+        statusBadgeEl.style.color = '#991b1b';
+    }
+
+    // 3. Original Payment Skeletons
+    if (origMethodEl) origMethodEl.textContent = (purchaseToRefundObj.payment_method || 'UPI').toUpperCase();
+    if (origDateEl) origDateEl.textContent = formattedStartDate;
+    if (origTxnEl) origTxnEl.textContent = '—';
+
+    // 4. Right Column Form Skeletons
+    if (amountDisplay) amountDisplay.textContent = '₹...';
+    if (maxRefundEl) maxRefundEl.textContent = '₹...';
+    if (reasonSelect) {
+        reasonSelect.value = '';
+        reasonSelect.style.borderColor = '#cbd5e1';
+    }
     if (noteField) noteField.value = '';
-    if (confirmBtn) { confirmBtn.disabled = true; confirmBtn.textContent = 'Issue Refund'; }
+    if (confirmBtn) { 
+        confirmBtn.disabled = true; 
+        confirmBtn.innerHTML = `
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="1 4 1 10 7 10"></polyline><path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10"></path></svg>
+            <span>Issue Refund</span>
+        `;
+    }
 
     // Fetch ledger data from business_transactions
     try {
+        // Query fresh customer details asynchronously if available
+        if (purchaseToRefundObj.customer_id) {
+            supabase.from('customers').select('*').eq('customer_id', purchaseToRefundObj.customer_id).maybeSingle()
+                .then(({ data: c }) => {
+                    if (c) {
+                        if (c.customer_name && custNameEl) custNameEl.textContent = c.customer_name;
+                        if ((c.customer_phone || c.phone) && custPhoneEl) custPhoneEl.textContent = c.customer_phone || c.phone;
+                        if ((c.customer_email || c.email) && custEmailEl) custEmailEl.textContent = c.customer_email || c.email;
+                        const newInitials = ((c.customer_name || custName) || 'CU').split(' ').map(n => n[0]).filter(Boolean).slice(0, 2).join('').toUpperCase() || 'CU';
+                        if (custAvatarEl) custAvatarEl.textContent = newInitials;
+                    }
+                }).catch(() => {});
+        }
+
         const { data, error } = await supabase
             .from('business_transactions')
-            .select('amount, payment_method, status')
+            .select('id, amount, payment_method, status, paid_at')
             .eq('reference_id', purchaseId)
-            .eq('reference_type', 'membership');
+            .eq('reference_type', 'membership')
+            .order('paid_at', { ascending: true });
 
         if (error) throw error;
 
         let ledgerPaid = 0;
         let ledgerRefunded = 0;
+        let originalTx = null;
 
         (data || []).forEach(tx => {
             const val = Math.abs(Number(tx.amount || 0));
             const stat = (tx.status || '').toLowerCase().trim();
-            if (stat === 'paid') ledgerPaid += val;
+            if (stat === 'paid') {
+                ledgerPaid += val;
+                if (!originalTx) originalTx = tx;
+            }
             if (stat === 'refunded') ledgerRefunded += val;
         });
 
@@ -1641,41 +1888,65 @@ window.refundMembershipPurchase = async function(purchaseId) {
         const ledgerNet = ledgerPaid - ledgerRefunded;
         refundableMembershipAmount = Math.max(0, ledgerNet);
 
-        console.log('calculated refund limit:', refundableMembershipAmount, 'from paid:', ledgerPaid);
-        if (refundableMembershipAmount === 0 && Number(purchaseToRefundObj.price) > 0) {
+        if (refundableMembershipAmount === 0 && Number(purchaseToRefundObj.price) > 0 && ledgerRefunded === 0) {
             refundableMembershipAmount = Number(purchaseToRefundObj.price);
         }
 
-        amountDisplay.value = refundableMembershipAmount || 0;
-        amountDisplay.style.color = (refundableMembershipAmount <= 0) ? '#94a3b8' : '#dc2626';
+        if (amountDisplay) amountDisplay.textContent = `₹${refundableMembershipAmount.toLocaleString('en-IN')}`;
+        if (maxRefundEl) maxRefundEl.textContent = `₹${refundableMembershipAmount.toLocaleString('en-IN')}`;
 
-        const lastMethod = data && data.length > 0 ? (data[data.length - 1].payment_method || 'cash').toLowerCase() : 'cash';
-        methodDisplay.value = ['cash', 'upi', 'card'].includes(lastMethod) ? lastMethod : 'cash';
+        if (originalTx) {
+            if (origMethodEl) origMethodEl.textContent = (originalTx.payment_method || 'cash').toUpperCase();
+            if (origDateEl && originalTx.paid_at) {
+                origDateEl.textContent = new Date(originalTx.paid_at).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' });
+            }
+            if (origTxnEl && originalTx.id) {
+                origTxnEl.textContent = `#TXN-${String(originalTx.id).slice(0, 8).toUpperCase()}`;
+            }
+        }
 
-        confirmBtn.disabled = false;
-        confirmBtn.textContent = 'Issue Refund';
+        const lastMethod = (originalTx?.payment_method || purchaseToRefundObj.payment_method || 'cash').toLowerCase();
+        if (methodSelect) {
+            methodSelect.value = ['cash', 'upi', 'card', 'bank_transfer'].includes(lastMethod) ? lastMethod : 'cash';
+        }
+
+        if (confirmBtn) {
+            confirmBtn.disabled = (refundableMembershipAmount <= 0);
+            confirmBtn.style.opacity = (refundableMembershipAmount <= 0) ? '0.5' : '1';
+        }
 
     } catch (err) {
         console.error('Error fetching ledger for refund:', err);
-        amountDisplay.textContent = 'Error';
+        if (amountDisplay) amountDisplay.textContent = '₹0';
     }
 };
 
 async function processMembershipRefund() {
-    const amountDisplay = document.getElementById('rfMemAmountDisplay');
-    const finalRefundAmount = Math.abs(parseFloat(amountDisplay?.value || '0'));
+    if (!purchaseToRefundObj || refundableMembershipAmount <= 0) {
+        showToast('Please enter a valid refund amount higher than 0.', '#dc2626');
+        return;
+    }
 
-    if (!purchaseToRefundObj || finalRefundAmount <= 0) {
-        showToast('Please enter a valid refund amount higher than 0.');
+    const reasonSelect = document.getElementById('rfMemReasonSelect');
+    const reason = reasonSelect ? reasonSelect.value.trim() : '';
+    if (!reason) {
+        showToast('Please select a refund reason.', '#dc2626');
+        if (reasonSelect) {
+            reasonSelect.focus();
+            reasonSelect.style.borderColor = '#ef4444';
+            setTimeout(() => { if (reasonSelect) reasonSelect.style.borderColor = '#cbd5e1'; }, 2500);
+        }
         return;
     }
     
     const confirmBtn = document.getElementById('confirmMemRefundBtn');
     const note = document.getElementById('rfMemNote')?.value.trim();
     const purchaseId = purchaseToRefundObj.purchase_id || purchaseToRefundObj.id;
+    const method = (document.getElementById('rfMemMethodDisplay')?.value || 'cash').toLowerCase();
+    const fullNotes = reason + (note ? ` - ${note}` : '');
 
     if (confirmBtn) {
-        confirmBtn.textContent = 'Processing...';
+        confirmBtn.innerHTML = '<span>Processing...</span>';
         confirmBtn.disabled = true;
     }
 
@@ -1688,10 +1959,10 @@ async function processMembershipRefund() {
                 branch_id: getBranchId(),
                 reference_id: purchaseId,
                 reference_type: 'membership',
-                amount: finalRefundAmount,
+                amount: refundableMembershipAmount,
                 status: 'refunded',
-                payment_method: (document.getElementById('rfMemMethodDisplay')?.value || 'cash').toLowerCase(),
-                notes: note || `Refund processed for membership ${purchaseId}`,
+                payment_method: method,
+                notes: fullNotes || `Refund processed for membership ${purchaseId}`,
                 paid_at: new Date().toISOString()
             });
 
@@ -1703,22 +1974,33 @@ async function processMembershipRefund() {
         const refundDate = new Date().toISOString().split('T')[0];
         const { error: memError } = await supabase
             .from('membership_purchases')
-            .update({ status: 'refunded', payment_status: 'refunded', notes: note || null, cancelled_date: refundDate })
+            .update({ status: 'refunded', payment_status: 'refunded', notes: fullNotes || null, cancelled_date: refundDate })
             .eq('purchase_id', purchaseId);
 
         if (memError) throw memError;
 
         showToast('Membership has been refunded.', '#dc2626');
-        document.getElementById('refundMembershipAdvancedOverlay').classList.remove('active');
+        if (window.notifyEvent) {
+            window.notifyEvent('payments', 'evt_payment_refunded', {
+                title: 'Membership Refunded',
+                message: `Refund of ₹${refundableMembershipAmount.toLocaleString('en-IN')} processed.`
+            });
+        }
+
+        document.getElementById('refundMembershipAdvancedOverlay')?.classList.remove('active');
         
         await loadPurchases();
 
     } catch (err) {
         console.error('Membership Refund error:', err);
         showToast('Failed to process refund: ' + (err.message || 'Unknown error'), '#dc2626');
+    } finally {
         if (confirmBtn) {
-            confirmBtn.textContent = 'Issue Refund';
             confirmBtn.disabled = false;
+            confirmBtn.innerHTML = `
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="1 4 1 10 7 10"></polyline><path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10"></path></svg>
+                <span>Issue Refund</span>
+            `;
         }
     }
 }
