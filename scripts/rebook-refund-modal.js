@@ -401,9 +401,6 @@ function ensureModalsInjected() {
                     </div>
 
                 </div>
-            </div>
-
-
 
             <!-- Sticky Footer -->
             <div style="padding:16px 28px;border-top:1px solid #e2e8f0;background:#fff;display:flex;justify-content:flex-end;align-items:center;gap:12px;flex-shrink:0;">
