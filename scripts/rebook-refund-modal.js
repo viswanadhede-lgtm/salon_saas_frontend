@@ -185,7 +185,7 @@ function ensureModalsInjected() {
     if (!document.getElementById('refundBookingModal')) {
         document.body.insertAdjacentHTML('beforeend', `
         <div class="modal-overlay" id="refundBookingModal" style="z-index:10005;backdrop-filter:blur(6px);">
-            <div class="modal-container" style="width:920px;max-width:96vw;max-height:92vh;background:#fff;border-radius:16px;box-shadow:0 25px 50px -12px rgba(0,0,0,0.25);border:1px solid #e2e8f0;display:flex;flex-direction:column;overflow:hidden;">
+            <div class="modal-container" style="width:1160px;max-width:98vw;max-height:96vh;background:#fff;border-radius:16px;box-shadow:0 25px 50px -12px rgba(0,0,0,0.25);border:1px solid #e2e8f0;display:flex;flex-direction:column;overflow:hidden;">
                 <!-- Header -->
                 <div class="modal-header" style="padding:18px 24px;border-bottom:1px solid #f1f5f9;display:flex;justify-content:space-between;align-items:center;background:#fff;">
                     <div style="display:flex;align-items:center;gap:12px;">
