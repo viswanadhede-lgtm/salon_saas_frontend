@@ -602,7 +602,17 @@ export function populateGlobalHeader() {
             const profileBranch       = document.getElementById('profileBranch');
             const profileLastLogin    = document.getElementById('profileLastLogin');
 
-            if (profileAvatarImg && avatarUrl)                          profileAvatarImg.src  = avatarUrl;
+            if (profileAvatarImg && avatarUrl) {
+                profileAvatarImg.src = avatarUrl;
+                if (!avatarUrl.includes('ui-avatars.com')) {
+                    profileAvatarImg.title = 'Double-click to enlarge';
+                    const wrap = profileAvatarImg.closest('.profile-avatar-wrap');
+                    if (wrap) {
+                        wrap.style.cursor = 'zoom-in';
+                        wrap.title = 'Double-click to enlarge';
+                    }
+                }
+            }
             if (profileNameDisplay && context.user.name)                profileNameDisplay.textContent = context.user.name;
             if (profileRoleDisplay && context.user.role_name)           profileRoleDisplay.textContent = context.user.role_name;
             if (profileFirstName   && context.user.first_name)          profileFirstName.value  = context.user.first_name;
@@ -725,10 +735,178 @@ export function populateDateChip() {
     textEl.textContent = formatted;     // e.g. "Saturday, 20 Sep 2026"
 }
 
-// Run on DOM ready so the date chip is visible as early as possible
-document.addEventListener('DOMContentLoaded', () => {
+// ─── Profile Photo Lightbox (Double-click to View Enlarged) ───────────────────
+export function initProfilePhotoLightbox() {
+    if (window._profilePhotoLightboxInitialized) return;
+    window._profilePhotoLightboxInitialized = true;
+
+    // Inject styles once
+    if (!document.getElementById('profilePhotoLightboxStyles')) {
+        const style = document.createElement('style');
+        style.id = 'profilePhotoLightboxStyles';
+        style.textContent = `
+            .profile-photo-lightbox {
+                position: fixed;
+                inset: 0;
+                z-index: 100000;
+                display: flex;
+                flex-direction: column;
+                align-items: center;
+                justify-content: center;
+                background: rgba(15, 23, 42, 0.85);
+                backdrop-filter: blur(12px);
+                -webkit-backdrop-filter: blur(12px);
+                opacity: 0;
+                pointer-events: none;
+                transition: opacity 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+                cursor: zoom-out;
+                padding: 24px;
+                box-sizing: border-box;
+            }
+            .profile-photo-lightbox.active {
+                opacity: 1;
+                pointer-events: auto;
+            }
+            .profile-photo-lightbox-close {
+                position: absolute;
+                top: 24px;
+                right: 28px;
+                width: 44px;
+                height: 44px;
+                border-radius: 50%;
+                border: 1px solid rgba(255, 255, 255, 0.2);
+                background: rgba(255, 255, 255, 0.12);
+                color: #ffffff;
+                font-size: 28px;
+                line-height: 1;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                cursor: pointer;
+                transition: all 0.2s ease;
+                backdrop-filter: blur(8px);
+                z-index: 100001;
+            }
+            .profile-photo-lightbox-close:hover {
+                background: rgba(255, 255, 255, 0.25);
+                transform: scale(1.08);
+            }
+            .profile-photo-lightbox-body {
+                position: relative;
+                max-width: 90vw;
+                max-height: 82vh;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                cursor: default;
+            }
+            .profile-photo-lightbox-img {
+                max-width: min(85vw, 680px);
+                max-height: min(80vh, 680px);
+                width: auto;
+                height: auto;
+                object-fit: contain;
+                border-radius: 16px;
+                box-shadow: 0 25px 60px -15px rgba(0, 0, 0, 0.7), 0 0 0 1px rgba(255, 255, 255, 0.15);
+                transform: scale(0.92);
+                transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+                user-select: none;
+            }
+            .profile-photo-lightbox.active .profile-photo-lightbox-img {
+                transform: scale(1);
+            }
+            .profile-photo-lightbox-caption {
+                margin-top: 14px;
+                font-size: 0.85rem;
+                color: rgba(255, 255, 255, 0.7);
+                font-family: Inter, system-ui, -apple-system, sans-serif;
+                letter-spacing: 0.2px;
+                user-select: none;
+                cursor: default;
+            }
+        `;
+        document.head.appendChild(style);
+    }
+
+    function createLightbox() {
+        let el = document.getElementById('profilePhotoLightbox');
+        if (!el) {
+            el = document.createElement('div');
+            el.id = 'profilePhotoLightbox';
+            el.className = 'profile-photo-lightbox';
+            el.setAttribute('role', 'dialog');
+            el.setAttribute('aria-modal', 'true');
+            el.setAttribute('aria-label', 'Enlarged Profile Photo');
+            el.innerHTML = `
+                <button type="button" class="profile-photo-lightbox-close" title="Close (Esc)">&times;</button>
+                <div class="profile-photo-lightbox-body">
+                    <img id="profilePhotoLightboxImg" class="profile-photo-lightbox-img" src="" alt="Enlarged Profile Photo">
+                </div>
+                <div class="profile-photo-lightbox-caption">Click outside or press Esc to close</div>
+            `;
+            document.body.appendChild(el);
+
+            // Close when clicking outside image or clicking close button
+            el.addEventListener('click', (e) => {
+                if (!e.target.closest('.profile-photo-lightbox-img')) {
+                    closeLightbox();
+                }
+            });
+
+            // Close on Escape key
+            document.addEventListener('keydown', (e) => {
+                if (e.key === 'Escape') closeLightbox();
+            });
+        }
+        return el;
+    }
+
+    function openLightbox(src) {
+        if (!src) return;
+        const el = createLightbox();
+        const img = el.querySelector('#profilePhotoLightboxImg');
+        if (img) img.src = src;
+        el.classList.add('active');
+    }
+
+    function closeLightbox() {
+        const el = document.getElementById('profilePhotoLightbox');
+        if (el && el.classList.contains('active')) {
+            el.classList.remove('active');
+        }
+    }
+
+    window.openProfilePhotoLightbox = openLightbox;
+    window.closeProfilePhotoLightbox = closeLightbox;
+
+    // Listen for double clicks on profile avatar elements
+    document.addEventListener('dblclick', (e) => {
+        const avatarWrap = e.target.closest('#profileAvatarImg, .profile-avatar-wrap');
+        if (!avatarWrap) return;
+
+        const img = avatarWrap.tagName === 'IMG'
+            ? avatarWrap
+            : (avatarWrap.querySelector('#profileAvatarImg') || avatarWrap.querySelector('img'));
+
+        if (!img || !img.src) return;
+
+        // Skip generic ui-avatars initials placeholder
+        if (img.src.includes('ui-avatars.com')) return;
+
+        openLightbox(img.src);
+    });
+}
+
+// Run on DOM ready so the date chip and photo lightbox are initialized as early as possible
+if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', () => {
+        populateDateChip();
+        initProfilePhotoLightbox();
+    });
+} else {
     populateDateChip();
-});
+    initProfilePhotoLightbox();
+}
 
 // ─── Auth Spinner ─────────────────────────────────────────────────────────────
 function removeAuthSpinner() {
