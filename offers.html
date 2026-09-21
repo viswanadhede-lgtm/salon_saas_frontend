@@ -1080,7 +1080,7 @@
 
     <!-- Schedule Modal -->
     <div class="modal-overlay" id="scheduleModalOverlay">
-        <div class="modal-container" id="scheduleModal" style="min-height: 60vh;">
+        <div class="modal-container" id="scheduleModal" style="width: 75%; max-width: 75%; max-height: 85vh; display: flex; flex-direction: column;">
             <div class="modal-header">
                 <div class="header-titles">
                     <h2 id="scheduleModalTitle">Schedule</h2>
@@ -1089,7 +1089,7 @@
                 <button class="modal-close" id="closeScheduleModal"><i data-feather="x"></i></button>
             </div>
 
-                        <div class="modal-body" style="padding: 0; min-height: 520px; overflow-y: auto;">
+                        <div class="modal-body" style="padding: 0; flex: 1; min-height: 0; overflow-y: auto;">
                 <div id="scheduleModalGrid" style="display: grid; grid-template-columns: 35% 65%; gap: 0; min-height: 100%; width: 100%;">
 
                     <!-- LEFT: Logged-in User Information (35%) -->
@@ -1214,8 +1214,8 @@
                 </div>
             </div>
 
-            <div class="modal-footer" style="justify-content: flex-end;">
-                <button type="button" class="btn btn-secondary" id="btnCloseScheduleFooter">Close</button>
+                        <div class="modal-footer" style="justify-content: flex-end; align-items: center; padding: 1rem 1.5rem; border-top: 1px solid #f1f5f9; background: #ffffff; flex-shrink: 0;">
+                <button type="button" class="btn btn-secondary" id="btnCloseScheduleFooter" style="padding: 8px 24px;">Close</button>
             </div>
         </div>
     </div>
