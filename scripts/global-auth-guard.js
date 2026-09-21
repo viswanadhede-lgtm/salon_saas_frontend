@@ -602,17 +602,7 @@ export function populateGlobalHeader() {
             const profileBranch       = document.getElementById('profileBranch');
             const profileLastLogin    = document.getElementById('profileLastLogin');
 
-            if (profileAvatarImg && avatarUrl) {
-                profileAvatarImg.src = avatarUrl;
-                if (!avatarUrl.includes('ui-avatars.com')) {
-                    profileAvatarImg.title = 'Double-click to enlarge';
-                    const wrap = profileAvatarImg.closest('.profile-avatar-wrap');
-                    if (wrap) {
-                        wrap.style.cursor = 'zoom-in';
-                        wrap.title = 'Double-click to enlarge';
-                    }
-                }
-            }
+            if (profileAvatarImg && avatarUrl) profileAvatarImg.src = avatarUrl;
             if (profileNameDisplay && context.user.name)                profileNameDisplay.textContent = context.user.name;
             if (profileRoleDisplay && context.user.role_name)           profileRoleDisplay.textContent = context.user.role_name;
             if (profileFirstName   && context.user.first_name)          profileFirstName.value  = context.user.first_name;

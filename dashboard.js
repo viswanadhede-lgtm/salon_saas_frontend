@@ -1287,15 +1287,7 @@ document.addEventListener('DOMContentLoaded', () => {
             reader.onload = (ev) => {
                 const dataUrl = ev.target.result;
                 const modalAvatar = document.getElementById('profileAvatarImg');
-                if (modalAvatar) {
-                    modalAvatar.src = dataUrl;
-                    modalAvatar.title = 'Double-click to enlarge';
-                    const wrap = modalAvatar.closest('.profile-avatar-wrap');
-                    if (wrap) {
-                        wrap.style.cursor = 'zoom-in';
-                        wrap.title = 'Double-click to enlarge';
-                    }
-                }
+                if (modalAvatar) modalAvatar.src = dataUrl;
                 const headerAvatar = document.querySelector('#avatarBtn img');
                 if (headerAvatar) headerAvatar.src = dataUrl;
             };
