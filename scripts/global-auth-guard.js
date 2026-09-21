@@ -489,7 +489,7 @@ export async function runGlobalAuthGuard() {
 
         // 9. Load profile for header hydration
         const { data: profileRows } = await supabase.from('profiles')
-            .select('first_name, last_name, phone, email, joined_on, emergency_contact_name, emergency_contact_number')
+            .select('first_name, last_name, phone, email, joined_on, emergency_contact_name, emergency_contact_number, profile_photo')
             .eq('user_id', user_id);
         const profile = profileRows?.[0];
 
@@ -503,13 +503,14 @@ export async function runGlobalAuthGuard() {
         const appContext = {
             user: {
                 user_id,
-                name:       userRow.name,
-                email:      userRow.email,
-                phone:      userRow.phone,
-                role_name:  userRow.role_name,
-                first_name: profile?.first_name || '',
-                last_name:  profile?.last_name  || '',
-                joined_on:  profile?.joined_on  || '',
+                name:          userRow.name,
+                email:         userRow.email,
+                phone:         userRow.phone,
+                role_name:     userRow.role_name,
+                first_name:    profile?.first_name || '',
+                last_name:     profile?.last_name  || '',
+                joined_on:     profile?.joined_on  || '',
+                profile_photo: profile?.profile_photo || '',
                 emergency_name:  profile?.emergency_contact_name || '',
                 emergency_phone: profile?.emergency_contact_number || ''
             },
@@ -579,9 +580,9 @@ export function populateGlobalHeader() {
             if (roleEl && context.user.role_name) roleEl.textContent = context.user.role_name;
         }
 
-        // Avatar
-        let avatarUrl = '';
-        if (context.user?.name) {
+        // Avatar: use saved profile_photo if available, else fallback to ui-avatars initials
+        let avatarUrl = context.user?.profile_photo || '';
+        if (!avatarUrl && context.user?.name) {
             avatarUrl = `https://ui-avatars.com/api/?name=${encodeURIComponent(context.user.name)}&background=1E3A8A&color=fff`;
         }
         if (avatarImg && avatarUrl) avatarImg.src = avatarUrl;
@@ -651,6 +652,59 @@ export function populateGlobalHeader() {
         console.error('[Auth Guard] Failed to hydrate header:', e);
     }
 }
+
+// ─── Profile Photo Upload ─────────────────────────────────────────────────────
+// Uploads a File to the profile-photos bucket under {user_id}/{filename}.
+// Uses the user's auth token (required by Storage RLS policy).
+// Returns the public URL string on success, or null on failure.
+window.uploadProfilePhoto = async function(file, userId) {
+    if (!file || !userId) return null;
+
+    const ALLOWED_TYPES = ['image/jpeg', 'image/png', 'image/webp'];
+    const MAX_SIZE_BYTES = 2 * 1024 * 1024; // 2 MB
+
+    if (!ALLOWED_TYPES.includes(file.type)) {
+        alert('Only JPEG, PNG, or WebP images are allowed.');
+        return null;
+    }
+    if (file.size > MAX_SIZE_BYTES) {
+        alert('Photo must be 2 MB or smaller.');
+        return null;
+    }
+
+    const token = localStorage.getItem('token');
+    if (!token) {
+        alert('Session expired. Please refresh and try again.');
+        return null;
+    }
+
+    const timestamp    = Math.floor(Date.now() / 1000);
+    const randomSuffix = Math.random().toString(36).substring(2, 8);
+    const safeName     = file.name.replace(/[^a-zA-Z0-9.\-]/g, '').toLowerCase() || 'photo.jpg';
+    const filename     = `${timestamp}-${randomSuffix}-${safeName}`;
+    const storagePath  = `${userId}/${filename}`;
+
+    try {
+        const res = await fetch(`${supabase._url}/storage/v1/object/profile-photos/${storagePath}`, {
+            method: 'POST',
+            headers: {
+                'apikey':        supabase._key,
+                'Authorization': `Bearer ${token}`,
+                'Content-Type':  file.type || 'application/octet-stream'
+            },
+            body: file
+        });
+
+        const data = await res.json().catch(() => null);
+        if (!res.ok) throw new Error(data?.message || data?.error || `HTTP ${res.status}`);
+
+        return `${supabase._url}/storage/v1/object/public/profile-photos/${storagePath}`;
+    } catch (err) {
+        console.error('[Profile Photo] Upload failed:', err);
+        alert('Failed to upload profile photo. Please try again.');
+        return null;
+    }
+};
 
 // ─── Date Chip ────────────────────────────────────────────────────────────────
 // Called both from populateGlobalHeader() and on DOMContentLoaded so the chip

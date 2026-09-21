@@ -1,5 +1,8 @@
 // dashboard.js - Logic for the main application dashboard
 
+// Tracks the profile photo file selected by the user until Save is clicked.
+let pendingProfilePhoto = null;
+
 window.navigateToBooking = function(status, bookingId) {
     status = (status || '').toLowerCase();
     if (status === 'completed') {
@@ -778,77 +781,98 @@ document.addEventListener('DOMContentLoaded', () => {
     async function handleProfileUpdate() {
         const btn = document.getElementById('btnSaveGenericModal');
         const originalText = btn.textContent;
-        
+
         try {
             const contextStr = localStorage.getItem('appContext');
-            if (!contextStr) throw new Error("App context not found. Please refresh.");
+            if (!contextStr) throw new Error('App context not found. Please refresh.');
             const context = JSON.parse(contextStr);
             const user_id = context.user.user_id;
 
-            const firstName = document.getElementById('profileFirstName').value.trim();
-            const lastName  = document.getElementById('profileLastName').value.trim();
-            const phone     = document.getElementById('profilePhone').value.trim();
+            const firstName      = document.getElementById('profileFirstName').value.trim();
+            const lastName       = document.getElementById('profileLastName').value.trim();
+            const phone          = document.getElementById('profilePhone').value.trim();
             const emergencyName  = document.getElementById('profileEmergencyName').value.trim();
             const emergencyPhone = document.getElementById('profileEmergencyPhone').value.trim();
 
-            if (!firstName) throw new Error("First name is required.");
+            if (!firstName) throw new Error('First name is required.');
 
             btn.textContent = 'Saving...';
             btn.disabled = true;
 
+            // 1. Upload profile photo if one was staged
+            let newPhotoUrl = null;
+            if (pendingProfilePhoto) {
+                if (typeof window.uploadProfilePhoto === 'function') {
+                    newPhotoUrl = await window.uploadProfilePhoto(pendingProfilePhoto, user_id);
+                    if (!newPhotoUrl) {
+                        // Upload failed — user was already alerted; abort save
+                        return;
+                    }
+                } else {
+                    console.warn('uploadProfilePhoto helper not available.');
+                }
+            }
+
             const { supabase } = await import('./lib/supabase.js');
 
-            // 1. Update Profiles Table
+            // 2. Build profiles update payload
+            const profilePayload = {
+                first_name:               firstName,
+                last_name:                lastName,
+                phone:                    phone,
+                emergency_contact_name:   emergencyName,
+                emergency_contact_number: emergencyPhone
+            };
+            if (newPhotoUrl) profilePayload.profile_photo = newPhotoUrl;
+
+            // 3. Update profiles table
             const { error: profileErr } = await supabase
                 .from('profiles')
-                .update({
-                    first_name: firstName,
-                    last_name: lastName,
-                    phone: phone,
-                    emergency_contact_name: emergencyName,
-                    emergency_contact_number: emergencyPhone
-                })
+                .update(profilePayload)
                 .eq('user_id', user_id);
 
             if (profileErr) throw profileErr;
 
-            // 2. Update Users Table (for core name/phone consistency)
+            // 4. Update users table (name + phone consistency)
             const fullName = `${firstName} ${lastName}`.trim();
             const { error: userErr } = await supabase
                 .from('users')
-                .update({
-                    name: fullName,
-                    phone: phone
-                })
+                .update({ name: fullName, phone })
                 .eq('user_id', user_id);
 
             if (userErr) throw userErr;
 
-            // 3. Update Sync local appContext
-            context.user.name = fullName;
-            context.user.first_name = firstName;
-            context.user.last_name = lastName;
-            context.user.phone = phone;
-            context.user.emergency_name = emergencyName;
+            // 5. Sync local appContext cache
+            context.user.name            = fullName;
+            context.user.first_name      = firstName;
+            context.user.last_name       = lastName;
+            context.user.phone           = phone;
+            context.user.emergency_name  = emergencyName;
             context.user.emergency_phone = emergencyPhone;
+            if (newPhotoUrl) context.user.profile_photo = newPhotoUrl;
             localStorage.setItem('appContext', JSON.stringify(context));
 
-            // 4. Update UI Header & Close
+            // 6. Clear staged photo
+            pendingProfilePhoto = null;
+            const photoInput = document.getElementById('profilePhotoInput');
+            if (photoInput) photoInput.value = '';
+
+            // 7. Refresh header avatars + profile modal fields
             if (typeof window.populateGlobalHeader === 'function') {
                 window.populateGlobalHeader();
             }
-            
+
             if (typeof window.toast === 'function') {
-                window.toast("Profile updated successfully!");
+                window.toast('Profile updated successfully!');
             } else {
-                alert("Profile updated successfully!");
+                alert('Profile updated successfully!');
             }
 
             closeGenericModalFn();
 
         } catch (err) {
-            console.error("Profile Update Error:", err);
-            alert(err.message || "Failed to update profile.");
+            console.error('Profile Update Error:', err);
+            alert(err.message || 'Failed to update profile.');
         } finally {
             btn.textContent = originalText;
             btn.disabled = false;
@@ -1234,20 +1258,36 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     // ----------------------------------------------------------------
-    // Change Photo — update modal avatar and header avatar live
+    // Change Photo — validate, preview locally, and stage for upload
     // ----------------------------------------------------------------
     const profilePhotoInput = document.getElementById('profilePhotoInput');
     if (profilePhotoInput) {
         profilePhotoInput.addEventListener('change', (e) => {
             const file = e.target.files[0];
             if (!file) return;
+
+            // Client-side validation (mirrors server-side bucket policy)
+            const ALLOWED = ['image/jpeg', 'image/png', 'image/webp'];
+            if (!ALLOWED.includes(file.type)) {
+                alert('Only JPEG, PNG, or WebP images are allowed.');
+                profilePhotoInput.value = '';
+                return;
+            }
+            if (file.size > 2 * 1024 * 1024) {
+                alert('Photo must be 2 MB or smaller.');
+                profilePhotoInput.value = '';
+                return;
+            }
+
+            // Stage file — will be uploaded on Save
+            pendingProfilePhoto = file;
+
+            // Show local preview immediately
             const reader = new FileReader();
             reader.onload = (ev) => {
                 const dataUrl = ev.target.result;
-                // Update modal avatar
                 const modalAvatar = document.getElementById('profileAvatarImg');
                 if (modalAvatar) modalAvatar.src = dataUrl;
-                // Update header avatar
                 const headerAvatar = document.querySelector('#avatarBtn img');
                 if (headerAvatar) headerAvatar.src = dataUrl;
             };
