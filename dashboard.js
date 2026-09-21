@@ -1095,7 +1095,7 @@ document.addEventListener('DOMContentLoaded', () => {
             // 1. Find staff_id by email
             const { data: staffDataArr, error: staffErr } = await supabase
                 .from('staff')
-                .select('staff_id, role_name, role')
+                .select('staff_id, role_name')
                 .eq('email', userEmail)
                 .eq('company_id', companyId)
                 .limit(1);
@@ -1103,7 +1103,7 @@ document.addEventListener('DOMContentLoaded', () => {
             if (staffErr) throw staffErr;
             const staffData = staffDataArr && staffDataArr.length > 0 ? staffDataArr[0] : null;
             if (staffData) {
-                const desig = staffData.role_name || staffData.role;
+                const desig = staffData.role_name;
                 const desigEl = document.getElementById('scheduleUserDesignation');
                 if (desigEl && desig) desigEl.textContent = desig;
             }
