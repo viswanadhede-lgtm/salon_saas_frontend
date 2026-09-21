@@ -882,9 +882,12 @@
                         <p class="profile-role-display" style="font-size: 0.95rem; padding: 6px 18px;">Owner</p>
                     </div>
 
-                    <!-- RIGHT: Form fields -->
+                                        <!-- RIGHT: Form fields -->
                     <div
                         style="display: flex; flex-direction: column; padding: 1rem 2.5rem 3rem 2.5rem; gap: 0; width: 100%; max-width: 720px; margin: 0 auto; box-sizing: border-box; justify-content: flex-start;">
+
+                        <!-- SECTION 1: Personal Information -->
+                        <h3 style="font-size: 1rem; font-weight: 600; color: #1e293b; margin-bottom: 16px; padding-bottom: 10px; border-bottom: 1px solid #e2e8f0;">Personal Information</h3>
 
                         <!-- First Name + Last Name -->
                         <div class="form-grid" style="gap: 16px; margin-bottom: 16px;">
@@ -907,39 +910,60 @@
                                 placeholder="Phone number">
                         </div>
 
-                        <!-- Emergency Contact Split -->
-                        <div class="form-grid" style="gap: 16px; margin-bottom: 24px;">
-                            <div class="form-group" style="margin-bottom: 0;">
-                                <label class="form-label" for="profileEmergencyName">Emergency Contact Name</label>
-                                <input type="text" id="profileEmergencyName" class="form-input"
-                                    placeholder="Contact name">
-                            </div>
-                            <div class="form-group" style="margin-bottom: 0;">
-                                <label class="form-label" for="profileEmergencyPhone">Emergency Contact Number</label>
-                                <input type="tel" id="profileEmergencyPhone" class="form-input"
-                                    placeholder="Contact number">
-                            </div>
-                        </div>
-
-                        <!-- Email (read-only) -->
-                        <div class="form-group">
-                            <label class="form-label" for="profileEmail">Email</label>
+                        <!-- Email Address (read-only) -->
+                        <div class="form-group" style="margin-bottom: 24px;">
+                            <label class="form-label" for="profileEmail">Email Address</label>
                             <input type="email" id="profileEmail" class="form-input read-only-input"
                                 value="admin@salon.com" readonly>
                         </div>
 
-                        <!-- Role (read-only) -->
-                        <div class="form-group">
-                            <label class="form-label" for="profileRole">Role</label>
-                            <input type="text" id="profileRole" class="form-input read-only-input" value="Owner"
-                                readonly>
+                        <!-- SECTION 2: Emergency Contact -->
+                        <h3 style="font-size: 1rem; font-weight: 600; color: #1e293b; margin-bottom: 16px; padding-bottom: 10px; border-bottom: 1px solid #e2e8f0; display: flex; align-items: center; justify-content: space-between;">
+                            Emergency Contact
+                            <span style="font-size: 0.78rem; font-weight: 400; color: #94a3b8; text-transform: uppercase; letter-spacing: 0.05em;">Optional</span>
+                        </h3>
+
+                        <!-- Emergency Contact Split -->
+                        <div class="form-grid" style="gap: 16px; margin-bottom: 24px;">
+                            <div class="form-group" style="margin-bottom: 0;">
+                                <label class="form-label" for="profileEmergencyName">Contact Name</label>
+                                <input type="text" id="profileEmergencyName" class="form-input"
+                                    placeholder="Enter contact name">
+                            </div>
+                            <div class="form-group" style="margin-bottom: 0;">
+                                <label class="form-label" for="profileEmergencyPhone">Contact Number</label>
+                                <input type="tel" id="profileEmergencyPhone" class="form-input"
+                                    placeholder="Enter contact number">
+                            </div>
                         </div>
 
-                        <!-- Joined On (read-only) -->
-                        <div class="form-group">
-                            <label class="form-label" for="profileJoined">Joined On</label>
-                            <input type="text" id="profileJoined" class="form-input read-only-input"
-                                value="January 15, 2024" readonly>
+                        <!-- SECTION 3: Account Information -->
+                        <h3 style="font-size: 1rem; font-weight: 600; color: #1e293b; margin-bottom: 16px; padding-bottom: 10px; border-bottom: 1px solid #e2e8f0;">Account Information</h3>
+
+                        <!-- Role + Assigned Branch (read-only) -->
+                        <div class="form-grid" style="gap: 16px; margin-bottom: 16px;">
+                            <div class="form-group" style="margin-bottom: 0;">
+                                <label class="form-label" for="profileRole">Role</label>
+                                <input type="text" id="profileRole" class="form-input read-only-input" value="Owner" readonly>
+                            </div>
+                            <div class="form-group" style="margin-bottom: 0;">
+                                <label class="form-label" for="profileBranch">Assigned Branch</label>
+                                <input type="text" id="profileBranch" class="form-input read-only-input" value="Main Branch" readonly>
+                            </div>
+                        </div>
+
+                        <!-- Joined On + Last Login (read-only) -->
+                        <div class="form-grid" style="gap: 16px; margin-bottom: 16px;">
+                            <div class="form-group" style="margin-bottom: 0;">
+                                <label class="form-label" for="profileJoined">Joined On</label>
+                                <input type="text" id="profileJoined" class="form-input read-only-input"
+                                    value="January 15, 2024" readonly>
+                            </div>
+                            <div class="form-group" style="margin-bottom: 0;">
+                                <label class="form-label" for="profileLastLogin">Last Login</label>
+                                <input type="text" id="profileLastLogin" class="form-input read-only-input"
+                                    value="Today" readonly>
+                            </div>
                         </div>
 
                     </div>

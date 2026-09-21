@@ -598,6 +598,9 @@ export function populateGlobalHeader() {
             const profileRoleInput    = document.getElementById('profileRole');
             const profileJoined       = document.getElementById('profileJoined');
 
+            const profileBranch       = document.getElementById('profileBranch');
+            const profileLastLogin    = document.getElementById('profileLastLogin');
+
             if (profileAvatarImg && avatarUrl)                          profileAvatarImg.src  = avatarUrl;
             if (profileNameDisplay && context.user.name)                profileNameDisplay.textContent = context.user.name;
             if (profileRoleDisplay && context.user.role_name)           profileRoleDisplay.textContent = context.user.role_name;
@@ -607,6 +610,15 @@ export function populateGlobalHeader() {
             if (profileEmail       && context.user.email)               profileEmail.value      = context.user.email;
             if (profileRoleInput   && context.user.role_name)           profileRoleInput.value  = context.user.role_name;
             if (profileJoined      && context.user.joined_on)           profileJoined.value     = context.user.joined_on;
+
+            // Assigned Branch & Last Login (read-only)
+            if (profileBranch) {
+                const currentBranch = (context.branches || []).find(b => (b.branch_id || b.id) === (context.current_branch_id || localStorage.getItem('active_branch_id')));
+                profileBranch.value = currentBranch?.branch_name || currentBranch?.name || 'Main Branch';
+            }
+            if (profileLastLogin) {
+                profileLastLogin.value = 'Today';
+            }
 
             const profileEmergencyName = document.getElementById('profileEmergencyName');
             const profileEmergencyPhone = document.getElementById('profileEmergencyPhone');
