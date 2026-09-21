@@ -749,7 +749,7 @@ export function initProfilePhotoLightbox() {
                 opacity: 0;
                 pointer-events: none;
                 transition: opacity 0.25s cubic-bezier(0.16, 1, 0.3, 1);
-                cursor: zoom-out;
+                cursor: default;
                 padding: 24px;
                 box-sizing: border-box;
             }
