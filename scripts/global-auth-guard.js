@@ -625,6 +625,28 @@ export function populateGlobalHeader() {
             const profileEmergencyPhone = document.getElementById('profileEmergencyPhone');
             if (profileEmergencyName && context.user.emergency_name)    profileEmergencyName.value = context.user.emergency_name;
             if (profileEmergencyPhone && context.user.emergency_phone)  profileEmergencyPhone.value = context.user.emergency_phone;
+
+            // Schedule modal fields (Left column 35%)
+            const scheduleUserAvatarImg   = document.getElementById('scheduleUserAvatarImg');
+            const scheduleUserName        = document.getElementById('scheduleUserName');
+            const scheduleUserRole        = document.getElementById('scheduleUserRole');
+            const scheduleUserEmail       = document.getElementById('scheduleUserEmail');
+            const scheduleUserPhone       = document.getElementById('scheduleUserPhone');
+            const scheduleUserBranch      = document.getElementById('scheduleUserBranch');
+            const scheduleUserDesignation = document.getElementById('scheduleUserDesignation');
+
+            if (scheduleUserAvatarImg && avatarUrl) scheduleUserAvatarImg.src = avatarUrl;
+            if (scheduleUserName && context.user.name) scheduleUserName.textContent = context.user.name;
+            if (scheduleUserRole && context.user.role_name) scheduleUserRole.textContent = context.user.role_name;
+            if (scheduleUserEmail && context.user.email) scheduleUserEmail.textContent = context.user.email;
+            if (scheduleUserPhone) scheduleUserPhone.textContent = context.user.phone || '-';
+            if (scheduleUserBranch) {
+                const currentBranch = (context.branches || []).find(b => (b.branch_id || b.id) === (context.current_branch_id || localStorage.getItem('active_branch_id')));
+                scheduleUserBranch.textContent = currentBranch?.branch_name || currentBranch?.name || 'Main Branch';
+            }
+            if (scheduleUserDesignation) {
+                scheduleUserDesignation.textContent = context.user.designation || (context.user.role_name === 'Owner' ? 'Owner / Manager' : context.user.role_name || 'Staff');
+            }
         }
 
         // Branch dropdown
@@ -871,7 +893,7 @@ export function initProfilePhotoLightbox() {
 
     // Listen for double clicks on profile avatar elements
     document.addEventListener('dblclick', (e) => {
-        const avatarWrap = e.target.closest('#profileAvatarImg, .profile-avatar-wrap');
+        const avatarWrap = e.target.closest('#profileAvatarImg, .profile-avatar-wrap, #scheduleUserAvatarImg, .schedule-avatar-wrap');
         if (!avatarWrap) return;
 
         const img = avatarWrap.tagName === 'IMG'

@@ -1095,13 +1095,18 @@ document.addEventListener('DOMContentLoaded', () => {
             // 1. Find staff_id by email
             const { data: staffDataArr, error: staffErr } = await supabase
                 .from('staff')
-                .select('staff_id')
+                .select('staff_id, role_name, role')
                 .eq('email', userEmail)
                 .eq('company_id', companyId)
                 .limit(1);
 
             if (staffErr) throw staffErr;
             const staffData = staffDataArr && staffDataArr.length > 0 ? staffDataArr[0] : null;
+            if (staffData) {
+                const desig = staffData.role_name || staffData.role;
+                const desigEl = document.getElementById('scheduleUserDesignation');
+                if (desigEl && desig) desigEl.textContent = desig;
+            }
             if (!staffData) {
                 const noStaffHtml = '<div style="padding:40px; text-align:center; color:#64748b;">No staff record found for your email. Please contact your administrator.</div>';
                 paneThisWeek.innerHTML = noStaffHtml;
@@ -1150,7 +1155,7 @@ document.addEventListener('DOMContentLoaded', () => {
             // 4. Render Helper
             const renderWeek = (dates) => {
                 let html = `
-                    <div style="display: grid; grid-template-columns: 100px 120px 1fr 1fr; padding: 6px 16px 10px 16px; border-bottom: 1px solid #e2e8f0; margin-bottom: 8px;">
+                    <div style="display: grid; grid-template-columns: 100px 120px 1fr 1fr; padding: 6px 16px 10px 16px; border-bottom: 1px solid #e2e8f0; margin-bottom: 10px;">
                         <div style="font-size: 0.75rem; font-weight: 700; color: #94a3b8; text-transform: uppercase; letter-spacing: 0.05em;">Date</div>
                         <div style="font-size: 0.75rem; font-weight: 700; color: #94a3b8; text-transform: uppercase; letter-spacing: 0.05em;">Day</div>
                         <div style="font-size: 0.75rem; font-weight: 700; color: #94a3b8; text-transform: uppercase; letter-spacing: 0.05em;">Time</div>
@@ -1167,20 +1172,20 @@ document.addEventListener('DOMContentLoaded', () => {
 
                     if (!record || record.is_off) {
                         html += `
-                            <li class="schedule-item" style="display: grid; grid-template-columns: 100px 120px 1fr 1fr; padding: 12px 16px; background: #fff5f5; border: 1px dashed #fecdd3; border-radius: 8px; align-items: center;">
-                                <div style="font-size: 0.85rem; color: #64748b; font-weight: 500;">${shortDate}</div>
-                                <div style="font-weight: 600; color: #334155; font-size: 0.9rem;">${dayName}</div>
-                                <div style="color: #e11d48; font-size: 0.9rem; font-weight: 600;">Off</div>
-                                <div style="color: #fca5a5; font-size: 0.85rem; text-align: right;">${record?.notes || '-'}</div>
+                            <li class="schedule-item" style="display: grid; grid-template-columns: 100px 120px 1fr 1fr; padding: 12px 16px; background: #ffffff; border: 1px solid #e2e8f0; border-radius: 8px; align-items: center;">
+                                <div style="font-size: 0.88rem; color: #475569; font-weight: 500;">${shortDate}</div>
+                                <div style="font-weight: 600; color: #0f172a; font-size: 0.9rem;">${dayName}</div>
+                                <div style="color: #ef4444; font-size: 0.9rem; font-weight: 600;">Off</div>
+                                <div style="color: #94a3b8; font-size: 0.85rem; text-align: right;">${record?.notes || '-'}</div>
                             </li>
                         `;
                     } else {
                         const start = record.start_time.substring(0, 5);
                         const end = record.end_time.substring(0, 5);
                         html += `
-                            <li class="schedule-item" style="display: grid; grid-template-columns: 100px 120px 1fr 1fr; padding: 12px 16px; background: #f8fafc; border-radius: 8px; align-items: center; border: 1px solid #e2e8f0;">
-                                <div style="font-size: 0.85rem; color: #64748b; font-weight: 500;">${shortDate}</div>
-                                <div style="font-weight: 600; color: #334155; font-size: 0.9rem;">${dayName}</div>
+                            <li class="schedule-item" style="display: grid; grid-template-columns: 100px 120px 1fr 1fr; padding: 12px 16px; background: #ffffff; border-radius: 8px; align-items: center; border: 1px solid #e2e8f0;">
+                                <div style="font-size: 0.88rem; color: #475569; font-weight: 500;">${shortDate}</div>
+                                <div style="font-weight: 600; color: #0f172a; font-size: 0.9rem;">${dayName}</div>
                                 <div style="color: #0f172a; font-size: 0.9rem; font-weight: 500;">${start} - ${end}</div>
                                 <div style="color: #64748b; font-size: 0.85rem; text-align: right;">${record.notes || '-'}</div>
                             </li>
@@ -1232,10 +1237,15 @@ document.addEventListener('DOMContentLoaded', () => {
             // Update buttons
             tabBtnThisWeek.classList.add('active');
             tabBtnNextWeek.classList.remove('active');
-            tabBtnThisWeek.style.color = '#1e3a8a';
-            tabBtnThisWeek.style.borderBottomColor = '#1e3a8a';
+            tabBtnThisWeek.style.color = '#2563eb';
+            tabBtnThisWeek.style.borderColor = '#2563eb';
+            tabBtnThisWeek.style.backgroundColor = '#eff6ff';
+            tabBtnThisWeek.style.fontWeight = '600';
+
             tabBtnNextWeek.style.color = '#64748b';
-            tabBtnNextWeek.style.borderBottomColor = 'transparent';
+            tabBtnNextWeek.style.borderColor = '#e2e8f0';
+            tabBtnNextWeek.style.backgroundColor = '#ffffff';
+            tabBtnNextWeek.style.fontWeight = '500';
             
             // Update panes
             paneThisWeek.style.display = 'block';
@@ -1246,10 +1256,15 @@ document.addEventListener('DOMContentLoaded', () => {
             // Update buttons
             tabBtnNextWeek.classList.add('active');
             tabBtnThisWeek.classList.remove('active');
-            tabBtnNextWeek.style.color = '#1e3a8a';
-            tabBtnNextWeek.style.borderBottomColor = '#1e3a8a';
+            tabBtnNextWeek.style.color = '#2563eb';
+            tabBtnNextWeek.style.borderColor = '#2563eb';
+            tabBtnNextWeek.style.backgroundColor = '#eff6ff';
+            tabBtnNextWeek.style.fontWeight = '600';
+
             tabBtnThisWeek.style.color = '#64748b';
-            tabBtnThisWeek.style.borderBottomColor = 'transparent';
+            tabBtnThisWeek.style.borderColor = '#e2e8f0';
+            tabBtnThisWeek.style.backgroundColor = '#ffffff';
+            tabBtnThisWeek.style.fontWeight = '500';
             
             // Update panes
             paneNextWeek.style.display = 'block';

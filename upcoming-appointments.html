@@ -924,219 +924,129 @@
                 <button class="modal-close" id="closeScheduleModal"><i data-feather="x"></i></button>
             </div>
 
-            <div class="modal-body" style="padding: 1.5rem; flex: 1; overflow-y: auto; flex-direction: column;">
+                        <div class="modal-body" style="padding: 0; min-height: 520px; overflow-y: auto;">
+                <div id="scheduleModalGrid" style="display: grid; grid-template-columns: 35% 65%; gap: 0; min-height: 100%; width: 100%;">
 
-                <!-- Tab Headers -->
-                <div class="schedule-tabs"
-                    style="display: flex; gap: 8px; margin-bottom: 1.5rem; border-bottom: 1px solid #f1f5f9; padding-bottom: 0.5rem;">
-                    <button class="schedule-tab-btn active" id="tabBtnThisWeek"
-                        style="padding: 8px 16px; border: none; background: none; font-weight: 600; font-size: 0.95rem; color: #1e3a8a; border-bottom: 2px solid #1e3a8a; cursor: pointer; transition: all 0.2s;">This
-                        Week</button>
-                    <button class="schedule-tab-btn" id="tabBtnNextWeek"
-                        style="padding: 8px 16px; border: none; background: none; font-weight: 500; font-size: 0.95rem; color: #64748b; border-bottom: 2px solid transparent; cursor: pointer; transition: all 0.2s;">Next
-                        Week</button>
-                </div>
+                    <!-- LEFT: Logged-in User Information (35%) -->
+                    <div style="display: flex; flex-direction: column; align-items: center; padding: 2.2rem 2.2rem; border-right: 1px solid #f1f5f9; width: 100%; box-sizing: border-box; justify-content: flex-start; text-align: center;">
+                        <!-- Avatar Circle -->
+                        <div class="schedule-avatar-wrap"
+                            style="width: 100px; height: 100px; border-radius: 50%; overflow: hidden; margin-bottom: 16px; box-shadow: 0 0 0 4px #e0e7ff, 0 4px 14px rgba(30, 58, 138, 0.12); display: flex; align-items: center; justify-content: center; background: #eff6ff;">
+                            <img id="scheduleUserAvatarImg"
+                                src="https://ui-avatars.com/api/?name=User&background=1E3A8A&color=fff&size=256"
+                                alt="User Avatar" style="width: 100%; height: 100%; object-fit: cover;">
+                        </div>
 
-                <!-- Tab Content: This Week -->
-                <div class="schedule-tab-pane" id="paneThisWeek" style="display: block;">
-                    <!-- Column Headers -->
-                    <div
-                        style="display: grid; grid-template-columns: 100px 120px 1fr 1fr; padding: 6px 16px 10px 16px; border-bottom: 1px solid #e2e8f0; margin-bottom: 8px;">
-                        <div
-                            style="font-size: 0.75rem; font-weight: 700; color: #94a3b8; text-transform: uppercase; letter-spacing: 0.05em;">
-                            Date</div>
-                        <div
-                            style="font-size: 0.75rem; font-weight: 700; color: #94a3b8; text-transform: uppercase; letter-spacing: 0.05em;">
-                            Day</div>
-                        <div
-                            style="font-size: 0.75rem; font-weight: 700; color: #94a3b8; text-transform: uppercase; letter-spacing: 0.05em;">
-                            Time</div>
-                        <div
-                            style="font-size: 0.75rem; font-weight: 700; color: #94a3b8; text-transform: uppercase; letter-spacing: 0.05em; text-align: right;">
-                            Comments</div>
+                        <!-- User Name & Role -->
+                        <h3 id="scheduleUserName"
+                            style="font-size: 1.25rem; font-weight: 700; color: #0f172a; margin: 0 0 4px 0; font-family: Inter, system-ui, sans-serif;">
+                            User Name
+                        </h3>
+                        <p id="scheduleUserRole"
+                            style="font-size: 0.9rem; font-weight: 500; color: #64748b; margin: 0 0 20px 0;">
+                            Owner
+                        </p>
+
+                        <!-- Divider -->
+                        <div style="width: 100%; height: 1px; background: #f1f5f9; margin-bottom: 22px;"></div>
+
+                        <!-- Details List -->
+                        <div style="width: 100%; display: flex; flex-direction: column; gap: 16px; text-align: left;">
+                            <div>
+                                <div style="font-size: 0.8rem; font-weight: 500; color: #64748b; margin-bottom: 4px;">Email address</div>
+                                <div id="scheduleUserEmail" style="font-size: 0.92rem; font-weight: 600; color: #0f172a; word-break: break-all;">-</div>
+                            </div>
+                            <div>
+                                <div style="font-size: 0.8rem; font-weight: 500; color: #64748b; margin-bottom: 4px;">Phone number</div>
+                                <div id="scheduleUserPhone" style="font-size: 0.92rem; font-weight: 600; color: #0f172a;">-</div>
+                            </div>
+                            <div>
+                                <div style="font-size: 0.8rem; font-weight: 500; color: #64748b; margin-bottom: 4px;">Assigned branch</div>
+                                <div id="scheduleUserBranch" style="font-size: 0.92rem; font-weight: 600; color: #0f172a;">-</div>
+                            </div>
+                            <div>
+                                <div style="font-size: 0.8rem; font-weight: 500; color: #64748b; margin-bottom: 4px;">Staff designation</div>
+                                <div id="scheduleUserDesignation" style="font-size: 0.92rem; font-weight: 600; color: #0f172a;">-</div>
+                            </div>
+                        </div>
                     </div>
-                    <ul class="schedule-list"
-                        style="list-style: none; padding: 0; margin: 0; display: flex; flex-direction: column; gap: 8px;">
-                        <li class="schedule-item"
-                            style="display: grid; grid-template-columns: 100px 120px 1fr 1fr; padding: 12px 16px; background: #f8fafc; border-radius: 8px; align-items: center;">
-                            <div class="schedule-date" style="font-size: 0.85rem; color: #64748b; font-weight: 500;">Mar
-                                9</div>
-                            <div class="schedule-day" style="font-weight: 600; color: #334155; font-size: 0.9rem;">
-                                Monday</div>
-                            <div class="schedule-time" style="color: #0f172a; font-size: 0.9rem; font-weight: 500;">
-                                09:00 AM - 06:00 PM</div>
-                            <div class="schedule-notes" style="color: #64748b; font-size: 0.85rem; text-align: right;">
-                                Opening shift</div>
-                        </li>
-                        <li class="schedule-item"
-                            style="display: grid; grid-template-columns: 100px 120px 1fr 1fr; padding: 12px 16px; background: #f8fafc; border-radius: 8px; align-items: center;">
-                            <div class="schedule-date" style="font-size: 0.85rem; color: #64748b; font-weight: 500;">Mar
-                                10</div>
-                            <div class="schedule-day" style="font-weight: 600; color: #334155; font-size: 0.9rem;">
-                                Tuesday</div>
-                            <div class="schedule-time" style="color: #0f172a; font-size: 0.9rem; font-weight: 500;">
-                                09:00 AM - 06:00 PM</div>
-                            <div class="schedule-notes" style="color: #94a3b8; font-size: 0.85rem; text-align: right;">-
-                            </div>
-                        </li>
-                        <li class="schedule-item"
-                            style="display: grid; grid-template-columns: 100px 120px 1fr 1fr; padding: 12px 16px; background: #fff5f5; border: 1px dashed #fecdd3; border-radius: 8px; align-items: center;">
-                            <div class="schedule-date" style="font-size: 0.85rem; color: #64748b; font-weight: 500;">Mar
-                                11</div>
-                            <div class="schedule-day" style="font-weight: 600; color: #334155; font-size: 0.9rem;">
-                                Wednesday</div>
-                            <div class="schedule-time off" style="color: #e11d48; font-size: 0.9rem; font-weight: 600;">
-                                Off</div>
-                            <div class="schedule-notes off"
-                                style="color: #fca5a5; font-size: 0.85rem; text-align: right;">-</div>
-                        </li>
-                        <li class="schedule-item"
-                            style="display: grid; grid-template-columns: 100px 120px 1fr 1fr; padding: 12px 16px; background: #f8fafc; border-radius: 8px; align-items: center;">
-                            <div class="schedule-date" style="font-size: 0.85rem; color: #64748b; font-weight: 500;">Mar
-                                12</div>
-                            <div class="schedule-day" style="font-weight: 600; color: #334155; font-size: 0.9rem;">
-                                Thursday</div>
-                            <div class="schedule-time" style="color: #0f172a; font-size: 0.9rem; font-weight: 500;">
-                                10:00 AM - 07:00 PM</div>
-                            <div class="schedule-notes" style="color: #94a3b8; font-size: 0.85rem; text-align: right;">-
-                            </div>
-                        </li>
-                        <li class="schedule-item"
-                            style="display: grid; grid-template-columns: 100px 120px 1fr 1fr; padding: 12px 16px; background: #f8fafc; border-radius: 8px; align-items: center;">
-                            <div class="schedule-date" style="font-size: 0.85rem; color: #64748b; font-weight: 500;">Mar
-                                13</div>
-                            <div class="schedule-day" style="font-weight: 600; color: #334155; font-size: 0.9rem;">
-                                Friday</div>
-                            <div class="schedule-time" style="color: #0f172a; font-size: 0.9rem; font-weight: 500;">
-                                10:00 AM - 08:00 PM</div>
-                            <div class="schedule-notes" style="color: #64748b; font-size: 0.85rem; text-align: right;">
-                                Late shift</div>
-                        </li>
-                        <li class="schedule-item"
-                            style="display: grid; grid-template-columns: 100px 120px 1fr 1fr; padding: 12px 16px; background: #f8fafc; border-radius: 8px; align-items: center;">
-                            <div class="schedule-date" style="font-size: 0.85rem; color: #64748b; font-weight: 500;">Mar
-                                14</div>
-                            <div class="schedule-day" style="font-weight: 600; color: #334155; font-size: 0.9rem;">
-                                Saturday</div>
-                            <div class="schedule-time" style="color: #0f172a; font-size: 0.9rem; font-weight: 500;">
-                                08:00 AM - 04:00 PM</div>
-                            <div class="schedule-notes" style="color: #64748b; font-size: 0.85rem; text-align: right;">
-                                Weekend shift</div>
-                        </li>
-                        <li class="schedule-item"
-                            style="display: grid; grid-template-columns: 100px 120px 1fr 1fr; padding: 12px 16px; background: #fff5f5; border: 1px dashed #fecdd3; border-radius: 8px; align-items: center;">
-                            <div class="schedule-date" style="font-size: 0.85rem; color: #64748b; font-weight: 500;">Mar
-                                15</div>
-                            <div class="schedule-day" style="font-weight: 600; color: #334155; font-size: 0.9rem;">
-                                Sunday</div>
-                            <div class="schedule-time off" style="color: #e11d48; font-size: 0.9rem; font-weight: 600;">
-                                Off</div>
-                            <div class="schedule-notes off"
-                                style="color: #fca5a5; font-size: 0.85rem; text-align: right;">-</div>
-                        </li>
-                    </ul>
-                </div>
 
-                <!-- Tab Content: Next Week -->
-                <div class="schedule-tab-pane" id="paneNextWeek" style="display: none;">
-                    <!-- Column Headers -->
-                    <div
-                        style="display: grid; grid-template-columns: 100px 120px 1fr 1fr; padding: 6px 16px 10px 16px; border-bottom: 1px solid #e2e8f0; margin-bottom: 8px;">
-                        <div
-                            style="font-size: 0.75rem; font-weight: 700; color: #94a3b8; text-transform: uppercase; letter-spacing: 0.05em;">
-                            Date</div>
-                        <div
-                            style="font-size: 0.75rem; font-weight: 700; color: #94a3b8; text-transform: uppercase; letter-spacing: 0.05em;">
-                            Day</div>
-                        <div
-                            style="font-size: 0.75rem; font-weight: 700; color: #94a3b8; text-transform: uppercase; letter-spacing: 0.05em;">
-                            Time</div>
-                        <div
-                            style="font-size: 0.75rem; font-weight: 700; color: #94a3b8; text-transform: uppercase; letter-spacing: 0.05em; text-align: right;">
-                            Comments</div>
+                    <!-- RIGHT: Schedule List (65%) -->
+                    <div style="display: flex; flex-direction: column; padding: 2rem 2.2rem; width: 100%; box-sizing: border-box; justify-content: flex-start;">
+                        
+                        <!-- Heading -->
+                        <h3 style="font-size: 1.15rem; font-weight: 700; color: #0f172a; margin: 0 0 1.25rem 0; font-family: Inter, system-ui, sans-serif;">
+                            Your work schedule
+                        </h3>
+
+                        <!-- Tabs Switcher -->
+                        <div class="schedule-tabs"
+                            style="display: flex; gap: 10px; margin-bottom: 1.5rem;">
+                            <button class="schedule-tab-btn active" id="tabBtnThisWeek"
+                                style="padding: 8px 22px; border-radius: 8px; border: 1.5px solid #2563eb; background: #eff6ff; font-weight: 600; font-size: 0.92rem; color: #2563eb; cursor: pointer; transition: all 0.2s;">
+                                This Week
+                            </button>
+                            <button class="schedule-tab-btn" id="tabBtnNextWeek"
+                                style="padding: 8px 22px; border-radius: 8px; border: 1.5px solid #e2e8f0; background: #ffffff; font-weight: 500; font-size: 0.92rem; color: #64748b; cursor: pointer; transition: all 0.2s;">
+                                Next Week
+                            </button>
+                        </div>
+
+                        <!-- Tab Content: This Week -->
+                        <div class="schedule-tab-pane" id="paneThisWeek" style="display: block;">
+                            <div style="display: grid; grid-template-columns: 100px 120px 1fr 1fr; padding: 6px 16px 10px 16px; border-bottom: 1px solid #e2e8f0; margin-bottom: 10px;">
+                                <div style="font-size: 0.75rem; font-weight: 700; color: #94a3b8; text-transform: uppercase; letter-spacing: 0.05em;">Date</div>
+                                <div style="font-size: 0.75rem; font-weight: 700; color: #94a3b8; text-transform: uppercase; letter-spacing: 0.05em;">Day</div>
+                                <div style="font-size: 0.75rem; font-weight: 700; color: #94a3b8; text-transform: uppercase; letter-spacing: 0.05em;">Time</div>
+                                <div style="font-size: 0.75rem; font-weight: 700; color: #94a3b8; text-transform: uppercase; letter-spacing: 0.05em; text-align: right;">Comments</div>
+                            </div>
+                            <ul class="schedule-list" style="list-style: none; padding: 0; margin: 0; display: flex; flex-direction: column; gap: 8px;">
+                                <li class="schedule-item" style="display: grid; grid-template-columns: 100px 120px 1fr 1fr; padding: 12px 16px; background: #ffffff; border: 1px solid #e2e8f0; border-radius: 8px; align-items: center;">
+                                    <div class="schedule-date" style="font-size: 0.88rem; color: #475569; font-weight: 500;">Sep 28</div>
+                                    <div class="schedule-day" style="font-weight: 600; color: #0f172a; font-size: 0.9rem;">Monday</div>
+                                    <div class="schedule-time off" style="color: #ef4444; font-size: 0.9rem; font-weight: 600;">Off</div>
+                                    <div class="schedule-notes off" style="color: #94a3b8; font-size: 0.85rem; text-align: right;">-</div>
+                                </li>
+                                <li class="schedule-item" style="display: grid; grid-template-columns: 100px 120px 1fr 1fr; padding: 12px 16px; background: #ffffff; border: 1px solid #e2e8f0; border-radius: 8px; align-items: center;">
+                                    <div class="schedule-date" style="font-size: 0.88rem; color: #475569; font-weight: 500;">Sep 29</div>
+                                    <div class="schedule-day" style="font-weight: 600; color: #0f172a; font-size: 0.9rem;">Tuesday</div>
+                                    <div class="schedule-time" style="color: #0f172a; font-size: 0.9rem; font-weight: 500;">09:00 - 18:00</div>
+                                    <div class="schedule-notes" style="color: #94a3b8; font-size: 0.85rem; text-align: right;">-</div>
+                                </li>
+                                <li class="schedule-item" style="display: grid; grid-template-columns: 100px 120px 1fr 1fr; padding: 12px 16px; background: #ffffff; border: 1px solid #e2e8f0; border-radius: 8px; align-items: center;">
+                                    <div class="schedule-date" style="font-size: 0.88rem; color: #475569; font-weight: 500;">Sep 30</div>
+                                    <div class="schedule-day" style="font-weight: 600; color: #0f172a; font-size: 0.9rem;">Wednesday</div>
+                                    <div class="schedule-time off" style="color: #ef4444; font-size: 0.9rem; font-weight: 600;">Off</div>
+                                    <div class="schedule-notes off" style="color: #94a3b8; font-size: 0.85rem; text-align: right;">-</div>
+                                </li>
+                            </ul>
+                        </div>
+
+                        <!-- Tab Content: Next Week -->
+                        <div class="schedule-tab-pane" id="paneNextWeek" style="display: none;">
+                            <div style="display: grid; grid-template-columns: 100px 120px 1fr 1fr; padding: 6px 16px 10px 16px; border-bottom: 1px solid #e2e8f0; margin-bottom: 10px;">
+                                <div style="font-size: 0.75rem; font-weight: 700; color: #94a3b8; text-transform: uppercase; letter-spacing: 0.05em;">Date</div>
+                                <div style="font-size: 0.75rem; font-weight: 700; color: #94a3b8; text-transform: uppercase; letter-spacing: 0.05em;">Day</div>
+                                <div style="font-size: 0.75rem; font-weight: 700; color: #94a3b8; text-transform: uppercase; letter-spacing: 0.05em;">Time</div>
+                                <div style="font-size: 0.75rem; font-weight: 700; color: #94a3b8; text-transform: uppercase; letter-spacing: 0.05em; text-align: right;">Comments</div>
+                            </div>
+                            <ul class="schedule-list" style="list-style: none; padding: 0; margin: 0; display: flex; flex-direction: column; gap: 8px;">
+                                <li class="schedule-item" style="display: grid; grid-template-columns: 100px 120px 1fr 1fr; padding: 12px 16px; background: #ffffff; border: 1px solid #e2e8f0; border-radius: 8px; align-items: center;">
+                                    <div class="schedule-date" style="font-size: 0.88rem; color: #475569; font-weight: 500;">Oct 5</div>
+                                    <div class="schedule-day" style="font-weight: 600; color: #0f172a; font-size: 0.9rem;">Monday</div>
+                                    <div class="schedule-time" style="color: #0f172a; font-size: 0.9rem; font-weight: 500;">09:00 - 18:00</div>
+                                    <div class="schedule-notes" style="color: #94a3b8; font-size: 0.85rem; text-align: right;">-</div>
+                                </li>
+                                <li class="schedule-item" style="display: grid; grid-template-columns: 100px 120px 1fr 1fr; padding: 12px 16px; background: #ffffff; border: 1px solid #e2e8f0; border-radius: 8px; align-items: center;">
+                                    <div class="schedule-date" style="font-size: 0.88rem; color: #475569; font-weight: 500;">Oct 6</div>
+                                    <div class="schedule-day" style="font-weight: 600; color: #0f172a; font-size: 0.9rem;">Tuesday</div>
+                                    <div class="schedule-time off" style="color: #ef4444; font-size: 0.9rem; font-weight: 600;">Off</div>
+                                    <div class="schedule-notes off" style="color: #94a3b8; font-size: 0.85rem; text-align: right;">-</div>
+                                </li>
+                            </ul>
+                        </div>
                     </div>
-                    <ul class="schedule-list"
-                        style="list-style: none; padding: 0; margin: 0; display: flex; flex-direction: column; gap: 8px;">
-                        <li class="schedule-item"
-                            style="display: grid; grid-template-columns: 100px 120px 1fr 1fr; padding: 12px 16px; background: #f8fafc; border-radius: 8px; align-items: center;">
-                            <div class="schedule-date" style="font-size: 0.85rem; color: #64748b; font-weight: 500;">Mar
-                                16</div>
-                            <div class="schedule-day" style="font-weight: 600; color: #334155; font-size: 0.9rem;">
-                                Monday</div>
-                            <div class="schedule-time" style="color: #0f172a; font-size: 0.9rem; font-weight: 500;">
-                                10:00 AM - 07:00 PM</div>
-                            <div class="schedule-notes" style="color: #94a3b8; font-size: 0.85rem; text-align: right;">-
-                            </div>
-                        </li>
-                        <li class="schedule-item"
-                            style="display: grid; grid-template-columns: 100px 120px 1fr 1fr; padding: 12px 16px; background: #f8fafc; border-radius: 8px; align-items: center;">
-                            <div class="schedule-date" style="font-size: 0.85rem; color: #64748b; font-weight: 500;">Mar
-                                17</div>
-                            <div class="schedule-day" style="font-weight: 600; color: #334155; font-size: 0.9rem;">
-                                Tuesday</div>
-                            <div class="schedule-time" style="color: #0f172a; font-size: 0.9rem; font-weight: 500;">
-                                10:00 AM - 07:00 PM</div>
-                            <div class="schedule-notes" style="color: #94a3b8; font-size: 0.85rem; text-align: right;">-
-                            </div>
-                        </li>
-                        <li class="schedule-item"
-                            style="display: grid; grid-template-columns: 100px 120px 1fr 1fr; padding: 12px 16px; background: #f8fafc; border-radius: 8px; align-items: center;">
-                            <div class="schedule-date" style="font-size: 0.85rem; color: #64748b; font-weight: 500;">Mar
-                                18</div>
-                            <div class="schedule-day" style="font-weight: 600; color: #334155; font-size: 0.9rem;">
-                                Wednesday</div>
-                            <div class="schedule-time" style="color: #0f172a; font-size: 0.9rem; font-weight: 500;">
-                                09:00 AM - 06:00 PM</div>
-                            <div class="schedule-notes" style="color: #94a3b8; font-size: 0.85rem; text-align: right;">-
-                            </div>
-                        </li>
-                        <li class="schedule-item"
-                            style="display: grid; grid-template-columns: 100px 120px 1fr 1fr; padding: 12px 16px; background: #fff5f5; border: 1px dashed #fecdd3; border-radius: 8px; align-items: center;">
-                            <div class="schedule-date" style="font-size: 0.85rem; color: #64748b; font-weight: 500;">Mar
-                                19</div>
-                            <div class="schedule-day" style="font-weight: 600; color: #334155; font-size: 0.9rem;">
-                                Thursday</div>
-                            <div class="schedule-time off" style="color: #e11d48; font-size: 0.9rem; font-weight: 600;">
-                                Off</div>
-                            <div class="schedule-notes off"
-                                style="color: #fca5a5; font-size: 0.85rem; text-align: right;">-</div>
-                        </li>
-                        <li class="schedule-item"
-                            style="display: grid; grid-template-columns: 100px 120px 1fr 1fr; padding: 12px 16px; background: #f8fafc; border-radius: 8px; align-items: center;">
-                            <div class="schedule-date" style="font-size: 0.85rem; color: #64748b; font-weight: 500;">Mar
-                                20</div>
-                            <div class="schedule-day" style="font-weight: 600; color: #334155; font-size: 0.9rem;">
-                                Friday</div>
-                            <div class="schedule-time" style="color: #0f172a; font-size: 0.9rem; font-weight: 500;">
-                                09:00 AM - 08:00 PM</div>
-                            <div class="schedule-notes" style="color: #64748b; font-size: 0.85rem; text-align: right;">
-                                Extended</div>
-                        </li>
-                        <li class="schedule-item"
-                            style="display: grid; grid-template-columns: 100px 120px 1fr 1fr; padding: 12px 16px; background: #f8fafc; border-radius: 8px; align-items: center;">
-                            <div class="schedule-date" style="font-size: 0.85rem; color: #64748b; font-weight: 500;">Mar
-                                21</div>
-                            <div class="schedule-day" style="font-weight: 600; color: #334155; font-size: 0.9rem;">
-                                Saturday</div>
-                            <div class="schedule-time" style="color: #0f172a; font-size: 0.9rem; font-weight: 500;">
-                                08:00 AM - 04:00 PM</div>
-                            <div class="schedule-notes" style="color: #94a3b8; font-size: 0.85rem; text-align: right;">-
-                            </div>
-                        </li>
-                        <li class="schedule-item"
-                            style="display: grid; grid-template-columns: 100px 120px 1fr 1fr; padding: 12px 16px; background: #fff5f5; border: 1px dashed #fecdd3; border-radius: 8px; align-items: center;">
-                            <div class="schedule-date" style="font-size: 0.85rem; color: #64748b; font-weight: 500;">Mar
-                                22</div>
-                            <div class="schedule-day" style="font-weight: 600; color: #334155; font-size: 0.9rem;">
-                                Sunday</div>
-                            <div class="schedule-time off" style="color: #e11d48; font-size: 0.9rem; font-weight: 600;">
-                                Off</div>
-                            <div class="schedule-notes off"
-                                style="color: #fca5a5; font-size: 0.85rem; text-align: right;">-</div>
-                        </li>
-                    </ul>
                 </div>
-
             </div>
 
             <div class="modal-footer" style="justify-content: flex-end;">
