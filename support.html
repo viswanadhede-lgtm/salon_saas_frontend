@@ -424,8 +424,10 @@
                             <p id="scPhoneHours" style="color: #64748b; font-size: 0.9rem; margin: 0 0 0.75rem 0;">For urgent queries
                                 related to bookings or payments.</p>
                             <a id="scPhoneLink" href="#"
-                                style="color: #d97706; font-weight: 500; text-decoration: none; display: inline-flex; align-items: center; gap: 4px; font-size: 0.95rem;">
-                                <span id="scPhoneText">Loading&hellip;</span> <i data-feather="arrow-right" style="width: 14px; height: 14px;"></i>
+                                style="color: #4f46e5; font-weight: 500; text-decoration: none; display: inline-flex; align-items: center; font-size: 0.95rem; transition: color 0.15s ease;"
+                                onmouseover="this.style.color='#3730a3';"
+                                onmouseout="this.style.color='#4f46e5';">
+                                <span id="scPhoneText">Loading&hellip;</span>
                             </a>
                         </div>
                     </div>
@@ -807,7 +809,7 @@
                     const num = s.support_phone.trim();
                     phoneText.textContent = num;
                     phoneLink.href = 'tel:' + num.replace(/[\s\-().]/g, '');
-                    phoneLink.style.color = '#d97706';
+                    phoneLink.style.color = '#4f46e5';
                     phoneLink.style.pointerEvents = '';
                     if (hours) $('scPhoneHours').textContent = hours;
                 } else {
