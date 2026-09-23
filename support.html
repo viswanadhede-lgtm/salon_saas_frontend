@@ -1403,16 +1403,12 @@
                     <label for="sgCategory">Suggestion Category <span class="sg-required">*</span></label>
                     <select id="sgCategory" class="sg-select" onchange="sgClearError(this, 'sgCategoryHint')">
                         <option value="" disabled selected>Select a category</option>
-                        <option value="appointments">📅 Appointments &amp; Calendar</option>
-                        <option value="billing_pos">💳 POS, Billing &amp; Invoicing</option>
-                        <option value="staff_commission">👥 Staff Management &amp; Commission</option>
-                        <option value="customer_loyalty">🙋 Customer Experience &amp; Loyalty</option>
-                        <option value="services_packages">✂️ Services &amp; Packages</option>
-                        <option value="products_inventory">🧴 Products &amp; Inventory</option>
-                        <option value="marketing_coupons">🎁 Marketing, Offers &amp; Coupons</option>
-                        <option value="reports_insights">📊 Reports &amp; Business Insights</option>
-                        <option value="mobile_usability">📱 Mobile &amp; Usability</option>
-                        <option value="new_feature">💡 New Feature / Other</option>
+                        <option value="Feature Request">💡 Feature Request</option>
+                        <option value="Improvement to Existing Feature">🔧 Improvement to Existing Feature</option>
+                        <option value="User Experience/Design">🎨 User Experience / Design</option>
+                        <option value="Performance">⚡ Performance</option>
+                        <option value="Integration">🔗 Integration</option>
+                        <option value="Other">📝 Other</option>
                     </select>
                     <div class="sg-field-hint" id="sgCategoryHint">Please select a category.</div>
                 </div>
@@ -1441,28 +1437,25 @@
 
                 <!-- Attach Images (Optional) -->
                 <div class="sg-field">
-                    <label>Attach Images <span class="sg-optional">(Optional)</span></label>
+                    <label>Attach Images <span class="sg-optional">(Optional, up to 5 images · max 10 MB each)</span></label>
                     <div class="sg-dropzone" id="sgDropzone"
                          ondragover="event.preventDefault(); this.classList.add('drag-over');"
                          ondragleave="this.classList.remove('drag-over');"
                          ondrop="handleSgDrop(event)">
-                        <input type="file" id="sgFileInput" accept="image/*" onchange="handleSgFileSelect(event)">
+                        <input type="file" id="sgFileInput" accept="image/jpeg,image/png,image/webp,image/gif" multiple onchange="handleSgFileSelect(event)">
                         <svg class="sg-dropzone-icon" width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
                             <rect x="3" y="3" width="18" height="18" rx="2" ry="2"/>
                             <circle cx="8.5" cy="8.5" r="1.5"/>
                             <polyline points="21 15 16 10 5 21"/>
                         </svg>
                         <span class="sg-dropzone-text">Upload Images</span>
-                        <span class="sg-dropzone-sub">Image attachment limits to be finalized.</span>
+                        <span class="sg-dropzone-sub">JPEG, PNG, WebP or GIF · max 10 MB each · up to 5 files</span>
                     </div>
-                    <div id="sgFilePreview" style="display:none;" class="sg-file-preview">
-                        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#4338ca" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
-                        <span id="sgFileName">image.png</span>
-                        <button onclick="removeSgFile()" title="Remove image" aria-label="Remove image">
-                            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
-                        </button>
-                    </div>
+                    <!-- Multi-file chip list -->
+                    <div id="sgFileChips" style="display:none; margin-top:8px; display:flex; flex-wrap:wrap; gap:6px;"></div>
                 </div>
+                <!-- Inline error banner for submission failures -->
+                <div id="sgErrorBanner" style="display:none; background:#fef2f2; border:1px solid #fecaca; border-radius:8px; padding:10px 14px; font-size:0.85rem; color:#b91c1c; margin-top:4px;"></div>
 
             </div><!-- /sg-body -->
 
@@ -1494,30 +1487,74 @@
         </div><!-- /modal -->
     </div><!-- /overlay -->
 
-    <!-- Suggestion Modal Logic -->
-    <script>
-        function openSuggestionModal() {
-            resetSuggestionModal();
+    <!-- Suggestion Modal Logic (Supabase-integrated) -->
+    <script type="module">
+        import { supabase } from './lib/supabase.js';
+
+        /* ── Configuration ────────────────────────────────────────────────── */
+        const SG_CONFIG = {
+            bucketName:       'suggestion-attachments',
+            maxFiles:         5,
+            maxSizeBytes:     10 * 1024 * 1024,  // 10 MB per file
+            allowedMimeTypes: ['image/jpeg', 'image/png', 'image/webp', 'image/gif']
+        };
+
+        /* ── In-memory file queue (survives re-opens until reset) ──────────── */
+        let _sgSelectedFiles = [];
+        let _sgSubmitting    = false;
+
+        /* ── Expose functions to global scope so inline handlers work ─────── */
+        window.openSuggestionModal = function() {
+            _sgResetModal();
             document.getElementById('suggestionOverlay').classList.add('active');
             document.body.style.overflow = 'hidden';
             setTimeout(() => document.getElementById('sgCategory').focus(), 120);
-        }
+        };
 
-        function closeSuggestionModal() {
+        window.closeSuggestionModal = function() {
+            if (_sgSubmitting) return; // prevent close mid-submit
             document.getElementById('suggestionOverlay').classList.remove('active');
             document.body.style.overflow = '';
-        }
+        };
 
-        function handleSgOverlayClick(e) {
-            if (e.target === document.getElementById('suggestionOverlay')) closeSuggestionModal();
-        }
+        window.handleSgOverlayClick = function(e) {
+            if (e.target === document.getElementById('suggestionOverlay')) window.closeSuggestionModal();
+        };
 
-        function resetSuggestionModal() {
+        window.sgClearError = function(el, hintId) {
+            el.classList.remove('sg-error');
+            const hint = document.getElementById(hintId);
+            if (hint) hint.classList.remove('visible');
+        };
+
+        window.handleSgFileSelect = function(e) {
+            _sgAddFiles(Array.from(e.target.files));
+            e.target.value = ''; // reset input so same file can be re-selected
+        };
+
+        window.handleSgDrop = function(e) {
+            e.preventDefault();
+            document.getElementById('sgDropzone').classList.remove('drag-over');
+            _sgAddFiles(Array.from(e.dataTransfer.files));
+        };
+
+        window.removeSgFile = function(index) {
+            _sgSelectedFiles.splice(index, 1);
+            _sgRenderChips();
+        };
+
+        window.submitSuggestion = function() {
+            _sgSubmit();
+        };
+
+        /* ── Internal helpers ─────────────────────────────────────────────── */
+        function _sgResetModal() {
             document.getElementById('sgCategory').value    = '';
             document.getElementById('sgTitle').value       = '';
             document.getElementById('sgDescription').value = '';
             document.getElementById('sgWhyUseful').value   = '';
-            removeSgFile();
+            _sgSelectedFiles = [];
+            _sgRenderChips();
             ['sgCategory','sgTitle','sgDescription'].forEach(id => {
                 const el = document.getElementById(id);
                 if (el) el.classList.remove('sg-error');
@@ -1526,111 +1563,280 @@
                 const el = document.getElementById(id);
                 if (el) el.classList.remove('visible');
             });
+            _sgHideBanner();
             document.getElementById('sgFormBody').style.display = 'flex';
             document.getElementById('sgSuccess').style.display  = 'none';
             document.getElementById('sgFooter').style.display   = 'flex';
-            document.getElementById('sgSubmitBtn').disabled     = false;
-            document.getElementById('sgSubmitBtn').innerHTML    = 'Submit Suggestion';
+            const btn = document.getElementById('sgSubmitBtn');
+            btn.disabled  = false;
+            btn.innerHTML = 'Submit Suggestion';
+            _sgSubmitting = false;
         }
 
-        function sgClearError(el, hintId) {
-            el.classList.remove('sg-error');
+        function _sgShowError(fieldId, hintId) {
+            const el   = document.getElementById(fieldId);
             const hint = document.getElementById(hintId);
-            if (hint) hint.classList.remove('visible');
-        }
-
-        function sgShowError(fieldId, hintId) {
-            const el = document.getElementById(fieldId);
-            const hint = document.getElementById(hintId);
-            if (el) el.classList.add('sg-error');
+            if (el)   el.classList.add('sg-error');
             if (hint) hint.classList.add('visible');
         }
 
-        function handleSgFileSelect(e) {
-            const file = e.target.files[0];
-            if (file) showSgFile(file);
+        function _sgShowBanner(msg) {
+            const b = document.getElementById('sgErrorBanner');
+            if (!b) return;
+            b.textContent  = msg;
+            b.style.display = 'block';
         }
 
-        function handleSgDrop(e) {
-            e.preventDefault();
-            document.getElementById('sgDropzone').classList.remove('drag-over');
-            const file = e.dataTransfer.files[0];
-            if (!file) return;
-            if (!file.type.startsWith('image/')) {
-                alert('Please upload an image file (PNG, JPG, WebP, etc.).');
+        function _sgHideBanner() {
+            const b = document.getElementById('sgErrorBanner');
+            if (b) b.style.display = 'none';
+        }
+
+        function _sgAddFiles(newFiles) {
+            const errors = [];
+            for (const file of newFiles) {
+                if (_sgSelectedFiles.length >= SG_CONFIG.maxFiles) {
+                    errors.push(`Maximum ${SG_CONFIG.maxFiles} images allowed. Extra files were skipped.`);
+                    break;
+                }
+                if (!SG_CONFIG.allowedMimeTypes.includes(file.type)) {
+                    errors.push(`"${file.name}" is not a supported image type (JPEG, PNG, WebP or GIF).`);
+                    continue;
+                }
+                if (file.size > SG_CONFIG.maxSizeBytes) {
+                    errors.push(`"${file.name}" exceeds the 10 MB size limit.`);
+                    continue;
+                }
+                // Avoid exact duplicates by name+size
+                const isDupe = _sgSelectedFiles.some(f => f.name === file.name && f.size === file.size);
+                if (!isDupe) _sgSelectedFiles.push(file);
+            }
+            if (errors.length) _sgShowBanner(errors.join(' '));
+            else _sgHideBanner();
+            _sgRenderChips();
+        }
+
+        function _sgRenderChips() {
+            const container = document.getElementById('sgFileChips');
+            const dropzone  = document.getElementById('sgDropzone');
+            if (!container) return;
+
+            container.innerHTML = '';
+
+            if (_sgSelectedFiles.length === 0) {
+                container.style.display = 'none';
+                if (dropzone) dropzone.style.display = '';
                 return;
             }
-            if (file.size > 10 * 1024 * 1024) {
-                alert('Image is too large. Maximum size is 10 MB.');
-                return;
+
+            container.style.display = 'flex';
+            if (dropzone && _sgSelectedFiles.length >= SG_CONFIG.maxFiles) {
+                dropzone.style.display = 'none';
+            } else if (dropzone) {
+                dropzone.style.display = '';
             }
-            showSgFile(file);
+
+            _sgSelectedFiles.forEach((file, idx) => {
+                const chip = document.createElement('div');
+                chip.style.cssText = 'display:flex;align-items:center;gap:6px;background:#eff6ff;border:1px solid #bfdbfe;border-radius:20px;padding:4px 10px;font-size:0.8rem;color:#1e40af;max-width:220px;';
+                chip.innerHTML = `
+                    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#4338ca" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
+                    <span style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:140px;" title="${file.name}">${file.name}</span>
+                    <span style="color:#64748b;flex-shrink:0;">(${(file.size/1024).toFixed(0)}KB)</span>
+                    <button onclick="removeSgFile(${idx})" title="Remove" aria-label="Remove ${file.name}" style="background:none;border:none;cursor:pointer;padding:0;color:#6b7280;display:flex;align-items:center;">
+                        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+                    </button>
+                `;
+                container.appendChild(chip);
+            });
         }
 
-        function showSgFile(file) {
-            document.getElementById('sgDropzone').style.display   = 'none';
-            document.getElementById('sgFilePreview').style.display = 'flex';
-            document.getElementById('sgFileName').textContent     = file.name + ' (' + (file.size / 1024).toFixed(1) + ' KB)';
+        /* ── Context helpers ──────────────────────────────────────────────── */
+        function _getAppContext() {
+            try { return JSON.parse(localStorage.getItem('appContext') || '{}'); } catch { return {}; }
         }
 
-        function removeSgFile() {
-            document.getElementById('sgFileInput').value           = '';
-            document.getElementById('sgDropzone').style.display    = '';
-            document.getElementById('sgFilePreview').style.display  = 'none';
-            document.getElementById('sgFileName').textContent      = '';
+        function _getCompanyId() {
+            const ctx = _getAppContext();
+            return ctx.company?.company_id || localStorage.getItem('company_id') || null;
         }
 
-        function submitSuggestion() {
+        function _getBranchId() {
+            const ctx = _getAppContext();
+            return ctx.current_branch_id || localStorage.getItem('active_branch_id') || null;
+        }
+
+        /* ── Storage: delete uploaded files on failure ────────────────────── */
+        async function _sgDeleteUploadedFiles(paths) {
+            const token = localStorage.getItem('token') || supabase._key;
+            for (const path of paths) {
+                try {
+                    await fetch(`${supabase._url}/storage/v1/object/${SG_CONFIG.bucketName}/${encodeURIComponent(path)}`, {
+                        method:  'DELETE',
+                        headers: {
+                            'apikey':        supabase._key,
+                            'Authorization': `Bearer ${token}`
+                        }
+                    });
+                } catch (e) {
+                    console.warn('[Suggestions] Could not delete orphaned file:', path, e);
+                }
+            }
+        }
+
+        /* ── Main submit ──────────────────────────────────────────────────── */
+        async function _sgSubmit() {
+            if (_sgSubmitting) return; // guard against double-click
+
+            /* 1. Validate fields */
             let valid = true;
             const category    = document.getElementById('sgCategory');
             const title       = document.getElementById('sgTitle');
             const description = document.getElementById('sgDescription');
             const whyUseful   = document.getElementById('sgWhyUseful');
 
-            if (!category.value) {
-                sgShowError('sgCategory', 'sgCategoryHint'); valid = false;
-            }
-            if (title.value.trim().length < 5) {
-                sgShowError('sgTitle', 'sgTitleHint'); valid = false;
-            }
-            if (description.value.trim().length < 15) {
-                sgShowError('sgDescription', 'sgDescriptionHint'); valid = false;
-            }
-
+            if (!category.value)                     { _sgShowError('sgCategory',    'sgCategoryHint');    valid = false; }
+            if (title.value.trim().length < 5)        { _sgShowError('sgTitle',       'sgTitleHint');       valid = false; }
+            if (description.value.trim().length < 15) { _sgShowError('sgDescription', 'sgDescriptionHint'); valid = false; }
             if (!valid) return;
 
+            _sgHideBanner();
+
+            /* 2. Start loading state */
+            _sgSubmitting = true;
             const btn = document.getElementById('sgSubmitBtn');
-            btn.disabled = true;
-            btn.innerHTML = '<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="animation:spin 0.8s linear infinite;"><line x1="12" y1="2" x2="12" y2="6"/><line x1="12" y1="18" x2="12" y2="22"/><line x1="4.93" y1="4.93" x2="7.76" y2="7.76"/><line x1="16.24" y1="16.24" x2="19.07" y2="19.07"/><line x1="2" y1="12" x2="6" y2="12"/><line x1="18" y1="12" x2="22" y2="12"/><line x1="4.93" y1="19.07" x2="7.76" y2="16.24"/><line x1="16.24" y1="7.76" x2="19.07" y2="4.93"/></svg> Submitting…';
+            btn.disabled  = true;
+            btn.innerHTML = `<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="animation:spin 0.8s linear infinite"><line x1="12" y1="2" x2="12" y2="6"/><line x1="12" y1="18" x2="12" y2="22"/><line x1="4.93" y1="4.93" x2="7.76" y2="7.76"/><line x1="16.24" y1="16.24" x2="19.07" y2="19.07"/><line x1="2" y1="12" x2="6" y2="12"/><line x1="18" y1="12" x2="22" y2="12"/><line x1="4.93" y1="19.07" x2="7.76" y2="16.24"/><line x1="16.24" y1="7.76" x2="19.07" y2="4.93"/></svg> Submitting…`;
 
-            setTimeout(() => {
-                const filePreview = document.getElementById('sgFileName');
-                const attachedFileName = (filePreview && filePreview.textContent) ? filePreview.textContent.trim() : null;
+            /* 3. Resolve authenticated user UUID */
+            const token = localStorage.getItem('token');
+            if (!token) {
+                _sgRestoreBtn(btn);
+                _sgShowBanner('Session expired. Please refresh the page and sign in again.');
+                return;
+            }
 
-                const newSuggestion = {
-                    id: 'SUG-' + String(Math.floor(10000 + Math.random() * 90000)),
-                    category: category.value,
-                    categoryLabel: category.options[category.selectedIndex].text.replace(/^[^\s]+\s+/, ''),
-                    title: title.value.trim(),
-                    description: description.value.trim(),
-                    whyUseful: whyUseful.value.trim() || null,
-                    imageAttachment: attachedFileName,
-                    submittedAt: new Date().toISOString()
+            let authUserId = null;
+            try {
+                const { data: userData, error: userErr } = await supabase.auth.getUser(token);
+                if (userErr || !userData?.user?.id) throw userErr || new Error('No user id');
+                authUserId = userData.user.id;
+            } catch (e) {
+                _sgRestoreBtn(btn);
+                _sgShowBanner('Could not verify your session. Please refresh and try again.');
+                return;
+            }
+
+            /* 4. Resolve company / branch context */
+            const company_id = _getCompanyId();
+            const branch_id  = _getBranchId() || null;
+
+            if (!company_id) {
+                _sgRestoreBtn(btn);
+                _sgShowBanner('Could not determine your company context. Please refresh and try again.');
+                return;
+            }
+
+            /* 5. Insert suggestion row */
+            let suggestion = null;
+            try {
+                const payload = {
+                    company_id,
+                    branch_id,
+                    user_id:          authUserId,
+                    category:         category.value,
+                    title:            title.value.trim(),
+                    description:      description.value.trim(),
+                    business_benefit: whyUseful.value.trim() || null
                 };
 
-                try {
-                    const existing = JSON.parse(localStorage.getItem('salon_suggestions') || '[]');
-                    existing.unshift(newSuggestion);
-                    localStorage.setItem('salon_suggestions', JSON.stringify(existing));
-                } catch(e) {
-                    console.error('Error saving suggestion:', e);
+                const { data: rows, error: insertErr } = await supabase
+                    .from('suggestions')
+                    .insert(payload)
+                    .select();
+
+                if (insertErr) throw insertErr;
+                suggestion = Array.isArray(rows) ? rows[0] : rows;
+                if (!suggestion?.id) throw new Error('Suggestion insert returned no id.');
+            } catch (e) {
+                console.error('[Suggestions] DB insert failed:', e);
+                _sgRestoreBtn(btn);
+                _sgShowBanner(`Failed to save your suggestion: ${e.message || 'Database error'}. Please try again.`);
+                return;
+            }
+
+            /* 6. Upload images (if any) */
+            const uploadedPaths = [];
+            if (_sgSelectedFiles.length > 0) {
+                for (const file of _sgSelectedFiles) {
+                    const timestamp    = Math.floor(Date.now() / 1000);
+                    const randomSuffix = Math.random().toString(36).substring(2, 8);
+                    const safeName     = file.name.replace(/[^a-zA-Z0-9.\-_]/g, '_').toLowerCase();
+                    const storagePath  = `${company_id}/${suggestion.id}/${timestamp}-${randomSuffix}-${safeName}`;
+
+                    try {
+                        const { data: upData, error: upErr } = await supabase.storage
+                            .from(SG_CONFIG.bucketName)
+                            .upload(storagePath, file, { upsert: false });
+                        if (upErr) throw new Error(upErr.message || JSON.stringify(upErr));
+                        uploadedPaths.push(storagePath);
+                    } catch (e) {
+                        console.error('[Suggestions] Upload failed for', file.name, e);
+                        // Rollback: delete already-uploaded files + delete suggestion row
+                        await _sgDeleteUploadedFiles(uploadedPaths);
+                        await supabase.from('suggestions').eq('id', suggestion.id).delete();
+                        _sgRestoreBtn(btn);
+                        _sgShowBanner(`Image upload failed for "${file.name}": ${e.message}. Your suggestion was not saved. Please try again.`);
+                        return;
+                    }
                 }
 
-                document.getElementById('sgFormBody').style.display = 'none';
-                document.getElementById('sgFooter').style.display   = 'none';
-                document.getElementById('sgSuccess').style.display  = 'flex';
-            }, 1000);
+                /* 7. Insert attachment records */
+                const attachmentRows = _sgSelectedFiles.map((file, idx) => ({
+                    suggestion_id: suggestion.id,
+                    storage_path:  uploadedPaths[idx],
+                    file_name:     file.name,
+                    content_type:  file.type,
+                    size_bytes:    file.size
+                }));
+
+                try {
+                    const { error: attErr } = await supabase
+                        .from('suggestion_attachments')
+                        .insert(attachmentRows);
+                    if (attErr) throw attErr;
+                } catch (e) {
+                    console.error('[Suggestions] Attachment record insert failed:', e);
+                    await _sgDeleteUploadedFiles(uploadedPaths);
+                    await supabase.from('suggestions').eq('id', suggestion.id).delete();
+                    _sgRestoreBtn(btn);
+                    _sgShowBanner(`Could not save image records: ${e.message}. Your suggestion was not saved. Please try again.`);
+                    return;
+                }
+            }
+
+            /* 8. All done — show success state */
+            document.getElementById('sgFormBody').style.display = 'none';
+            document.getElementById('sgFooter').style.display   = 'none';
+            document.getElementById('sgSuccess').style.display  = 'flex';
+            _sgSubmitting = false;
         }
+
+        function _sgRestoreBtn(btn) {
+            _sgSubmitting    = false;
+            btn.disabled     = false;
+            btn.innerHTML    = 'Submit Suggestion';
+        }
+
+        /* Ensure Escape key works */
+        document.addEventListener('keydown', function(e) {
+            if (e.key === 'Escape') {
+                const overlay = document.getElementById('suggestionOverlay');
+                if (overlay && overlay.classList.contains('active') && !_sgSubmitting) {
+                    window.closeSuggestionModal();
+                }
+            }
+        });
     </script>
 
     <!-- ===================== RATE YOUR EXPERIENCE (REVIEW) MODAL ===================== -->
