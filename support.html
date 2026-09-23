@@ -1,4 +1,4 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="en">
 
 <head>
@@ -281,7 +281,7 @@
                         style="display: flex; align-items: center; gap: 6px; padding: 8px 16px; font-size: 0.875rem; white-space: nowrap; height: 38px;">
                         <i data-feather="book-open" style="width: 15px; height: 15px;"></i> User Manual
                     </button>
-                    <button class="btn btn-secondary"
+                    <button id="btnReportIssue" class="btn btn-secondary" onclick="openReportIssueModal()"
                         style="display: flex; align-items: center; gap: 6px; padding: 8px 16px; font-size: 0.875rem; white-space: nowrap; height: 38px;">
                         <i data-feather="alert-circle" style="width: 15px; height: 15px;"></i> Report an Issue
                     </button>
@@ -488,6 +488,480 @@
     </div>
 
     <script src="dashboard.js"></script>
+
+    <!-- ===================== REPORT AN ISSUE MODAL ===================== -->
+    <style>
+        /* Overlay */
+        #reportIssueOverlay {
+            display: none;
+            position: fixed;
+            inset: 0;
+            background: rgba(15, 23, 42, 0.55);
+            backdrop-filter: blur(4px);
+            -webkit-backdrop-filter: blur(4px);
+            z-index: 9999;
+            align-items: center;
+            justify-content: center;
+            padding: 1rem;
+            animation: riOverlayIn 0.2s ease;
+        }
+        #reportIssueOverlay.active { display: flex; }
+        @keyframes riOverlayIn { from { opacity: 0; } to { opacity: 1; } }
+
+        /* Modal box */
+        #reportIssueModal {
+            background: #ffffff;
+            border-radius: 16px;
+            width: 100%;
+            max-width: 540px;
+            box-shadow: 0 24px 64px rgba(15,23,42,0.18), 0 4px 16px rgba(15,23,42,0.08);
+            overflow: hidden;
+            animation: riModalIn 0.25s cubic-bezier(0.34,1.56,0.64,1);
+            display: flex;
+            flex-direction: column;
+            max-height: 90vh;
+        }
+        @keyframes riModalIn {
+            from { opacity: 0; transform: scale(0.94) translateY(10px); }
+            to   { opacity: 1; transform: scale(1)   translateY(0); }
+        }
+
+        /* Header */
+        .ri-header {
+            padding: 1.25rem 1.5rem 1rem;
+            border-bottom: 1px solid #f1f5f9;
+            display: flex;
+            align-items: flex-start;
+            justify-content: space-between;
+            gap: 1rem;
+            flex-shrink: 0;
+        }
+        .ri-header-text h3 {
+            font-size: 1.05rem;
+            font-weight: 700;
+            color: #0f172a;
+            margin: 0 0 3px;
+        }
+        .ri-header-text p {
+            font-size: 0.82rem;
+            color: #64748b;
+            margin: 0;
+            line-height: 1.4;
+        }
+        .ri-header-text p strong { color: #4f46e5; }
+        .ri-close-btn {
+            background: none;
+            border: none;
+            cursor: pointer;
+            color: #94a3b8;
+            padding: 4px;
+            border-radius: 6px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: color 0.15s, background 0.15s;
+            flex-shrink: 0;
+        }
+        .ri-close-btn:hover { color: #1e293b; background: #f1f5f9; }
+
+        /* Body */
+        .ri-body {
+            padding: 1.25rem 1.5rem;
+            overflow-y: auto;
+            display: flex;
+            flex-direction: column;
+            gap: 1rem;
+        }
+
+        /* Form fields */
+        .ri-field label {
+            display: block;
+            font-size: 0.8rem;
+            font-weight: 600;
+            color: #374151;
+            margin-bottom: 5px;
+            letter-spacing: 0.01em;
+        }
+        .ri-field label .ri-required { color: #ef4444; margin-left: 2px; }
+        .ri-field label .ri-optional { color: #94a3b8; font-weight: 400; margin-left: 4px; }
+        .ri-select, .ri-input, .ri-textarea {
+            width: 100%;
+            border: 1.5px solid #e2e8f0;
+            border-radius: 9px;
+            font-size: 0.875rem;
+            color: #1e293b;
+            font-family: inherit;
+            background: #fff;
+            transition: border-color 0.2s, box-shadow 0.2s;
+            box-sizing: border-box;
+        }
+        .ri-select { padding: 10px 12px; appearance: none; background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%2394a3b8' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'/%3E%3C/svg%3E"); background-repeat: no-repeat; background-position: right 12px center; padding-right: 36px; cursor: pointer; }
+        .ri-input  { padding: 10px 12px; }
+        .ri-textarea { padding: 10px 12px; resize: vertical; min-height: 96px; line-height: 1.6; }
+        .ri-select:focus, .ri-input:focus, .ri-textarea:focus {
+            outline: none;
+            border-color: #6366f1;
+            box-shadow: 0 0 0 3px rgba(99,102,241,0.12);
+        }
+        .ri-select.ri-error, .ri-input.ri-error, .ri-textarea.ri-error {
+            border-color: #ef4444;
+            box-shadow: 0 0 0 3px rgba(239,68,68,0.1);
+        }
+        .ri-field-hint {
+            font-size: 0.76rem;
+            color: #ef4444;
+            margin-top: 4px;
+            display: none;
+        }
+        .ri-field-hint.visible { display: block; }
+
+        /* Attachment drop zone */
+        .ri-dropzone {
+            border: 1.5px dashed #cbd5e1;
+            border-radius: 10px;
+            padding: 1.2rem;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 6px;
+            cursor: pointer;
+            transition: border-color 0.2s, background 0.2s;
+            background: #f8fafc;
+            position: relative;
+        }
+        .ri-dropzone:hover, .ri-dropzone.drag-over {
+            border-color: #6366f1;
+            background: #eef2ff;
+        }
+        .ri-dropzone input[type=file] {
+            position: absolute;
+            inset: 0;
+            opacity: 0;
+            cursor: pointer;
+            width: 100%;
+            height: 100%;
+        }
+        .ri-dropzone-icon { color: #94a3b8; }
+        .ri-dropzone-text { font-size: 0.85rem; font-weight: 500; color: #475569; }
+        .ri-dropzone-sub  { font-size: 0.75rem; color: #94a3b8; }
+        .ri-file-preview {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 8px 10px;
+            background: #f1f5f9;
+            border-radius: 8px;
+            font-size: 0.8rem;
+            color: #374151;
+            margin-top: 6px;
+        }
+        .ri-file-preview button {
+            margin-left: auto;
+            background: none;
+            border: none;
+            cursor: pointer;
+            color: #94a3b8;
+            padding: 2px;
+            border-radius: 4px;
+            display: flex;
+        }
+        .ri-file-preview button:hover { color: #ef4444; background: #fee2e2; }
+
+        /* Footer */
+        .ri-footer {
+            padding: 1rem 1.5rem;
+            border-top: 1px solid #f1f5f9;
+            display: flex;
+            justify-content: flex-end;
+            gap: 10px;
+            flex-shrink: 0;
+        }
+        .ri-btn-cancel {
+            padding: 9px 20px;
+            border-radius: 9px;
+            border: 1.5px solid #e2e8f0;
+            background: #fff;
+            font-size: 0.875rem;
+            font-weight: 500;
+            color: #475569;
+            cursor: pointer;
+            font-family: inherit;
+            transition: background 0.15s, border-color 0.15s;
+        }
+        .ri-btn-cancel:hover { background: #f8fafc; border-color: #cbd5e1; }
+        .ri-btn-submit {
+            padding: 9px 22px;
+            border-radius: 9px;
+            border: none;
+            background: linear-gradient(135deg, #6366f1, #4f46e5);
+            color: #fff;
+            font-size: 0.875rem;
+            font-weight: 600;
+            cursor: pointer;
+            font-family: inherit;
+            box-shadow: 0 2px 8px rgba(99,102,241,0.35);
+            transition: transform 0.15s, box-shadow 0.15s, opacity 0.15s;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+        .ri-btn-submit:hover  { transform: translateY(-1px); box-shadow: 0 4px 14px rgba(99,102,241,0.4); }
+        .ri-btn-submit:active { transform: translateY(0);    box-shadow: 0 2px 8px rgba(99,102,241,0.35); }
+        .ri-btn-submit:disabled { opacity: 0.6; cursor: not-allowed; transform: none; }
+
+        /* Success state */
+        .ri-success {
+            display: none;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 2.5rem 2rem;
+            text-align: center;
+            gap: 12px;
+        }
+        .ri-success-icon {
+            width: 60px; height: 60px;
+            background: linear-gradient(135deg, #d1fae5, #a7f3d0);
+            border-radius: 50%;
+            display: flex; align-items: center; justify-content: center;
+            color: #059669;
+            animation: riPop 0.4s cubic-bezier(0.34,1.56,0.64,1);
+        }
+        @keyframes riPop { from { transform: scale(0); opacity: 0; } to { transform: scale(1); opacity: 1; } }
+        .ri-success h4 { font-size: 1.1rem; font-weight: 700; color: #0f172a; margin: 0; }
+        .ri-success p  { font-size: 0.875rem; color: #64748b; margin: 0; line-height: 1.55; }
+        .ri-ticket-id  { font-size: 0.78rem; background: #f1f5f9; color: #475569; padding: 5px 14px; border-radius: 20px; font-weight: 600; }
+    </style>
+
+    <!-- Modal HTML -->
+    <div id="reportIssueOverlay" role="dialog" aria-modal="true" aria-labelledby="riModalTitle" onclick="handleRiOverlayClick(event)">
+        <div id="reportIssueModal">
+
+            <!-- Header -->
+            <div class="ri-header">
+                <div class="ri-header-text">
+                    <h3 id="riModalTitle">Report an Issue</h3>
+                    <p>Tell us about a problem you're experiencing. Our support team will <strong>look into it</strong>.</p>
+                </div>
+                <button class="ri-close-btn" onclick="closeReportIssueModal()" title="Close" aria-label="Close modal">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+                </button>
+            </div>
+
+            <!-- Form body -->
+            <div class="ri-body" id="riFormBody">
+
+                <!-- Category -->
+                <div class="ri-field">
+                    <label for="riCategory">Issue Category <span class="ri-required">*</span></label>
+                    <select id="riCategory" class="ri-select" onchange="riClearError(this, 'riCategoryHint')">
+                        <option value="" disabled selected>Select a category</option>
+                        <option value="bookings">📅 Bookings &amp; Appointments</option>
+                        <option value="payments">💳 Payments &amp; Billing</option>
+                        <option value="pos">🧾 Point of Sale (POS)</option>
+                        <option value="staff">👥 Staff &amp; Scheduling</option>
+                        <option value="customers">🙋 Customers</option>
+                        <option value="services">✂️ Services &amp; Products</option>
+                        <option value="marketing">🎁 Memberships, Offers &amp; Coupons</option>
+                        <option value="reports">📊 Reports &amp; Analytics</option>
+                        <option value="settings">⚙️ Settings</option>
+                        <option value="branches">🏢 Branches</option>
+                        <option value="subscription">🔑 Subscription &amp; Plans</option>
+                        <option value="login">🔐 Login &amp; Access Issues</option>
+                        <option value="notifications">🔔 Notifications</option>
+                        <option value="other">🔧 Other / General</option>
+                    </select>
+                    <div class="ri-field-hint" id="riCategoryHint">Please select a category.</div>
+                </div>
+
+                <!-- Subject -->
+                <div class="ri-field">
+                    <label for="riSubject">Subject <span class="ri-required">*</span></label>
+                    <input type="text" id="riSubject" class="ri-input" placeholder="Briefly describe the issue" maxlength="120"
+                           oninput="riClearError(this, 'riSubjectHint')">
+                    <div class="ri-field-hint" id="riSubjectHint">Subject is required (min 5 characters).</div>
+                </div>
+
+                <!-- Description -->
+                <div class="ri-field">
+                    <label for="riDescription">Description <span class="ri-required">*</span></label>
+                    <textarea id="riDescription" class="ri-textarea" placeholder="Explain what happened, what you expected, and any steps to reproduce the issue…" maxlength="2000"
+                              oninput="riClearError(this, 'riDescriptionHint')"></textarea>
+                    <div class="ri-field-hint" id="riDescriptionHint">Description is required (min 20 characters).</div>
+                </div>
+
+                <!-- Attachment -->
+                <div class="ri-field">
+                    <label>Attachment <span class="ri-optional">(Optional)</span></label>
+                    <div class="ri-dropzone" id="riDropzone"
+                         ondragover="event.preventDefault(); this.classList.add('drag-over');"
+                         ondragleave="this.classList.remove('drag-over');"
+                         ondrop="handleRiDrop(event)">
+                        <input type="file" id="riFileInput" accept="image/*,.pdf,.mp4,.zip" onchange="handleRiFileSelect(event)">
+                        <svg class="ri-dropzone-icon" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+                        <span class="ri-dropzone-text">Attach a screenshot or file</span>
+                        <span class="ri-dropzone-sub">PNG, JPG, PDF, MP4 up to 10 MB</span>
+                    </div>
+                    <div id="riFilePreview" style="display:none;" class="ri-file-preview">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#6366f1" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+                        <span id="riFileName">file.png</span>
+                        <button onclick="removeRiFile()" title="Remove file" aria-label="Remove file">
+                            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+                        </button>
+                    </div>
+                </div>
+
+            </div><!-- /ri-body -->
+
+            <!-- Success state -->
+            <div class="ri-success" id="riSuccess">
+                <div class="ri-success-icon">
+                    <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+                </div>
+                <h4>Issue Submitted!</h4>
+                <p>We've received your report. Our support team will review it and get back to you within <strong>24 hours</strong>.</p>
+                <span class="ri-ticket-id" id="riTicketId">Ticket #BB-00001</span>
+                <button class="ri-btn-submit" style="margin-top:8px;" onclick="closeReportIssueModal()">Done</button>
+            </div>
+
+            <!-- Footer -->
+            <div class="ri-footer" id="riFooter">
+                <button class="ri-btn-cancel" onclick="closeReportIssueModal()">Cancel</button>
+                <button class="ri-btn-submit" id="riSubmitBtn" onclick="submitReportIssue()">
+                    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
+                    Submit Issue
+                </button>
+            </div>
+
+        </div><!-- /modal -->
+    </div><!-- /overlay -->
+
+    <script>
+        /* ======= Report an Issue Modal Logic ======= */
+
+        function openReportIssueModal() {
+            resetReportIssueModal();
+            document.getElementById('reportIssueOverlay').classList.add('active');
+            document.body.style.overflow = 'hidden';
+            setTimeout(() => document.getElementById('riCategory').focus(), 120);
+        }
+
+        function closeReportIssueModal() {
+            document.getElementById('reportIssueOverlay').classList.remove('active');
+            document.body.style.overflow = '';
+        }
+
+        function handleRiOverlayClick(e) {
+            if (e.target === document.getElementById('reportIssueOverlay')) closeReportIssueModal();
+        }
+
+        function resetReportIssueModal() {
+            document.getElementById('riCategory').value    = '';
+            document.getElementById('riSubject').value     = '';
+            document.getElementById('riDescription').value = '';
+            removeRiFile();
+            ['riCategory','riSubject','riDescription'].forEach(id => {
+                document.getElementById(id).classList.remove('ri-error');
+            });
+            ['riCategoryHint','riSubjectHint','riDescriptionHint'].forEach(id => {
+                document.getElementById(id).classList.remove('visible');
+            });
+            document.getElementById('riFormBody').style.display = 'flex';
+            document.getElementById('riSuccess').style.display  = 'none';
+            document.getElementById('riFooter').style.display   = 'flex';
+            document.getElementById('riSubmitBtn').disabled = false;
+        }
+
+        function riClearError(el, hintId) {
+            el.classList.remove('ri-error');
+            document.getElementById(hintId).classList.remove('visible');
+        }
+
+        function riShowError(fieldId, hintId) {
+            document.getElementById(fieldId).classList.add('ri-error');
+            document.getElementById(hintId).classList.add('visible');
+        }
+
+        function handleRiFileSelect(e) {
+            const file = e.target.files[0];
+            if (file) showRiFile(file);
+        }
+
+        function handleRiDrop(e) {
+            e.preventDefault();
+            document.getElementById('riDropzone').classList.remove('drag-over');
+            const file = e.dataTransfer.files[0];
+            if (!file) return;
+            const allowed = ['image/png','image/jpeg','image/gif','image/webp','application/pdf','video/mp4','application/zip'];
+            if (!allowed.includes(file.type) && !file.name.match(/\.(png|jpg|jpeg|gif|webp|pdf|mp4|zip)$/i)) {
+                alert('File type not supported. Please upload PNG, JPG, PDF, MP4, or ZIP.');
+                return;
+            }
+            if (file.size > 10 * 1024 * 1024) {
+                alert('File is too large. Maximum size is 10 MB.');
+                return;
+            }
+            showRiFile(file);
+        }
+
+        function showRiFile(file) {
+            document.getElementById('riDropzone').style.display  = 'none';
+            document.getElementById('riFilePreview').style.display = 'flex';
+            document.getElementById('riFileName').textContent = file.name + ' (' + (file.size / 1024).toFixed(1) + ' KB)';
+        }
+
+        function removeRiFile() {
+            document.getElementById('riFileInput').value          = '';
+            document.getElementById('riDropzone').style.display   = '';
+            document.getElementById('riFilePreview').style.display = 'none';
+            document.getElementById('riFileName').textContent     = '';
+        }
+
+        function submitReportIssue() {
+            let valid = true;
+
+            const category    = document.getElementById('riCategory');
+            const subject     = document.getElementById('riSubject');
+            const description = document.getElementById('riDescription');
+
+            if (!category.value) {
+                riShowError('riCategory', 'riCategoryHint'); valid = false;
+            }
+            if (subject.value.trim().length < 5) {
+                riShowError('riSubject', 'riSubjectHint'); valid = false;
+            }
+            if (description.value.trim().length < 20) {
+                riShowError('riDescription', 'riDescriptionHint'); valid = false;
+            }
+
+            if (!valid) return;
+
+            const btn = document.getElementById('riSubmitBtn');
+            btn.disabled = true;
+            btn.innerHTML = '<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="animation:spin 0.8s linear infinite;"><line x1="12" y1="2" x2="12" y2="6"/><line x1="12" y1="18" x2="12" y2="22"/><line x1="4.93" y1="4.93" x2="7.76" y2="7.76"/><line x1="16.24" y1="16.24" x2="19.07" y2="19.07"/><line x1="2" y1="12" x2="6" y2="12"/><line x1="18" y1="12" x2="22" y2="12"/><line x1="4.93" y1="19.07" x2="7.76" y2="16.24"/><line x1="16.24" y1="7.76" x2="19.07" y2="4.93"/></svg> Submitting…';
+
+            // Simulate API call
+            setTimeout(() => {
+                const ticketNum = 'BB-' + String(Math.floor(10000 + Math.random() * 90000));
+                document.getElementById('riTicketId').textContent = 'Ticket #' + ticketNum;
+                document.getElementById('riFormBody').style.display = 'none';
+                document.getElementById('riFooter').style.display   = 'none';
+                document.getElementById('riSuccess').style.display  = 'flex';
+            }, 1200);
+        }
+
+        // Spin animation for the loading icon
+        const riSpinStyle = document.createElement('style');
+        riSpinStyle.textContent = '@keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }';
+        document.head.appendChild(riSpinStyle);
+
+        // Close modal on Escape key
+        document.addEventListener('keydown', function(e) {
+            if (e.key === 'Escape' && document.getElementById('reportIssueOverlay').classList.contains('active')) {
+                closeReportIssueModal();
+            }
+        });
+    </script>
     <script>
         // Init Feather Icons
         feather.replace();
