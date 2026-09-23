@@ -308,7 +308,7 @@
                             </button>
                         </div>
                     </div>
-                    <button class="btn btn-secondary"
+                    <button id="btnSuggestions" class="btn btn-secondary" onclick="openSuggestionModal()"
                         style="display: flex; align-items: center; gap: 6px; padding: 8px 16px; font-size: 0.875rem; white-space: nowrap; height: 38px;">
                         <i data-feather="lightbulb" style="width: 15px; height: 15px;"></i> Suggestions
                     </button>
@@ -1084,10 +1084,550 @@
 
         // Close modal on Escape key
         document.addEventListener('keydown', function(e) {
-            if (e.key === 'Escape' && document.getElementById('reportIssueOverlay').classList.contains('active')) {
-                closeReportIssueModal();
+            if (e.key === 'Escape') {
+                if (document.getElementById('reportIssueOverlay').classList.contains('active')) {
+                    closeReportIssueModal();
+                }
+                if (document.getElementById('suggestionOverlay') && document.getElementById('suggestionOverlay').classList.contains('active')) {
+                    closeSuggestionModal();
+                }
             }
         });
+    </script>
+
+    <!-- ===================== SHARE A SUGGESTION MODAL ===================== -->
+    <style>
+        /* Suggestion Overlay */
+        #suggestionOverlay {
+            display: none;
+            position: fixed;
+            inset: 0;
+            background: rgba(15, 23, 42, 0.55);
+            backdrop-filter: blur(4px);
+            -webkit-backdrop-filter: blur(4px);
+            z-index: 9999;
+            align-items: center;
+            justify-content: center;
+            padding: 1rem;
+            animation: sgOverlayIn 0.2s ease;
+        }
+        #suggestionOverlay.active { display: flex; }
+        @keyframes sgOverlayIn { from { opacity: 0; } to { opacity: 1; } }
+
+        /* Modal Box */
+        #suggestionModal {
+            background: #ffffff;
+            border-radius: 16px;
+            width: 100%;
+            max-width: 540px;
+            box-shadow: 0 24px 64px rgba(15,23,42,0.18), 0 4px 16px rgba(15,23,42,0.08);
+            overflow: hidden;
+            animation: sgModalIn 0.25s cubic-bezier(0.34,1.56,0.64,1);
+            display: flex;
+            flex-direction: column;
+            max-height: 90vh;
+        }
+        @keyframes sgModalIn {
+            from { opacity: 0; transform: scale(0.94) translateY(10px); }
+            to   { opacity: 1; transform: scale(1) translateY(0); }
+        }
+
+        /* Header */
+        .sg-header {
+            padding: 1.25rem 1.5rem 1rem;
+            border-bottom: 1px solid #f1f5f9;
+            display: flex;
+            align-items: flex-start;
+            justify-content: space-between;
+            gap: 1rem;
+            flex-shrink: 0;
+        }
+        .sg-header-text h3 {
+            font-size: 1.15rem;
+            font-weight: 700;
+            color: #0f172a;
+            margin: 0 0 4px;
+        }
+        .sg-header-text p {
+            font-size: 0.85rem;
+            color: #64748b;
+            margin: 0;
+            line-height: 1.4;
+        }
+        .sg-close-btn {
+            background: none;
+            border: none;
+            cursor: pointer;
+            color: #94a3b8;
+            padding: 4px;
+            border-radius: 6px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: color 0.15s, background 0.15s;
+            flex-shrink: 0;
+        }
+        .sg-close-btn:hover { color: #1e293b; background: #f1f5f9; }
+
+        /* Body */
+        .sg-body {
+            padding: 1.25rem 1.5rem;
+            overflow-y: auto;
+            display: flex;
+            flex-direction: column;
+            gap: 1.1rem;
+        }
+
+        .sg-field label {
+            display: block;
+            font-size: 0.82rem;
+            font-weight: 600;
+            color: #374151;
+            margin-bottom: 6px;
+        }
+        .sg-field label .sg-required { color: #ef4444; margin-left: 2px; }
+        .sg-field label .sg-optional { color: #94a3b8; font-weight: 400; margin-left: 4px; }
+
+        .sg-select, .sg-input, .sg-textarea {
+            width: 100%;
+            border: 1.5px solid #e2e8f0;
+            border-radius: 9px;
+            font-size: 0.875rem;
+            color: #1e293b;
+            font-family: inherit;
+            background: #fff;
+            transition: border-color 0.2s, box-shadow 0.2s;
+            box-sizing: border-box;
+        }
+        .sg-select {
+            padding: 10px 12px;
+            appearance: none;
+            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%2394a3b8' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'/%3E%3C/svg%3E");
+            background-repeat: no-repeat;
+            background-position: right 12px center;
+            padding-right: 36px;
+            cursor: pointer;
+        }
+        .sg-input { padding: 10px 12px; }
+        .sg-textarea { padding: 10px 12px; resize: vertical; min-height: 90px; line-height: 1.55; }
+        .sg-select:focus, .sg-input:focus, .sg-textarea:focus {
+            outline: none;
+            border-color: #4338ca;
+            box-shadow: 0 0 0 3px rgba(67, 56, 202, 0.12);
+        }
+        .sg-select.sg-error, .sg-input.sg-error, .sg-textarea.sg-error {
+            border-color: #ef4444;
+            box-shadow: 0 0 0 3px rgba(239, 68, 68, 0.1);
+        }
+        .sg-field-hint {
+            font-size: 0.76rem;
+            color: #ef4444;
+            margin-top: 4px;
+            display: none;
+        }
+        .sg-field-hint.visible { display: block; }
+
+        /* Dropzone */
+        .sg-dropzone {
+            border: 1.5px dashed #cbd5e1;
+            border-radius: 10px;
+            padding: 1.25rem;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 6px;
+            cursor: pointer;
+            transition: border-color 0.2s, background 0.2s;
+            background: #f8fafc;
+            position: relative;
+            text-align: center;
+        }
+        .sg-dropzone:hover, .sg-dropzone.drag-over {
+            border-color: #4338ca;
+            background: #eef2ff;
+        }
+        .sg-dropzone input[type=file] {
+            position: absolute;
+            inset: 0;
+            opacity: 0;
+            cursor: pointer;
+            width: 100%;
+            height: 100%;
+        }
+        .sg-dropzone-icon { color: #64748b; }
+        .sg-dropzone-text { font-size: 0.88rem; font-weight: 600; color: #1e293b; }
+        .sg-dropzone-sub { font-size: 0.75rem; color: #94a3b8; }
+        .sg-file-preview {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 8px 10px;
+            background: #f1f5f9;
+            border-radius: 8px;
+            font-size: 0.8rem;
+            color: #374151;
+            margin-top: 6px;
+        }
+        .sg-file-preview button {
+            margin-left: auto;
+            background: none;
+            border: none;
+            cursor: pointer;
+            color: #94a3b8;
+            padding: 2px;
+            border-radius: 4px;
+            display: flex;
+        }
+        .sg-file-preview button:hover { color: #ef4444; background: #fee2e2; }
+
+        /* Footer */
+        .sg-footer {
+            padding: 1rem 1.5rem;
+            border-top: 1px solid #f1f5f9;
+            display: flex;
+            justify-content: flex-end;
+            gap: 10px;
+            flex-shrink: 0;
+        }
+        .sg-btn-cancel {
+            padding: 9px 20px;
+            border-radius: 9px;
+            border: 1.5px solid #e2e8f0;
+            background: #fff;
+            font-size: 0.875rem;
+            font-weight: 500;
+            color: #475569;
+            cursor: pointer;
+            font-family: inherit;
+            transition: background 0.15s, border-color 0.15s;
+        }
+        .sg-btn-cancel:hover { background: #f8fafc; border-color: #cbd5e1; }
+        .sg-btn-submit {
+            padding: 9px 22px;
+            border-radius: 9px;
+            border: none;
+            background: #3730a3;
+            color: #fff;
+            font-size: 0.875rem;
+            font-weight: 600;
+            cursor: pointer;
+            font-family: inherit;
+            box-shadow: 0 2px 8px rgba(55, 48, 163, 0.35);
+            transition: transform 0.15s, box-shadow 0.15s, background 0.15s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 6px;
+        }
+        .sg-btn-submit:hover {
+            background: #312e81;
+            transform: translateY(-1px);
+            box-shadow: 0 4px 14px rgba(55, 48, 163, 0.45);
+        }
+        .sg-btn-submit:active { transform: translateY(0); }
+        .sg-btn-submit:disabled { opacity: 0.6; cursor: not-allowed; transform: none; }
+
+        /* Success Step 2 Screen */
+        .sg-success {
+            display: none;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 3rem 2rem 2.5rem;
+            text-align: center;
+            gap: 14px;
+        }
+        .sg-success-icon {
+            width: 58px;
+            height: 58px;
+            border-radius: 50%;
+            border: 2.5px solid #16a34a;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #16a34a;
+            margin-bottom: 4px;
+            animation: sgPop 0.35s cubic-bezier(0.34,1.56,0.64,1);
+        }
+        @keyframes sgPop { from { transform: scale(0.4); opacity: 0; } to { transform: scale(1); opacity: 1; } }
+        .sg-success h3 {
+            font-size: 1.3rem;
+            font-weight: 700;
+            color: #0f172a;
+            margin: 0;
+            line-height: 1.3;
+        }
+        .sg-success p {
+            font-size: 0.9rem;
+            color: #475569;
+            margin: 0;
+            line-height: 1.6;
+            max-width: 440px;
+        }
+        .sg-highlight-banner {
+            margin-top: 6px;
+            background: #f8fafc;
+            border: 1px solid #f1f5f9;
+            padding: 12px 24px;
+            border-radius: 10px;
+            font-size: 0.88rem;
+            font-weight: 600;
+            color: #1e293b;
+            box-shadow: 0 1px 2px rgba(15,23,42,0.03);
+        }
+    </style>
+
+    <!-- Suggestion Modal HTML -->
+    <div id="suggestionOverlay" role="dialog" aria-modal="true" aria-labelledby="sgModalTitle" onclick="handleSgOverlayClick(event)">
+        <div id="suggestionModal">
+
+            <!-- Header -->
+            <div class="sg-header">
+                <div class="sg-header-text">
+                    <h3 id="sgModalTitle">Share a Suggestion</h3>
+                    <p>Have an idea to improve BharatBots? We'd love to hear it.</p>
+                </div>
+                <button class="sg-close-btn" onclick="closeSuggestionModal()" title="Close" aria-label="Close modal">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+                </button>
+            </div>
+
+            <!-- Form Body (Step 1) -->
+            <div class="sg-body" id="sgFormBody">
+
+                <!-- Suggestion Category -->
+                <div class="sg-field">
+                    <label for="sgCategory">Suggestion Category <span class="sg-required">*</span></label>
+                    <select id="sgCategory" class="sg-select" onchange="sgClearError(this, 'sgCategoryHint')">
+                        <option value="" disabled selected>Select a category</option>
+                        <option value="appointments">📅 Appointments &amp; Calendar</option>
+                        <option value="billing_pos">💳 POS, Billing &amp; Invoicing</option>
+                        <option value="staff_commission">👥 Staff Management &amp; Commission</option>
+                        <option value="customer_loyalty">🙋 Customer Experience &amp; Loyalty</option>
+                        <option value="services_packages">✂️ Services &amp; Packages</option>
+                        <option value="products_inventory">🧴 Products &amp; Inventory</option>
+                        <option value="marketing_coupons">🎁 Marketing, Offers &amp; Coupons</option>
+                        <option value="reports_insights">📊 Reports &amp; Business Insights</option>
+                        <option value="mobile_usability">📱 Mobile &amp; Usability</option>
+                        <option value="new_feature">💡 New Feature / Other</option>
+                    </select>
+                    <div class="sg-field-hint" id="sgCategoryHint">Please select a category.</div>
+                </div>
+
+                <!-- Suggestion Title -->
+                <div class="sg-field">
+                    <label for="sgTitle">Suggestion Title <span class="sg-required">*</span></label>
+                    <input type="text" id="sgTitle" class="sg-input" placeholder="Briefly describe your idea" maxlength="120"
+                           oninput="sgClearError(this, 'sgTitleHint')">
+                    <div class="sg-field-hint" id="sgTitleHint">Title is required (min 5 characters).</div>
+                </div>
+
+                <!-- Describe Your Suggestion -->
+                <div class="sg-field">
+                    <label for="sgDescription">Describe Your Suggestion <span class="sg-required">*</span></label>
+                    <textarea id="sgDescription" class="sg-textarea" placeholder="Tell us what you'd like to see..." maxlength="2000"
+                              oninput="sgClearError(this, 'sgDescriptionHint')"></textarea>
+                    <div class="sg-field-hint" id="sgDescriptionHint">Description is required (min 15 characters).</div>
+                </div>
+
+                <!-- Why Would This Be Useful? -->
+                <div class="sg-field">
+                    <label for="sgWhyUseful">Why Would This Be Useful? <span class="sg-optional">(Optional)</span></label>
+                    <input type="text" id="sgWhyUseful" class="sg-input" placeholder="How would this help your business?" maxlength="255">
+                </div>
+
+                <!-- Attach Images (Optional) -->
+                <div class="sg-field">
+                    <label>Attach Images <span class="sg-optional">(Optional)</span></label>
+                    <div class="sg-dropzone" id="sgDropzone"
+                         ondragover="event.preventDefault(); this.classList.add('drag-over');"
+                         ondragleave="this.classList.remove('drag-over');"
+                         ondrop="handleSgDrop(event)">
+                        <input type="file" id="sgFileInput" accept="image/*" onchange="handleSgFileSelect(event)">
+                        <svg class="sg-dropzone-icon" width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+                            <rect x="3" y="3" width="18" height="18" rx="2" ry="2"/>
+                            <circle cx="8.5" cy="8.5" r="1.5"/>
+                            <polyline points="21 15 16 10 5 21"/>
+                        </svg>
+                        <span class="sg-dropzone-text">Upload Images</span>
+                        <span class="sg-dropzone-sub">Image attachment limits to be finalized.</span>
+                    </div>
+                    <div id="sgFilePreview" style="display:none;" class="sg-file-preview">
+                        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#4338ca" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
+                        <span id="sgFileName">image.png</span>
+                        <button onclick="removeSgFile()" title="Remove image" aria-label="Remove image">
+                            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+                        </button>
+                    </div>
+                </div>
+
+            </div><!-- /sg-body -->
+
+            <!-- Success State (Step 2) -->
+            <div class="sg-success" id="sgSuccess">
+                <div class="sg-success-icon">
+                    <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#16a34a" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
+                        <polyline points="20 6 9 17 4 12"/>
+                    </svg>
+                </div>
+                <h3>Thank You for Your Suggestion!</h3>
+                <p>We appreciate you taking the time to share your idea with us. Your suggestion has been submitted successfully and will be reviewed by our team.</p>
+                <div class="sg-highlight-banner">
+                    Thank you for helping us improve BharatBots!
+                </div>
+                <button class="sg-btn-submit" style="margin-top:10px; padding: 10px 32px;" onclick="closeSuggestionModal()">
+                    Done
+                </button>
+            </div>
+
+            <!-- Footer -->
+            <div class="sg-footer" id="sgFooter">
+                <button class="sg-btn-cancel" onclick="closeSuggestionModal()">Cancel</button>
+                <button class="sg-btn-submit" id="sgSubmitBtn" onclick="submitSuggestion()">
+                    Submit Suggestion
+                </button>
+            </div>
+
+        </div><!-- /modal -->
+    </div><!-- /overlay -->
+
+    <!-- Suggestion Modal Logic -->
+    <script>
+        function openSuggestionModal() {
+            resetSuggestionModal();
+            document.getElementById('suggestionOverlay').classList.add('active');
+            document.body.style.overflow = 'hidden';
+            setTimeout(() => document.getElementById('sgCategory').focus(), 120);
+        }
+
+        function closeSuggestionModal() {
+            document.getElementById('suggestionOverlay').classList.remove('active');
+            document.body.style.overflow = '';
+        }
+
+        function handleSgOverlayClick(e) {
+            if (e.target === document.getElementById('suggestionOverlay')) closeSuggestionModal();
+        }
+
+        function resetSuggestionModal() {
+            document.getElementById('sgCategory').value    = '';
+            document.getElementById('sgTitle').value       = '';
+            document.getElementById('sgDescription').value = '';
+            document.getElementById('sgWhyUseful').value   = '';
+            removeSgFile();
+            ['sgCategory','sgTitle','sgDescription'].forEach(id => {
+                const el = document.getElementById(id);
+                if (el) el.classList.remove('sg-error');
+            });
+            ['sgCategoryHint','sgTitleHint','sgDescriptionHint'].forEach(id => {
+                const el = document.getElementById(id);
+                if (el) el.classList.remove('visible');
+            });
+            document.getElementById('sgFormBody').style.display = 'flex';
+            document.getElementById('sgSuccess').style.display  = 'none';
+            document.getElementById('sgFooter').style.display   = 'flex';
+            document.getElementById('sgSubmitBtn').disabled     = false;
+            document.getElementById('sgSubmitBtn').innerHTML    = 'Submit Suggestion';
+        }
+
+        function sgClearError(el, hintId) {
+            el.classList.remove('sg-error');
+            const hint = document.getElementById(hintId);
+            if (hint) hint.classList.remove('visible');
+        }
+
+        function sgShowError(fieldId, hintId) {
+            const el = document.getElementById(fieldId);
+            const hint = document.getElementById(hintId);
+            if (el) el.classList.add('sg-error');
+            if (hint) hint.classList.add('visible');
+        }
+
+        function handleSgFileSelect(e) {
+            const file = e.target.files[0];
+            if (file) showSgFile(file);
+        }
+
+        function handleSgDrop(e) {
+            e.preventDefault();
+            document.getElementById('sgDropzone').classList.remove('drag-over');
+            const file = e.dataTransfer.files[0];
+            if (!file) return;
+            if (!file.type.startsWith('image/')) {
+                alert('Please upload an image file (PNG, JPG, WebP, etc.).');
+                return;
+            }
+            if (file.size > 10 * 1024 * 1024) {
+                alert('Image is too large. Maximum size is 10 MB.');
+                return;
+            }
+            showSgFile(file);
+        }
+
+        function showSgFile(file) {
+            document.getElementById('sgDropzone').style.display   = 'none';
+            document.getElementById('sgFilePreview').style.display = 'flex';
+            document.getElementById('sgFileName').textContent     = file.name + ' (' + (file.size / 1024).toFixed(1) + ' KB)';
+        }
+
+        function removeSgFile() {
+            document.getElementById('sgFileInput').value           = '';
+            document.getElementById('sgDropzone').style.display    = '';
+            document.getElementById('sgFilePreview').style.display  = 'none';
+            document.getElementById('sgFileName').textContent      = '';
+        }
+
+        function submitSuggestion() {
+            let valid = true;
+            const category    = document.getElementById('sgCategory');
+            const title       = document.getElementById('sgTitle');
+            const description = document.getElementById('sgDescription');
+            const whyUseful   = document.getElementById('sgWhyUseful');
+
+            if (!category.value) {
+                sgShowError('sgCategory', 'sgCategoryHint'); valid = false;
+            }
+            if (title.value.trim().length < 5) {
+                sgShowError('sgTitle', 'sgTitleHint'); valid = false;
+            }
+            if (description.value.trim().length < 15) {
+                sgShowError('sgDescription', 'sgDescriptionHint'); valid = false;
+            }
+
+            if (!valid) return;
+
+            const btn = document.getElementById('sgSubmitBtn');
+            btn.disabled = true;
+            btn.innerHTML = '<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="animation:spin 0.8s linear infinite;"><line x1="12" y1="2" x2="12" y2="6"/><line x1="12" y1="18" x2="12" y2="22"/><line x1="4.93" y1="4.93" x2="7.76" y2="7.76"/><line x1="16.24" y1="16.24" x2="19.07" y2="19.07"/><line x1="2" y1="12" x2="6" y2="12"/><line x1="18" y1="12" x2="22" y2="12"/><line x1="4.93" y1="19.07" x2="7.76" y2="16.24"/><line x1="16.24" y1="7.76" x2="19.07" y2="4.93"/></svg> Submitting…';
+
+            setTimeout(() => {
+                const filePreview = document.getElementById('sgFileName');
+                const attachedFileName = (filePreview && filePreview.textContent) ? filePreview.textContent.trim() : null;
+
+                const newSuggestion = {
+                    id: 'SUG-' + String(Math.floor(10000 + Math.random() * 90000)),
+                    category: category.value,
+                    categoryLabel: category.options[category.selectedIndex].text.replace(/^[^\s]+\s+/, ''),
+                    title: title.value.trim(),
+                    description: description.value.trim(),
+                    whyUseful: whyUseful.value.trim() || null,
+                    imageAttachment: attachedFileName,
+                    submittedAt: new Date().toISOString()
+                };
+
+                try {
+                    const existing = JSON.parse(localStorage.getItem('salon_suggestions') || '[]');
+                    existing.unshift(newSuggestion);
+                    localStorage.setItem('salon_suggestions', JSON.stringify(existing));
+                } catch(e) {
+                    console.error('Error saving suggestion:', e);
+                }
+
+                document.getElementById('sgFormBody').style.display = 'none';
+                document.getElementById('sgFooter').style.display   = 'none';
+                document.getElementById('sgSuccess').style.display  = 'flex';
+            }, 1000);
+        }
     </script>
     <script>
         // Init Feather Icons
