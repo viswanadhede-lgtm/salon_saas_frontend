@@ -375,9 +375,9 @@
                         </div>
                         <div style="padding-left: 26px; margin-bottom: 18px;">
                             <a id="scEmailLink" href="mailto:support@bharathbots.com"
-                                style="color: #4f46e5; font-weight: 500; font-size: 0.95rem; text-decoration: underline; word-break: break-all; transition: color 0.15s ease;"
-                                onmouseover="this.style.color='#3730a3';"
-                                onmouseout="this.style.color='#4f46e5';">
+                                style="color: #4f46e5; font-weight: 500; font-size: 0.95rem; text-decoration: none; word-break: break-all; transition: color 0.15s ease;"
+                                onmouseover="this.style.color='#3730a3'; this.style.textDecoration='underline';"
+                                onmouseout="this.style.color='#4f46e5'; this.style.textDecoration='none';">
                                 <span id="scEmailText">support@bharathbots.com</span>
                             </a>
                         </div>
@@ -424,9 +424,10 @@
                             <p id="scPhoneHours" style="color: #64748b; font-size: 0.9rem; margin: 0 0 0.75rem 0;">For urgent queries
                                 related to bookings or payments.</p>
                             <a id="scPhoneLink" href="#"
-                                style="color: #4f46e5; font-weight: 500; text-decoration: none; display: inline-flex; align-items: center; font-size: 0.95rem; transition: color 0.15s ease;"
-                                onmouseover="this.style.color='#3730a3';"
-                                onmouseout="this.style.color='#4f46e5';">
+                                style="color: #4f46e5; font-weight: 500; text-decoration: none; display: inline-flex; align-items: center; gap: 6px; font-size: 0.95rem; transition: color 0.15s ease;"
+                                onmouseover="this.style.color='#3730a3'; this.style.textDecoration='underline';"
+                                onmouseout="this.style.color='#4f46e5'; this.style.textDecoration='none';">
+                                <i data-feather="phone" style="width: 14px; height: 14px; flex-shrink: 0;"></i>
                                 <span id="scPhoneText">Loading&hellip;</span>
                             </a>
                         </div>
@@ -707,7 +708,7 @@
                     const mailtoUrl = 'mailto:' + encodeURIComponent(addr) + '?subject=' + encodeURIComponent('BharatBots Support Request');
                     emailLink.href = mailtoUrl;
                     emailLink.style.color = '#4f46e5';
-                    emailLink.style.textDecoration = 'underline';
+                    emailLink.style.textDecoration = 'none';
                     emailLink.style.pointerEvents = '';
                     enableCard(emailCard);
 
@@ -810,6 +811,7 @@
                     phoneText.textContent = num;
                     phoneLink.href = 'tel:' + num.replace(/[\s\-().]/g, '');
                     phoneLink.style.color = '#4f46e5';
+                    phoneLink.style.textDecoration = 'none';
                     phoneLink.style.pointerEvents = '';
                     if (hours) $('scPhoneHours').textContent = hours;
                 } else {
