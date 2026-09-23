@@ -1,0 +1,2405 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <script src="scripts/auth-loader.js"></script>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Issue History & Support Tickets - BharathBots Salon SaaS.">
+    <title>Issue History - BharathBots</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="styles.css">
+    <link rel="stylesheet" href="dashboard.css">
+    <link rel="stylesheet" href="submenu.css">
+    <script src="https://unpkg.com/feather-icons"></script>
+    <style>
+        /* =================== Custom Issue History Styles =================== */
+        :root {
+            --ih-primary: #4f46e5;
+            --ih-primary-hover: #4338ca;
+            --ih-primary-soft: #eef2ff;
+            --ih-border: #e2e8f0;
+            --ih-surface: #ffffff;
+            --ih-bg-subtle: #f8fafc;
+            --ih-text-main: #0f172a;
+            --ih-text-muted: #64748b;
+        }
+
+        .ih-container {
+            max-width: 1440px;
+            margin: 0 auto;
+            padding-bottom: 2rem;
+        }
+
+        /* Top Bar / Breadcrumb */
+        .ih-top-bar {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            flex-wrap: wrap;
+            gap: 1rem;
+            margin-bottom: 1.5rem;
+        }
+
+        .ih-back-link {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            font-size: 0.875rem;
+            font-weight: 600;
+            color: #4f46e5;
+            text-decoration: none;
+            padding: 6px 12px;
+            border-radius: 8px;
+            background: #eef2ff;
+            transition: all 0.15s ease;
+        }
+
+        .ih-back-link:hover {
+            background: #e0e7ff;
+            color: #3730a3;
+            transform: translateX(-2px);
+        }
+
+        .ih-page-title-row {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            flex-wrap: wrap;
+            gap: 1rem;
+            margin-bottom: 1.5rem;
+        }
+
+        .ih-title-group h1 {
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: var(--ih-text-main);
+            margin: 0 0 4px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .ih-total-badge {
+            font-size: 0.78rem;
+            font-weight: 600;
+            padding: 2px 10px;
+            border-radius: 20px;
+            background: #e2e8f0;
+            color: #475569;
+        }
+
+        .ih-title-group p {
+            font-size: 0.875rem;
+            color: var(--ih-text-muted);
+            margin: 0;
+        }
+
+        .ih-header-actions {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .ih-btn-primary {
+            display: inline-flex;
+            align-items: center;
+            gap: 7px;
+            padding: 9px 18px;
+            font-size: 0.875rem;
+            font-weight: 600;
+            color: #fff;
+            background: linear-gradient(135deg, #4f46e5, #4338ca);
+            border: none;
+            border-radius: 9px;
+            cursor: pointer;
+            box-shadow: 0 2px 8px rgba(79, 70, 229, 0.35);
+            transition: all 0.15s ease;
+            white-space: nowrap;
+        }
+
+        .ih-btn-primary:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 4px 14px rgba(79, 70, 229, 0.45);
+        }
+
+        .ih-btn-secondary {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            padding: 8px 14px;
+            font-size: 0.875rem;
+            font-weight: 500;
+            color: #475569;
+            background: #fff;
+            border: 1.5px solid var(--ih-border);
+            border-radius: 9px;
+            cursor: pointer;
+            transition: all 0.15s ease;
+            white-space: nowrap;
+        }
+
+        .ih-btn-secondary:hover {
+            background: #f8fafc;
+            border-color: #cbd5e1;
+            color: #1e293b;
+        }
+
+        /* Filter Controls Bar */
+        .ih-controls-card {
+            background: #fff;
+            border: 1px solid var(--ih-border);
+            border-radius: 14px;
+            padding: 1rem 1.25rem;
+            margin-bottom: 1.25rem;
+            box-shadow: 0 1px 3px rgba(15, 23, 42, 0.05);
+            display: flex;
+            flex-direction: column;
+            gap: 1rem;
+        }
+
+        .ih-status-tabs {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            overflow-x: auto;
+            padding-bottom: 4px;
+        }
+
+        .ih-status-tab {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            padding: 7px 14px;
+            font-size: 0.84rem;
+            font-weight: 500;
+            color: #64748b;
+            border-radius: 8px;
+            border: 1px solid transparent;
+            background: #f8fafc;
+            cursor: pointer;
+            white-space: nowrap;
+            transition: all 0.15s ease;
+        }
+
+        .ih-status-tab:hover {
+            background: #f1f5f9;
+            color: #1e293b;
+        }
+
+        .ih-status-tab.active {
+            background: #4f46e5;
+            color: #fff;
+            font-weight: 600;
+        }
+
+        .ih-tab-count {
+            padding: 2px 7px;
+            font-size: 0.72rem;
+            border-radius: 20px;
+            background: rgba(0, 0, 0, 0.08);
+        }
+
+        .ih-status-tab.active .ih-tab-count {
+            background: rgba(255, 255, 255, 0.25);
+            color: #fff;
+        }
+
+        .ih-filters-row {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            flex-wrap: wrap;
+            gap: 12px;
+        }
+
+        .ih-search-box {
+            position: relative;
+            flex: 1;
+            min-width: 260px;
+        }
+
+        .ih-search-box svg {
+            position: absolute;
+            left: 12px;
+            top: 50%;
+            transform: translateY(-50%);
+            color: #94a3b8;
+            pointer-events: none;
+        }
+
+        .ih-search-input {
+            width: 100%;
+            padding: 8px 12px 8px 36px;
+            border: 1.5px solid var(--ih-border);
+            border-radius: 8px;
+            font-size: 0.85rem;
+            font-family: inherit;
+            color: #1e293b;
+            background: #fff;
+            transition: all 0.15s ease;
+            box-sizing: border-box;
+        }
+
+        .ih-search-input:focus {
+            outline: none;
+            border-color: #4f46e5;
+            box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.12);
+        }
+
+        .ih-filter-dropdowns {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+
+        .ih-select {
+            padding: 8px 30px 8px 12px;
+            border: 1.5px solid var(--ih-border);
+            border-radius: 8px;
+            font-size: 0.84rem;
+            font-family: inherit;
+            color: #334155;
+            background: #fff url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='14' height='14' viewBox='0 0 24 24' fill='none' stroke='%2364748b' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'/%3E%3C/svg%3E") no-repeat right 10px center;
+            appearance: none;
+            cursor: pointer;
+            transition: all 0.15s ease;
+        }
+
+        .ih-select:focus {
+            outline: none;
+            border-color: #4f46e5;
+        }
+
+        /* Master-Detail Grid Layout */
+        .ih-grid {
+            display: grid;
+            grid-template-columns: 420px 1fr;
+            gap: 1.25rem;
+            align-items: start;
+        }
+
+        @media (max-width: 1080px) {
+            .ih-grid {
+                grid-template-columns: 360px 1fr;
+            }
+        }
+
+        @media (max-width: 860px) {
+            .ih-grid {
+                grid-template-columns: 1fr;
+            }
+            .ih-detail-panel.mobile-hidden {
+                display: none;
+            }
+            .ih-card-list.mobile-hidden {
+                display: none;
+            }
+        }
+
+        /* Left Column: Ticket Cards List */
+        .ih-card-list {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            max-height: calc(100vh - 270px);
+            overflow-y: auto;
+            padding-right: 4px;
+        }
+
+        .ih-ticket-card {
+            background: #fff;
+            border: 1.5px solid var(--ih-border);
+            border-radius: 12px;
+            padding: 1.1rem;
+            cursor: pointer;
+            transition: all 0.18s ease;
+            position: relative;
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            box-shadow: 0 1px 3px rgba(15, 23, 42, 0.03);
+        }
+
+        .ih-ticket-card:hover {
+            border-color: #cbd5e1;
+            transform: translateY(-2px);
+            box-shadow: 0 6px 16px rgba(15, 23, 42, 0.06);
+        }
+
+        .ih-ticket-card.selected {
+            border-color: #4f46e5;
+            background: #fafbff;
+            box-shadow: 0 6px 20px rgba(79, 70, 229, 0.12);
+        }
+
+        .ih-ticket-card.selected::before {
+            content: "";
+            position: absolute;
+            left: 0;
+            top: 12px;
+            bottom: 12px;
+            width: 4px;
+            border-radius: 0 4px 4px 0;
+            background: #4f46e5;
+        }
+
+        .ih-card-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 8px;
+        }
+
+        .ih-card-id {
+            font-size: 0.78rem;
+            font-weight: 700;
+            color: #475569;
+            background: #f1f5f9;
+            padding: 3px 8px;
+            border-radius: 6px;
+            font-family: ui-monospace, monospace;
+        }
+
+        .ih-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 5px;
+            font-size: 0.74rem;
+            font-weight: 600;
+            padding: 3px 9px;
+            border-radius: 20px;
+            white-space: nowrap;
+        }
+
+        .ih-badge-open {
+            background: #eff6ff;
+            color: #2563eb;
+            border: 1px solid #bfdbfe;
+        }
+
+        .ih-badge-inprogress {
+            background: #fffbeb;
+            color: #d97706;
+            border: 1px solid #fde68a;
+        }
+
+        .ih-badge-resolved {
+            background: #ecfdf5;
+            color: #059669;
+            border: 1px solid #a7f3d0;
+        }
+
+        .ih-badge-closed {
+            background: #f8fafc;
+            color: #64748b;
+            border: 1px solid #e2e8f0;
+        }
+
+        .ih-badge-dot {
+            width: 6px;
+            height: 6px;
+            border-radius: 50%;
+            background: currentColor;
+        }
+
+        .ih-priority-pill {
+            font-size: 0.7rem;
+            font-weight: 600;
+            padding: 2px 7px;
+            border-radius: 4px;
+            text-transform: uppercase;
+            letter-spacing: 0.03em;
+        }
+
+        .ih-priority-urgent { background: #fee2e2; color: #dc2626; }
+        .ih-priority-high   { background: #ffedd5; color: #ea580c; }
+        .ih-priority-medium { background: #fef3c7; color: #d97706; }
+        .ih-priority-low    { background: #f1f5f9; color: #64748b; }
+
+        .ih-card-subject {
+            font-size: 0.95rem;
+            font-weight: 600;
+            color: #0f172a;
+            line-height: 1.35;
+            margin: 0;
+            overflow: hidden;
+            display: -webkit-box;
+            -webkit-line-clamp: 2;
+            -webkit-box-orient: vertical;
+        }
+
+        .ih-card-preview {
+            font-size: 0.82rem;
+            color: #64748b;
+            line-height: 1.45;
+            margin: 0;
+            overflow: hidden;
+            display: -webkit-box;
+            -webkit-line-clamp: 2;
+            -webkit-box-orient: vertical;
+        }
+
+        .ih-card-footer {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-top: 4px;
+            padding-top: 8px;
+            border-top: 1px solid #f1f5f9;
+            font-size: 0.76rem;
+            color: #94a3b8;
+        }
+
+        .ih-card-cat-tag {
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+            background: #f8fafc;
+            color: #475569;
+            padding: 2px 8px;
+            border-radius: 6px;
+            font-weight: 500;
+            max-width: 170px;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .ih-card-meta-right {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .ih-card-meta-item {
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+        }
+
+        /* Right Column: Detail Conversation Panel */
+        .ih-detail-panel {
+            background: #fff;
+            border: 1px solid var(--ih-border);
+            border-radius: 14px;
+            box-shadow: 0 2px 8px rgba(15, 23, 42, 0.04);
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+            min-height: 600px;
+        }
+
+        .ih-detail-header {
+            padding: 1.25rem 1.5rem;
+            border-bottom: 1px solid var(--ih-border);
+            background: #fff;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        .ih-mobile-back-btn {
+            display: none;
+            align-items: center;
+            gap: 6px;
+            font-size: 0.85rem;
+            color: #4f46e5;
+            background: none;
+            border: none;
+            cursor: pointer;
+            padding: 0;
+            font-weight: 600;
+            margin-bottom: 4px;
+        }
+
+        @media (max-width: 860px) {
+            .ih-mobile-back-btn {
+                display: inline-flex;
+            }
+        }
+
+        .ih-detail-top-row {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            flex-wrap: wrap;
+            gap: 10px;
+        }
+
+        .ih-detail-id-group {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            flex-wrap: wrap;
+        }
+
+        .ih-detail-actions {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .ih-detail-title {
+            font-size: 1.2rem;
+            font-weight: 700;
+            color: #0f172a;
+            margin: 0;
+            line-height: 1.35;
+        }
+
+        .ih-detail-meta-row {
+            display: flex;
+            align-items: center;
+            gap: 14px;
+            flex-wrap: wrap;
+            font-size: 0.8rem;
+            color: #64748b;
+        }
+
+        .ih-detail-meta-row span {
+            display: inline-flex;
+            align-items: center;
+            gap: 5px;
+        }
+
+        /* Message Conversation Thread */
+        .ih-thread-body {
+            padding: 1.5rem;
+            overflow-y: auto;
+            max-height: calc(100vh - 430px);
+            min-height: 280px;
+            display: flex;
+            flex-direction: column;
+            gap: 1.25rem;
+            background: #f8fafc;
+        }
+
+        /* Original Issue Description Card */
+        .ih-original-issue-card {
+            background: #ffffff;
+            border: 1px solid #e2e8f0;
+            border-radius: 12px;
+            padding: 1.2rem;
+            box-shadow: 0 1px 3px rgba(15, 23, 42, 0.04);
+            position: relative;
+        }
+
+        .ih-original-issue-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 8px;
+            padding-bottom: 8px;
+            border-bottom: 1px solid #f1f5f9;
+        }
+
+        .ih-original-issue-label {
+            font-size: 0.78rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.04em;
+            color: #4f46e5;
+            display: inline-flex;
+            align-items: center;
+            gap: 5px;
+        }
+
+        .ih-original-issue-text {
+            font-size: 0.88rem;
+            line-height: 1.6;
+            color: #334155;
+            white-space: pre-wrap;
+            margin: 0;
+        }
+
+        /* Chat Message Bubbles */
+        .ih-message-row {
+            display: flex;
+            gap: 12px;
+            align-items: flex-start;
+        }
+
+        .ih-message-row.user {
+            flex-direction: row-reverse;
+        }
+
+        .ih-msg-avatar {
+            width: 36px;
+            height: 36px;
+            border-radius: 50%;
+            overflow: hidden;
+            flex-shrink: 0;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+        }
+
+        .ih-msg-avatar img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+
+        .ih-msg-content {
+            max-width: 80%;
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+        }
+
+        .ih-message-row.user .ih-msg-content {
+            align-items: flex-end;
+        }
+
+        .ih-msg-header {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 0.76rem;
+            color: #64748b;
+        }
+
+        .ih-msg-sender-name {
+            font-weight: 600;
+            color: #1e293b;
+        }
+
+        .ih-agent-badge {
+            font-size: 0.68rem;
+            font-weight: 600;
+            background: #dbeafe;
+            color: #1d4ed8;
+            padding: 1px 6px;
+            border-radius: 4px;
+        }
+
+        .ih-msg-bubble {
+            padding: 12px 16px;
+            border-radius: 14px;
+            font-size: 0.875rem;
+            line-height: 1.55;
+            box-shadow: 0 1px 2px rgba(15, 23, 42, 0.04);
+            word-break: break-word;
+        }
+
+        .ih-message-row.support .ih-msg-bubble {
+            background: #ffffff;
+            border: 1px solid #e2e8f0;
+            color: #1e293b;
+            border-top-left-radius: 4px;
+        }
+
+        .ih-message-row.user .ih-msg-bubble {
+            background: #4f46e5;
+            color: #ffffff;
+            border-top-right-radius: 4px;
+        }
+
+        .ih-msg-attachment {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            padding: 8px 12px;
+            background: rgba(255, 255, 255, 0.15);
+            border-radius: 8px;
+            margin-top: 8px;
+            font-size: 0.8rem;
+            font-weight: 500;
+            text-decoration: none;
+            color: inherit;
+        }
+
+        .ih-message-row.support .ih-msg-attachment {
+            background: #f1f5f9;
+            color: #334155;
+            border: 1px solid #e2e8f0;
+        }
+
+        /* Reply Box Composer */
+        .ih-composer {
+            padding: 1rem 1.5rem;
+            background: #fff;
+            border-top: 1px solid var(--ih-border);
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        .ih-composer-textarea {
+            width: 100%;
+            min-height: 80px;
+            padding: 12px;
+            border: 1.5px solid var(--ih-border);
+            border-radius: 10px;
+            font-family: inherit;
+            font-size: 0.875rem;
+            color: #1e293b;
+            background: #fff;
+            resize: vertical;
+            transition: all 0.15s ease;
+            box-sizing: border-box;
+        }
+
+        .ih-composer-textarea:focus {
+            outline: none;
+            border-color: #4f46e5;
+            box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.12);
+        }
+
+        .ih-composer-bottom {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 10px;
+        }
+
+        .ih-composer-tools {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .ih-tool-btn {
+            background: none;
+            border: 1px solid var(--ih-border);
+            padding: 6px 12px;
+            border-radius: 7px;
+            cursor: pointer;
+            font-size: 0.8rem;
+            font-family: inherit;
+            color: #64748b;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            transition: all 0.15s ease;
+        }
+
+        .ih-tool-btn:hover {
+            background: #f8fafc;
+            color: #1e293b;
+            border-color: #cbd5e1;
+        }
+
+        .ih-composer-file-badge {
+            display: none;
+            align-items: center;
+            gap: 6px;
+            font-size: 0.78rem;
+            background: #eef2ff;
+            color: #4f46e5;
+            padding: 4px 10px;
+            border-radius: 6px;
+            font-weight: 500;
+        }
+
+        .ih-composer-file-badge button {
+            background: none;
+            border: none;
+            cursor: pointer;
+            color: #ef4444;
+            padding: 0;
+            display: flex;
+        }
+
+        /* Empty State */
+        .ih-empty-state {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 3rem 2rem;
+            text-align: center;
+            background: #fff;
+            border: 1px dashed #cbd5e1;
+            border-radius: 14px;
+            gap: 12px;
+        }
+
+        .ih-empty-icon {
+            width: 56px;
+            height: 56px;
+            border-radius: 50%;
+            background: #f1f5f9;
+            color: #94a3b8;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .ih-empty-state h3 {
+            font-size: 1.05rem;
+            font-weight: 600;
+            color: #1e293b;
+            margin: 0;
+        }
+
+        .ih-empty-state p {
+            font-size: 0.85rem;
+            color: #64748b;
+            margin: 0;
+            max-width: 320px;
+        }
+
+        /* Toast notification */
+        .ih-toast {
+            position: fixed;
+            bottom: 24px;
+            right: 24px;
+            background: #1e293b;
+            color: #fff;
+            padding: 10px 18px;
+            border-radius: 10px;
+            font-size: 0.85rem;
+            font-weight: 500;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.2);
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            z-index: 10000;
+            transform: translateY(20px);
+            opacity: 0;
+            transition: all 0.25s ease;
+            pointer-events: none;
+        }
+
+        .ih-toast.visible {
+            transform: translateY(0);
+            opacity: 1;
+        }
+    </style>
+</head>
+
+<body class="dashboard-body">
+
+    <!-- Collapsible Sidebar -->
+    <aside class="sidebar" id="sidebar">
+        <div class="sidebar-header">
+            <div class="logo">
+                <svg width="24" height="24" viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <rect x="2" y="6" width="28" height="20" rx="4" stroke="currentColor" stroke-width="2" />
+                    <path d="M8 12C8 12 11 16 16 16C21 16 24 12 24 12" stroke="currentColor" stroke-width="2"
+                        stroke-linecap="round" />
+                    <circle cx="16" cy="16" r="2" fill="currentColor" />
+                </svg>
+                <span class="logo-text">BharathBots</span>
+            </div>
+            <button class="toggle-btn" id="sidebarToggle" title="Close sidebar">
+                <i data-feather="sidebar" class="toggle-icon"></i>
+            </button>
+        </div>
+
+        <nav class="sidebar-nav">
+            <ul class="nav-list">
+                <!-- Dashboard -->
+                <li class="nav-item" title="Dashboard">
+                    <a href="dashboard.html" class="nav-link" data-feature="dashboard_access">
+                        <i data-feather="home" class="nav-icon"></i>
+                        <span class="nav-text">Dashboard</span>
+                    </a>
+                </li>
+
+                <!-- Bookings -->
+                <li class="nav-item" title="Bookings">
+                    <a href="bookings.html" class="nav-link" data-feature="bookings_management">
+                        <i data-feather="calendar" class="nav-icon"></i>
+                        <span class="nav-text">Bookings</span>
+                    </a>
+                </li>
+
+                <!-- Customers -->
+                <li class="nav-item" title="Customers">
+                    <a href="customers.html" class="nav-link" data-feature="customers_management">
+                        <i data-feather="users" class="nav-icon"></i>
+                        <span class="nav-text">Customers</span>
+                    </a>
+                </li>
+
+                <!-- Staff -->
+                <li class="nav-item has-submenu" title="Staff">
+                    <div class="nav-link submenu-toggle">
+                        <i data-feather="user-check" class="nav-icon"></i>
+                        <span class="nav-text">Staff</span>
+                        <i data-feather="chevron-down" class="submenu-arrow"></i>
+                    </div>
+                    <ul class="submenu">
+                        <li><a href="staff.html" class="submenu-link" data-feature="staff_management"><span class="submenu-bullet">&bull;</span><span class="nav-text">Staff</span></a></li>
+                        <li><a href="staff-schedule.html" class="submenu-link" data-feature="staff_schedules"><span class="submenu-bullet">&bull;</span><span class="nav-text">Staff Schedules</span></a></li>
+                    </ul>
+                </li>
+
+                <!-- Services -->
+                <li class="nav-item" title="Services">
+                    <a href="services.html" class="nav-link" data-feature="services_management">
+                        <i data-feather="scissors" class="nav-icon"></i>
+                        <span class="nav-text">Services</span>
+                    </a>
+                </li>
+
+                <!-- Sales -->
+                <li class="nav-item has-submenu" title="Sales">
+                    <div class="nav-link submenu-toggle">
+                        <i data-feather="dollar-sign" class="nav-icon"></i>
+                        <span class="nav-text">Sales</span>
+                        <i data-feather="chevron-down" class="submenu-arrow"></i>
+                    </div>
+                    <ul class="submenu">
+                        <li><a href="pos.html" class="submenu-link" data-feature="pos_system"><span class="submenu-bullet">&bull;</span><span class="nav-text">Point of Sale</span></a></li>
+                        <li><a href="products.html" class="submenu-link" data-feature="product_management"><span class="submenu-bullet">&bull;</span><span class="nav-text">Products</span></a></li>
+                        <li><a href="sales-history.html" class="submenu-link" data-feature="sales_history"><span class="submenu-bullet">&bull;</span><span class="nav-text">Sales History</span></a></li>
+                    </ul>
+                </li>
+
+                <!-- Payments -->
+                <li class="nav-item has-submenu" title="Payments">
+                    <div class="nav-link submenu-toggle">
+                        <i data-feather="credit-card" class="nav-icon"></i>
+                        <span class="nav-text">Payments</span>
+                        <i data-feather="chevron-down" class="submenu-arrow"></i>
+                    </div>
+                    <ul class="submenu">
+                        <li><a href="pending-payments.html" class="submenu-link" data-feature="pending_payments"><span class="submenu-bullet">&bull;</span><span class="nav-text">Pending Payments</span></a></li>
+                        <li><a href="payments-history.html" class="submenu-link" data-feature="payments_history"><span class="submenu-bullet">&bull;</span><span class="nav-text">Payments History</span></a></li>
+                    </ul>
+                </li>
+
+                <!-- Marketing -->
+                <li class="nav-item has-submenu" title="Marketing">
+                    <div class="nav-link submenu-toggle">
+                        <i data-feather="gift" class="nav-icon"></i>
+                        <span class="nav-text">Marketing</span>
+                        <i data-feather="chevron-down" class="submenu-arrow"></i>
+                    </div>
+                    <ul class="submenu">
+                        <li><a href="offers.html" class="submenu-link" data-feature="marketing_offers"><span class="submenu-bullet">&bull;</span><span class="nav-text">Offers</span></a></li>
+                        <li><a href="coupons.html" class="submenu-link" data-feature="marketing_coupons"><span class="submenu-bullet">&bull;</span><span class="nav-text">Coupons</span></a></li>
+                        <li><a href="memberships.html" class="submenu-link" data-feature="marketing_memberships"><span class="submenu-bullet">&bull;</span><span class="nav-text">Memberships</span></a></li>
+                        <li><a href="ad-campaigns.html" class="submenu-link" data-feature="marketing_campaigns"><span class="submenu-bullet">&bull;</span><span class="nav-text">Ad Campaigns</span></a></li>
+                    </ul>
+                </li>
+
+                <!-- Analytics -->
+                <li class="nav-item has-submenu" title="Analytics">
+                    <div class="nav-link submenu-toggle">
+                        <i data-feather="bar-chart-2" class="nav-icon"></i>
+                        <span class="nav-text">Analytics</span>
+                        <i data-feather="chevron-down" class="submenu-arrow"></i>
+                    </div>
+                    <ul class="submenu">
+                        <li><a href="overview.html" class="submenu-link" data-feature="analytics_overview"><span class="submenu-bullet">&bull;</span><span class="nav-text">Overview</span></a></li>
+                        <li><a href="reports.html" class="submenu-link" data-feature="reports_access"><span class="submenu-bullet">&bull;</span><span class="nav-text">Reports</span></a></li>
+                        <li><a href="expenses.html" class="submenu-link" data-feature="analytics_expenses"><span class="submenu-bullet">&bull;</span><span class="nav-text">Expenses</span></a></li>
+                    </ul>
+                </li>
+
+                <!-- Settings -->
+                <li class="nav-item has-submenu" title="Settings">
+                    <div class="nav-link submenu-toggle">
+                        <i data-feather="settings" class="nav-icon"></i>
+                        <span class="nav-text">Settings</span>
+                        <i data-feather="chevron-down" class="submenu-arrow"></i>
+                    </div>
+                    <ul class="submenu">
+                        <li><a href="company.html" class="submenu-link" data-feature="company_settings"><span class="submenu-bullet">&bull;</span><span class="nav-text">Company</span></a></li>
+                        <li><a href="users.html" class="submenu-link" data-feature="user_management"><span class="submenu-bullet">&bull;</span><span class="nav-text">Users</span></a></li>
+                        <li><a href="roles-permissions.html" class="submenu-link" data-feature="roles_permissions"><span class="submenu-bullet">&bull;</span><span class="nav-text">Roles & Permissions</span></a></li>
+                        <li><a href="billing-subscription.html" class="submenu-link" data-feature="billing_subscription_management"><span class="submenu-bullet">&bull;</span><span class="nav-text">Billing & Subscription</span></a></li>
+                    </ul>
+                </li>
+            </ul>
+        </nav>
+    </aside>
+
+    <!-- Main Content Wrapper -->
+    <div class="main-wrapper" id="mainWrapper">
+
+        <!-- Top Header Bar -->
+        <header class="top-header">
+            <div class="header-left">
+                <!-- Branch Switcher -->
+                <div class="branch-switcher">
+                    <i data-feather="map-pin" class="branch-icon"></i>
+                    <select id="branchSelect" class="branch-select">
+                        <option value="branch_1">Downtown Branch</option>
+                        <option value="branch_2">Uptown Spa</option>
+                    </select>
+                </div>
+                <!-- Date Chip -->
+                <div class="date-chip" id="headerDateChip">
+                    <i data-feather="calendar" class="date-chip-icon"></i>
+                    <span class="date-chip-text">Loading...</span>
+                </div>
+            </div>
+
+            <div class="header-center">
+                <div class="search-bar">
+                    <i data-feather="search" class="search-icon"></i>
+                    <input type="text" placeholder="Search bookings, customers..." class="search-input">
+                </div>
+            </div>
+
+            <div class="header-right">
+                <!-- Quick Actions -->
+                <div class="quick-actions">
+                    <button class="qa-btn qa-primary" id="btnNewBooking">
+                        <i data-feather="calendar" class="qa-icon"></i>
+                        <span>New Booking</span>
+                    </button>
+                </div>
+                <div class="header-divider"></div>
+                <div class="plan-badge" id="headerPlanBadge">Growth</div>
+                <button class="icon-btn" title="Notifications">
+                    <i data-feather="bell"></i>
+                    <span class="notification-dot"></span>
+                </button>
+                <div class="user-profile" id="userProfileDropdown">
+                    <div class="avatar" id="avatarBtn">
+                        <img src="https://ui-avatars.com/api/?name=Admin+User&background=1E3A8A&color=fff" alt="User">
+                    </div>
+
+                    <!-- Profile Dropdown Menu -->
+                    <div class="profile-dropdown" id="profileMenu">
+                        <div class="dropdown-header">
+                            <p class="dropdown-name">Admin User</p>
+                            <p class="dropdown-role">Owner</p>
+                        </div>
+                        <div class="dropdown-divider"></div>
+                        <ul class="dropdown-list">
+                            <li>
+                                <a href="company.html" class="dropdown-item">
+                                    <i data-feather="settings"></i>
+                                    <span>Settings</span>
+                                </a>
+                            </li>
+                            <li>
+                                <a href="support.html" class="dropdown-item">
+                                    <i data-feather="help-circle"></i>
+                                    <span>Support</span>
+                                </a>
+                            </li>
+                            <li>
+                                <a href="#" class="dropdown-item text-danger">
+                                    <i data-feather="log-out"></i>
+                                    <span>Logout</span>
+                                </a>
+                            </li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </header>
+
+        <!-- Profile Dropdown Backdrop -->
+        <div id="profileBackdrop" class="profile-backdrop"></div>
+
+        <!-- Page Content -->
+        <main class="content-area">
+            <div class="ih-container">
+
+                <!-- Breadcrumb & Nav -->
+                <div class="ih-top-bar">
+                    <a href="support.html" class="ih-back-link">
+                        <i data-feather="arrow-left" style="width:14px; height:14px;"></i>
+                        Back to Help &amp; Support
+                    </a>
+                </div>
+
+                <!-- Page Header Row -->
+                <div class="ih-page-title-row">
+                    <div class="ih-title-group">
+                        <h1>
+                            Issue History &amp; Support Tickets
+                            <span class="ih-total-badge" id="ihTotalBadge">0 Tickets</span>
+                        </h1>
+                        <p>Track reported issues, monitor support resolutions, and continue discussions with our technical team.</p>
+                    </div>
+                    <div class="ih-header-actions">
+                        <button class="ih-btn-secondary" onclick="refreshTickets()" title="Refresh tickets">
+                            <i data-feather="refresh-cw" style="width:14px; height:14px;"></i>
+                            Refresh
+                        </button>
+                        <button class="ih-btn-primary" onclick="openReportIssueModal()">
+                            <i data-feather="plus-circle" style="width:15px; height:15px;"></i>
+                            Report an Issue
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Search and Filters Bar -->
+                <div class="ih-controls-card">
+                    <!-- Status Tabs -->
+                    <div class="ih-status-tabs" id="statusTabs">
+                        <button class="ih-status-tab active" data-status="all" onclick="setStatusFilter('all', this)">
+                            All Tickets <span class="ih-tab-count" id="countAll">0</span>
+                        </button>
+                        <button class="ih-status-tab" data-status="Open" onclick="setStatusFilter('Open', this)">
+                            Open <span class="ih-tab-count" id="countOpen">0</span>
+                        </button>
+                        <button class="ih-status-tab" data-status="In Progress" onclick="setStatusFilter('In Progress', this)">
+                            In Progress <span class="ih-tab-count" id="countInProgress">0</span>
+                        </button>
+                        <button class="ih-status-tab" data-status="Resolved" onclick="setStatusFilter('Resolved', this)">
+                            Resolved <span class="ih-tab-count" id="countResolved">0</span>
+                        </button>
+                        <button class="ih-status-tab" data-status="Closed" onclick="setStatusFilter('Closed', this)">
+                            Closed <span class="ih-tab-count" id="countClosed">0</span>
+                        </button>
+                    </div>
+
+                    <!-- Search & Filter Row -->
+                    <div class="ih-filters-row">
+                        <div class="ih-search-box">
+                            <i data-feather="search" style="width:15px; height:15px;"></i>
+                            <input type="text" id="ihSearchInput" class="ih-search-input" placeholder="Search by ticket ID, subject or description..." oninput="handleSearch()">
+                        </div>
+
+                        <div class="ih-filter-dropdowns">
+                            <!-- Category Filter -->
+                            <select id="categoryFilter" class="ih-select" onchange="applyFilters()">
+                                <option value="all">All Categories</option>
+                                <option value="bookings">📅 Bookings &amp; Appointments</option>
+                                <option value="payments">💳 Payments &amp; Billing</option>
+                                <option value="pos">🧾 Point of Sale (POS)</option>
+                                <option value="staff">👥 Staff &amp; Scheduling</option>
+                                <option value="customers">🙋 Customers</option>
+                                <option value="services">✂️ Services &amp; Products</option>
+                                <option value="marketing">🎁 Memberships &amp; Offers</option>
+                                <option value="reports">📊 Reports &amp; Analytics</option>
+                                <option value="settings">⚙️ Settings</option>
+                                <option value="branches">🏢 Branches</option>
+                                <option value="subscription">🔑 Subscription</option>
+                                <option value="login">🔐 Login &amp; Access</option>
+                                <option value="notifications">🔔 Notifications</option>
+                                <option value="other">🔧 Other / General</option>
+                            </select>
+
+                            <!-- Priority Filter -->
+                            <select id="priorityFilter" class="ih-select" onchange="applyFilters()">
+                                <option value="all">All Priorities</option>
+                                <option value="Urgent">Urgent</option>
+                                <option value="High">High</option>
+                                <option value="Medium">Medium</option>
+                                <option value="Low">Low</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Master-Detail Layout -->
+                <div class="ih-grid">
+                    <!-- Left: Ticket Cards List -->
+                    <div class="ih-card-list" id="ticketCardList">
+                        <!-- Cards injected by JS -->
+                    </div>
+
+                    <!-- Right: Ticket Detail & Conversation -->
+                    <div class="ih-detail-panel" id="ticketDetailPanel">
+                        <!-- Injected by JS -->
+                    </div>
+                </div>
+
+            </div>
+        </main>
+    </div>
+
+    <!-- ===================== REPORT AN ISSUE MODAL ===================== -->
+    <style>
+        /* Overlay */
+        #reportIssueOverlay {
+            display: none;
+            position: fixed;
+            inset: 0;
+            background: rgba(15, 23, 42, 0.55);
+            backdrop-filter: blur(4px);
+            -webkit-backdrop-filter: blur(4px);
+            z-index: 9999;
+            align-items: center;
+            justify-content: center;
+            padding: 1rem;
+            animation: riOverlayIn 0.2s ease;
+        }
+        #reportIssueOverlay.active { display: flex; }
+        @keyframes riOverlayIn { from { opacity: 0; } to { opacity: 1; } }
+
+        /* Modal box */
+        #reportIssueModal {
+            background: #ffffff;
+            border-radius: 16px;
+            width: 100%;
+            max-width: 540px;
+            box-shadow: 0 24px 64px rgba(15,23,42,0.18), 0 4px 16px rgba(15,23,42,0.08);
+            overflow: hidden;
+            animation: riModalIn 0.25s cubic-bezier(0.34,1.56,0.64,1);
+            display: flex;
+            flex-direction: column;
+            max-height: 90vh;
+        }
+        @keyframes riModalIn {
+            from { opacity: 0; transform: scale(0.94) translateY(10px); }
+            to   { opacity: 1; transform: scale(1)   translateY(0); }
+        }
+
+        .ri-header {
+            padding: 1.25rem 1.5rem 1rem;
+            border-bottom: 1px solid #f1f5f9;
+            display: flex;
+            align-items: flex-start;
+            justify-content: space-between;
+            gap: 1rem;
+            flex-shrink: 0;
+        }
+        .ri-header-text h3 {
+            font-size: 1.05rem;
+            font-weight: 700;
+            color: #0f172a;
+            margin: 0 0 3px;
+        }
+        .ri-header-text p {
+            font-size: 0.82rem;
+            color: #64748b;
+            margin: 0;
+            line-height: 1.4;
+        }
+        .ri-close-btn {
+            background: none;
+            border: none;
+            cursor: pointer;
+            color: #94a3b8;
+            padding: 4px;
+            border-radius: 6px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: color 0.15s, background 0.15s;
+        }
+        .ri-close-btn:hover { color: #1e293b; background: #f1f5f9; }
+
+        .ri-body {
+            padding: 1.25rem 1.5rem;
+            overflow-y: auto;
+            display: flex;
+            flex-direction: column;
+            gap: 1rem;
+        }
+
+        .ri-field label {
+            display: block;
+            font-size: 0.8rem;
+            font-weight: 600;
+            color: #374151;
+            margin-bottom: 5px;
+        }
+        .ri-field label .ri-required { color: #ef4444; margin-left: 2px; }
+        .ri-field label .ri-optional { color: #94a3b8; font-weight: 400; margin-left: 4px; }
+        .ri-select, .ri-input, .ri-textarea {
+            width: 100%;
+            border: 1.5px solid #e2e8f0;
+            border-radius: 9px;
+            font-size: 0.875rem;
+            color: #1e293b;
+            font-family: inherit;
+            background: #fff;
+            transition: border-color 0.2s, box-shadow 0.2s;
+            box-sizing: border-box;
+        }
+        .ri-select { padding: 10px 12px; appearance: none; background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%2394a3b8' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'/%3E%3C/svg%3E"); background-repeat: no-repeat; background-position: right 12px center; padding-right: 36px; cursor: pointer; }
+        .ri-input  { padding: 10px 12px; }
+        .ri-textarea { padding: 10px 12px; resize: vertical; min-height: 96px; line-height: 1.6; }
+        .ri-select:focus, .ri-input:focus, .ri-textarea:focus {
+            outline: none;
+            border-color: #6366f1;
+            box-shadow: 0 0 0 3px rgba(99,102,241,0.12);
+        }
+        .ri-select.ri-error, .ri-input.ri-error, .ri-textarea.ri-error {
+            border-color: #ef4444;
+            box-shadow: 0 0 0 3px rgba(239,68,68,0.1);
+        }
+        .ri-field-hint {
+            font-size: 0.76rem;
+            color: #ef4444;
+            margin-top: 4px;
+            display: none;
+        }
+        .ri-field-hint.visible { display: block; }
+
+        .ri-dropzone {
+            border: 1.5px dashed #cbd5e1;
+            border-radius: 10px;
+            padding: 1.2rem;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 6px;
+            cursor: pointer;
+            transition: border-color 0.2s, background 0.2s;
+            background: #f8fafc;
+            position: relative;
+        }
+        .ri-dropzone:hover, .ri-dropzone.drag-over {
+            border-color: #6366f1;
+            background: #eef2ff;
+        }
+        .ri-dropzone input[type=file] {
+            position: absolute;
+            inset: 0;
+            opacity: 0;
+            cursor: pointer;
+            width: 100%;
+            height: 100%;
+        }
+        .ri-dropzone-icon { color: #94a3b8; }
+        .ri-dropzone-text { font-size: 0.85rem; font-weight: 500; color: #475569; }
+        .ri-dropzone-sub  { font-size: 0.75rem; color: #94a3b8; }
+        .ri-file-preview {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 8px 10px;
+            background: #f1f5f9;
+            border-radius: 8px;
+            font-size: 0.8rem;
+            color: #374151;
+            margin-top: 6px;
+        }
+        .ri-file-preview button {
+            margin-left: auto;
+            background: none;
+            border: none;
+            cursor: pointer;
+            color: #94a3b8;
+            padding: 2px;
+            border-radius: 4px;
+            display: flex;
+        }
+        .ri-file-preview button:hover { color: #ef4444; background: #fee2e2; }
+
+        .ri-footer {
+            padding: 1rem 1.5rem;
+            border-top: 1px solid #f1f5f9;
+            display: flex;
+            justify-content: flex-end;
+            gap: 10px;
+            flex-shrink: 0;
+        }
+        .ri-btn-cancel {
+            padding: 9px 20px;
+            border-radius: 9px;
+            border: 1.5px solid #e2e8f0;
+            background: #fff;
+            font-size: 0.875rem;
+            font-weight: 500;
+            color: #475569;
+            cursor: pointer;
+            font-family: inherit;
+        }
+        .ri-btn-cancel:hover { background: #f8fafc; border-color: #cbd5e1; }
+        .ri-btn-submit {
+            padding: 9px 22px;
+            border-radius: 9px;
+            border: none;
+            background: linear-gradient(135deg, #6366f1, #4f46e5);
+            color: #fff;
+            font-size: 0.875rem;
+            font-weight: 600;
+            cursor: pointer;
+            font-family: inherit;
+            box-shadow: 0 2px 8px rgba(99,102,241,0.35);
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+        .ri-btn-submit:disabled { opacity: 0.6; cursor: not-allowed; }
+
+        .ri-success {
+            display: none;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 2.5rem 2rem;
+            text-align: center;
+            gap: 12px;
+        }
+        .ri-success-icon {
+            width: 60px; height: 60px;
+            background: linear-gradient(135deg, #d1fae5, #a7f3d0);
+            border-radius: 50%;
+            display: flex; align-items: center; justify-content: center;
+            color: #059669;
+        }
+        .ri-success h4 { font-size: 1.1rem; font-weight: 700; color: #0f172a; margin: 0; }
+        .ri-success p  { font-size: 0.875rem; color: #64748b; margin: 0; line-height: 1.55; }
+        .ri-ticket-id  { font-size: 0.78rem; background: #f1f5f9; color: #475569; padding: 5px 14px; border-radius: 20px; font-weight: 600; }
+    </style>
+
+    <!-- Modal HTML -->
+    <div id="reportIssueOverlay" role="dialog" aria-modal="true" aria-labelledby="riModalTitle" onclick="handleRiOverlayClick(event)">
+        <div id="reportIssueModal">
+            <!-- Header -->
+            <div class="ri-header">
+                <div class="ri-header-text">
+                    <h3 id="riModalTitle">Report an Issue</h3>
+                    <p>Tell us about a problem you're experiencing. Our support team will look into it.</p>
+                </div>
+                <button class="ri-close-btn" onclick="closeReportIssueModal()" title="Close" aria-label="Close modal">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+                </button>
+            </div>
+
+            <!-- Form body -->
+            <div class="ri-body" id="riFormBody">
+                <!-- Category -->
+                <div class="ri-field">
+                    <label for="riCategory">Issue Category <span class="ri-required">*</span></label>
+                    <select id="riCategory" class="ri-select" onchange="riClearError(this, 'riCategoryHint')">
+                        <option value="" disabled selected>Select a category</option>
+                        <option value="bookings">📅 Bookings &amp; Appointments</option>
+                        <option value="payments">💳 Payments &amp; Billing</option>
+                        <option value="pos">🧾 Point of Sale (POS)</option>
+                        <option value="staff">👥 Staff &amp; Scheduling</option>
+                        <option value="customers">🙋 Customers</option>
+                        <option value="services">✂️ Services &amp; Products</option>
+                        <option value="marketing">🎁 Memberships, Offers &amp; Coupons</option>
+                        <option value="reports">📊 Reports &amp; Analytics</option>
+                        <option value="settings">⚙️ Settings</option>
+                        <option value="branches">🏢 Branches</option>
+                        <option value="subscription">🔑 Subscription &amp; Plans</option>
+                        <option value="login">🔐 Login &amp; Access Issues</option>
+                        <option value="notifications">🔔 Notifications</option>
+                        <option value="other">🔧 Other / General</option>
+                    </select>
+                    <div class="ri-field-hint" id="riCategoryHint">Please select a category.</div>
+                </div>
+
+                <!-- Subject -->
+                <div class="ri-field">
+                    <label for="riSubject">Subject <span class="ri-required">*</span></label>
+                    <input type="text" id="riSubject" class="ri-input" placeholder="Briefly describe the issue" maxlength="120"
+                           oninput="riClearError(this, 'riSubjectHint')">
+                    <div class="ri-field-hint" id="riSubjectHint">Subject is required (min 5 characters).</div>
+                </div>
+
+                <!-- Description -->
+                <div class="ri-field">
+                    <label for="riDescription">Description <span class="ri-required">*</span></label>
+                    <textarea id="riDescription" class="ri-textarea" placeholder="Explain what happened, what you expected, and any steps to reproduce the issue…" maxlength="2000"
+                              oninput="riClearError(this, 'riDescriptionHint')"></textarea>
+                    <div class="ri-field-hint" id="riDescriptionHint">Description is required (min 20 characters).</div>
+                </div>
+
+                <!-- Attachment -->
+                <div class="ri-field">
+                    <label>Attachment <span class="ri-optional">(Optional)</span></label>
+                    <div class="ri-dropzone" id="riDropzone"
+                         ondragover="event.preventDefault(); this.classList.add('drag-over');"
+                         ondragleave="this.classList.remove('drag-over');"
+                         ondrop="handleRiDrop(event)">
+                        <input type="file" id="riFileInput" accept="image/*,.pdf,.mp4,.zip" onchange="handleRiFileSelect(event)">
+                        <svg class="ri-dropzone-icon" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+                        <span class="ri-dropzone-text">Attach a screenshot or file</span>
+                        <span class="ri-dropzone-sub">PNG, JPG, PDF, MP4 up to 10 MB</span>
+                    </div>
+                    <div id="riFilePreview" style="display:none;" class="ri-file-preview">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#6366f1" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+                        <span id="riFileName">file.png</span>
+                        <button onclick="removeRiFile()" title="Remove file" aria-label="Remove file">
+                            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Success state -->
+            <div class="ri-success" id="riSuccess">
+                <div class="ri-success-icon">
+                    <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+                </div>
+                <h4>Issue Submitted!</h4>
+                <p>We've received your report. It has been added to your tickets list.</p>
+                <span class="ri-ticket-id" id="riTicketId">Ticket #BB-00001</span>
+                <button class="ri-btn-submit" style="margin-top:12px;" onclick="closeReportIssueModal(); refreshTickets();">View in Tickets</button>
+            </div>
+
+            <!-- Footer -->
+            <div class="ri-footer" id="riFooter">
+                <button class="ri-btn-cancel" onclick="closeReportIssueModal()">Cancel</button>
+                <button class="ri-btn-submit" id="riSubmitBtn" onclick="submitReportIssue()">
+                    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
+                    Submit Issue
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Hidden file input for reply attachments -->
+    <input type="file" id="replyFileInput" style="display:none;" onchange="handleReplyFileSelect(event)">
+
+    <!-- Toast -->
+    <div class="ih-toast" id="ihToast">
+        <i data-feather="check-circle" style="width:16px; height:16px; color:#10b981;"></i>
+        <span id="ihToastMsg">Action completed</span>
+    </div>
+
+    <script src="dashboard.js"></script>
+
+    <!-- Issue History & Ticket Discussion Engine -->
+    <script>
+        // Seed default tickets if not present
+        const DEFAULT_TICKETS = [
+            {
+                id: 'BB-39281',
+                categoryKey: 'payments',
+                categoryLabel: 'Payments & Billing',
+                subject: 'Payment gateway timed out during UPI QR checkout at Downtown Branch',
+                description: 'Customer tried to pay ₹1,850 via POS dynamic UPI QR code on terminal #2. Amount was debited from customer\'s Google Pay account, but POS displayed "Transaction Pending / Failed". Reference ID: UPI/8392019482.',
+                status: 'In Progress',
+                priority: 'High',
+                attachmentName: 'upi_payment_failed_screenshot.png',
+                createdAt: new Date(Date.now() - 3 * 3600000).toISOString(),
+                messages: [
+                    {
+                        id: 'm1',
+                        sender: 'user',
+                        senderName: 'Admin User',
+                        senderRole: 'Owner',
+                        senderAvatar: 'https://ui-avatars.com/api/?name=Admin+User&background=1E3A8A&color=fff',
+                        time: '3 hours ago',
+                        date: '23 Sep 2026, 07:15 AM',
+                        text: 'Customer tried to pay ₹1,850 via POS dynamic UPI QR code on terminal #2. Amount was debited from customer\'s Google Pay account, but POS displayed "Transaction Pending / Failed". Reference ID: UPI/8392019482.',
+                        attachment: 'upi_payment_failed_screenshot.png'
+                    },
+                    {
+                        id: 'm2',
+                        sender: 'support',
+                        senderName: 'Rahul Verma',
+                        senderRole: 'Billing Lead',
+                        senderAvatar: 'https://ui-avatars.com/api/?name=Rahul+Verma&background=4F46E5&color=fff',
+                        time: '1 hour ago',
+                        date: '23 Sep 2026, 09:20 AM',
+                        text: 'Hello Team, thank you for reaching out with the reference ID. We investigated gateway logs with Razorpay. The transaction UPI/8392019482 has been confirmed as captured and credited to your salon merchant account. We are triggering an instant ledger reconciliation for your POS terminal now.',
+                        attachment: null
+                    }
+                ]
+            },
+            {
+                id: 'BB-28490',
+                categoryKey: 'staff',
+                categoryLabel: 'Staff & Scheduling',
+                subject: 'Stylist leave not reflecting on Google Calendar two-way sync',
+                description: 'When our senior hair stylist Priya marked full-day leave for Friday on Google Calendar, the salon booking widget still allowed 2 customers to book slots at 3:00 PM and 4:30 PM.',
+                status: 'Open',
+                priority: 'Medium',
+                attachmentName: null,
+                createdAt: new Date(Date.now() - 22 * 3600000).toISOString(),
+                messages: [
+                    {
+                        id: 'm1',
+                        sender: 'user',
+                        senderName: 'Admin User',
+                        senderRole: 'Owner',
+                        senderAvatar: 'https://ui-avatars.com/api/?name=Admin+User&background=1E3A8A&color=fff',
+                        time: 'Yesterday, 04:20 PM',
+                        date: '22 Sep 2026, 04:20 PM',
+                        text: 'When our senior hair stylist Priya marked full-day leave for Friday on Google Calendar, the salon booking widget still allowed 2 customers to book slots at 3:00 PM and 4:30 PM.',
+                        attachment: null
+                    },
+                    {
+                        id: 'm2',
+                        sender: 'support',
+                        senderName: 'Ananya Roy',
+                        senderRole: 'Product Support Specialist',
+                        senderAvatar: 'https://ui-avatars.com/api/?name=Ananya+Roy&background=059669&color=fff',
+                        time: 'Yesterday, 05:45 PM',
+                        date: '22 Sep 2026, 05:45 PM',
+                        text: 'Hi there! We are currently checking the Google OAuth webhook event payload for staff ID #ST-04. Please ensure the Google Calendar permission has "Read & Write Events" enabled. Our backend sync worker is running diagnostic checks.',
+                        attachment: null
+                    }
+                ]
+            },
+            {
+                id: 'BB-19402',
+                categoryKey: 'settings',
+                categoryLabel: 'Settings',
+                subject: 'Need custom invoice template layout with Salon GSTIN & QR code',
+                description: 'Can we configure invoice settings to automatically print our state GSTIN, FSSAI registration number, and dynamic payment UPI QR code at the bottom of the invoice thermal receipts?',
+                status: 'Resolved',
+                priority: 'Low',
+                attachmentName: 'sample_thermal_receipt.pdf',
+                createdAt: new Date(Date.now() - 3 * 86400000).toISOString(),
+                messages: [
+                    {
+                        id: 'm1',
+                        sender: 'user',
+                        senderName: 'Admin User',
+                        senderRole: 'Owner',
+                        senderAvatar: 'https://ui-avatars.com/api/?name=Admin+User&background=1E3A8A&color=fff',
+                        time: '20 Sep 2026',
+                        date: '20 Sep 2026, 11:30 AM',
+                        text: 'Can we configure invoice settings to automatically print our state GSTIN, FSSAI registration number, and dynamic payment UPI QR code at the bottom of the invoice thermal receipts?',
+                        attachment: 'sample_thermal_receipt.pdf'
+                    },
+                    {
+                        id: 'm2',
+                        sender: 'support',
+                        senderName: 'Arjun Nair',
+                        senderRole: 'Configuration Specialist',
+                        senderAvatar: 'https://ui-avatars.com/api/?name=Arjun+Nair&background=D97706&color=fff',
+                        time: '20 Sep 2026',
+                        date: '20 Sep 2026, 01:15 PM',
+                        text: 'Greetings! Yes, you can configure this now in Settings > Invoice Designer. We have enabled the "GSTIN & Tax Disclosures" toggle and dynamic QR code footer for thermal 80mm printers.',
+                        attachment: null
+                    },
+                    {
+                        id: 'm3',
+                        sender: 'user',
+                        senderName: 'Admin User',
+                        senderRole: 'Owner',
+                        senderAvatar: 'https://ui-avatars.com/api/?name=Admin+User&background=1E3A8A&color=fff',
+                        time: '20 Sep 2026',
+                        date: '20 Sep 2026, 03:00 PM',
+                        text: 'Awesome, tested on our Epson printer and working cleanly. Thank you Arjun!',
+                        attachment: null
+                    }
+                ]
+            },
+            {
+                id: 'BB-10382',
+                categoryKey: 'customers',
+                categoryLabel: 'Customers',
+                subject: 'Bulk import of client contact list from CSV failing on line 142',
+                description: 'Exported 1,500 clients from our previous software. Import gets stuck at 10% with phone number formatting validation warning.',
+                status: 'Resolved',
+                priority: 'Medium',
+                attachmentName: 'clients_export_sample.csv',
+                createdAt: new Date(Date.now() - 7 * 86400000).toISOString(),
+                messages: [
+                    {
+                        id: 'm1',
+                        sender: 'user',
+                        senderName: 'Admin User',
+                        senderRole: 'Owner',
+                        senderAvatar: 'https://ui-avatars.com/api/?name=Admin+User&background=1E3A8A&color=fff',
+                        time: '16 Sep 2026',
+                        date: '16 Sep 2026, 02:45 PM',
+                        text: 'Exported 1,500 clients from our previous software. Import gets stuck at 10% with phone number formatting validation warning.',
+                        attachment: 'clients_export_sample.csv'
+                    },
+                    {
+                        id: 'm2',
+                        sender: 'support',
+                        senderName: 'Sneha Patel',
+                        senderRole: 'Technical Support',
+                        senderAvatar: 'https://ui-avatars.com/api/?name=Sneha+Patel&background=7C3AED&color=fff',
+                        time: '16 Sep 2026',
+                        date: '16 Sep 2026, 04:10 PM',
+                        text: 'Hi! We checked the file: line 142 had spaces inside phone number strings (e.g. "+91 98200 12345"). We enhanced the bulk import parser to auto-strip whitespace and sanitize prefixes. Your 1,500 clients have been imported successfully!',
+                        attachment: null
+                    }
+                ]
+            }
+        ];
+
+        let allTickets = [];
+        let selectedTicketId = null;
+        let currentStatusFilter = 'all';
+        let currentSearchQuery = '';
+        let currentCategoryFilter = 'all';
+        let currentPriorityFilter = 'all';
+        let pendingReplyFile = null;
+
+        // Initialize tickets
+        function initTickets() {
+            try {
+                const stored = localStorage.getItem('salon_support_tickets');
+                if (stored) {
+                    const parsed = JSON.parse(stored);
+                    if (Array.isArray(parsed) && parsed.length > 0) {
+                        allTickets = parsed;
+                    } else {
+                        allTickets = DEFAULT_TICKETS;
+                        localStorage.setItem('salon_support_tickets', JSON.stringify(DEFAULT_TICKETS));
+                    }
+                } else {
+                    allTickets = DEFAULT_TICKETS;
+                    localStorage.setItem('salon_support_tickets', JSON.stringify(DEFAULT_TICKETS));
+                }
+            } catch(e) {
+                allTickets = DEFAULT_TICKETS;
+            }
+
+            // Check URL param ?ticket=BB-xxxxx
+            const urlParams = new URLSearchParams(window.location.search);
+            const requestedId = urlParams.get('ticket');
+            if (requestedId && allTickets.some(t => t.id.toLowerCase() === requestedId.toLowerCase())) {
+                selectedTicketId = allTickets.find(t => t.id.toLowerCase() === requestedId.toLowerCase()).id;
+            } else if (allTickets.length > 0) {
+                selectedTicketId = allTickets[0].id;
+            }
+
+            updateCounts();
+            renderCardList();
+            renderDetailPanel();
+            if (window.feather) feather.replace();
+        }
+
+        function refreshTickets() {
+            initTickets();
+            showToast('Tickets refreshed');
+        }
+
+        function updateCounts() {
+            const total = allTickets.length;
+            const open = allTickets.filter(t => t.status === 'Open').length;
+            const inProgress = allTickets.filter(t => t.status === 'In Progress').length;
+            const resolved = allTickets.filter(t => t.status === 'Resolved').length;
+            const closed = allTickets.filter(t => t.status === 'Closed').length;
+
+            document.getElementById('ihTotalBadge').textContent = `${total} Ticket${total === 1 ? '' : 's'}`;
+            document.getElementById('countAll').textContent = total;
+            document.getElementById('countOpen').textContent = open;
+            document.getElementById('countInProgress').textContent = inProgress;
+            document.getElementById('countResolved').textContent = resolved;
+            document.getElementById('countClosed').textContent = closed;
+        }
+
+        function getFilteredTickets() {
+            return allTickets.filter(t => {
+                // Status
+                if (currentStatusFilter !== 'all' && t.status !== currentStatusFilter) {
+                    return false;
+                }
+                // Category
+                if (currentCategoryFilter !== 'all' && t.categoryKey !== currentCategoryFilter) {
+                    return false;
+                }
+                // Priority
+                if (currentPriorityFilter !== 'all' && t.priority !== currentPriorityFilter) {
+                    return false;
+                }
+                // Search
+                if (currentSearchQuery.trim()) {
+                    const q = currentSearchQuery.toLowerCase();
+                    const matchId = t.id.toLowerCase().includes(q);
+                    const matchSub = t.subject.toLowerCase().includes(q);
+                    const matchDesc = t.description.toLowerCase().includes(q);
+                    const matchCat = (t.categoryLabel || '').toLowerCase().includes(q);
+                    const matchMsg = (t.messages || []).some(m => m.text.toLowerCase().includes(q));
+                    if (!matchId && !matchSub && !matchDesc && !matchCat && !matchMsg) {
+                        return false;
+                    }
+                }
+                return true;
+            });
+        }
+
+        function setStatusFilter(status, el) {
+            currentStatusFilter = status;
+            document.querySelectorAll('.ih-status-tab').forEach(tab => tab.classList.remove('active'));
+            if (el) el.classList.add('active');
+            renderCardList();
+            const filtered = getFilteredTickets();
+            if (filtered.length > 0 && !filtered.some(t => t.id === selectedTicketId)) {
+                selectedTicketId = filtered[0].id;
+                renderDetailPanel();
+            } else if (filtered.length === 0) {
+                renderDetailPanel();
+            }
+        }
+
+        function handleSearch() {
+            currentSearchQuery = document.getElementById('ihSearchInput').value;
+            renderCardList();
+            const filtered = getFilteredTickets();
+            if (filtered.length > 0 && !filtered.some(t => t.id === selectedTicketId)) {
+                selectedTicketId = filtered[0].id;
+                renderDetailPanel();
+            } else if (filtered.length === 0) {
+                renderDetailPanel();
+            }
+        }
+
+        function applyFilters() {
+            currentCategoryFilter = document.getElementById('categoryFilter').value;
+            currentPriorityFilter = document.getElementById('priorityFilter').value;
+            renderCardList();
+            const filtered = getFilteredTickets();
+            if (filtered.length > 0 && !filtered.some(t => t.id === selectedTicketId)) {
+                selectedTicketId = filtered[0].id;
+                renderDetailPanel();
+            } else if (filtered.length === 0) {
+                renderDetailPanel();
+            }
+        }
+
+        function getStatusBadgeClass(status) {
+            switch(status) {
+                case 'Open': return 'ih-badge-open';
+                case 'In Progress': return 'ih-badge-inprogress';
+                case 'Resolved': return 'ih-badge-resolved';
+                case 'Closed': return 'ih-badge-closed';
+                default: return 'ih-badge-open';
+            }
+        }
+
+        function getPriorityClass(priority) {
+            switch((priority || '').toLowerCase()) {
+                case 'urgent': return 'ih-priority-urgent';
+                case 'high': return 'ih-priority-high';
+                case 'medium': return 'ih-priority-medium';
+                case 'low': return 'ih-priority-low';
+                default: return 'ih-priority-medium';
+            }
+        }
+
+        function formatDate(isoString) {
+            if (!isoString) return '';
+            try {
+                const date = new Date(isoString);
+                const now = new Date();
+                const diffHours = (now - date) / (1000 * 3600);
+                if (diffHours < 24 && date.getDate() === now.getDate()) {
+                    return 'Today, ' + date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+                } else if (diffHours < 48) {
+                    return 'Yesterday';
+                } else {
+                    return date.toLocaleDateString('en-GB', { day: '2-digit', month: 'short' });
+                }
+            } catch(e) {
+                return '';
+            }
+        }
+
+        function renderCardList() {
+            const listEl = document.getElementById('ticketCardList');
+            const filtered = getFilteredTickets();
+
+            if (filtered.length === 0) {
+                listEl.innerHTML = `
+                    <div class="ih-empty-state">
+                        <div class="ih-empty-icon">
+                            <i data-feather="inbox" style="width:24px; height:24px;"></i>
+                        </div>
+                        <h3>No tickets found</h3>
+                        <p>No support tickets match the selected filters or search query.</p>
+                        <button class="ih-btn-secondary" onclick="resetAllFilters()">Reset Filters</button>
+                    </div>
+                `;
+                if (window.feather) feather.replace();
+                return;
+            }
+
+            listEl.innerHTML = filtered.map(t => {
+                const isSelected = t.id === selectedTicketId;
+                const statusClass = getStatusBadgeClass(t.status);
+                const priorityClass = getPriorityClass(t.priority);
+                const latestMsg = (t.messages && t.messages.length > 0)
+                    ? t.messages[t.messages.length - 1].text
+                    : t.description;
+                const msgCount = (t.messages || []).length;
+                const dateStr = formatDate(t.createdAt);
+
+                return `
+                    <div class="ih-ticket-card ${isSelected ? 'selected' : ''}" onclick="selectTicket('${t.id}')">
+                        <div class="ih-card-header">
+                            <span class="ih-card-id">#${escapeHtml(t.id)}</span>
+                            <div style="display:flex; align-items:center; gap:6px;">
+                                <span class="ih-priority-pill ${priorityClass}">${escapeHtml(t.priority || 'Medium')}</span>
+                                <span class="ih-badge ${statusClass}">
+                                    <span class="ih-badge-dot"></span>
+                                    ${escapeHtml(t.status)}
+                                </span>
+                            </div>
+                        </div>
+                        <h4 class="ih-card-subject">${escapeHtml(t.subject)}</h4>
+                        <p class="ih-card-preview">${escapeHtml(latestMsg)}</p>
+                        <div class="ih-card-footer">
+                            <span class="ih-card-cat-tag">
+                                ${escapeHtml(t.categoryLabel || 'General')}
+                            </span>
+                            <div class="ih-card-meta-right">
+                                ${t.attachmentName ? `
+                                    <span class="ih-card-meta-item" title="Has attachment">
+                                        <i data-feather="paperclip" style="width:12px; height:12px;"></i>
+                                    </span>
+                                ` : ''}
+                                <span class="ih-card-meta-item">
+                                    <i data-feather="message-square" style="width:12px; height:12px;"></i>
+                                    ${msgCount}
+                                </span>
+                                <span>${dateStr}</span>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+
+            if (window.feather) feather.replace();
+        }
+
+        function resetAllFilters() {
+            currentStatusFilter = 'all';
+            currentCategoryFilter = 'all';
+            currentPriorityFilter = 'all';
+            currentSearchQuery = '';
+            document.getElementById('ihSearchInput').value = '';
+            document.getElementById('categoryFilter').value = 'all';
+            document.getElementById('priorityFilter').value = 'all';
+            document.querySelectorAll('.ih-status-tab').forEach(t => {
+                t.classList.toggle('active', t.getAttribute('data-status') === 'all');
+            });
+            renderCardList();
+            renderDetailPanel();
+        }
+
+        function selectTicket(id) {
+            selectedTicketId = id;
+            renderCardList();
+            renderDetailPanel();
+
+            if (window.innerWidth <= 860) {
+                document.getElementById('ticketCardList').classList.add('mobile-hidden');
+                document.getElementById('ticketDetailPanel').classList.remove('mobile-hidden');
+            }
+        }
+
+        function backToTicketListMobile() {
+            document.getElementById('ticketCardList').classList.remove('mobile-hidden');
+            document.getElementById('ticketDetailPanel').classList.add('mobile-hidden');
+        }
+
+        function renderDetailPanel() {
+            const detailEl = document.getElementById('ticketDetailPanel');
+            const ticket = allTickets.find(t => t.id === selectedTicketId);
+
+            if (!ticket) {
+                detailEl.innerHTML = `
+                    <div style="display:flex; flex-direction:column; align-items:center; justify-content:center; height:100%; min-height:400px; text-align:center; padding:2rem;">
+                        <div class="ih-empty-icon" style="margin-bottom:12px;">
+                            <i data-feather="message-circle" style="width:28px; height:28px;"></i>
+                        </div>
+                        <h3 style="font-size:1.1rem; color:#1e293b; margin:0 0 6px;">Select a ticket to view messages</h3>
+                        <p style="font-size:0.875rem; color:#64748b; margin:0;">Choose any ticket from the left panel to inspect updates and conversation history.</p>
+                    </div>
+                `;
+                if (window.feather) feather.replace();
+                return;
+            }
+
+            const statusClass = getStatusBadgeClass(ticket.status);
+            const priorityClass = getPriorityClass(ticket.priority);
+
+            const messagesHtml = (ticket.messages || []).map(m => {
+                const isUser = m.sender === 'user';
+                return `
+                    <div class="ih-message-row ${isUser ? 'user' : 'support'}">
+                        <div class="ih-msg-avatar">
+                            <img src="${m.senderAvatar || (isUser ? 'https://ui-avatars.com/api/?name=Admin+User&background=1E3A8A&color=fff' : 'https://ui-avatars.com/api/?name=Support+Agent&background=4F46E5&color=fff')}" alt="${escapeHtml(m.senderName)}">
+                        </div>
+                        <div class="ih-msg-content">
+                            <div class="ih-msg-header">
+                                <span class="ih-msg-sender-name">${escapeHtml(m.senderName)}</span>
+                                ${!isUser ? `<span class="ih-agent-badge">${escapeHtml(m.senderRole || 'Support Specialist')}</span>` : ''}
+                                <span>•</span>
+                                <span>${escapeHtml(m.time || m.date || 'Recently')}</span>
+                            </div>
+                            <div class="ih-msg-bubble">
+                                ${escapeHtml(m.text)}
+                                ${m.attachment ? `
+                                    <a href="#" class="ih-msg-attachment" onclick="previewFile('${escapeHtml(m.attachment)}'); return false;">
+                                        <i data-feather="paperclip" style="width:14px; height:14px;"></i>
+                                        <span>${escapeHtml(m.attachment)}</span>
+                                        <i data-feather="download" style="width:13px; height:13px; margin-left:4px;"></i>
+                                    </a>
+                                ` : ''}
+                            </div>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+
+            detailEl.innerHTML = `
+                <!-- Detail Header -->
+                <div class="ih-detail-header">
+                    <button class="ih-mobile-back-btn" onclick="backToTicketListMobile()">
+                        <i data-feather="arrow-left" style="width:14px; height:14px;"></i>
+                        Back to tickets list
+                    </button>
+                    <div class="ih-detail-top-row">
+                        <div class="ih-detail-id-group">
+                            <span class="ih-card-id" style="font-size:0.85rem; padding:4px 10px;">#${escapeHtml(ticket.id)}</span>
+                            <span class="ih-priority-pill ${priorityClass}">${escapeHtml(ticket.priority || 'Medium')} Priority</span>
+                            <span class="ih-badge ${statusClass}">
+                                <span class="ih-badge-dot"></span>
+                                ${escapeHtml(ticket.status)}
+                            </span>
+                        </div>
+                        <div class="ih-detail-actions">
+                            ${ticket.status !== 'Resolved' ? `
+                                <button class="ih-btn-secondary" onclick="updateTicketStatus('${ticket.id}', 'Resolved')">
+                                    <i data-feather="check" style="width:14px; height:14px; color:#10b981;"></i>
+                                    Mark Resolved
+                                </button>
+                            ` : `
+                                <button class="ih-btn-secondary" onclick="updateTicketStatus('${ticket.id}', 'Open')">
+                                    <i data-feather="rotate-ccw" style="width:14px; height:14px; color:#4f46e5;"></i>
+                                    Reopen Ticket
+                                </button>
+                            `}
+                        </div>
+                    </div>
+
+                    <h2 class="ih-detail-title">${escapeHtml(ticket.subject)}</h2>
+
+                    <div class="ih-detail-meta-row">
+                        <span>
+                            <i data-feather="tag" style="width:13px; height:13px;"></i>
+                            ${escapeHtml(ticket.categoryLabel || 'General')}
+                        </span>
+                        <span>
+                            <i data-feather="clock" style="width:13px; height:13px;"></i>
+                            Created ${ticket.createdAt ? new Date(ticket.createdAt).toLocaleDateString('en-GB', { day:'2-digit', month:'short', year:'numeric', hour:'2-digit', minute:'2-digit' }) : 'Recently'}
+                        </span>
+                        <span>
+                            <i data-feather="message-circle" style="width:13px; height:13px;"></i>
+                            ${(ticket.messages || []).length} Updates
+                        </span>
+                    </div>
+                </div>
+
+                <!-- Conversation Body -->
+                <div class="ih-thread-body" id="threadBody">
+                    <!-- Original Reported Description -->
+                    <div class="ih-original-issue-card">
+                        <div class="ih-original-issue-header">
+                            <span class="ih-original-issue-label">
+                                <i data-feather="alert-circle" style="width:13px; height:13px;"></i>
+                                Initial Report Description
+                            </span>
+                            <span style="font-size:0.75rem; color:#94a3b8;">Original Ticket</span>
+                        </div>
+                        <p class="ih-original-issue-text">${escapeHtml(ticket.description)}</p>
+                        ${ticket.attachmentName ? `
+                            <div style="margin-top:10px;">
+                                <a href="#" class="ih-msg-attachment" style="background:#f1f5f9; color:#334155; border:1px solid #e2e8f0;" onclick="previewFile('${escapeHtml(ticket.attachmentName)}'); return false;">
+                                    <i data-feather="paperclip" style="width:14px; height:14px;"></i>
+                                    <span>${escapeHtml(ticket.attachmentName)}</span>
+                                    <i data-feather="download" style="width:13px; height:13px; margin-left:4px;"></i>
+                                </a>
+                            </div>
+                        ` : ''}
+                    </div>
+
+                    <!-- Message Bubbles -->
+                    ${messagesHtml}
+                </div>
+
+                <!-- Composer -->
+                <div class="ih-composer">
+                    <textarea id="replyTextarea" class="ih-composer-textarea" placeholder="Write a reply or provide additional details to support team..." onkeydown="handleReplyKey(event)"></textarea>
+                    <div class="ih-composer-bottom">
+                        <div class="ih-composer-tools">
+                            <button class="ih-tool-btn" type="button" onclick="document.getElementById('replyFileInput').click()">
+                                <i data-feather="paperclip" style="width:13px; height:13px;"></i>
+                                Attach File
+                            </button>
+                            <span id="replyFileBadge" class="ih-composer-file-badge">
+                                <span id="replyFileNameText">file.png</span>
+                                <button onclick="removeReplyFile()" title="Remove">✕</button>
+                            </span>
+                        </div>
+                        <button class="ih-btn-primary" onclick="sendReply()">
+                            <i data-feather="send" style="width:14px; height:14px;"></i>
+                            Send Reply
+                        </button>
+                    </div>
+                </div>
+            `;
+
+            if (window.feather) feather.replace();
+
+            setTimeout(() => {
+                const thread = document.getElementById('threadBody');
+                if (thread) thread.scrollTop = thread.scrollHeight;
+            }, 60);
+        }
+
+        function updateTicketStatus(ticketId, newStatus) {
+            const ticket = allTickets.find(t => t.id === ticketId);
+            if (!ticket) return;
+
+            ticket.status = newStatus;
+            saveTicketsToStorage();
+            updateCounts();
+            renderCardList();
+            renderDetailPanel();
+            showToast(`Ticket status updated to ${newStatus}`);
+        }
+
+        function handleReplyKey(e) {
+            if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) {
+                e.preventDefault();
+                sendReply();
+            }
+        }
+
+        function handleReplyFileSelect(e) {
+            const file = e.target.files[0];
+            if (!file) return;
+            if (file.size > 10 * 1024 * 1024) {
+                alert('File is too large. Maximum size is 10 MB.');
+                return;
+            }
+            pendingReplyFile = file.name;
+            const badge = document.getElementById('replyFileBadge');
+            const nameEl = document.getElementById('replyFileNameText');
+            if (badge && nameEl) {
+                nameEl.textContent = file.name;
+                badge.style.display = 'inline-flex';
+            }
+        }
+
+        function removeReplyFile() {
+            pendingReplyFile = null;
+            document.getElementById('replyFileInput').value = '';
+            const badge = document.getElementById('replyFileBadge');
+            if (badge) badge.style.display = 'none';
+        }
+
+        function sendReply() {
+            const textarea = document.getElementById('replyTextarea');
+            if (!textarea) return;
+            const text = textarea.value.trim();
+
+            if (!text && !pendingReplyFile) {
+                textarea.focus();
+                return;
+            }
+
+            const ticket = allTickets.find(t => t.id === selectedTicketId);
+            if (!ticket) return;
+
+            const newMsg = {
+                id: 'm-' + Date.now(),
+                sender: 'user',
+                senderName: 'Admin User',
+                senderRole: 'Owner',
+                senderAvatar: 'https://ui-avatars.com/api/?name=Admin+User&background=1E3A8A&color=fff',
+                time: 'Just now',
+                date: new Date().toLocaleDateString('en-GB', { day:'2-digit', month:'short', year:'numeric', hour:'2-digit', minute:'2-digit' }),
+                text: text || '(Attachment sent)',
+                attachment: pendingReplyFile || null
+            };
+
+            if (!ticket.messages) ticket.messages = [];
+            ticket.messages.push(newMsg);
+
+            if (ticket.status === 'Resolved' || ticket.status === 'Closed') {
+                ticket.status = 'Open';
+            }
+
+            saveTicketsToStorage();
+            textarea.value = '';
+            removeReplyFile();
+            updateCounts();
+            renderCardList();
+            renderDetailPanel();
+            showToast('Reply sent to support team');
+
+            // Simulate support specialist auto acknowledgment after 2.5 seconds
+            setTimeout(() => {
+                if (ticket.status === 'Open') {
+                    ticket.status = 'In Progress';
+                }
+                const supportReply = {
+                    id: 'm-' + (Date.now() + 1),
+                    sender: 'support',
+                    senderName: 'Priya Sharma',
+                    senderRole: 'Senior Support Specialist',
+                    senderAvatar: 'https://ui-avatars.com/api/?name=Priya+Sharma&background=4F46E5&color=fff',
+                    time: 'Just now',
+                    date: new Date().toLocaleDateString('en-GB', { day:'2-digit', month:'short', year:'numeric', hour:'2-digit', minute:'2-digit' }),
+                    text: 'Thank you for the update! We have logged your response in the case investigation. Our team is actively reviewing this.',
+                    attachment: null
+                };
+                ticket.messages.push(supportReply);
+                saveTicketsToStorage();
+                updateCounts();
+                renderCardList();
+                if (selectedTicketId === ticket.id) renderDetailPanel();
+            }, 2500);
+        }
+
+        function previewFile(name) {
+            alert(`File preview: ${name}\nIn production, this downloads or displays the attachment.`);
+        }
+
+        function saveTicketsToStorage() {
+            try {
+                localStorage.setItem('salon_support_tickets', JSON.stringify(allTickets));
+            } catch(e) {
+                console.error('Storage error', e);
+            }
+        }
+
+        function showToast(msg) {
+            const toast = document.getElementById('ihToast');
+            const txt = document.getElementById('ihToastMsg');
+            if (!toast || !txt) return;
+            txt.textContent = msg;
+            toast.classList.add('visible');
+            setTimeout(() => toast.classList.remove('visible'), 3200);
+        }
+
+        function escapeHtml(str) {
+            if (str === null || str === undefined) return '';
+            return String(str)
+                .replace(/&/g, '&amp;')
+                .replace(/</g, '&lt;')
+                .replace(/>/g, '&gt;')
+                .replace(/"/g, '&quot;')
+                .replace(/'/g, '&#039;');
+        }
+
+        /* ======= Modal Controls ======= */
+        function openReportIssueModal() {
+            resetReportIssueModal();
+            document.getElementById('reportIssueOverlay').classList.add('active');
+            document.body.style.overflow = 'hidden';
+            setTimeout(() => document.getElementById('riCategory').focus(), 120);
+        }
+
+        function closeReportIssueModal() {
+            document.getElementById('reportIssueOverlay').classList.remove('active');
+            document.body.style.overflow = '';
+        }
+
+        function handleRiOverlayClick(e) {
+            if (e.target === document.getElementById('reportIssueOverlay')) closeReportIssueModal();
+        }
+
+        function resetReportIssueModal() {
+            document.getElementById('riCategory').value    = '';
+            document.getElementById('riSubject').value     = '';
+            document.getElementById('riDescription').value = '';
+            removeRiFile();
+            ['riCategory','riSubject','riDescription'].forEach(id => {
+                document.getElementById(id).classList.remove('ri-error');
+            });
+            ['riCategoryHint','riSubjectHint','riDescriptionHint'].forEach(id => {
+                document.getElementById(id).classList.remove('visible');
+            });
+            document.getElementById('riFormBody').style.display = 'flex';
+            document.getElementById('riSuccess').style.display  = 'none';
+            document.getElementById('riFooter').style.display   = 'flex';
+            document.getElementById('riSubmitBtn').disabled = false;
+        }
+
+        function riClearError(el, hintId) {
+            el.classList.remove('ri-error');
+            document.getElementById(hintId).classList.remove('visible');
+        }
+
+        function riShowError(fieldId, hintId) {
+            document.getElementById(fieldId).classList.add('ri-error');
+            document.getElementById(hintId).classList.add('visible');
+        }
+
+        function handleRiFileSelect(e) {
+            const file = e.target.files[0];
+            if (file) showRiFile(file);
+        }
+
+        function handleRiDrop(e) {
+            e.preventDefault();
+            document.getElementById('riDropzone').classList.remove('drag-over');
+            const file = e.dataTransfer.files[0];
+            if (!file) return;
+            showRiFile(file);
+        }
+
+        function showRiFile(file) {
+            document.getElementById('riDropzone').style.display  = 'none';
+            document.getElementById('riFilePreview').style.display = 'flex';
+            document.getElementById('riFileName').textContent = file.name + ' (' + (file.size / 1024).toFixed(1) + ' KB)';
+        }
+
+        function removeRiFile() {
+            document.getElementById('riFileInput').value          = '';
+            document.getElementById('riDropzone').style.display   = '';
+            document.getElementById('riFilePreview').style.display = 'none';
+            document.getElementById('riFileName').textContent     = '';
+        }
+
+        function submitReportIssue() {
+            let valid = true;
+            const category    = document.getElementById('riCategory');
+            const subject     = document.getElementById('riSubject');
+            const description = document.getElementById('riDescription');
+
+            if (!category.value) {
+                riShowError('riCategory', 'riCategoryHint'); valid = false;
+            }
+            if (subject.value.trim().length < 5) {
+                riShowError('riSubject', 'riSubjectHint'); valid = false;
+            }
+            if (description.value.trim().length < 20) {
+                riShowError('riDescription', 'riDescriptionHint'); valid = false;
+            }
+
+            if (!valid) return;
+
+            const btn = document.getElementById('riSubmitBtn');
+            btn.disabled = true;
+            btn.innerHTML = 'Submitting…';
+
+            setTimeout(() => {
+                const ticketNum = 'BB-' + String(Math.floor(10000 + Math.random() * 90000));
+                document.getElementById('riTicketId').textContent = 'Ticket #' + ticketNum;
+
+                const selectedOpt = category.options[category.selectedIndex];
+                const catLabel = selectedOpt ? selectedOpt.text.replace(/^[^\s]+\s+/, '') : 'General';
+                const filePreview = document.getElementById('riFileName');
+                const attachedFileName = (filePreview && filePreview.textContent) ? filePreview.textContent.trim() : null;
+
+                const newTicket = {
+                    id: ticketNum,
+                    categoryKey: category.value,
+                    categoryLabel: catLabel,
+                    subject: subject.value.trim(),
+                    description: description.value.trim(),
+                    attachmentName: attachedFileName,
+                    status: 'Open',
+                    priority: 'Medium',
+                    createdAt: new Date().toISOString(),
+                    messages: [
+                        {
+                            id: 'msg-' + Date.now(),
+                            sender: 'user',
+                            senderName: 'Admin User',
+                            senderRole: 'Owner',
+                            senderAvatar: 'https://ui-avatars.com/api/?name=Admin+User&background=1E3A8A&color=fff',
+                            time: 'Just now',
+                            date: new Date().toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' }),
+                            text: description.value.trim(),
+                            attachment: attachedFileName
+                        }
+                    ]
+                };
+
+                allTickets.unshift(newTicket);
+                saveTicketsToStorage();
+                selectedTicketId = ticketNum;
+
+                document.getElementById('riFormBody').style.display = 'none';
+                document.getElementById('riFooter').style.display   = 'none';
+                document.getElementById('riSuccess').style.display  = 'flex';
+            }, 1000);
+        }
+
+        // Initialize everything on DOM ready
+        document.addEventListener('DOMContentLoaded', () => {
+            initTickets();
+        });
+    </script>
+</body>
+</html>
