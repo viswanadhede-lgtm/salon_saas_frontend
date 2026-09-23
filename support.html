@@ -1772,7 +1772,7 @@
                     const timestamp    = Math.floor(Date.now() / 1000);
                     const randomSuffix = Math.random().toString(36).substring(2, 8);
                     const safeName     = file.name.replace(/[^a-zA-Z0-9.\-_]/g, '_').toLowerCase();
-                    const storagePath  = `${company_id}/${suggestion.id}/${timestamp}-${randomSuffix}-${safeName}`;
+                    const storagePath  = `${authUserId}/${suggestion.id}/${timestamp}-${randomSuffix}-${safeName}`;
 
                     try {
                         const { data: upData, error: upErr } = await supabase.storage
