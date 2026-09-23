@@ -375,9 +375,9 @@
                         </div>
                         <div style="padding-left: 26px; margin-bottom: 18px;">
                             <a id="scEmailLink" href="mailto:support@bharathbots.com"
-                                style="color: #111827; font-weight: 500; font-size: 0.95rem; text-decoration: none; word-break: break-all; transition: color 0.15s ease;"
-                                onmouseover="this.style.color='#4f46e5';"
-                                onmouseout="this.style.color='#111827';">
+                                style="color: #4f46e5; font-weight: 500; font-size: 0.95rem; text-decoration: underline; word-break: break-all; transition: color 0.15s ease;"
+                                onmouseover="this.style.color='#3730a3';"
+                                onmouseout="this.style.color='#4f46e5';">
                                 <span id="scEmailText">support@bharathbots.com</span>
                             </a>
                         </div>
@@ -704,7 +704,8 @@
                     // mailto link with pre-populated recipient & subject
                     const mailtoUrl = 'mailto:' + encodeURIComponent(addr) + '?subject=' + encodeURIComponent('BharatBots Support Request');
                     emailLink.href = mailtoUrl;
-                    emailLink.style.color = '#111827';
+                    emailLink.style.color = '#4f46e5';
+                    emailLink.style.textDecoration = 'underline';
                     emailLink.style.pointerEvents = '';
                     enableCard(emailCard);
 
