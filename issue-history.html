@@ -2,6 +2,7 @@
 <html lang="en">
 
 <head>
+    <script src="scripts/auth-loader.js"></script>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="description" content="Issue History & Support Tickets - BharathBots Salon SaaS.">
@@ -1542,311 +1543,55 @@
     <script src="dashboard.js"></script>
 
     <!-- Issue History & Ticket Discussion Engine -->
-    <script>
-        // Seed default tickets if not present
-        const DEFAULT_TICKETS = [
-            {
-                id: 'BB-39281',
-                categoryKey: 'payments',
-                categoryLabel: 'Payments & Billing',
-                subject: 'Payment gateway timed out during UPI QR checkout at Downtown Branch',
-                description: 'Customer tried to pay ₹1,850 via POS dynamic UPI QR code on terminal #2. Amount was debited from customer\'s Google Pay account, but POS displayed "Transaction Pending / Failed". Reference ID: UPI/8392019482.',
-                status: 'In Progress',
-                priority: 'High',
-                attachmentName: 'upi_payment_failed_screenshot.png',
-                createdAt: new Date(Date.now() - 3 * 3600000).toISOString(),
-                messages: [
-                    {
-                        id: 'm1',
-                        sender: 'user',
-                        senderName: 'Admin User',
-                        senderRole: 'Owner',
-                        senderAvatar: 'https://ui-avatars.com/api/?name=Admin+User&background=1E3A8A&color=fff',
-                        time: '3 hours ago',
-                        date: '23 Sep 2026, 07:15 AM',
-                        text: 'Customer tried to pay ₹1,850 via POS dynamic UPI QR code on terminal #2. Amount was debited from customer\'s Google Pay account, but POS displayed "Transaction Pending / Failed". Reference ID: UPI/8392019482.',
-                        attachment: 'upi_payment_failed_screenshot.png'
-                    },
-                    {
-                        id: 'm2',
-                        sender: 'support',
-                        senderName: 'Rahul Verma',
-                        senderRole: 'Billing Lead',
-                        senderAvatar: 'https://ui-avatars.com/api/?name=Rahul+Verma&background=4F46E5&color=fff',
-                        time: '1 hour ago',
-                        date: '23 Sep 2026, 09:20 AM',
-                        text: 'Hello Team, thank you for reaching out with the reference ID. We investigated gateway logs with Razorpay. The transaction UPI/8392019482 has been confirmed as captured and credited to your salon merchant account. We are triggering an instant ledger reconciliation for your POS terminal now.',
-                        attachment: null
-                    }
-                ]
-            },
-            {
-                id: 'BB-28490',
-                categoryKey: 'staff',
-                categoryLabel: 'Staff & Scheduling',
-                subject: 'Stylist leave not reflecting on Google Calendar two-way sync',
-                description: 'When our senior hair stylist Priya marked full-day leave for Friday on Google Calendar, the salon booking widget still allowed 2 customers to book slots at 3:00 PM and 4:30 PM.',
-                status: 'Open',
-                priority: 'Medium',
-                attachmentName: null,
-                createdAt: new Date(Date.now() - 22 * 3600000).toISOString(),
-                messages: [
-                    {
-                        id: 'm1',
-                        sender: 'user',
-                        senderName: 'Admin User',
-                        senderRole: 'Owner',
-                        senderAvatar: 'https://ui-avatars.com/api/?name=Admin+User&background=1E3A8A&color=fff',
-                        time: 'Yesterday, 04:20 PM',
-                        date: '22 Sep 2026, 04:20 PM',
-                        text: 'When our senior hair stylist Priya marked full-day leave for Friday on Google Calendar, the salon booking widget still allowed 2 customers to book slots at 3:00 PM and 4:30 PM.',
-                        attachment: null
-                    },
-                    {
-                        id: 'm2',
-                        sender: 'support',
-                        senderName: 'Ananya Roy',
-                        senderRole: 'Product Support Specialist',
-                        senderAvatar: 'https://ui-avatars.com/api/?name=Ananya+Roy&background=059669&color=fff',
-                        time: 'Yesterday, 05:45 PM',
-                        date: '22 Sep 2026, 05:45 PM',
-                        text: 'Hi there! We are currently checking the Google OAuth webhook event payload for staff ID #ST-04. Please ensure the Google Calendar permission has "Read & Write Events" enabled. Our backend sync worker is running diagnostic checks.',
-                        attachment: null
-                    }
-                ]
-            },
-            {
-                id: 'BB-19402',
-                categoryKey: 'settings',
-                categoryLabel: 'Settings',
-                subject: 'Need custom invoice template layout with Salon GSTIN & QR code',
-                description: 'Can we configure invoice settings to automatically print our state GSTIN, FSSAI registration number, and dynamic payment UPI QR code at the bottom of the invoice thermal receipts?',
-                status: 'Resolved',
-                priority: 'Low',
-                attachmentName: 'sample_thermal_receipt.pdf',
-                createdAt: new Date(Date.now() - 3 * 86400000).toISOString(),
-                messages: [
-                    {
-                        id: 'm1',
-                        sender: 'user',
-                        senderName: 'Admin User',
-                        senderRole: 'Owner',
-                        senderAvatar: 'https://ui-avatars.com/api/?name=Admin+User&background=1E3A8A&color=fff',
-                        time: '20 Sep 2026',
-                        date: '20 Sep 2026, 11:30 AM',
-                        text: 'Can we configure invoice settings to automatically print our state GSTIN, FSSAI registration number, and dynamic payment UPI QR code at the bottom of the invoice thermal receipts?',
-                        attachment: 'sample_thermal_receipt.pdf'
-                    },
-                    {
-                        id: 'm2',
-                        sender: 'support',
-                        senderName: 'Arjun Nair',
-                        senderRole: 'Configuration Specialist',
-                        senderAvatar: 'https://ui-avatars.com/api/?name=Arjun+Nair&background=D97706&color=fff',
-                        time: '20 Sep 2026',
-                        date: '20 Sep 2026, 01:15 PM',
-                        text: 'Greetings! Yes, you can configure this now in Settings > Invoice Designer. We have enabled the "GSTIN & Tax Disclosures" toggle and dynamic QR code footer for thermal 80mm printers.',
-                        attachment: null
-                    },
-                    {
-                        id: 'm3',
-                        sender: 'user',
-                        senderName: 'Admin User',
-                        senderRole: 'Owner',
-                        senderAvatar: 'https://ui-avatars.com/api/?name=Admin+User&background=1E3A8A&color=fff',
-                        time: '20 Sep 2026',
-                        date: '20 Sep 2026, 03:00 PM',
-                        text: 'Awesome, tested on our Epson printer and working cleanly. Thank you Arjun!',
-                        attachment: null
-                    }
-                ]
-            },
-            {
-                id: 'BB-10382',
-                categoryKey: 'customers',
-                categoryLabel: 'Customers',
-                subject: 'Bulk import of client contact list from CSV failing on line 142',
-                description: 'Exported 1,500 clients from our previous software. Import gets stuck at 10% with phone number formatting validation warning.',
-                status: 'Resolved',
-                priority: 'Medium',
-                attachmentName: 'clients_export_sample.csv',
-                createdAt: new Date(Date.now() - 7 * 86400000).toISOString(),
-                messages: [
-                    {
-                        id: 'm1',
-                        sender: 'user',
-                        senderName: 'Admin User',
-                        senderRole: 'Owner',
-                        senderAvatar: 'https://ui-avatars.com/api/?name=Admin+User&background=1E3A8A&color=fff',
-                        time: '16 Sep 2026',
-                        date: '16 Sep 2026, 02:45 PM',
-                        text: 'Exported 1,500 clients from our previous software. Import gets stuck at 10% with phone number formatting validation warning.',
-                        attachment: 'clients_export_sample.csv'
-                    },
-                    {
-                        id: 'm2',
-                        sender: 'support',
-                        senderName: 'Sneha Patel',
-                        senderRole: 'Technical Support',
-                        senderAvatar: 'https://ui-avatars.com/api/?name=Sneha+Patel&background=7C3AED&color=fff',
-                        time: '16 Sep 2026',
-                        date: '16 Sep 2026, 04:10 PM',
-                        text: 'Hi! We checked the file: line 142 had spaces inside phone number strings (e.g. "+91 98200 12345"). We enhanced the bulk import parser to auto-strip whitespace and sanitize prefixes. Your 1,500 clients have been imported successfully!',
-                        attachment: null
-                    }
-                ]
-            }
-        ];
+    <script type="module">
+        import {
+            getIssues,
+            getIssueThread,
+            sendFollowUp,
+            updateIssueStatus,
+            submitIssue,
+            getIssueContext
+        } from './scripts/issue-service.js';
 
-        let allTickets = [];
-        let selectedTicketId = null;
-        let currentStatusFilter = 'all';
-        let currentSearchQuery = '';
-        let currentCategoryFilter = 'all';
-        let currentPriorityFilter = 'all';
-        let pendingReplyFile = null;
+        const CATEGORY_LABELS = {
+            'bookings': 'Bookings & Appointments',
+            'payments': 'Payments & Billing',
+            'pos': 'Point of Sale (POS)',
+            'staff': 'Staff & Scheduling',
+            'customers': 'Customers',
+            'services': 'Services & Products',
+            'marketing': 'Memberships & Offers',
+            'reports': 'Reports & Analytics',
+            'settings': 'Settings',
+            'branches': 'Branches',
+            'subscription': 'Subscription & Plans',
+            'login': 'Login & Access',
+            'notifications': 'Notifications',
+            'other': 'Other / General'
+        };
 
-        // Initialize tickets
-        function initTickets() {
-            try {
-                const stored = localStorage.getItem('salon_support_tickets');
-                if (stored) {
-                    const parsed = JSON.parse(stored);
-                    if (Array.isArray(parsed) && parsed.length > 0) {
-                        allTickets = parsed;
-                    } else {
-                        allTickets = DEFAULT_TICKETS;
-                        localStorage.setItem('salon_support_tickets', JSON.stringify(DEFAULT_TICKETS));
-                    }
-                } else {
-                    allTickets = DEFAULT_TICKETS;
-                    localStorage.setItem('salon_support_tickets', JSON.stringify(DEFAULT_TICKETS));
-                }
-            } catch(e) {
-                allTickets = DEFAULT_TICKETS;
-            }
-
-            // Check URL param ?ticket=BB-xxxxx
-            const urlParams = new URLSearchParams(window.location.search);
-            const requestedId = urlParams.get('ticket');
-            if (requestedId && allTickets.some(t => t.id.toLowerCase() === requestedId.toLowerCase())) {
-                selectedTicketId = allTickets.find(t => t.id.toLowerCase() === requestedId.toLowerCase()).id;
-            } else if (allTickets.length > 0) {
-                selectedTicketId = allTickets[0].id;
-            }
-
-            updateCounts();
-            renderCardList();
-            renderDetailPanel();
-            if (window.feather) feather.replace();
+        function formatCategoryLabel(catKey) {
+            if (!catKey) return 'General';
+            return CATEGORY_LABELS[catKey.toLowerCase()] || catKey;
         }
 
-        function refreshTickets() {
-            initTickets();
-            showToast('Tickets refreshed');
-        }
-
-        function updateCounts() {
-            const total = allTickets.length;
-            const open = allTickets.filter(t => t.status === 'Open').length;
-            const inProgress = allTickets.filter(t => t.status === 'In Progress').length;
-            const resolved = allTickets.filter(t => t.status === 'Resolved').length;
-            const closed = allTickets.filter(t => t.status === 'Closed').length;
-
-            document.getElementById('ihTotalBadge').textContent = `${total} Ticket${total === 1 ? '' : 's'}`;
-            document.getElementById('countAll').textContent = total;
-            document.getElementById('countOpen').textContent = open;
-            document.getElementById('countInProgress').textContent = inProgress;
-            document.getElementById('countResolved').textContent = resolved;
-            document.getElementById('countClosed').textContent = closed;
-        }
-
-        function getFilteredTickets() {
-            return allTickets.filter(t => {
-                // Status
-                if (currentStatusFilter !== 'all' && t.status !== currentStatusFilter) {
-                    return false;
-                }
-                // Category
-                if (currentCategoryFilter !== 'all' && t.categoryKey !== currentCategoryFilter) {
-                    return false;
-                }
-                // Priority
-                if (currentPriorityFilter !== 'all' && t.priority !== currentPriorityFilter) {
-                    return false;
-                }
-                // Search
-                if (currentSearchQuery.trim()) {
-                    const q = currentSearchQuery.toLowerCase();
-                    const matchId = t.id.toLowerCase().includes(q);
-                    const matchSub = t.subject.toLowerCase().includes(q);
-                    const matchDesc = t.description.toLowerCase().includes(q);
-                    const matchCat = (t.categoryLabel || '').toLowerCase().includes(q);
-                    const matchMsg = (t.messages || []).some(m => m.text.toLowerCase().includes(q));
-                    if (!matchId && !matchSub && !matchDesc && !matchCat && !matchMsg) {
-                        return false;
-                    }
-                }
-                return true;
-            });
-        }
-
-        function setStatusFilter(status, el) {
-            currentStatusFilter = status;
-            document.querySelectorAll('.ih-status-tab').forEach(tab => tab.classList.remove('active'));
-            if (el) el.classList.add('active');
-            renderCardList();
-            const filtered = getFilteredTickets();
-            if (filtered.length > 0 && !filtered.some(t => t.id === selectedTicketId)) {
-                selectedTicketId = filtered[0].id;
-                renderDetailPanel();
-            } else if (filtered.length === 0) {
-                renderDetailPanel();
-            }
-        }
-
-        function handleSearch() {
-            currentSearchQuery = document.getElementById('ihSearchInput').value;
-            renderCardList();
-            const filtered = getFilteredTickets();
-            if (filtered.length > 0 && !filtered.some(t => t.id === selectedTicketId)) {
-                selectedTicketId = filtered[0].id;
-                renderDetailPanel();
-            } else if (filtered.length === 0) {
-                renderDetailPanel();
-            }
-        }
-
-        function applyFilters() {
-            currentCategoryFilter = document.getElementById('categoryFilter').value;
-            currentPriorityFilter = document.getElementById('priorityFilter').value;
-            renderCardList();
-            const filtered = getFilteredTickets();
-            if (filtered.length > 0 && !filtered.some(t => t.id === selectedTicketId)) {
-                selectedTicketId = filtered[0].id;
-                renderDetailPanel();
-            } else if (filtered.length === 0) {
-                renderDetailPanel();
+        function formatStatusLabel(status) {
+            switch ((status || '').toLowerCase()) {
+                case 'open': return 'Open';
+                case 'in_progress': return 'In Progress';
+                case 'resolved': return 'Resolved';
+                case 'closed': return 'Closed';
+                default: return 'Open';
             }
         }
 
         function getStatusBadgeClass(status) {
-            switch(status) {
-                case 'Open': return 'ih-badge-open';
-                case 'In Progress': return 'ih-badge-inprogress';
-                case 'Resolved': return 'ih-badge-resolved';
-                case 'Closed': return 'ih-badge-closed';
+            switch ((status || '').toLowerCase()) {
+                case 'open': return 'ih-badge-open';
+                case 'in_progress': return 'ih-badge-inprogress';
+                case 'resolved': return 'ih-badge-resolved';
+                case 'closed': return 'ih-badge-closed';
                 default: return 'ih-badge-open';
-            }
-        }
-
-        function getPriorityClass(priority) {
-            switch((priority || '').toLowerCase()) {
-                case 'urgent': return 'ih-priority-urgent';
-                case 'high': return 'ih-priority-high';
-                case 'medium': return 'ih-priority-medium';
-                case 'low': return 'ih-priority-low';
-                default: return 'ih-priority-medium';
             }
         }
 
@@ -1863,8 +1608,168 @@
                 } else {
                     return date.toLocaleDateString('en-GB', { day: '2-digit', month: 'short' });
                 }
-            } catch(e) {
+            } catch (e) {
                 return '';
+            }
+        }
+
+        function escapeHtml(str) {
+            if (str === null || str === undefined) return '';
+            return String(str)
+                .replace(/&/g, '&amp;')
+                .replace(/</g, '&lt;')
+                .replace(/>/g, '&gt;')
+                .replace(/"/g, '&quot;')
+                .replace(/'/g, '&#039;');
+        }
+
+        let allTickets = [];
+        let selectedTicketId = null;
+        let currentStatusFilter = 'all';
+        let currentSearchQuery = '';
+        let currentCategoryFilter = 'all';
+        let pendingReplyFileObj = null;
+        let riSelectedFile = null;
+
+        // Initialize tickets from Supabase
+        async function initTickets() {
+            const listEl = document.getElementById('ticketCardList');
+            if (listEl) {
+                listEl.innerHTML = `
+                    <div style="padding:2.5rem; text-align:center; color:#64748b;">
+                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="animation:spin 0.8s linear infinite; margin-bottom:8px;"><line x1="12" y1="2" x2="12" y2="6"/><line x1="12" y1="18" x2="12" y2="22"/><line x1="4.93" y1="4.93" x2="7.76" y2="7.76"/><line x1="16.24" y1="16.24" x2="19.07" y2="19.07"/><line x1="2" y1="12" x2="6" y2="12"/><line x1="18" y1="12" x2="22" y2="12"/><line x1="4.93" y1="19.07" x2="7.76" y2="16.24"/><line x1="16.24" y1="7.76" x2="19.07" y2="4.93"/></svg>
+                        <p style="font-size:0.875rem; margin:0;">Loading tickets…</p>
+                    </div>
+                `;
+            }
+
+            try {
+                const { data, error } = await getIssues();
+                if (error) {
+                    console.error('[issue-history] Failed to fetch issues:', error);
+                    showToast('Failed to load tickets: ' + (error.message || 'Error'));
+                }
+
+                allTickets = data || [];
+
+                // Check URL param ?ticket=ISS-xxxxx or UUID
+                const urlParams = new URLSearchParams(window.location.search);
+                const requestedId = urlParams.get('ticket');
+                if (requestedId) {
+                    const match = allTickets.find(t =>
+                        (t.reference_number && t.reference_number.toLowerCase() === requestedId.toLowerCase()) ||
+                        (t.id && t.id.toLowerCase() === requestedId.toLowerCase())
+                    );
+                    if (match) selectedTicketId = match.id;
+                    else if (allTickets.length > 0) selectedTicketId = allTickets[0].id;
+                } else if (allTickets.length > 0) {
+                    selectedTicketId = allTickets[0].id;
+                } else {
+                    selectedTicketId = null;
+                }
+
+                updateCounts();
+                renderCardList();
+
+                if (selectedTicketId) {
+                    await loadSelectedTicketThread();
+                } else {
+                    renderDetailPanel();
+                }
+            } catch (err) {
+                console.error('[issue-history] init error:', err);
+                showToast('Error loading tickets');
+            } finally {
+                if (window.feather) feather.replace();
+            }
+        }
+
+        async function refreshTickets() {
+            await initTickets();
+            showToast('Tickets refreshed');
+        }
+
+        function updateCounts() {
+            const total = allTickets.length;
+            const open = allTickets.filter(t => (t.status || '').toLowerCase() === 'open').length;
+            const inProgress = allTickets.filter(t => (t.status || '').toLowerCase() === 'in_progress').length;
+            const resolved = allTickets.filter(t => (t.status || '').toLowerCase() === 'resolved').length;
+            const closed = allTickets.filter(t => (t.status || '').toLowerCase() === 'closed').length;
+
+            const badge = document.getElementById('ihTotalBadge');
+            if (badge) badge.textContent = `${total} Ticket${total === 1 ? '' : 's'}`;
+            document.getElementById('countAll').textContent = total;
+            document.getElementById('countOpen').textContent = open;
+            document.getElementById('countInProgress').textContent = inProgress;
+            document.getElementById('countResolved').textContent = resolved;
+            document.getElementById('countClosed').textContent = closed;
+        }
+
+        function getFilteredTickets() {
+            return allTickets.filter(t => {
+                // Status
+                if (currentStatusFilter !== 'all') {
+                    const normStatus = (t.status || '').toLowerCase().replace(/\s+/g, '_');
+                    const normFilter = currentStatusFilter.toLowerCase().replace(/\s+/g, '_');
+                    if (normStatus !== normFilter) return false;
+                }
+                // Category
+                if (currentCategoryFilter !== 'all') {
+                    if ((t.category || '').toLowerCase() !== currentCategoryFilter.toLowerCase()) {
+                        return false;
+                    }
+                }
+                // Search
+                if (currentSearchQuery.trim()) {
+                    const q = currentSearchQuery.toLowerCase();
+                    const matchRef = (t.reference_number || '').toLowerCase().includes(q);
+                    const matchId = (t.id || '').toLowerCase().includes(q);
+                    const matchSub = (t.subject || '').toLowerCase().includes(q);
+                    const matchDesc = (t.description || '').toLowerCase().includes(q);
+                    const matchCat = (t.category || '').toLowerCase().includes(q);
+                    if (!matchRef && !matchId && !matchSub && !matchDesc && !matchCat) {
+                        return false;
+                    }
+                }
+                return true;
+            });
+        }
+
+        function setStatusFilter(status, el) {
+            currentStatusFilter = status;
+            document.querySelectorAll('.ih-status-tab').forEach(tab => tab.classList.remove('active'));
+            if (el) el.classList.add('active');
+            renderCardList();
+            const filtered = getFilteredTickets();
+            if (filtered.length > 0 && !filtered.some(t => t.id === selectedTicketId)) {
+                selectTicket(filtered[0].id);
+            } else if (filtered.length === 0) {
+                selectedTicketId = null;
+                renderDetailPanel();
+            }
+        }
+
+        function handleSearch() {
+            currentSearchQuery = document.getElementById('ihSearchInput').value;
+            renderCardList();
+            const filtered = getFilteredTickets();
+            if (filtered.length > 0 && !filtered.some(t => t.id === selectedTicketId)) {
+                selectTicket(filtered[0].id);
+            } else if (filtered.length === 0) {
+                selectedTicketId = null;
+                renderDetailPanel();
+            }
+        }
+
+        function applyFilters() {
+            currentCategoryFilter = document.getElementById('categoryFilter').value;
+            renderCardList();
+            const filtered = getFilteredTickets();
+            if (filtered.length > 0 && !filtered.some(t => t.id === selectedTicketId)) {
+                selectTicket(filtered[0].id);
+            } else if (filtered.length === 0) {
+                selectedTicketId = null;
+                renderDetailPanel();
             }
         }
 
@@ -1880,7 +1785,7 @@
                         </div>
                         <h3>No tickets found</h3>
                         <p>No support tickets match the selected filters or search query.</p>
-                        <button class="ih-btn-secondary" onclick="resetAllFilters()">Reset Filters</button>
+                        <button class="ih-btn-secondary" onclick="window._resetAllFilters()">Reset Filters</button>
                     </div>
                 `;
                 if (window.feather) feather.replace();
@@ -1890,41 +1795,37 @@
             listEl.innerHTML = filtered.map(t => {
                 const isSelected = t.id === selectedTicketId;
                 const statusClass = getStatusBadgeClass(t.status);
-                const priorityClass = getPriorityClass(t.priority);
+                const displayRef = t.reference_number || t.id.slice(0, 8);
                 const latestMsg = (t.messages && t.messages.length > 0)
-                    ? t.messages[t.messages.length - 1].text
+                    ? (t.messages[t.messages.length - 1].message || t.messages[t.messages.length - 1].text)
                     : t.description;
                 const msgCount = (t.messages || []).length;
-                const dateStr = formatDate(t.createdAt);
+                const dateStr = formatDate(t.created_at);
 
                 return `
-                    <div class="ih-ticket-card ${isSelected ? 'selected' : ''}" onclick="selectTicket('${t.id}')">
+                    <div class="ih-ticket-card ${isSelected ? 'selected' : ''}" onclick="window._selectTicket('${t.id}')">
                         <div class="ih-card-header">
-                            <span class="ih-card-id">#${escapeHtml(t.id)}</span>
+                            <span class="ih-card-id">#${escapeHtml(displayRef)}</span>
                             <div style="display:flex; align-items:center; gap:6px;">
-                                <span class="ih-priority-pill ${priorityClass}">${escapeHtml(t.priority || 'Medium')}</span>
                                 <span class="ih-badge ${statusClass}">
                                     <span class="ih-badge-dot"></span>
-                                    ${escapeHtml(t.status)}
+                                    ${escapeHtml(formatStatusLabel(t.status))}
                                 </span>
                             </div>
                         </div>
                         <h4 class="ih-card-subject">${escapeHtml(t.subject)}</h4>
-                        <p class="ih-card-preview">${escapeHtml(latestMsg)}</p>
+                        <p class="ih-card-preview">${escapeHtml(latestMsg || '')}</p>
                         <div class="ih-card-footer">
                             <span class="ih-card-cat-tag">
-                                ${escapeHtml(t.categoryLabel || 'General')}
+                                ${escapeHtml(formatCategoryLabel(t.category))}
                             </span>
                             <div class="ih-card-meta-right">
-                                ${t.attachmentName ? `
-                                    <span class="ih-card-meta-item" title="Has attachment">
-                                        <i data-feather="paperclip" style="width:12px; height:12px;"></i>
+                                ${msgCount > 0 ? `
+                                    <span class="ih-card-meta-item">
+                                        <i data-feather="message-square" style="width:12px; height:12px;"></i>
+                                        ${msgCount}
                                     </span>
                                 ` : ''}
-                                <span class="ih-card-meta-item">
-                                    <i data-feather="message-square" style="width:12px; height:12px;"></i>
-                                    ${msgCount}
-                                </span>
                                 <span>${dateStr}</span>
                             </div>
                         </div>
@@ -1938,26 +1839,46 @@
         function resetAllFilters() {
             currentStatusFilter = 'all';
             currentCategoryFilter = 'all';
-            currentPriorityFilter = 'all';
             currentSearchQuery = '';
             document.getElementById('ihSearchInput').value = '';
             document.getElementById('categoryFilter').value = 'all';
-            document.getElementById('priorityFilter').value = 'all';
             document.querySelectorAll('.ih-status-tab').forEach(t => {
                 t.classList.toggle('active', t.getAttribute('data-status') === 'all');
             });
             renderCardList();
-            renderDetailPanel();
+            const filtered = getFilteredTickets();
+            if (filtered.length > 0) {
+                selectTicket(filtered[0].id);
+            } else {
+                renderDetailPanel();
+            }
         }
 
-        function selectTicket(id) {
+        async function selectTicket(id) {
             selectedTicketId = id;
             renderCardList();
-            renderDetailPanel();
+            renderDetailPanel(true);
+            await loadSelectedTicketThread();
 
             if (window.innerWidth <= 860) {
                 document.getElementById('ticketCardList').classList.add('mobile-hidden');
                 document.getElementById('ticketDetailPanel').classList.remove('mobile-hidden');
+            }
+        }
+
+        async function loadSelectedTicketThread() {
+            if (!selectedTicketId) return;
+            try {
+                const { messages, allAttachments } = await getIssueThread(selectedTicketId);
+                const ticket = allTickets.find(t => t.id === selectedTicketId);
+                if (ticket) {
+                    ticket.messages = messages;
+                    ticket.attachments = allAttachments;
+                }
+                renderDetailPanel();
+            } catch (err) {
+                console.error('[issue-history] Thread loading error:', err);
+                renderDetailPanel();
             }
         }
 
@@ -1966,7 +1887,7 @@
             document.getElementById('ticketDetailPanel').classList.add('mobile-hidden');
         }
 
-        function renderDetailPanel() {
+        function renderDetailPanel(loading = false) {
             const detailEl = document.getElementById('ticketDetailPanel');
             const ticket = allTickets.find(t => t.id === selectedTicketId);
 
@@ -1985,31 +1906,55 @@
             }
 
             const statusClass = getStatusBadgeClass(ticket.status);
-            const priorityClass = getPriorityClass(ticket.priority);
+            const displayRef = ticket.reference_number || ticket.id.slice(0, 8);
+            const normStatus = (ticket.status || '').toLowerCase();
 
             const messagesHtml = (ticket.messages || []).map(m => {
-                const isUser = m.sender === 'user';
+                const isCustomer = (m.sender_type === 'customer' || m.sender === 'user');
+                const isSupport  = (m.sender_type === 'support');
+                const isSystem   = (m.sender_type === 'system');
+
+                if (isSystem) {
+                    return `
+                        <div style="display:flex; justify-content:center; margin:10px 0;">
+                            <span style="font-size:0.75rem; background:#f1f5f9; color:#64748b; padding:4px 14px; border-radius:20px; font-weight:500;">
+                                ${escapeHtml(m.message || m.text)}
+                            </span>
+                        </div>
+                    `;
+                }
+
+                const senderName = m.sender_name || (isCustomer ? 'Customer' : 'Support Specialist');
+                const senderRole = isSupport ? 'Support Team' : 'Customer';
+                const avatar = isCustomer
+                    ? `https://ui-avatars.com/api/?name=${encodeURIComponent(senderName)}&background=1E3A8A&color=fff`
+                    : `https://ui-avatars.com/api/?name=${encodeURIComponent(senderName)}&background=4F46E5&color=fff`;
+
+                const timeStr = formatDate(m.created_at);
+
+                const attachmentsList = (m.attachments || []).map(att => `
+                    <a href="${escapeHtml(att.url || '#')}" target="_blank" rel="noopener noreferrer" class="ih-msg-attachment" style="text-decoration:none;">
+                        <i data-feather="paperclip" style="width:14px; height:14px;"></i>
+                        <span>${escapeHtml(att.file_name)}</span>
+                        <i data-feather="download" style="width:13px; height:13px; margin-left:4px;"></i>
+                    </a>
+                `).join('');
+
                 return `
-                    <div class="ih-message-row ${isUser ? 'user' : 'support'}">
+                    <div class="ih-message-row ${isCustomer ? 'user' : 'support'}">
                         <div class="ih-msg-avatar">
-                            <img src="${m.senderAvatar || (isUser ? 'https://ui-avatars.com/api/?name=Admin+User&background=1E3A8A&color=fff' : 'https://ui-avatars.com/api/?name=Support+Agent&background=4F46E5&color=fff')}" alt="${escapeHtml(m.senderName)}">
+                            <img src="${avatar}" alt="${escapeHtml(senderName)}">
                         </div>
                         <div class="ih-msg-content">
                             <div class="ih-msg-header">
-                                <span class="ih-msg-sender-name">${escapeHtml(m.senderName)}</span>
-                                ${!isUser ? `<span class="ih-agent-badge">${escapeHtml(m.senderRole || 'Support Specialist')}</span>` : ''}
+                                <span class="ih-msg-sender-name">${escapeHtml(senderName)}</span>
+                                ${!isCustomer ? `<span class="ih-agent-badge">${escapeHtml(senderRole)}</span>` : ''}
                                 <span>•</span>
-                                <span>${escapeHtml(m.time || m.date || 'Recently')}</span>
+                                <span>${escapeHtml(timeStr)}</span>
                             </div>
                             <div class="ih-msg-bubble">
-                                ${escapeHtml(m.text)}
-                                ${m.attachment ? `
-                                    <a href="#" class="ih-msg-attachment" onclick="previewFile('${escapeHtml(m.attachment)}'); return false;">
-                                        <i data-feather="paperclip" style="width:14px; height:14px;"></i>
-                                        <span>${escapeHtml(m.attachment)}</span>
-                                        <i data-feather="download" style="width:13px; height:13px; margin-left:4px;"></i>
-                                    </a>
-                                ` : ''}
+                                ${escapeHtml(m.message || m.text || '')}
+                                ${attachmentsList}
                             </div>
                         </div>
                     </div>
@@ -2019,27 +1964,26 @@
             detailEl.innerHTML = `
                 <!-- Detail Header -->
                 <div class="ih-detail-header">
-                    <button class="ih-mobile-back-btn" onclick="backToTicketListMobile()">
+                    <button class="ih-mobile-back-btn" onclick="window._backToTicketListMobile()">
                         <i data-feather="arrow-left" style="width:14px; height:14px;"></i>
                         Back to tickets list
                     </button>
                     <div class="ih-detail-top-row">
                         <div class="ih-detail-id-group">
-                            <span class="ih-card-id" style="font-size:0.85rem; padding:4px 10px;">#${escapeHtml(ticket.id)}</span>
-                            <span class="ih-priority-pill ${priorityClass}">${escapeHtml(ticket.priority || 'Medium')} Priority</span>
+                            <span class="ih-card-id" style="font-size:0.85rem; padding:4px 10px;">#${escapeHtml(displayRef)}</span>
                             <span class="ih-badge ${statusClass}">
                                 <span class="ih-badge-dot"></span>
-                                ${escapeHtml(ticket.status)}
+                                ${escapeHtml(formatStatusLabel(ticket.status))}
                             </span>
                         </div>
                         <div class="ih-detail-actions">
-                            ${ticket.status !== 'Resolved' ? `
-                                <button class="ih-btn-secondary" onclick="updateTicketStatus('${ticket.id}', 'Resolved')">
+                            ${normStatus !== 'resolved' && normStatus !== 'closed' ? `
+                                <button class="ih-btn-secondary" onclick="window._updateTicketStatus('${ticket.id}', 'resolved')">
                                     <i data-feather="check" style="width:14px; height:14px; color:#10b981;"></i>
                                     Mark Resolved
                                 </button>
                             ` : `
-                                <button class="ih-btn-secondary" onclick="updateTicketStatus('${ticket.id}', 'Open')">
+                                <button class="ih-btn-secondary" onclick="window._updateTicketStatus('${ticket.id}', 'open')">
                                     <i data-feather="rotate-ccw" style="width:14px; height:14px; color:#4f46e5;"></i>
                                     Reopen Ticket
                                 </button>
@@ -2052,11 +1996,11 @@
                     <div class="ih-detail-meta-row">
                         <span>
                             <i data-feather="tag" style="width:13px; height:13px;"></i>
-                            ${escapeHtml(ticket.categoryLabel || 'General')}
+                            ${escapeHtml(formatCategoryLabel(ticket.category))}
                         </span>
                         <span>
                             <i data-feather="clock" style="width:13px; height:13px;"></i>
-                            Created ${ticket.createdAt ? new Date(ticket.createdAt).toLocaleDateString('en-GB', { day:'2-digit', month:'short', year:'numeric', hour:'2-digit', minute:'2-digit' }) : 'Recently'}
+                            Created ${ticket.created_at ? new Date(ticket.created_at).toLocaleDateString('en-GB', { day:'2-digit', month:'short', year:'numeric', hour:'2-digit', minute:'2-digit' }) : 'Recently'}
                         </span>
                         <span>
                             <i data-feather="message-circle" style="width:13px; height:13px;"></i>
@@ -2077,36 +2021,31 @@
                             <span style="font-size:0.75rem; color:#94a3b8;">Original Ticket</span>
                         </div>
                         <p class="ih-original-issue-text">${escapeHtml(ticket.description)}</p>
-                        ${ticket.attachmentName ? `
-                            <div style="margin-top:10px;">
-                                <a href="#" class="ih-msg-attachment" style="background:#f1f5f9; color:#334155; border:1px solid #e2e8f0;" onclick="previewFile('${escapeHtml(ticket.attachmentName)}'); return false;">
-                                    <i data-feather="paperclip" style="width:14px; height:14px;"></i>
-                                    <span>${escapeHtml(ticket.attachmentName)}</span>
-                                    <i data-feather="download" style="width:13px; height:13px; margin-left:4px;"></i>
-                                </a>
-                            </div>
-                        ` : ''}
                     </div>
 
                     <!-- Message Bubbles -->
-                    ${messagesHtml}
+                    ${loading ? `
+                        <div style="padding:1.5rem; text-align:center; color:#94a3b8; font-size:0.85rem;">
+                            Loading messages…
+                        </div>
+                    ` : messagesHtml}
                 </div>
 
                 <!-- Composer -->
                 <div class="ih-composer">
-                    <textarea id="replyTextarea" class="ih-composer-textarea" placeholder="Write a reply or provide additional details to support team..." onkeydown="handleReplyKey(event)"></textarea>
+                    <textarea id="replyTextarea" class="ih-composer-textarea" placeholder="Write a reply or provide additional details to support team…" onkeydown="window._handleReplyKey(event)"></textarea>
                     <div class="ih-composer-bottom">
                         <div class="ih-composer-tools">
                             <button class="ih-tool-btn" type="button" onclick="document.getElementById('replyFileInput').click()">
                                 <i data-feather="paperclip" style="width:13px; height:13px;"></i>
                                 Attach File
                             </button>
-                            <span id="replyFileBadge" class="ih-composer-file-badge">
+                            <span id="replyFileBadge" class="ih-composer-file-badge" style="display:none;">
                                 <span id="replyFileNameText">file.png</span>
-                                <button onclick="removeReplyFile()" title="Remove">✕</button>
+                                <button onclick="window._removeReplyFile()" title="Remove">✕</button>
                             </span>
                         </div>
-                        <button class="ih-btn-primary" onclick="sendReply()">
+                        <button class="ih-btn-primary" onclick="window._sendReply()">
                             <i data-feather="send" style="width:14px; height:14px;"></i>
                             Send Reply
                         </button>
@@ -2122,16 +2061,21 @@
             }, 60);
         }
 
-        function updateTicketStatus(ticketId, newStatus) {
+        async function updateTicketStatusHandler(ticketId, newStatus) {
             const ticket = allTickets.find(t => t.id === ticketId);
             if (!ticket) return;
 
-            ticket.status = newStatus;
-            saveTicketsToStorage();
-            updateCounts();
-            renderCardList();
-            renderDetailPanel();
-            showToast(`Ticket status updated to ${newStatus}`);
+            try {
+                await updateIssueStatus(ticketId, newStatus);
+                ticket.status = newStatus.toLowerCase();
+                updateCounts();
+                renderCardList();
+                renderDetailPanel();
+                showToast(`Ticket status updated to ${formatStatusLabel(newStatus)}`);
+            } catch (err) {
+                console.error('[issue-history] updateTicketStatus error:', err);
+                alert('Could not update status: ' + (err.message || 'Permission denied'));
+            }
         }
 
         function handleReplyKey(e) {
@@ -2148,7 +2092,7 @@
                 alert('File is too large. Maximum size is 10 MB.');
                 return;
             }
-            pendingReplyFile = file.name;
+            pendingReplyFileObj = file;
             const badge = document.getElementById('replyFileBadge');
             const nameEl = document.getElementById('replyFileNameText');
             if (badge && nameEl) {
@@ -2158,18 +2102,18 @@
         }
 
         function removeReplyFile() {
-            pendingReplyFile = null;
+            pendingReplyFileObj = null;
             document.getElementById('replyFileInput').value = '';
             const badge = document.getElementById('replyFileBadge');
             if (badge) badge.style.display = 'none';
         }
 
-        function sendReply() {
+        async function sendReply() {
             const textarea = document.getElementById('replyTextarea');
             if (!textarea) return;
             const text = textarea.value.trim();
 
-            if (!text && !pendingReplyFile) {
+            if (!text && !pendingReplyFileObj) {
                 textarea.focus();
                 return;
             }
@@ -2177,66 +2121,47 @@
             const ticket = allTickets.find(t => t.id === selectedTicketId);
             if (!ticket) return;
 
-            const newMsg = {
-                id: 'm-' + Date.now(),
-                sender: 'user',
-                senderName: 'Admin User',
-                senderRole: 'Owner',
-                senderAvatar: 'https://ui-avatars.com/api/?name=Admin+User&background=1E3A8A&color=fff',
-                time: 'Just now',
-                date: new Date().toLocaleDateString('en-GB', { day:'2-digit', month:'short', year:'numeric', hour:'2-digit', minute:'2-digit' }),
-                text: text || '(Attachment sent)',
-                attachment: pendingReplyFile || null
-            };
-
-            if (!ticket.messages) ticket.messages = [];
-            ticket.messages.push(newMsg);
-
-            if (ticket.status === 'Resolved' || ticket.status === 'Closed') {
-                ticket.status = 'Open';
+            const sendBtn = document.querySelector('.ih-composer button.ih-btn-primary');
+            if (sendBtn) {
+                sendBtn.disabled = true;
+                sendBtn.innerHTML = 'Sending…';
             }
 
-            saveTicketsToStorage();
-            textarea.value = '';
-            removeReplyFile();
-            updateCounts();
-            renderCardList();
-            renderDetailPanel();
-            showToast('Reply sent to support team');
+            try {
+                const result = await sendFollowUp({
+                    issueId: selectedTicketId,
+                    message: text,
+                    file: pendingReplyFileObj
+                });
 
-            // Simulate support specialist auto acknowledgment after 2.5 seconds
-            setTimeout(() => {
-                if (ticket.status === 'Open') {
-                    ticket.status = 'In Progress';
+                if (!ticket.messages) ticket.messages = [];
+                ticket.messages.push(result.message);
+
+                // If ticket was resolved or closed, customer reply reopens it
+                if (ticket.status === 'resolved' || ticket.status === 'closed') {
+                    ticket.status = 'open';
+                    try {
+                        await updateIssueStatus(ticket.id, 'open');
+                    } catch (e) {
+                        console.warn('[issue-history] Reopen update warning:', e);
+                    }
                 }
-                const supportReply = {
-                    id: 'm-' + (Date.now() + 1),
-                    sender: 'support',
-                    senderName: 'Priya Sharma',
-                    senderRole: 'Senior Support Specialist',
-                    senderAvatar: 'https://ui-avatars.com/api/?name=Priya+Sharma&background=4F46E5&color=fff',
-                    time: 'Just now',
-                    date: new Date().toLocaleDateString('en-GB', { day:'2-digit', month:'short', year:'numeric', hour:'2-digit', minute:'2-digit' }),
-                    text: 'Thank you for the update! We have logged your response in the case investigation. Our team is actively reviewing this.',
-                    attachment: null
-                };
-                ticket.messages.push(supportReply);
-                saveTicketsToStorage();
+
+                textarea.value = '';
+                removeReplyFile();
                 updateCounts();
                 renderCardList();
-                if (selectedTicketId === ticket.id) renderDetailPanel();
-            }, 2500);
-        }
-
-        function previewFile(name) {
-            alert(`File preview: ${name}\nIn production, this downloads or displays the attachment.`);
-        }
-
-        function saveTicketsToStorage() {
-            try {
-                localStorage.setItem('salon_support_tickets', JSON.stringify(allTickets));
-            } catch(e) {
-                console.error('Storage error', e);
+                renderDetailPanel();
+                showToast('Reply sent to support team');
+            } catch (err) {
+                console.error('[issue-history] sendReply error:', err);
+                alert('Could not send reply: ' + (err.message || 'Please try again.'));
+            } finally {
+                if (sendBtn) {
+                    sendBtn.disabled = false;
+                    sendBtn.innerHTML = '<i data-feather="send" style="width:14px; height:14px;"></i> Send Reply';
+                    if (window.feather) feather.replace();
+                }
             }
         }
 
@@ -2247,16 +2172,6 @@
             txt.textContent = msg;
             toast.classList.add('visible');
             setTimeout(() => toast.classList.remove('visible'), 3200);
-        }
-
-        function escapeHtml(str) {
-            if (str === null || str === undefined) return '';
-            return String(str)
-                .replace(/&/g, '&amp;')
-                .replace(/</g, '&lt;')
-                .replace(/>/g, '&gt;')
-                .replace(/"/g, '&quot;')
-                .replace(/'/g, '&#039;');
         }
 
         /* ======= Modal Controls ======= */
@@ -2305,7 +2220,10 @@
 
         function handleRiFileSelect(e) {
             const file = e.target.files[0];
-            if (file) showRiFile(file);
+            if (file) {
+                riSelectedFile = file;
+                showRiFile(file);
+            }
         }
 
         function handleRiDrop(e) {
@@ -2313,6 +2231,7 @@
             document.getElementById('riDropzone').classList.remove('drag-over');
             const file = e.dataTransfer.files[0];
             if (!file) return;
+            riSelectedFile = file;
             showRiFile(file);
         }
 
@@ -2323,13 +2242,14 @@
         }
 
         function removeRiFile() {
+            riSelectedFile = null;
             document.getElementById('riFileInput').value          = '';
             document.getElementById('riDropzone').style.display   = '';
             document.getElementById('riFilePreview').style.display = 'none';
             document.getElementById('riFileName').textContent     = '';
         }
 
-        function submitReportIssue() {
+        async function submitReportIssue() {
             let valid = true;
             const category    = document.getElementById('riCategory');
             const subject     = document.getElementById('riSubject');
@@ -2349,56 +2269,68 @@
 
             const btn = document.getElementById('riSubmitBtn');
             btn.disabled = true;
-            btn.innerHTML = 'Submitting…';
+            btn.innerHTML = '<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="animation:spin 0.8s linear infinite;"><line x1="12" y1="2" x2="12" y2="6"/><line x1="12" y1="18" x2="12" y2="22"/><line x1="4.93" y1="4.93" x2="7.76" y2="7.76"/><line x1="16.24" y1="16.24" x2="19.07" y2="19.07"/><line x1="2" y1="12" x2="6" y2="12"/><line x1="18" y1="12" x2="22" y2="12"/><line x1="4.93" y1="19.07" x2="7.76" y2="16.24"/><line x1="16.24" y1="7.76" x2="19.07" y2="4.93"/></svg> Submitting…';
 
-            setTimeout(() => {
-                const ticketNum = 'BB-' + String(Math.floor(10000 + Math.random() * 90000));
-                document.getElementById('riTicketId').textContent = 'Ticket #' + ticketNum;
+            try {
+                const result = await submitIssue({
+                    category: category.value,
+                    subject: subject.value,
+                    description: description.value,
+                    file: riSelectedFile
+                });
 
-                const selectedOpt = category.options[category.selectedIndex];
-                const catLabel = selectedOpt ? selectedOpt.text.replace(/^[^\s]+\s+/, '') : 'General';
-                const filePreview = document.getElementById('riFileName');
-                const attachedFileName = (filePreview && filePreview.textContent) ? filePreview.textContent.trim() : null;
+                const refNum = result.referenceNumber || 'Submitted';
+                document.getElementById('riTicketId').textContent = 'Ticket #' + refNum;
 
-                const newTicket = {
-                    id: ticketNum,
-                    categoryKey: category.value,
-                    categoryLabel: catLabel,
-                    subject: subject.value.trim(),
-                    description: description.value.trim(),
-                    attachmentName: attachedFileName,
-                    status: 'Open',
-                    priority: 'Medium',
-                    createdAt: new Date().toISOString(),
-                    messages: [
-                        {
-                            id: 'msg-' + Date.now(),
-                            sender: 'user',
-                            senderName: 'Admin User',
-                            senderRole: 'Owner',
-                            senderAvatar: 'https://ui-avatars.com/api/?name=Admin+User&background=1E3A8A&color=fff',
-                            time: 'Just now',
-                            date: new Date().toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' }),
-                            text: description.value.trim(),
-                            attachment: attachedFileName
-                        }
-                    ]
-                };
-
-                allTickets.unshift(newTicket);
-                saveTicketsToStorage();
-                selectedTicketId = ticketNum;
+                // Reload tickets from Supabase and select the new issue
+                await initTickets();
+                if (result.issue?.id) {
+                    selectedTicketId = result.issue.id;
+                    renderCardList();
+                    await loadSelectedTicketThread();
+                }
 
                 document.getElementById('riFormBody').style.display = 'none';
                 document.getElementById('riFooter').style.display   = 'none';
                 document.getElementById('riSuccess').style.display  = 'flex';
-            }, 1000);
+            } catch (err) {
+                console.error('[issue-history] Submit error:', err);
+                alert('Could not submit issue: ' + (err.message || 'Please try again.'));
+                btn.disabled = false;
+                btn.innerHTML = '<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg> Submit Issue';
+            }
         }
 
-        // Initialize everything on DOM ready
+        // Attach globally for inline HTML events
+        window.openReportIssueModal     = openReportIssueModal;
+        window.closeReportIssueModal    = closeReportIssueModal;
+        window.handleRiOverlayClick     = handleRiOverlayClick;
+        window.handleRiFileSelect       = handleRiFileSelect;
+        window.handleRiDrop             = handleRiDrop;
+        window.removeRiFile             = removeRiFile;
+        window.riClearError             = riClearError;
+        window.submitReportIssue        = submitReportIssue;
+        window.refreshTickets           = refreshTickets;
+        window.setStatusFilter          = setStatusFilter;
+        window.handleSearch             = handleSearch;
+        window.applyFilters             = applyFilters;
+        window.handleReplyFileSelect    = handleReplyFileSelect;
+        window._selectTicket            = selectTicket;
+        window._resetAllFilters         = resetAllFilters;
+        window._backToTicketListMobile  = backToTicketListMobile;
+        window._updateTicketStatus      = updateTicketStatusHandler;
+        window._handleReplyKey          = handleReplyKey;
+        window._removeReplyFile         = removeReplyFile;
+        window._sendReply               = sendReply;
+
+        // Initialize on DOM ready
         document.addEventListener('DOMContentLoaded', () => {
             initTickets();
         });
     </script>
+    <script src="logout.js"></script>
+    <script src="change-password.js"></script>
+    <script type="module" src="scripts/global-auth-guard.js"></script>
+    <script type="module" src="scripts/sub-features/sub-feature-gate.js"></script>
 </body>
 </html>

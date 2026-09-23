@@ -12,8 +12,7 @@
         '/plans.html',
         '/onboarding.html',
         '/payment-result.html',
-        '/payments.html',
-        '/issue-history.html'
+        '/payments.html'
     ];
     
     if (PUBLIC_ROUTES.includes(filename)) return;
