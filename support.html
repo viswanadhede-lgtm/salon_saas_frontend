@@ -361,8 +361,8 @@
                     style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 1.5rem; padding: 2rem;">
 
                     <!-- Email Support -->
-                    <div style="display: flex; gap: 1rem; align-items: flex-start; padding: 1.5rem; border: 1px solid #e2e8f0; border-radius: 12px; background: #f8fafc; transition: transform 0.2s; cursor: pointer;"
-                        onmouseover="this.style.transform='translateY(-2px)';"
+                    <div id="scEmailCard" style="display: flex; gap: 1rem; align-items: flex-start; padding: 1.5rem; border: 1px solid #e2e8f0; border-radius: 12px; background: #f8fafc; transition: transform 0.2s, opacity 0.2s; cursor: pointer;"
+                        onmouseover="if(!this.dataset.disabled) this.style.transform='translateY(-2px)';"
                         onmouseout="this.style.transform='translateY(0)';">
                         <div
                             style="background: #e0e7ff; color: #4f46e5; width: 48px; height: 48px; border-radius: 12px; display: flex; align-items: center; justify-content: center; flex-shrink: 0;">
@@ -371,18 +371,18 @@
                         <div>
                             <h3 style="font-size: 1.1rem; font-weight: 600; color: #1e293b; margin: 0 0 0.25rem 0;">
                                 Email Support</h3>
-                            <p style="color: #64748b; font-size: 0.9rem; margin: 0 0 0.75rem 0;">Get help within 24
+                            <p id="scEmailHours" style="color: #64748b; font-size: 0.9rem; margin: 0 0 0.75rem 0;">Get help within 24
                                 hours from our dedicated support team.</p>
-                            <a href="mailto:support@salon.com"
+                            <a id="scEmailLink" href="#"
                                 style="color: #4f46e5; font-weight: 500; text-decoration: none; display: inline-flex; align-items: center; gap: 4px; font-size: 0.95rem;">
-                                support@salon.com <i data-feather="arrow-right" style="width: 14px; height: 14px;"></i>
+                                <span id="scEmailText">Loading&hellip;</span> <i data-feather="arrow-right" style="width: 14px; height: 14px;"></i>
                             </a>
                         </div>
                     </div>
 
                     <!-- Live Chat -->
-                    <div style="display: flex; gap: 1rem; align-items: flex-start; padding: 1.5rem; border: 1px solid #e2e8f0; border-radius: 12px; background: #f8fafc; transition: transform 0.2s; cursor: pointer;"
-                        onmouseover="this.style.transform='translateY(-2px)';"
+                    <div id="scChatCard" style="display: flex; gap: 1rem; align-items: flex-start; padding: 1.5rem; border: 1px solid #e2e8f0; border-radius: 12px; background: #f8fafc; transition: transform 0.2s, opacity 0.2s; cursor: pointer;"
+                        onmouseover="if(!this.dataset.disabled) this.style.transform='translateY(-2px)';"
                         onmouseout="this.style.transform='translateY(0)';">
                         <div
                             style="background: #d1fae5; color: #10b981; width: 48px; height: 48px; border-radius: 12px; display: flex; align-items: center; justify-content: center; flex-shrink: 0;">
@@ -391,16 +391,16 @@
                         <div>
                             <h3 style="font-size: 1.1rem; font-weight: 600; color: #1e293b; margin: 0 0 0.25rem 0;">Live
                                 Chat</h3>
-                            <p style="color: #64748b; font-size: 0.9rem; margin: 0 0 0.75rem 0;">Chat directly with an
-                                agent. Available 9 AM - 6 PM IST.</p>
-                            <button class="btn btn-primary"
+                            <p id="scChatHours" style="color: #64748b; font-size: 0.9rem; margin: 0 0 0.75rem 0;">Chat directly with an
+                                agent.</p>
+                            <button id="scChatBtn" class="btn btn-primary"
                                 style="padding: 6px 16px; font-size: 0.9rem; height: auto;">Start Chat</button>
                         </div>
                     </div>
 
                     <!-- Phone Support -->
-                    <div style="display: flex; gap: 1rem; align-items: flex-start; padding: 1.5rem; border: 1px solid #e2e8f0; border-radius: 12px; background: #f8fafc; transition: transform 0.2s; cursor: pointer;"
-                        onmouseover="this.style.transform='translateY(-2px)';"
+                    <div id="scPhoneCard" style="display: flex; gap: 1rem; align-items: flex-start; padding: 1.5rem; border: 1px solid #e2e8f0; border-radius: 12px; background: #f8fafc; transition: transform 0.2s, opacity 0.2s; cursor: pointer;"
+                        onmouseover="if(!this.dataset.disabled) this.style.transform='translateY(-2px)';"
                         onmouseout="this.style.transform='translateY(0)';">
                         <div
                             style="background: #fef3c7; color: #f59e0b; width: 48px; height: 48px; border-radius: 12px; display: flex; align-items: center; justify-content: center; flex-shrink: 0;">
@@ -409,11 +409,11 @@
                         <div>
                             <h3 style="font-size: 1.1rem; font-weight: 600; color: #1e293b; margin: 0 0 0.25rem 0;">
                                 Phone Support</h3>
-                            <p style="color: #64748b; font-size: 0.9rem; margin: 0 0 0.75rem 0;">For urgent queries
+                            <p id="scPhoneHours" style="color: #64748b; font-size: 0.9rem; margin: 0 0 0.75rem 0;">For urgent queries
                                 related to bookings or payments.</p>
-                            <a href="tel:+18001234567"
+                            <a id="scPhoneLink" href="#"
                                 style="color: #d97706; font-weight: 500; text-decoration: none; display: inline-flex; align-items: center; gap: 4px; font-size: 0.95rem;">
-                                1-800-123-4567 <i data-feather="arrow-right" style="width: 14px; height: 14px;"></i>
+                                <span id="scPhoneText">Loading&hellip;</span> <i data-feather="arrow-right" style="width: 14px; height: 14px;"></i>
                             </a>
                         </div>
                     </div>
@@ -511,6 +511,173 @@
     </div>
 
     <script src="dashboard.js"></script>
+
+    <!-- ===== PLATFORM SUPPORT SETTINGS ===== -->
+    <script type="module">
+        import { supabase } from './lib/supabase.js';
+
+        // ── Helpers ──────────────────────────────────────────────────────────
+        const $ = id => document.getElementById(id);
+
+        /**
+         * Apply a disabled visual state to a card.
+         * Sets opacity, removes hover lift, marks data-disabled so
+         * the onmouseover guard in the HTML also skips the transform.
+         */
+        function disableCard(cardEl) {
+            cardEl.style.opacity = '0.5';
+            cardEl.style.cursor  = 'not-allowed';
+            cardEl.dataset.disabled = 'true';
+        }
+
+        /**
+         * Show the "unavailable" fallback on all three cards.
+         * Called when the fetch fails OR returns no row.
+         * Never shows stale hardcoded contact details.
+         */
+        function renderUnavailable() {
+            // Email card
+            const emailCard = $('scEmailCard');
+            const emailLink = $('scEmailLink');
+            $('scEmailText').textContent = 'Currently unavailable';
+            emailLink.removeAttribute('href');
+            emailLink.style.color = '#94a3b8';
+            emailLink.style.pointerEvents = 'none';
+            disableCard(emailCard);
+
+            // Chat card
+            const chatBtn = $('scChatBtn');
+            chatBtn.disabled = true;
+            chatBtn.textContent = 'Unavailable';
+            chatBtn.style.opacity = '0.5';
+            chatBtn.style.cursor  = 'not-allowed';
+            disableCard($('scChatCard'));
+
+            // Phone card
+            const phoneCard = $('scPhoneCard');
+            const phoneLink = $('scPhoneLink');
+            $('scPhoneText').textContent = 'Currently unavailable';
+            phoneLink.removeAttribute('href');
+            phoneLink.style.color = '#94a3b8';
+            phoneLink.style.pointerEvents = 'none';
+            disableCard(phoneCard);
+        }
+
+        /**
+         * Apply fetched settings to the three cards.
+         * @param {Object} s  - Row from platform_support_settings
+         */
+        function applySettings(s) {
+            const hoursLabel = (s.support_hours && s.support_hours.trim())
+                ? s.support_hours.trim()
+                : null;
+
+            // ── Email card ──────────────────────────────────────────────────
+            const emailCard = $('scEmailCard');
+            const emailLink = $('scEmailLink');
+            const emailText = $('scEmailText');
+
+            if (s.email_enabled && s.support_email) {
+                const addr = s.support_email.trim();
+                emailText.textContent  = addr;
+                emailLink.href         = `mailto:${addr}`;
+                emailLink.style.color  = '#4f46e5';
+                emailLink.style.pointerEvents = '';
+                if (hoursLabel) {
+                    $('scEmailHours').textContent = hoursLabel;
+                }
+            } else {
+                // Disabled: show why, but never leak a stale address
+                emailText.textContent = s.email_enabled ? 'Address not configured' : 'Currently unavailable';
+                emailLink.removeAttribute('href');
+                emailLink.style.color = '#94a3b8';
+                emailLink.style.pointerEvents = 'none';
+                disableCard(emailCard);
+            }
+
+            // ── Live Chat card ───────────────────────────────────────────────
+            const chatCard = $('scChatCard');
+            const chatBtn  = $('scChatBtn');
+
+            if (s.live_chat_enabled) {
+                chatBtn.disabled = false;
+                chatBtn.style.opacity = '';
+                chatBtn.style.cursor  = '';
+                if (hoursLabel) {
+                    $('scChatHours').textContent = 'Chat directly with an agent. ' + hoursLabel;
+                } else {
+                    $('scChatHours').textContent = 'Chat directly with an agent.';
+                }
+            } else {
+                chatBtn.disabled = true;
+                chatBtn.textContent = 'Currently unavailable';
+                chatBtn.style.opacity = '0.5';
+                chatBtn.style.cursor  = 'not-allowed';
+                if (hoursLabel) {
+                    $('scChatHours').textContent = 'Live chat is currently unavailable. ' + hoursLabel;
+                } else {
+                    $('scChatHours').textContent = 'Live chat is currently unavailable.';
+                }
+                disableCard(chatCard);
+            }
+
+            // ── Phone card ───────────────────────────────────────────────────
+            const phoneCard = $('scPhoneCard');
+            const phoneLink = $('scPhoneLink');
+            const phoneText = $('scPhoneText');
+
+            if (s.phone_enabled && s.support_phone) {
+                const num = s.support_phone.trim();
+                // Build a clean tel: href (strip spaces/dashes for dialling)
+                const dialNum = num.replace(/[\s\-().]/g, '');
+                phoneText.textContent  = num;
+                phoneLink.href         = `tel:${dialNum}`;
+                phoneLink.style.color  = '#d97706';
+                phoneLink.style.pointerEvents = '';
+                if (hoursLabel) {
+                    $('scPhoneHours').textContent = hoursLabel;
+                }
+            } else {
+                phoneText.textContent = s.phone_enabled ? 'Number not configured' : 'Currently unavailable';
+                phoneLink.removeAttribute('href');
+                phoneLink.style.color = '#94a3b8';
+                phoneLink.style.pointerEvents = 'none';
+                disableCard(phoneCard);
+            }
+
+            // Re-run Feather Icons so any newly rendered icons are painted
+            if (typeof feather !== 'undefined') feather.replace();
+        }
+
+        // ── Fetch and render ─────────────────────────────────────────────────
+        (async function loadPlatformSupportSettings() {
+            try {
+                const { data, error } = await supabase
+                    .from('platform_support_settings')
+                    .select('support_email, email_enabled, support_phone, phone_enabled, live_chat_enabled, support_hours, timezone')
+                    .eq('id', 1)
+                    .maybeSingle();
+
+                if (error) {
+                    console.error('[Support] Failed to load platform_support_settings:', error);
+                    renderUnavailable();
+                    return;
+                }
+
+                if (!data) {
+                    console.warn('[Support] platform_support_settings row not found.');
+                    renderUnavailable();
+                    return;
+                }
+
+                applySettings(data);
+
+            } catch (err) {
+                console.error('[Support] Unexpected error loading support settings:', err);
+                renderUnavailable();
+            }
+        })();
+    </script>
 
     <!-- ===================== REPORT DROPDOWN LOGIC ===================== -->
     <script>
