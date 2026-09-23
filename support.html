@@ -513,164 +513,126 @@
     <script src="dashboard.js"></script>
 
     <!-- ===== PLATFORM SUPPORT SETTINGS ===== -->
-    <script type="module">
-        import { supabase } from './lib/supabase.js';
-
-        // ── Helpers ──────────────────────────────────────────────────────────
-        const $ = id => document.getElementById(id);
-
-        /**
-         * Apply a disabled visual state to a card.
-         * Sets opacity, removes hover lift, marks data-disabled so
-         * the onmouseover guard in the HTML also skips the transform.
-         */
-        function disableCard(cardEl) {
-            cardEl.style.opacity = '0.5';
-            cardEl.style.cursor  = 'not-allowed';
-            cardEl.dataset.disabled = 'true';
-        }
-
-        /**
-         * Show the "unavailable" fallback on all three cards.
-         * Called when the fetch fails OR returns no row.
-         * Never shows stale hardcoded contact details.
-         */
-        function renderUnavailable() {
-            // Email card
-            const emailCard = $('scEmailCard');
-            const emailLink = $('scEmailLink');
-            $('scEmailText').textContent = 'Currently unavailable';
-            emailLink.removeAttribute('href');
-            emailLink.style.color = '#94a3b8';
-            emailLink.style.pointerEvents = 'none';
-            disableCard(emailCard);
-
-            // Chat card
-            const chatBtn = $('scChatBtn');
-            chatBtn.disabled = true;
-            chatBtn.textContent = 'Unavailable';
-            chatBtn.style.opacity = '0.5';
-            chatBtn.style.cursor  = 'not-allowed';
-            disableCard($('scChatCard'));
-
-            // Phone card
-            const phoneCard = $('scPhoneCard');
-            const phoneLink = $('scPhoneLink');
-            $('scPhoneText').textContent = 'Currently unavailable';
-            phoneLink.removeAttribute('href');
-            phoneLink.style.color = '#94a3b8';
-            phoneLink.style.pointerEvents = 'none';
-            disableCard(phoneCard);
-        }
-
-        /**
-         * Apply fetched settings to the three cards.
-         * @param {Object} s  - Row from platform_support_settings
-         */
-        function applySettings(s) {
-            const hoursLabel = (s.support_hours && s.support_hours.trim())
-                ? s.support_hours.trim()
-                : null;
-
-            // ── Email card ──────────────────────────────────────────────────
-            const emailCard = $('scEmailCard');
-            const emailLink = $('scEmailLink');
-            const emailText = $('scEmailText');
-
-            if (s.email_enabled && s.support_email) {
-                const addr = s.support_email.trim();
-                emailText.textContent  = addr;
-                emailLink.href         = `mailto:${addr}`;
-                emailLink.style.color  = '#4f46e5';
-                emailLink.style.pointerEvents = '';
-                if (hoursLabel) {
-                    $('scEmailHours').textContent = hoursLabel;
-                }
-            } else {
-                // Disabled: show why, but never leak a stale address
-                emailText.textContent = s.email_enabled ? 'Address not configured' : 'Currently unavailable';
-                emailLink.removeAttribute('href');
-                emailLink.style.color = '#94a3b8';
-                emailLink.style.pointerEvents = 'none';
-                disableCard(emailCard);
-            }
-
-            // ── Live Chat card ───────────────────────────────────────────────
-            const chatCard = $('scChatCard');
-            const chatBtn  = $('scChatBtn');
-
-            if (s.live_chat_enabled) {
-                chatBtn.disabled = false;
-                chatBtn.style.opacity = '';
-                chatBtn.style.cursor  = '';
-                if (hoursLabel) {
-                    $('scChatHours').textContent = 'Chat directly with an agent. ' + hoursLabel;
-                } else {
-                    $('scChatHours').textContent = 'Chat directly with an agent.';
-                }
-            } else {
-                chatBtn.disabled = true;
-                chatBtn.textContent = 'Currently unavailable';
-                chatBtn.style.opacity = '0.5';
-                chatBtn.style.cursor  = 'not-allowed';
-                if (hoursLabel) {
-                    $('scChatHours').textContent = 'Live chat is currently unavailable. ' + hoursLabel;
-                } else {
-                    $('scChatHours').textContent = 'Live chat is currently unavailable.';
-                }
-                disableCard(chatCard);
-            }
-
-            // ── Phone card ───────────────────────────────────────────────────
-            const phoneCard = $('scPhoneCard');
-            const phoneLink = $('scPhoneLink');
-            const phoneText = $('scPhoneText');
-
-            if (s.phone_enabled && s.support_phone) {
-                const num = s.support_phone.trim();
-                // Build a clean tel: href (strip spaces/dashes for dialling)
-                const dialNum = num.replace(/[\s\-().]/g, '');
-                phoneText.textContent  = num;
-                phoneLink.href         = `tel:${dialNum}`;
-                phoneLink.style.color  = '#d97706';
-                phoneLink.style.pointerEvents = '';
-                if (hoursLabel) {
-                    $('scPhoneHours').textContent = hoursLabel;
-                }
-            } else {
-                phoneText.textContent = s.phone_enabled ? 'Number not configured' : 'Currently unavailable';
-                phoneLink.removeAttribute('href');
-                phoneLink.style.color = '#94a3b8';
-                phoneLink.style.pointerEvents = 'none';
-                disableCard(phoneCard);
-            }
-
-            // Re-run Feather Icons so any newly rendered icons are painted
-            if (typeof feather !== 'undefined') feather.replace();
-        }
-
-        // ── Fetch and render ─────────────────────────────────────────────────
+    <script>
+        // Fetches platform_support_settings using the anon key only.
+        // This does NOT use the user's JWT — the table is publicly readable
+        // (RLS disabled) and must work independently of the auth guard.
         (async function loadPlatformSupportSettings() {
-            try {
-                const { data, error } = await supabase
-                    .from('platform_support_settings')
-                    .select('support_email, email_enabled, support_phone, phone_enabled, live_chat_enabled, support_hours, timezone')
-                    .eq('id', 1)
-                    .maybeSingle();
+            const SUPABASE_URL  = 'https://qxmgyxjwpxkdbgldpdil.supabase.co';
+            const SUPABASE_ANON = 'sb_publishable_aqCSbMiVxH5cSZxgssdNqw_jQZvzmA0';
 
-                if (error) {
-                    console.error('[Support] Failed to load platform_support_settings:', error);
+            const $ = id => document.getElementById(id);
+
+            // ── Disabled state ────────────────────────────────────────────────
+            function disableCard(cardEl) {
+                cardEl.style.opacity = '0.5';
+                cardEl.style.cursor  = 'not-allowed';
+                cardEl.dataset.disabled = 'true';
+            }
+
+            function renderUnavailable() {
+                $('scEmailText').textContent = 'Currently unavailable';
+                const el = $('scEmailLink'); el.removeAttribute('href'); el.style.color = '#94a3b8'; el.style.pointerEvents = 'none';
+                disableCard($('scEmailCard'));
+
+                const btn = $('scChatBtn'); btn.disabled = true; btn.textContent = 'Unavailable'; btn.style.opacity = '0.5'; btn.style.cursor = 'not-allowed';
+                disableCard($('scChatCard'));
+
+                $('scPhoneText').textContent = 'Currently unavailable';
+                const pl = $('scPhoneLink'); pl.removeAttribute('href'); pl.style.color = '#94a3b8'; pl.style.pointerEvents = 'none';
+                disableCard($('scPhoneCard'));
+            }
+
+            // ── Apply settings ────────────────────────────────────────────────
+            function applySettings(s) {
+                const hours = (s.support_hours && s.support_hours.trim()) ? s.support_hours.trim() : null;
+
+                // Email
+                const emailLink = $('scEmailLink');
+                const emailText = $('scEmailText');
+                if (s.email_enabled && s.support_email) {
+                    const addr = s.support_email.trim();
+                    emailText.textContent = addr;
+                    emailLink.href = 'mailto:' + addr;
+                    emailLink.style.color = '#4f46e5';
+                    emailLink.style.pointerEvents = '';
+                    if (hours) $('scEmailHours').textContent = hours;
+                } else {
+                    emailText.textContent = s.email_enabled ? 'Address not configured' : 'Currently unavailable';
+                    emailLink.removeAttribute('href');
+                    emailLink.style.color = '#94a3b8';
+                    emailLink.style.pointerEvents = 'none';
+                    disableCard($('scEmailCard'));
+                }
+
+                // Live Chat
+                const chatBtn = $('scChatBtn');
+                if (s.live_chat_enabled) {
+                    chatBtn.disabled = false;
+                    chatBtn.style.opacity = '';
+                    chatBtn.style.cursor = '';
+                    $('scChatHours').textContent = hours
+                        ? 'Chat directly with an agent. ' + hours
+                        : 'Chat directly with an agent.';
+                } else {
+                    chatBtn.disabled = true;
+                    chatBtn.textContent = 'Currently unavailable';
+                    chatBtn.style.opacity = '0.5';
+                    chatBtn.style.cursor = 'not-allowed';
+                    $('scChatHours').textContent = hours
+                        ? 'Live chat is currently unavailable. ' + hours
+                        : 'Live chat is currently unavailable.';
+                    disableCard($('scChatCard'));
+                }
+
+                // Phone
+                const phoneLink = $('scPhoneLink');
+                const phoneText = $('scPhoneText');
+                if (s.phone_enabled && s.support_phone) {
+                    const num = s.support_phone.trim();
+                    phoneText.textContent = num;
+                    phoneLink.href = 'tel:' + num.replace(/[\s\-().]/g, '');
+                    phoneLink.style.color = '#d97706';
+                    phoneLink.style.pointerEvents = '';
+                    if (hours) $('scPhoneHours').textContent = hours;
+                } else {
+                    phoneText.textContent = s.phone_enabled ? 'Number not configured' : 'Currently unavailable';
+                    phoneLink.removeAttribute('href');
+                    phoneLink.style.color = '#94a3b8';
+                    phoneLink.style.pointerEvents = 'none';
+                    disableCard($('scPhoneCard'));
+                }
+
+                if (typeof feather !== 'undefined') feather.replace();
+            }
+
+            // ── Fetch — anon key only, no JWT ─────────────────────────────────
+            try {
+                const url = SUPABASE_URL + '/rest/v1/platform_support_settings'
+                    + '?select=support_email,email_enabled,support_phone,phone_enabled,live_chat_enabled,support_hours,timezone'
+                    + '&id=eq.1&limit=1';
+
+                const res = await fetch(url, {
+                    headers: {
+                        'apikey':        SUPABASE_ANON,
+                        'Authorization': 'Bearer ' + SUPABASE_ANON
+                    }
+                });
+
+                if (!res.ok) {
+                    console.error('[Support] platform_support_settings fetch failed:', res.status);
                     renderUnavailable();
                     return;
                 }
 
-                if (!data) {
+                const rows = await res.json().catch(() => null);
+                if (!Array.isArray(rows) || rows.length === 0) {
                     console.warn('[Support] platform_support_settings row not found.');
                     renderUnavailable();
                     return;
                 }
 
-                applySettings(data);
+                applySettings(rows[0]);
 
             } catch (err) {
                 console.error('[Support] Unexpected error loading support settings:', err);
