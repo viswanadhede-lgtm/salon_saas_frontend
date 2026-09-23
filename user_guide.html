@@ -1,0 +1,841 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>BharatBots Salon SaaS - Comprehensive User Manual & Feature Guide</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap');
+
+        @page {
+            size: A4 portrait;
+            margin: 18mm 16mm;
+            @bottom-right {
+                content: counter(page);
+                font-family: 'Inter', sans-serif;
+                font-size: 8pt;
+                color: #64748b;
+            }
+        }
+
+        *, *::before, *::after {
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            color: #1e293b;
+            background: #ffffff;
+            line-height: 1.6;
+            font-size: 9.5pt;
+            margin: 0;
+            padding: 0;
+        }
+
+        .cover-page {
+            page-break-after: always;
+            min-height: 90vh;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            padding: 40px 20px;
+        }
+
+        .cover-header {
+            border-bottom: 2px solid #e2e8f0;
+            padding-bottom: 24px;
+        }
+
+        .logo-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 10px;
+            background: #eef2ff;
+            color: #4f46e5;
+            padding: 8px 16px;
+            border-radius: 24px;
+            font-weight: 700;
+            font-size: 11pt;
+            letter-spacing: -0.01em;
+            margin-bottom: 20px;
+        }
+
+        .cover-title {
+            font-size: 28pt;
+            font-weight: 800;
+            color: #0f172a;
+            line-height: 1.15;
+            margin: 0 0 12px;
+            letter-spacing: -0.02em;
+        }
+
+        .cover-subtitle {
+            font-size: 13pt;
+            font-weight: 500;
+            color: #64748b;
+            margin: 0 0 24px;
+            line-height: 1.5;
+        }
+
+        .cover-meta {
+            background: #f8fafc;
+            border: 1px solid #e2e8f0;
+            border-radius: 12px;
+            padding: 20px;
+            margin-top: 30px;
+        }
+
+        .cover-meta-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 16px;
+        }
+
+        .meta-item {
+            display: flex;
+            flex-direction: column;
+            gap: 2px;
+        }
+
+        .meta-label {
+            font-size: 8pt;
+            text-transform: uppercase;
+            font-weight: 700;
+            color: #64748b;
+            letter-spacing: 0.05em;
+        }
+
+        .meta-value {
+            font-size: 10pt;
+            font-weight: 600;
+            color: #0f172a;
+        }
+
+        .section-break {
+            page-break-before: always;
+        }
+
+        h1, h2, h3, h4 {
+            color: #0f172a;
+            font-weight: 700;
+            page-break-after: avoid;
+        }
+
+        h1 {
+            font-size: 18pt;
+            border-bottom: 2px solid #4f46e5;
+            padding-bottom: 6px;
+            margin-top: 24px;
+            margin-bottom: 16px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        h2 {
+            font-size: 13pt;
+            margin-top: 20px;
+            margin-bottom: 10px;
+            color: #1e293b;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        h3 {
+            font-size: 10.5pt;
+            margin-top: 14px;
+            margin-bottom: 6px;
+            color: #334155;
+        }
+
+        p {
+            margin: 0 0 10px;
+        }
+
+        /* Buttons and Badges */
+        .btn-tag {
+            display: inline-block;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 8pt;
+            font-weight: 600;
+            padding: 2px 7px;
+            border-radius: 5px;
+            background: #f1f5f9;
+            color: #0f172a;
+            border: 1px solid #cbd5e1;
+            white-space: nowrap;
+        }
+
+        .btn-primary-tag {
+            background: #eef2ff;
+            color: #4338ca;
+            border-color: #c7d2fe;
+        }
+
+        .btn-amber-tag {
+            background: #fef3c7;
+            color: #92400e;
+            border-color: #fde68a;
+        }
+
+        .btn-success-tag {
+            background: #ecfdf5;
+            color: #065f46;
+            border-color: #a7f3d0;
+        }
+
+        .btn-danger-tag {
+            background: #fee2e2;
+            color: #991b1b;
+            border-color: #fecaca;
+        }
+
+        /* Tables */
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 12px 0 18px;
+            font-size: 8.5pt;
+            page-break-inside: avoid;
+        }
+
+        th, td {
+            padding: 8px 10px;
+            border: 1px solid #e2e8f0;
+            text-align: left;
+            vertical-align: top;
+        }
+
+        th {
+            background: #f8fafc;
+            color: #334155;
+            font-weight: 700;
+            text-transform: uppercase;
+            font-size: 7.5pt;
+            letter-spacing: 0.04em;
+        }
+
+        tr:nth-child(even) td {
+            background: #fafafa;
+        }
+
+        /* Feature callout card */
+        .callout-box {
+            background: #f8fafc;
+            border-left: 4px solid #4f46e5;
+            padding: 10px 14px;
+            border-radius: 0 8px 8px 0;
+            margin: 12px 0;
+            font-size: 8.8pt;
+        }
+
+        .callout-title {
+            font-weight: 700;
+            color: #0f172a;
+            margin-bottom: 3px;
+        }
+
+        ul, ol {
+            margin: 0 0 12px;
+            padding-left: 20px;
+        }
+
+        li {
+            margin-bottom: 4px;
+        }
+
+        .toc-list {
+            list-style-type: none;
+            padding: 0;
+        }
+
+        .toc-item {
+            display: flex;
+            justify-content: space-between;
+            padding: 6px 0;
+            border-bottom: 1px dotted #cbd5e1;
+            font-size: 9.5pt;
+        }
+
+        .toc-title {
+            font-weight: 600;
+            color: #1e293b;
+        }
+
+        .toc-page {
+            font-weight: 500;
+            color: #64748b;
+            font-family: 'JetBrains Mono', monospace;
+        }
+    </style>
+</head>
+<body>
+
+    <!-- ==================== COVER PAGE ==================== -->
+    <div class="cover-page">
+        <div>
+            <div class="logo-badge">
+                <span>✂️ BharatBots Salon &amp; Spa SaaS</span>
+            </div>
+            <div class="cover-title">Application Manual &amp; Page Operation Guide</div>
+            <div class="cover-subtitle">Complete guide covering every page, modal, workflow, and interactive button in the system.</div>
+
+            <div class="callout-box">
+                <div class="callout-title">📖 Purpose of this Document</div>
+                This manual provides an end-to-end reference for salon owners, managers, cashiers, and front-desk receptionists. It outlines what every screen does, which buttons to click, and how key workflows (Appointments, Point of Sale, Issue Reporting, Suggestions, and Staff Rosters) operate.
+            </div>
+        </div>
+
+        <div class="cover-meta">
+            <div class="cover-meta-grid">
+                <div class="meta-item">
+                    <span class="meta-label">Application</span>
+                    <span class="meta-value">BharatBots Salon Management Cloud</span>
+                </div>
+                <div class="meta-item">
+                    <span class="meta-label">Version</span>
+                    <span class="meta-value">v2.4 Enterprise Edition</span>
+                </div>
+                <div class="meta-item">
+                    <span class="meta-label">Document Date</span>
+                    <span class="meta-value">September 2026</span>
+                </div>
+                <div class="meta-item">
+                    <span class="meta-label">Target Audience</span>
+                    <span class="meta-value">Salon Admins, Stylists, Front Desk &amp; Cashiers</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ==================== TABLE OF CONTENTS ==================== -->
+    <div class="section-break"></div>
+    <h1>Table of Contents</h1>
+    <ul class="toc-list">
+        <li class="toc-item"><span class="toc-title">1. Global Navigation &amp; Top Header Bar</span><span class="toc-page">Page 3</span></li>
+        <li class="toc-item"><span class="toc-title">2. Dashboard Overview &amp; Real-Time Metrics</span><span class="toc-page">Page 4</span></li>
+        <li class="toc-item"><span class="toc-title">3. Bookings &amp; Appointments Engine</span><span class="toc-page">Page 5</span></li>
+        <li class="toc-item"><span class="toc-title">4. Customers Directory &amp; Client Loyalty</span><span class="toc-page">Page 6</span></li>
+        <li class="toc-item"><span class="toc-title">5. Staff Roster &amp; Shift Scheduling</span><span class="toc-page">Page 7</span></li>
+        <li class="toc-item"><span class="toc-title">6. Services Catalog &amp; Category Setup</span><span class="toc-page">Page 8</span></li>
+        <li class="toc-item"><span class="toc-title">7. Point of Sale (POS), Products &amp; Sales History</span><span class="toc-page">Page 9</span></li>
+        <li class="toc-item"><span class="toc-title">8. Payments &amp; Settlement Tracking</span><span class="toc-page">Page 10</span></li>
+        <li class="toc-item"><span class="toc-title">9. Marketing, Offers, Coupons &amp; Memberships</span><span class="toc-page">Page 11</span></li>
+        <li class="toc-item"><span class="toc-title">10. Analytics, Reports &amp; Business Expenses</span><span class="toc-page">Page 12</span></li>
+        <li class="toc-item"><span class="toc-title">11. Salon Settings &amp; Invoice Designer</span><span class="toc-page">Page 13</span></li>
+        <li class="toc-item"><span class="toc-title">12. Help, Support, Issue History, Suggestions &amp; Reviews</span><span class="toc-page">Page 14</span></li>
+    </ul>
+
+    <!-- ==================== SECTION 1 ==================== -->
+    <div class="section-break"></div>
+    <h1>1. Global Navigation &amp; Top Header Bar</h1>
+    <p>The top header bar is persistent across all authorized pages and contains vital multi-branch controls, instant booking actions, and account settings.</p>
+
+    <table>
+        <thead>
+            <tr>
+                <th style="width: 25%;">Control / Button</th>
+                <th style="width: 20%;">Type</th>
+                <th>Functionality &amp; Operation</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr>
+                <td><span class="btn-tag">Sidebar Toggle [▤]</span></td>
+                <td>Icon Button</td>
+                <td>Collapses or expands the navigation sidebar to maximize workspace area on laptops and POS tablets. Remembers user preference in local storage.</td>
+            </tr>
+            <tr>
+                <td><span class="btn-tag">Branch Switcher</span></td>
+                <td>Dropdown Select</td>
+                <td>Switches the active branch view (e.g. <em>Downtown Branch</em> vs. <em>Uptown Spa</em>). All data, calendars, inventory, and staff filters instantly adapt to the chosen branch.</td>
+            </tr>
+            <tr>
+                <td><span class="btn-tag">Date Chip</span></td>
+                <td>Status Indicator</td>
+                <td>Displays the current operational calendar date formatted for the salon's timezone.</td>
+            </tr>
+            <tr>
+                <td><span class="btn-tag">Global Search Bar</span></td>
+                <td>Input Field</td>
+                <td>Searches bookings, invoices, customers by mobile number or name with live instant results.</td>
+            </tr>
+            <tr>
+                <td><span class="btn-tag btn-primary-tag">+ New Booking</span></td>
+                <td>Primary Action</td>
+                <td>Opens the global fast-booking modal from anywhere in the app to book an appointment in under 15 seconds without leaving your current work.</td>
+            </tr>
+            <tr>
+                <td><span class="btn-tag">Plan Badge</span></td>
+                <td>Status Badge</td>
+                <td>Displays your salon's active subscription tier (e.g. <em>Growth</em>, <em>Basic</em>, or <em>Enterprise</em>). Clicking navigates to billing settings.</td>
+            </tr>
+            <tr>
+                <td><span class="btn-tag">Notifications Bell [🔔]</span></td>
+                <td>Dropdown Panel</td>
+                <td>Shows unread alerts: upcoming appointments, stock depletion warnings, and support updates with red badge counter.</td>
+            </tr>
+            <tr>
+                <td><span class="btn-tag">User Avatar &amp; Menu</span></td>
+                <td>Profile Dropdown</td>
+                <td>Opens quick profile options: <em>Profile</em>, <em>Schedule</em>, <em>Settings</em>, <em>Support</em>, and <em>Logout</em>.</td>
+            </tr>
+        </tbody>
+    </table>
+
+    <!-- ==================== SECTION 2 ==================== -->
+    <h2>2. Dashboard Overview (`dashboard.html`)</h2>
+    <p>The operational cockpit showing real-time salon performance, walk-in traffic, and schedule status.</p>
+
+    <table>
+        <thead>
+            <tr>
+                <th style="width: 25%;">Dashboard Element</th>
+                <th>What It Shows &amp; Action</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr>
+                <td><strong>Today's Revenue Metric</strong></td>
+                <td>Total money collected today across cash, card, and UPI. Clicking links to the detailed revenue breakdown screen (`todays-revenue.html`).</td>
+            </tr>
+            <tr>
+                <td><strong>Appointments Metric</strong></td>
+                <td>Total scheduled slots vs completed appointments. Clicking links to `upcoming-appointments.html`.</td>
+            </tr>
+            <tr>
+                <td><strong>Walk-ins &amp; Clients</strong></td>
+                <td>Counter of unscheduled walk-in customers and new customer registrations.</td>
+            </tr>
+            <tr>
+                <td><strong>Today's Schedule Table</strong></td>
+                <td>Live list of appointments today. Contains quick action buttons on each row:
+                    <br>• <span class="btn-tag btn-success-tag">Check-In</span>: Marks client as arrived in salon.
+                    <br>• <span class="btn-tag btn-primary-tag">Checkout</span>: Directly sends appointment to POS terminal.
+                    <br>• <span class="btn-tag btn-danger-tag">Cancel</span>: Releases staff slot and updates booking status.
+                </td>
+            </tr>
+        </tbody>
+    </table>
+
+    <!-- ==================== SECTION 3 ==================== -->
+    <div class="section-break"></div>
+    <h1>3. Bookings &amp; Appointments Engine</h1>
+    <p>Central calendar and scheduling suite for client appointments, stylist assignments, and status tracking.</p>
+
+    <h2>Primary Pages</h2>
+    <ul>
+        <li><strong>`bookings.html`</strong>: Master calendar view (Day, Week, Month) with stylist columns.</li>
+        <li><strong>`upcoming-appointments.html`</strong>: Filterable list of confirmed upcoming slots.</li>
+        <li><strong>`completed-appointments.html`</strong>: Historical archive of finished services.</li>
+        <li><strong>`no-shows-cancellations.html`</strong>: Record of missed appointments for cancellation policy analysis.</li>
+    </ul>
+
+    <h2>Key Buttons &amp; Modal Operations in Bookings</h2>
+    <table>
+        <thead>
+            <tr>
+                <th style="width: 25%;">Button / Action</th>
+                <th>Description &amp; Operation</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr>
+                <td><span class="btn-tag btn-primary-tag">New Booking Modal</span></td>
+                <td>
+                    <strong>1. Customer Phone:</strong> Auto-completes existing customer profile or prompts to add new client.<br>
+                    <strong>2. Service Picker:</strong> Choose haircut, facial, coloring with automatic duration calculation.<br>
+                    <strong>3. Staff Member:</strong> Select available stylist or choose "Any Available".<br>
+                    <strong>4. Date &amp; Time Slot:</strong> Visual slot picker displaying free vs busy time blocks.<br>
+                    <strong>5. Confirm Booking:</strong> Saves appointment, updates stylist schedule, and triggers automated SMS/WhatsApp confirmation.
+                </td>
+            </tr>
+            <tr>
+                <td><span class="btn-tag">Reschedule</span></td>
+                <td>Opens pre-filled booking modal to choose a new time or assign a different stylist without deleting client history.</td>
+            </tr>
+            <tr>
+                <td><span class="btn-tag btn-danger-tag">Cancel Booking</span></td>
+                <td>Prompts for cancellation reason and instantly frees up stylist calendar.</td>
+            </tr>
+            <tr>
+                <td><span class="btn-tag">Calendar View Filters</span></td>
+                <td>Buttons to switch between <em>Day</em>, <em>Week</em>, and <em>Month</em> grid views, plus a filter by Stylist.</td>
+            </tr>
+        </tbody>
+    </table>
+
+    <!-- ==================== SECTION 4 ==================== -->
+    <h1>4. Customers Directory (`customers.html`)</h1>
+    <p>Complete CRM database storing client visit histories, formulas, preferences, and spending patterns.</p>
+
+    <table>
+        <thead>
+            <tr>
+                <th style="width: 25%;">Button / Action</th>
+                <th>Operation</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr>
+                <td><span class="btn-tag btn-primary-tag">+ Add Customer</span></td>
+                <td>Opens registration drawer to record Name, Mobile, Email, Gender, Birthday/Anniversary (for auto-discounts), and Notes.</td>
+            </tr>
+            <tr>
+                <td><span class="btn-tag">View Profile Card</span></td>
+                <td>Opens client 360° overview: past visits, favorite staff, membership status, total lifetime value (LTV), and notes.</td>
+            </tr>
+            <tr>
+                <td><span class="btn-tag">Quick Book Button</span></td>
+                <td>Launches the booking modal with client information already populated.</td>
+            </tr>
+            <tr>
+                <td><span class="btn-tag">Export CSV</span></td>
+                <td>Downloads the filtered client database for external campaign reporting.</td>
+            </tr>
+        </tbody>
+    </table>
+
+    <!-- ==================== SECTION 5 ==================== -->
+    <div class="section-break"></div>
+    <h1>5. Staff Roster &amp; Shift Scheduling</h1>
+    <p>Manage salon professionals, service specialties, work shifts, breaks, and commission tiers.</p>
+
+    <table>
+        <thead>
+            <tr>
+                <th style="width: 25%;">Screen &amp; Buttons</th>
+                <th>Functionality</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr>
+                <td><strong>`staff.html`</strong><br><span class="btn-tag btn-primary-tag">+ Add Staff</span></td>
+                <td>Adds a new employee: Full Name, Role (Stylist, Receptionist, Manager), Phone, Base Salary, and Commission % on Services and Retail Products.</td>
+            </tr>
+            <tr>
+                <td><span class="btn-tag">Active / Inactive Toggle</span></td>
+                <td>Temporarily pauses stylist from receiving online bookings without deleting their past sales history.</td>
+            </tr>
+            <tr>
+                <td><strong>`staff-schedule.html`</strong><br><span class="btn-tag">Set Shift Times</span></td>
+                <td>Assigns weekly working hours (e.g., 10:00 AM – 7:00 PM), lunch breaks, and designated weekly off days.</td>
+            </tr>
+            <tr>
+                <td><span class="btn-tag btn-amber-tag">Mark Leave</span></td>
+                <td>Blocks specific dates on the booking engine so clients cannot book absent staff.</td>
+            </tr>
+        </tbody>
+    </table>
+
+    <!-- ==================== SECTION 6 ==================== -->
+    <h1>6. Services &amp; Packages Setup</h1>
+    <p>Define the salon menu, service categories, pricing tiers, and execution durations.</p>
+
+    <table>
+        <thead>
+            <tr>
+                <th style="width: 25%;">Screen &amp; Buttons</th>
+                <th>Operation</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr>
+                <td><strong>`services.html`</strong><br><span class="btn-tag btn-primary-tag">+ Add Service</span></td>
+                <td>Creates menu items: Service Name, Category, Price (inclusive/exclusive of GST), Duration in minutes, Buffer time, and Stylist Commission rate.</td>
+            </tr>
+            <tr>
+                <td><strong>`service-categories.html`</strong><br><span class="btn-tag">+ New Category</span></td>
+                <td>Organizes services into clean tabs (e.g. <em>Hair Care</em>, <em>Skin &amp; Facials</em>, <em>Nails</em>, <em>Bridal Packages</em>).</td>
+            </tr>
+            <tr>
+                <td><span class="btn-tag">Pricing / Edit</span></td>
+                <td>Modifies prices or duration across all branches or specific selected branches.</td>
+            </tr>
+        </tbody>
+    </table>
+
+    <!-- ==================== SECTION 7 ==================== -->
+    <div class="section-break"></div>
+    <h1>7. Point of Sale (POS) &amp; Retail Products</h1>
+    <p>High-speed billing terminal built for touchscreens and barcode scanners to process checkouts in seconds.</p>
+
+    <table>
+        <thead>
+            <tr>
+                <th style="width: 25%;">POS Feature</th>
+                <th>Operation &amp; Workflow</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr>
+                <td><strong>Service &amp; Product Cart</strong></td>
+                <td>Click services from visual grid or scan retail barcode. Automatically calculates subtotal, GST, and discounts.</td>
+            </tr>
+            <tr>
+                <td><span class="btn-tag">Assign Stylist</span></td>
+                <td>Links individual line items to the stylist who performed the service to ensure accurate commission payroll.</td>
+            </tr>
+            <tr>
+                <td><span class="btn-tag btn-amber-tag">Apply Discount / Coupon</span></td>
+                <td>Allows fixed amount or percentage discount, or enters a marketing coupon code with automated limit checks.</td>
+            </tr>
+            <tr>
+                <td><span class="btn-tag btn-primary-tag">Tender / Pay</span></td>
+                <td>Opens payment selector supporting Split Payments:
+                    <br>• <strong>Cash</strong>: Displays change calculator.
+                    <br>• <strong>Card / POS Machine</strong>: Records card terminal auth code.
+                    <br>• <strong>Dynamic UPI QR</strong>: Generates QR code directly on screen for customer scanning.
+                </td>
+            </tr>
+            <tr>
+                <td><span class="btn-tag btn-success-tag">Print Invoice</span></td>
+                <td>Sends formatted receipt to 80mm or 58mm thermal receipt printers with GSTIN, salon logo, and optional UPI QR.</td>
+            </tr>
+            <tr>
+                <td><strong>`products.html`</strong><br><span class="btn-tag">+ Add Product</span></td>
+                <td>Manages salon retail inventory: Product Name, SKU, Barcode, Cost Price, Selling Price, and Low-Stock Alert threshold.</td>
+            </tr>
+            <tr>
+                <td><strong>`sales-history.html`</strong></td>
+                <td>Full invoice repository allowing search by Bill #, customer name, re-printing duplicate receipts, and issuing refunds.</td>
+            </tr>
+        </tbody>
+    </table>
+
+    <!-- ==================== SECTION 8 ==================== -->
+    <h1>8. Payments &amp; Settlement Tracking</h1>
+    <p>Track payments received, pending dues, and reconciliation with payment gateway logs.</p>
+
+    <table>
+        <thead>
+            <tr>
+                <th style="width: 25%;">Screen &amp; Button</th>
+                <th>Functionality</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr>
+                <td><strong>`pending-payments.html`</strong><br><span class="btn-tag btn-primary-tag">Collect Payment</span></td>
+                <td>Lists clients with outstanding balances or pay-later appointments. Clicking launches payment modal to collect partial or full balance.</td>
+            </tr>
+            <tr>
+                <td><span class="btn-tag">Send Reminder</span></td>
+                <td>Dispatches payment reminder with dynamic pay link via WhatsApp/SMS.</td>
+            </tr>
+            <tr>
+                <td><strong>`payments-history.html`</strong></td>
+                <td>Audited financial log showing every transaction, payment mode, reference ID, cashier name, and reconciliation status.</td>
+            </tr>
+        </tbody>
+    </table>
+
+    <!-- ==================== SECTION 9 ==================== -->
+    <div class="section-break"></div>
+    <h1>9. Marketing, Offers, Coupons &amp; Memberships</h1>
+    <p>Tools to boost repeat visits, run festive promotions, and sell recurring subscription memberships.</p>
+
+    <table>
+        <thead>
+            <tr>
+                <th style="width: 25%;">Marketing Module</th>
+                <th>Buttons &amp; Workflow</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr>
+                <td><strong>`offers.html`</strong><br><span class="btn-tag btn-primary-tag">+ Create Offer</span></td>
+                <td>Configures promotional deals (e.g. <em>"Monsoon Hair Spa 30% Off"</em>) with start and end dates.</td>
+            </tr>
+            <tr>
+                <td><strong>`coupons.html`</strong><br><span class="btn-tag btn-primary-tag">+ Generate Coupon</span></td>
+                <td>Generates promo codes (e.g. <code>FESTIVE500</code>). Configure maximum usage limits, expiry dates, and minimum bill threshold.</td>
+            </tr>
+            <tr>
+                <td><strong>`memberships.html`</strong><br><span class="btn-tag btn-primary-tag">+ New Membership Plan</span></td>
+                <td>Creates VIP tiers (e.g., <em>Gold Card</em>, <em>Platinum Club</em>) offering free monthly services and exclusive discounts on all bills.</td>
+            </tr>
+            <tr>
+                <td><strong>`ad-campaigns.html`</strong><br><span class="btn-tag btn-primary-tag">Broadcast Message</span></td>
+                <td>Sends targeted bulk WhatsApp / SMS campaigns to filtered customer groups (e.g., customers who haven't visited in 45 days).</td>
+            </tr>
+        </tbody>
+    </table>
+
+    <!-- ==================== SECTION 10 ==================== -->
+    <h1>10. Analytics, Reports &amp; Business Expenses</h1>
+    <p>Comprehensive business intelligence to monitor salon profitability, staff commissions, and operational overheads.</p>
+
+    <table>
+        <thead>
+            <tr>
+                <th style="width: 25%;">Report Screen</th>
+                <th>Information &amp; Export Actions</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr>
+                <td><strong>`overview.html`</strong></td>
+                <td>Executive dashboard displaying monthly revenue trajectories, peak service hours, and client retention rates.</td>
+            </tr>
+            <tr>
+                <td><strong>`reports.html`</strong></td>
+                <td>Detailed reports suite:
+                    <br>• <strong>Sales Report</strong>: Breakdowns by payment mode and tax collections.
+                    <br>• <strong>Staff Commission Report</strong>: Exact payout owed to each stylist based on services rendered.
+                    <br>• <strong>Inventory Consumption</strong>: Professional backbar products consumed vs retail sales.
+                </td>
+            </tr>
+            <tr>
+                <td><span class="btn-tag">Download CSV / PDF</span></td>
+                <td>Exports formatted reports for your Chartered Accountant (CA) or salon accountant.</td>
+            </tr>
+            <tr>
+                <td><strong>`expenses.html`</strong><br><span class="btn-tag btn-primary-tag">+ Add Expense</span></td>
+                <td>Tracks operational expenditure: Salon rent, electricity, laundry, coffee supplies, equipment maintenance, and staff advances.</td>
+            </tr>
+        </tbody>
+    </table>
+
+    <!-- ==================== SECTION 11 ==================== -->
+    <div class="section-break"></div>
+    <h1>11. Salon Settings &amp; Customization</h1>
+    <p>Configure salon profile, multi-branch setup, user access control, and invoice templates.</p>
+
+    <table>
+        <thead>
+            <tr>
+                <th style="width: 25%;">Settings Area</th>
+                <th>Controls &amp; Configuration</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr>
+                <td><strong>`company.html`</strong></td>
+                <td>Legal business details, registered company name, address, GSTIN / Tax number, contact numbers, and currency symbol.</td>
+            </tr>
+            <tr>
+                <td><strong>`settings-branding.html`</strong></td>
+                <td>Upload salon brand logo, favicon, and brand color palette applied across invoices and client portal.</td>
+            </tr>
+            <tr>
+                <td><strong>Invoice Designer Suite</strong><br>(`settings-invoice.html`)</td>
+                <td>
+                    Visual drag-and-drop designer for thermal receipt templates:
+                    <br>• Choose paper width (80mm vs 58mm).
+                    <br>• Toggle custom headers, salon social handles, and WiFi passwords.
+                    <br>• Print dynamic UPI payment QR code at the bottom of bills.
+                    <br>• Customize terms, cancellation policies, and GST tax breakdowns.
+                </td>
+            </tr>
+            <tr>
+                <td><strong>`settings-hours.html`</strong></td>
+                <td>Weekly salon timing (Opening &amp; Closing times for each day of the week, plus public holidays).</td>
+            </tr>
+            <tr>
+                <td><strong>`settings-payments.html`</strong></td>
+                <td>Payment gateway configuration: Razorpay / Stripe credentials, UPI VPA handles, and EDC card machine terminal IDs.</td>
+            </tr>
+            <tr>
+                <td><strong>`users.html` &amp; `roles-permissions.html`</strong></td>
+                <td>Role-based access control (RBAC). Create roles (e.g. <em>Receptionist</em>, <em>Floor Manager</em>, <em>Accountant</em>) and toggle feature permissions (e.g., hide revenue reports from stylists).</td>
+            </tr>
+        </tbody>
+    </table>
+
+    <!-- ==================== SECTION 12 ==================== -->
+    <div class="section-break"></div>
+    <h1>12. Help, Support, Issue History &amp; Feedback Suite</h1>
+    <p>Comprehensive built-in support infrastructure providing instant self-help, technical ticketing, suggestions, and app reviews.</p>
+
+    <h2>Support Page (`support.html`) Header Controls</h2>
+    <table>
+        <thead>
+            <tr>
+                <th style="width: 22%;">Header Button</th>
+                <th style="width: 25%;">Trigger / Component</th>
+                <th>Operation &amp; Workflow</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr>
+                <td><span class="btn-tag">User Manual</span></td>
+                <td>Direct Link</td>
+                <td>Opens this complete documentation guide and searchable FAQ knowledge base.</td>
+            </tr>
+            <tr>
+                <td><span class="btn-tag btn-primary-tag">Report an Issue ⌵</span></td>
+                <td>Dropdown Menu with 2 Options:
+                    <br>1. <strong>Report an Issue</strong>
+                    <br>2. <strong>Issue History</strong>
+                </td>
+                <td>
+                    <strong>1. Report an Issue:</strong> Opens modal dialog to report a problem (Category, Subject, Description, and file attachment). Submits and generates a Ticket ID (`#BB-xxxxx`).
+                    <br><br>
+                    <strong>2. Issue History:</strong> Navigates directly to the dedicated <code>issue-history.html</code> portal.
+                </td>
+            </tr>
+            <tr>
+                <td><span class="btn-tag">Suggestions</span></td>
+                <td>Modal Dialog<br>(<em>"Share a Suggestion"</em>)</td>
+                <td>
+                    Opens feature request modal:
+                    <br>• <strong>Category</strong>: Appointments, POS &amp; Billing, Staff, Loyalty, etc.
+                    <br>• <strong>Suggestion Title</strong> &amp; <strong>Detailed Description</strong>.
+                    <br>• <strong>Why Would This Be Useful?</strong> (Business impact).
+                    <br>• <strong>Image Attachment Dropzone</strong>: Upload UI mockups/screenshots.
+                    <br>• Upon submission, displays a Thank-You confirmation card.
+                </td>
+            </tr>
+            <tr>
+                <td><span class="btn-tag btn-amber-tag">⭐ Review</span></td>
+                <td>Modal Dialog<br>(<em>"Rate Your Experience"</em>)</td>
+                <td>
+                    Opens rating modal:
+                    <br>• <strong>Interactive 5-Star Rating</strong>: Click stars 1 to 5 with live hover descriptions.
+                    <br>• <strong>Comments Textarea</strong>: Optional user feedback.
+                    <br>• <strong>Submit Review</strong>: Saves rating and displays confirmation card with checkmark.
+                </td>
+            </tr>
+        </tbody>
+    </table>
+
+    <h2>Dedicated Issue History Page (`issue-history.html`)</h2>
+    <div class="callout-box">
+        <div class="callout-title">🌐 Public Ticket Tracking System</div>
+        The Issue History page is configured as an unrestricted, public dashboard (bypassing auth-guard) allowing team members to monitor support progress and collaborate with technical specialists.
+    </div>
+
+    <table>
+        <thead>
+            <tr>
+                <th style="width: 25%;">Component</th>
+                <th>Operation</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr>
+                <td><strong>Status Filter Tabs</strong></td>
+                <td>Tabs displaying real-time counts: <span class="btn-tag">All</span>, <span class="btn-tag btn-primary-tag">Open</span>, <span class="btn-tag btn-amber-tag">In Progress</span>, <span class="btn-tag btn-success-tag">Resolved</span>, <span class="btn-tag">Closed</span>. Clicking filters tickets instantly.</td>
+            </tr>
+            <tr>
+                <td><strong>Ticket Cards List (Left Panel)</strong></td>
+                <td>Scrollable list of ticket cards showing Ticket ID, priority pill, category tag, message preview, timestamp, and message counter. Clicking any card displays its thread on the right.</td>
+            </tr>
+            <tr>
+                <td><strong>Conversation Thread (Right Panel)</strong></td>
+                <td>Displays the full discussion timeline with support specialists, verified agent badges, timestamps, and attachment previews.</td>
+            </tr>
+            <tr>
+                <td><strong>Reply Composer</strong></td>
+                <td>Allows the user to reply to the support team, attach screenshots, and click <span class="btn-tag btn-primary-tag">Send Reply</span> to append messages in real time.</td>
+            </tr>
+            <tr>
+                <td><span class="btn-tag">Mark Resolved / Reopen</span></td>
+                <td>Allows closing tickets when resolved or reopening them if further assistance is required.</td>
+            </tr>
+        </tbody>
+    </table>
+
+</body>
+</html>
