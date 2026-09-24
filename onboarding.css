@@ -1,4 +1,4 @@
-/* onboarding.css - Spacious & Comfortable 2-Column Onboarding Page */
+/* onboarding.css - Full-Width End-to-End Onboarding Page */
 
 .onboarding-page {
     background-color: var(--bg-secondary);
@@ -6,17 +6,20 @@
     flex-direction: column;
     align-items: center;
     justify-content: flex-start;
-    padding: 3.5rem 2rem 5rem;
+    padding: 2.25rem 2rem 4rem;
     min-height: 100vh;
     font-family: inherit;
     color: var(--text-main);
+    width: 100%;
+    box-sizing: border-box;
 }
 
 .onboarding-container {
     width: 100%;
-    max-width: 1240px;
-    margin: 0 auto;
+    max-width: 100%;
+    margin: 0;
     animation: fadeIn 0.4s ease-out;
+    box-sizing: border-box;
 }
 
 @keyframes fadeIn {
@@ -27,7 +30,8 @@
 /* Header */
 .onboarding-header {
     text-align: center;
-    margin-bottom: 2.5rem;
+    margin-bottom: 2.25rem;
+    width: 100%;
 }
 
 .onboarding-header .logo {
@@ -37,11 +41,11 @@
     font-size: 1.35rem;
     font-weight: 700;
     color: var(--primary);
-    margin-bottom: 0.85rem;
+    margin-bottom: 0.75rem;
 }
 
 .onboarding-header h1 {
-    font-size: 2.1rem;
+    font-size: 2.2rem;
     font-weight: 700;
     color: var(--text-main);
     letter-spacing: -0.025em;
@@ -51,7 +55,7 @@
 .onboarding-header p {
     color: var(--text-muted);
     font-size: 1.05rem;
-    max-width: 620px;
+    max-width: 680px;
     margin: 0 auto;
     line-height: 1.55;
 }
@@ -82,29 +86,33 @@
     font-weight: 700;
 }
 
-/* Setup Card */
+/* Setup Card - Full Width */
 .setup-card {
     background: #ffffff;
-    border-radius: 1.5rem;
-    box-shadow: 0 20px 45px -15px rgba(15, 23, 42, 0.08), 0 0 0 1px rgba(226, 232, 240, 0.85);
-    padding: 3.5rem 4rem 3.25rem;
+    border-radius: 1.25rem;
+    box-shadow: 0 10px 30px -5px rgba(15, 23, 42, 0.06), 0 0 0 1px rgba(226, 232, 240, 0.85);
+    padding: 3.5rem 4.5rem 3.5rem;
+    width: 100%;
+    box-sizing: border-box;
 }
 
 /* 2-Column Grid Layout */
 .setup-grid {
     display: grid;
     grid-template-columns: 1fr 1fr;
-    gap: 4.5rem;
+    gap: 5rem;
+    width: 100%;
 }
 
 .setup-column {
     display: flex;
     flex-direction: column;
+    width: 100%;
 }
 
 .setup-column:first-child {
     border-right: 1px solid #f1f5f9;
-    padding-right: 4.5rem;
+    padding-right: 5rem;
 }
 
 /* Column Header */
@@ -131,7 +139,7 @@
 }
 
 .column-header h2 {
-    font-size: 1.25rem;
+    font-size: 1.3rem;
     font-weight: 700;
     color: #0f172a;
     line-height: 1.25;
@@ -145,16 +153,16 @@
 
 /* Form Inputs & Groups */
 .form-group {
-    margin-bottom: 1.6rem;
+    margin-bottom: 1.65rem;
     display: flex;
     flex-direction: column;
 }
 
 .form-group label {
-    font-size: 0.9rem;
+    font-size: 0.925rem;
     font-weight: 600;
     color: #334155;
-    margin-bottom: 0.5rem;
+    margin-bottom: 0.55rem;
     display: flex;
     align-items: center;
 }
@@ -167,7 +175,7 @@
 .form-group input,
 .form-select {
     width: 100%;
-    padding: 0.85rem 1.15rem;
+    padding: 0.9rem 1.2rem;
     border: 1px solid #cbd5e1;
     border-radius: 0.7rem;
     font-size: 0.95rem;
@@ -203,7 +211,7 @@
 /* Grid Row Groups */
 .row-group {
     display: grid;
-    gap: 1.25rem;
+    gap: 1.5rem;
 }
 
 .row-group.row-country-tz {
@@ -219,7 +227,7 @@
 }
 
 .row-group .form-group {
-    margin-bottom: 1.6rem;
+    margin-bottom: 1.65rem;
 }
 
 /* Footer & Actions */
@@ -241,9 +249,9 @@
     align-items: center;
     justify-content: center;
     gap: 0.65rem;
-    min-width: 420px;
-    padding: 1.1rem 3rem;
-    font-size: 1.05rem;
+    min-width: 440px;
+    padding: 1.15rem 3.5rem;
+    font-size: 1.1rem;
     font-weight: 600;
     border-radius: 0.75rem;
     cursor: pointer;
@@ -292,21 +300,25 @@
 }
 
 /* Responsive Breakpoints */
-@media (max-width: 1100px) {
+@media (max-width: 1200px) {
     .setup-card {
-        padding: 3rem 2.5rem;
+        padding: 3rem 3rem;
     }
 
     .setup-grid {
-        gap: 3.25rem;
+        gap: 3.5rem;
     }
 
     .setup-column:first-child {
-        padding-right: 3.25rem;
+        padding-right: 3.5rem;
     }
 }
 
-@media (max-width: 880px) {
+@media (max-width: 960px) {
+    .onboarding-page {
+        padding: 1.75rem 1.25rem 3.5rem;
+    }
+
     .setup-card {
         padding: 2.25rem 1.75rem;
     }
@@ -331,7 +343,7 @@
 
 @media (max-width: 600px) {
     .onboarding-page {
-        padding: 2rem 1rem 3.5rem;
+        padding: 1.5rem 0.75rem 3rem;
     }
 
     .onboarding-header h1 {
@@ -346,6 +358,7 @@
     }
 
     .setup-card {
-        padding: 1.75rem 1.25rem;
+        padding: 1.75rem 1.15rem;
+        border-radius: 1rem;
     }
 }
