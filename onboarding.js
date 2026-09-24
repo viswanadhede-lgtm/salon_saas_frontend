@@ -1,124 +1,82 @@
 import { API } from '../config/api.js';
-import { supabase } from './lib/supabase.js';document.addEventListener('DOMContentLoaded', () => {
-    
+import { supabase } from './lib/supabase.js';
+
+document.addEventListener('DOMContentLoaded', () => {
     // Auth Check
-    const token = localStorage.getItem('auth_token');
+    const token = localStorage.getItem('auth_token') || localStorage.getItem('token');
     if (!token) {
         console.warn("No auth token found. User should theoretically be redirected to login.");
-        // window.location.href = 'signin.html';
     }
 
     // Plan check
-    const plan = localStorage.getItem('selected_plan') || 'None Selected (Error)';
-    document.getElementById('summaryPlan').textContent = plan;
-
+    const signupData = JSON.parse(localStorage.getItem('signup_data') || '{}');
+    const planName = signupData.plan_name || localStorage.getItem('selected_plan') || 'Free Trial';
+    const planEl = document.getElementById('summaryPlan');
+    if (planEl) {
+        planEl.textContent = planName;
+    }
 });
 
-// ----------------------------------------------------------------
-// UI WIZARD LOGIC
-// ----------------------------------------------------------------
-
-function nextStep(stepNumber) {
-    // Basic validation before allowing next step
-    if (stepNumber === 2 && !validateStep1()) return;
-    
-    updateWizardUI(stepNumber);
-}
-
-function prevStep(stepNumber) {
-    updateWizardUI(stepNumber);
-}
-
-function updateWizardUI(targetStep) {
-    // Hide all steps
-    document.querySelectorAll('.wizard-step').forEach(step => {
-        step.classList.remove('active');
-    });
-
-    // Show target step
-    document.getElementById(`step${targetStep}`).classList.add('active');
-
-    // Update progress indicator
-    document.querySelectorAll('.progress-step').forEach(indicator => {
-        const stepVal = parseInt(indicator.getAttribute('data-step'));
-        
-        // Reset classes
-        indicator.classList.remove('active', 'completed');
-        
-        if (stepVal < targetStep) {
-            indicator.classList.add('completed');
-        } else if (stepVal === targetStep) {
-            indicator.classList.add('active');
+// Helper for displaying validation/API errors
+function displayError(msg, focusFieldId = null) {
+    const errDiv = document.getElementById('apiError');
+    if (errDiv) {
+        errDiv.textContent = msg;
+        errDiv.style.display = 'block';
+    }
+    if (focusFieldId) {
+        const el = document.getElementById(focusFieldId);
+        if (el) {
+            el.focus();
+            el.scrollIntoView({ behavior: 'smooth', block: 'center' });
         }
-    });
-
-    // Update lines between steps
-    const lines = document.querySelectorAll('.progress-line');
-    lines.forEach((line, index) => {
-        line.classList.remove('completed');
-        // Line 0 connects step 1 and 2. Line 1 connects step 2 and 3.
-        if (index < targetStep - 1) {
-            line.classList.add('completed');
-        }
-    });
-}
-
-function validateStep1() {
-    const name = document.getElementById('salonName').value;
-    const type = document.getElementById('businessType').value;
-    
-    if (!name || name.trim() === '') {
-        alert('Please enter a Salon Name.');
-        return false;
     }
-    if (!type) {
-        alert('Please select a Business Type.');
-        return false;
-    }
-    return true;
 }
-
-function prepareConfirmation() {
-    // Validate Step 2
-    const locName = document.getElementById('locationName').value;
-    const city = document.getElementById('city').value;
-    const pincode = document.getElementById('pincode').value;
-    
-    if (!locName || locName.trim() === '') {
-        alert('Please enter a Branch name.');
-        return;
-    }
-    
-    // Populate summary fields
-    document.getElementById('summarySalon').textContent = document.getElementById('salonName').value;
-    document.getElementById('summaryType').textContent = document.getElementById('businessType').value;
-    document.getElementById('summaryLocation').textContent = locName;
-    document.getElementById('summaryCity').textContent = city || 'N/A';
-    document.getElementById('summaryPincode').textContent = pincode || 'N/A';
-    
-    // Move to step 3
-    nextStep(3);
-}
-
-window.nextStep = nextStep;
-window.prevStep = prevStep;
-window.prepareConfirmation = prepareConfirmation;
-window.submitOnboarding = submitOnboarding;
 
 // ----------------------------------------------------------------
-// API LOGIC
+// SUBMIT ONBOARDING (Unified Salon + Branch Creation)
 // ----------------------------------------------------------------
 
 async function submitOnboarding() {
     const btn = document.getElementById('btnSubmit');
     const errDiv = document.getElementById('apiError');
-    const originalText = btn.textContent;
+    const originalContent = btn.innerHTML;
     
-    btn.textContent = 'Creating Salon...';
-    btn.style.opacity = '0.8';
-    btn.style.cursor = 'wait';
+    if (errDiv) errDiv.style.display = 'none';
+
+    // 1. Validate Form Fields
+    const companyName = document.getElementById('salonName')?.value.trim();
+    const businessType = document.getElementById('businessType')?.value;
+    const businessPhone = document.getElementById('salonPhone')?.value.trim();
+    const country = document.getElementById('country')?.value || 'IN';
+    const timezone = document.getElementById('timezone')?.value || 'Asia/Kolkata';
+
+    const branchName = document.getElementById('locationName')?.value.trim();
+    const branchAddress = document.getElementById('branchAddress')?.value.trim();
+    const branchCity = document.getElementById('city')?.value.trim();
+    const branchState = document.getElementById('state')?.value.trim();
+    const branchPincode = document.getElementById('pincode')?.value.trim();
+    const branchPhone = document.getElementById('locationPhone')?.value.trim();
+
+    if (!companyName) return displayError("Please enter your Salon / Company Name.", 'salonName');
+    if (!businessType) return displayError("Please select a Business Type.", 'businessType');
+    if (!businessPhone) return displayError("Please enter your Business Phone number.", 'salonPhone');
+    if (!branchName) return displayError("Please enter a Branch Name.", 'locationName');
+    if (!branchAddress) return displayError("Please enter the Branch Street Address.", 'branchAddress');
+    if (!branchCity) return displayError("Please enter the Branch City.", 'city');
+    if (!branchState) return displayError("Please enter the Branch State / Province.", 'state');
+    if (!branchPincode) return displayError("Please enter the Branch Pincode / Zip Code.", 'pincode');
+    if (!branchPhone) return displayError("Please enter the Branch Phone number.", 'locationPhone');
+
+    // 2. Set Button Loading State
+    btn.innerHTML = `
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="animation: spin 1s linear infinite;">
+            <circle cx="12" cy="12" r="10" stroke-opacity="0.25"></circle>
+            <path d="M12 2a10 10 0 0 1 10 10"></path>
+        </svg>
+        <span>Setting up your workspace...</span>
+    `;
     btn.disabled = true;
-    errDiv.style.display = 'none';
 
     try {
         const data = JSON.parse(localStorage.getItem("signup_data") || '{}');
@@ -126,21 +84,8 @@ async function submitOnboarding() {
         const user_id = data.user_id;
 
         if (!token || !user_id) {
-            throw new Error("Authentication missing! Please sign up again.");
+            throw new Error("Authentication session missing! Please sign up or sign in again.");
         }
-
-        const companyName = document.getElementById('salonName').value;
-        const businessType = document.getElementById('businessType').value;
-        const businessPhone = document.getElementById('salonPhone').value;
-        const country = document.getElementById('country').value;
-        const timezone = document.getElementById('timezone').value;
-
-        const branchName = document.getElementById('locationName').value;
-        const branchAddress = document.getElementById('branchAddress').value;
-        const branchCity = document.getElementById('city').value;
-        const branchState = document.getElementById('state').value;
-        const branchPincode = document.getElementById('pincode').value;
-        const branchPhone = document.getElementById('locationPhone').value;
 
         // Map legacy string ids to correct Supabase UUIDs
         const planIdMapping = {
@@ -153,8 +98,9 @@ async function submitOnboarding() {
         const activePlanId = data.plan_id || 'trial';
         const planId = planIdMapping[activePlanId] || activePlanId;
         const planName = data.plan_name || 'Free Trial';
+        const nowIso = new Date().toISOString();
 
-        // 1. Insert Company — subscription details set later (on Free Trial / Pay & Activate)
+        // 1. Insert Company
         const { data: compData, error: compErr } = await supabase.from('companies').insert({
             company_name: companyName,
             owner_user_id: user_id,
@@ -164,9 +110,11 @@ async function submitOnboarding() {
             subscription_status: 'pending'
         });
 
-        if (compErr || !compData || !compData.length) throw new Error("Failed to create Company: " + (compErr?.message || "Unknown db error"));
+        if (compErr || !compData || !compData.length) {
+            throw new Error("Failed to create Company: " + (compErr?.message || "Unknown database error"));
+        }
         const company_id = compData[0].company_id || compData[0].id;
-        const company_created_at = compData[0].created_at || subscriptionStart;
+        const company_created_at = compData[0].created_at || nowIso;
 
         // 2. Insert Branch
         const { data: bData, error: bErr } = await supabase.from('branches').insert({
@@ -179,10 +127,12 @@ async function submitOnboarding() {
             status: 'active'
         });
 
-        if (bErr || !bData || !bData.length) throw new Error("Failed to create Branch: " + (bErr?.message || "Unknown db error"));
+        if (bErr || !bData || !bData.length) {
+            throw new Error("Failed to create Branch: " + (bErr?.message || "Unknown database error"));
+        }
         const branch_id = bData[0].branch_id || bData[0].id;
 
-        // 3. Insert Role
+        // 3. Insert Role (Default Owner Role)
         const { data: roleData, error: rErr } = await supabase.from('roles').insert({
             company_id,
             branch_id,
@@ -219,7 +169,6 @@ async function submitOnboarding() {
                     const { error: permErr } = await supabase.from('role_permissions').insert(permissionRows);
                     if (permErr) console.warn("Failed to insert granular owner permissions:", permErr.message);
                 } else {
-                    // Fallback just in case plan has no features assigned yet (prevent lockout)
                     console.warn("No plan features found. Inserting fallback 'ALL' key.");
                     await supabase.from('role_permissions').insert({
                         company_id, branch_id, role_id, role_name: 'Owner', permission_key: 'ALL', status: 'active'
@@ -237,18 +186,15 @@ async function submitOnboarding() {
             branch_id,
             name: data.full_name,
             email: data.email,
-            phone: data.phone || null,           // null for Google OAuth users (no phone yet)
-            password_hash: data.password_hash || null, // null for Google OAuth users (no password)
+            phone: data.phone || null,
+            password_hash: data.password_hash || null,
             role_id,
             role_name: 'Owner',
             status: 'active'
         });
         if (userErr) throw new Error('Failed to create User record: ' + userErr.message);
 
-        // 6. Fetch plan_limits and insert one usage_counter row per resource
-        console.log('[usage_counters] Fetching plan_limits for plan_id:', planId);
-
-        // Default limits used as fallback when plan_limits has no rows for this plan
+        // 6. Fetch plan_limits and insert usage_counters
         const DEFAULT_LIMITS = [
             { limit_key: 'max_branches', limit_value: 1 },
             { limit_key: 'max_users',    limit_value: 5 },
@@ -256,25 +202,18 @@ async function submitOnboarding() {
             { limit_key: 'max_services', limit_value: 20 }
         ];
 
-        const { data: planLimits, error: plErr } = await supabase
+        const { data: planLimits } = await supabase
             .from('plan_limits')
             .select('*')
             .eq('plan_id', planId);
-
-        console.log('[usage_counters] plan_limits result:', planLimits, plErr);
 
         const limitsToUse = (Array.isArray(planLimits) && planLimits.length > 0)
             ? planLimits
             : DEFAULT_LIMITS;
 
-        if (!Array.isArray(planLimits) || planLimits.length === 0) {
-            console.warn('[usage_counters] plan_limits empty or missing for plan_id:', planId, '— using defaults:', DEFAULT_LIMITS);
-        }
-
         for (const limit of limitsToUse) {
             const resourceKey = limit.limit_key;
             const currentCount = resourceKey === 'max_branches' ? 1 : 0;
-            console.log(`[usage_counters] Inserting: resource_key=${resourceKey}, current=${currentCount}, max=${limit.limit_value}`);
 
             const { error: ucErr } = await supabase.from('usage_counters').insert({
                 company_id,
@@ -305,25 +244,30 @@ async function submitOnboarding() {
         });
         if (profileErr) throw new Error('Failed to create Profile record: ' + profileErr.message);
 
-        // Save context to localStorage
+        // 8. Save context to localStorage
         localStorage.setItem('company_id', company_id);
         localStorage.setItem('active_branch_id', branch_id);
         if (role_id) localStorage.setItem('role_id', role_id);
 
-        btn.textContent = 'Success! Setting up payments...';
+        btn.innerHTML = `
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                <polyline points="20 6 9 17 4 12"></polyline>
+            </svg>
+            <span>Workspace Created! Redirecting...</span>
+        `;
         btn.style.backgroundColor = '#10b981';
 
         setTimeout(() => {
             window.location.href = `payments.html?company_id=${company_id}`;
-        }, 1000);
+        }, 800);
 
     } catch (err) {
         console.error("Onboarding Error:", err);
-        btn.textContent = originalText;
-        btn.style.opacity = '1';
-        btn.style.cursor = 'pointer';
+        btn.innerHTML = originalContent;
         btn.disabled = false;
-        errDiv.textContent = err.message || 'An error occurred during database setup.';
-        errDiv.style.display = 'block';
+        displayError(err.message || 'An error occurred during database setup. Please try again.');
     }
 }
+
+// Attach to window so inline onclick or form submit triggers it
+window.submitOnboarding = submitOnboarding;
