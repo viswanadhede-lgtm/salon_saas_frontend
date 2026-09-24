@@ -1,4 +1,4 @@
-/* onboarding.css - Full-Width End-to-End Onboarding Page */
+/* onboarding.css - Full-Width End-to-End Onboarding Page with Prominent Typography */
 
 .onboarding-page {
     background-color: var(--bg-secondary);
@@ -6,7 +6,7 @@
     flex-direction: column;
     align-items: center;
     justify-content: flex-start;
-    padding: 2.25rem 2rem 4rem;
+    padding: 2.5rem 2.25rem 4.5rem;
     min-height: 100vh;
     font-family: inherit;
     color: var(--text-main);
@@ -27,41 +27,41 @@
     to { opacity: 1; transform: translateY(0); }
 }
 
-/* Header */
+/* Page Header */
 .onboarding-header {
     text-align: center;
-    margin-bottom: 2.25rem;
+    margin-bottom: 2.5rem;
     width: 100%;
 }
 
 .onboarding-header .logo {
     display: inline-flex;
     align-items: center;
-    gap: 0.6rem;
-    font-size: 1.35rem;
+    gap: 0.65rem;
+    font-size: 1.5rem;
     font-weight: 700;
     color: var(--primary);
-    margin-bottom: 0.75rem;
+    margin-bottom: 0.85rem;
 }
 
 .onboarding-header h1 {
-    font-size: 2.2rem;
-    font-weight: 700;
+    font-size: 2.5rem;
+    font-weight: 800;
     color: var(--text-main);
-    letter-spacing: -0.025em;
-    margin-bottom: 0.45rem;
+    letter-spacing: -0.03em;
+    margin-bottom: 0.5rem;
 }
 
 .onboarding-header p {
     color: var(--text-muted);
-    font-size: 1.05rem;
-    max-width: 680px;
+    font-size: 1.15rem;
+    max-width: 720px;
     margin: 0 auto;
-    line-height: 1.55;
+    line-height: 1.6;
 }
 
 .plan-pill-container {
-    margin-top: 1.15rem;
+    margin-top: 1.25rem;
     display: flex;
     justify-content: center;
 }
@@ -73,9 +73,9 @@
     background: #ffffff;
     border: 1px solid var(--border);
     color: var(--text-muted);
-    padding: 0.4rem 1.15rem;
+    padding: 0.45rem 1.25rem;
     border-radius: 9999px;
-    font-size: 0.875rem;
+    font-size: 0.925rem;
     font-weight: 500;
     box-shadow: var(--shadow-sm);
 }
@@ -89,9 +89,9 @@
 /* Setup Card - Full Width */
 .setup-card {
     background: #ffffff;
-    border-radius: 1.25rem;
-    box-shadow: 0 10px 30px -5px rgba(15, 23, 42, 0.06), 0 0 0 1px rgba(226, 232, 240, 0.85);
-    padding: 3.5rem 4.5rem 3.5rem;
+    border-radius: 1.35rem;
+    box-shadow: 0 12px 35px -5px rgba(15, 23, 42, 0.06), 0 0 0 1px rgba(226, 232, 240, 0.9);
+    padding: 3.75rem 4.75rem 3.75rem;
     width: 100%;
     box-sizing: border-box;
 }
@@ -100,7 +100,7 @@
 .setup-grid {
     display: grid;
     grid-template-columns: 1fr 1fr;
-    gap: 5rem;
+    gap: 5.5rem;
     width: 100%;
 }
 
@@ -112,23 +112,23 @@
 
 .setup-column:first-child {
     border-right: 1px solid #f1f5f9;
-    padding-right: 5rem;
+    padding-right: 5.5rem;
 }
 
 /* Column Header */
 .column-header {
     display: flex;
     align-items: center;
-    gap: 1rem;
-    margin-bottom: 2.25rem;
-    padding-bottom: 1.25rem;
+    gap: 1.25rem;
+    margin-bottom: 2.5rem;
+    padding-bottom: 1.5rem;
     border-bottom: 1px solid #f1f5f9;
 }
 
 .column-icon-box {
-    width: 3.25rem;
-    height: 3.25rem;
-    border-radius: 0.85rem;
+    width: 4rem;
+    height: 4rem;
+    border-radius: 1rem;
     background: #faf5ff;
     border: 1px solid #f3e8ff;
     color: var(--accent);
@@ -139,46 +139,50 @@
 }
 
 .column-header h2 {
-    font-size: 1.3rem;
-    font-weight: 700;
+    font-size: 1.85rem;
+    font-weight: 800;
     color: #0f172a;
-    line-height: 1.25;
+    line-height: 1.2;
+    letter-spacing: -0.025em;
 }
 
 .column-header p {
-    font-size: 0.875rem;
+    font-size: 1.05rem;
     color: #64748b;
-    margin-top: 3px;
+    margin-top: 5px;
+    font-weight: 400;
 }
 
 /* Form Inputs & Groups */
 .form-group {
-    margin-bottom: 1.65rem;
+    margin-bottom: 1.85rem;
     display: flex;
     flex-direction: column;
 }
 
 .form-group label {
-    font-size: 0.925rem;
+    font-size: 1.05rem;
     font-weight: 600;
-    color: #334155;
-    margin-bottom: 0.55rem;
+    color: #1e293b;
+    margin-bottom: 0.65rem;
     display: flex;
     align-items: center;
+    letter-spacing: -0.01em;
 }
 
 .form-group label .required {
     color: #ef4444;
     margin-left: 3px;
+    font-size: 1.1rem;
 }
 
 .form-group input,
 .form-select {
     width: 100%;
-    padding: 0.9rem 1.2rem;
+    padding: 0.95rem 1.25rem;
     border: 1px solid #cbd5e1;
-    border-radius: 0.7rem;
-    font-size: 0.95rem;
+    border-radius: 0.75rem;
+    font-size: 1.025rem;
     font-family: inherit;
     color: var(--text-main);
     background-color: #ffffff;
@@ -200,7 +204,7 @@
 .form-select:focus {
     outline: none;
     border-color: var(--accent);
-    box-shadow: 0 0 0 4px rgba(217, 70, 239, 0.12);
+    box-shadow: 0 0 0 4px rgba(217, 70, 239, 0.14);
 }
 
 .form-select {
@@ -227,13 +231,13 @@
 }
 
 .row-group .form-group {
-    margin-bottom: 1.65rem;
+    margin-bottom: 1.85rem;
 }
 
 /* Footer & Actions */
 .setup-footer {
-    margin-top: 2.75rem;
-    padding-top: 2.25rem;
+    margin-top: 3rem;
+    padding-top: 2.5rem;
     border-top: 1px solid #f1f5f9;
 }
 
@@ -241,28 +245,29 @@
     display: flex;
     flex-direction: column;
     align-items: center;
-    gap: 1rem;
+    gap: 1.15rem;
 }
 
 .btn-submit-onboarding {
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    gap: 0.65rem;
-    min-width: 440px;
-    padding: 1.15rem 3.5rem;
-    font-size: 1.1rem;
-    font-weight: 600;
-    border-radius: 0.75rem;
+    gap: 0.75rem;
+    min-width: 480px;
+    padding: 1.25rem 4rem;
+    font-size: 1.15rem;
+    font-weight: 700;
+    border-radius: 0.85rem;
     cursor: pointer;
     transition: all 0.2s ease;
     border: none;
-    box-shadow: 0 6px 18px rgba(15, 23, 42, 0.15);
+    box-shadow: 0 6px 20px rgba(15, 23, 42, 0.16);
+    letter-spacing: -0.01em;
 }
 
 .btn-submit-onboarding:hover {
     transform: translateY(-2px);
-    box-shadow: 0 10px 24px rgba(15, 23, 42, 0.22);
+    box-shadow: 0 12px 28px rgba(15, 23, 42, 0.24);
 }
 
 .btn-submit-onboarding:active {
@@ -278,8 +283,8 @@
 .setup-helper-note {
     display: flex;
     align-items: center;
-    gap: 0.45rem;
-    font-size: 0.875rem;
+    gap: 0.5rem;
+    font-size: 0.925rem;
     color: #64748b;
     text-align: center;
 }
@@ -287,14 +292,14 @@
 .api-error {
     background: #fef2f2;
     color: #b91c1c;
-    padding: 0.95rem 1.4rem;
-    border-radius: 0.7rem;
-    margin-bottom: 1.5rem;
-    font-size: 0.9rem;
-    font-weight: 500;
+    padding: 1rem 1.5rem;
+    border-radius: 0.75rem;
+    margin-bottom: 1.75rem;
+    font-size: 0.95rem;
+    font-weight: 600;
     border: 1px solid #fecaca;
     text-align: center;
-    max-width: 600px;
+    max-width: 650px;
     margin-left: auto;
     margin-right: auto;
 }
@@ -306,33 +311,33 @@
     }
 
     .setup-grid {
-        gap: 3.5rem;
+        gap: 3.75rem;
     }
 
     .setup-column:first-child {
-        padding-right: 3.5rem;
+        padding-right: 3.75rem;
     }
 }
 
 @media (max-width: 960px) {
     .onboarding-page {
-        padding: 1.75rem 1.25rem 3.5rem;
+        padding: 2rem 1.25rem 3.5rem;
     }
 
     .setup-card {
-        padding: 2.25rem 1.75rem;
+        padding: 2.5rem 2rem;
     }
 
     .setup-grid {
         grid-template-columns: 1fr;
-        gap: 2.5rem;
+        gap: 2.75rem;
     }
 
     .setup-column:first-child {
         border-right: none;
         padding-right: 0;
         border-bottom: 1px solid #f1f5f9;
-        padding-bottom: 2.5rem;
+        padding-bottom: 2.75rem;
     }
 
     .btn-submit-onboarding {
@@ -347,7 +352,11 @@
     }
 
     .onboarding-header h1 {
-        font-size: 1.6rem;
+        font-size: 1.85rem;
+    }
+
+    .column-header h2 {
+        font-size: 1.4rem;
     }
 
     .row-group.row-country-tz,
@@ -358,7 +367,7 @@
     }
 
     .setup-card {
-        padding: 1.75rem 1.15rem;
+        padding: 1.75rem 1.25rem;
         border-radius: 1rem;
     }
 }
