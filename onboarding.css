@@ -1,17 +1,20 @@
-/* onboarding.css - Full-Width End-to-End Onboarding Page with Prominent Typography */
+/* onboarding.css - Full-Width End-to-End Onboarding Page with Salon Background */
 
 .onboarding-page {
-    background-color: var(--bg-secondary);
+    background: linear-gradient(135deg, rgba(15, 23, 42, 0.65) 0%, rgba(30, 27, 75, 0.72) 100%),
+                url('assets/images/onboarding-bg.png') no-repeat center center fixed;
+    background-size: cover;
     display: flex;
     flex-direction: column;
     align-items: center;
     justify-content: flex-start;
-    padding: 2.5rem 2.25rem 4.5rem;
+    padding: 2.75rem 2.25rem 5rem;
     min-height: 100vh;
     font-family: inherit;
     color: var(--text-main);
     width: 100%;
     box-sizing: border-box;
+    position: relative;
 }
 
 .onboarding-container {
@@ -40,24 +43,27 @@
     gap: 0.65rem;
     font-size: 1.5rem;
     font-weight: 700;
-    color: var(--primary);
+    color: #ffffff;
     margin-bottom: 0.85rem;
+    filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.3));
 }
 
 .onboarding-header h1 {
     font-size: 2.5rem;
     font-weight: 800;
-    color: var(--text-main);
+    color: #ffffff;
     letter-spacing: -0.03em;
     margin-bottom: 0.5rem;
+    text-shadow: 0 2px 8px rgba(0, 0, 0, 0.35);
 }
 
 .onboarding-header p {
-    color: var(--text-muted);
+    color: rgba(255, 255, 255, 0.92);
     font-size: 1.15rem;
     max-width: 720px;
     margin: 0 auto;
     line-height: 1.6;
+    text-shadow: 0 1px 4px rgba(0, 0, 0, 0.3);
 }
 
 .plan-pill-container {
@@ -70,14 +76,15 @@
     display: inline-flex;
     align-items: center;
     gap: 0.5rem;
-    background: #ffffff;
-    border: 1px solid var(--border);
-    color: var(--text-muted);
+    background: rgba(255, 255, 255, 0.95);
+    backdrop-filter: blur(8px);
+    border: 1px solid rgba(255, 255, 255, 0.8);
+    color: #334155;
     padding: 0.45rem 1.25rem;
     border-radius: 9999px;
     font-size: 0.925rem;
     font-weight: 500;
-    box-shadow: var(--shadow-sm);
+    box-shadow: 0 4px 14px rgba(0, 0, 0, 0.18);
 }
 
 .plan-pill strong {
@@ -86,11 +93,12 @@
     font-weight: 700;
 }
 
-/* Setup Card - Full Width */
+/* Setup Card - Full Width with Frosted Elevation */
 .setup-card {
-    background: #ffffff;
+    background: rgba(255, 255, 255, 0.97);
+    backdrop-filter: blur(20px);
     border-radius: 1.35rem;
-    box-shadow: 0 12px 35px -5px rgba(15, 23, 42, 0.06), 0 0 0 1px rgba(226, 232, 240, 0.9);
+    box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.35), 0 0 0 1px rgba(255, 255, 255, 0.85);
     padding: 3.75rem 4.75rem 3.75rem;
     width: 100%;
     box-sizing: border-box;
@@ -261,13 +269,13 @@
     cursor: pointer;
     transition: all 0.2s ease;
     border: none;
-    box-shadow: 0 6px 20px rgba(15, 23, 42, 0.16);
+    box-shadow: 0 8px 24px rgba(15, 23, 42, 0.25);
     letter-spacing: -0.01em;
 }
 
 .btn-submit-onboarding:hover {
     transform: translateY(-2px);
-    box-shadow: 0 12px 28px rgba(15, 23, 42, 0.24);
+    box-shadow: 0 14px 32px rgba(15, 23, 42, 0.32);
 }
 
 .btn-submit-onboarding:active {
