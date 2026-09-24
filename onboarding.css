@@ -1,11 +1,12 @@
-/* onboarding.css - Clean 2-column dedicated onboarding page */
+/* onboarding.css - Spacious & Comfortable 2-Column Onboarding Page */
 
 .onboarding-page {
     background-color: var(--bg-secondary);
     display: flex;
+    flex-direction: column;
     align-items: center;
-    justify-content: center;
-    padding: 2.5rem 1.5rem;
+    justify-content: flex-start;
+    padding: 3.5rem 2rem 5rem;
     min-height: 100vh;
     font-family: inherit;
     color: var(--text-main);
@@ -13,7 +14,7 @@
 
 .onboarding-container {
     width: 100%;
-    max-width: 1040px;
+    max-width: 1240px;
     margin: 0 auto;
     animation: fadeIn 0.4s ease-out;
 }
@@ -26,36 +27,37 @@
 /* Header */
 .onboarding-header {
     text-align: center;
-    margin-bottom: 2rem;
+    margin-bottom: 2.5rem;
 }
 
 .onboarding-header .logo {
     display: inline-flex;
     align-items: center;
-    gap: 0.5rem;
-    font-size: 1.25rem;
+    gap: 0.6rem;
+    font-size: 1.35rem;
     font-weight: 700;
     color: var(--primary);
-    margin-bottom: 0.75rem;
+    margin-bottom: 0.85rem;
 }
 
 .onboarding-header h1 {
-    font-size: 1.85rem;
+    font-size: 2.1rem;
     font-weight: 700;
     color: var(--text-main);
-    letter-spacing: -0.02em;
-    margin-bottom: 0.35rem;
+    letter-spacing: -0.025em;
+    margin-bottom: 0.45rem;
 }
 
 .onboarding-header p {
     color: var(--text-muted);
-    font-size: 0.95rem;
-    max-width: 580px;
+    font-size: 1.05rem;
+    max-width: 620px;
     margin: 0 auto;
+    line-height: 1.55;
 }
 
 .plan-pill-container {
-    margin-top: 1rem;
+    margin-top: 1.15rem;
     display: flex;
     justify-content: center;
 }
@@ -63,35 +65,36 @@
 .plan-pill {
     display: inline-flex;
     align-items: center;
-    gap: 0.4rem;
-    background: #f1f5f9;
+    gap: 0.5rem;
+    background: #ffffff;
     border: 1px solid var(--border);
     color: var(--text-muted);
-    padding: 0.35rem 0.9rem;
+    padding: 0.4rem 1.15rem;
     border-radius: 9999px;
-    font-size: 0.825rem;
+    font-size: 0.875rem;
     font-weight: 500;
+    box-shadow: var(--shadow-sm);
 }
 
 .plan-pill strong {
     color: var(--primary);
     text-transform: capitalize;
+    font-weight: 700;
 }
 
-/* Card */
+/* Setup Card */
 .setup-card {
     background: #ffffff;
-    border-radius: 1.25rem;
-    box-shadow: 0 10px 30px -5px rgba(15, 23, 42, 0.08), 0 4px 12px -2px rgba(15, 23, 42, 0.04);
-    border: 1px solid var(--border);
-    padding: 2.75rem 3rem 2.5rem;
+    border-radius: 1.5rem;
+    box-shadow: 0 20px 45px -15px rgba(15, 23, 42, 0.08), 0 0 0 1px rgba(226, 232, 240, 0.85);
+    padding: 3.5rem 4rem 3.25rem;
 }
 
-/* Grid Layout */
+/* 2-Column Grid Layout */
 .setup-grid {
     display: grid;
     grid-template-columns: 1fr 1fr;
-    gap: 3rem;
+    gap: 4.5rem;
 }
 
 .setup-column {
@@ -101,25 +104,25 @@
 
 .setup-column:first-child {
     border-right: 1px solid #f1f5f9;
-    padding-right: 3rem;
+    padding-right: 4.5rem;
 }
 
 /* Column Header */
 .column-header {
     display: flex;
     align-items: center;
-    gap: 0.85rem;
-    margin-bottom: 1.75rem;
-    padding-bottom: 1rem;
-    border-bottom: 1px solid var(--border);
+    gap: 1rem;
+    margin-bottom: 2.25rem;
+    padding-bottom: 1.25rem;
+    border-bottom: 1px solid #f1f5f9;
 }
 
 .column-icon-box {
-    width: 2.75rem;
-    height: 2.75rem;
-    border-radius: 0.75rem;
-    background: #f8fafc;
-    border: 1px solid #e2e8f0;
+    width: 3.25rem;
+    height: 3.25rem;
+    border-radius: 0.85rem;
+    background: #faf5ff;
+    border: 1px solid #f3e8ff;
     color: var(--accent);
     display: flex;
     align-items: center;
@@ -128,60 +131,68 @@
 }
 
 .column-header h2 {
-    font-size: 1.15rem;
+    font-size: 1.25rem;
     font-weight: 700;
-    color: var(--text-main);
+    color: #0f172a;
     line-height: 1.25;
 }
 
 .column-header p {
-    font-size: 0.825rem;
-    color: var(--text-muted);
-    margin-top: 2px;
+    font-size: 0.875rem;
+    color: #64748b;
+    margin-top: 3px;
 }
 
-/* Form inputs & styles */
+/* Form Inputs & Groups */
 .form-group {
-    margin-bottom: 1.25rem;
+    margin-bottom: 1.6rem;
     display: flex;
     flex-direction: column;
 }
 
 .form-group label {
-    font-size: 0.875rem;
+    font-size: 0.9rem;
     font-weight: 600;
     color: #334155;
-    margin-bottom: 0.4rem;
+    margin-bottom: 0.5rem;
+    display: flex;
+    align-items: center;
 }
 
 .form-group label .required {
     color: #ef4444;
-    margin-left: 2px;
+    margin-left: 3px;
 }
 
 .form-group input,
 .form-select {
     width: 100%;
-    padding: 0.75rem 1rem;
-    border: 1px solid var(--border);
-    border-radius: 0.6rem;
-    font-size: 0.925rem;
+    padding: 0.85rem 1.15rem;
+    border: 1px solid #cbd5e1;
+    border-radius: 0.7rem;
+    font-size: 0.95rem;
     font-family: inherit;
     color: var(--text-main);
     background-color: #ffffff;
-    transition: border-color 0.2s, box-shadow 0.2s;
+    transition: border-color 0.2s, box-shadow 0.2s, background-color 0.2s;
     box-sizing: border-box;
+    line-height: 1.5;
 }
 
 .form-group input::placeholder {
     color: #94a3b8;
 }
 
+.form-group input:hover,
+.form-select:hover {
+    border-color: #94a3b8;
+}
+
 .form-group input:focus,
 .form-select:focus {
     outline: none;
     border-color: var(--accent);
-    box-shadow: 0 0 0 3px rgba(217, 70, 239, 0.12);
+    box-shadow: 0 0 0 4px rgba(217, 70, 239, 0.12);
 }
 
 .form-select {
@@ -189,110 +200,152 @@
     appearance: auto;
 }
 
+/* Grid Row Groups */
 .row-group {
-    display: flex;
-    gap: 1rem;
+    display: grid;
+    gap: 1.25rem;
 }
 
-.half {
-    flex: 1;
+.row-group.row-country-tz {
+    grid-template-columns: 2fr 3fr;
+}
+
+.row-group.row-city-state {
+    grid-template-columns: 1fr 1fr;
+}
+
+.row-group.row-pin-phone {
+    grid-template-columns: 2fr 3fr;
+}
+
+.row-group .form-group {
+    margin-bottom: 1.6rem;
 }
 
 /* Footer & Actions */
 .setup-footer {
-    margin-top: 2.25rem;
-    padding-top: 1.75rem;
-    border-top: 1px solid var(--border);
+    margin-top: 2.75rem;
+    padding-top: 2.25rem;
+    border-top: 1px solid #f1f5f9;
 }
 
 .action-wrap {
     display: flex;
     flex-direction: column;
     align-items: center;
-    gap: 0.85rem;
+    gap: 1rem;
 }
 
 .btn-submit-onboarding {
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    gap: 0.6rem;
-    padding: 0.95rem 2.5rem;
+    gap: 0.65rem;
+    min-width: 420px;
+    padding: 1.1rem 3rem;
     font-size: 1.05rem;
     font-weight: 600;
-    border-radius: 0.65rem;
+    border-radius: 0.75rem;
     cursor: pointer;
     transition: all 0.2s ease;
     border: none;
-    box-shadow: 0 4px 14px rgba(15, 23, 42, 0.15);
+    box-shadow: 0 6px 18px rgba(15, 23, 42, 0.15);
 }
 
 .btn-submit-onboarding:hover {
-    transform: translateY(-1px);
-    box-shadow: 0 6px 20px rgba(15, 23, 42, 0.2);
+    transform: translateY(-2px);
+    box-shadow: 0 10px 24px rgba(15, 23, 42, 0.22);
+}
+
+.btn-submit-onboarding:active {
+    transform: translateY(0);
 }
 
 .btn-submit-onboarding:disabled {
     cursor: not-allowed;
-    opacity: 0.7;
+    opacity: 0.75;
     transform: none;
 }
 
 .setup-helper-note {
     display: flex;
     align-items: center;
-    gap: 0.35rem;
-    font-size: 0.825rem;
-    color: var(--text-muted);
+    gap: 0.45rem;
+    font-size: 0.875rem;
+    color: #64748b;
     text-align: center;
 }
 
 .api-error {
     background: #fef2f2;
     color: #b91c1c;
-    padding: 0.85rem 1.25rem;
-    border-radius: 0.6rem;
-    margin-bottom: 1.25rem;
-    font-size: 0.875rem;
+    padding: 0.95rem 1.4rem;
+    border-radius: 0.7rem;
+    margin-bottom: 1.5rem;
+    font-size: 0.9rem;
     font-weight: 500;
     border: 1px solid #fecaca;
     text-align: center;
+    max-width: 600px;
+    margin-left: auto;
+    margin-right: auto;
 }
 
-/* Responsive */
+/* Responsive Breakpoints */
+@media (max-width: 1100px) {
+    .setup-card {
+        padding: 3rem 2.5rem;
+    }
+
+    .setup-grid {
+        gap: 3.25rem;
+    }
+
+    .setup-column:first-child {
+        padding-right: 3.25rem;
+    }
+}
+
 @media (max-width: 880px) {
     .setup-card {
-        padding: 2rem 1.5rem;
+        padding: 2.25rem 1.75rem;
     }
 
     .setup-grid {
         grid-template-columns: 1fr;
-        gap: 2.25rem;
+        gap: 2.5rem;
     }
 
     .setup-column:first-child {
         border-right: none;
         padding-right: 0;
         border-bottom: 1px solid #f1f5f9;
-        padding-bottom: 2rem;
+        padding-bottom: 2.5rem;
     }
 
     .btn-submit-onboarding {
         width: 100%;
+        min-width: 0;
     }
 }
 
-@media (max-width: 520px) {
+@media (max-width: 600px) {
     .onboarding-page {
-        padding: 1.5rem 1rem;
+        padding: 2rem 1rem 3.5rem;
     }
 
     .onboarding-header h1 {
-        font-size: 1.5rem;
+        font-size: 1.6rem;
     }
 
-    .row-group {
-        flex-direction: column;
+    .row-group.row-country-tz,
+    .row-group.row-city-state,
+    .row-group.row-pin-phone {
+        grid-template-columns: 1fr;
         gap: 0;
+    }
+
+    .setup-card {
+        padding: 1.75rem 1.25rem;
     }
 }
