@@ -87,6 +87,11 @@ async function submitOnboarding() {
             throw new Error("Authentication session missing! Please sign up or sign in again.");
         }
 
+        if (!data.phone) {
+            data.phone = businessPhone || branchPhone || '';
+            localStorage.setItem("signup_data", JSON.stringify(data));
+        }
+
         // Map legacy string ids to correct Supabase UUIDs
         const planIdMapping = {
             'plan_01': 'd0d4cc8f-3498-4da1-b5e5-2887b9b39dce',
