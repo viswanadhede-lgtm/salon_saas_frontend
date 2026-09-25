@@ -238,6 +238,7 @@ async function handleInvoicePaid(event: Record<string, unknown>): Promise<Respon
   const nowIso = new Date().toISOString();
   const { error: payInsertErr } = await supabaseAdmin.from("payments").insert({
     order_id:        rzpInvoiceId || rzpSubscriptionId,
+    invoice_id:      rzpInvoiceId || null,
     subscription_id: subscription_id,
     company_id:      company_id,
     plan_id:         plan_id,
@@ -353,6 +354,7 @@ async function handleInvoiceExpired(event: Record<string, unknown>): Promise<Res
   const nowIso = new Date().toISOString();
   const { error: payInsertErr } = await supabaseAdmin.from("payments").insert({
     order_id:        rzpInvoiceId || rzpSubscriptionId,
+    invoice_id:      rzpInvoiceId || null,
     subscription_id: localSub.subscription_id,
     company_id:      localSub.company_id,
     plan_id:         localSub.plan_id,
