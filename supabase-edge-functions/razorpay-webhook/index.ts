@@ -193,21 +193,23 @@ async function handleInvoicePaid(event: Record<string, unknown>): Promise<Respon
       console.log(`razorpay-webhook: invoice.paid — payment_id [${rzpPaymentId}] already recorded (id=${existingPayment.id}). Idempotent skip.`);
       return jsonResponse({ received: true, action: "already_processed", payment_id: rzpPaymentId });
     }
-  } else if (rzpInvoiceId) {
-    // Fallback idempotency on invoice_id via order_id column
-    const { data: existingByOrder, error: dupOrderErr } = await supabaseAdmin
+  }
+
+  if (rzpInvoiceId) {
+    // Idempotency check on invoice_id (checking both invoice_id and order_id columns)
+    const { data: existingByInvoice, error: dupInvoiceErr } = await supabaseAdmin
       .from("payments")
       .select("id, status")
-      .eq("order_id", rzpInvoiceId)
+      .or(`invoice_id.eq.${rzpInvoiceId},order_id.eq.${rzpInvoiceId}`)
       .eq("status", "paid")
       .maybeSingle();
 
-    if (dupOrderErr) {
-      console.error("razorpay-webhook: invoice.paid — invoice duplicate check failed:", dupOrderErr);
+    if (dupInvoiceErr) {
+      console.error("razorpay-webhook: invoice.paid — invoice duplicate check failed:", dupInvoiceErr);
       return jsonResponse({ error: "Database error during idempotency check" }, 500);
     }
 
-    if (existingByOrder) {
+    if (existingByInvoice) {
       console.log(`razorpay-webhook: invoice.paid — invoice_id [${rzpInvoiceId}] already recorded as paid. Idempotent skip.`);
       return jsonResponse({ received: true, action: "already_processed", invoice_id: rzpInvoiceId });
     }
@@ -314,7 +316,7 @@ async function handleInvoiceExpired(event: Record<string, unknown>): Promise<Res
     const { data: existingExpired, error: dupErr } = await supabaseAdmin
       .from("payments")
       .select("id")
-      .eq("order_id", rzpInvoiceId)
+      .or(`invoice_id.eq.${rzpInvoiceId},order_id.eq.${rzpInvoiceId}`)
       .eq("status", "expired")
       .maybeSingle();
 
@@ -372,9 +374,19 @@ async function handleInvoiceExpired(event: Record<string, unknown>): Promise<Res
     return jsonResponse({ error: "Database error: failed to record expired invoice" }, 500);
   }
 
-  // NOTE: subscription status is NOT updated here. invoice.expired alone does not
-  // determine subscription termination — subscription.cancelled / subscription.halted
-  // are the authoritative events for that state transition.
+  // ── UPDATE LOCAL SUBSCRIPTION ─────────────────────────────────────────────
+  const { error: subUpdateErr } = await supabaseAdmin
+    .from("subscriptions")
+    .update({
+      updated_at: nowIso,
+    })
+    .eq("subscription_id", rzpSubscriptionId);
+
+  if (subUpdateErr) {
+    console.error(`razorpay-webhook: invoice.expired — subscriptions update failed for [${rzpSubscriptionId}]:`, subUpdateErr);
+    return jsonResponse({ error: "Database error: failed to update subscription" }, 500);
+  }
+
   console.log(`razorpay-webhook: invoice.expired — recorded. invoice_id=${rzpInvoiceId} subscription_id=${rzpSubscriptionId} company_id=${localSub.company_id}`);
   return jsonResponse({ received: true, action: "processed", event: "invoice.expired" });
 }

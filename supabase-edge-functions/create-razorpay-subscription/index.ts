@@ -228,8 +228,8 @@ Deno.serve(async (req: Request) => {
     };
 
     if (is_trial) {
-      const days = Number(trial_days) || 7;
-      subscriptionPayload.start_at = Math.floor(Date.now() / 1000) + (days * 24 * 60 * 60);
+      const trialDays = 7;
+      subscriptionPayload.start_at = Math.floor(Date.now() / 1000) + (trialDays * 24 * 60 * 60);
     }
 
     const rzpResponse = await fetch("https://api.razorpay.com/v1/subscriptions", {
@@ -253,6 +253,16 @@ Deno.serve(async (req: Request) => {
     const nowIso = new Date().toISOString();
     const initialStatus = "created";
 
+    const subStartDate = rzpSubscription.start_at
+      ? new Date((rzpSubscription.start_at as number) * 1000).toISOString()
+      : (rzpSubscription.current_start ? new Date((rzpSubscription.current_start as number) * 1000).toISOString() : null);
+    const subEndDate = rzpSubscription.current_end
+      ? new Date((rzpSubscription.current_end as number) * 1000).toISOString()
+      : null;
+    const nextBillingAt = rzpSubscription.charge_at
+      ? new Date((rzpSubscription.charge_at as number) * 1000).toISOString()
+      : null;
+
     // ── 11 & 12. CREATE AUTHORITATIVE SUBSCRIPTIONS ROW ─────────────────────
     const { error: subInsertErr } = await supabaseAdmin.from("subscriptions").insert({
       subscription_id:          rzpSubscriptionId,
@@ -266,6 +276,9 @@ Deno.serve(async (req: Request) => {
       billing_amount:           derivedAmount,
       plan_name:                plan.plan_name,
       status:                   initialStatus,
+      subscription_start_date:  subStartDate,
+      subscription_end_date:    subEndDate,
+      next_billing_at:          nextBillingAt,
       auto_renew:               true,
       razorpay_subscription_id: rzpSubscriptionId,
       razorpay_customer_id:     (rzpSubscription.customer_id as string) || null,
