@@ -2,7 +2,7 @@ import { API, RAZORPAY, fetchWithAuth } from './config/api.js';
 import { FEATURES } from './config/feature-registry.js';
 import { supabase } from './lib/supabase.js';
 
-document.addEventListener('DOMContentLoaded', () => {
+document.addEventListener('DOMContentLoaded', async () => {
     
     // Core State
     const params = new URLSearchParams(window.location.search);
@@ -24,6 +24,7 @@ document.addEventListener('DOMContentLoaded', () => {
     let billingCycle = 'monthly'; 
     let basePlanMonthly = 0;
     let basePlanAnnual = 0;
+    let isPlanLoaded = false;
     
     let dynamicAddonsPricing = {};
 
@@ -49,44 +50,55 @@ document.addEventListener('DOMContentLoaded', () => {
         return;
     }
 
-    renderPlanSummary(planId, planName);
-
-    // 2. Fetch and Render Addons
-    fetchAddons();
-
     // 3. Setup Billing Configuration Handlers
     const btnMonthly = document.getElementById('toggleMonthly');
     const btnAnnual = document.getElementById('toggleAnnual');
 
-    btnMonthly.addEventListener('click', () => {
-        billingCycle = 'monthly';
-        btnMonthly.classList.add('active');
-        btnAnnual.classList.remove('active');
-        updatePricingDisplay();
-    });
+    if (btnMonthly) {
+        btnMonthly.addEventListener('click', () => {
+            billingCycle = 'monthly';
+            btnMonthly.classList.add('active');
+            if (btnAnnual) btnAnnual.classList.remove('active');
+            updatePricingDisplay();
+        });
+    }
 
-    btnAnnual.addEventListener('click', () => {
-        billingCycle = 'annual';
-        btnAnnual.classList.add('active');
-        btnMonthly.classList.remove('active');
-        updatePricingDisplay();
-    });
+    if (btnAnnual) {
+        btnAnnual.addEventListener('click', () => {
+            billingCycle = 'annual';
+            btnAnnual.classList.add('active');
+            if (btnMonthly) btnMonthly.classList.remove('active');
+            updatePricingDisplay();
+        });
+    }
 
-    // Initialize first display based on saved preference
+    // Initialize billing cycle based on saved preference
     billingCycle = savedBillingCycle;
     if (billingCycle === 'annual') {
-        btnAnnual.classList.add('active');
-        btnMonthly.classList.remove('active');
+        if (btnAnnual) btnAnnual.classList.add('active');
+        if (btnMonthly) btnMonthly.classList.remove('active');
     } else {
-        btnMonthly.classList.add('active');
-        btnAnnual.classList.remove('active');
+        if (btnMonthly) btnMonthly.classList.add('active');
+        if (btnAnnual) btnAnnual.classList.remove('active');
     }
-    updatePricingDisplay();
+
+    // 2. Fetch and render plan from Supabase plans table
+    const planSuccess = await fetchPlanAndRender(planId, planName);
+    if (!planSuccess) {
+        return;
+    }
+
+    // Fetch and Render Addons
+    fetchAddons();
 
     // 4. Action Buttons
     const btnPayNow = document.getElementById('btnPayNow');
     if (btnPayNow) {
         btnPayNow.addEventListener('click', () => {
+            if (!isPlanLoaded) {
+                showMessage('Plan pricing could not be verified. Please refresh the page.', 'error');
+                return;
+            }
             // Pass planId so triggerOrderCreation can fetch the Razorpay Plan ID
             // from the plans table and send it to the edge function for a recurring subscription.
             triggerOrderCreation(btnPayNow, planId, companyId, billingCycle);
@@ -96,6 +108,10 @@ document.addEventListener('DOMContentLoaded', () => {
     const btnTrial = document.getElementById('btnStartTrial');
     if (btnTrial) {
         btnTrial.addEventListener('click', () => {
+            if (!isPlanLoaded) {
+                showMessage('Plan pricing could not be verified. Please refresh the page.', 'error');
+                return;
+            }
             // isTrial = true uses Subscriptions API (Future delayed charge)
             triggerSubscriptionCheckout(btnTrial, companyId, planId, billingCycle, true);
         });
@@ -163,36 +179,98 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
-    function renderPlanSummary(id, fallbackName) {
-        const PLANS = {
-            'd0d4cc8f-3498-4da1-b5e5-2887b9b39dce': { name: 'Basic', monthly: 1999, annual: 19999, benefits: ['1 Branch', 'Up to 5 staff accounts', 'Bookings & Customers CRM', 'Basic dashboard analytics', 'Payment tracking'] },
-            'b42bcd41-217a-4ddb-9451-20e040984277': { name: 'Advance', monthly: 4999, annual: 49999, benefits: ['Up to 3 branches', 'Up to 12 staff accounts', 'POS & Product sales', 'Offers & coupons', 'Advanced reports'] },
-            'b32fe38d-a715-4166-acf1-b970bd845c21': { name: 'Pro', monthly: 9999, annual: 99999, benefits: ['Up to 10 branches', 'Unlimited staff accounts', 'Membership programs', 'Online booking page', 'Deep analytics dashboard'] },
-            '2e86d143-72aa-4ae4-a925-ded2b8475dc8': { name: 'Enterprise', monthly: 19999, annual: 199999, benefits: ['Unlimited branches', 'AI receptionist included', 'WhatsApp booking automation', 'Custom integrations', 'Dedicated support & SLA'] },
-            '7e0af07f-b57b-40e7-a23a-6e8104c8033c': { name: 'Free Trial', monthly: 0, annual: 0, benefits: ['7 days unrestricted access'] }
-        };
-
-        const plan = PLANS[id] || { name: fallbackName || 'Unknown Plan', monthly: 0, annual: 0, benefits: ['Standard features'] };
-        
-        // Save base pricing constraints for summary calculations
-        basePlanMonthly = plan.monthly;
-        basePlanAnnual = plan.annual;
-
+    async function fetchPlanAndRender(id, fallbackName) {
         const container = document.getElementById('planSummaryCard');
-        let benefitsHtml = plan.benefits.map(b => `<li><svg class="check-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg> ${b}</li>`).join('');
+        if (container) {
+            container.innerHTML = `
+                <div class="skeleton-loader" style="padding: 20px; text-align: center; color: var(--text-muted); font-size: 0.9rem;">
+                    Loading plan details...
+                </div>
+            `;
+        }
 
-        container.innerHTML = `
-            <div class="summary-header">
-                <h3>${plan.name} Plan</h3>
-            </div>
-            <div class="summary-body">
-                <ul class="summary-benefits vertical-benefits">
-                    ${benefitsHtml}
-                </ul>
-            </div>
-        `;
-        
-        document.getElementById('receiptPlanName').textContent = `${plan.name} Plan`;
+        try {
+            const { data: dbPlan, error } = await supabase
+                .from('plans')
+                .select('plan_id, plan_name, price_monthly, price_yearly, status')
+                .eq('plan_id', id)
+                .eq('status', 'active')
+                .maybeSingle();
+
+            if (error) {
+                console.error('[fetchPlanAndRender] Supabase query error:', error);
+                throw error;
+            }
+
+            if (!dbPlan) {
+                console.error(`[fetchPlanAndRender] Plan not found or inactive for ID: ${id}`);
+                showMessage('Selected plan is invalid or no longer active. Please choose another plan.', 'error');
+                disableAllActions();
+                if (container) {
+                    container.innerHTML = '<div class="summary-header"><h3>Plan Unavailable</h3></div><div class="summary-body"><p style="color: var(--text-muted); font-size: 0.9rem;">Could not load plan details.</p></div>';
+                }
+                const receiptPlanPriceEl = document.getElementById('receiptPlanPrice');
+                const receiptTotalPriceEl = document.getElementById('receiptTotalPrice');
+                if (receiptPlanPriceEl) receiptPlanPriceEl.textContent = '—';
+                if (receiptTotalPriceEl) receiptTotalPriceEl.textContent = '—';
+                isPlanLoaded = false;
+                return false;
+            }
+
+            // Authoritative pricing from Supabase plans table
+            basePlanMonthly = parseFloat(dbPlan.price_monthly) || 0;
+            basePlanAnnual  = parseFloat(dbPlan.price_yearly) || 0;
+            isPlanLoaded = true;
+
+            const displayName = dbPlan.plan_name
+                ? (dbPlan.plan_name.charAt(0).toUpperCase() + dbPlan.plan_name.slice(1))
+                : (fallbackName || 'Selected');
+
+            const PLAN_BENEFITS = {
+                'd0d4cc8f-3498-4da1-b5e5-2887b9b39dce': ['1 Branch', 'Up to 5 staff accounts', 'Bookings & Customers CRM', 'Basic dashboard analytics', 'Payment tracking'],
+                'b42bcd41-217a-4ddb-9451-20e040984277': ['Up to 3 branches', 'Up to 12 staff accounts', 'POS & Product sales', 'Offers & coupons', 'Advanced reports'],
+                'b32fe38d-a715-4166-acf1-b970bd845c21': ['Up to 10 branches', 'Unlimited staff accounts', 'Membership programs', 'Online booking page', 'Deep analytics dashboard'],
+                '2e86d143-72aa-4ae4-a925-ded2b8475dc8': ['Unlimited branches', 'AI receptionist included', 'WhatsApp booking automation', 'Custom integrations', 'Dedicated support & SLA'],
+                '7e0af07f-b57b-40e7-a23a-6e8104c8033c': ['7 days unrestricted access']
+            };
+
+            const benefits = PLAN_BENEFITS[id] || ['Standard features'];
+            const benefitsHtml = benefits.map(b => `<li><svg class="check-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg> ${b}</li>`).join('');
+
+            if (container) {
+                container.innerHTML = `
+                    <div class="summary-header">
+                        <h3>${displayName} Plan</h3>
+                    </div>
+                    <div class="summary-body">
+                        <ul class="summary-benefits vertical-benefits">
+                            ${benefitsHtml}
+                        </ul>
+                    </div>
+                `;
+            }
+
+            const receiptPlanNameEl = document.getElementById('receiptPlanName');
+            if (receiptPlanNameEl) {
+                receiptPlanNameEl.textContent = `${displayName} Plan`;
+            }
+
+            updatePricingDisplay();
+            return true;
+        } catch (err) {
+            console.error('[fetchPlanAndRender] Failed to fetch plan from plans table:', err);
+            showMessage('Unable to load plan pricing from server. Please refresh or contact support.', 'error');
+            disableAllActions();
+            if (container) {
+                container.innerHTML = '<div class="summary-header"><h3>Plan Unavailable</h3></div><div class="summary-body"><p style="color: var(--text-muted); font-size: 0.9rem;">Could not load plan details.</p></div>';
+            }
+            const receiptPlanPriceEl = document.getElementById('receiptPlanPrice');
+            const receiptTotalPriceEl = document.getElementById('receiptTotalPrice');
+            if (receiptPlanPriceEl) receiptPlanPriceEl.textContent = '—';
+            if (receiptTotalPriceEl) receiptTotalPriceEl.textContent = '—';
+            isPlanLoaded = false;
+            return false;
+        }
     }
 
     function updatePricingDisplay() {
@@ -248,6 +326,10 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     async function triggerOrderCreation(btnElement, planId, companyId, cycle) {
+        if (!isPlanLoaded) {
+            showMessage('Plan pricing could not be verified. Please refresh the page.', 'error');
+            return;
+        }
         const originalText = btnElement.innerHTML;
         setLoadingState(btnElement, 'Initiating Payment...');
 
@@ -386,6 +468,10 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     async function triggerSubscriptionCheckout(btnElement, companyId, planId, cycle, isTrial) {
+        if (!isPlanLoaded) {
+            showMessage('Plan pricing could not be verified. Please refresh the page.', 'error');
+            return;
+        }
         const originalText = btnElement.textContent;
         setLoadingState(btnElement, isTrial ? 'Setting up trial...' : 'Initiating payment...');
 
