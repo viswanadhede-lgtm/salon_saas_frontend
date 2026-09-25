@@ -137,6 +137,9 @@ Deno.serve(async (req: Request) => {
       case "subscription.halted":
         return await handleSubscriptionLifecycle(event, "halted");
 
+      case "subscription.completed":
+        return await handleSubscriptionLifecycle(event, "completed");
+
       default:
         // Unknown but validly-signed event — log and acknowledge without mutation
         console.log(`razorpay-webhook: Unknown event [${eventName}] — no action taken`);
@@ -378,10 +381,10 @@ async function handleInvoiceExpired(event: Record<string, unknown>): Promise<Res
 
 // ── HANDLER: subscription lifecycle events ────────────────────────────────────
 // Handles: subscription.authenticated | subscription.activated |
-//          subscription.cancelled     | subscription.halted
+//          subscription.cancelled     | subscription.halted    | subscription.completed
 async function handleSubscriptionLifecycle(
   event: Record<string, unknown>,
-  targetStatus: "authenticated" | "activated" | "cancelled" | "halted",
+  targetStatus: "authenticated" | "activated" | "cancelled" | "halted" | "completed",
 ): Promise<Response> {
   const eventName   = event.event as string;
   const payload     = (event.payload as Record<string, unknown>) || {};

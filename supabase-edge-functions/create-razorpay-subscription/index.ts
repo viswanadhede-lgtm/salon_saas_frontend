@@ -210,7 +210,7 @@ Deno.serve(async (req: Request) => {
 
     const subscriptionPayload: Record<string, unknown> = {
       plan_id:     derivedRazorpayPlanId,
-      total_count: normalizedCycle === "yearly" ? 1 : 12,
+      total_count: normalizedCycle === "yearly" ? 10 : 120,
       quantity:    1,
       customer_notify: 0,
       notify_info: {
