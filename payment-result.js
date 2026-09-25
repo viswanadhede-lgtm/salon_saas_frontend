@@ -24,8 +24,8 @@ document.addEventListener('DOMContentLoaded', async () => {
     // Dynamically adjust text if paid
     if (flowType === 'paid') {
         heading.textContent = 'Activating your subscription';
-        const step2Span = step2.querySelector('span');
-        if (step2Span) step2Span.textContent = 'Activating your subscription';
+        const step2Span = step2?.querySelector('span');
+        if (step2Span) step2Span.textContent = 'Verifying your subscription';
     }
 
     console.log('[payment-result] URL params:', {
@@ -55,164 +55,121 @@ document.addEventListener('DOMContentLoaded', async () => {
         return;
     }
 
-    // Extract user details from signup_data
-    const planId       = signupData.plan_id       || null;
-    const userId       = signupData.user_id        || null;
-    const userName     = signupData.full_name      || null;
-    const userEmail    = signupData.email          || null;
-    const userPhone    = signupData.phone          || null;
-    const billingCycle = signupData.billing_cycle  || 'monthly'; // 'monthly' or 'yearly'
+    // Extract user details for non-payment profile sync (if needed)
+    const userId    = signupData.user_id || null;
+    const userPhone = signupData.phone   || null;
 
-    // --- Begin activation ---
-    await activateTrial();
+    // --- Begin Read-Only Polling ---
+    await pollSubscriptionStatus();
 
     // ---------------------------------------------------------------
-    // STEP 1: Verify (subscription_id present)
-    // STEP 2: Insert into payments + subscriptions + update companies
-    // STEP 3: Clear caches & redirect to dashboard
+    // READ-ONLY SUBSCRIPTION VERIFICATION (POLLING)
     // ---------------------------------------------------------------
-    async function activateTrial() {
-        try {
-            // STEP 1 — subscription_id verified ✅
-            markDone(step1);
-            markActive(step2);
+    async function pollSubscriptionStatus() {
+        const MAX_POLL_ATTEMPTS = 10;
+        const POLL_INTERVAL_MS = 2500;
 
-            const now = new Date();
-            let periodEnd;
+        // STEP 1 — Payment callback parameters verified
+        markDone(step1);
+        markActive(step2);
 
-            if (flowType === 'paid') {
-                periodEnd = new Date(
-                    billingCycle === 'annual'
-                        ? now.getTime() + 365 * 24 * 60 * 60 * 1000
-                        : now.getTime() + 30 * 24 * 60 * 60 * 1000
-                );
-            } else {
-                periodEnd = new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000); // 7 days
-            }
+        for (let attempt = 1; attempt <= MAX_POLL_ATTEMPTS; attempt++) {
+            try {
+                // 1. Query subscriptions table as single source of truth
+                let { data: sub, error: subError } = await supabase
+                    .from('subscriptions')
+                    .select('*')
+                    .eq('subscription_id', reference_id)
+                    .maybeSingle();
 
-            const nextCharge = periodEnd; 
+                if (subError) {
+                    console.warn(`[payment-result] Poll attempt ${attempt} error:`, subError);
+                }
 
-            // ── 1. Insert into payments table ────────────────────────────
-            // ── 1. Update the existing payments row (Created by Edge Function or Webhook) ──
-            const { error: payError } = await supabase
-                .from('payments')
-                .eq('order_id', reference_id)
-                .update({
-                    name:           userName,
-                    phone:          userPhone,
-                    payment_id:     razorpay_payment_id || null,
-                    status:         flowType === 'paid' ? 'active' : 'authenticated'
-                    // 'authenticated' = mandate set up, billing starts after 7 days
-                    // Webhook will update this to 'charged' when first charge fires
-                });
-
-            if (payError) {
-                console.warn('[payment-result] payments insert warning (non-critical):', payError);
-            } else {
-                console.log('[payment-result] payments row inserted.');
-            }
-
-            // Lookup billing amount (amount charged after trial / on renewal)
-            const PLAN_PRICING = {
-                'd0d4cc8f-3498-4da1-b5e5-2887b9b39dce': { monthly: 1999,  annual: 19999  },
-                'b42bcd41-217a-4ddb-9451-20e040984277': { monthly: 4999,  annual: 49999  },
-                'b32fe38d-a715-4166-acf1-b970bd845c21': { monthly: 9999,  annual: 99999  },
-                '2e86d143-72aa-4ae4-a925-ded2b8475dc8': { monthly: 19999, annual: 199999 }
-            };
-            const planPricing  = PLAN_PRICING[planId] || { monthly: 0, annual: 0 };
-            const billingAmount = billingCycle === 'annual' ? planPricing.annual : planPricing.monthly;
-
-            // ── 2. Insert into subscriptions table ───────────────────────
-            const { error: subError } = await supabase
-                .from('subscriptions')
-                .insert({
-                    subscription_id:      reference_id,
-                    company_id:           companyId,
-                    plan_id:              planId,
-                    user_id:              userId,
-                    name:                 userName,
-                    email:                userEmail,
-                    phone:                userPhone,
-                    billing_cycle:        billingCycle,
-                    billing_amount:       billingAmount, // Amount charged at next renewal
-                    status:               'active',
-                    current_period_start: now.toISOString(),
-                    current_period_end:   periodEnd.toISOString(),
-                    next_charge_at:       nextCharge.toISOString()
-                });
-
-            if (subError) {
-                console.error('[payment-result] subscriptions insert error:', subError);
-                throw new Error('Failed to create subscription record. Please contact support.');
-            }
-            console.log('[payment-result] subscriptions row inserted.');
-
-            // ── 3. Update companies table with trial/paid status ─────────
-            const { error: compError } = await supabase
-                .from('companies')
-                .eq('company_id', companyId)
-                .update({
-                    subscription_type:       flowType, // 'trial' or 'paid'
-                    subscription_status:     'active',
-                    subscription_start_date: now.toISOString(),
-                    subscription_end_date:   periodEnd.toISOString()
-                });
-
-            if (compError) {
-                console.warn('[payment-result] companies update warning (non-critical):', compError);
-            } else {
-                console.log('[payment-result] companies subscription status updated.');
-            }
-
-            // ── 4. Backfill phone into users + profiles if it was missing (Google OAuth flow) ──
-            // During onboarding the phone was empty; it was collected on payments.html and saved
-            // to signup_data. We now patch it back into the DB so all tables are consistent.
-            if (userPhone && userId) {
-                const [userPhoneUpdate, profilePhoneUpdate] = await Promise.all([
-                    supabase
-                        .from('users')
-                        .update({ phone: userPhone })
-                        .eq('user_id', userId)
-                        .eq('company_id', companyId),
-                    supabase
-                        .from('profiles')
-                        .update({ phone: userPhone })
-                        .eq('user_id', userId)
+                // Fallback: check by company_id if reference_id lookup returns no row yet
+                if (!sub && companyId) {
+                    const { data: companySubs } = await supabase
+                        .from('subscriptions')
+                        .select('*')
                         .eq('company_id', companyId)
-                ]);
-                if (userPhoneUpdate.error) {
-                    console.warn('[payment-result] users phone backfill warning:', userPhoneUpdate.error);
-                } else {
-                    console.log('[payment-result] users.phone backfilled successfully.');
+                        .order('created_at', { ascending: false })
+                        .limit(1);
+
+                    if (companySubs && companySubs.length > 0) {
+                        sub = companySubs[0];
+                    }
                 }
-                if (profilePhoneUpdate.error) {
-                    console.warn('[payment-result] profiles phone backfill warning:', profilePhoneUpdate.error);
+
+                if (sub) {
+                    const status = (sub.status || '').toLowerCase().trim();
+                    console.log(`[payment-result] Poll attempt ${attempt}: Subscription status is "${status}"`);
+
+                    // Active state reached
+                    if (['active', 'trial', 'trialing'].includes(status)) {
+                        markDone(step2);
+                        markActive(step3);
+
+                        // Backfill phone into users and profiles if missing (Google OAuth onboarding)
+                        if (userPhone && userId) {
+                            try {
+                                await Promise.all([
+                                    supabase
+                                        .from('users')
+                                        .update({ phone: userPhone })
+                                        .eq('user_id', userId)
+                                        .eq('company_id', companyId),
+                                    supabase
+                                        .from('profiles')
+                                        .update({ phone: userPhone })
+                                        .eq('user_id', userId)
+                                        .eq('company_id', companyId)
+                                ]);
+                            } catch (e) {
+                                console.warn('[payment-result] Profile phone backfill warning:', e);
+                            }
+                        }
+
+                        // Clear cached permissions so dashboard reloads fresh state from subscriptions
+                        localStorage.removeItem('userFeatures');
+                        localStorage.removeItem('userSubFeatures');
+                        localStorage.removeItem('appContext');
+
+                        showSuccess();
+
+                        setTimeout(() => {
+                            window.location.href = 'dashboard.html';
+                        }, 2000);
+                        return;
+                    }
+
+                    // Terminal failure states
+                    if (['cancelled', 'halted', 'past_due', 'failed'].includes(status)) {
+                        markFailed(step2);
+                        showError(
+                            'Subscription Issue',
+                            `Your subscription status is ${status}. Please check your payment method or contact support.`
+                        );
+                        return;
+                    }
+
+                    // Transient / pending state (created, authenticated, pending)
+                    subtext.textContent = `Awaiting confirmation from payment provider (attempt ${attempt} of ${MAX_POLL_ATTEMPTS})...`;
                 } else {
-                    console.log('[payment-result] profiles.phone backfilled successfully.');
+                    console.log(`[payment-result] Poll attempt ${attempt}: Subscription record not found yet.`);
+                    subtext.textContent = `Confirming your payment with the bank (attempt ${attempt} of ${MAX_POLL_ATTEMPTS})...`;
                 }
+            } catch (err) {
+                console.warn(`[payment-result] Unexpected error during poll attempt ${attempt}:`, err);
             }
 
-            markDone(step2);
-            markActive(step3);
-
-            // STEP 3 — Clear stale caches & redirect
-            localStorage.removeItem('userFeatures');
-            localStorage.removeItem('userSubFeatures');
-            localStorage.removeItem('appContext');
-
-            showSuccess();
-
-            setTimeout(() => {
-                window.location.href = 'dashboard.html';
-            }, 2500);
-
-        } catch (err) {
-            console.error('[payment-result] activateTrial error:', err);
-            showError(
-                'Activation Failed',
-                err.message || 'Something went wrong while activating your trial. Your payment was received — please contact support.'
-            );
+            // Wait before next poll attempt
+            if (attempt < MAX_POLL_ATTEMPTS) {
+                await new Promise(resolve => setTimeout(resolve, POLL_INTERVAL_MS));
+            }
         }
+
+        // Webhook has not marked subscription active within the polling window
+        showVerificationPending();
     }
 
     // ---------------------------------------------------------------
@@ -220,15 +177,25 @@ document.addEventListener('DOMContentLoaded', async () => {
     // ---------------------------------------------------------------
 
     function markDone(el) {
-        el.classList.remove('active');
+        if (!el) return;
+        el.classList.remove('active', 'failed');
         el.classList.add('done');
     }
 
     function markActive(el) {
+        if (!el) return;
+        el.classList.remove('done', 'failed');
         el.classList.add('active');
     }
 
+    function markFailed(el) {
+        if (!el) return;
+        el.classList.remove('active', 'done');
+        el.classList.add('failed');
+    }
+
     function showSuccess() {
+        iconArea.classList.remove('error');
         iconArea.classList.add('success');
         resultIcon.innerHTML = `
             <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="#10b981" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
@@ -245,6 +212,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
 
     function showError(title, message) {
+        iconArea.classList.remove('success');
         iconArea.classList.add('error');
         resultIcon.innerHTML = `
             <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="#ef4444" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
@@ -253,6 +221,21 @@ document.addEventListener('DOMContentLoaded', async () => {
             </svg>`;
         heading.textContent = title;
         subtext.textContent = message;
-        retryBtn.style.display = 'inline-block';
+        if (retryBtn) {
+            retryBtn.textContent = 'Try Again';
+            retryBtn.onclick = () => { window.location.href = 'payments.html'; };
+            retryBtn.style.display = 'inline-block';
+        }
+    }
+
+    function showVerificationPending() {
+        markActive(step2);
+        heading.textContent = 'Payment Received — Verification in Progress';
+        subtext.textContent = 'Your payment details were received, but bank confirmation is taking a moment. Your subscription will activate automatically once processed.';
+        if (retryBtn) {
+            retryBtn.textContent = 'Go to Billing';
+            retryBtn.onclick = () => { window.location.href = 'billing-subscription.html'; };
+            retryBtn.style.display = 'inline-block';
+        }
     }
 });

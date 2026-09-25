@@ -266,54 +266,41 @@ document.addEventListener('DOMContentLoaded', () => {
             }
             const storedCompanyId = localStorage.getItem('company_id') || companyId;
 
-            // Fetch plan from DB — we need both the amount AND the Razorpay Plan ID
-            const { data: dbPlans, error: planErr } = await supabase
-                .from('plans')
-                .select('*')
-                .eq('plan_id', planId);
-
-            if (planErr || !dbPlans || dbPlans.length === 0) {
-                showMessage('Could not verify your plan. Please try again.', 'error');
+            // The hardened Edge Function requires an authenticated Bearer token.
+            // The token is set during sign-in/OTP verification and stored in localStorage.
+            const accessToken = localStorage.getItem('token') || '';
+            if (!accessToken) {
+                showMessage('Your session has expired. Please sign in again.', 'error');
                 resetLoadingState(btnElement, originalText);
                 return;
             }
 
-            const dbPlan = dbPlans[0];
-            const amount = cycle === 'annual' ? basePlanAnnual : basePlanMonthly;
-
-            // Pick the Razorpay Plan ID for the selected billing cycle
-            const rzpPlanId = cycle === 'annual'
-                ? dbPlan.razorpay_plan_id_yearly
-                : dbPlan.razorpay_plan_id_monthly;
-
-            if (!rzpPlanId) {
-                showMessage(
-                    `Razorpay Plan ID is not configured for the ${dbPlan.plan_name} plan (${cycle}). Please contact support.`,
-                    'error'
-                );
-                resetLoadingState(btnElement, originalText);
-                return;
-            }
-
-            console.log('[triggerOrderCreation] Using Razorpay Plan ID:', rzpPlanId);
+            // Normalize billing cycle: UI uses 'annual', backend requires 'yearly'
+            const billingCycleNormalized = cycle === 'annual' ? 'yearly' : 'monthly';
 
             const SUPABASE_URL      = 'https://qxmgyxjwpxkdbgldpdil.supabase.co';
             const SUPABASE_ANON_KEY = 'sb_publishable_aqCSbMiVxH5cSZxgssdNqw_jQZvzmA0';
 
-            // Call the unified create-razorpay-subscription Edge Function
-            // (Used for both Paid and Trial flows. We pass is_trial: false here)
+            // Call create-razorpay-subscription.
+            // The backend is authoritative for plan validation, Razorpay Plan ID, and amount.
+            // We send only the identifiers — the backend derives everything else.
             const res = await fetch(`${SUPABASE_URL}/functions/v1/create-razorpay-subscription`, {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json', 'apikey': SUPABASE_ANON_KEY },
+                headers: {
+                    'Content-Type':  'application/json',
+                    'apikey':        SUPABASE_ANON_KEY,
+                    'Authorization': `Bearer ${accessToken}`
+                },
                 body: JSON.stringify({
-                    company_id:       storedCompanyId,
-                    db_plan_id:       dbPlan.plan_id,      // ← Matches edge fn expectation
-                    razorpay_plan_id: rzpPlanId,           // ← Razorpay Plan ID
-                    amount:           amount,
-                    is_trial:         false,               // ← Paid flow, no 7-day delay
-                    customer_email:   customerEmail,
-                    customer_name:    customerName,
-                    customer_phone:   customerPhone
+                    company_id:     storedCompanyId,
+                    db_plan_id:     planId,                  // Supabase plan UUID — backend validates
+                    billing_cycle:  billingCycleNormalized,  // 'monthly' | 'yearly'
+                    is_trial:       false,                   // Paid flow, no 7-day delay
+                    customer_email: customerEmail,
+                    customer_name:  customerName,
+                    customer_phone: customerPhone
+                    // razorpay_plan_id removed — backend derives from plans table
+                    // amount removed — backend derives from plans.price_monthly/price_yearly
                 })
             });
 
@@ -323,34 +310,40 @@ document.addEventListener('DOMContentLoaded', () => {
                 let errMsg = 'Failed to create subscription. Please try again.';
                 try {
                     const parsed = JSON.parse(errText);
-                    if (parsed.error) {
-                        if (typeof parsed.error === 'string') errMsg = parsed.error;
-                        else if (parsed.error.description) errMsg = parsed.error.description;
-                        else errMsg = JSON.stringify(parsed.error);
-                    } else if (parsed.description) {
-                        errMsg = parsed.description;
-                    }
+                    const raw = typeof parsed.error === 'string' ? parsed.error
+                        : (parsed.error?.description || parsed.description || null);
+                    if (raw) errMsg = raw;
                 } catch (_) {}
+                // Map specific status codes to user-friendly messages
+                if (res.status === 401) errMsg = 'Your session has expired. Please sign in again.';
+                if (res.status === 403) errMsg = 'You do not have access to this company account.';
+                if (res.status === 409) errMsg = 'This account already has an active or in-progress subscription. Please contact support if you believe this is an error.';
                 throw new Error(errMsg);
             }
 
             const data = await res.json();
             console.log('[triggerOrderCreation] Edge function response:', data);
 
-            // Edge function returns subscription_id
+            // Backend returns the Razorpay subscription_id
             const subscriptionId = data.subscription_id || data.id;
 
             if (!subscriptionId) {
-                console.error('[triggerOrderCreation] Edge function error:', data);
+                console.error('[triggerOrderCreation] No subscription ID in response:', data);
                 throw new Error('Invalid response from payment service. Please contact support.');
             }
 
-            // Open Razorpay Checkout with subscription_id (recurring billing)
+            // Open Razorpay Checkout with the subscription_id returned by the backend.
+            // Do NOT construct the subscription client-side.
+            // The Razorpay public key MUST come from the backend — never hardcoded here.
+            if (!data.key_id) {
+                throw new Error('Razorpay key ID was not returned by the server. Please contact support.');
+            }
+            const cycleLabel = cycle === 'annual' ? 'Annual' : 'Monthly';
             const options = {
-                key:             data.key_id || 'rzp_live_STT1YqefvnMX7O',
+                key:             data.key_id,
                 subscription_id: subscriptionId,
                 name:            'BharathBots',
-                description:     `${dbPlan.plan_name} - ${cycle === 'annual' ? 'Annual' : 'Monthly'} Subscription`,
+                description:     `${planName || 'Plan'} - ${cycleLabel} Subscription`,
                 image:           'https://www.bharathbots.com/favicon.ico',
                 prefill: {
                     name:    customerName,
@@ -388,7 +381,7 @@ document.addEventListener('DOMContentLoaded', () => {
         } catch (err) {
             console.error('[triggerOrderCreation] Error:', err);
             resetLoadingState(btnElement, originalText);
-            showMessage('Failed to initialize payment. Please try again.', 'error');
+            showMessage(err.message || 'Failed to initialize payment. Please try again.', 'error');
         }
     }
 
@@ -409,7 +402,6 @@ document.addEventListener('DOMContentLoaded', () => {
             if (!customerPhone || customerPhone.length !== 10) {
                 customerPhone = '9876543210';
             }
-            const storedUserId    = signupData.user_id   || null;
             const storedCompanyId = localStorage.getItem('company_id') || companyId;
 
             if (!customerEmail) {
@@ -418,57 +410,43 @@ document.addEventListener('DOMContentLoaded', () => {
                 return;
             }
 
-            // --- Fetch Dynamic Plan DB ID and Razorpay Plan ID ---
-            const { data: dbPlans, error: planErr } = await supabase
-                .from('plans')
-                .eq('plan_id', planId)
-                .select('*');
-
-            if (planErr || !dbPlans || dbPlans.length === 0) {
-                console.error('[triggerSubscriptionCheckout] DB Plan fetch error:', planErr);
-                showMessage('Could not verify your plan configuration. Please contact support.', 'error');
+            // The hardened Edge Function requires an authenticated Bearer token.
+            // The token is set during sign-in/OTP verification and stored in localStorage.
+            const accessToken = localStorage.getItem('token') || '';
+            if (!accessToken) {
+                showMessage('Your session has expired. Please sign in again.', 'error');
                 resetLoadingState(btnElement, originalText);
                 return;
             }
 
-            const dbPlan = dbPlans[0];
-            const dbPlanId = dbPlan.plan_id; // Supabase UUID
-            const rzpPlanId = cycle === 'annual' ? dbPlan.razorpay_plan_id_yearly : dbPlan.razorpay_plan_id_monthly;
-
-            if (!rzpPlanId) {
-                showMessage(`Razorpay subscription ID is missing for the ${dbPlan.plan_name} plan. Please configure it in the database.`, 'error');
-                resetLoadingState(btnElement, originalText);
-                return;
-            }
+            // Normalize billing cycle: UI uses 'annual', backend requires 'yearly'
+            const billingCycleNormalized = cycle === 'annual' ? 'yearly' : 'monthly';
 
             const SUPABASE_URL      = 'https://qxmgyxjwpxkdbgldpdil.supabase.co';
             const SUPABASE_ANON_KEY = 'sb_publishable_aqCSbMiVxH5cSZxgssdNqw_jQZvzmA0';
 
-            // Get the billing amount for this plan/cycle (stored in payments table for reference)
-            const amount = cycle === 'annual' ? basePlanAnnual : basePlanMonthly;
-
-            // Step 1: Call create-razorpay-subscription (deployed Supabase edge function)
-            // Fields MUST match the edge function's destructuring:
-            //   razorpay_plan_id  ← Razorpay Plan ID
-            //   db_plan_id        ← Supabase UUID
-            //   is_trial          ← triggers start_at delay of 7 days in the edge function
+            // Call create-razorpay-subscription.
+            // The backend is authoritative for plan validation, Razorpay Plan ID, and amount.
+            // We send only the identifiers — the backend derives everything else.
             const response = await fetch(
                 `${SUPABASE_URL}/functions/v1/create-razorpay-subscription`,
                 {
                     method: 'POST',
                     headers: {
-                        'Content-Type': 'application/json',
-                        'apikey': SUPABASE_ANON_KEY
+                        'Content-Type':  'application/json',
+                        'apikey':        SUPABASE_ANON_KEY,
+                        'Authorization': `Bearer ${accessToken}`
                     },
                     body: JSON.stringify({
-                        razorpay_plan_id: rzpPlanId,      // ← Razorpay Plan ID (was wrongly sent as plan_id before)
-                        db_plan_id:       dbPlanId,        // ← Supabase UUID
-                        company_id:       storedCompanyId,
-                        customer_email:   customerEmail,
-                        customer_name:    customerName,
-                        customer_phone:   customerPhone,
-                        is_trial:         isTrial,          // ← was missing before; triggers 7-day start_at
-                        amount:           amount            // ← was missing before
+                        company_id:     storedCompanyId,
+                        db_plan_id:     planId,                  // Supabase plan UUID — backend validates
+                        billing_cycle:  billingCycleNormalized,  // 'monthly' | 'yearly'
+                        is_trial:       isTrial,                 // triggers 7-day start_at delay in Edge Function
+                        customer_email: customerEmail,
+                        customer_name:  customerName,
+                        customer_phone: customerPhone
+                        // razorpay_plan_id removed — backend derives from plans table
+                        // amount removed — backend derives from plans.price_monthly/price_yearly
                     })
                 }
             );
@@ -476,18 +454,17 @@ document.addEventListener('DOMContentLoaded', () => {
             if (!response.ok) {
                 const errText = await response.text();
                 console.error('[triggerSubscriptionCheckout] Edge function error:', errText);
-                // Parse for a cleaner error message
                 let errMsg = 'Failed to initialize subscription. Please try again.';
                 try {
                     const parsed = JSON.parse(errText);
-                    if (parsed.error) {
-                        if (typeof parsed.error === 'string') errMsg = parsed.error;
-                        else if (parsed.error.description) errMsg = parsed.error.description;
-                        else errMsg = JSON.stringify(parsed.error);
-                    } else if (parsed.description) {
-                        errMsg = parsed.description;
-                    }
+                    const raw = typeof parsed.error === 'string' ? parsed.error
+                        : (parsed.error?.description || parsed.description || null);
+                    if (raw) errMsg = raw;
                 } catch (_) {}
+                // Map specific status codes to user-friendly messages
+                if (response.status === 401) errMsg = 'Your session has expired. Please sign in again.';
+                if (response.status === 403) errMsg = 'You do not have access to this company account.';
+                if (response.status === 409) errMsg = 'This account already has an active or in-progress subscription. Please contact support if you believe this is an error.';
                 throw new Error(errMsg);
             }
 
@@ -502,9 +479,14 @@ document.addEventListener('DOMContentLoaded', () => {
 
             resetLoadingState(btnElement, originalText);
 
-            // Step 2: Open Razorpay Checkout inline
+            // Open Razorpay Checkout with the subscription_id returned by the backend.
+            // Do NOT construct the subscription client-side.
+            // The Razorpay public key MUST come from the backend — never hardcoded here.
+            if (!data.key_id) {
+                throw new Error('Razorpay key ID was not returned by the server. Please contact support.');
+            }
             const options = {
-                key:             'rzp_live_STT1YqefvnMX7O',
+                key:             data.key_id,
                 subscription_id: subscriptionId,
                 name:            'BharathBots',
                 description:     isTrial ? '7-Day Free Trial — No charge today' : 'Plan Activation',
@@ -516,16 +498,15 @@ document.addEventListener('DOMContentLoaded', () => {
                 },
                 theme: { color: '#6366f1' },
 
-                // Step 3: Success handler
                 handler: async function(razorpayResponse) {
                     setLoadingState(btnElement, 'Verifying payment...');
                     showMessage('Payment authorized! Redirecting...', 'success');
                     
                     const params = new URLSearchParams({
-                        razorpay_payment_id: razorpayResponse.razorpay_payment_id || '',
+                        razorpay_payment_id:      razorpayResponse.razorpay_payment_id || '',
                         razorpay_subscription_id: subscriptionId,
-                        razorpay_signature: razorpayResponse.razorpay_signature || '',
-                        flow_type: isTrial ? 'trial' : 'paid',    // Pass flow type to callback
+                        razorpay_signature:       razorpayResponse.razorpay_signature || '',
+                        flow_type:                isTrial ? 'trial' : 'paid',
                         t: localStorage.getItem('token') || ''
                     });
                     

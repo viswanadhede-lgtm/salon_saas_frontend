@@ -182,6 +182,79 @@ function setupTokenRefresh() {
     }, 50 * 60 * 1000); // every 50 minutes
 }
 
+// ─── Authoritative Subscription Helper ─────────────────────────────────────────
+// Reads current subscription state from the authoritative subscriptions table.
+async function getAuthoritativeSubscription(supabaseClient, companyId, userId) {
+    if (!companyId) return null;
+
+    const selectFields = 'subscription_id, company_id, plan_id, plan_name, status, subscription_start_date, subscription_end_date, billing_cycle, auto_renew, created_at';
+    const STATUS_TIER = {
+        'active': 1,
+        'trial': 1,
+        'trialing': 1,
+        'past_due': 2,
+        'cancelled': 3
+    };
+
+    function pickBestSubscription(rows) {
+        if (!rows || rows.length === 0) return null;
+
+        const today = new Date();
+
+        // 1. Find all currently valid (unexpired) subscriptions
+        const validSubs = rows.filter(sub => {
+            const rawStatus = (sub.status || '').toLowerCase().trim();
+            if (!STATUS_TIER[rawStatus]) return false;
+            const endDate = sub.subscription_end_date ? new Date(sub.subscription_end_date) : null;
+            return endDate && !isNaN(endDate.getTime()) && endDate > today;
+        });
+
+        // If unexpired subscriptions exist, prioritize active/trial over past_due/cancelled, then newest created_at
+        if (validSubs.length > 0) {
+            validSubs.sort((a, b) => {
+                const tierA = STATUS_TIER[(a.status || '').toLowerCase().trim()] || 99;
+                const tierB = STATUS_TIER[(b.status || '').toLowerCase().trim()] || 99;
+                if (tierA !== tierB) return tierA - tierB;
+                return new Date(b.created_at || 0) - new Date(a.created_at || 0);
+            });
+            return validSubs[0];
+        }
+
+        // 2. If no unexpired subscription exists, fall back to the most recent subscription overall
+        return rows[0];
+    }
+
+    try {
+        // Query candidate subscriptions for company
+        const { data: compSubs, error: compErr } = await supabaseClient
+            .from('subscriptions')
+            .select(selectFields)
+            .eq('company_id', companyId)
+            .order('created_at', { ascending: false });
+
+        if (!compErr && compSubs && compSubs.length > 0) {
+            return pickBestSubscription(compSubs);
+        }
+
+        // Fallback: lookup by user_id if company has no subscription rows
+        if (userId) {
+            const { data: userSubs, error: userErr } = await supabaseClient
+                .from('subscriptions')
+                .select(selectFields)
+                .eq('user_id', userId)
+                .order('created_at', { ascending: false });
+
+            if (!userErr && userSubs && userSubs.length > 0) {
+                return pickBestSubscription(userSubs);
+            }
+        }
+    } catch (err) {
+        console.warn('[Auth Guard] Error fetching authoritative subscription:', err.message || err);
+    }
+
+    return null;
+}
+
 // ─── Hourly Heartbeat ─────────────────────────────────────────────────────────
 // Re-validates subscription, features and role_permissions silently every hour.
 function setupHourlyHeartbeat() {
@@ -194,29 +267,35 @@ function setupHourlyHeartbeat() {
             const user_id_raw = localStorage.getItem('token');
             if (!company_id) return;
 
-            // 1. Re-check subscription
-            const { data: compRows } = await supabase.from('companies')
-                .select('plan_id, plan_name, subscription_status, subscription_type, subscription_end_date')
-                .eq('company_id', company_id);
-
-            const company = compRows?.[0];
-            if (!company) return;
+            // 1. Re-check authoritative subscription from subscriptions table
+            const subscription = await getAuthoritativeSubscription(supabase, company_id, null);
 
             const today = new Date();
-            const endDate = company.subscription_end_date ? new Date(company.subscription_end_date) : null;
-            const isExpired = !endDate || endDate <= today;
+            const endDate = subscription?.subscription_end_date ? new Date(subscription.subscription_end_date) : null;
+            const subStatus = (subscription?.status || '').toLowerCase().trim();
+            const isValidStatus = ['active', 'trial', 'trialing', 'past_due', 'cancelled'].includes(subStatus);
+            const isExpired = !subscription || !isValidStatus || !endDate || isNaN(endDate.getTime()) || endDate <= today;
 
             if (isExpired) {
                 clearInterval(heartbeatInterval);
-                console.warn('[Auth Guard] Heartbeat: subscription expired.');
+                console.warn('[Auth Guard] Heartbeat: subscription expired or inactive.');
                 showAuthBlockModal('SUBSCRIPTION_INACTIVE',
                     'Your subscription has expired. Please renew to continue.',
                     'Renew', 'plans.html?flow=renew');
                 return;
             }
 
-            // 2. Re-derive features from plan
-            const planFeatures = PLAN_FEATURES[company.plan_id] || DEFAULT_FEATURES;
+            // Load company row for plan/membership details
+            const { data: compRows } = await supabase.from('companies')
+                .select('company_id, plan_id, plan_name, subscription_type')
+                .eq('company_id', company_id);
+
+            const company = compRows?.[0];
+            if (!company) return;
+
+            // 2. Re-derive features from plan (authoritative subscription plan_id takes precedence)
+            const activePlanId = subscription?.plan_id || company.plan_id;
+            const planFeatures = PLAN_FEATURES[activePlanId] || DEFAULT_FEATURES;
 
             // 3. Re-check role permissions
             const cachedContext = JSON.parse(localStorage.getItem('appContext') || '{}');
@@ -236,7 +315,7 @@ function setupHourlyHeartbeat() {
                 const allMainFeatures = Object.values(FEATURES);
 
                 if (hasAllPerms) {
-                    const planFeatures = PLAN_FEATURES[company.plan_id] || DEFAULT_FEATURES;
+                    const planFeatures = PLAN_FEATURES[activePlanId] || DEFAULT_FEATURES;
                     userFeatures = planFeatures;
                     userFeatures.forEach(feat => {
                         const children = SUB_FEATURES_MAP[feat] || [];
@@ -408,12 +487,12 @@ export async function runGlobalAuthGuard() {
             return;
         }
 
-        const resolvedCompanyId = company_id || userRow.company_id;
+        const resolvedCompanyId = userRow.company_id || company_id;
         const resolvedBranchId  = branch_id  || userRow.branch_id;
 
-        // 3. Load company (subscription check)
+        // 3. Load company (for identity and membership, not authoritative subscription state)
         const { data: compRows } = await supabase.from('companies')
-            .select('plan_id, plan_name, subscription_status, subscription_type, subscription_end_date')
+            .select('company_id, plan_id, plan_name, subscription_type')
             .eq('company_id', resolvedCompanyId);
 
         const company = compRows?.[0];
@@ -422,10 +501,14 @@ export async function runGlobalAuthGuard() {
             return;
         }
 
-        // 4. Subscription status check
+        // 4. Authoritative subscription status & expiry check from subscriptions table
+        const subscription = await getAuthoritativeSubscription(supabase, resolvedCompanyId, user_id);
+
         const today = new Date();
-        const endDate = company.subscription_end_date ? new Date(company.subscription_end_date) : null;
-        const isExpired = !endDate || endDate <= today;
+        const endDate = subscription?.subscription_end_date ? new Date(subscription.subscription_end_date) : null;
+        const subStatus = (subscription?.status || '').toLowerCase().trim();
+        const isValidStatus = ['active', 'trial', 'trialing', 'past_due', 'cancelled'].includes(subStatus);
+        const isExpired = !subscription || !isValidStatus || !endDate || isNaN(endDate.getTime()) || endDate <= today;
 
         if (isExpired) {
             showAuthBlockModal('SUBSCRIPTION_INACTIVE',
@@ -447,9 +530,11 @@ export async function runGlobalAuthGuard() {
         let userFeatures = [];
         let userSubFeatures = [];
 
+        const activePlanId = subscription?.plan_id || company.plan_id;
+
         if (hasAllPerms) {
             // For roles with 'ALL' (e.g., Owners), fall back to checking the subscription plan
-            const planFeatures = PLAN_FEATURES[company.plan_id] || DEFAULT_FEATURES;
+            const planFeatures = PLAN_FEATURES[activePlanId] || DEFAULT_FEATURES;
             userFeatures = planFeatures;
             
             userFeatures.forEach(feat => {
@@ -516,9 +601,9 @@ export async function runGlobalAuthGuard() {
             },
             company: {
                 company_id:          resolvedCompanyId,
-                plan:                company.plan_name || 'Free Trial',
-                subscription_status: company.subscription_status,
-                subscription_type:   company.subscription_type
+                plan:                subscription?.plan_name || company.plan_name || 'Free Trial',
+                subscription_status: subscription?.status || 'inactive',
+                subscription_type:   subscription?.billing_cycle || company.subscription_type || 'monthly'
             },
             branches: (branches || []).map(b => ({ id: b.branch_id, branch_id: b.branch_id, branch_name: b.branch_name })),
             current_branch_id: resolvedBranchId

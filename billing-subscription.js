@@ -176,63 +176,7 @@
             country: 'India',
             loaded: false
         },
-        paymentHistory: [
-            {
-                id: 'INV-2026-00009',
-                date: '10 Sep 2026',
-                description: 'Growth Plan',
-                amount: 6766,
-                method: 'UPI',
-                paymentRef: 'UPI/3294829104',
-                status: 'Paid',
-                addons: ['whatsapp', 'ai_receptionist'],
-                items: [
-                    { name: 'Growth Plan — Monthly Subscription', subtitle: 'Core salon management, bookings & multi-staff CRM', amount: 4236, isPlan: true },
-                    { name: 'WhatsApp Reminders', subtitle: 'Automated 24h & 2h appointment reminders via WhatsApp', amount: 499, isAddon: true },
-                    { name: 'AI Receptionist', subtitle: '24/7 intelligent voice & chat booking assistant', amount: 999, isAddon: true }
-                ]
-            },
-            {
-                id: 'INV-2026-00008',
-                date: '10 Aug 2026',
-                description: 'Growth Plan',
-                amount: 4999,
-                method: 'Card',
-                paymentRef: 'TXN-8492019482',
-                status: 'Paid',
-                addons: [],
-                items: [
-                    { name: 'Growth Plan — Monthly Subscription', subtitle: 'Core salon management, bookings & multi-staff CRM', amount: 4236, isPlan: true }
-                ]
-            },
-            {
-                id: 'INV-2026-00007',
-                date: '10 Jul 2026',
-                description: 'Growth Plan',
-                amount: 5587,
-                method: 'Card',
-                paymentRef: 'TXN-7391048201',
-                status: 'Paid',
-                addons: ['whatsapp'],
-                items: [
-                    { name: 'Growth Plan — Monthly Subscription', subtitle: 'Core salon management, bookings & multi-staff CRM', amount: 4236, isPlan: true },
-                    { name: 'WhatsApp Reminders', subtitle: 'Automated 24h & 2h appointment reminders via WhatsApp', amount: 499, isAddon: true }
-                ]
-            },
-            {
-                id: 'INV-2026-00006',
-                date: '10 Jun 2026',
-                description: 'Growth Plan',
-                amount: 4999,
-                method: 'Card',
-                paymentRef: 'TXN-6192849102',
-                status: 'Refunded',
-                addons: [],
-                items: [
-                    { name: 'Growth Plan — Monthly Subscription', subtitle: 'Core salon management, bookings & multi-staff CRM', amount: 4236, isPlan: true }
-                ]
-            }
-        ],
+        paymentHistory: [],
         pendingAddonId: null
     };
 
@@ -832,31 +776,37 @@
 
 
     function renderPaymentHistory() {
+        if (!state.paymentHistory || state.paymentHistory.length === 0) {
+            paymentHistoryBody.innerHTML = `
+                <tr>
+                    <td colspan="6" style="text-align: center; color: var(--text-secondary); padding: 32px 16px;">
+                        No payment records found.
+                    </td>
+                </tr>
+            `;
+            return;
+        }
+
         paymentHistoryBody.innerHTML = state.paymentHistory.map(row => {
             let statusPillClass = 'status-paid';
-            if (row.status === 'Pending') statusPillClass = 'status-pending';
-            else if (row.status === 'Failed') statusPillClass = 'status-failed';
-            else if (row.status === 'Refunded') statusPillClass = 'status-refunded';
+            const normStatus = (row.status || '').toLowerCase();
+            if (normStatus === 'pending') statusPillClass = 'status-pending';
+            else if (normStatus === 'failed') statusPillClass = 'status-failed';
+            else if (normStatus === 'refunded') statusPillClass = 'status-refunded';
+            else if (normStatus === 'expired') statusPillClass = 'status-failed';
 
-            let planTitle = `${state.plan.name} Plan`;
+            let planTitle = row.description || `${state.plan.name || 'Plan'} Subscription`;
             let addonSubtitle = '';
             let amount = row.amount;
 
-            if (row.id === 'INV-2026-00009') {
-                const activeAddons = state.activeAddonIds.map(id => CATALOG_ADDONS.find(a => a.id === id)).filter(Boolean);
-                if (activeAddons.length > 0) {
-                    addonSubtitle = `+ ${activeAddons.map(a => a.name).join(', ')}`;
-                    const subtotal = 4236 + activeAddons.reduce((acc, cur) => acc + cur.price, 0);
-                    amount = subtotal + Math.round(subtotal * 0.18);
-                } else {
-                    amount = 4999;
-                }
-            } else if (row.addons && row.addons.length > 0) {
+            if (row.addons && row.addons.length > 0) {
                 const addonsList = row.addons.map(id => CATALOG_ADDONS.find(a => a.id === id)).filter(Boolean);
                 if (addonsList.length > 0) {
                     addonSubtitle = `+ ${addonsList.map(a => a.name).join(', ')}`;
                 }
             }
+
+            const displayStatus = (row.status || 'Paid').charAt(0).toUpperCase() + (row.status || 'Paid').slice(1);
 
             return `
                 <tr>
@@ -870,7 +820,7 @@
                     <td>
                         <span class="table-status-pill ${statusPillClass}">
                             <span class="status-indicator-dot"></span>
-                            ${row.status}
+                            ${displayStatus}
                         </span>
                     </td>
                     <td>
@@ -1040,59 +990,9 @@
             const addId = state.pendingAddonId;
             const addon = getAddonById(addId);
 
-            // Disable button and show buffer circle
-            const prevHtml = btnConfirmAddAddon.innerHTML;
-            btnConfirmAddAddon.disabled = true;
-            btnConfirmAddAddon.innerHTML = '<span class="btn-spinner"></span> <span>Adding...</span>';
-
-            const closeButtons = modalAddAddon.querySelectorAll('[data-close-modal], .billing-modal-close');
-            closeButtons.forEach(btn => btn.disabled = true);
-
-            try {
-                if (state.subscriptionId && addon) {
-                    try {
-                        const { supabase } = await import('./lib/supabase.js');
-                        await supabase
-                            .from('subscription_add_ons')
-                            .insert({
-                                subscription_id: state.subscriptionId,
-                                company_id: getCompanyId(),
-                                addon_id: addon.id,
-                                addon_name: addon.name,
-                                price: addon.price,
-                                status: 'active',
-                                started_at: new Date().toISOString()
-                            });
-                    } catch (err) {
-                        console.error('[Billing] Error activating add-on in DB:', err);
-                    }
-                }
-
-                if (!state.activeAddonIds.includes(addId)) {
-                    state.activeAddonIds.push(addId);
-                }
-
-                if (addon && !state.activeAddons.some(a => a.id === addon.id)) {
-                    state.activeAddons.push({
-                        id: addon.id,
-                        name: addon.name,
-                        price: addon.price,
-                        status: 'active',
-                        icon: addon.icon || 'package',
-                        theme: addon.theme || 'blue'
-                    });
-                }
-
-                syncCatalogWithActiveAddons();
-                closeModal(modalAddAddon);
-                renderAll();
-                showToast(`✓ ${addon ? addon.name : 'Add-on'} activated!`);
-            } finally {
-                btnConfirmAddAddon.disabled = false;
-                btnConfirmAddAddon.innerHTML = prevHtml;
-                closeButtons.forEach(btn => btn.disabled = false);
-                state.pendingAddonId = null;
-            }
+            closeModal(modalAddAddon);
+            state.pendingAddonId = null;
+            showToast('Add-on activation is managed via billing support. Please contact support or purchase via checkout.');
         });
     }
 
@@ -1312,83 +1212,20 @@
         btnCloseManageAddons.addEventListener('click', closeManageAddonsModal);
     }
 
-    // Save Changes: commit changes to state and database
+    // Save Changes: safe UI handling without direct DB mutation
     if (btnSaveManageAddons) {
         btnSaveManageAddons.addEventListener('click', async function () {
-            const prevHtml = btnSaveManageAddons.innerHTML;
-            btnSaveManageAddons.disabled = true;
-            btnSaveManageAddons.innerHTML = '<span class="btn-spinner"></span> <span>Saving...</span>';
+            // Determine additions and removals
+            const addedIds = localSelectedAddonIds.filter(id => !initialActiveAddonIds.includes(id));
+            const removedIds = initialActiveAddonIds.filter(id => !localSelectedAddonIds.includes(id));
 
-            try {
-                // Determine additions and removals
-                const addedIds = localSelectedAddonIds.filter(id => !initialActiveAddonIds.includes(id));
-                const removedIds = initialActiveAddonIds.filter(id => !localSelectedAddonIds.includes(id));
-
-                // Save to database if subscription exists
-                if (state.subscriptionId) {
-                    try {
-                        const { supabase } = await import('./lib/supabase.js');
-                        const companyId = getCompanyId();
-
-                        // Cancel removed add-ons in Supabase
-                        for (const remId of removedIds) {
-                            await supabase
-                                .from('subscription_add_ons')
-                                .update({ status: 'cancelled', ended_at: new Date().toISOString() })
-                                .eq('subscription_id', state.subscriptionId)
-                                .eq('addon_id', remId)
-                                .eq('status', 'active');
-                        }
-
-                        // Insert new additions in Supabase
-                        for (const addId of addedIds) {
-                            const addonMeta = getAddonById(addId);
-                            if (addonMeta) {
-                                await supabase
-                                    .from('subscription_add_ons')
-                                    .insert({
-                                        subscription_id: state.subscriptionId,
-                                        company_id: companyId,
-                                        addon_id: addonMeta.id,
-                                        addon_name: addonMeta.name,
-                                        price: addonMeta.price,
-                                        status: 'active',
-                                        started_at: new Date().toISOString()
-                                    });
-                            }
-                        }
-                    } catch (dbErr) {
-                        console.error('[Billing] Error updating subscription_add_ons in DB:', dbErr);
-                    }
-                }
-
-                // Update local state active add-ons
-                state.activeAddons = localSelectedAddonIds.map(id => {
-                    const existing = (state.activeAddons || []).find(a => a.id === id);
-                    if (existing) return existing;
-                    const cat = getAddonById(id);
-                    if (cat) {
-                        return {
-                            id: cat.id,
-                            name: cat.name,
-                            price: cat.price,
-                            status: 'active',
-                            icon: cat.icon || 'package',
-                            theme: cat.theme || 'blue'
-                        };
-                    }
-                    return { id, name: 'Add-on', price: 0, status: 'active', icon: 'package', theme: 'blue' };
-                });
-                state.activeAddonIds = [...localSelectedAddonIds];
-                syncCatalogWithActiveAddons();
-
+            if (addedIds.length === 0 && removedIds.length === 0) {
                 closeModal(modalManageAddons);
-                renderAll();
-                showToast('Add-on changes saved successfully.');
-            } finally {
-                btnSaveManageAddons.disabled = false;
-                btnSaveManageAddons.innerHTML = prevHtml;
+                return;
             }
+
+            closeModal(modalManageAddons);
+            showToast('Add-on modifications are managed via billing support. Please contact support or update via checkout.');
         });
     }
 
@@ -1473,45 +1310,7 @@
             return;
         }
 
-        const btnRenew = document.getElementById('btnRenewSubscription') || document.getElementById('btnReactivateSub');
-        const prevHtml = btnRenew ? btnRenew.innerHTML : '';
-        if (btnRenew) {
-            btnRenew.disabled = true;
-            btnRenew.innerHTML = '<span class="btn-spinner"></span> <span>Renewing...</span>';
-        }
-
-        try {
-            const { supabase } = await import('./lib/supabase.js');
-            if (!supabase) throw new Error('Supabase client unavailable');
-
-            const { error: renewErr } = await supabase
-                .from('subscriptions')
-                .update({
-                    status: 'active',
-                    auto_renew: true,
-                    remarks: null,
-                    updated_at: new Date().toISOString()
-                })
-                .eq('subscription_id', state.subscriptionId);
-
-            if (renewErr) {
-                console.error('[Billing] Error renewing subscription in Supabase:', renewErr);
-                throw renewErr;
-            }
-
-            // Refresh live subscription from DB
-            await loadActiveSubscription();
-
-            showToast('Subscription renewed successfully. Auto-renewal has been re-enabled.');
-        } catch (err) {
-            console.error('[Billing] Failed to renew subscription:', err);
-            showToast('Failed to renew subscription. Please try again.');
-        } finally {
-            if (btnRenew) {
-                btnRenew.disabled = false;
-                btnRenew.innerHTML = prevHtml;
-            }
-        }
+        showToast('Online renewal is currently unavailable. Please contact support or renew via checkout.');
     }
 
     if (btnTriggerCancelModal) {
@@ -1548,7 +1347,6 @@
                 return;
             }
 
-            let remarks = CANCELLATION_REASONS[selectedRadio.value] || selectedRadio.value;
             if (selectedRadio.value === 'other') {
                 const customText = cancelOtherTextarea ? cancelOtherTextarea.value.trim() : '';
                 if (!customText) {
@@ -1556,7 +1354,6 @@
                     if (cancelOtherTextarea) cancelOtherTextarea.focus();
                     return;
                 }
-                remarks = customText;
             }
 
             if (!state.subscriptionId) {
@@ -1565,46 +1362,11 @@
                 return;
             }
 
-            const prevHtml = btnConfirmCancelSubscription.innerHTML;
-            btnConfirmCancelSubscription.disabled = true;
-            btnConfirmCancelSubscription.innerHTML = '<span class="btn-spinner"></span> <span>Cancelling...</span>';
+            // Close modal and reset form without client-side DB mutation
+            closeModal(modalCancelSub);
+            resetCancelModalForm();
 
-            try {
-                const { supabase } = await import('./lib/supabase.js');
-                if (!supabase) throw new Error('Supabase client unavailable');
-
-                // IMPORTANT: Subscription remains ACTIVE during paid period, only auto_renew is set to false
-                const { error: cancelErr } = await supabase
-                    .from('subscriptions')
-                    .update({
-                        status: 'active',
-                        auto_renew: false,
-                        remarks: remarks,
-                        updated_at: new Date().toISOString()
-                    })
-                    .eq('subscription_id', state.subscriptionId);
-
-                if (cancelErr) {
-                    console.error('[Billing] Error cancelling subscription in Supabase:', cancelErr);
-                    throw cancelErr;
-                }
-
-                // Close modal and reset form
-                closeModal(modalCancelSub);
-                resetCancelModalForm();
-
-                // Refresh live subscription from DB
-                await loadActiveSubscription();
-
-                const validUntil = state.plan.validUntil && state.plan.validUntil !== '—' ? state.plan.validUntil : 'the end of your billing cycle';
-                showToast(`Subscription cancellation scheduled. Your plan remains active until ${validUntil}.`);
-            } catch (err) {
-                console.error('[Billing] Failed to cancel subscription:', err);
-                showToast('Failed to cancel subscription. Please try again.');
-            } finally {
-                btnConfirmCancelSubscription.disabled = false;
-                btnConfirmCancelSubscription.innerHTML = prevHtml;
-            }
+            showToast('Subscription cancellation is managed via billing support. Please contact support to cancel your plan.');
         });
     }
 
@@ -1958,6 +1720,7 @@
     // Modal 6: View Invoice Preview
     function openInvoiceModal(invoiceId) {
         const item = state.paymentHistory.find(h => h.id === invoiceId) || state.paymentHistory[0];
+        if (!item) return;
         invoiceModalTitle.textContent = `Invoice #${item.id}`;
 
         let statusBadgeClass = 'is-paid';
@@ -1971,26 +1734,8 @@
             statusBadge.textContent = item.status.toUpperCase();
         }
 
-        // Calculate Subtotal & GST from itemized list or active state
+        // Calculate Subtotal & GST from itemized list or fallback
         let items = item.items;
-        if (item.id === 'INV-2026-00009') {
-            const activeAddons = state.activeAddonIds.map(id => CATALOG_ADDONS.find(a => a.id === id)).filter(Boolean);
-            items = [
-                {
-                    name: `${state.plan.name} Plan — Monthly Subscription`,
-                    subtitle: 'Core salon management, bookings & multi-staff CRM',
-                    amount: 4236,
-                    isPlan: true
-                },
-                ...activeAddons.map(a => ({
-                    name: `${a.name} Add-on`,
-                    subtitle: a.desc || `${a.name} active feature bundle`,
-                    amount: a.price,
-                    isAddon: true
-                }))
-            ];
-        }
-
         let subtotal = 0;
         if (items && items.length > 0) {
             subtotal = items.reduce((acc, cur) => acc + cur.amount, 0);
@@ -2038,7 +1783,7 @@
                     </div>
                     <div class="invoice-meta-row">
                         <span class="invoice-meta-label">Payment Ref:</span>
-                        <span class="invoice-meta-value invoice-meta-value--mono">${item.paymentRef || 'TXN-8492019482'}</span>
+                        <span class="invoice-meta-value invoice-meta-value--mono">${item.paymentRef || '—'}</span>
                     </div>
                     <div class="invoice-meta-row">
                         <span class="invoice-meta-label">Status:</span>
@@ -2121,6 +1866,10 @@
     const btnExportAllHistory = document.getElementById('btnExportAllHistory');
     if (btnExportAllHistory) {
         btnExportAllHistory.addEventListener('click', function () {
+            if (!state.paymentHistory || state.paymentHistory.length === 0) {
+                showToast('No payment history to export.');
+                return;
+            }
             const rows = [
                 ['Invoice ID', 'Date', 'Description', 'Amount', 'Payment Method', 'Status'],
                 ...state.paymentHistory.map(h => [h.id, h.date, h.description, h.amount, h.method, h.status])
@@ -2400,6 +2149,66 @@
         }
     }
 
+    async function loadPaymentHistory(supabase, companyId) {
+        if (!supabase || !companyId) {
+            state.paymentHistory = [];
+            renderPaymentHistory();
+            return;
+        }
+
+        try {
+            const { data, error } = await supabase
+                .from('payments')
+                .select('id, payment_id, invoice_id, order_id, subscription_id, amount, status, payment_method, created_at, plan_id')
+                .eq('company_id', companyId)
+                .order('created_at', { ascending: false });
+
+            if (error) {
+                console.warn('[Billing] Error loading payment history from payments table:', error.message || error);
+                state.paymentHistory = [];
+                renderPaymentHistory();
+                return;
+            }
+
+            state.paymentHistory = (data || []).map(row => {
+                const planTitle = (state.plan && state.plan.name) ? `${state.plan.name} Plan` : 'Subscription';
+                const formattedDate = formatDateDisplay(row.created_at);
+                const amt = Number(row.amount) || 0;
+                const rawMethod = (row.payment_method || 'Razorpay').trim();
+                const displayMethod = rawMethod.charAt(0).toUpperCase() + rawMethod.slice(1);
+                const rawStatus = (row.status || 'paid').trim();
+                const displayStatus = rawStatus.charAt(0).toUpperCase() + rawStatus.slice(1);
+                const displayId = row.invoice_id || row.payment_id || row.order_id || `PAY-${row.id}`;
+
+                return {
+                    id: displayId,
+                    date: formattedDate,
+                    rawDate: row.created_at,
+                    description: planTitle,
+                    amount: amt,
+                    method: displayMethod,
+                    paymentRef: row.payment_id || row.order_id || '—',
+                    status: displayStatus,
+                    addons: [],
+                    items: [
+                        {
+                            name: `${planTitle} — Subscription Payment`,
+                            subtitle: 'Core salon management & features',
+                            amount: amt,
+                            isPlan: true
+                        }
+                    ]
+                };
+            });
+
+            renderPaymentHistory();
+        } catch (err) {
+            console.warn('[Billing] Non-blocking warning in loadPaymentHistory:', err);
+            state.paymentHistory = [];
+            renderPaymentHistory();
+        }
+    }
+
     async function loadPlanFeatures(supabase, planId) {
         if (!planId) {
             state.features = { included: [], excluded: [], loaded: true };
@@ -2570,7 +2379,8 @@
                 await Promise.all([
                     loadAvailableAddonsCatalog(supabase),
                     loadBillingSettings(supabase, companyId),
-                    loadBillingInformation(supabase, companyId)
+                    loadBillingInformation(supabase, companyId),
+                    loadPaymentHistory(supabase, companyId)
                 ]);
                 renderCurrentPlan();
                 renderPlanFeatures();
@@ -2634,13 +2444,14 @@
 
             renderCurrentPlan();
 
-            // Load features, active add-ons, available add-ons catalog, billing settings, and billing information in parallel
+            // Load features, active add-ons, available add-ons catalog, billing settings, billing information, and payment history in parallel
             await Promise.all([
                 loadPlanFeatures(supabase, sub.plan_id),
                 loadActiveAddons(supabase, sub.subscription_id),
                 loadAvailableAddonsCatalog(supabase),
                 loadBillingSettings(supabase, companyId),
-                loadBillingInformation(supabase, companyId)
+                loadBillingInformation(supabase, companyId),
+                loadPaymentHistory(supabase, companyId)
             ]);
 
             renderBillingSummary();
