@@ -184,7 +184,7 @@ function setupTokenRefresh() {
 
 // ─── Authoritative Subscription Helper ─────────────────────────────────────────
 // Reads current subscription state from the authoritative subscriptions table.
-async function getAuthoritativeSubscription(supabaseClient, companyId, userId) {
+async function getAuthoritativeSubscription(supabaseClient, companyId) {
     if (!companyId) return null;
 
     const selectFields = 'subscription_id, company_id, plan_id, plan_name, status, subscription_start_date, subscription_end_date, billing_cycle, auto_renew, created_at';
@@ -192,8 +192,7 @@ async function getAuthoritativeSubscription(supabaseClient, companyId, userId) {
         'active': 1,
         'trial': 1,
         'trialing': 1,
-        'past_due': 2,
-        'cancelled': 3
+        'cancelled': 2
     };
 
     function pickBestSubscription(rows) {
@@ -209,7 +208,7 @@ async function getAuthoritativeSubscription(supabaseClient, companyId, userId) {
             return endDate && !isNaN(endDate.getTime()) && endDate > today;
         });
 
-        // If unexpired subscriptions exist, prioritize active/trial over past_due/cancelled, then newest created_at
+        // If unexpired subscriptions exist, prioritize active/trial over cancelled, then newest created_at
         if (validSubs.length > 0) {
             validSubs.sort((a, b) => {
                 const tierA = STATUS_TIER[(a.status || '').toLowerCase().trim()] || 99;
@@ -225,7 +224,7 @@ async function getAuthoritativeSubscription(supabaseClient, companyId, userId) {
     }
 
     try {
-        // Query candidate subscriptions for company
+        // Query candidate subscriptions strictly for the current company
         const { data: compSubs, error: compErr } = await supabaseClient
             .from('subscriptions')
             .select(selectFields)
@@ -234,19 +233,6 @@ async function getAuthoritativeSubscription(supabaseClient, companyId, userId) {
 
         if (!compErr && compSubs && compSubs.length > 0) {
             return pickBestSubscription(compSubs);
-        }
-
-        // Fallback: lookup by user_id if company has no subscription rows
-        if (userId) {
-            const { data: userSubs, error: userErr } = await supabaseClient
-                .from('subscriptions')
-                .select(selectFields)
-                .eq('user_id', userId)
-                .order('created_at', { ascending: false });
-
-            if (!userErr && userSubs && userSubs.length > 0) {
-                return pickBestSubscription(userSubs);
-            }
         }
     } catch (err) {
         console.warn('[Auth Guard] Error fetching authoritative subscription:', err.message || err);
@@ -268,12 +254,12 @@ function setupHourlyHeartbeat() {
             if (!company_id) return;
 
             // 1. Re-check authoritative subscription from subscriptions table
-            const subscription = await getAuthoritativeSubscription(supabase, company_id, null);
+            const subscription = await getAuthoritativeSubscription(supabase, company_id);
 
             const today = new Date();
             const endDate = subscription?.subscription_end_date ? new Date(subscription.subscription_end_date) : null;
             const subStatus = (subscription?.status || '').toLowerCase().trim();
-            const isValidStatus = ['active', 'trial', 'trialing', 'past_due', 'cancelled'].includes(subStatus);
+            const isValidStatus = ['active', 'trial', 'trialing', 'cancelled'].includes(subStatus);
             const isExpired = !subscription || !isValidStatus || !endDate || isNaN(endDate.getTime()) || endDate <= today;
 
             if (isExpired) {
@@ -502,12 +488,12 @@ export async function runGlobalAuthGuard() {
         }
 
         // 4. Authoritative subscription status & expiry check from subscriptions table
-        const subscription = await getAuthoritativeSubscription(supabase, resolvedCompanyId, user_id);
+        const subscription = await getAuthoritativeSubscription(supabase, resolvedCompanyId);
 
         const today = new Date();
         const endDate = subscription?.subscription_end_date ? new Date(subscription.subscription_end_date) : null;
         const subStatus = (subscription?.status || '').toLowerCase().trim();
-        const isValidStatus = ['active', 'trial', 'trialing', 'past_due', 'cancelled'].includes(subStatus);
+        const isValidStatus = ['active', 'trial', 'trialing', 'cancelled'].includes(subStatus);
         const isExpired = !subscription || !isValidStatus || !endDate || isNaN(endDate.getTime()) || endDate <= today;
 
         if (isExpired) {

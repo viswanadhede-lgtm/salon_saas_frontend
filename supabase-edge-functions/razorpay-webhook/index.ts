@@ -1414,30 +1414,48 @@ async function handleSubscriptionLifecycle(
         "created";
     }
 
-    if (
-      subEntity.current_start != null
-    ) {
-      update.subscription_start_date =
-        new Date(
-          (subEntity.current_start as number) *
-          1000
-        ).toISOString();
-    }
+    // IMPORTANT:
+    // subscription.activated is a Razorpay technical lifecycle event.
+    // It must NOT overwrite the 7-day trial window.
+    //
+    // For a trial, the create function already stores:
+    //   subscription_end_date = charge_at
+    //   next_billing_at      = charge_at
+    //
+    // invoice.paid is responsible for replacing those dates with the
+    // confirmed paid billing period. Therefore, preserve the existing
+    // trial dates while the subscription is still in trial.
+    if (localSub.status !== "trial" && localSub.status !== "trialing") {
+      if (
+        subEntity.current_start != null
+      ) {
+        update.subscription_start_date =
+          new Date(
+            (subEntity.current_start as number) *
+            1000
+          ).toISOString();
+      }
 
-    if (
-      subEntity.current_end != null
-    ) {
-      update.subscription_end_date =
-        new Date(
-          (subEntity.current_end as number) *
-          1000
-        ).toISOString();
+      if (
+        subEntity.current_end != null
+      ) {
+        update.subscription_end_date =
+          new Date(
+            (subEntity.current_end as number) *
+            1000
+          ).toISOString();
 
-      update.next_billing_at =
-        new Date(
-          (subEntity.current_end as number) *
-          1000
-        ).toISOString();
+        update.next_billing_at =
+          new Date(
+            (subEntity.current_end as number) *
+            1000
+          ).toISOString();
+      }
+    } else {
+      console.log(
+        `razorpay-webhook: subscription.activated — ` +
+        `preserving trial dates for [${rzpSubId}]`
+      );
     }
 
     console.log(
