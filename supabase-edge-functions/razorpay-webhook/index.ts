@@ -417,6 +417,14 @@ async function handleInvoicePaid(
   }
 
   // ── IDEMPOTENCY: payment_id ───────────────────────────────────────────────
+  //
+  // If the payment row is already recorded as paid we must NOT create a
+  // duplicate. However, we MUST NOT return early: the subscription update
+  // may have failed on a previous attempt and the retry must reconcile it.
+  // paymentAlreadyRecorded=true skips all payment writes below but still
+  // falls through to the subscription update section.
+
+  let paymentAlreadyRecorded = false;
 
   if (rzpPaymentId) {
 
@@ -448,20 +456,18 @@ async function handleInvoicePaid(
       console.log(
         `razorpay-webhook: invoice.paid — payment_id ` +
         `[${rzpPaymentId}] already recorded ` +
-        `(id=${existingPayment.id}). Idempotent skip.`
+        `(id=${existingPayment.id}). Skipping payment write; ` +
+        `will still reconcile subscription state.`
       );
-
-      return jsonResponse({
-        received: true,
-        action: "already_processed",
-        payment_id: rzpPaymentId,
-      });
+      paymentAlreadyRecorded = true;
     }
   }
 
   // ── IDEMPOTENCY: invoice_id ───────────────────────────────────────────────
+  //
+  // Same logic: skip payment write on duplicate, fall through to subscription.
 
-  if (rzpInvoiceId) {
+  if (!paymentAlreadyRecorded && rzpInvoiceId) {
 
     const {
       data: existingByInvoice,
@@ -493,14 +499,10 @@ async function handleInvoicePaid(
     if (existingByInvoice) {
       console.log(
         `razorpay-webhook: invoice.paid — invoice_id ` +
-        `[${rzpInvoiceId}] already recorded as paid.`
+        `[${rzpInvoiceId}] already recorded as paid. Skipping payment write; ` +
+        `will still reconcile subscription state.`
       );
-
-      return jsonResponse({
-        received: true,
-        action: "already_processed",
-        invoice_id: rzpInvoiceId,
-      });
+      paymentAlreadyRecorded = true;
     }
   }
 
@@ -575,176 +577,183 @@ async function handleInvoicePaid(
   //
   // For the FIRST invoice.paid event, update that row instead
   // of inserting a duplicate payment record.
-
-  const {
-    data: existingPendingPayment,
-    error: pendingLookupErr,
-  } = await supabaseAdmin
-    .from("payments")
-    .select("id, status")
-    .eq(
-      "subscription_id",
-      subscription_id
-    )
-    .eq(
-      "status",
-      "created"
-    )
-    .order(
-      "created_at",
-      {
-        ascending: true,
-      }
-    )
-    .limit(1)
-    .maybeSingle();
-
-  if (pendingLookupErr) {
-    console.error(
-      "razorpay-webhook: invoice.paid — pending payment lookup failed:",
-      pendingLookupErr
-    );
-
-    return jsonResponse(
-      {
-        error:
-          "Database error during pending payment lookup",
-      },
-      500
-    );
-  }
+  //
+  // If paymentAlreadyRecorded=true (idempotency hit above), skip all
+  // payment writes and fall through to subscription reconciliation.
 
   const nowIso =
     new Date().toISOString();
 
-  // ── UPDATE EXISTING INITIAL PAYMENT ──────────────────────────────────────
-
-  if (existingPendingPayment) {
+  if (!paymentAlreadyRecorded) {
 
     const {
-      error: paymentUpdateErr,
+      data: existingPendingPayment,
+      error: pendingLookupErr,
     } = await supabaseAdmin
       .from("payments")
-      .update({
-        order_id:
-          rzpInvoiceId ||
-          rzpSubscriptionId,
-
-        invoice_id:
-          rzpInvoiceId ||
-          null,
-
-        payment_id:
-          rzpPaymentId ||
-          null,
-
-        amount:
-          paidAmount,
-
-        payment_method:
-          paymentMethod,
-
-        status:
-          "paid",
-      })
+      .select("id, status")
       .eq(
-        "id",
-        existingPendingPayment.id
-      );
+        "subscription_id",
+        subscription_id
+      )
+      .eq(
+        "status",
+        "created"
+      )
+      .order(
+        "created_at",
+        {
+          ascending: true,
+        }
+      )
+      .limit(1)
+      .maybeSingle();
 
-    if (paymentUpdateErr) {
+    if (pendingLookupErr) {
       console.error(
-        "razorpay-webhook: invoice.paid — existing payment update failed:",
-        paymentUpdateErr
+        "razorpay-webhook: invoice.paid — pending payment lookup failed:",
+        pendingLookupErr
       );
 
       return jsonResponse(
         {
           error:
-            "Database error: failed to update payment",
+            "Database error during pending payment lookup",
         },
         500
       );
     }
 
-    console.log(
-      `razorpay-webhook: invoice.paid — ` +
-      `updated existing payment row [${existingPendingPayment.id}] to paid.`
-    );
+    // ── UPDATE EXISTING INITIAL PAYMENT ────────────────────────────────────
 
-  } else {
+    if (existingPendingPayment) {
 
-    // ── RECURRING PAYMENT ───────────────────────────────────────────────────
-    //
-    // If there is no pending initial row, this is treated as a
-    // subsequent recurring payment and gets a new ledger row.
+      const {
+        error: paymentUpdateErr,
+      } = await supabaseAdmin
+        .from("payments")
+        .update({
+          order_id:
+            rzpInvoiceId ||
+            rzpSubscriptionId,
 
-    const {
-      error: payInsertErr,
-    } = await supabaseAdmin
-      .from("payments")
-      .insert({
-        order_id:
-          rzpInvoiceId ||
-          rzpSubscriptionId,
+          invoice_id:
+            rzpInvoiceId ||
+            null,
 
-        invoice_id:
-          rzpInvoiceId ||
-          null,
+          payment_id:
+            rzpPaymentId ||
+            null,
 
-        subscription_id:
-          subscription_id,
+          amount:
+            paidAmount,
 
-        company_id:
-          company_id,
+          payment_method:
+            paymentMethod,
 
-        plan_id:
-          plan_id,
+          status:
+            "paid",
+        })
+        .eq(
+          "id",
+          existingPendingPayment.id
+        );
 
-        amount:
-          paidAmount,
+      if (paymentUpdateErr) {
+        console.error(
+          "razorpay-webhook: invoice.paid — existing payment update failed:",
+          paymentUpdateErr
+        );
 
-        payment_id:
-          rzpPaymentId ||
-          null,
+        return jsonResponse(
+          {
+            error:
+              "Database error: failed to update payment",
+          },
+          500
+        );
+      }
 
-        email:
-          null,
-
-        name:
-          null,
-
-        payment_method:
-          paymentMethod,
-
-        status:
-          "paid",
-
-        created_at:
-          paidAtIso ||
-          nowIso,
-      });
-
-    if (payInsertErr) {
-      console.error(
-        "razorpay-webhook: invoice.paid — recurring payment insert failed:",
-        payInsertErr
+      console.log(
+        `razorpay-webhook: invoice.paid — ` +
+        `updated existing payment row [${existingPendingPayment.id}] to paid.`
       );
 
-      return jsonResponse(
-        {
-          error:
-            "Database error: failed to record payment",
-        },
-        500
+    } else {
+
+      // ── RECURRING PAYMENT ─────────────────────────────────────────────────
+      //
+      // If there is no pending initial row, this is treated as a
+      // subsequent recurring payment and gets a new ledger row.
+
+      const {
+        error: payInsertErr,
+      } = await supabaseAdmin
+        .from("payments")
+        .insert({
+          order_id:
+            rzpInvoiceId ||
+            rzpSubscriptionId,
+
+          invoice_id:
+            rzpInvoiceId ||
+            null,
+
+          subscription_id:
+            subscription_id,
+
+          company_id:
+            company_id,
+
+          plan_id:
+            plan_id,
+
+          amount:
+            paidAmount,
+
+          payment_id:
+            rzpPaymentId ||
+            null,
+
+          email:
+            null,
+
+          name:
+            null,
+
+          payment_method:
+            paymentMethod,
+
+          status:
+            "paid",
+
+          created_at:
+            paidAtIso ||
+            nowIso,
+        });
+
+      if (payInsertErr) {
+        console.error(
+          "razorpay-webhook: invoice.paid — recurring payment insert failed:",
+          payInsertErr
+        );
+
+        return jsonResponse(
+          {
+            error:
+              "Database error: failed to record payment",
+          },
+          500
+        );
+      }
+
+      console.log(
+        "razorpay-webhook: invoice.paid — " +
+        "created recurring payment row."
       );
     }
 
-    console.log(
-      "razorpay-webhook: invoice.paid — " +
-      "created recurring payment row."
-    );
-  }
+  } // end !paymentAlreadyRecorded
 
   // ── UPDATE SUBSCRIPTION ───────────────────────────────────────────────────
   //

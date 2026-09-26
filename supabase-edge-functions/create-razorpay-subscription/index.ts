@@ -285,6 +285,25 @@ Deno.serve(async (req: Request) => {
         ? Number(plan.price_yearly)
         : Number(plan.price_monthly);
 
+    // Validate the derived amount: must be a finite number greater than zero.
+    // Rejects NaN, Infinity, -Infinity, zero, and negative values.
+    if (!Number.isFinite(derivedAmount) || derivedAmount <= 0) {
+      console.error(
+        `create-razorpay-subscription: Invalid plan price for plan [${db_plan_id}] ` +
+        `cycle [${normalizedCycle}]: ${derivedAmount}`
+      );
+      return new Response(
+        JSON.stringify({ error: "Invalid plan price configured" }),
+        {
+          status: 400,
+          headers: {
+            ...corsHeaders,
+            "Content-Type": "application/json",
+          },
+        }
+      );
+    }
+
     // ── 8. CUSTOMER INFORMATION (AUTHENTICATED EMAIL FIRST) ─────────────────
     const verifiedEmail =
       authenticatedUserEmail || customer_email || "";

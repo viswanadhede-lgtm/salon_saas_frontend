@@ -439,8 +439,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                         razorpay_payment_id:      response.razorpay_payment_id      || '',
                         razorpay_subscription_id: response.razorpay_subscription_id || subscriptionId,
                         razorpay_signature:       response.razorpay_signature       || '',
-                        flow_type:                'paid',
-                        t: localStorage.getItem('token') || ''
+                        flow_type:                'paid'
                     });
                     window.location.href = `payment-result.html?${params.toString()}`;
                 },
@@ -592,8 +591,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                         razorpay_payment_id:      razorpayResponse.razorpay_payment_id || '',
                         razorpay_subscription_id: subscriptionId,
                         razorpay_signature:       razorpayResponse.razorpay_signature || '',
-                        flow_type:                isTrial ? 'trial' : 'paid',
-                        t: localStorage.getItem('token') || ''
+                        flow_type:                isTrial ? 'trial' : 'paid'
                     });
                     
                     window.location.href = `payment-result.html?${params.toString()}`;
