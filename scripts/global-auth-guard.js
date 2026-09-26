@@ -378,56 +378,9 @@ export async function runGlobalAuthGuard() {
         return;
     }
 
-    // ── Optimistic cache hit ───────────────────────────────────────────────────
-    const cachedFeaturesStr = localStorage.getItem('userFeatures');
-    if (cachedFeaturesStr) {
-        try {
-            const cachedFeatures = JSON.parse(cachedFeaturesStr);
-            if (Array.isArray(cachedFeatures)) {
-                console.log('[Auth Guard] Cache hit — instant unlock.');
-                setupTokenRefresh();
-                setupHourlyHeartbeat();
-
-                function hasFeatureAccess(featList, fKey) {
-                    if (!fKey) return true;
-                    if (featList.includes(fKey)) return true;
-                    if (fKey === FEATURES.PAYMENT_BOOKINGS && featList.includes(FEATURES.BOOKINGS_MANAGEMENT)) return true;
-                    if (fKey === FEATURES.PAYMENT_POS && featList.includes(FEATURES.POS_SYSTEM)) return true;
-                    if (fKey === FEATURES.PAYMENT_MEMBERSHIPS && featList.includes(FEATURES.MARKETING_MEMBERSHIPS)) return true;
-                    return false;
-                }
-
-                if (!hasFeatureAccess(cachedFeatures, featureKey)) {
-                    showAuthBlockModal('FEATURE_NOT_ALLOWED',
-                        "You currently don't have access to this feature. Please upgrade your plan.",
-                        'Upgrade', 'plans.html?flow=upgrade');
-                    return;
-                }
-
-                const requiredSubFeature = SUB_ROUTE_MAP[filename];
-                if (requiredSubFeature) {
-                    const cachedSubFeatures = JSON.parse(localStorage.getItem('userSubFeatures') || '[]');
-                    if (Array.isArray(cachedSubFeatures) && !cachedSubFeatures.includes(requiredSubFeature)) {
-                        showAuthBlockModal('FEATURE_NOT_ALLOWED',
-                            "Your role does not have permission to access this settings section.",
-                            'Back to Settings', 'company.html');
-                        return;
-                    }
-                }
-
-                populateGlobalHeader();
-                initGlobalBookingModal();
-                initSubFeatures();
-                applySubFeatureGates();
-                removeAuthSpinner();
-                return;
-            }
-        } catch (e) { /* fall through to cold start */ }
-    }
-
-    // ── Cold start: validate token + load context from Supabase ───────────────
+    // ── Authoritative validation: validate token + load subscription context from Supabase ─────────
     try {
-        console.log('[Auth Guard] Cold start — validating session via Supabase...');
+        console.log('[Auth Guard] Validating session and authoritative subscription via Supabase...');
 
         // 1. Validate token
         const userRes = await fetch(`${SUPABASE_URL}/auth/v1/user`, {
