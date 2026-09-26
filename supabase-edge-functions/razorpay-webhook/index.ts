@@ -512,7 +512,7 @@ async function handleInvoicePaid(
   } = await supabaseAdmin
     .from("subscriptions")
     .select(
-      "subscription_id, company_id, plan_id, user_id, billing_cycle, plan_name"
+      "subscription_id, company_id, plan_id, user_id, billing_cycle, plan_name, status"
     )
     .eq(
       "subscription_id",
@@ -749,16 +749,40 @@ async function handleInvoicePaid(
   // ── UPDATE SUBSCRIPTION ───────────────────────────────────────────────────
   //
   // invoice.paid is the authoritative confirmed payment event.
-  // Only this event grants the paid subscription ACTIVE status.
+  // Only this event grants a non-terminal paid subscription ACTIVE status.
+  //
+  // IMPORTANT:
+  // A late/replayed invoice.paid event must never reactivate a subscription
+  // that has already reached a terminal lifecycle state.
+
+  const terminalStatuses = [
+    "cancelled",
+    "halted",
+    "completed",
+  ];
+
+  const currentSubscriptionStatus =
+    String(localSub.status || "").toLowerCase();
+
+  const isTerminalSubscription =
+    terminalStatuses.includes(currentSubscriptionStatus);
 
   const subUpdate:
     Record<string, unknown> = {
-    status:
-      "active",
-
     updated_at:
       nowIso,
   };
+
+  if (!isTerminalSubscription) {
+    subUpdate.status =
+      "active";
+  } else {
+    console.log(
+      `razorpay-webhook: invoice.paid — ` +
+      `subscription [${rzpSubscriptionId}] is already terminal ` +
+      `[${currentSubscriptionStatus}]; payment recorded without reactivating it.`
+    );
+  }
 
   // Use Razorpay invoice dates when available.
 
