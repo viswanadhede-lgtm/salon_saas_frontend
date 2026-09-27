@@ -1132,6 +1132,33 @@ window.viewCustomerProfile = async function(customerId, customerName) {
 
 function attachEventListeners() {
 
+    // ── Tab Switching Logic ──────────────────────────────────────────────────
+    const tabBtns = document.querySelectorAll('.bookings-tab-btn');
+    const tabPanes = document.querySelectorAll('.bookings-tab-pane');
+
+    tabBtns.forEach(btn => {
+        btn.addEventListener('click', () => {
+            // Remove active from all
+            tabBtns.forEach(b => b.classList.remove('active'));
+            tabPanes.forEach(p => p.classList.remove('active'));
+
+            // Add active to clicked
+            btn.classList.add('active');
+            const targetId = btn.getAttribute('data-target');
+            const targetPane = document.getElementById(targetId);
+            if (targetPane) {
+                targetPane.classList.add('active');
+            }
+
+            // If switching to Calendar, ensure calendar view is rendered
+            if (targetId === 'paneCalendar' && typeof renderCalendar === 'function') {
+                renderCalendar();
+            }
+        });
+    });
+
+    initCalendarListeners();
+
     const branchSelect = document.getElementById('branchSelect');
     if (branchSelect) {
         branchSelect.addEventListener('change', async (e) => {
@@ -2664,25 +2691,27 @@ function openCalendarDayModal(dateStr, bookings) {
 }
 
 // Wire Calendar Navigation Listeners
-document.addEventListener('DOMContentLoaded', () => {
-    // Needs feather icons again mostly managed elsewhere
+function initCalendarListeners() {
     const prev = document.getElementById('calPrevBtn');
     const next = document.getElementById('calNextBtn');
     const todayBtn = document.getElementById('calTodayBtn');
 
-    if (prev) {
+    if (prev && !prev.dataset.calInit) {
+        prev.dataset.calInit = '1';
         prev.addEventListener('click', () => {
             currentCalDate.setMonth(currentCalDate.getMonth() - 1);
             renderCalendar();
         });
     }
-    if (next) {
+    if (next && !next.dataset.calInit) {
+        next.dataset.calInit = '1';
         next.addEventListener('click', () => {
             currentCalDate.setMonth(currentCalDate.getMonth() + 1);
             renderCalendar();
         });
     }
-    if (todayBtn) {
+    if (todayBtn && !todayBtn.dataset.calInit) {
+        todayBtn.dataset.calInit = '1';
         todayBtn.addEventListener('click', () => {
             currentCalDate = new Date();
             renderCalendar();
@@ -2695,14 +2724,27 @@ document.addEventListener('DOMContentLoaded', () => {
     const closeBtn2 = document.getElementById('calDayModalCloseBtn');
 
     const handleClose = () => { if (overlay) overlay.classList.remove('active'); };
-    if (closeBtn1) closeBtn1.addEventListener('click', handleClose);
-    if (closeBtn2) closeBtn2.addEventListener('click', handleClose);
+    if (closeBtn1 && !closeBtn1.dataset.calInit) {
+        closeBtn1.dataset.calInit = '1';
+        closeBtn1.addEventListener('click', handleClose);
+    }
+    if (closeBtn2 && !closeBtn2.dataset.calInit) {
+        closeBtn2.dataset.calInit = '1';
+        closeBtn2.addEventListener('click', handleClose);
+    }
     
     // Close on outside click
-    if (overlay) {
+    if (overlay && !overlay.dataset.calInit) {
+        overlay.dataset.calInit = '1';
         overlay.addEventListener('click', (e) => {
             if (e.target === overlay) handleClose();
         });
     }
-});
+}
+
+if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', initCalendarListeners);
+} else {
+    initCalendarListeners();
+}
 
