@@ -4,6 +4,7 @@
 
     // ─── Inject Modal HTML & CSS on load ──────────────────────────────────────
     function injectLogoutModal() {
+        if (document.getElementById('logoutModalBackdrop') || !document.body) return;
         const style = document.createElement('style');
         style.textContent = `
             #logoutModalBackdrop {
@@ -133,28 +134,48 @@
     }
 
     function openLogoutModal() {
-        document.getElementById('logoutModalBackdrop').classList.add('active');
+        injectLogoutModal();
+        injectLoggingOutOverlay();
+        const backdrop = document.getElementById('logoutModalBackdrop');
+        if (backdrop) backdrop.classList.add('active');
     }
 
     function closeLogoutModal() {
-        document.getElementById('logoutModalBackdrop').classList.remove('active');
+        const backdrop = document.getElementById('logoutModalBackdrop');
+        if (backdrop) backdrop.classList.remove('active');
     }
 
+    // Expose globally so app-layout and other scripts can trigger confirmation modal
+    window.openLogoutModal = openLogoutModal;
+    window.closeLogoutModal = closeLogoutModal;
+    window.handleLogout = handleLogout;
+
     // ─── Bind logout button click → show modal ─────────────────────────────────
-    document.addEventListener('DOMContentLoaded', () => {
+    function initLogout() {
         injectLogoutModal();
         injectLoggingOutOverlay();
 
-        document.querySelectorAll('.dropdown-item.text-danger, a.dropdown-item[style*="color:#ef4444"]').forEach(logoutBtn => {
-            logoutBtn.addEventListener('click', (e) => {
-                e.preventDefault();
-                openLogoutModal();
-            });
+        document.querySelectorAll('.dropdown-item.text-danger, a.dropdown-item[style*="color:#ef4444"], #menuItemLogout').forEach(logoutBtn => {
+            if (!logoutBtn.dataset.logoutModalBound) {
+                logoutBtn.dataset.logoutModalBound = '1';
+                logoutBtn.addEventListener('click', (e) => {
+                    e.preventDefault();
+                    openLogoutModal();
+                });
+            }
         });
-    });
+    }
+
+    if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', initLogout);
+    } else {
+        initLogout();
+    }
+    document.addEventListener('app-shell:ready', initLogout);
 
     // ─── Inject Logging-out Overlay ────────────────────────────────────────────
     function injectLoggingOutOverlay() {
+        if (document.getElementById('loggingOutOverlay') || !document.body) return;
         const style = document.createElement('style');
         style.textContent = `
             #loggingOutOverlay {
