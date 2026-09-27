@@ -320,8 +320,9 @@ function setupHourlyHeartbeat() {
             }
 
             // 5. Update cache
-            localStorage.setItem('userFeatures',    JSON.stringify(userFeatures));
-            localStorage.setItem('userSubFeatures', JSON.stringify(userSubFeatures));
+            localStorage.setItem('userFeatures',      JSON.stringify(userFeatures));
+            localStorage.setItem('userSubFeatures',   JSON.stringify(userSubFeatures));
+            localStorage.setItem('authCacheTimestamp', Date.now().toString()); // ← reset TTL clock
 
             // 6. Check current page is still allowed
             const path = window.location.pathname;
@@ -378,9 +379,57 @@ export async function runGlobalAuthGuard() {
         return;
     }
 
-    // ── Authoritative validation: validate token + load subscription context from Supabase ─────────
+    // ── OPTIMISTIC CACHE HIT: skip network on page-to-page navigation ─────────────────────────────
+    const cachedFeatures  = localStorage.getItem('userFeatures');
+    const cachedContext   = localStorage.getItem('appContext');
+    const cacheTimestamp  = parseInt(localStorage.getItem('authCacheTimestamp') || '0', 10);
+    const CACHE_TTL_MS    = 60 * 60 * 1000; // 1 hour — aligned with heartbeat
+    const isCacheValid    = cachedFeatures && cachedContext &&
+                            (Date.now() - cacheTimestamp) < CACHE_TTL_MS;
+
+    if (isCacheValid) {
+        try {
+            const userFeatures    = JSON.parse(cachedFeatures);
+            const userSubFeatures = JSON.parse(localStorage.getItem('userSubFeatures') || '[]');
+
+            // Verify current page is still allowed per cached permissions
+            if (!hasFeatureAccess(userFeatures, featureKey)) {
+                showAuthBlockModal('FEATURE_NOT_ALLOWED',
+                    "You currently don't have access to this feature. Please upgrade your plan.",
+                    'Upgrade', 'plans.html?flow=upgrade');
+                return;
+            }
+
+            const requiredSubFeature = SUB_ROUTE_MAP[filename];
+            if (requiredSubFeature && !userSubFeatures.includes(requiredSubFeature)) {
+                showAuthBlockModal('FEATURE_NOT_ALLOWED',
+                    "Your role does not have permission to access this settings section.",
+                    'Back to Settings', 'company.html');
+                return;
+            }
+
+            // Hydrate UI from cache (instant, no network)
+            populateGlobalHeader();
+            initGlobalBookingModal();
+            initSubFeatures();
+            applySubFeatureGates();
+            removeAuthSpinner();
+
+            // Ensure background jobs are running
+            setupTokenRefresh();
+            setupHourlyHeartbeat();
+
+            console.log('[Auth Guard] Cache hit ✓ Page unlocked instantly.');
+            return; // ← skip cold start entirely
+        } catch (cacheErr) {
+            console.warn('[Auth Guard] Cache parse error, falling through to cold start:', cacheErr.message);
+            // fall-through to cold start below
+        }
+    }
+
+    // ── COLD START: authoritative validation via Supabase (first login or stale cache) ───────────
     try {
-        console.log('[Auth Guard] Validating session and authoritative subscription via Supabase...');
+        console.log('[Auth Guard] Cache miss — running cold start via Supabase...');
 
         // 1. Validate token
         const userRes = await fetch(`${SUPABASE_URL}/auth/v1/user`, {
@@ -549,9 +598,10 @@ export async function runGlobalAuthGuard() {
         };
 
         // 12. Persist to cache
-        localStorage.setItem('userFeatures',    JSON.stringify(userFeatures));
-        localStorage.setItem('userSubFeatures', JSON.stringify(userSubFeatures));
-        localStorage.setItem('appContext',      JSON.stringify(appContext));
+        localStorage.setItem('userFeatures',      JSON.stringify(userFeatures));
+        localStorage.setItem('userSubFeatures',   JSON.stringify(userSubFeatures));
+        localStorage.setItem('appContext',        JSON.stringify(appContext));
+        localStorage.setItem('authCacheTimestamp', Date.now().toString()); // ← cache TTL clock
         if (!localStorage.getItem('company_id')) localStorage.setItem('company_id', resolvedCompanyId);
         if (!localStorage.getItem('active_branch_id')) localStorage.setItem('active_branch_id', resolvedBranchId);
 
