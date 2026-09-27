@@ -1,0 +1,92 @@
+<header class="top-header">
+    <div class="header-left">
+        <!-- Mobile Sidebar Toggle -->
+        <button class="mobile-sidebar-toggle" id="mobileSidebarToggle" type="button" aria-label="Toggle navigation menu" title="Open menu">
+            <i data-feather="menu"></i>
+        </button>
+
+        <!-- Branch Switcher -->
+        <div class="branch-switcher">
+            <i data-feather="map-pin" class="branch-icon"></i>
+            <select id="branchSelect" class="branch-select">
+                <option value="branch_1">Downtown Branch</option>
+                <option value="branch_2">Uptown Spa</option>
+            </select>
+        </div>
+        <!-- Date Chip -->
+        <div class="date-chip" id="headerDateChip">
+            <i data-feather="calendar" class="date-chip-icon"></i>
+            <span class="date-chip-text">Loading...</span>
+        </div>
+    </div>
+
+    <div class="header-right">
+        <!-- Quick Actions -->
+        <div class="quick-actions">
+            <button class="qa-btn qa-primary" id="btnNewBooking" data-sub-feature="dashboard_create_booking" type="button">
+                <i data-feather="calendar" class="qa-icon"></i>
+                <span>New Booking</span>
+            </button>
+        </div>
+        <div class="header-divider"></div>
+        <div class="plan-badge" id="headerPlanBadge">Growth</div>
+        <button class="icon-btn" title="Notifications" type="button">
+            <i data-feather="bell"></i>
+            <span class="notification-dot"></span>
+        </button>
+        <div class="user-profile" id="userProfileDropdown">
+            <div class="avatar" id="avatarBtn" role="button" tabindex="0" title="User menu">
+                <img src="https://ui-avatars.com/api/?name=Admin+User&background=1E3A8A&color=fff" alt="User">
+            </div>
+
+            <!-- Profile Dropdown Menu -->
+            <div class="profile-dropdown" id="profileMenu">
+                <div class="dropdown-header">
+                    <p class="dropdown-name">Admin User</p>
+                    <p class="dropdown-role">Owner</p>
+                </div>
+                <div class="dropdown-divider"></div>
+                <ul class="dropdown-list">
+                    <li>
+                        <a href="company.html" class="dropdown-item" id="menuItemProfile">
+                            <i data-feather="user"></i>
+                            <span>Profile</span>
+                        </a>
+                    </li>
+                    <li>
+                        <a href="staff-schedule.html" class="dropdown-item" id="menuItemSchedule">
+                            <i data-feather="calendar"></i>
+                            <span>Schedule</span>
+                        </a>
+                    </li>
+                    <li id="billingMenuItem">
+                        <a href="billing-subscription.html" class="dropdown-item" id="menuItemBilling">
+                            <i data-feather="credit-card"></i>
+                            <span>Billing</span>
+                        </a>
+                    </li>
+                    <li>
+                        <a href="company.html" class="dropdown-item" id="menuItemSettings">
+                            <i data-feather="settings"></i>
+                            <span>Settings</span>
+                        </a>
+                    </li>
+                    <li>
+                        <a href="support.html" class="dropdown-item" id="menuItemSupport">
+                            <i data-feather="help-circle"></i>
+                            <span>Support</span>
+                        </a>
+                    </li>
+                    <li>
+                        <a href="#" class="dropdown-item text-danger" id="menuItemLogout">
+                            <i data-feather="log-out"></i>
+                            <span>Logout</span>
+                        </a>
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </div>
+</header>
+<div id="profileBackdrop" class="profile-backdrop"></div>
+<div id="sidebarBackdrop" class="sidebar-backdrop"></div>

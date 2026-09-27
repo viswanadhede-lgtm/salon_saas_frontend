@@ -40,60 +40,10 @@ document.addEventListener('DOMContentLoaded', () => {
     initBranchSwitcher(branchId);
 
     // ----------------------------------------------------------------
-    // 2. SIDEBAR TOGGLE LOGIC (Lovable Style)
+    // 2. LAYOUT BEHAVIOR
     // ----------------------------------------------------------------
-    const sidebar = document.getElementById('sidebar');
-    const toggleBtn = document.getElementById('sidebarToggle');
-    
-    // Check local storage for sidebar preference
-    const sidebarState = localStorage.getItem('sidebar_collapsed');
-    if (sidebarState === 'true') {
-        sidebar.classList.add('collapsed');
-        toggleBtn.setAttribute('title', 'Open sidebar');
-    }
-
-    // Toggle button click event — guard against double-bind from page-level scripts
-    if (toggleBtn && !toggleBtn.dataset.tbInit) {
-        toggleBtn.dataset.tbInit = '1';
-        toggleBtn.addEventListener('click', () => {
-            sidebar.classList.toggle('collapsed');
-            const isCollapsed = sidebar.classList.contains('collapsed');
-            localStorage.setItem('sidebar_collapsed', isCollapsed);
-            if(isCollapsed) {
-                toggleBtn.setAttribute('title', 'Open sidebar');
-            } else {
-                toggleBtn.setAttribute('title', 'Close sidebar');
-            }
-        });
-    }
-
-    // ----------------------------------------------------------------
-    // 3. SUBMENU TOGGLE LOGIC
-    // ----------------------------------------------------------------
-    const submenuToggles = document.querySelectorAll('.submenu-toggle');
-    
-    submenuToggles.forEach(toggle => {
-        if (toggle.dataset.tbInit) return; // already bound by page-level script
-        toggle.dataset.tbInit = '1';
-        toggle.addEventListener('click', (e) => {
-            e.preventDefault();
-            const parentItem = toggle.closest('.has-submenu');
-            if (!parentItem) return;
-            parentItem.classList.toggle('submenu-open');
-            if (sidebar && sidebar.classList.contains('collapsed')) {
-                sidebar.classList.remove('collapsed');
-                localStorage.setItem('sidebar_collapsed', 'false');
-                if (toggleBtn) toggleBtn.setAttribute('title', 'Close sidebar');
-            }
-        });
-    });
-
-    // Auto-open any submenu that contains the currently active page link
-    document.querySelectorAll('.nav-item.has-submenu').forEach(item => {
-        if (item.querySelector('.submenu-link.active')) {
-            item.classList.add('submenu-open');
-        }
-    });
+    // Shared layout behaviors (sidebar collapse, mobile toggle, submenus, active nav)
+    // are now centralized and managed by scripts/app-layout.js
 
     // Handle tooltips logic...
     // When sidebar is NOT collapsed, we want to disable default title tooltips 
@@ -637,59 +587,7 @@ document.addEventListener('DOMContentLoaded', () => {
     // 5. PROFILE DROPDOWN LOGIC
     // ----------------------------------------------------------------
 
-    // Use event delegation for robust dropdown toggling across all pages
-    document.addEventListener('click', (e) => {
-        const avatarBtn = document.getElementById('avatarBtn');
-        const profileMenu = document.getElementById('profileMenu');
-        const profileBackdrop = document.getElementById('profileBackdrop');
-        const userProfileDropdown = document.getElementById('userProfileDropdown');
-        
-        if (!avatarBtn || !profileMenu) return;
-
-        // Ensure roles/billing options are initialized when needed
-        const currentUserRole = localStorage.getItem('user_role') || 'Owner'; 
-        const roleTextEl = profileMenu.querySelector('.dropdown-role');
-        const billingMenuItem = document.getElementById('billingMenuItem');
-        if (roleTextEl && roleTextEl.textContent !== currentUserRole) {
-            roleTextEl.textContent = currentUserRole;
-        }
-        if (currentUserRole.toLowerCase() === 'staff' && billingMenuItem) {
-            billingMenuItem.style.display = 'none';
-        }
-
-        const closeProfileMenu = () => {
-            profileMenu.classList.remove('show');
-            if (profileBackdrop) profileBackdrop.classList.remove('active');
-        };
-
-        const openProfileMenu = () => {
-            profileMenu.classList.add('show');
-            if (profileBackdrop) profileBackdrop.classList.add('active');
-        };
-
-        // 1. Clicked on the Avatar button
-        const avatarClick = e.target.closest('#avatarBtn');
-        if (avatarClick) {
-            e.preventDefault();
-            e.stopPropagation();
-            profileMenu.classList.contains('show') ? closeProfileMenu() : openProfileMenu();
-            return;
-        }
-
-        // 2. Clicked on the Backdrop
-        const backdropClick = e.target === profileBackdrop;
-        if (backdropClick) {
-            e.preventDefault();
-            e.stopPropagation();
-            closeProfileMenu();
-            return;
-        }
-
-        // 3. Clicked Outside (while menu is open)
-        if (profileMenu.classList.contains('show') && userProfileDropdown && !userProfileDropdown.contains(e.target)) {
-            closeProfileMenu();
-        }
-    });
+    // Profile dropdown behavior is now centralized and managed by scripts/app-layout.js
 
     // ----------------------------------------------------------------
     // 6. GENERIC PROFILE SECTION MODAL LOGIC

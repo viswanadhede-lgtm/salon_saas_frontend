@@ -1,4 +1,4 @@
-ï»¿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="en">
 
 <head>
@@ -14,6 +14,7 @@
     <link rel="stylesheet" href="styles.css">
     <link rel="stylesheet" href="dashboard.css">
     <link rel="stylesheet" href="submenu.css">
+    <link rel="stylesheet" href="styles/global-layout.css">
     <script src="https://unpkg.com/feather-icons"></script>
 
     <style>
@@ -54,141 +55,15 @@
 <body class="dashboard-body sales-history-body">
 
     <!-- Sidebar -->
-    <aside class="sidebar" id="sidebar">
-        <div class="sidebar-header">
-            <div class="logo">
-                <svg width="24" height="24" viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg">
-                    <rect x="2" y="6" width="28" height="20" rx="4" stroke="currentColor" stroke-width="2" />
-                    <path d="M8 12C8 12 11 16 16 16C21 16 24 12 24 12" stroke="currentColor" stroke-width="2" stroke-linecap="round" />
-                    <circle cx="16" cy="16" r="2" fill="currentColor" />
-                </svg>
-                <span class="logo-text">BharathBots</span>
-            </div>
-            <button class="toggle-btn" id="sidebarToggle" title="Close sidebar">
-                <i data-feather="sidebar" class="toggle-icon"></i>
-            </button>
-        </div>
-        <nav class="sidebar-nav">
-            <ul class="nav-list">
-                <li class="nav-item" title="Dashboard"><a href="dashboard.html" class="nav-link" data-feature="dashboard_access"><i data-feather="home" class="nav-icon"></i><span class="nav-text">Dashboard</span></a></li>
-                <li class="nav-item" title="Bookings"><a href="bookings.html" class="nav-link" data-feature="bookings_management"><i data-feather="calendar" class="nav-icon"></i><span class="nav-text">Bookings</span></a></li>
-                <li class="nav-item" title="Customers"><a href="customers.html" class="nav-link" data-feature="customers_management"><i data-feather="users" class="nav-icon"></i><span class="nav-text">Customers</span></a></li>
-                <li class="nav-item" title="Staff"><a href="staff.html" class="nav-link" data-feature="staff_management"><i data-feather="user-check" class="nav-icon"></i><span class="nav-text">Staff</span></a></li>
-                <li class="nav-item" title="Services"><a href="services.html" class="nav-link" data-feature="services_management"><i data-feather="scissors" class="nav-icon"></i><span class="nav-text">Services</span></a></li>
-                <li class="nav-item has-submenu active" title="Sales">
-                    <div class="nav-link submenu-toggle"><i data-feather="dollar-sign" class="nav-icon"></i><span class="nav-text">Sales</span><i data-feather="chevron-down" class="submenu-arrow"></i></div>
-                    <ul class="submenu">
-                        <li><a href="pos.html" class="submenu-link" data-feature="pos_system"><span class="submenu-bullet">&bull;</span><span class="nav-text">Point of Sale</span></a></li>
-                        <li><a href="products.html" class="submenu-link" data-feature="product_management"><span class="submenu-bullet">&bull;</span><span class="nav-text">Products</span></a></li>
-                        <li><a href="sales-history.html" class="submenu-link active"><span class="submenu-bullet">&bull;</span><span class="nav-text">Sales History</span></a></li>
-                    </ul>
-                </li>
-                <li class="nav-item has-submenu" title="Payments">
-                    <div class="nav-link submenu-toggle"><i data-feather="credit-card" class="nav-icon"></i><span class="nav-text">Payments</span><i data-feather="chevron-down" class="submenu-arrow"></i></div>
-                    <ul class="submenu">
-                        <li><a href="pending-payments.html" class="submenu-link" data-feature="pending_payments"><span class="submenu-bullet">&bull;</span><span class="nav-text">Pending Payments</span></a></li>
-                        <li><a href="payments-history.html" class="submenu-link" data-feature="payments_history"><span class="submenu-bullet">&bull;</span><span class="nav-text">Payments History</span></a></li>
-                    </ul>
-                </li>
-                <li class="nav-item has-submenu" title="Marketing">
-                    <div class="nav-link submenu-toggle"><i data-feather="gift" class="nav-icon"></i><span class="nav-text">Marketing</span><i data-feather="chevron-down" class="submenu-arrow"></i></div>
-                    <ul class="submenu">
-                        <li><a href="offers.html" class="submenu-link" data-feature="marketing_offers"><span class="submenu-bullet">&bull;</span><span
-                                    class="nav-text">Offers</span></a></li>
-                        <li><a href="coupons.html" class="submenu-link" data-feature="marketing_coupons"><span class="submenu-bullet">&bull;</span><span
-                                    class="nav-text">Coupons</span></a></li>
-                        <li><a href="memberships.html" class="submenu-link" data-feature="marketing_memberships"><span class="submenu-bullet">&bull;</span><span
-                                    class="nav-text">Memberships</span></a></li>
-                        <li><a href="ad-campaigns.html" class="submenu-link" data-feature="marketing_campaigns"><span class="submenu-bullet">&bull;</span><span
-                                    class="nav-text">Ad Campaigns</span></a></li>
-                    </ul>
-                </li>
-                <li class="nav-item has-submenu" title="Analytics">
-                    <div class="nav-link submenu-toggle"><i data-feather="bar-chart-2" class="nav-icon"></i><span class="nav-text">Analytics</span><i data-feather="chevron-down" class="submenu-arrow"></i></div>
-                    <ul class="submenu">
-                        <li><a href="overview.html" class="submenu-link" data-feature="analytics_overview"><span class="submenu-bullet">&bull;</span><span
-                                    class="nav-text">Overview</span></a></li>
-                        <li><a href="reports.html" class="submenu-link" data-feature="reports_access"><span class="submenu-bullet">&bull;</span><span
-                                    class="nav-text">Reports</span></a></li>
-                        <li><a href="expenses.html" class="submenu-link" data-feature="analytics_expenses"><span class="submenu-bullet">&bull;</span><span class="nav-text">Expenses</span></a></li>
-                    </ul>
-                </li>
-                <li class="nav-item has-submenu" title="Settings">
-                    <div class="nav-link submenu-toggle"><i data-feather="settings" class="nav-icon"></i><span class="nav-text">Settings</span><i data-feather="chevron-down" class="submenu-arrow"></i></div>
-                    <ul class="submenu">
-                        <li><a href="company.html" class="submenu-link" data-feature="company_settings"><span class="submenu-bullet">&bull;</span><span class="nav-text">Company</span></a></li>
-                        <li><a href="users.html" class="submenu-link" data-feature="user_management"><span class="submenu-bullet">&bull;</span><span class="nav-text">Users</span></a></li>
-                        <li><a href="roles-permissions.html" class="submenu-link" data-feature="roles_permissions"><span class="submenu-bullet">&bull;</span><span class="nav-text">Roles &amp; Permissions</span></a></li>
-                        <li><a href="billing-subscription.html" class="submenu-link" data-feature="billing_subscription_management"><span class="submenu-bullet">&bull;</span><span class="nav-text">Billing & Subscription</span></a></li>
-                    </ul>
-                </li>
-            </ul>
-        </nav>
-    </aside>
+
+    <!-- Global Sidebar Shell Placeholder -->
+    <div id="global-sidebar"></div>
 
     <!-- Main Wrapper -->
     <div class="main-wrapper" id="mainContent">
 
-        <!-- Top Header Bar -->
-        <header class="top-header">
-            <div class="header-left">
-                <div class="branch-switcher">
-                    <i data-feather="map-pin" class="branch-icon"></i>
-                    <select id="branchSelect" class="branch-select">
-                        <option value="branch_1">Downtown Branch</option>
-                        <option value="branch_2">Uptown Spa</option>
-                    </select>
-                </div>
-                <!-- Date Chip -->
-                <div class="date-chip" id="headerDateChip">
-                    <i data-feather="calendar" class="date-chip-icon"></i>
-                    <span class="date-chip-text">Loading...</span>
-                </div>
-            </div>
-
-            <div class="header-center">
-                <div class="search-bar">
-                    <i data-feather="search" class="search-icon"></i>
-                    <input type="text" placeholder="Search bookings, customers..." class="search-input">
-                </div>
-            </div>
-
-            <div class="header-right">
-                <div class="quick-actions">
-                    <button class="qa-btn qa-primary" id="btnNewBooking" data-sub-feature="sales_history_create_booking">
-                        <i data-feather="calendar" class="qa-icon"></i>
-                        <span>New Booking</span>
-                    </button>
-                </div>
-                <div class="header-divider"></div>
-                <div class="plan-badge" id="headerPlanBadge">Growth</div>
-                <button class="icon-btn" title="Notifications">
-                    <i data-feather="bell"></i>
-                    <span class="notification-dot"></span>
-                </button>
-                <div class="user-profile" id="userProfileDropdown">
-                    <div class="avatar" id="avatarBtn">
-                        <img src="https://ui-avatars.com/api/?name=Admin+User&background=1E3A8A&color=fff" alt="User">
-                    </div>
-                    <div class="profile-dropdown" id="profileMenu">
-                        <div class="dropdown-header">
-                            <p class="dropdown-name">Admin User</p>
-                            <p class="dropdown-role">Owner</p>
-                        </div>
-                        <div class="dropdown-divider"></div>
-                        <ul class="dropdown-list">
-                            <li><a href="#" class="dropdown-item"><i data-feather="user"></i><span>Profile</span></a></li>
-                            <li><a href="#" class="dropdown-item"><i data-feather="calendar"></i><span>Schedule</span></a></li>
-                            <li><a href="#" class="dropdown-item"><i data-feather="settings"></i><span>Settings</span></a></li>
-                            <li><a href="#" class="dropdown-item"><i data-feather="help-circle"></i><span>Support</span></a></li>
-                            <li><a href="#" class="dropdown-item text-danger"><i data-feather="log-out"></i><span>Logout</span></a></li>
-                        </ul>
-                    </div>
-                </div>
-            </div>
-        </header>
-
-        <div id="profileBackdrop" class="profile-backdrop"></div>
+        <!-- Global Header Shell Placeholder -->
+        <div id="global-header"></div>
 
         <!-- Page Content -->
         <main class="content-area" style="padding:0;">
@@ -406,11 +281,11 @@
                                     <div style="display:flex;align-items:center;gap:16px;flex-wrap:wrap;">
                                         <span style="display:inline-flex;align-items:center;gap:5px;font-size:0.8rem;color:#475569;">
                                             <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#64748b" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"></path></svg>
-                                            <span id="rfCustomerPhone">â€”</span>
+                                            <span id="rfCustomerPhone">—</span>
                                         </span>
                                         <span style="display:inline-flex;align-items:center;gap:5px;font-size:0.8rem;color:#475569;">
                                             <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#64748b" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"></path><polyline points="22,6 12,13 2,6"></polyline></svg>
-                                            <span id="rfCustomerEmail">â€”</span>
+                                            <span id="rfCustomerEmail">—</span>
                                         </span>
                                     </div>
                                 </div>
@@ -421,16 +296,16 @@
                         <div style="background:#f8fafc;border:1px solid #e2e8f0;border-radius:12px;padding:16px;display:flex;flex-direction:column;gap:12px;">
                             <div style="display:flex;justify-content:space-between;align-items:center;">
                                 <span style="font-size:0.75rem;font-weight:800;color:#64748b;text-transform:uppercase;letter-spacing:0.05em;">SALE DETAILS</span>
-                                <span id="rfSaleBadge" style="background:#eff6ff;color:#2563eb;border:1px solid #bfdbfe;font-size:0.75rem;font-weight:700;padding:3px 10px;border-radius:20px;font-family:monospace;">#â€”</span>
+                                <span id="rfSaleBadge" style="background:#eff6ff;color:#2563eb;border:1px solid #bfdbfe;font-size:0.75rem;font-weight:700;padding:3px 10px;border-radius:20px;font-family:monospace;">#—</span>
                             </div>
                             <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
                                 <div style="display:flex;justify-content:space-between;align-items:center;padding:10px 12px;background:#fff;border:1px solid #e2e8f0;border-radius:8px;">
                                     <span style="font-size:0.82rem;color:#64748b;">Sale date</span>
-                                    <span id="rfSaleDate" style="font-size:0.85rem;font-weight:600;color:#0f172a;">â€”</span>
+                                    <span id="rfSaleDate" style="font-size:0.85rem;font-weight:600;color:#0f172a;">—</span>
                                 </div>
                                 <div style="display:flex;justify-content:space-between;align-items:center;padding:10px 12px;background:#fff;border:1px solid #e2e8f0;border-radius:8px;">
                                     <span style="font-size:0.82rem;color:#64748b;">Cashier</span>
-                                    <span id="rfCashier" style="font-size:0.85rem;font-weight:600;color:#0f172a;">â€”</span>
+                                    <span id="rfCashier" style="font-size:0.85rem;font-weight:600;color:#0f172a;">—</span>
                                 </div>
                             </div>
                         </div>
@@ -475,9 +350,9 @@
                                 <span style="font-size:0.72rem;font-weight:800;color:#991b1b;text-transform:uppercase;letter-spacing:0.05em;">TOTAL REFUND</span>
                                 <span id="rfRefundTypeBadge" style="background:#ffe4e6;color:#e11d48;font-size:0.72rem;font-weight:700;padding:3px 10px;border-radius:20px;">Full Amount</span>
                             </div>
-                            <div id="rfAmountDisplay" style="font-size:2.25rem;font-weight:800;color:#dc2626;margin:2px 0;">â‚¹0.00</div>
+                            <div id="rfAmountDisplay" style="font-size:2.25rem;font-weight:800;color:#dc2626;margin:2px 0;">?0.00</div>
                             <div id="rfAmountSubtext" style="font-size:0.8rem;color:#b91c1c;">Updates according to the selected return items.</div>
-                            <div style="font-size:0.75rem;color:#64748b;margin-top:2px;">Maximum refundable: <span id="rfMaxRefundText" style="font-weight:600;color:#475569;">â‚¹0</span></div>
+                            <div style="font-size:0.75rem;color:#64748b;margin-top:2px;">Maximum refundable: <span id="rfMaxRefundText" style="font-weight:600;color:#475569;">?0</span></div>
                         </div>
 
                         <!-- Refund Payment Method Select -->
@@ -1171,7 +1046,7 @@
 
     
     <script type="module" src="sales-history.js"></script>
-    <script src="dashboard.js"></script>
+    <script type="module" src="scripts/app-shell.js"></script>
 <script src="logout.js"></script><script src="change-password.js"></script>    <script type="module" src="scripts/global-auth-guard.js"></script>
     <script type="module" src="scripts/sub-features/sub-feature-gate.js"></script>
 </body>
