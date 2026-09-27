@@ -147,6 +147,10 @@ export function initSidebar() {
                 if (genericModal && genericModal.classList.contains('active')) {
                     genericModal.classList.remove('active');
                 }
+                const scheduleModal = document.getElementById('scheduleModalOverlay');
+                if (scheduleModal && scheduleModal.classList.contains('active')) {
+                    scheduleModal.classList.remove('active');
+                }
             }
         });
     }
@@ -305,6 +309,28 @@ export function initProfileMenu() {
         });
     }
 
+    // Wire Schedule Button
+    const scheduleBtn = document.getElementById('menuItemSchedule');
+    if (scheduleBtn && !scheduleBtn.dataset.appLayoutInit) {
+        scheduleBtn.dataset.appLayoutInit = '1';
+        scheduleBtn.addEventListener('click', (e) => {
+            e.preventDefault();
+            closeProfileMenu();
+            openScheduleModal();
+        });
+    }
+
+    // Wire Settings Button
+    const settingsBtn = document.getElementById('menuItemSettings');
+    if (settingsBtn && !settingsBtn.dataset.appLayoutInit) {
+        settingsBtn.dataset.appLayoutInit = '1';
+        settingsBtn.addEventListener('click', (e) => {
+            e.preventDefault();
+            closeProfileMenu();
+            openSettingsModal();
+        });
+    }
+
     // Wire Logout Button with Confirmation
     const logoutBtn = document.getElementById('menuItemLogout');
     if (logoutBtn && !logoutBtn.dataset.appLayoutInit) {
@@ -333,11 +359,12 @@ export function initProfileMenu() {
 let pendingProfilePhoto = null;
 
 function ensureProfileModalHtml() {
-    if (document.getElementById('genericModalOverlay')) return;
-    if (!document.body) return;
+    const existingOverlay = document.getElementById('genericModalOverlay');
+    if (!existingOverlay) {
+        if (!document.body) return;
 
-    const modalHtml = `
-    <!-- Profile Modal (Shared App Shell Component) -->
+        const modalHtml = `
+    <!-- Profile & Settings Modal (Shared App Shell Component) -->
     <div class="modal-overlay" id="genericModalOverlay">
         <div class="modal-container" id="genericModal" style="width: 75%; max-width: 75%; min-height: 85vh;">
             <div class="modal-header">
@@ -504,6 +531,79 @@ function ensureProfileModalHtml() {
                         </div>
                     </div>
                 </div>
+
+                <!-- ===== SETTINGS CONTENT ===== -->
+                <div id="settingsContent" style="display: none; grid-template-columns: 65% 35%; gap: 0; min-height: 100%; width: 100%;">
+                    <!-- LEFT: App Preferences -->
+                    <div style="display: flex; flex-direction: column; padding: 1rem 2.5rem 3rem 2.5rem; border-right: 1px solid #f1f5f9; width: 100%; box-sizing: border-box; justify-content: center; align-items: center;">
+                        <div style="width: 100%; max-width: 450px;">
+                            <h3 style="font-size: 1.1rem; font-weight: 600; color: #1e293b; margin-bottom: 24px; padding-bottom: 12px; border-bottom: 1px solid #e2e8f0; width: 100%;">App Preferences</h3>
+                            <div class="form-group" style="margin-bottom: 16px;">
+                                <label class="form-label" for="settingsLanguage">Language</label>
+                                <select id="settingsLanguage" class="form-input" style="appearance: auto; cursor: pointer;">
+                                    <option value="en" selected>English</option>
+                                    <option value="hi">Hindi</option>
+                                    <option value="te">Telugu</option>
+                                    <option value="ta">Tamil</option>
+                                </select>
+                            </div>
+                            <div class="form-group" style="margin-bottom: 16px;">
+                                <label class="form-label" for="settingsTheme">Theme</label>
+                                <select id="settingsTheme" class="form-input" style="appearance: auto; cursor: pointer;">
+                                    <option value="light" selected>Light</option>
+                                    <option value="dark">Dark</option>
+                                    <option value="system">System Default</option>
+                                </select>
+                            </div>
+                            <div class="form-group" style="margin-bottom: 16px;">
+                                <label class="form-label" for="settingsNotifications">Notifications</label>
+                                <select id="settingsNotifications" class="form-input" style="appearance: auto; cursor: pointer;">
+                                    <option value="enabled" selected>Enabled</option>
+                                    <option value="disabled">Disabled</option>
+                                </select>
+                            </div>
+                            <div class="form-group" style="margin-bottom: 16px;">
+                                <label class="form-label" for="settingsTimeZone">Time Zone</label>
+                                <select id="settingsTimeZone" class="form-input" style="appearance: auto; cursor: pointer;">
+                                    <option value="Asia/Kolkata" selected>Asia/Kolkata (IST)</option>
+                                    <option value="UTC">UTC</option>
+                                </select>
+                            </div>
+                            <div class="form-group" style="margin-bottom: 16px;">
+                                <label class="form-label" for="settingsDateTimeFormat">Date & Time Format</label>
+                                <select id="settingsDateTimeFormat" class="form-input" style="appearance: auto; cursor: pointer;">
+                                    <option value="DD MMM YYYY, hh:mm A" selected>DD MMM YYYY, hh:mm A</option>
+                                    <option value="MM/DD/YYYY, HH:mm">MM/DD/YYYY, HH:mm</option>
+                                    <option value="YYYY-MM-DD, HH:mm">YYYY-MM-DD, HH:mm</option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+                    <!-- RIGHT: App Information -->
+                    <div style="display: flex; flex-direction: column; padding: 1rem 2.5rem 3rem 2.5rem; gap: 0; width: 100%; box-sizing: border-box; justify-content: flex-start;">
+                        <h3 style="font-size: 1.1rem; font-weight: 600; color: #1e293b; margin-bottom: 24px; padding-bottom: 12px; border-bottom: 1px solid #e2e8f0;">App Information</h3>
+                        <div class="form-group" style="margin-bottom: 16px;">
+                            <label class="form-label">Version</label>
+                            <p id="settingsVersion" style="font-size: 0.95rem; color: #3b82f6; margin: 0; padding-top: 10px; font-weight: 600;">v1.0.0</p>
+                        </div>
+                        <div class="form-group" style="margin-bottom: 16px;">
+                            <label class="form-label">Status</label>
+                            <div style="display: flex; align-items: center; justify-content: space-between; padding-top: 10px;">
+                                <p id="settingsStatus" style="font-size: 0.95rem; color: #10b981; font-weight: 600; margin: 0;">Up to date</p>
+                                <button id="btnUpdateApp" class="btn btn-primary" style="display: none; padding: 6px 14px; font-size: 0.8rem; height: auto; border-radius: 6px;">Update</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- ===== OTHER SECTION CONTENT (placeholder) ===== -->
+                <div id="genericPlaceholderContent" style="display:none; align-items: center; justify-content: center; height: 100%; text-align: center; color: #94a3b8;">
+                    <div>
+                        <i data-feather="layers" style="width: 40px; height: 40px; margin-bottom: 12px; stroke: #cbd5e1;"></i>
+                        <p style="font-size: 0.95rem; font-weight: 500; margin: 0;">Content coming soon</p>
+                        <p style="font-size: 0.8rem; margin-top: 4px;">This section is under construction.</p>
+                    </div>
+                </div>
             </div>
 
             <div class="modal-footer" id="genericModalFooter" style="justify-content: flex-end; align-items: center; gap: 12px; display: flex;">
@@ -513,7 +613,77 @@ function ensureProfileModalHtml() {
         </div>
     </div>`;
 
-    document.body.insertAdjacentHTML('beforeend', modalHtml);
+        document.body.insertAdjacentHTML('beforeend', modalHtml);
+    } else {
+        const body = document.getElementById('genericModalBody');
+        if (body && !document.getElementById('settingsContent')) {
+            const settingsHtml = `
+                <!-- ===== SETTINGS CONTENT ===== -->
+                <div id="settingsContent" style="display: none; grid-template-columns: 65% 35%; gap: 0; min-height: 100%; width: 100%;">
+                    <!-- LEFT: App Preferences -->
+                    <div style="display: flex; flex-direction: column; padding: 1rem 2.5rem 3rem 2.5rem; border-right: 1px solid #f1f5f9; width: 100%; box-sizing: border-box; justify-content: center; align-items: center;">
+                        <div style="width: 100%; max-width: 450px;">
+                            <h3 style="font-size: 1.1rem; font-weight: 600; color: #1e293b; margin-bottom: 24px; padding-bottom: 12px; border-bottom: 1px solid #e2e8f0; width: 100%;">App Preferences</h3>
+                            <div class="form-group" style="margin-bottom: 16px;">
+                                <label class="form-label" for="settingsLanguage">Language</label>
+                                <select id="settingsLanguage" class="form-input" style="appearance: auto; cursor: pointer;">
+                                    <option value="en" selected>English</option>
+                                    <option value="hi">Hindi</option>
+                                    <option value="te">Telugu</option>
+                                    <option value="ta">Tamil</option>
+                                </select>
+                            </div>
+                            <div class="form-group" style="margin-bottom: 16px;">
+                                <label class="form-label" for="settingsTheme">Theme</label>
+                                <select id="settingsTheme" class="form-input" style="appearance: auto; cursor: pointer;">
+                                    <option value="light" selected>Light</option>
+                                    <option value="dark">Dark</option>
+                                    <option value="system">System Default</option>
+                                </select>
+                            </div>
+                            <div class="form-group" style="margin-bottom: 16px;">
+                                <label class="form-label" for="settingsNotifications">Notifications</label>
+                                <select id="settingsNotifications" class="form-input" style="appearance: auto; cursor: pointer;">
+                                    <option value="enabled" selected>Enabled</option>
+                                    <option value="disabled">Disabled</option>
+                                </select>
+                            </div>
+                            <div class="form-group" style="margin-bottom: 16px;">
+                                <label class="form-label" for="settingsTimeZone">Time Zone</label>
+                                <select id="settingsTimeZone" class="form-input" style="appearance: auto; cursor: pointer;">
+                                    <option value="Asia/Kolkata" selected>Asia/Kolkata (IST)</option>
+                                    <option value="UTC">UTC</option>
+                                </select>
+                            </div>
+                            <div class="form-group" style="margin-bottom: 16px;">
+                                <label class="form-label" for="settingsDateTimeFormat">Date & Time Format</label>
+                                <select id="settingsDateTimeFormat" class="form-input" style="appearance: auto; cursor: pointer;">
+                                    <option value="DD MMM YYYY, hh:mm A" selected>DD MMM YYYY, hh:mm A</option>
+                                    <option value="MM/DD/YYYY, HH:mm">MM/DD/YYYY, HH:mm</option>
+                                    <option value="YYYY-MM-DD, HH:mm">YYYY-MM-DD, HH:mm</option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+                    <!-- RIGHT: App Information -->
+                    <div style="display: flex; flex-direction: column; padding: 1rem 2.5rem 3rem 2.5rem; gap: 0; width: 100%; box-sizing: border-box; justify-content: flex-start;">
+                        <h3 style="font-size: 1.1rem; font-weight: 600; color: #1e293b; margin-bottom: 24px; padding-bottom: 12px; border-bottom: 1px solid #e2e8f0;">App Information</h3>
+                        <div class="form-group" style="margin-bottom: 16px;">
+                            <label class="form-label">Version</label>
+                            <p id="settingsVersion" style="font-size: 0.95rem; color: #3b82f6; margin: 0; padding-top: 10px; font-weight: 600;">v1.0.0</p>
+                        </div>
+                        <div class="form-group" style="margin-bottom: 16px;">
+                            <label class="form-label">Status</label>
+                            <div style="display: flex; align-items: center; justify-content: space-between; padding-top: 10px;">
+                                <p id="settingsStatus" style="font-size: 0.95rem; color: #10b981; font-weight: 600; margin: 0;">Up to date</p>
+                                <button id="btnUpdateApp" class="btn btn-primary" style="display: none; padding: 6px 14px; font-size: 0.8rem; height: auto; border-radius: 6px;">Update</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>`;
+            body.insertAdjacentHTML('beforeend', settingsHtml);
+        }
+    }
 }
 
 function bindProfileModalEvents(modalOverlay) {
@@ -570,8 +740,11 @@ function bindProfileModalEvents(modalOverlay) {
                 return;
             }
             const titleEl = document.getElementById('genericModalTitle');
-            if (titleEl && titleEl.textContent !== 'Profile') return;
-            await handleProfileSave();
+            if (titleEl && titleEl.textContent === 'Settings') {
+                await handleSettingsSave();
+            } else if (titleEl && titleEl.textContent === 'Profile') {
+                await handleProfileSave();
+            }
         });
     }
 }
@@ -766,8 +939,428 @@ export function closeProfileModal() {
     }
 }
 
+async function fetchAndPopulateSettings() {
+    const langDropdown = document.getElementById('settingsLanguage');
+    const themeDropdown = document.getElementById('settingsTheme');
+    const notifyDropdown = document.getElementById('settingsNotifications');
+
+    if (!langDropdown || !themeDropdown || !notifyDropdown) return;
+
+    try {
+        const contextStr = localStorage.getItem('appContext');
+        if (!contextStr) return;
+        const context = JSON.parse(contextStr);
+        const user_id = context.user?.user_id || context.user?.id;
+        if (!user_id) return;
+
+        const { supabase } = await import('../lib/supabase.js');
+
+        const { data, error } = await supabase
+            .from('user_preferences')
+            .select('*')
+            .eq('user_id', user_id)
+            .limit(1);
+
+        if (error) throw error;
+
+        if (data && data.length > 0) {
+            const prefs = data[0];
+            if (prefs.language) langDropdown.value = prefs.language;
+            if (prefs.theme) themeDropdown.value = prefs.theme;
+            if (prefs.notifications !== undefined) {
+                notifyDropdown.value = prefs.notifications ? 'enabled' : 'disabled';
+            }
+        }
+    } catch (err) {
+        console.error("Fetch Settings Error:", err);
+    }
+}
+
+async function handleSettingsSave() {
+    const btn = document.getElementById('btnSaveGenericModal');
+    if (!btn) return;
+    const originalText = btn.textContent;
+
+    const langDropdown = document.getElementById('settingsLanguage');
+    const themeDropdown = document.getElementById('settingsTheme');
+    const notifyDropdown = document.getElementById('settingsNotifications');
+
+    const lang = langDropdown ? langDropdown.value : 'en';
+    const theme = themeDropdown ? themeDropdown.value : 'light';
+    const notify = notifyDropdown ? notifyDropdown.value === 'enabled' : true;
+
+    try {
+        const contextStr = localStorage.getItem('appContext');
+        if (!contextStr) throw new Error("User context not found.");
+        const context = JSON.parse(contextStr);
+        const user_id = context.user?.user_id || context.user?.id;
+        const company_id = context.company?.company_id || localStorage.getItem('company_id');
+        const branch_id = context.current_branch_id || localStorage.getItem('active_branch_id');
+
+        if (!user_id) throw new Error("User ID not found in session.");
+
+        btn.textContent = 'Saving...';
+        btn.disabled = true;
+
+        const { supabase } = await import('../lib/supabase.js');
+
+        // Check if record exists
+        const { data: existing, error: checkErr } = await supabase
+            .from('user_preferences')
+            .select('id')
+            .eq('user_id', user_id)
+            .limit(1);
+
+        if (checkErr) throw checkErr;
+
+        let result;
+        if (existing && existing.length > 0) {
+            result = await supabase
+                .from('user_preferences')
+                .update({
+                    company_id,
+                    branch_id,
+                    language: lang,
+                    theme: theme,
+                    notifications: notify,
+                    updated_at: new Date().toISOString()
+                })
+                .eq('user_id', user_id);
+        } else {
+            result = await supabase
+                .from('user_preferences')
+                .insert([{
+                    user_id,
+                    company_id,
+                    branch_id,
+                    language: lang,
+                    theme: theme,
+                    notifications: notify,
+                    created_at: new Date().toISOString(),
+                    updated_at: new Date().toISOString()
+                }]);
+        }
+
+        if (result.error) throw result.error;
+
+        if (typeof window.toast === 'function') {
+            window.toast("Settings saved successfully!");
+        } else {
+            alert("Settings saved successfully!");
+        }
+
+        closeProfileModal();
+
+    } catch (err) {
+        console.error("Settings Update Error:", err);
+        alert(err.message || "Failed to update settings.");
+    } finally {
+        btn.textContent = originalText;
+        btn.disabled = false;
+    }
+}
+
+export function openSettingsModal() {
+    ensureProfileModalHtml();
+    const modalOverlay = document.getElementById('genericModalOverlay');
+    if (!modalOverlay) return;
+
+    bindProfileModalEvents(modalOverlay);
+
+    const titleEl = document.getElementById('genericModalTitle');
+    const subEl   = document.getElementById('genericModalSubtitle');
+    if (titleEl) titleEl.textContent = 'Settings';
+    if (subEl)   subEl.textContent   = 'Configure your account preferences.';
+
+    const profileContent     = document.getElementById('profileContent');
+    const settingsContent    = document.getElementById('settingsContent');
+    const placeholderContent = document.getElementById('genericPlaceholderContent');
+    const footerSave         = document.getElementById('btnSaveGenericModal');
+
+    if (profileContent)     profileContent.style.display = 'none';
+    if (settingsContent)    settingsContent.style.display = 'grid';
+    if (placeholderContent) placeholderContent.style.display = 'none';
+    if (footerSave)         footerSave.style.display = '';
+
+    fetchAndPopulateSettings();
+
+    modalOverlay.classList.add('active');
+
+    if (typeof feather !== 'undefined' && feather.replace) {
+        feather.replace();
+    }
+}
+
+function ensureScheduleModalHtml() {
+    if (document.getElementById('scheduleModalOverlay')) return;
+    if (!document.body) return;
+
+    const modalHtml = `
+    <!-- Schedule Modal (Shared App Shell Component) -->
+    <div class="modal-overlay" id="scheduleModalOverlay">
+        <div class="modal-container" id="scheduleModal" style="min-height: 60vh;">
+            <div class="modal-header">
+                <div class="header-titles">
+                    <h2 id="scheduleModalTitle">Schedule</h2>
+                    <p class="subtitle" id="scheduleModalSubtitle">View your upcoming work schedule.</p>
+                </div>
+                <button class="modal-close" id="closeScheduleModal"><i data-feather="x"></i></button>
+            </div>
+
+            <div class="modal-body" style="padding: 1.5rem; flex: 1; overflow-y: auto; flex-direction: column;">
+                <!-- Tab Headers -->
+                <div class="schedule-tabs" style="display: flex; gap: 8px; margin-bottom: 1.5rem; border-bottom: 1px solid #f1f5f9; padding-bottom: 0.5rem;">
+                    <button class="schedule-tab-btn active" id="tabBtnThisWeek" style="padding: 8px 16px; border: none; background: none; font-weight: 600; font-size: 0.95rem; color: #1e3a8a; border-bottom: 2px solid #1e3a8a; cursor: pointer; transition: all 0.2s;">This Week</button>
+                    <button class="schedule-tab-btn" id="tabBtnNextWeek" style="padding: 8px 16px; border: none; background: none; font-weight: 500; font-size: 0.95rem; color: #64748b; border-bottom: 2px solid transparent; cursor: pointer; transition: all 0.2s;">Next Week</button>
+                </div>
+
+                <!-- Tab Content: This Week -->
+                <div class="schedule-tab-pane" id="paneThisWeek" style="display: block;">
+                    <div style="padding:40px; text-align:center; color:#64748b;">Loading your schedule...</div>
+                </div>
+
+                <!-- Tab Content: Next Week -->
+                <div class="schedule-tab-pane" id="paneNextWeek" style="display: none;">
+                    <div style="padding:40px; text-align:center; color:#64748b;">Loading your schedule...</div>
+                </div>
+            </div>
+
+            <div class="modal-footer" style="justify-content: flex-end;">
+                <button type="button" class="btn btn-secondary" id="btnCloseScheduleFooter">Close</button>
+            </div>
+        </div>
+    </div>`;
+
+    document.body.insertAdjacentHTML('beforeend', modalHtml);
+}
+
+function bindScheduleModalEvents(modalOverlay) {
+    if (!modalOverlay || modalOverlay.dataset.appLayoutEventsBound) return;
+    modalOverlay.dataset.appLayoutEventsBound = '1';
+
+    const closeBtn = document.getElementById('closeScheduleModal');
+    const footerCloseBtn = document.getElementById('btnCloseScheduleFooter');
+    if (closeBtn) closeBtn.addEventListener('click', closeScheduleModal);
+    if (footerCloseBtn) footerCloseBtn.addEventListener('click', closeScheduleModal);
+
+    modalOverlay.addEventListener('click', (e) => {
+        if (e.target === modalOverlay) closeScheduleModal();
+    });
+
+    const tabBtnThisWeek = document.getElementById('tabBtnThisWeek');
+    const tabBtnNextWeek = document.getElementById('tabBtnNextWeek');
+    const paneThisWeek = document.getElementById('paneThisWeek');
+    const paneNextWeek = document.getElementById('paneNextWeek');
+
+    if (tabBtnThisWeek && tabBtnNextWeek) {
+        tabBtnThisWeek.addEventListener('click', () => {
+            tabBtnThisWeek.classList.add('active');
+            tabBtnNextWeek.classList.remove('active');
+            tabBtnThisWeek.style.color = '#1e3a8a';
+            tabBtnThisWeek.style.borderBottom = '2px solid #1e3a8a';
+            tabBtnThisWeek.style.fontWeight = '600';
+
+            tabBtnNextWeek.style.color = '#64748b';
+            tabBtnNextWeek.style.borderBottom = '2px solid transparent';
+            tabBtnNextWeek.style.fontWeight = '500';
+
+            if (paneThisWeek) paneThisWeek.style.display = 'block';
+            if (paneNextWeek) paneNextWeek.style.display = 'none';
+        });
+
+        tabBtnNextWeek.addEventListener('click', () => {
+            tabBtnNextWeek.classList.add('active');
+            tabBtnThisWeek.classList.remove('active');
+            tabBtnNextWeek.style.color = '#1e3a8a';
+            tabBtnNextWeek.style.borderBottom = '2px solid #1e3a8a';
+            tabBtnNextWeek.style.fontWeight = '600';
+
+            tabBtnThisWeek.style.color = '#64748b';
+            tabBtnThisWeek.style.borderBottom = '2px solid transparent';
+            tabBtnThisWeek.style.fontWeight = '500';
+
+            if (paneThisWeek) paneThisWeek.style.display = 'none';
+            if (paneNextWeek) paneNextWeek.style.display = 'block';
+        });
+    }
+}
+
+async function fetchAndRenderUserSchedule() {
+    const paneThisWeek = document.getElementById('paneThisWeek');
+    const paneNextWeek = document.getElementById('paneNextWeek');
+    if (!paneThisWeek || !paneNextWeek) return;
+
+    // Show loading state
+    const loadingHtml = '<div style="padding:40px; text-align:center; color:#64748b;"><div class="spinner-sm" style="margin:0 auto 12px;"></div>Loading your schedule...</div>';
+    paneThisWeek.innerHTML = loadingHtml;
+    paneNextWeek.innerHTML = loadingHtml;
+
+    try {
+        const contextStr = localStorage.getItem('appContext');
+        if (!contextStr) throw new Error("App context not found.");
+        const context = JSON.parse(contextStr);
+        const userEmail = context.user?.email;
+        const companyId = context.company?.company_id || localStorage.getItem('company_id');
+
+        if (!userEmail) throw new Error("User email not found in session.");
+
+        const { supabase } = await import('../lib/supabase.js');
+
+        // 1. Find staff_id by email
+        let staffQuery = supabase
+            .from('staff')
+            .select('staff_id, role_name')
+            .eq('email', userEmail);
+
+        if (companyId) {
+            staffQuery = staffQuery.eq('company_id', companyId);
+        }
+
+        const { data: staffDataArr, error: staffErr } = await staffQuery.limit(1);
+
+        if (staffErr) throw staffErr;
+        const staffData = staffDataArr && staffDataArr.length > 0 ? staffDataArr[0] : null;
+        if (!staffData) {
+            const noStaffHtml = '<div style="padding:40px; text-align:center; color:#64748b;">No staff record found for your email. Please contact your administrator.</div>';
+            paneThisWeek.innerHTML = noStaffHtml;
+            paneNextWeek.innerHTML = noStaffHtml;
+            return;
+        }
+
+        const staffId = staffData.staff_id;
+
+        // 2. Calculate Date Ranges
+        const today = new Date();
+        const getMonday = (d) => {
+            const date = new Date(d);
+            const day = date.getDay();
+            const diff = date.getDate() - day + (day === 0 ? -6 : 1); // Adjust for Sunday
+            return new Date(date.setDate(diff));
+        };
+
+        const thisMon = getMonday(today);
+        const nextMon = new Date(thisMon);
+        nextMon.setDate(thisMon.getDate() + 7);
+
+        const formatDateISO = (d) => {
+            const year = d.getFullYear();
+            const month = String(d.getMonth() + 1).padStart(2, '0');
+            const day = String(d.getDate()).padStart(2, '0');
+            return `${year}-${month}-${day}`;
+        };
+
+        const getWeekDates = (monday) => {
+            const dates = [];
+            for (let i = 0; i < 7; i++) {
+                const d = new Date(monday);
+                d.setDate(monday.getDate() + i);
+                dates.push(formatDateISO(d));
+            }
+            return dates;
+        };
+
+        const thisWeekDates = getWeekDates(thisMon);
+        const nextWeekDates = getWeekDates(nextMon);
+
+        // 3. Fetch Schedules
+        const allDates = [...thisWeekDates, ...nextWeekDates];
+        const { data: schedData, error: schedErr } = await supabase
+            .from('staff_schedule')
+            .select('*')
+            .eq('staff_id', staffId)
+            .in('schedule_date', allDates);
+
+        if (schedErr) throw schedErr;
+
+        // 4. Render Helper
+        const renderWeek = (dates) => {
+            let html = `
+                <div style="display: grid; grid-template-columns: 100px 120px 1fr 1fr; padding: 6px 16px 10px 16px; border-bottom: 1px solid #e2e8f0; margin-bottom: 10px;">
+                    <div style="font-size: 0.75rem; font-weight: 700; color: #94a3b8; text-transform: uppercase; letter-spacing: 0.05em;">Date</div>
+                    <div style="font-size: 0.75rem; font-weight: 700; color: #94a3b8; text-transform: uppercase; letter-spacing: 0.05em;">Day</div>
+                    <div style="font-size: 0.75rem; font-weight: 700; color: #94a3b8; text-transform: uppercase; letter-spacing: 0.05em;">Time</div>
+                    <div style="font-size: 0.75rem; font-weight: 700; color: #94a3b8; text-transform: uppercase; letter-spacing: 0.05em; text-align: right;">Comments</div>
+                </div>
+                <ul class="schedule-list" style="list-style: none; padding: 0; margin: 0; display: flex; flex-direction: column; gap: 8px;">
+            `;
+
+            dates.forEach(dateStr => {
+                const [y, m, d] = dateStr.split('-').map(Number);
+                const dateObj = new Date(y, m - 1, d);
+                const dayName = dateObj.toLocaleDateString('en-US', { weekday: 'long' });
+                const shortDate = dateObj.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+                const record = (schedData || []).find(s => s.schedule_date === dateStr);
+
+                if (!record || record.is_off) {
+                    html += `
+                        <li class="schedule-item" style="display: grid; grid-template-columns: 100px 120px 1fr 1fr; padding: 12px 16px; background: #ffffff; border: 1px solid #e2e8f0; border-radius: 8px; align-items: center;">
+                            <div style="font-size: 0.88rem; color: #475569; font-weight: 500;">${shortDate}</div>
+                            <div style="font-weight: 600; color: #0f172a; font-size: 0.9rem;">${dayName}</div>
+                            <div style="color: #ef4444; font-size: 0.9rem; font-weight: 600;">Off</div>
+                            <div style="color: #94a3b8; font-size: 0.85rem; text-align: right;">${record?.notes || '-'}</div>
+                        </li>
+                    `;
+                } else {
+                    const start = record.start_time ? record.start_time.substring(0, 5) : '--';
+                    const end = record.end_time ? record.end_time.substring(0, 5) : '--';
+                    html += `
+                        <li class="schedule-item" style="display: grid; grid-template-columns: 100px 120px 1fr 1fr; padding: 12px 16px; background: #ffffff; border-radius: 8px; align-items: center; border: 1px solid #e2e8f0;">
+                            <div style="font-size: 0.88rem; color: #475569; font-weight: 500;">${shortDate}</div>
+                            <div style="font-weight: 600; color: #0f172a; font-size: 0.9rem;">${dayName}</div>
+                            <div style="color: #0f172a; font-size: 0.9rem; font-weight: 500;">${start} - ${end}</div>
+                            <div style="color: #64748b; font-size: 0.85rem; text-align: right;">${record.notes || '-'}</div>
+                        </li>
+                    `;
+                }
+            });
+
+            html += `</ul>`;
+            return html;
+        };
+
+        paneThisWeek.innerHTML = renderWeek(thisWeekDates);
+        paneNextWeek.innerHTML = renderWeek(nextWeekDates);
+
+    } catch (err) {
+        console.error("Schedule Fetch Error:", err);
+        const errHtml = `<div style="padding:40px; text-align:center; color:#ef4444;">Failed to load schedule: ${err.message}</div>`;
+        paneThisWeek.innerHTML = errHtml;
+        paneNextWeek.innerHTML = errHtml;
+    }
+}
+
+export function openScheduleModal() {
+    ensureScheduleModalHtml();
+    const modalOverlay = document.getElementById('scheduleModalOverlay');
+    if (!modalOverlay) return;
+
+    bindScheduleModalEvents(modalOverlay);
+
+    const tabBtnThisWeek = document.getElementById('tabBtnThisWeek');
+    if (tabBtnThisWeek) tabBtnThisWeek.click();
+
+    fetchAndRenderUserSchedule();
+
+    modalOverlay.classList.add('active');
+
+    if (typeof feather !== 'undefined' && feather.replace) {
+        feather.replace();
+    }
+}
+
+export function closeScheduleModal() {
+    const modalOverlay = document.getElementById('scheduleModalOverlay');
+    if (modalOverlay) {
+        modalOverlay.classList.remove('active');
+    }
+}
+
 window.openProfileModal = openProfileModal;
 window.closeProfileModal = closeProfileModal;
+window.openSettingsModal = openSettingsModal;
+window.closeSettingsModal = closeProfileModal;
+window.openScheduleModal = openScheduleModal;
+window.closeScheduleModal = closeScheduleModal;
 
 /**
  * 5. Quick Actions ("New Booking" in Header)
