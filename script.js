@@ -231,23 +231,20 @@ import { supabase } from './lib/supabase.js';
             document.body.style.cursor = 'wait';
             msgEl.style.display = 'none';
 
-            fetch('https://dev.bharathbots.com/webhook/auth_reset_password_request', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ email })
+            // Send Supabase password recovery email
+            supabase.auth.resetPasswordForEmail(email, {
+                redirectTo: `${window.location.origin}/reset-password.html`
             })
-            .then(res => res.json())
-            .then(data => {
-                const result = Array.isArray(data) ? data[0] : data;
-                if (result && result.success) {
+            .then(({ error }) => {
+                if (!error) {
                     msgEl.style.color = '#16a34a';
-                    msgEl.textContent = result.message || 'Reset link sent to your registered email ID. Please check your inbox and reset your password.';
+                    msgEl.textContent = 'Reset link sent to your email. Please check your inbox and reset your password.';
                     msgEl.style.display = 'block';
                     // Hide the action buttons after success
                     document.querySelector('#fwdBox .fwd-actions').style.display = 'none';
                 } else {
                     msgEl.style.color = '#ef4444';
-                    msgEl.textContent = (result && result.message) || 'Something went wrong. Please try again.';
+                    msgEl.textContent = error.message || 'Something went wrong. Please try again.';
                     msgEl.style.display = 'block';
                 }
             })

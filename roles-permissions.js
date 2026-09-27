@@ -482,7 +482,6 @@ async function saveInlinePerms() {
 
 /**
  * Core helper: wipe all existing permission rows for a role_id, then reinsert.
- * Mirrors the original n8n "delete-all, reinsert" update strategy.
  */
 async function syncRolePermissions(roleId, companyId, branchId, roleName, permissionKeys, now) {
     // Step 1: Delete all existing perm rows for this role

@@ -217,71 +217,102 @@
         backdrop.addEventListener('click', e => { if (e.target === backdrop) closeChgPwdModal(); });
 
         // Submit
-        document.getElementById('cpwdSubmitBtn').addEventListener('click', () => {
+        document.getElementById('cpwdSubmitBtn').addEventListener('click', async () => {
             const currentPwd = document.getElementById('cpwdCurrent').value.trim();
             const newPwd = document.getElementById('cpwdNew').value.trim();
             const confirmPwd = document.getElementById('cpwdConfirm').value.trim();
             const errorEl = document.getElementById('cpwdMismatchError');
             const submitBtn = document.getElementById('cpwdSubmitBtn');
 
-            // Frontend validation: new and confirm must match
+            // Frontend validation
+            if (!newPwd || !confirmPwd) {
+                errorEl.style.color = '#ef4444';
+                errorEl.textContent = 'Please fill in all password fields.';
+                errorEl.style.display = 'block';
+                return;
+            }
+
+            if (newPwd.length < 6) {
+                errorEl.style.color = '#ef4444';
+                errorEl.textContent = 'New password must be at least 6 characters.';
+                errorEl.style.display = 'block';
+                return;
+            }
+
             if (newPwd !== confirmPwd) {
                 errorEl.style.color = '#ef4444';
                 errorEl.textContent = 'Passwords do not match.';
                 errorEl.style.display = 'block';
                 return;
             }
+
             errorEl.style.display = 'none';
 
             // Loading state
             const token = localStorage.getItem('token');
+            if (!token) {
+                errorEl.style.color = '#ef4444';
+                errorEl.textContent = 'Session expired. Please sign in again.';
+                errorEl.style.display = 'block';
+                return;
+            }
+
             submitBtn.disabled = true;
             submitBtn.textContent = 'Updating Password...';
             submitBtn.style.cursor = 'wait';
             document.body.style.cursor = 'wait';
 
-            fetch('https://dev.bharathbots.com/webhook/auth_change_password', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${token}`
-                },
-                body: JSON.stringify({
-                    current_password: currentPwd,
-                    new_password: newPwd
-                })
-            })
-            .then(res => res.json())
-            .then(data => {
-                // Normalise — handle both array [ {...} ] and object { ... }
-                const result = Array.isArray(data) ? data[0] : data;
-                const msg = (result && result.message) ? result.message : null;
+            try {
+                // Get Supabase client
+                let sb = window.supabase;
+                if (!sb) {
+                    const mod = await import('./lib/supabase.js');
+                    sb = mod.supabase;
+                }
 
-                if (result && result.success) {
-                    console.log('[change-password] Password updated successfully.');
-                    // Show success message in green, then auto-close after 2s
+                // If user provided a current password, verify it first using signInWithPassword
+                if (currentPwd) {
+                    const { data: userData } = await sb.auth.getUser(token);
+                    const userEmail = userData?.user?.email;
+                    if (userEmail) {
+                        const { error: verifyErr } = await sb.auth.signInWithPassword({
+                            email: userEmail,
+                            password: currentPwd
+                        });
+                        if (verifyErr) {
+                            errorEl.style.color = '#ef4444';
+                            errorEl.textContent = 'Current password is incorrect.';
+                            errorEl.style.display = 'block';
+                            return;
+                        }
+                    }
+                }
+
+                // Update password via Supabase Auth
+                const { data, error } = await sb.auth.updateUser({ password: newPwd });
+
+                if (error) {
+                    errorEl.style.color = '#ef4444';
+                    errorEl.textContent = error.message || 'Failed to update password. Please try again.';
+                    errorEl.style.display = 'block';
+                } else {
+                    console.log('[change-password] Password updated successfully via Supabase Auth.');
                     errorEl.style.color = '#16a34a';
-                    errorEl.textContent = msg || 'Password updated successfully.';
+                    errorEl.textContent = 'Password updated successfully.';
                     errorEl.style.display = 'block';
                     setTimeout(() => closeChgPwdModal(), 2000);
-                } else {
-                    errorEl.style.color = '#ef4444';
-                    errorEl.textContent = msg || 'Failed to update password. Please try again.';
-                    errorEl.style.display = 'block';
                 }
-            })
-            .catch(err => {
-                console.error('[change-password] Network error:', err);
+            } catch (err) {
+                console.error('[change-password] Error:', err);
                 errorEl.style.color = '#ef4444';
-                errorEl.textContent = 'Network error. Please check your connection and try again.';
+                errorEl.textContent = 'An error occurred while updating password. Please try again.';
                 errorEl.style.display = 'block';
-            })
-            .finally(() => {
+            } finally {
                 submitBtn.disabled = false;
                 submitBtn.textContent = 'Update Password';
                 submitBtn.style.cursor = '';
                 document.body.style.cursor = '';
-            });
+            }
         });
     }
 

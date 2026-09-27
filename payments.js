@@ -1,4 +1,3 @@
-import { API, RAZORPAY, fetchWithAuth } from './config/api.js';
 import { FEATURES } from './config/feature-registry.js';
 import { supabase } from './lib/supabase.js';
 

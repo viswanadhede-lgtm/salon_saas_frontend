@@ -1,12 +1,10 @@
 // reset-password.js – Handles the reset password page logic
-// Reads ?token from URL, validates form, calls auth_reset_password_confirm API.
+// Reads Supabase recovery session from URL hash (#access_token=...&type=recovery),
+// validates form, then calls supabase.auth.updateUser() to set the new password.
+
+import { supabase } from './lib/supabase.js';
 
 (function () {
-    const API_URL = 'https://dev.bharathbots.com/webhook/auth_reset_password_confirm';
-
-    // ── Read token from URL ────────────────────────────────────────────────────
-    const params  = new URLSearchParams(window.location.search);
-    const token   = params.get('token');
 
     // ── Element refs ───────────────────────────────────────────────────────────
     const form             = document.getElementById('rpForm');
@@ -19,8 +17,30 @@
     const invalidBanner    = document.getElementById('invalidTokenBanner');
     const backLink         = document.querySelector('.rp-back');
 
-    // ── If no token in URL, show invalid banner immediately ───────────────────
-    if (!token) {
+    // ── Extract Supabase recovery session from URL hash ────────────────────────
+    // Supabase recovery emails redirect to: reset-password.html#access_token=...&type=recovery
+    let recoveryToken = null;
+
+    (function parseHash() {
+        const hash = window.location.hash;
+        if (!hash) return;
+        const params = new URLSearchParams(hash.replace('#', ''));
+        const type = params.get('type');
+        const accessToken = params.get('access_token');
+
+        if (type === 'recovery' && accessToken) {
+            recoveryToken = accessToken;
+            // Store in localStorage so updateUser() can use it via the wrapper
+            localStorage.setItem('token', accessToken);
+            const refreshToken = params.get('refresh_token');
+            if (refreshToken) localStorage.setItem('refresh_token', refreshToken);
+            // Clean the URL so the token isn't visible or bookmarkable
+            window.history.replaceState({}, document.title, window.location.pathname);
+        }
+    })();
+
+    // ── If no valid recovery token, show invalid banner immediately ────────────
+    if (!recoveryToken) {
         showInvalidToken();
     }
 
@@ -37,9 +57,9 @@
     });
 
     // ── Form submit ────────────────────────────────────────────────────────────
-    form.addEventListener('submit', e => {
+    form.addEventListener('submit', async e => {
         e.preventDefault();
-        if (!token) { showInvalidToken(); return; }
+        if (!recoveryToken) { showInvalidToken(); return; }
 
         const newPwd     = newPwdInput.value.trim();
         const confirmPwd = confirmPwdInput.value.trim();
@@ -68,41 +88,29 @@
         submitBtn.textContent = 'Resetting…';
         document.body.style.cursor = 'wait';
 
-        fetch(API_URL, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ token, new_password: newPwd })
-        })
-        .then(res => res.json())
-        .then(data => {
-            // Normalise: handles [{}], {}, and [{json:{}}] shapes
-            const raw    = Array.isArray(data) ? data[0] : data;
-            const result = (raw && raw.json) ? raw.json : raw;
+        try {
+            const { error } = await supabase.auth.updateUser({ password: newPwd });
 
-            if (result && result.success) {
+            if (!error) {
+                // Clear the recovery token from storage so it can't be reused
+                localStorage.removeItem('token');
+                localStorage.removeItem('refresh_token');
                 showSuccess();
             } else {
-                const msg = (result && result.message) ? result.message : null;
-                // Detect invalid/expired token scenarios
-                if (
-                    !result ||
-                    (result.error && /invalid|expired/i.test(result.error)) ||
-                    (msg && /invalid|expired/i.test(msg))
-                ) {
+                const msg = error.message || null;
+                if (msg && /invalid|expired|not found/i.test(msg)) {
                     showInvalidToken();
                 } else {
                     showHint(confirmPwdInput, confirmHint, msg || 'Something went wrong. Please try again.');
                 }
             }
-        })
-        .catch(() => {
+        } catch (err) {
             showHint(confirmPwdInput, confirmHint, 'Network error. Please check your connection and try again.');
-        })
-        .finally(() => {
+        } finally {
             submitBtn.disabled = false;
             submitBtn.textContent = 'Reset Password';
             document.body.style.cursor = '';
-        });
+        }
     });
 
     // ── Helpers ────────────────────────────────────────────────────────────────

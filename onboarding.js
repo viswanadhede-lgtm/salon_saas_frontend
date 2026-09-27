@@ -1,4 +1,3 @@
-import { API } from '../config/api.js';
 import { supabase } from './lib/supabase.js';
 
 document.addEventListener('DOMContentLoaded', () => {
