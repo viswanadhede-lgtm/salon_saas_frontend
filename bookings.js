@@ -300,8 +300,8 @@ function getFilteredBookings() {
     else if (dateFilter === '30days') cutoff = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
 
     let filtered = results.filter(b => {
-        // Status Check — skip if "All" is checked
-        if (!statusAllChecked && activeStatuses.length && !activeStatuses.includes(String(b.status).toLowerCase())) {
+        // Status Check — skip if "All" is checked OR no individual statuses are checked
+        if (!statusAllChecked && activeStatuses.length > 0 && !activeStatuses.includes(String(b.status).toLowerCase())) {
             return false;
         }
 
@@ -2351,6 +2351,13 @@ function attachEventListeners() {
     const btnFilter = document.getElementById('btnFilterBookings');
     const filterMenu = document.getElementById('filterDropdownMenu');
     const FILTER_KEY = 'bookings_filter_state';
+    const FILTER_VER_KEY = 'bookings_filter_version';
+    const CURRENT_FILTER_VER = '2';
+    // Clear stale filter state if version mismatch (fixes old broken default)
+    if (localStorage.getItem(FILTER_VER_KEY) !== CURRENT_FILTER_VER) {
+        localStorage.removeItem(FILTER_KEY);
+        localStorage.setItem(FILTER_VER_KEY, CURRENT_FILTER_VER);
+    }
 
     // ── Save current DOM filter state to localStorage ────────────────────────
     function saveFilterState() {
@@ -2372,10 +2379,18 @@ function attachEventListeners() {
             const s = JSON.parse(raw);
             // Status
             if (s.statuses) {
-                s.statuses.forEach(({ value, checked }) => {
-                    const el = document.querySelector(`input[name="filterStatus"][value="${value}"]`);
-                    if (el) el.checked = checked;
-                });
+                const hasAllChecked = s.statuses.find(x => x.value === 'all')?.checked;
+                const hasAnyIndividualChecked = s.statuses.some(x => x.value !== 'all' && x.checked);
+                // If saved state has no valid selection, default to "All"
+                if (!hasAllChecked && !hasAnyIndividualChecked) {
+                    const allEl = document.querySelector('input[name="filterStatus"][value="all"]');
+                    if (allEl) allEl.checked = true;
+                } else {
+                    s.statuses.forEach(({ value, checked }) => {
+                        const el = document.querySelector(`input[name="filterStatus"][value="${value}"]`);
+                        if (el) el.checked = checked;
+                    });
+                }
             }
             // Date
             if (s.dateRange) {
@@ -2431,8 +2446,10 @@ function attachEventListeners() {
     // ── Clear ────────────────────────────────────────────────────────────────
     document.getElementById('btnFilterClear')?.addEventListener('click', (e) => {
         e.stopPropagation();
-        // Uncheck all status filters (no filter = show all)
+        // Reset status to "All" (show everything)
         document.querySelectorAll('input[name="filterStatus"]').forEach(c => c.checked = false);
+        const statusAllCb = document.querySelector('input[name="filterStatus"][value="all"]');
+        if (statusAllCb) statusAllCb.checked = true;
         // Reset staff to All Staff
         const staffAll = document.querySelector('input[name="filterStaff"][value="all"]');
         if (staffAll) staffAll.checked = true;
