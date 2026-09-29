@@ -1,1363 +1,226 @@
-import { supabase } from './lib/supabase.js';
+// sales-history.js
 
-function getCompanyId() {
-    try {
-        const ctx = JSON.parse(localStorage.getItem('appContext') || '{}');
-        return ctx.company?.id || localStorage.getItem('company_id') || null;
-    } catch { return localStorage.getItem('company_id') || null; }
-}
+/**
+ * Sales History Orchestrator
+ * Coordinates state, data fetching, table rendering, filters, modals, payment collection, and refunds.
+ */
 
-function getBranchId() {
-    return localStorage.getItem('active_branch_id') || null;
-}
+import { salesState, getCompanyId, getBranchId } from './scripts/sales-history/sales-state.js';
+import { fetchSalesHistoryFromDb } from './scripts/sales-history/sales-api.js';
+import { renderTable, toggleProdExtra } from './scripts/sales-history/sales-table.js';
+import { 
+    setupSearchFilter, 
+    filterByDate, 
+    applyFilter, 
+    clearFilter, 
+    exportData 
+} from './scripts/sales-history/sales-filters.js';
+import { 
+    registerActionHandlers, 
+    handleSaleAction, 
+    toggleSaleMenu, 
+    closeOpenActionMenu, 
+    runSaleView, 
+    runSalePrint, 
+    runSaleRefund, 
+    triggerShare 
+} from './scripts/sales-history/sales-actions.js';
+import { 
+    openSaleDetails, 
+    setupSaleDetailsEventListeners, 
+    setDetailsRefundHandler 
+} from './scripts/sales-history/sales-details-modal.js';
+import { openCollectPaymentModal } from './scripts/sales-history/sales-payment.js';
+import { 
+    openRefundModal, 
+    setupRefundEventListeners, 
+    registerRefundCompleteCallback 
+} from './scripts/sales-history/sales-refund.js';
+import { showToast } from './scripts/sales-history/sales-utils.js';
 
-document.addEventListener('DOMContentLoaded', () => {
-    // ----------------------------------------------------------------------
-    // 1. DATA STATE
-    // ----------------------------------------------------------------------
-    let initialSalesData = [];
-    let currentSalesData = [];
-    let activeMenuEl = null;
-    let currentActionData = null; // { action, idx, sale }
+// ─────────────────────────────────────────────────────────────
+// EXPOSE WINDOW APIS (Required for inline HTML onclick contracts)
+// ─────────────────────────────────────────────────────────────
 
+window.hsFilterByDate = function(range) {
+    filterByDate(range, () => renderTable(handleSaleAction));
+};
 
-    // ----------------------------------------------------------------------
-    // 2. DOM ELEMENTS
-    // ----------------------------------------------------------------------
+window.hsExportData = function(format) {
+    exportData(format);
+};
+
+window.toggleSaleMenu = function(e, idx) {
+    toggleSaleMenu(e, idx);
+};
+
+window.handleSaleAction = handleSaleAction;
+window.runSaleView = runSaleView;
+window.runSalePrint = runSalePrint;
+window.runSaleRefund = runSaleRefund;
+
+window.openRefundModal = openRefundModal;
+
+window.hsApplyFilter = function() {
+    applyFilter(() => renderTable(handleSaleAction));
+};
+
+window.hsClearFilter = function() {
+    clearFilter(() => renderTable(handleSaleAction));
+};
+
+window.triggerShare = triggerShare;
+window.toggleProdExtra = toggleProdExtra;
+
+// ─────────────────────────────────────────────────────────────
+// DATA FETCHING & STATE MAPPING
+// ─────────────────────────────────────────────────────────────
+
+async function fetchSalesHistory() {
     const tableBody = document.getElementById('hsTableBody');
-    const searchInput = document.getElementById('hsSearchInput');
+    if (!tableBody) return;
     
-    // Filter Dropdown
+    tableBody.innerHTML = `
+        <tr>
+            <td colspan="7" style="text-align:center; padding: 40px; color: #64748b;">
+                <i data-feather="loader" style="width: 32px; height: 32px; margin-bottom: 12px; animation: spin 1s linear infinite;"></i>
+                <p>Loading sales history...</p>
+            </td>
+        </tr>
+        <style>@keyframes spin { 100% { transform: rotate(360deg); } }</style>
+    `;
+    if (typeof feather !== 'undefined') feather.replace();
+
+    try {
+        const companyId = getCompanyId();
+        const branchId = getBranchId();
+
+        if (!companyId) return;
+
+        // Fetch pre-grouped data directly from the consolidated table
+        const { data: salesList, error: salesError } = await fetchSalesHistoryFromDb(companyId, branchId);
+
+        if (salesError) throw salesError;
+
+        // Map the table rows directly to state
+        salesState.initialSalesData = (salesList || []).map(row => {
+            const d = new Date(row.created_at);
+            const formattedDate = d.toLocaleDateString('en-IN', { month: 'short', day: 'numeric', year: 'numeric' })
+                + ' ' + d.toLocaleTimeString('en-IN', { hour: 'numeric', minute: '2-digit' });
+
+            const productsSummary = Array.isArray(row.product_names)
+                ? row.product_names.join(', ')
+                : (row.product_names || '');
+
+            const subtotal = Number(row.total_price ?? 0);
+            const finalAmount = Number(row.final_amount ?? subtotal);
+            const discountAmt = Number(row.discount_amount ?? 0);
+
+            return {
+                id: row.sale_id,
+                customer: row.customer_name || 'Walk-in',
+                customer_id: row.customer_id || null,
+                customer_phone: row.customer_phone || '',
+                date: formattedDate,
+                raw_date: d,
+                payment: (row.payment_method || 'other').toLowerCase(),
+                staff: row.staff_name || 'System',
+                status: (row.payment_status || 'paid').toLowerCase(),
+                amount_paid: finalAmount,
+                payment_status: (row.payment_status || 'paid').toLowerCase(),
+                totalAmountNum: finalAmount,
+                total: `₹${finalAmount.toLocaleString('en-IN')}`,
+                item_count: row.total_quantity != null ? Number(row.total_quantity) : 1,
+                products_summary: productsSummary,
+                subtotal_price: subtotal,
+                discount_amount: discountAmt,
+                discount_type: row.discount_type || null,
+                discount_name: row.discount_name || null,
+                is_view_grouped: true
+            };
+        });
+
+        salesState.currentSalesData = [...salesState.initialSalesData];
+        renderTable(handleSaleAction);
+
+    } catch (err) {
+        console.error('Error fetching sales history:', err);
+        tableBody.innerHTML = `
+            <tr>
+                <td colspan="8" style="text-align:center; padding: 40px; color: #64748b;">
+                    <i data-feather="alert-circle" style="width: 32px; height: 32px; margin-bottom: 12px; opacity: 0.5;"></i>
+                    <p>Could not load sales history. Please try again.</p>
+                    <p style="font-size: 0.8rem; color: #94a3b8; margin-top: 4px;">${err.message || ''}</p>
+                    <button onclick="window.location.reload()" style="margin-top: 10px; padding: 6px 16px; border-radius: 6px; border: 1px solid #e2e8f0; background: #fff; cursor: pointer;">Retry</button>
+                </td>
+            </tr>
+        `;
+        if (typeof feather !== 'undefined') feather.replace();
+    }
+}
+
+// ─────────────────────────────────────────────────────────────
+// LIFECYCLE & EVENT INITIALIZATION
+// ─────────────────────────────────────────────────────────────
+
+function setupEventListeners() {
+    setupSearchFilter(() => renderTable(handleSaleAction));
+    setupSaleDetailsEventListeners();
+    setupRefundEventListeners();
+
     const filterBtn = document.getElementById('hsFilterBtn');
     const filterMenu = document.getElementById('hsFilterMenu');
     const applyFiltersBtn = document.getElementById('hsApplyFilters');
-    
-    // Date Dropdown
     const dateBtn = document.getElementById('hsDateBtn');
     const dateMenu = document.getElementById('hsDateMenu');
-    
-    // Export Dropdown
     const exportBtn = document.getElementById('hsExportBtn');
     const exportMenu = document.getElementById('hsExportMenu');
 
-    // Modals & Overlays
-    const saleDetailsModalOverlay = document.getElementById('saleDetailsModalOverlay');
-    const closeSaleDetailsModal = document.getElementById('closeSaleDetailsModal');
-    const closeSaleDetailsBtn = document.getElementById('closeSaleDetailsBtn');
-    
-    const refundSummaryOverlay = document.getElementById('refundSummaryOverlay');
-    const cancelRefundBtn = document.getElementById('cancelRefundBtn');
-    const confirmRefundBtn = document.getElementById('confirmRefundBtn');
-
-    // Sale Details Content Fields
-    const sdSubtitle = document.getElementById('sdSubtitle');
-    const sdCustomer = document.getElementById('sdCustomer');
-    const sdStaff = document.getElementById('sdStaff');
-    const sdDate = document.getElementById('sdDate');
-    const sdPayment = document.getElementById('sdPayment');
-    const sdItemsList = document.getElementById('sdItemsList');
-    const sdSubtotal = document.getElementById('sdSubtotal');
-    const sdTax = document.getElementById('sdTax');
-    const sdDiscount = document.getElementById('sdDiscount');
-    const sdTotal = document.getElementById('sdTotal');
-    const sdPrintBtn = document.getElementById('sdPrintBtn');
-    const sdRefundBtn = document.getElementById('sdRefundBtn');
-
-
-    // ----------------------------------------------------------------------
-    // 3. INITIALIZATION
-    // ----------------------------------------------------------------------
-    initPage();
-
-    async function initPage() {
-        if (typeof feather !== 'undefined') feather.replace();
-        setupEventListeners();
-        await fetchSalesHistory();
-    }
-
-    // ----------------------------------------------------------------------
-    // SUPABASE: Fetch Sales History
-    // ----------------------------------------------------------------------
-    async function fetchSalesHistory() {
-        if (!tableBody) return;
-        
-        tableBody.innerHTML = `
-            <tr>
-                <td colspan="7" style="text-align:center; padding: 40px; color: #64748b;">
-                    <i data-feather="loader" style="width: 32px; height: 32px; margin-bottom: 12px; animation: spin 1s linear infinite;"></i>
-                    <p>Loading sales history...</p>
-                </td>
-            </tr>
-            <style>@keyframes spin { 100% { transform: rotate(360deg); } }</style>
-        `;
-        if (typeof feather !== 'undefined') feather.replace();
-
-        try {
-            const companyId = getCompanyId();
-            const branchId = getBranchId();
-
-            if (!companyId) return;
-
-            // Fetch pre-grouped data directly from the consolidated table
-            const { data: salesList, error: salesError } = await supabase
-                .from('sales_for_business_transactions')
-                .select('*')
-                .eq('company_id', companyId)
-                .eq('branch_id', branchId)
-                .order('created_at', { ascending: false });
-
-            if (salesError) throw salesError;
-
-            // Map the table rows directly to our state
-            initialSalesData = (salesList || []).map(row => {
-                const d = new Date(row.created_at);
-                const formattedDate = d.toLocaleDateString('en-IN', { month: 'short', day: 'numeric', year: 'numeric' })
-                    + ' ' + d.toLocaleTimeString('en-IN', { hour: 'numeric', minute: '2-digit' });
-
-                // product_names is a text[] array in the new table
-                const productsSummary = Array.isArray(row.product_names)
-                    ? row.product_names.join(', ')
-                    : (row.product_names || '');
-
-                const subtotal = Number(row.total_price ?? 0);
-                const finalAmount = Number(row.final_amount ?? subtotal);
-                const discountAmt = Number(row.discount_amount ?? 0);
-
-                return {
-                    id: row.sale_id,
-                    customer: row.customer_name || 'Walk-in',
-                    customer_id: row.customer_id || null,
-                    customer_phone: row.customer_phone || '',
-                    date: formattedDate,
-                    raw_date: d,
-                    payment: (row.payment_method || 'other').toLowerCase(),
-                    staff: row.staff_name || 'System',
-                    status: (row.payment_status || 'paid').toLowerCase(),
-                    amount_paid: finalAmount,
-                    payment_status: (row.payment_status || 'paid').toLowerCase(),
-                    totalAmountNum: finalAmount,
-                    total: `₹${finalAmount.toLocaleString('en-IN')}`,
-                    item_count: row.total_quantity != null ? Number(row.total_quantity) : 1,
-                    products_summary: productsSummary,
-                    // Discount fields from consolidated table
-                    subtotal_price: subtotal,
-                    discount_amount: discountAmt,
-                    discount_type: row.discount_type || null,
-                    discount_name: row.discount_name || null,
-                    is_view_grouped: true
-                };
-            });
-
-            currentSalesData = [...initialSalesData];
-            renderTable();
-
-        } catch (err) {
-            console.error('Error fetching sales history:', err);
-            tableBody.innerHTML = `
-                <tr>
-                    <td colspan="8" style="text-align:center; padding: 40px; color: #64748b;">
-                        <i data-feather="alert-circle" style="width: 32px; height: 32px; margin-bottom: 12px; opacity: 0.5;"></i>
-                        <p>Could not load sales history. Please try again.</p>
-                        <p style="font-size: 0.8rem; color: #94a3b8; margin-top: 4px;">${err.message || ''}</p>
-                        <button onclick="window.location.reload()" style="margin-top: 10px; padding: 6px 16px; border-radius: 6px; border: 1px solid #e2e8f0; background: #fff; cursor: pointer;">Retry</button>
-                    </td>
-                </tr>
-            `;
-            if (typeof feather !== 'undefined') feather.replace();
-        }
-    }
-
-    // ----------------------------------------------------------------------
-    // 4. RENDER TABLE
-    // ----------------------------------------------------------------------
-    function renderTable() {
-        if (!tableBody) return;
-        tableBody.innerHTML = '';
-
-        if (currentSalesData.length === 0) {
-            tableBody.innerHTML = `
-                <tr>
-                    <td colspan="7" style="text-align:center; padding: 40px; color: #64748b;">
-                        <i data-feather="inbox" style="width: 32px; height: 32px; margin-bottom: 12px; opacity: 0.5;"></i>
-                        <p>No sales records found matching your filters.</p>
-                    </td>
-                </tr>
-            `;
-            if (typeof feather !== 'undefined') feather.replace();
-            return;
-        }
-
-        currentSalesData.forEach((sale, idx) => {
-            const tr = document.createElement('tr');
-            tr.className = 'tb-row';
-            tr.style.cursor = 'pointer';
-            tr.setAttribute('data-idx', idx);
-
-            // Dynamic payment status logic
-            const payStatus = sale.payment_status || 'unpaid';
-            let statusPillClass = 'tb-payment-pending'; // default for unpaid
-            let statusLabel = payStatus.toUpperCase();
-
-            if (payStatus === 'paid') statusPillClass = 'tb-payment-paid';
-            else if (payStatus === 'partial') statusPillClass = 'tb-payment-partial';
-            else if (payStatus === 'refunded') {
-                statusPillClass = 'tb-payment-unpaid'; // use red for refund
-                statusLabel = 'REFUNDED';
-            }
-
-            const isRefunded = payStatus === 'refunded';
-            let saleTotalDisplay = isRefunded
-                ? `<del style="color:#94a3b8; font-weight:400;">${sale.total}</del> <span style="color:#dc2626; font-size: 0.8rem; display:block;">Refunded</span>`
-                : sale.total;
-
-            const itemCount = sale.item_count === 0 ? 'N/A' : (sale.item_count != null ? sale.item_count : 1);
-            
-            let productDisplayHtml = '-';
-            if (sale.products_summary) {
-                const parts = sale.products_summary.split(',').map(s => s.trim()).filter(Boolean);
-                if (parts.length > 0) {
-                    const formatPart = (p) => {
-                        const match = p.match(/^(\d+)\s*\*\s*(.+)$/);
-                        if (match) return `${match[2]} - ${match[1]}`;
-                        return p;
-                    };
-                    
-                    const chipStyle = `display:inline-block;padding:2px 8px;border-radius:20px;font-size:0.75rem;font-weight:500;color:#334155;margin:1px 2px 1px 0;white-space:nowrap;`;
-                    
-                    const formattedParts = parts.map(formatPart);
-                    const firstChip = `<span style="${chipStyle}">${formattedParts[0]}</span>`;
-                    
-                    if (formattedParts.length === 1) {
-                        productDisplayHtml = firstChip;
-                    } else {
-                        const extraCount = formattedParts.length - 1;
-                        const extraId = `prod-extra-${sale.id}`;
-                        const toggleId = `prod-toggle-${sale.id}`;
-                        const extraChips = formattedParts.slice(1).map(s => `<span style="${chipStyle}">${s}</span>`).join('');
-                        productDisplayHtml = `<div style="display:flex;flex-wrap:wrap;align-items:flex-start;gap:2px;width:100%;">
-                            ${firstChip}
-                            <span id="${toggleId}"
-                                onclick="event.stopPropagation(); window.toggleProdExtra('${extraId}', '${toggleId}', ${extraCount})"
-                                style="display:inline-block;padding:2px 7px;border-radius:20px;font-size:0.7rem;font-weight:600;background:#e0e7ff;color:#4f46e5;cursor:pointer;white-space:nowrap;user-select:none;">+${extraCount}</span>
-                            <div id="${extraId}" style="display:none;flex-wrap:wrap;gap:2px;width:100%;margin-top:3px;">
-                                ${extraChips}
-                            </div>
-                        </div>`;
-                    }
-                }
-            }
-
-            tr.innerHTML = `
-                <td style="padding:14px 16px 14px 24px; color:#475569; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">${sale.date}</td>
-                <td style="padding:14px 16px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">
-                    ${sale.customer_id 
-                        ? `<span class="customer-link" style="font-weight:600; cursor:pointer;" onclick="event.stopPropagation(); window.viewCustomerProfile('${sale.customer_id}', '${(sale.customer || '').replace(/'/g, "\\'")}')">${sale.customer}</span>`
-                        : `<span style="color:#1e293b; font-weight:500;">${sale.customer}</span>`
-                    }
-                </td>
-                <td style="padding:14px 16px; color:#475569;">${productDisplayHtml}</td>
-                <td style="padding:14px 16px; font-weight:600; color:#059669;">${saleTotalDisplay}</td>
-                <td style="padding:14px 16px;">
-                    <span class="tb-status-pill ${statusPillClass}" style="text-transform: uppercase; font-size: 0.7rem;">${statusLabel}</span>
-                </td>
-                <td style="padding:14px 16px; color:#475569;">${sale.staff}</td>
-                <td style="padding:14px 16px; text-align:center;" class="action-cell"></td>
-            `;
-
-            const actionCell = tr.querySelector('.action-cell');
-            actionCell.style.display = 'flex';
-            actionCell.style.alignItems = 'center';
-            actionCell.style.justifyContent = 'center';
-            actionCell.style.gap = '12px';
-
-            // Invoice action
-            const invoiceBtn = document.createElement('button');
-            invoiceBtn.innerHTML = '<i data-feather="file-text" style="width:14px; height:14px;"></i>';
-            invoiceBtn.style.cssText = 'background:#f1f5f9; border:1px solid #e2e8f0; border-radius:6px; cursor:pointer; color:#64748b; padding:6px; transition:all 0.2s; display:flex; align-items:center; justify-content:center;';
-            invoiceBtn.title = 'View Invoice';
-            invoiceBtn.onmouseover = () => { invoiceBtn.style.background = '#e0e7ff'; invoiceBtn.style.color = '#4f46e5'; invoiceBtn.style.borderColor = '#c7d2fe'; };
-            invoiceBtn.onmouseout = () => { invoiceBtn.style.background = '#f1f5f9'; invoiceBtn.style.color = '#64748b'; invoiceBtn.style.borderColor = '#e2e8f0'; };
-            invoiceBtn.onclick = (e) => {
-                e.stopPropagation();
-                handleSaleAction('view', idx);
-            };
-
-            // Refund action
-            const refundBtn = document.createElement('button');
-            refundBtn.innerHTML = '<i data-feather="corner-up-left" style="width:14px; height:14px;"></i>';
-            refundBtn.setAttribute('data-sub-feature', 'pos_issue_refund');
-            refundBtn.style.cssText = 'background:#fff1f2; border:1px solid #fecdd3; border-radius:6px; cursor:pointer; color:#e11d48; padding:6px; transition:all 0.2s; display:flex; align-items:center; justify-content:center;';
-            refundBtn.title = payStatus === 'unpaid' ? 'Cannot return pending sale' : 'Return Items';
-            
-            if (payStatus === 'unpaid') {
-                refundBtn.disabled = true;
-                refundBtn.style.opacity = '0.5';
-                refundBtn.style.cursor = 'not-allowed';
-                refundBtn.style.background = '#f8fafc';
-                refundBtn.style.borderColor = '#f1f5f9';
-                refundBtn.style.color = '#cbd5e1';
-            } else {
-                refundBtn.onmouseover = () => { refundBtn.style.background = '#ffe4e6'; };
-                refundBtn.onmouseout = () => { refundBtn.style.background = '#fff1f2'; };
-                refundBtn.addEventListener('click', (e) => {
-                    e.stopPropagation();
-                    handleSaleAction('refund', idx);
-                });
-            }
-            
-            actionCell.appendChild(invoiceBtn);
-            actionCell.appendChild(refundBtn);
-
-
-            tableBody.appendChild(tr);
-        });
-
-        if (typeof feather !== 'undefined') feather.replace();
-        if (window.applySubFeatureGates) window.applySubFeatureGates();
-    }
-
-
-    // ----------------------------------------------------------------------
-    // 5. EVENT LISTENERS & FILTERING
-    // ----------------------------------------------------------------------
-    function setupEventListeners() {
-        if (searchInput) {
-            searchInput.addEventListener('input', (e) => {
-                const term = e.target.value.toLowerCase();
-                currentSalesData = initialSalesData.filter(s => 
-                    String(s.id).toLowerCase().includes(term) || 
-                    s.customer.toLowerCase().includes(term) ||
-                    (s.customer_phone || '').toLowerCase().includes(term) ||
-                    s.staff.toLowerCase().includes(term) ||
-                    (s.products_summary || '').toLowerCase().includes(term)
-                );
-                renderTable();
-            });
-        }
-
-        // Date range filter — exposed on window so HTML onclicks can call it,
-        // but defined here inside the IIFE so it has access to the data vars.
-        window.hsFilterByDate = function(range) {
-            const label = document.getElementById('hsDateLabel');
-            const now = new Date();
-            let from = null;
-            let to = null;
-
-            if (range === 'today') {
-                from = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-                if (label) label.textContent = 'Today';
-            } else if (range === 'week') {
-                from = new Date(now);
-                from.setDate(from.getDate() - 7);
-                if (label) label.textContent = 'Last 7 days';
-            } else if (range === 'month') {
-                from = new Date(now);
-                from.setDate(from.getDate() - 30);
-                if (label) label.textContent = 'Last 30 days';
-            } else if (range === 'custom') {
-                const fromInput = document.getElementById('hsCustomFrom');
-                const toInput   = document.getElementById('hsCustomTo');
-                if (fromInput && fromInput.value) from = new Date(fromInput.value);
-                if (toInput && toInput.value) {
-                    to = new Date(toInput.value);
-                    to.setHours(23, 59, 59, 999);
-                }
-                if (label) {
-                    const fmtDate = (val) => {
-                        if (!val) return '...';
-                        const d = new Date(val);
-                        const day = d.getDate();
-                        const suffix = day === 1 || day === 21 || day === 31 ? 'st'
-                                     : day === 2 || day === 22 ? 'nd'
-                                     : day === 3 || day === 23 ? 'rd' : 'th';
-                        return `${day}${suffix} ${d.toLocaleDateString('en-IN', { month: 'long', year: 'numeric' })}`;
-                    };
-                    label.textContent = `${fmtDate(fromInput?.value)} → ${fmtDate(toInput?.value)}`;
-                }
-            } else {
-                if (label) label.textContent = 'All Time';
-            }
-
-            currentSalesData = initialSalesData.filter(s => {
-                if (!s.raw_date) return false;
-                if (from && s.raw_date < from) return false;
-                if (to   && s.raw_date > to)   return false;
-                return true;
-            });
-
-            renderTable();
-        };
-
-        // Export to Excel — exposed on window, defined here inside IIFE to access currentSalesData
-        window.hsExportData = function() {
-            const headers = ['Date', 'Customer', 'Products', 'Total', 'Payment', 'Staff'];
-            const rows = [headers];
-
-            currentSalesData.forEach(s => {
-                const products = (s.products_summary || '')
-                    .split(',')
-                    .map(p => {
-                        const m = p.trim().match(/^(\d+)\s*\*\s*(.+)$/);
-                        return m ? `${m[2].trim()} - ${m[1]}` : p.trim();
-                    })
-                    .join('; ');
-
-                rows.push([
-                    s.date || '',
-                    s.customer || '',
-                    products,
-                    s.totalAmountNum || 0,
-                    (s.payment_status || 'UNPAID').toUpperCase(),
-                    s.staff || ''
-                ]);
-            });
-
-            let xls = '<table border="1">';
-            rows.forEach((r, i) => {
-                xls += '<tr>';
-                r.forEach(v => {
-                    xls += i === 0 ? `<th>${v}</th>` : `<td>${v}</td>`;
-                });
-                xls += '</tr>';
-            });
-            xls += '</table>';
-
-            const blob = new Blob(['\ufeff', xls], { type: 'application/vnd.ms-excel;charset=utf-8;' });
-            const url = URL.createObjectURL(blob);
-            const a = document.createElement('a');
-            a.href = url;
-            a.download = 'sales-history.xls';
-            a.click();
-            URL.revokeObjectURL(url);
-        };
-
-        document.addEventListener('click', (e) => {
-            if (activeMenuEl && !activeMenuEl.contains(e.target)) closeOpenActionMenu();
-            
-            if (filterMenu && filterMenu.style.display === 'block' && !filterMenu.contains(e.target) && e.target !== filterBtn) {
-                filterMenu.style.display = 'none';
-            }
-            if (dateMenu && dateMenu.style.display === 'block' && !dateMenu.contains(e.target) && e.target !== dateBtn) {
-                dateMenu.style.display = 'none';
-            }
-            if (exportMenu && exportMenu.style.display === 'block' && !exportMenu.contains(e.target) && e.target !== exportBtn) {
-                exportMenu.style.display = 'none';
-            }
-        });
-
-        if (applyFiltersBtn) {
-            applyFiltersBtn.addEventListener('click', () => {
-                showToast('Filters applied.', '#3b82f6');
-                filterMenu.style.display = 'none';
-            });
-        }
-        
-        const exportCsvBtn = document.getElementById('exportCsvBtn');
-        const exportExcelBtn = document.getElementById('exportExcelBtn');
-        if (exportCsvBtn) exportCsvBtn.addEventListener('click', () => { hsExportData('csv'); });
-        if (exportExcelBtn) exportExcelBtn.addEventListener('click', () => { hsExportData('excel'); });
-
-        function closeSaleModal() {
-            if (saleDetailsModalOverlay) saleDetailsModalOverlay.classList.remove('active');
-            currentActionData = null;
-        }
-
-        if (closeSaleDetailsModal) closeSaleDetailsModal.addEventListener('click', closeSaleModal);
-        if (closeSaleDetailsBtn) closeSaleDetailsBtn.addEventListener('click', closeSaleModal);
-        if (saleDetailsModalOverlay) {
-            saleDetailsModalOverlay.addEventListener('click', (e) => {
-                if (e.target === saleDetailsModalOverlay) closeSaleModal();
-            });
-        }
-
-        function closeRefundModal() {
-            if (refundSummaryOverlay) refundSummaryOverlay.classList.remove('active');
-        }
-        
-        const closeRefundBtnFooter = document.getElementById('closeRefundBtn');
-        if (cancelRefundBtn) cancelRefundBtn.addEventListener('click', closeRefundModal);
-        if (closeRefundBtnFooter) closeRefundBtnFooter.addEventListener('click', closeRefundModal);
-        if (refundSummaryOverlay) {
-            refundSummaryOverlay.addEventListener('click', (e) => {
-                if (e.target === refundSummaryOverlay) closeRefundModal();
-            });
-        }
-
-        if (sdRefundBtn) {
-            sdRefundBtn.addEventListener('click', () => {
-                if (currentActionData && currentActionData.sale) {
-                    openRefundModal(currentActionData.sale);
-                } else {
-                    refundSummaryOverlay.classList.add('active');
-                }
-            });
-        }
-
-        if (confirmRefundBtn) {
-            confirmRefundBtn.addEventListener('click', processRefund);
-        }
-
-        if (sdPrintBtn) {
-            sdPrintBtn.addEventListener('click', () => {
-                window.print();
-            });
-        }
-
-        // --- Refund Modal Listeners (updated) ---
-        const closeRefundBtn = document.getElementById('closeRefundBtn');
-        if (closeRefundBtn) closeRefundBtn.addEventListener('click', closeRefundModal);
-    }
-
-
-    // ----------------------------------------------------------------------
-    // 6. ACTIONS MENU LOGIC
-    // ----------------------------------------------------------------------
-    window.toggleSaleMenu = function(e, idx) {
-        e.stopPropagation();
-        closeOpenActionMenu();
-
-        const sale = currentSalesData[idx];
-        const btn = e.currentTarget;
-        const rect = btn.getBoundingClientRect();
-
-        const menu = document.createElement('div');
-        menu.className = 'tb-actions-menu';
-        menu.id = 'tbActiveMenu';
-
-        const isRefunded = sale.status === 'refunded';
-
-        if (isRefunded) {
-             menu.innerHTML = `
-                <button class="tb-menu-item" onclick="handleSaleAction('view', ${idx})">
-                    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
-                    View Details
-                </button>
-            `;
-        } else {
-             menu.innerHTML = `
-                <button class="tb-menu-item" onclick="handleSaleAction('view', ${idx})">
-                    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
-                    View Details
-                </button>
-                <button class="tb-menu-item" onclick="handleSaleAction('print', ${idx})">
-                    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg>
-                    Print Receipt
-                </button>
-                <div style="height: 1px; background: #e2e8f0; margin: 4px 0;"></div>
-                <button class="tb-menu-item danger" data-sub-feature="pos_issue_refund" onclick="handleSaleAction('refund', ${idx})">
-                    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 14 4 9 9 4"/><path d="M20 20v-7a4 4 0 0 0-4-4H4"/></svg>
-                    Return Items
-                </button>
-            `;
-        }
-
-        document.body.appendChild(menu);
-        activeMenuEl = menu;
-
-        const menuH = isRefunded ? 46 : 130; 
-        let top = rect.bottom + 6;
-        if (top + menuH > window.innerHeight - 8) top = window.innerHeight - menuH - 8;
-        let left = rect.right - 192;
-        if (left < 8) left = rect.left;
-
-        menu.style.top = top + 'px';
-        menu.style.left = left + 'px';
-        
-        if (window.applySubFeatureGates) window.applySubFeatureGates();
-    };
-
-    function closeOpenActionMenu() {
-        if (activeMenuEl) { activeMenuEl.remove(); activeMenuEl = null; }
-    }
-
-    // ----------------------------------------------------------------------
-    // 7. HANDLE SALE ACTIONS
-    // ----------------------------------------------------------------------
-    function handleSaleAction(action, idx) {
-        try {
+    document.addEventListener('click', (e) => {
+        if (salesState.activeMenuEl && !salesState.activeMenuEl.contains(e.target)) {
             closeOpenActionMenu();
-            const sale = currentSalesData[idx];
-            if (!sale) return;
-            currentActionData = { action, idx, sale };
-
-            if (action === 'view') {
-                openSaleDetails(sale);
-            } else if (action === 'collect') {
-                openCollectPaymentModal(sale);
-            } else if (action === 'refund') {
-                openRefundModal(sale);
-            } else if (action === 'print') {
-                showToast('Preparing receipt printer...', '#10b981');
-                window.print();
-            }
-        } catch (err) {
-            console.error('[Action Error]', err);
-            showToast('Unable to process action. See console for details.', '#ef4444');
         }
+        
+        if (filterMenu && filterMenu.style.display === 'block' && !filterMenu.contains(e.target) && e.target !== filterBtn) {
+            filterMenu.style.display = 'none';
+        }
+        if (dateMenu && dateMenu.style.display === 'block' && !dateMenu.contains(e.target) && e.target !== dateBtn) {
+            dateMenu.style.display = 'none';
+        }
+        if (exportMenu && exportMenu.style.display === 'block' && !exportMenu.contains(e.target) && e.target !== exportBtn) {
+            exportMenu.style.display = 'none';
+        }
+    });
+
+    if (applyFiltersBtn) {
+        applyFiltersBtn.addEventListener('click', () => {
+            showToast('Filters applied.', '#3b82f6');
+            if (filterMenu) filterMenu.style.display = 'none';
+        });
     }
-    window.handleSaleAction = handleSaleAction;
     
-    // Explicit global wrappers for absolute fallback guarantee
-    window.runSaleView = function(idx) { handleSaleAction('view', idx); };
-    window.runSalePrint = function(idx) { handleSaleAction('print', idx); };
-    window.runSaleRefund = function(idx) { handleSaleAction('refund', idx); };
-    
-    // ----------------------------------------------------------------------
-    // 7.1. COLLECT PAYMENT MODAL
-    // ----------------------------------------------------------------------
-    async function openCollectPaymentModal(sale) {
-        if (!sale) return;
-
-        const total = sale.totalAmountNum || 0;
-        const paid = sale.amount_paid || 0;
-        const balance = Math.max(0, total - paid);
-
-        if (window.openGlobalPaymentModal) {
-            window.openGlobalPaymentModal({
-                saleId: sale.id,
-                customerId: sale.customer_id,
-                customerName: sale.customer || 'Walk-in',
-                totalAmount: balance, // In sales history we collect the remaining balance
-                amountDue: balance,
-                isMembershipPurchase: false, // Sales history typically shows products/services
-                onComplete: async (payload) => {
-                    await processProductPayment(payload, sale);
-                }
-            });
-        } else {
-            showToast('Global payment modal not loaded', '#ef4444');
-        }
-    }
-
-    async function processProductPayment(payload, sale) {
-        const amount = payload.amountCollected;
-        const method = payload.paymentMethod;
-        
-        try {
-            const { error } = await supabase
-                .from('business_transactions')
-                .insert({
-                    company_id: getCompanyId(),
-                    branch_id: getBranchId(),
-                    reference_id: sale.id,
-                    reference_type: 'product',
-                    amount: amount,
-                    status: 'paid',
-                    payment_method: method.toLowerCase(),
-                    notes: `Partial payment for sale ${sale.id}`,
-                    paid_at: new Date().toISOString()
-                });
-
-            if (error) throw error;
-
-            showToast('Payment recorded successfully!', '#10b981');
-            await fetchSalesHistory(); // Refresh to update badges
-        } catch (err) {
-            console.error('Error recording payment:', err);
-            showToast('Failed to record payment.', '#ef4444');
-            throw err; // Re-throw so modal handles it
-        }
-    }
-
-    // ----------------------------------------------------------------------
-    // 7.2. REFUND MODAL
-    // ----------------------------------------------------------------------
-    // ----------------------------------------------------------------------
-    // 7.2. RETURN MODAL (Itemized 2-Column Layout)
-    // ----------------------------------------------------------------------
-    let currentRefundItems = [];
-    
-    async function openRefundModal(sale) {
-        if (!sale) return;
-        const modal = document.getElementById('refundSummaryOverlay');
-        if (!modal) return;
-        
-        currentActionData = { action: 'refund', sale };
-        modal.classList.add('active');
-
-        // 1. Customer Details Card
-        const custNameEl = document.getElementById('rfCustomerName');
-        const custPhoneEl = document.getElementById('rfCustomerPhone');
-        const custEmailEl = document.getElementById('rfCustomerEmail');
-        const custAvatarEl = document.getElementById('rfCustomerAvatar');
-        const viewProfBtn = document.getElementById('rfCustomerViewProfileBtn');
-
-        let custName = sale.customer || 'Walk-in';
-        let custPhone = sale.customer_phone || '—';
-        let custEmail = sale.customer_email || '—';
-
-        if (custNameEl) custNameEl.textContent = custName;
-        if (custPhoneEl) custPhoneEl.textContent = custPhone;
-        if (custEmailEl) custEmailEl.textContent = custEmail;
-
-        const initials = (custName || 'CU').split(' ').map(n => n[0]).filter(Boolean).slice(0, 2).join('').toUpperCase() || 'CU';
-        if (custAvatarEl) custAvatarEl.textContent = initials;
-
-        if (viewProfBtn) {
-            if (sale.customer_id) {
-                viewProfBtn.style.display = 'inline-flex';
-                viewProfBtn.onclick = async (e) => {
-                    e.preventDefault();
-                    if (!window.viewCustomerProfile) {
-                        try { await import('./scripts/global-customer-profile-modal.js'); } catch(e) {}
-                    }
-                    if (window.viewCustomerProfile) {
-                        window.viewCustomerProfile(sale.customer_id, custName);
-                    }
-                };
-            } else {
-                viewProfBtn.style.display = 'none';
-            }
-        }
-
-        // 2. Sale Details Card
-        const saleBadge = document.getElementById('rfSaleBadge');
-        const saleDateEl = document.getElementById('rfSaleDate');
-        const cashierEl = document.getElementById('rfCashier');
-
-        const shortId = sale.id ? String(sale.id).slice(0, 8).toUpperCase() : '—';
-        if (saleBadge) saleBadge.textContent = `#${shortId}`;
-        if (saleDateEl) saleDateEl.textContent = sale.date || '—';
-        if (cashierEl) cashierEl.textContent = sale.staff || 'System';
-
-        // 3. Products in this Sale Card
-        const itemsCountBadge = document.getElementById('rfItemsCountBadge');
-        const productList = document.getElementById('rfProductList');
-        if (itemsCountBadge) itemsCountBadge.textContent = 'Loading...';
-        if (productList) productList.innerHTML = `<div style="padding: 20px; text-align: center; color: #64748b; font-size: 0.85rem;">Loading items...</div>`;
-
-        // 4. Original Payment Card
-        const origMethodEl = document.getElementById('rfOrigMethod');
-        const origTxnEl = document.getElementById('rfOrigTxnRef');
-        if (origMethodEl) {
-            const m = (sale.payment || 'cash').toLowerCase();
-            origMethodEl.textContent = m.charAt(0).toUpperCase() + m.slice(1);
-        }
-        if (origTxnEl) origTxnEl.textContent = `#${shortId}`;
-
-        // Right Column: Form Controls
-        const amountDisplay = document.getElementById('rfAmountDisplay');
-        const maxRefundEl = document.getElementById('rfMaxRefundText');
-        const typeBadge = document.getElementById('rfRefundTypeBadge');
-        const methodSelect = document.getElementById('rfMethodSelect');
-        const reasonSelect = document.getElementById('rfReasonSelect');
-        const noteField = document.getElementById('rfNote');
-        const confirmBtn = document.getElementById('confirmRefundBtn');
-
-        if (amountDisplay) amountDisplay.textContent = '₹0.00';
-        if (maxRefundEl) maxRefundEl.textContent = '₹0';
-        if (typeBadge) {
-            typeBadge.textContent = 'Full Amount';
-            typeBadge.style.background = '#ffe4e6';
-            typeBadge.style.color = '#e11d48';
-        }
-        if (methodSelect) {
-            let m = (sale.payment || 'cash').toLowerCase();
-            if (!['cash', 'card', 'upi', 'bank_transfer'].includes(m)) m = 'cash';
-            methodSelect.value = m;
-        }
-        if (reasonSelect) {
-            reasonSelect.value = '';
-            reasonSelect.style.borderColor = '#cbd5e1';
-        }
-        if (noteField) noteField.value = '';
-        if (confirmBtn) {
-            confirmBtn.disabled = true;
-            confirmBtn.innerHTML = `
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="1 4 1 10 7 10"></polyline><path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10"></path></svg>
-                <span>Issue Refund</span>
-            `;
-        }
-
-        try {
-            // Asynchronously fetch fresh customer record if customer_id is available
-            if (sale.customer_id) {
-                supabase.from('customers').select('*').eq('customer_id', sale.customer_id).maybeSingle()
-                    .then(({ data: c }) => {
-                        if (c) {
-                            if (c.customer_name && custNameEl) custNameEl.textContent = c.customer_name;
-                            if ((c.customer_phone || c.phone) && custPhoneEl) custPhoneEl.textContent = c.customer_phone || c.phone;
-                            if ((c.customer_email || c.email) && custEmailEl) custEmailEl.textContent = c.customer_email || c.email;
-                            const newInitials = ((c.customer_name || custName) || 'CU').split(' ').map(n => n[0]).filter(Boolean).slice(0, 2).join('').toUpperCase() || 'CU';
-                            if (custAvatarEl) custAvatarEl.textContent = newInitials;
-                        }
-                    }).catch(() => {});
-            }
-
-            // Asynchronously fetch transaction ref if available
-            supabase.from('business_transactions').select('id, payment_method')
-                .eq('reference_id', sale.id)
-                .order('paid_at', { ascending: true })
-                .limit(1)
-                .then(({ data: txs }) => {
-                    if (txs && txs.length > 0 && txs[0].id && origTxnEl) {
-                        origTxnEl.textContent = `#TXN-${String(txs[0].id).slice(0, 8).toUpperCase()}`;
-                    }
-                }).catch(() => {});
-
-            // Fetch individual items comprising this sale group
-            const { data: items, error } = await supabase
-                .from('sales')
-                .select('*')
-                .eq('sale_id', sale.id);
-
-            if (error) throw error;
-            currentRefundItems = items || [];
-            if (itemsCountBadge) itemsCountBadge.textContent = `${currentRefundItems.length} item${currentRefundItems.length === 1 ? '' : 's'}`;
-
-            // Render right away
-            renderRefundItems();
-
-        } catch (err) {
-            console.error('[Return Load Error]', err);
-            if (productList) productList.innerHTML = `<div style="padding: 20px; text-align: center; color: #dc2626; font-size: 0.85rem;">Failed to load items.</div>`;
-        }
-        
-        if (typeof feather !== 'undefined') feather.replace();
-    }
-    window.openRefundModal = openRefundModal;
-
-
-    function renderRefundItems() {
-        const list = document.getElementById('rfProductList');
-        if (!list) return;
-        
-        list.innerHTML = '';
-        
-        if (currentRefundItems.length === 0) {
-            list.innerHTML = `<div style="padding: 20px; text-align: center; color: #64748b; font-size: 0.85rem;">No items found.</div>`;
-            return;
-        }
-
-        currentRefundItems.forEach(item => {
-            const isRefunded = (item.status === 'refunded');
-            const itemPrice = Number(item.price || 0);
-            const initialQty = item.quantity || 1;
-            
-            const card = document.createElement('div');
-            card.className = 'rf-product-card';
-            card.dataset.id = item.id;
-            card.style.cssText = `border:1px solid ${isRefunded ? '#f1f5f9' : '#e2e8f0'}; border-radius:10px; background:${isRefunded ? '#f8fafc' : '#fff'}; padding:12px 14px; display:flex; align-items:center; justify-content:space-between; gap:12px; transition:all 0.15s; ${isRefunded ? 'opacity:0.6;' : ''}`;
-            
-            card.innerHTML = `
-                <div style="display:flex; align-items:center; gap:12px; flex:1; min-width:0;">
-                    <input type="checkbox" class="rf-item-cb" data-id="${item.id}" 
-                        style="width:19px; height:19px; flex-shrink:0; accent-color:#dc2626; cursor:${isRefunded ? 'not-allowed' : 'pointer'}; border-radius:4px;" 
-                        ${isRefunded ? 'disabled' : 'checked'}>
-                    <div style="display:flex; flex-direction:column; gap:2px; min-width:0;">
-                        <div style="font-size:0.92rem; font-weight:600; color:#0f172a; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; ${isRefunded ? 'text-decoration:line-through; color:#94a3b8;' : ''}">
-                            ${item.product_name || 'Product'}
-                        </div>
-                        ${isRefunded 
-                            ? `<div style="font-size:0.75rem; color:#dc2626; font-weight:600;">Returned (Qty: ${initialQty})</div>`
-                            : `<div style="display:flex; align-items:center; gap:8px; font-size:0.78rem; color:#64748b;">
-                                 <span>Return quantity:</span>
-                                 <div style="display:inline-flex; align-items:center; border:1px solid #cbd5e1; border-radius:6px; overflow:hidden; height:24px; background:#fff;">
-                                     <button type="button" class="rf-qty-btn minus" data-id="${item.id}" style="width:24px; height:100%; display:flex; align-items:center; justify-content:center; background:#f8fafc; border:none; border-right:1px solid #cbd5e1; color:#475569; font-weight:700; cursor:pointer; font-size:0.85rem;" onmouseover="this.style.background='#f1f5f9'" onmouseout="this.style.background='#f8fafc'">−</button>
-                                     <input type="text" class="rf-qty-input" data-id="${item.id}" value="${initialQty}" data-max="${initialQty}" readonly style="width:32px; height:100%; border:none; text-align:center; font-size:0.78rem; font-weight:600; color:#0f172a; background:#fff; pointer-events:none; padding:0;">
-                                     <button type="button" class="rf-qty-btn plus" data-id="${item.id}" style="width:24px; height:100%; display:flex; align-items:center; justify-content:center; background:#f8fafc; border:none; border-left:1px solid #cbd5e1; color:#475569; font-weight:700; cursor:pointer; font-size:0.85rem;" onmouseover="this.style.background='#f1f5f9'" onmouseout="this.style.background='#f8fafc'">+</button>
-                                 </div>
-                                 <span style="font-size:0.75rem; color:#94a3b8;">of ${initialQty}</span>
-                               </div>`
-                        }
-                    </div>
-                </div>
-                <div style="text-align:right; flex-shrink:0;">
-                    <div class="rf-row-price" data-id="${item.id}" style="font-size:0.95rem; font-weight:700; color:#0f172a;">
-                        ₹0
-                    </div>
-                </div>
-            `;
-            list.appendChild(card);
-        });
-
-        // Attach recalculation
-        document.querySelectorAll('.rf-item-cb:not(:disabled)').forEach(cb => {
-            cb.addEventListener('change', calculateRefundTotal);
-        });
-        
-        document.querySelectorAll('.rf-qty-btn').forEach(btn => {
-            btn.addEventListener('click', (e) => {
-                const id = e.currentTarget.dataset.id;
-                const input = document.querySelector(`.rf-qty-input[data-id="${id}"]`);
-                if (!input) return;
-                
-                let val = parseInt(input.value) || 1;
-                const max = parseInt(input.dataset.max) || 1;
-                
-                if (e.currentTarget.classList.contains('plus')) {
-                    if (val < max) val++;
-                } else if (e.currentTarget.classList.contains('minus')) {
-                    if (val > 1) val--;
-                }
-                
-                input.value = val;
-                
-                // If they interact with quantity, auto-check the row
-                const cb = document.querySelector(`.rf-item-cb[data-id="${id}"]`);
-                if (cb && !cb.checked) {
-                    cb.checked = true;
-                }
-                
-                calculateRefundTotal();
-            });
-        });
-        
-        calculateRefundTotal();
-    }
-
-    function calculateRefundTotal() {
-        let total = 0;
-        let selectedCount = 0;
-        let unrefundedTotal = 0;
-        let unrefundedCount = 0;
-        
-        currentRefundItems.forEach(item => {
-            const isRefunded = (item.status === 'refunded');
-            const price = Number(item.price || 0);
-            
-            if (isRefunded) {
-                const priceDisplay = document.querySelector(`.rf-row-price[data-id="${item.id}"]`);
-                if (priceDisplay) {
-                    priceDisplay.textContent = `₹${Number(item.total_amount || 0).toLocaleString('en-IN')}`;
-                    priceDisplay.style.color = '#94a3b8';
-                }
-            } else {
-                unrefundedCount++;
-                const maxQty = item.quantity || 1;
-                unrefundedTotal += price * maxQty;
-
-                const cb = document.querySelector(`.rf-item-cb[data-id="${item.id}"]`);
-                const qtyInput = document.querySelector(`.rf-qty-input[data-id="${item.id}"]`);
-                const card = document.querySelector(`.rf-product-card[data-id="${item.id}"]`);
-                
-                let qty = qtyInput ? parseInt(qtyInput.value) || 1 : maxQty;
-                if (qty > maxQty) qty = maxQty;
-                if (qty < 1) qty = 1;
-                if (qtyInput && parseInt(qtyInput.value) !== qty) qtyInput.value = qty;
-                
-                const displayVal = price * qty;
-                const priceDisplay = document.querySelector(`.rf-row-price[data-id="${item.id}"]`);
-                if (priceDisplay) {
-                    priceDisplay.textContent = `₹${displayVal.toLocaleString('en-IN')}`;
-                    priceDisplay.style.color = (cb && cb.checked) ? '#0f172a' : '#94a3b8';
-                }
-
-                if (card) {
-                    card.style.borderColor = (cb && cb.checked) ? '#fca5a5' : '#e2e8f0';
-                    card.style.background = (cb && cb.checked) ? '#fff' : '#fafafa';
-                }
-                
-                if (cb && cb.checked) {
-                    total += displayVal;
-                    selectedCount++;
-                }
-            }
-        });
-        
-        const amountDisplay = document.getElementById('rfAmountDisplay');
-        if (amountDisplay) {
-            amountDisplay.textContent = `₹${total.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
-        }
-
-        const maxRefundText = document.getElementById('rfMaxRefundText');
-        if (maxRefundText) {
-            maxRefundText.textContent = `₹${unrefundedTotal.toLocaleString('en-IN')}`;
-        }
-
-        const typeBadge = document.getElementById('rfRefundTypeBadge');
-        if (typeBadge) {
-            if (selectedCount === 0) {
-                typeBadge.textContent = 'No Items';
-                typeBadge.style.background = '#f1f5f9';
-                typeBadge.style.color = '#64748b';
-            } else if (total === unrefundedTotal && selectedCount === unrefundedCount) {
-                typeBadge.textContent = 'Full Amount';
-                typeBadge.style.background = '#ffe4e6';
-                typeBadge.style.color = '#e11d48';
-            } else {
-                typeBadge.textContent = 'Partial Refund';
-                typeBadge.style.background = '#fef3c7';
-                typeBadge.style.color = '#d97706';
-            }
-        }
-        
-        const btn = document.getElementById('confirmRefundBtn');
-        if (btn) {
-            btn.disabled = (selectedCount === 0 || total <= 0);
-            btn.style.opacity = (selectedCount === 0 || total <= 0) ? '0.5' : '1';
-            btn.style.cursor = (selectedCount === 0 || total <= 0) ? 'not-allowed' : 'pointer';
-        }
-    }
-
-    // ----------------------------------------------------------------------
-    // FILTER: Apply & Clear (called from HTML onclick)
-    // ----------------------------------------------------------------------
-    window.hsApplyFilter = function() {
-        document.getElementById('hsFilterMenu').style.display = 'none';
-
-        const allCbs = document.querySelectorAll('.hs-filter-cb');
-        const payments = [], staff = [], categories = [];
-        allCbs.forEach(cb => {
-            if (!cb.checked) return;
-            const val = cb.value;
-            if (['cash','card','upi'].includes(val))                     payments.push(val);
-            if (['Sarah','Michael','Anjali'].includes(val))              staff.push(val);
-            if (['Hair care','Skin care','Style products'].includes(val)) categories.push(val);
-        });
-
-        currentSalesData = initialSalesData.filter(sale => {
-            const paymentOk  = payments.length === 0   || payments.includes(sale.payment);
-            const staffOk    = staff.length === 0      || staff.includes(sale.staff);
-            // Category filter can only be applied to line items.
-            // Since the main list is grouped, category filtering is disabled here.
-            return paymentOk && staffOk;
-        });
-
-        renderTable();
-    };
-
-    window.hsClearFilter = function() {
-        document.querySelectorAll('.hs-filter-cb').forEach(cb => cb.checked = false);
-        currentSalesData = [...initialSalesData];
-        renderTable();
-        document.getElementById('hsFilterMenu').style.display = 'none';
-    };
-
-
-    // ----------------------------------------------------------------------
-    // 8. POPULATE SALE DETAILS MODAL
-    // ----------------------------------------------------------------------
-    async function openSaleDetails(sale) {
-        try {
-            if (!sale) return;
-            currentActionData = { action: 'view', idx: currentSalesData.indexOf(sale), sale };
-
-            if (sdSubtitle && sale.id) sdSubtitle.textContent = `Transaction ID: ${String(sale.id).substring(0,8).toUpperCase()}`;
-            if (sdCustomer) sdCustomer.textContent = sale.customer || '-';
-            if (sdStaff) sdStaff.textContent = sale.staff || '-';
-            if (sdDate) sdDate.textContent = sale.date || '-';
-            if (sdPayment && sale.payment_status) {
-                const st = String(sale.payment_status).toUpperCase();
-                let badgeColor = '#92400e'; let bg = '#fef3c7'; // default pending
-                if (st === 'PAID') { badgeColor = '#065f46'; bg = '#d1fae5'; }
-                else if (st === 'UNPAID') { badgeColor = '#991b1b'; bg = '#fee2e2'; }
-                
-                sdPayment.innerHTML = `<span style="display:inline-block; padding:2px 10px; border-radius:12px; font-size:0.7rem; font-weight:700; letter-spacing:0.3px; color:${badgeColor}; background:${bg};">${st}</span>`;
-            } else if (sdPayment) {
-                sdPayment.textContent = '-';
-            }
-
-            const sdItemCountEl = document.getElementById('sdItemCount');
-            if (sdItemCountEl) sdItemCountEl.textContent = sale.item_count || 1;
-
-            if (sdItemsList) {
-                sdItemsList.innerHTML = `<tr><td colspan="4" style="text-align:center; padding:20px; color:#64748b;">Loading items...</td></tr>`;
-            }
-            
-            if (saleDetailsModalOverlay) saleDetailsModalOverlay.classList.add('active');
-            if (typeof feather !== 'undefined') feather.replace();
-
-            // Fetch actual line items from 'sales' table for this sale_id
-            const { data: items, error } = await supabase
-                .from('sales')
-                .select('*')
-                .eq('sale_id', sale.id)
-                .order('id', { ascending: true }); // Keep grouped items ordered predictably
-
-            if (error) throw error;
-
-            if (sdItemsList) {
-                sdItemsList.innerHTML = '';
-                let subtotal = 0;
-                let rowsHTML = '';
-
-                (items || []).forEach((item, index) => {
-                    const lineTotal = Number(item.total_amount || 0);
-                    const qty = Number(item.quantity || 1);
-                    const isRefunded = (item.status === 'refunded');
-                    subtotal += isRefunded ? 0 : lineTotal; 
-
-                    let calculatedPrice = 0;
-                    if (qty > 0) calculatedPrice = lineTotal / qty;
-
-                    const rowBg = isRefunded ? 'background: #f8fafc; opacity: 0.7;' : '';
-                    const strike = isRefunded ? 'text-decoration: line-through;' : '';
-                    const badge = isRefunded ? '<span style="color:#dc2626; font-size:0.7rem; font-weight:600; margin-left:8px; text-transform:uppercase;">Returned</span>' : '';
-                    
-                    const isLast = (index === items.length - 1);
-                    const tdBorder = isLast ? '' : 'border-bottom: 1px solid #e2e8f0;';
-
-                    rowsHTML += `
-                        <tr style="${rowBg}">
-                            <td style="padding:12px 16px; font-size:0.875rem; color:#334155; ${tdBorder} ${strike}">
-                                ${item.product_name || 'Product'} ${badge}
-                            </td>
-                            <td style="padding:12px 16px; font-size:0.875rem; color:#475569; text-align:center; ${tdBorder}">${qty}</td>
-                            <td style="padding:12px 16px; font-size:0.875rem; color:#475569; text-align:right; ${tdBorder}">₹${calculatedPrice.toLocaleString('en-IN', {maximumFractionDigits:2})}</td>
-                            <td style="padding:12px 16px; font-size:0.875rem; color:#1e293b; font-weight:600; text-align:right; ${tdBorder} ${strike}">₹${lineTotal.toLocaleString('en-IN', {maximumFractionDigits:2})}</td>
-                        </tr>
-                    `;
-                });
-                
-                sdItemsList.innerHTML = rowsHTML;
-
-                if (sdSubtotal) sdSubtotal.textContent = `₹${subtotal.toLocaleString('en-IN')}`;
-                if (sdTax)      sdTax.textContent      = `₹${0}`;
-
-                // --- Discount row ---
-                const saleDiscount = sale.discount_amount || 0;
-                if (sdDiscount) {
-                    if (saleDiscount > 0) {
-                        // Build a label like "Coupon: SUMMER20" or just "Discount"
-                        let discountLabel = 'Discount';
-                        if (sale.discount_name) {
-                            const typeIcon = sale.discount_type === 'coupon' ? '🏷️' : sale.discount_type === 'membership' ? '💳' : '';
-                            discountLabel = `${typeIcon} ${sale.discount_name}`.trim();
-                        }
-                        // Update the label element if it exists
-                        const discountLabelEl = document.getElementById('sdDiscountLabel');
-                        if (discountLabelEl) discountLabelEl.textContent = discountLabel;
-                        sdDiscount.textContent = `-₹${saleDiscount.toLocaleString('en-IN')}`;
-                        sdDiscount.style.color = '#16a34a'; // green
-                    } else {
-                        const discountLabelEl = document.getElementById('sdDiscountLabel');
-                        if (discountLabelEl) discountLabelEl.textContent = 'Discount';
-                        sdDiscount.textContent = `₹0`;
-                        sdDiscount.style.color = '#16a34a';
-                    }
-                }
-
-                // Final total = final_amount stored on consolidated row
-                const finalTotal = sale.totalAmountNum || subtotal;
-                if (sdTotal) sdTotal.textContent = `₹${finalTotal.toLocaleString('en-IN')}`;
-
-            }
-
-            if (sdRefundBtn) {
-                // If every single item is refunded, hide the button
-                const allRefunded = items && items.length > 0 && items.every(i => i.status === 'refunded');
-                sdRefundBtn.style.display = allRefunded ? 'none' : 'inline-flex';
-            }
-
-        } catch (err) {
-            console.error('Error fetching sale details:', err);
-            if (sdItemsList) sdItemsList.innerHTML = `<tr><td colspan="4" style="text-align:center; padding:20px; color:#ef4444;">Failed to load items.</td></tr>`;
-        }
-    }
-
-
-    // ----------------------------------------------------------------------
-    // 9. PROCESS REFUND (via Supabase array/multi-row update)
-    // ----------------------------------------------------------------------
-    async function processRefund() {
-        if (!currentActionData || !currentActionData.sale) return;
-
-        const reasonSelect = document.getElementById('rfReasonSelect');
-        const reason = reasonSelect ? reasonSelect.value.trim() : '';
-        if (!reason) {
-            showToast('Please select a refund reason.', '#dc2626');
-            if (reasonSelect) {
-                reasonSelect.focus();
-                reasonSelect.style.borderColor = '#ef4444';
-                setTimeout(() => { if (reasonSelect) reasonSelect.style.borderColor = '#cbd5e1'; }, 2500);
-            }
-            return;
-        }
-
-        const checkedBoxes = Array.from(document.querySelectorAll('.rf-item-cb:not(:disabled):checked'));
-        if (checkedBoxes.length === 0) {
-            showToast('Please select at least one item to return.', '#dc2626');
-            return;
-        }
-
-        const confirmBtn = document.getElementById('confirmRefundBtn');
-        if (confirmBtn) {
-            confirmBtn.disabled = true;
-            confirmBtn.innerHTML = `<span>Processing...</span>`;
-        }
-
-        try {
-            const saleId = currentActionData.sale.id; // The Parent Group ID
-            const note = document.getElementById('rfNote')?.value.trim();
-            const methodSelect = document.getElementById('rfMethodSelect');
-            let method = methodSelect ? methodSelect.value.toLowerCase() : 'cash';
-            
-            // ENSURE CHECK CONSTRAINT COMPLIANCE
-            if (!['cash', 'card', 'upi', 'bank_transfer'].includes(method)) method = 'cash';
-
-            const fullNotes = reason + (note ? ` - ${note}` : '');
-            const ledgerRows = [];
-            const saleUpdatePromises = [];
-            
-            for (const cb of checkedBoxes) {
-                const itemId = cb.dataset.id;
-                const itemObj = currentRefundItems.find(i => String(i.id) === itemId);
-                if (!itemObj) continue;
-
-                const qtyInput = document.querySelector(`.rf-qty-input[data-id="${itemId}"]`);
-                const refundQty = qtyInput ? parseInt(qtyInput.value) || 1 : (itemObj.quantity || 1);
-                
-                const itemPrice = Number(itemObj.price || 0);
-                const refundAmount = refundQty * itemPrice;
-                
-                let resultingLineId = itemId;
-
-                const remainingQty = (itemObj.quantity || 1) - refundQty;
-                const remainingAmount = remainingQty * itemPrice;
-                
-                const updatePayload = {
-                    quantity: remainingQty,
-                    total_amount: remainingAmount
-                };
-                
-                if (remainingQty <= 0) {
-                    updatePayload.status = 'refunded';
-                }
-                
-                saleUpdatePromises.push(
-                    supabase.from('sales').update(updatePayload).eq('id', itemId)
-                );
-
-                // INVENTORY RESTOCK LOGIC
-                if (itemObj.product_id) {
-                    try {
-                        const { data: prodData } = await supabase
-                            .from('products')
-                            .select('stock_quantity')
-                            .eq('id', itemObj.product_id)
-                            .single();
-                            
-                        if (prodData) {
-                            const newStock = Number(prodData.stock_quantity || 0) + refundQty;
-                            saleUpdatePromises.push(
-                                supabase.from('products').update({ stock_quantity: newStock }).eq('id', itemObj.product_id)
-                            );
-                        }
-                    } catch (restockErr) {
-                        console.error('Failed to restock product:', itemObj.product_id, restockErr);
-                    }
-                }
-
-                // Add Ledger Entry linked to the original row ID
-                ledgerRows.push({
-                    company_id: getCompanyId(),
-                    branch_id: getBranchId(),
-                    reference_id: saleId,               // Parent cart ID
-                    reference_line_id: resultingLineId, // Direct specific row ID
-                    reference_type: 'product',
-                    amount: Math.abs(refundAmount),
-                    status: 'refunded',
-                    payment_method: method,
-                    notes: fullNotes ? `${fullNotes} (Returned: ${itemObj.product_name || 'Item'} x${refundQty})` : `Returned: ${itemObj.product_name || 'Item'} (Qty: ${refundQty})`,
-                    paid_at: new Date().toISOString()
-                });
-            }
-
-            // Execute batched DB operations
-            if (saleUpdatePromises.length > 0) {
-                await Promise.all(saleUpdatePromises);
-            }
-            if (ledgerRows.length > 0) {
-                const { error: txError } = await supabase.from('business_transactions').insert(ledgerRows);
-                if (txError) throw txError;
-            }
-
-            // Success!
-            showToast(`Successfully returned ${checkedBoxes.length} partial/full item(s).`, '#dc2626');
-            if (window.notifyEvent) {
-                window.notifyEvent('payments', 'evt_payment_refunded', {
-                    title: 'Payment Refunded',
-                    message: `Refund processed for ${checkedBoxes.length} item(s).`
-                });
-            }
-            if (window.notifyCustomer && currentActionData?.sale) {
-                const s = currentActionData.sale;
-                window.notifyCustomer('purchase', 'refund_confirm', {
-                    name: s.customer,
-                    phone: s.customer_phone || s.phone || '',
-                    email: s.customer_email || s.email || ''
-                }, {
-                    saleId: s.id,
-                    itemsReturned: checkedBoxes.length
-                });
-            }
-            closeRefundModal();
-            
-            // Re-fetch to sync table badges and metrics
-            await fetchSalesHistory();
-            
-            // Close detail modal if open
-            if (sdRefundBtn) sdRefundBtn.style.display = 'none';
-
-        } catch (err) {
-            console.error('Return error:', err);
-            showToast('Failed to process return: ' + (err.message || 'Unknown error'), '#dc2626');
-        } finally {
-            if (confirmBtn) {
-                confirmBtn.disabled = false;
-                confirmBtn.innerHTML = `
-                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="1 4 1 10 7 10"></polyline><path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10"></path></svg>
-                    <span>Issue Refund</span>
-                `;
-            }
-        }
-    }
-
-    function closeRefundOverlayOnly() {
-        if (refundSummaryOverlay) refundSummaryOverlay.classList.remove('active');
-    }
-
-
-    // ----------------------------------------------------------------------
-    // 10. TOAST NOTIFICATION
-    // ----------------------------------------------------------------------
-    function showToast(msg, color) {
-        const toast = document.getElementById('toastNotification');
-        if (!toast) return;
-        toast.textContent = msg;
-        if (color) toast.style.background = color;
-        toast.classList.add('show');
-        setTimeout(() => {
-            toast.classList.remove('show');
-        }, 3000);
-    }
+    const exportCsvBtn = document.getElementById('exportCsvBtn');
+    const exportExcelBtn = document.getElementById('exportExcelBtn');
+    if (exportCsvBtn) exportCsvBtn.addEventListener('click', () => { exportData('csv'); });
+    if (exportExcelBtn) exportExcelBtn.addEventListener('click', () => { exportData('excel'); });
+}
+
+async function initPage() {
+    if (typeof feather !== 'undefined') feather.replace();
+    setupEventListeners();
+    await fetchSalesHistory();
+}
+
+// Wire cross-module action handlers
+registerActionHandlers({
+    openSaleDetails: (sale) => openSaleDetails(sale),
+    openCollectPaymentModal: (sale) => openCollectPaymentModal(sale, fetchSalesHistory),
+    openRefundModal: (sale) => openRefundModal(sale)
 });
 
+setDetailsRefundHandler((sale) => openRefundModal(sale));
+registerRefundCompleteCallback(fetchSalesHistory);
 
-
-window.triggerShare = function(method) {
-    if (!currentActionData || !currentActionData.sale) return;
-    const s = currentActionData.sale;
-    const title = `Invoice - ${String(s.id).substring(0,8).toUpperCase()}`;
-    const text = `Here is your Invoice: ${String(s.id).substring(0,8).toUpperCase()}\nDate: ${s.date}\nCustomer: ${s.customer || 'Walk-in'}\nTotal: ₹${Number(s.totalAmountNum || 0).toLocaleString('en-IN')}\n\nThank you for choosing us!`;
-    const encodedText = encodeURIComponent(text);
-
-    if (method === 'whatsapp') {
-        window.open(`https://api.whatsapp.com/send?text=${encodedText}`, '_blank');
-    } else if (method === 'mail') {
-        window.open(`mailto:?subject=${encodeURIComponent(title)}&body=${encodedText}`, '_self');
-    } else if (method === 'copy') {
-        const temp = document.createElement("textarea");
-        temp.value = text;
-        document.body.appendChild(temp);
-        temp.select();
-        try {
-            document.execCommand("copy");
-            if (window.hsShowToast) hsShowToast("Invoice copied!", "#10b981");
-            else alert("Invoice copied!");
-        } catch(e) {
-            alert("Could not copy text.");
-        }
-        document.body.removeChild(temp);
-    }
-};
-
-window.toggleProdExtra = function(extraId, toggleId, extraCount) {
-    var el  = document.getElementById(extraId);
-    var tog = document.getElementById(toggleId);
-    if (!el || !tog) return;
-    var isHidden = el.style.display === 'none' || el.style.display === '';
-    el.style.display  = isHidden ? 'flex' : 'none';
-    tog.textContent   = isHidden ? '▲ less' : '+' + extraCount;
-};
+document.addEventListener('DOMContentLoaded', () => {
+    initPage();
+});
