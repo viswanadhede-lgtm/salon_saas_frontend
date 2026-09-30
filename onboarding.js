@@ -110,8 +110,7 @@ async function submitOnboarding() {
             owner_user_id: user_id,
             plan_id: planId,
             plan_name: planName,
-            status: 'active',
-            subscription_status: 'pending'
+            status: 'active'
         });
 
         if (compErr || !compData || !compData.length) {

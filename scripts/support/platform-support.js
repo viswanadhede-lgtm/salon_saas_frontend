@@ -1,13 +1,14 @@
 // scripts/support/platform-support.js
-// Extracted from support.html Block 1.
 // Fetches platform_support_settings using the anon key only.
-// Also evaluates company subscription entitlement for email support.
+// Evaluates company subscription entitlement for email support.
 //
-// ARCHITECTURE NOTE (intentionally preserved — do NOT fix here):
-//   This module reads companies.subscription_status and
-//   companies.subscription_end_date rather than the subscriptions table.
-//   It also falls back to localStorage appContext for cached subscription data.
-//   A separate task will address the subscription single-source-of-truth issue.
+// SUBSCRIPTION SOURCE OF TRUTH:
+//   Subscription entitlement reads exclusively from the authoritative
+//   subscriptions table via the authenticated Supabase JS client.
+//   The companies table is NOT used for subscription state.
+//   localStorage is used only for company identity resolution.
+
+import { supabase } from '../../lib/supabase.js';
 
 (async function loadPlatformSupportSettings() {
     const SUPABASE_URL  = 'https://qxmgyxjwpxkdbgldpdil.supabase.co';
@@ -66,19 +67,16 @@
     }
 
     // ── Plan & Subscription Entitlement Check ──────────────────────────
+    // Reads exclusively from the authoritative subscriptions table.
+    // localStorage is used only to resolve company identity, not subscription state.
     async function verifyCompanyPlanEntitlement() {
+        // ── 1. Company identity resolution ────────────────────────────
         let companyId = null;
-        let cachedPlan = null;
-        let cachedStatus = null;
-        let cachedEndDate = null;
 
         try {
             const ctx = JSON.parse(localStorage.getItem('appContext') || '{}');
             if (ctx.company) {
-                companyId     = ctx.company.company_id || ctx.company.id || null;
-                cachedPlan    = ctx.company.plan || null;
-                cachedStatus  = ctx.company.subscription_status || null;
-                cachedEndDate = ctx.company.subscription_end_date || null;
+                companyId = ctx.company.company_id || ctx.company.id || null;
             }
         } catch (_) {}
 
@@ -94,53 +92,87 @@
             return { allowed: false, reason: 'unauthenticated' };
         }
 
-        let planId = null;
-        let planName = cachedPlan;
-        let subStatus = cachedStatus;
-        let endDateStr = cachedEndDate;
+        // ── 2. Authoritative subscription query ───────────────────────
+        // Uses the authenticated Supabase JS client (subscriptions = SSOT).
+        let subscription = null;
 
-        // Attempt to fetch fresh company record from Supabase
         try {
-            const compUrl = SUPABASE_URL + '/rest/v1/companies'
-                + '?select=company_id,plan_id,plan_name,subscription_status,subscription_end_date'
-                + '&company_id=eq.' + encodeURIComponent(companyId)
-                + '&limit=1';
+            const { data: subRows, error } = await supabase
+                .from('subscriptions')
+                .select(`
+                    subscription_id,
+                    company_id,
+                    plan_id,
+                    plan_name,
+                    status,
+                    subscription_start_date,
+                    subscription_end_date,
+                    billing_cycle,
+                    auto_renew,
+                    created_at
+                `)
+                .eq('company_id', companyId)
+                .order('created_at', { ascending: false });
 
-            const compRes = await fetch(compUrl, {
-                headers: {
-                    'apikey':        SUPABASE_ANON,
-                    'Authorization': 'Bearer ' + SUPABASE_ANON
-                }
+            if (error) {
+                // Query error → fail closed; do NOT fall back to localStorage
+                console.warn('[Support] Subscription query error:', error.message || error);
+                return { allowed: false, reason: 'inactive_subscription' };
+            }
+
+            if (!subRows || subRows.length === 0) {
+                // No subscription record for this company
+                console.warn('[Support] No subscription found for company:', companyId);
+                return { allowed: false, reason: 'inactive_subscription' };
+            }
+
+            // ── Pick-best subscription: prefer unexpired active/trial/trialing rows ──
+            const VALID_STATUSES = ['active', 'trial', 'trialing'];
+            const today = new Date();
+
+            const validSubs = subRows.filter(sub => {
+                const st = (sub.status || '').toLowerCase().trim();
+                if (!VALID_STATUSES.includes(st)) return false;
+                const endDate = sub.subscription_end_date ? new Date(sub.subscription_end_date) : null;
+                return endDate && !isNaN(endDate.getTime()) && endDate > today;
             });
 
-            if (compRes.ok) {
-                const compRows = await compRes.json();
-                if (Array.isArray(compRows) && compRows.length > 0) {
-                    const c = compRows[0];
-                    planId     = c.plan_id;
-                    planName   = c.plan_name;
-                    subStatus  = c.subscription_status;
-                    endDateStr = c.subscription_end_date;
-                }
+            if (validSubs.length > 0) {
+                // Most recent unexpired valid subscription
+                subscription = validSubs[0];
+            } else {
+                // No unexpired valid row — use the most recent row so we can
+                // determine the correct inactive/expired result below
+                subscription = subRows[0];
             }
         } catch (err) {
-            console.warn('[Support] Live company check error, using cached context:', err);
-        }
-
-        // Subscription status check: active or trialing
-        const normStatus = (subStatus || '').trim().toLowerCase();
-        if (normStatus !== 'active' && normStatus !== 'trialing') {
+            // Unexpected runtime error → fail closed
+            console.error('[Support] Unexpected subscription error:', err);
             return { allowed: false, reason: 'inactive_subscription' };
         }
 
-        // Expiry check: if subscription_end_date is in the past
-        if (endDateStr) {
-            const endDate = new Date(endDateStr);
-            if (!isNaN(endDate.getTime()) && endDate <= new Date()) {
-                return { allowed: false, reason: 'expired_subscription' };
-            }
+        // ── 3. Status check ───────────────────────────────────────────
+        const ENTITLEMENT_STATUSES = ['active', 'trial', 'trialing'];
+        const normStatus = (subscription.status || '').trim().toLowerCase();
+        if (!ENTITLEMENT_STATUSES.includes(normStatus)) {
+            return { allowed: false, reason: 'inactive_subscription' };
         }
 
+        // ── 4. Expiry check ───────────────────────────────────────────
+        // Null, missing, or invalid end date is treated as expired.
+        const endDateStr = subscription.subscription_end_date || null;
+        if (!endDateStr) {
+            return { allowed: false, reason: 'expired_subscription' };
+        }
+        const endDate = new Date(endDateStr);
+        if (isNaN(endDate.getTime())) {
+            return { allowed: false, reason: 'expired_subscription' };
+        }
+        if (endDate <= new Date()) {
+            return { allowed: false, reason: 'expired_subscription' };
+        }
+
+        // ── 5. Plan allowlist check ───────────────────────────────────
         // Known Plan UUIDs & Names that permit Email Support
         // Basic, Advance, Pro all permit Email Support
         const allowedPlanNames = ['basic', 'advance', 'pro', 'enterprise'];
@@ -152,8 +184,10 @@
             '7e0af07f-b57b-40e7-a23a-6e8104c8033c'  // enterprise/trial
         ];
 
+        const planName  = subscription.plan_name || null;
+        const planId    = subscription.plan_id   || null;
         const cleanName = (planName || '').trim().toLowerCase();
-        const cleanId   = (planId || '').trim().toLowerCase();
+        const cleanId   = (planId   || '').trim().toLowerCase();
 
         const isNameAllowed = allowedPlanNames.some(p => cleanName.includes(p));
         const isIdAllowed   = cleanId ? allowedPlanIds.includes(cleanId) : false;
