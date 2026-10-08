@@ -1,7 +1,7 @@
-﻿// scripts/staff-schedule.js — Thin Orchestrator
+// scripts/staff-schedule.js — Thin Orchestrator
 // Modularized from monolithic script into scripts/staff-schedule/ modules.
 
-import { DOM, scheduleState } from './staff-schedule/schedule-state.js';
+import { DOM, initDOM, scheduleState } from './staff-schedule/schedule-state.js';
 import { parseModalMonth, showInlinePopup } from './staff-schedule/schedule-helpers.js';
 import { fetchStaff, fetchSchedules, registerScheduleUpdateListener } from './staff-schedule/schedule-api.js';
 import { renderTable } from './staff-schedule/schedule-table.js';
@@ -83,6 +83,9 @@ function setupEventListeners() {
 // INITIALIZATION & STARTUP LIFECYCLE
 // ─────────────────────────────────────────────────────────────
 async function initStaffSchedule() {
+    // ── Step 1: Populate DOM references NOW that the document is ready ──
+    initDOM();
+
     setupEventListeners();
 
     // Default filter to current month
