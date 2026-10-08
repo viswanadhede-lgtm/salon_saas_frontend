@@ -1,5 +1,5 @@
 // scripts/memberships/memberships-api.js
-import { supabase } from '../lib/supabase.js';
+import { supabase } from '../../lib/supabase.js';
 
 // ── Customers ──────────────────────────────────────────────────────────────
 export async function fetchCustomersApi(companyId, branchId) {
