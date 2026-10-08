@@ -713,73 +713,7 @@
     </div>
 
     <script type="module" src="scripts/app-shell.js"></script>
-    <script>
-        // Init Feather Icons
-        feather.replace();
-
-        // -- Filter Dropdown -----------------------------------------
-        (function () {
-            const filterBtn = document.getElementById('customerFilterBtn');
-            const filterDropdown = document.getElementById('customerFilterDropdown');
-            const filterLabel = document.getElementById('customerFilterLabel');
-            const filterOptions = document.querySelectorAll('.filter-option');
-
-            function openDropdown() {
-                filterBtn.classList.add('open');
-                filterDropdown.classList.add('open');
-                feather.replace(); // re-init any icons inside dropdown
-            }
-
-            function closeDropdown() {
-                filterBtn.classList.remove('open');
-                filterDropdown.classList.remove('open');
-            }
-
-            if(filterBtn) {
-                filterBtn.addEventListener('click', function (e) {
-                    e.stopPropagation();
-                    filterDropdown.classList.contains('open') ? closeDropdown() : openDropdown();
-                });
-            }
-
-            filterOptions.forEach(function (option) {
-                option.addEventListener('click', function () {
-                    // Remove active from all
-                    filterOptions.forEach(o => o.classList.remove('active'));
-                    // Set active on clicked
-                    option.classList.add('active');
-                    // Update button label
-                    const tag = option.dataset.tag;
-                    filterLabel.textContent = tag === 'all' ? 'Filter' : option.textContent.trim();
-                    closeDropdown();
-                    if (typeof applyCustomerFilter === 'function') applyCustomerFilter(tag);
-                });
-            });
-
-            // Close on outside click
-            document.addEventListener('click', function (e) {
-                const wrap = document.getElementById('customerFilterWrap');
-                if (wrap && !wrap.contains(e.target)) {
-                    closeDropdown();
-                }
-            });
-        })();
-
-        // -- Add Customer Button — wired to global modal -------------
-        document.addEventListener('DOMContentLoaded', function() {
-            const btnAddCustomer = document.getElementById('btnAddCustomer');
-            if (btnAddCustomer) {
-                btnAddCustomer.addEventListener('click', function() {
-                    if (typeof window.openGlobalAddCustomerModal === 'function') {
-                        window.openGlobalAddCustomerModal(function() {
-                            // Refresh the customer table after creation
-                            if (typeof fetchCustomers === 'function') fetchCustomers();
-                        });
-                    }
-                });
-            }
-        });
-    </script>
+    <script type="module" src="scripts/customers/customers-ui.js"></script>
 
     <!-- Global Customer Modal Script -->
     <script type="module" src="scripts/global-customer-modal.js"></script>
