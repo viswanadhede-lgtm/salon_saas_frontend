@@ -11,8 +11,6 @@ import { renderTable, toggleProdExtra } from './scripts/sales-history/sales-tabl
 import { 
     setupSearchFilter, 
     filterByDate, 
-    applyFilter, 
-    clearFilter, 
     exportData 
 } from './scripts/sales-history/sales-filters.js';
 import { 
@@ -61,13 +59,6 @@ window.runSaleRefund = runSaleRefund;
 
 window.openRefundModal = openRefundModal;
 
-window.hsApplyFilter = function() {
-    applyFilter(() => renderTable(handleSaleAction));
-};
-
-window.hsClearFilter = function() {
-    clearFilter(() => renderTable(handleSaleAction));
-};
 
 window.triggerShare = triggerShare;
 window.toggleProdExtra = toggleProdExtra;

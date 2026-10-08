@@ -1,4 +1,4 @@
-﻿import { supabase } from '../lib/supabase.js';
+import { supabase } from '../lib/supabase.js';
 
 // ================================================================
 // BOOKINGS DATA
@@ -203,63 +203,6 @@ function renderBookingsTable() {
 }
 window.renderBookingsTable = renderBookingsTable;
 
-// ================================================================
-// ACTIONS DROPDOWN MENU
-// ================================================================
-window.toggleBookingMenu = function (e, idx) {
-    e.stopPropagation();
-    closeOpenMenu();
-
-    const booking = todaysBookingsData[idx];
-    const btn = e.currentTarget;
-    const rect = btn.getBoundingClientRect();
-
-    const menu = document.createElement('div');
-    menu.className = 'tb-actions-menu';
-    menu.id = 'tbActiveMenu';
-
-    const isBooked = booking.status === 'booked';
-
-    if (isBooked) {
-        menu.innerHTML = `
-            <button class="tb-menu-item" onclick="handleBookingAction('view', ${idx})">
-                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
-                View Booking
-            </button>
-            <button class="tb-menu-item" onclick="handleBookingAction('edit', ${idx})">
-                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
-                Edit Booking
-            </button>
-            <button class="tb-menu-item" onclick="handleBookingAction('complete', ${idx})">
-                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
-                Mark Completed
-            </button>
-            <button class="tb-menu-item danger" onclick="handleBookingAction('cancel', ${idx})">
-                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/></svg>
-                Cancel Booking
-            </button>
-        `;
-    } else {
-        menu.innerHTML = `
-            <button class="tb-menu-item" onclick="handleBookingAction('view', ${idx})">
-                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
-                View Booking
-            </button>
-        `;
-    }
-
-    document.body.appendChild(menu);
-    activeMenuEl = menu;
-
-    const menuH = isBooked ? 172 : 46;
-    let top = rect.bottom + 6;
-    if (top + menuH > window.innerHeight - 8) top = window.innerHeight - menuH - 8;
-    let left = rect.right - 192;
-    if (left < 8) left = rect.left;
-
-    menu.style.top = top + 'px';
-    menu.style.left = left + 'px';
-};
 
 function closeOpenMenu() {
     if (activeMenuEl) { activeMenuEl.remove(); activeMenuEl = null; }

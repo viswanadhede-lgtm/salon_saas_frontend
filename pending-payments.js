@@ -298,21 +298,6 @@ document.addEventListener('DOMContentLoaded', async () => {
         searchInput.addEventListener('input', applyAllFilters);
     }
 
-    // ─── FILTER ────────────────────────────────────────────────────────────
-    window.ppApplyFilter = function() {
-        document.getElementById('ppFilterMenu').style.display = 'none';
-        currentFilter.status = [...document.querySelectorAll('.pp-filter-status:checked')].map(cb => cb.value);
-        currentFilter.staff  = [...document.querySelectorAll('.pp-filter-staff:checked')].map(cb => cb.value);
-        applyAllFilters();
-    };
-
-    window.ppClearFilter = function() {
-        document.querySelectorAll('.pp-filter-status, .pp-filter-staff').forEach(cb => cb.checked = false);
-        currentFilter.status = [];
-        currentFilter.staff = [];
-        applyAllFilters();
-        document.getElementById('ppFilterMenu').style.display = 'none';
-    };
 
     // ─── DATE RANGE ────────────────────────────────────────────────────────
     window.ppFilterByDate = function(range) {
@@ -364,9 +349,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     // Close dropdowns on outside click
     document.addEventListener('click', (e) => {
-        const fm = document.getElementById('ppFilterMenu');
         const dm = document.getElementById('ppDateMenu');
-        if (fm && !e.target.closest('#ppFilterMenu') && !e.target.closest('button[onclick*="ppFilterMenu"]')) fm.style.display = 'none';
         if (dm && !e.target.closest('#ppDateMenu') && !e.target.closest('button[onclick*="ppDateMenu"]')) dm.style.display = 'none';
     });
 

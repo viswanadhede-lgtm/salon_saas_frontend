@@ -566,6 +566,3 @@ window.phExportData = function(format = 'csv') {
     URL.revokeObjectURL(url);
 };
 
-window.phOpenBooking = function(bookingId) {
-    console.log("Opening live booking detail: " + bookingId);
-};

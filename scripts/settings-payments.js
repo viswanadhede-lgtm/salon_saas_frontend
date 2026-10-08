@@ -295,10 +295,7 @@ window.loadPaymentSettings = loadPaymentSettings;
 window.savePaymentSettings = savePaymentSettings;
 window.removeQrCode = removeQrCode;
 window.showToast = showToast;
-window.setQrDataUrl = (url) => {
-    currentQrUrl = url;
-    updateQrPreview(url);
-};
+
 
 // ── Auto-initialize ─────────────────────────────────────────────────────────
 document.addEventListener('DOMContentLoaded', () => {
