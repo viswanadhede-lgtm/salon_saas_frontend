@@ -290,6 +290,7 @@ function renderCustomers() {
 
         // Avatar: ui-avatars fallback (profile_photo column does not exist in schema)
         const avatarUrl = `https://ui-avatars.com/api/?name=${encodeURIComponent(name)}&background=c7d2fe&color=3730A3`;
+        const hasNotes = Boolean(customer.notes && customer.notes.trim());
 
         let tagHtml = '';
         if (tag === 'vip') {
@@ -305,11 +306,18 @@ function renderCustomers() {
         tr.innerHTML = `
             <td>
                 <div class="customer-info" style="display:flex; align-items:center; gap:1rem;">
-                    <div class="avatar-sm" style="width:40px; height:40px; border-radius:50%; overflow:hidden;">
+                    <div class="avatar-sm" style="width:40px; height:40px; border-radius:50%; overflow:hidden; flex-shrink:0;">
                         <img src="${avatarUrl}" alt="${name}" style="width:100%; height:100%; object-fit:cover;">
                     </div>
-                    <div>
-                        <span class="customer-link" onclick="viewCustomerProfile('${customer.customer_id || customer.id}')">${name}</span>
+                    <div style="flex:1; min-width:0;">
+                        <div style="display:flex; align-items:center; gap:0.4rem; flex-wrap:wrap;">
+                            <span class="customer-link" onclick="viewCustomerProfile('${customer.customer_id || customer.id}')">${name}</span>
+                            ${hasNotes ? `
+                                <button type="button" class="btn-customer-notes" data-customer-id="${customer.customer_id || customer.id}" title="View Note" aria-label="View note for ${name}">
+                                    <i data-feather="file-text"></i>
+                                </button>
+                            ` : ''}
+                        </div>
                         <p class="text-sm text-muted" style="margin:0; font-size:0.875rem; color:#64748b;">Joined ${joinedDate}</p>
                     </div>
                 </div>
@@ -414,12 +422,54 @@ function renderCustomers() {
         });
     });
 
+    // Attach customer notes modal listeners
+    document.querySelectorAll('.btn-customer-notes').forEach(btn => {
+        btn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            const customerId = e.currentTarget.getAttribute('data-customer-id');
+            openCustomerNoteModal(customerId);
+        });
+    });
+
     try {
         if (typeof applySubFeatureGates === 'function') {
             applySubFeatureGates();
         }
     } catch(e) {}
 }
+
+// -- CUSTOMER NOTE MODAL (VIEW ONLY) --
+function openCustomerNoteModal(customerId) {
+    const customer = customersList.find(c => String(c.customer_id || c.id) === String(customerId));
+    if (!customer) return;
+
+    const overlay = document.getElementById('customerNoteModalOverlay');
+    const nameEl  = document.getElementById('noteModalCustomerName');
+    const textEl  = document.getElementById('noteModalTextContent');
+
+    if (nameEl) nameEl.textContent = customer.customer_name ? `${customer.customer_name}'s Note` : 'Customer Note';
+    if (textEl) textEl.textContent = customer.notes || '';
+
+    if (overlay) {
+        overlay.classList.add('active');
+        if (window.feather) feather.replace();
+    }
+}
+
+function closeCustomerNoteModal() {
+    const overlay = document.getElementById('customerNoteModalOverlay');
+    if (overlay) overlay.classList.remove('active');
+}
+
+// Wire customer note modal close handlers
+document.getElementById('btnCloseNoteModalX')?.addEventListener('click', closeCustomerNoteModal);
+document.getElementById('btnCloseNoteModalBtn')?.addEventListener('click', closeCustomerNoteModal);
+document.getElementById('customerNoteModalOverlay')?.addEventListener('click', (e) => {
+    if (e.target.id === 'customerNoteModalOverlay') closeCustomerNoteModal();
+});
+document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape') closeCustomerNoteModal();
+});
 
 // -- PAGINATION EVENT LISTENERS (attached once on load) --
 document.addEventListener('DOMContentLoaded', () => {

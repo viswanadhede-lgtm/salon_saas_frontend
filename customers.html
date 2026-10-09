@@ -1,4 +1,4 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="en">
 
 <head>
@@ -567,6 +567,35 @@
         }
         .cust-page-btn:hover:not(:disabled) { background: #4f46e5; border-color: #4f46e5; color: #fff; }
         .cust-page-btn:disabled { opacity: 0.38; cursor: not-allowed; }
+
+        /* Notes button in customer row */
+        .btn-customer-notes {
+            background: #f8fafc;
+            border: 1px solid #e2e8f0;
+            border-radius: 6px;
+            width: 24px;
+            height: 24px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            color: #64748b;
+            transition: all 0.15s ease;
+            padding: 0;
+            margin-left: 6px;
+            flex-shrink: 0;
+            vertical-align: middle;
+        }
+        .btn-customer-notes:hover {
+            background: #eef2ff;
+            border-color: #c7d2fe;
+            color: #4f46e5;
+            transform: translateY(-1px);
+        }
+        .btn-customer-notes i {
+            width: 13px;
+            height: 13px;
+        }
     </style>
 </head>
 
@@ -782,6 +811,38 @@
                     <span class="sbd-total-label">Total</span>
                     <span class="sbd-total-value" id="sbdTotal">?0</span>
                 </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- View Customer Note Modal -->
+    <div class="modal-overlay" id="customerNoteModalOverlay" style="z-index: 9999;">
+        <div class="modal-container" id="customerNoteModal" style="max-width: 480px; width: 92%; border-radius: 14px; box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25); overflow: hidden; background: #ffffff;">
+            <!-- Header -->
+            <div class="modal-header" style="display: flex; align-items: center; justify-content: space-between; padding: 1.1rem 1.5rem; border-bottom: 1px solid #f1f5f9; background: #fafafa;">
+                <div style="display: flex; align-items: center; gap: 0.65rem;">
+                    <div style="width: 32px; height: 32px; border-radius: 8px; background: #eef2ff; color: #4f46e5; display: flex; align-items: center; justify-content: center;">
+                        <i data-feather="file-text" style="width: 16px; height: 16px;"></i>
+                    </div>
+                    <div>
+                        <h3 id="noteModalCustomerName" style="margin: 0; font-size: 1rem; font-weight: 700; color: #0f172a;">Customer Note</h3>
+                        <p style="margin: 0; font-size: 0.78rem; color: #64748b;">Special notes & client preferences</p>
+                    </div>
+                </div>
+                <button type="button" class="modal-close" id="btnCloseNoteModalX" style="background: transparent; border: none; font-size: 1.25rem; color: #94a3b8; cursor: pointer; display: flex; align-items: center; justify-content: center; width: 32px; height: 32px; border-radius: 6px; transition: color 0.15s;" title="Close">
+                    <i data-feather="x" style="width: 18px; height: 18px;"></i>
+                </button>
+            </div>
+
+            <!-- Body -->
+            <div class="modal-body" style="padding: 1.5rem;">
+                <div id="noteModalTextContent" style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 10px; padding: 1rem 1.25rem; font-size: 0.92rem; line-height: 1.6; color: #334155; white-space: pre-wrap; word-break: break-word; max-height: 320px; overflow-y: auto;">
+                </div>
+            </div>
+
+            <!-- Footer -->
+            <div class="modal-footer" style="display: flex; justify-content: flex-end; padding: 1rem 1.5rem; border-top: 1px solid #f1f5f9; background: #fafafa;">
+                <button type="button" class="btn btn-secondary" id="btnCloseNoteModalBtn" style="padding: 0.5rem 1.25rem; font-weight: 600; border-radius: 8px; cursor: pointer;">Close</button>
             </div>
         </div>
     </div>
