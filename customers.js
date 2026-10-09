@@ -265,37 +265,12 @@ function renderStatCardTrends(trendRow) {
         }
     }
 
-    // 2. NEW THIS MONTH: new_customers_change_percent (Month-over-month)
+    // 2. NEW THIS MONTH: Customers added during the current month
     const elNewTrend = document.getElementById('trendNewThisMonth');
     if (elNewTrend) {
-        const rawNew = trendRow.new_customers_change_percent;
-        if (rawNew === null || rawNew === undefined) {
-            // Null handling: previous month was 0, growth from 0 is undefined
-            elNewTrend.className = 'stat-trend positive';
-            elNewTrend.style.display = 'flex';
-            elNewTrend.innerHTML = `<i data-feather="trending-up"></i><span>New this month</span>`;
-        } else {
-            const num = parseFloat(rawNew);
-            if (!isNaN(num)) {
-                const formatted = formatPercent(rawNew);
-                let trendClass = 'stat-trend neutral';
-                let icon = 'minus';
-                let sign = '';
-
-                if (num > 0) {
-                    trendClass = 'stat-trend positive';
-                    icon = 'trending-up';
-                    sign = '+';
-                } else if (num < 0) {
-                    trendClass = 'stat-trend negative';
-                    icon = 'trending-down';
-                }
-
-                elNewTrend.className = trendClass;
-                elNewTrend.style.display = 'flex';
-                elNewTrend.innerHTML = `<i data-feather="${icon}"></i><span>${sign}${formatted} from last month</span>`;
-            }
-        }
+        elNewTrend.className = 'stat-trend positive';
+        elNewTrend.style.display = 'flex';
+        elNewTrend.innerHTML = `<i data-feather="trending-up"></i><span>Customers added this month</span>`;
     }
 
     // 3. VIP CUSTOMERS: vip_customers_percentage (% of total customers)
