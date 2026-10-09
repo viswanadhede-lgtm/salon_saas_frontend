@@ -197,7 +197,8 @@ async function fetchCustomers() {
             p_branch_id: branchId
         });
         if (statsError) throw statsError;
-        const { total_customers, new_this_month, vip_customers, inactive_customers } = statsData || {};
+        const stats = Array.isArray(statsData) ? statsData[0] : statsData;
+        const { total_customers, new_this_month, vip_customers, inactive_customers } = stats || {};
 
         // Hydrate stat cards
         const elTotal    = document.getElementById('statTotalCustomers');
