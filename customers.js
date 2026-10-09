@@ -199,11 +199,12 @@ async function refreshCustomerStatCards() {
         if (elVip)      elVip.textContent      = vip_customers      ?? 0;
         if (elInactive) elInactive.textContent = inactive_customers ?? 0;
 
-        // Hide trends (rely on advanced analytics not yet implemented)
-        updateTrend('trendTotalCustomers', null);
-        updateTrend('trendNewThisMonth',   null);
-        updateTrend('trendVipCustomers',   null);
-        updateTrend('trendInactiveDays',   null);
+        // Ensure trend elements are displayed
+        ['trendTotalCustomers', 'trendNewThisMonth', 'trendVipCustomers', 'trendInactiveDays'].forEach(id => {
+            const el = document.getElementById(id);
+            if (el) el.style.display = 'flex';
+        });
+        if (window.feather) feather.replace();
     } catch (err) {
         console.error('Error refreshing stat cards:', err);
     }
@@ -242,11 +243,11 @@ function renderPagination() {
 function updateTrend(elementId, changeValue) {
     const el = document.getElementById(elementId);
     if (!el) return;
-    if (changeValue === null || changeValue === undefined) {
-        el.style.display = 'none';
-        return;
+    el.style.display = 'flex';
+    if (changeValue !== null && changeValue !== undefined) {
+        const span = el.querySelector('span');
+        if (span) span.textContent = changeValue;
     }
-    el.style.display = 'none';
 }
 
 // -- TABLE RENDERING --
