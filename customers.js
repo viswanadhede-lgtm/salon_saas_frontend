@@ -305,21 +305,19 @@ function renderCustomers() {
 
         tr.innerHTML = `
             <td>
-                <div class="customer-info" style="display:flex; align-items:center; gap:1rem;">
+                <div class="customer-info" style="display:flex; align-items:center; gap:0.75rem;">
                     <div class="avatar-sm" style="width:40px; height:40px; border-radius:50%; overflow:hidden; flex-shrink:0;">
                         <img src="${avatarUrl}" alt="${name}" style="width:100%; height:100%; object-fit:cover;">
                     </div>
                     <div style="flex:1; min-width:0;">
-                        <div style="display:flex; align-items:center; gap:0.4rem; flex-wrap:wrap;">
-                            <span class="customer-link" onclick="viewCustomerProfile('${customer.customer_id || customer.id}')">${name}</span>
-                            ${hasNotes ? `
-                                <button type="button" class="btn-customer-notes" data-customer-id="${customer.customer_id || customer.id}" title="View Note" aria-label="View note for ${name}">
-                                    <i data-feather="file-text"></i>
-                                </button>
-                            ` : ''}
-                        </div>
+                        <span class="customer-link" onclick="viewCustomerProfile('${customer.customer_id || customer.id}')">${name}</span>
                         <p class="text-sm text-muted" style="margin:0; font-size:0.875rem; color:#64748b;">Joined ${joinedDate}</p>
                     </div>
+                    ${hasNotes ? `
+                        <button type="button" class="btn-customer-notes" data-customer-id="${customer.customer_id || customer.id}" title="View Note" aria-label="View note for ${name}">
+                            <i data-feather="file-text"></i>
+                        </button>
+                    ` : ''}
                 </div>
             </td>
             <td>
