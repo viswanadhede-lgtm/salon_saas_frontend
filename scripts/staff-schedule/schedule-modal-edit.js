@@ -1,8 +1,8 @@
-﻿// scripts/staff-schedule/schedule-modal-edit.js
+// scripts/staff-schedule/schedule-modal-edit.js
 
 import { DOM, scheduleState, WEEK_DAYS_FULL, WEEK_DAYS_SHORT } from './schedule-state.js';
 import { generateMonthWeeks, getAllWeekdayDatesInMonth, toISODate, formatDateOnly, formatDayOnly, parseModalMonth, showToast } from './schedule-helpers.js';
-import { fetchSchedules, saveScheduleRecords } from './schedule-api.js';
+import { fetchSchedules, saveScheduleRecords, getCompanyId, getBranchId } from './schedule-api.js';
 import { renderTable } from './schedule-table.js';
 
 export function initializeMonthBuilder(year, month) {
@@ -51,8 +51,8 @@ export function initMonthScheduleData() {
 }
 
 /**
- * Returns all dates in a month whose weekday matches weekdayIdx (Mon=0 … Sun=6).
-
+ * Synchronizes full month data across weeks based on the week 1 pattern.
+ */
 export function syncFullMonthData() {
     if (!scheduleState.currentMonthWeeks.length) return;
     const baseWeeks = scheduleState.currentMonthWeeks[0];
@@ -415,7 +415,7 @@ export async function handleFormSubmit(e) {
     const month      = mm - 1; // 0-indexed
 
     const baseWeekDates = scheduleState.currentMonthWeeks[0] || [];
-    const branchId      = document.getElementById('branchSelect')?.value || null;
+    const branchId      = getBranchId();
 
     // ── Read per-day inputs ──────────────────────────────────
     let calculatedHoursPerWeek = 0;
@@ -529,13 +529,7 @@ export async function handleFormSubmit(e) {
             </svg>Saving...`;
     }
 
-    let companyId = null;
-    try {
-        const appContext = JSON.parse(localStorage.getItem('appContext') || '{}');
-        companyId = appContext.company?.id || localStorage.getItem('company_id') || null;
-    } catch (e) {
-        companyId = localStorage.getItem('company_id') || null;
-    }
+    const companyId = getCompanyId();
 
     // Add company_id and branch_id to local schedule Entries for direct DB insert
     const insertPayload = scheduleEntries.map(entry => ({

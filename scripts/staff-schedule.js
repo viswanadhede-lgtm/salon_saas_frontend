@@ -77,6 +77,21 @@ function setupEventListeners() {
         updatePaginationUI();
         renderDayRows();
     });
+
+    // Listen for branch changes from global header
+    document.addEventListener('change', async (e) => {
+        if (e.target && e.target.id === 'branchSelect') {
+            await fetchStaff();
+            await fetchSchedules(renderTable);
+        }
+    });
+
+    window.addEventListener('storage', async (e) => {
+        if (e.key === 'active_branch_id') {
+            await fetchStaff();
+            await fetchSchedules(renderTable);
+        }
+    });
 }
 
 // ─────────────────────────────────────────────────────────────

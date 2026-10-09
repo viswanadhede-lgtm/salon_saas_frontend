@@ -1,4 +1,4 @@
-﻿// scripts/staff-schedule/schedule-api.js
+// scripts/staff-schedule/schedule-api.js
 
 import { supabase } from '../../lib/supabase.js';
 import { DOM, scheduleState, setStaffList, setRawSchedules } from './schedule-state.js';
@@ -10,18 +10,36 @@ export function registerScheduleUpdateListener(fn) {
     onSchedulesUpdated = fn;
 }
 
+export function getCompanyId() {
+    try {
+        const appContext = JSON.parse(localStorage.getItem('appContext') || '{}');
+        if (appContext.company?.id) return appContext.company.id;
+    } catch (e) {}
+    return localStorage.getItem('company_id') || null;
+}
+
+export function getBranchId() {
+    try {
+        const appContext = JSON.parse(localStorage.getItem('appContext') || '{}');
+        if (appContext.current_branch_id) return appContext.current_branch_id;
+        if (Array.isArray(appContext.branches) && appContext.branches.length > 0) {
+            return appContext.branches[0].branch_id || appContext.branches[0].id;
+        }
+    } catch (e) {}
+    return localStorage.getItem('active_branch_id') ||
+           localStorage.getItem('branch_id') ||
+           document.getElementById('branchSelect')?.value ||
+           null;
+}
+
 // ─────────────────────────────────────────────────────────────
 // API – FETCH STAFF
 // ─────────────────────────────────────────────────────────────
 
 export async function fetchStaff() {
     try {
-        let companyId = null;
-        try {
-            const appContext = JSON.parse(localStorage.getItem('appContext') || '{}');
-            companyId = appContext.company?.id || localStorage.getItem('company_id') || null;
-        } catch (e) { companyId = localStorage.getItem('company_id') || null; }
-        const branchId = localStorage.getItem('active_branch_id') || null;
+        const companyId = getCompanyId();
+        const branchId = getBranchId();
 
         if (companyId && branchId) {
             const { data, error } = await supabase
@@ -65,14 +83,18 @@ export function populateStaffDropdown() {
 
 export async function fetchSchedules(renderCallback) {
     try {
-        let companyId = null;
-        try {
-            const appContext = JSON.parse(localStorage.getItem('appContext') || '{}');
-            companyId = appContext.company?.id || localStorage.getItem('company_id') || null;
-        } catch (e) { companyId = localStorage.getItem('company_id') || null; }
-        const branchId = localStorage.getItem('active_branch_id') || null;
+        const companyId = getCompanyId();
+        const branchId = getBranchId();
 
-        if (!companyId || !branchId) return;
+        if (!companyId || !branchId) {
+            setRawSchedules([]);
+            if (typeof renderCallback === 'function') {
+                renderCallback();
+            } else if (typeof onSchedulesUpdated === 'function') {
+                onSchedulesUpdated();
+            }
+            return;
+        }
 
         const filterMonth = DOM.monthFilter?.value; // 'YYYY-MM'
         let query = supabase.from('staff_schedule').select('*').eq('company_id', companyId).eq('branch_id', branchId);
@@ -184,7 +206,7 @@ export async function fetchTodayBookings(staffIds) {
     if (!staffIds || staffIds.length === 0) return countMap;
 
     try {
-        const branchId = localStorage.getItem('active_branch_id') || null;
+        const branchId = getBranchId();
         const today = new Date();
         const todayStr = toISODate(today); // 'YYYY-MM-DD'
 
