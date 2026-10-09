@@ -78,6 +78,9 @@ window.openGlobalAddCustomerModal = function(callback) {
     document.getElementById('newCustTag').value = 'regular';
     document.getElementById('newCustNotes').value = '';
     
+    const saveBtn = document.getElementById('btnSaveNewCustomer');
+    if (saveBtn) saveBtn.textContent = 'Save Customer';
+    
     document.getElementById('addCustomerModalOverlay').classList.add('active');
 };
 
@@ -92,13 +95,18 @@ document.getElementById('addCustomerModalOverlay')?.addEventListener('click', (e
 });
 
 document.getElementById('btnSaveNewCustomer')?.addEventListener('click', async () => {
+    const btnSaveCustomer = document.getElementById('btnSaveNewCustomer');
+    // If modal is in update/edit mode, customers.js owns the update; do not create
+    if (btnSaveCustomer && btnSaveCustomer.textContent.trim().startsWith('Update')) {
+        return;
+    }
+
     const inputName = document.getElementById('newCustName');
     const inputPhone = document.getElementById('newCustPhone');
     const inputEmail = document.getElementById('newCustEmail');
     const inputDob = document.getElementById('newCustDob');
     const inputTag = document.getElementById('newCustTag');
     const inputNotes = document.getElementById('newCustNotes');
-    const btnSaveCustomer = document.getElementById('btnSaveNewCustomer');
 
     const name = inputName.value.trim();
     const phone = inputPhone.value.trim();

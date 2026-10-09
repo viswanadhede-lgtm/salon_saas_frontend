@@ -461,14 +461,35 @@ function openEditModal(id) {
 }
 
 function closeModal() {
+    editingCustomerId = null;
+    if (btnSaveCustomer) btnSaveCustomer.textContent = 'Save Customer';
     if (modalOverlay) modalOverlay.classList.remove('active');
+}
+
+document.getElementById('closeAddCustomerModal')?.addEventListener('click', closeModal);
+document.getElementById('btnCancelAddCustomer')?.addEventListener('click', closeModal);
+
+const btnAddCustomerEl = document.getElementById('btnAddCustomer');
+if (btnAddCustomerEl) {
+    btnAddCustomerEl.addEventListener('click', () => {
+        editingCustomerId = null;
+        if (modalTitle) modalTitle.textContent = 'Add New Customer';
+        if (modalSubtitle) modalSubtitle.textContent = 'Enter the details to create a new client profile.';
+        if (btnSaveCustomer) btnSaveCustomer.textContent = 'Save Customer';
+    });
 }
 
 // Note: btnAddCustomer click is handled by global-customer-modal.js (via customers.html inline script)
 
-// -- CREATE / UPDATE --
+// -- UPDATE ONLY (Create is owned exclusively by global-customer-modal.js) --
 if (btnSaveCustomer) {
     btnSaveCustomer.addEventListener('click', async () => {
+        // If not in edit mode, customers.js must NOT create or insert a customer.
+        // New customer creation is handled exclusively by global-customer-modal.js.
+        if (!editingCustomerId) {
+            return;
+        }
+
         const name = inputName ? inputName.value.trim() : '';
         const phone = inputPhone ? inputPhone.value.trim() : '';
         const email = inputEmail ? inputEmail.value.trim() : '';
@@ -486,14 +507,7 @@ if (btnSaveCustomer) {
             return;
         }
 
-        const isEditing = !!editingCustomerId;
-        
-        let existingDupe = false;
-        if (isEditing) {
-            existingDupe = customersList.find(c => c.customer_phone === digitsOnly && String(c.customer_id) !== String(editingCustomerId));
-        } else {
-            existingDupe = customersList.find(c => c.customer_phone === digitsOnly);
-        }
+        const existingDupe = customersList.find(c => c.customer_phone === digitsOnly && String(c.customer_id) !== String(editingCustomerId));
 
         if (existingDupe) {
             showToast('A customer with this phone number already exists.', true);
@@ -512,42 +526,25 @@ if (btnSaveCustomer) {
         if (dob) {
             payload.dob = dob;
         }
-        if (!isEditing) {
-            payload.status = 'active';
-        }
 
         const originalText = btnSaveCustomer.textContent;
-        btnSaveCustomer.textContent = isEditing ? 'Updating...' : 'Saving...';
+        btnSaveCustomer.textContent = 'Updating...';
         btnSaveCustomer.disabled = true;
 
         try {
-            let error;
-            if (isEditing) {
-                const { error: updateErr } = await supabase.from('customers').eq('customer_id', editingCustomerId).update(payload);
-                error = updateErr;
-            } else {
-                const { error: insertErr } = await supabase.from('customers').insert(payload);
-                error = insertErr;
-            }
+            const { error: updateErr } = await supabase.from('customers').eq('customer_id', editingCustomerId).update(payload);
 
-            if (error) {
-                throw error;
+            if (updateErr) {
+                throw updateErr;
             }
 
             closeModal();
-            showToast(isEditing ? 'Customer updated successfully!' : 'Customer created successfully!');
+            showToast('Customer updated successfully!');
             if (window.notifyEvent) {
-                if (isEditing) {
-                    window.notifyEvent('customers', 'evt_customer_updated', {
-                        title: 'Customer Profile Updated',
-                        message: `${name}'s profile was updated.`
-                    });
-                } else {
-                    window.notifyEvent('customers', 'evt_customer_added', {
-                        title: 'New Customer Added',
-                        message: `${name} was added to customers.`
-                    });
-                }
+                window.notifyEvent('customers', 'evt_customer_updated', {
+                    title: 'Customer Profile Updated',
+                    message: `${name}'s profile was updated.`
+                });
             }
             await fetchCustomers(); // Refresh the list
         } catch (err) {
