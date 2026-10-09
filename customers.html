@@ -57,7 +57,7 @@
             display: flex;
             align-items: center;
             justify-content: flex-end;
-            gap: 0.625rem;
+            gap: 0.5rem;
         }
 
         /* Search � compact, sits inside right actions group */
@@ -65,7 +65,7 @@
             display: flex;
             align-items: center;
             height: 38px;
-            width: 480px; /* Base width */
+            width: 340px; /* Base width */
             background: #fff;
             border: 1px solid #e2e8f0;
             border-radius: 0.5rem;
@@ -246,6 +246,47 @@
             height: 14px;
             flex-shrink: 0;
             stroke: currentColor;
+        }
+
+        /* Download Button */
+        .customers-download-btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.4rem;
+            padding: 0.5rem 0.875rem;
+            border: 1px solid #e2e8f0;
+            border-radius: 0.5rem;
+            background-color: #fff;
+            font-size: 0.875rem;
+            font-weight: 500;
+            font-family: inherit;
+            color: #334155;
+            cursor: pointer;
+            white-space: nowrap;
+            height: 38px;
+            transition: all 0.2s ease;
+        }
+        .customers-download-btn:hover {
+            background-color: #f0fdf4;
+            border-color: #86efac;
+            color: #16a34a;
+            transform: translateY(-1px);
+            box-shadow: 0 2px 8px rgba(22, 163, 74, 0.15);
+        }
+        .customers-download-btn:active {
+            transform: translateY(0);
+            box-shadow: none;
+        }
+        .customers-download-btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+            transform: none;
+            box-shadow: none;
+        }
+        .download-btn-icon {
+            width: 14px;
+            height: 14px;
+            flex-shrink: 0;
         }
 
         /* Add Customer Button */
@@ -670,6 +711,12 @@
                         </div>
                     </div>
 
+                    <!-- Download Button -->
+                    <button class="customers-download-btn" id="btnDownloadCustomers" type="button" title="Download customer list as Excel">
+                        <i data-feather="download" class="download-btn-icon"></i>
+                        <span>Download</span>
+                    </button>
+
                     <!-- Add Customer Button -->
                     <button class="customers-add-btn" id="btnAddCustomer" type="button" data-sub-feature="customer_create">
                         <i data-feather="user-plus" class="add-btn-icon"></i>
@@ -774,6 +821,9 @@
             </div>
         </main>
     </div>
+
+    <!-- SheetJS for Excel export -->
+    <script src="https://cdn.sheetjs.com/xlsx-0.20.3/package/dist/xlsx.full.min.js"></script>
 
     <script type="module" src="scripts/app-shell.js"></script>
     <script type="module" src="scripts/customers/customers-ui.js"></script>

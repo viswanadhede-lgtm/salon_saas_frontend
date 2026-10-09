@@ -754,3 +754,116 @@ function showToast(msg, isError = false) {
         t.style.background = '';
     }, 3500);
 }
+
+// =====================================================================
+// DOWNLOAD CUSTOMERS AS EXCEL (.xlsx)
+// =====================================================================
+(function initDownloadButton() {
+    const btn = document.getElementById('btnDownloadCustomers');
+    if (!btn) return;
+
+    btn.addEventListener('click', async () => {
+        // Guard: SheetJS must be loaded
+        if (typeof XLSX === 'undefined') {
+            showToast('Excel library not loaded. Please refresh and try again.', true);
+            return;
+        }
+
+        const companyId = getCompanyId();
+        const branchId  = getBranchId();
+        if (!companyId || !branchId) {
+            showToast('Company/branch not found. Please re-login.', true);
+            return;
+        }
+
+        // Disable button while fetching
+        btn.disabled = true;
+        const originalHTML = btn.innerHTML;
+        btn.innerHTML = `
+            <svg class="download-btn-icon" style="animation: sbd-spin 0.65s linear infinite;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M21 12a9 9 0 1 1-6.219-8.56"/>
+            </svg>
+            <span>Downloading…</span>
+        `;
+
+        try {
+            // Fetch ALL active customers (no pagination limit)
+            const FIELDS = 'customer_name,created_at,customer_phone,customer_email,total_spent,last_visit,tags,status';
+            const { data, error } = await supabase
+                .from('customers')
+                .select(FIELDS)
+                .eq('company_id', companyId)
+                .eq('branch_id', branchId)
+                .neq('status', 'deleted')
+                .order('customer_name', { ascending: true });
+
+            if (error) throw error;
+
+            if (!data || data.length === 0) {
+                showToast('No customers to download.', true);
+                return;
+            }
+
+            // Format helper
+            const fmtDate = (val) => {
+                if (!val) return '-';
+                const d = new Date(val);
+                if (isNaN(d.getTime())) return '-';
+                return d.toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' });
+            };
+
+            const fmtCurrency = (val) => {
+                const n = Number(val ?? 0);
+                return `₹${n.toLocaleString('en-IN')}`;
+            };
+
+            // Build rows
+            const rows = data.map(c => ({
+                'Customer Name':  c.customer_name || '-',
+                'Joined Date':    fmtDate(c.created_at),
+                'Phone Number':   c.customer_phone || '-',
+                'Email':          c.customer_email || '-',
+                'Total Spent':    fmtCurrency(c.total_spent),
+                'Last Visit':     fmtDate(c.last_visit),
+                'Tags / Status':  c.tags || c.status || '-'
+            }));
+
+            // Create workbook + sheet
+            const ws = XLSX.utils.json_to_sheet(rows);
+
+            // Auto-fit column widths
+            const colKeys = Object.keys(rows[0]);
+            ws['!cols'] = colKeys.map((key) => {
+                let maxLen = key.length;
+                rows.forEach(row => {
+                    const cellLen = String(row[key] || '').length;
+                    if (cellLen > maxLen) maxLen = cellLen;
+                });
+                return { wch: Math.min(maxLen + 4, 40) };
+            });
+
+            const wb = XLSX.utils.book_new();
+            XLSX.utils.book_append_sheet(wb, ws, 'Customers');
+
+            // Generate filename with today's date
+            const today = new Date().toLocaleDateString('en-IN', {
+                day: '2-digit', month: 'short', year: 'numeric'
+            }).replace(/ /g, '-');
+            const filename = `Customers_${today}.xlsx`;
+
+            // Trigger download
+            XLSX.writeFile(wb, filename);
+
+            showToast(`Downloaded ${data.length} customers ✓`);
+
+        } catch (err) {
+            console.error('Customer download error:', err);
+            showToast('Failed to download customers. Try again.', true);
+        } finally {
+            btn.disabled  = false;
+            btn.innerHTML = originalHTML;
+            // Re-render feather icons inside the restored button
+            if (typeof feather !== 'undefined') feather.replace({ 'stroke-width': 2 });
+        }
+    });
+})();
