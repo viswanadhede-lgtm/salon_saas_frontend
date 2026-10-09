@@ -68,6 +68,13 @@ function applyCustomerFilter(tag) {
     fetchCustomers();
 }
 window.applyCustomerFilter = applyCustomerFilter;
+window.fetchCustomers = fetchCustomers;
+window.refreshCustomerStatCards = refreshCustomerStatCards;
+
+// Automatically refresh customer table and 4 stat cards when a customer is added anywhere
+document.addEventListener('customer-added', () => {
+    fetchCustomers();
+});
 
 // -- READ: server-side search + filter + pagination --
 async function fetchCustomers() {
@@ -148,12 +155,33 @@ async function fetchCustomers() {
         renderCustomers();
         renderPagination();
 
-        // -- Stat Cards (RPC — unchanged) --
+        // Refresh 4 stat cards from RPC
+        await refreshCustomerStatCards();
+
+    } catch (err) {
+        console.error('Error fetching customers:', err);
+        if (customersTableBody) {
+            customersTableBody.innerHTML = `<tr><td colspan="6" class="text-center py-4 text-rose" style="text-align:center; color: #e11d48;"><b>Failed to load customers:</b><br>${err.message}</td></tr>`;
+        }
+        renderPagination(); // hide pagination on error
+    }
+}
+
+// -- STAT CARDS (RPC: customers_page__four_statcards) --
+async function refreshCustomerStatCards() {
+    try {
+        const companyId = getCompanyId();
+        const branchId  = getBranchId();
+        if (!companyId || !branchId) return;
+
         const { data: statsData, error: statsError } = await supabase.rpc('customers_page__four_statcards', {
             p_company_id: companyId,
             p_branch_id:  branchId
         });
-        if (statsError) console.error('Stat cards error:', statsError);
+        if (statsError) {
+            console.error('Stat cards error:', statsError);
+            return;
+        }
         const stats = Array.isArray(statsData) ? statsData[0] : statsData;
         const { total_customers, new_this_month, vip_customers, inactive_customers } = stats || {};
 
@@ -171,13 +199,8 @@ async function fetchCustomers() {
         updateTrend('trendNewThisMonth',   null);
         updateTrend('trendVipCustomers',   null);
         updateTrend('trendInactiveDays',   null);
-
     } catch (err) {
-        console.error('Error fetching customers:', err);
-        if (customersTableBody) {
-            customersTableBody.innerHTML = `<tr><td colspan="6" class="text-center py-4 text-rose" style="text-align:center; color: #e11d48;"><b>Failed to load customers:</b><br>${err.message}</td></tr>`;
-        }
-        renderPagination(); // hide pagination on error
+        console.error('Error refreshing stat cards:', err);
     }
 }
 

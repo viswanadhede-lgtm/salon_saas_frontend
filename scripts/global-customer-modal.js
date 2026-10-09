@@ -188,6 +188,13 @@ document.getElementById('btnSaveNewCustomer')?.addEventListener('click', async (
                 message: `${name} was added to customers.`
             });
         }
+        // Dispatch global event and directly refresh customers page table + stat cards
+        document.dispatchEvent(new CustomEvent('customer-added', { detail: newCustomer }));
+        if (typeof window.fetchCustomers === 'function') {
+            window.fetchCustomers();
+        } else if (typeof window.refreshCustomerStatCards === 'function') {
+            window.refreshCustomerStatCards();
+        }
         if (onSuccessCallback) {
             onSuccessCallback(newCustomer);
         }
