@@ -398,17 +398,21 @@
             gap: 0.5rem;
         }
 
-        .customer-name-link {
-            color: #3b82f6;
-            text-decoration: none !important;
+        .customer-name-link,
+        .customer-link {
+            color: #4f46e5;
+            font-weight: 600;
+            text-decoration: none;
+            cursor: pointer;
             transition: color 0.15s ease;
             position: relative;
             display: inline-block;
         }
 
-        .customer-name-link:hover {
-            color: #2563eb;
-            text-decoration: underline !important;
+        .customer-name-link:hover,
+        .customer-link:hover {
+            color: #4338ca;
+            text-decoration: underline;
         }
         
         /* -- Add Customer Modal Specifics ---------------------------- */
@@ -830,6 +834,9 @@
 
     <!-- Global Customer Modal Script -->
     <script type="module" src="scripts/global-customer-modal.js"></script>
+
+    <!-- Global Customer Profile Modal Script -->
+    <script type="module" src="scripts/global-customer-profile-modal.js"></script>
 
     <!-- Spending Breakdown Modal -->
     <div id="spendingBreakdownOverlay">

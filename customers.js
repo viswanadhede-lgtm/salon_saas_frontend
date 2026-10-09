@@ -2,6 +2,7 @@ import { supabase } from './lib/supabase.js';
 import { FEATURES } from './config/feature-registry.js';
 import { SUB_FEATURES } from './config/sub-feature-registry.js';
 import { applySubFeatureGates } from './scripts/sub-features/sub-feature-gate.js';
+import './scripts/global-customer-profile-modal.js';
 
 // DOM Elements
 const customersTableBody = document.getElementById('customersTableBody');
@@ -310,7 +311,7 @@ function renderCustomers() {
                         <img src="${avatarUrl}" alt="${name}" style="width:100%; height:100%; object-fit:cover;">
                     </div>
                     <div>
-                        <span class="customer-link" onclick="viewCustomerProfile('${customer.customer_id || customer.id}')">${name}</span>
+                        <span class="customer-link" data-customer-id="${customer.customer_id || customer.id}" data-customer-name="${name.replace(/"/g, '&quot;')}" style="font-weight:600; cursor:pointer;">${name}</span>
                         <p class="text-sm text-muted" style="margin:0; font-size:0.875rem; color:#64748b;">Joined ${joinedDate}</p>
                     </div>
                     ${hasNotes ? `
@@ -426,6 +427,19 @@ function renderCustomers() {
             e.stopPropagation();
             const customerId = e.currentTarget.getAttribute('data-customer-id');
             openCustomerNoteModal(customerId);
+        });
+    });
+
+    // Attach customer profile modal listeners (identical to bookings page)
+    document.querySelectorAll('.customer-link').forEach(link => {
+        link.addEventListener('click', (e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            const customerId = e.currentTarget.getAttribute('data-customer-id');
+            const customerName = e.currentTarget.getAttribute('data-customer-name') || e.currentTarget.textContent.trim();
+            if (typeof window.viewCustomerProfile === 'function') {
+                window.viewCustomerProfile(customerId, customerName);
+            }
         });
     });
 
