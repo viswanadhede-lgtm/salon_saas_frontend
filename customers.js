@@ -103,8 +103,12 @@ async function fetchCustomers() {
 
         // Server-side search (applied BEFORE filter and pagination)
         if (searchQuery) {
-            const q = searchQuery.replace(/'/g, "''"); // basic safety
-            query = query.or(`customer_name.ilike.%${q}%,customer_phone.ilike.%${q}%`);
+            // Strip parenthesis and commas which delimit PostgREST or=(...) expressions
+            const cleanQ = searchQuery.replace(/[\(\),]/g, ' ').trim();
+            if (cleanQ) {
+                const encoded = encodeURIComponent(cleanQ);
+                query = query.or(`customer_name.ilike.*${encoded}*,customer_phone.ilike.*${encoded}*`);
+            }
         }
 
         // Server-side filter (applied BEFORE pagination)
