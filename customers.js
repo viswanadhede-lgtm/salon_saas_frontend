@@ -191,14 +191,13 @@ async function fetchCustomers() {
             };
         });
 
-        // Calculate simple stats
-        const now = new Date();
-        const thirtyDaysAgo = new Date();
-        thirtyDaysAgo.setDate(now.getDate() - 30);
-        
-        const total = customersList.length;
-        const newThisMonth = customersList.filter(c => c.created_at && new Date(c.created_at) >= thirtyDaysAgo).length;
-        const vip = customersList.filter(c => (c.tags || '').toLowerCase() === 'vip').length;
+        // Fetch stat card values from backend RPC
+        const { data: statsData, error: statsError } = await supabase.rpc('customers_page__four_statcards', {
+            p_company_id: companyId,
+            p_branch_id: branchId
+        });
+        if (statsError) throw statsError;
+        const { total_customers, new_this_month, vip_customers, inactive_customers } = statsData || {};
 
         // Hydrate stat cards
         const elTotal    = document.getElementById('statTotalCustomers');
@@ -206,10 +205,10 @@ async function fetchCustomers() {
         const elVip      = document.getElementById('statVipCustomers');
         const elInactive = document.getElementById('statInactiveDays');
         
-        if (elTotal)    elTotal.textContent    = total;
-        if (elNew)      elNew.textContent      = newThisMonth;
-        if (elVip)      elVip.textContent      = vip;
-        if (elInactive) elInactive.textContent = '0';
+        if (elTotal)    elTotal.textContent    = total_customers ?? 0;
+        if (elNew)      elNew.textContent      = new_this_month ?? 0;
+        if (elVip)      elVip.textContent      = vip_customers ?? 0;
+        if (elInactive) elInactive.textContent = inactive_customers ?? 0;
 
         // Hide trends temporarily as they rely on advanced analytics
         updateTrend('trendTotalCustomers', null);
