@@ -501,8 +501,14 @@ if (btnSaveCustomer) {
             return;
         }
 
-        // -- ASYNC DUPLICATE PHONE CHECK (database-level, works across all pages) --
         const companyId = getCompanyId();
+        const branchId  = getBranchId();
+
+        if (!companyId || !branchId) {
+            showToast('Missing company or branch context.', true);
+            return;
+        }
+
         const { data: dupeData, error: dupeErr } = await supabase
             .from('customers')
             .select('customer_id')
@@ -519,13 +525,12 @@ if (btnSaveCustomer) {
         }
 
         const payload = {
-            company_id:      getCompanyId(),
-            branch_id:       getBranchId(),
             customer_name:   name,
             customer_phone:  digitsOnly,
             customer_email:  email,
             tags:            tag,
-            notes:           inputNotes ? inputNotes.value.trim() : ''
+            notes:           inputNotes ? inputNotes.value.trim() : '',
+            updated_at:      'now'
         };
         if (dob) {
             payload.dob = dob;
@@ -536,7 +541,12 @@ if (btnSaveCustomer) {
         btnSaveCustomer.disabled    = true;
 
         try {
-            const { error: updateErr } = await supabase.from('customers').eq('customer_id', editingCustomerId).update(payload);
+            const { error: updateErr } = await supabase
+                .from('customers')
+                .update(payload)
+                .eq('customer_id', editingCustomerId)
+                .eq('company_id', companyId)
+                .eq('branch_id', branchId);
 
             if (updateErr) throw updateErr;
 
@@ -564,7 +574,20 @@ if (btnSaveCustomer) {
 // -- DELETE --
 async function deleteCustomer(id) {
     try {
-        const { error } = await supabase.from('customers').eq('customer_id', id).update({ status: 'deleted' });
+        const companyId = getCompanyId();
+        const branchId  = getBranchId();
+
+        if (!companyId || !branchId) {
+            showToast('Missing company or branch context.', true);
+            return false;
+        }
+
+        const { error } = await supabase
+            .from('customers')
+            .update({ status: 'deleted', updated_at: 'now' })
+            .eq('customer_id', id)
+            .eq('company_id', companyId)
+            .eq('branch_id', branchId);
 
         if (error) throw error;
 
