@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+ï»¿<!DOCTYPE html>
 <html lang="en">
 
 <head>
@@ -60,7 +60,7 @@
             gap: 0.625rem;
         }
 
-        /* Search — compact, sits inside right actions group */
+        /* Search ï¿½ compact, sits inside right actions group */
         .customers-search-wrap {
             display: flex;
             align-items: center;
@@ -543,6 +543,30 @@
         }
         @keyframes sbd-spin { to { transform: rotate(360deg); } }
         .sbd-loading-text { font-size: 0.8rem; color: #94a3b8; font-weight: 500; }
+
+        /* ===== Customer Table Pagination Footer ===== */
+        #customersPaginationFooter {
+            display: none;
+            align-items: center;
+            justify-content: space-between;
+            gap: 0.75rem;
+            padding: 0.75rem 1.25rem;
+            border-top: 1px solid #e2e8f0;
+            background: #f8fafc;
+            border-radius: 0 0 12px 12px;
+            flex-wrap: wrap;
+        }
+        #custPageShowing { font-size: 0.8rem; color: #64748b; font-weight: 500; }
+        .cust-page-controls { display: flex; align-items: center; gap: 0.6rem; }
+        #custPageInfo { font-size: 0.82rem; font-weight: 600; color: #0f172a; min-width: 90px; text-align: center; }
+        .cust-page-btn {
+            display: inline-flex; align-items: center; gap: 4px;
+            padding: 5px 14px; border-radius: 7px; border: 1px solid #e2e8f0;
+            background: #fff; color: #374151; font-size: 0.8rem; font-weight: 600;
+            cursor: pointer; transition: background 0.15s, border-color 0.15s, color 0.15s;
+        }
+        .cust-page-btn:hover:not(:disabled) { background: #4f46e5; border-color: #4f46e5; color: #fff; }
+        .cust-page-btn:disabled { opacity: 0.38; cursor: not-allowed; }
     </style>
 </head>
 
@@ -633,7 +657,7 @@
                     </div>
                     <div class="stat-details">
                         <p class="stat-label">Total Customers</p>
-                        <h3 class="stat-value" id="statTotalCustomers">—</h3>
+                        <h3 class="stat-value" id="statTotalCustomers">ï¿½</h3>
                         <p class="stat-trend positive" id="trendTotalCustomers">
                             <i data-feather="trending-up"></i>
                             <span>+12% from last month</span>
@@ -648,7 +672,7 @@
                     </div>
                     <div class="stat-details">
                         <p class="stat-label">New This Month</p>
-                        <h3 class="stat-value" id="statNewThisMonth">—</h3>
+                        <h3 class="stat-value" id="statNewThisMonth">ï¿½</h3>
                         <p class="stat-trend positive" id="trendNewThisMonth">
                             <i data-feather="trending-up"></i>
                             <span>+8% from last month</span>
@@ -663,7 +687,7 @@
                     </div>
                     <div class="stat-details">
                         <p class="stat-label">VIP Customers</p>
-                        <h3 class="stat-value" id="statVipCustomers">—</h3>
+                        <h3 class="stat-value" id="statVipCustomers">ï¿½</h3>
                         <p class="stat-trend neutral" id="trendVipCustomers">
                             <i data-feather="minus"></i>
                             <span>0% from last month</span>
@@ -678,7 +702,7 @@
                     </div>
                     <div class="stat-details">
                         <p class="stat-label">Inactive (90+ Days)</p>
-                        <h3 class="stat-value" id="statInactiveDays">—</h3>
+                        <h3 class="stat-value" id="statInactiveDays">ï¿½</h3>
                         <p class="stat-trend negative" id="trendInactiveDays">
                             <i data-feather="trending-down"></i>
                             <span>+3.2% from last month</span>
@@ -707,6 +731,15 @@
                     </table>
                 </div>
 
+                <!-- Customer Table Pagination Footer -->
+                <div id="customersPaginationFooter">
+                    <span id="custPageShowing">Showing 1-25 of 0 customers</span>
+                    <div class="cust-page-controls">
+                        <button class="cust-page-btn" id="custBtnPrev" disabled>&#8592; Previous</button>
+                        <span id="custPageInfo">Page 1 of 1</span>
+                        <button class="cust-page-btn" id="custBtnNext" disabled>Next &#8594;</button>
+                    </div>
+                </div>
 
             </div>
         </main>
@@ -728,7 +761,7 @@
             <!-- Loading state -->
             <div class="sbd-loading" id="sbdLoading">
                 <div class="sbd-spinner"></div>
-                <span class="sbd-loading-text">Fetching breakdown…</span>
+                <span class="sbd-loading-text">Fetching breakdownï¿½</span>
             </div>
             <!-- Breakdown content (hidden while loading) -->
             <div id="sbdContent" style="display:none;">
@@ -787,7 +820,7 @@
     <div id="deletingCustomerOverlay">
         <div style="background: #fff; border-radius: 16px; padding: 2.25rem 2.75rem; display: flex; flex-direction: column; align-items: center; gap: 16px; box-shadow: 0 24px 64px rgba(0,0,0,0.25); animation: louFadeIn 0.2s ease;">
             <div style="width: 44px; height: 44px; border: 4px solid #e2e8f0; border-top-color: #ef4444; border-radius: 50%; animation: louSpin 0.75s linear infinite;"></div>
-            <p style="font-size: 1rem; font-weight: 600; color: #0f172a; margin: 0;">Deleting customer…</p>
+            <p style="font-size: 1rem; font-weight: 600; color: #0f172a; margin: 0;">Deleting customerï¿½</p>
             <p style="font-size: 0.8rem; color: #64748b; margin: 0;">Please wait a moment.</p>
         </div>
     </div>

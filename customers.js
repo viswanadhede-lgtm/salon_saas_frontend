@@ -21,173 +21,224 @@ const inputDob = document.getElementById('newCustDob');
 const inputTag = document.getElementById('newCustTag');
 const inputNotes = document.getElementById('newCustNotes');
 
-let customersList = [];
+// -- PAGINATION & QUERY STATE --
+let customersList    = [];   // current page's 25 rows only
 let editingCustomerId = null;
-let activeFilter = 'all'; // tracks the current filter tag
+let activeFilter  = 'all';
+let searchQuery   = '';
+let currentPage   = 1;
+const PAGE_SIZE   = 25;
+let totalRecords  = 0;
 
 function getCompanyId() { return localStorage.getItem('company_id') || null; }
+function getBranchId()  { return localStorage.getItem('active_branch_id') || null; }
 
-function getBranchId() {
-    return localStorage.getItem('active_branch_id') || null;
+// -- DEBOUNCE UTILITY --
+function debounce(fn, delay) {
+    let timer;
+    return (...args) => {
+        clearTimeout(timer);
+        timer = setTimeout(() => fn(...args), delay);
+    };
 }
 
-// Initialize
+// -- INITIALIZE --
 if (document.readyState === 'loading') {
     document.addEventListener('DOMContentLoaded', fetchCustomers);
 } else {
     fetchCustomers();
 }
 
+// -- SEARCH LISTENER (debounced 300ms, server-side) --
 if (customerSearchInput) {
-    customerSearchInput.addEventListener('input', (e) => {
-        const query = e.target.value.toLowerCase().trim();
-        const base = getFilteredList(activeFilter);
-        if (!query) {
-            renderCustomers(base);
-            return;
-        }
-        const filtered = base.filter(c => {
-            const name = (c.customer_name || '').toLowerCase();
-            const phone = String(c.customer_phone || '').toLowerCase();
-            return name.includes(query) || phone.includes(query);
-        });
-        renderCustomers(filtered);
-    });
+    customerSearchInput.addEventListener('input', debounce((e) => {
+        searchQuery = e.target.value.trim();
+        currentPage = 1;
+        fetchCustomers();
+    }, 300));
 }
 
-// Returns a filtered subset of customersList based on a filter tag
-function getFilteredList(tag) {
-    const now = new Date();
-    const thirtyDaysAgo = new Date(now); thirtyDaysAgo.setDate(now.getDate() - 30);
-    const ninetyDaysAgo = new Date(now); ninetyDaysAgo.setDate(now.getDate() - 90);
-
-    switch (tag) {
-        case 'vip':
-            return customersList.filter(c => (c.tags || '').toLowerCase() === 'vip');
-        case 'regular':
-            return customersList.filter(c => (c.tags || '').toLowerCase() === 'regular');
-        case 'new':
-            return customersList.filter(c => c.created_at && new Date(c.created_at) >= thirtyDaysAgo);
-        case 'inactive':
-            return customersList.filter(c => {
-                if (c.last_visit) {
-                    return new Date(c.last_visit) < ninetyDaysAgo;
-                }
-                // Never visited but account is older than 90 days
-                return c.created_at && new Date(c.created_at) < ninetyDaysAgo;
-            });
-        default:
-            return customersList;
-    }
-}
-
-// Called by the filter dropdown in customers.html
-// Exposed on window because customers.js is an ES module (not global by default)
+// -- FILTER HANDLER (server-side, exposed to HTML) --
 function applyCustomerFilter(tag) {
     activeFilter = tag;
-    // Reset search input so results aren't stale
+    searchQuery  = '';
+    currentPage  = 1;
+    // Clear the search box to match previous UX behaviour
     if (customerSearchInput) customerSearchInput.value = '';
-    renderCustomers(getFilteredList(tag));
+    fetchCustomers();
 }
 window.applyCustomerFilter = applyCustomerFilter;
 
-// -- READ --
+// -- READ: server-side search + filter + pagination --
 async function fetchCustomers() {
     try {
         if (customersTableBody) {
             customersTableBody.innerHTML = '<tr><td colspan="6" class="text-center py-4" style="text-align:center;">Loading customers...</td></tr>';
         }
-        
-        const companyId = getCompanyId();
-        const branchId = getBranchId();
 
+        const companyId = getCompanyId();
+        const branchId  = getBranchId();
         if (!companyId || !branchId) return;
 
-        const { data, error } = await supabase
+        const start = (currentPage - 1) * PAGE_SIZE;
+        const end   = start + PAGE_SIZE - 1;
+
+        // Required fields only (no profile_photo — not in schema)
+        const FIELDS = 'customer_id,company_id,branch_id,customer_name,customer_phone,customer_email,dob,tags,total_spent,last_visit,notes,status,created_at,updated_at';
+
+        // Build base query
+        let query = supabase
             .from('customers')
-            .select('*')
+            .select(FIELDS, { count: 'exact' })
             .eq('company_id', companyId)
             .eq('branch_id', branchId)
-            .neq('status', 'deleted')
-            .order('customer_name', { ascending: true });
+            .neq('status', 'deleted');
+
+        // Server-side search (applied BEFORE filter and pagination)
+        if (searchQuery) {
+            const q = searchQuery.replace(/'/g, "''"); // basic safety
+            query = query.or(`customer_name.ilike.%${q}%,customer_phone.ilike.%${q}%`);
+        }
+
+        // Server-side filter (applied BEFORE pagination)
+        const now = new Date();
+        if (activeFilter === 'vip') {
+            query = query.ilike('tags', 'vip');
+        } else if (activeFilter === 'regular') {
+            query = query.ilike('tags', 'regular');
+        } else if (activeFilter === 'new') {
+            const d30 = new Date(now);
+            d30.setDate(d30.getDate() - 30);
+            query = query.gte('created_at', d30.toISOString());
+        } else if (activeFilter === 'inactive') {
+            const d90date = new Date(now);
+            d90date.setDate(d90date.getDate() - 90);
+            const d90iso  = d90date.toISOString();
+            const d90date_only = d90date.toISOString().split('T')[0]; // YYYY-MM-DD for last_visit (date column)
+            // last_visit exists and is older than 90 days, OR last_visit is null and created_at is older than 90 days
+            query = query.or(`last_visit.lt.${d90date_only},and(last_visit.is.null,created_at.lt.${d90iso})`);
+        }
+
+        // Deterministic ordering + server-side window
+        const { data, count, error } = await query
+            .order('customer_name', { ascending: true })
+            .order('customer_id',   { ascending: true })
+            .range(start, end);
 
         if (error) throw error;
 
+        totalRecords  = count ?? 0;
         customersList = (data || []).map(c => ({
             ...c,
-            customer_name: c.customer_name || c.name,
+            customer_name:  c.customer_name  || c.name,
             customer_phone: c.customer_phone || c.phone,
             customer_email: c.customer_email || c.email,
-            last_visit: c.last_visit || null,
-            total_spent: c.total_spent != null ? c.total_spent : 0
+            last_visit:     c.last_visit     || null,
+            total_spent:    c.total_spent    != null ? c.total_spent : 0
         }));
 
-        // Fetch stat card values from backend RPC
+        // Guard: if current page is now beyond total pages (e.g. after deletion), go to last valid page
+        const totalPages = Math.ceil(totalRecords / PAGE_SIZE) || 1;
+        if (currentPage > totalPages) {
+            currentPage = totalPages;
+            await fetchCustomers();
+            return;
+        }
+
+        renderCustomers();
+        renderPagination();
+
+        // -- Stat Cards (RPC — unchanged) --
         const { data: statsData, error: statsError } = await supabase.rpc('customers_page__four_statcards', {
             p_company_id: companyId,
-            p_branch_id: branchId
+            p_branch_id:  branchId
         });
-        if (statsError) throw statsError;
+        if (statsError) console.error('Stat cards error:', statsError);
         const stats = Array.isArray(statsData) ? statsData[0] : statsData;
         const { total_customers, new_this_month, vip_customers, inactive_customers } = stats || {};
 
-        // Hydrate stat cards
         const elTotal    = document.getElementById('statTotalCustomers');
         const elNew      = document.getElementById('statNewThisMonth');
         const elVip      = document.getElementById('statVipCustomers');
         const elInactive = document.getElementById('statInactiveDays');
-        
-        if (elTotal)    elTotal.textContent    = total_customers ?? 0;
-        if (elNew)      elNew.textContent      = new_this_month ?? 0;
-        if (elVip)      elVip.textContent      = vip_customers ?? 0;
+        if (elTotal)    elTotal.textContent    = total_customers    ?? 0;
+        if (elNew)      elNew.textContent      = new_this_month     ?? 0;
+        if (elVip)      elVip.textContent      = vip_customers      ?? 0;
         if (elInactive) elInactive.textContent = inactive_customers ?? 0;
 
-        // Hide trends temporarily as they rely on advanced analytics
+        // Hide trends (rely on advanced analytics not yet implemented)
         updateTrend('trendTotalCustomers', null);
-        updateTrend('trendNewThisMonth', null);
-        updateTrend('trendVipCustomers', null);
-        updateTrend('trendInactiveDays', null);
+        updateTrend('trendNewThisMonth',   null);
+        updateTrend('trendVipCustomers',   null);
+        updateTrend('trendInactiveDays',   null);
 
-        renderCustomers();
-    } catch (error) {
-        console.error('Error fetching customers:', error);
+    } catch (err) {
+        console.error('Error fetching customers:', err);
         if (customersTableBody) {
-            customersTableBody.innerHTML = `<tr><td colspan="6" class="text-center py-4 text-rose" style="text-align:center; color: #e11d48;"><b>Failed to load customers:</b><br>${error.message}</td></tr>`;
+            customersTableBody.innerHTML = `<tr><td colspan="6" class="text-center py-4 text-rose" style="text-align:center; color: #e11d48;"><b>Failed to load customers:</b><br>${err.message}</td></tr>`;
         }
+        renderPagination(); // hide pagination on error
     }
+}
+
+// -- PAGINATION UI --
+function renderPagination() {
+    const footer = document.getElementById('customersPaginationFooter');
+    if (!footer) return;
+
+    const totalPages = Math.ceil(totalRecords / PAGE_SIZE) || 1;
+
+    // Hide completely when all results fit on one page
+    if (totalRecords <= PAGE_SIZE) {
+        footer.style.display = 'none';
+        return;
+    }
+
+    footer.style.display = 'flex';
+
+    const rangeStart = Math.min((currentPage - 1) * PAGE_SIZE + 1, totalRecords);
+    const rangeEnd   = Math.min(currentPage * PAGE_SIZE, totalRecords);
+
+    const showingEl  = document.getElementById('custPageShowing');
+    const pageInfoEl = document.getElementById('custPageInfo');
+    const btnPrev    = document.getElementById('custBtnPrev');
+    const btnNext    = document.getElementById('custBtnNext');
+
+    if (showingEl)  showingEl.textContent  = `Showing ${rangeStart}–${rangeEnd} of ${totalRecords} customers`;
+    if (pageInfoEl) pageInfoEl.textContent = `Page ${currentPage} of ${totalPages}`;
+
+    if (btnPrev) btnPrev.disabled = currentPage <= 1;
+    if (btnNext) btnNext.disabled = currentPage >= totalPages;
 }
 
 function updateTrend(elementId, changeValue) {
     const el = document.getElementById(elementId);
     if (!el) return;
-    
-    // Hide if no change value is passed
     if (changeValue === null || changeValue === undefined) {
         el.style.display = 'none';
         return;
     }
-    
-    // Fallback logic
     el.style.display = 'none';
 }
 
-function renderCustomers(listToRender = customersList) {
+// -- TABLE RENDERING --
+function renderCustomers() {
     if (!customersTableBody) return;
     customersTableBody.innerHTML = '';
-    
-    if (listToRender.length === 0) {
+
+    if (customersList.length === 0) {
         customersTableBody.innerHTML = '<tr><td colspan="6" class="text-center py-4" style="text-align:center;">No customers found.</td></tr>';
         return;
     }
 
-    listToRender.forEach(customer => {
+    customersList.forEach(customer => {
         const tr = document.createElement('tr');
-        
+
         const name  = customer.customer_name  || 'Unknown';
         const phone = customer.customer_phone || 'N/A';
         const email = customer.customer_email || '-';
         const tag   = (customer.tags || 'regular').toLowerCase();
-        
+
         let joinedDate = 'Recently';
         if (customer.created_at) {
             const dateObj = new Date(customer.created_at);
@@ -196,9 +247,8 @@ function renderCustomers(listToRender = customersList) {
             const y = dateObj.getFullYear();
             joinedDate = `${d}-${m}-${y}`;
         }
-        
-        const totalSpent    = customer.total_spent    != null ? customer.total_spent    : 0;
-        const totalBookings = customer.total_bookings != null ? customer.total_bookings : 0;
+
+        const totalSpent = customer.total_spent != null ? customer.total_spent : 0;
         let lastVisit = '-';
         let lastVisitDay = '';
         if (customer.last_visit) {
@@ -207,15 +257,13 @@ function renderCustomers(listToRender = customersList) {
             const m = String(dateObj.getMonth() + 1).padStart(2, '0');
             const y = dateObj.getFullYear();
             lastVisit = `${d}-${m}-${y}`;
-            
             const days = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
             lastVisitDay = days[dateObj.getDay()];
         }
 
-        // Avatar generation
-        const avatarUrl = customer.profile_photo || `https://ui-avatars.com/api/?name=${encodeURIComponent(name)}&background=c7d2fe&color=3730A3`;
-        
-        // Setup Tag HTML
+        // Avatar: ui-avatars fallback (profile_photo column does not exist in schema)
+        const avatarUrl = `https://ui-avatars.com/api/?name=${encodeURIComponent(name)}&background=c7d2fe&color=3730A3`;
+
         let tagHtml = '';
         if (tag === 'vip') {
             tagHtml = `<span class="status-badge bg-amber-light text-amber" style="padding: 4px 8px;"><i data-feather="star" style="width:12px; height:12px; margin-right:4px;"></i>VIP</span>`;
@@ -281,9 +329,9 @@ function renderCustomers(listToRender = customersList) {
         });
     });
 
-    const deleteOverlay = document.getElementById('deleteConfirmOverlay');
+    const deleteOverlay    = document.getElementById('deleteConfirmOverlay');
     const btnConfirmDelete = document.getElementById('btnConfirmDelete');
-    const btnCancelDelete = document.getElementById('btnCancelDelete');
+    const btnCancelDelete  = document.getElementById('btnCancelDelete');
     let pendingDeleteId = null;
 
     document.querySelectorAll('.btn-delete').forEach(btn => {
@@ -312,16 +360,9 @@ function renderCustomers(listToRender = customersList) {
 
         newConfirmBtn.addEventListener('click', async () => {
             if (pendingDeleteId) {
-                // Instantly hide the small confirmation modal
                 if (deleteOverlay) deleteOverlay.classList.remove('active');
-                
-                // Show the full-screen blurred "Deleting..." overlay
                 if (deletingOverlay) deletingOverlay.classList.add('active');
-
-                // Wait for the delete to finish
                 await deleteCustomer(pendingDeleteId);
-                
-                // Cleanup and close overlay
                 pendingDeleteId = null;
                 if (deletingOverlay) deletingOverlay.classList.remove('active');
             }
@@ -353,21 +394,45 @@ function renderCustomers(listToRender = customersList) {
     } catch(e) {}
 }
 
+// -- PAGINATION EVENT LISTENERS (attached once on load) --
+document.addEventListener('DOMContentLoaded', () => {
+    const btnPrev = document.getElementById('custBtnPrev');
+    const btnNext = document.getElementById('custBtnNext');
+
+    if (btnPrev) {
+        btnPrev.addEventListener('click', () => {
+            if (currentPage > 1) {
+                currentPage--;
+                fetchCustomers();
+            }
+        });
+    }
+
+    if (btnNext) {
+        btnNext.addEventListener('click', () => {
+            const totalPages = Math.ceil(totalRecords / PAGE_SIZE) || 1;
+            if (currentPage < totalPages) {
+                currentPage++;
+                fetchCustomers();
+            }
+        });
+    }
+});
+
 // -- MODAL HANDLING --
 function openModalForCreate() {
     editingCustomerId = null;
-    if (modalTitle) modalTitle.textContent = 'Add New Customer';
+    if (modalTitle)    modalTitle.textContent    = 'Add New Customer';
     if (modalSubtitle) modalSubtitle.textContent = 'Enter the details to create a new client profile.';
     if (btnSaveCustomer) btnSaveCustomer.textContent = 'Save Customer';
-    
-    // Clear inputs
-    if (inputName) inputName.value = '';
+
+    if (inputName)  inputName.value  = '';
     if (inputPhone) inputPhone.value = '';
     if (inputEmail) inputEmail.value = '';
-    if (inputDob) inputDob.value = '';
-    if (inputTag) inputTag.value = 'new';
+    if (inputDob)   inputDob.value   = '';
+    if (inputTag)   inputTag.value   = 'new';
     if (inputNotes) inputNotes.value = '';
-    
+
     if (modalOverlay) modalOverlay.classList.add('active');
 }
 
@@ -376,16 +441,15 @@ function openEditModal(id) {
     if (!customer) return;
 
     editingCustomerId = customer.customer_id;
-    if (modalTitle) modalTitle.textContent = 'Edit Customer';
+    if (modalTitle)    modalTitle.textContent    = 'Edit Customer';
     if (modalSubtitle) modalSubtitle.textContent = 'Update the client profile details.';
     if (btnSaveCustomer) btnSaveCustomer.textContent = 'Update Customer';
 
-    // Populate inputs (map API field names)
-    if (inputName) inputName.value = customer.customer_name || '';
+    if (inputName)  inputName.value  = customer.customer_name  || '';
     if (inputPhone) inputPhone.value = customer.customer_phone || '';
     if (inputEmail) inputEmail.value = customer.customer_email || '';
-    if (inputDob) inputDob.value = customer.dob || '';
-    if (inputTag) inputTag.value = (customer.tags || 'regular').toLowerCase();
+    if (inputDob)   inputDob.value   = customer.dob            || '';
+    if (inputTag)   inputTag.value   = (customer.tags || 'regular').toLowerCase();
     if (inputNotes) inputNotes.value = customer.notes || '';
 
     if (modalOverlay) modalOverlay.classList.add('active');
@@ -404,7 +468,7 @@ const btnAddCustomerEl = document.getElementById('btnAddCustomer');
 if (btnAddCustomerEl) {
     btnAddCustomerEl.addEventListener('click', () => {
         editingCustomerId = null;
-        if (modalTitle) modalTitle.textContent = 'Add New Customer';
+        if (modalTitle)    modalTitle.textContent    = 'Add New Customer';
         if (modalSubtitle) modalSubtitle.textContent = 'Enter the details to create a new client profile.';
         if (btnSaveCustomer) btnSaveCustomer.textContent = 'Save Customer';
     });
@@ -416,16 +480,15 @@ if (btnAddCustomerEl) {
 if (btnSaveCustomer) {
     btnSaveCustomer.addEventListener('click', async () => {
         // If not in edit mode, customers.js must NOT create or insert a customer.
-        // New customer creation is handled exclusively by global-customer-modal.js.
         if (!editingCustomerId) {
             return;
         }
 
-        const name = inputName ? inputName.value.trim() : '';
+        const name  = inputName  ? inputName.value.trim()  : '';
         const phone = inputPhone ? inputPhone.value.trim() : '';
         const email = inputEmail ? inputEmail.value.trim() : '';
-        const dob = inputDob && inputDob.value ? inputDob.value : null;
-        const tag = inputTag ? inputTag.value : '';
+        const dob   = inputDob && inputDob.value ? inputDob.value : null;
+        const tag   = inputTag ? inputTag.value : '';
 
         if (!name || !phone) {
             showToast('Name and Phone are required.', true);
@@ -438,21 +501,31 @@ if (btnSaveCustomer) {
             return;
         }
 
-        const existingDupe = customersList.find(c => c.customer_phone === digitsOnly && String(c.customer_id) !== String(editingCustomerId));
+        // -- ASYNC DUPLICATE PHONE CHECK (database-level, works across all pages) --
+        const companyId = getCompanyId();
+        const { data: dupeData, error: dupeErr } = await supabase
+            .from('customers')
+            .select('customer_id')
+            .eq('company_id', companyId)
+            .eq('customer_phone', digitsOnly)
+            .neq('customer_id', editingCustomerId)
+            .neq('status', 'deleted');
 
-        if (existingDupe) {
+        if (dupeErr) {
+            console.error('Duplicate check error:', dupeErr);
+        } else if (dupeData && dupeData.length > 0) {
             showToast('A customer with this phone number already exists.', true);
             return;
         }
 
-        const payload = { 
-            company_id: getCompanyId(), 
-            branch_id: getBranchId(),
-            customer_name: name, 
-            customer_phone: digitsOnly, 
-            customer_email: email, 
-            tags: tag,
-            notes: inputNotes ? inputNotes.value.trim() : ''
+        const payload = {
+            company_id:      getCompanyId(),
+            branch_id:       getBranchId(),
+            customer_name:   name,
+            customer_phone:  digitsOnly,
+            customer_email:  email,
+            tags:            tag,
+            notes:           inputNotes ? inputNotes.value.trim() : ''
         };
         if (dob) {
             payload.dob = dob;
@@ -460,30 +533,28 @@ if (btnSaveCustomer) {
 
         const originalText = btnSaveCustomer.textContent;
         btnSaveCustomer.textContent = 'Updating...';
-        btnSaveCustomer.disabled = true;
+        btnSaveCustomer.disabled    = true;
 
         try {
             const { error: updateErr } = await supabase.from('customers').eq('customer_id', editingCustomerId).update(payload);
 
-            if (updateErr) {
-                throw updateErr;
-            }
+            if (updateErr) throw updateErr;
 
             closeModal();
             showToast('Customer updated successfully!');
             if (window.notifyEvent) {
                 window.notifyEvent('customers', 'evt_customer_updated', {
-                    title: 'Customer Profile Updated',
+                    title:   'Customer Profile Updated',
                     message: `${name}'s profile was updated.`
                 });
             }
-            await fetchCustomers(); // Refresh the list
+            await fetchCustomers(); // Refresh current page
         } catch (err) {
             console.error('Error saving customer:', err);
             showToast(err.message || 'Failed to save customer. Please try again.', true);
         } finally {
             btnSaveCustomer.textContent = originalText;
-            btnSaveCustomer.disabled = false;
+            btnSaveCustomer.disabled    = false;
         }
     });
 }
@@ -500,10 +571,11 @@ async function deleteCustomer(id) {
         showToast('Customer deleted successfully.');
         if (window.notifyEvent) {
             window.notifyEvent('customers', 'evt_customer_deleted', {
-                title: 'Customer Deleted',
+                title:   'Customer Deleted',
                 message: 'A customer profile was deleted.'
             });
         }
+        // fetchCustomers handles page-guard: if current page becomes empty it backs to last valid page
         await fetchCustomers();
         return true;
     } catch (err) {
@@ -513,7 +585,7 @@ async function deleteCustomer(id) {
     }
 }
 
-// -- SPENDING BREAKDOWN MODAL --
+// -- SPENDING BREAKDOWN MODAL (unchanged — uses customers_page_clickable_total_spent RPC) --
 async function openSpendingModal(customerId) {
     const overlay  = document.getElementById('spendingBreakdownOverlay');
     const loading  = document.getElementById('sbdLoading');
@@ -522,16 +594,14 @@ async function openSpendingModal(customerId) {
 
     if (!overlay) return;
 
-    // Show overlay + loading state
     loading.innerHTML = `
         <div class="sbd-spinner"></div>
         <span class="sbd-loading-text">Fetching breakdown...</span>
     `;
-    loading.style.display  = 'flex';
-    content.style.display  = 'none';
+    loading.style.display = 'flex';
+    content.style.display = 'none';
     overlay.classList.add('active');
 
-    // Close handlers
     const closeModal = () => overlay.classList.remove('active');
     closeBtn.onclick = closeModal;
     overlay.onclick  = (e) => { if (e.target === overlay) closeModal(); };
@@ -544,19 +614,18 @@ async function openSpendingModal(customerId) {
             'customers_page_clickable_total_spent',
             {
                 p_company_id: companyId,
-                p_branch_id: branchId,
+                p_branch_id:  branchId,
                 p_customer_id: customerId
             }
         );
 
         if (error) throw error;
 
-        const breakdown = data?.[0];
-
-        const servicesTotal = Number(breakdown?.services_total ?? 0);
-        const productsTotal = Number(breakdown?.products_total ?? 0);
+        const breakdown       = data?.[0];
+        const servicesTotal   = Number(breakdown?.services_total   ?? 0);
+        const productsTotal   = Number(breakdown?.products_total   ?? 0);
         const membershipsTotal = Number(breakdown?.memberships_total ?? 0);
-        const grandTotal = Number(breakdown?.grand_total ?? 0);
+        const grandTotal      = Number(breakdown?.grand_total      ?? 0);
 
         document.getElementById('sbdServices').textContent    = `₹${servicesTotal.toLocaleString('en-IN')}`;
         document.getElementById('sbdProducts').textContent    = `₹${productsTotal.toLocaleString('en-IN')}`;
@@ -580,10 +649,10 @@ function showToast(msg, isError = false) {
         t = document.getElementById('toastNotification');
     }
     t.textContent = msg;
-    t.className = 'toast-notification show';
+    t.className   = 'toast-notification show';
     t.style.background = isError ? '#ef4444' : '#10b981';
     setTimeout(() => {
-        t.className = 'toast-notification';
+        t.className        = 'toast-notification';
         t.style.background = '';
     }, 3500);
 }
