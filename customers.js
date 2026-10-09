@@ -523,6 +523,10 @@ async function openSpendingModal(customerId) {
     if (!overlay) return;
 
     // Show overlay + loading state
+    loading.innerHTML = `
+        <div class="sbd-spinner"></div>
+        <span class="sbd-loading-text">Fetching breakdown...</span>
+    `;
     loading.style.display  = 'flex';
     content.style.display  = 'none';
     overlay.classList.add('active');
@@ -536,41 +540,28 @@ async function openSpendingModal(customerId) {
         const companyId = getCompanyId();
         const branchId  = getBranchId();
 
-        // Fire 3 queries in parallel
-        const [bookingsRes, salesRes, membershipsRes] = await Promise.all([
-            supabase
-                .from('bookings_for_business_transaction')
-                .select('total_price')
-                .eq('company_id', companyId)
-                .eq('branch_id', branchId)
-                .eq('customer_id', customerId)
-                .eq('status', 'completed'),
+        const { data, error } = await supabase.rpc(
+            'customers_page_clickable_total_spent',
+            {
+                p_company_id: companyId,
+                p_branch_id: branchId,
+                p_customer_id: customerId
+            }
+        );
 
-            supabase
-                .from('sales_for_business_transactions')
-                .select('final_amount')
-                .eq('company_id', companyId)
-                .eq('branch_id', branchId)
-                .eq('customer_id', customerId),
+        if (error) throw error;
 
-            supabase
-                .from('membership_purchases')
-                .select('price')
-                .eq('company_id', companyId)
-                .eq('branch_id', branchId)
-                .eq('customer_id', customerId)
-                .eq('payment_status', 'paid')
-        ]);
+        const breakdown = data?.[0];
 
-        const services    = (bookingsRes.data    || []).reduce((s, r) => s + (parseFloat(r.total_price)  || 0), 0);
-        const products    = (salesRes.data        || []).reduce((s, r) => s + (parseFloat(r.final_amount)  || 0), 0);
-        const memberships = (membershipsRes.data  || []).reduce((s, r) => s + (parseFloat(r.price)        || 0), 0);
-        const total       = services + products + memberships;
+        const servicesTotal = Number(breakdown?.services_total ?? 0);
+        const productsTotal = Number(breakdown?.products_total ?? 0);
+        const membershipsTotal = Number(breakdown?.memberships_total ?? 0);
+        const grandTotal = Number(breakdown?.grand_total ?? 0);
 
-        document.getElementById('sbdServices').textContent    = `₹${services}`;
-        document.getElementById('sbdProducts').textContent    = `₹${products}`;
-        document.getElementById('sbdMemberships').textContent = `₹${memberships}`;
-        document.getElementById('sbdTotal').textContent       = `₹${total}`;
+        document.getElementById('sbdServices').textContent    = `₹${servicesTotal.toLocaleString('en-IN')}`;
+        document.getElementById('sbdProducts').textContent    = `₹${productsTotal.toLocaleString('en-IN')}`;
+        document.getElementById('sbdMemberships').textContent = `₹${membershipsTotal.toLocaleString('en-IN')}`;
+        document.getElementById('sbdTotal').textContent       = `₹${grandTotal.toLocaleString('en-IN')}`;
 
         loading.style.display = 'none';
         content.style.display = 'block';
