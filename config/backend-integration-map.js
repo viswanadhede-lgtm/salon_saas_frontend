@@ -2,6 +2,9 @@
 // ==================================================
 // IMPORTANT PURPOSE
 // ==================================================
-// This map is intentionally empty. Features are added only after their integration has been audited, hardened, implemented, and validated.
+// This map is documentation only. Features are added only after their integration has been audited, hardened, implemented, and validated.
 
-export const BACKEND_INTEGRATION_MAP = {};
+// ==================================================
+// CUSTOMERS PAGE
+// ==================================================
+// 1. Statcards - customers_page__four_statcards
