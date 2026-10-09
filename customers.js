@@ -199,15 +199,131 @@ async function refreshCustomerStatCards() {
         if (elVip)      elVip.textContent      = vip_customers      ?? 0;
         if (elInactive) elInactive.textContent = inactive_customers ?? 0;
 
-        // Ensure trend elements are displayed
-        ['trendTotalCustomers', 'trendNewThisMonth', 'trendVipCustomers', 'trendInactiveDays'].forEach(id => {
-            const el = document.getElementById(id);
-            if (el) el.style.display = 'flex';
-        });
-        if (window.feather) feather.replace();
+        // Secondary/trend values via dedicated RPC (customers_page__four_statcard_trendelements)
+        try {
+            const { data: trendData, error: trendError } = await supabase.rpc(
+                'customers_page__four_statcard_trendelements',
+                {
+                    p_company_id: companyId,
+                    p_branch_id:  branchId
+                }
+            );
+
+            if (trendError) {
+                console.error('Trend elements RPC error:', trendError);
+            } else {
+                const trendRow = Array.isArray(trendData) ? trendData[0] : trendData;
+                if (trendRow) {
+                    renderStatCardTrends(trendRow);
+                }
+            }
+        } catch (trendErr) {
+            console.error('Error fetching trend elements:', trendErr);
+        }
     } catch (err) {
         console.error('Error refreshing stat cards:', err);
     }
+}
+
+// -- RENDER SECONDARY / TREND ELEMENTS --
+function renderStatCardTrends(trendRow) {
+    if (!trendRow) return;
+
+    // Helper: format percent number cleanly (e.g. 575.00 -> 575%, 14.81 -> 14.81%, 0.00 -> 0%)
+    const formatPercent = (rawVal) => {
+        if (rawVal === null || rawVal === undefined) return null;
+        const num = parseFloat(rawVal);
+        if (isNaN(num)) return null;
+        return Number.isInteger(num) ? `${num}%` : `${parseFloat(num.toFixed(2))}%`;
+    };
+
+    // 1. TOTAL CUSTOMERS: total_customers_change_percent (Month-over-month)
+    const elTotalTrend = document.getElementById('trendTotalCustomers');
+    if (elTotalTrend) {
+        const rawTotal = trendRow.total_customers_change_percent;
+        if (rawTotal !== null && rawTotal !== undefined) {
+            const num = parseFloat(rawTotal);
+            if (!isNaN(num)) {
+                const formatted = formatPercent(rawTotal);
+                let trendClass = 'stat-trend neutral';
+                let icon = 'minus';
+                let sign = '';
+
+                if (num > 0) {
+                    trendClass = 'stat-trend positive';
+                    icon = 'trending-up';
+                    sign = '+';
+                } else if (num < 0) {
+                    trendClass = 'stat-trend negative';
+                    icon = 'trending-down';
+                }
+
+                elTotalTrend.className = trendClass;
+                elTotalTrend.style.display = 'flex';
+                elTotalTrend.innerHTML = `<i data-feather="${icon}"></i><span>${sign}${formatted} from last month</span>`;
+            }
+        }
+    }
+
+    // 2. NEW THIS MONTH: new_customers_change_percent (Month-over-month)
+    const elNewTrend = document.getElementById('trendNewThisMonth');
+    if (elNewTrend) {
+        const rawNew = trendRow.new_customers_change_percent;
+        if (rawNew === null || rawNew === undefined) {
+            // Null handling: previous month was 0, growth from 0 is undefined
+            elNewTrend.className = 'stat-trend positive';
+            elNewTrend.style.display = 'flex';
+            elNewTrend.innerHTML = `<i data-feather="trending-up"></i><span>New this month</span>`;
+        } else {
+            const num = parseFloat(rawNew);
+            if (!isNaN(num)) {
+                const formatted = formatPercent(rawNew);
+                let trendClass = 'stat-trend neutral';
+                let icon = 'minus';
+                let sign = '';
+
+                if (num > 0) {
+                    trendClass = 'stat-trend positive';
+                    icon = 'trending-up';
+                    sign = '+';
+                } else if (num < 0) {
+                    trendClass = 'stat-trend negative';
+                    icon = 'trending-down';
+                }
+
+                elNewTrend.className = trendClass;
+                elNewTrend.style.display = 'flex';
+                elNewTrend.innerHTML = `<i data-feather="${icon}"></i><span>${sign}${formatted} from last month</span>`;
+            }
+        }
+    }
+
+    // 3. VIP CUSTOMERS: vip_customers_percentage (% of total customers)
+    const elVipTrend = document.getElementById('trendVipCustomers');
+    if (elVipTrend) {
+        const rawVip = trendRow.vip_customers_percentage;
+        if (rawVip !== null && rawVip !== undefined) {
+            const formatted = formatPercent(rawVip) || '0%';
+            elVipTrend.className = 'stat-trend neutral';
+            elVipTrend.style.display = 'flex';
+            elVipTrend.innerHTML = `<i data-feather="star"></i><span>${formatted} of customers</span>`;
+        }
+    }
+
+    // 4. INACTIVE (90+ DAYS): inactive_customers_percentage (% of total customers)
+    const elInactiveTrend = document.getElementById('trendInactiveDays');
+    if (elInactiveTrend) {
+        const rawInactive = trendRow.inactive_customers_percentage;
+        if (rawInactive !== null && rawInactive !== undefined) {
+            const num = parseFloat(rawInactive) || 0;
+            const formatted = formatPercent(rawInactive) || '0%';
+            elInactiveTrend.className = num > 0 ? 'stat-trend negative' : 'stat-trend neutral';
+            elInactiveTrend.style.display = 'flex';
+            elInactiveTrend.innerHTML = `<i data-feather="minus"></i><span>${formatted} of customers</span>`;
+        }
+    }
+
+    if (window.feather) feather.replace();
 }
 
 // -- PAGINATION UI --
