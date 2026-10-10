@@ -17,3 +17,4 @@
 //          f.Last visit Updation - Membership purchased: membership purchased is completed then the last visit in the customers table will be updated with the timeztampz.
 //    g.Clickable Total Spent - customers_page_clickable_total_spent [RPC Function] - 3 Tables being used are (bookings_for_business_transaction), (sales_for_business_transactions),(membership_purchases).
 // 3. StatCards TrendElements - customers_page__four_statcard_trendelements [RPC Function] - Source Table is Customers Table.
+// 4. GLOBAL CUSTOMER PROFILE MODAL - Two Rpc Functions - Global_customer_profile_modal & customers_page_clickable_total_spent.

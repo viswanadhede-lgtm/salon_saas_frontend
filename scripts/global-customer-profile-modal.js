@@ -45,61 +45,84 @@ window.viewCustomerProfile = async function(customerId, customerName) {
     }
 
     try {
-        // ── 1. Fetch customer record + 3 spend sources in parallel
-        let [custRes, bookingsRes, salesRes, membershipsRes, recentBkRes] = await Promise.all([
-            supabase.from('customers').select('*').eq('customer_id', customerId).limit(1),
-            supabase.from('bookings_for_business_transaction')
-                .select('total_price').eq('customer_id', customerId).eq('status', 'completed'),
-            supabase.from('sales_for_business_transactions')
-                .select('final_amount').eq('customer_id', customerId),
-            supabase.from('membership_purchases')
-                .select('price').eq('customer_id', customerId).eq('payment_status', 'paid'),
-            supabase.from('bookings_for_business_transaction')
-                .select('*')
-                .eq('customer_id', customerId)
-                .order('booking_date', { ascending: false })
-                .limit(5)
+        const companyId = localStorage.getItem('company_id') || null;
+        const branchId  = localStorage.getItem('active_branch_id') || null;
+
+        if (!companyId || !branchId) {
+            throw new Error('Active company or branch not found. Please log in again.');
+        }
+
+        // ── 1. Execute BOTH RPCs in parallel (exactly 2 network requests)
+        const [profileRes, spentRes] = await Promise.all([
+            supabase.rpc('Global_customer_profile_modal', {
+                p_company_id:  companyId,
+                p_branch_id:   branchId,
+                p_customer_id: customerId
+            }),
+            supabase.rpc('customers_page_clickable_total_spent', {
+                p_company_id:  companyId,
+                p_branch_id:   branchId,
+                p_customer_id: customerId
+            })
         ]);
 
-        const customer = custRes.data && custRes.data.length > 0 ? custRes.data[0] : null;
-        if (!customer) throw new Error('Customer not found.');
+        if (profileRes.error) throw profileRes.error;
+        if (spentRes.error)   throw spentRes.error;
 
-        // ── 2. Compute total spent
-        let totalSpent = 0;
-        (bookingsRes.data || []).forEach(b => totalSpent += parseFloat(b.total_price) || 0);
-        (salesRes.data   || []).forEach(s => totalSpent += parseFloat(s.final_amount) || 0);
-        (membershipsRes.data || []).forEach(m => totalSpent += parseFloat(m.price) || 0);
+        // Extract single rows safely
+        const profileData = Array.isArray(profileRes.data) ? profileRes.data[0] : profileRes.data;
+        const spentData   = Array.isArray(spentRes.data)   ? spentRes.data[0]   : spentRes.data;
 
-        const name      = customer.customer_name  || 'Unknown';
-        const phone     = customer.customer_phone || '—';
-        const email     = customer.customer_email || '—';
-        const tags      = customer.tags            || 'Regular';
-        const notes     = customer.notes           || '—';
-        const totalVisits = (bookingsRes.data || []).length;
-        const avatarUrl = customer.profile_photo ||
+        if (!profileData) {
+            throw new Error('Customer profile not found.');
+        }
+
+        // ── 2. Map Profile and Financial values directly from RPC responses
+        const name        = profileData.customer_name  || customerName || 'Unknown';
+        const phone       = profileData.customer_phone || '—';
+        const email       = profileData.customer_email || profileData.email || '—';
+        const tags        = profileData.tags           || 'Regular';
+        const notes       = profileData.notes          || '—';
+        const totalVisits = Number(profileData.total_visits ?? 0);
+        const totalSpent  = Number(spentData?.grand_total ?? 0);
+
+        const avatarUrl = profileData.profile_photo ||
             `https://ui-avatars.com/api/?name=${encodeURIComponent(name)}&background=c7d2fe&color=3730A3&size=128`;
 
         let joinedDate = '—';
-        if (customer.created_at) {
-            const d = new Date(customer.created_at);
-            joinedDate = `${String(d.getDate()).padStart(2,'0')}-${String(d.getMonth()+1).padStart(2,'0')}-${d.getFullYear()}`;
+        if (profileData.created_at) {
+            const d = new Date(profileData.created_at);
+            if (!isNaN(d.getTime())) {
+                joinedDate = `${String(d.getDate()).padStart(2, '0')}-${String(d.getMonth() + 1).padStart(2, '0')}-${d.getFullYear()}`;
+            }
         }
 
-        // ── 3. Build booking history rows
-        const recentBookings = recentBkRes.data || [];
-        const statusColor = { completed:'#065f46', booked:'#1e40af', confirmed:'#1e40af', cancelled:'#991b1b', 'no-show':'#92400e', 'no_show':'#92400e' };
-        const statusBg    = { completed:'#d1fae5', booked:'#dbeafe', confirmed:'#dbeafe', cancelled:'#fee2e2', 'no-show':'#fef3c7', 'no_show':'#fef3c7' };
+        // ── 3. Build booking history rows (using final_amount)
+        const recentBookings = Array.isArray(profileData.recent_bookings) ? profileData.recent_bookings.slice(0, 5) : [];
+        const statusColor = { completed: '#065f46', booked: '#1e40af', confirmed: '#1e40af', cancelled: '#991b1b', 'no-show': '#92400e', 'no_show': '#92400e' };
+        const statusBg    = { completed: '#d1fae5', booked: '#dbeafe', confirmed: '#dbeafe', cancelled: '#fee2e2', 'no-show': '#fef3c7', 'no_show': '#fef3c7' };
+
         const bkRows = recentBookings.length ? recentBookings.map(bk => {
-            const bkDate = bk.booking_date ? (() => { const d=new Date(bk.booking_date+'T00:00'); return `${String(d.getDate()).padStart(2,'0')}-${String(d.getMonth()+1).padStart(2,'0')}-${d.getFullYear()}`; })() : '—';
-            const s = (bk.status||'').toLowerCase();
+            let bkDate = '—';
+            if (bk.booking_date) {
+                const d = new Date(bk.booking_date + 'T00:00');
+                if (!isNaN(d.getTime())) {
+                    bkDate = `${String(d.getDate()).padStart(2, '0')}-${String(d.getMonth() + 1).padStart(2, '0')}-${d.getFullYear()}`;
+                } else {
+                    bkDate = bk.booking_date;
+                }
+            }
+            const s = (bk.status || '').toLowerCase();
             const sc = statusColor[s] || '#475569';
             const sb = statusBg[s]    || '#f1f5f9';
+            const finalAmount = Number(bk.final_amount ?? 0);
+
             return `<tr style="border-bottom:1px solid #f1f5f9;">
                 <td style="padding:8px 10px;font-size:0.8rem;color:#475569;white-space:nowrap;">${bkDate}</td>
-                <td style="padding:8px 10px;font-size:0.8rem;font-weight:700;color:#1e293b;max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${bk.service_name||'—'}</td>
-                <td style="padding:8px 10px;font-size:0.8rem;color:#475569;">${bk.staff_name||'—'}</td>
-                <td style="padding:8px 10px;font-size:0.8rem;font-weight:600;color:#059669;">₹${bk.total_price||0}</td>
-                <td style="padding:8px 10px;"><span style="display:inline-block;padding:2px 8px;border-radius:20px;font-size:0.72rem;font-weight:600;color:${sc};background:${sb};">${bk.status||'—'}</span></td>
+                <td style="padding:8px 10px;font-size:0.8rem;font-weight:700;color:#1e293b;max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="${bk.service_name || '—'}">${bk.service_name || '—'}</td>
+                <td style="padding:8px 10px;font-size:0.8rem;color:#475569;">${bk.staff_name || '—'}</td>
+                <td style="padding:8px 10px;font-size:0.8rem;font-weight:600;color:#059669;">₹${finalAmount.toLocaleString('en-IN')}</td>
+                <td style="padding:8px 10px;"><span style="display:inline-block;padding:2px 8px;border-radius:20px;font-size:0.72rem;font-weight:600;color:${sc};background:${sb};">${bk.status || '—'}</span></td>
             </tr>`;
         }).join('') : `<tr><td colspan="5" style="padding:24px;text-align:center;color:#94a3b8;font-size:0.85rem;">No booking history found.</td></tr>`;
 
