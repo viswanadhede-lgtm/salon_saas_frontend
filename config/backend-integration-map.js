@@ -78,6 +78,17 @@
 //SERVICES PAGE
 //===================================================================================================
 
-//SERVICES TAB
+// 1. SERVICES TAB
 //
-// 1. 
+// Services Table - No RPC Functions
+//
+
+// 2. SERVICE CATEGORIES TAB
+//
+// Service Categories Table - No RPC Functions
+//
+
+// 3. PACKAGES TAB
+//
+//
+//
