@@ -58,54 +58,76 @@ export function initPackageDropdowns() {
 }
 
 export function populatePackageServicesDropdown() {
-    const pkgServicesDropdownMenu = document.getElementById('pkgServicesDropdownMenu');
-    if (!pkgServicesDropdownMenu) return;
-    pkgServicesDropdownMenu.innerHTML = '';
+    const tbody = document.getElementById('pkgServicesDropdownBody');
+    if (!tbody) return;
+    tbody.innerHTML = '';
     servicesState.selectedPackageServices.clear();
     updatePackageServicesChips();
     recalculateOriginalPrice(servicesState.selectedPackageServices, 'pkgOriginalPrice');
 
     (window.liveServicesData || servicesState.liveServicesData || []).filter(s => s.status === 'active').forEach(s => {
-        const itemDiv = document.createElement('div');
-        itemDiv.style.display = 'flex';
-        itemDiv.style.flexDirection = 'row';
-        itemDiv.style.alignItems = 'center';
-        itemDiv.style.justifyContent = 'flex-start';
-        itemDiv.style.padding = '10px 16px';
-        itemDiv.style.cursor = 'pointer';
-        itemDiv.style.width = '100%';
-        itemDiv.style.boxSizing = 'border-box';
-        itemDiv.style.margin = '0';
-        itemDiv.style.borderBottom = '1px solid #f1f5f9';
-        
+        const tr = document.createElement('tr');
+        tr.style.cursor = 'pointer';
+        tr.style.borderBottom = '1px solid #f1f5f9';
+        tr.style.transition = 'background 0.15s ease';
+
+        // Checkbox cell
+        const tdCheck = document.createElement('td');
+        tdCheck.style.padding = '8px 8px 8px 12px';
+        tdCheck.style.verticalAlign = 'middle';
         const checkbox = document.createElement('input');
         checkbox.type = 'checkbox';
         checkbox.value = s.service_id || s.id;
         checkbox.dataset.name = s.service_name || s.name;
-        checkbox.style.display = 'inline-block';
         checkbox.style.width = '16px';
         checkbox.style.height = '16px';
-        checkbox.style.margin = '0 12px 0 0';
-        checkbox.style.padding = '0';
         checkbox.style.accentColor = '#1e3a8a';
-        checkbox.style.flexShrink = '0';
         checkbox.style.cursor = 'pointer';
+        checkbox.style.margin = '0';
+        tdCheck.appendChild(checkbox);
 
-        const textSpan = document.createElement('span');
-        textSpan.textContent = formatServiceLabel(s);
-        textSpan.style.display = 'inline-block';
-        textSpan.style.whiteSpace = 'nowrap';
-        textSpan.style.overflow = 'hidden';
-        textSpan.style.textOverflow = 'ellipsis';
-        textSpan.style.fontSize = '0.9rem';
-        textSpan.style.color = '#374151';
-        textSpan.style.flexGrow = '1';
-        textSpan.style.textAlign = 'left';
+        // Service name cell
+        const tdName = document.createElement('td');
+        tdName.style.padding = '8px';
+        tdName.style.verticalAlign = 'middle';
+        tdName.style.color = '#1e293b';
+        tdName.style.fontWeight = '500';
+        tdName.style.overflow = 'hidden';
+        tdName.style.textOverflow = 'ellipsis';
+        tdName.style.whiteSpace = 'nowrap';
+        tdName.textContent = s.service_name || s.name || '';
+
+        // Category cell (pill badge)
+        const tdCat = document.createElement('td');
+        tdCat.style.padding = '8px';
+        tdCat.style.verticalAlign = 'middle';
+        const catBadge = document.createElement('span');
+        catBadge.textContent = s.category_name || s.category || '';
+        catBadge.style.background = '#f1f5f9';
+        catBadge.style.color = '#475569';
+        catBadge.style.padding = '2px 10px';
+        catBadge.style.borderRadius = '12px';
+        catBadge.style.fontSize = '0.75rem';
+        catBadge.style.fontWeight = '500';
+        catBadge.style.whiteSpace = 'nowrap';
+        tdCat.appendChild(catBadge);
+
+        // Price cell
+        const tdPrice = document.createElement('td');
+        tdPrice.style.padding = '8px 12px 8px 8px';
+        tdPrice.style.verticalAlign = 'middle';
+        tdPrice.style.textAlign = 'right';
+        tdPrice.style.fontWeight = '600';
+        tdPrice.style.color = '#1e3a8a';
+        tdPrice.style.whiteSpace = 'nowrap';
+        tdPrice.textContent = `₹${parseFloat(s.price || 0).toLocaleString('en-IN')}`;
+
+        tr.appendChild(tdCheck);
+        tr.appendChild(tdName);
+        tr.appendChild(tdCat);
+        tr.appendChild(tdPrice);
         
-        itemDiv.appendChild(checkbox);
-        itemDiv.appendChild(textSpan);
-        
-        itemDiv.addEventListener('click', (e) => {
+        tr.addEventListener('click', (e) => {
             if (e.target !== checkbox) {
                 checkbox.checked = !checkbox.checked;
             }
@@ -115,10 +137,10 @@ export function populatePackageServicesDropdown() {
             recalculateOriginalPrice(servicesState.selectedPackageServices, 'pkgOriginalPrice');
         });
 
-        itemDiv.addEventListener('mouseenter', () => itemDiv.style.background = '#f8fafc');
-        itemDiv.addEventListener('mouseleave', () => itemDiv.style.background = 'transparent');
+        tr.addEventListener('mouseenter', () => tr.style.background = '#f8fafc');
+        tr.addEventListener('mouseleave', () => tr.style.background = 'transparent');
         
-        pkgServicesDropdownMenu.appendChild(itemDiv);
+        tbody.appendChild(tr);
     });
 }
 
@@ -173,56 +195,78 @@ export function updatePackageServicesChips() {
 }
 
 export function populateEditPackageServicesDropdown() {
-    const editPkgServicesDropdownMenu = document.getElementById('editPkgServicesDropdownMenu');
-    if (!editPkgServicesDropdownMenu) return;
-    editPkgServicesDropdownMenu.innerHTML = '';
+    const tbody = document.getElementById('editPkgServicesDropdownBody');
+    if (!tbody) return;
+    tbody.innerHTML = '';
     updateEditPackageServicesChips();
 
     (window.liveServicesData || servicesState.liveServicesData || []).filter(s => s.status === 'active').forEach(s => {
-        const itemDiv = document.createElement('div');
-        itemDiv.style.display = 'flex';
-        itemDiv.style.flexDirection = 'row';
-        itemDiv.style.alignItems = 'center';
-        itemDiv.style.justifyContent = 'flex-start';
-        itemDiv.style.padding = '10px 16px';
-        itemDiv.style.cursor = 'pointer';
-        itemDiv.style.width = '100%';
-        itemDiv.style.boxSizing = 'border-box';
-        itemDiv.style.margin = '0';
-        itemDiv.style.borderBottom = '1px solid #f1f5f9';
-        
+        const tr = document.createElement('tr');
+        tr.style.cursor = 'pointer';
+        tr.style.borderBottom = '1px solid #f1f5f9';
+        tr.style.transition = 'background 0.15s ease';
+
+        // Checkbox cell
+        const tdCheck = document.createElement('td');
+        tdCheck.style.padding = '8px 8px 8px 12px';
+        tdCheck.style.verticalAlign = 'middle';
         const checkbox = document.createElement('input');
         checkbox.type = 'checkbox';
         checkbox.value = s.service_id || s.id;
         checkbox.dataset.name = s.service_name || s.name;
-        checkbox.style.display = 'inline-block';
         checkbox.style.width = '16px';
         checkbox.style.height = '16px';
-        checkbox.style.margin = '0 12px 0 0';
-        checkbox.style.padding = '0';
         checkbox.style.accentColor = '#1e3a8a';
-        checkbox.style.flexShrink = '0';
         checkbox.style.cursor = 'pointer';
+        checkbox.style.margin = '0';
         
         if (servicesState.editSelectedPackageServices.has(checkbox.value)) {
             checkbox.checked = true;
         }
+        tdCheck.appendChild(checkbox);
 
-        const textSpan = document.createElement('span');
-        textSpan.textContent = formatServiceLabel(s);
-        textSpan.style.display = 'inline-block';
-        textSpan.style.whiteSpace = 'nowrap';
-        textSpan.style.overflow = 'hidden';
-        textSpan.style.textOverflow = 'ellipsis';
-        textSpan.style.fontSize = '0.9rem';
-        textSpan.style.color = '#374151';
-        textSpan.style.flexGrow = '1';
-        textSpan.style.textAlign = 'left';
+        // Service name cell
+        const tdName = document.createElement('td');
+        tdName.style.padding = '8px';
+        tdName.style.verticalAlign = 'middle';
+        tdName.style.color = '#1e293b';
+        tdName.style.fontWeight = '500';
+        tdName.style.overflow = 'hidden';
+        tdName.style.textOverflow = 'ellipsis';
+        tdName.style.whiteSpace = 'nowrap';
+        tdName.textContent = s.service_name || s.name || '';
+
+        // Category cell (pill badge)
+        const tdCat = document.createElement('td');
+        tdCat.style.padding = '8px';
+        tdCat.style.verticalAlign = 'middle';
+        const catBadge = document.createElement('span');
+        catBadge.textContent = s.category_name || s.category || '';
+        catBadge.style.background = '#f1f5f9';
+        catBadge.style.color = '#475569';
+        catBadge.style.padding = '2px 10px';
+        catBadge.style.borderRadius = '12px';
+        catBadge.style.fontSize = '0.75rem';
+        catBadge.style.fontWeight = '500';
+        catBadge.style.whiteSpace = 'nowrap';
+        tdCat.appendChild(catBadge);
+
+        // Price cell
+        const tdPrice = document.createElement('td');
+        tdPrice.style.padding = '8px 12px 8px 8px';
+        tdPrice.style.verticalAlign = 'middle';
+        tdPrice.style.textAlign = 'right';
+        tdPrice.style.fontWeight = '600';
+        tdPrice.style.color = '#1e3a8a';
+        tdPrice.style.whiteSpace = 'nowrap';
+        tdPrice.textContent = `₹${parseFloat(s.price || 0).toLocaleString('en-IN')}`;
+
+        tr.appendChild(tdCheck);
+        tr.appendChild(tdName);
+        tr.appendChild(tdCat);
+        tr.appendChild(tdPrice);
         
-        itemDiv.appendChild(checkbox);
-        itemDiv.appendChild(textSpan);
-        
-        itemDiv.addEventListener('click', (e) => {
+        tr.addEventListener('click', (e) => {
             if (e.target !== checkbox) {
                 checkbox.checked = !checkbox.checked;
             }
@@ -232,10 +276,10 @@ export function populateEditPackageServicesDropdown() {
             recalculateOriginalPrice(servicesState.editSelectedPackageServices, 'editPkgOriginalPrice');
         });
 
-        itemDiv.addEventListener('mouseenter', () => itemDiv.style.background = '#f8fafc');
-        itemDiv.addEventListener('mouseleave', () => itemDiv.style.background = 'transparent');
+        tr.addEventListener('mouseenter', () => tr.style.background = '#f8fafc');
+        tr.addEventListener('mouseleave', () => tr.style.background = 'transparent');
         
-        editPkgServicesDropdownMenu.appendChild(itemDiv);
+        tbody.appendChild(tr);
     });
 }
 

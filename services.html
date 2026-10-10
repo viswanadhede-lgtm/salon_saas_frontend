@@ -192,8 +192,19 @@
                             <div id="pkgServicesSelectedChips" style="display:flex; flex-wrap:wrap; gap:6px; flex:1;"></div>
                             <i data-feather="chevron-down" style="width:16px;height:16px;color:#64748b;margin-left:8px;flex-shrink:0;"></i>
                         </div>
-                        <div id="pkgServicesDropdownMenu" style="display:none; position:absolute; top:100%; left:0; right:0; background:#fff; border:1px solid #e2e8f0; border-radius:8px; margin-top:4px; box-shadow:0 4px 6px -1px rgba(0,0,0,0.1), 0 2px 4px -1px rgba(0,0,0,0.06); max-height:240px; overflow-y:auto; z-index:100; padding:8px 0;">
-                            <!-- Checkboxes injected via JS -->
+                        <div id="pkgServicesDropdownMenu" style="display:none; position:absolute; top:100%; left:0; right:0; background:#fff; border:1px solid #e2e8f0; border-radius:8px; margin-top:4px; box-shadow:0 4px 6px -1px rgba(0,0,0,0.1), 0 2px 4px -1px rgba(0,0,0,0.06); max-height:260px; overflow-y:auto; z-index:100; padding:0;">
+                            <table style="width:100%;border-collapse:collapse;font-size:0.85rem;table-layout:fixed;">
+                                <colgroup><col style="width:36px"><col style="width:auto"><col style="width:30%"><col style="width:22%"></colgroup>
+                                <thead><tr style="background:#f8fafc;border-bottom:2px solid #e2e8f0;position:sticky;top:0;z-index:2;">
+                                    <th style="padding:9px 8px 9px 12px;"></th>
+                                    <th style="padding:9px 8px;text-align:left;font-size:0.7rem;font-weight:600;color:#64748b;text-transform:uppercase;letter-spacing:0.05em;">Service</th>
+                                    <th style="padding:9px 8px;text-align:left;font-size:0.7rem;font-weight:600;color:#64748b;text-transform:uppercase;letter-spacing:0.05em;">Category</th>
+                                    <th style="padding:9px 12px 9px 8px;text-align:right;font-size:0.7rem;font-weight:600;color:#64748b;text-transform:uppercase;letter-spacing:0.05em;">Price</th>
+                                </tr></thead>
+                                <tbody id="pkgServicesDropdownBody">
+                                    <!-- Table rows injected via JS -->
+                                </tbody>
+                            </table>
                         </div>
                     </div>
 
@@ -227,8 +238,19 @@
                             <div id="editPkgServicesSelectedChips" style="display:flex; flex-wrap:wrap; gap:6px; flex:1;"></div>
                             <i data-feather="chevron-down" style="width:16px;height:16px;color:#64748b;margin-left:8px;flex-shrink:0;"></i>
                         </div>
-                        <div id="editPkgServicesDropdownMenu" style="display:none; position:absolute; top:100%; left:0; right:0; background:#fff; border:1px solid #e2e8f0; border-radius:8px; margin-top:4px; box-shadow:0 4px 6px -1px rgba(0,0,0,0.1), 0 2px 4px -1px rgba(0,0,0,0.06); max-height:240px; overflow-y:auto; z-index:100; padding:8px 0;">
-                            <!-- Checkboxes injected via JS -->
+                        <div id="editPkgServicesDropdownMenu" style="display:none; position:absolute; top:100%; left:0; right:0; background:#fff; border:1px solid #e2e8f0; border-radius:8px; margin-top:4px; box-shadow:0 4px 6px -1px rgba(0,0,0,0.1), 0 2px 4px -1px rgba(0,0,0,0.06); max-height:260px; overflow-y:auto; z-index:100; padding:0;">
+                            <table style="width:100%;border-collapse:collapse;font-size:0.85rem;table-layout:fixed;">
+                                <colgroup><col style="width:36px"><col style="width:auto"><col style="width:30%"><col style="width:22%"></colgroup>
+                                <thead><tr style="background:#f8fafc;border-bottom:2px solid #e2e8f0;position:sticky;top:0;z-index:2;">
+                                    <th style="padding:9px 8px 9px 12px;"></th>
+                                    <th style="padding:9px 8px;text-align:left;font-size:0.7rem;font-weight:600;color:#64748b;text-transform:uppercase;letter-spacing:0.05em;">Service</th>
+                                    <th style="padding:9px 8px;text-align:left;font-size:0.7rem;font-weight:600;color:#64748b;text-transform:uppercase;letter-spacing:0.05em;">Category</th>
+                                    <th style="padding:9px 12px 9px 8px;text-align:right;font-size:0.7rem;font-weight:600;color:#64748b;text-transform:uppercase;letter-spacing:0.05em;">Price</th>
+                                </tr></thead>
+                                <tbody id="editPkgServicesDropdownBody">
+                                    <!-- Table rows injected via JS -->
+                                </tbody>
+                            </table>
                         </div>
                     </div>
 
