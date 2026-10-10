@@ -73,56 +73,61 @@
                 <button id="tabBtnPackages" class="svc-tab" onclick="switchTab('packages')">Packages <span id="countPackages" class="svc-badge"></span></button>
             </div>
 
-            <!-- Services Panel -->
-            <div id="panelServices" class="svc-panel">
-                <div class="tb-table-area">
-                    <table style="width:100%;border-collapse:collapse;font-size:0.875rem;table-layout:fixed;">
-                        <colgroup><col style="width:24%"><col style="width:16%"><col style="width:13%"><col style="width:13%"><col style="width:13%"><col style="width:21%"></colgroup>
-                        <thead><tr style="background:#f8fafc;border-bottom:2px solid #e2e8f0;">
-                            <th style="padding:13px 16px 13px 24px;text-align:left;font-size:0.75rem;font-weight:600;color:#64748b;text-transform:uppercase;letter-spacing:0.05em;">Service</th>
-                            <th style="padding:13px 16px;text-align:left;font-size:0.75rem;font-weight:600;color:#64748b;text-transform:uppercase;letter-spacing:0.05em;">Category</th>
-                            <th style="padding:13px 16px;text-align:left;font-size:0.75rem;font-weight:600;color:#64748b;text-transform:uppercase;letter-spacing:0.05em;">Duration</th>
-                            <th style="padding:13px 16px;text-align:left;font-size:0.75rem;font-weight:600;color:#64748b;text-transform:uppercase;letter-spacing:0.05em;">Price</th>
-                            <th style="padding:13px 16px;text-align:left;font-size:0.75rem;font-weight:600;color:#64748b;text-transform:uppercase;letter-spacing:0.05em;">Status</th>
-                            <th style="padding:13px 16px;text-align:left;font-size:0.75rem;font-weight:600;color:#64748b;text-transform:uppercase;letter-spacing:0.05em;">Actions</th>
-                        </tr></thead>
-                        <tbody id="servicesTableBody"></tbody>
-                    </table>
-                </div>
-            </div>
+            <!-- Tab Content Area -->
+            <div style="flex: 1; overflow-y: auto;">
 
-            <!-- Categories Panel -->
-            <div id="panelCategories" class="svc-panel" style="display:none;">
-                <div class="tb-table-area">
-                    <table style="width:100%;border-collapse:collapse;font-size:0.875rem;table-layout:fixed;">
-                        <colgroup><col style="width:30%"><col style="width:25%"><col style="width:20%"><col style="width:25%"></colgroup>
-                        <thead><tr style="background:#f8fafc;border-bottom:2px solid #e2e8f0;">
-                            <th style="padding:13px 16px 13px 24px;text-align:left;font-size:0.75rem;font-weight:600;color:#64748b;text-transform:uppercase;letter-spacing:0.05em;">Category</th>
-                            <th style="padding:13px 16px;text-align:left;font-size:0.75rem;font-weight:600;color:#64748b;text-transform:uppercase;letter-spacing:0.05em;">Services Count</th>
-                            <th style="padding:13px 16px;text-align:left;font-size:0.75rem;font-weight:600;color:#64748b;text-transform:uppercase;letter-spacing:0.05em;">Status</th>
-                            <th style="padding:13px 16px;text-align:left;font-size:0.75rem;font-weight:600;color:#64748b;text-transform:uppercase;letter-spacing:0.05em;">Actions</th>
-                        </tr></thead>
-                        <tbody id="categoriesTableBody"></tbody>
-                    </table>
+                <!-- Services Panel -->
+                <div id="panelServices" style="margin:20px 32px 32px;background:#fff;border:1px solid #e2e8f0;border-radius:12px;overflow:hidden;box-shadow:0 1px 3px rgba(0,0,0,0.04);">
+                    <div class="tb-table-area" style="overflow-x:auto;">
+                        <table style="width:100%;border-collapse:collapse;font-size:0.875rem;table-layout:fixed;">
+                            <colgroup><col style="width:24%"><col style="width:16%"><col style="width:13%"><col style="width:13%"><col style="width:13%"><col style="width:21%"></colgroup>
+                            <thead><tr style="background:#f8fafc;border-bottom:2px solid #e2e8f0;">
+                                <th style="padding:13px 16px 13px 24px;text-align:left;font-size:0.75rem;font-weight:600;color:#64748b;text-transform:uppercase;letter-spacing:0.05em;">Service</th>
+                                <th style="padding:13px 16px;text-align:left;font-size:0.75rem;font-weight:600;color:#64748b;text-transform:uppercase;letter-spacing:0.05em;">Category</th>
+                                <th style="padding:13px 16px;text-align:left;font-size:0.75rem;font-weight:600;color:#64748b;text-transform:uppercase;letter-spacing:0.05em;">Duration</th>
+                                <th style="padding:13px 16px;text-align:left;font-size:0.75rem;font-weight:600;color:#64748b;text-transform:uppercase;letter-spacing:0.05em;">Price</th>
+                                <th style="padding:13px 16px;text-align:left;font-size:0.75rem;font-weight:600;color:#64748b;text-transform:uppercase;letter-spacing:0.05em;">Status</th>
+                                <th style="padding:13px 16px;text-align:left;font-size:0.75rem;font-weight:600;color:#64748b;text-transform:uppercase;letter-spacing:0.05em;">Actions</th>
+                            </tr></thead>
+                            <tbody id="servicesTableBody"></tbody>
+                        </table>
+                    </div>
                 </div>
-            </div>
 
-            <!-- Packages Panel -->
-            <div id="panelPackages" class="svc-panel" style="display:none;">
-                <div class="tb-table-area">
-                    <table style="width:100%;border-collapse:collapse;font-size:0.875rem;table-layout:fixed;">
-                        <colgroup><col style="width:20%"><col style="width:15%"><col style="width:15%"><col style="width:15%"><col style="width:15%"><col style="width:20%"></colgroup>
-                        <thead><tr style="background:#f8fafc;border-bottom:2px solid #e2e8f0;">
-                            <th style="padding:13px 16px 13px 24px;text-align:left;font-size:0.75rem;font-weight:600;color:#64748b;text-transform:uppercase;letter-spacing:0.05em;">Package Name</th>
-                            <th style="padding:13px 16px;text-align:center;font-size:0.75rem;font-weight:600;color:#64748b;text-transform:uppercase;letter-spacing:0.05em;">Services</th>
-                            <th style="padding:13px 16px;text-align:left;font-size:0.75rem;font-weight:600;color:#64748b;text-transform:uppercase;letter-spacing:0.05em;">Original Price</th>
-                            <th style="padding:13px 16px;text-align:left;font-size:0.75rem;font-weight:600;color:#64748b;text-transform:uppercase;letter-spacing:0.05em;">Final Price</th>
-                            <th style="padding:13px 16px;text-align:left;font-size:0.75rem;font-weight:600;color:#64748b;text-transform:uppercase;letter-spacing:0.05em;">Status</th>
-                            <th style="padding:13px 16px;text-align:left;font-size:0.75rem;font-weight:600;color:#64748b;text-transform:uppercase;letter-spacing:0.05em;">Actions</th>
-                        </tr></thead>
-                        <tbody id="packagesTableBody"></tbody>
-                    </table>
+                <!-- Categories Panel -->
+                <div id="panelCategories" style="margin:20px 32px 32px;background:#fff;border:1px solid #e2e8f0;border-radius:12px;overflow:hidden;box-shadow:0 1px 3px rgba(0,0,0,0.04);display:none;">
+                    <div class="tb-table-area" style="overflow-x:auto;">
+                        <table style="width:100%;border-collapse:collapse;font-size:0.875rem;table-layout:fixed;">
+                            <colgroup><col style="width:30%"><col style="width:25%"><col style="width:20%"><col style="width:25%"></colgroup>
+                            <thead><tr style="background:#f8fafc;border-bottom:2px solid #e2e8f0;">
+                                <th style="padding:13px 16px 13px 24px;text-align:left;font-size:0.75rem;font-weight:600;color:#64748b;text-transform:uppercase;letter-spacing:0.05em;">Category</th>
+                                <th style="padding:13px 16px;text-align:left;font-size:0.75rem;font-weight:600;color:#64748b;text-transform:uppercase;letter-spacing:0.05em;">Services Count</th>
+                                <th style="padding:13px 16px;text-align:left;font-size:0.75rem;font-weight:600;color:#64748b;text-transform:uppercase;letter-spacing:0.05em;">Status</th>
+                                <th style="padding:13px 16px;text-align:left;font-size:0.75rem;font-weight:600;color:#64748b;text-transform:uppercase;letter-spacing:0.05em;">Actions</th>
+                            </tr></thead>
+                            <tbody id="categoriesTableBody"></tbody>
+                        </table>
+                    </div>
                 </div>
+
+                <!-- Packages Panel -->
+                <div id="panelPackages" style="margin:20px 32px 32px;background:#fff;border:1px solid #e2e8f0;border-radius:12px;overflow:hidden;box-shadow:0 1px 3px rgba(0,0,0,0.04);display:none;">
+                    <div class="tb-table-area" style="overflow-x:auto;">
+                        <table style="width:100%;border-collapse:collapse;font-size:0.875rem;table-layout:fixed;">
+                            <colgroup><col style="width:20%"><col style="width:15%"><col style="width:15%"><col style="width:15%"><col style="width:15%"><col style="width:20%"></colgroup>
+                            <thead><tr style="background:#f8fafc;border-bottom:2px solid #e2e8f0;">
+                                <th style="padding:13px 16px 13px 24px;text-align:left;font-size:0.75rem;font-weight:600;color:#64748b;text-transform:uppercase;letter-spacing:0.05em;">Package Name</th>
+                                <th style="padding:13px 16px;text-align:center;font-size:0.75rem;font-weight:600;color:#64748b;text-transform:uppercase;letter-spacing:0.05em;">Services</th>
+                                <th style="padding:13px 16px;text-align:left;font-size:0.75rem;font-weight:600;color:#64748b;text-transform:uppercase;letter-spacing:0.05em;">Original Price</th>
+                                <th style="padding:13px 16px;text-align:left;font-size:0.75rem;font-weight:600;color:#64748b;text-transform:uppercase;letter-spacing:0.05em;">Final Price</th>
+                                <th style="padding:13px 16px;text-align:left;font-size:0.75rem;font-weight:600;color:#64748b;text-transform:uppercase;letter-spacing:0.05em;">Status</th>
+                                <th style="padding:13px 16px;text-align:left;font-size:0.75rem;font-weight:600;color:#64748b;text-transform:uppercase;letter-spacing:0.05em;">Actions</th>
+                            </tr></thead>
+                            <tbody id="packagesTableBody"></tbody>
+                        </table>
+                    </div>
+                </div>
+
             </div>
 
         </main>
@@ -134,46 +139,6 @@
         .svc-tab:hover:not(.active) { color:#334155; }
         .svc-badge { display:inline-flex;align-items:center;justify-content:center;min-width:22px;height:22px;padding:0 6px;background:#f1f5f9;color:#64748b;border-radius:20px;font-size:0.75rem;font-weight:600; }
         .svc-tab.active .svc-badge { background:#dbeafe;color:#1e3a8a; }
-
-        .svc-panel {
-            margin: 20px 32px 24px;
-            background: #fff;
-            border: 1px solid #e2e8f0;
-            border-radius: 12px;
-            overflow: hidden;
-            box-shadow: 0 1px 3px rgba(0,0,0,0.04);
-            flex: 1;
-            min-height: 0;
-            display: flex;
-            flex-direction: column;
-        }
-        .svc-panel .tb-table-area {
-            flex: 1;
-            min-height: 0;
-            overflow-y: auto;
-            scrollbar-width: thin;
-            scrollbar-color: #cbd5e1 transparent;
-        }
-        .svc-panel .tb-table-area::-webkit-scrollbar {
-            width: 6px;
-            height: 6px;
-        }
-        .svc-panel .tb-table-area::-webkit-scrollbar-track {
-            background: transparent;
-        }
-        .svc-panel .tb-table-area::-webkit-scrollbar-thumb {
-            background: #cbd5e1;
-            border-radius: 4px;
-        }
-        .svc-panel .tb-table-area::-webkit-scrollbar-thumb:hover {
-            background: #94a3b8;
-        }
-        .svc-panel thead th {
-            position: sticky;
-            top: 0;
-            z-index: 10;
-            background: #f8fafc;
-        }
     </style>
 
     <script type="module" src="scripts/app-shell.js"></script>
