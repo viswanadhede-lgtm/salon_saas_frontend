@@ -90,5 +90,23 @@
 
 // 3. PACKAGES TAB
 //
+// Packages Table & package_services Table
 //
+//    a. Atomic Package Creation
+//       create_package_atomic [RPC Function]
+//       Sources:
+//       - packages (header insert)
+//       - package_services (child service assignments insert)
+//       - services (authoritative validation & name derivation)
+//       - users & branches (caller authentication & tenant/branch scoping)
 //
+//    b. Atomic Package Update & Service Replacement
+//       update_package_atomic [RPC Function]
+//       Sources:
+//       - packages (header update with row lock)
+//       - package_services (atomic replacement of assignments)
+//       - services (authoritative validation & name derivation)
+//       - users & branches (caller authentication & tenant/branch scoping)
+//
+
+//===================================================================================================

@@ -259,7 +259,7 @@ export function initGlobalBookingModal() {
                 supabase.from('services').select('*').eq('company_id', company_id).eq('branch_id', branch_id),
                 supabase.from('staff').select('*').eq('company_id', company_id).eq('branch_id', branch_id),
                 supabase.from('customers').select('*').eq('company_id', company_id).eq('branch_id', branch_id),
-                supabase.from('packages').select('*').eq('company_id', company_id).eq('branch_id', branch_id).eq('is_active', true),
+                supabase.from('packages').select('*').eq('company_id', company_id).eq('branch_id', branch_id).eq('is_active', true).neq('status', 'deleted'),
                 supabase.from('package_services').select('*')
             ]);
 

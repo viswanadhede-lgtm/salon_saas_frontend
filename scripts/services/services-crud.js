@@ -15,6 +15,9 @@ import {
     insertPackageServices,
     updatePackage,
     deletePackageServices,
+    createPackageAtomic,
+    updatePackageAtomic,
+    checkPackageDependencies,
     deletePackage,
     fetchServices,
     fetchPackages
@@ -341,7 +344,7 @@ export function attachEventListeners() {
     }
 
     // ─────────────────────────────────────────────────────────────────────────
-    // 4. ADD PACKAGE FORM
+    // 4. ADD PACKAGE FORM (ATOMIC)
     // ─────────────────────────────────────────────────────────────────────────
     const addPkgForm = document.getElementById('addPackageForm');
     if (addPkgForm) {
@@ -353,14 +356,12 @@ export function attachEventListeners() {
             }
 
             const payload = {
-                company_id: getCompanyId(),
-                branch_id: getBranchId(),
                 package_name: document.getElementById('pkgName').value.trim(),
                 description: document.getElementById('pkgDescription').value.trim(),
                 original_price: parseFloat(document.getElementById('pkgOriginalPrice').value),
                 final_price: parseFloat(document.getElementById('pkgFinalPrice').value),
-                services_count: servicesState.selectedPackageServices.size,
-                is_active: document.querySelector('input[name="pkgStatus"]:checked').value === 'true'
+                is_active: document.querySelector('input[name="pkgStatus"]:checked').value === 'true',
+                service_ids: Array.from(servicesState.selectedPackageServices)
             };
 
             const btn = document.querySelector('button[form="addPackageForm"]');
@@ -368,41 +369,25 @@ export function attachEventListeners() {
             if (btn) { btn.textContent = 'Saving...'; btn.disabled = true; }
 
             try {
-                const { data: pkgData, error: pkgError } = await insertPackage(payload);
+                const { data: pkgData, error: pkgError } = await createPackageAtomic(payload);
 
                 if (pkgError) throw pkgError;
 
-                if (pkgData && pkgData.length > 0) {
-                    const newPkgId = pkgData[0].package_id;
-                    const psPayloads = Array.from(servicesState.selectedPackageServices).map(svcId => {
-                        const svc = (window.liveServicesData || servicesState.liveServicesData || []).find(s => (s.service_id || s.id) === svcId);
-                        return {
-                            package_id: newPkgId,
-                            service_id: svcId,
-                            service_name: svc ? (svc.service_name || svc.name) : 'Unknown Service'
-                        };
+                window.toast && window.toast('Package added successfully!');
+                if (window.notifyEvent) {
+                    window.notifyEvent('services', 'evt_package_created', {
+                        title: 'New Package Created',
+                        message: `${payload.package_name} was created.`
                     });
-
-                    const { error: psError } = await insertPackageServices(psPayloads);
-
-                    if (psError) throw psError;
-
-                    window.toast && window.toast('Package added successfully!');
-                    if (window.notifyEvent) {
-                        window.notifyEvent('services', 'evt_package_created', {
-                            title: 'New Package Created',
-                            message: `${payload.package_name} was created.`
-                        });
-                    }
-                    document.getElementById('addPackageModal').classList.remove('active');
-                    addPkgForm.reset();
-                    servicesState.selectedPackageServices.clear();
-                    updatePackageServicesChips();
-                    if (window.fetchPackages) await window.fetchPackages();
                 }
+                document.getElementById('addPackageModal').classList.remove('active');
+                addPkgForm.reset();
+                servicesState.selectedPackageServices.clear();
+                updatePackageServicesChips();
+                if (window.fetchPackages) await window.fetchPackages();
             } catch (err) {
                 console.error(err);
-                window.toast && window.toast('Error adding package: ' + err.message);
+                window.toast && window.toast('Error adding package: ' + (err.message || 'Operation failed'));
             } finally {
                 if (btn) { btn.textContent = originalText; btn.disabled = false; }
             }
@@ -410,7 +395,7 @@ export function attachEventListeners() {
     }
 
     // ─────────────────────────────────────────────────────────────────────────
-    // 5. EDIT PACKAGE FORM
+    // 5. EDIT PACKAGE FORM (ATOMIC)
     // ─────────────────────────────────────────────────────────────────────────
     const editPkgForm = document.getElementById('editPackageForm');
     if (editPkgForm) {
@@ -427,8 +412,8 @@ export function attachEventListeners() {
                 description: document.getElementById('editPkgDescription').value.trim(),
                 original_price: parseFloat(document.getElementById('editPkgOriginalPrice').value),
                 final_price: parseFloat(document.getElementById('editPkgFinalPrice').value),
-                services_count: servicesState.editSelectedPackageServices.size,
-                is_active: document.querySelector('input[name="editPkgStatus"]:checked').value === 'true'
+                is_active: document.querySelector('input[name="editPkgStatus"]:checked').value === 'true',
+                service_ids: Array.from(servicesState.editSelectedPackageServices)
             };
 
             const btn = document.querySelector('button[form="editPackageForm"]');
@@ -436,26 +421,8 @@ export function attachEventListeners() {
             if (btn) { btn.textContent = 'Updating...'; btn.disabled = true; }
 
             try {
-                // 1. Update Package
-                const { error: pkgError } = await updatePackage(pkgId, payload);
+                const { error: pkgError } = await updatePackageAtomic(pkgId, payload);
                 if (pkgError) throw pkgError;
-
-                // 2. Delete old package services
-                const { error: delError } = await deletePackageServices(pkgId);
-                if (delError) throw delError;
-
-                // 3. Insert new package services
-                const psPayloads = Array.from(servicesState.editSelectedPackageServices).map(svcId => {
-                    const svc = (window.liveServicesData || servicesState.liveServicesData || []).find(s => (s.service_id || s.id) === svcId);
-                    return {
-                        package_id: pkgId,
-                        service_id: svcId,
-                        service_name: svc ? (svc.service_name || svc.name) : 'Unknown Service'
-                    };
-                });
-
-                const { error: psError } = await insertPackageServices(psPayloads);
-                if (psError) throw psError;
 
                 window.toast && window.toast('Package updated successfully!');
                 if (window.notifyEvent) {
@@ -468,7 +435,7 @@ export function attachEventListeners() {
                 if (window.fetchPackages) await window.fetchPackages();
             } catch (err) {
                 console.error(err);
-                window.toast && window.toast('Error updating package: ' + err.message);
+                window.toast && window.toast('Error updating package: ' + (err.message || 'Operation failed'));
             } finally {
                 if (btn) { btn.textContent = originalText; btn.disabled = false; }
             }
@@ -501,26 +468,45 @@ export function attachEventListeners() {
             confirmDeletePkgBtn.addEventListener('click', async () => {
                 if (!servicesState.packageToDelete) return;
                 
+                const pkgId = servicesState.packageToDelete.id;
+                const pkgName = servicesState.packageToDelete.name || 'Package';
+
                 deletePkgOverlay.classList.remove('active');
                 // S5: Reuse fullScreenDeleteServiceLoader preserved
                 const loader = document.getElementById('fullScreenDeleteServiceLoader');
                 if (loader) loader.classList.add('active');
                 
                 try {
-                    // Cascading delete handles package_services
-                    const { error: deleteError } = await deletePackage(servicesState.packageToDelete.id);
+                    // Check future booking dependencies before soft deletion
+                    const depCheck = await checkPackageDependencies(pkgId);
+                    if (depCheck.error) {
+                        if (loader) loader.classList.remove('active');
+                        const errMsg = 'Error verifying booking dependencies: ' + (depCheck.error.message || 'Database error') + '. Deletion cancelled for safety.';
+                        window.toast && window.toast(errMsg);
+                        alert(errMsg);
+                        return;
+                    }
+                    if (depCheck.hasDependency) {
+                        if (loader) loader.classList.remove('active');
+                        window.toast && window.toast(depCheck.reason);
+                        alert(depCheck.reason);
+                        return;
+                    }
+
+                    const { error: deleteError } = await deletePackage(pkgId);
 
                     if (!deleteError) {
                         window.toast && window.toast('Package deleted successfully!');
                         if (window.notifyEvent) {
                             window.notifyEvent('services', 'evt_package_deleted', {
                                 title: 'Package Deleted',
-                                message: `${servicesState.packageToDelete?.name || 'Package'} was deleted.`
+                                message: `${pkgName} was deleted.`
                             });
                         }
                         if (window.fetchPackages) await window.fetchPackages();
                     } else {
-                        window.toast && window.toast('Error deleting package: ' + deleteError.message);
+                        window.toast && window.toast(deleteError.message || 'Error deleting package');
+                        alert(deleteError.message);
                     }
                 } catch (err) {
                     console.error('Error deleting package:', err);
