@@ -4,6 +4,16 @@
 
 'use strict';
 
+export function escapeHtml(str) {
+    if (str == null) return '';
+    return String(str)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#039;');
+}
+
 // ── 1. STATUS BADGE HELPER ──────────────────────────────────────────
 
 export function statusBadge(s) {
@@ -115,25 +125,33 @@ export function renderCat(data) {
         return;
     }
     tb.innerHTML = data.map(c => {
+        const catId = c.category_id || c.id || '';
         const catName = c.category_name || c.name || '';
         const catDesc = c.description || '';
         const catStatus = c.status || 'active';
-        const cnt = (window.liveServicesData || []).filter(s => s.category_name === catName).length;
+        const cnt = (window.liveServicesData || []).filter(s => {
+            if ((s.status || '').toLowerCase() === 'deleted') return false;
+            if (catId && s.category_id) {
+                return String(s.category_id) === String(catId);
+            }
+            return (s.category_name || '').trim().toLowerCase() === catName.trim().toLowerCase();
+        }).length;
+
         return `<tr class="tb-row">
-            <td style="padding:14px 16px 14px 24px;"><div style="font-weight:600;color:#1e293b;font-size:0.9rem;">${catName}</div>${catDesc ? `<div style="font-size:0.8rem;color:#94a3b8;margin-top:2px;">${catDesc}</div>` : ''}</td>
+            <td style="padding:14px 16px 14px 24px;"><div style="font-weight:600;color:#1e293b;font-size:0.9rem;">${escapeHtml(catName)}</div>${catDesc ? `<div style="font-size:0.8rem;color:#94a3b8;margin-top:2px;">${escapeHtml(catDesc)}</div>` : ''}</td>
             <td style="padding:14px 16px;">
-                <span class="customer-link" onclick="window.openCatServicesModal('${catName.replace(/'/g, "\\'")}')">
+                <span class="customer-link" role="button" tabindex="0" data-cat-id="${catId}" data-cat-name="${escapeHtml(catName)}" style="cursor:pointer;" onclick="window.openCatServicesModal(this.dataset.catId, this.dataset.catName)" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();window.openCatServicesModal(this.dataset.catId, this.dataset.catName);}">
                     ${cnt} ${cnt === 1 ? 'service' : 'services'}
                 </span>
             </td>
             <td style="padding:14px 16px;">${statusBadge(catStatus)}</td>
             <td style="padding:14px 16px; vertical-align:middle;">
                 <div class="action-buttons" style="display:flex; justify-content:flex-start; gap:0.5rem;">
-                    <button class="btn-edit-cat hover-lift" onclick="window.openEditCategoryModal('${c.id || c.category_id || ''}', '${catName}')" title="Edit Category" data-sub-feature="update_service_category" style="display:flex; flex-direction:column; align-items:center; justify-content:center; padding: 4px 8px; border-radius:8px; border:1px solid #e0e7ff; background:#eff6ff; cursor:pointer; color:#3b82f6; transition:all 0.2s; min-width: 52px;">
+                    <button class="btn-edit-cat hover-lift" onclick="window.openEditCategoryModal('${catId}', '${catName}')" title="Edit Category" data-sub-feature="update_service_category" style="display:flex; flex-direction:column; align-items:center; justify-content:center; padding: 4px 8px; border-radius:8px; border:1px solid #e0e7ff; background:#eff6ff; cursor:pointer; color:#3b82f6; transition:all 0.2s; min-width: 52px;">
                         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="margin-bottom:2px;"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path></svg>
                         <span style="font-size:10px; font-weight:600;">Edit</span>
                     </button>
-                    <button class="btn-delete-cat flex-shrink-0 hover-lift" ${cnt > 0 ? 'disabled' : ''} onclick="${cnt > 0 ? '' : `window.triggerDeleteCategory('${c.id || c.category_id || ''}', '${catName}')`}" title="${cnt > 0 ? 'Cannot delete the service category because there are active services under this category' : 'Delete Category'}" data-sub-feature="delete_service_category" style="display:flex; flex-direction:column; align-items:center; justify-content:center; padding: 4px 8px; border-radius:8px; border:1px solid #fee2e2; background:#fef2f2; cursor:${cnt > 0 ? 'not-allowed' : 'pointer'}; color:#ef4444; transition:all 0.2s; min-width: 52px; opacity: ${cnt > 0 ? '0.45' : '1'};">
+                    <button class="btn-delete-cat flex-shrink-0 hover-lift" ${cnt > 0 ? 'disabled' : ''} onclick="${cnt > 0 ? '' : `window.triggerDeleteCategory('${catId}', '${catName}')`}" title="${cnt > 0 ? 'Cannot delete the service category because there are active services under this category' : 'Delete Category'}" data-sub-feature="delete_service_category" style="display:flex; flex-direction:column; align-items:center; justify-content:center; padding: 4px 8px; border-radius:8px; border:1px solid #fee2e2; background:#fef2f2; cursor:${cnt > 0 ? 'not-allowed' : 'pointer'}; color:#ef4444; transition:all 0.2s; min-width: 52px; opacity: ${cnt > 0 ? '0.45' : '1'};">
                         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="margin-bottom:2px;"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path><line x1="10" y1="11" x2="10" y2="17"></line><line x1="14" y1="11" x2="14" y2="17"></line></svg>
                         <span style="font-size:10px; font-weight:600;">Delete</span>
                     </button>
@@ -200,15 +218,66 @@ export async function openPkgServicesModal(pkgId, pkgName) {
     if (window._openPkgServicesModalInner) window._openPkgServicesModalInner(pkgId, pkgName);
 }
 
-export function openCatServicesModal(catName) {
-    const services = (window.liveServicesData || []).filter(s => s.category_name === catName);
+export async function openCatServicesModal(catIdOrName, catNameArg) {
+    let catId = '';
+    let catName = '';
+
+    if (catNameArg !== undefined) {
+        catId = catIdOrName || '';
+        catName = catNameArg || '';
+    } else {
+        const isUuid = typeof catIdOrName === 'string' && /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(catIdOrName);
+        if (isUuid) {
+            catId = catIdOrName;
+            const foundCat = (window.liveCategoriesData || []).find(c => String(c.category_id || c.id) === String(catId));
+            catName = foundCat ? (foundCat.category_name || foundCat.name || '') : '';
+        } else {
+            catName = catIdOrName || '';
+            const foundCat = (window.liveCategoriesData || []).find(c => (c.category_name || c.name || '').toLowerCase() === (catName || '').toLowerCase());
+            catId = foundCat ? (foundCat.category_id || foundCat.id || '') : '';
+        }
+    }
+
     const modal = document.getElementById('catServicesModal');
     const title = document.getElementById('catServicesModalTitle');
     const body = document.getElementById('catServicesModalBody');
     if (!modal) return;
+
     if (title) {
-        title.innerHTML = `${catName} <span style="display: inline-flex; align-items: center; justify-content: center; min-width: 26px; height: 26px; border-radius: 50%; background-color: #eff6ff; color: #1e3a8a; font-size: 0.9rem; font-weight: 600; margin-left: 8px; vertical-align: middle; padding: 0 6px;">${services.length}</span>`;
+        title.innerHTML = `${escapeHtml(catName || 'Category')} <span style="display: inline-flex; align-items: center; justify-content: center; min-width: 26px; height: 26px; border-radius: 50%; background-color: #eff6ff; color: #1e3a8a; font-size: 0.9rem; font-weight: 600; margin-left: 8px; vertical-align: middle; padding: 0 6px;">...</span>`;
     }
+    if (body) {
+        body.innerHTML = '<tr><td colspan="3" style="padding:40px;text-align:center;"><div style="color:#64748b;font-weight:500;">Loading services...</div></td></tr>';
+    }
+    modal.classList.add('active');
+
+    // If liveServicesData is not yet loaded, attempt to fetch it
+    if (!window.liveServicesData || window.liveServicesData.length === 0) {
+        try {
+            if (window.fetchServices) {
+                await window.fetchServices();
+            }
+        } catch (err) {
+            console.error('Error fetching services for category modal:', err);
+            if (body) {
+                body.innerHTML = '<tr><td colspan="3" style="padding:40px;text-align:center;"><div style="color:#ef4444;font-weight:500;">Failed to load services. Please check your connection and try again.</div></td></tr>';
+            }
+            return;
+        }
+    }
+
+    const services = (window.liveServicesData || []).filter(s => {
+        if ((s.status || '').toLowerCase() === 'deleted') return false;
+        if (catId && s.category_id) {
+            return String(s.category_id) === String(catId);
+        }
+        return (s.category_name || '').trim().toLowerCase() === (catName || '').trim().toLowerCase();
+    });
+
+    if (title) {
+        title.innerHTML = `${escapeHtml(catName || 'Category')} <span style="display: inline-flex; align-items: center; justify-content: center; min-width: 26px; height: 26px; border-radius: 50%; background-color: #eff6ff; color: #1e3a8a; font-size: 0.9rem; font-weight: 600; margin-left: 8px; vertical-align: middle; padding: 0 6px;">${services.length}</span>`;
+    }
+
     if (body) {
         if (!services.length) {
             body.innerHTML = '<tr><td colspan="3" style="padding:40px;text-align:center;"><div style="font-size:2rem;margin-bottom:10px;">✂️</div><div style="color:#64748b;font-weight:500;font-size:0.92rem;">No services listed in this category yet.</div></td></tr>';
@@ -218,14 +287,18 @@ export function openCatServicesModal(catName) {
                 const duration = s.duration ? s.duration + ' min' : '-';
                 const price = s.price != null ? '&#8377;' + parseFloat(s.price).toLocaleString() : '-';
                 return `<tr class="tb-row">
-                    <td style="padding:12px 16px 12px 20px;font-weight:500;color:#1e293b;">${name}</td>
-                    <td style="padding:12px 16px;color:#374151;">${duration}</td>
+                    <td style="padding:12px 16px 12px 20px;">
+                        <div style="display:flex;align-items:center;gap:8px;">
+                            <span style="font-weight:500;color:#1e293b;">${escapeHtml(name)}</span>
+                            ${statusBadge(s.status)}
+                        </div>
+                    </td>
+                    <td style="padding:12px 16px;color:#374151;">${escapeHtml(duration)}</td>
                     <td style="padding:12px 16px;color:#374151;font-weight:500;">${price}</td>
                 </tr>`;
             }).join('');
         }
     }
-    modal.classList.add('active');
 }
 
 // ── 7. TOAST NOTIFICATION ───────────────────────────────────────────
@@ -280,6 +353,25 @@ export function populateServicesCategoryFilter() {
     }
 }
 
+export function applyCategoryFilters() {
+    const categoriesSearchInput = document.getElementById('categoriesSearchInput');
+    const q = (categoriesSearchInput?.value || '').trim().toLowerCase();
+    const categories = window.liveCategoriesData || [];
+
+    if (!q) {
+        window.renderCat(categories);
+        return;
+    }
+
+    const filtered = categories.filter(c => {
+        const name = (c.category_name || c.name || '').toLowerCase();
+        const desc = (c.description || '').toLowerCase();
+        return name.includes(q) || desc.includes(q);
+    });
+
+    window.renderCat(filtered);
+}
+
 // ── 9. DOM INITIALIZATION / PAGE GLUE ───────────────────────────────
 
 export function initServicesPageUI() {
@@ -295,11 +387,7 @@ export function initServicesPageUI() {
         servicesCategoryFilter.addEventListener('change', applyServiceFilters);
     }
     if (categoriesSearchInput) {
-        categoriesSearchInput.addEventListener('input', function () {
-            const q = this.value.toLowerCase();
-            const filtered = (window.liveCategoriesData || []).filter(c => (c.category_name || c.name || '').toLowerCase().includes(q));
-            window.renderCat(filtered);
-        });
+        categoriesSearchInput.addEventListener('input', applyCategoryFilters);
     }
     if (packagesSearchInput) {
         packagesSearchInput.addEventListener('input', function () {
@@ -441,6 +529,7 @@ window.openPkgServicesModal = openPkgServicesModal;
 window.openCatServicesModal = openCatServicesModal;
 window.toast = toast;
 window.applyServiceFilters = applyServiceFilters;
+window.applyCategoryFilters = applyCategoryFilters;
 window.populateServicesCategoryFilter = populateServicesCategoryFilter;
 
 // ── 11. AUTO-INITIALIZE UI ON DOM READY ─────────────────────────────

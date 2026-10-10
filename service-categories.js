@@ -3,6 +3,9 @@ import { FEATURES } from './config/feature-registry.js';
 import { SUB_FEATURES } from './config/sub-feature-registry.js';
 
 let liveCategoriesData = [];
+let isSubmittingCategory = false;
+let isUpdatingCategory = false;
+let isDeletingCategory = false;
 
 // --- Helpers ---
 function getCompanyId() { return localStorage.getItem('company_id') || null; }
@@ -37,7 +40,7 @@ function setupModals() {
                         <input type="hidden" id="editCategoryId">
                         <div class="form-group" style="margin:0;">
                             <label class="form-label" for="editCfName">Category Name <span class="text-rose">*</span></label>
-                            <input type="text" id="editCfName" class="form-input" required>
+                            <input type="text" id="editCfName" class="form-input" maxlength="100" required>
                         </div>
                         <div class="form-group" style="margin:0;">
                             <label class="form-label" for="editCfDescription">Description <span style="font-weight:400;color:#94a3b8;">(Optional)</span></label>
@@ -101,27 +104,90 @@ function attachEventListeners() {
     if (addCatForm) {
         addCatForm.addEventListener('submit', async (e) => {
             e.preventDefault();
+
+            // ── Re-entrancy guard ──
+            if (isSubmittingCategory) return;
+
+            // ── 1. Validate category name ──
             const categoryName = document.getElementById('cfName').value.trim();
+            if (!categoryName) {
+                window.toast && window.toast('Category name is required.');
+                return;
+            }
+            if (categoryName.length > 100) {
+                window.toast && window.toast('Category name must be 100 characters or fewer.');
+                return;
+            }
+
+            // ── 2. Validate company/branch context ──
+            const companyId = getCompanyId();
+            const branchId = getBranchId();
+            if (!companyId || !branchId) {
+                window.toast && window.toast('Missing company or branch context. Please reload or select a branch.');
+                console.warn('Add Category blocked: missing company_id or branch_id');
+                return;
+            }
+
+            // ── 3. Validate status selection ──
+            const statusRadio = document.querySelector('input[name="cfStatus"]:checked');
+            if (!statusRadio || !['active', 'inactive'].includes(statusRadio.value)) {
+                window.toast && window.toast('Please select a valid status (Active or Inactive).');
+                return;
+            }
+            const status = statusRadio.value;
+
+            // ── 4. Duplicate check: in-memory first ──
             const nameLower = categoryName.toLowerCase();
-            
-            // Check for duplicates
-            const exists = liveCategoriesData.find(c => (c.category_name || '').toLowerCase() === nameLower);
-            if (exists) {
+            const memDuplicate = liveCategoriesData.find(c =>
+                (c.category_name || '').trim().toLowerCase() === nameLower
+            );
+            if (memDuplicate) {
                 window.toast && window.toast('A category with this name already exists.');
                 return;
             }
 
-            const payload = {
-                company_id: getCompanyId(),
-                branch_id: getBranchId(),
-                category_name: categoryName,
-                description: document.getElementById('cfDescription').value.trim(),
-                status: document.querySelector('input[name="cfStatus"]:checked').value
-            };
-            
+            // ── 5. Duplicate check: server-side safety net ──
+            // Guards against stale in-memory data or concurrent creation
+            try {
+                const { data: dupRows, error: dupError } = await supabase
+                    .from('service_categories')
+                    .select('category_id, category_name')
+                    .eq('company_id', companyId)
+                    .eq('branch_id', branchId)
+                    .neq('status', 'deleted');
+
+                if (dupError) {
+                    console.error('Duplicate check query failed:', dupError);
+                    window.toast && window.toast('Could not verify category name. Please try again.');
+                    return;
+                }
+
+                const serverDuplicate = (dupRows || []).find(c =>
+                    (c.category_name || '').trim().toLowerCase() === nameLower
+                );
+                if (serverDuplicate) {
+                    window.toast && window.toast('A category with this name already exists.');
+                    return;
+                }
+            } catch (dupErr) {
+                console.error('Network error during duplicate check:', dupErr);
+                window.toast && window.toast('Network error verifying category name. Please try again.');
+                return;
+            }
+
+            // ── 6. Lock submission ──
+            isSubmittingCategory = true;
             const btn = document.querySelector('button[form="addCategoryForm"]');
             const originalText = btn ? btn.textContent : 'Save Category';
             if (btn) { btn.textContent = 'Saving...'; btn.disabled = true; }
+
+            const payload = {
+                company_id: companyId,
+                branch_id: branchId,
+                category_name: categoryName,
+                description: document.getElementById('cfDescription').value.trim(),
+                status: status
+            };
             
             try {
                 const { error } = await supabase
@@ -138,14 +204,21 @@ function attachEventListeners() {
                     }
                     document.getElementById('addCategoryModal').classList.remove('active');
                     addCatForm.reset();
-                    await fetchCategories();
+                    try {
+                        await fetchCategories();
+                    } catch (refreshErr) {
+                        console.warn('Category created but list refresh failed:', refreshErr);
+                        window.toast && window.toast('Category created, but the list failed to refresh. Please reload.');
+                    }
                 } else {
-                    window.toast && window.toast('Error adding category: ' + error.message);
+                    console.error('Supabase insert error:', error);
+                    window.toast && window.toast('Error adding category: ' + (error.message || 'Unknown error'));
                 }
             } catch (err) {
-                console.error(err);
-                window.toast && window.toast('Network error saving category');
+                console.error('Network error inserting category:', err);
+                window.toast && window.toast('Network error saving category. Please try again.');
             } finally {
+                isSubmittingCategory = false;
                 if (btn) { btn.textContent = originalText; btn.disabled = false; }
             }
         });
@@ -161,80 +234,179 @@ function attachEventListeners() {
     
     editCatForm.addEventListener('submit', async (e) => {
         e.preventDefault();
-        const categoryId = document.getElementById('editCategoryId').value;
-        const newCategoryName = document.getElementById('editCfName').value.trim();
-        const nameLower = newCategoryName.toLowerCase();
+        if (isUpdatingCategory) return;
 
-        // Check for duplicates
-        const exists = liveCategoriesData.find(c => 
-            (c.category_name || '').toLowerCase() === nameLower && 
-            String(c.category_id || c.id) !== String(categoryId)
+        // ── 1. Company and branch scope enforcement ──
+        const companyId = getCompanyId();
+        const branchId = getBranchId();
+        if (!companyId || !branchId) {
+            console.error('Missing company or branch context');
+            window.toast && window.toast('Session error: missing company or branch. Please re-login or reload.');
+            return;
+        }
+
+        // ── 2. Primary-key & input extraction/validation ──
+        const categoryId = (document.getElementById('editCategoryId').value || '').trim();
+        if (!categoryId) {
+            window.toast && window.toast('Invalid category identifier. Please close and re-open the modal.');
+            return;
+        }
+
+        const newCategoryName = (document.getElementById('editCfName').value || '').trim();
+        if (!newCategoryName) {
+            window.toast && window.toast('Category name is required.');
+            return;
+        }
+        if (newCategoryName.length > 100) {
+            window.toast && window.toast('Category name cannot exceed 100 characters.');
+            return;
+        }
+
+        const description = (document.getElementById('editCfDescription').value || '').trim();
+
+        const statusRadio = document.querySelector('input[name="editCfStatus"]:checked');
+        if (!statusRadio || !['active', 'inactive'].includes(statusRadio.value)) {
+            window.toast && window.toast('Please select a valid status (Active or Inactive).');
+            return;
+        }
+        const status = statusRadio.value;
+
+        // ── 3. Duplicate check: in-memory first (case-insensitive, excluding current category) ──
+        const nameLower = newCategoryName.toLowerCase();
+        const memDuplicate = (liveCategoriesData || []).find(c =>
+            String(c.category_id || c.id) !== String(categoryId) &&
+            (c.category_name || '').trim().toLowerCase() === nameLower
         );
-        if (exists) {
+        if (memDuplicate) {
             window.toast && window.toast('A category with this name already exists.');
             return;
         }
 
-        const payload = {
-            category_name: newCategoryName,
-            description: document.getElementById('editCfDescription').value.trim(),
-            status: document.querySelector('input[name="editCfStatus"]:checked').value
-        };
-        
+        // ── 4. Re-entrancy guard & lock UI ──
+        isUpdatingCategory = true;
         const btn = document.querySelector('button[form="editCategoryForm"]');
         const originalText = btn ? btn.textContent : 'Update Category';
-        if (btn) { btn.textContent = 'Updating...'; btn.disabled = true; }
-        
+        if (btn) {
+            btn.textContent = 'Updating...';
+            btn.disabled = true;
+        }
+
         try {
-            let requestError = null;
-            const { error } = await supabase
+            // ── 5. Duplicate check: server-side safety net (direct scoped SELECT) ──
+            const { data: existingRows, error: dupError } = await supabase
                 .from('service_categories')
-                .eq('id', categoryId)
-                .update(payload);
-            requestError = error;
+                .select('category_id, category_name')
+                .eq('company_id', companyId)
+                .eq('branch_id', branchId)
+                .neq('status', 'deleted');
 
-            if (error) {
-                // fallback: try category_id column
-                const { error: err2 } = await supabase
-                    .from('service_categories')
-                    .eq('category_id', categoryId)
-                    .update(payload);
-                if (err2) throw err2;
-                requestError = null; // Clear error since fallback succeeded
+            if (dupError) {
+                console.error('Duplicate check query failed:', dupError);
+                window.toast && window.toast('Could not verify category name. Please try again.');
+                return;
             }
-            
-            if (!requestError) {
-                // If name changed, update corresponding services table
-                const origCategory = liveCategoriesData.find(c => String(c.category_id || c.id) === String(categoryId));
-                if (origCategory && origCategory.category_name !== newCategoryName) {
-                    await supabase
-                        .from('services')
-                        .eq('category_id', categoryId)
-                        .update({ category_name: newCategoryName });
-                    // also try id-based fallback silently for services table
-                    await supabase
-                        .from('services')
-                        .eq('id', categoryId)
-                        .update({ category_name: newCategoryName });
-                }
 
-                window.toast && window.toast('Category updated successfully!');
-                if (window.notifyEvent) {
-                    window.notifyEvent('services', 'evt_service_category_updated', {
-                        title: 'Service Category Updated',
-                        message: `${newCategoryName} was updated.`
-                    });
+            const serverDuplicate = (existingRows || []).find(c =>
+                String(c.category_id) !== String(categoryId) &&
+                (c.category_name || '').trim().toLowerCase() === nameLower
+            );
+            if (serverDuplicate) {
+                window.toast && window.toast('A category with this name already exists.');
+                return;
+            }
+
+            // Determine if category name actually changed
+            const currentCatInDb = (existingRows || []).find(c => String(c.category_id) === String(categoryId));
+            const origCategory = currentCatInDb || (liveCategoriesData || []).find(c => String(c.category_id || c.id) === String(categoryId));
+            const isNameChanged = origCategory ? (origCategory.category_name !== newCategoryName) : true;
+
+            // ── 6. Execute scoped category update using category_id, company_id, branch_id ──
+            const updatePayload = {
+                category_name: newCategoryName,
+                description: description,
+                status: status,
+                updated_at: new Date().toISOString()
+            };
+
+            const { data: updatedCatData, error: catUpdateError } = await supabase
+                .from('service_categories')
+                .update(updatePayload)
+                .eq('category_id', categoryId)
+                .eq('company_id', companyId)
+                .eq('branch_id', branchId);
+
+            if (catUpdateError) {
+                console.error('Supabase update error on service_categories:', catUpdateError);
+                window.toast && window.toast('Error updating category: ' + (catUpdateError.message || 'Unknown error'));
+                return;
+            }
+
+            if (!updatedCatData || updatedCatData.length === 0) {
+                console.error('No matching category found to update for this company and branch.');
+                window.toast && window.toast('Category not found or access denied for this branch.');
+                return;
+            }
+
+            // ── 7. Propagate renamed category to linked services (if name changed) ──
+            let linkedServicesFailed = false;
+            let linkedServicesErrorMessage = '';
+
+            if (isNameChanged) {
+                const serviceUpdatePayload = {
+                    category_name: newCategoryName,
+                    updated_at: new Date().toISOString()
+                };
+
+                const { error: serviceUpdateError } = await supabase
+                    .from('services')
+                    .update(serviceUpdatePayload)
+                    .eq('category_id', categoryId)
+                    .eq('company_id', companyId)
+                    .eq('branch_id', branchId);
+
+                if (serviceUpdateError) {
+                    console.error('Failed to update linked services:', serviceUpdateError);
+                    linkedServicesFailed = true;
+                    linkedServicesErrorMessage = serviceUpdateError.message || 'Unknown error';
                 }
-                editCatModal.classList.remove('active');
-                await fetchCategories();
+            }
+
+            // ── 8. Notification & Partial-Failure Handling ──
+            if (linkedServicesFailed) {
+                console.warn(`Category '${newCategoryName}' updated, but linked services propagation failed: ${linkedServicesErrorMessage}`);
+                window.toast && window.toast(`Category updated, but updating linked service names failed (${linkedServicesErrorMessage}). Linked services may need reconciliation.`);
             } else {
-                window.toast && window.toast('Error updating category: ' + requestError.message);
+                window.toast && window.toast('Category updated successfully!');
+            }
+
+            if (window.notifyEvent) {
+                window.notifyEvent('services', 'evt_service_category_updated', {
+                    title: 'Service Category Updated',
+                    message: `${newCategoryName} was updated.`
+                });
+            }
+
+            editCatModal.classList.remove('active');
+
+            // ── 9. Refresh UI state (Services first, then Categories) ──
+            try {
+                if (window.fetchServices) {
+                    await window.fetchServices();
+                }
+                await fetchCategories();
+            } catch (refreshErr) {
+                console.warn('Category updated but UI refresh failed:', refreshErr);
+                window.toast && window.toast('Category updated, but the list failed to refresh. Please reload.');
             }
         } catch (err) {
-            console.error(err);
-            window.toast && window.toast('Network error updating category');
+            console.error('Network error updating category:', err);
+            window.toast && window.toast('Network error updating category. Please try again.');
         } finally {
-            if (btn) { btn.textContent = originalText; btn.disabled = false; }
+            isUpdatingCategory = false;
+            if (btn) {
+                btn.textContent = originalText;
+                btn.disabled = false;
+            }
         }
     });
 
@@ -244,11 +416,13 @@ function attachEventListeners() {
     let categoryToDelete = null;
 
     document.getElementById('btnCancelDelete').addEventListener('click', () => {
+        if (isDeletingCategory) return;
         deleteOverlay.classList.remove('active');
         categoryToDelete = null;
     });
 
     deleteOverlay.addEventListener('click', (e) => {
+        if (isDeletingCategory) return;
         if (e.target === deleteOverlay) {
             deleteOverlay.classList.remove('active');
             categoryToDelete = null;
@@ -256,65 +430,160 @@ function attachEventListeners() {
     });
 
     document.getElementById('btnConfirmDelete').addEventListener('click', async () => {
+        if (isDeletingCategory) return;
         if (!categoryToDelete) return;
-        
+
+        // ── 1. Company and branch scope enforcement ──
+        const companyId = getCompanyId();
+        const branchId = getBranchId();
+        if (!companyId || !branchId) {
+            console.error('Missing company or branch context');
+            window.toast && window.toast('Session error: missing company or branch. Please re-login or reload.');
+            deleteOverlay.classList.remove('active');
+            categoryToDelete = null;
+            return;
+        }
+
+        const catId = categoryToDelete.category_id || categoryToDelete.id;
+        const catName = categoryToDelete.name || 'Category';
+        if (!catId) {
+            window.toast && window.toast('Invalid category identifier. Deletion cancelled.');
+            deleteOverlay.classList.remove('active');
+            categoryToDelete = null;
+            return;
+        }
+
+        // ── 2. Re-entrancy guard & lock UI ──
+        isDeletingCategory = true;
+        const btnConfirm = document.getElementById('btnConfirmDelete');
+        const btnCancel = document.getElementById('btnCancelDelete');
+        const originalConfirmText = btnConfirm ? btnConfirm.textContent : 'Yes, Delete';
+        if (btnConfirm) {
+            btnConfirm.textContent = 'Deleting...';
+            btnConfirm.disabled = true;
+        }
+        if (btnCancel) {
+            btnCancel.disabled = true;
+        }
+
         deleteOverlay.classList.remove('active');
         fullScreenLoader.classList.add('active');
-        
-        try {
-            // Try Supabase auto-PK 'id' first, then fallback to 'category_id'
-            let deleteError;
-            ({ error: deleteError } = await supabase
-                .from('service_categories')
-                .eq('id', categoryToDelete.id)
-                .update({ status: 'deleted' }));
 
-            if (deleteError) {
-                console.warn('id-based delete failed, trying category_id:', deleteError.message);
-                ({ error: deleteError } = await supabase
-                    .from('service_categories')
-                    .eq('category_id', categoryToDelete.id)
-                    .update({ status: 'deleted' }));
+        try {
+            // ── 3. Direct Dependency Check on `services` table ──
+            // Exclude soft-deleted services; block deletion if active services still reference this category
+            const { data: linkedServices, error: depError } = await supabase
+                .from('services')
+                .select('service_id, service_name, status')
+                .eq('category_id', catId)
+                .eq('company_id', companyId)
+                .eq('branch_id', branchId)
+                .neq('status', 'deleted');
+
+            if (depError) {
+                console.error('Dependency check query failed:', depError);
+                window.toast && window.toast('Could not verify linked services. Deletion aborted for safety.');
+                return;
             }
 
-            if (!deleteError) {
-                window.toast && window.toast('Category deleted successfully!');
-                if (window.notifyEvent) {
-                    window.notifyEvent('services', 'evt_service_category_deleted', {
-                        title: 'Service Category Deleted',
-                        message: `${categoryToDelete?.name || 'Category'} was deleted.`
-                    });
+            if (linkedServices && linkedServices.length > 0) {
+                const count = linkedServices.length;
+                const msg = `Cannot delete category: ${count} active ${count === 1 ? 'service is' : 'services are'} still assigned to it. Please reassign or delete the services first.`;
+                console.warn(msg);
+                window.toast && window.toast(msg);
+                return;
+            }
+
+            // ── 4. Scoped Soft-Delete on `service_categories` ──
+            const deletePayload = {
+                status: 'deleted',
+                updated_at: new Date().toISOString()
+            };
+
+            const { data: deletedRows, error: deleteError } = await supabase
+                .from('service_categories')
+                .update(deletePayload)
+                .eq('category_id', catId)
+                .eq('company_id', companyId)
+                .eq('branch_id', branchId);
+
+            if (deleteError) {
+                console.error('Delete failed:', deleteError);
+                window.toast && window.toast('Error deleting category: ' + (deleteError.message || 'Unknown error'));
+                return;
+            }
+
+            // ── 5. Detect zero-row updates ──
+            if (!deletedRows || deletedRows.length === 0) {
+                console.error('Zero rows updated: category not found or access denied for this branch.');
+                window.toast && window.toast('Category not found or access denied for this branch.');
+                return;
+            }
+
+            // ── 6. Success notification & event ──
+            window.toast && window.toast('Category deleted successfully!');
+            if (window.notifyEvent) {
+                window.notifyEvent('services', 'evt_service_category_deleted', {
+                    title: 'Service Category Deleted',
+                    message: `${catName} was deleted.`
+                });
+            }
+
+            // ── 7. UI state refresh (Services first, then Categories) ──
+            try {
+                if (window.fetchServices) {
+                    await window.fetchServices();
                 }
                 await fetchCategories();
-            } else {
-                console.error('Delete failed:', deleteError);
-                window.toast && window.toast('Error deleting category: ' + deleteError.message);
+            } catch (refreshErr) {
+                console.warn('Category deleted but UI refresh failed:', refreshErr);
+                window.toast && window.toast('Category deleted, but the list failed to refresh. Please reload.');
             }
         } catch (err) {
             console.error('Network error deleting category:', err);
-            window.toast && window.toast('Error: ' + (err.message || 'Unknown error deleting category'));
+            window.toast && window.toast('Error: ' + (err.message || 'Unknown network error deleting category'));
         } finally {
+            isDeletingCategory = false;
             fullScreenLoader.classList.remove('active');
+            deleteOverlay.classList.remove('active');
+            if (btnConfirm) {
+                btnConfirm.textContent = originalConfirmText;
+                btnConfirm.disabled = false;
+            }
+            if (btnCancel) {
+                btnCancel.disabled = false;
+            }
             categoryToDelete = null;
         }
     });
 
     // Global expose so dynamically rendered buttons can call these
     window.openEditCategoryModal = (catId, catName) => {
-        const cat = liveCategoriesData.find(c => (c.id || c.category_id) === catId);
+        const cat = (liveCategoriesData || []).find(c => String(c.category_id || c.id) === String(catId));
         if (cat) {
-            document.getElementById('editCategoryId').value = cat.id || cat.category_id || '';
+            document.getElementById('editCategoryId').value = cat.category_id || cat.id || '';
             document.getElementById('editCfName').value = cat.category_name || cat.name || '';
             document.getElementById('editCfDescription').value = cat.description || '';
+            const catStatus = (cat.status || 'active').toLowerCase() === 'inactive' ? 'inactive' : 'active';
             const statusRadios = document.querySelectorAll('input[name="editCfStatus"]');
-            statusRadios.forEach(r => r.checked = (r.value === cat.status));
+            statusRadios.forEach(r => r.checked = (r.value === catStatus));
             document.getElementById('editCategoryModal').classList.add('active');
+            const nameInput = document.getElementById('editCfName');
+            if (nameInput) setTimeout(() => nameInput.focus(), 50);
+        } else {
+            console.warn('openEditCategoryModal: Category not found for id:', catId);
+            window.toast && window.toast('Category details not found. Please refresh the page.');
         }
     };
     
     window.triggerDeleteCategory = (catId, catName) => {
-        categoryToDelete = { id: catId, name: catName };
-        document.getElementById('deleteConfirmOverlay').classList.add('active');
+        if (isDeletingCategory) return;
+        const cat = (liveCategoriesData || []).find(c => String(c.category_id || c.id) === String(catId));
+        const resolvedId = (cat ? cat.category_id : null) || catId;
+        const resolvedName = (cat ? cat.category_name : null) || catName;
+        categoryToDelete = { category_id: resolvedId, id: resolvedId, name: resolvedName };
+        const overlay = document.getElementById('deleteConfirmOverlay');
+        if (overlay) overlay.classList.add('active');
     };
 }
 
@@ -323,31 +592,69 @@ export async function fetchCategories() {
         const companyId = getCompanyId();
         const branchId = getBranchId();
 
-        let query = supabase
+        if (!companyId || !branchId) {
+            console.warn('Cannot fetch service categories: missing company_id or branch_id context');
+            if (window.toast) window.toast('Missing company or branch context. Please reload or select a branch.');
+            liveCategoriesData = [];
+            window.liveCategoriesData = [];
+            if (window.renderCat) window.renderCat([]);
+            const countEl = document.getElementById('countCategories');
+            if (countEl) countEl.textContent = '0';
+            populateCategoryDropdownEx();
+            if (window.populateServicesCategoryFilter) window.populateServicesCategoryFilter();
+            return;
+        }
+
+        const { data, error } = await supabase
             .from('service_categories')
             .select('*')
+            .eq('company_id', companyId)
+            .eq('branch_id', branchId)
+            .neq('status', 'deleted')
             .order('category_name', { ascending: true });
-        
-        if (companyId) query = query.eq('company_id', companyId);
-        if (branchId) query = query.eq('branch_id', branchId);
 
-        const { data, error } = await query;
-        if (error) throw new Error(error.message);
-        
-        // Ensure "deleted" status items are completely removed from the frontend mapping
+        if (error) {
+            console.error('Error fetching service categories:', error.message || error);
+            if (window.toast) window.toast('Error loading categories: ' + (error.message || 'Check connection'));
+            liveCategoriesData = [];
+            window.liveCategoriesData = [];
+            if (window.renderCat) window.renderCat([]);
+            const countEl = document.getElementById('countCategories');
+            if (countEl) countEl.textContent = '0';
+            populateCategoryDropdownEx();
+            if (window.populateServicesCategoryFilter) window.populateServicesCategoryFilter();
+            return;
+        }
+
         const rawCategories = data || [];
-        liveCategoriesData = rawCategories.filter(c => (c.status || '').toLowerCase() !== 'deleted');
-        
+        liveCategoriesData = rawCategories
+            .map(c => ({ ...c, status: (c.status || '').trim() }))
+            .filter(c => c.status && c.status.toLowerCase() !== 'deleted');
+
         window.liveCategoriesData = liveCategoriesData;
-        if (window.renderCat) window.renderCat(liveCategoriesData);
+
+        // If search input has an active query, filter; else render all
+        const searchInput = document.getElementById('categoriesSearchInput');
+        if (searchInput && searchInput.value && window.applyCategoryFilters) {
+            window.applyCategoryFilters();
+        } else if (window.renderCat) {
+            window.renderCat(liveCategoriesData);
+        }
+
         const countEl = document.getElementById('countCategories');
         if (countEl) {
             countEl.textContent = liveCategoriesData.length;
         }
         populateCategoryDropdownEx();
+        if (window.populateServicesCategoryFilter) window.populateServicesCategoryFilter();
     } catch (err) {
-        console.error('Network Error:', err);
-        if (window.renderCat) window.renderCat(liveCategoriesData);
+        console.error('Network Error fetching service categories:', err);
+        if (window.toast) window.toast('Network error loading categories');
+        liveCategoriesData = [];
+        window.liveCategoriesData = [];
+        if (window.renderCat) window.renderCat([]);
+        const countEl = document.getElementById('countCategories');
+        if (countEl) countEl.textContent = '0';
     }
 }
 
@@ -372,5 +679,8 @@ function populateCategoryDropdownEx() {
         sel.value = currentVal;
     }
 }
+
+window.fetchCategories = fetchCategories;
+
 
 

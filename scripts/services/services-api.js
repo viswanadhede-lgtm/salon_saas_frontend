@@ -254,6 +254,9 @@ export async function fetchServices() {
             window.renderSvc(liveServicesData);
         }
         if (window.populateServicesCategoryFilter) window.populateServicesCategoryFilter();
+        if (window.liveCategoriesData && window.liveCategoriesData.length && window.renderCat) {
+            window.renderCat(window.liveCategoriesData);
+        }
 
         const countEl = document.getElementById('countServices');
         if (countEl) {
