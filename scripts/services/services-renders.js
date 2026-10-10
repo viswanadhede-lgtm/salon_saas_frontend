@@ -131,16 +131,13 @@ export function renderCat(data) {
         const catStatus = c.status || 'active';
         const cnt = (window.liveServicesData || []).filter(s => {
             if ((s.status || '').toLowerCase() === 'deleted') return false;
-            if (catId && s.category_id) {
-                return String(s.category_id) === String(catId);
-            }
-            return (s.category_name || '').trim().toLowerCase() === catName.trim().toLowerCase();
+            return Boolean(catId && s.category_id && String(s.category_id) === String(catId));
         }).length;
 
         return `<tr class="tb-row">
             <td style="padding:14px 16px 14px 24px;"><div style="font-weight:600;color:#1e293b;font-size:0.9rem;">${escapeHtml(catName)}</div>${catDesc ? `<div style="font-size:0.8rem;color:#94a3b8;margin-top:2px;">${escapeHtml(catDesc)}</div>` : ''}</td>
             <td style="padding:14px 16px;">
-                <span class="customer-link" role="button" tabindex="0" data-cat-id="${catId}" data-cat-name="${escapeHtml(catName)}" style="cursor:pointer;" onclick="window.openCatServicesModal(this.dataset.catId, this.dataset.catName)" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();window.openCatServicesModal(this.dataset.catId, this.dataset.catName);}">
+                <span class="customer-link cat-service-count-link" role="button" tabindex="0" data-cat-id="${catId}" data-cat-name="${escapeHtml(catName)}" style="cursor:pointer;">
                     ${cnt} ${cnt === 1 ? 'service' : 'services'}
                 </span>
             </td>
@@ -159,6 +156,23 @@ export function renderCat(data) {
             </td>
         </tr>`;
     }).join('');
+
+    // Attach safe event listeners to service count links
+    tb.querySelectorAll('.cat-service-count-link').forEach(link => {
+        const handleOpen = () => {
+            const catId = link.getAttribute('data-cat-id') || '';
+            const catName = link.getAttribute('data-cat-name') || '';
+            window.openCatServicesModal(catId, catName);
+        };
+        link.addEventListener('click', handleOpen);
+        link.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter' || e.key === ' ') {
+                e.preventDefault();
+                handleOpen();
+            }
+        });
+    });
+
     if (typeof window.applySubFeatureGates === 'function') window.applySubFeatureGates();
 }
 
@@ -251,27 +265,39 @@ export async function openCatServicesModal(catIdOrName, catNameArg) {
     }
     modal.classList.add('active');
 
+    let fetchFailed = false;
+    let fetchErrorMessage = '';
+
     // If liveServicesData is not yet loaded, attempt to fetch it
     if (!window.liveServicesData || window.liveServicesData.length === 0) {
         try {
             if (window.fetchServices) {
-                await window.fetchServices();
+                const res = await window.fetchServices();
+                if (res && res.error) {
+                    fetchFailed = true;
+                    fetchErrorMessage = res.error.message || 'Error loading services';
+                }
             }
         } catch (err) {
-            console.error('Error fetching services for category modal:', err);
-            if (body) {
-                body.innerHTML = '<tr><td colspan="3" style="padding:40px;text-align:center;"><div style="color:#ef4444;font-weight:500;">Failed to load services. Please check your connection and try again.</div></td></tr>';
-            }
-            return;
+            fetchFailed = true;
+            fetchErrorMessage = err.message || 'Network error loading services';
         }
     }
 
+    if (fetchFailed) {
+        if (title) {
+            title.innerHTML = `${escapeHtml(catName || 'Category')} <span style="display: inline-flex; align-items: center; justify-content: center; min-width: 26px; height: 26px; border-radius: 50%; background-color: #fee2e2; color: #ef4444; font-size: 0.9rem; font-weight: 600; margin-left: 8px; vertical-align: middle; padding: 0 6px;">!</span>`;
+        }
+        if (body) {
+            body.innerHTML = `<tr><td colspan="3" style="padding:40px;text-align:center;"><div style="font-size:2rem;margin-bottom:10px;">⚠️</div><div style="color:#ef4444;font-weight:500;font-size:0.92rem;">Failed to load services (${escapeHtml(fetchErrorMessage)}). Please check your connection and try again.</div></td></tr>`;
+        }
+        return;
+    }
+
+    // Match strictly by category_id and exclude deleted services
     const services = (window.liveServicesData || []).filter(s => {
         if ((s.status || '').toLowerCase() === 'deleted') return false;
-        if (catId && s.category_id) {
-            return String(s.category_id) === String(catId);
-        }
-        return (s.category_name || '').trim().toLowerCase() === (catName || '').trim().toLowerCase();
+        return Boolean(catId && s.category_id && String(s.category_id) === String(catId));
     });
 
     if (title) {

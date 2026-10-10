@@ -235,11 +235,22 @@ export async function fetchServices() {
         if (error) {
             console.error('Error fetching services:', error.message || error);
             if (window.toast) window.toast('Error loading services: ' + (error.message || 'Check connection'));
-            setLiveServicesData([]);
-            if (window.renderSvc) window.renderSvc([]);
-            const countEl = document.getElementById('countServices');
-            if (countEl) countEl.textContent = '0';
-            return;
+            const cached = servicesState.liveServicesData;
+            if (!cached || cached.length === 0) {
+                setLiveServicesData([]);
+                if (window.renderSvc) window.renderSvc([]);
+                const countEl = document.getElementById('countServices');
+                if (countEl) countEl.textContent = '0';
+            } else {
+                if (window.applyServiceFilters) {
+                    window.applyServiceFilters();
+                } else if (window.renderSvc) {
+                    window.renderSvc(cached);
+                }
+                const countEl = document.getElementById('countServices');
+                if (countEl) countEl.textContent = cached.length;
+            }
+            return { data: null, error };
         }
 
         const liveServicesData = (data || [])
@@ -262,10 +273,26 @@ export async function fetchServices() {
         if (countEl) {
             countEl.textContent = liveServicesData.length;
         }
+        return { data: liveServicesData, error: null };
     } catch (err) {
         console.error('Network Error fetching services:', err);
         if (window.toast) window.toast('Network error loading services');
-        if (window.renderSvc) window.renderSvc(servicesState.liveServicesData || []);
+        const cached = servicesState.liveServicesData;
+        if (!cached || cached.length === 0) {
+            setLiveServicesData([]);
+            if (window.renderSvc) window.renderSvc([]);
+            const countEl = document.getElementById('countServices');
+            if (countEl) countEl.textContent = '0';
+        } else {
+            if (window.applyServiceFilters) {
+                window.applyServiceFilters();
+            } else if (window.renderSvc) {
+                window.renderSvc(cached);
+            }
+            const countEl = document.getElementById('countServices');
+            if (countEl) countEl.textContent = cached.length;
+        }
+        return { data: null, error: err };
     }
 }
 
