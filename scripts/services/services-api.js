@@ -205,13 +205,35 @@ export async function insertPackageServices(psPayloads) {
 }
 
 export async function updatePackage(pkgId, payload) {
-    return await supabase
+    const companyId = getCompanyId();
+    const branchId = getBranchId();
+
+    if (!companyId || !branchId) {
+        return { data: null, error: { message: 'Missing company or branch context' } };
+    }
+
+    const { data, error } = await supabase
         .from('packages')
         .update(payload)
-        .eq('package_id', pkgId);
+        .eq('package_id', pkgId)
+        .eq('company_id', companyId)
+        .eq('branch_id', branchId);
+
+    if (!error && (!data || data.length === 0)) {
+        return { data: null, error: { message: 'No matching package found to update for this company and branch.' } };
+    }
+
+    return { data, error };
 }
 
 export async function deletePackageServices(pkgId) {
+    const companyId = getCompanyId();
+    const branchId = getBranchId();
+
+    if (!companyId || !branchId) {
+        return { data: null, error: { message: 'Missing company or branch context' } };
+    }
+
     return await supabase
         .from('package_services')
         .delete()
@@ -219,10 +241,25 @@ export async function deletePackageServices(pkgId) {
 }
 
 export async function deletePackage(pkgId) {
-    return await supabase
+    const companyId = getCompanyId();
+    const branchId = getBranchId();
+
+    if (!companyId || !branchId) {
+        return { data: null, error: { message: 'Missing company or branch context' } };
+    }
+
+    const { data, error } = await supabase
         .from('packages')
         .delete()
-        .eq('package_id', pkgId);
+        .eq('package_id', pkgId)
+        .eq('company_id', companyId)
+        .eq('branch_id', branchId);
+
+    if (!error && (!data || data.length === 0)) {
+        return { data: null, error: { message: 'No matching package found to delete for this company and branch.' } };
+    }
+
+    return { data, error };
 }
 
 // ─────────────────────────────────────────────────────────────────────────────

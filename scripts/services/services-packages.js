@@ -5,6 +5,26 @@
 import { servicesState } from './services-state.js';
 import { fetchPackageServicesForEdit } from './services-api.js';
 
+// ── HELPER: Recalculate Original Price from selected service IDs ─────
+function recalculateOriginalPrice(selectedSet, fieldId) {
+    const allServices = window.liveServicesData || servicesState.liveServicesData || [];
+    let total = 0;
+    selectedSet.forEach(id => {
+        const svc = allServices.find(s => (s.service_id || s.id) === id);
+        if (svc) total += parseFloat(svc.price || 0);
+    });
+    const field = document.getElementById(fieldId);
+    if (field) field.value = total;
+}
+
+// ── HELPER: Format dropdown label as "Service – Category – ₹Price" ───
+function formatServiceLabel(s) {
+    const name = s.service_name || s.name || '';
+    const cat  = s.category_name || s.category || '';
+    const price = parseFloat(s.price || 0).toLocaleString('en-IN');
+    return `${name}  –  ${cat}  –  ₹${price}`;
+}
+
 export function initPackageDropdowns() {
     const pkgServicesDropdownToggle = document.getElementById('pkgServicesDropdownToggle');
     const pkgServicesDropdownMenu = document.getElementById('pkgServicesDropdownMenu');
@@ -43,6 +63,7 @@ export function populatePackageServicesDropdown() {
     pkgServicesDropdownMenu.innerHTML = '';
     servicesState.selectedPackageServices.clear();
     updatePackageServicesChips();
+    recalculateOriginalPrice(servicesState.selectedPackageServices, 'pkgOriginalPrice');
 
     (window.liveServicesData || servicesState.liveServicesData || []).filter(s => s.status === 'active').forEach(s => {
         const itemDiv = document.createElement('div');
@@ -71,7 +92,7 @@ export function populatePackageServicesDropdown() {
         checkbox.style.cursor = 'pointer';
 
         const textSpan = document.createElement('span');
-        textSpan.textContent = s.service_name || s.name;
+        textSpan.textContent = formatServiceLabel(s);
         textSpan.style.display = 'inline-block';
         textSpan.style.whiteSpace = 'nowrap';
         textSpan.style.overflow = 'hidden';
@@ -91,6 +112,7 @@ export function populatePackageServicesDropdown() {
             if (checkbox.checked) servicesState.selectedPackageServices.add(s.service_id || s.id);
             else servicesState.selectedPackageServices.delete(s.service_id || s.id);
             updatePackageServicesChips();
+            recalculateOriginalPrice(servicesState.selectedPackageServices, 'pkgOriginalPrice');
         });
 
         itemDiv.addEventListener('mouseenter', () => itemDiv.style.background = '#f8fafc');
@@ -138,6 +160,7 @@ export function updatePackageServicesChips() {
                         if (cb) cb.checked = false;
                     }
                     updatePackageServicesChips();
+                    recalculateOriginalPrice(servicesState.selectedPackageServices, 'pkgOriginalPrice');
                 });
                 
                 chip.appendChild(document.createTextNode(svc.service_name || svc.name));
@@ -186,7 +209,7 @@ export function populateEditPackageServicesDropdown() {
         }
 
         const textSpan = document.createElement('span');
-        textSpan.textContent = s.service_name || s.name;
+        textSpan.textContent = formatServiceLabel(s);
         textSpan.style.display = 'inline-block';
         textSpan.style.whiteSpace = 'nowrap';
         textSpan.style.overflow = 'hidden';
@@ -206,6 +229,7 @@ export function populateEditPackageServicesDropdown() {
             if (checkbox.checked) servicesState.editSelectedPackageServices.add(s.service_id || s.id);
             else servicesState.editSelectedPackageServices.delete(s.service_id || s.id);
             updateEditPackageServicesChips();
+            recalculateOriginalPrice(servicesState.editSelectedPackageServices, 'editPkgOriginalPrice');
         });
 
         itemDiv.addEventListener('mouseenter', () => itemDiv.style.background = '#f8fafc');
@@ -253,6 +277,7 @@ export function updateEditPackageServicesChips() {
                         if (cb) cb.checked = false;
                     }
                     updateEditPackageServicesChips();
+                    recalculateOriginalPrice(servicesState.editSelectedPackageServices, 'editPkgOriginalPrice');
                 });
                 
                 chip.appendChild(document.createTextNode(svc.service_name || svc.name));
@@ -270,7 +295,6 @@ export async function openEditPackageModal(pkgId) {
 
     document.getElementById('editPkgId').value = pkg.package_id;
     document.getElementById('editPkgName').value = pkg.package_name;
-    document.getElementById('editPkgOriginalPrice').value = pkg.original_price;
     document.getElementById('editPkgFinalPrice').value = pkg.final_price;
     document.getElementById('editPkgDescription').value = pkg.description || '';
     
@@ -292,6 +316,7 @@ export async function openEditPackageModal(pkgId) {
 
     populateEditPackageServicesDropdown();
     updateEditPackageServicesChips();
+    recalculateOriginalPrice(servicesState.editSelectedPackageServices, 'editPkgOriginalPrice');
     
     document.getElementById('editPackageModal').classList.add('active');
 }
