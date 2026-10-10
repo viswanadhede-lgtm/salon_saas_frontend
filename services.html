@@ -30,10 +30,10 @@
         <div id="global-header"></div>
 
         <!-- Page Content -->
-                <main class="content-area" style="display:flex;flex-direction:column;padding:0;background:#f8fafc;">
+        <main class="content-area" style="display:flex;flex-direction:column;padding:0;background:#f8fafc;min-height:0;overflow:hidden;">
 
             <!-- Services Page Header -->
-            <div style="display:flex;justify-content:space-between;align-items:center;border-bottom:1px solid #e2e8f0;padding:18px 32px 14px 32px;background:#fff;">
+            <div style="display:flex;justify-content:space-between;align-items:center;border-bottom:1px solid #e2e8f0;padding:18px 32px 14px 32px;background:#fff;flex-shrink:0;">
                 <div>
                     <h1 style="font-size:1.45rem;font-weight:700;color:#1e293b;margin:0;">Services</h1>
                     <p style="font-size:0.95rem;color:#64748b;margin:2px 0 0 0;">Manage your salon services</p>
@@ -67,14 +67,14 @@
             </div>
 
             <!-- Tabs -->
-            <div style="display:flex;align-items:center;padding:0 32px;background:#fff;border-bottom:1px solid #e2e8f0;">
+            <div style="display:flex;align-items:center;padding:0 32px;background:#fff;border-bottom:1px solid #e2e8f0;flex-shrink:0;">
                 <button id="tabBtnServices" class="svc-tab active" onclick="switchTab('services')">Services <span id="countServices" class="svc-badge"></span></button>
                 <button id="tabBtnCategories" class="svc-tab" onclick="switchTab('categories')">Service Categories <span id="countCategories" class="svc-badge"></span></button>
                 <button id="tabBtnPackages" class="svc-tab" onclick="switchTab('packages')">Packages <span id="countPackages" class="svc-badge"></span></button>
             </div>
 
             <!-- Services Panel -->
-            <div id="panelServices" style="margin:20px 32px 32px;background:#fff;border:1px solid #e2e8f0;border-radius:12px;overflow:hidden;box-shadow:0 1px 3px rgba(0,0,0,0.04);">
+            <div id="panelServices" class="svc-panel">
                 <div class="tb-table-area">
                     <table style="width:100%;border-collapse:collapse;font-size:0.875rem;table-layout:fixed;">
                         <colgroup><col style="width:24%"><col style="width:16%"><col style="width:13%"><col style="width:13%"><col style="width:13%"><col style="width:21%"></colgroup>
@@ -92,7 +92,7 @@
             </div>
 
             <!-- Categories Panel -->
-            <div id="panelCategories" style="margin:20px 32px 32px;background:#fff;border:1px solid #e2e8f0;border-radius:12px;overflow:hidden;box-shadow:0 1px 3px rgba(0,0,0,0.04);display:none;">
+            <div id="panelCategories" class="svc-panel" style="display:none;">
                 <div class="tb-table-area">
                     <table style="width:100%;border-collapse:collapse;font-size:0.875rem;table-layout:fixed;">
                         <colgroup><col style="width:30%"><col style="width:25%"><col style="width:20%"><col style="width:25%"></colgroup>
@@ -108,7 +108,7 @@
             </div>
 
             <!-- Packages Panel -->
-            <div id="panelPackages" style="margin:20px 32px 32px;background:#fff;border:1px solid #e2e8f0;border-radius:12px;overflow:hidden;box-shadow:0 1px 3px rgba(0,0,0,0.04);display:none;">
+            <div id="panelPackages" class="svc-panel" style="display:none;">
                 <div class="tb-table-area">
                     <table style="width:100%;border-collapse:collapse;font-size:0.875rem;table-layout:fixed;">
                         <colgroup><col style="width:20%"><col style="width:15%"><col style="width:15%"><col style="width:15%"><col style="width:15%"><col style="width:20%"></colgroup>
@@ -128,12 +128,52 @@
         </main>
     </div>
 
-        <style>
+    <style>
         .svc-tab { padding:14px 20px;border:none;background:none;font-size:0.92rem;font-weight:500;color:#64748b;border-bottom:2px solid transparent;cursor:pointer;transition:all 0.2s;display:flex;align-items:center;gap:8px;margin-bottom:-1px; }
         .svc-tab.active { color:#1e3a8a;border-bottom:2px solid #1e3a8a;font-weight:600; }
         .svc-tab:hover:not(.active) { color:#334155; }
         .svc-badge { display:inline-flex;align-items:center;justify-content:center;min-width:22px;height:22px;padding:0 6px;background:#f1f5f9;color:#64748b;border-radius:20px;font-size:0.75rem;font-weight:600; }
         .svc-tab.active .svc-badge { background:#dbeafe;color:#1e3a8a; }
+
+        .svc-panel {
+            margin: 20px 32px 24px;
+            background: #fff;
+            border: 1px solid #e2e8f0;
+            border-radius: 12px;
+            overflow: hidden;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.04);
+            flex: 1;
+            min-height: 0;
+            display: flex;
+            flex-direction: column;
+        }
+        .svc-panel .tb-table-area {
+            flex: 1;
+            min-height: 0;
+            overflow-y: auto;
+            scrollbar-width: thin;
+            scrollbar-color: #cbd5e1 transparent;
+        }
+        .svc-panel .tb-table-area::-webkit-scrollbar {
+            width: 6px;
+            height: 6px;
+        }
+        .svc-panel .tb-table-area::-webkit-scrollbar-track {
+            background: transparent;
+        }
+        .svc-panel .tb-table-area::-webkit-scrollbar-thumb {
+            background: #cbd5e1;
+            border-radius: 4px;
+        }
+        .svc-panel .tb-table-area::-webkit-scrollbar-thumb:hover {
+            background: #94a3b8;
+        }
+        .svc-panel thead th {
+            position: sticky;
+            top: 0;
+            z-index: 10;
+            background: #f8fafc;
+        }
     </style>
 
     <script type="module" src="scripts/app-shell.js"></script>
@@ -246,7 +286,7 @@
         <div class="modal-container" style="width:560px;max-width:95vw;">
             <div class="modal-header">
                 <div class="header-titles">
-                    <h2 id="catServicesModalTitle">Category — Services</h2>
+                    <h2 id="catServicesModalTitle">Category â€” Services</h2>
                     <p class="subtitle">Services under this category.</p>
                 </div>
                 <button class="modal-close" onclick="document.getElementById('catServicesModal').classList.remove('active')"><i data-feather="x"></i></button>
