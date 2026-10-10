@@ -1,6 +1,5 @@
 // scripts/services/services-crud.js
 // CRUD event listeners and submit/delete workflows for Services and Packages.
-// Preserves exact duplicate checks, payloads, dual-key updates, and notification triggers.
 
 import {
     servicesState,
@@ -11,6 +10,7 @@ import {
     insertService,
     updateService,
     softDeleteService,
+    checkServiceDependencies,
     insertPackage,
     insertPackageServices,
     updatePackage,
@@ -21,6 +21,10 @@ import {
 } from './services-api.js';
 import { updatePackageServicesChips } from './services-packages.js';
 
+let isSubmittingService = false;
+let isUpdatingService = false;
+let isDeletingService = false;
+
 export function attachEventListeners() {
     // ─────────────────────────────────────────────────────────────────────────
     // 1. ADD SERVICE FORM
@@ -29,14 +33,56 @@ export function attachEventListeners() {
     if (addSvcForm) {
         addSvcForm.addEventListener('submit', async (e) => {
             e.preventDefault();
-            const serviceName = document.getElementById('sfSvcName').value.trim();
-            const nameLower = serviceName.toLowerCase();
 
-            // Duplicate Check
-            const categoryName = document.getElementById('sfCategory').value.toLowerCase();
-            const exists = servicesState.liveServicesData.find(s => 
-                (s.service_name || s.name || '').toLowerCase() === nameLower &&
-                (s.category_name || s.category || '').toLowerCase() === categoryName
+            if (isSubmittingService) return;
+
+            const companyId = getCompanyId();
+            const branchId = getBranchId();
+
+            if (!companyId || !branchId) {
+                window.toast && window.toast('Missing company or branch context. Please reload or select a branch.');
+                return;
+            }
+
+            const serviceNameInput = document.getElementById('sfSvcName');
+            const serviceName = (serviceNameInput?.value || '').trim();
+            if (!serviceName) {
+                window.toast && window.toast('Please enter a service name.');
+                serviceNameInput?.focus();
+                return;
+            }
+
+            const categorySelect = document.getElementById('sfCategory');
+            const categoryId = categorySelect?.value || '';
+            const categoryName = categorySelect?.selectedOptions[0]?.dataset.name || categorySelect?.selectedOptions[0]?.textContent || '';
+
+            if (!categoryId || categoryId === 'Select a category') {
+                window.toast && window.toast('Please select a valid category.');
+                categorySelect?.focus();
+                return;
+            }
+
+            const durationInput = document.getElementById('sfDuration');
+            const duration = parseInt(durationInput?.value, 10);
+            if (isNaN(duration) || duration < 5 || duration % 5 !== 0) {
+                window.toast && window.toast('Duration must be at least 5 minutes and in increments of 5.');
+                durationInput?.focus();
+                return;
+            }
+
+            const priceInput = document.getElementById('sfPrice');
+            const price = parseFloat(priceInput?.value);
+            if (isNaN(price) || price < 0) {
+                window.toast && window.toast('Price must be a valid non-negative number.');
+                priceInput?.focus();
+                return;
+            }
+
+            // Usability Duplicate Check (case-insensitive name within intended category)
+            const nameLower = serviceName.toLowerCase();
+            const exists = (servicesState.liveServicesData || []).find(s => 
+                (s.service_name || s.name || '').trim().toLowerCase() === nameLower &&
+                (s.category_id === categoryId || (s.category_name || s.category || '').trim().toLowerCase() === categoryName.trim().toLowerCase())
             );
             if (exists) {
                 window.toast && window.toast('A service with this name already exists in this category.');
@@ -44,20 +90,21 @@ export function attachEventListeners() {
             }
 
             const payload = {
-                company_id: getCompanyId(),
-                branch_id: getBranchId(),
+                company_id: companyId,
+                branch_id: branchId,
                 service_name: serviceName,
-                category_id: document.getElementById('sfCategory').selectedOptions[0]?.dataset.id || '',
-                category_name: document.getElementById('sfCategory').value,
-                duration: parseInt(document.getElementById('sfDuration').value, 10),
-                price: parseFloat(document.getElementById('sfPrice').value),
-                status: document.querySelector('input[name="sfStatus"]:checked').value,
-                description: document.getElementById('sfDescription').value.trim()
+                category_id: categoryId,
+                category_name: categoryName,
+                duration: duration,
+                price: price,
+                status: document.querySelector('input[name="sfStatus"]:checked')?.value || 'active',
+                description: (document.getElementById('sfDescription')?.value || '').trim()
             };
             
             const btn = document.querySelector('button[form="addServiceForm"]');
             const originalText = btn ? btn.textContent : 'Save Service';
             if (btn) { btn.textContent = 'Saving...'; btn.disabled = true; }
+            isSubmittingService = true;
             
             try {
                 const { error } = await insertService(payload);
@@ -70,7 +117,6 @@ export function attachEventListeners() {
                             message: `${payload.service_name} was created.`
                         });
                     }
-                    // Marketing Notifications: notify customers
                     if (window.notifyCustomer) {
                         window.notifyCustomer('new_service_added', {
                             title: 'New Service Available!',
@@ -78,16 +124,17 @@ export function attachEventListeners() {
                             serviceName: payload.service_name
                         });
                     }
-                    document.getElementById('addServiceModal').classList.remove('active');
+                    document.getElementById('addServiceModal')?.classList.remove('active');
                     addSvcForm.reset();
                     await fetchServices();
                 } else {
                     window.toast && window.toast('Error adding service: ' + error.message);
                 }
             } catch (err) {
-                console.error(err);
+                console.error('Error adding service:', err);
                 window.toast && window.toast('Network error saving service');
             } finally {
+                isSubmittingService = false;
                 if (btn) { btn.textContent = originalText; btn.disabled = false; }
             }
         });
@@ -100,10 +147,10 @@ export function attachEventListeners() {
     const editSvcForm = document.getElementById('editServiceForm');
     
     const closeBtn = document.getElementById('btnCloseEditServiceModal');
-    if (closeBtn) closeBtn.addEventListener('click', () => editSvcModal.classList.remove('active'));
+    if (closeBtn) closeBtn.addEventListener('click', () => editSvcModal?.classList.remove('active'));
     
     const cancelBtn = document.getElementById('btnCancelEditService');
-    if (cancelBtn) cancelBtn.addEventListener('click', () => editSvcModal.classList.remove('active'));
+    if (cancelBtn) cancelBtn.addEventListener('click', () => editSvcModal?.classList.remove('active'));
     
     if (editSvcModal) {
         editSvcModal.addEventListener('click', (e) => {
@@ -114,16 +161,63 @@ export function attachEventListeners() {
     if (editSvcForm) {
         editSvcForm.addEventListener('submit', async (e) => {
             e.preventDefault();
-            const serviceId = document.getElementById('editServiceId').value;
-            const newServiceName = document.getElementById('editSfSvcName').value.trim();
-            const nameLower = newServiceName.toLowerCase();
 
-            // Duplicate Check
-            const categoryName = document.getElementById('editSfCategory').value.toLowerCase();
-            const exists = servicesState.liveServicesData.find(s => 
-                (s.service_name || s.name || '').toLowerCase() === nameLower && 
-                (s.category_name || s.category || '').toLowerCase() === categoryName &&
-                String(s.service_id || s.id) !== String(serviceId)
+            if (isUpdatingService) return;
+
+            const companyId = getCompanyId();
+            const branchId = getBranchId();
+
+            if (!companyId || !branchId) {
+                window.toast && window.toast('Missing company or branch context. Please reload or select a branch.');
+                return;
+            }
+
+            const serviceId = document.getElementById('editServiceId')?.value;
+            if (!serviceId) {
+                window.toast && window.toast('Missing service identifier.');
+                return;
+            }
+
+            const nameInput = document.getElementById('editSfSvcName');
+            const newServiceName = (nameInput?.value || '').trim();
+            if (!newServiceName) {
+                window.toast && window.toast('Please enter a service name.');
+                nameInput?.focus();
+                return;
+            }
+
+            const categorySelect = document.getElementById('editSfCategory');
+            const categoryId = categorySelect?.value || '';
+            const categoryName = categorySelect?.selectedOptions[0]?.dataset.name || categorySelect?.selectedOptions[0]?.textContent || '';
+
+            if (!categoryId || categoryId === 'Select a category') {
+                window.toast && window.toast('Please select a valid category.');
+                categorySelect?.focus();
+                return;
+            }
+
+            const durationInput = document.getElementById('editSfDuration');
+            const duration = parseInt(durationInput?.value, 10);
+            if (isNaN(duration) || duration < 5 || duration % 5 !== 0) {
+                window.toast && window.toast('Duration must be at least 5 minutes and in increments of 5.');
+                durationInput?.focus();
+                return;
+            }
+
+            const priceInput = document.getElementById('editSfPrice');
+            const price = parseFloat(priceInput?.value);
+            if (isNaN(price) || price < 0) {
+                window.toast && window.toast('Price must be a valid non-negative number.');
+                priceInput?.focus();
+                return;
+            }
+
+            // Usability Duplicate Check (excluding current service)
+            const nameLower = newServiceName.toLowerCase();
+            const exists = (servicesState.liveServicesData || []).find(s => 
+                (s.service_name || s.name || '').trim().toLowerCase() === nameLower && 
+                (s.category_id === categoryId || (s.category_name || s.category || '').trim().toLowerCase() === categoryName.trim().toLowerCase()) &&
+                String(s.service_id) !== String(serviceId)
             );
             if (exists) {
                 window.toast && window.toast('A service with this name already exists in this category.');
@@ -132,17 +226,19 @@ export function attachEventListeners() {
 
             const payload = {
                 service_name: newServiceName,
-                category_id: document.getElementById('editSfCategory').selectedOptions[0]?.dataset.id || '',
-                category_name: document.getElementById('editSfCategory').value,
-                duration: parseInt(document.getElementById('editSfDuration').value, 10),
-                price: parseFloat(document.getElementById('editSfPrice').value),
-                status: document.querySelector('input[name="editSfStatus"]:checked').value,
-                description: document.getElementById('editSfDescription').value.trim()
+                category_id: categoryId,
+                category_name: categoryName,
+                duration: duration,
+                price: price,
+                status: document.querySelector('input[name="editSfStatus"]:checked')?.value || 'active',
+                description: (document.getElementById('editSfDescription')?.value || '').trim(),
+                updated_at: new Date().toISOString()
             };
             
             const btn = document.querySelector('button[form="editServiceForm"]');
             const originalText = btn ? btn.textContent : 'Update Service';
             if (btn) { btn.textContent = 'Updating...'; btn.disabled = true; }
+            isUpdatingService = true;
             
             try {
                 const { error: updateError } = await updateService(serviceId, payload);
@@ -155,7 +251,7 @@ export function attachEventListeners() {
                             message: `${payload.service_name} details were updated.`
                         });
                     }
-                    editSvcModal.classList.remove('active');
+                    editSvcModal?.classList.remove('active');
                     await fetchServices();
                 } else {
                     window.toast && window.toast('Error updating service: ' + updateError.message);
@@ -164,6 +260,7 @@ export function attachEventListeners() {
                 console.error('Error updating service:', err);
                 window.toast && window.toast('Error: ' + (err.message || 'Unknown error updating service'));
             } finally {
+                isUpdatingService = false;
                 if (btn) { btn.textContent = originalText; btn.disabled = false; }
             }
         });
@@ -195,20 +292,35 @@ export function attachEventListeners() {
     const confirmDeleteSvcBtn = document.getElementById('btnConfirmDeleteService');
     if (confirmDeleteSvcBtn) {
         confirmDeleteSvcBtn.addEventListener('click', async () => {
-            if (!servicesState.serviceToDelete) return;
+            if (!servicesState.serviceToDelete || isDeletingService) return;
             
-            if (deleteOverlay) deleteOverlay.classList.remove('active');
-            if (fullScreenLoader) fullScreenLoader.classList.add('active');
-            
+            const serviceId = servicesState.serviceToDelete.id;
+            const serviceName = servicesState.serviceToDelete.name || 'Service';
+
+            isDeletingService = true;
+            if (confirmDeleteSvcBtn) confirmDeleteSvcBtn.disabled = true;
+
             try {
-                const { error: deleteError } = await softDeleteService(servicesState.serviceToDelete.id);
+                // Dependency check before deletion (packages & bookings)
+                const depCheck = await checkServiceDependencies(serviceId);
+                if (depCheck.hasDependency) {
+                    if (deleteOverlay) deleteOverlay.classList.remove('active');
+                    window.toast && window.toast(depCheck.reason);
+                    alert(depCheck.reason);
+                    return;
+                }
+
+                if (deleteOverlay) deleteOverlay.classList.remove('active');
+                if (fullScreenLoader) fullScreenLoader.classList.add('active');
+
+                const { error: deleteError } = await softDeleteService(serviceId);
 
                 if (!deleteError) {
                     window.toast && window.toast('Service deleted successfully!');
                     if (window.notifyEvent) {
                         window.notifyEvent('services', 'evt_service_deleted', {
                             title: 'Service Deleted',
-                            message: `${servicesState.serviceToDelete?.name || 'Service'} was deleted.`
+                            message: `${serviceName} was deleted.`
                         });
                     }
                     await fetchServices();
@@ -220,6 +332,8 @@ export function attachEventListeners() {
                 console.error('Error deleting service:', err);
                 window.toast && window.toast('Error: ' + (err.message || 'Unknown error deleting service'));
             } finally {
+                isDeletingService = false;
+                if (confirmDeleteSvcBtn) confirmDeleteSvcBtn.disabled = false;
                 if (fullScreenLoader) fullScreenLoader.classList.remove('active');
                 servicesState.serviceToDelete = null;
             }

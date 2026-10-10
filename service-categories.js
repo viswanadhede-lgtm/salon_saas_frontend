@@ -354,13 +354,23 @@ export async function fetchCategories() {
 function populateCategoryDropdownEx() {
     const sel = document.getElementById('sfCategory');
     if (!sel) return;
+    const currentVal = sel.value;
     sel.innerHTML = '<option value="" disabled selected>Select a category</option>';
-    liveCategoriesData.filter(c => c.status === 'active').forEach(c => {
-        const o = document.createElement('option');
-        o.value = c.category_name; // the name usually
-        o.textContent = c.category_name;
-        sel.appendChild(o);
+    liveCategoriesData.filter(c => (c.status || '').toLowerCase() === 'active').forEach(c => {
+        const catId = c.category_id || c.id;
+        const catName = c.category_name || c.name || '';
+        if (catId) {
+            const o = document.createElement('option');
+            o.value = catId;
+            o.textContent = catName;
+            o.dataset.name = catName;
+            o.dataset.id = catId;
+            sel.appendChild(o);
+        }
     });
+    if (currentVal && Array.from(sel.options).some(opt => opt.value === currentVal)) {
+        sel.value = currentVal;
+    }
 }
 
 

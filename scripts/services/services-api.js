@@ -19,15 +19,18 @@ export async function fetchServicesFromDb() {
     const companyId = getCompanyId();
     const branchId = getBranchId();
 
-    let query = supabase
+    if (!companyId || !branchId) {
+        console.warn('Cannot fetch services: missing company_id or branch_id context');
+        return { data: [], error: { message: 'Missing company or branch context' } };
+    }
+
+    return await supabase
         .from('services')
         .select('*')
+        .eq('company_id', companyId)
+        .eq('branch_id', branchId)
+        .neq('status', 'deleted')
         .order('service_name', { ascending: true });
-
-    if (companyId) query = query.eq('company_id', companyId);
-    if (branchId) query = query.eq('branch_id', branchId);
-
-    return await query;
 }
 
 export async function fetchPackagesFromDb() {
@@ -60,44 +63,132 @@ export async function fetchPackageServicesForBreakdown(packageId) {
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// WRITE OPERATIONS
+// WRITE OPERATIONS & DEPENDENCY CHECKS
 // ─────────────────────────────────────────────────────────────────────────────
 
 export async function insertService(payload) {
+    const companyId = getCompanyId();
+    const branchId = getBranchId();
+
+    if (!companyId || !branchId) {
+        return { data: null, error: { message: 'Missing company or branch context' } };
+    }
+
     return await supabase
         .from('services')
         .insert(payload);
 }
 
 export async function updateService(serviceId, payload) {
-    let { error: updateError } = await supabase
-        .from('services')
-        .eq('id', serviceId)
-        .update(payload);
+    const companyId = getCompanyId();
+    const branchId = getBranchId();
 
-    if (updateError) {
-        ({ error: updateError } = await supabase
-            .from('services')
-            .eq('service_id', serviceId)
-            .update(payload));
+    if (!companyId || !branchId) {
+        return { data: null, error: { message: 'Missing company or branch context' } };
     }
-    return { error: updateError };
+
+    const { data, error } = await supabase
+        .from('services')
+        .update(payload)
+        .eq('service_id', serviceId)
+        .eq('company_id', companyId)
+        .eq('branch_id', branchId);
+
+    if (!error && (!data || data.length === 0)) {
+        return { data: null, error: { message: 'No matching service found to update for this company and branch.' } };
+    }
+
+    return { data, error };
+}
+
+export async function checkServiceDependencies(serviceId) {
+    const companyId = getCompanyId();
+    const branchId = getBranchId();
+
+    // 1. Check if referenced in packages
+    try {
+        const { data: pkgServices, error: psError } = await supabase
+            .from('package_services')
+            .select('package_id, service_name')
+            .eq('service_id', serviceId);
+
+        if (!psError && pkgServices && pkgServices.length > 0) {
+            const pkgIds = pkgServices.map(ps => ps.package_id).filter(Boolean);
+            if (pkgIds.length > 0) {
+                let pkgQuery = supabase
+                    .from('packages')
+                    .select('package_id, package_name, is_active')
+                    .in('package_id', pkgIds)
+                    .eq('is_active', true);
+                if (companyId) pkgQuery = pkgQuery.eq('company_id', companyId);
+                if (branchId) pkgQuery = pkgQuery.eq('branch_id', branchId);
+
+                const { data: activePkgs, error: pError } = await pkgQuery;
+                if (!pError && activePkgs && activePkgs.length > 0) {
+                    const pkgNames = activePkgs.map(p => p.package_name).join(', ');
+                    return {
+                        hasDependency: true,
+                        reason: `Cannot delete this service because it is currently included in active package(s): ${pkgNames}. Please remove it from the package(s) or deactivate them first.`
+                    };
+                }
+            }
+        }
+    } catch (e) {
+        console.warn('Error checking package dependencies:', e);
+    }
+
+    // 2. Check if referenced in future active bookings
+    try {
+        const todayStr = new Date().toISOString().split('T')[0];
+        let bookingQuery = supabase
+            .from('bookings')
+            .select('booking_id, booking_date, status')
+            .eq('service_id', serviceId)
+            .eq('status', 'booked')
+            .gte('booking_date', todayStr);
+
+        if (companyId) bookingQuery = bookingQuery.eq('company_id', companyId);
+        if (branchId) bookingQuery = bookingQuery.eq('branch_id', branchId);
+
+        const { data: futureBookings, error: bError } = await bookingQuery;
+        if (!bError && futureBookings && futureBookings.length > 0) {
+            return {
+                hasDependency: true,
+                reason: `Cannot delete this service because there are ${futureBookings.length} upcoming active booking(s) scheduled for it. Please reschedule or cancel the booking(s) first.`
+            };
+        }
+    } catch (e) {
+        console.warn('Error checking booking dependencies:', e);
+    }
+
+    return { hasDependency: false, reason: null };
 }
 
 export async function softDeleteService(serviceId) {
-    let { error: deleteError } = await supabase
-        .from('services')
-        .eq('id', serviceId)
-        .update({ status: 'deleted' });
+    const companyId = getCompanyId();
+    const branchId = getBranchId();
 
-    if (deleteError) {
-        console.warn('id-based delete failed, trying service_id:', deleteError.message);
-        ({ error: deleteError } = await supabase
-            .from('services')
-            .eq('service_id', serviceId)
-            .update({ status: 'deleted' }));
+    if (!companyId || !branchId) {
+        return { data: null, error: { message: 'Missing company or branch context' } };
     }
-    return { error: deleteError };
+
+    const payload = {
+        status: 'deleted',
+        updated_at: new Date().toISOString()
+    };
+
+    const { data, error } = await supabase
+        .from('services')
+        .update(payload)
+        .eq('service_id', serviceId)
+        .eq('company_id', companyId)
+        .eq('branch_id', branchId);
+
+    if (!error && (!data || data.length === 0)) {
+        return { data: null, error: { message: 'No matching service found to delete for this company and branch.' } };
+    }
+
+    return { data, error };
 }
 
 export async function insertPackage(payload) {
@@ -141,7 +232,15 @@ export async function deletePackage(pkgId) {
 export async function fetchServices() {
     try {
         const { data, error } = await fetchServicesFromDb();
-        if (error) throw new Error(error.message);
+        if (error) {
+            console.error('Error fetching services:', error.message || error);
+            if (window.toast) window.toast('Error loading services: ' + (error.message || 'Check connection'));
+            setLiveServicesData([]);
+            if (window.renderSvc) window.renderSvc([]);
+            const countEl = document.getElementById('countServices');
+            if (countEl) countEl.textContent = '0';
+            return;
+        }
 
         const liveServicesData = (data || [])
             .map(s => ({ ...s, status: (s.status || '').trim() }))
@@ -149,7 +248,11 @@ export async function fetchServices() {
 
         setLiveServicesData(liveServicesData);
 
-        if (window.renderSvc) window.renderSvc(liveServicesData);
+        if (window.applyServiceFilters) {
+            window.applyServiceFilters();
+        } else if (window.renderSvc) {
+            window.renderSvc(liveServicesData);
+        }
         if (window.populateServicesCategoryFilter) window.populateServicesCategoryFilter();
 
         const countEl = document.getElementById('countServices');
@@ -158,6 +261,7 @@ export async function fetchServices() {
         }
     } catch (err) {
         console.error('Network Error fetching services:', err);
+        if (window.toast) window.toast('Network error loading services');
         if (window.renderSvc) window.renderSvc(servicesState.liveServicesData || []);
     }
 }

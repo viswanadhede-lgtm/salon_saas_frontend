@@ -129,12 +129,17 @@ export function populateCategoryDropdownExForEdit() {
     const currentVal = sel.value;
     
     sel.innerHTML = '<option value="" disabled selected>Select a category</option>';
-    window.liveCategoriesData.filter(c => c.status === 'active').forEach(c => {
-        const o = document.createElement('option');
-        o.value = c.category_name || c.name;
-        o.textContent = c.category_name || c.name;
-        o.dataset.id = c.id || c.category_id || '';
-        sel.appendChild(o);
+    (window.liveCategoriesData || []).filter(c => (c.status || '').toLowerCase() === 'active').forEach(c => {
+        const catId = c.category_id || c.id;
+        const catName = c.category_name || c.name || '';
+        if (catId) {
+            const o = document.createElement('option');
+            o.value = catId;
+            o.textContent = catName;
+            o.dataset.name = catName;
+            o.dataset.id = catId;
+            sel.appendChild(o);
+        }
     });
     
     if (currentVal && Array.from(sel.options).some(opt => opt.value === currentVal)) {
@@ -143,21 +148,33 @@ export function populateCategoryDropdownExForEdit() {
 }
 
 export function openEditServiceModal(svcId) {
-    // S2: Strict service_id matching preserved
-    const svc = servicesState.liveServicesData.find(s => (s.service_id) === svcId);
+    const svc = (servicesState.liveServicesData || []).find(s => s.service_id === svcId);
     if (svc) {
         document.getElementById('editServiceId').value = svc.service_id || '';
         document.getElementById('editSfSvcName').value = svc.service_name || svc.name || '';
         
         populateCategoryDropdownExForEdit();
         
-        document.getElementById('editSfCategory').value = svc.category_name || '';
+        const sel = document.getElementById('editSfCategory');
+        if (sel) {
+            // First try matching by category_id
+            if (svc.category_id && Array.from(sel.options).some(o => o.value === svc.category_id)) {
+                sel.value = svc.category_id;
+            } else {
+                // Fallback by category_name if category_id was missing
+                const matchOpt = Array.from(sel.options).find(o => (o.textContent || '').trim().toLowerCase() === (svc.category_name || '').trim().toLowerCase());
+                if (matchOpt) sel.value = matchOpt.value;
+            }
+        }
         document.getElementById('editSfDuration').value = svc.duration || '';
         document.getElementById('editSfPrice').value = svc.price || '';
         document.getElementById('editSfDescription').value = svc.description || '';
         const statusRadios = document.querySelectorAll('input[name="editSfStatus"]');
-        statusRadios.forEach(r => r.checked = (r.value === svc.status));
+        statusRadios.forEach(r => r.checked = (r.value === (svc.status || 'active')));
         document.getElementById('editServiceModal').classList.add('active');
+    } else {
+        console.warn('Could not find service with service_id:', svcId);
+        if (window.toast) window.toast('Could not find service details');
     }
     if (window.svcMenu) { window.svcMenu.remove(); window.svcMenu = null; }
 }

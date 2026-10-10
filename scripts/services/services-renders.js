@@ -81,7 +81,7 @@ export function renderSvc(data) {
     tb.innerHTML = data.map(s => {
         const sName = s.service_name || s.name || '';
         const sCat = s.category_name || s.category || '';
-        const sId = s.service_id || s.id || '';
+        const sId = s.service_id || '';
         return `<tr class="tb-row">
             <td style="padding:14px 16px 14px 24px;font-weight:500;color:#1e293b;">${sName}</td>
             <td style="padding:14px 16px;"><span style="display:inline-block;padding:3px 10px;border-radius:20px;font-size:0.78rem;font-weight:600;background:#eff6ff;color:#1d4ed8;">${sCat}</span></td>
@@ -244,12 +244,18 @@ export function toast(msg) {
 export function applyServiceFilters() {
     const searchInput = document.getElementById('servicesSearchInput');
     const catFilter = document.getElementById('servicesCategoryFilter');
-    const q = (searchInput?.value || '').toLowerCase();
-    const cat = catFilter?.value || '';
+    const q = (searchInput?.value || '').trim().toLowerCase();
+    const selectedCatId = catFilter?.value || '';
 
     let filtered = window.liveServicesData || [];
-    if (cat) filtered = filtered.filter(s => (s.category_name || s.category || '') === cat);
-    if (q) filtered = filtered.filter(s => (s.service_name || s.name || '').toLowerCase().includes(q) || (s.category_name || s.category || '').toLowerCase().includes(q));
+    if (selectedCatId) {
+        filtered = filtered.filter(s => s.category_id === selectedCatId);
+    }
+    if (q) {
+        filtered = filtered.filter(s => 
+            (s.service_name || s.name || '').toLowerCase().includes(q)
+        );
+    }
     window.renderSvc(filtered);
 }
 
@@ -258,13 +264,20 @@ export function populateServicesCategoryFilter() {
     if (!sel) return;
     const currentVal = sel.value;
     sel.innerHTML = '<option value="">All Categories</option>';
-    [...new Set((window.liveCategoriesData || []).filter(c => c.status === 'active').map(c => c.category_name || c.name))].forEach(name => {
-        const o = document.createElement('option');
-        o.value = name;
-        o.textContent = name;
-        sel.appendChild(o);
+    const categories = (window.liveCategoriesData || []).filter(c => (c.status || '').toLowerCase() === 'active');
+    categories.forEach(c => {
+        const catId = c.category_id || c.id;
+        const catName = c.category_name || c.name || '';
+        if (catId) {
+            const o = document.createElement('option');
+            o.value = catId;
+            o.textContent = catName;
+            sel.appendChild(o);
+        }
     });
-    if (currentVal) sel.value = currentVal;
+    if (currentVal && Array.from(sel.options).some(opt => opt.value === currentVal)) {
+        sel.value = currentVal;
+    }
 }
 
 // ── 9. DOM INITIALIZATION / PAGE GLUE ───────────────────────────────
@@ -309,12 +322,17 @@ export function initServicesPageUI() {
             const sel = document.getElementById('sfCategory');
             if (sel) {
                 sel.innerHTML = '<option value="" disabled selected>Select a category</option>';
-                (window.liveCategoriesData || []).filter(c => c.status === 'active').forEach(c => {
-                    const o = document.createElement('option');
-                    o.value = c.category_name || c.name;
-                    o.textContent = c.category_name || c.name;
-                    o.dataset.id = c.id || c.category_id || '';
-                    sel.appendChild(o);
+                (window.liveCategoriesData || []).filter(c => (c.status || '').toLowerCase() === 'active').forEach(c => {
+                    const catId = c.category_id || c.id;
+                    const catName = c.category_name || c.name || '';
+                    if (catId) {
+                        const o = document.createElement('option');
+                        o.value = catId;
+                        o.textContent = catName;
+                        o.dataset.name = catName;
+                        o.dataset.id = catId;
+                        sel.appendChild(o);
+                    }
                 });
             }
 
@@ -323,12 +341,17 @@ export function initServicesPageUI() {
                     if (sel) {
                         const currentSelection = sel.value;
                         sel.innerHTML = '<option value="" disabled selected>Select a category</option>';
-                        (window.liveCategoriesData || []).filter(c => c.status === 'active').forEach(c => {
-                            const o = document.createElement('option');
-                            o.value = c.category_name || c.name;
-                            o.textContent = c.category_name || c.name;
-                            o.dataset.id = c.id || c.category_id || '';
-                            sel.appendChild(o);
+                        (window.liveCategoriesData || []).filter(c => (c.status || '').toLowerCase() === 'active').forEach(c => {
+                            const catId = c.category_id || c.id;
+                            const catName = c.category_name || c.name || '';
+                            if (catId) {
+                                const o = document.createElement('option');
+                                o.value = catId;
+                                o.textContent = catName;
+                                o.dataset.name = catName;
+                                o.dataset.id = catId;
+                                sel.appendChild(o);
+                            }
                         });
                         if (currentSelection) sel.value = currentSelection;
                     }
@@ -417,6 +440,7 @@ window.renderPackages = renderPackages;
 window.openPkgServicesModal = openPkgServicesModal;
 window.openCatServicesModal = openCatServicesModal;
 window.toast = toast;
+window.applyServiceFilters = applyServiceFilters;
 window.populateServicesCategoryFilter = populateServicesCategoryFilter;
 
 // ── 11. AUTO-INITIALIZE UI ON DOM READY ─────────────────────────────
