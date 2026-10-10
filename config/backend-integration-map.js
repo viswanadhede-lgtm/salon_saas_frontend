@@ -1,20 +1,75 @@
 // BACKEND INTEGRATION MAP
+
 // ==================================================
 // IMPORTANT PURPOSE
 // ==================================================
-// This map is documentation only. Features are added only after their integration has been audited, hardened, implemented, and validated.
+
+// This map is documentation only. Features are added only after
+// their integration has been audited, hardened, implemented,
+// and validated.
 
 // ==================================================
 // CUSTOMERS PAGE
-// ==================================================================================================================================================
-// 1. Statcards - customers_page__four_statcards [RPC Function]  -  Source Table is Customers Table.
-// 2. Customers Table - All the columns will get the data from the customers table directly.
-//     a.Total Spent Updation - Bookings: current value in total spent + current booking value and then updates the total spent value in the customers table.
-//     b.Total Spent Updation - Product sale: current value in total spent + current product sale value and then updates the total spent value in the customers table.
-//     c.Total Spent Updation - Membership purchased : current value in total spent + current membership purchased value and then updates the total spent value in the customers table.
-//          d.Last Visit Updation - Bookings: Booking status is completed then the last visit in the customers table will be updated with the timeztampz.
-//          e.Last Visit Updation - Product sale: product sale is completed then the last visit in the customers table will be updated with the timeztampz.
-//          f.Last visit Updation - Membership purchased: membership purchased is completed then the last visit in the customers table will be updated with the timeztampz.
-//    g.Clickable Total Spent - customers_page_clickable_total_spent [RPC Function] - 3 Tables being used are (bookings_for_business_transaction), (sales_for_business_transactions),(membership_purchases).
-// 3. StatCards TrendElements - customers_page__four_statcard_trendelements [RPC Function] - Source Table is Customers Table.
-// 4. GLOBAL CUSTOMER PROFILE MODAL - Two Rpc Functions - Global_customer_profile_modal & customers_page_clickable_total_spent.
+// ==================================================
+
+// 1. Stat Cards
+//    customers_page__four_statcards [RPC Function]
+//    Source: customers table
+//
+//    - Total Customers
+//    - New This Month
+//    - VIP Customers
+//    - Inactive (90+ Days)
+
+// 2. Customers Table
+//    Source: customers table directly
+//
+//    - Customer
+//    - Contact
+//    - Last Visit
+//    - Tags / Status
+//    - Notes
+//
+//    a. Total Spent Updation - Booking
+//       On completed booking:
+//       customers.total_spent is updated with the booking value.
+//
+//    b. Total Spent Updation - Product Sale
+//       On completed product sale:
+//       customers.total_spent is updated with the product-sale value.
+//
+//    c. Total Spent Updation - Membership Purchase
+//       On completed membership purchase:
+//       customers.total_spent is updated with the membership value.
+//
+//    d. Last Visit Updation - Booking
+//       On completed booking:
+//       customers.last_visit is updated.
+//
+//    e. Last Visit Updation - Product Sale
+//       On completed product sale:
+//       customers.last_visit is updated.
+//
+//    f. Last Visit Updation - Membership Purchase
+//       On completed membership purchase:
+//       customers.last_visit is updated.
+//
+//    g. Clickable Total Spent
+//       customers_page_clickable_total_spent [RPC Function]
+//       Sources:
+//       - bookings_for_business_transaction
+//       - sales_for_business_transactions
+//       - membership_purchases
+
+// 3. Stat Card Trend Elements
+//    customers_page__four_statcard_trendelements [RPC Function]
+//    Source: customers table
+
+// 4. Global Customer Profile Modal
+//    Uses two RPC Functions:
+//    - Global_customer_profile_modal
+//    - customers_page_clickable_total_spent
+//
+//    Global_customer_profile_modal sources:
+//    - customers
+//    - bookings_for_business_transaction
