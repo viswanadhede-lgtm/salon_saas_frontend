@@ -355,11 +355,54 @@ export function attachEventListeners() {
                 return;
             }
 
+            // ── Package Name Validation ──
+            const pkgNameInput = document.getElementById('pkgName');
+            const packageName = (pkgNameInput?.value || '').trim();
+            if (!packageName) {
+                window.toast && window.toast('Please enter a package name.');
+                pkgNameInput?.focus();
+                return;
+            }
+
+            // ── Price Validation ──
+            const originalPriceInput = document.getElementById('pkgOriginalPrice');
+            const finalPriceInput = document.getElementById('pkgFinalPrice');
+            const originalPrice = parseFloat(originalPriceInput?.value);
+            const finalPrice = parseFloat(finalPriceInput?.value);
+
+            if (!Number.isFinite(originalPrice) || originalPrice < 0) {
+                window.toast && window.toast('Original price must be a valid non-negative number.');
+                originalPriceInput?.focus();
+                return;
+            }
+            if (!Number.isFinite(finalPrice) || finalPrice < 0) {
+                window.toast && window.toast('Final price must be a valid non-negative number.');
+                finalPriceInput?.focus();
+                return;
+            }
+            if (finalPrice > originalPrice) {
+                window.toast && window.toast('Final price cannot exceed the original price.');
+                finalPriceInput?.focus();
+                return;
+            }
+
+            // ── Duplicate Package Name Check (usability; database is authoritative) ──
+            const pkgNameLower = packageName.toLowerCase();
+            const duplicatePkg = (servicesState.livePackagesData || []).find(p =>
+                (p.package_name || '').trim().toLowerCase() === pkgNameLower &&
+                (p.status || '').toLowerCase() !== 'deleted'
+            );
+            if (duplicatePkg) {
+                window.toast && window.toast('A package with this name already exists.');
+                pkgNameInput?.focus();
+                return;
+            }
+
             const payload = {
-                package_name: document.getElementById('pkgName').value.trim(),
+                package_name: packageName,
                 description: document.getElementById('pkgDescription').value.trim(),
-                original_price: parseFloat(document.getElementById('pkgOriginalPrice').value),
-                final_price: parseFloat(document.getElementById('pkgFinalPrice').value),
+                original_price: originalPrice,
+                final_price: finalPrice,
                 is_active: document.querySelector('input[name="pkgStatus"]:checked').value === 'true',
                 service_ids: Array.from(servicesState.selectedPackageServices)
             };
@@ -407,11 +450,56 @@ export function attachEventListeners() {
             }
 
             const pkgId = document.getElementById('editPkgId').value;
+
+            // ── Package Name Validation ──
+            const editPkgNameInput = document.getElementById('editPkgName');
+            const editPackageName = (editPkgNameInput?.value || '').trim();
+            if (!editPackageName) {
+                window.toast && window.toast('Please enter a package name.');
+                editPkgNameInput?.focus();
+                return;
+            }
+
+            // ── Price Validation ──
+            const editOriginalPriceInput = document.getElementById('editPkgOriginalPrice');
+            const editFinalPriceInput = document.getElementById('editPkgFinalPrice');
+            const editOriginalPrice = parseFloat(editOriginalPriceInput?.value);
+            const editFinalPrice = parseFloat(editFinalPriceInput?.value);
+
+            if (!Number.isFinite(editOriginalPrice) || editOriginalPrice < 0) {
+                window.toast && window.toast('Original price must be a valid non-negative number.');
+                editOriginalPriceInput?.focus();
+                return;
+            }
+            if (!Number.isFinite(editFinalPrice) || editFinalPrice < 0) {
+                window.toast && window.toast('Final price must be a valid non-negative number.');
+                editFinalPriceInput?.focus();
+                return;
+            }
+            if (editFinalPrice > editOriginalPrice) {
+                window.toast && window.toast('Final price cannot exceed the original price.');
+                editFinalPriceInput?.focus();
+                return;
+            }
+
+            // ── Duplicate Package Name Check (exclude current package; usability only) ──
+            const editPkgNameLower = editPackageName.toLowerCase();
+            const editDuplicatePkg = (servicesState.livePackagesData || []).find(p =>
+                (p.package_name || '').trim().toLowerCase() === editPkgNameLower &&
+                (p.status || '').toLowerCase() !== 'deleted' &&
+                String(p.package_id) !== String(pkgId)
+            );
+            if (editDuplicatePkg) {
+                window.toast && window.toast('A package with this name already exists.');
+                editPkgNameInput?.focus();
+                return;
+            }
+
             const payload = {
-                package_name: document.getElementById('editPkgName').value.trim(),
+                package_name: editPackageName,
                 description: document.getElementById('editPkgDescription').value.trim(),
-                original_price: parseFloat(document.getElementById('editPkgOriginalPrice').value),
-                final_price: parseFloat(document.getElementById('editPkgFinalPrice').value),
+                original_price: editOriginalPrice,
+                final_price: editFinalPrice,
                 is_active: document.querySelector('input[name="editPkgStatus"]:checked').value === 'true',
                 service_ids: Array.from(servicesState.editSelectedPackageServices)
             };
