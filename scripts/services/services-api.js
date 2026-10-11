@@ -39,7 +39,7 @@ export async function fetchPackagesFromDb() {
 
     let query = supabase
         .from('packages')
-        .select('*, package_services(service_name)')
+        .select('*, package_services(service_id, service_name)')
         .neq('status', 'deleted')
         .order('created_at', { ascending: false });
 
@@ -59,7 +59,7 @@ export async function fetchPackageServicesForEdit(packageId) {
 export async function fetchPackageServicesForBreakdown(packageId) {
     return await supabase
         .from('package_services')
-        .select('service_name')
+        .select('service_id, service_name')
         .eq('package_id', packageId);
 }
 
@@ -603,17 +603,34 @@ export async function openPkgServicesModalInner(pkgId, pkgName) {
     const body = document.getElementById('pkgServicesModalBody');
     if (!title || !body) return;
 
+    const liveServices = window.liveServicesData || servicesState.liveServicesData || [];
+
+    const renderRows = (servicesList) => {
+        return servicesList.map(r => {
+            const svc = liveServices.find(s => 
+                (r.service_id && String(s.service_id) === String(r.service_id)) ||
+                ((s.service_name || s.name || '').trim().toLowerCase() === (r.service_name || '').trim().toLowerCase())
+            );
+            const sName = r.service_name || svc?.service_name || '—';
+            const catName = svc?.category_name || svc?.category || '—';
+            const price = svc?.price != null ? `₹${parseFloat(svc.price).toLocaleString('en-IN')}` : '—';
+
+            return `
+            <tr class="tb-row">
+                <td style="padding:12px 16px 12px 20px;font-weight:600;color:#1e293b;font-size:0.87rem;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="${sName}">${sName}</td>
+                <td style="padding:12px 16px;"><span style="display:inline-block;padding:2px 8px;border-radius:20px;font-size:0.75rem;font-weight:600;background:#eff6ff;color:#1d4ed8;">${catName}</span></td>
+                <td style="padding:12px 16px;font-weight:600;color:#059669;font-size:0.87rem;">${price}</td>
+            </tr>`;
+        }).join('');
+    };
+
     // 1. Check in-memory cache first for instant (0ms) render
     const cachedPkg = (servicesState.livePackagesData || []).find(p => String(p.package_id) === String(pkgId));
     if (cachedPkg && Array.isArray(cachedPkg.package_services) && cachedPkg.package_services.length > 0) {
         const services = cachedPkg.package_services.filter(r => r.service_name);
         title.innerHTML = `${pkgName} <span style="display: inline-flex; align-items: center; justify-content: center; min-width: 26px; height: 26px; border-radius: 50%; background-color: #eff6ff; color: #1e3a8a; font-size: 0.9rem; font-weight: 600; margin-left: 8px; vertical-align: middle; padding: 0 6px;">${services.length}</span>`;
 
-        body.innerHTML = services.map(r => `
-            <tr class="tb-row">
-                <td style="padding:14px 16px 14px 20px;font-weight:600;color:#1e293b;font-size:0.87rem;">${r.service_name}</td>
-            </tr>`
-        ).join('');
+        body.innerHTML = renderRows(services);
         return;
     }
 
@@ -626,17 +643,13 @@ export async function openPkgServicesModalInner(pkgId, pkgName) {
         title.innerHTML = `${pkgName} <span style="display: inline-flex; align-items: center; justify-content: center; min-width: 26px; height: 26px; border-radius: 50%; background-color: #eff6ff; color: #1e3a8a; font-size: 0.9rem; font-weight: 600; margin-left: 8px; vertical-align: middle; padding: 0 6px;">${services.length}</span>`;
 
         if (!services.length) {
-            body.innerHTML = '<tr><td style="padding:40px;text-align:center;color:#64748b;font-weight:500;">No services included in this package.</td></tr>';
+            body.innerHTML = '<tr><td colspan="3" style="padding:40px;text-align:center;color:#64748b;font-weight:500;">No services included in this package.</td></tr>';
         } else {
-            body.innerHTML = services.map(r => `
-                <tr class="tb-row">
-                    <td style="padding:14px 16px 14px 20px;font-weight:600;color:#1e293b;font-size:0.87rem;">${r.service_name}</td>
-                </tr>`
-            ).join('');
+            body.innerHTML = renderRows(services);
         }
     } catch (err) {
         console.error('Error fetching package services:', err);
         title.innerHTML = pkgName;
-        body.innerHTML = '<tr><td style="padding:40px;text-align:center;color:#ef4444;">Failed to load services.</td></tr>';
+        body.innerHTML = '<tr><td colspan="3" style="padding:40px;text-align:center;color:#ef4444;">Failed to load services.</td></tr>';
     }
 }

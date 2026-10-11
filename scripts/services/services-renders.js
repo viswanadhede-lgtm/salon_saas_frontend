@@ -223,19 +223,32 @@ export async function openPkgServicesModal(pkgId, pkgName) {
     const body = document.getElementById('pkgServicesModalBody');
     if (!modal) return;
 
+    const liveServices = window.liveServicesData || [];
+
     // 1. Instant render if package services are already cached in memory
     const cachedPkg = (window.livePackagesData || []).find(p => String(p.package_id) === String(pkgId));
     if (cachedPkg && Array.isArray(cachedPkg.package_services) && cachedPkg.package_services.length > 0) {
         const services = cachedPkg.package_services.filter(r => r.service_name);
         if (title) {
-            title.innerHTML = `${pkgName} <span style="display: inline-flex; align-items: center; justify-content: center; min-width: 26px; height: 26px; border-radius: 50%; background-color: #eff6ff; color: #1e3a8a; font-size: 0.9rem; font-weight: 600; margin-left: 8px; vertical-align: middle; padding: 0 6px;">${services.length}</span>`;
+            title.innerHTML = `${escapeHtml(pkgName)} <span style="display: inline-flex; align-items: center; justify-content: center; min-width: 26px; height: 26px; border-radius: 50%; background-color: #eff6ff; color: #1e3a8a; font-size: 0.9rem; font-weight: 600; margin-left: 8px; vertical-align: middle; padding: 0 6px;">${services.length}</span>`;
         }
         if (body) {
-            body.innerHTML = services.map(r => `
+            body.innerHTML = services.map(r => {
+                const svc = liveServices.find(s => 
+                    (r.service_id && String(s.service_id) === String(r.service_id)) ||
+                    ((s.service_name || s.name || '').trim().toLowerCase() === (r.service_name || '').trim().toLowerCase())
+                );
+                const sName = r.service_name || svc?.service_name || '—';
+                const catName = svc?.category_name || svc?.category || '—';
+                const price = svc?.price != null ? `₹${parseFloat(svc.price).toLocaleString('en-IN')}` : '—';
+
+                return `
                 <tr class="tb-row">
-                    <td style="padding:14px 16px 14px 20px;font-weight:600;color:#1e293b;font-size:0.87rem;">${r.service_name}</td>
-                </tr>`
-            ).join('');
+                    <td style="padding:12px 16px 12px 20px;font-weight:600;color:#1e293b;font-size:0.87rem;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="${escapeHtml(sName)}">${escapeHtml(sName)}</td>
+                    <td style="padding:12px 16px;"><span style="display:inline-block;padding:2px 8px;border-radius:20px;font-size:0.75rem;font-weight:600;background:#eff6ff;color:#1d4ed8;">${escapeHtml(catName)}</span></td>
+                    <td style="padding:12px 16px;font-weight:600;color:#059669;font-size:0.87rem;">${price}</td>
+                </tr>`;
+            }).join('');
         }
         modal.classList.add('active');
         return;
@@ -243,10 +256,10 @@ export async function openPkgServicesModal(pkgId, pkgName) {
 
     // 2. Fallback to network query if not yet cached
     if (title) {
-        title.innerHTML = `${pkgName} <span style="display: inline-flex; align-items: center; justify-content: center; min-width: 26px; height: 26px; border-radius: 50%; background-color: #eff6ff; color: #1e3a8a; font-size: 0.9rem; font-weight: 600; margin-left: 8px; vertical-align: middle; padding: 0 6px;">...</span>`;
+        title.innerHTML = `${escapeHtml(pkgName)} <span style="display: inline-flex; align-items: center; justify-content: center; min-width: 26px; height: 26px; border-radius: 50%; background-color: #eff6ff; color: #1e3a8a; font-size: 0.9rem; font-weight: 600; margin-left: 8px; vertical-align: middle; padding: 0 6px;">...</span>`;
     }
     if (body) {
-        body.innerHTML = '<tr><td style="padding:40px;text-align:center;"><div style="color:#64748b;font-weight:500;">Loading services...</div></td></tr>';
+        body.innerHTML = '<tr><td colspan="3" style="padding:40px;text-align:center;"><div style="color:#64748b;font-weight:500;">Loading services...</div></td></tr>';
     }
     modal.classList.add('active');
     if (window._openPkgServicesModalInner) window._openPkgServicesModalInner(pkgId, pkgName);
