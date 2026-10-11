@@ -93,8 +93,8 @@ export function renderSvc(data) {
         const sCat = s.category_name || s.category || '';
         const sId = s.service_id || '';
         return `<tr class="tb-row">
-            <td style="padding:14px 16px 14px 24px;font-weight:500;color:#1e293b;">${sName}</td>
-            <td style="padding:14px 16px;"><span style="display:inline-block;padding:3px 10px;border-radius:20px;font-size:0.78rem;font-weight:600;background:#eff6ff;color:#1d4ed8;">${sCat}</span></td>
+            <td style="padding:14px 16px 14px 24px;font-weight:500;color:#1e293b;">${escapeHtml(sName)}</td>
+            <td style="padding:14px 16px;"><span style="display:inline-block;padding:3px 10px;border-radius:20px;font-size:0.78rem;font-weight:600;background:#eff6ff;color:#1d4ed8;">${escapeHtml(sCat)}</span></td>
             <td style="padding:14px 16px;color:#374151;">${s.duration} min</td>
             <td style="padding:14px 16px;color:#374151;font-weight:500;">&#8377;${parseFloat(s.price || 0).toLocaleString()}</td>
             <td style="padding:14px 16px;">${statusBadge(s.status)}</td>
@@ -189,7 +189,7 @@ export function renderPackages(data) {
         const pName = p.package_name || '';
         const cnt = p.services_count || 0;
         return `<tr class="tb-row">
-            <td style="padding:14px 16px 14px 24px;"><div style="font-weight:600;color:#1e293b;font-size:0.9rem;">${pName}</div>${p.description ? `<div style="font-size:0.8rem;color:#94a3b8;margin-top:2px;">${p.description}</div>` : ''}</td>
+            <td style="padding:14px 16px 14px 24px;"><div style="font-weight:600;color:#1e293b;font-size:0.9rem;">${escapeHtml(pName)}</div>${p.description ? `<div style="font-size:0.8rem;color:#94a3b8;margin-top:2px;">${escapeHtml(p.description)}</div>` : ''}</td>
             <td style="padding:14px 16px; text-align:center;">
                 <span class="customer-link" onclick="window.openPkgServicesModal('${p.package_id}', '${pName.replace(/'/g, "\\'")}')">
                     ${cnt} ${cnt === 1 ? 'service' : 'services'}
