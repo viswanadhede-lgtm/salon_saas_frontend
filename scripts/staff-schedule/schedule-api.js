@@ -236,32 +236,62 @@ export async function fetchTodayBookings(staffIds) {
 // DATABASE MUTATIONS: DELETE & SAVE
 // ─────────────────────────────────────────────────────────────
 
-export async function deleteScheduleByMonth(staffId, targetMonth) {
+export async function deleteScheduleByMonth(staffId, targetMonth, companyId, branchId) {
     const [yyyy, mm] = targetMonth.split('-').map(Number);
     const lastDay = new Date(yyyy, mm, 0).getDate();
+    const monthEnd = `${targetMonth}-${String(lastDay).padStart(2, '0')}`;
+
+    // Future-date guard: only delete dates from tomorrow onwards (preserve past work history)
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const tomorrow = new Date(today);
+    tomorrow.setDate(tomorrow.getDate() + 1);
+    const tomorrowStr = toISODate(tomorrow);
+    const deleteFrom = tomorrowStr > `${targetMonth}-01` ? tomorrowStr : `${targetMonth}-01`;
+
+    // If the entire month is in the past, nothing to delete
+    if (deleteFrom > monthEnd) return;
 
     const { error } = await supabase
         .from('staff_schedule')
+        .delete()
         .eq('staff_id', staffId)
-        .gte('schedule_date', `${targetMonth}-01`)
-        .lte('schedule_date', `${targetMonth}-${String(lastDay).padStart(2, '0')}`)
-        .delete();
+        .eq('company_id', companyId)
+        .eq('branch_id', branchId)
+        .gte('schedule_date', deleteFrom)
+        .lte('schedule_date', monthEnd);
     
     if (error) throw error;
 }
 
-export async function saveScheduleRecords(insertPayload, staffId, year, month) {
-    // ALWAYS Purge existing data for this staff_id and month, and overwrite directly
+export async function saveScheduleRecords(insertPayload, staffId, year, month, companyId, branchId) {
+    // Purge existing FUTURE data for this staff_id and month, then overwrite
     const lastDay = new Date(year, month + 1, 0).getDate();
-    const { error: delError } = await supabase
-        .from('staff_schedule')
-        .eq('staff_id', staffId)
-        .gte('schedule_date', `${year}-${String(month + 1).padStart(2, '0')}-01`)
-        .lte('schedule_date', `${year}-${String(month + 1).padStart(2, '0')}-${String(lastDay).padStart(2, '0')}`)
-        .delete();
+    const monthStr = `${year}-${String(month + 1).padStart(2, '0')}`;
+    const monthStart = `${monthStr}-01`;
+    const monthEnd = `${monthStr}-${String(lastDay).padStart(2, '0')}`;
 
-    if (delError) {
-        throw new Error('Failed to overwrite existing schedule');
+    // Future-date guard: only delete dates from tomorrow onwards (preserve past work history)
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const tomorrow = new Date(today);
+    tomorrow.setDate(tomorrow.getDate() + 1);
+    const tomorrowStr = toISODate(tomorrow);
+    const deleteFrom = tomorrowStr > monthStart ? tomorrowStr : monthStart;
+
+    if (deleteFrom <= monthEnd) {
+        const { error: delError } = await supabase
+            .from('staff_schedule')
+            .delete()
+            .eq('staff_id', staffId)
+            .eq('company_id', companyId)
+            .eq('branch_id', branchId)
+            .gte('schedule_date', deleteFrom)
+            .lte('schedule_date', monthEnd);
+
+        if (delError) {
+            throw new Error('Failed to overwrite existing schedule');
+        }
     }
 
     // Insert new schedules

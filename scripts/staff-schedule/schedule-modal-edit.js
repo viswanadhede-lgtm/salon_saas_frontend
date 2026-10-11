@@ -532,15 +532,19 @@ export async function handleFormSubmit(e) {
     const companyId = getCompanyId();
 
     // Add company_id and branch_id to local schedule Entries for direct DB insert
+    const isEdit = !!scheduleState.currentEditingScheduleId;
+    const nowISO = new Date().toISOString();
     const insertPayload = scheduleEntries.map(entry => ({
         ...entry,
         company_id: companyId,
-        branch_id: branchId
+        branch_id: branchId,
+        schedule_month: targetMonth,
+        ...(isEdit ? { updated_at: nowISO } : {})
     }));
 
     try {
         // ALWAYS Purge existing data for this staff_id and month, and overwrite directly
-        await saveScheduleRecords(insertPayload, payload.staff_id, year, month);
+        await saveScheduleRecords(insertPayload, payload.staff_id, year, month, companyId, branchId);
         await fetchSchedules();
 
         if (DOM.toast) {

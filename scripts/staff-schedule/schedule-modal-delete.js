@@ -1,8 +1,8 @@
-﻿// scripts/staff-schedule/schedule-modal-delete.js
+// scripts/staff-schedule/schedule-modal-delete.js
 
 import { DOM, scheduleState } from './schedule-state.js';
 import { showToast } from './schedule-helpers.js';
-import { deleteScheduleByMonth } from './schedule-api.js';
+import { deleteScheduleByMonth, getCompanyId, getBranchId } from './schedule-api.js';
 import { renderTable } from './schedule-table.js';
 
 export function deleteSchedule(scheduleId) {
@@ -162,7 +162,9 @@ export async function performDelete(scheduleId) {
     }
 
     try {
-        await deleteScheduleByMonth(staffId, targetMonth);
+        const companyId = getCompanyId();
+        const branchId = getBranchId();
+        await deleteScheduleByMonth(staffId, targetMonth, companyId, branchId);
         scheduleState.rawSchedules = scheduleState.rawSchedules.filter(s => s.id !== scheduleId);
         renderTable();
 
