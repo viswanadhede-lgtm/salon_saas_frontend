@@ -16,14 +16,12 @@ window.fetchStaff = async function() {
             .select('*')
             .eq('company_id', company_id)
             .eq('branch_id', branch_id)
+            .neq('status', 'deleted')
             .order('staff_name', { ascending: true });
         
         if (error) throw new Error(error.message);
         
         let staffArray = data || [];
-
-        // Filter out soft-deleted staff
-        staffArray = staffArray.filter(s => (s.status || '').toLowerCase() !== 'deleted');
 
         // Update Stat Cards dynamically
         const statTotal = document.getElementById('statTotalStaff');
@@ -71,6 +69,9 @@ window.fetchStaff = async function() {
                 email: staff.email || '',
                 notes: staff.notes || '',
                 status: normStatus,
+                joined_at: staff.joined_at || '',
+                created_at: staff.created_at || '',
+                updated_at: staff.updated_at || '',
                 initials: initials,
                 color: avatarColors[idx % avatarColors.length]
             };
@@ -81,7 +82,7 @@ window.fetchStaff = async function() {
         console.error('Error fetching staff:', error);
         liveStaffData = [];
         const tbody = document.getElementById('staffTableBody');
-        if (tbody) tbody.innerHTML = `<tr><td colspan="6" style="padding:40px; text-align:center; color:#ef4444;">Failed to load staff records.</td></tr>`;
+        if (tbody) tbody.innerHTML = `<tr><td colspan="5" style="padding:40px; text-align:center; color:#ef4444;">Failed to load staff records.</td></tr>`;
     }
 };
 
@@ -92,6 +93,87 @@ function getCompanyId() { return localStorage.getItem('company_id') || null; }
 
 function getBranchId() {
     return localStorage.getItem('active_branch_id') || null;
+}
+
+function showToast(message, isError = false) {
+    if (typeof window.toast === 'function') {
+        window.toast(message, isError ? '#ef4444' : '#10b981');
+        return;
+    }
+    const existing = document.getElementById('toastNotification');
+    if (existing) {
+        existing.textContent = message;
+        existing.style.background = isError ? '#ef4444' : '#10b981';
+        existing.classList.add('show');
+        setTimeout(() => existing.classList.remove('show'), 3000);
+        return;
+    }
+    const toast = document.createElement('div');
+    toast.id = 'toastNotification';
+    toast.textContent = message;
+    toast.style.cssText = `
+        position: fixed; bottom: 24px; right: 24px; z-index: 10001;
+        background: ${isError ? '#ef4444' : '#10b981'}; color: #fff;
+        padding: 12px 20px; border-radius: 8px; font-weight: 500; font-size: 0.9rem;
+        box-shadow: 0 4px 12px rgba(0,0,0,0.15); transition: opacity 0.3s ease;
+    `;
+    document.body.appendChild(toast);
+    setTimeout(() => {
+        toast.style.opacity = '0';
+        setTimeout(() => toast.remove(), 300);
+    }, 3000);
+}
+
+export async function checkStaffDependencies(staffId) {
+    const companyId = getCompanyId();
+    const branchId = getBranchId();
+    const todayStr = new Date().toISOString().split('T')[0];
+
+    try {
+        let bookingQuery = supabase
+            .from('bookings')
+            .select('booking_id, booking_date, status')
+            .eq('staff_id', staffId)
+            .in('status', ['booked', 'confirmed'])
+            .gte('booking_date', todayStr);
+
+        if (companyId) bookingQuery = bookingQuery.eq('company_id', companyId);
+        if (branchId) bookingQuery = bookingQuery.eq('branch_id', branchId);
+
+        const { data: futureBookings, error: bError } = await bookingQuery;
+        if (!bError && futureBookings && futureBookings.length > 0) {
+            return {
+                hasDependency: true,
+                reason: `Cannot delete this staff member because there are ${futureBookings.length} upcoming active booking(s) assigned to them. Please reschedule or reassign the booking(s) first.`
+            };
+        }
+    } catch (e) {
+        console.warn('Error checking staff booking dependencies:', e);
+    }
+
+    try {
+        let bbtQuery = supabase
+            .from('bookings_for_business_transaction')
+            .select('booking_id, booking_date, status')
+            .ilike('staff_id', `%${staffId}%`)
+            .in('status', ['booked', 'confirmed'])
+            .gte('booking_date', todayStr);
+
+        if (companyId) bbtQuery = bbtQuery.eq('company_id', companyId);
+        if (branchId) bbtQuery = bbtQuery.eq('branch_id', branchId);
+
+        const { data: futureBbt, error: bbtError } = await bbtQuery;
+        if (!bbtError && futureBbt && futureBbt.length > 0) {
+            return {
+                hasDependency: true,
+                reason: `Cannot delete this staff member because there are ${futureBbt.length} upcoming active booking(s) assigned to them. Please reschedule or reassign the booking(s) first.`
+            };
+        }
+    } catch (e) {
+        console.warn('Error checking staff transaction dependencies:', e);
+    }
+
+    return { hasDependency: false, reason: null };
 }
 
 export async function initStaff() {
@@ -111,20 +193,38 @@ function renderStaffTable(data) {
     const tbody = document.getElementById('staffTableBody');
     if (!tbody) return;
     if (!data.length) {
-        tbody.innerHTML = `<tr><td colspan="6" style="padding:40px; text-align:center; color:#94a3b8;">No staff members found.</td></tr>`;
+        tbody.innerHTML = `<tr><td colspan="5" style="padding:40px; text-align:center; color:#94a3b8;">No staff members found.</td></tr>`;
         return;
     }
-    tbody.innerHTML = data.map(s => `
+    tbody.innerHTML = data.map(s => {
+        let joinedDate = 'Recently';
+        const rawDate = s.joined_at || s.created_at;
+        if (rawDate) {
+            const dateObj = new Date(rawDate);
+            if (!isNaN(dateObj)) {
+                const d = String(dateObj.getDate()).padStart(2, '0');
+                const m = String(dateObj.getMonth() + 1).padStart(2, '0');
+                const y = dateObj.getFullYear();
+                joinedDate = `${d}-${m}-${y}`;
+            }
+        }
+
+        return `
         <tr class="tb-row">
             <td style="padding:14px 16px 14px 24px;">
                 <div style="display:flex; align-items:center; gap:12px;">
                     <div style="width:38px; height:38px; border-radius:50%; background:${s.color || '#6366f1'}; color:#fff; font-size:0.8rem; font-weight:700; display:flex; align-items:center; justify-content:center; flex-shrink:0;">${s.initials}</div>
-                    <span class="customer-link" onclick="window.viewStaffProfile('${s.id}')">${s.name}</span>
+                    <div>
+                        <span class="customer-link" onclick="window.viewStaffProfile('${s.id}')" style="font-weight:600; cursor:pointer;">${s.name}</span>
+                        <p class="text-sm text-muted" style="margin:0; font-size:0.875rem; color:#64748b;">Joined ${joinedDate}</p>
+                    </div>
                 </div>
             </td>
-            <td style="padding:14px 16px; color:#374151; font-weight:500;">${s.role}</td>
-            <td style="padding:14px 16px; color:#64748b;">${s.services}</td>
-            <td style="padding:14px 16px; color:#374151;">${s.phone}</td>
+            <td style="padding:14px 16px;">
+                <p class="text-sm" style="margin:0; font-size:0.875rem; color:#374151; font-weight:500;">${s.phone && s.phone !== '-' ? s.phone : '-'}</p>
+                <p class="text-sm text-muted" style="margin:0; font-size:0.875rem; color:#64748b;">${s.email || '-'}</p>
+            </td>
+            <td style="padding:14px 16px; color:#64748b;">${s.services || '-'}</td>
             <td style="padding:14px 16px;">${getStaffStatusBadge(s.status)}</td>
             <td style="padding:14px 16px; vertical-align:middle;">
                 <div class="action-buttons" style="display:flex; justify-content:flex-start; gap:0.5rem;">
@@ -139,7 +239,8 @@ function renderStaffTable(data) {
                 </div>
             </td>
         </tr>
-    `).join('');
+    `;
+    }).join('');
     if (window.feather) feather.replace();
 
     // Apply sub-feature gating to dynamically generated action buttons
@@ -288,7 +389,11 @@ function attachEventListeners() {
     if (searchInput) {
         searchInput.addEventListener('input', function() {
             const q = this.value.toLowerCase();
-            const filtered = liveStaffData.filter(s => s.name.toLowerCase().includes(q) || s.phone.includes(q));
+            const filtered = liveStaffData.filter(s => 
+                s.name.toLowerCase().includes(q) || 
+                s.phone.includes(q) || 
+                (s.email && s.email.toLowerCase().includes(q))
+            );
             renderStaffTable(filtered);
         });
     }
@@ -336,8 +441,7 @@ function attachEventListeners() {
             // Duplicate Check
             const exists = liveStaffData.find(s => s.phone === phoneVal);
             if (exists) {
-                const toast = document.getElementById('toastNotification');
-                if (toast) { toast.textContent = 'A staff member with this phone number already exists.'; toast.classList.add('show'); setTimeout(() => toast.classList.remove('show'), 3000); }
+                showToast('A staff member with this phone number already exists.', true);
                 return;
             }
 
@@ -356,43 +460,33 @@ function attachEventListeners() {
                     throw new Error("Missing company or branch context. Please reload or log in again.");
                 }
 
+                const nowIso = new Date().toISOString();
+                const todayDate = nowIso.split('T')[0];
+
                 const payload = {
                     company_id,
                     branch_id,
                     staff_name: document.getElementById('sfName').value.trim(),
                     phone: phoneVal,
-                    email: document.getElementById('sfEmail').value.trim(),
+                    email: document.getElementById('sfEmail').value.trim() || null,
                     role_name: 'Staff',
-                    services_offered: document.getElementById('sfServices').value.trim(),
-                    notes: document.getElementById('sfNotes').value.trim(),
-                    status: document.querySelector('input[name="sfStatus"]:checked')?.value || 'active'
+                    services_offered: document.getElementById('sfServices').value.trim() || null,
+                    notes: document.getElementById('sfNotes').value.trim() || null,
+                    status: document.querySelector('input[name="sfStatus"]:checked')?.value || 'active',
+                    joined_at: todayDate,
+                    created_at: nowIso,
+                    updated_at: nowIso
                 };
 
                 const { error } = await supabase
                     .from('staff')
-                    .insert({
-                        company_id,
-                        branch_id,
-                        staff_name: payload.staff_name,
-                        phone: payload.phone,
-                        email: payload.email,
-                        role_id: payload.role_id,
-                        role_name: payload.role_name,
-                        services_offered: payload.services_offered,
-                        notes: payload.notes,
-                        status: payload.status
-                    });
+                    .insert(payload);
 
                 if (error) {
                     throw new Error(error.message || 'Failed to create staff member');
                 }
 
-                const toast = document.getElementById('toastNotification');
-                if (toast) { 
-                    toast.textContent = 'Staff member added successfully'; 
-                    toast.classList.add('show'); 
-                    setTimeout(() => toast.classList.remove('show'), 3000); 
-                }
+                showToast('Staff member added successfully');
                 if (window.notifyEvent) {
                     window.notifyEvent('staff', 'evt_staff_added', {
                         title: 'New Staff Added',
@@ -406,7 +500,7 @@ function attachEventListeners() {
                 await window.fetchStaff();
             } catch (err) {
                 console.error("Error creating staff:", err);
-                alert(err.message || 'An error occurred while creating the staff member');
+                showToast(err.message || 'An error occurred while creating the staff member', true);
             } finally {
                 if (submitBtn) {
                     submitBtn.innerText = originalText;
@@ -432,8 +526,7 @@ function attachEventListeners() {
             // Duplicate Check
             const exists = liveStaffData.find(s => s.phone === phoneVal && String(s.id) !== String(staffId));
             if (exists) {
-                const toast = document.getElementById('toastNotification');
-                if (toast) { toast.textContent = 'Another staff member already uses this phone number.'; toast.classList.add('show'); setTimeout(() => toast.classList.remove('show'), 3000); }
+                showToast('Another staff member already uses this phone number.', true);
                 return;
             }
 
@@ -452,31 +545,31 @@ function attachEventListeners() {
                     throw new Error('Missing company or branch context. Please reload or log in again.');
                 }
 
+                const nowIso = new Date().toISOString();
+
                 const payload = {
                     staff_name: document.getElementById('editSfName').value.trim(),
                     phone: phoneVal,
-                    email: document.getElementById('editSfEmail').value.trim(),
+                    email: document.getElementById('editSfEmail').value.trim() || null,
                     role_name: 'Staff',
-                    services_offered: document.getElementById('editSfServices').value.trim(),
-                    notes: document.getElementById('editSfNotes').value.trim(),
-                    status: document.querySelector('input[name="editSfStatus"]:checked')?.value || 'active'
+                    services_offered: document.getElementById('editSfServices').value.trim() || null,
+                    notes: document.getElementById('editSfNotes').value.trim() || null,
+                    status: document.querySelector('input[name="editSfStatus"]:checked')?.value || 'active',
+                    updated_at: nowIso
                 };
 
                 const { error } = await supabase
                     .from('staff')
+                    .update(payload)
                     .eq('staff_id', staffId)
-                    .update(payload);
+                    .eq('company_id', company_id)
+                    .eq('branch_id', branch_id);
 
                 if (error) {
                     throw new Error(error.message || 'Failed to update staff member');
                 }
 
-                const toast = document.getElementById('toastNotification');
-                if (toast) {
-                    toast.textContent = 'Staff member updated successfully';
-                    toast.classList.add('show');
-                    setTimeout(() => toast.classList.remove('show'), 3000);
-                }
+                showToast('Staff member updated successfully');
                 if (window.notifyEvent) {
                     window.notifyEvent('staff', 'evt_staff_updated', {
                         title: 'Staff Details Updated',
@@ -488,7 +581,7 @@ function attachEventListeners() {
                 await window.fetchStaff();
             } catch (err) {
                 console.error('Error updating staff:', err);
-                alert(err.message || 'An error occurred while updating the staff member');
+                showToast(err.message || 'An error occurred while updating the staff member', true);
             } finally {
                 if (submitBtn) {
                     submitBtn.innerText = originalText;
@@ -516,6 +609,9 @@ function attachEventListeners() {
 
         document.getElementById('btnConfirmDeleteStaff')?.addEventListener('click', async () => {
             if (!staffToDelete) return;
+            const staffId = staffToDelete.id;
+            const staffName = staffToDelete.name || 'Staff member';
+
             deleteOverlay.classList.remove('active');
             fullScreenLoader.classList.add('active');
 
@@ -527,37 +623,40 @@ function attachEventListeners() {
                     throw new Error('Missing company or branch context. Please reload or log in again.');
                 }
 
-                let deleteError;
-                ({ error: deleteError } = await supabase
-                    .from('staff')
-                    .eq('id', staffToDelete.id)
-                    .update({ status: 'deleted' }));
-
-                if (deleteError) {
-                    ({ error: deleteError } = await supabase
-                        .from('staff')
-                        .eq('staff_id', staffToDelete.id)
-                        .update({ status: 'deleted' }));
+                // Check upcoming active bookings before soft deletion
+                const depCheck = await checkStaffDependencies(staffId);
+                if (depCheck.hasDependency) {
+                    fullScreenLoader.classList.remove('active');
+                    staffToDelete = null;
+                    showToast(depCheck.reason, true);
+                    alert(depCheck.reason);
+                    return;
                 }
+
+                const nowIso = new Date().toISOString();
+
+                const { error: deleteError } = await supabase
+                    .from('staff')
+                    .update({ 
+                        status: 'deleted',
+                        updated_at: nowIso
+                    })
+                    .eq('staff_id', staffId)
+                    .eq('company_id', company_id)
+                    .eq('branch_id', branch_id);
 
                 if (deleteError) {
                     throw new Error(deleteError.message || 'Failed to delete staff member');
                 }
 
                 fullScreenLoader.classList.remove('active');
-                const deletedName = staffToDelete.name || 'Staff member';
                 staffToDelete = null;
 
-                const toast = document.getElementById('toastNotification');
-                if (toast) {
-                    toast.textContent = 'Staff member deleted successfully';
-                    toast.classList.add('show');
-                    setTimeout(() => toast.classList.remove('show'), 3000);
-                }
+                showToast('Staff member deleted successfully');
                 if (window.notifyEvent) {
                     window.notifyEvent('staff', 'evt_staff_deleted', {
                         title: 'Staff Deleted',
-                        message: `${deletedName} was removed.`
+                        message: `${staffName} was removed.`
                     });
                 }
 
@@ -566,7 +665,7 @@ function attachEventListeners() {
                 console.error('Error deleting staff:', err);
                 fullScreenLoader.classList.remove('active');
                 staffToDelete = null;
-                alert(err.message || 'An error occurred while deleting the staff member');
+                showToast(err.message || 'An error occurred while deleting the staff member', true);
             }
         });
     }
