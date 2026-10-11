@@ -2419,7 +2419,8 @@ html:has(.dashboard-body) {
     z-index: 500;
     animation: dropIn 0.15s ease;
 }
-.filter-menu.active {
+.filter-menu.active,
+.filter-menu.show {
     display: block;
     opacity: 1;
     visibility: visible;

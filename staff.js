@@ -402,9 +402,16 @@ function attachEventListeners() {
     const staffFilterBtn = document.getElementById('btnStaffFilter');
     const staffFilterMenu = document.getElementById('staffFilterMenu');
     if (staffFilterBtn && staffFilterMenu) {
-        staffFilterBtn.addEventListener('click', e => { e.stopPropagation(); staffFilterMenu.classList.toggle('show'); });
+        staffFilterBtn.addEventListener('click', e => { 
+            e.stopPropagation(); 
+            staffFilterMenu.classList.toggle('active');
+            staffFilterMenu.classList.toggle('show'); 
+        });
         staffFilterMenu.addEventListener('click', e => e.stopPropagation());
-        document.addEventListener('click', () => staffFilterMenu.classList.remove('show'));
+        document.addEventListener('click', () => {
+            staffFilterMenu.classList.remove('active');
+            staffFilterMenu.classList.remove('show');
+        });
         
         const btnApply = document.getElementById('btnStaffFilterApply');
         if (btnApply) btnApply.addEventListener('click', () => {
@@ -414,6 +421,7 @@ function attachEventListeners() {
             
             const filtered = liveStaffData.filter(s => checkedStatuses.includes(s.status));
             renderStaffTable(filtered);
+            staffFilterMenu.classList.remove('active');
             staffFilterMenu.classList.remove('show');
         });
         
@@ -422,6 +430,8 @@ function attachEventListeners() {
             btnReset.addEventListener('click', () => {
                 staffFilterMenu.querySelectorAll('input[type=checkbox]').forEach(cb => cb.checked = true);
                 renderStaffTable(liveStaffData);
+                staffFilterMenu.classList.remove('active');
+                staffFilterMenu.classList.remove('show');
             });
         }
     }
