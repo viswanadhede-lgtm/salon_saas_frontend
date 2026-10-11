@@ -222,6 +222,26 @@ export async function openPkgServicesModal(pkgId, pkgName) {
     const title = document.getElementById('pkgServicesModalTitle');
     const body = document.getElementById('pkgServicesModalBody');
     if (!modal) return;
+
+    // 1. Instant render if package services are already cached in memory
+    const cachedPkg = (window.livePackagesData || []).find(p => String(p.package_id) === String(pkgId));
+    if (cachedPkg && Array.isArray(cachedPkg.package_services) && cachedPkg.package_services.length > 0) {
+        const services = cachedPkg.package_services.filter(r => r.service_name);
+        if (title) {
+            title.innerHTML = `${pkgName} <span style="display: inline-flex; align-items: center; justify-content: center; min-width: 26px; height: 26px; border-radius: 50%; background-color: #eff6ff; color: #1e3a8a; font-size: 0.9rem; font-weight: 600; margin-left: 8px; vertical-align: middle; padding: 0 6px;">${services.length}</span>`;
+        }
+        if (body) {
+            body.innerHTML = services.map(r => `
+                <tr class="tb-row">
+                    <td style="padding:14px 16px 14px 20px;font-weight:600;color:#1e293b;font-size:0.87rem;">${r.service_name}</td>
+                </tr>`
+            ).join('');
+        }
+        modal.classList.add('active');
+        return;
+    }
+
+    // 2. Fallback to network query if not yet cached
     if (title) {
         title.innerHTML = `${pkgName} <span style="display: inline-flex; align-items: center; justify-content: center; min-width: 26px; height: 26px; border-radius: 50%; background-color: #eff6ff; color: #1e3a8a; font-size: 0.9rem; font-weight: 600; margin-left: 8px; vertical-align: middle; padding: 0 6px;">...</span>`;
     }

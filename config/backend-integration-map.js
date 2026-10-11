@@ -91,9 +91,12 @@
 // 3. PACKAGES TAB
 //
 // Packages Table & package_services Table
+// - Fetch Packages: Direct Supabase query with relation preload:
+//   supabase.from('packages').select('*, package_services(service_name)')
+//   (Enables instant 0ms popup of included services when clicking the service count)
 //
 //    a. Atomic Package Creation
-//       create_package_atomic [RPC Function]
+//       create_package_atomic [RPC Function] - This one creates a new package.
 //       Sources:
 //       - packages (header insert)
 //       - package_services (child service assignments insert)
@@ -101,7 +104,7 @@
 //       - users & branches (caller authentication & tenant/branch scoping)
 //
 //    b. Atomic Package Update & Service Replacement
-//       update_package_atomic [RPC Function]
+//       update_package_atomic [RPC Function] -  This one updates an existing package.
 //       Sources:
 //       - packages (header update with row lock)
 //       - package_services (atomic replacement of assignments)

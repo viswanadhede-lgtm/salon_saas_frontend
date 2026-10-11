@@ -39,7 +39,7 @@ export async function fetchPackagesFromDb() {
 
     let query = supabase
         .from('packages')
-        .select('*')
+        .select('*, package_services(service_name)')
         .neq('status', 'deleted')
         .order('created_at', { ascending: false });
 
@@ -601,6 +601,23 @@ export async function fetchPackages() {
 export async function openPkgServicesModalInner(pkgId, pkgName) {
     const title = document.getElementById('pkgServicesModalTitle');
     const body = document.getElementById('pkgServicesModalBody');
+    if (!title || !body) return;
+
+    // 1. Check in-memory cache first for instant (0ms) render
+    const cachedPkg = (servicesState.livePackagesData || []).find(p => String(p.package_id) === String(pkgId));
+    if (cachedPkg && Array.isArray(cachedPkg.package_services) && cachedPkg.package_services.length > 0) {
+        const services = cachedPkg.package_services.filter(r => r.service_name);
+        title.innerHTML = `${pkgName} <span style="display: inline-flex; align-items: center; justify-content: center; min-width: 26px; height: 26px; border-radius: 50%; background-color: #eff6ff; color: #1e3a8a; font-size: 0.9rem; font-weight: 600; margin-left: 8px; vertical-align: middle; padding: 0 6px;">${services.length}</span>`;
+
+        body.innerHTML = services.map(r => `
+            <tr class="tb-row">
+                <td style="padding:14px 16px 14px 20px;font-weight:600;color:#1e293b;font-size:0.87rem;">${r.service_name}</td>
+            </tr>`
+        ).join('');
+        return;
+    }
+
+    // 2. Fallback to network query if not cached
     try {
         const { data: rows, error } = await fetchPackageServicesForBreakdown(pkgId);
         if (error) throw error;
