@@ -254,26 +254,15 @@ export function viewSchedule(scheduleId) {
 
     // Populate Month View (mini timeline/summary of repeating pattern)
     const monthHtmlArray = [];
-    const targetWeeks = generateCalendarWeeks(parseInt(yyyy), parseInt(mm) - 1);
-    
-    const jsDayMap = { 'Mon': 1, 'Tue': 2, 'Wed': 3, 'Thu': 4, 'Fri': 5, 'Sat': 6, 'Sun': 0 };
+    const targetWeeks = generateMonthWeeks(parseInt(yyyy), parseInt(mm) - 1);
 
-    for(let w = 0; w < targetWeeks.length; w++) {
+    for (let w = 0; w < targetWeeks.length; w++) {
         const weekDates = targetWeeks[w];
         
-        const miniPills = DAY_ORDER.map(dayCode => {
-            const jsDay = jsDayMap[dayCode];
-            const dateObj = weekDates.find(d => d.getDay() === jsDay);
-            
-            if (!dateObj) {
-                return `<div style="display:flex; flex-direction:column; background:#f8fafc; padding:10px 6px; border-radius:6px; flex:1; text-align:center; border:1px dashed #e2e8f0; opacity:0.4;">
-                 <span style="font-size:0.75rem; font-weight:600; color:#cbd5e1; text-transform:uppercase;">${dayCode}</span>
-                 <span style="font-size:0.8rem; font-weight:500; color:#cbd5e1; margin-top:4px;">-</span>
-               </div>`;
-            }
-
+        const pills = weekDates.map(dateObj => {
+            const dayCode = WEEK_DAYS_SHORT[dateObj.getDay()];
             const dateStr = toISODate(dateObj);
-            const entry = s.schedule_entries.find(e => e.schedule_date === dateStr);
+            const entry = s.schedule_entries?.find(e => e.schedule_date === dateStr);
             const isActive = entry && !entry.is_off;
             
             const dateNumStr = String(dateObj.getDate()).padStart(2, '0');
@@ -292,12 +281,20 @@ export function viewSchedule(scheduleId) {
                  <span style="font-size:0.8rem; font-weight:500; color:#cbd5e1; margin-top:4px;">Off</span>
                </div>`;
             }
-        }).join('');
+        });
+
+        // Pad remaining slots in the last week up to 7 so the row maintains uniform column widths
+        while (pills.length < 7) {
+            pills.push(`<div style="display:flex; flex-direction:column; background:#f8fafc; padding:10px 6px; border-radius:6px; flex:1; text-align:center; border:1px dashed #e2e8f0; opacity:0.4;">
+                 <span style="font-size:0.75rem; font-weight:600; color:#cbd5e1; text-transform:uppercase;">-</span>
+                 <span style="font-size:0.8rem; font-weight:500; color:#cbd5e1; margin-top:4px;">-</span>
+               </div>`);
+        }
 
         monthHtmlArray.push(`
             <div style="background:#fff; border:1px solid #e2e8f0; border-radius:8px; padding:16px;">
                 <h4 style="margin:0 0 12px 0; font-size:0.85rem; font-weight:600; color:#475569;">Week ${w + 1}</h4>
-                <div style="display:flex; gap:8px;">${miniPills}</div>
+                <div style="display:flex; gap:8px;">${pills.join('')}</div>
             </div>
         `);
     }
