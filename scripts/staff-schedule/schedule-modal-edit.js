@@ -113,8 +113,8 @@ export function renderDayRows() {
 
     const htmlRows = patternDates.map((date, ix) => {
         const dateStr       = toISODate(date);
-        const isPastDate    = dateStr < todayStr;
-        if (isPastDate) return ''; // Hide past dates completely
+        const isPastOrToday = dateStr < todayStr;
+        if (isPastOrToday) return ''; // Hide past dates completely
 
         const jsDay         = date.getDay();
         const dateLabel     = formatDateOnly(date);
@@ -332,7 +332,10 @@ export function editSchedule(scheduleId) {
     const [yyyy, mm] = s.target_month.split('-').map(Number);
     initializeMonthBuilder(yyyy, mm - 1);
 
-    const todayStr = toISODate(new Date());
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const todayStr = toISODate(today);
+
     for (const [dateStr, data] of Object.entries(scheduleState.monthScheduleData)) {
         if (dateStr < todayStr) continue;
 
@@ -362,7 +365,6 @@ export function editSchedule(scheduleId) {
         }
     }
     
-    const todayStr = toISODate(today);
     let targetWeek = 0;
     for (let i = 0; i < scheduleState.currentMonthWeeks.length; i++) {
         if (scheduleState.currentMonthWeeks[i].some(d => d >= today)) {
