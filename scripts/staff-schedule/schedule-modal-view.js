@@ -3,6 +3,8 @@
 import { DOM, scheduleState } from './schedule-state.js';
 import { generateMonthWeeks, generateCalendarWeeks, toISODate, showToast } from './schedule-helpers.js';
 
+const DAY_ORDER = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
+
 export function closeViewModal() {
     DOM.viewModal?.classList.remove('active');
 }
