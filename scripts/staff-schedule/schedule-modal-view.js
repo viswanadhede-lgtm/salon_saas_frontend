@@ -1,7 +1,7 @@
-﻿// scripts/staff-schedule/schedule-modal-view.js
+// scripts/staff-schedule/schedule-modal-view.js
 
 import { DOM, scheduleState } from './schedule-state.js';
-import { generateMonthWeeks, toISODate, showToast } from './schedule-helpers.js';
+import { generateMonthWeeks, generateCalendarWeeks, toISODate, showToast } from './schedule-helpers.js';
 
 export function closeViewModal() {
     DOM.viewModal?.classList.remove('active');
@@ -190,26 +190,47 @@ export function viewSchedule(scheduleId) {
     // Populate This Week
     const fullDayMap = { 'Mon': 'Monday', 'Tue': 'Tuesday', 'Wed': 'Wednesday', 'Thu': 'Thursday', 'Fri': 'Friday', 'Sat': 'Saturday', 'Sun': 'Sunday' };
     
-    const weekHtml = s.days.map((d, index) => {
+    const weekHtml = DAY_ORDER.map((dayCode, index) => {
         // Calculate exact date string e.g. "01-06-2026"
-        const dayOffset = DAY_ORDER.indexOf(d.day);
         const exactDate = new Date(mondayBtn);
-        exactDate.setDate(mondayBtn.getDate() + dayOffset);
+        exactDate.setDate(mondayBtn.getDate() + index);
         
         const dd = String(exactDate.getDate()).padStart(2, '0');
         const mmStr = String(exactDate.getMonth() + 1).padStart(2, '0');
         const yyyyStr = exactDate.getFullYear();
         const dateFormatted = `${dd}-${mmStr}-${yyyyStr}`;
+        const dateIso = toISODate(exactDate);
         
-        const fullDayName = fullDayMap[d.day] || d.day;
+        const fullDayName = fullDayMap[dayCode] || dayCode;
 
-        if (d.active) {
+        // Check specific date entry first, then fallback to template
+        const exactEntry = s.schedule_entries?.find(e => e.schedule_date === dateIso);
+        const dayTemplate = s.days?.find(d => d.day === dayCode);
+
+        let isActive = false;
+        let startTime = null;
+        let endTime = null;
+        let notes = '-';
+
+        if (exactEntry) {
+            isActive = !exactEntry.is_off;
+            startTime = exactEntry.start_time;
+            endTime = exactEntry.end_time;
+            notes = exactEntry.notes || '-';
+        } else if (dayTemplate) {
+            isActive = dayTemplate.active;
+            startTime = dayTemplate.start;
+            endTime = dayTemplate.end;
+            notes = dayTemplate.notes || '-';
+        }
+
+        if (isActive) {
             return `
                 <div style="display:grid; grid-template-columns:repeat(4, 1fr); gap:12px; align-items:center; background:#fff; padding:12px 16px; border-radius:8px; border:1px solid #e2e8f0;">
                     <div style="font-size:0.875rem; color:#475569; font-weight:600;">${dateFormatted}</div>
                     <div style="font-weight:600; color:#334155; font-size:0.875rem;">${fullDayName}</div>
-                    <div style="font-size:0.85rem; color:#475569; font-weight:600;">${fmt12(d.start)} - ${fmt12(d.end)}</div>
-                    <div style="font-size:0.85rem; color:#64748b; font-style:italic;">${d.notes || '-'}</div>
+                    <div style="font-size:0.85rem; color:#475569; font-weight:600;">${fmt12(startTime)} - ${fmt12(endTime)}</div>
+                    <div style="font-size:0.85rem; color:#64748b; font-style:italic;">${notes}</div>
                 </div>`;
         } else {
             return `
@@ -225,7 +246,7 @@ export function viewSchedule(scheduleId) {
 
     // Populate Month View (mini timeline/summary of repeating pattern)
     const monthHtmlArray = [];
-    const targetWeeks = generateMonthWeeks(parseInt(yyyy), parseInt(mm) - 1);
+    const targetWeeks = generateCalendarWeeks(parseInt(yyyy), parseInt(mm) - 1);
     
     const jsDayMap = { 'Mon': 1, 'Tue': 2, 'Wed': 3, 'Thu': 4, 'Fri': 5, 'Sat': 6, 'Sun': 0 };
 

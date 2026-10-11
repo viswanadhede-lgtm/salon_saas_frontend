@@ -1,4 +1,4 @@
-﻿// scripts/staff-schedule/schedule-helpers.js
+// scripts/staff-schedule/schedule-helpers.js
 
 import { DOM, WEEK_DAYS_FULL, MONTH_NAMES } from './schedule-state.js';
 
@@ -15,6 +15,28 @@ export function generateMonthWeeks(year, month) {
     const weeks = [];
     for (let i = 0; i < dates.length; i += 7) {
         weeks.push(dates.slice(i, i + 7));
+    }
+    return weeks;
+}
+
+/**
+ * Returns month dates grouped into true Monday-to-Sunday calendar weeks.
+ * Each week ends on Sunday (or the last day of the month).
+ */
+export function generateCalendarWeeks(year, month) {
+    const daysInMonth = new Date(year, month + 1, 0).getDate();
+    const weeks = [];
+    let currentWeek = [];
+
+    for (let day = 1; day <= daysInMonth; day++) {
+        const date = new Date(year, month, day);
+        currentWeek.push(date);
+        
+        // Sunday (day 0) ends the week, or the last day of the month
+        if (date.getDay() === 0 || day === daysInMonth) {
+            weeks.push(currentWeek);
+            currentWeek = [];
+        }
     }
     return weeks;
 }

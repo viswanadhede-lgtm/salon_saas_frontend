@@ -1,4 +1,4 @@
-﻿// scripts/staff-schedule/schedule-table.js
+// scripts/staff-schedule/schedule-table.js
 
 import { DOM, scheduleState } from './schedule-state.js';
 import { toISODate } from './schedule-helpers.js';
@@ -32,37 +32,32 @@ export async function renderTable() {
     const currentMonthVal = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
     const isCurrentMonth = !filterMonthVal || filterMonthVal === currentMonthVal;
     
-    let targetWeekDateObj;
     let tableHeaderEl = document.getElementById('weekScheduleHeader');
-    
+    let weekDates = [];
+
     if (isCurrentMonth) {
-        // Current Month selected: show the week containing Today
+        // Current Month selected: show the week containing Today (Monday to Sunday)
         if (tableHeaderEl) tableHeaderEl.textContent = "This Week's Schedule";
-        targetWeekDateObj = now;
+        const isoTargetIdx = (now.getDay() + 6) % 7; 
+        const monday = new Date(now);
+        monday.setDate(now.getDate() - isoTargetIdx);
+        monday.setHours(0, 0, 0, 0);
+
+        weekDates = Array.from({ length: 7 }, (_, i) => {
+            const d = new Date(monday);
+            d.setDate(monday.getDate() + i);
+            return d;
+        });
     } else {
-        // Past or Future Month selected: show the first week of that month
+        // Past or Future Month selected: strictly show Date 1 to Date 7 of that selected month
         if (tableHeaderEl) tableHeaderEl.textContent = "First Week's Schedule";
         const [fYear, fMonth] = filterMonthVal.split('-').map(Number);
-        targetWeekDateObj = new Date(fYear, fMonth - 1, 1); // 1st of the selected month
+        weekDates = Array.from({ length: 7 }, (_, i) => {
+            return new Date(fYear, fMonth - 1, i + 1);
+        });
     }
-    
-    // ISO weekday of the target date: 0=Mon … 6=Sun
-    const isoTargetIdx = (targetWeekDateObj.getDay() + 6) % 7; 
 
-    // Get Mon of the target week
-    const monday = new Date(targetWeekDateObj);
-    monday.setDate(targetWeekDateObj.getDate() - isoTargetIdx);
-    monday.setHours(0, 0, 0, 0);
-
-    // Build array of 7 Date objects: Mon → Sun
-    const weekDates = Array.from({ length: 7 }, (_, i) => {
-        const d = new Date(monday);
-        d.setDate(monday.getDate() + i);
-        return d;
-    });
-
-    // Short day labels Mon=0 … Sun=6 (matching s.days order which is Mon-Sun)
-    const DAY_SHORT_MON_FIRST = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
+    const DAY_SHORT_NAMES = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 
     // Ordinal suffix helper
     function ordinal(n) {
@@ -83,10 +78,10 @@ export async function renderTable() {
     DOM.tableBody.innerHTML = viewData.map(s => {
 
         // ── Column 2: This Week's Schedule ───────────────────────
-        const weekPills = weekDates.map((date, idx) => {
-            const dayCode = DAY_SHORT_MON_FIRST[idx]; // Mon, Tue … Sun
+        const weekPills = weekDates.map((date) => {
+            const dayCode = DAY_SHORT_NAMES[date.getDay()]; // Real day of week e.g. Sun, Mon, Tue
             const dateNum = date.getDate();
-            const isToday = (date.getDate() === now.getDate() &&
+            const isToday = isCurrentMonth && (date.getDate() === now.getDate() &&
                              date.getMonth() === now.getMonth() &&
                              date.getFullYear() === now.getFullYear());
 
@@ -173,30 +168,38 @@ export async function renderTable() {
         }).join('');
 
         // ── Column 3: Today Shift ────────────────────────────────
-        const isoTodayDayIdx = (now.getDay() + 6) % 7; // 0=Mon … 6=Sun
-        const todayDayCode = DAY_SHORT_MON_FIRST[isoTodayDayIdx];
-        // Full day name (Sun=0 so map via native getDay)
-        const fullDayNames = ['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
-        const todayFullDay = fullDayNames[now.getDay()];
-        const todayOrdinal = ordinal(now.getDate());
+        let todayHeaderLine, todayShiftLine2, shiftLine2Color, shiftIsOff;
 
-        const todayDayEntry = s.days.find(d => d.day === todayDayCode);
-        const todayDateStr = toISODate(now);
-        const todayExactEntry = s.schedule_entries?.find(e => e.schedule_date === todayDateStr);
+        if (isCurrentMonth) {
+            const fullDayNames = ['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
+            const todayFullDay = fullDayNames[now.getDay()];
+            const todayOrdinal = ordinal(now.getDate());
+            todayHeaderLine = `${todayFullDay}, ${todayOrdinal}`;
 
-        let todayShiftLine2, shiftIsOff;
-        if (todayExactEntry) {
-            shiftIsOff = todayExactEntry.is_off;
-            todayShiftLine2 = shiftIsOff ? 'Day Off' : `${fmt12(todayExactEntry.start_time)} – ${fmt12(todayExactEntry.end_time)}`;
-        } else if (todayDayEntry && todayDayEntry.active) {
-            shiftIsOff = false;
-            todayShiftLine2 = `${fmt12(todayDayEntry.start)} – ${fmt12(todayDayEntry.end)}`;
+            const todayDayCode = DAY_SHORT_NAMES[now.getDay()];
+            const todayDayEntry = s.days.find(d => d.day === todayDayCode);
+            const todayDateStr = toISODate(now);
+            const todayExactEntry = s.schedule_entries?.find(e => e.schedule_date === todayDateStr);
+
+            if (todayExactEntry) {
+                shiftIsOff = todayExactEntry.is_off;
+                todayShiftLine2 = shiftIsOff ? 'Day Off' : `${fmt12(todayExactEntry.start_time)} – ${fmt12(todayExactEntry.end_time)}`;
+            } else if (todayDayEntry && todayDayEntry.active) {
+                shiftIsOff = false;
+                todayShiftLine2 = `${fmt12(todayDayEntry.start)} – ${fmt12(todayDayEntry.end)}`;
+            } else {
+                shiftIsOff = true;
+                todayShiftLine2 = 'Day Off';
+            }
+            shiftLine2Color = shiftIsOff ? '#ef4444' : '#475569';
         } else {
-            shiftIsOff = true;
-            todayShiftLine2 = 'Day Off';
+            const [selY, selM] = filterMonthVal.split('-').map(Number);
+            const selMonthName = new Date(selY, selM - 1, 1).toLocaleString('default', { month: 'short' });
+            todayHeaderLine = `Today (${now.getDate()} ${new Date().toLocaleString('default', { month: 'short' })})`;
+            todayShiftLine2 = `Viewing ${selMonthName}`;
+            shiftIsOff = false;
+            shiftLine2Color = '#94a3b8';
         }
-
-        const shiftLine2Color = shiftIsOff ? '#ef4444' : '#475569';
 
         // ── Column 4: Today Bookings ─────────────────────────────
         const bookingCount = todayBookingsMap.get(String(s.staff_id)) || 0;
@@ -223,7 +226,7 @@ export async function renderTable() {
                 <div style="display:flex; gap:5px; align-items:stretch;">${weekPills}</div>
             </td>
             <td style="padding:14px 16px; vertical-align:middle;">
-                <div style="font-weight:600; color:#334155; font-size:0.85rem;">${todayFullDay}, ${todayOrdinal}</div>
+                <div style="font-weight:600; color:#334155; font-size:0.85rem;">${todayHeaderLine}</div>
                 <div style="font-size:0.8rem; color:${shiftLine2Color}; margin-top:3px; font-weight:${shiftIsOff ? '500' : '600'}">${todayShiftLine2}</div>
             </td>
             <td style="padding:14px 16px; vertical-align:middle;">
