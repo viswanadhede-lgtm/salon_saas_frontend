@@ -97,6 +97,16 @@ window.viewCustomerProfile = async function(customerId, customerName) {
             }
         }
 
+        let dobFormatted = '—';
+        if (profileData.dob) {
+            const parts = String(profileData.dob).split('T')[0].split('-');
+            if (parts.length === 3) {
+                dobFormatted = `${parts[2]}-${parts[1]}-${parts[0]}`;
+            } else {
+                dobFormatted = profileData.dob;
+            }
+        }
+
         // ── 3. Build booking history rows (using final_amount)
         const recentBookings = Array.isArray(profileData.recent_bookings) ? profileData.recent_bookings.slice(0, 5) : [];
         const statusColor = { completed: '#065f46', booked: '#1e40af', confirmed: '#1e40af', cancelled: '#991b1b', 'no-show': '#92400e', 'no_show': '#92400e' };
@@ -156,21 +166,25 @@ window.viewCustomerProfile = async function(customerId, customerName) {
             </div>
 
             <!-- CENTER: Details -->
-            <div style="padding:24px 20px;border-right:1px solid #e2e8f0;display:flex;flex-direction:column;gap:14px;">
-                <h4 style="margin:0 0 4px;font-size:0.8rem;font-weight:700;color:#94a3b8;text-transform:uppercase;letter-spacing:0.05em;">Contact & Info</h4>
-                <div style="background:#f8fafc;border:1px solid #e2e8f0;border-radius:8px;padding:12px;">
+            <div style="padding:24px 20px;border-right:1px solid #e2e8f0;display:flex;flex-direction:column;gap:12px;overflow-y:auto;">
+                <h4 style="margin:0 0 2px;font-size:0.8rem;font-weight:700;color:#94a3b8;text-transform:uppercase;letter-spacing:0.05em;">Contact & Info</h4>
+                <div style="background:#f8fafc;border:1px solid #e2e8f0;border-radius:8px;padding:10px 12px;">
                     <p style="margin:0;font-size:0.7rem;color:#94a3b8;font-weight:600;text-transform:uppercase;">Email</p>
                     <p style="margin:4px 0 0;font-size:0.88rem;color:#334155;word-break:break-all;">${email}</p>
                 </div>
-                <div style="background:#f8fafc;border:1px solid #e2e8f0;border-radius:8px;padding:12px;">
+                <div style="background:#f8fafc;border:1px solid #e2e8f0;border-radius:8px;padding:10px 12px;">
                     <p style="margin:0;font-size:0.7rem;color:#94a3b8;font-weight:600;text-transform:uppercase;">Phone</p>
                     <p style="margin:4px 0 0;font-size:0.88rem;color:#334155;">${phone}</p>
                 </div>
-                <div style="background:#f8fafc;border:1px solid #e2e8f0;border-radius:8px;padding:12px;">
+                <div style="background:#f8fafc;border:1px solid #e2e8f0;border-radius:8px;padding:10px 12px;">
+                    <p style="margin:0;font-size:0.7rem;color:#94a3b8;font-weight:600;text-transform:uppercase;">Date of Birth (D.O.B)</p>
+                    <p style="margin:4px 0 0;font-size:0.88rem;color:#334155;">${dobFormatted}</p>
+                </div>
+                <div style="background:#f8fafc;border:1px solid #e2e8f0;border-radius:8px;padding:10px 12px;">
                     <p style="margin:0;font-size:0.7rem;color:#94a3b8;font-weight:600;text-transform:uppercase;">Member Since</p>
                     <p style="margin:4px 0 0;font-size:0.88rem;color:#334155;">${joinedDate}</p>
                 </div>
-                <div style="background:#f8fafc;border:1px solid #e2e8f0;border-radius:8px;padding:12px;flex:1;">
+                <div style="background:#f8fafc;border:1px solid #e2e8f0;border-radius:8px;padding:10px 12px;flex:1;">
                     <p style="margin:0;font-size:0.7rem;color:#94a3b8;font-weight:600;text-transform:uppercase;">Notes</p>
                     <p style="margin:4px 0 0;font-size:0.85rem;color:#334155;white-space:pre-wrap;">${notes}</p>
                 </div>
