@@ -109,15 +109,14 @@ export function renderDayRows() {
     if (!DOM.daysContainer) return;
 
     const patternDates = scheduleState.currentMonthWeeks[scheduleState.currentWeekIndex] || [];
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
+    const todayStr = toISODate(new Date());
 
     const htmlRows = patternDates.map((date, ix) => {
-        const isPastOrToday = date < today;
-        if (isPastOrToday) return ''; // Hide past dates completely
+        const dateStr       = toISODate(date);
+        const isPastDate    = dateStr < todayStr;
+        if (isPastDate) return ''; // Hide past dates completely
 
         const jsDay         = date.getDay();
-        const dateStr       = toISODate(date);
         const dateLabel     = formatDateOnly(date);
         const dayLabel      = formatDayOnly(date);
         let state           = scheduleState.monthScheduleData[dateStr] || { active:false, start:'', end:'', notes:'' };
@@ -333,26 +332,33 @@ export function editSchedule(scheduleId) {
     const [yyyy, mm] = s.target_month.split('-').map(Number);
     initializeMonthBuilder(yyyy, mm - 1);
 
-    const today = new Date();
-    today.setHours(0,0,0,0);
+    const todayStr = toISODate(new Date());
     for (const [dateStr, data] of Object.entries(scheduleState.monthScheduleData)) {
-        const dDate = new Date(dateStr);
-        if (dDate < today) continue;
+        if (dateStr < todayStr) continue;
 
-        const jsDay = dDate.getDay();
-        const shortDay = WEEK_DAYS_SHORT[jsDay];
-        const dayMatch = s.days.find(d => d.day === shortDay);
-
-        if (dayMatch && dayMatch.active) {
-            scheduleState.monthScheduleData[dateStr].active = true;
-            scheduleState.monthScheduleData[dateStr].start = dayMatch.start;
-            scheduleState.monthScheduleData[dateStr].end = dayMatch.end;
-            scheduleState.monthScheduleData[dateStr].notes = dayMatch.notes || '';
+        const specificEntry = s.schedule_entries?.find(e => e.schedule_date === dateStr);
+        if (specificEntry) {
+            scheduleState.monthScheduleData[dateStr].active = !specificEntry.is_off;
+            scheduleState.monthScheduleData[dateStr].start = specificEntry.start_time || '';
+            scheduleState.monthScheduleData[dateStr].end = specificEntry.end_time || '';
+            scheduleState.monthScheduleData[dateStr].notes = specificEntry.notes || '';
         } else {
-            scheduleState.monthScheduleData[dateStr].active = false;
-            scheduleState.monthScheduleData[dateStr].start = '';
-            scheduleState.monthScheduleData[dateStr].end = '';
-            scheduleState.monthScheduleData[dateStr].notes = '';
+            const dDate = new Date(dateStr + 'T00:00:00');
+            const jsDay = dDate.getDay();
+            const shortDay = WEEK_DAYS_SHORT[jsDay];
+            const dayMatch = s.days.find(d => d.day === shortDay);
+
+            if (dayMatch && dayMatch.active) {
+                scheduleState.monthScheduleData[dateStr].active = true;
+                scheduleState.monthScheduleData[dateStr].start = dayMatch.start;
+                scheduleState.monthScheduleData[dateStr].end = dayMatch.end;
+                scheduleState.monthScheduleData[dateStr].notes = dayMatch.notes || '';
+            } else {
+                scheduleState.monthScheduleData[dateStr].active = false;
+                scheduleState.monthScheduleData[dateStr].start = '';
+                scheduleState.monthScheduleData[dateStr].end = '';
+                scheduleState.monthScheduleData[dateStr].notes = '';
+            }
         }
     }
     
@@ -447,20 +453,20 @@ export async function handleFormSubmit(e) {
 
     // ── Expand to date-based entries ─────────────────────────
     const scheduleEntries = [];
-    const today           = new Date();
-    today.setHours(0, 0, 0, 0);
+    const todayStr        = toISODate(new Date());
 
     if (applyFullMonth) {
         // Repeat Week 1's pattern across all matching weekdays in the month
         for (const day of weekPattern) {
             const allDates = getAllWeekdayDatesInMonth(year, month, day.jsDay);
             for (const d of allDates) {
-                if (d < today) continue; // enforce past-date bypass
+                const dStr = toISODate(d);
+                if (dStr < todayStr) continue; // enforce past-date bypass
 
                 scheduleEntries.push({
                     staff_id:      staffId,
                     branch_id:     branchId,
-                    schedule_date: toISODate(d),
+                    schedule_date: dStr,
                     start_time:    day.active ? day.start : null,
                     end_time:      day.active ? day.end   : null,
                     notes:         day.notes  || null,
@@ -471,8 +477,7 @@ export async function handleFormSubmit(e) {
     } else {
         // Serialize explicitly typed month Schedule Data accurately
         for (const [dateStr, data] of Object.entries(scheduleState.monthScheduleData)) {
-            const dDate = new Date(dateStr);
-            if (dDate < today) continue; // enforce past-date bypass
+            if (dateStr < todayStr) continue; // enforce past-date bypass
             
             // Validate any active blocks typed out into future weeks
             if (data.active && (!data.start || !data.end)) {

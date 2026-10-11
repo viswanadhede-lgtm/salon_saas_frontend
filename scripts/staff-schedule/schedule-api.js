@@ -241,13 +241,9 @@ export async function deleteScheduleByMonth(staffId, targetMonth, companyId, bra
     const lastDay = new Date(yyyy, mm, 0).getDate();
     const monthEnd = `${targetMonth}-${String(lastDay).padStart(2, '0')}`;
 
-    // Future-date guard: only delete dates from tomorrow onwards (preserve past work history)
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
-    const tomorrow = new Date(today);
-    tomorrow.setDate(tomorrow.getDate() + 1);
-    const tomorrowStr = toISODate(tomorrow);
-    const deleteFrom = tomorrowStr > `${targetMonth}-01` ? tomorrowStr : `${targetMonth}-01`;
+    // Past-date guard: only delete dates from today onwards (preserve past work history)
+    const todayStr = toISODate(new Date());
+    const deleteFrom = todayStr > `${targetMonth}-01` ? todayStr : `${targetMonth}-01`;
 
     // If the entire month is in the past, nothing to delete
     if (deleteFrom > monthEnd) return;
@@ -265,19 +261,15 @@ export async function deleteScheduleByMonth(staffId, targetMonth, companyId, bra
 }
 
 export async function saveScheduleRecords(insertPayload, staffId, year, month, companyId, branchId) {
-    // Purge existing FUTURE data for this staff_id and month, then overwrite
+    // Purge existing data for this staff_id and month from today onwards, then overwrite
     const lastDay = new Date(year, month + 1, 0).getDate();
     const monthStr = `${year}-${String(month + 1).padStart(2, '0')}`;
     const monthStart = `${monthStr}-01`;
     const monthEnd = `${monthStr}-${String(lastDay).padStart(2, '0')}`;
 
-    // Future-date guard: only delete dates from tomorrow onwards (preserve past work history)
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
-    const tomorrow = new Date(today);
-    tomorrow.setDate(tomorrow.getDate() + 1);
-    const tomorrowStr = toISODate(tomorrow);
-    const deleteFrom = tomorrowStr > monthStart ? tomorrowStr : monthStart;
+    // Past-date guard: preserve strictly past dates (< today)
+    const todayStr = toISODate(new Date());
+    const deleteFrom = todayStr > monthStart ? todayStr : monthStart;
 
     if (deleteFrom <= monthEnd) {
         const { error: delError } = await supabase

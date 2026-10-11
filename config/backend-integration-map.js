@@ -100,6 +100,24 @@
 //    b. Update a Package
 //       update_package_atomic [RPC Function] -  This one updates an existing package.
 //     
-//===================================================================================================
 
-//========================================================
+//===================================================================================================
+// STAFF PAGE
+//==================================================================================================
+
+//  1. Stat Cards - Direct supabase query - No RPC Functions - Source Table is STAFF Table.
+
+//  For staff page its only the STAFF table ..
+//
+
+//========================================================================================================
+// STAFF SCHEDULE 
+//========================================================================================================
+
+// staff schedule page uses 3 tables
+
+// a. Staff table - Populating the staff dropdown in the Create modal.
+// b. staff_schedule table - To save the staff's schedule data.
+// c. bookings_for_business_transaction - Fetching today's booking count per staff (Today Bookings column in the table).
+
+//====================================================================================================================
