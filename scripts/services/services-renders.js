@@ -347,10 +347,7 @@ export async function openCatServicesModal(catIdOrName, catNameArg) {
                 const price = s.price != null ? '&#8377;' + parseFloat(s.price).toLocaleString() : '-';
                 return `<tr class="tb-row">
                     <td style="padding:12px 16px 12px 20px;">
-                        <div style="display:flex;align-items:center;gap:8px;">
-                            <span style="font-weight:500;color:#1e293b;">${escapeHtml(name)}</span>
-                            ${statusBadge(s.status)}
-                        </div>
+                        <span style="font-weight:600;color:#1e293b;font-size:0.87rem;">${escapeHtml(name)}</span>
                     </td>
                     <td style="padding:12px 16px;color:#374151;">${escapeHtml(duration)}</td>
                     <td style="padding:12px 16px;color:#374151;font-weight:500;">${price}</td>
