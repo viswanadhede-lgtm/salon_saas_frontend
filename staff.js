@@ -412,15 +412,43 @@ function attachEventListeners() {
             staffFilterMenu.classList.remove('active');
             staffFilterMenu.classList.remove('show');
         });
+
+        // "All Staff" and individual status checkbox synchronization
+        const allStaffCheckbox = document.getElementById('filterStaffAll');
+        const statusCheckboxes = staffFilterMenu.querySelectorAll('.filter-staff-status');
+
+        function updateAllStaffState() {
+            if (!allStaffCheckbox) return;
+            const allChecked = statusCheckboxes.length > 0 && Array.from(statusCheckboxes).every(cb => cb.checked);
+            allStaffCheckbox.checked = allChecked;
+        }
+
+        if (allStaffCheckbox) {
+            allStaffCheckbox.addEventListener('change', () => {
+                const isChecked = allStaffCheckbox.checked;
+                statusCheckboxes.forEach(cb => {
+                    cb.checked = isChecked;
+                });
+            });
+        }
+
+        statusCheckboxes.forEach(cb => {
+            cb.addEventListener('change', updateAllStaffState);
+        });
+
+        updateAllStaffState();
         
         const btnApply = document.getElementById('btnStaffFilterApply');
         if (btnApply) btnApply.addEventListener('click', () => {
-            const checkedStatuses = Array.from(
-                staffFilterMenu.querySelectorAll('input[type=checkbox]:checked')
-            ).map(cb => cb.value);
-            
-            const filtered = liveStaffData.filter(s => checkedStatuses.includes(s.status));
-            renderStaffTable(filtered);
+            if (allStaffCheckbox && allStaffCheckbox.checked) {
+                renderStaffTable(liveStaffData);
+            } else {
+                const checkedStatuses = Array.from(statusCheckboxes)
+                    .filter(cb => cb.checked)
+                    .map(cb => cb.value);
+                const filtered = liveStaffData.filter(s => checkedStatuses.includes(s.status));
+                renderStaffTable(filtered);
+            }
             staffFilterMenu.classList.remove('active');
             staffFilterMenu.classList.remove('show');
         });
@@ -428,7 +456,8 @@ function attachEventListeners() {
         const btnReset = document.getElementById('btnStaffFilterReset');
         if (btnReset) {
             btnReset.addEventListener('click', () => {
-                staffFilterMenu.querySelectorAll('input[type=checkbox]').forEach(cb => cb.checked = true);
+                statusCheckboxes.forEach(cb => cb.checked = true);
+                if (allStaffCheckbox) allStaffCheckbox.checked = true;
                 renderStaffTable(liveStaffData);
                 staffFilterMenu.classList.remove('active');
                 staffFilterMenu.classList.remove('show');
