@@ -173,35 +173,41 @@ export function viewSchedule(scheduleId) {
         return `${h12}:${String(m).padStart(2, '0')} ${period}`;
     }
 
-    let targetWeekDateObjBtn;
-    if (s.target_month === currentMonthVal) {
-        targetWeekDateObjBtn = now;
+    const isCurrentMonthView = s.target_month === currentMonthVal;
+    let targetDates = [];
+
+    if (isCurrentMonthView) {
+        // Current month: Show the week containing Today (Monday to Sunday)
+        const isoTargetIdxBtn = (now.getDay() + 6) % 7; 
+        const mondayBtn = new Date(now);
+        mondayBtn.setDate(now.getDate() - isoTargetIdxBtn);
+        mondayBtn.setHours(0, 0, 0, 0);
+
+        targetDates = Array.from({ length: 7 }, (_, i) => {
+            const d = new Date(mondayBtn);
+            d.setDate(mondayBtn.getDate() + i);
+            return d;
+        });
     } else {
+        // Other month: Show strictly Date 1 to Date 7 of that selected month
         const [fYear, fMonth] = s.target_month.split('-').map(Number);
-        targetWeekDateObjBtn = new Date(fYear, fMonth - 1, 1);
+        targetDates = Array.from({ length: 7 }, (_, i) => {
+            return new Date(fYear, fMonth - 1, i + 1);
+        });
     }
-    const isoTargetIdxBtn = (targetWeekDateObjBtn.getDay() + 6) % 7; 
-    const mondayBtn = new Date(targetWeekDateObjBtn);
-    mondayBtn.setDate(targetWeekDateObjBtn.getDate() - isoTargetIdxBtn);
-    mondayBtn.setHours(0, 0, 0, 0);
 
-    const DAY_ORDER = ['Mon','Tue','Wed','Thu','Fri','Sat','Sun'];
+    const WEEK_DAYS_FULL = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+    const WEEK_DAYS_SHORT = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 
-    // Populate This Week
-    const fullDayMap = { 'Mon': 'Monday', 'Tue': 'Tuesday', 'Wed': 'Wednesday', 'Thu': 'Thursday', 'Fri': 'Friday', 'Sat': 'Saturday', 'Sun': 'Sunday' };
-    
-    const weekHtml = DAY_ORDER.map((dayCode, index) => {
-        // Calculate exact date string e.g. "01-06-2026"
-        const exactDate = new Date(mondayBtn);
-        exactDate.setDate(mondayBtn.getDate() + index);
-        
+    const weekHtml = targetDates.map((exactDate) => {
         const dd = String(exactDate.getDate()).padStart(2, '0');
         const mmStr = String(exactDate.getMonth() + 1).padStart(2, '0');
         const yyyyStr = exactDate.getFullYear();
         const dateFormatted = `${dd}-${mmStr}-${yyyyStr}`;
         const dateIso = toISODate(exactDate);
         
-        const fullDayName = fullDayMap[dayCode] || dayCode;
+        const fullDayName = WEEK_DAYS_FULL[exactDate.getDay()];
+        const dayCode = WEEK_DAYS_SHORT[exactDate.getDay()];
 
         // Check specific date entry first, then fallback to template
         const exactEntry = s.schedule_entries?.find(e => e.schedule_date === dateIso);
