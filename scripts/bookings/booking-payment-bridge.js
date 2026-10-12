@@ -1,6 +1,6 @@
 // scripts/bookings/booking-payment-bridge.js
 import { supabase } from '../../lib/supabase.js';
-import { getCompanyId, getBranchId, getLiveBookings } from './bookings-state.js';
+import { getLiveBookings } from './bookings-state.js';
 import { fetchBookings } from './bookings-data.js';
 
 // ─── Collect Payment Handler ────────────────────────────────────────────────
@@ -79,9 +79,6 @@ export async function processBookingPaymentCallback(payload, row) {
     const payMethod = payload.paymentMethod;
 
     try {
-        const companyId = getCompanyId();
-        const branchId  = getBranchId();
-        const paidAt    = new Date().toISOString().replace('Z', '');
         const bookingId = row.booking_id || row.id;
 
         const rawVal = row.final_amount ?? row.total_price ?? row.price ?? 0;
@@ -95,58 +92,22 @@ export async function processBookingPaymentCallback(payload, row) {
         else if (d.membershipName) { discountType = 'membership'; discountName = d.membershipName; }
         else if (d.manualValue > 0) { discountType = 'manual'; discountName = d.manualType === 'percent' ? `${d.manualValue}% off` : `₹${d.manualValue} off`; }
 
-        // 1. Insert into business_transactions
-        const { error: txError } = await supabase
-            .from('business_transactions')
-            .insert({
-                company_id:     companyId,
-                branch_id:      branchId,
-                reference_id:   bookingId,
-                reference_type: 'booking',
-                amount:         amount,
-                currency:       'INR',
-                payment_method: (payMethod || 'cash').toLowerCase(),
-                status:         'paid',
-                notes:          `Payment for booking ${String(bookingId).substring(0, 8)}`,
-                paid_at:        paidAt,
-                final_amount:   amount,
-                discount_type:  discountType,
-                discount_name:  discountName,
-                discount_amount: totalDiscount > 0 ? totalDiscount : null
-            });
-        if (txError) console.error('[BookingPayment] tx error:', txError);
+        // Single atomic RPC call — updates business_transactions, bookings_for_business_transaction, and bookings
+        const { data: rpcResult, error: rpcError } = await supabase.rpc('process_booking_payment_atomic', {
+            p_booking_id:      bookingId,
+            p_payment_method:  (payMethod || 'cash').toLowerCase(),
+            p_discount_type:   discountType,
+            p_discount_name:   discountName,
+            p_discount_amount: totalDiscount > 0 ? totalDiscount : 0,
+            p_final_amount:    amount,
+            p_notes:           `Payment for booking ${String(bookingId).substring(0, 8)}`
+        });
 
-        // 2. Update bookings_for_business_transaction
-        const { error: bftError } = await supabase
-            .from('bookings_for_business_transaction')
-            .update({
-                payment_status:  'paid',
-                final_amount:    amount,
-                discount_amount: totalDiscount > 0 ? totalDiscount : null,
-                discount_type:   discountType,
-                discount_name:   discountName,
-                updated_at:      new Date().toISOString()
-            })
-            .eq('booking_id', bookingId);
-        if (bftError) console.error('[BookingPayment] bft error:', bftError);
-
-        // 3. Update bookings table
-        const { error: bkError } = await supabase
-            .from('bookings')
-            .update({
-                payment:    'paid',
-                updated_at: new Date().toISOString()
-            })
-            .eq('booking_id', bookingId);
-        if (bkError) {
-            await supabase
-                .from('bookings')
-                .update({
-                    payment:    'paid',
-                    updated_at: new Date().toISOString()
-                })
-                .eq('id', bookingId);
+        if (rpcError) {
+            console.error('[BookingPayment] RPC error:', rpcError);
+            throw new Error(rpcError.message);
         }
+        console.log('[BookingPayment] RPC result:', rpcResult);
 
         // Open post-payment confirmation modal (booking flow only)
         const bookingRef = '#' + String(bookingId).slice(0, 8).toUpperCase();

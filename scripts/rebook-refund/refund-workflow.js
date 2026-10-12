@@ -1,15 +1,9 @@
 // scripts/rebook-refund/refund-workflow.js
-// Implements window.processRefund — the financial write sequence.
-// HIGH RISK: Contains 3 sequential Supabase writes. Do not reorder or modify.
-//
-// Write sequence (MUST remain in this exact order):
-//   1. INSERT business_transactions  (refund ledger entry)
-//   2. UPDATE bookings_for_business_transaction  (payment_status + status)
-//   3. UPDATE bookings  (status + payment)
+// Implements window.processRefund — calls the atomic refund RPC.
+// The RPC handles all 3 table updates + customer stats reversal in a single transaction.
 
 import { supabase } from '../../lib/supabase.js';
 import { getActiveRefundBookingId, getActiveRefundableAmount } from './rebook-refund-state.js';
-import { getCompanyId, getBranchId } from './rebook-refund-utils.js';
 
 export async function processRefund() {
     const activeRefundBookingId = getActiveRefundBookingId();
@@ -35,55 +29,22 @@ export async function processRefund() {
     btn.textContent = 'Processing Refund...';
 
     try {
-        const companyId = getCompanyId();
-        const branchId  = getBranchId();
         const note   = document.getElementById('refundNote')?.value.trim() || '';
         const method = (document.getElementById('refundMethodSelect')?.value || 'cash').toLowerCase();
 
-        const fullNotes = reason ? `[${reason}] ${note || 'Refund processed'}` : (note || 'Refund processed for booking');
+        // Single atomic RPC call — handles all 3 table updates + customer stats reversal
+        const { data: rpcResult, error: rpcError } = await supabase.rpc('process_booking_refund_atomic', {
+            p_booking_id:    activeRefundBookingId,
+            p_refund_reason: reason,
+            p_refund_notes:  reason ? `[${reason}] ${note || 'Refund processed'}` : (note || 'Refund processed for booking'),
+            p_refund_method: method
+        });
 
-        // 1. Insert refund record into business_transactions
-        const { error: txErr } = await supabase
-            .from('business_transactions')
-            .insert({
-                company_id:      companyId,
-                branch_id:       branchId,
-                reference_id:    activeRefundBookingId,
-                reference_type:  'booking',
-                amount:          Math.abs(activeRefundableAmount),
-                final_amount:    Math.abs(activeRefundableAmount),
-                currency:        'INR',
-                payment_method:  method,
-                status:          'refunded',
-                notes:           fullNotes,
-                paid_at:         new Date().toISOString()
-            });
-
-        if (txErr) console.warn('[Refund] business_transactions insert note:', txErr);
-
-        // 2. Update summary table bookings_for_business_transaction
-        const { error: bftErr } = await supabase
-            .from('bookings_for_business_transaction')
-            .update({
-                payment_status: 'refunded',
-                status:         'cancelled',
-                updated_at:     new Date().toISOString()
-            })
-            .eq('booking_id', activeRefundBookingId);
-
-        if (bftErr) console.warn('[Refund] bft update note:', bftErr);
-
-        // 3. Update main bookings table
-        const { error: bkErr } = await supabase
-            .from('bookings')
-            .update({
-                status:     'cancelled',
-                payment:    'refunded',
-                updated_at: new Date().toISOString()
-            })
-            .eq('booking_id', activeRefundBookingId);
-
-        if (bkErr) console.warn('[Refund] bookings table update note:', bkErr);
+        if (rpcError) {
+            console.error('[Refund] RPC error:', rpcError);
+            throw new Error(rpcError.message);
+        }
+        console.log('[Refund] RPC result:', rpcResult);
 
         document.getElementById('refundBookingModal')?.classList.remove('active');
 

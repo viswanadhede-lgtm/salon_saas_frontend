@@ -1,6 +1,6 @@
 // scripts/bookings/booking-status-actions.js
 import { supabase } from '../../lib/supabase.js';
-import { getCompanyId, getBranchId, getLiveBookings, statusUpdateState } from './bookings-state.js';
+import { getLiveBookings, statusUpdateState } from './bookings-state.js';
 import { fetchBookings } from './bookings-data.js';
 
 export function updateBookingStatus(bookingId, newStatus) {
@@ -48,7 +48,7 @@ export async function confirmUpdateBookingStatus() {
     try {
         const { error: dbError } = await supabase
             .from('bookings')
-            .update({ status: newStatus })
+            .update({ status: newStatus, updated_at: new Date().toISOString() })
             .eq('booking_id', bookingId);
 
         if (dbError) {
@@ -62,21 +62,6 @@ export async function confirmUpdateBookingStatus() {
             .update({ status: newStatus, updated_at: new Date().toISOString() })
             .eq('booking_id', bookingId);
         if (summaryErr) console.error('[Status Update] summary update error:', summaryErr);
-
-        if (newStatus.toLowerCase() === 'cancelled') {
-            const { error: ledgerErr } = await supabase
-                .from('business_transactions')
-                .insert([{
-                    company_id: getCompanyId() || null,
-                    branch_id: getBranchId() || null,
-                    reference_id: bookingId,
-                    reference_type: 'booking',
-                    status: 'cancelled',
-                    amount: 0,
-                    created_at: new Date().toISOString()
-                }]);
-            if (ledgerErr) console.error('[Status Update] ledger insert error:', ledgerErr);
-        }
 
         window.toast && window.toast(`Booking status updated to ${newStatus}`);
         // Fire notification based on the new status

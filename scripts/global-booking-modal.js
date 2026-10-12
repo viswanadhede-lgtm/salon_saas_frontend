@@ -650,46 +650,44 @@ export function initGlobalBookingModal() {
         });
     }
 
-    // ── Create bookings (bulk insert) ─────────────────────────────────────
+    // ── Create bookings (atomic RPC) ────────────────────────────────────
     async function createBookings(payloads) {
         try {
             console.log('[createBookings] payloads:', payloads);
-            const { data, error } = await supabase.from('bookings').insert(payloads);
-            console.log('[createBookings] result:', { data, error });
-            if (!error) {
-                // ── Write one summary row to bookings_for_business_transaction ──
-                const totalPrice = payloads.reduce((sum, p) => sum + (Number(p.price) || 0), 0);
-                const summaryRow = {
-                    booking_id:     payloads[0].booking_id,
-                    company_id:     payloads[0].company_id,
-                    branch_id:      payloads[0].branch_id,
-                    customer_id:    payloads[0].customer_id    || null,
-                    customer_name:  payloads[0].customer_name  || '',
-                    customer_mail:  payloads[0].customer_mail  || null,
-                    customer_phone: payloads[0].customer_phone || '',
-                    service_id:     payloads.map(p => p.service_id).filter(Boolean).join(', '),
-                    staff_id:       [...new Set(payloads.map(p => p.staff_id).filter(Boolean))].join(', '),
-                    service_name:   payloads.map(p => p.service_name).filter(Boolean).join(', '),
-                    staff_name:     [...new Set(payloads.map(p => p.staff_name).filter(Boolean))].join(', '),
-                    booking_date:   payloads[0].booking_date,
-                    start_time:     payloads[0].start_time,
-                    end_time:       payloads[0].end_time       || null,
-                    notes:          payloads[0].notes          || '',
-                    total_price:    totalPrice,
-                    final_amount:   totalPrice,
-                    status:         payloads[0].status         || 'booked',
-                    payment_status: 'pending',
-                    booking_type:   payloads[0].booking_type   || 'walk-in'
-                };
-                console.log('[createBookings] summaryRow to insert:', summaryRow);
-                const { error: summaryErr } = await supabase
-                    .from('bookings_for_business_transaction')
-                    .insert(summaryRow);
-                if (summaryErr) {
-                    console.error('[createBookings] summary insert error:', summaryErr);
-                    showMsg('Warning: Booking saved but summary record failed: ' + summaryErr.message, true);
-                }
+            const totalPrice = payloads.reduce((sum, p) => sum + (Number(p.price) || 0), 0);
 
+            // Build services array for the RPC
+            const services = payloads.map(p => ({
+                service_id:   p.service_id,
+                staff_id:     p.staff_id,
+                service_name: p.service_name,
+                staff_name:   p.staff_name,
+                start_time:   p.start_time,
+                end_time:     p.end_time || null,
+                price:        Number(p.price) || 0,
+                status:       p.status || 'booked'
+            }));
+
+            // Single atomic RPC call — creates customer (if new), bookings rows,
+            // summary row, and triggers initial business_transactions entry
+            const { data, error } = await supabase.rpc('create_booking_atomic', {
+                p_booking_id:      payloads[0].booking_id,
+                p_company_id:      payloads[0].company_id,
+                p_branch_id:       payloads[0].branch_id,
+                p_customer_id:     payloads[0].customer_id || null,
+                p_customer_name:   payloads[0].customer_name || 'Walk-in Customer',
+                p_customer_email:  payloads[0].customer_mail || null,
+                p_customer_phone:  payloads[0].customer_phone || '',
+                p_is_new_customer: false, // Customer already created/checked in the submit handler
+                p_services:        services,
+                p_booking_date:    payloads[0].booking_date,
+                p_notes:           payloads[0].notes || null,
+                p_booking_type:    payloads[0].booking_type || 'walk-in'
+            });
+
+            console.log('[createBookings] RPC result:', { data, error });
+
+            if (!error) {
                 const label = payloads.length > 1 ? `${payloads.length} bookings` : 'Booking';
                 showMsg(`${label} created successfully!`);
                 if (window.notifyEvent) {
