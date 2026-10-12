@@ -596,9 +596,8 @@ export function initGlobalBookingModal() {
         let totalMins = hh * 60 + mm + parseInt(durationMins);
         let endH = Math.floor(totalMins / 60);
         let endM = totalMins % 60;
-        const ampm    = endH >= 12 ? 'PM' : 'AM';
-        const displayH = endH > 12 ? endH - 12 : (endH === 0 ? 12 : endH);
-        return `${displayH.toString().padStart(2, '0')}:${endM.toString().padStart(2, '0')} ${ampm}`;
+        // Return 24-hour format (HH:MM) — required by PostgreSQL TIME column
+        return `${endH.toString().padStart(2, '0')}:${endM.toString().padStart(2, '0')}`;
     }
 
     function timeToMins(tStr) {

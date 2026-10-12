@@ -25,7 +25,7 @@ setOnBookingsRefreshed(() => {
     populateStaffFilter();
     renderBookings(getFilteredBookings());
     if (typeof renderCalendar === 'function') {
-        renderCalendar();
+        renderCalendar();  // async — fire-and-forget on initial load
     }
 });
 
@@ -70,7 +70,7 @@ function attachTabListeners() {
 
             // If switching to Calendar, ensure calendar view is rendered
             if (targetId === 'paneCalendar' && typeof renderCalendar === 'function') {
-                renderCalendar();
+                renderCalendar();  // async — fire-and-forget on tab switch
             }
         });
     });
