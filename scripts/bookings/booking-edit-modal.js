@@ -458,93 +458,43 @@ export function attachEditModalListeners() {
         if (btn) { btn.textContent = 'Updating...'; btn.disabled = true; }
 
         try {
-            const b = editState.activeBooking;
-            const currentDbIds = new Set();
-            const updates = [];
-            const inserts = [];
-
-            Array.from(svcRowEls).forEach(row => {
+            // Build normalized services array for atomic RPC
+            const services = Array.from(svcRowEls).map(row => {
                 const svcSel     = row.querySelector('.edit-svc-select');
                 const staffSel   = row.querySelector('.edit-staff-select');
                 const priceInput = row.querySelector('.edit-svc-price');
                 const opt        = svcSel?.options[svcSel.selectedIndex];
-                const dbId       = row.dataset.dbId || null;
 
-                const payload = {
-                    company_id:     getCompanyId(),
-                    branch_id:      getBranchId(),
-                    booking_id:     bookingId,
-                    customer_id:    b?.customer_id    || null,
-                    customer_name:  b?.customer_name  || '',
-                    customer_mail:  b?.customer_mail  || b?.customer_email || null,
-                    customer_phone: b?.customer_phone || '',
-                    service_id:     svcSel?.value     || '',
-                    service_name:   opt?.textContent?.trim() || '',
-                    staff_id:       staffSel?.value   || '',
-                    staff_name:     staffSel?.options[staffSel.selectedIndex]?.text || '',
-                    booking_date:   date,
-                    start_time:     time,
-                    end_time:       null,
-                    notes:          notes,
-                    price:          Number(priceInput?.value || 0),
-                    status:         status,
-                    payment:        b?.payment        || 'pending',
-                    booking_type:   b?.booking_type   || 'walk-in'
+                return {
+                    service_id:   svcSel?.value || null,
+                    service_name: opt?.textContent?.trim() || '',
+                    staff_id:     staffSel?.value || null,
+                    staff_name:   staffSel?.options[staffSel.selectedIndex]?.text || '',
+                    price:        Number(priceInput?.value || 0),
+                    start_time:   time,
+                    end_time:     null,
+                    status:       status
                 };
-
-                if (dbId) {
-                    currentDbIds.add(dbId);
-                    updates.push({ id: dbId, payload });
-                } else {
-                    inserts.push(payload);
-                }
             });
 
-            // Rows removed from UI that existed in DB → DELETE
-            const toDelete = [...editState.originalServiceRowIds].filter(id => !currentDbIds.has(id));
+            // Single atomic RPC call — updates bookings, bookings_for_business_transaction,
+            // and business_transactions (if unpaid), plus triggers customer stats if completed.
+            const { data: rpcResult, error: rpcError } = await supabase.rpc('update_booking_atomic', {
+                p_booking_id:   bookingId,
+                p_company_id:   getCompanyId(),
+                p_branch_id:    getBranchId(),
+                p_booking_date: date,
+                p_start_time:   time,
+                p_notes:        notes || null,
+                p_status:       status || 'booked',
+                p_services:     services
+            });
 
-            const ops = [];
-            for (const { id, payload } of updates) {
-                ops.push(supabase.from('bookings').update(payload).eq('id', id));
+            if (rpcError) {
+                console.error('[EditBooking] RPC error:', rpcError);
+                throw rpcError;
             }
-            if (inserts.length > 0) {
-                ops.push(supabase.from('bookings').insert(inserts));
-            }
-            for (const id of toDelete) {
-                ops.push(supabase.from('bookings').delete().eq('id', id));
-            }
-
-            const results = await Promise.all(ops);
-            const failedOp = results.find(r => r.error);
-            if (failedOp) throw failedOp.error;
-
-            // ── Update summary row in bookings_for_business_transaction ──
-            const allCurrentRows = Array.from(svcRowEls);
-            const summaryUpdate = {
-                service_id:   allCurrentRows.map(row => row.querySelector('.edit-svc-select')?.value || '').filter(Boolean).join(', '),
-                staff_id:     [...new Set(allCurrentRows.map(row => row.querySelector('.edit-staff-select')?.value || '').filter(Boolean))].join(', '),
-                service_name: allCurrentRows.map(row => {
-                    const sel = row.querySelector('.edit-svc-select');
-                    return sel?.options[sel.selectedIndex]?.textContent?.trim() || '';
-                }).filter(Boolean).join(', '),
-                staff_name: [...new Set(allCurrentRows.map(row => {
-                    const sel = row.querySelector('.edit-staff-select');
-                    return sel?.options[sel.selectedIndex]?.text?.trim() || '';
-                }).filter(Boolean))].join(', '),
-                total_price:  allCurrentRows.reduce((sum, row) => {
-                    return sum + (Number(row.querySelector('.edit-svc-price')?.value) || 0);
-                }, 0),
-                booking_date: date,
-                start_time:   time,
-                notes:        notes,
-                status:       status,
-                updated_at:   new Date().toISOString()
-            };
-            const { error: summaryErr } = await supabase
-                .from('bookings_for_business_transaction')
-                .update(summaryUpdate)
-                .eq('booking_id', bookingId);
-            if (summaryErr) console.error('[EditBooking] summary update error:', summaryErr);
+            console.log('[EditBooking] RPC result:', rpcResult);
 
             window.toast && window.toast('Booking updated successfully!');
             if (window.notifyEvent) window.notifyEvent('bookings', 'evt_booking_modified', { title: 'Booking Modified', message: `Booking #${bookingId} was updated.` });
