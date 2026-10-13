@@ -415,24 +415,7 @@ export function setupModals() {
             </div>
         </div>`);
     }
-
-    if (!document.getElementById('customerProfileBookingModal')) {
-        document.body.insertAdjacentHTML('beforeend', `
-        <div class="modal-overlay" id="customerProfileBookingModal" style="z-index:10100;">
-            <div class="modal-container" style="width:90vw;max-width:1100px;">
-                <div class="modal-header" style="border-bottom:1px solid #f1f5f9;">
-                    <div class="header-titles">
-                        <h2>Customer Profile</h2>
-                        <p class="subtitle" id="profModalSubtitle">Loading details...</p>
-                    </div>
-                    <button class="modal-close" id="btnCloseProfModal" onclick="document.getElementById('customerProfileBookingModal').classList.remove('active')"><i data-feather="x"></i></button>
-                </div>
-                <div class="modal-body" style="padding:0; overflow:hidden;" id="profModalBody">
-                    <div style="text-align:center;padding:48px;color:#94a3b8;font-size:0.9rem;">⏳ Loading customer information...</div>
-                </div>
-            </div>
-        </div>`);
-    }
+    // customerProfileBookingModal is injected globally by scripts/global-customer-profile-modal.js
 
     if (window.feather) feather.replace();
 }
