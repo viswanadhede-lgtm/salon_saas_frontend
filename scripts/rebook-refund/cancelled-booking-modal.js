@@ -87,15 +87,15 @@ export async function openCancelledBookingModal(bookingIdOrObj) {
     if (el('cbmDate')) el('cbmDate').textContent = formatDate(dateVal);
     if (el('cbmTime')) el('cbmTime').textContent = formatTime12(timeVal.slice(0, 5));
 
-    // Payment Status Badge
     let payRaw = (b.payment_status || b.payment || '').toLowerCase();
     if (el('cbmPaymentBadge')) {
         const payLabel = payRaw ? payRaw.charAt(0).toUpperCase() + payRaw.slice(1) : 'Pending';
         const payColors = {
-            paid:    { color: '#059669', bg: '#d1fae5' },
-            pending: { color: '#b45309', bg: '#fef3c7' },
-            unpaid:  { color: '#dc2626', bg: '#fee2e2' },
-            partial: { color: '#7c3aed', bg: '#ede9fe' },
+            paid:     { color: '#059669', bg: '#d1fae5' },
+            pending:  { color: '#b45309', bg: '#fef3c7' },
+            unpaid:   { color: '#dc2626', bg: '#fee2e2' },
+            partial:  { color: '#7c3aed', bg: '#ede9fe' },
+            refunded: { color: '#b45309', bg: '#fef3c7' },
         };
         const pc = payColors[payRaw] || { color: '#475569', bg: '#f1f5f9' };
         el('cbmPaymentBadge').innerHTML = `<span style="display:inline-block;padding:2px 8px;border-radius:20px;font-size:0.72rem;font-weight:600;background:${pc.bg};color:${pc.color};">${payLabel}</span>`;
@@ -141,10 +141,12 @@ export async function openCancelledBookingModal(bookingIdOrObj) {
     }
 
     // Check payment status from both booking object and transactions
-    let isPaid = ['paid', 'partial'].includes(payRaw);
+    const isAlreadyRefunded = payRaw === 'refunded';
+    let isPaid = ['paid', 'partial'].includes(payRaw) || isAlreadyRefunded;
     if (el('cbmRefundSection')) el('cbmRefundSection').style.display = isPaid ? 'block' : 'none';
 
     // Check transactions table asynchronously to guarantee accuracy
+    let refundedAmount = 0;
     try {
         const { data: txs } = await supabase
             .from('business_transactions')
@@ -155,7 +157,38 @@ export async function openCancelledBookingModal(bookingIdOrObj) {
             isPaid = true;
             if (el('cbmRefundSection')) el('cbmRefundSection').style.display = 'block';
         }
+        // Sum up any refunded transactions to show the amount
+        if (isAlreadyRefunded && txs) {
+            refundedAmount = txs
+                .filter(t => (t.status || '').toLowerCase().trim() === 'refunded')
+                .reduce((sum, t) => sum + Math.abs(parseFloat(t.amount) || 0), 0);
+        }
     } catch(e) { /* ignore */ }
+
+    // Update the Refund section: if already refunded, show disabled state with amount
+    const refundSection = el('cbmRefundSection');
+    if (refundSection) {
+        if (isAlreadyRefunded) {
+            const displayAmount = refundedAmount > 0
+                ? `₹${refundedAmount.toLocaleString('en-IN')}`
+                : (b.final_amount ?? b.total_price ?? b.price ? `₹${Number(b.final_amount ?? b.total_price ?? b.price).toLocaleString('en-IN')}` : '');
+            refundSection.innerHTML = `
+                <div style="background:#f8fafc;border:1px solid #e2e8f0;border-radius:12px;padding:18px;display:flex;flex-direction:column;align-items:center;text-align:center;gap:10px;">
+                    <div style="width:40px;height:40px;border-radius:50%;background:#fef3c7;display:flex;align-items:center;justify-content:center;color:#b45309;">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>
+                    </div>
+                    <div>
+                        <div style="font-weight:700;color:#b45309;font-size:0.88rem;">Refunded ${displayAmount}</div>
+                        <div style="font-size:0.72rem;color:#94a3b8;margin-top:2px;">Payment has been returned to customer</div>
+                    </div>
+                    <button disabled
+                        style="width:100%;padding:9px 14px;background:#f1f5f9;color:#94a3b8;border:1px solid #e2e8f0;border-radius:8px;font-size:0.82rem;font-weight:600;cursor:not-allowed;display:inline-flex;align-items:center;justify-content:center;gap:6px;">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="1 4 1 10 7 10"></polyline><path d="M3.51 15a9 9 0 1 0 .49-3.5"></path></svg>
+                        Refunded
+                    </button>
+                </div>`;
+        }
+    }
 
     // Wire Rebook button
     const btnRebook = el('btnCbmRebook');

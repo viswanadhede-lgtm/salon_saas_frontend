@@ -163,8 +163,13 @@ export function buildRow(b, includeDate = false) {
                 const p = (payment || '').toLowerCase().trim();
                 const s = (status || '').toLowerCase().trim();
                 const isPaid = p === 'paid';
+                const isRefunded = p === 'refunded';
                 const isCancelled = s === 'cancelled';
                 const isNoShow = ['no-show', 'noshow', 'no_show'].includes(s);
+
+                if (isRefunded) {
+                    return `<span style="display:inline-block;padding:3px 10px;border-radius:20px;font-size:0.75rem;font-weight:600;color:#b45309;background:#fef3c7;">Refunded</span>`;
+                }
 
                 if (isPaid) {
                     return `<span style="color:#059669;font-weight:700;font-size:0.85rem;">Paid</span>`;
@@ -212,8 +217,8 @@ export function buildRow(b, includeDate = false) {
                     </button>`;
                 }
 
-                // State 4 & 6: status = cancelled / no-show AND paid -> Info (opens modal with Refund and Rebook)
-                if (isCancelledOrNoShow && isPaid) {
+                // State 4 & 6: status = cancelled / no-show AND paid OR refunded -> Info (opens modal with Refund/Refunded and Rebook)
+                if (isCancelledOrNoShow && (isPaid || p === 'refunded')) {
                     return `
                     <button onclick="window.openCancelledBookingModal('${bookingId}')"
                         style="width:90px;padding:5px 8px;border-radius:6px;border:1px solid #e2e8f0;background:#ffffff;color:#1e293b;font-size:0.78rem;font-weight:600;cursor:pointer;white-space:nowrap;transition:all 0.2s;box-shadow:0 1px 2px rgba(0,0,0,0.04);display:inline-flex;align-items:center;justify-content:center;gap:6px;"
