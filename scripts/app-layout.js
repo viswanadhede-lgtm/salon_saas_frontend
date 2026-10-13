@@ -82,15 +82,20 @@ export function initQuickActions() {
     if (!btnNewBooking || btnNewBooking.dataset.appLayoutInit) return;
 
     btnNewBooking.dataset.appLayoutInit = '1';
-    btnNewBooking.addEventListener('click', (e) => {
+    btnNewBooking.addEventListener('click', async (e) => {
         e.preventDefault();
         if (typeof window.openGlobalBookingModal === 'function') {
             window.openGlobalBookingModal();
-        } else if (document.getElementById('bookingModalOverlay')) {
-            const overlay = document.getElementById('bookingModalOverlay');
-            overlay.classList.add('active');
         } else {
-            window.location.href = 'bookings.html?action=new';
+            try {
+                const { initGlobalBookingModal } = await import('./global-booking-modal.js');
+                initGlobalBookingModal();
+                if (typeof window.openGlobalBookingModal === 'function') {
+                    window.openGlobalBookingModal();
+                }
+            } catch (err) {
+                console.error('[QuickActions] Failed to open booking modal:', err);
+            }
         }
     });
 }

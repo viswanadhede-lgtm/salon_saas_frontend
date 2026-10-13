@@ -29,13 +29,126 @@ let liveStaffDB     = [];
 let livePackagesDB  = [];
 let livePackageServicesDB = [];
 let rowCounter      = 0;
+let isGlobalBookingModalInitialized = false;
+
+export function ensureBookingModalHtml() {
+    if (document.getElementById('bookingModalOverlay')) return;
+    if (!document.body) return;
+
+    const modalHtml = `
+    <!-- Premium New Booking Modal (Global Component) -->
+    <div class="modal-overlay" id="bookingModalOverlay">
+        <div class="modal-container" id="bookingModal">
+            <!-- Header -->
+            <div class="modal-header">
+                <div class="header-titles">
+                    <h2>New Booking</h2>
+                    <p class="subtitle">Create a new appointment for a customer.</p>
+                </div>
+                <button class="modal-close" id="closeBookingModal"><i data-feather="x"></i></button>
+            </div>
+
+            <div class="modal-body" style="padding: 1.5rem; overflow-y: auto;">
+                <div class="modal-form-side" style="width: 100%; max-width: none; flex: 1; padding: 0; border: none;">
+                    <div style="width: 100%; display: grid; grid-template-columns: 1fr 1fr; gap: 32px;">
+
+                        <!-- LEFT COLUMN -->
+                        <div style="display: flex; flex-direction: column;">
+                            <!-- Customer Ident -->
+                            <div class="form-group relative">
+                                <label class="form-label" for="phoneSearch">Phone Number <span
+                                        class="text-rose">*</span></label>
+                                <input type="tel" id="phoneSearch" class="form-input" placeholder="Enter phone number"
+                                    autocomplete="off">
+                                <div class="search-suggestions" id="searchSuggestions"></div>
+                            </div>
+
+                            <div class="customer-badge-container" id="customerBadgeContainer"
+                                style="display:none; margin-bottom: 8px;">
+                                <span class="badge-pill existing-badge" id="customerBadge">Existing Customer</span>
+                            </div>
+
+                            <div class="form-group span-full" id="newCustomerBadgeContainer"
+                                style="display:none; margin-bottom: 8px;">
+                                <span class="badge-pill new-badge" id="newCustomerBadge">New Customer</span>
+                            </div>
+
+                            <div class="form-group" id="customerNameGroup">
+                                <label class="form-label" for="customerName">Customer Name <span
+                                        class="text-rose">*</span></label>
+                                <input type="text" id="customerName" class="form-input"
+                                    placeholder="Enter customer name">
+                            </div>
+
+                            <div class="form-group" id="customerEmailGroup">
+                                <label class="form-label" for="customerEmail">Email <span id="emailOptionalLabel"
+                                        class="text-muted"></span></label>
+                                <input type="email" id="customerEmail" class="form-input"
+                                    placeholder="Enter email address">
+                            </div>
+
+                            <!-- Booking Notes -->
+                            <div class="form-group section-gap flex-grow" style="margin-bottom: 1.5rem;">
+                                <label class="form-label" for="bookingNotes">Booking Notes <span
+                                        class="text-muted">(Optional)</span></label>
+                                <textarea id="bookingNotes" class="form-input form-textarea"
+                                    placeholder="Add optional notes for this booking..."
+                                    style="min-height: 120px;"></textarea>
+                            </div>
+                        </div>
+
+                        <!-- RIGHT COLUMN -->
+                        <div style="display: flex; flex-direction: column; gap: 0;">
+                            <!-- Dynamic Service + Staff rows (injected by JS) -->
+                            <div id="serviceRowsContainer" style="display:flex; flex-direction:column; gap:0; margin-bottom:14px;"></div>
+
+                            <!-- Date & Time -->
+                            <div class="form-grid section-gap">
+                                <div class="form-group">
+                                    <label class="form-label" for="bookingDate">Date <span
+                                            class="text-rose">*</span></label>
+                                    <input type="date" id="bookingDate" class="form-input">
+                                </div>
+                                <div class="form-group">
+                                    <label class="form-label" for="bookingTime">Time <span
+                                            class="text-rose">*</span></label>
+                                    <div class="relative" style="display: flex; gap: 8px;">
+                                        <input type="time" id="bookingTime" class="form-input" style="flex: 1;">
+                                        <button type="button" class="btn btn-secondary" id="btnTimeNow"
+                                            style="padding: 0 12px; height: 40px; font-size: 13px;">Now</button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div> <!-- /inner form container -->
+                </div>
+            </div>
+
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" id="btnCancelBooking">Cancel</button>
+                <button type="button" class="btn btn-primary" id="btnConfirmBooking" disabled>Confirm Booking</button>
+            </div>
+        </div>
+    </div>`;
+
+    document.body.insertAdjacentHTML('beforeend', modalHtml);
+    if (window.feather && feather.replace) {
+        feather.replace();
+    }
+}
 
 export function initGlobalBookingModal() {
+    if (isGlobalBookingModalInitialized && document.getElementById('bookingModalOverlay')) return;
+
+    ensureBookingModalHtml();
+
     const serviceRowsContainer = document.getElementById('serviceRowsContainer');
     const phoneSearch          = document.getElementById('phoneSearch');
 
     // Guard: if modal not present on this page, bail silently
     if (!serviceRowsContainer || !phoneSearch) return;
+
+    isGlobalBookingModalInitialized = true;
 
     // ── Core elements ─────────────────────────────────────────────────────
     const btnNewBooking          = document.getElementById('btnNewBooking');
