@@ -1,4 +1,4 @@
-﻿// scripts/global-payment-modal.js — Thin Orchestrator (v2.3.0)
+// scripts/global-payment-modal.js — Thin Orchestrator (v2.3.0)
 // Modularized into:
 //   scripts/global-payment-modal/gpm-state.js
 //   scripts/global-payment-modal/gpm-ui.js
@@ -63,15 +63,6 @@
             }
         });
 
-        // Edit Booking
-        document.getElementById('gpmBtnEditBooking')?.addEventListener('click', () => {
-            if (gpmState.globalPaymentConfig?.bookingId && window.openEditBookingModal) {
-                window.closeGlobalPaymentModal();
-                window.openEditBookingModal(gpmState.globalPaymentConfig.bookingId);
-            } else {
-                alert('Edit booking is not available for this appointment.');
-            }
-        });
 
         // Payment Methods
         document.querySelectorAll('.gpm-method-card').forEach(btn => {

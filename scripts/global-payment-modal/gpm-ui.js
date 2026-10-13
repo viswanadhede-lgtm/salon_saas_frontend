@@ -1,4 +1,4 @@
-﻿// scripts/global-payment-modal/gpm-ui.js
+// scripts/global-payment-modal/gpm-ui.js
 import { gpmState } from './gpm-state.js';
 
 export function gpmFormatCurrency(amt) {
@@ -942,10 +942,6 @@ export function injectGlobalPaymentModalHTML() {
                     <div class="gpm-card" id="gpmItemsCard">
                         <div class="gpm-card-header">
                             <span class="gpm-card-title" id="gpmItemsHeader">Booked Services (1)</span>
-                            <button type="button" id="gpmBtnEditBooking" class="gpm-link-btn">
-                                <i data-feather="edit-2" style="width:13px; height:13px;"></i>
-                                <span>Edit</span>
-                            </button>
                         </div>
                         <div style="overflow-x:auto;">
                             <table class="gpm-services-table" id="gpmServicesTable">

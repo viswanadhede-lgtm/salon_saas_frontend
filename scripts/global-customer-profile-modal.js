@@ -3,7 +3,7 @@ import { supabase } from '../lib/supabase.js';
 // Automatically inject the customer profile modal into the document
 if (!document.getElementById('customerProfileBookingModal')) {
     document.body.insertAdjacentHTML('beforeend', `
-    <div class="modal-overlay" id="customerProfileBookingModal" style="z-index:9999;">
+    <div class="modal-overlay" id="customerProfileBookingModal" style="z-index:10100;">
         <div class="modal-container" style="width:90vw;max-width:1100px;">
             <div class="modal-header" style="border-bottom:1px solid #f1f5f9;">
                 <div class="header-titles">
