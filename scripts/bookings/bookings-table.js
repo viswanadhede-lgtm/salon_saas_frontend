@@ -32,13 +32,29 @@ export function paymentBadge(status) {
 
 // ─── Row Renderer ─────────────────────────────────────────────────────────────
 // Toggle extra services in the bookings table
-export function toggleSvcExtra(extraId, toggleId, extraCount) {
-    var el  = document.getElementById(extraId);
-    var tog = document.getElementById(toggleId);
+export function toggleSvcExtra(target, arg2, arg3) {
+    // Option A: Self-contained element toggle (this, extraCount)
+    if (target && (target.nodeType === 1 || typeof target === 'object')) {
+        const tog = target;
+        const extraCount = arg2;
+        const el = tog.nextElementSibling;
+        if (!el) return;
+        const isHidden = el.style.display === 'none' || el.style.display === '';
+        el.style.display = isHidden ? 'flex' : 'none';
+        tog.textContent  = isHidden ? '▲ less' : '+' + extraCount;
+        return;
+    }
+
+    // Backward compatibility if called with (extraId, toggleId, extraCount)
+    const extraId    = target;
+    const toggleId   = arg2;
+    const extraCount = arg3;
+    const el  = document.getElementById(extraId);
+    const tog = document.getElementById(toggleId);
     if (!el || !tog) return;
-    var isHidden = el.style.display === 'none' || el.style.display === '';
-    el.style.display  = isHidden ? 'flex' : 'none';
-    tog.textContent   = isHidden ? '▲ less' : '+' + extraCount;
+    const isHidden = el.style.display === 'none' || el.style.display === '';
+    el.style.display = isHidden ? 'flex' : 'none';
+    tog.textContent  = isHidden ? '▲ less' : '+' + extraCount;
 }
 
 if (typeof window !== 'undefined') {
@@ -96,15 +112,12 @@ export function buildRow(b, includeDate = false) {
             serviceCell = firstChip;
         } else {
             const extraCount = serviceNames.length - 1;
-            const extraId = `svc-extra-${bookingId}`;
-            const toggleId = `svc-toggle-${bookingId}`;
             const extraChips = serviceNames.slice(1).map(s => `<span style="${chipStyle}">${s}</span>`).join('');
             serviceCell = `<div style="display:flex;flex-wrap:wrap;align-items:flex-start;gap:2px;width:100%;">
                     ${firstChip}
-                    <span id="${toggleId}"
-                        onclick="window.toggleSvcExtra('${extraId}', '${toggleId}', ${extraCount})"
+                    <span onclick="window.toggleSvcExtra(this, ${extraCount})"
                         style="display:inline-block;padding:2px 7px;border-radius:20px;font-size:0.7rem;font-weight:600;background:#e0e7ff;color:#4f46e5;cursor:pointer;white-space:nowrap;user-select:none;">+${extraCount}</span>
-                    <div id="${extraId}" style="display:none;flex-wrap:wrap;gap:2px;width:100%;margin-top:3px;">
+                    <div style="display:none;flex-wrap:wrap;gap:2px;width:100%;margin-top:3px;">
                         ${extraChips}
                     </div>
                 </div>`;
@@ -119,15 +132,12 @@ export function buildRow(b, includeDate = false) {
             staffCell = firstChip;
         } else {
             const extraCount = staffNames.length - 1;
-            const extraId = `staff-extra-${bookingId}`;
-            const toggleId = `staff-toggle-${bookingId}`;
             const extraChips = staffNames.slice(1).map(s => `<span style="${chipStyle}">${s}</span>`).join('');
             staffCell = `<div style="display:flex;flex-wrap:wrap;align-items:flex-start;gap:2px;width:100%;">
                     ${firstChip}
-                    <span id="${toggleId}"
-                        onclick="window.toggleSvcExtra('${extraId}', '${toggleId}', ${extraCount})"
+                    <span onclick="window.toggleSvcExtra(this, ${extraCount})"
                         style="display:inline-block;padding:2px 7px;border-radius:20px;font-size:0.7rem;font-weight:600;background:#e0e7ff;color:#4f46e5;cursor:pointer;white-space:nowrap;user-select:none;">+${extraCount}</span>
-                    <div id="${extraId}" style="display:none;flex-wrap:wrap;gap:2px;width:100%;margin-top:3px;">
+                    <div style="display:none;flex-wrap:wrap;gap:2px;width:100%;margin-top:3px;">
                         ${extraChips}
                     </div>
                 </div>`;
