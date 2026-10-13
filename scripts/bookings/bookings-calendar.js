@@ -290,7 +290,7 @@ export function openCalendarDayModal(dateStr) {
             tr.style.backgroundColor = '#f8fafc';
         }
         const priceRaw = b.final_amount != null ? b.final_amount : (b.total_price != null ? b.total_price : (b.price != null ? b.price : null));
-        const priceCell = priceRaw != null ? `<span style="font-weight:700;color:#0f172a;">₹${Number(priceRaw).toLocaleString('en-IN')}</span>` : '—';
+        const priceCell = priceRaw != null ? `<span style="font-weight:700;color:#059669;">₹${Number(priceRaw).toLocaleString('en-IN')}</span>` : '—';
 
         tr.innerHTML = `
             <td style="padding:12px 14px; font-weight:600; font-size:0.88rem; color:#334155; white-space:nowrap;">${ptime || '—'}</td>
