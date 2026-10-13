@@ -6,7 +6,7 @@ import { renderBookings, toggleSvcExtra } from './scripts/bookings/bookings-tabl
 import { getFilteredBookings, populateStaffFilter, attachFilterListeners, toggleSort, _applyPendingStaffFilter } from './scripts/bookings/bookings-filters.js';
 import { renderCalendar, initCalendarListeners } from './scripts/bookings/bookings-calendar.js';
 import { setupModals } from './scripts/bookings/booking-modals-inject.js';
-import { openEditBookingModal, attachEditModalListeners } from './scripts/bookings/booking-edit-modal.js?v=2.3.1';
+import { openEditBookingModal, showPaymentNotCompletedModal, attachEditModalListeners } from './scripts/bookings/booking-edit-modal.js?v=2.3.1';
 import { updateBookingStatus, confirmUpdateBookingStatus, attachStatusActionsListeners } from './scripts/bookings/booking-status-actions.js';
 import { openBookingPayment } from './scripts/bookings/booking-payment-bridge.js';
 import { 
@@ -34,6 +34,7 @@ if (typeof window !== 'undefined') {
     window.fetchBookings               = fetchBookings;
     window.liveBookingsData            = getLiveBookings();
     window.openEditBookingModal        = openEditBookingModal;
+    window.showPaymentNotCompletedModal= showPaymentNotCompletedModal;
     window.openBookingPayment          = openBookingPayment;
     window.openViewBookingModal        = openViewBookingModal;
     window.openCancelledBookingModal   = openCancelledBookingModal;

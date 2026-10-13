@@ -179,22 +179,35 @@ export function setupModals() {
     if (!document.getElementById('paymentNotCompletedModal')) {
         document.body.insertAdjacentHTML('beforeend', `
         <div class="modal-overlay" id="paymentNotCompletedModal" style="z-index:10005;backdrop-filter:blur(6px);">
-            <div class="modal-container" style="background:#fff;border-radius:14px;padding:24px 28px;width:580px !important;max-width:92vw !important;box-shadow:0 25px 50px -12px rgba(0,0,0,0.25);border:1px solid #e2e8f0;text-align:left;">
-                <div style="display:flex;align-items:center;gap:10px;">
-                    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#ea580c" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0;">
-                        <circle cx="12" cy="12" r="10"></circle>
-                        <line x1="12" y1="8" x2="12" y2="12"></line>
-                        <line x1="12" y1="16" x2="12.01" y2="16"></line>
-                    </svg>
-                    <h3 style="font-size:1.1rem;font-weight:700;color:#0f172a;margin:0;">Payment not completed</h3>
+            <div class="modal-container" style="background:#fff;border-radius:14px;padding:24px 28px;width:480px !important;max-width:92vw !important;box-shadow:0 25px 50px -12px rgba(0,0,0,0.25);border:1px solid #e2e8f0;text-align:left;">
+                <div style="display:flex;align-items:center;gap:12px;">
+                    <div style="width:42px;height:42px;border-radius:50%;background:#fef2f2;display:flex;align-items:center;justify-content:center;color:#dc2626;flex-shrink:0;">
+                        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                            <circle cx="12" cy="12" r="10"></circle>
+                            <line x1="12" y1="8" x2="12" y2="12"></line>
+                            <line x1="12" y1="16" x2="12.01" y2="16"></line>
+                        </svg>
+                    </div>
+                    <div>
+                        <h3 style="font-size:1.1rem;font-weight:700;color:#0f172a;margin:0;">Payment Required</h3>
+                        <p style="font-size:0.8rem;color:#64748b;margin:2px 0 0 0;">Cannot complete booking without payment</p>
+                    </div>
                 </div>
-                <p style="margin:14px 0 22px 0;font-size:0.92rem;color:#334155;line-height:1.55;">
-                    This booking has an outstanding payment of <strong id="pncModalAmount" style="color:#0f172a;font-weight:700;">₹0</strong>. You can collect the payment now or mark the service as completed and collect it later.
-                </p>
-                <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;">
-                    <button type="button" id="btnPncCollectPayment" style="background:#dcfce7;color:#15803d;border:1px solid #bbf7d0;border-radius:20px;padding:7px 18px;font-size:0.85rem;font-weight:600;cursor:pointer;transition:all 0.15s;" onmouseover="this.style.background='#bbf7d0'" onmouseout="this.style.background='#dcfce7'">Collect Payment</button>
-                    <button type="button" id="btnPncCompleteWithoutPayment" style="background:#f1f5f9;color:#334155;border:1px solid #e2e8f0;border-radius:20px;padding:7px 18px;font-size:0.85rem;font-weight:500;cursor:pointer;transition:all 0.15s;" onmouseover="this.style.background='#e2e8f0'" onmouseout="this.style.background='#f1f5f9'">Complete Without Payment</button>
-                    <button type="button" id="btnPncGoBack" style="background:#f1f5f9;color:#334155;border:1px solid #e2e8f0;border-radius:20px;padding:7px 18px;font-size:0.85rem;font-weight:500;cursor:pointer;transition:all 0.15s;" onmouseover="this.style.background='#e2e8f0'" onmouseout="this.style.background='#f1f5f9'">Go Back</button>
+                <div style="margin:18px 0 24px 0;background:#f8fafc;border:1px solid #e2e8f0;border-radius:10px;padding:14px 16px;">
+                    <p style="margin:0 0 10px 0;font-size:0.9rem;color:#334155;line-height:1.5;">
+                        Please collect the payment before marking this booking as completed.
+                    </p>
+                    <div style="display:flex;justify-content:space-between;align-items:center;padding-top:10px;border-top:1px dashed #cbd5e1;font-size:0.85rem;">
+                        <span style="color:#64748b;font-weight:500;">Outstanding Amount:</span>
+                        <strong id="pncModalAmount" style="color:#0f172a;font-weight:700;font-size:1rem;">₹0</strong>
+                    </div>
+                </div>
+                <div style="display:flex;gap:12px;align-items:center;justify-content:flex-end;">
+                    <button type="button" id="btnPncClose" style="background:#ffffff;color:#475569;border:1px solid #cbd5e1;border-radius:8px;padding:9px 20px;font-size:0.85rem;font-weight:600;cursor:pointer;transition:all 0.15s;" onmouseover="this.style.background='#f8fafc'" onmouseout="this.style.background='#ffffff'">Close</button>
+                    <button type="button" id="btnPncCollectPayment" style="background:#4f46e5;color:#ffffff;border:none;border-radius:8px;padding:9px 20px;font-size:0.85rem;font-weight:600;cursor:pointer;display:inline-flex;align-items:center;gap:6px;box-shadow:0 1px 2px rgba(79,70,229,0.25);transition:all 0.15s;" onmouseover="this.style.background='#4338ca'" onmouseout="this.style.background='#4f46e5'">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="1" y="4" width="22" height="16" rx="2" ry="2"></rect><line x1="1" y1="10" x2="23" y2="10"></line></svg>
+                        Collect Payment
+                    </button>
                 </div>
             </div>
         </div>`);

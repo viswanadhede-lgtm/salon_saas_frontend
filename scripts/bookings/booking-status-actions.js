@@ -5,6 +5,21 @@ import { fetchBookings } from './bookings-data.js';
 
 export function updateBookingStatus(bookingId, newStatus) {
     if (!bookingId || !newStatus) return;
+
+    if (newStatus.toLowerCase() === 'completed') {
+        const liveData = getLiveBookings() || [];
+        const b = liveData.find(x => (x.booking_id || x.id) == bookingId);
+        const payment = (b?.payment_status || b?.payment || '').toLowerCase().trim();
+        if (payment !== 'paid') {
+            if (window.showPaymentNotCompletedModal) {
+                window.showPaymentNotCompletedModal(bookingId);
+            } else if (window.openBookingPayment) {
+                window.openBookingPayment(bookingId);
+            }
+            return;
+        }
+    }
+
     statusUpdateState.bookingId = bookingId;
     statusUpdateState.newStatus = newStatus;
     

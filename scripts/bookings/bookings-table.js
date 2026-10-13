@@ -160,10 +160,29 @@ export function buildRow(b, includeDate = false) {
         <td style="padding:14px 8px;font-size:0.85rem;font-weight:600;color:#059669;${cellStyle}">${amount}</td>
         <td style="padding:14px 8px;font-size:0.85rem;${cellStyle}">
             ${(() => {
-                const p = (payment || '').toLowerCase();
-                if (p === 'paid') {
+                const p = (payment || '').toLowerCase().trim();
+                const s = (status || '').toLowerCase().trim();
+                const isPaid = p === 'paid';
+                const isCancelled = s === 'cancelled';
+                const isNoShow = ['no-show', 'noshow', 'no_show'].includes(s);
+
+                if (isPaid) {
                     return `<span style="color:#059669;font-weight:700;font-size:0.85rem;">Paid</span>`;
                 }
+
+                if (isCancelled || isNoShow) {
+                    const label = isCancelled ? 'Cancelled' : 'No show';
+                    return `
+                    <div style="display:flex;flex-direction:column;align-items:flex-start;gap:2px;">
+                        <button disabled
+                            style="background:#f1f5f9;border:1px solid #e2e8f0;border-radius:6px;color:#94a3b8;padding:5px 12px;font-size:0.78rem;font-weight:600;display:inline-flex;align-items:center;gap:6px;cursor:not-allowed;box-shadow:none;">
+                            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="1" y="4" width="22" height="16" rx="2" ry="2"></rect><line x1="1" y1="10" x2="23" y2="10"></line></svg>
+                            Collect
+                        </button>
+                        <span style="font-size:0.7rem;color:#94a3b8;font-weight:400;padding-left:2px;">${label}</span>
+                    </div>`;
+                }
+
                 return `
                 <button onclick="window.openBookingPayment('${bookingId}')"
                     data-sub-feature="collect_payment"
@@ -175,32 +194,60 @@ export function buildRow(b, includeDate = false) {
             })()}
         </td>
         <td style="padding:14px 8px 14px 24px;">
-            ${(status || '').toLowerCase() === 'completed' ? `
-            <button onclick="window.openViewBookingModal('${bookingId}')"
-                style="width:90px;padding:5px 8px;border-radius:6px;border:1px solid #e2e8f0;background:#ffffff;color:#1e293b;font-size:0.78rem;font-weight:600;cursor:pointer;white-space:nowrap;transition:all 0.2s;box-shadow:0 1px 2px rgba(0,0,0,0.04);display:inline-flex;align-items:center;justify-content:center;gap:6px;"
-                onmouseover="this.style.background='#f8fafc';this.style.borderColor='#cbd5e1'" 
-                onmouseout="this.style.background='#ffffff';this.style.borderColor='#e2e8f0'">
-                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#64748b" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path><circle cx="12" cy="12" r="3"></circle></svg>
-                View
-            </button>
-            ` : ['cancelled', 'no-show', 'noshow', 'no_show'].includes((status || '').toLowerCase().trim()) ? `
-            <button onclick="window.openCancelledBookingModal('${bookingId}')"
-                style="width:90px;padding:5px 8px;border-radius:6px;border:1px solid #e2e8f0;background:#ffffff;color:#1e293b;font-size:0.78rem;font-weight:600;cursor:pointer;white-space:nowrap;transition:all 0.2s;box-shadow:0 1px 2px rgba(0,0,0,0.04);display:inline-flex;align-items:center;justify-content:center;gap:6px;"
-                onmouseover="this.style.background='#f8fafc';this.style.borderColor='#cbd5e1'" 
-                onmouseout="this.style.background='#ffffff';this.style.borderColor='#e2e8f0'">
-                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#64748b" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M17 1l4 4-4 4"/><path d="M3 11V9a4 4 0 0 1 4-4h14"/><path d="M7 23l-4-4 4-4"/><path d="M21 13v2a4 4 0 0 1-4 4H3"/></svg>
-                Rebook
-            </button>
-            ` : `
-            <button onclick="window.openEditBookingModal('${bookingId}')"
-                data-sub-feature="update_booking"
-                style="width:90px;padding:5px 8px;border-radius:6px;border:1px solid #e2e8f0;background:#ffffff;color:#1e293b;font-size:0.78rem;font-weight:600;cursor:pointer;white-space:nowrap;transition:all 0.2s;box-shadow:0 1px 2px rgba(0,0,0,0.04);display:inline-flex;align-items:center;justify-content:center;gap:6px;"
-                onmouseover="this.style.background='#f8fafc';this.style.borderColor='#cbd5e1'" 
-                onmouseout="this.style.background='#ffffff';this.style.borderColor='#e2e8f0'">
-                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#64748b" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path></svg>
-                Update
-            </button>
-            `}
+            ${(() => {
+                const s = (status || '').toLowerCase().trim();
+                const p = (payment || '').toLowerCase().trim();
+                const isPaid = p === 'paid';
+                const isCancelledOrNoShow = ['cancelled', 'no-show', 'noshow', 'no_show'].includes(s);
+
+                // State 2: status = completed -> View
+                if (s === 'completed') {
+                    return `
+                    <button onclick="window.openViewBookingModal('${bookingId}')"
+                        style="width:90px;padding:5px 8px;border-radius:6px;border:1px solid #e2e8f0;background:#ffffff;color:#1e293b;font-size:0.78rem;font-weight:600;cursor:pointer;white-space:nowrap;transition:all 0.2s;box-shadow:0 1px 2px rgba(0,0,0,0.04);display:inline-flex;align-items:center;justify-content:center;gap:6px;"
+                        onmouseover="this.style.background='#f8fafc';this.style.borderColor='#cbd5e1'" 
+                        onmouseout="this.style.background='#ffffff';this.style.borderColor='#e2e8f0'">
+                        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#64748b" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path><circle cx="12" cy="12" r="3"></circle></svg>
+                        View
+                    </button>`;
+                }
+
+                // State 4 & 6: status = cancelled / no-show AND paid -> Info (opens modal with Refund and Rebook)
+                if (isCancelledOrNoShow && isPaid) {
+                    return `
+                    <button onclick="window.openCancelledBookingModal('${bookingId}')"
+                        style="width:90px;padding:5px 8px;border-radius:6px;border:1px solid #e2e8f0;background:#ffffff;color:#1e293b;font-size:0.78rem;font-weight:600;cursor:pointer;white-space:nowrap;transition:all 0.2s;box-shadow:0 1px 2px rgba(0,0,0,0.04);display:inline-flex;align-items:center;justify-content:center;gap:6px;"
+                        onmouseover="this.style.background='#f8fafc';this.style.borderColor='#cbd5e1'" 
+                        onmouseout="this.style.background='#ffffff';this.style.borderColor='#e2e8f0'">
+                        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#64748b" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="16" x2="12" y2="12"></line><line x1="12" y1="8" x2="12.01" y2="8"></line></svg>
+                        Info
+                    </button>`;
+                }
+
+                // State 3 & 5: status = cancelled / no-show AND unpaid -> Rebook (direct prefill)
+                if (isCancelledOrNoShow && !isPaid) {
+                    return `
+                    <button onclick="window.triggerRebook('${bookingId}')"
+                        data-sub-feature="create_booking"
+                        style="width:90px;padding:5px 8px;border-radius:6px;border:1px solid #e2e8f0;background:#ffffff;color:#1e293b;font-size:0.78rem;font-weight:600;cursor:pointer;white-space:nowrap;transition:all 0.2s;box-shadow:0 1px 2px rgba(0,0,0,0.04);display:inline-flex;align-items:center;justify-content:center;gap:6px;"
+                        onmouseover="this.style.background='#f8fafc';this.style.borderColor='#cbd5e1'" 
+                        onmouseout="this.style.background='#ffffff';this.style.borderColor='#e2e8f0'">
+                        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#64748b" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M17 1l4 4-4 4"/><path d="M3 11V9a4 4 0 0 1 4-4h14"/><path d="M7 23l-4-4 4-4"/><path d="M21 13v2a4 4 0 0 1-4 4H3"/></svg>
+                        Rebook
+                    </button>`;
+                }
+
+                // State 1: status = booked / confirmed / etc. -> Update
+                return `
+                <button onclick="window.openEditBookingModal('${bookingId}')"
+                    data-sub-feature="update_booking"
+                    style="width:90px;padding:5px 8px;border-radius:6px;border:1px solid #e2e8f0;background:#ffffff;color:#1e293b;font-size:0.78rem;font-weight:600;cursor:pointer;white-space:nowrap;transition:all 0.2s;box-shadow:0 1px 2px rgba(0,0,0,0.04);display:inline-flex;align-items:center;justify-content:center;gap:6px;"
+                    onmouseover="this.style.background='#f8fafc';this.style.borderColor='#cbd5e1'" 
+                    onmouseout="this.style.background='#ffffff';this.style.borderColor='#e2e8f0'">
+                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#64748b" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path></svg>
+                    Update
+                </button>`;
+            })()}
         </td>
     </tr>`;
 }

@@ -124,17 +124,20 @@ export function syncEditServiceDropdowns() {
 }
 
 // ─── Payment Not Completed Warning Modal Handlers ─────────────────────────────
-export function showPaymentNotCompletedModal() {
+export function showPaymentNotCompletedModal(bookingId) {
+    const bId = bookingId || document.getElementById('editBookingId')?.value || editState.activeBooking?.booking_id || editState.activeBooking?.id;
+    const b = (getLiveBookings() || []).find(x => (x.booking_id || x.id) == bId) || editState.activeBooking;
+
+    let totalAmount = 0;
     const container = document.getElementById('editServiceRowsContainer');
     const svcRowEls = container?.querySelectorAll('.edit-service-row');
-    let totalAmount = 0;
     if (svcRowEls && svcRowEls.length > 0) {
         svcRowEls.forEach(r => {
             totalAmount += Number(r.querySelector('.edit-svc-price')?.value || 0);
         });
     }
-    if (!totalAmount) {
-        totalAmount = Number(editState.activeBooking?.total_price || editState.activeBooking?.price || 0);
+    if (!totalAmount && b) {
+        totalAmount = Number(b.final_amount != null ? b.final_amount : (b.total_price || b.price || 0));
     }
 
     const amountEl = document.getElementById('pncModalAmount');
@@ -144,6 +147,7 @@ export function showPaymentNotCompletedModal() {
 
     const modal = document.getElementById('paymentNotCompletedModal');
     if (modal) {
+        modal.dataset.pendingBookingId = bId || '';
         modal.classList.add('active');
     }
 }
@@ -364,6 +368,7 @@ export async function openEditBookingModal(bookingId) {
 
 if (typeof window !== 'undefined') {
     window.openEditBookingModal = openEditBookingModal;
+    window.showPaymentNotCompletedModal = showPaymentNotCompletedModal;
 }
 
 export function attachEditModalListeners() {
@@ -378,28 +383,16 @@ export function attachEditModalListeners() {
     const pncModal = document.getElementById('paymentNotCompletedModal');
 
     document.getElementById('btnPncCollectPayment')?.addEventListener('click', () => {
-        pncModal?.classList.remove('active');
+        const modal = document.getElementById('paymentNotCompletedModal');
+        const bookingId = modal?.dataset?.pendingBookingId || document.getElementById('editBookingId')?.value || editState.activeBooking?.booking_id || editState.activeBooking?.id;
+        revertStatusAndClosePnc();
         editModal?.classList.remove('active');
-        const bookingId = document.getElementById('editBookingId')?.value || editState.activeBooking?.booking_id || editState.activeBooking?.id;
         if (bookingId && window.openBookingPayment) {
             window.openBookingPayment(bookingId);
         }
     });
 
-    document.getElementById('btnPncCompleteWithoutPayment')?.addEventListener('click', () => {
-        pncModal?.classList.remove('active');
-        editState.allowCompleteWithoutPayment = true;
-        const statusSelect = document.getElementById('editBkStatus');
-        if (statusSelect) statusSelect.value = 'completed';
-        if (editForm) {
-            if (typeof editForm.requestSubmit === 'function') {
-                editForm.requestSubmit();
-            } else {
-                editForm.dispatchEvent(new Event('submit', { cancelable: true, bubbles: true }));
-            }
-        }
-    });
-
+    document.getElementById('btnPncClose')?.addEventListener('click', revertStatusAndClosePnc);
     document.getElementById('btnPncGoBack')?.addEventListener('click', revertStatusAndClosePnc);
     pncModal?.addEventListener('click', (e) => {
         if (e.target === pncModal) revertStatusAndClosePnc();
@@ -408,9 +401,9 @@ export function attachEditModalListeners() {
     const editBkStatusSelect = document.getElementById('editBkStatus');
     editBkStatusSelect?.addEventListener('change', (e) => {
         const newStatus = e.target.value.toLowerCase();
-        if (newStatus === 'completed' && editState.previousEditBkStatus !== 'completed') {
+        if (newStatus === 'completed') {
             const payment = (editState.activeBooking?.payment_status || editState.activeBooking?.payment || '').toLowerCase();
-            if (payment !== 'paid' && !editState.allowCompleteWithoutPayment) {
+            if (payment !== 'paid') {
                 showPaymentNotCompletedModal();
                 return;
             }
@@ -429,7 +422,7 @@ export function attachEditModalListeners() {
 
         // Check if completing an unpaid booking
         const payment   = (editState.activeBooking?.payment_status || editState.activeBooking?.payment || '').toLowerCase();
-        if (status.toLowerCase() === 'completed' && editState.previousEditBkStatus !== 'completed' && payment !== 'paid' && !editState.allowCompleteWithoutPayment) {
+        if (status.toLowerCase() === 'completed' && payment !== 'paid') {
             showPaymentNotCompletedModal();
             return;
         }
