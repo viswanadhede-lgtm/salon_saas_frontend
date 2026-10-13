@@ -289,12 +289,16 @@ export function openCalendarDayModal(dateStr) {
         if (index % 2 !== 0) {
             tr.style.backgroundColor = '#f8fafc';
         }
+        const priceRaw = b.final_amount != null ? b.final_amount : (b.total_price != null ? b.total_price : (b.price != null ? b.price : null));
+        const priceCell = priceRaw != null ? `<span style="font-weight:700;color:#0f172a;">₹${Number(priceRaw).toLocaleString('en-IN')}</span>` : '—';
+
         tr.innerHTML = `
             <td style="padding:12px 14px; font-weight:600; font-size:0.88rem; color:#334155; white-space:nowrap;">${ptime || '—'}</td>
             <td style="padding:12px 8px; font-weight:600; font-size:0.92rem; color:#1e293b;">
                 ${b.customer_name ? `<a href="#" style="color:#2563eb; text-decoration:none;" onclick="event.preventDefault(); if(window.viewCustomerProfile) { window.viewCustomerProfile('${b.customer_id || ''}', '${b.customer_name}'); document.getElementById('calDayModalOverlay').classList.remove('active'); }">${b.customer_name}</a>` : '—'}
             </td>
             <td style="padding:12px 8px; max-width:220px;">${serviceCell}</td>
+            <td style="padding:12px 8px; white-space:nowrap;">${priceCell}</td>
             <td style="padding:12px 8px; max-width:180px;">${staffCell}</td>
             <td style="padding:12px 8px;">${statusBadge(b.status)}</td>
         `;

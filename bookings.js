@@ -4,7 +4,7 @@ import { getLiveBookings } from './scripts/bookings/bookings-state.js';
 import { fetchBookings, setOnBookingsRefreshed } from './scripts/bookings/bookings-data.js';
 import { renderBookings, toggleSvcExtra } from './scripts/bookings/bookings-table.js?v=2.4.0';
 import { getFilteredBookings, populateStaffFilter, attachFilterListeners, toggleSort, _applyPendingStaffFilter } from './scripts/bookings/bookings-filters.js?v=2.4.0';
-import { renderCalendar, initCalendarListeners } from './scripts/bookings/bookings-calendar.js?v=2.4.0';
+import { renderCalendar, initCalendarListeners } from './scripts/bookings/bookings-calendar.js?v=2.4.2';
 import { setupModals } from './scripts/bookings/booking-modals-inject.js?v=2.4.0';
 import { openEditBookingModal, showPaymentNotCompletedModal, attachEditModalListeners } from './scripts/bookings/booking-edit-modal.js?v=2.4.0';
 import { updateBookingStatus, confirmUpdateBookingStatus, attachStatusActionsListeners } from './scripts/bookings/booking-status-actions.js?v=2.4.0';
