@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+ï»¿<!DOCTYPE html>
 <html lang="en">
 
 <head>
@@ -281,11 +281,11 @@
                                     <div style="display:flex;align-items:center;gap:16px;flex-wrap:wrap;">
                                         <span style="display:inline-flex;align-items:center;gap:5px;font-size:0.8rem;color:#475569;">
                                             <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#64748b" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"></path></svg>
-                                            <span id="rfCustomerPhone">—</span>
+                                            <span id="rfCustomerPhone">ï¿½</span>
                                         </span>
                                         <span style="display:inline-flex;align-items:center;gap:5px;font-size:0.8rem;color:#475569;">
                                             <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#64748b" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"></path><polyline points="22,6 12,13 2,6"></polyline></svg>
-                                            <span id="rfCustomerEmail">—</span>
+                                            <span id="rfCustomerEmail">ï¿½</span>
                                         </span>
                                     </div>
                                 </div>
@@ -296,16 +296,16 @@
                         <div style="background:#f8fafc;border:1px solid #e2e8f0;border-radius:12px;padding:16px;display:flex;flex-direction:column;gap:12px;">
                             <div style="display:flex;justify-content:space-between;align-items:center;">
                                 <span style="font-size:0.75rem;font-weight:800;color:#64748b;text-transform:uppercase;letter-spacing:0.05em;">SALE DETAILS</span>
-                                <span id="rfSaleBadge" style="background:#eff6ff;color:#2563eb;border:1px solid #bfdbfe;font-size:0.75rem;font-weight:700;padding:3px 10px;border-radius:20px;font-family:monospace;">#—</span>
+                                <span id="rfSaleBadge" style="background:#eff6ff;color:#2563eb;border:1px solid #bfdbfe;font-size:0.75rem;font-weight:700;padding:3px 10px;border-radius:20px;font-family:monospace;">#ï¿½</span>
                             </div>
                             <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
                                 <div style="display:flex;justify-content:space-between;align-items:center;padding:10px 12px;background:#fff;border:1px solid #e2e8f0;border-radius:8px;">
                                     <span style="font-size:0.82rem;color:#64748b;">Sale date</span>
-                                    <span id="rfSaleDate" style="font-size:0.85rem;font-weight:600;color:#0f172a;">—</span>
+                                    <span id="rfSaleDate" style="font-size:0.85rem;font-weight:600;color:#0f172a;">ï¿½</span>
                                 </div>
                                 <div style="display:flex;justify-content:space-between;align-items:center;padding:10px 12px;background:#fff;border:1px solid #e2e8f0;border-radius:8px;">
                                     <span style="font-size:0.82rem;color:#64748b;">Cashier</span>
-                                    <span id="rfCashier" style="font-size:0.85rem;font-weight:600;color:#0f172a;">—</span>
+                                    <span id="rfCashier" style="font-size:0.85rem;font-weight:600;color:#0f172a;">ï¿½</span>
                                 </div>
                             </div>
                         </div>
@@ -439,128 +439,6 @@
         }
     </script>
 
-
-<div class="modal-overlay" id="bookingModalOverlay">
-        <div class="modal-container" id="bookingModal">
-            <!-- Header -->
-            <div class="modal-header">
-                <div class="header-titles">
-                    <h2>New Booking</h2>
-                    <p class="subtitle">Create a new appointment for a customer.</p>
-                </div>
-                <button class="modal-close" id="closeBookingModal"><i data-feather="x"></i></button>
-            </div>
-
-            <div class="modal-body" style="padding: 1.5rem; overflow-y: auto;">
-                <div class="modal-form-side" style="width: 100%; max-width: none; flex: 1; padding: 0; border: none;">
-                    <div style="width: 100%; display: grid; grid-template-columns: 1fr 1fr; gap: 32px;">
-
-                        <!-- LEFT COLUMN -->
-                        <div style="display: flex; flex-direction: column;">
-                            <!-- Customer Ident -->
-                            <div class="form-group relative">
-                                <label class="form-label" for="phoneSearch">Phone Number <span
-                                        class="text-rose">*</span></label>
-                                <input type="tel" id="phoneSearch" class="form-input" placeholder="Enter phone number"
-                                    autocomplete="off">
-                                <div class="search-suggestions" id="searchSuggestions"></div>
-                            </div>
-
-                            <div class="customer-badge-container" id="customerBadgeContainer"
-                                style="display:none; margin-bottom: 8px;">
-                                <span class="badge-pill existing-badge" id="customerBadge">Existing Customer</span>
-                            </div>
-
-                            <div class="form-group span-full" id="newCustomerBadgeContainer"
-                                style="display:none; margin-bottom: 8px;">
-                                <span class="badge-pill new-badge" id="newCustomerBadge">New Customer</span>
-                            </div>
-
-                            <div class="form-group" id="customerNameGroup">
-                                <label class="form-label" for="customerName">Customer Name <span
-                                        class="text-rose">*</span></label>
-                                <input type="text" id="customerName" class="form-input"
-                                    placeholder="Enter customer name">
-                            </div>
-
-                            <div class="form-group" id="customerEmailGroup">
-                                <label class="form-label" for="customerEmail">Email <span id="emailOptionalLabel"
-                                        class="text-muted"></span></label>
-                                <input type="email" id="customerEmail" class="form-input"
-                                    placeholder="Enter email address">
-                            </div>
-
-                            <!-- Booking Notes -->
-                            <div class="form-group section-gap flex-grow" style="margin-bottom: 1.5rem;">
-                                <label class="form-label" for="bookingNotes">Booking Notes <span
-                                        class="text-muted">(Optional)</span></label>
-                                <textarea id="bookingNotes" class="form-input form-textarea"
-                                    placeholder="Add optional notes for this booking..."
-                                    style="min-height: 120px;"></textarea>
-                            </div>
-                        </div>
-
-                        <!-- RIGHT COLUMN -->
-                        <div style="display: flex; flex-direction: column;">
-                            <!-- Service Selection -->
-                            <div class="form-group" style="margin-top: 0;">
-                                <label class="form-label" for="bookingService">Service <span
-                                        class="text-rose">*</span></label>
-                                <select id="bookingService" class="form-select">
-                                    <option value="" disabled selected>Select a service</option>
-                                    <!-- populated via JS -->
-                                </select>
-                            </div>
-
-                            <div class="form-grid" id="serviceMetaFields" style="display:none;">
-                                <div class="form-group">
-                                    <label class="form-label">Duration</label>
-                                    <input type="text" class="form-input read-only-input" id="roDuration" readonly>
-                                </div>
-                                <div class="form-group">
-                                    <label class="form-label">Price</label>
-                                    <input type="text" class="form-input read-only-input" id="roPrice" readonly>
-                                </div>
-                            </div>
-
-                            <!-- Staff Selection -->
-                            <div class="form-group section-gap">
-                                <label class="form-label" for="bookingStaff">Staff <span
-                                        class="text-rose">*</span></label>
-                                <select id="bookingStaff" class="form-select">
-                                    <option value="" disabled selected>Select staff member</option>
-                                    <!-- populated via JS -->
-                                </select>
-                            </div>
-
-                            <!-- Date & Time -->
-                            <div class="form-grid section-gap">
-                                <div class="form-group">
-                                    <label class="form-label" for="bookingDate">Date <span
-                                            class="text-rose">*</span></label>
-                                    <input type="date" id="bookingDate" class="form-input">
-                                </div>
-                                <div class="form-group">
-                                    <label class="form-label" for="bookingTime">Time <span
-                                            class="text-rose">*</span></label>
-                                    <div class="relative" style="display: flex; gap: 8px;">
-                                        <input type="time" id="bookingTime" class="form-input" style="flex: 1;">
-                                        <button type="button" class="btn btn-secondary" id="btnTimeNow"
-                                            style="padding: 0 12px; height: 40px; font-size: 13px;">Now</button>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    </div> <!-- /inner form container -->
-                </div>
-            </div>
-
-            <div class="modal-footer">
-                <button type="button" class="btn btn-secondary" id="btnCancelBooking">Cancel</button>
-                <button type="button" class="btn btn-primary" id="btnConfirmBooking" disabled>Confirm Booking</button>
-            </div>
-        </div>
-    </div>
 
     <!-- Toast Notification -->
     <div id="toastNotification" class="toast-notification">Booking created successfully (demo)</div>

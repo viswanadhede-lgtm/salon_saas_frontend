@@ -441,11 +441,42 @@ export function initGlobalBookingModal() {
     if (window.feather) feather.replace();
 
     // ── Open/Close triggers ───────────────────────────────────────────────
-    btnNewBooking?.addEventListener('click', openModal);
-    btnNewBookingPage?.addEventListener('click', openModal);
+    window.openGlobalBookingModal = openModal;
+
+    btnNewBooking?.addEventListener('click', (e) => {
+        e.preventDefault();
+        openModal();
+    });
+    btnNewBookingPage?.addEventListener('click', (e) => {
+        e.preventDefault();
+        openModal();
+    });
     btnCloseModal?.addEventListener('click', closeModal);
     btnCancelBooking?.addEventListener('click', closeModal);
     modalOverlay.addEventListener('click', (e) => { if (e.target === modalOverlay) closeModal(); });
+
+    // Ensure header button is bound when shell finishes mounting
+    document.addEventListener('app-shell:ready', () => {
+        const headerBtn = document.getElementById('btnNewBooking');
+        if (headerBtn && !headerBtn.dataset.bookingModalBound) {
+            headerBtn.dataset.bookingModalBound = '1';
+            headerBtn.addEventListener('click', (e) => {
+                e.preventDefault();
+                openModal();
+            });
+        }
+    });
+
+    // Handle auto-open if navigated with ?action=new
+    try {
+        const urlParams = new URLSearchParams(window.location.search);
+        if (urlParams.get('action') === 'new') {
+            openModal();
+            const url = new URL(window.location.href);
+            url.searchParams.delete('action');
+            window.history.replaceState({}, document.title, url.pathname + (url.search ? url.search : '') + url.hash);
+        }
+    } catch { /* ignore */ }
 
     // ── Phone search ──────────────────────────────────────────────────────
     phoneSearch.addEventListener('input', (e) => {

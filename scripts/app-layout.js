@@ -84,9 +84,11 @@ export function initQuickActions() {
     btnNewBooking.dataset.appLayoutInit = '1';
     btnNewBooking.addEventListener('click', (e) => {
         e.preventDefault();
-        const bookingOverlay = document.getElementById('bookingModalOverlay');
-        if (bookingOverlay) {
-            bookingOverlay.style.display = 'flex';
+        if (typeof window.openGlobalBookingModal === 'function') {
+            window.openGlobalBookingModal();
+        } else if (document.getElementById('bookingModalOverlay')) {
+            const overlay = document.getElementById('bookingModalOverlay');
+            overlay.classList.add('active');
         } else {
             window.location.href = 'bookings.html?action=new';
         }
