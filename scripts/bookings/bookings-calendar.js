@@ -1,7 +1,7 @@
 // scripts/bookings/bookings-calendar.js
 import { supabase } from '../../lib/supabase.js';
 import { getLiveBookings, getBranchId, calendarState } from './bookings-state.js';
-import { statusBadge, toggleSvcExtra } from './bookings-table.js';
+import { statusBadge, toggleSvcExtra } from './bookings-table.js?v=2.4.0';
 
 if (typeof window !== 'undefined' && !window.toggleSvcExtra) {
     window.toggleSvcExtra = toggleSvcExtra;
