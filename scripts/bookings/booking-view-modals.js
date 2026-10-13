@@ -100,10 +100,33 @@ export async function viewCustomerProfile(customerId, customerName) {
             }
         }
 
-        // ── 3. Build booking history rows
-        const recentBookings = recentBkRes.data || [];
-        const statusColor = { completed:'#065f46', booked:'#1e40af', confirmed:'#1e40af', cancelled:'#991b1b', 'no-show':'#92400e', 'no_show':'#92400e' };
-        const statusBg    = { completed:'#d1fae5', booked:'#dbeafe', confirmed:'#dbeafe', cancelled:'#fee2e2', 'no-show':'#fef3c7', 'no_show':'#fef3c7' };
+        // Helper: build a +N expandable chip cell from a comma-separated string
+        const profChipCell = (raw) => {
+            const names = String(raw || '').split(',').map(n => n.trim()).filter(Boolean);
+            if (!names.length) return '—';
+            const chipStyle = `display:inline-block;padding:2px 7px;border-radius:20px;font-size:0.72rem;font-weight:500;background:#f1f5f9;color:#334155;margin:1px 2px 1px 0;white-space:nowrap;`;
+            const first = `<span style="${chipStyle}">${names[0]}</span>`;
+            if (names.length === 1) return first;
+            const extra = names.slice(1).map(n => `<span style="${chipStyle}">${n}</span>`).join('');
+            const count = names.length - 1;
+            return `<div style="display:flex;flex-wrap:wrap;align-items:center;gap:2px;">
+                ${first}
+                <span onclick="window.toggleProfExtra(this,${count})" style="display:inline-block;padding:2px 7px;border-radius:20px;font-size:0.68rem;font-weight:600;background:#e0e7ff;color:#4f46e5;cursor:pointer;white-space:nowrap;user-select:none;">+${count}</span>
+                <div style="display:none;flex-wrap:wrap;gap:2px;width:100%;margin-top:2px;">${extra}</div>
+            </div>`;
+        };
+        if (!window._profExtraWired) {
+            window.toggleProfExtra = (btn, count) => {
+                const container = btn.parentElement;
+                const extrasDiv = container.querySelector('div');
+                if (!extrasDiv) return;
+                const hidden = extrasDiv.style.display === 'none';
+                extrasDiv.style.display = hidden ? 'flex' : 'none';
+                btn.textContent = hidden ? '▲ less' : `+${count}`;
+            };
+            window._profExtraWired = true;
+        }
+
         const bkRows = recentBookings.length ? recentBookings.map(bk => {
             const bkDate = bk.booking_date ? (() => { const d=new Date(bk.booking_date+'T00:00'); return `${String(d.getDate()).padStart(2,'0')}-${String(d.getMonth()+1).padStart(2,'0')}-${d.getFullYear()}`; })() : '—';
             const s = (bk.status||'').toLowerCase();
@@ -111,9 +134,9 @@ export async function viewCustomerProfile(customerId, customerName) {
             const sb = statusBg[s]    || '#f1f5f9';
             return `<tr style="border-bottom:1px solid #f1f5f9;">
                 <td style="padding:8px 10px;font-size:0.8rem;color:#475569;white-space:nowrap;">${bkDate}</td>
-                <td style="padding:8px 10px;font-size:0.8rem;font-weight:700;color:#1e293b;max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${bk.service_name||'—'}</td>
-                <td style="padding:8px 10px;font-size:0.8rem;color:#475569;">${bk.staff_name||'—'}</td>
-                <td style="padding:8px 10px;font-size:0.8rem;font-weight:600;color:#059669;">₹${bk.total_price||0}</td>
+                <td style="padding:8px 10px;font-size:0.8rem;">${profChipCell(bk.service_name)}</td>
+                <td style="padding:8px 10px;font-size:0.8rem;">${profChipCell(bk.staff_name)}</td>
+                <td style="padding:8px 10px;font-size:0.8rem;font-weight:600;color:#059669;white-space:nowrap;">₹${bk.total_price||0}</td>
                 <td style="padding:8px 10px;"><span style="display:inline-block;padding:2px 8px;border-radius:20px;font-size:0.72rem;font-weight:600;color:${sc};background:${sb};">${bk.status||'—'}</span></td>
             </tr>`;
         }).join('') : `<tr><td colspan="5" style="padding:24px;text-align:center;color:#94a3b8;font-size:0.85rem;">No booking history found.</td></tr>`;
