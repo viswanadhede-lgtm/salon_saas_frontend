@@ -288,5 +288,26 @@
 // Customer Stats	customers (total_spent, last_visit)	Update	DB Trigger / Atomic Function
 
 //========================================================================================================================================================================================
+// BOOKING-STATUS, PAYMENT-STATUS  &  ACTIONS relation in Bookings Table
 //
-//========================================================================================================================================================================================
+
+    //state 1 : IF Status = Booked/Confirmed  ||    AND  ||  Payment = Collect  || THEN ||  Actions show Update.
+
+    //state 2 : IF Status = Completed   ||  AND  ||  Payment = Paid     ||  THEN    ||  Actions will show view 
+
+    //state 3 : IF Status = Cancelled   ||  AND  ||  Payment = Collect  || THEN     ||  Actions will show Rebook (when the booking status is updated to cancelled the payment collect button should grey out and show cancelled with grey color light weight under the collect button )
+
+    //state 4:  IF Status = Cancelled   ||  AND  ||  Payment = Paid     ||  THEN    ||  Actions will show Info [when clicked on it will show two options Refund and Rebook ]
+
+    //state 5:  IF Status = No-Show     ||  AND  ||  Payment = Collect  || THEN     ||  Actions will show Rebook (when the booking status is updated to No-Show the payment collect button should grey out and show cancelled with grey color light weight under the collect button )
+
+    //state 6:  IF Status = No-Show     ||  AND  ||  Payment = Paid     ||  THEN    ||  Actions will show Info [when clicked on it will show two options Refund and Rebook ]
+
+// NOTES:   
+ 
+//1. Basically No-Show and Cancelled are the same
+
+//2. Booking status can not change to complete with out payment is paid.
+
+
+====================================================================================================================================================================================================================

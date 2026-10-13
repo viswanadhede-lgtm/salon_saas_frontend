@@ -1,7 +1,11 @@
 // scripts/bookings/bookings-calendar.js
 import { supabase } from '../../lib/supabase.js';
 import { getLiveBookings, getBranchId, calendarState } from './bookings-state.js';
-import { statusBadge } from './bookings-table.js';
+import { statusBadge, toggleSvcExtra } from './bookings-table.js';
+
+if (typeof window !== 'undefined' && !window.toggleSvcExtra) {
+    window.toggleSvcExtra = toggleSvcExtra;
+}
 
 // ─── Calendar Summary Cache ──────────────────────────────────────────────────
 let calendarSummaryCache = [];  // rows from RPC: { booking_date, total_bookings, booked_count, ... }
@@ -167,8 +171,11 @@ export async function renderCalendar() {
             badgesWrap.appendChild(totalEl);
 
             // ── Per-status breakdown ───────────────────────────────────────
-            Object.entries(statusConfig).forEach(([, cfg]) => {
-                const count = Number(daySummary[cfg.key] || 0);
+            Object.entries(statusConfig).forEach(([statusKey, cfg]) => {
+                let count = Number(daySummary[cfg.key] || 0);
+                if (statusKey === 'no-show' && count === 0) {
+                    count = Number(daySummary.no_show || daySummary.no_shows || daySummary.noshow || 0);
+                }
                 if (count <= 0) return;
 
                 const pill = document.createElement('div');
@@ -227,7 +234,54 @@ export function openCalendarDayModal(dateStr) {
             ptime = `${String(hr).padStart(2,'0')}:${mm} ${ampm}`;
         }
 
-        const svcs = (b.service_name || '').split(',').map(s=> `<span style="display:inline-block;padding:2px 6px;margin:2px;background:#f1f5f9;border-radius:4px;font-size:0.85rem;">${s.trim()}</span>`).join('');
+        const chipStyle = `display:inline-block;padding:2px 8px;border-radius:20px;font-size:0.75rem;font-weight:500;background:#f1f5f9;color:#334155;margin:1px 2px 1px 0;white-space:nowrap;`;
+
+        const serviceNames = (Array.isArray(b.service_names) ? b.service_names : [b.service_name])
+            .filter(Boolean)
+            .flatMap(s => String(s).split(',').map(item => item.trim()))
+            .filter(Boolean);
+        const staffNames = (Array.isArray(b.staff_names) ? b.staff_names : [b.staff_name])
+            .filter(Boolean)
+            .flatMap(s => String(s).split(',').map(item => item.trim()))
+            .filter(Boolean);
+
+        let serviceCell = '—';
+        if (serviceNames.length) {
+            const firstChip = `<span style="${chipStyle}">${serviceNames[0]}</span>`;
+            if (serviceNames.length === 1) {
+                serviceCell = firstChip;
+            } else {
+                const extraCount = serviceNames.length - 1;
+                const extraChips = serviceNames.slice(1).map(s => `<span style="${chipStyle}">${s}</span>`).join('');
+                serviceCell = `<div style="display:flex;flex-wrap:wrap;align-items:center;gap:2px;width:100%;">
+                        ${firstChip}
+                        <span onclick="window.toggleSvcExtra(this, ${extraCount})"
+                            style="display:inline-block;padding:2px 7px;border-radius:20px;font-size:0.7rem;font-weight:600;background:#e0e7ff;color:#4f46e5;cursor:pointer;white-space:nowrap;user-select:none;">+${extraCount}</span>
+                        <div style="display:none;flex-wrap:wrap;gap:2px;width:100%;margin-top:3px;">
+                            ${extraChips}
+                        </div>
+                    </div>`;
+            }
+        }
+
+        let staffCell = '—';
+        if (staffNames.length) {
+            const firstChip = `<span style="${chipStyle}">${staffNames[0]}</span>`;
+            if (staffNames.length === 1) {
+                staffCell = firstChip;
+            } else {
+                const extraCount = staffNames.length - 1;
+                const extraChips = staffNames.slice(1).map(s => `<span style="${chipStyle}">${s}</span>`).join('');
+                staffCell = `<div style="display:flex;flex-wrap:wrap;align-items:center;gap:2px;width:100%;">
+                        ${firstChip}
+                        <span onclick="window.toggleSvcExtra(this, ${extraCount})"
+                            style="display:inline-block;padding:2px 7px;border-radius:20px;font-size:0.7rem;font-weight:600;background:#e0e7ff;color:#4f46e5;cursor:pointer;white-space:nowrap;user-select:none;">+${extraCount}</span>
+                        <div style="display:none;flex-wrap:wrap;gap:2px;width:100%;margin-top:3px;">
+                            ${extraChips}
+                        </div>
+                    </div>`;
+            }
+        }
 
         const tr = document.createElement('tr');
         tr.style.borderBottom = '1px solid #f1f5f9';
@@ -236,12 +290,12 @@ export function openCalendarDayModal(dateStr) {
             tr.style.backgroundColor = '#f8fafc';
         }
         tr.innerHTML = `
-            <td style="padding:12px 14px; font-weight:600; font-size:0.95rem; color:#334155; white-space:nowrap;">${ptime || '—'}</td>
-            <td style="padding:12px 8px; font-weight:600; font-size:1rem; color:#1e293b;">
+            <td style="padding:12px 14px; font-weight:600; font-size:0.88rem; color:#334155; white-space:nowrap;">${ptime || '—'}</td>
+            <td style="padding:12px 8px; font-weight:600; font-size:0.92rem; color:#1e293b;">
                 ${b.customer_name ? `<a href="#" style="color:#2563eb; text-decoration:none;" onclick="event.preventDefault(); if(window.viewCustomerProfile) { window.viewCustomerProfile('${b.customer_id || ''}', '${b.customer_name}'); document.getElementById('calDayModalOverlay').classList.remove('active'); }">${b.customer_name}</a>` : '—'}
             </td>
-            <td style="padding:12px 8px;">${svcs}</td>
-            <td style="padding:12px 8px; color:#475569; font-size:0.9rem;">${b.staff_name || '—'}</td>
+            <td style="padding:12px 8px; max-width:220px;">${serviceCell}</td>
+            <td style="padding:12px 8px; max-width:180px;">${staffCell}</td>
             <td style="padding:12px 8px;">${statusBadge(b.status)}</td>
         `;
         tbody.appendChild(tr);
