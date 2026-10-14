@@ -83,6 +83,22 @@ export function setupInjectedModals() {
                                 <label class="form-label" for="editProductDescription">Description</label>
                                 <textarea id="editProductDescription" class="form-input form-textarea" style="min-height:80px;"></textarea>
                             </div>
+
+                            <div class="form-group" style="margin-bottom:0; margin-top:20px;">
+                                <label class="form-label">Status</label>
+                                <div style="display:flex; gap:8px;">
+                                    <button type="button" id="editPStatusActiveBtn" onclick="window.selectEditStatus('Active')"
+                                        style="flex:1; padding:9px 12px; border-radius:8px; border:1px solid #1e3a8a; background:#eff6ff; color:#1e3a8a; font-size:0.85rem; font-weight:600; cursor:pointer; display:flex; align-items:center; justify-content:center; gap:6px; transition:all 0.2s;">
+                                        <span style="width:8px;height:8px;border-radius:50%;background:#1e3a8a;display:inline-block;flex-shrink:0;"></span> Active
+                                    </button>
+                                    <button type="button" id="editPStatusInactiveBtn" onclick="window.selectEditStatus('Inactive')"
+                                        style="flex:1; padding:9px 12px; border-radius:8px; border:1px solid #e2e8f0; background:#f8fafc; color:#64748b; font-size:0.85rem; font-weight:600; cursor:pointer; display:flex; align-items:center; justify-content:center; gap:6px; transition:all 0.2s;">
+                                        <span style="width:8px;height:8px;border-radius:50%;background:#94a3b8;display:inline-block;flex-shrink:0;"></span> Inactive
+                                    </button>
+                                </div>
+                                <input type="radio" name="editProductStatus" id="editPStatusActive" value="active" style="display:none;">
+                                <input type="radio" name="editProductStatus" id="editPStatusInactive" value="inactive" style="display:none;">
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -140,13 +156,19 @@ export function selectStatus(val) {
     const act = document.getElementById('statusActiveBtn');
     const inact = document.getElementById('statusInactiveBtn');
     if (act && inact) {
+        const actDot = act.querySelector('span');
+        const inactDot = inact.querySelector('span');
         if (val === 'Active') {
             act.style.borderColor = '#1e3a8a'; act.style.background = '#eff6ff'; act.style.color = '#1e3a8a';
+            if (actDot) actDot.style.background = '#1e3a8a';
             inact.style.borderColor = '#e2e8f0'; inact.style.background = '#f8fafc'; inact.style.color = '#64748b';
+            if (inactDot) inactDot.style.background = '#94a3b8';
             const el = document.getElementById('statusActive'); if (el) el.checked = true;
         } else {
             inact.style.borderColor = '#1e3a8a'; inact.style.background = '#eff6ff'; inact.style.color = '#1e3a8a';
+            if (inactDot) inactDot.style.background = '#1e3a8a';
             act.style.borderColor = '#e2e8f0'; act.style.background = '#f8fafc'; act.style.color = '#64748b';
+            if (actDot) actDot.style.background = '#94a3b8';
             const el = document.getElementById('statusInactive'); if (el) el.checked = true;
         }
     }
@@ -156,13 +178,19 @@ export function selectEditStatus(val) {
     const act = document.getElementById('editPStatusActiveBtn');
     const inact = document.getElementById('editPStatusInactiveBtn');
     if (act && inact) {
+        const actDot = act.querySelector('span');
+        const inactDot = inact.querySelector('span');
         if (val === 'Active') {
             act.style.borderColor = '#1e3a8a'; act.style.background = '#eff6ff'; act.style.color = '#1e3a8a';
+            if (actDot) actDot.style.background = '#1e3a8a';
             inact.style.borderColor = '#e2e8f0'; inact.style.background = '#f8fafc'; inact.style.color = '#64748b';
+            if (inactDot) inactDot.style.background = '#94a3b8';
             const el = document.getElementById('editPStatusActive'); if (el) el.checked = true;
         } else {
             inact.style.borderColor = '#1e3a8a'; inact.style.background = '#eff6ff'; inact.style.color = '#1e3a8a';
+            if (inactDot) inactDot.style.background = '#1e3a8a';
             act.style.borderColor = '#e2e8f0'; act.style.background = '#f8fafc'; act.style.color = '#64748b';
+            if (actDot) actDot.style.background = '#94a3b8';
             const el = document.getElementById('editPStatusInactive'); if (el) el.checked = true;
         }
     }

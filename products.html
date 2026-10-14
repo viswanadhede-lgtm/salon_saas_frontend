@@ -280,9 +280,25 @@
 
 
 
-                        <div class="form-group" style="margin-bottom:0;">
+                        <div class="form-group">
                             <label class="form-label" for="productDescription">Description <span style="color:#94a3b8;font-weight:400;">(Optional)</span></label>
                             <textarea id="productDescription" class="form-input form-textarea" placeholder="Add a short description..." style="min-height:80px;"></textarea>
+                        </div>
+
+                        <div class="form-group" style="margin-bottom:0;">
+                            <label class="form-label">Status</label>
+                            <div style="display:flex; gap:8px;">
+                                <button type="button" id="statusActiveBtn" onclick="window.selectStatus('Active')"
+                                    style="flex:1; padding:9px 12px; border-radius:8px; border:1px solid #1e3a8a; background:#eff6ff; color:#1e3a8a; font-size:0.85rem; font-weight:600; cursor:pointer; display:flex; align-items:center; justify-content:center; gap:6px; transition:all 0.2s;">
+                                    <span style="width:8px;height:8px;border-radius:50%;background:#1e3a8a;display:inline-block;flex-shrink:0;"></span> Active
+                                </button>
+                                <button type="button" id="statusInactiveBtn" onclick="window.selectStatus('Inactive')"
+                                    style="flex:1; padding:9px 12px; border-radius:8px; border:1px solid #e2e8f0; background:#f8fafc; color:#64748b; font-size:0.85rem; font-weight:600; cursor:pointer; display:flex; align-items:center; justify-content:center; gap:6px; transition:all 0.2s;">
+                                    <span style="width:8px;height:8px;border-radius:50%;background:#94a3b8;display:inline-block;flex-shrink:0;"></span> Inactive
+                                </button>
+                            </div>
+                            <input type="radio" name="productStatus" id="statusActive" value="active" checked style="display:none;">
+                            <input type="radio" name="productStatus" id="statusInactive" value="inactive" style="display:none;">
                         </div>
                     </div>
                 </div>
