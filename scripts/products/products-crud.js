@@ -94,7 +94,8 @@ export function attachGlobalEventListeners() {
             const payload = {
                 company_id: getCompanyId(),
                 branch_id: getBranchId(),
-                category_name: name
+                category_name: name,
+                status: 'active'
             };
 
             saveCatBtn.disabled = true;
@@ -192,7 +193,7 @@ export function attachGlobalEventListeners() {
                     category_id: catId,
                     price: Number(price),
                     stock_quantity: Number(stock),
-                    status: document.querySelector('input[name="productStatus"]:checked')?.value || 'Active',
+                    status: (document.querySelector('input[name="productStatus"]:checked')?.value || 'active').toLowerCase(),
                     description: document.getElementById('productDescription').value.trim() || null,
                     product_image_url: finalImageUrl
                 });
@@ -203,7 +204,7 @@ export function attachGlobalEventListeners() {
                 // Marketing Notifications: notify customers
                 if (window.notifyCustomer) {
                     const pName = document.getElementById('productName')?.value?.trim() || 'New Product';
-                    window.notifyCustomer('new_product_added', {
+                    window.notifyCustomer('business', 'new_product_added', null, {
                         title: 'New Product Available!',
                         message: `We just added a new product: ${pName}`,
                         productName: pName
@@ -259,28 +260,36 @@ export function attachGlobalEventListeners() {
                     if (!finalImageUrl) throw new Error('Image upload failed');
                 }
 
-                // Fetch the old product row first to see if we need to delete an old image
+                // 1. Fetch old product row to detect previous image URL
                 const { data: oldDataRows } = await fetchProductImageUrl(productId);
-
                 const oldData = oldDataRows && oldDataRows.length > 0 ? oldDataRows[0] : null;
+                const oldImageUrl = oldData ? oldData.product_image_url : null;
 
-                if (oldData && oldData.product_image_url && oldData.product_image_url !== finalImageUrl) {
-                    const { error: storageError } = await window.deleteProductImage(oldData.product_image_url);
-                    if (storageError) throw new Error('Storage deletion failed: ' + (storageError.message || 'Unknown error'));
-                }
-
+                // 2. Perform database update first
                 const { error } = await updateProduct(productId, {
                     product_name: name,
                     category_name: cat,
                     category_id: catId,
                     price: Number(price),
                     stock_quantity: Number(stock),
-                    status: document.querySelector('input[name="editProductStatus"]:checked')?.value || 'Active',
+                    status: (document.querySelector('input[name="editProductStatus"]:checked')?.value || 'active').toLowerCase(),
                     description: document.getElementById('editProductDescription').value.trim() || null,
                     product_image_url: finalImageUrl
                 });
 
                 if (error) throw error;
+
+                // 3. Only delete old image after product database update succeeds
+                if (oldImageUrl && oldImageUrl !== finalImageUrl) {
+                    try {
+                        const { error: storageError } = await window.deleteProductImage(oldImageUrl);
+                        if (storageError) {
+                            console.warn('Storage deletion warning for replaced image:', storageError);
+                        }
+                    } catch (storageErr) {
+                        console.warn('Failed to delete old image from storage:', storageErr);
+                    }
+                }
 
                 showToast('Product updated');
                 closeAllModals();
@@ -315,19 +324,19 @@ export function attachGlobalEventListeners() {
             let error;
 
             if (isProd) {
-                // Fetch product first to check for image
-                const { data: prodDataRows } = await fetchProductImageUrlForDelete(deleteTarget.id);
-
-                const prodData = prodDataRows && prodDataRows.length > 0 ? prodDataRows[0] : null;
-
-                if (prodData && prodData.product_image_url) {
-                    const { error: storageError } = await window.deleteProductImage(prodData.product_image_url);
-                    if (storageError) throw new Error('Storage deletion failed: ' + (storageError.message || 'Unknown error'));
-                }
-
-                // Hard delete row
+                // Soft delete product (do NOT delete image from storage to preserve historical receipts/sales)
                 ({ error } = await deleteProduct(deleteTarget.id));
             } else {
+                // Guard: verify no active products are assigned to this category before soft deleting
+                const hasAssignedProducts = productsState.products.some(p =>
+                    String(p.category_id) === String(deleteTarget.id) &&
+                    (p.status || 'active').toLowerCase() !== 'deleted'
+                );
+                if (hasAssignedProducts) {
+                    throw new Error('Cannot delete category: products are still assigned to it.');
+                }
+
+                // Soft delete category
                 ({ error } = await deleteCategory(deleteTarget.id));
             }
 

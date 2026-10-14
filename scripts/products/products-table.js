@@ -1,4 +1,4 @@
-﻿// scripts/products/products-table.js
+// scripts/products/products-table.js
 // Rendering: stockBadge, statusBadge, renderProductsTable,
 // renderCategoriesTable, renderFilterOptions, populateCategoryDropdown.
 // Preserved exactly from original products.js.
@@ -161,7 +161,7 @@ export function renderCategoriesTable() {
 
     filtered.forEach(c => {
         const tr = document.createElement('tr');
-        const pCount = productsState.products.filter(p => p.category_name === c.category_name).length;
+        const pCount = productsState.products.filter(p => String(p.category_id) === String(c.category_id || c.id)).length;
         const char = (c.category_name || '?').charAt(0).toUpperCase();
         tr.className = 'tb-row';
         tr.innerHTML = `
@@ -172,7 +172,7 @@ export function renderCategoriesTable() {
                 </div>
             </td>
             <td style="padding:14px 16px; text-align:left;">
-                <span class="customer-link" onclick="window.openCatProductsModal('${(c.category_name || '').replace(/'/g, "\\'")}')" style="cursor:pointer;">
+                <span class="customer-link" onclick="window.openCatProductsModal('${c.category_id || c.id}', '${(c.category_name || '').replace(/'/g, "\\'")}')" style="cursor:pointer;">
                     ${pCount} ${pCount === 1 ? 'product' : 'products'}
                 </span>
             </td>

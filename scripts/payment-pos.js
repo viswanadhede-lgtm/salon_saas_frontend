@@ -398,7 +398,31 @@ async function finalizePosSale() {
             console.warn('Could not parse appContext for staff details:', e);
         }
 
-        // 1. Insert batch into sales table
+        // 1. Atomic Product Stock Deduction via RPC (Validates inventory, permissions & updates atomically)
+        const productItems = cart
+            .filter(item => item.id && item.type !== 'service')
+            .map(item => ({
+                product_id: item.id,
+                quantity: Number(item.quantity) || 1
+            }));
+
+        let stockResult = null;
+        if (productItems.length > 0) {
+            const { data, error: stockError } = await supabase.rpc('deduct_product_stock', {
+                p_company_id: companyId,
+                p_branch_id: branchId,
+                p_items: productItems
+            });
+
+            if (stockError) {
+                console.error('POS: Stock deduction failed:', stockError);
+                const rawMsg = stockError.message || stockError.details || 'Failed to deduct product stock.';
+                throw new Error(rawMsg);
+            }
+            stockResult = data;
+        }
+
+        // 2. Insert batch into sales table
         const salesBatch = cart.map(item => ({
             sale_id: saleGroupId,
             company_id: companyId,
@@ -423,7 +447,7 @@ async function finalizePosSale() {
 
         if (saleError) throw saleError;
 
-        // 2. Insert summary row into sales_for_business_transactions
+        // 3. Insert summary row into sales_for_business_transactions
         const totalOriginal = Number(paymentConfig.totalAmount || 0);
         const totalDiscount = Math.max(0, totalOriginal - amountCollected);
         const d = payload.discounts || {};
@@ -470,7 +494,7 @@ async function finalizePosSale() {
 
         if (summaryError) console.error('POS: Summary insert error:', summaryError);
 
-        // 3. Insert into business_transactions
+        // 4. Insert into business_transactions
         const refNote = document.getElementById('paymentRefInput').value.trim();
         const paidAt = new Date().toISOString().replace('Z', '');
         await supabase
@@ -492,31 +516,16 @@ async function finalizePosSale() {
                 discount_amount: totalDiscount > 0 ? totalDiscount : null
             });
 
-        // 4. Decrement Stock in Products Table
-        for (const item of cart) {
-            const productId = item.id;
-            const soldQty = Number(item.quantity) || 1;
-            if (!productId || item.type === 'service') continue;
-
-            const { data: prodRows } = await supabase
-                .from('products')
-                .select('stock_quantity, min_stock_alert, product_name')
-                .eq('product_id', productId);
-
-            if (prodRows && prodRows.length > 0) {
-                const currentStock = Number(prodRows[0].stock_quantity) || 0;
-                const minStock = Number(prodRows[0].min_stock_alert) || 5;
-                const newStock = Math.max(0, currentStock - soldQty);
-
-                await supabase
-                    .from('products')
-                    .eq('product_id', productId)
-                    .update({ stock_quantity: newStock });
-
-                if (newStock <= minStock && window.notifyEvent) {
+        // 5. Trigger low stock notifications from RPC result
+        if (stockResult?.deducted_items && window.notifyEvent) {
+            const deductedList = Array.isArray(stockResult.deducted_items) 
+                ? stockResult.deducted_items.flat() 
+                : [];
+            for (const dItem of deductedList) {
+                if (Number(dItem.remaining_stock) <= 5) {
                     window.notifyEvent('pos', 'evt_pos_low_stock', {
                         title: 'Low Stock Alert',
-                        message: `${item.name} stock dropped to ${newStock} (threshold: ${minStock}).`
+                        message: `${dItem.product_name} stock dropped to ${dItem.remaining_stock} (threshold: 5).`
                     });
                 }
             }

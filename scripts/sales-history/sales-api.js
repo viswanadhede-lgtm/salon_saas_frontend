@@ -56,7 +56,7 @@ export async function fetchProductStock(productId) {
     return await supabase
         .from('products')
         .select('stock_quantity')
-        .eq('id', productId)
+        .eq('product_id', productId)
         .single();
 }
 
@@ -81,7 +81,7 @@ export function buildProductStockUpdatePromise(productId, newStock) {
     return supabase
         .from('products')
         .update({ stock_quantity: newStock })
-        .eq('id', productId);
+        .eq('product_id', productId);
 }
 
 export async function insertRefundLedger(ledgerRows) {

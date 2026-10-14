@@ -1,4 +1,4 @@
-﻿// scripts/products/products-modals.js
+// scripts/products/products-modals.js
 // Modal injection, status toggles, open/close functions.
 // Preserved exactly from original products.js.
 
@@ -189,8 +189,13 @@ export function openAddCategoryModal() {
     if (window.feather) feather.replace();
 }
 
-export function openCatProductsModal(catName) {
-    const products = productsState.products.filter(p => p.category_name === catName);
+export function openCatProductsModal(catIdOrName, maybeCatName) {
+    const catId = maybeCatName ? catIdOrName : null;
+    const catName = maybeCatName || catIdOrName;
+    const products = productsState.products.filter(p =>
+        (catId && String(p.category_id) === String(catId)) ||
+        (p.category_name === catName)
+    );
     const modal = document.getElementById('catProductsModal');
     if(!modal) return;
 

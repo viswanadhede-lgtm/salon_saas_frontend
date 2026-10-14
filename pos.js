@@ -503,8 +503,31 @@ function setupEventListeners() {
                 console.warn('Could not parse appContext for staff details:', e);
             }
             
-            // NOTE: We could apply discount logic to the individual sales lines if needed,
-            // but for now we maintain the original logic of creating the sales lines based on cart.
+            // 1. Atomic Product Stock Deduction via RPC (Validates inventory, permissions & updates atomically)
+            const productItems = cart
+                .filter(item => item.id && item.type !== 'service')
+                .map(item => ({
+                    product_id: item.id,
+                    quantity: Number(item.quantity) || 1
+                }));
+
+            let stockResult = null;
+            if (productItems.length > 0) {
+                const { data, error: stockError } = await supabase.rpc('deduct_product_stock', {
+                    p_company_id: getCompanyId(),
+                    p_branch_id: getBranchId(),
+                    p_items: productItems
+                });
+
+                if (stockError) {
+                    console.error('POS: Stock deduction failed:', stockError);
+                    const rawMsg = stockError.message || stockError.details || 'Failed to deduct product stock.';
+                    throw new Error(rawMsg);
+                }
+                stockResult = data;
+            }
+
+            // 2. Insert Batch into 'sales' table
             const salesBatch = cart.map(item => ({
                 sale_id: saleGroupId,
                 company_id: getCompanyId(),
@@ -531,7 +554,7 @@ function setupEventListeners() {
 
             if (saleError) throw saleError;
 
-            // ─── Insert Consolidated Summary Row ────────────────────────────────
+            // 3. Insert Consolidated Summary Row
             const totalOriginal = cart.reduce((sum, item) => sum + (item.price * item.quantity), 0);
             const totalDiscount = totalOriginal - amountCollected;
             const d = payload.discounts || {};
@@ -589,32 +612,18 @@ function setupEventListeners() {
                 console.error('POS: Summary insert failed:', summaryError);
             }
 
-            // ─── Decrement Stock in Products Table ────────────────────────────────
-            for (const item of cart) {
-                const productId = item.id;
-                const soldQty = item.quantity;
-                if (!productId) continue;
-
-                // Fetch current stock
-                const { data: prodRows } = await supabase
-                    .from('products')
-                    .select('stock_quantity, min_stock_alert, product_name')
-                    .eq('product_id', productId);
-
-                const currentStock = prodRows && prodRows.length > 0 ? (Number(prodRows[0].stock_quantity) || 0) : 0;
-                const minStock = prodRows && prodRows.length > 0 ? (Number(prodRows[0].min_stock_alert) || 5) : 5;
-                const newStock = Math.max(0, currentStock - soldQty);
-
-                await supabase
-                    .from('products')
-                    .eq('product_id', productId)
-                    .update({ stock_quantity: newStock });
-
-                if (newStock <= minStock && window.notifyEvent) {
-                    window.notifyEvent('pos', 'evt_pos_low_stock', {
-                        title: 'Low Stock Alert',
-                        message: `${item.name} stock dropped to ${newStock} (threshold: ${minStock}).`
-                    });
+            // 4. Trigger low-stock alerts from RPC result
+            if (stockResult?.deducted_items && window.notifyEvent) {
+                const deductedList = Array.isArray(stockResult.deducted_items)
+                    ? stockResult.deducted_items.flat()
+                    : [];
+                for (const dItem of deductedList) {
+                    if (Number(dItem.remaining_stock) <= 5) {
+                        window.notifyEvent('pos', 'evt_pos_low_stock', {
+                            title: 'Low Stock Alert',
+                            message: `${dItem.product_name} stock dropped to ${dItem.remaining_stock} (threshold: 5).`
+                        });
+                    }
                 }
             }
 

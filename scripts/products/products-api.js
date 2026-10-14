@@ -1,4 +1,4 @@
-﻿// scripts/products/products-api.js
+// scripts/products/products-api.js
 // Data-access layer: all Supabase DB reads/writes and Storage REST calls.
 // Preserved exactly from original products.js. Do NOT optimize or fix.
 
@@ -19,7 +19,10 @@ export async function fetchProductCategories() {
 
         if (error) throw error;
 
-        productsState.categories = data || [];
+        // Exclude soft-deleted categories; tolerate existing NULL status prior to migration
+        productsState.categories = (data || []).filter(c =>
+            (c.status || 'active').toLowerCase() !== 'deleted'
+        );
 
         populateCategoryDropdown('productCategory');
         populateCategoryDropdown('editProductCategory');
@@ -44,8 +47,9 @@ export async function fetchProducts() {
 
         if (error) throw error;
 
+        // Exclude soft-deleted products; inactive products remain visible and manageable
         productsState.products = (data || []).filter(p =>
-            (p.status || '').toLowerCase() !== 'deleted'
+            (p.status || 'active').toLowerCase() !== 'deleted'
         );
 
         renderProductsTable();
@@ -66,20 +70,24 @@ export async function insertCategory(payload) {
     return supabase.from('product_categories').insert(payload);
 }
 
-// product_categories UPDATE  -- P5: malformed chain preserved EXACTLY as original
+// product_categories UPDATE
 export async function updateCategory(catId, name) {
     return supabase
         .from('product_categories')
+        .update({ category_name: name })
         .eq('category_id', catId)
-        .update({ category_name: name });
+        .eq('company_id', getCompanyId())
+        .eq('branch_id', getBranchId());
 }
 
-// product_categories DELETE
+// product_categories DELETE (Soft Deletion)
 export async function deleteCategory(catId) {
     return supabase
         .from('product_categories')
+        .update({ status: 'deleted' })
         .eq('category_id', catId)
-        .delete();
+        .eq('company_id', getCompanyId())
+        .eq('branch_id', getBranchId());
 }
 
 // products INSERT
@@ -91,16 +99,20 @@ export async function insertProduct(payload) {
 export async function updateProduct(productId, payload) {
     return supabase
         .from('products')
+        .update(payload)
         .eq('product_id', productId)
-        .update(payload);
+        .eq('company_id', getCompanyId())
+        .eq('branch_id', getBranchId());
 }
 
-// products DELETE
+// products DELETE (Soft Deletion)
 export async function deleteProduct(productId) {
     return supabase
         .from('products')
+        .update({ status: 'deleted' })
         .eq('product_id', productId)
-        .delete();
+        .eq('company_id', getCompanyId())
+        .eq('branch_id', getBranchId());
 }
 
 // products READ for edit (product_image_url)
@@ -108,7 +120,9 @@ export async function fetchProductImageUrl(productId) {
     return supabase
         .from('products')
         .select('product_image_url')
-        .eq('product_id', productId);
+        .eq('product_id', productId)
+        .eq('company_id', getCompanyId())
+        .eq('branch_id', getBranchId());
 }
 
 // products READ for delete (product_image_url)
@@ -116,7 +130,9 @@ export async function fetchProductImageUrlForDelete(productId) {
     return supabase
         .from('products')
         .select('product_image_url')
-        .eq('product_id', productId);
+        .eq('product_id', productId)
+        .eq('company_id', getCompanyId())
+        .eq('branch_id', getBranchId());
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
