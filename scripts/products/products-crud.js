@@ -6,7 +6,8 @@ import { productsState, getCompanyId, getBranchId } from './products-state.js';
 import {
     insertCategory, updateCategory, deleteCategory,
     insertProduct, updateProduct, deleteProduct,
-    fetchProductImageUrl, fetchProductImageUrlForDelete
+    fetchProductImageUrl, fetchProductImageUrlForDelete,
+    cascadeRenameCategoryOnProducts
 } from './products-api.js';
 import { fetchProductCategories, fetchProducts } from './products-api.js';
 import { renderProductsTable, renderCategoriesTable } from './products-table.js';
@@ -95,7 +96,8 @@ export function attachGlobalEventListeners() {
                 company_id: getCompanyId(),
                 branch_id: getBranchId(),
                 category_name: name,
-                status: 'active'
+                status: 'active',
+                updated_at: new Date().toISOString()
             };
 
             saveCatBtn.disabled = true;
@@ -141,8 +143,18 @@ export function attachGlobalEventListeners() {
                 const { error } = await updateCategory(catId, name);
                 if (error) throw error;
 
-                showToast('Category updated');
+                // CHANGE 1: cascade rename to all products in this category
+                const { error: cascadeError } = await cascadeRenameCategoryOnProducts(catId, name);
+                if (cascadeError) {
+                    console.warn('Category renamed but product cascade failed:', cascadeError);
+                    showToast('Category renamed, but some products may still show the old name.', true);
+                } else {
+                    showToast('Category updated');
+                }
+
                 closeAllModals();
+                // Refresh both so product count and filter options stay accurate
+                await fetchProducts();
                 fetchProductCategories();
             } catch (err) {
                 showToast(err.message || 'Failed to update category', true);
@@ -159,19 +171,20 @@ export function attachGlobalEventListeners() {
     if (saveProdBtn) {
         saveProdBtn.addEventListener('click', async () => {
             const name = document.getElementById('productName').value.trim();
-            const cat = document.getElementById('productCategory').value;
+            const catId = document.getElementById('productCategory').value;  // now a UUID
             const price = document.getElementById('productPrice').value;
             const stock = document.getElementById('productStock').value;
 
-            if (!name || !cat || price === '' || stock === '') return showToast('Please fill all required fields', true);
+            if (!name || !catId || price === '' || stock === '') return showToast('Please fill all required fields', true);
 
-            const categoryObj = productsState.categories.find(c => c.category_name === cat);
-            const catId = categoryObj ? (categoryObj.category_id || categoryObj.id) : null;
+            // Resolve category name from state using the UUID
+            const categoryObj = productsState.categories.find(c => (c.category_id || c.id) === catId);
+            const cat = categoryObj ? categoryObj.category_name : '';
 
             // Duplicate check (case-insensitive, under the same category)
             const isDuplicate = productsState.products.some(
                 p => (p.product_name || '').trim().toLowerCase() === name.toLowerCase() &&
-                     (p.category_name || '').trim().toLowerCase() === cat.toLowerCase()
+                     String(p.category_id) === String(catId)
             );
             if (isDuplicate) return showToast(`A product named "${name}" already exists in this category.`, true);
 
@@ -195,7 +208,8 @@ export function attachGlobalEventListeners() {
                     stock_quantity: Number(stock),
                     status: (document.querySelector('input[name="productStatus"]:checked')?.value || 'active').toLowerCase(),
                     description: document.getElementById('productDescription').value.trim() || null,
-                    product_image_url: finalImageUrl
+                    product_image_url: finalImageUrl,
+                    updated_at: new Date().toISOString()
                 });
 
                 if (error) throw error;
@@ -232,20 +246,21 @@ export function attachGlobalEventListeners() {
     if (updateProdBtn) {
         updateProdBtn.addEventListener('click', async () => {
             const name = document.getElementById('editProductName').value.trim();
-            const cat = document.getElementById('editProductCategory').value;
+            const catId = document.getElementById('editProductCategory').value;  // now a UUID
             const price = document.getElementById('editProductPrice').value;
             const stock = document.getElementById('editProductStock').value;
 
-            if (!name || !cat || price === '' || stock === '') return showToast('Please fill all required fields', true);
+            if (!name || !catId || price === '' || stock === '') return showToast('Please fill all required fields', true);
 
             const productId = document.getElementById('editProductId').value;
-            const categoryObj = productsState.categories.find(c => c.category_name === cat);
-            const catId = categoryObj ? (categoryObj.category_id || categoryObj.id) : null;
+            // Resolve category name from state using the UUID
+            const categoryObj = productsState.categories.find(c => (c.category_id || c.id) === catId);
+            const cat = categoryObj ? categoryObj.category_name : '';
 
             // Duplicate check (case-insensitive, under the same category, excluding self)
             const isDuplicate = productsState.products.some(
                 p => (p.product_name || '').trim().toLowerCase() === name.toLowerCase() &&
-                     (p.category_name || '').trim().toLowerCase() === cat.toLowerCase() &&
+                     String(p.category_id) === String(catId) &&
                      String(p.product_id || p.id) !== String(productId)
             );
             if (isDuplicate) return showToast(`A product named "${name}" already exists in this category.`, true);
@@ -274,7 +289,8 @@ export function attachGlobalEventListeners() {
                     stock_quantity: Number(stock),
                     status: (document.querySelector('input[name="editProductStatus"]:checked')?.value || 'active').toLowerCase(),
                     description: document.getElementById('editProductDescription').value.trim() || null,
-                    product_image_url: finalImageUrl
+                    product_image_url: finalImageUrl,
+                    updated_at: new Date().toISOString()
                 });
 
                 if (error) throw error;

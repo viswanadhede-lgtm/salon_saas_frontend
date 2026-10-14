@@ -238,7 +238,8 @@ export function openEditProductModal(id) {
     if (p) {
         document.getElementById('editProductId').value = p.product_id || p.id;
         document.getElementById('editProductName').value = p.product_name || '';
-        document.getElementById('editProductCategory').value = p.category_name || '';
+        // CHANGE 4: set value to category_id UUID so it matches populateCategoryDropdown option values
+        document.getElementById('editProductCategory').value = p.category_id || '';
         document.getElementById('editProductPrice').value = p.price || 0;
         document.getElementById('editProductStock').value = p.stock_quantity || 0;
         document.getElementById('editProductDescription').value = p.description || '';

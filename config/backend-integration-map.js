@@ -316,11 +316,17 @@
 // PRODUCTS PAGE
 // ====================================================================================================================================================================================================================
 
-//
-//
+// TABLES USED
+
+//  products TABLE
+//  product_categories TABLE
+
+// 1. Stock Update - [RPC Function] - deduct_product_stock - To deduct product quantities from the PRODUCTS table during POS checkout, safely handling concurrent sales.
+
+// 2. Storage Bucket -  product-images  -  Stores product photos -  OPERATIONS: Upload (PUT), Delete (REMOVE), Get Public URL
 
 
-
+//======================================================================================================================================================================================================================
 
 
 

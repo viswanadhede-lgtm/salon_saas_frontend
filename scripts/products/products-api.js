@@ -1,6 +1,6 @@
 // scripts/products/products-api.js
-// Data-access layer: all Supabase DB reads/writes and Storage REST calls.
-// Preserved exactly from original products.js. Do NOT optimize or fix.
+// Data-access layer: all Supabase DB reads/writes and Storage SDK calls.
+// CHANGES: updated_at on all writes; Storage SDK replaces raw REST; cascadeRenameCategoryOnProducts added.
 
 import { supabase } from '../../lib/supabase.js';
 import { productsState, getCompanyId, getBranchId } from './products-state.js';
@@ -74,7 +74,7 @@ export async function insertCategory(payload) {
 export async function updateCategory(catId, name) {
     return supabase
         .from('product_categories')
-        .update({ category_name: name })
+        .update({ category_name: name, updated_at: new Date().toISOString() })
         .eq('category_id', catId)
         .eq('company_id', getCompanyId())
         .eq('branch_id', getBranchId());
@@ -84,7 +84,7 @@ export async function updateCategory(catId, name) {
 export async function deleteCategory(catId) {
     return supabase
         .from('product_categories')
-        .update({ status: 'deleted' })
+        .update({ status: 'deleted', updated_at: new Date().toISOString() })
         .eq('category_id', catId)
         .eq('company_id', getCompanyId())
         .eq('branch_id', getBranchId());
@@ -109,8 +109,18 @@ export async function updateProduct(productId, payload) {
 export async function deleteProduct(productId) {
     return supabase
         .from('products')
-        .update({ status: 'deleted' })
+        .update({ status: 'deleted', updated_at: new Date().toISOString() })
         .eq('product_id', productId)
+        .eq('company_id', getCompanyId())
+        .eq('branch_id', getBranchId());
+}
+
+// CHANGE 1: Cascade category rename to all products in that category
+export async function cascadeRenameCategoryOnProducts(catId, newCategoryName) {
+    return supabase
+        .from('products')
+        .update({ category_name: newCategoryName, updated_at: new Date().toISOString() })
+        .eq('category_id', catId)
         .eq('company_id', getCompanyId())
         .eq('branch_id', getBranchId());
 }
@@ -136,7 +146,7 @@ export async function fetchProductImageUrlForDelete(productId) {
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// STORAGE (direct REST -- preserved exactly, NOT migrated to SDK)
+// STORAGE — CHANGE 6: Supabase Storage SDK (replaces raw REST fetch)
 // ─────────────────────────────────────────────────────────────────────────────
 
 export async function uploadProductImageToStorage(file) {
@@ -147,21 +157,20 @@ export async function uploadProductImageToStorage(file) {
     const filename = `${timestamp}-${randomString}-${safeName}`;
 
     try {
-        const url = `${supabase._url}/storage/v1/object/product-images/${filename}`;
-        const res = await fetch(url, {
-            method: 'POST',
-            headers: {
-                'apikey': supabase._key,
-                'Authorization': `Bearer ${supabase._key}`,
-                'Content-Type': file.type || 'application/octet-stream'
-            },
-            body: file
-        });
+        const { error } = await supabase.storage
+            .from('product-images')
+            .upload(filename, file, {
+                contentType: file.type || 'application/octet-stream',
+                upsert: false
+            });
 
-        const data = await res.json().catch(() => null);
-        if (!res.ok) throw new Error(data?.message || data?.error || `HTTP ${res.status}`);
+        if (error) throw error;
 
-        return `${supabase._url}/storage/v1/object/public/product-images/${filename}`;
+        const { data: publicData } = supabase.storage
+            .from('product-images')
+            .getPublicUrl(filename);
+
+        return publicData?.publicUrl || null;
     } catch (err) {
         console.error('Image upload failed:', err);
         window.showToast('Failed to upload image', true);
@@ -176,22 +185,11 @@ export async function deleteProductImageFromStorage(url) {
         const filename = urlParts[urlParts.length - 1];
         if (!filename) return { error: { message: 'Invalid URL for deletion' } };
 
-        const apiUrl = `${supabase._url}/storage/v1/object/product-images/${filename}`;
-        const res = await fetch(apiUrl, {
-            method: 'DELETE',
-            headers: {
-                'apikey': supabase._key,
-                'Authorization': `Bearer ${supabase._key}`
-            }
-        });
+        const { error } = await supabase.storage
+            .from('product-images')
+            .remove([filename]);
 
-        let data = null;
-        try { data = await res.json(); } catch(e){}
-
-        if (!res.ok) {
-            return { error: data || { message: `HTTP ${res.status}` } };
-        }
-        return { error: null };
+        return { error: error || null };
     } catch (err) {
         console.error('Failed to delete image from bucket:', err);
         return { error: err };

@@ -92,7 +92,10 @@ export function renderProductsTable() {
         const tr = document.createElement('tr');
         tr.className = 'tb-row';
         tr.innerHTML = `
-            <td style="padding:14px 16px 14px 24px;"><p style="font-weight:500;color:#1e293b;margin:0;font-size:0.9rem;">${p.product_name || '-'}</p></td>
+            <td style="padding:14px 16px 14px 24px;">
+                <p style="font-weight:500;color:#1e293b;margin:0 0 4px 0;font-size:0.9rem;">${p.product_name || '-'}</p>
+                ${statusBadge(p.status || 'active')}
+            </td>
             <td style="padding:14px 16px;"><span style="background:#f1f5f9;padding:3px 8px;border-radius:6px;font-size:0.8rem;color:#475569;">${p.category_name || 'Uncategorized'}</span></td>
             <td style="padding:14px 16px;color:#374151;font-weight:500;font-size:0.9rem;">&#8377;${p.price || 0}</td>
             <td style="padding:14px 16px;">${stockBadge(p.stock_quantity || 0)}</td>
@@ -199,6 +202,7 @@ export function renderCategoriesTable() {
 // POPULATE: Category Dropdown
 // ─────────────────────────────────────────────────────────────────────────────
 
+// CHANGE 4: Use category_id as option value (not category_name) to avoid name-match ambiguity
 export function populateCategoryDropdown(dropdownId) {
     const sel = document.getElementById(dropdownId);
     if (!sel) return;
@@ -206,7 +210,7 @@ export function populateCategoryDropdown(dropdownId) {
     productsState.categories
         .forEach(c => {
             const o = document.createElement('option');
-            o.value = c.category_name;
+            o.value = c.category_id || c.id;  // store UUID
             o.textContent = c.category_name;
             sel.appendChild(o);
         });

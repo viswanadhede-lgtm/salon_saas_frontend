@@ -139,7 +139,8 @@ function initTabs() {
                 primaryActionBtn.setAttribute('data-sub-feature', 'create_product_category');
                 primaryActionBtn.onclick = window.openAddCategoryModal;
                 if (window.applySubFeatureGates) window.applySubFeatureGates();
-                fetchProductCategories();
+                // CHANGE 3: load products in parallel so product count column is never 0
+                Promise.all([fetchProducts(), fetchProductCategories()]);
             }
         });
     });
