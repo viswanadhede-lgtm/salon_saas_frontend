@@ -140,11 +140,18 @@ export function renderTable(onActionCallback) {
 
         // Single Info button — opens the Sale Action Picker popup
         const infoBtn = document.createElement('button');
-        infoBtn.innerHTML = '<i data-feather="info" style="width:14px; height:14px;"></i>';
-        infoBtn.style.cssText = 'background:#f1f5f9; border:1px solid #e2e8f0; border-radius:6px; cursor:pointer; color:#64748b; padding:6px; transition:all 0.2s; display:flex; align-items:center; justify-content:center;';
+        infoBtn.innerHTML = `
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#64748b" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                <circle cx="12" cy="12" r="10"></circle>
+                <line x1="12" y1="16" x2="12" y2="12"></line>
+                <line x1="12" y1="8" x2="12.01" y2="8"></line>
+            </svg>
+            Info
+        `;
+        infoBtn.style.cssText = 'width:90px; padding:5px 8px; border-radius:6px; border:1px solid #e2e8f0; background:#ffffff; color:#1e293b; font-size:0.78rem; font-weight:600; cursor:pointer; white-space:nowrap; transition:all 0.2s; box-shadow:0 1px 2px rgba(0,0,0,0.04); display:inline-flex; align-items:center; justify-content:center; gap:6px;';
         infoBtn.title = 'Sale Actions';
-        infoBtn.onmouseover = () => { infoBtn.style.background = '#e0e7ff'; infoBtn.style.color = '#4f46e5'; infoBtn.style.borderColor = '#c7d2fe'; };
-        infoBtn.onmouseout  = () => { infoBtn.style.background = '#f1f5f9'; infoBtn.style.color = '#64748b'; infoBtn.style.borderColor = '#e2e8f0'; };
+        infoBtn.onmouseover = () => { infoBtn.style.background = '#f8fafc'; infoBtn.style.borderColor = '#cbd5e1'; };
+        infoBtn.onmouseout  = () => { infoBtn.style.background = '#ffffff'; infoBtn.style.borderColor = '#e2e8f0'; };
         infoBtn.addEventListener('click', (e) => {
             e.stopPropagation();
             if (typeof onActionCallback === 'function') {
