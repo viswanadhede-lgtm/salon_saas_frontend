@@ -503,60 +503,9 @@ function setupEventListeners() {
                 console.warn('Could not parse appContext for staff details:', e);
             }
             
-            // 1. Atomic Product Stock Deduction via RPC (Validates inventory, permissions & updates atomically)
-            const productItems = cart
-                .filter(item => item.id && item.type !== 'service')
-                .map(item => ({
-                    product_id: item.id,
-                    quantity: Number(item.quantity) || 1
-                }));
-
-            let stockResult = null;
-            if (productItems.length > 0) {
-                const { data, error: stockError } = await supabase.rpc('deduct_product_stock', {
-                    p_company_id: getCompanyId(),
-                    p_branch_id: getBranchId(),
-                    p_items: productItems
-                });
-
-                if (stockError) {
-                    console.error('POS: Stock deduction failed:', stockError);
-                    const rawMsg = stockError.message || stockError.details || 'Failed to deduct product stock.';
-                    throw new Error(rawMsg);
-                }
-                stockResult = data;
-            }
-
-            // 2. Insert Batch into 'sales' table
-            const salesBatch = cart.map(item => ({
-                sale_id: saleGroupId,
-                company_id: getCompanyId(),
-                branch_id: getBranchId(),
-                customer_id: customerId,
-                customer_name: customerName,
-                customer_phone: customerPhone,
-                payment_method: paymentMethod,
-                status: 'completed',
-                staff_name: staffName,
-                product_id: item.id,
-                product_name: item.name,
-                category_id: item.category_id || null,
-                quantity: item.quantity,
-                price: item.price,
-                total_amount: item.price * item.quantity
-            }));
-
-            // Insert Batch into 'sales' table AND immediately fetch the newly created rows/IDs
-            const { data: insertedSales, error: saleError } = await supabase
-                .from('sales')
-                .insert(salesBatch)
-                .select('id, product_name, total_amount, payment_method');
-
-            if (saleError) throw saleError;
-
-            // 3. Insert Consolidated Summary Row
+            // 1. Calculate totals and discounts
             const totalOriginal = cart.reduce((sum, item) => sum + (item.price * item.quantity), 0);
-            const totalDiscount = totalOriginal - amountCollected;
+            const totalDiscount = Math.max(0, totalOriginal - amountCollected);
             const d = payload.discounts || {};
             let discountType = null;
             let discountName = null;
@@ -574,48 +523,44 @@ function setupEventListeners() {
                 discountName = d.manualType === 'percent' ? `${d.manualValue}% off` : `₹${d.manualValue} off`;
             }
 
-            // PostgreSQL array formats need standard JS arrays which Supabase handles
-            const productIds = cart.map(item => item.id).filter(Boolean);
-            const productNames = cart.map(item => item.name).filter(Boolean);
-            const categoryIds = cart.map(item => item.category_id).filter(Boolean);
-            const categoryNames = cart.map(item => item.category_name).filter(Boolean);
-            const totalQty = cart.reduce((sum, item) => sum + item.quantity, 0);
+            // 2. Atomic RPC Call:
+            // - Deducts & validates product stock in products table
+            // - Inserts all product line items into sales table
+            // - Inserts consolidated summary row into sales_for_business_transactions
+            // - Automatically triggers trg_create_pos_business_transaction into business_transactions
+            const { data: rpcResult, error: rpcError } = await supabase.rpc('create_pos_sale_atomic', {
+                p_company_id: getCompanyId(),
+                p_branch_id: getBranchId(),
+                p_sale_id: saleGroupId,
+                p_customer_id: customerId,
+                p_customer_name: customerName,
+                p_customer_phone: customerPhone,
+                p_payment_method: (paymentMethod || 'cash').toLowerCase(),
+                p_staff_id: staffId,
+                p_staff_name: staffName,
+                p_items: cart.map(item => ({
+                    product_id: item.id,
+                    product_name: item.name,
+                    category_id: item.category_id || null,
+                    category_name: item.category_name || '',
+                    quantity: Number(item.quantity) || 1,
+                    price: Number(item.price) || 0
+                })),
+                p_discount_type: discountType,
+                p_discount_name: discountName,
+                p_discount_amount: totalDiscount > 0 ? totalDiscount : 0,
+                p_final_amount: Number(amountCollected) || 0
+            });
 
-            const summaryRow = {
-                company_id: getCompanyId(),
-                branch_id: getBranchId(),
-                sale_id: saleGroupId,
-                product_ids: productIds.length ? productIds : null,
-                product_names: productNames.length ? productNames : null,
-                category_ids: categoryIds.length ? categoryIds : null,
-                category_names: categoryNames.length ? categoryNames : null,
-                customer_id: customerId,
-                customer_name: customerName,
-                customer_phone: customerPhone,
-                total_quantity: totalQty,
-                total_price: totalOriginal,
-                payment_method: paymentMethod.toLowerCase(),
-                payment_status: 'paid',
-                staff_id: staffId,
-                staff_name: staffName,
-                discount_type: discountType,
-                discount_name: discountName,
-                discount_amount: totalDiscount > 0 ? totalDiscount : null,
-                final_amount: amountCollected
-            };
-            
-            const { error: summaryError } = await supabase
-                .from('sales_for_business_transactions')
-                .insert(summaryRow);
-
-            if (summaryError) {
-                console.error('POS: Summary insert failed:', summaryError);
+            if (rpcError) {
+                console.error('POS: Atomic sale creation failed:', rpcError);
+                throw new Error(rpcError.message || rpcError.details || 'Failed to complete POS sale.');
             }
 
-            // 4. Trigger low-stock alerts from RPC result
-            if (stockResult?.deducted_items && window.notifyEvent) {
-                const deductedList = Array.isArray(stockResult.deducted_items)
-                    ? stockResult.deducted_items.flat()
+            // 3. Trigger low-stock alerts from RPC result
+            if (rpcResult?.deducted_items && window.notifyEvent) {
+                const deductedList = Array.isArray(rpcResult.deducted_items)
+                    ? rpcResult.deducted_items.flat()
                     : [];
                 for (const dItem of deductedList) {
                     if (Number(dItem.remaining_stock) <= 5) {
