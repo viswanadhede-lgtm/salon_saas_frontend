@@ -187,8 +187,9 @@
             subtitleEl.textContent = parts.length > 0 ? parts.join(' • ') : custName;
         }
 
-        // Render Services Table
+        // Render Services / Products Table
         const itemsHeader = document.getElementById('gpmItemsHeader');
+        const thead = document.getElementById('gpmServicesThead') || document.querySelector('#gpmServicesTable thead');
         const tbody = document.getElementById('gpmServicesTbody');
         const subtotalEl = document.getElementById('gpmServicesSubtotal');
         const noteEl = document.getElementById('gpmServiceNote');
@@ -208,10 +209,57 @@
         }
         if (noteEl) {
             noteEl.style.display = (config.hasMultipleServices || itemsCount > 1) ? 'flex' : 'none';
+            const noteText = document.getElementById('gpmServiceNoteText');
+            if (noteText) {
+                noteText.textContent = type === 'pos' ? 'Includes multiple products' : 'Includes multiple services';
+            }
         }
 
+        // Dynamic Table Header: POS Retail vs Appointment Bookings
+        if (thead) {
+            if (type === 'pos') {
+                thead.innerHTML = `
+                    <tr>
+                        <th style="width:28px;">#</th>
+                        <th>Product</th>
+                        <th>Staff</th>
+                        <th style="text-align:center;">Quantity</th>
+                        <th style="text-align:right;">Price</th>
+                        <th style="text-align:right;">Total</th>
+                    </tr>
+                `;
+            } else {
+                thead.innerHTML = `
+                    <tr>
+                        <th style="width:28px;">#</th>
+                        <th>Service</th>
+                        <th>Staff</th>
+                        <th>Time</th>
+                        <th style="text-align:right;">Price</th>
+                    </tr>
+                `;
+            }
+        }
+
+        // Dynamic Table Body
         if (tbody) {
-            if (items.length > 0) {
+            if (type === 'pos') {
+                tbody.innerHTML = items.map((it, idx) => {
+                    const qty = it.quantity || 1;
+                    const price = Number(it.price || 0);
+                    const lineTotal = it.total !== undefined ? Number(it.total) : (price * qty);
+                    return `
+                        <tr>
+                            <td class="svc-idx">${it.index || (idx + 1)}</td>
+                            <td class="svc-name">${it.name || 'Product'}</td>
+                            <td class="svc-staff">${it.staff || it.staff_name || config.staffName || 'Staff'}</td>
+                            <td class="pos-qty">${qty}</td>
+                            <td class="svc-price">${gpmFormatCurrency(price)}</td>
+                            <td class="pos-total">${gpmFormatCurrency(lineTotal)}</td>
+                        </tr>
+                    `;
+                }).join('');
+            } else if (items.length > 0) {
                 tbody.innerHTML = items.map((it, idx) => `
                     <tr>
                         <td class="svc-idx">${it.index || (idx + 1)}</td>

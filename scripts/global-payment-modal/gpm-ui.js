@@ -250,6 +250,16 @@ export function injectGlobalPaymentModalStyles() {
             color: #0f172a;
             text-align: right;
         }
+        .gpm-services-table td.pos-qty {
+            font-weight: 600;
+            color: #334155;
+            text-align: center;
+        }
+        .gpm-services-table td.pos-total {
+            font-weight: 700;
+            color: #0f172a;
+            text-align: right;
+        }
         .gpm-link-btn {
             background: none;
             border: none;
@@ -945,7 +955,7 @@ export function injectGlobalPaymentModalHTML() {
                         </div>
                         <div style="overflow-x:auto;">
                             <table class="gpm-services-table" id="gpmServicesTable">
-                                <thead>
+                                <thead id="gpmServicesThead">
                                     <tr>
                                         <th style="width:28px;">#</th>
                                         <th>Service</th>

@@ -445,6 +445,23 @@ function setupEventListeners() {
         const shortDisplayId = Math.random().toString(36).substring(2, 10).toUpperCase();
         const saleGroupUUID = crypto.randomUUID();
 
+        let staffName = 'Staff';
+        let staffId = null;
+        try {
+            const contextStr = localStorage.getItem('appContext');
+            if (contextStr) {
+                const ctx = JSON.parse(contextStr);
+                staffId = ctx?.user?.user_id || ctx?.user?.id || localStorage.getItem('user_id') || null;
+                if (ctx?.user?.first_name) {
+                    staffName = ctx.user.first_name;
+                } else if (ctx?.user?.name) {
+                    staffName = ctx.user.name.split(' ')[0];
+                }
+            }
+        } catch (e) {
+            console.warn('Could not parse appContext for staff details:', e);
+        }
+
         const serviceIds = cart
             .filter(item => item.type === 'service' || item.service_id)
             .map(item => item.service_id || item.id)
@@ -460,11 +477,14 @@ function setupEventListeners() {
                 totalAmount: total,
                 amountDue: total,
                 serviceIds: serviceIds,
+                staffName: staffName,
                 items: cart.map(item => ({
                     name: item.name,
                     category: item.category_name,
+                    staff: staffName,
                     quantity: item.quantity,
-                    price: item.price
+                    price: item.price,
+                    total: item.price * item.quantity
                 })),
                 onComplete: async (payload) => {
                     await finalizeSale(payload, saleGroupUUID);
