@@ -18,13 +18,9 @@ export function stockBadge(stock) {
 
 export function statusBadge(statusStr) {
     const active = (statusStr || '').toLowerCase() === 'active';
-    const bg = active ? '#f0fdf4' : '#f1f5f9';
-    const color = active ? '#16a34a' : '#64748b';
-    const border = active ? '#bbf7d0' : '#e2e8f0';
-    const displayStatus = active ? 'Active' : 'Inactive';
-    return `<span style="padding:3px 9px;border-radius:12px;font-size:0.72rem;font-weight:500;background:${bg};color:${color};border:1px solid ${border};">
-            <span style="display:inline-block;width:6px;height:6px;border-radius:50%;background:${color};margin-right:5px;vertical-align:middle;"></span>
-            ${displayStatus}</span>`;
+    return active
+        ? '<span style="display:inline-block;padding:3px 10px;border-radius:20px;font-size:0.78rem;font-weight:600;background:#d1fae5;color:#065f46;">Active</span>'
+        : '<span style="display:inline-block;padding:3px 10px;border-radius:20px;font-size:0.78rem;font-weight:600;background:#f1f5f9;color:#64748b;">Inactive</span>';
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
