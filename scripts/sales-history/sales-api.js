@@ -86,11 +86,11 @@ export async function insertProductPayment(txnData) {
  * @param {string}   params.p_customer_id       - null for walk-ins
  * @param {string}   params.p_customer_name
  * @param {string}   params.p_customer_phone
- * @param {string}   params.p_payment_method    - 'cash' | 'card' | 'upi' | 'bank_transfer'
+ * @param {string}   params.p_payment_method    - 'cash' | 'card' | 'upi'
  * @param {string}   params.p_staff_id
  * @param {string}   params.p_staff_name
  * @param {string}   params.p_refund_reason
- * @param {Array}    params.p_items             - [{ product_id, product_name, category_id, return_qty, price }]
+ * @param {Array}    params.p_items             - [{ item_id, product_id, product_name, category_id, return_qty, price }]
  */
 export async function executePosRefundAtomic(params) {
     return await supabase.rpc('process_pos_refund_atomic', params);

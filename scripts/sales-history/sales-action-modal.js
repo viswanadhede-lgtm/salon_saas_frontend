@@ -50,14 +50,22 @@ export async function openSaleActionPicker(sale) {
 
     const status = (sale.payment_status || 'paid').toLowerCase();
 
-    // For partial/refunded states we need to fetch the refunded lines
+    // In append-only architecture, fetch lines to check for refund records
     let refundedItems = [];
-    if (status === 'partial' || status === 'refunded') {
-        try {
-            const { data } = await fetchSaleLineItems(sale.id);
-            refundedItems = (data || []).filter(i => i.status === 'refunded');
-        } catch (_) {}
-    }
+    let isFullyRefunded = status === 'refunded';
+    try {
+        const { data } = await fetchSaleLineItems(sale.id);
+        const lines = data || [];
+        const originalLines = lines.filter(i => !i.refund_reference_id && i.status !== 'refunded');
+        refundedItems = lines.filter(i => Boolean(i.refund_reference_id) || i.status === 'refunded');
+
+        const totalSoldQty = originalLines.reduce((sum, i) => sum + Number(i.quantity || 0), 0);
+        const totalRefundedQty = refundedItems.reduce((sum, i) => sum + Number(i.quantity || 0), 0);
+
+        if (totalSoldQty > 0 && totalRefundedQty >= totalSoldQty) {
+            isFullyRefunded = true;
+        }
+    } catch (_) {}
 
     // Build cards
     grid.innerHTML = '';
@@ -76,9 +84,10 @@ export async function openSaleActionPicker(sale) {
     }));
 
     // ── Card 2: Refunded read-only (partial or refunded states) ─────
-    if (status === 'partial' || status === 'refunded') {
+    if (refundedItems.length > 0 || status === 'refunded' || status === 'partial') {
         const refundTotal = refundedItems.reduce((sum, i) => sum + Number(i.total_amount || 0), 0);
-        const refundTotalFmt = `₹${refundTotal.toLocaleString('en-IN')}`;
+        const refundDisplayTotal = refundTotal > 0 ? refundTotal : Number(sale.amount_paid || sale.subtotal_price || 0);
+        const refundTotalFmt = `₹${refundDisplayTotal.toLocaleString('en-IN')}`;
 
         // Build item summary lines
         const itemLines = refundedItems.map(i =>
@@ -99,8 +108,8 @@ export async function openSaleActionPicker(sale) {
         grid.appendChild(refundedCard);
     }
 
-    // ── Card 3: Refund action (paid or partial only) ─────────────────
-    if (status === 'paid' || status === 'partial') {
+    // ── Card 3: Refund action (only if not fully refunded and not a refund row) ───
+    if (!isFullyRefunded && status !== 'refunded' && !sale.refund_reference_id) {
         grid.appendChild(_buildCard({
             icon: `<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#dc2626" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10"/></svg>`,
             iconBg: '#fee2e2',

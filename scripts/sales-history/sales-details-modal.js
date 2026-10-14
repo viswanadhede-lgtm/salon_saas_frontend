@@ -74,34 +74,58 @@ export async function openSaleDetails(sale) {
             let subtotal = 0;
             let rowsHTML = '';
 
-            (items || []).forEach((item, index) => {
+            const originalLines = (items || []).filter(i => !i.refund_reference_id && i.status !== 'refunded');
+            const refundLines   = (items || []).filter(i => Boolean(i.refund_reference_id) || i.status === 'refunded');
+
+            // 1. Render original purchased lines
+            originalLines.forEach((item, index) => {
                 const lineTotal = Number(item.total_amount || 0);
                 const qty = Number(item.quantity || 1);
-                const isRefunded = (item.status === 'refunded');
-                subtotal += isRefunded ? 0 : lineTotal; 
+                subtotal += lineTotal;
 
                 let calculatedPrice = 0;
                 if (qty > 0) calculatedPrice = lineTotal / qty;
 
-                const rowBg = isRefunded ? 'background: #f8fafc; opacity: 0.7;' : '';
-                const strike = isRefunded ? 'text-decoration: line-through;' : '';
-                const badge = isRefunded ? '<span style="color:#dc2626; font-size:0.7rem; font-weight:600; margin-left:8px; text-transform:uppercase;">Returned</span>' : '';
-                
-                const isLast = (index === items.length - 1);
+                const isLast = (index === originalLines.length - 1 && refundLines.length === 0);
                 const tdBorder = isLast ? '' : 'border-bottom: 1px solid #e2e8f0;';
 
                 rowsHTML += `
-                    <tr style="${rowBg}">
-                        <td style="padding:12px 16px; font-size:0.875rem; color:#334155; ${tdBorder} ${strike}">
-                            ${item.product_name || 'Product'} ${badge}
+                    <tr>
+                        <td style="padding:12px 16px; font-size:0.875rem; color:#334155; ${tdBorder}">
+                            ${item.product_name || 'Product'}
                         </td>
                         <td style="padding:12px 16px; font-size:0.875rem; color:#475569; text-align:center; ${tdBorder}">${qty}</td>
                         <td style="padding:12px 16px; font-size:0.875rem; color:#475569; text-align:right; ${tdBorder}">₹${calculatedPrice.toLocaleString('en-IN', {maximumFractionDigits:2})}</td>
-                        <td style="padding:12px 16px; font-size:0.875rem; color:#1e293b; font-weight:600; text-align:right; ${tdBorder} ${strike}">₹${lineTotal.toLocaleString('en-IN', {maximumFractionDigits:2})}</td>
+                        <td style="padding:12px 16px; font-size:0.875rem; color:#1e293b; font-weight:600; text-align:right; ${tdBorder}">₹${lineTotal.toLocaleString('en-IN', {maximumFractionDigits:2})}</td>
                     </tr>
                 `;
             });
-            
+
+            // 2. Render refund records separately and clearly labeled
+            if (refundLines.length > 0) {
+                refundLines.forEach((item, index) => {
+                    const lineTotal = Number(item.total_amount || 0);
+                    const qty = Number(item.quantity || 1);
+                    let calculatedPrice = 0;
+                    if (qty > 0) calculatedPrice = lineTotal / qty;
+
+                    const isLast = (index === refundLines.length - 1);
+                    const tdBorder = isLast ? '' : 'border-bottom: 1px solid #e2e8f0;';
+
+                    rowsHTML += `
+                        <tr style="background:#fff1f2;">
+                            <td style="padding:12px 16px; font-size:0.875rem; color:#991b1b; ${tdBorder}">
+                                <span style="font-weight:600;">${item.product_name || 'Product'}</span>
+                                <span style="display:inline-block; margin-left:8px; padding:1px 7px; font-size:0.68rem; font-weight:700; color:#dc2626; background:#fee2e2; border:1px solid #fecdd3; border-radius:4px; text-transform:uppercase;">Returned</span>
+                            </td>
+                            <td style="padding:12px 16px; font-size:0.875rem; color:#dc2626; font-weight:600; text-align:center; ${tdBorder}">-${qty}</td>
+                            <td style="padding:12px 16px; font-size:0.875rem; color:#dc2626; text-align:right; ${tdBorder}">₹${calculatedPrice.toLocaleString('en-IN', {maximumFractionDigits:2})}</td>
+                            <td style="padding:12px 16px; font-size:0.875rem; color:#dc2626; font-weight:600; text-align:right; ${tdBorder}">-₹${lineTotal.toLocaleString('en-IN', {maximumFractionDigits:2})}</td>
+                        </tr>
+                    `;
+                });
+            }
+
             sdItemsList.innerHTML = rowsHTML;
 
             if (sdSubtotal) sdSubtotal.textContent = `₹${subtotal.toLocaleString('en-IN')}`;
@@ -134,7 +158,11 @@ export async function openSaleDetails(sale) {
         }
 
         if (sdRefundBtn) {
-            const allRefunded = items && items.length > 0 && items.every(i => i.status === 'refunded');
+            const originalLines = (items || []).filter(i => !i.refund_reference_id && i.status !== 'refunded');
+            const refundLines   = (items || []).filter(i => Boolean(i.refund_reference_id) || i.status === 'refunded');
+            const totalSoldQty = originalLines.reduce((sum, i) => sum + Number(i.quantity || 0), 0);
+            const totalRefundedQty = refundLines.reduce((sum, i) => sum + Number(i.quantity || 0), 0);
+            const allRefunded = totalSoldQty > 0 && totalRefundedQty >= totalSoldQty;
             sdRefundBtn.style.display = allRefunded ? 'none' : 'inline-flex';
         }
 

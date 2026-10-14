@@ -151,10 +151,43 @@ export async function openRefundModal(sale) {
             }).catch(() => {});
 
         // Fetch individual items comprising this sale group
-        const { data: items, error } = await fetchSaleLineItems(sale.id);
+        const { data: allItems, error } = await fetchSaleLineItems(sale.id);
 
         if (error) throw error;
-        salesState.currentRefundItems = items || [];
+
+        // In append-only design:
+        // - Original sale rows have refund_reference_id IS NULL.
+        // - Refunded rows have refund_reference_id IS NOT NULL and status = 'refunded'.
+        const originalLines = (allItems || []).filter(i => !i.refund_reference_id && i.status !== 'refunded');
+        const refundLines   = (allItems || []).filter(i => Boolean(i.refund_reference_id) || i.status === 'refunded');
+
+        // Sum previously refunded quantity per product_id
+        const refundedQtyByProduct = {};
+        refundLines.forEach(r => {
+            if (r.product_id) {
+                refundedQtyByProduct[r.product_id] = (refundedQtyByProduct[r.product_id] || 0) + Number(r.quantity || 0);
+            }
+        });
+
+        // Compute remaining refundable quantity for each original line item
+        const pool = { ...refundedQtyByProduct };
+        const processedItems = originalLines.map(orig => {
+            const origQty = Number(orig.quantity || 1);
+            const prodId = orig.product_id;
+            const alreadyRef = pool[prodId] || 0;
+            const allocatedRef = Math.min(origQty, alreadyRef);
+            pool[prodId] = Math.max(0, alreadyRef - allocatedRef);
+
+            const remainingQty = Math.max(0, origQty - allocatedRef);
+            return {
+                ...orig,
+                original_quantity: origQty,
+                refunded_quantity: allocatedRef,
+                remaining_refundable_qty: remainingQty
+            };
+        });
+
+        salesState.currentRefundItems = processedItems;
         if (itemsCountBadge) itemsCountBadge.textContent = `${salesState.currentRefundItems.length} item${salesState.currentRefundItems.length === 1 ? '' : 's'}`;
 
         // Render right away
@@ -180,33 +213,34 @@ export function renderRefundItems() {
     }
 
     salesState.currentRefundItems.forEach(item => {
-        const isRefunded = (item.status === 'refunded');
-        const initialQty = item.quantity || 1;
+        const remainingQty = item.remaining_refundable_qty != null ? item.remaining_refundable_qty : (item.quantity || 1);
+        const isFullyRefunded = (remainingQty <= 0);
+        const originalQty = item.original_quantity || item.quantity || 1;
         
         const card = document.createElement('div');
         card.className = 'rf-product-card';
         card.dataset.id = item.id;
-        card.style.cssText = `border:1px solid ${isRefunded ? '#f1f5f9' : '#e2e8f0'}; border-radius:10px; background:${isRefunded ? '#f8fafc' : '#fff'}; padding:12px 14px; display:flex; align-items:center; justify-content:space-between; gap:12px; transition:all 0.15s; ${isRefunded ? 'opacity:0.6;' : ''}`;
+        card.style.cssText = `border:1px solid ${isFullyRefunded ? '#f1f5f9' : '#e2e8f0'}; border-radius:10px; background:${isFullyRefunded ? '#f8fafc' : '#fff'}; padding:12px 14px; display:flex; align-items:center; justify-content:space-between; gap:12px; transition:all 0.15s; ${isFullyRefunded ? 'opacity:0.6;' : ''}`;
         
         card.innerHTML = `
             <div style="display:flex; align-items:center; gap:12px; flex:1; min-width:0;">
                 <input type="checkbox" class="rf-item-cb" data-id="${item.id}" 
-                    style="width:19px; height:19px; flex-shrink:0; accent-color:#dc2626; cursor:${isRefunded ? 'not-allowed' : 'pointer'}; border-radius:4px;" 
-                    ${isRefunded ? 'disabled' : 'checked'}>
+                    style="width:19px; height:19px; flex-shrink:0; accent-color:#dc2626; cursor:${isFullyRefunded ? 'not-allowed' : 'pointer'}; border-radius:4px;" 
+                    ${isFullyRefunded ? 'disabled' : 'checked'}>
                 <div style="display:flex; flex-direction:column; gap:2px; min-width:0;">
-                    <div style="font-size:0.92rem; font-weight:600; color:#0f172a; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; ${isRefunded ? 'text-decoration:line-through; color:#94a3b8;' : ''}">
+                    <div style="font-size:0.92rem; font-weight:600; color:#0f172a; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; ${isFullyRefunded ? 'text-decoration:line-through; color:#94a3b8;' : ''}">
                         ${item.product_name || 'Product'}
                     </div>
-                    ${isRefunded 
-                        ? `<div style="font-size:0.75rem; color:#dc2626; font-weight:600;">Returned (Qty: ${initialQty})</div>`
+                    ${isFullyRefunded 
+                        ? `<div style="font-size:0.75rem; color:#dc2626; font-weight:600;">Fully Returned (Qty: ${originalQty})</div>`
                         : `<div style="display:flex; align-items:center; gap:8px; font-size:0.78rem; color:#64748b;">
                              <span>Return quantity:</span>
                              <div style="display:inline-flex; align-items:center; border:1px solid #cbd5e1; border-radius:6px; overflow:hidden; height:24px; background:#fff;">
                                  <button type="button" class="rf-qty-btn minus" data-id="${item.id}" style="width:24px; height:100%; display:flex; align-items:center; justify-content:center; background:#f8fafc; border:none; border-right:1px solid #cbd5e1; color:#475569; font-weight:700; cursor:pointer; font-size:0.85rem;" onmouseover="this.style.background='#f1f5f9'" onmouseout="this.style.background='#f8fafc'">−</button>
-                                 <input type="text" class="rf-qty-input" data-id="${item.id}" value="${initialQty}" data-max="${initialQty}" readonly style="width:32px; height:100%; border:none; text-align:center; font-size:0.78rem; font-weight:600; color:#0f172a; background:#fff; pointer-events:none; padding:0;">
+                                 <input type="text" class="rf-qty-input" data-id="${item.id}" value="${remainingQty}" data-max="${remainingQty}" readonly style="width:32px; height:100%; border:none; text-align:center; font-size:0.78rem; font-weight:600; color:#0f172a; background:#fff; pointer-events:none; padding:0;">
                                  <button type="button" class="rf-qty-btn plus" data-id="${item.id}" style="width:24px; height:100%; display:flex; align-items:center; justify-content:center; background:#f8fafc; border:none; border-left:1px solid #cbd5e1; color:#475569; font-weight:700; cursor:pointer; font-size:0.85rem;" onmouseover="this.style.background='#f1f5f9'" onmouseout="this.style.background='#f8fafc'">+</button>
                              </div>
-                             <span style="font-size:0.75rem; color:#94a3b8;">of ${initialQty}</span>
+                             <span style="font-size:0.75rem; color:#94a3b8;">${remainingQty < originalQty ? `${remainingQty} of ${originalQty} available` : `of ${originalQty}`}</span>
                            </div>`
                     }
                 </div>
@@ -262,18 +296,19 @@ export function calculateRefundTotal() {
     let unrefundedCount = 0;
     
     salesState.currentRefundItems.forEach(item => {
-        const isRefunded = (item.status === 'refunded');
+        const remainingQty = item.remaining_refundable_qty != null ? item.remaining_refundable_qty : (item.quantity || 1);
+        const isFullyRefunded = (remainingQty <= 0);
         const price = Number(item.price || 0);
         
-        if (isRefunded) {
+        if (isFullyRefunded) {
             const priceDisplay = document.querySelector(`.rf-row-price[data-id="${item.id}"]`);
             if (priceDisplay) {
-                priceDisplay.textContent = `₹${Number(item.total_amount || 0).toLocaleString('en-IN')}`;
+                priceDisplay.textContent = `₹${Number(item.total_amount || (price * (item.original_quantity || 1))).toLocaleString('en-IN')}`;
                 priceDisplay.style.color = '#94a3b8';
             }
         } else {
             unrefundedCount++;
-            const maxQty = item.quantity || 1;
+            const maxQty = remainingQty;
             unrefundedTotal += price * maxQty;
 
             const cb = document.querySelector(`.rf-item-cb[data-id="${item.id}"]`);
@@ -372,7 +407,8 @@ export async function processRefund() {
 
         const methodSelect = document.getElementById('rfMethodSelect');
         let method = methodSelect ? methodSelect.value.toLowerCase() : 'cash';
-        if (!['cash', 'card', 'upi', 'bank_transfer'].includes(method)) method = 'cash';
+        // Database CHECK constraint allows only: 'cash', 'upi', 'card'
+        if (!['cash', 'card', 'upi'].includes(method)) method = 'cash';
 
         const note = document.getElementById('rfNote')?.value.trim() || '';
 
@@ -393,11 +429,13 @@ export async function processRefund() {
             if (!itemObj) continue;
 
             const qtyInput = document.querySelector(`.rf-qty-input[data-id="${itemId}"]`);
-            const returnQty = qtyInput ? Math.max(1, parseInt(qtyInput.value) || 1) : (itemObj.quantity || 1);
+            const maxAvailable = itemObj.remaining_refundable_qty != null ? itemObj.remaining_refundable_qty : (itemObj.quantity || 1);
+            let returnQty = qtyInput ? parseInt(qtyInput.value) || 1 : maxAvailable;
+            returnQty = Math.min(Math.max(1, returnQty), maxAvailable);
 
             p_items.push({
-                item_id:      itemObj.id           || null,
-                product_id:   itemObj.product_id   || null,
+                item_id:      itemObj.id,
+                product_id:   itemObj.product_id,
                 product_name: itemObj.product_name || 'Product',
                 category_id:  itemObj.category_id  || null,
                 return_qty:   returnQty,
@@ -411,9 +449,10 @@ export async function processRefund() {
         }
 
         // ── Single atomic RPC call ─────────────────────────────────────────
+        const refundSaleId = crypto.randomUUID();
         const { data, error } = await executePosRefundAtomic({
             p_original_sale_id: saleId,
-            p_refund_sale_id:   crypto.randomUUID(),
+            p_refund_sale_id:   refundSaleId,
             p_company_id:       getCompanyId(),
             p_branch_id:        getBranchId(),
             p_customer_id:      sale.customer_id   || null,
@@ -427,9 +466,12 @@ export async function processRefund() {
         });
 
         if (error) throw error;
+        if (!data || !data.success) {
+            throw new Error(data?.message || 'Refund failed to execute');
+        }
 
         // ── Success ────────────────────────────────────────────────────────
-        showToast(`Successfully returned ${p_items.length} item(s).`, '#dc2626');
+        showToast(`Successfully returned ${p_items.length} item(s).`, '#16a34a');
 
         if (window.notifyEvent) {
             window.notifyEvent('payments', 'evt_payment_refunded', {
@@ -450,14 +492,20 @@ export async function processRefund() {
 
         closeRefundModal();
 
-        // Re-fetch so the table badge flips to REFUNDED immediately
+        // Re-fetch so the new refund transaction appears in the table
         if (typeof onRefundCompletedCallback === 'function') {
             await onRefundCompletedCallback();
         }
 
-        // Hide refund button in details modal if open
+        // Hide refund button in details modal if open, and reload details if visible
         const sdRefundBtn = document.getElementById('sdRefundBtn');
         if (sdRefundBtn) sdRefundBtn.style.display = 'none';
+        if (typeof window.openSaleDetails === 'function' && sale) {
+            const saleDetailsModalOverlay = document.getElementById('saleDetailsModalOverlay');
+            if (saleDetailsModalOverlay && saleDetailsModalOverlay.classList.contains('active')) {
+                try { await window.openSaleDetails(sale); } catch (_) {}
+            }
+        }
 
     } catch (err) {
         console.error('[Refund Error]', err);
