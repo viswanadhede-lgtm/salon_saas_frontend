@@ -94,8 +94,7 @@ export function renderProductsTable() {
         tr.className = 'tb-row';
         tr.innerHTML = `
             <td style="padding:14px 16px 14px 24px;">
-                <p style="font-weight:500;color:#1e293b;margin:0 0 4px 0;font-size:0.9rem;">${p.product_name || '-'}</p>
-                ${statusBadge(p.status || 'active')}
+                <p style="font-weight:500;color:#1e293b;margin:0;font-size:0.9rem;">${p.product_name || '-'}</p>
             </td>
             <td style="padding:14px 16px;"><span style="background:#f1f5f9;padding:3px 8px;border-radius:6px;font-size:0.8rem;color:#475569;">${p.category_name || 'Uncategorized'}</span></td>
             <td style="padding:14px 16px;color:#374151;font-weight:500;font-size:0.9rem;">&#8377;${p.price || 0}</td>
@@ -104,6 +103,9 @@ export function renderProductsTable() {
                 ${p.product_image_url || p.image_url || p.photo_url
                     ? `<img src="${p.product_image_url || p.image_url || p.photo_url}" style="width:40px; height:40px; border-radius:8px; object-fit:cover; border:1px solid #cbd5e1; padding:2px; background:#ffffff; cursor:pointer; margin: 0 auto; display: block;" alt="${p.product_name}" onclick="window.openImageViewer('${p.product_image_url || p.image_url || p.photo_url}')">`
                     : `<div style="width:40px; height:40px; border-radius:8px; background:#f8fafc; border:1px dashed #cbd5e1; display:flex; align-items:center; justify-content:center; color:#94a3b8; margin: 0 auto;"><i data-feather="image" style="width:18px; height:18px;"></i></div>`}
+            </td>
+            <td style="padding:14px 16px; vertical-align:middle;">
+                ${statusBadge(p.status || 'active')}
             </td>
             <td style="padding:14px 16px; vertical-align:middle;">
                 <div class="action-buttons" style="display:flex; justify-content:center; gap:0.5rem;">
