@@ -1,5 +1,5 @@
 -- ============================================================================
--- RPC FUNCTION: process_pos_refund_atomic
+-- RPC FUNCTION: process_pos_refund_atomic & SCHEMA CONSTRAINTS
 -- ============================================================================
 -- Atomic POS product refund and return handler.
 --
@@ -12,6 +12,21 @@
 --   4. Inserts a refund ledger record into `business_transactions` (reference_type = 'product', status = 'refunded').
 --   5. Reverses customer lifetime spend in `customers` (total_spent = total_spent - total_refund).
 -- ============================================================================
+
+-- 0. Ensure check constraints allow 'refunded' and 'partial'
+ALTER TABLE public.sales_for_business_transactions 
+DROP CONSTRAINT IF EXISTS sales_for_business_transactions_payment_status_check;
+
+ALTER TABLE public.sales_for_business_transactions 
+ADD CONSTRAINT sales_for_business_transactions_payment_status_check 
+CHECK (payment_status IN ('paid', 'partial', 'refunded', 'pending', 'unpaid', 'cancelled'));
+
+ALTER TABLE public.sales 
+DROP CONSTRAINT IF EXISTS sales_status_check;
+
+ALTER TABLE public.sales 
+ADD CONSTRAINT sales_status_check 
+CHECK (status IN ('paid', 'refunded', 'pending', 'partial', 'cancelled'));
 
 -- 1. Drop all previous overloaded versions cleanly
 DO $$

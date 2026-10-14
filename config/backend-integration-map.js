@@ -378,8 +378,23 @@
 //   2. sales (Read) - Itemized product lines displayed inside the Invoice Details Modal.
 //   3. customers (Read) - Customer profile details loaded by Customer 360° drawer.
 
+
+//=====================================================================================================================
+
 // RPC FUNCTIONS USED:
-//   - process_pos_refund_atomic: Atomically executes POS product refund, product restock, sales line status update ('refunded'), sales_for_business_transactions status sync ('refunded' / 'partial'), business_transactions ledger recording, and customer total_spent deduction.
+//   process_pos_refund_atomic - (Refund RPC: to be implemented for atomic return)
+
+
+//====================================================================================================
+
+// 3 states of Actions column related to Refunds in the sales history table
+
+// State 1: Sale is PAID (no refund yet) >>> Action will show "Info Button" >>> clicking on which will open a modal with 2 cards >> 1 = Invoice & 2 = Refund.
+
+// State 2: Sale is partial (some items refunded, some still active) >>> Same Info button, same modal, but now 3 cards >>> 1 = Invoice, 2 = Refunded (read-only)[Shows what     	 was already refunded — which products, qty, amount. No action, just info], 3 = Refund [Click → opens Refund modal (to return the remaining items)]
+
+// State 3: State 3: Sale is refunded (fully refunded) >> Same Info Button >> modal opens with 2 cards >> 1 = Invoice, 2 = Refunded (read only) Shows full refund details — 	 no Refund card since nothing left to return.
+
 
 
 
