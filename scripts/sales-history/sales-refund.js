@@ -396,6 +396,7 @@ export async function processRefund() {
             const returnQty = qtyInput ? Math.max(1, parseInt(qtyInput.value) || 1) : (itemObj.quantity || 1);
 
             p_items.push({
+                item_id:      itemObj.id           || null,
                 product_id:   itemObj.product_id   || null,
                 product_name: itemObj.product_name || 'Product',
                 category_id:  itemObj.category_id  || null,

@@ -379,7 +379,7 @@
 //   3. customers (Read) - Customer profile details loaded by Customer 360° drawer.
 
 // RPC FUNCTIONS USED:
-//   - (Refund RPC: to be implemented for atomic return)
+//   - process_pos_refund_atomic: Atomically executes POS product refund, product restock, sales line status update ('refunded'), sales_for_business_transactions status sync ('refunded' / 'partial'), business_transactions ledger recording, and customer total_spent deduction.
 
 
 
