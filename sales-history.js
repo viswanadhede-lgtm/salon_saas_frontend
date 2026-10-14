@@ -103,8 +103,9 @@ async function fetchSalesHistory() {
         // Map the table rows directly to state
         salesState.initialSalesData = (salesList || []).map(row => {
             const d = new Date(row.created_at);
-            const formattedDate = d.toLocaleDateString('en-IN', { month: 'short', day: 'numeric', year: 'numeric' })
-                + ' ' + d.toLocaleTimeString('en-IN', { hour: 'numeric', minute: '2-digit' });
+            const datePart = d.toLocaleDateString('en-IN', { month: 'short', day: 'numeric', year: 'numeric' });
+            const timePart = d.toLocaleTimeString('en-IN', { hour: 'numeric', minute: '2-digit' });
+            const formattedDate = `${datePart} ${timePart}`;
 
             const productsSummary = Array.isArray(row.product_names)
                 ? row.product_names.join(', ')
@@ -120,6 +121,8 @@ async function fetchSalesHistory() {
                 customer_id: row.customer_id || null,
                 customer_phone: row.customer_phone || '',
                 date: formattedDate,
+                date_part: datePart,
+                time_part: timePart,
                 raw_date: d,
                 payment: (row.payment_method || 'other').toLowerCase(),
                 staff: row.staff_name || 'System',

@@ -89,8 +89,34 @@ export function renderTable(onActionCallback) {
             }
         }
 
+        // Two-row Date column: Date in row 1, Time in row 2
+        let datePart = sale.date_part;
+        let timePart = sale.time_part;
+
+        if (!datePart || !timePart) {
+            if (sale.raw_date instanceof Date && !isNaN(sale.raw_date)) {
+                datePart = sale.raw_date.toLocaleDateString('en-IN', { month: 'short', day: 'numeric', year: 'numeric' });
+                timePart = sale.raw_date.toLocaleTimeString('en-IN', { hour: 'numeric', minute: '2-digit' });
+            } else if (typeof sale.date === 'string') {
+                const parts = sale.date.trim().split(' ');
+                if (parts.length >= 4) {
+                    datePart = parts.slice(0, 3).join(' ');
+                    timePart = parts.slice(3).join(' ');
+                } else {
+                    datePart = sale.date;
+                    timePart = '';
+                }
+            } else {
+                datePart = '-';
+                timePart = '';
+            }
+        }
+
         tr.innerHTML = `
-            <td style="padding:14px 16px 14px 24px; color:#475569; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">${sale.date}</td>
+            <td style="padding:12px 16px 12px 24px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">
+                <div style="font-weight:500; color:#334155; font-size:0.85rem; line-height:1.25;">${datePart}</div>
+                ${timePart ? `<div style="color:#64748b; font-size:0.75rem; margin-top:2px; line-height:1.2;">${timePart}</div>` : ''}
+            </td>
             <td style="padding:14px 16px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">
                 ${sale.customer_id 
                     ? `<span class="customer-link" style="font-weight:600; cursor:pointer;" onclick="event.stopPropagation(); window.viewCustomerProfile('${sale.customer_id}', '${(sale.customer || '').replace(/'/g, "\\'")}')">${sale.customer}</span>`
