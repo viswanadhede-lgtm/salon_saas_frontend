@@ -335,15 +335,15 @@
   // When products are selected and Collect is clicked in POS, the Global Payment Modal opens.
   // When 'Collect Payment' button is clicked in the modal, the RPC Function `create_pos_sale_atomic` runs:
   //   1. Validates and deducts stock from `products` table atomically (locking rows to prevent overselling).
-  //   2. Inserts all product line items into `sales` table (one row for each product).
+  //   2. Inserts all product line items into `sales` table (one row for each product, status = 'paid').
   //   3. Inserts 1 consolidated summary row into `sales_for_business_transactions` table (payment_status = 'paid').
   // When the summary row is inserted into `sales_for_business_transactions`, the DB Trigger `trg_create_pos_business_transaction` fires:
   //   - Automatically writes 1 financial ledger row into `business_transactions` (reference_type = 'product', reference_id = sale_id, status = 'paid', paid_at = NOW()).
 
 // TABLES USED:
    
-    // 1. sales Table - 1 row per product item in a sale
-    // 2. sales_for_business_transactions Table - Consolidated 1 header/summary row per sale transaction
+    // 1. sales Table - 1 row per product item in a sale (status = 'paid')
+    // 2. sales_for_business_transactions Table - Consolidated 1 header/summary row per sale transaction (payment_status = 'paid')
     // 3. business_transactions Table - Central financial ledger row (reference_type = 'product', status = 'paid')
     // 4. products Table - Stock quantities decremented atomically
 

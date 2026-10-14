@@ -492,7 +492,7 @@ function setupEventListeners() {
                 const contextStr = localStorage.getItem('appContext');
                 if (contextStr) {
                     const ctx = JSON.parse(contextStr);
-                    if (ctx?.user?.id) staffId = ctx.user.id;
+                    staffId = ctx?.user?.user_id || ctx?.user?.id || localStorage.getItem('user_id') || null;
                     if (ctx?.user?.first_name) {
                         staffName = ctx.user.first_name;
                     } else if (ctx?.user?.name) {
