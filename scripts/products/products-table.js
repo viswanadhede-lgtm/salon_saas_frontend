@@ -46,7 +46,8 @@ export function renderProductsTable() {
 
     const selectedCategory = document.querySelector('input[name="filterCategory"]:checked');
     if (selectedCategory && selectedCategory.value !== 'all') {
-        filtered = filtered.filter(p => p.category_name === selectedCategory.value);
+        // Match by category_id (UUID) — rename-safe
+        filtered = filtered.filter(p => String(p.category_id) === selectedCategory.value);
     }
 
     // Stock filter
@@ -138,7 +139,7 @@ export function renderFilterOptions() {
 
     productsState.categories.forEach(cat => {
         html += `<label class="filter-option">
-                <input type="radio" name="filterCategory" value="${cat.category_name}">
+                <input type="radio" name="filterCategory" value="${cat.category_id || cat.id}">
                 <span>${cat.category_name}</span>
                 </label>`;
     });
