@@ -360,6 +360,27 @@
     //   - Fires: AFTER INSERT ON sales_for_business_transactions FOR EACH ROW
     //   - Action: Inserts a row into business_transactions with status = 'paid', reference_type = 'product', reference_id = sale_id, amount = final_amount, paid_at = NOW().
 
+//=============================================================================================================================================================
+// SALES HISTORY PAGE
+//=============================================================================================================================================================
+
+// WORKING SUMMARY
+//   1. Sales History Table: Reads pre-grouped rows from `sales_for_business_transactions` ordered by created_at DESC.
+//   2. Search: Instant client-side filtering on Customer Name, Phone, Sale ID, Staff, Products, and Payment Status.
+//   3. Date Range Filter: Filters loaded dataset by presets (Today, Last 7 days, Last 30 days, All Time) or Custom Date picker (00:00:00 to 23:59:59.999).
+//   4. Export: Client-side CSV generation with UTF-8 BOM encoding for seamless spreadsheet opening without format warnings.
+//   5. Customer Links: Clickable customer names call `window.viewCustomerProfile(customerId)` to open the Customer 360° drawer (plain text for Walk-ins).
+//   6. Invoice Details Modal: Fetches itemized products from `sales` table (`WHERE sale_id = id`). Provides Print Receipt (with @media print isolation) and Share (WhatsApp, Email, Copy Text).
+//   7. Refund / Return Workflow: (In progress) Will execute atomic restock, line item update, sales_for_business_transactions status sync, and ledger recording.
+
+// TABLES USED:
+//   1. sales_for_business_transactions (Read) - Master list of consolidated POS retail sales.
+//   2. sales (Read) - Itemized product lines displayed inside the Invoice Details Modal.
+//   3. customers (Read) - Customer profile details loaded by Customer 360° drawer.
+
+// RPC FUNCTIONS USED:
+//   - (Refund RPC: to be implemented for atomic return)
+
 
 
 

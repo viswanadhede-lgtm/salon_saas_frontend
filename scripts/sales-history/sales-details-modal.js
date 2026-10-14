@@ -46,6 +46,8 @@ export async function openSaleDetails(sale) {
             const st = String(sale.payment_status).toUpperCase();
             let badgeColor = '#92400e'; let bg = '#fef3c7'; // default pending
             if (st === 'PAID') { badgeColor = '#065f46'; bg = '#d1fae5'; }
+            else if (st === 'PARTIAL') { badgeColor = '#92400e'; bg = '#fef3c7'; }
+            else if (st === 'REFUNDED') { badgeColor = '#991b1b'; bg = '#fee2e2'; }
             else if (st === 'UNPAID') { badgeColor = '#991b1b'; bg = '#fee2e2'; }
             
             sdPayment.innerHTML = `<span style="display:inline-block; padding:2px 10px; border-radius:12px; font-size:0.7rem; font-weight:700; letter-spacing:0.3px; color:${badgeColor}; background:${bg};">${st}</span>`;

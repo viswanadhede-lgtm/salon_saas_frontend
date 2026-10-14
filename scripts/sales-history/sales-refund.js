@@ -5,10 +5,7 @@ import {
     fetchCustomerById, 
     fetchOriginalTransaction, 
     fetchSaleLineItems, 
-    fetchProductStock,
-    buildSaleItemUpdatePromise,
-    buildProductStockUpdatePromise,
-    insertRefundLedger
+    executePosRefundAtomic
 } from './sales-api.js';
 import { showToast } from './sales-utils.js';
 
@@ -370,119 +367,99 @@ export async function processRefund() {
     }
 
     try {
-        const saleId = salesState.currentActionData.sale.id; // The Parent Group ID
-        const note = document.getElementById('rfNote')?.value.trim();
+        const sale = salesState.currentActionData.sale;
+        const saleId = sale.id; // The original parent sale UUID
+
         const methodSelect = document.getElementById('rfMethodSelect');
         let method = methodSelect ? methodSelect.value.toLowerCase() : 'cash';
-        
-        // ENSURE CHECK CONSTRAINT COMPLIANCE
         if (!['cash', 'card', 'upi', 'bank_transfer'].includes(method)) method = 'cash';
 
-        const fullNotes = reason + (note ? ` - ${note}` : '');
-        const ledgerRows = [];
-        const saleUpdatePromises = [];
-        
+        const note = document.getElementById('rfNote')?.value.trim() || '';
+
+        // ── Resolve staff from appContext ──────────────────────────────────
+        let staffId = null;
+        let staffName = 'System';
+        try {
+            const ctx = JSON.parse(localStorage.getItem('appContext') || '{}');
+            staffId = ctx.staff?.id || ctx.user?.id || null;
+            staffName = ctx.staff?.name || ctx.user?.name || ctx.staff?.full_name || ctx.user?.full_name || 'System';
+        } catch (_) {}
+
+        // ── Build item payload for the RPC ─────────────────────────────────
+        const p_items = [];
         for (const cb of checkedBoxes) {
             const itemId = cb.dataset.id;
             const itemObj = salesState.currentRefundItems.find(i => String(i.id) === itemId);
             if (!itemObj) continue;
 
             const qtyInput = document.querySelector(`.rf-qty-input[data-id="${itemId}"]`);
-            const refundQty = qtyInput ? parseInt(qtyInput.value) || 1 : (itemObj.quantity || 1);
-            
-            const itemPrice = Number(itemObj.price || 0);
-            const refundAmount = refundQty * itemPrice;
-            
-            let resultingLineId = itemId;
+            const returnQty = qtyInput ? Math.max(1, parseInt(qtyInput.value) || 1) : (itemObj.quantity || 1);
 
-            const remainingQty = (itemObj.quantity || 1) - refundQty;
-            const remainingAmount = remainingQty * itemPrice;
-            
-            const updatePayload = {
-                quantity: remainingQty,
-                total_amount: remainingAmount
-            };
-            
-            if (remainingQty <= 0) {
-                updatePayload.status = 'refunded';
-            }
-            
-            saleUpdatePromises.push(
-                buildSaleItemUpdatePromise(itemId, updatePayload)
-            );
-
-            // INVENTORY RESTOCK LOGIC
-            if (itemObj.product_id) {
-                try {
-                    const { data: prodData } = await fetchProductStock(itemObj.product_id);
-                        
-                    if (prodData) {
-                        const newStock = Number(prodData.stock_quantity || 0) + refundQty;
-                        saleUpdatePromises.push(
-                            buildProductStockUpdatePromise(itemObj.product_id, newStock)
-                        );
-                    }
-                } catch (restockErr) {
-                    console.error('Failed to restock product:', itemObj.product_id, restockErr);
-                }
-            }
-
-            // Add Ledger Entry linked to the original row ID
-            ledgerRows.push({
-                company_id: getCompanyId(),
-                branch_id: getBranchId(),
-                reference_id: saleId,               // Parent cart ID
-                reference_line_id: resultingLineId, // Direct specific row ID
-                reference_type: 'product',
-                amount: Math.abs(refundAmount),
-                status: 'refunded',
-                payment_method: method,
-                notes: fullNotes ? `${fullNotes} (Returned: ${itemObj.product_name || 'Item'} x${refundQty})` : `Returned: ${itemObj.product_name || 'Item'} (Qty: ${refundQty})`,
-                paid_at: new Date().toISOString()
+            p_items.push({
+                product_id:   itemObj.product_id   || null,
+                product_name: itemObj.product_name || 'Product',
+                category_id:  itemObj.category_id  || null,
+                return_qty:   returnQty,
+                price:        Number(itemObj.price  || 0)
             });
         }
 
-        // Execute batched DB operations
-        if (saleUpdatePromises.length > 0) {
-            await Promise.all(saleUpdatePromises);
-        }
-        if (ledgerRows.length > 0) {
-            const { error: txError } = await insertRefundLedger(ledgerRows);
-            if (txError) throw txError;
+        if (p_items.length === 0) {
+            showToast('No valid items selected for return.', '#dc2626');
+            return;
         }
 
-        // Success!
-        showToast(`Successfully returned ${checkedBoxes.length} partial/full item(s).`, '#dc2626');
+        // ── Single atomic RPC call ─────────────────────────────────────────
+        const { data, error } = await executePosRefundAtomic({
+            p_original_sale_id: saleId,
+            p_refund_sale_id:   crypto.randomUUID(),
+            p_company_id:       getCompanyId(),
+            p_branch_id:        getBranchId(),
+            p_customer_id:      sale.customer_id   || null,
+            p_customer_name:    sale.customer      || 'Walk-in',
+            p_customer_phone:   sale.customer_phone || null,
+            p_payment_method:   method,
+            p_staff_id:         staffId,
+            p_staff_name:       staffName,
+            p_refund_reason:    reason + (note ? ` - ${note}` : ''),
+            p_items
+        });
+
+        if (error) throw error;
+
+        // ── Success ────────────────────────────────────────────────────────
+        showToast(`Successfully returned ${p_items.length} item(s).`, '#dc2626');
+
         if (window.notifyEvent) {
             window.notifyEvent('payments', 'evt_payment_refunded', {
                 title: 'Payment Refunded',
-                message: `Refund processed for ${checkedBoxes.length} item(s).`
+                message: `Refund processed for ${p_items.length} item(s).`
             });
         }
-        if (window.notifyCustomer && salesState.currentActionData?.sale) {
-            const s = salesState.currentActionData.sale;
+        if (window.notifyCustomer && sale) {
             window.notifyCustomer('purchase', 'refund_confirm', {
-                name: s.customer,
-                phone: s.customer_phone || s.phone || '',
-                email: s.customer_email || s.email || ''
+                name:  sale.customer,
+                phone: sale.customer_phone || sale.phone || '',
+                email: sale.customer_email || sale.email || ''
             }, {
-                saleId: s.id,
-                itemsReturned: checkedBoxes.length
+                saleId: sale.id,
+                itemsReturned: p_items.length
             });
         }
+
         closeRefundModal();
-        
-        // Re-fetch to sync table badges and metrics
+
+        // Re-fetch so the table badge flips to REFUNDED immediately
         if (typeof onRefundCompletedCallback === 'function') {
             await onRefundCompletedCallback();
         }
-        
-        // Close detail modal if open
+
+        // Hide refund button in details modal if open
         const sdRefundBtn = document.getElementById('sdRefundBtn');
         if (sdRefundBtn) sdRefundBtn.style.display = 'none';
 
     } catch (err) {
-        console.error('Return error:', err);
+        console.error('[Refund Error]', err);
         showToast('Failed to process return: ' + (err.message || 'Unknown error'), '#dc2626');
     } finally {
         if (confirmBtn) {

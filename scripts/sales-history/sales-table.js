@@ -32,14 +32,21 @@ export function renderTable(onActionCallback) {
 
         // Dynamic payment status logic
         const payStatus = sale.payment_status || 'unpaid';
-        let statusPillClass = 'tb-payment-pending'; // default for unpaid
+        let statusPillClass = 'tb-payment-pending';
         let statusLabel = payStatus.toUpperCase();
 
-        if (payStatus === 'paid') statusPillClass = 'tb-payment-paid';
-        else if (payStatus === 'partial') statusPillClass = 'tb-payment-partial';
-        else if (payStatus === 'refunded') {
-            statusPillClass = 'tb-payment-unpaid'; // use red for refund
+        if (payStatus === 'paid') {
+            statusPillClass = 'tb-payment-paid';
+            statusLabel = 'PAID';
+        } else if (payStatus === 'partial') {
+            statusPillClass = 'tb-payment-partial';
+            statusLabel = 'PARTIAL';
+        } else if (payStatus === 'refunded') {
+            statusPillClass = 'tb-payment-refunded';
             statusLabel = 'REFUNDED';
+        } else {
+            statusPillClass = 'tb-payment-pending';
+            statusLabel = payStatus.toUpperCase();
         }
 
         const isRefunded = payStatus === 'refunded';
@@ -126,11 +133,19 @@ export function renderTable(onActionCallback) {
         refundBtn.innerHTML = '<i data-feather="corner-up-left" style="width:14px; height:14px;"></i>';
         refundBtn.setAttribute('data-sub-feature', 'pos_issue_refund');
         refundBtn.style.cssText = 'background:#fff1f2; border:1px solid #fecdd3; border-radius:6px; cursor:pointer; color:#e11d48; padding:6px; transition:all 0.2s; display:flex; align-items:center; justify-content:center;';
-        refundBtn.title = payStatus === 'unpaid' ? 'Cannot return pending sale' : 'Return Items';
 
+        const isRefundDisabled = (payStatus === 'unpaid' || payStatus === 'refunded');
         if (payStatus === 'unpaid') {
+            refundBtn.title = 'Cannot return pending sale';
+        } else if (payStatus === 'refunded') {
+            refundBtn.title = 'Sale already refunded';
+        } else {
+            refundBtn.title = 'Return Items';
+        }
+
+        if (isRefundDisabled) {
             refundBtn.disabled = true;
-            refundBtn.style.opacity = '0.5';
+            refundBtn.style.opacity = '0.4';
             refundBtn.style.cursor = 'not-allowed';
             refundBtn.style.background = '#f8fafc';
             refundBtn.style.borderColor = '#f1f5f9';
@@ -150,6 +165,16 @@ export function renderTable(onActionCallback) {
 
         actionCell.appendChild(invoiceBtn);
         actionCell.appendChild(refundBtn);
+
+        // Clicking anywhere on the row (except links or buttons) opens Invoice Details
+        tr.addEventListener('click', (e) => {
+            if (e.target.closest('.customer-link') || e.target.closest('.action-cell') || e.target.closest('[id^="prod-toggle-"]')) return;
+            if (typeof onActionCallback === 'function') {
+                onActionCallback('view', idx);
+            } else if (window.handleSaleAction) {
+                window.handleSaleAction('view', idx);
+            }
+        });
 
         tableBody.appendChild(tr);
     });

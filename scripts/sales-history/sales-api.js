@@ -70,6 +70,35 @@ export async function insertProductPayment(txnData) {
         .insert(txnData);
 }
 
+/**
+ * Atomic POS refund RPC.
+ * Executes in a single DB transaction:
+ *   1. Increments product stock (stock_quantity + returned_qty)
+ *   2. Inserts 1 new sales row per returned product (status = 'refunded')
+ *   3. Inserts 1 consolidated summary row in sales_for_business_transactions (payment_status = 'refunded')
+ *   4. DB trigger trg_pos_sale_business_transaction auto-writes business_transactions
+ *
+ * @param {Object} params
+ * @param {string}   params.p_original_sale_id  - Parent sale UUID (the PAID sale being refunded against)
+ * @param {string}   params.p_refund_sale_id    - New UUID generated for this refund transaction
+ * @param {string}   params.p_company_id
+ * @param {string}   params.p_branch_id
+ * @param {string}   params.p_customer_id       - null for walk-ins
+ * @param {string}   params.p_customer_name
+ * @param {string}   params.p_customer_phone
+ * @param {string}   params.p_payment_method    - 'cash' | 'card' | 'upi' | 'bank_transfer'
+ * @param {string}   params.p_staff_id
+ * @param {string}   params.p_staff_name
+ * @param {string}   params.p_refund_reason
+ * @param {Array}    params.p_items             - [{ product_id, product_name, category_id, return_qty, price }]
+ */
+export async function executePosRefundAtomic(params) {
+    return await supabase.rpc('process_pos_refund_atomic', params);
+}
+
+// ─── Legacy helpers (kept for backward-compat; no longer called by processRefund) ───
+
+/** @deprecated Use executePosRefundAtomic instead */
 export function buildSaleItemUpdatePromise(itemId, updatePayload) {
     return supabase
         .from('sales')
@@ -77,6 +106,7 @@ export function buildSaleItemUpdatePromise(itemId, updatePayload) {
         .eq('id', itemId);
 }
 
+/** @deprecated Use executePosRefundAtomic instead */
 export function buildProductStockUpdatePromise(productId, newStock) {
     return supabase
         .from('products')
@@ -84,6 +114,7 @@ export function buildProductStockUpdatePromise(productId, newStock) {
         .eq('product_id', productId);
 }
 
+/** @deprecated Use executePosRefundAtomic instead */
 export async function insertRefundLedger(ledgerRows) {
     return await supabase
         .from('business_transactions')
