@@ -10,7 +10,8 @@ import { showToast } from './sales-utils.js';
 let registeredActionHandlers = {
     openSaleDetails: null,
     openCollectPaymentModal: null,
-    openRefundModal: null
+    openRefundModal: null,
+    openSaleActionPicker: null
 };
 
 export function registerActionHandlers(handlers) {
@@ -31,7 +32,11 @@ export function handleSaleAction(action, idx) {
         if (!sale) return;
         salesState.currentActionData = { action, idx, sale };
 
-        if (action === 'view') {
+        if (action === 'info') {
+            if (registeredActionHandlers.openSaleActionPicker) {
+                registeredActionHandlers.openSaleActionPicker(sale);
+            }
+        } else if (action === 'view') {
             if (registeredActionHandlers.openSaleDetails) {
                 registeredActionHandlers.openSaleDetails(sale);
             }

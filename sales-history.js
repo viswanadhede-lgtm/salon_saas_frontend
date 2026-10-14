@@ -34,6 +34,12 @@ import {
     setupRefundEventListeners, 
     registerRefundCompleteCallback 
 } from './scripts/sales-history/sales-refund.js';
+import {
+    openSaleActionPicker,
+    closeSaleActionPicker,
+    setupActionPickerListeners,
+    registerActionPickerHandlers
+} from './scripts/sales-history/sales-action-modal.js';
 import { showToast } from './scripts/sales-history/sales-utils.js';
 
 // ─────────────────────────────────────────────────────────────
@@ -58,7 +64,8 @@ window.runSalePrint = runSalePrint;
 window.runSaleRefund = runSaleRefund;
 
 window.openRefundModal = openRefundModal;
-
+window.openSaleActionPicker = openSaleActionPicker;
+window.closeSaleActionPicker = closeSaleActionPicker;
 
 window.triggerShare = triggerShare;
 window.toggleProdExtra = toggleProdExtra;
@@ -158,6 +165,7 @@ function setupEventListeners() {
     setupSearchFilter(() => renderTable(handleSaleAction));
     setupSaleDetailsEventListeners();
     setupRefundEventListeners();
+    setupActionPickerListeners();
 
     const filterBtn = document.getElementById('hsFilterBtn');
     const filterMenu = document.getElementById('hsFilterMenu');
@@ -204,9 +212,16 @@ async function initPage() {
 
 // Wire cross-module action handlers
 registerActionHandlers({
-    openSaleDetails: (sale) => openSaleDetails(sale),
+    openSaleDetails:         (sale) => openSaleDetails(sale),
     openCollectPaymentModal: (sale) => openCollectPaymentModal(sale, fetchSalesHistory),
-    openRefundModal: (sale) => openRefundModal(sale)
+    openRefundModal:         (sale) => openRefundModal(sale),
+    openSaleActionPicker:    (sale) => openSaleActionPicker(sale)
+});
+
+// Register what the action picker's cards invoke
+registerActionPickerHandlers({
+    onInvoice: (sale) => openSaleDetails(sale),
+    onRefund:  (sale) => openRefundModal(sale)
 });
 
 setDetailsRefundHandler((sale) => openRefundModal(sale));

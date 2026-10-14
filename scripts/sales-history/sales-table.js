@@ -112,59 +112,24 @@ export function renderTable(onActionCallback) {
         actionCell.style.justifyContent = 'center';
         actionCell.style.gap = '12px';
 
-        // Invoice action
-        const invoiceBtn = document.createElement('button');
-        invoiceBtn.innerHTML = '<i data-feather="file-text" style="width:14px; height:14px;"></i>';
-        invoiceBtn.style.cssText = 'background:#f1f5f9; border:1px solid #e2e8f0; border-radius:6px; cursor:pointer; color:#64748b; padding:6px; transition:all 0.2s; display:flex; align-items:center; justify-content:center;';
-        invoiceBtn.title = 'View Invoice';
-        invoiceBtn.onmouseover = () => { invoiceBtn.style.background = '#e0e7ff'; invoiceBtn.style.color = '#4f46e5'; invoiceBtn.style.borderColor = '#c7d2fe'; };
-        invoiceBtn.onmouseout = () => { invoiceBtn.style.background = '#f1f5f9'; invoiceBtn.style.color = '#64748b'; invoiceBtn.style.borderColor = '#e2e8f0'; };
-        invoiceBtn.onclick = (e) => {
+        // Single Info button — opens the Sale Action Picker popup
+        const infoBtn = document.createElement('button');
+        infoBtn.innerHTML = '<i data-feather="info" style="width:14px; height:14px;"></i>';
+        infoBtn.style.cssText = 'background:#f1f5f9; border:1px solid #e2e8f0; border-radius:6px; cursor:pointer; color:#64748b; padding:6px; transition:all 0.2s; display:flex; align-items:center; justify-content:center;';
+        infoBtn.title = 'Sale Actions';
+        infoBtn.onmouseover = () => { infoBtn.style.background = '#e0e7ff'; infoBtn.style.color = '#4f46e5'; infoBtn.style.borderColor = '#c7d2fe'; };
+        infoBtn.onmouseout  = () => { infoBtn.style.background = '#f1f5f9'; infoBtn.style.color = '#64748b'; infoBtn.style.borderColor = '#e2e8f0'; };
+        infoBtn.addEventListener('click', (e) => {
             e.stopPropagation();
             if (typeof onActionCallback === 'function') {
-                onActionCallback('view', idx);
+                onActionCallback('info', idx);
             } else if (window.handleSaleAction) {
-                window.handleSaleAction('view', idx);
+                window.handleSaleAction('info', idx);
             }
-        };
+        });
 
-        // Refund action
-        const refundBtn = document.createElement('button');
-        refundBtn.innerHTML = '<i data-feather="corner-up-left" style="width:14px; height:14px;"></i>';
-        refundBtn.setAttribute('data-sub-feature', 'pos_issue_refund');
-        refundBtn.style.cssText = 'background:#fff1f2; border:1px solid #fecdd3; border-radius:6px; cursor:pointer; color:#e11d48; padding:6px; transition:all 0.2s; display:flex; align-items:center; justify-content:center;';
+        actionCell.appendChild(infoBtn);
 
-        const isRefundDisabled = (payStatus === 'unpaid' || payStatus === 'refunded');
-        if (payStatus === 'unpaid') {
-            refundBtn.title = 'Cannot return pending sale';
-        } else if (payStatus === 'refunded') {
-            refundBtn.title = 'Sale already refunded';
-        } else {
-            refundBtn.title = 'Return Items';
-        }
-
-        if (isRefundDisabled) {
-            refundBtn.disabled = true;
-            refundBtn.style.opacity = '0.4';
-            refundBtn.style.cursor = 'not-allowed';
-            refundBtn.style.background = '#f8fafc';
-            refundBtn.style.borderColor = '#f1f5f9';
-            refundBtn.style.color = '#cbd5e1';
-        } else {
-            refundBtn.onmouseover = () => { refundBtn.style.background = '#ffe4e6'; };
-            refundBtn.onmouseout = () => { refundBtn.style.background = '#fff1f2'; };
-            refundBtn.addEventListener('click', (e) => {
-                e.stopPropagation();
-                if (typeof onActionCallback === 'function') {
-                    onActionCallback('refund', idx);
-                } else if (window.handleSaleAction) {
-                    window.handleSaleAction('refund', idx);
-                }
-            });
-        }
-
-        actionCell.appendChild(invoiceBtn);
-        actionCell.appendChild(refundBtn);
 
         // Clicking anywhere on the row (except links or buttons) opens Invoice Details
         tr.addEventListener('click', (e) => {
