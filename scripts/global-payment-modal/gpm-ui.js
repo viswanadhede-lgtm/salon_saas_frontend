@@ -953,7 +953,10 @@ export function injectGlobalPaymentModalHTML() {
                         <div class="gpm-card-header">
                             <span class="gpm-card-title" id="gpmItemsHeader">Booked Services (1)</span>
                         </div>
-                        <div style="overflow-x:auto;">
+                        <!-- Membership card layout (shown only for type=membership) -->
+                        <div id="gpmMembershipCardWrap" style="display:none;"></div>
+                        <!-- Standard table (shown for booking/pos) -->
+                        <div id="gpmTableWrap" style="overflow-x:auto;">
                             <table class="gpm-services-table" id="gpmServicesTable">
                                 <thead id="gpmServicesThead">
                                     <tr>
@@ -973,7 +976,7 @@ export function injectGlobalPaymentModalHTML() {
                                 <span id="gpmServiceNoteText">Includes multiple services</span>
                             </div>
                             <div style="font-weight:700; color:#0f172a;">
-                                <span style="color:#64748b; font-weight:600; margin-right:8px;">Subtotal</span>
+                                <span id="gpmServicesSubtotalLabel" style="color:#64748b; font-weight:600; margin-right:8px;">Subtotal</span>
                                 <span id="gpmServicesSubtotal">₹0</span>
                             </div>
                         </div>

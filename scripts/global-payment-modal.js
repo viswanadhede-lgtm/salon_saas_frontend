@@ -192,6 +192,7 @@
         const thead = document.getElementById('gpmServicesThead') || document.querySelector('#gpmServicesTable thead');
         const tbody = document.getElementById('gpmServicesTbody');
         const subtotalEl = document.getElementById('gpmServicesSubtotal');
+        const subtotalLabelEl = document.getElementById('gpmServicesSubtotalLabel');
         const noteEl = document.getElementById('gpmServiceNote');
         const statItemsCount = document.getElementById('gpmStatItemsCount');
 
@@ -199,7 +200,11 @@
         const itemsCount = items.length || 1;
 
         if (itemsHeader) {
-            itemsHeader.textContent = type === 'booking' ? `Booked Services (${itemsCount})` : `Order Items (${itemsCount})`;
+            if (type === 'membership') {
+                itemsHeader.innerHTML = `Order Items (${itemsCount}) <span id="gpmMembershipBadge" style="float:right; font-size:0.75rem; font-weight:600; color:#475569; background:#f1f5f9; border:1px solid #e2e8f0; border-radius:6px; padding:3px 10px; margin-left:8px;">${itemsCount} membership</span>`;
+            } else {
+                itemsHeader.textContent = type === 'booking' ? `Booked Services (${itemsCount})` : `Order Items (${itemsCount})`;
+            }
         }
         if (statItemsCount) {
             statItemsCount.textContent = `${itemsCount} item${itemsCount !== 1 ? 's' : ''}`;
@@ -207,78 +212,134 @@
         if (subtotalEl) {
             subtotalEl.textContent = gpmFormatCurrency(config.totalAmount || 0);
         }
+        if (subtotalLabelEl) {
+            subtotalLabelEl.textContent = type === 'membership' ? 'Membership Price' : 'Subtotal';
+        }
         if (noteEl) {
-            noteEl.style.display = (config.hasMultipleServices || itemsCount > 1) ? 'flex' : 'none';
+            noteEl.style.display = (type !== 'membership' && (config.hasMultipleServices || itemsCount > 1)) ? 'flex' : 'none';
             const noteText = document.getElementById('gpmServiceNoteText');
             if (noteText) {
                 noteText.textContent = type === 'pos' ? 'Includes multiple products' : 'Includes multiple services';
             }
         }
 
-        // Dynamic Table Header: POS Retail vs Appointment Bookings
-        if (thead) {
-            if (type === 'pos') {
-                thead.innerHTML = `
-                    <tr>
-                        <th style="width:28px;">#</th>
-                        <th>Product</th>
-                        <th>Staff</th>
-                        <th style="text-align:center;">Quantity</th>
-                        <th style="text-align:right;">Price</th>
-                        <th style="text-align:right;">Total</th>
-                    </tr>
-                `;
-            } else {
-                thead.innerHTML = `
-                    <tr>
-                        <th style="width:28px;">#</th>
-                        <th>Service</th>
-                        <th>Staff</th>
-                        <th>Time</th>
-                        <th style="text-align:right;">Price</th>
-                    </tr>
+        // Dynamic Table Header & Body
+        const tableWrap = document.getElementById('gpmTableWrap');
+        const membershipCardWrap = document.getElementById('gpmMembershipCardWrap');
+
+        if (type === 'membership') {
+            // Hide standard table, show membership card layout
+            if (tableWrap) tableWrap.style.display = 'none';
+            if (membershipCardWrap) {
+                membershipCardWrap.style.display = 'block';
+                const it = items[0] || {};
+                const mDuration = it.duration || 12;
+
+                // Build Applicable Benefits text
+                let benefitsText = '—';
+                if (it.discount_type && it.discount_value) {
+                    if (it.discount_type === 'percentage') {
+                        benefitsText = `${it.discount_value}% discount`;
+                    } else if (it.discount_type === 'flat') {
+                        benefitsText = `₹${Number(it.discount_value).toLocaleString('en-IN')} off`;
+                    } else {
+                        benefitsText = `${it.discount_value} ${it.discount_type}`;
+                    }
+                }
+
+                membershipCardWrap.innerHTML = `
+                    <div style="padding: 14px 0 6px 0; border-bottom: 1px solid #f1f5f9; margin-bottom: 12px;">
+                        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 14px 24px;">
+                            <div>
+                                <div style="font-size:0.75rem; color:#64748b; font-weight:600; margin-bottom:4px;">#</div>
+                                <div style="font-size:0.92rem; font-weight:700; color:#0f172a;">1</div>
+                            </div>
+                            <div>
+                                <div style="font-size:0.75rem; color:#64748b; font-weight:600; margin-bottom:4px;">Membership Plan</div>
+                                <div style="font-size:0.92rem; font-weight:700; color:#0f172a;">${it.name || 'Membership'}</div>
+                            </div>
+                            <div>
+                                <div style="font-size:0.75rem; color:#64748b; font-weight:600; margin-bottom:4px;">Duration</div>
+                                <div style="font-size:0.92rem; font-weight:600; color:#334155;">${mDuration} Month${mDuration !== 1 ? 's' : ''}</div>
+                            </div>
+                            <div>
+                                <div style="font-size:0.75rem; color:#64748b; font-weight:600; margin-bottom:4px;">Applicable Benefits</div>
+                                <div style="font-size:0.92rem; font-weight:600; color:#16a34a;">${benefitsText}</div>
+                            </div>
+                        </div>
+                    </div>
                 `;
             }
-        }
+        } else {
+            // Show standard table, hide membership card
+            if (tableWrap) tableWrap.style.display = '';
+            if (membershipCardWrap) membershipCardWrap.style.display = 'none';
 
-        // Dynamic Table Body
-        if (tbody) {
-            if (type === 'pos') {
-                tbody.innerHTML = items.map((it, idx) => {
-                    const qty = it.quantity || 1;
-                    const price = Number(it.price || 0);
-                    const lineTotal = it.total !== undefined ? Number(it.total) : (price * qty);
-                    return `
+            // Dynamic Table Header: POS Retail vs Appointment Bookings
+            if (thead) {
+                if (type === 'pos') {
+                    thead.innerHTML = `
                         <tr>
-                            <td class="svc-idx">${it.index || (idx + 1)}</td>
-                            <td class="svc-name">${it.name || 'Product'}</td>
-                            <td class="svc-staff">${it.staff || it.staff_name || config.staffName || 'Staff'}</td>
-                            <td class="pos-qty">${qty}</td>
-                            <td class="svc-price">${gpmFormatCurrency(price)}</td>
-                            <td class="pos-total">${gpmFormatCurrency(lineTotal)}</td>
+                            <th style="width:28px;">#</th>
+                            <th>Product</th>
+                            <th>Staff</th>
+                            <th style="text-align:center;">Quantity</th>
+                            <th style="text-align:right;">Price</th>
+                            <th style="text-align:right;">Total</th>
                         </tr>
                     `;
-                }).join('');
-            } else if (items.length > 0) {
-                tbody.innerHTML = items.map((it, idx) => `
-                    <tr>
-                        <td class="svc-idx">${it.index || (idx + 1)}</td>
-                        <td class="svc-name">${it.name || 'Service'}</td>
-                        <td class="svc-staff">${it.staff || it.staff_name || 'Assigned'}</td>
-                        <td class="svc-time">${it.time || it.start_time || config.bookingTime || ''}</td>
-                        <td class="svc-price">${gpmFormatCurrency(it.price || 0)}</td>
-                    </tr>
-                `).join('');
-            } else {
-                tbody.innerHTML = `
-                    <tr>
-                        <td class="svc-idx">1</td>
-                        <td class="svc-name">${config.title || 'Service Appointment'}</td>
-                        <td class="svc-staff">Assigned</td>
-                        <td class="svc-time">${config.bookingTime || ''}</td>
-                        <td class="svc-price">${gpmFormatCurrency(config.totalAmount || 0)}</td>
-                    </tr>
-                `;
+                } else {
+                    thead.innerHTML = `
+                        <tr>
+                            <th style="width:28px;">#</th>
+                            <th>Service</th>
+                            <th>Staff</th>
+                            <th>Time</th>
+                            <th style="text-align:right;">Price</th>
+                        </tr>
+                    `;
+                }
+            }
+
+            // Dynamic Table Body
+            if (tbody) {
+                if (type === 'pos') {
+                    tbody.innerHTML = items.map((it, idx) => {
+                        const qty = it.quantity || 1;
+                        const price = Number(it.price || 0);
+                        const lineTotal = it.total !== undefined ? Number(it.total) : (price * qty);
+                        return `
+                            <tr>
+                                <td class="svc-idx">${it.index || (idx + 1)}</td>
+                                <td class="svc-name">${it.name || 'Product'}</td>
+                                <td class="svc-staff">${it.staff || it.staff_name || config.staffName || 'Staff'}</td>
+                                <td class="pos-qty">${qty}</td>
+                                <td class="svc-price">${gpmFormatCurrency(price)}</td>
+                                <td class="pos-total">${gpmFormatCurrency(lineTotal)}</td>
+                            </tr>
+                        `;
+                    }).join('');
+                } else if (items.length > 0) {
+                    tbody.innerHTML = items.map((it, idx) => `
+                        <tr>
+                            <td class="svc-idx">${it.index || (idx + 1)}</td>
+                            <td class="svc-name">${it.name || 'Service'}</td>
+                            <td class="svc-staff">${it.staff || it.staff_name || 'Assigned'}</td>
+                            <td class="svc-time">${it.time || it.start_time || config.bookingTime || ''}</td>
+                            <td class="svc-price">${gpmFormatCurrency(it.price || 0)}</td>
+                        </tr>
+                    `).join('');
+                } else {
+                    tbody.innerHTML = `
+                        <tr>
+                            <td class="svc-idx">1</td>
+                            <td class="svc-name">${config.title || 'Service Appointment'}</td>
+                            <td class="svc-staff">Assigned</td>
+                            <td class="svc-time">${config.bookingTime || ''}</td>
+                            <td class="svc-price">${gpmFormatCurrency(config.totalAmount || 0)}</td>
+                        </tr>
+                    `;
+                }
             }
         }
 

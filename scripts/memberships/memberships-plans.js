@@ -248,6 +248,13 @@ export function deletePlan(id) {
 
 export async function executeDeletePlan(id) {
     try {
+        // Guard: block delete if plan still has active members
+        const plan = getCurrentPlans().find(p => (p.membership_id || p.id) === id);
+        if (plan && plan.member_count > 0) {
+            showToast(`Cannot delete — this plan has ${plan.member_count} active member${plan.member_count > 1 ? 's' : ''}. Cancel their memberships first.`);
+            return;
+        }
+
         const { error } = await softDeletePlanApi(id);
         if (error) throw error;
         showToast('Membership plan deleted successfully.');

@@ -56,17 +56,12 @@ export function populateAssignPlanDropdown() {
 // ── Customer Form State Helper ─────────────────────────────────────────────
 export function setCustFormState(isNew, name = '', email = '') {
     const custName = document.getElementById('assignCustomerName');
-    const custEmail = document.getElementById('assignCustomerEmail');
     if (custName) {
         custName.value = name;
         custName.readOnly = !isNew;
         custName.classList.toggle('read-only-input', !isNew);
     }
-    if (custEmail) {
-        custEmail.value = email;
-        custEmail.readOnly = !isNew;
-        custEmail.classList.toggle('read-only-input', !isNew);
-    }
+    // assignCustomerEmail field removed from UI — email stored on record only
 }
 
 // ── Update Assign Modal Summary & Dates ────────────────────────────────────
@@ -319,7 +314,10 @@ export async function preValidateAndShowCollect() {
                     name: planName,
                     subtitle: `${duration} Months Validity`,
                     quantity: 1,
-                    price: price
+                    price: price,
+                    duration: duration,
+                    discount_type: selectedPlan?.discount_type || null,
+                    discount_value: selectedPlan?.discount_value || null
                 }],
                 onComplete: async (payload) => {
                     await executeMembershipAssignment(payload, newPurchaseId);

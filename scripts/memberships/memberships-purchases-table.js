@@ -10,7 +10,7 @@ import { fetchPurchasesApi, markMembershipsExpiredApi } from './memberships-api.
 // ── Purchases Workflow ─────────────────────────────────────────────────────
 
 export async function loadPurchases(isBackground = false) {
-    const tbody = document.querySelector('#purchasesTableContent tbody');
+    const tbody = document.getElementById('purchasesTableContent');
     if (!tbody) return;
 
     if (!isBackground) {
@@ -66,7 +66,7 @@ export async function loadPurchases(isBackground = false) {
 }
 
 export function renderPurchases() {
-    const tbody = document.querySelector('#purchasesTableContent tbody');
+    const tbody = document.getElementById('purchasesTableContent');
     if (!tbody) return;
 
     const currentPurchases = getCurrentPurchases();
