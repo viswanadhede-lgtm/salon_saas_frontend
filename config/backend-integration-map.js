@@ -411,12 +411,31 @@
 // State 3: State 3: Sale is refunded (fully refunded) >> Same Info Button >> modal opens with 2 cards >> 1 = Invoice, 2 = Refunded (read only) Shows full refund details — 	 no Refund card since nothing left to return.
 
 
+
 //========================================================================================================================================================================================================================================================================
-//
+//  MEMBERSHIPS PAGE
 //=====================================================================================================================================================================================
 
+// MEMBERHSIP PLANS TAB
+
+// For Membership Plans tab it used only 1 table -  MEMBERSHIPS TABLE -  No RPC or NO Nothing 
+
+//========================================================================================================
+
+// ACTIVE MEMBERSHIPS TAB-----------------
 
 
+// ACTIVE MEMBERSHIPS TABLE - STATUS, PAYMENT & ACTIONS RELATIONSHIPS 
+
+// State 1: If Status = Active || AND || Payment = Paid || THEN || Actions will show View & cancel
+
+// State 2: If Status = Expired || AND || Payment = Paid || THEN || Actions will show View & Renew
+
+// State 3: If Status = Cancelled || AND || Payment = Paid || THEN || Actions will show View & Refund
+
+// State 4: If Status = Refunded  || AND || Payment = Refunded || THEN || Actions will show View + Info
+
+//=======================================================================================================
 
 
 

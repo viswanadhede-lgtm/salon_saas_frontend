@@ -107,26 +107,34 @@ export async function insertMembershipPurchaseApi(purchasePayload) {
 }
 
 export async function cancelMembershipPurchaseApi(purchaseId, notes, cancelledDate) {
-    const res = await supabase
+    let res = await supabase
         .from('membership_purchases')
-        .eq('purchase_id', purchaseId)
-        .update({ status: 'cancelled', notes: notes, cancelled_date: cancelledDate });
+        .update({ status: 'cancelled', notes: notes, cancelled_date: cancelledDate })
+        .eq('purchase_id', purchaseId);
 
     if (res.error) {
         // fallback if pk is id
-        return await supabase
+        res = await supabase
             .from('membership_purchases')
-            .eq('id', purchaseId)
-            .update({ status: 'cancelled', notes: notes, cancelled_date: cancelledDate });
+            .update({ status: 'cancelled', notes: notes, cancelled_date: cancelledDate })
+            .eq('id', purchaseId);
     }
     return res;
 }
 
 export async function updatePurchaseRefundStatusApi(purchaseId, updateData) {
-    return await supabase
+    let res = await supabase
         .from('membership_purchases')
         .update(updateData)
         .eq('purchase_id', purchaseId);
+
+    if (res.error) {
+        res = await supabase
+            .from('membership_purchases')
+            .update(updateData)
+            .eq('id', purchaseId);
+    }
+    return res;
 }
 
 export async function fetchPurchaseByIdApi(purchaseId) {
