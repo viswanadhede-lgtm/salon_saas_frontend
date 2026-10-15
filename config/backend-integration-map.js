@@ -511,9 +511,77 @@
 
 //  ----------------------------------------------------------------------------------
 
-//
+// MEMBERSHIP REFUND WORKING PROCESS.
+
+     // In the Active Memberships table, when a record is in State 3 (status = 'cancelled' & payment_status = 'paid'), the action column displays View and Refund
+          
+     // Clicking Refund opens the Process Membership Refund modal displaying:
+               //  Original plan price & collected amount.
+               //  Refund amount input (defaults to the collected amount, with validation preventing refunds higher than paid).
+               //  Refund payment method selection (cash, upi, card).
+               //  Refund reason dropdown (e.g., Customer Relocation, Dissatisfied with Service, Medical Issues, Other) + optional notes.
+     
+     // Clicking the "Issue Refund" button activates this RPC: process_membership_refund.
+            
+
+    // So what this RPC [process_membership_refund]do is It executes the entire refund operation inside one atomic database transaction (BEGIN ... COMMIT). If any part fails (e.g., refund exceeds paid amount, invalid payment method), everything is rolled back:
+         
+         // Validates that the membership is cancelled and has not already been refunded.
+         // Updates the purchase record status to 'refunded'.
+         // Records a new financial refund entry in the central ledger (business_transactions).
+         // Reverses the refunded amount from the customer's lifetime spend (customers.total_spent).
 
 
+    // WHICH TABLES DOES IT READ FROM
+
+         // 1. membership_purchases (Read):
+
+              //Reads the purchase record by purchase_id to verify:
+              // Record exists and belongs to the active company/branch.
+              // status = 'cancelled' and payment_status = 'paid'.
+              // Fetches final_amount, customer_id, customer_name, and plan_name.
+         
+         // 2. business_transactions (Read):
+
+              // Checks existing transaction entries for this purchase_id to ensure total refunds do not exceed the original payment.
+         
+         // 3. customers (Read):
+
+              // Reads the customer's current total_spent for reversal.
+
+
+    // WHICH TABLES DOES IT WRITE TO:
+
+         // 1. membership_purchases (Write / Update):
+
+              //status = 'refunded'
+              //payment_status = 'refunded'
+              //notes = Appends the refund reason and notes to the existing notes.
+              //updated_at = NOW() (This immediately flips the row into State 4: Refunded + Refunded, displaying View + Info).
+
+
+         // 2. business_transactions (Write / Insert):
+
+            //Inserts a new refund ledger row:
+            //reference_id = purchase_id
+            //reference_type = 'membership'
+            //amount = p_refund_amount
+            //final_amount = p_refund_amount
+            //currency = 'INR'
+            //payment_method = p_payment_method ('cash', 'upi', or 'card')
+            //status = 'refunded'
+            //notes = p_refund_reason
+            //created_by = p_staff_id
+            //paid_at = NOW()
+
+
+         // 3. customers (Write / Update):
+
+            // Deducts the refunded amount from customer lifetime spend:
+                // total_spent = GREATEST(0, COALESCE(total_spent, 0) - p_refund_amount)
+            // updated_at = NOW()
+
+// -----------------------------------------------------------------------------------------------------------------
 
 
 

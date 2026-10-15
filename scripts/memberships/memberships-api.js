@@ -114,6 +114,10 @@ export async function cancelMembershipRpcApi(rpcPayload) {
     return await supabase.rpc('cancel_membership', rpcPayload);
 }
 
+export async function processMembershipRefundRpcApi(rpcPayload) {
+    return await supabase.rpc('process_membership_refund', rpcPayload);
+}
+
 export async function cancelMembershipPurchaseApi(purchaseId, notes, cancelledDate) {
     let res = await supabase
         .from('membership_purchases')

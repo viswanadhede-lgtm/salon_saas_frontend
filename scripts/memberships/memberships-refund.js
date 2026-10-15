@@ -13,9 +13,8 @@ import { showToast } from './memberships-utils.js';
 import {
     fetchCustomerByIdApi,
     fetchTransactionsForPurchaseApi,
-    insertRefundTransactionApi,
-    updatePurchaseRefundStatusApi,
-    fetchTransactionsSummaryForPurchaseApi
+    fetchTransactionsSummaryForPurchaseApi,
+    processMembershipRefundRpcApi
 } from './memberships-api.js';
 import { loadPurchases } from './memberships-purchases-table.js';
 
@@ -198,14 +197,13 @@ export function setupRefundPurchaseModal() {
                                 <span style="font-size:0.72rem;font-weight:800;color:#991b1b;text-transform:uppercase;letter-spacing:0.05em;">REFUND AMOUNT</span>
                                 <span id="rfMemRefundTypeBadge" style="background:#ffe4e6;color:#e11d48;font-size:0.72rem;font-weight:700;padding:3px 10px;border-radius:20px;transition:all 0.2s;">Full Refund</span>
                             </div>
-                            <div id="rfMemAmountInputWrapper" style="display:flex;align-items:center;background:#fff;border:1.5px solid #fecdd3;border-radius:10px;padding:4px 12px;transition:all 0.15s;">
+                            <div id="rfMemAmountInputWrapper" style="display:flex;align-items:center;background:#f8fafc;border:1.5px solid #fecdd3;border-radius:10px;padding:4px 12px;transition:all 0.15s;">
                                 <span style="font-size:1.6rem;font-weight:800;color:#e11d48;line-height:1;margin-right:6px;user-select:none;">₹</span>
-                                <input type="number" id="rfMemAmountInput" min="1" step="any" placeholder="0" 
-                                       style="width:100%;font-size:1.6rem;font-weight:800;color:#e11d48;border:none;background:transparent;outline:none;padding:4px 0;line-height:1;font-family:inherit;" />
+                                <input type="number" id="rfMemAmountInput" readonly placeholder="0" 
+                                       style="width:100%;font-size:1.6rem;font-weight:800;color:#e11d48;border:none;background:transparent;outline:none;padding:4px 0;line-height:1;font-family:inherit;cursor:not-allowed;" />
                             </div>
                             <div style="font-size:0.78rem;color:#64748b;display:flex;justify-content:space-between;align-items:center;">
-                                <span>Maximum refundable: <strong id="rfMemMaxRefundText" style="font-weight:700;color:#475569;">₹0</strong></span>
-                                <button type="button" id="rfMemSetFullRefundBtn" style="background:none;border:none;color:#e11d48;font-size:0.75rem;font-weight:700;cursor:pointer;padding:0;text-decoration:underline;">Reset Full</button>
+                                <span>Refund Amount (Full): <strong id="rfMemMaxRefundText" style="font-weight:700;color:#475569;">₹0</strong></span>
                             </div>
                         </div>
 
@@ -214,9 +212,8 @@ export function setupRefundPurchaseModal() {
                             <label style="font-size:0.82rem;font-weight:700;color:#334155;margin-bottom:6px;display:block;">Refund Payment Method <span style="color:#ef4444;">*</span></label>
                             <select id="rfMemMethodDisplay" class="form-input" style="height:44px;border-radius:10px;border:1px solid #cbd5e1;font-weight:500;font-size:0.88rem;width:100%;background:#fff;padding:0 12px;cursor:pointer;">
                                 <option value="cash" selected>Cash</option>
-                                <option value="card">Card</option>
                                 <option value="upi">UPI</option>
-                                <option value="bank_transfer">Bank Transfer</option>
+                                <option value="card">Card</option>
                             </select>
                         </div>
 
@@ -499,6 +496,7 @@ export async function refundMembershipPurchase(purchaseId) {
 
                 if (amountInput) {
                     amountInput.disabled = false;
+                    amountInput.readOnly = true;
                     amountInput.value = refundableMembershipAmount > 0 ? refundableMembershipAmount : '';
                     if (refundableMembershipAmount > 0) amountInput.max = refundableMembershipAmount;
                 }
@@ -514,7 +512,7 @@ export async function refundMembershipPurchase(purchaseId) {
 
                 const lastMethod = (originalTx?.payment_method || purchaseToRefundObj.payment_method || 'cash').toLowerCase();
                 if (methodSelect) {
-                    methodSelect.value = ['cash', 'upi', 'card', 'bank_transfer'].includes(lastMethod) ? lastMethod : 'cash';
+                    methodSelect.value = ['cash', 'upi', 'card'].includes(lastMethod) ? lastMethod : 'cash';
                 }
             }
         } catch (err) {
@@ -570,33 +568,32 @@ export async function processMembershipRefund() {
     }
 
     try {
-        // 1. Insert Refund into Ledger
-        const { error: txError } = await insertRefundTransactionApi({
-            company_id: getCompanyId(),
-            branch_id: getBranchId(),
-            reference_id: purchaseId,
-            reference_type: 'membership',
-            amount: enteredRefundAmount,
-            status: 'refunded',
-            payment_method: method,
-            notes: fullNotes || `Refund processed for membership ${purchaseId}`,
-            paid_at: new Date().toISOString()
-        });
+        let staffId = null;
+        try {
+            const ctx = JSON.parse(localStorage.getItem('appContext') || '{}');
+            staffId = ctx.user?.id || ctx.user?.user_id || null;
+        } catch (e) {}
 
-        if (txError) {
-             console.warn('business_transactions insert failed, but updating membership record anyway:', txError);
+        let safeMethod = method;
+        if (!['cash', 'upi', 'card'].includes(safeMethod)) {
+            safeMethod = 'cash';
         }
 
-        // 2. Update membership_purchases status AND notes column
-        const refundDate = new Date().toISOString().split('T')[0];
-        const { error: memError } = await updatePurchaseRefundStatusApi(purchaseId, {
-            status: 'refunded',
-            payment_status: 'refunded',
-            notes: fullNotes || null,
-            cancelled_date: refundDate
+        // Execute atomic process_membership_refund RPC
+        const { data, error } = await processMembershipRefundRpcApi({
+            p_purchase_id: purchaseId,
+            p_company_id: getCompanyId(),
+            p_branch_id: getBranchId(),
+            p_refund_amount: enteredRefundAmount,
+            p_payment_method: safeMethod,
+            p_refund_reason: fullNotes || 'Customer Requested Refund',
+            p_staff_id: staffId
         });
 
-        if (memError) throw memError;
+        if (error) throw error;
+        if (data && !data.success) {
+            throw new Error(data.error || 'Failed to process refund');
+        }
 
         showToast('Membership has been refunded.', '#dc2626');
         if (window.notifyEvent) {
