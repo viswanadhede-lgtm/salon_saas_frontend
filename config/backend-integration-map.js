@@ -440,13 +440,78 @@
 
 // Renew Logic - When renew is clicked the assign membership modal opens with pre filled details.
 
-// Refund Logic - 
-
 // Status set to Expired logic - It is done by the Frontend only, when expiry date < Todays date then the frontend will update the status to expired in the memberhsip..when ever this page loads.
 
 
+//--------------------------------------------------------------
+
+// ASSIGN MEMBERSHIP WORKING PROCESS --
+
+      // When user opened assign memberhsip modal and clicked on collect payment in the assign membership modal  then the frontend will activate this RPC And what this RPC does is 
+
+          //1. RPC will read from the 3 tables mentioned (customers, memberships and memberhsip_purchases) 
+          //2. write to memberhsip_purchases table
+          //3. conditional write to customers table
+          //4. write to business transaction table ..
+
+//  EXPLANATION :-
+
+// RPC FUNCTION 1. assign_membership RPC: What Does It Do & Which Tables?
+         // What it does:
+
+        //It executes the entire assignment workflow in one single database transaction (BEGIN ... COMMIT). If anything fails (e.g. invalid plan ID or network glitch), the whole transaction rolls back, preventing partial or broken records.
+
+    // Which tables does it READ from?
+
+                // 1. memberships table (Read):
+
+                    // a. Reads the membership plan by membership_id to verify true plan price, duration, and discounts directly from the server (ensuring client-side tampering is      	   impossible).
+            
+                // 2. customers table (Read):
+
+                    // a.Checks if a customer with the given phone number already exists.
+
+                // 3. membership_purchases table (Read):
+    
+                    // a.Checks if the customer already has an active membership for this plan to prevent accidental duplicate purchases.
 
 
+   // Which tables does it WRITE to?
+
+                // 1. customers table (Conditional Write):
+
+	                // a.If the customer does not exist yet, it inserts a new customer record (customer_name, customer_phone, customer_email, company_id, branch_id).
+
+                // 2. membership_purchases table (Write):
+ 
+                    // a.Inserts the new purchase record (purchase_id, company_id, branch_id, customer_id, plan_name, price, duration, purchase_date, expiry_date, payment_method,   	    payment_status = 'paid', status = 'active').
+
+                // 3. business_transactions table (Write):
+          
+                    // a.Inserts the financial ledger entry (reference_id = purchase_id, reference_type = 'membership', amount = final_amount, status = 'paid', payment_method).
+
+
+//  --------------------------------------------------------------------------
+
+// MEMBERSHIP CANCELLATION WORKING PROCESS.
+
+   //   In the Active Memberships table, when a record is in State 1 (status = 'active' & payment_status = 'paid'), the action column displays View and Cancel.
+         // Clicking Cancel opens the confirmation modal displaying customer name, plan name, start date, elapsed duration, and an optional Reason / Notes textarea.
+         // Clicking "Cancel Membership" in the modal activates this RPC cancel_membership
+
+    // so what this RPC [cancel_membership]do is (it updates only one table) it will read from membership purchases table and updates the memberhsip purchases table ... 
+
+        //it updates the below columns in the membership purchases table.
+
+        // 1. status = cancelled
+        // 2. cancelled date = current date ?
+        // 3. udpated at = now
+        // 4. notes = if any.
+
+
+//  ----------------------------------------------------------------------------------
+
+//
 
 
 

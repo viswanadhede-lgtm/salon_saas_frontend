@@ -110,6 +110,10 @@ export async function assignMembershipRpcApi(rpcPayload) {
     return await supabase.rpc('assign_membership', rpcPayload);
 }
 
+export async function cancelMembershipRpcApi(rpcPayload) {
+    return await supabase.rpc('cancel_membership', rpcPayload);
+}
+
 export async function cancelMembershipPurchaseApi(purchaseId, notes, cancelledDate) {
     let res = await supabase
         .from('membership_purchases')

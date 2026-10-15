@@ -8,8 +8,7 @@ import {
 } from './memberships-state.js';
 import { showToast, calculateDurationBetweenDates } from './memberships-utils.js';
 import {
-    cancelMembershipPurchaseApi,
-    insertCancellationLedgerApi,
+    cancelMembershipRpcApi,
     fetchPurchaseByIdApi
 } from './memberships-api.js';
 import { loadPurchases } from './memberships-purchases-table.js';
@@ -124,26 +123,16 @@ export function cancelMembershipPurchase(purchaseId) {
 // ── Execute Cancellation in DB ─────────────────────────────────────────────
 export async function executeCancelMembershipPurchase(purchaseId, notes = null) {
     try {
-        const today = new Date().toISOString().split('T')[0];
-        const { error } = await cancelMembershipPurchaseApi(purchaseId, notes, today);
-        if (error) throw error;
-
-        // Audit Trail: Insert Cancelled Ledger Row
-        const { error: txError } = await insertCancellationLedgerApi({
-            company_id: getCompanyId(),
-            branch_id: getBranchId(),
-            reference_id: purchaseId,
-            reference_type: 'membership',
-            amount: 0,
-            currency: 'INR',
-            payment_method: 'cash',
-            status: 'cancelled',
-            notes: 'Membership Cancelled (No Refund Processed)',
-            paid_at: new Date().toISOString().replace('Z', '')
+        const { data, error } = await cancelMembershipRpcApi({
+            p_purchase_id: purchaseId,
+            p_company_id: getCompanyId(),
+            p_branch_id: getBranchId(),
+            p_notes: notes
         });
-            
-        if (txError) {
-            console.error('Ledger recording failed for cancellation:', txError);
+
+        if (error) throw error;
+        if (data && !data.success) {
+            throw new Error(data.error || 'Failed to cancel membership');
         }
 
         showToast('Membership has been cancelled.');
