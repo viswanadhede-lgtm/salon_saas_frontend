@@ -137,6 +137,22 @@ export async function updatePurchaseRefundStatusApi(purchaseId, updateData) {
     return res;
 }
 
+export async function markMembershipsExpiredApi(purchaseIds) {
+    if (!purchaseIds || purchaseIds.length === 0) return { data: null, error: null };
+    let res = await supabase
+        .from('membership_purchases')
+        .update({ status: 'expired' })
+        .in('purchase_id', purchaseIds);
+
+    if (res.error) {
+        res = await supabase
+            .from('membership_purchases')
+            .update({ status: 'expired' })
+            .in('id', purchaseIds);
+    }
+    return res;
+}
+
 export async function fetchPurchaseByIdApi(purchaseId) {
     const res = await supabase
         .from('membership_purchases')

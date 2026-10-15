@@ -5,45 +5,63 @@ import {
     getCurrentPurchases,
     setCurrentPurchases
 } from './memberships-state.js';
-import { fetchPurchasesApi } from './memberships-api.js';
+import { fetchPurchasesApi, markMembershipsExpiredApi } from './memberships-api.js';
 
 // ── Purchases Workflow ─────────────────────────────────────────────────────
 
-export async function loadPurchases() {
+export async function loadPurchases(isBackground = false) {
     const tbody = document.querySelector('#purchasesTableContent tbody');
     if (!tbody) return;
 
-    tbody.innerHTML = `
-        <tr>
-            <td colspan="9" style="padding:32px; text-align:center; color:#64748b;">
-                <div style="display:flex;flex-direction:column;align-items:center;gap:12px;">
-                    <i data-feather="loader" class="spin" style="width:24px;height:24px;"></i>
-                    <span style="font-size:0.9rem;">Loading membership purchases...</span>
-                </div>
-            </td>
-        </tr>`;
-    if (window.feather) feather.replace();
+    if (!isBackground) {
+        tbody.innerHTML = `
+            <tr>
+                <td colspan="9" style="padding:32px; text-align:center; color:#64748b;">
+                    <div style="display:flex;flex-direction:column;align-items:center;gap:12px;">
+                        <i data-feather="loader" class="spin" style="width:24px;height:24px;"></i>
+                        <span style="font-size:0.9rem;">Loading membership purchases...</span>
+                    </div>
+                </td>
+            </tr>`;
+        if (window.feather) feather.replace();
+    }
 
     try {
         const { data, error } = await fetchPurchasesApi(getCompanyId(), getBranchId());
 
         if (error) throw error;
         const purchases = data || [];
+
+        // Check for expired memberships (expiry_date < today)
+        const todayStr = new Date().toISOString().split('T')[0];
+        const expiredPurchases = purchases.filter(p => p.expiry_date && p.expiry_date < todayStr && p.status === 'active');
+
+        if (expiredPurchases.length > 0) {
+            // 1. Update in-memory objects immediately so render shows State 2 (Expired)
+            expiredPurchases.forEach(p => { p.status = 'expired'; });
+
+            // 2. Persist status = 'expired' directly to the Supabase database table
+            const expiredIds = expiredPurchases.map(p => p.purchase_id || p.id).filter(Boolean);
+            markMembershipsExpiredApi(expiredIds).catch(err => {
+                console.warn('Failed to sync expired memberships to DB:', err);
+            });
+
+            // 3. Notify marketing / event system
+            if (window.notifyEvent) {
+                window.notifyEvent('marketing', 'evt_marketing_membership_expired_renewed', {
+                    title: 'Membership Expired',
+                    message: `${expiredPurchases.length} membership(s) have expired.`
+                });
+            }
+        }
+
         setCurrentPurchases(purchases);
         renderPurchases();
-
-        // Check for expired memberships
-        const todayStr = new Date().toISOString().split('T')[0];
-        const expiredCount = purchases.filter(p => p.expiry_date && p.expiry_date < todayStr && p.status === 'active').length;
-        if (expiredCount > 0 && window.notifyEvent) {
-            window.notifyEvent('marketing', 'evt_marketing_membership_expired_renewed', {
-                title: 'Membership Expired',
-                message: `${expiredCount} membership(s) have expired.`
-            });
-        }
     } catch (err) {
         console.error('loadPurchases:', err);
-        tbody.innerHTML = `<tr><td colspan="9" style="text-align:center;padding:32px;color:#ef4444;">Failed to load membership purchases: ${err.message || ''}</td></tr>`;
+        if (!isBackground) {
+            tbody.innerHTML = `<tr><td colspan="9" style="text-align:center;padding:32px;color:#ef4444;">Failed to load membership purchases: ${err.message || ''}</td></tr>`;
+        }
     }
 }
 

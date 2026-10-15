@@ -440,6 +440,21 @@
 
 // Refund Logic - 
 
+// Expiry Detection & Database Sync Logic:
+// - How it works:
+//   * In `loadPurchases()`, the frontend checks all records where `expiry_date < today` and `status === 'active'`.
+//   * If expired rows are detected:
+//     1. In-memory status is immediately set to 'expired' so the UI table updates instantly to State 2 (⚪ Expired | 💳 Paid | Actions: View + Renew).
+//     2. An automated Supabase query (`markMembershipsExpiredApi`) executes:
+//        `UPDATE membership_purchases SET status = 'expired' WHERE purchase_id IN (expiredIds)`
+//     3. Fires the marketing event notification `evt_marketing_membership_expired_renewed` if configured.
+// - What Triggers It:
+//   1. Page Load / Boot: Executes immediately when `memberships.html` opens.
+//   2. Branch Switch: Executes whenever active branch changes in `#branchSelect`.
+//   3. Tab Visibility Return: Executes when staff returns to the browser tab (`visibilitychange` event).
+//   4. Periodic Interval: Runs automatically in the background every 30 minutes (`setInterval`).
+//   5. Post-Action Reloads: Executes after assigning, renewing, cancelling, or refunding memberships. 
+
 
 
 

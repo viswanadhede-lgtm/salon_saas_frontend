@@ -50,6 +50,18 @@ async function initMemberships() {
         await loadPlans();
         await loadPurchases();
     });
+
+    // 5. Auto-check on visibility change (e.g., returning to the tab next morning)
+    document.addEventListener('visibilitychange', () => {
+        if (document.visibilityState === 'visible') {
+            loadPurchases(true);
+        }
+    });
+
+    // 6. Periodic background check every 30 minutes
+    setInterval(() => {
+        loadPurchases(true);
+    }, 30 * 60 * 1000);
 }
 
 // ── DOM Readiness ──────────────────────────────────────────────────────────
