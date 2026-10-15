@@ -435,6 +435,8 @@
 
 // State 4: If Status = Refunded  || AND || Payment = Refunded || THEN || Actions will show View + Info
 
+// Table Column Order: Customer | Membership Plan | Plan Price | Duration | Purchase Date | Expiry Date | Payment | Status | Actions
+
 //=======================================================================================================
 
 

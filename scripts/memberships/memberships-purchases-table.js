@@ -140,15 +140,15 @@ export function renderPurchases() {
         const purchaseDateStr = formatDate(purchase.purchase_date);
         const validUntilStr = formatDate(purchase.expiry_date);
         
-        let priceDisplay = `₹${Number(purchase.price || 0).toLocaleString('en-IN')}`;
+        let basePrice = `₹${Number(purchase.price || 0).toLocaleString('en-IN')}`;
+        let priceDisplay = '';
         if (purchase.discount_amount > 0 && purchase.final_amount != null) {
-             priceDisplay = `<div style="display:flex; flex-direction:column; align-items:flex-start;">
-                 <span style="background-color: #ecfdf5; color: #059669; border: 1px solid #d1fae5; padding: 0.25rem 0.6rem; border-radius: 1rem; font-size: 0.75rem; font-weight: 600;">₹${Number(purchase.final_amount).toLocaleString('en-IN')}</span>
-                 <span style="text-decoration: line-through; color: #94a3b8; font-size: 0.65rem; margin-top:3px; align-self:center;">${priceDisplay}</span>
-                 <span style="color: #6366f1; font-size: 0.65rem; margin-top:1px; align-self:center; font-weight:500;">(-₹${Number(purchase.discount_amount).toLocaleString('en-IN')})</span>
-             </div>`;
+            priceDisplay = `<div style="display:flex; flex-direction:column; align-items:flex-start;">
+                <span style="font-weight: 600; color: #059669;">₹${Number(purchase.final_amount).toLocaleString('en-IN')}</span>
+                <span style="text-decoration: line-through; color: #94a3b8; font-size: 0.75rem; margin-top: 1px;">${basePrice}</span>
+            </div>`;
         } else {
-             priceDisplay = `<span style="background-color: #ecfdf5; color: #059669; border: 1px solid #d1fae5; padding: 0.25rem 0.6rem; border-radius: 1rem; font-size: 0.75rem; font-weight: 600;">${priceDisplay}</span>`;
+            priceDisplay = `<span style="font-weight: 600; color: #059669;">${basePrice}</span>`;
         }
 
         return `
@@ -170,8 +170,8 @@ export function renderPurchases() {
                 <td style="color: #64748b; font-size: 0.9rem;">${purchase.duration ? purchase.duration + ' Months' : '-'}</td>
                 <td style="color: #64748b;">${purchaseDateStr}</td>
                 <td style="color: #64748b;">${validUntilStr}</td>
-                <td>${statusBadge}</td>
                 <td>${paymentBadge}</td>
+                <td>${statusBadge}</td>
                 <td style="text-align: center;">
                     <div style="display: flex; gap: 0.5rem; justify-content: center; align-items: stretch;">
                         <button class="action-btn" title="View" onclick="window.viewMembershipSummary('${purchaseId}')" style="display:flex;flex-direction:column;align-items:center;justify-content:center;padding:4px 8px;min-width:52px;height:40px;border-radius:8px;border:1px solid #dbeafe;background:#eff6ff;cursor:pointer;color:#3b82f6;transition:all 0.2s;" onmouseover="this.style.background='#dbeafe'" onmouseout="this.style.background='#eff6ff'">
