@@ -14,7 +14,8 @@ import {
     fetchCustomersApi,
     checkDuplicateActivePurchaseApi,
     createCustomerApi,
-    insertMembershipPurchaseApi
+    insertMembershipPurchaseApi,
+    assignMembershipRpcApi
 } from './memberships-api.js';
 import { loadPurchases } from './memberships-purchases-table.js';
 
@@ -253,7 +254,19 @@ export async function preValidateAndShowCollect() {
 
     try {
         // Duplicate Check BEFORE creating DB records
-        const finalCustomerId = selectedCustomer ? (selectedCustomer.id || selectedCustomer.customer_id) : null;
+        let finalCustomerId = selectedCustomer ? (selectedCustomer.id || selectedCustomer.customer_id) : null;
+        if (!finalCustomerId && custSearchValue) {
+            const inputDigits = custSearchValue.replace(/\D/g, '');
+            const allCustomers = getAllCustomers();
+            const existingCust = allCustomers.find(c => {
+                const p = String(c.customer_phone || c.phone_number || '').replace(/\D/g, '');
+                return p === inputDigits || p === custSearchValue;
+            });
+            if (existingCust) {
+                finalCustomerId = existingCust.id || existingCust.customer_id;
+            }
+        }
+
         if (finalCustomerId && planValue) {
             const { data: existing, error: checkErr } = await checkDuplicateActivePurchaseApi(
                 finalCustomerId,
@@ -328,61 +341,46 @@ export async function preValidateAndShowCollect() {
 
 // ── Execute Assignment on Payment Complete ─────────────────────────────────
 export async function executeMembershipAssignment(payload, newPurchaseId) {
-    const planValue = document.getElementById('assignPlanInput').value;
+    const planValue = document.getElementById('assignPlanInput')?.value;
     const currentPlans = getCurrentPlans();
     const selectedPlan = currentPlans.find(p => (p.membership_id || p.id) === planValue);
 
-    const custSearchValue = document.getElementById('custSearchInput').value.trim();
-    const custNameValue = document.getElementById('assignCustomerName')?.value.trim();
-    const custEmailValue = document.getElementById('assignCustomerEmail')?.value.trim();
+    const custSearchValue = document.getElementById('custSearchInput')?.value?.trim() || '';
+    const custNameValue = document.getElementById('assignCustomerName')?.value?.trim() || '';
+    const custEmailValue = document.getElementById('assignCustomerEmail')?.value?.trim() || '';
     const assignDate = document.getElementById('assignDateInput')?.value || new Date().toISOString().split('T')[0];
+    const notesValue = document.getElementById('assignNotes')?.value?.trim() || null;
     
     // Get active payment method and collected amount from payload
-    let payMethod = payload.paymentMethod || 'cash';
+    let payMethod = (payload.paymentMethod || 'cash').toLowerCase();
+    if (!['cash', 'upi', 'card'].includes(payMethod)) {
+        payMethod = 'cash';
+    }
     const finalPrice = payload.amountCollected || 0;
 
     const selectedCustomer = getSelectedCustomer();
     const allCustomers = getAllCustomers();
 
-    // Create new customer if not selected
+    // Determine customer identification
     let finalCustomerId = selectedCustomer ? (selectedCustomer.id || selectedCustomer.customer_id) : null;
-    let finalCustomerName = selectedCustomer ? (selectedCustomer.customer_name || `${selectedCustomer.first_name || ''} ${selectedCustomer.last_name || ''}`).trim() : custNameValue;
-    
-    if (!finalCustomerId) {
+    let finalCustomerName = selectedCustomer 
+        ? (selectedCustomer.customer_name || `${selectedCustomer.first_name || ''} ${selectedCustomer.last_name || ''}`).trim() 
+        : custNameValue;
+
+    // If customer was not picked from dropdown, check if phone exists in allCustomers cache
+    if (!finalCustomerId && custSearchValue) {
         const inputDigits = custSearchValue.replace(/\D/g, '');
         const existingCust = allCustomers.find(c => {
             const p = String(c.customer_phone || c.phone_number || '').replace(/\D/g, '');
             return p === inputDigits || p === custSearchValue;
         });
-
         if (existingCust) {
-            showToast('Customer already exists! Please select them from the dropdown list.', true);
-            return;
-        } else {
-            try {
-                const { data: newCust, error: custErr } = await createCustomerApi({
-                    company_id: getCompanyId(),
-                    branch_id: getBranchId(),
-                    customer_name: finalCustomerName || 'Unknown Customer',
-                    customer_phone: custSearchValue,
-                    customer_email: custEmailValue || null,
-                    status: 'active'
-                });
-                if (custErr) throw custErr;
-                if (newCust && newCust.length > 0) {
-                    finalCustomerId = newCust[0].id || newCust[0].customer_id;
-                    allCustomers.push(newCust[0]);
-                    setAllCustomers(allCustomers);
-                }
-            } catch (err) {
-                console.error('Failed to create new customer:', err);
-                showToast('Failed to create customer: ' + (err.message || ''));
-                throw err;
-            }
+            finalCustomerId = existingCust.id || existingCust.customer_id;
+            finalCustomerName = existingCust.customer_name || finalCustomerName;
         }
     }
     
-    // Extract user details
+    // Extract user details from appContext
     const contextStr = localStorage.getItem('appContext');
     let userId = null;
     let userName = null;
@@ -394,20 +392,7 @@ export async function executeMembershipAssignment(payload, newPurchaseId) {
         } catch (e) {}
     }
 
-    const duration = selectedPlan ? (selectedPlan.duration_months || selectedPlan.duration) : null;
     const purchaseDate = assignDate || new Date().toISOString().split('T')[0];
-    
-    const domExpiry = document.getElementById('assignExpiryInput')?.value;
-    
-    // Javascript calculated Expiry Date (fallback)
-    let expiryDate = domExpiry || null;
-    if (!expiryDate && purchaseDate && duration) {
-        const d = new Date(purchaseDate);
-        d.setMonth(d.getMonth() + parseInt(duration, 10));
-        expiryDate = d.toISOString().split('T')[0];
-    }
-
-    // Determine actual total price of plan
     const planPrice = selectedPlan ? Number(selectedPlan.price || 0) : 0;
 
     // Calculate final amount and discounts
@@ -423,50 +408,56 @@ export async function executeMembershipAssignment(payload, newPurchaseId) {
         discountName = d.manualType === 'percent' ? `${d.manualValue}% off` : `₹${d.manualValue} off`;
     }
     
-    // finalPrice mapped from payload
     const finalAmount = finalPrice; 
     let discountAmount = planPrice > finalAmount ? (planPrice - finalAmount) : null;
     if (discountAmount <= 0) discountAmount = null;
 
-    // Calculate payment status based on how much was collected today
-    let paymentStatus = 'paid';
-
-    const membershipPayload = {
-        purchase_id: newPurchaseId,
-        company_id: getCompanyId(),
-        branch_id: getBranchId(),
-        assigned_by_user_id: userId,
-        assigned_by_user_name: userName,
-        customer_id: finalCustomerId,
-        customer_name: finalCustomerName,
-        membership_id: planValue,
-        plan_name: selectedPlan ? (selectedPlan.plan_name || selectedPlan.name) : null,
-        price: planPrice,               // The true total price of the membership
-        duration: duration,
-        payment_method: payMethod,
-        payment_status: paymentStatus,  // 'paid' for full payments
-        purchase_date: purchaseDate,
-        expiry_date: expiryDate,
-        status: 'active',
-        discount_type: discountType,
-        discount_name: discountName,
-        discount_amount: discountAmount,
-        final_amount: finalAmount
+    const rpcPayload = {
+        p_company_id: getCompanyId(),
+        p_branch_id: getBranchId(),
+        p_membership_id: planValue,
+        p_customer_id: finalCustomerId || null,
+        p_customer_phone: custSearchValue || null,
+        p_customer_name: finalCustomerName || custNameValue || 'Customer',
+        p_customer_email: custEmailValue || null,
+        p_payment_method: payMethod,
+        p_purchase_date: purchaseDate,
+        p_discount_type: discountType,
+        p_discount_name: discountName,
+        p_discount_amount: discountAmount,
+        p_final_amount: finalAmount,
+        p_assigned_by_user_id: userId,
+        p_assigned_by_user_name: userName,
+        p_notes: notesValue
     };
 
     try {
-        // 1. Insert into membership_purchases
-        const { error } = await insertMembershipPurchaseApi(membershipPayload);
+        // Execute atomic assign_membership RPC
+        const { data, error } = await assignMembershipRpcApi(rpcPayload);
 
         if (error) throw error;
+        if (data && !data.success) {
+            throw new Error(data.error || 'Failed to assign membership');
+        }
 
-        // 2. The database trigger 'trg_membership_transaction' handles logging to business_transactions natively.
+        // Cache new customer in memory if one was created
+        if (data?.customer_id && !selectedCustomer) {
+            allCustomers.push({
+                customer_id: data.customer_id,
+                id: data.customer_id,
+                customer_name: data.customer_name || finalCustomerName,
+                customer_phone: custSearchValue,
+                customer_email: custEmailValue || null,
+                status: 'active'
+            });
+            setAllCustomers(allCustomers);
+        }
 
         showToast('Membership assigned successfully!');
         if (window.notifyEvent) {
             window.notifyEvent('marketing', 'evt_marketing_membership_purchased', {
                 title: 'Membership Purchased',
-                message: `${finalCustomerName} purchased ${selectedPlan ? (selectedPlan.plan_name || selectedPlan.name) : 'membership'}.`
+                message: `${data?.customer_name || finalCustomerName} purchased ${data?.plan_name || (selectedPlan ? (selectedPlan.plan_name || selectedPlan.name) : 'membership')}.`
             });
         }
         
