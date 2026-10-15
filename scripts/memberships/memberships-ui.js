@@ -57,7 +57,8 @@ export function initMembershipsTabs() {
             contents.forEach(content => {
                 content.style.display = 'none';
             });
-            const targetContent = document.getElementById(`${target}TableContent`);
+            const panelId = target === 'purchases' ? 'purchasesTabPanel' : `${target}TableContent`;
+            const targetContent = document.getElementById(panelId);
             if (targetContent) targetContent.style.display = 'block';
 
             // Update Context-Aware Header Controls
