@@ -427,18 +427,18 @@
 
 // ACTIVE MEMBERSHIPS TABLE - STATUS, PAYMENT & ACTIONS RELATIONSHIPS 
 
-// State 1: If Status = Active || AND || Payment = Paid || THEN || Actions will show View & cancel
+     // State 1: If Status = Active || AND || Payment = Paid || THEN || Actions will show View & cancel
 
-// State 2: If Status = Expired || AND || Payment = Paid || THEN || Actions will show View & Renew
+     // State 2: If Status = Expired || AND || Payment = Paid || THEN || Actions will show View & Renew
 
-// State 3: If Status = Cancelled || AND || Payment = Paid || THEN || Actions will show View & Refund
+     // State 3: If Status = Cancelled || AND || Payment = Paid || THEN || Actions will show View & Refund
 
-// State 4: If Status = Refunded  || AND || Payment = Refunded || THEN || Actions will show View + Info
+     // State 4: If Status = Refunded  || AND || Payment = Refunded || THEN || Actions will show View + Info
 
-// Table Column Order: Customer | Membership Plan | Plan Price | Duration | Purchase Date | Expiry Date | Payment | Status | Actions
 
-//=======================================================================================================
+// Renew Logic - When renew is clicked the assign membership modal opens with pre filled details.
 
+// Refund Logic - 
 
 
 

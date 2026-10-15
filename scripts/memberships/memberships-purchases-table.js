@@ -164,12 +164,12 @@ export function renderPurchases() {
                 <td>
                     <span style="font-weight: 600; color: #475569;">${purchase.plan_name || purchase.membership_name || purchase.name || '-'}</span>
                 </td>
-                <td>
-                    ${priceDisplay}
-                </td>
                 <td style="color: #64748b; font-size: 0.9rem;">${purchase.duration ? purchase.duration + ' Months' : '-'}</td>
                 <td style="color: #64748b;">${purchaseDateStr}</td>
                 <td style="color: #64748b;">${validUntilStr}</td>
+                <td>
+                    ${priceDisplay}
+                </td>
                 <td>${paymentBadge}</td>
                 <td>${statusBadge}</td>
                 <td style="text-align: center;">
