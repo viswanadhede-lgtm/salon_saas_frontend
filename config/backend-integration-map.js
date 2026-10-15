@@ -360,29 +360,44 @@
     //   - Fires: AFTER INSERT ON sales_for_business_transactions FOR EACH ROW
     //   - Action: Inserts a row into business_transactions with status = 'paid', reference_type = 'product', reference_id = sale_id, amount = final_amount, paid_at = NOW().
 
+
 //=============================================================================================================================================================
 // SALES HISTORY PAGE
 //=============================================================================================================================================================
 
-// WORKING SUMMARY
-//   1. Sales History Table: Reads pre-grouped rows from `sales_for_business_transactions` ordered by created_at DESC.
-//   2. Search: Instant client-side filtering on Customer Name, Phone, Sale ID, Staff, Products, and Payment Status.
-//   3. Date Range Filter: Filters loaded dataset by presets (Today, Last 7 days, Last 30 days, All Time) or Custom Date picker (00:00:00 to 23:59:59.999).
-//   4. Export: Client-side CSV generation with UTF-8 BOM encoding for seamless spreadsheet opening without format warnings.
-//   5. Customer Links: Clickable customer names call `window.viewCustomerProfile(customerId)` to open the Customer 360° drawer (plain text for Walk-ins).
-//   6. Invoice Details Modal: Fetches itemized products from `sales` table (`WHERE sale_id = id`). Provides Print Receipt (with @media print isolation) and Share (WhatsApp, Email, Copy Text).
-//   7. Refund / Return Workflow: (In progress) Will execute atomic restock, line item update, sales_for_business_transactions status sync, and ledger recording.
+// REFUND LOGIC
 
-// TABLES USED:
-//   1. sales_for_business_transactions (Read) - Master list of consolidated POS retail sales.
-//   2. sales (Read) - Itemized product lines displayed inside the Invoice Details Modal.
-//   3. customers (Read) - Customer profile details loaded by Customer 360° drawer.
+// When clicked on refund in the actions column, it will open the refund modal (here the frontend will calculate the refund calculations and display it in the UI ) and once the issue refund button is clicked then it will call the RPC function *process_pos_refund_atomic* ... whose functionality is explained below ..
+
+   //   >>> Frontend will not modify anything from the existing table
+
+   //   >>> Even the RPC Function *process_pos_refund_atomic* should not update anytable except the products table the products count ... other three tables would be a new row insertion....rather it should add a new row in all the three tables
+         
+         // .. sales table - new row should be inserted (one row per one product status = refunded)  -  done by this RPC function [process_pos_refund_atomic]
+         //.. sales for business transaction - new row should be added (one consolidated row per transaction status = refunded)  -  done by this RPC function [process_pos_refund_atomic]
+         //.. Business Transactions - one row should be added (one consolidated row per transaction with status = refunded) - Done by the trigger [trg_create_pos_business_transaction ]
+         // .. Products table - Product count should be increased - -  done by this RPC function [process_pos_refund_atomic]
+
+   // how a refund row in business transaction table is inserted ?
+
+       // we will use a trigger * trg_create_pos_business_transaction * 
+          
+       // This trigger is being used at two functions 
+          
+            //  1 is when a pos sale is happened, the create_pos_sale_atomic Function inserts into the sales table and sales for business transaction table and when a row is 
+                 //   inserted in the sales for business transactions table then this trigger * trg_create_pos_business_transaction * will create a new row in business transactions    	  table...
+            // 2: so we are using this trigger to do the insertion of new refund row in the business transaction table ... so it will use type = paid and type = refund ...
+                 //Based on the type this trigger writes the paid row and the refunded row ...
+   
 
 
 //=====================================================================================================================
 
-// RPC FUNCTIONS USED:
+// RPC FUNCTIONS USED: 
 //   process_pos_refund_atomic - (Refund RPC: to be implemented for atomic return)
+
+// TRIGGER USED:
+//   trg_create_pos_business_transaction 
 
 
 //====================================================================================================
@@ -396,6 +411,9 @@
 // State 3: State 3: Sale is refunded (fully refunded) >> Same Info Button >> modal opens with 2 cards >> 1 = Invoice, 2 = Refunded (read only) Shows full refund details — 	 no Refund card since nothing left to return.
 
 
+//========================================================================================================================================================================================================================================================================
+//
+//=====================================================================================================================================================================================
 
 
 

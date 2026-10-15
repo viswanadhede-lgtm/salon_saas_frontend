@@ -2,7 +2,6 @@
 
 // ── Shared Mutable State ───────────────────────────────────────────────────
 let currentPlans = [];
-let availableServices = [];
 let isEditing = false;
 let currentEditId = null;
 let planToDelete = null;
@@ -32,12 +31,6 @@ export const setCurrentPlans = (val) => {
     return currentPlans;
 };
 
-export const getAvailableServices = () => availableServices;
-export const setAvailableServices = (val) => {
-    availableServices = val || [];
-    if (typeof window !== 'undefined') window.availableServices = availableServices;
-    return availableServices;
-};
 
 export const getIsEditing = () => isEditing;
 export const setIsEditing = (val) => {

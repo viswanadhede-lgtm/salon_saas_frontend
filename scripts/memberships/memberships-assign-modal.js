@@ -99,13 +99,12 @@ export function updateAssignModalSummary() {
                 ? (isFlat ? `₹${discountVal} Off` : `${discountVal}% Off`)
                 : null;
 
-            const svcArr = Array.isArray(selectedPlan.applicable_services) ? selectedPlan.applicable_services : [];
-            let servicesLine = '';
-            if (svcArr.length > 0) {
-                const firstName = svcArr[0].service_name || '';
-                const extra = svcArr.length - 1;
-                servicesLine = extra > 0 ? `${firstName} + ${extra} more service${extra > 1 ? 's' : ''}` : firstName;
-            }
+            // Build "Applicable To" line from boolean columns
+            const applicableItems = [];
+            if (selectedPlan.all_services)    applicableItems.push('Services');
+            if (selectedPlan.all_products)    applicableItems.push('Products');
+            if (selectedPlan.all_memberships) applicableItems.push('Memberships');
+            const servicesLine = applicableItems.join(', ');
 
             summaryBody.innerHTML = `
                 <div style="display: grid; grid-template-columns: 100px 1fr; gap: 6px; width: 100%;">

@@ -49,27 +49,31 @@ export async function fetchPlansAndMemberCountsApi(companyId, branchId) {
             .select('membership_id')
             .eq('company_id', companyId)
             .eq('branch_id', branchId)
+            .eq('status', 'active')   // ← count active members only
     ]);
 }
 
-export async function deletePlanRowsApi(planId) {
+// ── Single-row plan insert (new schema: 1 plan = 1 row) ───────────────────
+export async function insertSinglePlanApi(planData) {
     return await supabase
         .from('memberships')
-        .eq('membership_id', planId)
-        .delete();
+        .insert(planData);
 }
 
-export async function insertPlanRowsApi(rowsToInsert) {
+// ── Single-row plan update (edit: simple UPDATE by membership_id) ──────────
+export async function updateSinglePlanApi(planId, planData) {
     return await supabase
         .from('memberships')
-        .insert(rowsToInsert);
+        .update(planData)
+        .eq('membership_id', planId);
 }
 
+// ── Soft delete (fixed chain order) ───────────────────────────────────────
 export async function softDeletePlanApi(planId) {
     return await supabase
         .from('memberships')
-        .eq('membership_id', planId)
-        .update({ status: 'deleted' });
+        .update({ status: 'deleted', updated_at: new Date().toISOString() })
+        .eq('membership_id', planId);
 }
 
 // ── Purchases ──────────────────────────────────────────────────────────────

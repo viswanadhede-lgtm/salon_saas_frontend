@@ -1,4 +1,4 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="en">
 
 <head>
@@ -449,7 +449,7 @@
                             <tr>
                                 <th style="width:14%;">Plan Name</th>
                                 <th style="width:12%;">Discount</th>
-                                <th style="width:18%;">Applicable Services</th>
+                                <th style="width:18%;">Applicable To</th>
                                 <th style="width:12%;">Duration</th>
                                 <th style="width:12%;">Members</th>
                                 <th style="width:12%;">Price</th>
@@ -641,25 +641,20 @@
                     </div>
 
                     <div class="form-group" style="margin-bottom: 0;">
-                        <label class="form-label">Applicable Services</label>
-                        <div style="position:relative;">
-                            <button id="planSvcBtn" type="button" class="form-input" style="text-align:left; cursor:pointer; display:flex; align-items:center; justify-content:space-between; padding-right: 12px;">
-                                <span id="planSvcText" style="color: #94a3b8;">Select services...</span>
-                                <i data-feather="chevron-down" style="width:18px; height:18px; color:#64748b;"></i>
-                            </button>
-                            <div id="planSvcMenu" style="display:none; position:absolute; top:calc(100% + 4px); left:0; right:0; background:#fff; border:1px solid #e2e8f0; border-radius:10px; z-index:100; box-shadow:0 10px 15px -3px rgba(0,0,0,0.1); overflow:hidden;">
-                                <div id="planSvcCheckboxList" style="padding:4px 0; max-height:240px; overflow-y:auto; display: block !important;">
-                                    <label class="svc-dropdown-label"><input type="checkbox" value="All Services" style="accent-color:#7c3aed;"> All Services</label>
-                                    <label class="svc-dropdown-label"><input type="checkbox" value="Haircut" style="accent-color:#7c3aed;"> Haircut</label>
-                                    <label class="svc-dropdown-label"><input type="checkbox" value="Facial" style="accent-color:#7c3aed;"> Facial</label>
-                                    <label class="svc-dropdown-label"><input type="checkbox" value="Massage" style="accent-color:#7c3aed;"> Massage</label>
-                                    <label class="svc-dropdown-label"><input type="checkbox" value="Manicure" style="accent-color:#7c3aed;"> Manicure</label>
-                                </div>
-                                <div style="border-top:1px solid #f1f5f9; padding:10px; display:flex; gap:10px;">
-                                    <button id="planSvcReset" type="button" style="flex:1; padding:6px; border:1px solid #e2e8f0; border-radius:6px; background:#fff; font-size:0.8rem; color:#64748b; cursor:pointer;">Reset</button>
-                                    <button id="planSvcApply" type="button" style="flex:1; padding:6px; border:none; border-radius:6px; background:#7c3aed; font-size:0.8rem; color:#fff; font-weight:600; cursor:pointer;">Apply</button>
-                                </div>
-                            </div>
+                        <label class="form-label">Applicable To</label>
+                        <div style="display:flex; gap:8px; margin-top:4px;">
+                            <label id="appToServicesLabel" style="flex:1; display:flex; align-items:center; gap:8px; padding:10px 12px; border:1px solid #e2e8f0; border-radius:8px; cursor:pointer; transition:all 0.2s; background:#f8fafc; user-select:none;">
+                                <input type="checkbox" id="appToServices" style="accent-color:#7c3aed; width:15px; height:15px; flex-shrink:0; cursor:pointer;">
+                                <span style="font-size:0.85rem; color:#334155; font-weight:500;">Services</span>
+                            </label>
+                            <label id="appToProductsLabel" style="flex:1; display:flex; align-items:center; gap:8px; padding:10px 12px; border:1px solid #e2e8f0; border-radius:8px; cursor:pointer; transition:all 0.2s; background:#f8fafc; user-select:none;">
+                                <input type="checkbox" id="appToProducts" style="accent-color:#7c3aed; width:15px; height:15px; flex-shrink:0; cursor:pointer;">
+                                <span style="font-size:0.85rem; color:#334155; font-weight:500;">Products</span>
+                            </label>
+                            <label id="appToMembershipsLabel" style="flex:1; display:flex; align-items:center; gap:8px; padding:10px 12px; border:1px solid #e2e8f0; border-radius:8px; cursor:pointer; transition:all 0.2s; background:#f8fafc; user-select:none;">
+                                <input type="checkbox" id="appToMemberships" style="accent-color:#7c3aed; width:15px; height:15px; flex-shrink:0; cursor:pointer;">
+                                <span style="font-size:0.85rem; color:#334155; font-weight:500;">Memberships</span>
+                            </label>
                         </div>
                     </div>
                 </div>

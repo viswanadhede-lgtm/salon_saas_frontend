@@ -1,7 +1,6 @@
 // scripts/memberships.js - Main Memberships Application Orchestrator
 
 import {
-    fetchServices,
     loadPlans,
     initPlanListeners,
     editPlan,
@@ -40,7 +39,6 @@ async function initMemberships() {
     initAssignModalListeners();
 
     // 2. Fetch prerequisite entities
-    await fetchServices();
     await fetchCustomers();
 
     // 3. Load core dataset
