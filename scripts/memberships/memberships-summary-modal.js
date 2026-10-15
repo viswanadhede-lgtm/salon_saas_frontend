@@ -35,8 +35,8 @@ export function viewMembershipSummary(purchaseId) {
 
     const isRefundedPayment = (purchase.payment_status || '').toLowerCase() === 'refunded' || purchase.status === 'refunded';
     const paymentBadgeHtml = isRefundedPayment
-        ? `<span style="padding:4px 12px;border-radius:20px;font-size:0.75rem;font-weight:700;background:#fef2f2;color:#dc2626;border:1px solid #fecdd3;">Refunded</span>`
-        : `<span style="padding:4px 12px;border-radius:20px;font-size:0.75rem;font-weight:700;background:#eff6ff;color:#1d4ed8;border:1px solid #dbeafe;">Paid</span>`;
+        ? `<span style="padding:4px 12px;border-radius:9999px;font-size:0.75rem;font-weight:700;background:#fef3c7;color:#b45309;">Refunded</span>`
+        : `<span style="color:#059669;font-weight:700;font-size:0.85rem;">Paid</span>`;
 
     // Discount from matching plan
     const planRecord = currentPlans.find(p => (p.membership_id || p.id) === purchase.membership_id);
