@@ -526,6 +526,16 @@
                         </tbody>
                     </table>
                 </div>
+
+                <!-- Expenses Table Pagination Footer (Visible only from 26th record onwards) -->
+                <div id="expensesPaginationFooter" style="display: none; align-items: center; justify-content: space-between; gap: 0.75rem; padding: 0.85rem 1.25rem; border-top: 1px solid #e2e8f0; background: #f8fafc; border-radius: 0 0 10px 10px; flex-wrap: wrap;">
+                    <span id="expPageShowing" style="font-size: 0.82rem; color: #64748b; font-weight: 500;">Showing 1-25 of 0 expenses</span>
+                    <div style="display: flex; align-items: center; gap: 0.6rem;">
+                        <button class="btn btn-secondary" id="expBtnPrev" style="padding: 5px 12px; font-size: 0.8rem; font-weight: 600; display: inline-flex; align-items: center; gap: 4px;" disabled>&larr; Previous</button>
+                        <span id="expPageInfo" style="font-size: 0.82rem; font-weight: 600; color: #0f172a; min-width: 85px; text-align: center;">Page 1 of 1</span>
+                        <button class="btn btn-secondary" id="expBtnNext" style="padding: 5px 12px; font-size: 0.8rem; font-weight: 600; display: inline-flex; align-items: center; gap: 4px;" disabled>Next &rarr;</button>
+                    </div>
+                </div>
             </div>
         </main>
     </div>

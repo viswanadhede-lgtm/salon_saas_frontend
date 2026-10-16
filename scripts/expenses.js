@@ -1,21 +1,29 @@
 import { supabase } from '../lib/supabase.js';
 
 // ─── State ────────────────────────────────────────────────────────────────────
-let allExpenses     = [];
+let allExpenses      = [];
 let editingExpenseId = null; // null = create mode, string = edit mode
+let currentPage      = 1;
+const PAGE_SIZE      = 25;
 
-// ─── Context ──────────────────────────────────────────────────────────────────
+// ─── Context Resolvers ────────────────────────────────────────────────────────
 const getCompanyId = () => {
     try {
         const ctx = JSON.parse(localStorage.getItem('appContext') || '{}');
-        return ctx.company?.id || localStorage.getItem('company_id') || null;
-    } catch { return localStorage.getItem('company_id') || null; }
+        return ctx.company?.company_id || ctx.company?.id || localStorage.getItem('company_id') || null;
+    } catch {
+        return localStorage.getItem('company_id') || null;
+    }
 };
 
-const getBranchId = () =>
-    localStorage.getItem('active_branch_id') ||
-    document.getElementById('branchSelect')?.value ||
-    null;
+const getBranchId = () => {
+    try {
+        const ctx = JSON.parse(localStorage.getItem('appContext') || '{}');
+        return localStorage.getItem('active_branch_id') || ctx.current_branch_id || document.getElementById('branchSelect')?.value || null;
+    } catch {
+        return localStorage.getItem('active_branch_id') || null;
+    }
+};
 
 const getUserInfo = () => {
     try {
@@ -29,24 +37,30 @@ const getUserInfo = () => {
     } catch { return { id: null, name: 'Admin' }; }
 };
 
-// ─── Boot ─────────────────────────────────────────────────────────────────────
-console.log('Expenses module loaded (Supabase)');
-feather.replace();
+// ─── Date Helper ──────────────────────────────────────────────────────────────
+const parseDateParts = (dateStr) => {
+    if (!dateStr) return null;
+    const clean = String(dateStr).slice(0, 10);
+    const parts = clean.split('-');
+    if (parts.length < 3) return null;
+    const year  = parseInt(parts[0], 10);
+    const month = parseInt(parts[1], 10) - 1; // 0-indexed
+    const day   = parseInt(parts[2], 10);
+    return {
+        year,
+        month,
+        day,
+        dateObj: new Date(year, month, day, 12, 0, 0)
+    };
+};
 
-document.addEventListener('DOMContentLoaded', () => {
-    // initialize standard dynamic formatting natively
-    window.setExpensesDateFilter('this_month');
-});
+// ─── Forward Declarations for Clean Hoisting ─────────────────────────────────
+export function renderExpenses() {
+    renderExpensesTable();
+}
+window.renderExpenses = renderExpenses;
 
-const dateRangeSelect = document.getElementById('expensesDateRange');
-const customStart = document.getElementById('expensesCustomStart');
-const customEnd = document.getElementById('expensesCustomEnd');
-
-dateRangeSelect.addEventListener('change', () => {
-    // Rely on renderExpenses
-    renderExpenses();
-});
-
+// ─── Date Filter Formatting & Selection ───────────────────────────────────────
 window.formatExCustomDate = (dateStr) => {
     if (!dateStr) return '...';
     try {
@@ -61,8 +75,8 @@ window.formatExCustomDate = (dateStr) => {
 };
 
 window.formatExCustomRange = () => {
-    const start = document.getElementById('expensesCustomStart').value;
-    const end = document.getElementById('expensesCustomEnd').value;
+    const start = document.getElementById('expensesCustomStart')?.value;
+    const end = document.getElementById('expensesCustomEnd')?.value;
     if (!start && !end) return 'Custom Range';
     
     const badgeStyle = "background:#f1f5f9; border:1px solid #cbd5e1; border-radius:6px; padding:2px 8px; font-weight:600; color:#475569; font-size:0.8rem;";
@@ -70,8 +84,10 @@ window.formatExCustomRange = () => {
 };
 
 window.setExpensesDateFilter = (val) => {
-    document.getElementById('expensesDateRange').value = val;
-    document.getElementById('expensesDateRange').dispatchEvent(new Event('change'));
+    const select = document.getElementById('expensesDateRange');
+    if (select) {
+        select.value = val;
+    }
     
     const labelEl = document.getElementById('exDateLabel');
     const now = new Date();
@@ -79,77 +95,62 @@ window.setExpensesDateFilter = (val) => {
     const currentMonthShort = now.toLocaleString('en-US', { month: 'short' });
     const currentYear = now.getFullYear();
 
-    if (val === 'this_month') {
-        labelEl.innerText = `This Month - ${currentMonthLong} ${currentYear}`;
-    } else if (val === 'last_month') {
-        const lastM = new Date();
-        lastM.setMonth(now.getMonth() - 1);
-        labelEl.innerText = `Last Month - ${lastM.toLocaleString('en-US', { month: 'long' })} ${lastM.getFullYear()}`;
-    } else if (val === '3months') {
-        const past = new Date();
-        past.setMonth(now.getMonth() - 3);
-        labelEl.innerText = `Last 3 Months - ${past.toLocaleString('en-US', { month: 'short' })} ${past.getFullYear()} to ${currentMonthShort} ${currentYear}`;
-    } else if (val === '6months') {
-        const past = new Date();
-        past.setMonth(now.getMonth() - 6);
-        labelEl.innerText = `Last 6 Months - ${past.toLocaleString('en-US', { month: 'short' })} ${past.getFullYear()} to ${currentMonthShort} ${currentYear}`;
-    } else if (val === '12months') {
-        const past = new Date();
-        past.setFullYear(now.getFullYear() - 1);
-        labelEl.innerText = `Last 12 Months - ${past.toLocaleString('en-US', { month: 'short' })} ${past.getFullYear()} to ${currentMonthShort} ${currentYear}`;
-    } else if (val === 'all') {
-        labelEl.innerText = 'All Time';
-    } else if (val === 'custom') {
-        labelEl.innerHTML = window.formatExCustomRange();
+    if (labelEl) {
+        if (val === 'this_month') {
+            labelEl.innerText = `This Month - ${currentMonthLong} ${currentYear}`;
+        } else if (val === 'last_month') {
+            const lastM = new Date(currentYear, now.getMonth() - 1, 1);
+            labelEl.innerText = `Last Month - ${lastM.toLocaleString('en-US', { month: 'long' })} ${lastM.getFullYear()}`;
+        } else if (val === '3months') {
+            const past = new Date(currentYear, now.getMonth() - 3, 1);
+            labelEl.innerText = `Last 3 Months - ${past.toLocaleString('en-US', { month: 'short' })} ${past.getFullYear()} to ${currentMonthShort} ${currentYear}`;
+        } else if (val === '6months') {
+            const past = new Date(currentYear, now.getMonth() - 6, 1);
+            labelEl.innerText = `Last 6 Months - ${past.toLocaleString('en-US', { month: 'short' })} ${past.getFullYear()} to ${currentMonthShort} ${currentYear}`;
+        } else if (val === '12months') {
+            const past = new Date(currentYear - 1, now.getMonth(), 1);
+            labelEl.innerText = `Last 12 Months - ${past.toLocaleString('en-US', { month: 'short' })} ${past.getFullYear()} to ${currentMonthShort} ${currentYear}`;
+        } else if (val === 'all') {
+            labelEl.innerText = 'All Time';
+        } else if (val === 'custom') {
+            labelEl.innerHTML = window.formatExCustomRange();
+        }
     }
     
-    document.getElementById('exDateMenu').style.display = 'none';
+    const menu = document.getElementById('exDateMenu');
+    if (menu) menu.style.display = 'none';
+
+    currentPage = 1;
+    renderExpenses();
 };
 
-customStart.addEventListener('change', renderExpenses);
-customEnd.addEventListener('change', renderExpenses);
-document.getElementById('filterCategory').addEventListener('change', renderExpenses);
-
-// Click outside close
-document.addEventListener('click', (e) => {
-    const menus = ['exDateMenu'];
-    menus.forEach(id => {
-        const menu = document.getElementById(id);
-        if (menu && menu.style.display === 'block') {
-            if (!menu.contains(e.target) && e.target.id !== 'exDateBtn' && !document.getElementById('exDateBtn').contains(e.target)) {
-                menu.style.display = 'none';
-            }
-        }
-    });
-});
-
-document.getElementById('addExpenseForm').addEventListener('submit', (e) => {
-    e.preventDefault();
-    window.submitExpense();
-});
-
-document.getElementById('addExpenseModal').addEventListener('click', (e) => {
-    if (e.target.id === 'addExpenseModal') window.closeAddExpenseModal();
-});
-
-// ─── Modal helpers ─────────────────────────────────────────────────────────────
+// ─── Modal Helpers ────────────────────────────────────────────────────────────
 window.openAddExpenseModal = () => {
     editingExpenseId = null;
 
     // Reset form
     const todayStr = new Date().toISOString().split('T')[0];
-    document.getElementById('expenseDate').value     = todayStr;
-    document.getElementById('expenseDate').max       = todayStr;
-    document.getElementById('expenseCategory').value = '';
-    document.getElementById('expenseAmount').value   = '';
-    document.getElementById('expenseNotes').value    = '';
+    const dateInput = document.getElementById('expenseDate');
+    if (dateInput) {
+        dateInput.value = todayStr;
+        dateInput.max   = todayStr;
+    }
+    const catInput = document.getElementById('expenseCategory');
+    if (catInput) catInput.value = '';
+    const amtInput = document.getElementById('expenseAmount');
+    if (amtInput) amtInput.value = '';
+    const notesInput = document.getElementById('expenseNotes');
+    if (notesInput) notesInput.value = '';
 
     // Set modal to "Create" mode
     const modal = document.getElementById('addExpenseModal');
-    modal.querySelector('.modal-header h2').textContent = 'Add New Expense';
-    modal.querySelector('.btn-primary').innerHTML       = 'Save Expense';
-
-    modal.classList.add('active');
+    if (modal) {
+        const title = modal.querySelector('.modal-header h2');
+        if (title) title.textContent = 'Add New Expense';
+        const saveBtn = modal.querySelector('.btn-primary');
+        if (saveBtn) saveBtn.innerHTML = 'Save Expense';
+        modal.classList.add('active');
+    }
 };
 
 window.editExpense = (expenseId) => {
@@ -159,43 +160,53 @@ window.editExpense = (expenseId) => {
     editingExpenseId = expenseId;
 
     // Pre-fill the form
-    document.getElementById('expenseDate').value     = expense.date ? expense.date.split('T')[0] : '';
-    document.getElementById('expenseDate').max       = new Date().toISOString().split('T')[0];
-    document.getElementById('expenseCategory').value = expense.category || '';
-    document.getElementById('expenseAmount').value   = expense.amount || '';
-    document.getElementById('expenseNotes').value    = expense.notes || '';
+    const dateInput = document.getElementById('expenseDate');
+    if (dateInput) {
+        dateInput.value = expense.date ? expense.date.split('T')[0] : '';
+        dateInput.max   = new Date().toISOString().split('T')[0];
+    }
+    const catInput = document.getElementById('expenseCategory');
+    if (catInput) catInput.value = expense.category || '';
+    const amtInput = document.getElementById('expenseAmount');
+    if (amtInput) amtInput.value = expense.amount || '';
+    const notesInput = document.getElementById('expenseNotes');
+    if (notesInput) notesInput.value = expense.notes || '';
 
     // Set modal to "Edit" mode
     const modal = document.getElementById('addExpenseModal');
-    modal.querySelector('.modal-header h2').textContent = 'Edit Expense';
-    modal.querySelector('.btn-primary').innerHTML       = 'Update Expense';
-
-    modal.classList.add('active');
+    if (modal) {
+        const title = modal.querySelector('.modal-header h2');
+        if (title) title.textContent = 'Edit Expense';
+        const saveBtn = modal.querySelector('.btn-primary');
+        if (saveBtn) saveBtn.innerHTML = 'Update Expense';
+        modal.classList.add('active');
+    }
 };
 
 window.closeAddExpenseModal = () => {
     editingExpenseId = null;
-    document.getElementById('addExpenseModal').classList.remove('active');
+    document.getElementById('addExpenseModal')?.classList.remove('active');
 };
 
 window.viewExpenseNotes = (expenseId) => {
     const expense = allExpenses.find(e => (e.id || e.expense_id) === expenseId || String(e.id || e.expense_id) === String(expenseId));
     if (!expense) return;
     
-    document.getElementById('expenseNotesContent').textContent = expense.notes || 'No notes provided.';
-    document.getElementById('viewExpenseNotesModal').classList.add('active');
+    const content = document.getElementById('expenseNotesContent');
+    if (content) content.textContent = expense.notes || 'No notes provided.';
+    document.getElementById('viewExpenseNotesModal')?.classList.add('active');
 };
 
 window.closeExpenseNotesModal = () => {
-    document.getElementById('viewExpenseNotesModal').classList.remove('active');
+    document.getElementById('viewExpenseNotesModal')?.classList.remove('active');
 };
 
 // ─── CREATE / UPDATE Expense (Supabase) ───────────────────────────────────────
 window.submitExpense = async () => {
-    const date     = document.getElementById('expenseDate').value;
-    const category = document.getElementById('expenseCategory').value;
-    const amount   = parseFloat(document.getElementById('expenseAmount').value);
-    const notes    = document.getElementById('expenseNotes').value.trim();
+    const date     = document.getElementById('expenseDate')?.value;
+    const category = document.getElementById('expenseCategory')?.value;
+    const amount   = parseFloat(document.getElementById('expenseAmount')?.value);
+    const notes    = document.getElementById('expenseNotes')?.value?.trim() || null;
 
     if (!date || !category || isNaN(amount)) {
         showToast('Please fill in all required fields.');
@@ -203,17 +214,20 @@ window.submitExpense = async () => {
     }
 
     const btn = document.querySelector('#addExpenseModal .btn-primary');
-    const originalText = btn.innerHTML;
-    btn.innerHTML = editingExpenseId ? 'Updating...' : 'Saving...';
-    btn.disabled  = true;
+    const originalText = btn ? btn.innerHTML : 'Save';
+    if (btn) {
+        btn.innerHTML = editingExpenseId ? 'Updating...' : 'Saving...';
+        btn.disabled  = true;
+    }
 
     try {
+        if (editingExpenseId) {
             // ── UPDATE ──
             const updatePayload = {
                 date,
                 category,
                 amount,
-                notes:      notes || null,
+                notes,
                 status:     'active',
                 updated_at: new Date().toISOString()
             };
@@ -247,7 +261,7 @@ window.submitExpense = async () => {
                     date,
                     category,
                     amount,
-                    notes:      notes || null,
+                    notes,
                     staff_id:   user.id,
                     staff_name: user.name || user.first_name || 'Admin',
                     status:     'active',
@@ -265,15 +279,18 @@ window.submitExpense = async () => {
         console.error('submitExpense error:', err);
         showToast('Failed to save expense: ' + (err.message || ''));
     } finally {
-        btn.innerHTML = originalText;
-        btn.disabled  = false;
+        if (btn) {
+            btn.innerHTML = originalText;
+            btn.disabled  = false;
+        }
     }
 };
 
-// ── Confirm Delete Modal Logic ──────────────────────────────────────────
+// ─── Confirm Delete Modal Logic ───────────────────────────────────────────────
 let expenseToDeleteId = null;
 
 function injectDeleteModal() {
+    if (document.getElementById('deleteExpenseBackdrop')) return;
     const style = document.createElement('style');
     style.textContent = `
         #deleteExpenseBackdrop { display: none; position: fixed; inset: 0; background: rgba(15, 23, 42, 0.55); backdrop-filter: blur(4px); z-index: 99999; align-items: center; justify-content: center; }
@@ -310,20 +327,20 @@ function injectDeleteModal() {
     `;
     document.body.appendChild(backdrop);
 
-    document.getElementById('delExpCancelBtn').addEventListener('click', closeDeleteModal);
-    document.getElementById('delExpConfirmBtn').addEventListener('click', performDeleteExpense);
+    document.getElementById('delExpCancelBtn')?.addEventListener('click', closeDeleteModal);
+    document.getElementById('delExpConfirmBtn')?.addEventListener('click', performDeleteExpense);
     backdrop.addEventListener('click', (e) => { if (e.target === backdrop) closeDeleteModal(); });
 }
 
 function closeDeleteModal() {
-    document.getElementById('deleteExpenseBackdrop').classList.remove('active');
+    document.getElementById('deleteExpenseBackdrop')?.classList.remove('active');
     expenseToDeleteId = null;
 }
 
 window.deleteExpense = function (id) {
     if (!document.getElementById('deleteExpenseBackdrop')) injectDeleteModal();
     expenseToDeleteId = id;
-    document.getElementById('deleteExpenseBackdrop').classList.add('active');
+    document.getElementById('deleteExpenseBackdrop')?.classList.add('active');
 };
 
 async function performDeleteExpense() {
@@ -338,7 +355,6 @@ async function performDeleteExpense() {
             .eq('expense_id', id);
 
         if (error) {
-            // Fallback for ID if standard expense_id fails
             ({ error } = await supabase
                 .from('expenses')
                 .update({ status: 'deleted', updated_at: new Date().toISOString() })
@@ -351,7 +367,7 @@ async function performDeleteExpense() {
         await loadAllExpenseData();
     } catch (err) {
         console.error("Error deleting expense:", err);
-        showToast("Failed to delete expense", 'error');
+        showToast("Failed to delete expense");
     }
 }
 
@@ -370,14 +386,14 @@ async function fetchExpenseStatCards() {
         });
 
         if (error) {
-            console.warn('get_expenses_stat_cards RPC returned error, using fallback:', error);
+            console.warn('get_expenses_stat_cards RPC error, using client fallback:', error);
             computeAndRenderStatCardsClientSide();
             return;
         }
 
         renderStatCardsFromData(data);
     } catch (err) {
-        console.warn('get_expenses_stat_cards RPC exception, using fallback:', err);
+        console.warn('get_expenses_stat_cards RPC exception, using client fallback:', err);
         computeAndRenderStatCardsClientSide();
     }
 }
@@ -386,27 +402,25 @@ async function fetchExpenseStatCards() {
 function renderStatCardsFromData(data) {
     if (!data) return;
 
-    const elTodayAmt = document.getElementById('cardTodayExpenses');
-    const elTodayTrend = document.getElementById('cardTodayTrend');
-    const elThisMonthAmt = document.getElementById('cardThisMonthExpenses');
-    const elThisMonthTrend = document.getElementById('cardThisMonthTrend');
-    const elTotalAmt = document.getElementById('cardTotalExpenses');
-    const elTopCatName = document.getElementById('cardTopCategoryName');
-    const elTopCatDetails = document.getElementById('cardTopCategoryDetails');
+    const elTodayAmt        = document.getElementById('cardTodayExpenses');
+    const elTodayTrend      = document.getElementById('cardTodayTrend');
+    const elThisMonthAmt    = document.getElementById('cardThisMonthExpenses');
+    const elThisMonthTrend  = document.getElementById('cardThisMonthTrend');
+    const elTotalAmt        = document.getElementById('cardTotalExpenses');
+    const elTopCatName      = document.getElementById('cardTopCategoryName');
+    const elTopCatDetails   = document.getElementById('cardTopCategoryDetails');
 
     // 1. Today's Expenses
     if (elTodayAmt) {
         const todayAmt = parseFloat(data.today_expenses || 0);
-        elTodayAmt.innerText = `₹${todayAmt.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+        elTodayAmt.innerHTML = `&#8377;${todayAmt.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
     }
     if (elTodayTrend) {
         const pct = Math.abs(parseFloat(data.today_trend_pct || 0));
         const dir = data.today_trend_direction || 'flat';
         if (dir === 'up') {
-            // Expenses increased -> red alert
             elTodayTrend.innerHTML = `<span style="color: #ef4444; display: inline-flex; align-items: center; gap: 4px;"><i data-feather="trending-up" style="width: 14px; height: 14px;"></i> ${pct}% vs yesterday</span>`;
         } else if (dir === 'down') {
-            // Expenses decreased -> green savings
             elTodayTrend.innerHTML = `<span style="color: #10b981; display: inline-flex; align-items: center; gap: 4px;"><i data-feather="trending-down" style="width: 14px; height: 14px;"></i> ${pct}% vs yesterday</span>`;
         } else {
             elTodayTrend.innerHTML = `<span style="color: #64748b; font-weight: 500;">0% vs yesterday</span>`;
@@ -416,7 +430,7 @@ function renderStatCardsFromData(data) {
     // 2. This Month's Expenses
     if (elThisMonthAmt) {
         const monthAmt = parseFloat(data.this_month_expenses || 0);
-        elThisMonthAmt.innerText = `₹${monthAmt.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+        elThisMonthAmt.innerHTML = `&#8377;${monthAmt.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
     }
     if (elThisMonthTrend) {
         const pct = Math.abs(parseFloat(data.this_month_trend_pct || 0));
@@ -433,7 +447,7 @@ function renderStatCardsFromData(data) {
     // 3. Total Expenses (Lifetime)
     if (elTotalAmt) {
         const totalAmt = parseFloat(data.total_expenses || 0);
-        elTotalAmt.innerText = `₹${totalAmt.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+        elTotalAmt.innerHTML = `&#8377;${totalAmt.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
     }
 
     // 4. Top Expense Category
@@ -446,9 +460,9 @@ function renderStatCardsFromData(data) {
         const topAmt = parseFloat(data.top_category_amount || 0);
         const topPct = parseFloat(data.top_category_pct || 0);
         if (topAmt > 0) {
-            elTopCatDetails.innerHTML = `₹${topAmt.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} &middot; ${topPct}% of total`;
+            elTopCatDetails.innerHTML = `&#8377;${topAmt.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} &middot; ${topPct}% of total`;
         } else {
-            elTopCatDetails.innerHTML = `₹0.00 &middot; 0% of total`;
+            elTopCatDetails.innerHTML = `&#8377;0.00 &middot; 0% of total`;
         }
     }
 
@@ -461,8 +475,7 @@ function computeAndRenderStatCardsClientSide() {
     const pad2 = (n) => String(n).padStart(2, '0');
     const todayStr = `${now.getFullYear()}-${pad2(now.getMonth() + 1)}-${pad2(now.getDate())}`;
 
-    const yesterdayObj = new Date(now);
-    yesterdayObj.setDate(now.getDate() - 1);
+    const yesterdayObj = new Date(now.getFullYear(), now.getMonth(), now.getDate() - 1);
     const yesterdayStr = `${yesterdayObj.getFullYear()}-${pad2(yesterdayObj.getMonth() + 1)}-${pad2(yesterdayObj.getDate())}`;
 
     const currentYear = now.getFullYear();
@@ -508,7 +521,7 @@ function computeAndRenderStatCardsClientSide() {
         }
     });
 
-    let topCatName = '-';
+    let topCatName = 'None';
     let topCatMax = 0;
     for (const [cat, total] of Object.entries(lifetimeCategoryTotals)) {
         if (total > topCatMax) {
@@ -554,7 +567,10 @@ function computeAndRenderStatCardsClientSide() {
 async function fetchExpenses() {
     try {
         const companyId = getCompanyId();
-        if (!companyId) return;
+        if (!companyId) {
+            console.warn('fetchExpenses: companyId not ready yet');
+            return;
+        }
 
         const rawBranchId = getBranchId();
         const branchId = rawBranchId && rawBranchId !== 'all' ? rawBranchId : null;
@@ -567,12 +583,13 @@ async function fetchExpenses() {
             .order('date', { ascending: false });
 
         if (branchId) {
-            query = query.eq('branch_id', branchId);
+            query = query.or(`branch_id.eq.${branchId},branch_id.is.null`);
         }
 
         const { data, error } = await query;
         if (error) throw error;
         allExpenses = data || [];
+        console.log('fetchExpenses: loaded', allExpenses.length, 'records for company', companyId);
     } catch (err) {
         console.error('fetchExpenses error:', err);
         showToast('Failed to load expenses: ' + (err.message || ''));
@@ -580,6 +597,12 @@ async function fetchExpenses() {
     }
 
     renderExpensesTable();
+
+    // Fallback: if stat cards are still showing 0 and records exist, compute client-side
+    const totalCard = document.getElementById('cardTotalExpenses');
+    if (totalCard && (totalCard.innerText === '₹0.00' || totalCard.innerText === '₹0' || totalCard.innerText.includes('0.00')) && allExpenses.length > 0) {
+        computeAndRenderStatCardsClientSide();
+    }
 }
 
 // ─── Master Loader ────────────────────────────────────────────────────────────
@@ -590,54 +613,54 @@ async function loadAllExpenseData() {
     ]);
 }
 
-// ─── Render Table ─────────────────────────────────────────────────────────────
+// ─── Render Table & Pagination ────────────────────────────────────────────────
 function renderExpensesTable() {
-    const tbody           = document.getElementById('expensesTableBody');
-    const dateRangeFilter = document.getElementById('expensesDateRange').value;
-    const categoryFilter  = document.getElementById('filterCategory').value;
+    const tbody = document.getElementById('expensesTableBody');
+    if (!tbody) return;
 
-    const now             = new Date();
-    const startOfCurrentMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+    const dateRangeFilter = document.getElementById('expensesDateRange')?.value || 'this_month';
+    const categoryFilter  = document.getElementById('filterCategory')?.value || 'All';
+
+    const now          = new Date();
+    const currentYear  = now.getFullYear();
+    const currentMonth = now.getMonth();
+
+    const lastMonthDate = new Date(currentYear, currentMonth - 1, 1);
+    const lastMonthYear = lastMonthDate.getFullYear();
+    const lastMonthNum  = lastMonthDate.getMonth();
 
     let filtered = allExpenses.filter(expense => {
-        const expDate = new Date(expense.date);
-
         if (categoryFilter !== 'All' && expense.category !== categoryFilter) return false;
 
+        const dParts = parseDateParts(expense.date);
+        if (!dParts) return false;
+
         if (dateRangeFilter === 'this_month') {
-            if (expDate < startOfCurrentMonth || expDate > now) return false;
+            if (dParts.year !== currentYear || dParts.month !== currentMonth) return false;
         } else if (dateRangeFilter === 'last_month') {
-            const startOfLastMonth = new Date(now.getFullYear(), now.getMonth() - 1, 1);
-            const endOfLastMonth   = new Date(now.getFullYear(), now.getMonth(), 0, 23, 59, 59);
-            if (expDate < startOfLastMonth || expDate > endOfLastMonth) return false;
+            if (dParts.year !== lastMonthYear || dParts.month !== lastMonthNum) return false;
         } else if (dateRangeFilter === '30days') {
-            const thirtyDaysAgo = new Date();
-            thirtyDaysAgo.setDate(now.getDate() - 30);
-            if (expDate < thirtyDaysAgo) return false;
+            const thirtyDaysAgo = new Date(now.getFullYear(), now.getMonth(), now.getDate() - 30, 0, 0, 0);
+            if (dParts.dateObj < thirtyDaysAgo) return false;
         } else if (dateRangeFilter === '3months') {
-            const threeMonthsAgo = new Date();
-            threeMonthsAgo.setMonth(now.getMonth() - 3);
-            if (expDate < threeMonthsAgo) return false;
+            const threeMonthsAgo = new Date(now.getFullYear(), now.getMonth() - 3, 1, 0, 0, 0);
+            if (dParts.dateObj < threeMonthsAgo) return false;
         } else if (dateRangeFilter === '6months') {
-            const sixMonthsAgo = new Date();
-            sixMonthsAgo.setMonth(now.getMonth() - 6);
-            if (expDate < sixMonthsAgo) return false;
+            const sixMonthsAgo = new Date(now.getFullYear(), now.getMonth() - 6, 1, 0, 0, 0);
+            if (dParts.dateObj < sixMonthsAgo) return false;
         } else if (dateRangeFilter === '12months') {
-            const twelveMonths = new Date();
-            twelveMonths.setFullYear(now.getFullYear() - 1);
-            if (expDate < twelveMonths) return false;
+            const twelveMonthsAgo = new Date(now.getFullYear() - 1, now.getMonth(), 1, 0, 0, 0);
+            if (dParts.dateObj < twelveMonthsAgo) return false;
         } else if (dateRangeFilter === 'custom') {
-            const startVal = document.getElementById('expensesCustomStart').value;
-            const endVal = document.getElementById('expensesCustomEnd').value;
+            const startVal = document.getElementById('expensesCustomStart')?.value;
+            const endVal = document.getElementById('expensesCustomEnd')?.value;
             if (startVal) {
-                const sDate = new Date(startVal);
-                sDate.setHours(0,0,0,0);
-                if (expDate < sDate) return false;
+                const s = parseDateParts(startVal);
+                if (s && dParts.dateObj < s.dateObj) return false;
             }
             if (endVal) {
-                const eDate = new Date(endVal);
-                eDate.setHours(23,59,59,999);
-                if (expDate > eDate) return false;
+                const e = parseDateParts(endVal);
+                if (e && dParts.dateObj > e.dateObj) return false;
             }
         }
         // 'all' — no date filter
@@ -645,7 +668,39 @@ function renderExpensesTable() {
         return true;
     });
 
+    // Sort descending by date
     filtered.sort((a, b) => new Date(b.date) - new Date(a.date));
+
+    // ── Pagination Calculation ──
+    const totalRecords     = filtered.length;
+    const paginationFooter = document.getElementById('expensesPaginationFooter');
+    const pageShowing      = document.getElementById('expPageShowing');
+    const pageInfo         = document.getElementById('expPageInfo');
+    const btnPrev          = document.getElementById('expBtnPrev');
+    const btnNext          = document.getElementById('expBtnNext');
+
+    let displayRows = filtered;
+
+    if (totalRecords <= 25) {
+        if (paginationFooter) paginationFooter.style.display = 'none';
+        currentPage = 1;
+        displayRows = filtered;
+    } else {
+        if (paginationFooter) paginationFooter.style.display = 'flex';
+        const totalPages = Math.ceil(totalRecords / PAGE_SIZE);
+        if (currentPage > totalPages) currentPage = totalPages;
+        if (currentPage < 1) currentPage = 1;
+
+        const startIdx = (currentPage - 1) * PAGE_SIZE;
+        const endIdx   = Math.min(startIdx + PAGE_SIZE, totalRecords);
+
+        displayRows = filtered.slice(startIdx, endIdx);
+
+        if (pageShowing) pageShowing.textContent = `Showing ${startIdx + 1}-${endIdx} of ${totalRecords} expenses`;
+        if (pageInfo) pageInfo.textContent = `Page ${currentPage} of ${totalPages}`;
+        if (btnPrev) btnPrev.disabled = (currentPage <= 1);
+        if (btnNext) btnNext.disabled = (currentPage >= totalPages);
+    }
 
     const badgeMap = {
         'Rent':        'bg-indigo-light text-indigo',
@@ -656,16 +711,18 @@ function renderExpensesTable() {
         'Marketing':   'bg-purple-light text-purple'
     };
 
-    if (filtered.length === 0) {
-        tbody.innerHTML = `<tr><td colspan="6" class="text-center text-muted" style="padding: 2rem;">No expenses found for the selected criteria.</td></tr>`;
+    if (displayRows.length === 0) {
+        tbody.innerHTML = `<tr><td colspan="6" class="text-center text-muted" style="padding: 2.5rem; color: #64748b; font-size: 0.9rem;">No expenses found for the selected criteria.</td></tr>`;
     } else {
-        tbody.innerHTML = filtered.map(exp => {
+        tbody.innerHTML = displayRows.map(exp => {
             const amt        = parseFloat(exp.amount || 0);
             const badgeClass = badgeMap[exp.category] || 'bg-gray-100 text-gray-800';
             const expId      = exp.id || exp.expense_id;
             
-            const expD = new Date(exp.date);
-            const formattedDate = `${String(expD.getDate()).padStart(2, '0')}-${String(expD.getMonth() + 1).padStart(2, '0')}-${expD.getFullYear()}`;
+            const expParts = parseDateParts(exp.date);
+            const formattedDate = expParts
+                ? `${String(expParts.day).padStart(2, '0')}-${String(expParts.month + 1).padStart(2, '0')}-${expParts.year}`
+                : (exp.date || '-');
 
             const fullName = exp.staff_name || 'Admin';
             const firstName = fullName.split(' ')[0];
@@ -674,7 +731,7 @@ function renderExpensesTable() {
                 <tr>
                     <td>${formattedDate}</td>
                     <td><span class="status-badge ${badgeClass}">${exp.category || 'Other'}</span></td>
-                    <td style="font-weight: 600;">₹${amt.toLocaleString('en-IN', { minimumFractionDigits: 2 })}</td>
+                    <td style="font-weight: 600;">&#8377;${amt.toLocaleString('en-IN', { minimumFractionDigits: 2 })}</td>
                     <td class="text-center" style="text-align: center; vertical-align: middle;">
                         ${exp.notes ? `
                         <button class="icon-btn mx-auto" title="View Notes" onclick="window.viewExpenseNotes('${expId}')" style="background:#f8fafc; border:1px solid #e2e8f0; border-radius:6px; padding:6px; margin: 0 auto; display: block;">
@@ -704,16 +761,12 @@ function renderExpensesTable() {
         }).join('');
     }
 
-    feather.replace();
+    if (window.feather) feather.replace();
     
     if (window.applySubFeatureGates) {
         window.applySubFeatureGates();
     }
 }
-
-// Backward compatibility alias
-const renderExpenses = renderExpensesTable;
-window.renderExpenses = renderExpensesTable;
 
 // ─── Toast ────────────────────────────────────────────────────────────────────
 function showToast(msg) {
@@ -724,12 +777,113 @@ function showToast(msg) {
     setTimeout(() => toast.classList.remove('show'), 3000);
 }
 
-// ─── Init ─────────────────────────────────────────────────────────────────────
-loadAllExpenseData();
+// ─── Event Setup ──────────────────────────────────────────────────────────────
+function setupExpensesEvents() {
+    // Pagination buttons
+    document.getElementById('expBtnPrev')?.addEventListener('click', () => {
+        if (currentPage > 1) {
+            currentPage--;
+            renderExpensesTable();
+        }
+    });
 
-// Listen for active branch changes
+    document.getElementById('expBtnNext')?.addEventListener('click', () => {
+        currentPage++;
+        renderExpensesTable();
+    });
+
+    // Date range selects
+    document.getElementById('expensesDateRange')?.addEventListener('change', () => {
+        currentPage = 1;
+        renderExpenses();
+    });
+
+    document.getElementById('expensesCustomStart')?.addEventListener('change', () => {
+        currentPage = 1;
+        renderExpenses();
+    });
+
+    document.getElementById('expensesCustomEnd')?.addEventListener('change', () => {
+        currentPage = 1;
+        renderExpenses();
+    });
+
+    // Category filter
+    document.getElementById('filterCategory')?.addEventListener('change', () => {
+        currentPage = 1;
+        renderExpenses();
+    });
+
+    // Date dropdown toggle
+    document.getElementById('exDateBtn')?.addEventListener('click', (e) => {
+        e.stopPropagation();
+        const menu = document.getElementById('exDateMenu');
+        if (menu) {
+            menu.style.display = menu.style.display === 'block' ? 'none' : 'block';
+        }
+    });
+
+    // Close date menu on outside click
+    document.addEventListener('click', (e) => {
+        const menu = document.getElementById('exDateMenu');
+        const btn = document.getElementById('exDateBtn');
+        if (menu && menu.style.display === 'block') {
+            if (!menu.contains(e.target) && e.target !== btn && !btn?.contains(e.target)) {
+                menu.style.display = 'none';
+            }
+        }
+    });
+
+    // Modal submit & backdrop close
+    document.getElementById('addExpenseForm')?.addEventListener('submit', (e) => {
+        e.preventDefault();
+        window.submitExpense();
+    });
+
+    document.getElementById('addExpenseModal')?.addEventListener('click', (e) => {
+        if (e.target.id === 'addExpenseModal') window.closeAddExpenseModal();
+    });
+
+    // Branch switch detection across the app
+    document.addEventListener('change', (e) => {
+        if (e.target && e.target.id === 'branchSelect') {
+            localStorage.setItem('active_branch_id', e.target.value);
+            currentPage = 1;
+            loadAllExpenseData();
+        }
+    });
+}
+
+// ─── Module Initialization ────────────────────────────────────────────────────
+function initExpensesModule() {
+    console.log('Expenses module initializing (Supabase)');
+    setupExpensesEvents();
+    window.setExpensesDateFilter('this_month');
+    loadAllExpenseData();
+
+    // In case auth guard is still finalizing localStorage tokens / appContext
+    setTimeout(loadAllExpenseData, 300);
+    setTimeout(loadAllExpenseData, 800);
+    setTimeout(loadAllExpenseData, 1500);
+
+    if (window.feather) feather.replace();
+}
+
+// Safe boot whether DOM is already loaded or still parsing
+if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', initExpensesModule);
+} else {
+    initExpensesModule();
+}
+
+// Listen for storage changes from other tabs or active branch switch
 window.addEventListener('storage', (e) => {
-    if (e.key === 'active_branch_id') {
+    if (e.key === 'active_branch_id' || e.key === 'appContext' || e.key === 'company_id') {
+        currentPage = 1;
         loadAllExpenseData();
     }
+});
+
+window.addEventListener('app-shell:ready', () => {
+    loadAllExpenseData();
 });

@@ -71,7 +71,7 @@ BEGIN
         v_lifetime_total
     FROM public.expenses e
     WHERE e.company_id = p_company_id
-      AND (p_branch_id IS NULL OR e.branch_id = p_branch_id)
+      AND (p_branch_id IS NULL OR e.branch_id = p_branch_id OR e.branch_id IS NULL)
       AND COALESCE(e.status, 'active') <> 'deleted';
 
     -- 3. Calculate Trend for Today vs Yesterday
@@ -125,7 +125,7 @@ BEGIN
         v_top_category_total
     FROM public.expenses e
     WHERE e.company_id = p_company_id
-      AND (p_branch_id IS NULL OR e.branch_id = p_branch_id)
+      AND (p_branch_id IS NULL OR e.branch_id = p_branch_id OR e.branch_id IS NULL)
       AND COALESCE(e.status, 'active') <> 'deleted'
     GROUP BY COALESCE(e.category, 'Other')
     ORDER BY SUM(e.amount) DESC
