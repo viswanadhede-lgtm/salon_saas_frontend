@@ -2,21 +2,67 @@ import { supabase } from './lib/supabase.js';
 
 /**
  * Payments History JavaScript
- * Handles the logic for rendering the payments history table, 
- * filtering, sorting, exporting, and the slide-out payment detail drawer.
+ * Integrates directly with Supabase view `payment_history_view`.
+ * Covers all 3 financial revenue sources:
+ *   1. Bookings (Services)
+ *   2. POS Checkouts & Returns (Products)
+ *   3. Memberships
+ * Supports settled states: 'paid' and 'refunded'.
  */
 
 // Global State
 let allPayments = [];
 let filteredPayments = [];
 let phCurrentSort = { column: 'paid_at', order: 'desc' };
-let currentFilterDateRange = { type: 'all' };
+let currentFilterDateRange = { type: 'all', from: null, to: null };
 
+// ─── CONTEXT HELPERS ────────────────────────────────────────────────────────
+function getCompanyId() {
+    try {
+        const ctx = JSON.parse(localStorage.getItem('appContext') || '{}');
+        return ctx.company?.company_id || ctx.company?.id || localStorage.getItem('company_id') || null;
+    } catch (e) {
+        return localStorage.getItem('company_id') || null;
+    }
+}
+
+function getBranchId() {
+    const fromDom = document.getElementById('branchSelect')?.value;
+    const fromStorage = localStorage.getItem('branch_id') || localStorage.getItem('active_branch_id');
+    const bId = (fromDom && fromDom !== 'branch_1' && fromDom !== 'branch_2' && fromDom !== 'all')
+        ? fromDom
+        : (fromStorage && fromStorage !== 'branch_1' && fromStorage !== 'branch_2' && fromStorage !== 'all' ? fromStorage : null);
+    return bId || null;
+}
+
+function showLoading(isLoading) {
+    const tbody = document.getElementById('phTableBody');
+    if (!tbody) return;
+    if (isLoading) {
+        tbody.innerHTML = `
+            <tr>
+                <td colspan="11" style="text-align:center; padding:50px;">
+                    <div style="display:flex; flex-direction:column; align-items:center; gap:12px;">
+                        <i data-feather="loader" style="width:30px; height:30px; color:#4f46e5; animation: spin 1s linear infinite;"></i>
+                        <p style="color:#64748b; font-weight:500; font-size:0.9rem;">Loading payment history...</p>
+                    </div>
+                </td>
+            </tr>`;
+        if (window.feather) feather.replace();
+    }
+}
+
+// Format Indian Rupee Currency
+function formatINR(amount) {
+    if (amount === undefined || amount === null || isNaN(amount)) return '₹0';
+    return '₹' + Number(amount).toLocaleString('en-IN');
+}
+
+// ─── INITIALIZATION ─────────────────────────────────────────────────────────
 document.addEventListener('DOMContentLoaded', async () => {
-    
     // Search bar listener
     const searchInput = document.getElementById('phSearchInput');
-    if(searchInput) {
+    if (searchInput) {
         searchInput.addEventListener('input', () => {
             phApplyFilter();
         });
@@ -25,13 +71,26 @@ document.addEventListener('DOMContentLoaded', async () => {
     // Initial Fetch
     await fetchPaymentHistory();
 
-    // Global click listener to close dropdowns
+    // Branch switcher change listener
+    const branchSelect = document.getElementById('branchSelect');
+    if (branchSelect) {
+        branchSelect.addEventListener('change', () => fetchPaymentHistory());
+    }
+    document.addEventListener('branchChanged', () => fetchPaymentHistory());
+
+    // Hydration retry safeguard: in case auth-loader / app-shell fills company/branch slightly after DOMContentLoaded
+    setTimeout(() => {
+        if (allPayments.length === 0) {
+            fetchPaymentHistory();
+        }
+    }, 600);
+
+    // Global click listener to close dropdowns when clicking outside
     document.addEventListener('click', (e) => {
         const menus = ['phFilterMenu', 'phDateMenu', 'phExportMenu'];
         menus.forEach(id => {
             const menu = document.getElementById(id);
             if (menu && menu.style.display === 'block') {
-                // If the click is outside the menu itself, close it
                 if (!menu.contains(e.target)) {
                     menu.style.display = 'none';
                 }
@@ -40,14 +99,18 @@ document.addEventListener('DOMContentLoaded', async () => {
     });
 });
 
-// --- Supabase Interaction ---
+// ─── SUPABASE FETCH ─────────────────────────────────────────────────────────
 async function fetchPaymentHistory() {
+    showLoading(true);
     try {
-        const ctx = JSON.parse(localStorage.getItem('appContext') || '{}');
-        const companyId = ctx.company?.id || localStorage.getItem('company_id');
-        const branchId = localStorage.getItem('active_branch_id');
+        const companyId = getCompanyId();
+        const branchId = getBranchId();
 
-        if (!companyId) return;
+        if (!companyId) {
+            console.warn('[PaymentsHistory] No company_id resolved, waiting for auth context.');
+            showLoading(false);
+            return;
+        }
 
         let query = supabase
             .from('payment_history_view')
@@ -58,6 +121,8 @@ async function fetchPaymentHistory() {
             query = query.eq('branch_id', branchId);
         }
 
+        query = query.order('paid_at', { ascending: false });
+
         const { data, error } = await query;
         if (error) throw error;
 
@@ -66,25 +131,23 @@ async function fetchPaymentHistory() {
         phRenderTable(filteredPayments);
 
     } catch (err) {
-        console.error('Error fetching history:', err);
+        console.error('Error fetching payments history from view:', err);
+        const tbody = document.getElementById('phTableBody');
+        if (tbody) {
+            tbody.innerHTML = `<tr><td colspan="11" style="padding: 30px; text-align: center; color: #ef4444;">Failed to load payments history. Please refresh the page.</td></tr>`;
+        }
     }
 }
 
-// Format Indian Rupee
-function formatINR(amount) {
-    if (amount === undefined || amount === null) return '₹0';
-    return '₹' + Number(amount).toLocaleString('en-IN');
-}
-
-// Render Table
+// ─── RENDER TABLE ───────────────────────────────────────────────────────────
 function phRenderTable(data) {
     const tbody = document.getElementById('phTableBody');
-    if(!tbody) return;
+    if (!tbody) return;
 
     tbody.innerHTML = '';
 
-    if(data.length === 0) {
-        tbody.innerHTML = `<tr><td colspan="11" style="padding: 30px; text-align: center; color: #64748b;">No payment records found.</td></tr>`;
+    if (!data || data.length === 0) {
+        tbody.innerHTML = `<tr><td colspan="11" style="padding: 40px; text-align: center; color: #64748b;">No payment records found.</td></tr>`;
         return;
     }
 
@@ -95,39 +158,37 @@ function phRenderTable(data) {
 
         const status = (item.status || 'paid').toLowerCase();
         const statusLabel = status.toUpperCase();
-        let statusPillClass = 'tb-payment-paid';
-        if (status === 'unpaid' || status === 'pending') statusPillClass = 'tb-payment-pending';
-        else if (status === 'partial') statusPillClass = 'tb-payment-partial';
-        else if (status === 'refunded') statusPillClass = 'tb-payment-unpaid';
+        const isRefunded = status === 'refunded';
+        const statusPillClass = isRefunded ? 'tb-payment-unpaid' : 'tb-payment-paid';
 
         const tr = document.createElement('tr');
         tr.className = 'tb-row';
 
-        // Date & Time
+        // 1. Date & Time
         let displayDateTime = '-';
         if (item.paid_at) {
             const d = new Date(item.paid_at);
-            const datePart = d.toLocaleDateString('en-IN', { day:'2-digit', month:'short', year:'numeric' });
+            const datePart = d.toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' });
             let hrs = d.getHours(), mins = d.getMinutes();
             const ampm = hrs >= 12 ? 'pm' : 'am';
             hrs = hrs % 12 || 12;
-            const minStr = mins.toString().padStart(2,'0');
+            const minStr = mins.toString().padStart(2, '0');
             displayDateTime = `${datePart}, ${hrs}:${minStr} ${ampm}`;
         }
 
-        // Type badge
-        const typeVal = item.type || '-';
-        const typeColor = typeVal === 'Service' ? { bg:'#dbeafe', color:'#1d4ed8' }
-                       : typeVal === 'Product'  ? { bg:'#fef9c3', color:'#92400e' }
-                       : typeVal === 'Membership' ? { bg:'#f3e8ff', color:'#7e22ce' }
-                       : { bg:'#f1f5f9', color:'#475569' };
+        // 2. Type Badge (Service = blue, Product = amber/yellow, Membership = purple)
+        const typeVal = item.type || 'Service';
+        const typeColor = typeVal === 'Service'    ? { bg: '#dbeafe', color: '#1d4ed8' }
+                        : typeVal === 'Product'    ? { bg: '#fef9c3', color: '#92400e' }
+                        : typeVal === 'Membership' ? { bg: '#f3e8ff', color: '#7e22ce' }
+                        : { bg: '#f1f5f9', color: '#475569' };
         const typeBadge = `<span style="display:inline-block; padding:2px 10px; background:${typeColor.bg}; color:${typeColor.color}; border-radius:9999px; font-size:0.72rem; font-weight:600;">${typeVal}</span>`;
 
-        // Item (item_name) — expandable +N
+        // 3. Item (service_name / product_names / plan_name) — expandable +N
         const rawItems = (item.item_name || '').split(',').map(s => s.trim()).filter(Boolean);
         let itemHtml = '-';
         if (rawItems.length === 1) {
-            itemHtml = `<span style="display:inline-block; max-width:150px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; vertical-align:middle;" title="${rawItems[0]}">${rawItems[0]}</span>`;
+            itemHtml = `<span style="display:inline-block; max-width:160px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; vertical-align:middle;" title="${rawItems[0]}">${rawItems[0]}</span>`;
         } else if (rawItems.length > 1) {
             const firstItem = rawItems[0];
             const restCount = rawItems.length - 1;
@@ -135,7 +196,7 @@ function phRenderTable(data) {
             itemHtml = `
                 <div style="display:flex; flex-direction:column; gap:4px;">
                     <div style="display:flex; align-items:center; gap:6px; cursor:pointer;" onclick="event.stopPropagation(); const e=this.nextElementSibling; e.style.display=e.style.display==='none'?'block':'none'">
-                        <span style="display:inline-block; max-width:120px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; vertical-align:middle;" title="${firstItem}">${firstItem}</span>
+                        <span style="display:inline-block; max-width:130px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; vertical-align:middle;" title="${firstItem}">${firstItem}</span>
                         <span style="background:#e0e7ff; color:#3730a3; padding:2px 8px; border-radius:12px; font-size:0.7rem; font-weight:600; transition:background 0.2s;" onmouseover="this.style.background='#c7d2fe'" onmouseout="this.style.background='#e0e7ff'">+${restCount}</span>
                     </div>
                     <div style="display:none; font-size:0.8rem; color:#64748b; line-height:1.6; padding-left:2px; padding-top:2px; white-space:normal;">
@@ -145,10 +206,10 @@ function phRenderTable(data) {
             `;
         }
 
-        // Original Amount
+        // 4. Original Amount
         const origAmtHtml = `<span style="color:#475569; font-size:0.85rem;">${formatINR(item.original_amount)}</span>`;
 
-        // Discount
+        // 5. Discount
         let discountHtml = '<span style="color:#94a3b8; font-size:0.8rem;">—</span>';
         const discAmt = parseFloat(item.discount_amount || 0);
         if (discAmt > 0) {
@@ -156,12 +217,12 @@ function phRenderTable(data) {
             discountHtml = `<span style="color:#dc2626; font-weight:600; font-size:0.82rem;">-${formatINR(discAmt)}</span>${discName}`;
         }
 
-        // Final Amount (green pill)
-        const finalAmtHtml = status === 'refunded'
-            ? `<del style="color:#94a3b8; font-weight:400;">${formatINR(item.final_amount)}</del><span style="color:#dc2626; font-size:0.75rem; display:block;">Refunded</span>`
+        // 6. Final Amount
+        const finalAmtHtml = isRefunded
+            ? `<del style="color:#94a3b8; font-weight:400;">${formatINR(item.final_amount)}</del><span style="color:#dc2626; font-size:0.72rem; display:block; font-weight:600;">Refunded</span>`
             : `<span style="display:inline-block; padding:4px 12px; background:#d1fae5; color:#059669; border:1px solid #a7f3d0; border-radius:9999px; font-size:0.75rem; font-weight:700;">${formatINR(item.final_amount)}</span>`;
 
-        // Staff — first name only
+        // 7. Staff — First name with +N expander
         let staffHtml = '-';
         const rawStaff = (item.staff_name || '').split(',').map(s => s.trim()).filter(Boolean);
         const firstNameOnly = name => { const n = name.split(' ')[0]; return n.charAt(0).toUpperCase() + n.slice(1); };
@@ -201,29 +262,43 @@ function phRenderTable(data) {
     if (window.applySubFeatureGates) window.applySubFeatureGates();
 }
 
-// Drawer Functions
+// ─── DRAWER FUNCTIONS ───────────────────────────────────────────────────────
 window.phOpenDrawer = function(paymentId) {
     const p = allPayments.find(x => x.payment_id === paymentId);
-    if(!p) return;
+    if (!p) return;
 
-    const displayId = p.payment_id.substring(0,8).toUpperCase();
+    const displayId = (p.payment_id || '').substring(0, 8).toUpperCase();
+    const refVal = (p.reference_id || p.booking_id || p.payment_id || '').substring(0, 8).toUpperCase();
     const displayDate = p.paid_at ? new Date(p.paid_at).toLocaleString('en-IN') : '-';
     const pStatus = (p.status || 'paid').toLowerCase();
+    const isRefunded = pStatus === 'refunded';
 
-    // Populate data
-    document.getElementById('drawerSubtitle').textContent = `${p.type || ''} — ${displayId}`;
+    // Headers & Labels
+    document.getElementById('drawerSubtitle').textContent = `${p.type || 'Payment'} — ${displayId}`;
     document.getElementById('drawerPayId').textContent = displayId;
+    
     const bookingIdEl = document.getElementById('drawerBookingId');
-    if (bookingIdEl) bookingIdEl.textContent = p.payment_id ? p.payment_id.substring(0,8).toUpperCase() : '-';
+    if (bookingIdEl) bookingIdEl.textContent = refVal || '-';
+
+    const refLabelEl = document.getElementById('drawerRefLabel');
+    if (refLabelEl) {
+        refLabelEl.textContent = p.type === 'Service' ? 'Booking ID' : p.type === 'Product' ? 'Sale ID' : 'Purchase ID';
+    }
+
+    const itemLabelEl = document.getElementById('drawerItemLabel');
+    if (itemLabelEl) {
+        itemLabelEl.textContent = p.type === 'Service' ? 'Service(s)' : p.type === 'Product' ? 'Product(s)' : 'Membership Plan';
+    }
+
     document.getElementById('drawerDate').textContent = displayDate;
     document.getElementById('drawerStaff').textContent = p.staff_name || '-';
     document.getElementById('drawerCustomer').textContent = p.customer_name || 'Guest';
-    document.getElementById('drawerService').textContent = `${p.type || ''}: ${p.item_name || '-'}`;
+    document.getElementById('drawerService').textContent = p.item_name || '-';
     
     const drawerAmountEl = document.getElementById('drawerAmount');
     if (drawerAmountEl) {
         drawerAmountEl.textContent = formatINR(p.final_amount);
-        drawerAmountEl.style.color = pStatus === 'refunded' ? '#ef4444' : '#10b981';
+        drawerAmountEl.style.color = isRefunded ? '#dc2626' : '#10b981';
     }
     
     const method = (p.payment_method || 'Cash').toLowerCase();
@@ -233,15 +308,18 @@ window.phOpenDrawer = function(paymentId) {
     else methodHTML = '<span style="color:#475569"><i data-feather="dollar-sign" style="width:14px;height:14px;vertical-align:middle;margin-right:4px;"></i> Cash</span>';
     document.getElementById('drawerMethod').innerHTML = methodHTML;
     
-    const statusBg = pStatus === 'refunded' ? '#fee2e2' : '#dcfce7';
-    const statusColor = pStatus === 'refunded' ? '#991b1b' : '#166534';
-    document.getElementById('drawerStatus').innerHTML = `<span style="color:${statusColor}; background:${statusBg}; padding:2px 8px; border-radius:4px; font-size:0.75rem;">${p.status || 'Paid'}</span>`;
+    const statusBg = isRefunded ? '#fee2e2' : '#dcfce7';
+    const statusColor = isRefunded ? '#991b1b' : '#166534';
+    document.getElementById('drawerStatus').innerHTML = `<span style="color:${statusColor}; background:${statusBg}; padding:2px 8px; border-radius:4px; font-size:0.75rem; font-weight:600;">${(p.status || 'Paid').toUpperCase()}</span>`;
 
     const drawerBookTotalEl = document.getElementById('drawerBookTotal');
     const drawerBookPaidEl = document.getElementById('drawerBookPaid');
     const drawerBookDueEl = document.getElementById('drawerBookDue');
     if (drawerBookTotalEl) drawerBookTotalEl.textContent = formatINR(p.original_amount);
-    if (drawerBookPaidEl) drawerBookPaidEl.textContent = `${formatINR(p.final_amount)} (Discount: ${formatINR(p.discount_amount || 0)})`;
+    if (drawerBookPaidEl) {
+        const discPart = Number(p.discount_amount || 0) > 0 ? ` (Discount: ${formatINR(p.discount_amount)})` : '';
+        drawerBookPaidEl.textContent = `${formatINR(p.final_amount)}${discPart}`;
+    }
     if (drawerBookDueEl) drawerBookDueEl.textContent = formatINR(0);
 
     if (window.feather) feather.replace();
@@ -249,7 +327,6 @@ window.phOpenDrawer = function(paymentId) {
     const overlay = document.getElementById('phDrawerOverlay');
     const drawer = document.getElementById('phSideDrawer');
     overlay.style.display = 'block';
-    // Close when clicking on the dark backdrop (outside the drawer)
     overlay.onclick = (e) => { if (e.target === overlay) phCloseDrawer(); };
     
     setTimeout(() => {
@@ -258,9 +335,10 @@ window.phOpenDrawer = function(paymentId) {
     }, 10);
 };
 
-window.phCloseDrawer = function phCloseDrawer() {
+window.phCloseDrawer = function() {
     const overlay = document.getElementById('phDrawerOverlay');
     const drawer = document.getElementById('phSideDrawer');
+    if (!overlay || !drawer) return;
     
     overlay.classList.remove('active');
     drawer.classList.remove('active');
@@ -268,17 +346,15 @@ window.phCloseDrawer = function phCloseDrawer() {
     setTimeout(() => {
         overlay.style.display = 'none';
     }, 300);
-}
+};
 
-// Print Receipt
+// ─── PRINT RECEIPT ──────────────────────────────────────────────────────────
 window.phPrintReceipt = function() {
-    const subtitle   = document.getElementById('drawerSubtitle')?.textContent  || '';
     const payId      = document.getElementById('drawerPayId')?.textContent      || '';
     const date       = document.getElementById('drawerDate')?.textContent       || '';
     const customer   = document.getElementById('drawerCustomer')?.textContent   || '';
     const service    = document.getElementById('drawerService')?.textContent    || '';
     const staff      = document.getElementById('drawerStaff')?.textContent      || '';
-    const amount     = document.getElementById('drawerAmount')?.textContent     || '';
     const method     = document.getElementById('drawerMethod')?.innerText       || '';
     const status     = document.getElementById('drawerStatus')?.innerText       || '';
     const bookTotal  = document.getElementById('drawerBookTotal')?.textContent  || '';
@@ -330,7 +406,7 @@ window.phPrintReceipt = function() {
 
 <hr class="divider">
 
-<p class="section-title">Customer</p>
+<p class="section-title">Customer & Item</p>
 <div style="margin-bottom:16px;">
   <div class="row"><span class="label">Name</span><span class="value">${customer}</span></div>
   <div class="row"><span class="label">Item</span><span class="value">${service}</span></div>
@@ -358,42 +434,56 @@ window.phPrintReceipt = function() {
     win.document.close();
 };
 
-function phSortTable(column) {
-    if(phCurrentSort.column === column) {
+// ─── SORTING ────────────────────────────────────────────────────────────────
+window.phSortTable = function(column) {
+    if (phCurrentSort.column === column) {
         phCurrentSort.order = phCurrentSort.order === 'asc' ? 'desc' : 'asc';
     } else {
         phCurrentSort.column = column;
         phCurrentSort.order = 'asc';
     }
 
-    const sortedData = [...paymentsData].sort((a, b) => {
-        let valA = a[column];
-        let valB = b[column];
+    const sourceData = filteredPayments.length > 0 ? filteredPayments : allPayments;
+    const sortedData = [...sourceData].sort((a, b) => {
+        let valA, valB;
 
-        // Handle string vs numbers
-        if(typeof valA === 'string') valA = valA.toLowerCase();
-        if(typeof valB === 'string') valB = valB.toLowerCase();
+        if (column === 'date' || column === 'paid_at') {
+            valA = new Date(a.paid_at || 0).getTime();
+            valB = new Date(b.paid_at || 0).getTime();
+        } else if (column === 'amount' || column === 'final_amount') {
+            valA = Number(a.final_amount ?? a.original_amount ?? 0);
+            valB = Number(b.final_amount ?? b.original_amount ?? 0);
+        } else {
+            valA = (a[column] || '').toString().toLowerCase();
+            valB = (b[column] || '').toString().toLowerCase();
+        }
 
         if (valA < valB) return phCurrentSort.order === 'asc' ? -1 : 1;
         if (valA > valB) return phCurrentSort.order === 'asc' ? 1 : -1;
         return 0;
     });
 
-    phRenderTable(sortedData);
-}
+    filteredPayments = sortedData;
+    phRenderTable(filteredPayments);
+};
 
-// Filtering
+// ─── FILTERING ──────────────────────────────────────────────────────────────
 window.phApplyFilter = function() {
-    const searchTerm = document.getElementById('phSearchInput').value.toLowerCase();
+    const searchEl = document.getElementById('phSearchInput');
+    const searchTerm = (searchEl?.value || '').toLowerCase().trim();
     
     const types = Array.from(document.querySelectorAll('.ph-filter-type:checked')).map(cb => cb.value.toLowerCase());
     const statuses = Array.from(document.querySelectorAll('.ph-filter-status:checked')).map(cb => cb.value.toLowerCase());
     const methods = Array.from(document.querySelectorAll('.ph-filter-method:checked')).map(cb => cb.value.toLowerCase());
 
     filteredPayments = allPayments.filter(p => {
-        const matchesSearch = (p.payment_id || '').toLowerCase().includes(searchTerm) || 
+        const matchesSearch = !searchTerm || 
+                              (p.payment_id || '').toLowerCase().includes(searchTerm) || 
                               (p.booking_id || '').toLowerCase().includes(searchTerm) || 
-                              (p.customer_name || '').toLowerCase().includes(searchTerm);
+                              (p.reference_id || '').toLowerCase().includes(searchTerm) || 
+                              (p.customer_name || '').toLowerCase().includes(searchTerm) ||
+                              (p.item_name || '').toLowerCase().includes(searchTerm) ||
+                              (p.staff_name || '').toLowerCase().includes(searchTerm);
         
         const matchesType = types.length === 0 || types.includes((p.type || '').toLowerCase());
         const matchesStatus = statuses.length === 0 || statuses.includes((p.status || '').toLowerCase());
@@ -420,7 +510,7 @@ window.phClearFilter = function() {
     const search = document.getElementById('phSearchInput');
     if (search) search.value = '';
     
-    currentFilterDateRange = { type: 'all' };
+    currentFilterDateRange = { type: 'all', from: null, to: null };
     const label = document.getElementById('phDateLabel');
     if (label) label.textContent = 'Date Range';
 
@@ -465,7 +555,7 @@ window.phFilterByDate = function(range) {
                 const suffix = day === 1 || day === 21 || day === 31 ? 'st'
                              : day === 2 || day === 22 ? 'nd'
                              : day === 3 || day === 23 ? 'rd' : 'th';
-                return `${day}${suffix} ${d.toLocaleDateString('en-IN', { month: 'long', year: 'numeric' })}`;
+                return `${day}${suffix} ${d.toLocaleDateString('en-IN', { month: 'short', year: 'numeric' })}`;
             };
             label.textContent = `${fmtDate(fromInput?.value)} → ${fmtDate(toInput?.value)}`;
         }
@@ -477,6 +567,7 @@ window.phFilterByDate = function(range) {
     phApplyFilter();
 };
 
+// ─── EXPORT DATA ────────────────────────────────────────────────────────────
 window.phExportData = function(format = 'csv') {
     const activeData = filteredPayments && filteredPayments.length > 0 ? filteredPayments : allPayments;
     if (!activeData || activeData.length === 0) {
@@ -484,7 +575,7 @@ window.phExportData = function(format = 'csv') {
         return;
     }
 
-    const headers = ['Date', 'Payment ID', 'Booking ID', 'Customer', 'Type', 'Item', 'Original Amount', 'Discount', 'Final Amount', 'Method', 'Status', 'Staff'];
+    const headers = ['Date', 'Payment ID', 'Reference ID', 'Customer', 'Type', 'Item', 'Original Amount', 'Discount', 'Final Amount', 'Method', 'Status', 'Staff'];
     
     let content = '';
     let mimeType = '';
@@ -498,7 +589,7 @@ window.phExportData = function(format = 'csv') {
             const row = [
                 p.paid_at ? new Date(p.paid_at).toLocaleString('en-IN') : '',
                 p.payment_id,
-                p.booking_id,
+                p.reference_id || p.booking_id,
                 p.customer_name,
                 p.type,
                 p.item_name,
@@ -509,7 +600,6 @@ window.phExportData = function(format = 'csv') {
                 p.status,
                 p.staff_name
             ];
-            // Format HTML safely
             content += '<tr>' + row.map(col => {
                 const s = String(col !== null && col !== undefined ? col : '');
                 const safeStr = s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
@@ -535,7 +625,7 @@ window.phExportData = function(format = 'csv') {
             const row = [
                 p.paid_at ? new Date(p.paid_at).toLocaleString('en-IN') : '',
                 p.payment_id,
-                p.booking_id,
+                p.reference_id || p.booking_id,
                 p.customer_name,
                 p.type,
                 p.item_name,
@@ -565,4 +655,3 @@ window.phExportData = function(format = 'csv') {
     document.body.removeChild(link);
     URL.revokeObjectURL(url);
 };
-
