@@ -669,10 +669,74 @@
 // ===================================================================================================================================================================================================
 
 // All Direct Supabase queries only ... and it is only one table OFFERS that the frontend is reading and writing to.
+
+
+//=======================================================================================================================================================================================================
+// EXPENSES PAGE
+//=======================================================================================================================================================================================================
+
+// Four Stat Cards and their trend indicators RPC FUNCTION - get_expenses_stat_cards
+
+// Rest everything direct supabase and uses expenses table..
+
+//===========================================================================================================================================================================================
+
+
+//=================================================================================================================================================================
+// DASHBOARD
+//==================================================================================================================================================================================
+
+// ── Row 1: Stat Cards ────────────────────────────────────────────────────────
 //
+// 1. dashboard_statcards_four [RPC Function]
+//    Source: bookings_for_business_transaction
+//    Parameters: p_branch_id, p_company_id
+//    Returns (single row):
+//      - todays_bookings        COUNT(*) for today (all statuses)
+//      - completed_appointments COUNT(*) where status = 'completed'
+//      - no_shows               COUNT(*) where status = 'no-show'
+//      - cancelled              COUNT(*) where status = 'cancelled'
+//      - todays_revenue         SUM(final_amount) where status='completed' AND payment_status='paid'
+//      - booking_trend          % change vs yesterday (positive = up)
+//      - revenue_trend          % change vs yesterday (positive = up)
+//      - completion_rate        % of today's bookings that are completed
+//    Frontend: scripts/dashboard/dashboard-kpis.js → fetchAndRenderDashboardKPIs()
 
+// ── Row 2, Card 1: Appointments Tabs (Upcoming / Completed / No-show & Cancellations) ──
+//
+// 2. Direct Supabase Query
+//    Source: bookings_for_business_transaction
+//    Frontend: scripts/dashboard/dashboard-appointments.js → fetchAndRenderAppointments()
 
+// ── Row 2, Card 2: Product Sales Today ───────────────────────────────────────
+//
+// 3. Direct Supabase Query
+//    Source: (to be confirmed — likely sales_for_business_transactions or business_transactions)
+//    Frontend: scripts/dashboard/dashboard-sales.js → fetchAndRenderProductSales()
 
+// ── Row 3: Weekly Revenue Chart ───────────────────────────────────────────────
+//
+// 4. Direct Supabase Query
+//    Source: business_transactions
+//    Filters: reference_type IN ('booking','product','membership'), status IN ('paid','refunded')
+//    Date range: last 7 days
+//    Frontend: scripts/dashboard/dashboard-revenue.js → fetchAndRenderWeeklyRevenue()
+
+// ── Row 3: Top Services Today ─────────────────────────────────────────────────
+//
+// 5. Direct Supabase Query
+//    Source: bookings (service_name, price)
+//    Filters: booking_date = today, status NOT IN ('cancelled','no-show')
+//    Aggregation: done in JS (group by service_name, count + revenue)
+//    Frontend: scripts/dashboard/dashboard-services.js → fetchAndRenderTopServicesToday()
+
+// ── Row 3: Top Services This Week ────────────────────────────────────────────
+//
+// 6. Direct Supabase Query
+//    Source: bookings (service_name, price)
+//    Filters: booking_date between last 7 days, status NOT IN ('cancelled','no-show')
+//    Aggregation: done in JS (group by service_name, count + revenue)
+//    Frontend: scripts/dashboard/dashboard-services.js → fetchAndRenderTopServicesWeekly()
 
 
 
