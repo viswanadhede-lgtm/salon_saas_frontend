@@ -688,7 +688,9 @@
 
 // Stat cards four - RPC FUNCTION - dashboard_statcards_four.
 
-// Today's revenue analytics - 
+// Today's revenue analytics - RPC FUNCTION - dashboard_todays_revenue_kpis.
+
+
 
 
 

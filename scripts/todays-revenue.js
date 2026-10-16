@@ -1,6 +1,13 @@
 import { supabase } from '../lib/supabase.js';
 
-let todaysBookingsData = [];
+function getCompanyId() {
+    try {
+        const ctx = JSON.parse(localStorage.getItem('active_company_context') || '{}');
+        return ctx.company?.id || ctx.company?.company_id || localStorage.getItem('company_id') || null;
+    } catch {
+        return localStorage.getItem('company_id') || null;
+    }
+}
 
 export async function calculateAndRenderRevenue() {
     let realized = 0, booked = 0, lost = 0;
@@ -18,42 +25,22 @@ export async function calculateAndRenderRevenue() {
         const now = new Date();
         const localISOTime = new Date(now.getTime() - (now.getTimezoneOffset() * 60000)).toISOString().split('T')[0];
 
-        // --- 1. NEW KPI LOGIC (business_transactions) ---
-        const { data: trxData, error: trxError } = await supabase
-            .from('business_transactions')
-            .select('*')
-            .eq('branch_id', branchId)
-            .gte('created_at', `${localISOTime}T00:00:00`)
-            .lte('created_at', `${localISOTime}T23:59:59`);
-
-        if (trxError) throw trxError;
-
-        const trxMap = {};
-        
-        (trxData || []).forEach(trx => {
-            const refId = trx.reference_id;
-            if (!refId) return;
-            if (!trxMap[refId]) {
-                trxMap[refId] = { type: trx.reference_type, paid: 0, refunded: 0 };
-            }
-            const amt = Number(trx.final_amount) || Number(trx.amount) || 0;
-            if (trx.status === 'paid') {
-                trxMap[refId].paid += amt;
-            } else if (trx.status === 'refunded') {
-                trxMap[refId].refunded += amt;
-            }
+        // --- 1. KPI & SNAPSHOT LOGIC via RPC (dashboard_todays_revenue_kpis) ---
+        const companyId = getCompanyId();
+        const { data: rpcData, error: rpcError } = await supabase.rpc('dashboard_todays_revenue_kpis', {
+            p_branch_id:  branchId,
+            p_company_id: companyId,
+            p_today:      localISOTime
         });
 
-        Object.values(trxMap).forEach(group => {
-            const net = group.paid - group.refunded;
-            if (net > 0) {
-                if (group.type === 'booking') servicesRev += net;
-                else if (group.type === 'product') productsRev += net;
-                else if (group.type === 'membership') membershipsRev += net;
-            }
-        });
+        if (rpcError) throw rpcError;
 
-        totalRev = servicesRev + productsRev + membershipsRev;
+        const kpis = (Array.isArray(rpcData) && rpcData.length > 0) ? rpcData[0] : (rpcData || {});
+
+        servicesRev    = Number(kpis.services_revenue) || 0;
+        productsRev    = Number(kpis.products_revenue) || 0;
+        membershipsRev = Number(kpis.memberships_revenue) || 0;
+        totalRev       = Number(kpis.total_revenue) || 0;
 
         const kpiServicesEl = document.getElementById('kpiServicesRev');
         if (kpiServicesEl) kpiServicesEl.textContent = '₹' + servicesRev.toLocaleString('en-IN');
@@ -65,16 +52,7 @@ export async function calculateAndRenderRevenue() {
         if (kpiTotalEl) kpiTotalEl.textContent = '₹' + totalRev.toLocaleString('en-IN');
 
         // --- EXPENSES & NET REVENUE ──────────────────────────────────────────
-        const { data: expData } = await supabase
-            .from('expenses')
-            .select('amount, status')
-            .eq('branch_id', branchId)
-            .eq('date', localISOTime);
-
-        const todayExpenses = (expData || [])
-            .filter(e => e.status !== 'deleted')
-            .reduce((sum, e) => sum + (Number(e.amount) || 0), 0);
-
+        const todayExpenses = Number(kpis.today_expenses) || 0;
         const netRevenue = totalRev - todayExpenses;
         const isPositive = netRevenue >= 0;
 
@@ -104,15 +82,12 @@ export async function calculateAndRenderRevenue() {
         }
 
         // --- SNAPSHOT TILES ---
-        const paidRows = (trxData || []).filter(t => t.status === 'paid');
-        const refundedRows = (trxData || []).filter(t => t.status === 'refunded');
-
-        const totalTxn = paidRows.length;
-        const highestSale = paidRows.reduce((max, t) => Math.max(max, Number(t.final_amount) || Number(t.amount) || 0), 0);
-        const totalRefunds = refundedRows.reduce((sum, t) => sum + (Number(t.final_amount) || Number(t.amount) || 0), 0);
-        const cashTotal = paidRows.filter(t => t.payment_method === 'cash').reduce((sum, t) => sum + (Number(t.final_amount) || Number(t.amount) || 0), 0);
-        const digitalTotal = paidRows.filter(t => t.payment_method === 'upi' || t.payment_method === 'card').reduce((sum, t) => sum + (Number(t.final_amount) || Number(t.amount) || 0), 0);
-        const avgValue = totalTxn > 0 ? Math.round(totalRev / totalTxn) : 0;
+        const totalTxn     = Number(kpis.total_transactions) || 0;
+        const avgValue     = Number(kpis.avg_transaction_value) || 0;
+        const highestSale  = Number(kpis.highest_sale) || 0;
+        const totalRefunds = Number(kpis.total_refunds) || 0;
+        const cashTotal    = Number(kpis.cash_payments) || 0;
+        const digitalTotal = Number(kpis.digital_payments) || 0;
 
         const snapTxnEl = document.getElementById('snapTotalTxn');
         if (snapTxnEl) snapTxnEl.textContent = totalTxn;
