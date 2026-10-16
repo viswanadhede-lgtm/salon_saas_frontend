@@ -61,6 +61,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                 .from('bookings_for_business_transaction')
                 .select('*')
                 .eq('payment_status', 'pending')
+                .in('status', ['booked', 'confirmed'])
                 .order('booking_date', { ascending: false });
 
             if (companyId) {
@@ -82,7 +83,8 @@ document.addEventListener('DOMContentLoaded', async () => {
                     total,
                     paid: 0,
                     due: total,
-                    status: b.payment_status || 'pending',
+                    payment_status: b.payment_status || 'pending',
+                    status: b.status || 'booked',
                     ref_type: 'booking'
                 };
             });
@@ -223,8 +225,11 @@ document.addEventListener('DOMContentLoaded', async () => {
                     <span class="tb-status-pill ${statusPillClass}" style="text-transform: uppercase; font-size: 0.7rem;">${statusLabel}</span>
                 </td>
                 <td style="padding:14px 16px;">
-                    <button data-sub-feature="pending_payments_collect" onclick="ppOpenCollect('${bookingIdAttr}')" title="Collect Payment" style="background:#f1f5f9; border:1px solid #e2e8f0; border-radius:6px; cursor:pointer; color:#64748b; padding:6px 10px; transition:all 0.2s; display:flex; align-items:center; justify-content:center; gap: 4px; font-size: 0.8rem; font-weight: 500;" onmouseover="this.style.background='#e0e7ff'; this.style.color='#4f46e5'; this.style.borderColor='#c7d2fe';" onmouseout="this.style.background='#f1f5f9'; this.style.color='#64748b'; this.style.borderColor='#e2e8f0';">
-                        <i data-feather="credit-card" style="width:14px; height:14px;"></i> Collect
+                    <button data-sub-feature="pending_payments_collect" onclick="ppOpenCollect('${bookingIdAttr}')" title="Collect Payment"
+                        style="background:#4f46e5; border:none; border-radius:6px; cursor:pointer; color:#ffffff; padding:5px 12px; transition:all 0.2s; display:inline-flex; align-items:center; justify-content:center; gap:6px; font-size:0.78rem; font-weight:600; white-space:nowrap; box-shadow:0 1px 2px rgba(79,70,229,0.25);"
+                        onmouseover="this.style.background='#4338ca';" onmouseout="this.style.background='#4f46e5';">
+                        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="1" y="4" width="22" height="16" rx="2" ry="2"></rect><line x1="1" y1="10" x2="23" y2="10"></line></svg>
+                        Collect
                     </button>
                 </td>`;
             tbody.appendChild(tr);
@@ -239,6 +244,12 @@ document.addEventListener('DOMContentLoaded', async () => {
         const term = (searchInput?.value || '').trim().toLowerCase();
 
         filteredPayments = allPayments.filter(r => {
+            // Strictly exclude cancelled and no-show bookings
+            const s = (r.status || '').toLowerCase().trim();
+            if (['cancelled', 'no-show', 'noshow', 'no_show'].includes(s)) {
+                return false;
+            }
+
             // Search
             const matchesSearch = !term ||
                 (r.booking_id || '').toLowerCase().includes(term) ||
@@ -382,4 +393,11 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     // ─── INIT ──────────────────────────────────────────────────────────────
     await fetchPayments();
+
+    // Catch any delayed branch or auth context population (matching bookings.js)
+    setTimeout(async () => {
+        if (!allPayments || allPayments.length === 0) {
+            await fetchPayments();
+        }
+    }, 600);
 });
