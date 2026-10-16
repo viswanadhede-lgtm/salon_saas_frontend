@@ -1,12 +1,16 @@
 import { supabase } from '../lib/supabase.js';
 
+let todaysBookingsData = [];
+
 function getCompanyId() {
-    try {
-        const ctx = JSON.parse(localStorage.getItem('active_company_context') || '{}');
-        return ctx.company?.id || ctx.company?.company_id || localStorage.getItem('company_id') || null;
-    } catch {
-        return localStorage.getItem('company_id') || null;
+    let companyId = localStorage.getItem('company_id');
+    if (!companyId) {
+        try {
+            const ctx = JSON.parse(localStorage.getItem('active_company_context') || localStorage.getItem('appContext') || '{}');
+            companyId = ctx.company?.company_id || ctx.company?.id;
+        } catch (_) {}
     }
+    return companyId || null;
 }
 
 export async function calculateAndRenderRevenue() {
@@ -29,11 +33,14 @@ export async function calculateAndRenderRevenue() {
         const companyId = getCompanyId();
         const { data: rpcData, error: rpcError } = await supabase.rpc('dashboard_todays_revenue_kpis', {
             p_branch_id:  branchId,
-            p_company_id: companyId,
+            p_company_id: companyId || null,
             p_today:      localISOTime
         });
 
-        if (rpcError) throw rpcError;
+        if (rpcError) {
+            console.error('[TodaysRevenue] dashboard_todays_revenue_kpis RPC error:', rpcError);
+            throw rpcError;
+        }
 
         const kpis = (Array.isArray(rpcData) && rpcData.length > 0) ? rpcData[0] : (rpcData || {});
 
