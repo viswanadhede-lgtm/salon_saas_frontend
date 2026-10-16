@@ -59,34 +59,67 @@ function formatINR(amount) {
 }
 
 // ─── CUSTOMER PROFILE HELPER ────────────────────────────────────────────────
-window.phOpenCustomerProfile = async function(customerId, customerName) {
-    if (window.viewCustomerProfile) {
-        if (customerId) {
-            window.viewCustomerProfile(customerId, customerName);
+window.phOpenCustomerProfile = async function(customerId, customerName, customerPhone) {
+    if (!window.viewCustomerProfile) {
+        console.warn('[PaymentsHistory] window.viewCustomerProfile is not loaded yet.');
+        return;
+    }
+
+    // Ensure company_id and active_branch_id are available for the modal RPCs
+    const compId = getCompanyId();
+    const brId = getBranchId();
+    if (compId && !localStorage.getItem('company_id')) localStorage.setItem('company_id', compId);
+    if (brId && !localStorage.getItem('active_branch_id')) localStorage.setItem('active_branch_id', brId);
+
+    if (customerId) {
+        window.viewCustomerProfile(customerId, customerName);
+        return;
+    }
+
+    if (!customerName || customerName === 'Guest') {
+        window.viewCustomerProfile('', customerName);
+        return;
+    }
+
+    // Graceful fallback: look up customer_id using correct columns from `customers` table
+    try {
+        let query = supabase
+            .from('customers')
+            .select('customer_id, customer_name, customer_phone');
+
+        if (compId) {
+            query = query.eq('company_id', compId);
+        }
+
+        if (customerPhone && customerPhone.trim()) {
+            query = query.eq('customer_phone', customerPhone.trim());
+        } else {
+            query = query.ilike('customer_name', customerName.trim());
+        }
+
+        const { data, error } = await query.limit(1);
+        if (data && data.length > 0 && data[0].customer_id) {
+            window.viewCustomerProfile(data[0].customer_id, data[0].customer_name || customerName);
             return;
         }
-        // Graceful fallback: look up customer_id by name if not in view
-        try {
-            const companyId = getCompanyId();
-            if (companyId && customerName && customerName !== 'Guest') {
-                const { data } = await supabase
-                    .from('customers')
-                    .select('id, name')
-                    .eq('company_id', companyId)
-                    .ilike('name', customerName.trim())
-                    .limit(1);
-                if (data && data.length > 0 && data[0].id) {
-                    window.viewCustomerProfile(data[0].id, customerName);
-                    return;
-                }
+
+        // Secondary fallback by customer_name if phone query didn't yield a match
+        if (customerPhone) {
+            const { data: byName } = await supabase
+                .from('customers')
+                .select('customer_id, customer_name')
+                .ilike('customer_name', customerName.trim())
+                .limit(1);
+            if (byName && byName.length > 0 && byName[0].customer_id) {
+                window.viewCustomerProfile(byName[0].customer_id, byName[0].customer_name || customerName);
+                return;
             }
-        } catch (e) {
-            console.warn('[PaymentsHistory] Customer lookup error:', e);
         }
-        window.viewCustomerProfile('', customerName);
-    } else {
-        console.warn('[PaymentsHistory] window.viewCustomerProfile is not loaded yet.');
+    } catch (e) {
+        console.warn('[PaymentsHistory] Customer lookup error:', e);
     }
+
+    window.viewCustomerProfile('', customerName);
 };
 
 // ─── INITIALIZATION ─────────────────────────────────────────────────────────

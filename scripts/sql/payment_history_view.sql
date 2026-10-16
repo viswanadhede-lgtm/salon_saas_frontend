@@ -7,7 +7,9 @@
 -- Filter: Settled transactions only (status IN ('paid', 'refunded'))
 -- ============================================================================
 
-CREATE OR REPLACE VIEW public.payment_history_view AS
+DROP VIEW IF EXISTS public.payment_history_view;
+
+CREATE VIEW public.payment_history_view AS
 
 -- 1. BOOKINGS (Services)
 SELECT
