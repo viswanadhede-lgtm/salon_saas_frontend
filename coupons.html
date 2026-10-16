@@ -1,4 +1,4 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="en">
 <head>
     <script src="scripts/auth-loader.js"></script>
@@ -127,7 +127,7 @@
                                 <th style="width:18%; padding:14px 20px; font-weight:600; color:#475569; font-size:0.85rem; text-transform:uppercase; letter-spacing:0.05em;">Coupon Code</th>
                                 <th style="width:12%; padding:14px 20px; font-weight:600; color:#475569; font-size:0.85rem; text-transform:uppercase; letter-spacing:0.05em;">Discount</th>
                                 <th style="width:15%; padding:14px 20px; font-weight:600; color:#475569; font-size:0.85rem; text-transform:uppercase; letter-spacing:0.05em;">Discount Type</th>
-                                <th style="width:18%; padding:14px 20px; font-weight:600; color:#475569; font-size:0.85rem; text-transform:uppercase; letter-spacing:0.05em;">Applicable Services</th>
+                                <th style="width:18%; padding:14px 20px; font-weight:600; color:#475569; font-size:0.85rem; text-transform:uppercase; letter-spacing:0.05em;">Applicable To</th>
                                 <th style="width:17%; padding:14px 20px; font-weight:600; color:#475569; font-size:0.85rem; text-transform:uppercase; letter-spacing:0.05em; text-align:center;">Validity</th>
                                 <th style="width:20%; padding:14px 20px; font-weight:600; color:#475569; font-size:0.85rem; text-transform:uppercase; letter-spacing:0.05em; text-align:center;">Actions</th>
                             </tr>
@@ -185,23 +185,22 @@
                         </div>
                     </div>
                     
-                    <!-- Services -->
+                    <!-- Applicable To -->
                     <div class="cpn-form-group" style="margin-bottom:0;">
-                        <label>Applicable Services</label>
-                        <div style="position:relative;">
-                            <button id="cpnServicesBtn" type="button" style="width:100%;padding:9px 12px;border:1px solid #e2e8f0;border-radius:8px;background:#fff;text-align:left;cursor:pointer;display:flex;align-items:center;justify-content:space-between;font-size:0.9rem;color:#94a3b8;">
-                                <span id="cpnServicesText">Select services...</span>
-                                <i data-feather="chevron-down" style="width:15px;height:15px;color:#94a3b8;flex-shrink:0;"></i>
-                            </button>
-                            <div id="cpnServicesMenu" style="display:none;position:absolute;top:calc(100% + 4px);left:0;right:0;background:#fff;border:1px solid #e2e8f0;border-radius:8px;z-index:100;box-shadow:0 4px 12px rgba(0,0,0,0.08);overflow:hidden;">
-                                <div id="cpnServicesCheckboxList" style="padding:8px 0;max-height:200px;overflow-y:auto;">
-                                    <label style="display:flex;align-items:center;gap:10px;padding:8px 14px;cursor:pointer;font-size:0.88rem;color:#334155;"><input type="checkbox" value="all" style="accent-color:#6366f1;"> All Services</label>
-                                </div>
-                                <div style="border-top:1px solid #e2e8f0;padding:8px 10px;display:flex;gap:8px;">
-                                    <button id="cpnSvcReset" type="button" style="flex:1;padding:6px;border:1px solid #e2e8f0;border-radius:6px;background:#fff;font-size:0.8rem;color:#64748b;cursor:pointer;">Reset</button>
-                                    <button id="cpnSvcApply" type="button" style="flex:1;padding:6px;border:none;border-radius:6px;background:#6366f1;font-size:0.8rem;color:#fff;font-weight:600;cursor:pointer;">Apply</button>
-                                </div>
-                            </div>
+                        <label>Applicable To</label>
+                        <div style="display:flex; gap:8px; margin-top:4px;">
+                            <label id="cpnAppToServicesLabel" style="flex:1; display:flex; align-items:center; gap:8px; padding:10px 12px; border:1px solid #e2e8f0; border-radius:8px; cursor:pointer; transition:all 0.2s; background:#f8fafc; user-select:none;">
+                                <input type="checkbox" id="cpnAppToServices" style="accent-color:#6366f1; width:15px; height:15px; flex-shrink:0; cursor:pointer;">
+                                <span style="font-size:0.85rem; color:#334155; font-weight:500;">Services</span>
+                            </label>
+                            <label id="cpnAppToProductsLabel" style="flex:1; display:flex; align-items:center; gap:8px; padding:10px 12px; border:1px solid #e2e8f0; border-radius:8px; cursor:pointer; transition:all 0.2s; background:#f8fafc; user-select:none;">
+                                <input type="checkbox" id="cpnAppToProducts" style="accent-color:#6366f1; width:15px; height:15px; flex-shrink:0; cursor:pointer;">
+                                <span style="font-size:0.85rem; color:#334155; font-weight:500;">Products</span>
+                            </label>
+                            <label id="cpnAppToMembershipsLabel" style="flex:1; display:flex; align-items:center; gap:8px; padding:10px 12px; border:1px solid #e2e8f0; border-radius:8px; cursor:pointer; transition:all 0.2s; background:#f8fafc; user-select:none;">
+                                <input type="checkbox" id="cpnAppToMemberships" style="accent-color:#6366f1; width:15px; height:15px; flex-shrink:0; cursor:pointer;">
+                                <span style="font-size:0.85rem; color:#334155; font-weight:500;">Memberships</span>
+                            </label>
                         </div>
                     </div>
                 </div>
@@ -237,10 +236,6 @@
 
     <!-- Toast Notification -->
     <div id="toastNotification" class="toast-notification">Coupon created successfully!</div>
-
-
-    <!-- Toast Notification -->
-    <div id="toastNotification" class="toast-notification">Booking created successfully (demo)</div>
 
 
     <!-- Delete Coupon Confirmation Modal -->

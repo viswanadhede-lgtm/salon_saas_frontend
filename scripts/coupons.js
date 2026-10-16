@@ -1,202 +1,139 @@
-import { supabase } from '../lib/supabase.js';
+﻿import { supabase } from '../lib/supabase.js';
 
-window.toggleCpnSvcExtra = function(extraId, toggleId, extraCount) {
-    var el  = document.getElementById(extraId);
-    var tog = document.getElementById(toggleId);
-    if (!el || !tog) return;
-    var isHidden = el.style.display === 'none' || el.style.display === '';
-    el.style.display  = isHidden ? 'flex' : 'none';
-    tog.textContent   = isHidden ? '▲ less' : '+' + extraCount;
-};
+// â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// STATE
+// â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+let currentCoupons  = [];
+let isEditing       = false;
+let currentEditId   = null;
+let couponToDelete  = null;
 
-let currentCoupons = [];
-let availableServices = [];
-let isEditing = false;
-let currentEditId = null;
-let couponToDelete = null;
-
-// Global context getters
+// â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// CONTEXT HELPERS
+// â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 const getCompanyId = () => {
     try {
         const ctx = JSON.parse(localStorage.getItem('appContext') || '{}');
         return ctx.company?.id || localStorage.getItem('company_id') || null;
     } catch { return localStorage.getItem('company_id') || null; }
 };
-const getBranchId = () => localStorage.getItem('active_branch_id') || document.getElementById('branchSelect')?.value || null;
+const getBranchId = () =>
+    localStorage.getItem('active_branch_id') ||
+    document.getElementById('branchSelect')?.value || null;
 
+// â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// APPLICABLE-TO VISUAL FEEDBACK  (mirrors memberships pattern)
+// â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+function updateApplicableToVisuals() {
+    ['Services', 'Products', 'Memberships'].forEach(type => {
+        const cb    = document.getElementById(`cpnAppTo${type}`);
+        const label = document.getElementById(`cpnAppTo${type}Label`);
+        if (!cb || !label) return;
+        if (cb.checked) {
+            label.style.borderColor = '#6366f1';
+            label.style.background  = '#eef2ff';
+        } else {
+            label.style.borderColor = '#e2e8f0';
+            label.style.background  = '#f8fafc';
+        }
+    });
+}
+
+// â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// DOM READY
+// â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 document.addEventListener('DOMContentLoaded', async () => {
     if (window.feather) feather.replace();
 
-    await fetchServices();
     await loadCoupons();
 
+    // Branch change -> reload
     document.getElementById('branchSelect')?.addEventListener('change', loadCoupons);
 
-    // Filter panel
+    // -- Filter panel -----------------------------------------------------------
     const filterPanel = document.getElementById('cpnFilterPanel');
-    const btnFilter = document.getElementById('btnFilterCoupons');
+    const btnFilter   = document.getElementById('btnFilterCoupons');
     if (btnFilter && filterPanel) {
         btnFilter.addEventListener('click', e => {
             e.stopPropagation();
             filterPanel.style.display = filterPanel.style.display === 'block' ? 'none' : 'block';
         });
-        document.getElementById('btnCloseCpnFilter')?.addEventListener('click', () => { filterPanel.style.display = 'none'; });
-        document.getElementById('btnCpnFilterApply')?.addEventListener('click', () => { filterPanel.style.display = 'none'; });
+        document.getElementById('btnCloseCpnFilter')?.addEventListener('click', () => {
+            filterPanel.style.display = 'none';
+        });
+        document.getElementById('btnCpnFilterApply')?.addEventListener('click', () => {
+            filterPanel.style.display = 'none';
+            renderCoupons();
+        });
         document.getElementById('btnCpnFilterReset')?.addEventListener('click', () => {
             filterPanel.querySelectorAll('input').forEach(i => i.checked = false);
             renderCoupons();
         });
-
-        const filterCheckboxes = document.querySelectorAll('input[name="filterDiscountType"]');
-        filterCheckboxes.forEach(cb => {
+        document.querySelectorAll('input[name="filterDiscountType"]').forEach(cb => {
             cb.addEventListener('change', renderCoupons);
         });
         filterPanel.addEventListener('click', e => e.stopPropagation());
+        document.addEventListener('click', () => { filterPanel.style.display = 'none'; });
     }
 
-    // Modal events
-    const overlay = document.getElementById('couponModalOverlay');
-    const btnCreateCoupon = document.getElementById('btnCreateCoupon');
-    if (btnCreateCoupon) {
-        btnCreateCoupon.setAttribute('data-sub-feature', 'create_coupon');
-        btnCreateCoupon.addEventListener('click', openCreateModal);
+    // -- Create Coupon button ---------------------------------------------------
+    const btnCreate = document.getElementById('btnCreateCoupon');
+    if (btnCreate) {
+        btnCreate.setAttribute('data-sub-feature', 'create_coupon');
+        btnCreate.addEventListener('click', openCreateModal);
     }
+
+    // -- Modal close ------------------------------------------------------------
     document.getElementById('closeCouponModal')?.addEventListener('click', closeModal);
     document.getElementById('btnCancelCoupon')?.addEventListener('click', closeModal);
-    overlay?.addEventListener('click', e => { if (e.target === overlay) closeModal(); });
+    document.getElementById('couponModalOverlay')?.addEventListener('click', e => {
+        if (e.target === document.getElementById('couponModalOverlay')) closeModal();
+    });
 
-    // Delete modal events
-    const deleteConfirmOverlay = document.getElementById('deleteCouponConfirmOverlay');
+    // -- Delete confirm modal ---------------------------------------------------
     document.getElementById('btnCancelDeleteCoupon')?.addEventListener('click', () => {
-        deleteConfirmOverlay?.classList.remove('active');
+        document.getElementById('deleteCouponConfirmOverlay')?.classList.remove('active');
         couponToDelete = null;
     });
     document.getElementById('btnConfirmDeleteCoupon')?.addEventListener('click', async () => {
         if (!couponToDelete) return;
-        deleteConfirmOverlay?.classList.remove('active');
+        document.getElementById('deleteCouponConfirmOverlay')?.classList.remove('active');
         await executeDeleteCoupon(couponToDelete);
         couponToDelete = null;
     });
 
-    // Discount type placeholder
+    // -- Discount type -> update placeholder ------------------------------------
     const discType = document.getElementById('cpnDiscountType');
-    const discVal = document.getElementById('cpnDiscountValue');
+    const discVal  = document.getElementById('cpnDiscountValue');
     if (discType && discVal) {
         discType.addEventListener('change', () => {
             discVal.placeholder = discType.value === 'percentage' ? 'e.g. 10' : 'e.g. 100';
         });
     }
 
-    // Auto-uppercase coupon code
+    // -- Auto-uppercase coupon code --------------------------------------------
     const codeInput = document.getElementById('cpnCode');
     if (codeInput) {
-        codeInput.addEventListener('input', () => { codeInput.value = codeInput.value.toUpperCase(); });
-    }
-
-    // Services dropdown toggle
-    const svcBtn = document.getElementById('cpnServicesBtn');
-    const svcMenu = document.getElementById('cpnServicesMenu');
-    if (svcBtn && svcMenu) {
-        svcBtn.addEventListener('click', e => {
-            e.stopPropagation();
-            svcMenu.style.display = svcMenu.style.display === 'block' ? 'none' : 'block';
-        });
-        document.addEventListener('click', e => {
-            if (!svcBtn.contains(e.target) && !svcMenu.contains(e.target)) svcMenu.style.display = 'none';
+        codeInput.addEventListener('input', () => {
+            codeInput.value = codeInput.value.toUpperCase();
         });
     }
 
-    document.getElementById('cpnSvcApply')?.addEventListener('click', () => {
-        applyServiceSelection();
-        if (svcMenu) svcMenu.style.display = 'none';
-    });
-    document.getElementById('cpnSvcReset')?.addEventListener('click', () => {
-        document.querySelectorAll('#cpnServicesCheckboxList input[type="checkbox"]').forEach(c => c.checked = false);
-        applyServiceSelection();
+    // -- Applicable-to checkbox visuals ----------------------------------------
+    ['Services', 'Products', 'Memberships'].forEach(type => {
+        document.getElementById(`cpnAppTo${type}`)?.addEventListener('change', updateApplicableToVisuals);
     });
 
+    // -- Search ----------------------------------------------------------------
+    document.getElementById('couponsSearchInput')?.addEventListener('input', renderCoupons);
+
+    // -- Save ------------------------------------------------------------------
     document.getElementById('btnSaveCoupon')?.addEventListener('click', handleSaveCoupon);
-
-    const searchInputEl = document.getElementById('couponsSearchInput');
-    if (searchInputEl) {
-        searchInputEl.addEventListener('input', renderCoupons);
-    }
 });
 
-// ─────────────────────────────────────────────────────────────────────────────
-// Helper: service selection display text
-// ─────────────────────────────────────────────────────────────────────────────
-function applyServiceSelection() {
-    const list = document.querySelectorAll('#cpnServicesCheckboxList input[type="checkbox"]');
-    const svcText = document.getElementById('cpnServicesText');
-    if (!svcText) return;
-
-    const selTitles = Array.from(list).filter(c => c.checked).map(c => c.nextSibling?.textContent?.trim() || c.value);
-    const selValues = Array.from(list).filter(c => c.checked).map(c => c.value);
-
-    if (selValues.length === 0) { svcText.textContent = 'Select services...'; svcText.style.color = '#94a3b8'; }
-    else if (selValues.includes('all')) { svcText.textContent = 'All Services'; svcText.style.color = '#1e293b'; }
-    else if (selTitles.length === 1) { svcText.textContent = selTitles[0]; svcText.style.color = '#1e293b'; }
-    else { svcText.textContent = `${selTitles[0]} +${selTitles.length - 1} more`; svcText.style.color = '#1e293b'; }
-}
-
-// ─────────────────────────────────────────────────────────────────────────────
-// SUPABASE: Fetch services for the dropdowns
-// ─────────────────────────────────────────────────────────────────────────────
-async function fetchServices() {
-    try {
-        const { data, error } = await supabase
-            .from('services')
-            .select('service_id, service_name, status')
-            .eq('company_id', getCompanyId())
-            .eq('branch_id', getBranchId());
-
-        if (error) throw error;
-        availableServices = (data || []).filter(s => (s.status || '').toLowerCase() === 'active');
-        populateServicesCheckboxes();
-    } catch (err) {
-        console.error('Failed to load services', err);
-    }
-}
-
-function populateServicesCheckboxes() {
-    const modalContainer = document.getElementById('cpnServicesCheckboxList');
-    const filterContainer = document.getElementById('filterServicesContainer');
-
-    let dynamicHtml = '';
-    availableServices.forEach(svc => {
-        dynamicHtml += `<label style="display:flex;align-items:center;gap:10px;padding:8px 14px;cursor:pointer;font-size:0.88rem;color:#334155;"><input type="checkbox" value="${svc.service_id}" style="accent-color:#6366f1;"> ${svc.service_name}</label>`;
-    });
-
-    const allRow = `<label style="display:flex;align-items:center;gap:10px;padding:8px 14px;cursor:pointer;font-size:0.88rem;color:#334155;"><input type="checkbox" value="all" style="accent-color:#6366f1;"> All Services</label>`;
-
-    if (modalContainer) {
-        modalContainer.innerHTML = allRow + dynamicHtml;
-        bindAllServicesToggle(modalContainer);
-    }
-}
-
-function bindAllServicesToggle(container) {
-    const allCheckbox = container.querySelector('input[value="all"]');
-    const otherCheckboxes = container.querySelectorAll('input:not([value="all"])');
-
-    if (allCheckbox) {
-        allCheckbox.addEventListener('change', (e) => {
-            otherCheckboxes.forEach(cb => { cb.checked = e.target.checked; });
-            if (container.id === 'cpnServicesCheckboxList') applyServiceSelection();
-        });
-        otherCheckboxes.forEach(cb => {
-            cb.addEventListener('change', () => {
-                allCheckbox.checked = Array.from(otherCheckboxes).every(c => c.checked);
-                if (container.id === 'cpnServicesCheckboxList') applyServiceSelection();
-            });
-        });
-    }
-}
-
-// ─────────────────────────────────────────────────────────────────────────────
-// SUPABASE: Load Coupons + coupon_services join
-// ─────────────────────────────────────────────────────────────────────────────
+// â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// LOAD COUPONS  (1 row per coupon â€” no grouping needed)
+// â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 async function loadCoupons() {
     const tbody = document.getElementById('couponsTableBody');
     if (!tbody) return;
@@ -213,124 +150,82 @@ async function loadCoupons() {
     if (window.feather) feather.replace();
 
     try {
-        const companyId = getCompanyId();
-        const branchId = getBranchId();
-
-        // Fetch coupons directly
-        const { data: couponsData, error: couponsErr } = await supabase
+        const { data, error } = await supabase
             .from('coupons')
             .select('*')
-            .eq('company_id', companyId)
-            .eq('branch_id', branchId)
+            .eq('company_id', getCompanyId())
+            .eq('branch_id', getBranchId())
             .neq('status', 'deleted')
             .order('created_at', { ascending: false });
 
-        if (couponsErr) throw couponsErr;
+        if (error) throw error;
 
-        // Group flattened rows by coupon_id
-        const groupedCoupons = {};
-        (couponsData || []).forEach(row => {
-            const cId = row.coupon_id;
-            if (!groupedCoupons[cId]) {
-                // Initialize the top-level coupon aggregate object
-                groupedCoupons[cId] = { ...row, applicable_services: [] };
-            }
-            
-            // Keep pushing distinct services onto it
-            if (row.service_id) {
-                groupedCoupons[cId].applicable_services.push({
-                    service_id: row.service_id,
-                    service_name: row.service_name || '',
-                    current_usage_count: row.current_usage_count || 0,
-                    rowId: row.id
-                });
-            }
-        });
-
-        currentCoupons = Object.values(groupedCoupons);
-        
-        // Re-sort based on created_at since Object.values dumps order
-        currentCoupons.sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
-
+        currentCoupons = data || [];
         renderCoupons();
     } catch (err) {
-        console.error(err);
+        console.error('loadCoupons error:', err);
         tbody.innerHTML = `<tr><td colspan="6" style="text-align:center;padding:24px;color:#ef4444;">Failed to load coupons: ${err.message || ''}</td></tr>`;
     }
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
+// â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// BUILD "APPLICABLE TO" DISPLAY  from boolean columns
+// â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+function buildApplicableToDisplay(coupon) {
+    const chipStyle = `display:inline-block;padding:2px 8px;border-radius:20px;font-size:0.72rem;font-weight:500;margin:1px 2px 1px 0;white-space:nowrap;`;
+    const chips = [];
+
+    if (coupon.all_services)    chips.push(`<span style="${chipStyle}background:#e0f2fe;color:#0284c7;">Services</span>`);
+    if (coupon.all_products)    chips.push(`<span style="${chipStyle}background:#dcfce7;color:#15803d;">Products</span>`);
+    if (coupon.all_memberships) chips.push(`<span style="${chipStyle}background:#faf5ff;color:#7c3aed;">Memberships</span>`);
+
+    if (chips.length === 0) {
+        return `<span style="${chipStyle}background:#f1f5f9;color:#64748b;">None</span>`;
+    }
+    return chips.join('');
+}
+
+// â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 // RENDER TABLE
-// ─────────────────────────────────────────────────────────────────────────────
+// â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 function renderCoupons() {
     const tbody = document.getElementById('couponsTableBody');
     if (!tbody) return;
 
-    const searchInput = document.getElementById('couponsSearchInput');
-    const q = searchInput ? searchInput.value.toLowerCase().trim() : '';
+    const q = (document.getElementById('couponsSearchInput')?.value || '').toLowerCase().trim();
+    const activeTypes = Array.from(
+        document.querySelectorAll('input[name="filterDiscountType"]:checked')
+    ).map(cb => cb.value);
 
-    const activeTypes = Array.from(document.querySelectorAll('input[name="filterDiscountType"]:checked')).map(cb => cb.value);
+    let list = currentCoupons;
 
-    let filteredCoupons = currentCoupons;
-    
     if (q) {
-        filteredCoupons = filteredCoupons.filter(c => 
-            (c.coupon_code || '').toLowerCase().includes(q)
-        );
+        list = list.filter(c => (c.coupon_code || '').toLowerCase().includes(q));
     }
-
     if (activeTypes.length > 0) {
-        filteredCoupons = filteredCoupons.filter(c => activeTypes.includes(c.discount_type));
+        list = list.filter(c => activeTypes.includes(c.discount_type));
     }
 
-    if (filteredCoupons.length === 0) {
+    if (list.length === 0) {
         tbody.innerHTML = `<tr><td colspan="6" style="text-align:center;padding:24px;color:#64748b;">No coupons found.</td></tr>`;
         return;
     }
 
-    tbody.innerHTML = filteredCoupons.map(coupon => {
-        const couponId = coupon.coupon_id || coupon.id;
-        const isFlat = coupon.discount_type === 'flat';
-        const discountDisplay = isFlat ? `₹${coupon.discount_value} OFF` : `${coupon.discount_value}% OFF`;
-        const badgeColor = isFlat ? 'color:#15803d;background:#dcfce7;' : 'color:#0284c7;background:#e0f2fe;';
-
-        let svcDisplay = '';
-        const chipStyle = `display:inline-block;padding:2px 8px;border-radius:20px;font-size:0.72rem;font-weight:500;background:#f1f5f9;color:#334155;margin:1px 2px 1px 0;white-space:nowrap;`;
-
-        if (coupon.applicable_services?.length > 0) {
-            let servicesToRender = coupon.applicable_services;
-            if (servicesToRender.length === 1 && servicesToRender[0].service_id === 'all') {
-                servicesToRender = availableServices.length > 0 ? availableServices : [{ service_name: 'All Services' }];
-            }
-
-            const firstChip = `<span style="${chipStyle}">${servicesToRender[0].service_name}</span>`;
-            if (servicesToRender.length === 1) {
-                svcDisplay = firstChip;
-            } else {
-                const extraCount = servicesToRender.length - 1;
-                const extraId = `cpn-svc-extra-${couponId}`;
-                const toggleId = `cpn-svc-toggle-${couponId}`;
-                const extraChips = servicesToRender.slice(1).map(s => `<span style="${chipStyle}">${s.service_name}</span>`).join('');
-
-                svcDisplay = `<div style="display:flex;flex-wrap:wrap;align-items:flex-start;gap:2px;width:100%;">
-                        ${firstChip}
-                        <span id="${toggleId}"
-                            onclick="window.toggleCpnSvcExtra('${extraId}', '${toggleId}', ${extraCount})"
-                            style="display:inline-block;padding:2px 7px;border-radius:20px;font-size:0.7rem;font-weight:600;background:#e0e7ff;color:#4f46e5;cursor:pointer;white-space:nowrap;user-select:none;">+${extraCount}</span>
-                        <div id="${extraId}" style="display:none;flex-wrap:wrap;gap:2px;width:100%;margin-top:3px;">
-                            ${extraChips}
-                        </div>
-                    </div>`;
-            }
-        } else {
-            svcDisplay = `<span style="${chipStyle}">All Services</span>`;
-        }
+    tbody.innerHTML = list.map(coupon => {
+        const couponId        = coupon.coupon_id || coupon.id;
+        const isFlat          = coupon.discount_type === 'flat';
+        const discountDisplay = isFlat
+            ? `\u20B9${coupon.discount_value} OFF`
+            : `${coupon.discount_value}% OFF`;
+        const badgeColor = isFlat
+            ? 'color:#15803d;background:#dcfce7;'
+            : 'color:#0284c7;background:#e0f2fe;';
 
         let validityText = 'Always Active';
         if (coupon.valid_from || coupon.valid_to) {
             const startStr = coupon.valid_from ? new Date(coupon.valid_from).toLocaleDateString() : 'Now';
-            const endStr = coupon.valid_to ? new Date(coupon.valid_to).toLocaleDateString() : 'No Expiry';
-            validityText = `${startStr} – ${endStr}`;
+            const endStr   = coupon.valid_to   ? new Date(coupon.valid_to).toLocaleDateString()   : 'No Expiry';
+            validityText   = `${startStr} \u2013 ${endStr}`;
         }
 
         return `
@@ -338,17 +233,21 @@ function renderCoupons() {
                 <td style="padding:16px 20px;"><span class="cpn-code-badge">${coupon.coupon_code || 'N/A'}</span></td>
                 <td style="padding:16px 20px;"><span style="font-weight:700;${badgeColor}padding:4px 8px;border-radius:6px;font-size:0.85rem;">${discountDisplay}</span></td>
                 <td style="padding:16px 20px;font-size:0.9rem;color:#334155;text-transform:capitalize;">${coupon.discount_type || '-'}</td>
-                <td style="padding:16px 20px;font-size:0.9rem;color:#334155;">${svcDisplay}</td>
+                <td style="padding:16px 20px;font-size:0.9rem;color:#334155;">${buildApplicableToDisplay(coupon)}</td>
                 <td style="padding:16px 20px;font-size:0.9rem;color:#64748b;text-align:center;">${validityText}</td>
                 <td style="padding:14px 16px; vertical-align:middle;">
-                    <div class="action-buttons" style="display:flex; justify-content:center; gap:0.5rem;">
-                        <button class="hover-lift edit-btn" data-sub-feature="update_coupon" onclick="window.editCoupon('${couponId}')" title="Edit Coupon" style="display:flex; flex-direction:column; align-items:center; justify-content:center; padding: 4px 8px; border-radius:8px; border:1px solid #e0e7ff; background:#eff6ff; cursor:pointer; color:#3b82f6; transition:all 0.2s; min-width: 52px;">
+                    <div class="action-buttons" style="display:flex;justify-content:center;gap:0.5rem;">
+                        <button class="hover-lift edit-btn" data-sub-feature="update_coupon"
+                            onclick="window.editCoupon('${couponId}')" title="Edit Coupon"
+                            style="display:flex;flex-direction:column;align-items:center;justify-content:center;padding:4px 8px;border-radius:8px;border:1px solid #e0e7ff;background:#eff6ff;cursor:pointer;color:#3b82f6;transition:all 0.2s;min-width:52px;">
                             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="margin-bottom:2px;"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path></svg>
-                            <span style="font-size:10px; font-weight:600;">Edit</span>
+                            <span style="font-size:10px;font-weight:600;">Edit</span>
                         </button>
-                        <button class="hover-lift delete-btn" data-sub-feature="delete_coupon" onclick="window.deleteCoupon('${couponId}')" title="Delete Coupon" style="display:flex; flex-direction:column; align-items:center; justify-content:center; padding: 4px 8px; border-radius:8px; border:1px solid #fee2e2; background:#fef2f2; cursor:pointer; color:#ef4444; transition:all 0.2s; min-width: 52px;">
+                        <button class="hover-lift delete-btn" data-sub-feature="delete_coupon"
+                            onclick="window.deleteCoupon('${couponId}')" title="Delete Coupon"
+                            style="display:flex;flex-direction:column;align-items:center;justify-content:center;padding:4px 8px;border-radius:8px;border:1px solid #fee2e2;background:#fef2f2;cursor:pointer;color:#ef4444;transition:all 0.2s;min-width:52px;">
                             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="margin-bottom:2px;"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path><line x1="10" y1="11" x2="10" y2="17"></line><line x1="14" y1="11" x2="14" y2="17"></line></svg>
-                            <span style="font-size:10px; font-weight:600;">Delete</span>
+                            <span style="font-size:10px;font-weight:600;">Delete</span>
                         </button>
                     </div>
                 </td>
@@ -360,90 +259,95 @@ function renderCoupons() {
     if (window.applySubFeatureGates) window.applySubFeatureGates();
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
-// MODAL: Open Create / Edit
-// ─────────────────────────────────────────────────────────────────────────────
+// â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// MODAL: OPEN CREATE
+// â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 function openCreateModal() {
-    isEditing = false;
+    isEditing     = false;
     currentEditId = null;
 
-    document.getElementById('cpnCode').value = '';
-    document.getElementById('cpnDiscountType').value = '';
+    document.getElementById('cpnCode').value          = '';
+    document.getElementById('cpnDiscountType').value  = '';
     document.getElementById('cpnDiscountValue').value = '';
-    document.querySelectorAll('#cpnServicesCheckboxList input[type="checkbox"]').forEach(c => c.checked = false);
-    applyServiceSelection();
-    document.getElementById('cpnMinBooking').value = '';
-    document.getElementById('cpnStartDate').value = '';
-    document.getElementById('cpnEndDate').value = '';
+    document.getElementById('cpnMinBooking').value    = '';
+    document.getElementById('cpnStartDate').value     = '';
+    document.getElementById('cpnEndDate').value       = '';
+
+    // Reset applicable-to checkboxes
+    ['Services', 'Products', 'Memberships'].forEach(type => {
+        const cb = document.getElementById(`cpnAppTo${type}`);
+        if (cb) cb.checked = false;
+    });
+    updateApplicableToVisuals();
+
+    // Coupon code editable
+    const cpnCodeInput            = document.getElementById('cpnCode');
+    cpnCodeInput.readOnly         = false;
+    cpnCodeInput.style.background = '';
+    cpnCodeInput.style.color      = '';
+    cpnCodeInput.style.cursor     = '';
 
     document.querySelector('#couponModalOverlay h2').textContent = 'Create Coupon';
-    document.getElementById('btnSaveCoupon').textContent = 'Create Coupon';
-
-    const cpnCodeInput = document.getElementById('cpnCode');
-    cpnCodeInput.readOnly = false;
-    cpnCodeInput.style.background = '';
-    cpnCodeInput.style.color = '';
-    cpnCodeInput.style.cursor = '';
-
+    document.getElementById('btnSaveCoupon').textContent         = 'Create Coupon';
     document.getElementById('couponModalOverlay').classList.add('active');
 }
 
+// â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// MODAL: OPEN EDIT
+// â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 window.editCoupon = function(id) {
     const coupon = currentCoupons.find(c => (c.coupon_id || c.id) === id);
     if (!coupon) return;
 
-    isEditing = true;
+    isEditing     = true;
     currentEditId = id;
 
-    document.getElementById('cpnCode').value = coupon.coupon_code || '';
-    document.getElementById('cpnDiscountType').value = coupon.discount_type || 'percentage';
-    document.getElementById('cpnDiscountValue').value = coupon.discount_value || '';
+    document.getElementById('cpnCode').value          = coupon.coupon_code    || '';
+    document.getElementById('cpnDiscountType').value  = coupon.discount_type  || 'percentage';
+    document.getElementById('cpnDiscountValue').value = coupon.discount_value != null ? coupon.discount_value : '';
+    document.getElementById('cpnMinBooking').value    = coupon.min_bill_amount != null ? coupon.min_bill_amount : '';
+    document.getElementById('cpnStartDate').value     = coupon.valid_from ? coupon.valid_from.split('T')[0] : '';
+    document.getElementById('cpnEndDate').value       = coupon.valid_to   ? coupon.valid_to.split('T')[0]   : '';
 
-    // Pre-check services
-    const svcCheckboxes = document.querySelectorAll('#cpnServicesCheckboxList input[type="checkbox"]');
-    const isAll = coupon.applicable_services?.length >= availableServices.length;
-    svcCheckboxes.forEach(c => {
-        if (c.value === 'all') {
-            c.checked = isAll;
-        } else if (coupon.applicable_services) {
-            c.checked = coupon.applicable_services.some(svc =>
-                (typeof svc === 'object' ? svc.service_id : svc) === c.value
-            );
-        } else {
-            c.checked = false;
-        }
-    });
-    applyServiceSelection();
+    // Pre-check applicable-to booleans
+    const cb_s = document.getElementById('cpnAppToServices');
+    const cb_p = document.getElementById('cpnAppToProducts');
+    const cb_m = document.getElementById('cpnAppToMemberships');
+    if (cb_s) cb_s.checked = !!coupon.all_services;
+    if (cb_p) cb_p.checked = !!coupon.all_products;
+    if (cb_m) cb_m.checked = !!coupon.all_memberships;
+    updateApplicableToVisuals();
 
-    document.getElementById('cpnMinBooking').value = coupon.min_bill_amount || '';
-
-    document.getElementById('cpnStartDate').value = coupon.valid_from ? coupon.valid_from.split('T')[0] : '';
-    document.getElementById('cpnEndDate').value = coupon.valid_to ? coupon.valid_to.split('T')[0] : '';
+    // Lock coupon code during edit
+    const cpnCodeInput            = document.getElementById('cpnCode');
+    cpnCodeInput.readOnly         = true;
+    cpnCodeInput.style.background = '#f1f5f9';
+    cpnCodeInput.style.color      = '#94a3b8';
+    cpnCodeInput.style.cursor     = 'not-allowed';
 
     document.querySelector('#couponModalOverlay h2').textContent = 'Edit Coupon';
-    document.getElementById('btnSaveCoupon').textContent = 'Save Changes';
-
-    const cpnCodeInput = document.getElementById('cpnCode');
-    cpnCodeInput.readOnly = true;
-    cpnCodeInput.style.background = '#f1f5f9';
-    cpnCodeInput.style.color = '#94a3b8';
-    cpnCodeInput.style.cursor = 'not-allowed';
-
+    document.getElementById('btnSaveCoupon').textContent         = 'Save Changes';
     document.getElementById('couponModalOverlay').classList.add('active');
 };
 
+// â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// MODAL: CLOSE
+// â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+function closeModal() {
+    document.getElementById('couponModalOverlay').classList.remove('active');
+}
+
+// â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// DELETE: trigger confirm modal
+// â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 window.deleteCoupon = function(id) {
     couponToDelete = id;
     document.getElementById('deleteCouponConfirmOverlay')?.classList.add('active');
 };
 
-function closeModal() {
-    document.getElementById('couponModalOverlay').classList.remove('active');
-}
-
-// ─────────────────────────────────────────────────────────────────────────────
-// SUPABASE: Delete (soft delete)
-// ─────────────────────────────────────────────────────────────────────────────
+// â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// DELETE: execute soft-delete  (correct chain: .update().eq())
+// â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 async function executeDeleteCoupon(id) {
     const deletingOverlay = document.getElementById('deletingCouponOverlay');
     if (deletingOverlay) deletingOverlay.classList.add('active');
@@ -451,33 +355,37 @@ async function executeDeleteCoupon(id) {
     try {
         const { error } = await supabase
             .from('coupons')
-            .eq('coupon_id', id)
-            .update({ status: 'deleted' });
+            .update({ status: 'deleted', updated_at: new Date().toISOString() })
+            .eq('coupon_id', id);
 
         if (error) throw error;
 
         showToast('Coupon deleted successfully');
         if (window.notifyEvent) {
             window.notifyEvent('marketing', 'evt_marketing_coupon', {
-                title: 'Coupon Deleted',
+                title:   'Coupon Deleted',
                 message: 'A coupon was deleted.'
             });
         }
         await loadCoupons();
     } catch (err) {
-        console.error(err);
+        console.error('executeDeleteCoupon error:', err);
         showToast('Error deleting coupon: ' + (err.message || ''));
     } finally {
         if (deletingOverlay) deletingOverlay.classList.remove('active');
     }
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
-// SUPABASE: Save (Create or Update) Coupon
-// ─────────────────────────────────────────────────────────────────────────────
+// â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// SAVE (Create or Update)
+// â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 async function handleSaveCoupon() {
-    const coupon_code = document.getElementById('cpnCode').value.trim();
-    const discount_type = document.getElementById('cpnDiscountType').value;
+    // Declare btnSave & origText at the TOP so the finally block can always reach them
+    const btnSave  = document.getElementById('btnSaveCoupon');
+    const origText = btnSave?.textContent || 'Save';
+
+    const coupon_code    = document.getElementById('cpnCode').value.trim();
+    const discount_type  = document.getElementById('cpnDiscountType').value;
     const discount_value = document.getElementById('cpnDiscountValue').value;
 
     if (!coupon_code || !discount_type || !discount_value) {
@@ -485,109 +393,80 @@ async function handleSaveCoupon() {
         return;
     }
 
+    // Duplicate check on create
     if (!isEditing) {
-        const isDuplicate = currentCoupons.some(c => c.coupon_code && c.coupon_code.toUpperCase() === coupon_code.toUpperCase());
+        const isDuplicate = currentCoupons.some(
+            c => (c.coupon_code || '').toUpperCase() === coupon_code.toUpperCase()
+        );
         if (isDuplicate) {
-            showToast('Coupon name already exists.');
+            showToast('A coupon with this code already exists.');
             return;
         }
     }
 
-    // Build service list
-    const existingCoupon = isEditing && currentEditId
-        ? currentCoupons.find(c => (c.coupon_id || c.id) === currentEditId)
-        : null;
+    if (btnSave) { btnSave.textContent = 'Saving...'; btnSave.disabled = true; }
 
-    const checkboxes = document.querySelectorAll('#cpnServicesCheckboxList input[type="checkbox"]');
-    const hasAllSelected = Array.from(checkboxes).some(c => c.value === 'all' && c.checked);
+    // Read the three booleans
+    const all_services    = !!(document.getElementById('cpnAppToServices')?.checked);
+    const all_products    = !!(document.getElementById('cpnAppToProducts')?.checked);
+    const all_memberships = !!(document.getElementById('cpnAppToMemberships')?.checked);
 
-    let applicableServices = [];
-    if (hasAllSelected) {
-        applicableServices = availableServices.map(svc => {
-            const existing = existingCoupon?.applicable_services?.find(s => s.service_id === svc.service_id);
-            return { service_id: svc.service_id, service_name: svc.service_name, current_usage_count: existing?.current_usage_count || 0 };
-        });
-    } else {
-        Array.from(checkboxes)
-            .filter(c => c.checked && c.value !== 'all')
-            .forEach(c => {
-                const existing = existingCoupon?.applicable_services?.find(s => s.service_id === c.value);
-                applicableServices.push({
-                    service_id: c.value,
-                    service_name: c.nextSibling?.textContent?.trim() || c.value,
-                    current_usage_count: existing?.current_usage_count || 0
-                });
-            });
-    }
-
-    if (applicableServices.length === 0) {
-        // Fallback: apply to all services
-        applicableServices = availableServices.map(svc => ({
-            service_id: svc.service_id,
-            service_name: svc.service_name,
-            current_usage_count: existingCoupon?.applicable_services?.find(s => s.service_id === svc.service_id)?.current_usage_count || 0
-        }));
-    }
+    const payload = {
+        company_id:      getCompanyId(),
+        branch_id:       getBranchId(),
+        coupon_code,
+        discount_type,
+        discount_value:  parseFloat(discount_value),
+        status:          'active',
+        min_bill_amount: document.getElementById('cpnMinBooking').value
+            ? parseFloat(document.getElementById('cpnMinBooking').value)
+            : null,
+        valid_from:      document.getElementById('cpnStartDate').value || null,
+        valid_to:        document.getElementById('cpnEndDate').value   || null,
+        all_services,
+        all_products,
+        all_memberships,
+        updated_at:      new Date().toISOString()
+    };
 
     try {
-        let couponId = isEditing ? currentEditId : crypto.randomUUID();
-
-        const rowsToInsert = applicableServices.map(svc => ({
-            coupon_id: couponId,
-            company_id: getCompanyId(),
-            branch_id: getBranchId(),
-            coupon_code: coupon_code,
-            discount_type: discount_type,
-            discount_value: parseFloat(discount_value),
-            status: 'active',
-            min_bill_amount: document.getElementById('cpnMinBooking').value ? parseFloat(document.getElementById('cpnMinBooking').value) : null,
-            total_usage_limit: null,
-            usage_per_customer: null,
-            valid_from: document.getElementById('cpnStartDate').value || null,
-            valid_to: document.getElementById('cpnEndDate').value || null,
-            service_id: svc.service_id,
-            service_name: svc.service_name,
-            current_usage_count: svc.current_usage_count || 0
-        }));
-
         if (isEditing) {
-            // DELETE old rows
-            const { error: delErr } = await supabase
-                .from('coupons')
-                .eq('coupon_id', couponId)
-                .delete();
-            if (delErr) throw delErr;
-        }
-
-        // INSERT all new mapped rows directly to flattened coupons table
-        if (rowsToInsert.length > 0) {
+            // UPDATE existing row by coupon_id (correct chain: .update().eq())
             const { error } = await supabase
                 .from('coupons')
-                .insert(rowsToInsert);
+                .update(payload)
+                .eq('coupon_id', currentEditId);
+
+            if (error) throw error;
+        } else {
+            // INSERT new row â€” DB generates coupon_id via DEFAULT gen_random_uuid()
+            const { error } = await supabase
+                .from('coupons')
+                .insert({ ...payload, created_at: new Date().toISOString() });
+
             if (error) throw error;
         }
 
         showToast(isEditing ? 'Coupon updated successfully' : 'Coupon created successfully');
         if (window.notifyEvent) {
             window.notifyEvent('marketing', 'evt_marketing_coupon', {
-                title: isEditing ? 'Coupon Modified' : 'New Coupon Created',
+                title:   isEditing ? 'Coupon Modified' : 'New Coupon Created',
                 message: `Coupon "${coupon_code}" was ${isEditing ? 'updated' : 'created'}.`
             });
         }
         closeModal();
         await loadCoupons();
     } catch (err) {
-        console.error(err);
+        console.error('handleSaveCoupon error:', err);
         showToast('Error saving coupon: ' + (err.message || 'Unknown error'));
     } finally {
-        btnSave.textContent = origText;
-        btnSave.disabled = false;
+        if (btnSave) { btnSave.textContent = origText; btnSave.disabled = false; }
     }
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
+// â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 // TOAST
-// ─────────────────────────────────────────────────────────────────────────────
+// â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 function showToast(message) {
     const toast = document.getElementById('toastNotification');
     if (toast) {
@@ -598,3 +477,4 @@ function showToast(message) {
         alert(message);
     }
 }
+
