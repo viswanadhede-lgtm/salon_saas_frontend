@@ -690,6 +690,10 @@
 
 // Today's revenue analytics - RPC FUNCTION - dashboard_todays_revenue_kpis.
 
+ // Appointments Tab card - has 3 tabs - upcoming appointments, completed appointments, noshows& cancellations - Source Table = bookings_for_business_transaction .
+
+ 
+
 
 
 

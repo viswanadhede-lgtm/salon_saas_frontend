@@ -398,7 +398,7 @@ async function processPaymentCallback(payload, row) {
             companyId = localStorage.getItem('company_id') || null;
         }
 
-        const branchId = localStorage.getItem('branch_id');
+        const branchId = localStorage.getItem('branch_id') || localStorage.getItem('active_branch_id');
         const paidAt = new Date().toISOString().replace('Z', '');
 
         const totalOriginal = parseInt(row.amount.replace(/[^0-9]/g, ''), 10) || 0;

@@ -3,6 +3,18 @@ import { supabase } from '../lib/supabase.js';
 let todaysBookingsData = [];
 let currentActionData = null;
 
+function getBranchId() {
+    let b = localStorage.getItem('branch_id') || localStorage.getItem('active_branch_id');
+    if (b === 'null' || b === 'undefined') b = null;
+    if (!b) {
+        try {
+            const ctx = JSON.parse(localStorage.getItem('appContext') || localStorage.getItem('active_company_context') || '{}');
+            b = ctx.branch?.branch_id || ctx.branch?.id || ctx.activeBranch?.id || ctx.activeBranch?.branch_id || ctx.current_branch_id;
+        } catch (_) {}
+    }
+    return b || null;
+}
+
 export async function initPage() {
     const now = new Date();
     const opts = { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' };
@@ -12,7 +24,7 @@ export async function initPage() {
     }
     
     try {
-        const branchId = localStorage.getItem('branch_id');
+        const branchId = getBranchId();
         if (!branchId) throw new Error("No branch selected.");
 
         const localISOTime = new Date(now.getTime() - (now.getTimezoneOffset() * 60000)).toISOString().split('T')[0];
@@ -24,7 +36,7 @@ export async function initPage() {
             .eq('booking_date', localISOTime)
             .order('start_time', { ascending: true });
             
-        query = query.eq('status', 'completed');
+        query = query.in('status', ['completed', 'Completed']);
 
         const { data, error } = await query;
         if (error) throw error;
@@ -46,7 +58,7 @@ export async function initPage() {
                 time: formattedTime,
                 service: b.service_name || 'N/A',
                 staff: b.staff_name || 'Unassigned',
-                status: (b.status || 'completed').toLowerCase(),
+                status: (b.status || 'completed').toLowerCase().trim(),
                 amount: '₹' + (b.total_price || 0).toLocaleString('en-IN'),
                 payment: (b.payment_status || 'pending').toLowerCase()
             };
@@ -56,7 +68,7 @@ export async function initPage() {
         console.error("Failed to load live bookings:", err);
     }
 
-    const completed = todaysBookingsData.filter(b => b.status === 'completed');
+    const completed = todaysBookingsData.filter(b => (b.status || '').toLowerCase() === 'completed');
     const countBadge = document.getElementById('caCountBadge');
     if (countBadge) {
         countBadge.textContent = completed.length + ' completed';
@@ -96,8 +108,12 @@ export function renderTable() {
     const tbody = document.getElementById('caTableBody');
     if (!tbody) return;
     tbody.innerHTML = '';
-    todaysBookingsData.forEach((b, idx) => {
-        if (b.status !== 'completed') return;
+    const completedList = todaysBookingsData.filter(b => b.status === 'completed');
+    if (completedList.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="8" style="text-align:center; padding:32px; color:#94a3b8;">No completed appointments today.</td></tr>';
+        return;
+    }
+    completedList.forEach((b, idx) => {
 
         // Service pills
         let serviceHtml = '-';

@@ -3,6 +3,18 @@ import { supabase } from '../lib/supabase.js';
 let todaysBookingsData = [];
 let activeTab = 'no-show';
 
+function getBranchId() {
+    let b = localStorage.getItem('branch_id') || localStorage.getItem('active_branch_id');
+    if (b === 'null' || b === 'undefined') b = null;
+    if (!b) {
+        try {
+            const ctx = JSON.parse(localStorage.getItem('appContext') || localStorage.getItem('active_company_context') || '{}');
+            b = ctx.branch?.branch_id || ctx.branch?.id || ctx.activeBranch?.id || ctx.activeBranch?.branch_id || ctx.current_branch_id;
+        } catch (_) {}
+    }
+    return b || null;
+}
+
 export async function initPage() {
     const now = new Date();
     const opts = { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' };
@@ -12,7 +24,7 @@ export async function initPage() {
     }
     
     try {
-        const branchId = localStorage.getItem('branch_id');
+        const branchId = getBranchId();
         if (!branchId) throw new Error("No branch selected.");
 
         const localISOTime = new Date(now.getTime() - (now.getTimezoneOffset() * 60000)).toISOString().split('T')[0];
@@ -24,7 +36,7 @@ export async function initPage() {
             .eq('booking_date', localISOTime)
             .order('start_time', { ascending: true });
             
-        query = query.in('status', ['no-show', 'cancelled']);
+        query = query.in('status', ['no-show', 'cancelled', 'noshow', 'no_show', 'No-show', 'Cancelled', 'Noshow', 'No_show']);
 
         const { data, error } = await query;
         if (error) throw error;
@@ -38,6 +50,9 @@ export async function initPage() {
             const formattedTime = `${String(hours).padStart(2, '0')}:${minutes} ${ampm}`;
             const displayId = (b.booking_id || '').slice(0, 8).toUpperCase();
 
+            let normStatus = (b.status || 'no-show').toLowerCase().trim();
+            if (normStatus === 'noshow' || normStatus === 'no_show') normStatus = 'no-show';
+
             return {
                 id: displayId,
                 raw_id: b.booking_id,
@@ -46,7 +61,7 @@ export async function initPage() {
                 time: formattedTime,
                 service: b.service_name || 'N/A',
                 staff: b.staff_name || 'Unassigned',
-                status: (b.status || 'no-show').toLowerCase(),
+                status: normStatus,
                 amount: '₹' + (b.total_price || 0).toLocaleString('en-IN'),
                 payment: (b.payment_status || 'pending').toLowerCase()
             };
@@ -72,12 +87,25 @@ export async function initPage() {
     const tabC = document.getElementById('tabCancelledCountBadge');
     if (tabC) tabC.textContent = cancelled.length;
     
-    renderTable();
+    // Check if initial tab or highlight specifies a tab
+    const urlParams = new URLSearchParams(window.location.search);
+    const tabParam = urlParams.get('tab');
+    const highlightId = urlParams.get('highlight');
+    if (tabParam === 'cancelled' || tabParam === 'no-show') {
+        switchTab(tabParam);
+    } else if (highlightId) {
+        const targetBooking = todaysBookingsData.find(b => b.raw_id === highlightId || b.id === highlightId);
+        if (targetBooking && (targetBooking.status === 'cancelled' || targetBooking.status === 'no-show')) {
+            switchTab(targetBooking.status);
+        } else {
+            renderTable();
+        }
+    } else {
+        renderTable();
+    }
 
     // Highlight particular booking if specified in URL
     setTimeout(() => {
-        const urlParams = new URLSearchParams(window.location.search);
-        const highlightId = urlParams.get('highlight');
         if (highlightId) {
             let targetRow = document.getElementById(`row-${highlightId}`);
             if (!targetRow) {
