@@ -15,19 +15,25 @@ export async function fetchAndRenderProductSales(currentBranchId) {
         const now = new Date();
         const today = new Date(now.getTime() - (now.getTimezoneOffset() * 60000)).toISOString().split('T')[0];
 
-        // Fetch completed sales for today
-        const { data: sales, error } = await supabase
+        // Fetch paid/completed product sales for today
+        let query = supabase
             .from('sales')
-            .select('product_name, quantity, total_amount')
-            .eq('company_id', companyId)
+            .select('product_name, quantity, total_amount, price, status')
             .eq('branch_id', currentBranchId)
-            .eq('status', 'completed')
-            .gte('created_at', today + 'T00:00:00')
-            .lte('created_at', today + 'T23:59:59');
+            .in('status', ['paid', 'completed', 'Paid', 'Completed'])
+            .gte('created_at', `${today}T00:00:00`)
+            .lte('created_at', `${today}T23:59:59`);
+
+        if (companyId) {
+            query = query.eq('company_id', companyId);
+        }
+
+        const { data: sales, error } = await query;
 
         if (error) throw error;
 
         if (!sales || sales.length === 0) {
+            listContainer.className = 'service-list';
             listContainer.innerHTML = '<li class="centered-placeholder">No product sales today.</li>';
             return;
         }
@@ -35,20 +41,22 @@ export async function fetchAndRenderProductSales(currentBranchId) {
         // Aggregate data
         const productMap = {};
         sales.forEach(sale => {
-            const name = sale.product_name;
+            const name = (sale.product_name || 'Unnamed Product').trim();
             if (!productMap[name]) {
                 productMap[name] = { name, count: 0, revenue: 0 };
             }
-            productMap[name].count += sale.quantity;
-            productMap[name].revenue += sale.total_amount;
+            const qty = Number(sale.quantity) || 1;
+            const amt = Number(sale.total_amount ?? (Number(sale.price || 0) * qty) ?? 0);
+            productMap[name].count += qty;
+            productMap[name].revenue += amt;
         });
 
         const aggregated = Object.values(productMap)
-            .sort((a, b) => b.count - a.count)
-            .slice(0, 4);
+            .sort((a, b) => b.count - a.count || b.revenue - a.revenue)
+            .slice(0, 5);
 
         if (aggregated.length > 0) {
-            const maxCount = aggregated[0].count; // Used for progress bar max width
+            const maxCount = Math.max(...aggregated.map(p => p.count), 1); // Used for progress bar max width
             const colors = ['#6366f1', '#10b981', '#3b82f6', '#f59e0b', '#ec4899']; // Indigo, emerald, blue, amber, pink
             
             listContainer.className = 'services-today-list'; // Match the styling used in top services
@@ -77,11 +85,13 @@ export async function fetchAndRenderProductSales(currentBranchId) {
 
             if (window.feather) feather.replace();
         } else {
+            listContainer.className = 'service-list';
             listContainer.innerHTML = '<li class="centered-placeholder">No product sales today.</li>';
         }
 
     } catch (err) {
         console.error("Error fetching Product Sales:", err);
+        listContainer.className = 'service-list';
         listContainer.innerHTML = '<li class="centered-placeholder" style="color:#ef4444;">Error loading sales.</li>';
     }
 }
