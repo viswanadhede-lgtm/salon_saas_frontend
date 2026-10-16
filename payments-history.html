@@ -17,6 +17,19 @@
     <link rel="stylesheet" href="styles/global-layout.css">
     <!-- Feather Icons for a clean SaaS look -->
     <script src="https://unpkg.com/feather-icons"></script>
+    <style>
+        .customer-link {
+            font-weight: 600;
+            color: #4f46e5;
+            cursor: pointer;
+            text-decoration: none;
+            transition: all 0.2s;
+        }
+        .customer-link:hover {
+            color: #3730a3;
+            text-decoration: underline;
+        }
+    </style>
 </head>
 
 <body class="dashboard-body" style="min-height: calc(100vh / 0.93);">
@@ -287,7 +300,8 @@
     </div>
 
     <script type="module" src="scripts/app-shell.js"></script>
-    <script type="module" src="payments-history.js?v=2.6.0"></script>
+    <script type="module" src="scripts/global-customer-profile-modal.js"></script>
+    <script type="module" src="payments-history.js?v=2.7.0"></script>
     <script>
         // Init Feather Icons
         feather.replace();

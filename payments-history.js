@@ -58,6 +58,37 @@ function formatINR(amount) {
     return '₹' + Number(amount).toLocaleString('en-IN');
 }
 
+// ─── CUSTOMER PROFILE HELPER ────────────────────────────────────────────────
+window.phOpenCustomerProfile = async function(customerId, customerName) {
+    if (window.viewCustomerProfile) {
+        if (customerId) {
+            window.viewCustomerProfile(customerId, customerName);
+            return;
+        }
+        // Graceful fallback: look up customer_id by name if not in view
+        try {
+            const companyId = getCompanyId();
+            if (companyId && customerName && customerName !== 'Guest') {
+                const { data } = await supabase
+                    .from('customers')
+                    .select('id, name')
+                    .eq('company_id', companyId)
+                    .ilike('name', customerName.trim())
+                    .limit(1);
+                if (data && data.length > 0 && data[0].id) {
+                    window.viewCustomerProfile(data[0].id, customerName);
+                    return;
+                }
+            }
+        } catch (e) {
+            console.warn('[PaymentsHistory] Customer lookup error:', e);
+        }
+        window.viewCustomerProfile('', customerName);
+    } else {
+        console.warn('[PaymentsHistory] window.viewCustomerProfile is not loaded yet.');
+    }
+};
+
 // ─── INITIALIZATION ─────────────────────────────────────────────────────────
 document.addEventListener('DOMContentLoaded', async () => {
     // Search bar listener
@@ -159,12 +190,11 @@ function phRenderTable(data) {
         const status = (item.status || 'paid').toLowerCase();
         const statusLabel = status.toUpperCase();
         const isRefunded = status === 'refunded';
-        const statusPillClass = isRefunded ? 'tb-payment-unpaid' : 'tb-payment-paid';
 
         const tr = document.createElement('tr');
         tr.className = 'tb-row';
 
-        // 1. Date & Time
+        // 1. Date & Time (Stacked 2 rows: Date on row 1, Time on row 2)
         let displayDateTime = '-';
         if (item.paid_at) {
             const d = new Date(item.paid_at);
@@ -173,10 +203,24 @@ function phRenderTable(data) {
             const ampm = hrs >= 12 ? 'pm' : 'am';
             hrs = hrs % 12 || 12;
             const minStr = mins.toString().padStart(2, '0');
-            displayDateTime = `${datePart}, ${hrs}:${minStr} ${ampm}`;
+            const timePart = `${hrs}:${minStr} ${ampm}`;
+            displayDateTime = `
+                <div style="display:flex; flex-direction:column; gap:2px; line-height:1.25;">
+                    <span style="color:#1e293b; font-weight:500; font-size:0.84rem;">${datePart}</span>
+                    <span style="color:#64748b; font-size:0.75rem;">${timePart}</span>
+                </div>
+            `;
         }
 
-        // 2. Type Badge (Service = blue, Product = amber/yellow, Membership = purple)
+        // 2. Customer Name (Blue clickable link to global customer profile modal)
+        const customerName = item.customer_name || 'Guest';
+        const custSafeName = (customerName || '').replace(/'/g, "\\'");
+        const custId = item.customer_id || '';
+        const customerHtml = customerName !== 'Guest'
+            ? `<span class="customer-link" style="color:#4f46e5; font-weight:600; font-size:0.87rem; cursor:pointer;" onclick="event.stopPropagation(); window.phOpenCustomerProfile('${custId}', '${custSafeName}')">${customerName}</span>`
+            : `<span style="color:#64748b; font-weight:500; font-size:0.85rem;">Guest</span>`;
+
+        // 3. Type Badge (Service = blue, Product = amber/yellow, Membership = purple)
         const typeVal = item.type || 'Service';
         const typeColor = typeVal === 'Service'    ? { bg: '#dbeafe', color: '#1d4ed8' }
                         : typeVal === 'Product'    ? { bg: '#fef9c3', color: '#92400e' }
@@ -184,7 +228,7 @@ function phRenderTable(data) {
                         : { bg: '#f1f5f9', color: '#475569' };
         const typeBadge = `<span style="display:inline-block; padding:2px 10px; background:${typeColor.bg}; color:${typeColor.color}; border-radius:9999px; font-size:0.72rem; font-weight:600;">${typeVal}</span>`;
 
-        // 3. Item (service_name / product_names / plan_name) — expandable +N
+        // 4. Item (service_name / product_names / plan_name) — expandable +N
         const rawItems = (item.item_name || '').split(',').map(s => s.trim()).filter(Boolean);
         let itemHtml = '-';
         if (rawItems.length === 1) {
@@ -206,23 +250,23 @@ function phRenderTable(data) {
             `;
         }
 
-        // 4. Original Amount
+        // 5. Original Amount
         const origAmtHtml = `<span style="color:#475569; font-size:0.85rem;">${formatINR(item.original_amount)}</span>`;
 
-        // 5. Discount
-        let discountHtml = '<span style="color:#94a3b8; font-size:0.8rem;">—</span>';
+        // 6. Discount (Displays N/A if no discount applied)
+        let discountHtml = '<span style="color:#94a3b8; font-size:0.8rem; font-weight:500;">N/A</span>';
         const discAmt = parseFloat(item.discount_amount || 0);
         if (discAmt > 0) {
             const discName = item.discount_name ? `<span style="display:block; font-size:0.7rem; color:#94a3b8;">${item.discount_name}</span>` : '';
             discountHtml = `<span style="color:#dc2626; font-weight:600; font-size:0.82rem;">-${formatINR(discAmt)}</span>${discName}`;
         }
 
-        // 6. Final Amount
+        // 7. Final Amount (Plain bold numbers: Green for Paid, Red for Refunded)
         const finalAmtHtml = isRefunded
-            ? `<del style="color:#94a3b8; font-weight:400;">${formatINR(item.final_amount)}</del><span style="color:#dc2626; font-size:0.72rem; display:block; font-weight:600;">Refunded</span>`
-            : `<span style="display:inline-block; padding:4px 12px; background:#d1fae5; color:#059669; border:1px solid #a7f3d0; border-radius:9999px; font-size:0.75rem; font-weight:700;">${formatINR(item.final_amount)}</span>`;
+            ? `<span style="color:#dc2626; font-weight:700; font-size:0.9rem;">${formatINR(item.final_amount)}</span>`
+            : `<span style="color:#059669; font-weight:700; font-size:0.9rem;">${formatINR(item.final_amount)}</span>`;
 
-        // 7. Staff — First name with +N expander
+        // 8. Staff — First name with +N expander
         let staffHtml = '-';
         const rawStaff = (item.staff_name || '').split(',').map(s => s.trim()).filter(Boolean);
         const firstNameOnly = name => { const n = name.split(' ')[0]; return n.charAt(0).toUpperCase() + n.slice(1); };
@@ -235,9 +279,14 @@ function phRenderTable(data) {
             staffHtml = `<div style="display:flex; flex-direction:column; gap:4px;"><div style="display:flex; align-items:center; gap:6px; cursor:pointer;" onclick="event.stopPropagation(); const e=this.nextElementSibling; e.style.display=e.style.display==='none'?'block':'none'"><span style="color:#475569; font-size:0.85rem;">${firstS}</span><span style="background:#f1f5f9; color:#475569; padding:2px 6px; border-radius:12px; font-size:0.7rem; font-weight:600; border:1px solid #cbd5e1;">+${restS}</span></div><div style="display:none; font-size:0.75rem; color:#64748b; line-height:1.4; padding-left:2px; padding-top:2px; white-space:normal;">${fullListS}</div></div>`;
         }
 
+        // 9. Status Badge (Refunded pill matching Bookings table)
+        const statusBadgeHtml = isRefunded
+            ? `<span style="display:inline-block; padding:3px 10px; border-radius:20px; font-size:0.72rem; font-weight:700; color:#991b1b; background:#fee2e2; text-transform:uppercase;">REFUNDED</span>`
+            : `<span style="display:inline-block; padding:3px 10px; border-radius:20px; font-size:0.72rem; font-weight:700; color:#065f46; background:#d1fae5; text-transform:uppercase;">PAID</span>`;
+
         tr.innerHTML = `
-            <td style="padding:14px 16px 14px 24px; color:#475569; font-size:0.83rem; white-space:nowrap;">${displayDateTime}</td>
-            <td style="padding:14px 16px; color:#1e293b; font-weight:500;">${item.customer_name || 'Guest'}</td>
+            <td style="padding:14px 16px 14px 24px; white-space:nowrap;">${displayDateTime}</td>
+            <td style="padding:14px 16px;">${customerHtml}</td>
             <td style="padding:14px 16px;">${typeBadge}</td>
             <td style="padding:14px 16px; color:#475569;">${itemHtml}</td>
             <td style="padding:14px 16px;">${origAmtHtml}</td>
@@ -245,9 +294,7 @@ function phRenderTable(data) {
             <td style="padding:14px 16px;">${finalAmtHtml}</td>
             <td style="padding:14px 16px;">${methodBadge}</td>
             <td style="padding:14px 16px;">${staffHtml}</td>
-            <td style="padding:14px 16px;">
-                <span class="tb-status-pill ${statusPillClass}" style="text-transform:uppercase; font-size:0.7rem;">${statusLabel}</span>
-            </td>
+            <td style="padding:14px 16px;">${statusBadgeHtml}</td>
             <td style="padding:14px 12px; text-align:center;" class="action-cell">
                 <button onclick="event.stopPropagation(); window.phOpenDrawer('${item.payment_id}')" title="View Invoice" style="background:#eff6ff; border:1px solid #bfdbfe; border-radius:8px; cursor:pointer; color:#1d4ed8; padding:6px 10px; font-size:0.7rem; font-weight:600; transition:all 0.2s; display:inline-flex; flex-direction:column; align-items:center; gap:2px; min-width:48px;" onmouseover="this.style.background='#dbeafe'; this.style.borderColor='#93c5fd';" onmouseout="this.style.background='#eff6ff'; this.style.borderColor='#bfdbfe';">
                     <i data-feather="file-text" style="width:14px; height:14px;"></i>
