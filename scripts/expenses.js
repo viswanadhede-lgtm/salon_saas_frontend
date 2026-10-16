@@ -55,6 +55,17 @@ const parseDateParts = (dateStr) => {
     };
 };
 
+// ─── Utility & Security Helpers ───────────────────────────────────────────────
+const escapeHtml = (str) => {
+    if (!str) return '';
+    return String(str)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#39;');
+};
+
 // ─── Forward Declarations for Clean Hoisting ─────────────────────────────────
 export function renderExpenses() {
     renderExpensesTable();
@@ -242,8 +253,14 @@ window.submitExpense = async () => {
     const amount   = parseFloat(document.getElementById('expenseAmount')?.value);
     const notes    = document.getElementById('expenseNotes')?.value?.trim() || null;
 
-    if (!date || !category || isNaN(amount)) {
-        showToast('Please fill in all required fields.');
+    if (!date || !category || isNaN(amount) || amount <= 0) {
+        showToast('Please enter all required fields with an amount greater than 0.');
+        return;
+    }
+
+    const companyId = getCompanyId();
+    if (!companyId) {
+        showToast('Company information not loaded. Please refresh the page.');
         return;
     }
 
@@ -269,6 +286,7 @@ window.submitExpense = async () => {
             let { error } = await supabase
                 .from('expenses')
                 .update(updatePayload)
+                .eq('company_id', companyId)
                 .eq('expense_id', editingExpenseId);
 
             if (error) {
@@ -276,6 +294,7 @@ window.submitExpense = async () => {
                 ({ error } = await supabase
                     .from('expenses')
                     .update(updatePayload)
+                    .eq('company_id', companyId)
                     .eq('id', editingExpenseId));
             }
 
@@ -290,7 +309,7 @@ window.submitExpense = async () => {
             const { error } = await supabase
                 .from('expenses')
                 .insert({
-                    company_id: getCompanyId(),
+                    company_id: companyId,
                     branch_id:  branchId,
                     date,
                     category,
@@ -383,16 +402,25 @@ async function performDeleteExpense() {
     closeDeleteModal();
     
     try {
-        let { error } = await supabase
+        const companyId = getCompanyId();
+        let query = supabase
             .from('expenses')
-            .update({ status: 'deleted', updated_at: new Date().toISOString() })
-            .eq('expense_id', id);
+            .update({ status: 'deleted', updated_at: new Date().toISOString() });
+
+        if (companyId) {
+            query = query.eq('company_id', companyId);
+        }
+
+        let { error } = await query.eq('expense_id', id);
 
         if (error) {
-            ({ error } = await supabase
+            let fallbackQuery = supabase
                 .from('expenses')
-                .update({ status: 'deleted', updated_at: new Date().toISOString() })
-                .eq('id', id));
+                .update({ status: 'deleted', updated_at: new Date().toISOString() });
+            if (companyId) {
+                fallbackQuery = fallbackQuery.eq('company_id', companyId);
+            }
+            ({ error } = await fallbackQuery.eq('id', id));
         }
 
         if (error) throw error;
@@ -774,34 +802,38 @@ function renderExpensesTable() {
             const expParts = parseDateParts(exp.date);
             const formattedDate = expParts
                 ? `${String(expParts.day).padStart(2, '0')}-${String(expParts.month + 1).padStart(2, '0')}-${expParts.year}`
-                : (exp.date || '-');
+                : escapeHtml(exp.date || '-');
 
+            const safeCategory = escapeHtml(exp.category || 'Other');
             const fullName = exp.staff_name || 'Admin';
             const firstName = fullName.split(' ')[0];
+            const safeFullName = escapeHtml(fullName);
+            const safeFirstName = escapeHtml(firstName);
+            const safeExpId = escapeHtml(String(expId));
 
             return `
                 <tr>
                     <td>${formattedDate}</td>
-                    <td><span class="status-badge ${badgeClass}">${exp.category || 'Other'}</span></td>
+                    <td><span class="status-badge ${badgeClass}">${safeCategory}</span></td>
                     <td style="font-weight: 600;">&#8377;${amt.toLocaleString('en-IN', { minimumFractionDigits: 2 })}</td>
                     <td class="text-center" style="text-align: center; vertical-align: middle;">
                         ${exp.notes ? `
-                        <button class="icon-btn mx-auto" title="View Notes" onclick="window.viewExpenseNotes('${expId}')" style="background:#f8fafc; border:1px solid #e2e8f0; border-radius:6px; padding:6px; margin: 0 auto; display: block;">
+                        <button class="icon-btn mx-auto" title="View Notes" onclick="window.viewExpenseNotes('${safeExpId}')" style="background:#f8fafc; border:1px solid #e2e8f0; border-radius:6px; padding:6px; margin: 0 auto; display: block;">
                             <i data-feather="file-text" style="width:16px;height:16px;color:#64748b;"></i>
                         </button>
                         ` : '<span class="text-muted" style="font-weight:500; display:block; text-align:center; width:100%;">N/A</span>'}
                     </td>
-                    <td><span title="${fullName}" style="cursor:help;">${firstName}</span></td>
+                    <td><span title="${safeFullName}" style="cursor:help;">${safeFirstName}</span></td>
                     <td style="text-align: center;">
                         <div style="display:flex; gap:6px; justify-content:center; align-items:center;">
                             <button data-sub-feature="expenses_update"
-                                onclick="window.editExpense('${expId}')"
+                                onclick="window.editExpense('${safeExpId}')"
                                 style="display:inline-flex; flex-direction:column; align-items:center; justify-content:center; gap:2px; padding:5px 10px; background:#eff6ff; color:#3b82f6; border:1px solid #bfdbfe; border-radius:7px; font-size:0.7rem; font-weight:600; cursor:pointer; min-width:44px;">
                                 <i data-feather="edit-2" style="width:13px;height:13px;"></i>
                                 <span>Edit</span>
                             </button>
                             <button data-sub-feature="expenses_delete"
-                                onclick="window.deleteExpense('${expId}')"
+                                onclick="window.deleteExpense('${safeExpId}')"
                                 style="display:inline-flex; flex-direction:column; align-items:center; justify-content:center; gap:2px; padding:5px 10px; background:#fef2f2; color:#ef4444; border:1px solid #fecaca; border-radius:7px; font-size:0.7rem; font-weight:600; cursor:pointer; min-width:44px;">
                                 <i data-feather="trash-2" style="width:13px;height:13px;"></i>
                                 <span>Delete</span>

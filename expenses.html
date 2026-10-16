@@ -349,6 +349,23 @@
             border-radius: 8px;
             border: 1px solid #e2e8f0;
         }
+
+        .expenses-stat-grid {
+            margin-bottom: 1.5rem;
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 1.25rem;
+        }
+        @media (max-width: 1024px) {
+            .expenses-stat-grid {
+                grid-template-columns: repeat(2, 1fr);
+            }
+        }
+        @media (max-width: 600px) {
+            .expenses-stat-grid {
+                grid-template-columns: 1fr;
+            }
+        }
     </style>
 </head>
 
@@ -378,8 +395,8 @@
                 </div>
             </div>
 
-            <!-- Summary Cards (Single row of 4 cards) -->
-            <div class="summary-cards" style="margin-bottom: 1.5rem; display: grid; grid-template-columns: repeat(4, 1fr); gap: 1.25rem;">
+            <!-- Summary Cards (Single row of 4 cards on desktop) -->
+            <div class="summary-cards expenses-stat-grid">
                 
                 <!-- Card 1: Today's Expenses -->
                 <div class="card" style="padding: 1.25rem 1.4rem; display: flex; flex-direction: column; justify-content: space-between; background: #ffffff; border-radius: 12px; border: 1px solid #e2e8f0; box-shadow: 0 1px 3px rgba(0,0,0,0.03); min-width: 0;">
