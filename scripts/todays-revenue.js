@@ -64,6 +64,45 @@ export async function calculateAndRenderRevenue() {
         const kpiTotalEl = document.getElementById('kpiTotalRev');
         if (kpiTotalEl) kpiTotalEl.textContent = '₹' + totalRev.toLocaleString('en-IN');
 
+        // --- EXPENSES & NET REVENUE ──────────────────────────────────────────
+        const { data: expData } = await supabase
+            .from('expenses')
+            .select('amount, status')
+            .eq('branch_id', branchId)
+            .eq('date', localISOTime);
+
+        const todayExpenses = (expData || [])
+            .filter(e => e.status !== 'deleted')
+            .reduce((sum, e) => sum + (Number(e.amount) || 0), 0);
+
+        const netRevenue = totalRev - todayExpenses;
+        const isPositive = netRevenue >= 0;
+
+        const kpiExpEl = document.getElementById('kpiTodayExpenses');
+        if (kpiExpEl) kpiExpEl.textContent = '₹' + todayExpenses.toLocaleString('en-IN');
+
+        const kpiNetEl = document.getElementById('kpiNetRevenue');
+        if (kpiNetEl) {
+            kpiNetEl.textContent = (isPositive ? '' : '-') + '₹' + Math.abs(netRevenue).toLocaleString('en-IN');
+            kpiNetEl.style.color = isPositive ? '#10b981' : '#ef4444';
+        }
+
+        const netRevCard = document.getElementById('netRevenueStripCard');
+        if (netRevCard) netRevCard.style.borderLeftColor = isPositive ? '#10b981' : '#ef4444';
+
+        const netRevIconWrap = document.getElementById('netRevIconWrap');
+        if (netRevIconWrap) {
+            netRevIconWrap.style.background = isPositive ? '#d1fae5' : '#fee2e2';
+            const icon = netRevIconWrap.querySelector('i');
+            if (icon) icon.style.color = isPositive ? '#10b981' : '#ef4444';
+        }
+
+        const netRevNote = document.getElementById('kpiNetRevenueNote');
+        if (netRevNote) {
+            netRevNote.textContent = isPositive ? 'Total Revenue − Expenses' : 'Expenses exceeded revenue';
+            netRevNote.style.color = isPositive ? '#94a3b8' : '#ef4444';
+        }
+
         // --- SNAPSHOT TILES ---
         const paidRows = (trxData || []).filter(t => t.status === 'paid');
         const refundedRows = (trxData || []).filter(t => t.status === 'refunded');
