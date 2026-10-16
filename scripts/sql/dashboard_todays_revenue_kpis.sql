@@ -173,3 +173,5 @@ BEGIN
         COALESCE(v_expenses,   0);
 END;
 $$;
+
+GRANT EXECUTE ON FUNCTION public.dashboard_todays_revenue_kpis(uuid, uuid, date) TO authenticated, service_role, anon;

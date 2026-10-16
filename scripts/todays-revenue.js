@@ -2,8 +2,21 @@ import { supabase } from '../lib/supabase.js';
 
 let todaysBookingsData = [];
 
+function getBranchId() {
+    let b = localStorage.getItem('branch_id') || localStorage.getItem('active_branch_id');
+    if (b === 'null' || b === 'undefined') b = null;
+    if (!b) {
+        try {
+            const ctx = JSON.parse(localStorage.getItem('active_company_context') || localStorage.getItem('appContext') || '{}');
+            b = ctx.branch?.branch_id || ctx.branch?.id || ctx.activeBranch?.id || ctx.activeBranch?.branch_id;
+        } catch (_) {}
+    }
+    return b || null;
+}
+
 function getCompanyId() {
     let companyId = localStorage.getItem('company_id');
+    if (companyId === 'null' || companyId === 'undefined') companyId = null;
     if (!companyId) {
         try {
             const ctx = JSON.parse(localStorage.getItem('active_company_context') || localStorage.getItem('appContext') || '{}');
@@ -19,27 +32,31 @@ export async function calculateAndRenderRevenue() {
     const staffRevenue = {};
     const tableBody = document.getElementById('revTableBody');
     if (tableBody) {
-        tableBody.innerHTML = '<tr><td colspan="4" style="text-align:center; padding:24px; color:#94a3b8;">Loading live data...</td></tr>';
+        tableBody.innerHTML = '<tr><td colspan="5" style="text-align:center; padding:24px; color:#94a3b8;">Loading live data...</td></tr>';
     }
 
     try {
-        const branchId = localStorage.getItem('branch_id');
-        if (!branchId) throw new Error("No branch selected.");
+        const branchId = getBranchId();
+        if (!branchId) throw new Error("No branch selected (branch_id / active_branch_id missing).");
 
         const now = new Date();
         const localISOTime = new Date(now.getTime() - (now.getTimezoneOffset() * 60000)).toISOString().split('T')[0];
 
         // --- 1. KPI & SNAPSHOT LOGIC via RPC (dashboard_todays_revenue_kpis) ---
         const companyId = getCompanyId();
-        const { data: rpcData, error: rpcError } = await supabase.rpc('dashboard_todays_revenue_kpis', {
+        const rpcParams = {
             p_branch_id:  branchId,
-            p_company_id: companyId || null,
             p_today:      localISOTime
-        });
+        };
+        if (companyId) {
+            rpcParams.p_company_id = companyId;
+        }
+
+        const { data: rpcData, error: rpcError } = await supabase.rpc('dashboard_todays_revenue_kpis', rpcParams);
 
         if (rpcError) {
             console.error('[TodaysRevenue] dashboard_todays_revenue_kpis RPC error:', rpcError);
-            throw rpcError;
+            throw new Error(`RPC error: ${rpcError.message || rpcError.details || JSON.stringify(rpcError)}`);
         }
 
         const kpis = (Array.isArray(rpcData) && rpcData.length > 0) ? rpcData[0] : (rpcData || {});
@@ -226,7 +243,7 @@ export async function calculateAndRenderRevenue() {
     } catch (err) {
         console.error("Failed to load revenue data:", err);
         if (tableBody) {
-            tableBody.innerHTML = '<tr><td colspan="4" style="text-align:center; padding:24px; color:#ef4444;">Failed to load live data. Please refresh.</td></tr>';
+            tableBody.innerHTML = `<tr><td colspan="5" style="text-align:center; padding:24px; color:#ef4444; font-weight:600;">Failed to load live data: ${err.message || 'Error'}. Please refresh.</td></tr>`;
         }
     }
 
