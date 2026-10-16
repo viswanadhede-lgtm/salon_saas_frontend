@@ -440,23 +440,6 @@ function renderExpenses() {
     filtered.sort((a, b) => new Date(b.date) - new Date(a.date));
 
     let totalSelectedRange = 0;
-    let thisMonthTotal     = 0;
-    let todayTotal         = 0;
-
-    const startOfToday = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-
-    allExpenses.forEach(exp => {
-        const amt = parseFloat(exp.amount || 0);
-        const expDate = new Date(exp.date);
-        
-        if (expDate >= startOfCurrentMonth && expDate < new Date(now.getFullYear(), now.getMonth() + 1, 1)) {
-            thisMonthTotal += amt;
-        }
-        if (expDate >= startOfToday) {
-            todayTotal += amt;
-        }
-    });
-
     const categoryTotals = {};
 
     const badgeMap = {
@@ -519,21 +502,129 @@ function renderExpenses() {
         }).join('');
     }
 
+    // ─── Stat Cards Calculation & Rendering ───
+    const pad2 = (n) => String(n).padStart(2, '0');
+    const todayStr = `${now.getFullYear()}-${pad2(now.getMonth() + 1)}-${pad2(now.getDate())}`;
+
+    const yesterdayObj = new Date(now);
+    yesterdayObj.setDate(now.getDate() - 1);
+    const yesterdayStr = `${yesterdayObj.getFullYear()}-${pad2(yesterdayObj.getMonth() + 1)}-${pad2(yesterdayObj.getDate())}`;
+
+    const currentYear = now.getFullYear();
+    const currentMonth = now.getMonth(); // 0-indexed
+
+    const lastMonthObj = new Date(now.getFullYear(), now.getMonth() - 1, 1);
+    const lastMonthYear = lastMonthObj.getFullYear();
+    const lastMonthNum = lastMonthObj.getMonth(); // 0-indexed
+
+    let todayTotal = 0;
+    let yesterdayTotal = 0;
+    let thisMonthTotal = 0;
+    let lastMonthTotal = 0;
+    let lifetimeTotal = 0;
+    const lifetimeCategoryTotals = {};
+
+    allExpenses.forEach(exp => {
+        const amt = parseFloat(exp.amount || 0);
+        if (isNaN(amt) || amt <= 0) return;
+
+        lifetimeTotal += amt;
+        const cat = exp.category || 'Other';
+        lifetimeCategoryTotals[cat] = (lifetimeCategoryTotals[cat] || 0) + amt;
+
+        if (exp.date) {
+            const expDateStr = String(exp.date).slice(0, 10);
+            if (expDateStr === todayStr) {
+                todayTotal += amt;
+            } else if (expDateStr === yesterdayStr) {
+                yesterdayTotal += amt;
+            }
+
+            const parts = expDateStr.split('-');
+            if (parts.length >= 2) {
+                const y = parseInt(parts[0], 10);
+                const m = parseInt(parts[1], 10) - 1;
+                if (y === currentYear && m === currentMonth) {
+                    thisMonthTotal += amt;
+                } else if (y === lastMonthYear && m === lastMonthNum) {
+                    lastMonthTotal += amt;
+                }
+            }
+        }
+    });
+
     let topCatName = '-';
-    let topCatMax = -1;
-    for (const cat in categoryTotals) {
-        if (categoryTotals[cat] > topCatMax) {
-            topCatMax = categoryTotals[cat];
+    let topCatMax = 0;
+    for (const [cat, total] of Object.entries(lifetimeCategoryTotals)) {
+        if (total > topCatMax) {
+            topCatMax = total;
             topCatName = cat;
         }
     }
+    const topCatPercent = lifetimeTotal > 0 && topCatMax > 0
+        ? ((topCatMax / lifetimeTotal) * 100).toFixed(1)
+        : '0.0';
 
-    document.getElementById('cardTotalExpenses').innerText     = `₹${totalSelectedRange.toLocaleString('en-IN', { minimumFractionDigits: 2 })}`;
-    document.getElementById('cardTopCategory').innerHTML       = topCatMax > 0 
-        ? `<div style="font-size:1.1rem; margin-bottom:2px;">${topCatName}</div><div style="font-size:0.8rem; font-weight:600; color:#64748b;">₹${topCatMax.toLocaleString('en-IN', { minimumFractionDigits: 2 })}</div>`
-        : '-';
-    document.getElementById('cardTodayExpenses').innerText     = `₹${todayTotal.toLocaleString('en-IN', { minimumFractionDigits: 2 })}`;
-    document.getElementById('cardThisMonthExpenses').innerText = `₹${thisMonthTotal.toLocaleString('en-IN', { minimumFractionDigits: 2 })}`;
+    // Helper to format trend indicators for expenses:
+    // Increased spend = alert/negative (red, trending-up)
+    // Decreased spend = good/savings (green, trending-down)
+    const formatTrend = (current, previous, vsLabel) => {
+        if (previous === 0 && current === 0) {
+            return `<span style="color: #64748b; font-weight: 500;">0% vs ${vsLabel}</span>`;
+        }
+        if (previous === 0 && current > 0) {
+            return `<span style="color: #ef4444; display: inline-flex; align-items: center; gap: 4px;"><i data-feather="trending-up" style="width: 14px; height: 14px;"></i> 100% vs ${vsLabel}</span>`;
+        }
+        if (current === 0 && previous > 0) {
+            return `<span style="color: #10b981; display: inline-flex; align-items: center; gap: 4px;"><i data-feather="trending-down" style="width: 14px; height: 14px;"></i> 100% vs ${vsLabel}</span>`;
+        }
+        const change = ((current - previous) / previous) * 100;
+        const absVal = Math.abs(Math.round(change));
+        if (change > 0) {
+            return `<span style="color: #ef4444; display: inline-flex; align-items: center; gap: 4px;"><i data-feather="trending-up" style="width: 14px; height: 14px;"></i> ${absVal}% vs ${vsLabel}</span>`;
+        } else if (change < 0) {
+            return `<span style="color: #10b981; display: inline-flex; align-items: center; gap: 4px;"><i data-feather="trending-down" style="width: 14px; height: 14px;"></i> ${absVal}% vs ${vsLabel}</span>`;
+        } else {
+            return `<span style="color: #64748b; font-weight: 500;">0% vs ${vsLabel}</span>`;
+        }
+    };
+
+    // Update DOM elements
+    const elTodayAmt = document.getElementById('cardTodayExpenses');
+    const elTodayTrend = document.getElementById('cardTodayTrend');
+    const elThisMonthAmt = document.getElementById('cardThisMonthExpenses');
+    const elThisMonthTrend = document.getElementById('cardThisMonthTrend');
+    const elTotalAmt = document.getElementById('cardTotalExpenses');
+    const elTopCatName = document.getElementById('cardTopCategoryName');
+    const elTopCatDetails = document.getElementById('cardTopCategoryDetails');
+
+    if (elTodayAmt) {
+        elTodayAmt.innerText = `₹${todayTotal.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+    }
+    if (elTodayTrend) {
+        elTodayTrend.innerHTML = formatTrend(todayTotal, yesterdayTotal, 'yesterday');
+    }
+
+    if (elThisMonthAmt) {
+        elThisMonthAmt.innerText = `₹${thisMonthTotal.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+    }
+    if (elThisMonthTrend) {
+        elThisMonthTrend.innerHTML = formatTrend(thisMonthTotal, lastMonthTotal, 'last month');
+    }
+
+    if (elTotalAmt) {
+        elTotalAmt.innerText = `₹${lifetimeTotal.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+    }
+
+    if (elTopCatName) {
+        elTopCatName.innerText = topCatMax > 0 ? topCatName : 'None';
+        elTopCatName.title = topCatMax > 0 ? topCatName : 'None';
+    }
+    if (elTopCatDetails) {
+        elTopCatDetails.innerHTML = topCatMax > 0
+            ? `₹${topCatMax.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} &middot; ${topCatPercent}% of total`
+            : `₹0.00 &middot; 0% of total`;
+    }
 
     feather.replace();
     

@@ -435,47 +435,59 @@
                 </div>
             </div>
 
-            <!-- Summary Cards -->
-            <div class="summary-cards" style="margin-bottom: 1.5rem; display: grid; grid-template-columns: repeat(4, 1fr); gap: 1.5rem;">
+            <!-- Summary Cards (Single row of 4 cards) -->
+            <div class="summary-cards" style="margin-bottom: 1.5rem; display: grid; grid-template-columns: repeat(4, 1fr); gap: 1.25rem;">
                 
-                <!-- Static: Ignore Filters -->
-                <div class="card stat-card">
-                    <div class="stat-icon bg-rose-light">
-                        <i data-feather="clock" class="text-rose"></i>
+                <!-- Card 1: Today's Expenses -->
+                <div class="card" style="padding: 1.25rem 1.4rem; display: flex; flex-direction: column; justify-content: space-between; background: #ffffff; border-radius: 12px; border: 1px solid #e2e8f0; box-shadow: 0 1px 3px rgba(0,0,0,0.03); min-width: 0;">
+                    <div style="display: flex; align-items: center; gap: 10px;">
+                        <div style="width: 36px; height: 36px; border-radius: 8px; background: #fee2e2; display: flex; align-items: center; justify-content: center; flex-shrink: 0;">
+                            <i data-feather="clock" style="width: 18px; height: 18px; stroke: #ef4444;"></i>
+                        </div>
+                        <span style="font-size: 0.88rem; font-weight: 500; color: #475569;">Today's Expenses</span>
                     </div>
-                    <div class="stat-details">
-                        <p class="stat-label">Today's Expenses</p>
-                        <h3 class="stat-value" id="cardTodayExpenses">?0</h3>
-                    </div>
-                </div>
-                <div class="card stat-card">
-                    <div class="stat-icon bg-amber-light">
-                        <i data-feather="calendar" class="text-amber"></i>
-                    </div>
-                    <div class="stat-details">
-                        <p class="stat-label">This Month Expenses</p>
-                        <h3 class="stat-value" id="cardThisMonthExpenses">?0</h3>
+                    <div class="stat-value" id="cardTodayExpenses" style="font-size: 1.6rem; font-weight: 700; color: #0f172a; margin: 8px 0 4px 0; letter-spacing: -0.02em;">&#8377;0.00</div>
+                    <div id="cardTodayTrend" style="display: flex; align-items: center; gap: 4px; font-size: 0.82rem; font-weight: 600; min-height: 20px;">
+                        <span style="color: #64748b; font-weight: 500;">&mdash; vs yesterday</span>
                     </div>
                 </div>
 
-                <!-- Dynamic: Respect Filters -->
-                <div class="card stat-card">
-                    <div class="stat-icon bg-indigo-light">
-                        <i data-feather="dollar-sign" class="text-indigo"></i>
+                <!-- Card 2: This Month's Expenses -->
+                <div class="card" style="padding: 1.25rem 1.4rem; display: flex; flex-direction: column; justify-content: space-between; background: #ffffff; border-radius: 12px; border: 1px solid #e2e8f0; box-shadow: 0 1px 3px rgba(0,0,0,0.03); min-width: 0;">
+                    <div style="display: flex; align-items: center; gap: 10px;">
+                        <div style="width: 36px; height: 36px; border-radius: 8px; background: #fef3c7; display: flex; align-items: center; justify-content: center; flex-shrink: 0;">
+                            <i data-feather="calendar" style="width: 18px; height: 18px; stroke: #d97706;"></i>
+                        </div>
+                        <span style="font-size: 0.88rem; font-weight: 500; color: #475569;">This Month's Expenses</span>
                     </div>
-                    <div class="stat-details">
-                        <p class="stat-label">Total Expenses</p>
-                        <h3 class="stat-value" id="cardTotalExpenses">?0</h3>
+                    <div class="stat-value" id="cardThisMonthExpenses" style="font-size: 1.6rem; font-weight: 700; color: #0f172a; margin: 8px 0 4px 0; letter-spacing: -0.02em;">&#8377;0.00</div>
+                    <div id="cardThisMonthTrend" style="display: flex; align-items: center; gap: 4px; font-size: 0.82rem; font-weight: 600; min-height: 20px;">
+                        <span style="color: #64748b; font-weight: 500;">&mdash; vs last month</span>
                     </div>
                 </div>
-                <div class="card stat-card">
-                    <div class="stat-icon bg-blue-light">
-                        <i data-feather="bar-chart-2" class="text-blue"></i>
+
+                <!-- Card 3: Total Expenses -->
+                <div class="card" style="padding: 1.25rem 1.4rem; display: flex; flex-direction: column; justify-content: space-between; background: #ffffff; border-radius: 12px; border: 1px solid #e2e8f0; box-shadow: 0 1px 3px rgba(0,0,0,0.03); min-width: 0;">
+                    <div style="display: flex; align-items: center; gap: 10px;">
+                        <div style="width: 36px; height: 36px; border-radius: 8px; background: #ede9fe; display: flex; align-items: center; justify-content: center; flex-shrink: 0;">
+                            <span style="font-weight: 700; font-size: 1.15rem; color: #6366f1; line-height: 1;">&#8377;</span>
+                        </div>
+                        <span style="font-size: 0.88rem; font-weight: 500; color: #475569;">Total Expenses</span>
                     </div>
-                    <div class="stat-details">
-                        <p class="stat-label">Top Expense Category</p>
-                        <h3 class="stat-value" id="cardTopCategory" style="line-height: 1.25; margin-top:2px;">-</h3>
+                    <div class="stat-value" id="cardTotalExpenses" style="font-size: 1.6rem; font-weight: 700; color: #0f172a; margin: 8px 0 4px 0; letter-spacing: -0.02em;">&#8377;0.00</div>
+                    <div style="font-size: 0.82rem; color: #64748b; font-weight: 500; min-height: 20px; display: flex; align-items: center;">Lifetime expenses</div>
+                </div>
+
+                <!-- Card 4: Top Expense Category -->
+                <div class="card" style="padding: 1.25rem 1.4rem; display: flex; flex-direction: column; justify-content: space-between; background: #ffffff; border-radius: 12px; border: 1px solid #e2e8f0; box-shadow: 0 1px 3px rgba(0,0,0,0.03); min-width: 0;">
+                    <div style="display: flex; align-items: center; gap: 10px;">
+                        <div style="width: 36px; height: 36px; border-radius: 8px; background: #dbeafe; display: flex; align-items: center; justify-content: center; flex-shrink: 0;">
+                            <i data-feather="bar-chart-2" style="width: 18px; height: 18px; stroke: #2563eb;"></i>
+                        </div>
+                        <span style="font-size: 0.88rem; font-weight: 500; color: #475569;">Top Expense Category</span>
                     </div>
+                    <div class="stat-value" id="cardTopCategoryName" style="font-size: 1.4rem; font-weight: 700; color: #0f172a; margin: 8px 0 4px 0; letter-spacing: -0.01em; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">-</div>
+                    <div id="cardTopCategoryDetails" style="font-size: 0.82rem; color: #64748b; font-weight: 500; min-height: 20px; display: flex; align-items: center;">&#8377;0.00 &middot; 0% of total</div>
                 </div>
             </div>
 
