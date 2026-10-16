@@ -692,7 +692,18 @@
 
  // Appointments Tab card - has 3 tabs - upcoming appointments, completed appointments, noshows& cancellations - Source Table = bookings_for_business_transaction .
 
- 
+ // Product sales today - direct supabase - source table = SALES Table .
+
+ // Weekly Revenue (Bar Chart) -  RPC FUNCTION - dashboard_weekly_revenue .
+
+ // Top Services This Week - RPC FUNCTION - dashboard_top_services   (Top Services This Week & Top Services Today)
+
+ // Top Services Today - RPC FUNCTION - dashboard_top_services   (Top Services This Week & Top Services Today)
+
+
+ //==============================================================================================================================================================================
+ //
+ //==============================================================================================================================================================================
 
 
 
