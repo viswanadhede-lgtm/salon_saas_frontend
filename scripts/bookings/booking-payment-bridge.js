@@ -4,15 +4,24 @@ import { getLiveBookings } from './bookings-state.js';
 import { fetchBookings } from './bookings-data.js';
 
 // ─── Collect Payment Handler ────────────────────────────────────────────────
-export async function openBookingPayment(bookingId) {
-    const liveData = getLiveBookings() || [];
-    let row = liveData.find(x => (x.booking_id || x.id) === bookingId);
-    if (!row) {
-        row = liveData.find(x => String(x.booking_id || x.id || '').toLowerCase() === String(bookingId || '').toLowerCase());
+export async function openBookingPayment(bookingIdOrRow, options = {}) {
+    let row = null;
+    let targetId = null;
+
+    if (bookingIdOrRow && typeof bookingIdOrRow === 'object') {
+        row = bookingIdOrRow;
+        targetId = row.booking_id || row.id;
+    } else {
+        const liveData = (typeof getLiveBookings === 'function' ? getLiveBookings() : []) || [];
+        row = liveData.find(x => (x.booking_id || x.id) === bookingIdOrRow);
+        if (!row) {
+            row = liveData.find(x => String(x.booking_id || x.id || '').toLowerCase() === String(bookingIdOrRow || '').toLowerCase());
+        }
+        targetId = row ? (row.booking_id || row.id) : bookingIdOrRow;
     }
-    const targetId = row ? (row.booking_id || row.id) : bookingId;
+
     if (!targetId) {
-        console.error('[BookingPayment] Booking not found for ID:', bookingId);
+        console.error('[BookingPayment] Booking not found for ID:', bookingIdOrRow);
         return;
     }
 
@@ -25,16 +34,20 @@ export async function openBookingPayment(bookingId) {
     let items = [];
     if (row && (row.service_name || row.services)) {
         const svcNames = (row.service_name || row.services || '').split(',');
+        const apptDate = (row && (row.appointment_date || row.booking_date || row.date)) || 'Today';
+        const apptTime = (row && (row.appointment_time || row.start_time || row.time)) || '';
         items = svcNames.map(s => ({
             name: s.trim(),
-            subtitle: `${(row && (row.appointment_date || row.date)) || 'Today'} at ${(row && (row.appointment_time || row.time)) || ''}`,
+            subtitle: `${apptDate}${apptTime ? ' at ' + apptTime : ''}`,
             quantity: 1,
             price: Math.round(totalOriginal / Math.max(1, svcNames.length))
         }));
     } else {
+        const apptDate = (row && (row.appointment_date || row.booking_date || row.date)) || 'Today';
+        const staffName = (row && (row.staff_name || row.staff)) || 'Assigned';
         items = [{
             name: 'Salon Service Appointment',
-            subtitle: `${(row && (row.appointment_date || row.date)) || 'Today'} · Staff: ${(row && row.staff_name) || 'Assigned'}`,
+            subtitle: `${apptDate} · Staff: ${staffName}`,
             quantity: 1,
             price: totalOriginal
         }];
@@ -55,14 +68,14 @@ export async function openBookingPayment(bookingId) {
             type: 'booking',
             title: 'Booking Payment',
             saleId: String(targetId).slice(0, 8).toUpperCase(),
-            customerId: (row && row.customer_id) || null,
+            customerId: (row && (row.customer_id || row.customerId)) || null,
             customerName: customerName,
             customerPhone: customerPhone,
             totalAmount: totalOriginal,
             amountDue: totalOriginal,
             items: items,
             onComplete: async (payload) => {
-                await processBookingPaymentCallback(payload, row || { booking_id: targetId, final_amount: totalOriginal });
+                await processBookingPaymentCallback(payload, row || { booking_id: targetId, final_amount: totalOriginal }, options);
             }
         });
     } else {
@@ -74,7 +87,7 @@ if (typeof window !== 'undefined') {
     window.openBookingPayment = openBookingPayment;
 }
 
-export async function processBookingPaymentCallback(payload, row) {
+export async function processBookingPaymentCallback(payload, row, options = {}) {
     const amount = payload.amountCollected;
     const payMethod = payload.paymentMethod;
 
@@ -149,7 +162,19 @@ export async function processBookingPaymentCallback(payload, row) {
                     window.toast(msg);
                 }
 
-                await fetchBookings();
+                if (typeof options.onSuccess === 'function') {
+                    await options.onSuccess({ bookingId, status: 'completed' });
+                } else if (typeof fetchBookings === 'function') {
+                    await fetchBookings();
+                }
+
+                // Dispatch cross-tab / cross-component event
+                document.dispatchEvent(new CustomEvent('payment-recorded', {
+                    detail: { bookingId, amount, status: 'completed' }
+                }));
+                try {
+                    localStorage.setItem('app_payment_sync', JSON.stringify({ bookingId, time: Date.now() }));
+                } catch (e) {}
             },
             onExit: async () => {
                 // Payment is already saved — just refresh and show payment toast
@@ -162,7 +187,20 @@ export async function processBookingPaymentCallback(payload, row) {
                 } else if (window.toast) {
                     window.toast('Payment recorded successfully!');
                 }
-                await fetchBookings();
+
+                if (typeof options.onSuccess === 'function') {
+                    await options.onSuccess({ bookingId, status: 'paid' });
+                } else if (typeof fetchBookings === 'function') {
+                    await fetchBookings();
+                }
+
+                // Dispatch cross-tab / cross-component event
+                document.dispatchEvent(new CustomEvent('payment-recorded', {
+                    detail: { bookingId, amount, status: 'paid' }
+                }));
+                try {
+                    localStorage.setItem('app_payment_sync', JSON.stringify({ bookingId, time: Date.now() }));
+                } catch (e) {}
             }
         });
 
