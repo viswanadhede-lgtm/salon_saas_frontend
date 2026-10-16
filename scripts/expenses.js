@@ -5,6 +5,7 @@ let allExpenses      = [];
 let editingExpenseId = null; // null = create mode, string = edit mode
 let currentPage      = 1;
 const PAGE_SIZE      = 25;
+let searchQuery      = '';
 
 // ─── Context Resolvers ────────────────────────────────────────────────────────
 const getCompanyId = () => {
@@ -122,6 +123,28 @@ window.setExpensesDateFilter = (val) => {
 
     currentPage = 1;
     renderExpenses();
+};
+
+// ─── Search Handlers ─────────────────────────────────────────────────────────
+window.onExpenseSearch = (val) => {
+    searchQuery = (val || '').trim().toLowerCase();
+    const clearBtn = document.getElementById('expenseSearchClear');
+    if (clearBtn) {
+        clearBtn.style.display = searchQuery ? 'block' : 'none';
+    }
+    currentPage = 1;
+    renderExpensesTable();
+};
+
+window.clearExpenseSearch = () => {
+    const input = document.getElementById('expenseSearch');
+    if (input) input.value = '';
+    searchQuery = '';
+    const clearBtn = document.getElementById('expenseSearchClear');
+    if (clearBtn) clearBtn.style.display = 'none';
+    currentPage = 1;
+    renderExpensesTable();
+    if (input) input.focus();
 };
 
 // ─── Modal Helpers ────────────────────────────────────────────────────────────
@@ -635,6 +658,24 @@ function renderExpensesTable() {
         const dParts = parseDateParts(expense.date);
         if (!dParts) return false;
 
+        // Search text filter
+        if (searchQuery) {
+            const cat = (expense.category || '').toLowerCase();
+            const notes = (expense.notes || '').toLowerCase();
+            const staff = (expense.staff_name || 'Admin').toLowerCase();
+            const amt = String(expense.amount || '');
+            const rawDate = String(expense.date || '').toLowerCase();
+            const formattedDate = `${String(dParts.day).padStart(2, '0')}-${String(dParts.month + 1).padStart(2, '0')}-${dParts.year}`;
+
+            const matchesSearch = cat.includes(searchQuery) ||
+                                  notes.includes(searchQuery) ||
+                                  staff.includes(searchQuery) ||
+                                  amt.includes(searchQuery) ||
+                                  rawDate.includes(searchQuery) ||
+                                  formattedDate.includes(searchQuery);
+            if (!matchesSearch) return false;
+        }
+
         if (dateRangeFilter === 'this_month') {
             if (dParts.year !== currentYear || dParts.month !== currentMonth) return false;
         } else if (dateRangeFilter === 'last_month') {
@@ -812,6 +853,11 @@ function setupExpensesEvents() {
     document.getElementById('filterCategory')?.addEventListener('change', () => {
         currentPage = 1;
         renderExpenses();
+    });
+
+    // Search input event fallback
+    document.getElementById('expenseSearch')?.addEventListener('input', (e) => {
+        window.onExpenseSearch(e.target.value);
     });
 
     // Date dropdown toggle
