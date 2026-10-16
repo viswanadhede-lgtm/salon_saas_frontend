@@ -455,11 +455,11 @@
 
                     <!-- Month / Date Range Filter -->
                     <div style="position: relative;">
-                        <button id="exDateBtn" style="background-image: none !important; height: 40px; display: flex; align-items: center; gap: 8px; padding: 0 14px; background-color: #fff; border: 1px solid #e2e8f0; border-radius: 8px; box-shadow: 0 1px 2px rgba(0,0,0,0.04); color: #334155; font-size: 0.85rem; font-weight: 500; min-width: 170px; justify-content: space-between; cursor: pointer;"
-                            onclick="event.stopPropagation(); var m=document.getElementById('exDateMenu'); m.style.display=(m.style.display==='block'?'none':'block');">
+                        <button id="exDateBtn" type="button" style="background-image: none !important; height: 40px; display: flex; align-items: center; gap: 8px; padding: 0 14px; background-color: #fff; border: 1px solid #e2e8f0; border-radius: 8px; box-shadow: 0 1px 2px rgba(0,0,0,0.04); color: #334155; font-size: 0.85rem; font-weight: 500; min-width: 170px; justify-content: space-between; cursor: pointer;"
+                            onclick="window.toggleExpensesDateMenu(event)">
                             <span style="display: flex; align-items: center; gap: 6px;">
                                 <i data-feather="calendar" style="width: 14px; height: 14px; color: #64748b; flex-shrink: 0;"></i>
-                                <span id="exDateLabel" style="white-space: nowrap;">This Month</span>
+                                <span id="exDateLabel" style="white-space: nowrap;">October 2026</span>
                             </span>
                             <i data-feather="chevron-down" style="width: 14px; height: 14px; color: #64748b; flex-shrink: 0;"></i>
                         </button>

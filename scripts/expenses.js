@@ -84,6 +84,17 @@ window.formatExCustomRange = () => {
     return `<span style="${badgeStyle}">${window.formatExCustomDate(start)}</span> <span style="font-size:0.75rem; color:#94a3b8; font-style:italic;">to</span> <span style="${badgeStyle}">${window.formatExCustomDate(end)}</span>`;
 };
 
+window.toggleExpensesDateMenu = (e) => {
+    if (e) {
+        e.stopPropagation();
+        e.preventDefault();
+    }
+    const menu = document.getElementById('exDateMenu');
+    if (!menu) return;
+    const isVisible = menu.style.display === 'block';
+    menu.style.display = isVisible ? 'none' : 'block';
+};
+
 window.setExpensesDateFilter = (val) => {
     const select = document.getElementById('expensesDateRange');
     if (select) {
@@ -98,19 +109,19 @@ window.setExpensesDateFilter = (val) => {
 
     if (labelEl) {
         if (val === 'this_month') {
-            labelEl.innerText = `This Month - ${currentMonthLong} ${currentYear}`;
+            labelEl.innerText = `${currentMonthLong} ${currentYear}`;
         } else if (val === 'last_month') {
             const lastM = new Date(currentYear, now.getMonth() - 1, 1);
-            labelEl.innerText = `Last Month - ${lastM.toLocaleString('en-US', { month: 'long' })} ${lastM.getFullYear()}`;
+            labelEl.innerText = `${lastM.toLocaleString('en-US', { month: 'long' })} ${lastM.getFullYear()}`;
         } else if (val === '3months') {
             const past = new Date(currentYear, now.getMonth() - 3, 1);
-            labelEl.innerText = `Last 3 Months - ${past.toLocaleString('en-US', { month: 'short' })} ${past.getFullYear()} to ${currentMonthShort} ${currentYear}`;
+            labelEl.innerText = `Last 3 Months (${past.toLocaleString('en-US', { month: 'short' })} - ${currentMonthShort} ${currentYear})`;
         } else if (val === '6months') {
             const past = new Date(currentYear, now.getMonth() - 6, 1);
-            labelEl.innerText = `Last 6 Months - ${past.toLocaleString('en-US', { month: 'short' })} ${past.getFullYear()} to ${currentMonthShort} ${currentYear}`;
+            labelEl.innerText = `Last 6 Months (${past.toLocaleString('en-US', { month: 'short' })} - ${currentMonthShort} ${currentYear})`;
         } else if (val === '12months') {
             const past = new Date(currentYear - 1, now.getMonth(), 1);
-            labelEl.innerText = `Last 12 Months - ${past.toLocaleString('en-US', { month: 'short' })} ${past.getFullYear()} to ${currentMonthShort} ${currentYear}`;
+            labelEl.innerText = `Last 12 Months (${past.toLocaleString('en-US', { month: 'short' })} - ${currentMonthShort} ${currentYear})`;
         } else if (val === 'all') {
             labelEl.innerText = 'All Time';
         } else if (val === 'custom') {
@@ -860,21 +871,12 @@ function setupExpensesEvents() {
         window.onExpenseSearch(e.target.value);
     });
 
-    // Date dropdown toggle
-    document.getElementById('exDateBtn')?.addEventListener('click', (e) => {
-        e.stopPropagation();
-        const menu = document.getElementById('exDateMenu');
-        if (menu) {
-            menu.style.display = menu.style.display === 'block' ? 'none' : 'block';
-        }
-    });
-
     // Close date menu on outside click
     document.addEventListener('click', (e) => {
         const menu = document.getElementById('exDateMenu');
         const btn = document.getElementById('exDateBtn');
         if (menu && menu.style.display === 'block') {
-            if (!menu.contains(e.target) && e.target !== btn && !btn?.contains(e.target)) {
+            if (!menu.contains(e.target) && !btn?.contains(e.target)) {
                 menu.style.display = 'none';
             }
         }
