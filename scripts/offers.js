@@ -1,640 +1,489 @@
 import { supabase } from '../lib/supabase.js';
 
-window.toggleOfferSvcExtra = function(extraId, toggleId, extraCount) {
-    var el  = document.getElementById(extraId);
-    var tog = document.getElementById(toggleId);
-    if (!el || !tog) return;
-    var isHidden = el.style.display === 'none' || el.style.display === '';
-    el.style.display  = isHidden ? 'flex' : 'none';
-    tog.textContent   = isHidden ? '▲ less' : '+' + extraCount;
+// ─────────────────────────────────────────────────────────────────────────────
+// STATE
+// ─────────────────────────────────────────────────────────────────────────────
+let currentOffers = [];
+let isEditing     = false;
+let currentEditId = null;
+let offerToDelete = null;
+
+// ─────────────────────────────────────────────────────────────────────────────
+// CONTEXT HELPERS
+// ─────────────────────────────────────────────────────────────────────────────
+const getCompanyId = () => {
+    try {
+        const ctx = JSON.parse(localStorage.getItem('appContext') || '{}');
+        return ctx.company?.id || localStorage.getItem('company_id') || null;
+    } catch { return localStorage.getItem('company_id') || null; }
+};
+const getBranchId = () =>
+    localStorage.getItem('active_branch_id') ||
+    document.getElementById('branchSelect')?.value || null;
+
+// ─────────────────────────────────────────────────────────────────────────────
+// APPLICABLE-TO VISUAL FEEDBACK
+// ─────────────────────────────────────────────────────────────────────────────
+function updateApplicableToVisuals() {
+    ['Services', 'Products', 'Memberships'].forEach(type => {
+        const cb    = document.getElementById(`offerAppTo${type}`);
+        const label = document.getElementById(`offerAppTo${type}Label`);
+        if (!cb || !label) return;
+        if (cb.checked) {
+            label.style.borderColor = '#6366f1';
+            label.style.background  = '#eef2ff';
+        } else {
+            label.style.borderColor = '#e2e8f0';
+            label.style.background  = '#f8fafc';
+        }
+    });
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// DOM READY
+// ─────────────────────────────────────────────────────────────────────────────
+document.addEventListener('DOMContentLoaded', async () => {
+    if (window.feather) feather.replace();
+
+    await loadOffers();
+
+    // Branch change -> reload
+    document.getElementById('branchSelect')?.addEventListener('change', loadOffers);
+
+    // -- Filter panel -----------------------------------------------------------
+    const filterPanel = document.getElementById('offersFilterPanel');
+    const btnFilter   = document.getElementById('btnFilterOffers');
+    if (btnFilter && filterPanel) {
+        btnFilter.addEventListener('click', e => {
+            e.stopPropagation();
+            filterPanel.style.display = filterPanel.style.display === 'block' ? 'none' : 'block';
+        });
+        document.getElementById('btnCloseOffersFilter')?.addEventListener('click', () => {
+            filterPanel.style.display = 'none';
+        });
+        document.getElementById('btnOffersFilterApply')?.addEventListener('click', () => {
+            filterPanel.style.display = 'none';
+            renderOffers();
+        });
+        document.getElementById('btnOffersFilterReset')?.addEventListener('click', () => {
+            filterPanel.querySelectorAll('input').forEach(i => i.checked = false);
+            renderOffers();
+        });
+        document.querySelectorAll('input[name="filterDiscountType"]').forEach(cb => {
+            cb.addEventListener('change', renderOffers);
+        });
+        filterPanel.addEventListener('click', e => e.stopPropagation());
+        document.addEventListener('click', () => { filterPanel.style.display = 'none'; });
+    }
+
+    // -- Create Offer button ---------------------------------------------------
+    const btnCreate = document.getElementById('btnCreateOffer');
+    if (btnCreate) {
+        btnCreate.setAttribute('data-sub-feature', 'create_offer');
+        btnCreate.addEventListener('click', openCreateModal);
+    }
+
+    // -- Modal close ------------------------------------------------------------
+    document.getElementById('closeOfferModal')?.addEventListener('click', closeModal);
+    document.getElementById('btnCancelOffer')?.addEventListener('click', closeModal);
+    document.getElementById('offerModalOverlay')?.addEventListener('click', e => {
+        if (e.target === document.getElementById('offerModalOverlay')) closeModal();
+    });
+
+    // -- Delete confirm modal ---------------------------------------------------
+    document.getElementById('btnCancelDeleteOffer')?.addEventListener('click', () => {
+        document.getElementById('deleteOfferConfirmOverlay')?.classList.remove('active');
+        offerToDelete = null;
+    });
+    document.getElementById('btnConfirmDeleteOffer')?.addEventListener('click', async () => {
+        if (!offerToDelete) return;
+        document.getElementById('deleteOfferConfirmOverlay')?.classList.remove('active');
+        await executeDeleteOffer(offerToDelete);
+        offerToDelete = null;
+    });
+
+    // -- Discount type -> update placeholder ------------------------------------
+    const discType = document.getElementById('offerDiscountType');
+    const discVal  = document.getElementById('offerDiscountValue');
+    if (discType && discVal) {
+        discType.addEventListener('change', () => {
+            discVal.placeholder = discType.value === 'percentage' ? 'e.g., 20' : 'e.g., 200';
+        });
+    }
+
+    // -- Applicable-to checkbox visuals ----------------------------------------
+    ['Services', 'Products', 'Memberships'].forEach(type => {
+        document.getElementById(`offerAppTo${type}`)?.addEventListener('change', updateApplicableToVisuals);
+    });
+
+    // -- Search ----------------------------------------------------------------
+    document.getElementById('offersSearchInput')?.addEventListener('input', renderOffers);
+
+    // -- Save ------------------------------------------------------------------
+    document.getElementById('btnSaveOffer')?.addEventListener('click', handleSaveOffer);
+});
+
+// ─────────────────────────────────────────────────────────────────────────────
+// LOAD OFFERS
+// ─────────────────────────────────────────────────────────────────────────────
+async function loadOffers() {
+    const tbody = document.getElementById('offersTableBody');
+    if (!tbody) return;
+
+    tbody.innerHTML = `
+        <tr>
+            <td colspan="6" style="padding:24px 20px; text-align:center; color:#64748b;">
+                <div style="display:flex;flex-direction:column;align-items:center;gap:12px;">
+                    <div style="width:24px;height:24px;border:3px solid #e0e7ff;border-top-color:#6366f1;border-radius:50%;animation:spin 0.8s linear infinite;"></div>
+                    <span style="font-size:0.9rem;">Loading offers...</span>
+                </div>
+            </td>
+        </tr>`;
+    if (window.feather) feather.replace();
+
+    try {
+        const companyId = getCompanyId();
+        const branchId  = getBranchId();
+
+        if (!companyId || !branchId) {
+            tbody.innerHTML = `<tr><td colspan="6" style="text-align:center;padding:24px;color:#64748b;">No company or branch selected.</td></tr>`;
+            return;
+        }
+
+        const { data, error } = await supabase
+            .from('offers')
+            .select('*')
+            .eq('company_id', companyId)
+            .eq('branch_id', branchId)
+            .neq('status', 'deleted')
+            .order('created_at', { ascending: false });
+
+        if (error) throw error;
+
+        currentOffers = data || [];
+        renderOffers();
+    } catch (err) {
+        console.error('loadOffers error:', err);
+        tbody.innerHTML = `<tr><td colspan="6" style="text-align:center;padding:24px;color:#ef4444;">Failed to load offers: ${err.message || ''}</td></tr>`;
+    }
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// BUILD "APPLICABLE TO" DISPLAY
+// ─────────────────────────────────────────────────────────────────────────────
+function buildApplicableToDisplay(offer) {
+    const chipStyle = `display:inline-block;padding:2px 8px;border-radius:20px;font-size:0.72rem;font-weight:500;margin:1px 2px 1px 0;white-space:nowrap;`;
+    const chips = [];
+
+    if (offer.all_services)    chips.push(`<span style="${chipStyle}background:#e0f2fe;color:#0284c7;">Services</span>`);
+    if (offer.all_products)    chips.push(`<span style="${chipStyle}background:#dcfce7;color:#15803d;">Products</span>`);
+    if (offer.all_memberships) chips.push(`<span style="${chipStyle}background:#faf5ff;color:#7c3aed;">Memberships</span>`);
+
+    if (chips.length === 0) {
+        return `<span style="${chipStyle}background:#f1f5f9;color:#64748b;">None</span>`;
+    }
+    return chips.join('');
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// RENDER TABLE
+// ─────────────────────────────────────────────────────────────────────────────
+function renderOffers() {
+    const tbody = document.getElementById('offersTableBody');
+    if (!tbody) return;
+
+    const q = (document.getElementById('offersSearchInput')?.value || '').toLowerCase().trim();
+    const activeTypes = Array.from(
+        document.querySelectorAll('input[name="filterDiscountType"]:checked')
+    ).map(cb => cb.value);
+
+    let list = currentOffers;
+
+    if (q) {
+        list = list.filter(o => (o.offer_name || '').toLowerCase().includes(q));
+    }
+    if (activeTypes.length > 0) {
+        list = list.filter(o => activeTypes.includes(o.discount_type));
+    }
+
+    if (list.length === 0) {
+        tbody.innerHTML = `<tr><td colspan="6" style="text-align:center;padding:24px;color:#64748b;">No offers found.</td></tr>`;
+        return;
+    }
+
+    tbody.innerHTML = list.map(offer => {
+        const offerId         = offer.id || offer.offer_id;
+        const isFlat          = offer.discount_type === 'flat';
+        const discountDisplay = isFlat
+            ? `\u20B9${offer.discount_value} OFF`
+            : `${offer.discount_value}% OFF`;
+        const badgeColor = isFlat
+            ? 'color:#15803d;background:#dcfce7;'
+            : 'color:#0284c7;background:#e0f2fe;';
+
+        let validityText = 'Always Active';
+        if (offer.valid_from || offer.valid_to) {
+            const startStr = offer.valid_from ? new Date(offer.valid_from).toLocaleDateString() : 'Now';
+            const endStr   = offer.valid_to   ? new Date(offer.valid_to).toLocaleDateString()   : 'No Expiry';
+            validityText   = `${startStr} \u2013 ${endStr}`;
+        }
+
+        return `
+            <tr style="border-bottom:1px solid #e2e8f0;">
+                <td style="padding:16px 20px;"><span style="font-weight:600;color:#1e293b;">${offer.offer_name || 'N/A'}</span></td>
+                <td style="padding:16px 20px;"><span style="font-weight:700;${badgeColor}padding:4px 8px;border-radius:6px;font-size:0.85rem;">${discountDisplay}</span></td>
+                <td style="padding:16px 20px;font-size:0.9rem;color:#334155;text-transform:capitalize;">${offer.discount_type || '-'}</td>
+                <td style="padding:16px 20px;font-size:0.9rem;color:#334155;">${buildApplicableToDisplay(offer)}</td>
+                <td style="padding:16px 20px;font-size:0.9rem;color:#64748b;text-align:center;">${validityText}</td>
+                <td style="padding:14px 16px; vertical-align:middle;">
+                    <div class="action-buttons" style="display:flex;justify-content:center;gap:0.5rem;">
+                        <button class="hover-lift edit-btn" data-sub-feature="update_offer"
+                            onclick="window.editOffer('${offerId}')" title="Edit Offer"
+                            style="display:flex;flex-direction:column;align-items:center;justify-content:center;padding:4px 8px;border-radius:8px;border:1px solid #e0e7ff;background:#eff6ff;cursor:pointer;color:#3b82f6;transition:all 0.2s;min-width:52px;">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="margin-bottom:2px;"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path></svg>
+                            <span style="font-size:10px;font-weight:600;">Edit</span>
+                        </button>
+                        <button class="hover-lift delete-btn" data-sub-feature="delete_offer"
+                            onclick="window.deleteOffer('${offerId}')" title="Delete Offer"
+                            style="display:flex;flex-direction:column;align-items:center;justify-content:center;padding:4px 8px;border-radius:8px;border:1px solid #fee2e2;background:#fef2f2;cursor:pointer;color:#ef4444;transition:all 0.2s;min-width:52px;">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="margin-bottom:2px;"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path><line x1="10" y1="11" x2="10" y2="17"></line><line x1="14" y1="11" x2="14" y2="17"></line></svg>
+                            <span style="font-size:10px;font-weight:600;">Delete</span>
+                        </button>
+                    </div>
+                </td>
+            </tr>
+        `;
+    }).join('');
+
+    if (window.feather) feather.replace();
+    if (window.applySubFeatureGates) window.applySubFeatureGates();
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// MODAL: OPEN CREATE
+// ─────────────────────────────────────────────────────────────────────────────
+function openCreateModal() {
+    isEditing     = false;
+    currentEditId = null;
+
+    document.getElementById('offerName').value          = '';
+    document.getElementById('offerDiscountType').value  = 'percentage';
+    document.getElementById('offerDiscountValue').value = '';
+    document.getElementById('offerDiscountValue').placeholder = 'e.g., 20';
+    document.getElementById('offerMinBillAmount').value = '';
+    document.getElementById('offerStartDate').value     = '';
+    document.getElementById('offerEndDate').value       = '';
+
+    // Reset applicable-to checkboxes
+    ['Services', 'Products', 'Memberships'].forEach(type => {
+        const cb = document.getElementById(`offerAppTo${type}`);
+        if (cb) cb.checked = false;
+    });
+    updateApplicableToVisuals();
+
+    const titleEl = document.querySelector('#offerModalOverlay .header-titles h2') || document.querySelector('#offerModalOverlay h2');
+    if (titleEl) titleEl.textContent = 'Create Offer';
+    const btnSave = document.getElementById('btnSaveOffer');
+    if (btnSave) btnSave.textContent = 'Create Offer';
+
+    document.getElementById('offerModalOverlay')?.classList.add('active');
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// MODAL: OPEN EDIT
+// ─────────────────────────────────────────────────────────────────────────────
+window.editOffer = function(id) {
+    const offer = currentOffers.find(o => (o.id === id || o.offer_id === id));
+    if (!offer) return;
+
+    isEditing     = true;
+    currentEditId = offer.id || offer.offer_id;
+
+    document.getElementById('offerName').value          = offer.offer_name || '';
+    document.getElementById('offerDiscountType').value  = offer.discount_type || 'percentage';
+    document.getElementById('offerDiscountValue').value = offer.discount_value != null ? offer.discount_value : '';
+    document.getElementById('offerDiscountValue').placeholder = (offer.discount_type === 'flat') ? 'e.g., 200' : 'e.g., 20';
+    document.getElementById('offerMinBillAmount').value = offer.min_bill_amount != null ? offer.min_bill_amount : '';
+    document.getElementById('offerStartDate').value     = offer.valid_from ? offer.valid_from.split('T')[0] : '';
+    document.getElementById('offerEndDate').value       = offer.valid_to   ? offer.valid_to.split('T')[0]   : '';
+
+    // Pre-check applicable-to booleans
+    const cb_s = document.getElementById('offerAppToServices');
+    const cb_p = document.getElementById('offerAppToProducts');
+    const cb_m = document.getElementById('offerAppToMemberships');
+    if (cb_s) cb_s.checked = !!offer.all_services;
+    if (cb_p) cb_p.checked = !!offer.all_products;
+    if (cb_m) cb_m.checked = !!offer.all_memberships;
+    updateApplicableToVisuals();
+
+    const titleEl = document.querySelector('#offerModalOverlay .header-titles h2') || document.querySelector('#offerModalOverlay h2');
+    if (titleEl) titleEl.textContent = 'Edit Offer';
+    const btnSave = document.getElementById('btnSaveOffer');
+    if (btnSave) btnSave.textContent = 'Save Changes';
+
+    document.getElementById('offerModalOverlay')?.classList.add('active');
 };
 
-document.addEventListener('DOMContentLoaded', () => {
-    let offers = [];
-    let services = [];
-    let isEditMode = false;
-    let editingOfferId = null;
-    let offerToDeleteId = null;
+// ─────────────────────────────────────────────────────────────────────────────
+// MODAL: CLOSE
+// ─────────────────────────────────────────────────────────────────────────────
+function closeModal() {
+    document.getElementById('offerModalOverlay')?.classList.remove('active');
+}
 
-    // Global context getters
-    const getCompanyId = () => {
-        try {
-            const ctx = JSON.parse(localStorage.getItem('appContext') || '{}');
-            return ctx.company?.id || localStorage.getItem('company_id') || null;
-        } catch { return localStorage.getItem('company_id') || null; }
-    };
-    const getBranchId = () => localStorage.getItem('active_branch_id') || document.getElementById('branchSelect')?.value || null;
+// ─────────────────────────────────────────────────────────────────────────────
+// DELETE: TRIGGER CONFIRM MODAL
+// ─────────────────────────────────────────────────────────────────────────────
+window.deleteOffer = function(id) {
+    offerToDelete = id;
+    document.getElementById('deleteOfferConfirmOverlay')?.classList.add('active');
+};
 
-    // DOM Elements - Table & Overlays
-    const tbody = document.getElementById('offersTableBody');
-    const deleteOverlay = document.getElementById('deleteOfferConfirmOverlay');
-    const deletingLoader = document.getElementById('deletingOfferOverlay');
-    const btnCancelDelete = document.getElementById('btnCancelDeleteOffer');
-    const btnConfirmDelete = document.getElementById('btnConfirmDeleteOffer');
+// ─────────────────────────────────────────────────────────────────────────────
+// DELETE: EXECUTE SOFT-DELETE (.update().eq())
+// ─────────────────────────────────────────────────────────────────────────────
+async function executeDeleteOffer(id) {
+    const deletingOverlay = document.getElementById('deletingOfferOverlay');
+    if (deletingOverlay) deletingOverlay.classList.add('active');
 
-    // DOM Elements - Modal & Form
-    const modalOverlay = document.getElementById('offerModalOverlay');
-    const btnCreateOffer = document.getElementById('btnCreateOffer');
-    const btnCancelOffer = document.getElementById('btnCancelOffer');
-    const closeOfferModalBtn = document.getElementById('closeOfferModal');
-    const btnSaveOffer = document.getElementById('btnSaveOffer');
+    try {
+        const offer = currentOffers.find(o => (o.id === id || o.offer_id === id));
+        const targetCol = offer?.id ? 'id' : 'offer_id';
+        const targetVal = offer?.id || offer?.offer_id || id;
 
-    const offerNameEl = document.getElementById('offerName');
-    const offerDiscountTypeEl = document.getElementById('offerDiscountType');
-    const offerDiscountValueEl = document.getElementById('offerDiscountValue');
-    const offerStartDateEl = document.getElementById('offerStartDate');
-    const offerEndDateEl = document.getElementById('offerEndDate');
-    const offerMinBillAmountEl = document.getElementById('offerMinBillAmount');
+        const { error } = await supabase
+            .from('offers')
+            .update({ status: 'deleted', updated_at: new Date().toISOString() })
+            .eq(targetCol, targetVal);
 
-    // Multi-select dropdown elements
-    const offerServicesText = document.getElementById('offerServicesText');
-    const offerServicesMenu = document.getElementById('offerServicesMenu');
-    const offerServicesBtn = document.getElementById('offerServicesBtn');
+        if (error) throw error;
 
-    // ─────────────────────────────────────────────────────────────────────────
-    // SUPABASE: Initialise — fetch services then offers
-    // ─────────────────────────────────────────────────────────────────────────
-    async function initOffers() {
-        if (!getCompanyId() || !getBranchId()) {
-            console.error('Company ID or Branch ID missing from localStorage');
-            tbody.innerHTML = `<tr><td colspan="8" style="text-align: center; padding: 2rem;">Configuration missing. Please re-login.</td></tr>`;
-            return;
-        }
-
-        tbody.innerHTML = `
-            <tr><td colspan="8" style="text-align: center; padding: 2rem;">
-                <div style="display:flex; justify-content:center; align-items:center; gap:8px;">
-                    <div class="spinner" style="width:20px;height:20px;border:3px solid rgba(79,70,229,0.2);border-top-color:#4f46e5;border-radius:50%;animation:louSpin 1s linear infinite;"></div>
-                    Loading Offers...
-                </div>
-            </td></tr>`;
-
-        if (!document.getElementById('louSpinKeyframes')) {
-            const style = document.createElement('style');
-            style.id = 'louSpinKeyframes';
-            style.innerHTML = `@keyframes louSpin { to { transform: rotate(360deg); } }`;
-            document.head.appendChild(style);
-        }
-
-        try {
-            // Fetch services from Supabase
-            const { data: svcData, error: svcErr } = await supabase
-                .from('services')
-                .select('service_id, service_name, status')
-                .eq('company_id', getCompanyId())
-                .eq('branch_id', getBranchId());
-
-            if (svcErr) console.warn('Could not load services:', svcErr.message);
-            services = (svcData || []).filter(s => (s.status || '').toLowerCase() === 'active');
-
-            populateServiceDropdown();
-            await loadOffers();
-        } catch (error) {
-            console.error('Initialization error:', error);
-            tbody.innerHTML = `<tr><td colspan="8" style="text-align: center; padding: 2rem; color: #ef4444;">Failed to load offers.</td></tr>`;
-        }
-    }
-
-    function populateServiceDropdown() {
-        const checkboxContainer = document.getElementById('servicesCheckboxList');
-        if (!checkboxContainer) return;
-
-        let html = `
-            <label class="service-lbl" style="margin-bottom: 12px;">
-                <input type="checkbox" class="custom-chk-circle serviceCheckboxes" value="All Categories" data-id="all">
-                <span style="font-size: 0.95rem; color: #1e293b; font-weight: 500;">All Categories</span>
-            </label>
-            <div style="height: 1px; background: #e2e8f0; margin: 8px 0;"></div>
-        `;
-
-        services.forEach(srv => {
-            html += `
-                <label class="service-lbl" style="margin-bottom: 8px;">
-                    <input type="checkbox" class="custom-chk-circle serviceCheckboxes" value="${srv.service_name}" data-id="${srv.service_id}">
-                    <span style="font-size: 0.9rem; color: #475569;">${srv.service_name}</span>
-                </label>
-            `;
-        });
-
-        checkboxContainer.innerHTML = html;
-
-        const newApplyBtn = document.getElementById('applyServicesBtn');
-        const newResetBtn = document.getElementById('resetServicesBtn');
-        const newCheckboxes = document.querySelectorAll('.serviceCheckboxes');
-        const allCheckbox = document.querySelector('.serviceCheckboxes[data-id="all"]');
-        const otherCheckboxes = document.querySelectorAll('.serviceCheckboxes:not([data-id="all"])');
-
-        if (allCheckbox) {
-            allCheckbox.addEventListener('change', (e) => {
-                otherCheckboxes.forEach(cb => { cb.checked = e.target.checked; });
-            });
-            otherCheckboxes.forEach(cb => {
-                cb.addEventListener('change', () => {
-                    allCheckbox.checked = Array.from(otherCheckboxes).every(c => c.checked);
-                });
+        showToast('Offer deleted successfully');
+        if (window.notifyEvent) {
+            window.notifyEvent('marketing', 'evt_marketing_offer', {
+                title:   'Offer Deleted',
+                message: 'An offer was deleted.'
             });
         }
+        await loadOffers();
+    } catch (err) {
+        console.error('executeDeleteOffer error:', err);
+        showToast('Error deleting offer: ' + (err.message || ''));
+    } finally {
+        if (deletingOverlay) deletingOverlay.classList.remove('active');
+    }
+}
 
-        if (newApplyBtn) {
-            newApplyBtn.addEventListener('click', () => {
-                const selected = Array.from(newCheckboxes).filter(c => c.checked).map(c => c.value);
-                if (selected.length === 0) {
-                    offerServicesText.textContent = 'Select services...';
-                    offerServicesText.style.color = '#94a3b8';
-                } else if (selected.includes('All Categories')) {
-                    offerServicesText.textContent = 'All Categories';
-                    offerServicesText.style.color = '#1e293b';
-                } else if (selected.length === 1) {
-                    offerServicesText.textContent = selected[0];
-                    offerServicesText.style.color = '#1e293b';
-                } else {
-                    offerServicesText.textContent = `${selected[0]} +${selected.length - 1} more`;
-                    offerServicesText.style.color = '#1e293b';
-                }
-                offerServicesMenu.style.display = 'none';
-            });
-        }
+// ─────────────────────────────────────────────────────────────────────────────
+// SAVE (CREATE OR UPDATE)
+// ─────────────────────────────────────────────────────────────────────────────
+async function handleSaveOffer() {
+    const btnSave  = document.getElementById('btnSaveOffer');
+    const origText = btnSave?.textContent || 'Save';
 
-        if (newResetBtn) {
-            newResetBtn.addEventListener('click', () => {
-                newCheckboxes.forEach(chk => chk.checked = false);
-                offerServicesText.textContent = 'Select services...';
-                offerServicesText.style.color = '#94a3b8';
-            });
-        }
+    const offer_name     = document.getElementById('offerName').value.trim();
+    const discount_type  = document.getElementById('offerDiscountType').value;
+    const discount_value = document.getElementById('offerDiscountValue').value;
+
+    if (!offer_name || !discount_type || !discount_value) {
+        showToast('Please fill all required fields (Name, Type, Value).');
+        return;
     }
 
-    // ─────────────────────────────────────────────────────────────────────────
-    // SUPABASE: Load Offers (from flattened table grouped by offer_id)
-    // ─────────────────────────────────────────────────────────────────────────
-    async function loadOffers() {
-        try {
-            const companyId = getCompanyId();
-            const branchId = getBranchId();
-
-            // Fetch offers directly
-            const { data: offersData, error: offersErr } = await supabase
-                .from('offers')
-                .select('*')
-                .eq('company_id', companyId)
-                .eq('branch_id', branchId)
-                .neq('status', 'deleted')
-                .order('created_at', { ascending: false });
-
-            if (offersErr) throw offersErr;
-
-            // Group flattened rows by offer_id
-            const groupedOffers = {};
-            (offersData || []).forEach(row => {
-                const oId = row.offer_id;
-                if (!groupedOffers[oId]) {
-                    // Initialize the top-level offer aggregate object
-                    groupedOffers[oId] = { ...row, applicable_services: [] };
-                }
-                
-                // Keep pushing distinct services onto it
-                if (row.service_id) {
-                    groupedOffers[oId].applicable_services.push({
-                        service_id: row.service_id,
-                        service_name: row.service_name || '',
-                        current_usage_count: row.current_usage_count || 0,
-                        rowId: row.id // if there's a primary key we need to track, store it just in case
-                    });
-                }
-            });
-
-            offers = Object.values(groupedOffers);
-            
-            // Re-sort based on created_at since Object.values dumps order
-            offers.sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
-
-            renderOffersTable();
-        } catch (error) {
-            console.error('Error loading offers:', error);
-            tbody.innerHTML = `<tr><td colspan="8" style="text-align: center; padding: 2rem; color: #ef4444;">Error fetching data: ${error.message}</td></tr>`;
-        }
-    }
-
-    // ─────────────────────────────────────────────────────────────────────────
-    // RENDER TABLE
-    // ─────────────────────────────────────────────────────────────────────────
-    function renderOffersTable() {
-        const searchInput = document.getElementById('offersSearchInput');
-        const q = searchInput ? searchInput.value.toLowerCase().trim() : '';
-
-        const activeTypes = Array.from(document.querySelectorAll('input[name="filterDiscountType"]:checked')).map(cb => cb.value);
-
-        let filteredOffers = offers;
-        
-        if (q) {
-            filteredOffers = filteredOffers.filter(o => 
-                (o.offer_name || '').toLowerCase().includes(q)
-            );
-        }
-
-        if (activeTypes.length > 0) {
-            filteredOffers = filteredOffers.filter(o => activeTypes.includes(o.discount_type));
-        }
-
-        if (filteredOffers.length === 0) {
-            tbody.innerHTML = `<tr><td colspan="8" style="text-align: center; padding: 2rem; color: #64748b;">No offers found.</td></tr>`;
-            return;
-        }
-
-        tbody.innerHTML = filteredOffers.map(offer => {
-            const offerId = offer.offer_id || offer.id;
-            let servicesToRender = offer.applicable_services;
-            if (offer.applicable_services.length === 1 && offer.applicable_services[0].service_id === 'all') {
-                servicesToRender = services.length > 0 ? services : offer.applicable_services;
-            }
-            
-            let serviceHtml = '';
-            const chipStyle = `display:inline-block;padding:2px 8px;border-radius:20px;font-size:0.72rem;font-weight:500;background:#f1f5f9;color:#334155;margin:1px 2px 1px 0;white-space:nowrap;`;
-            
-            if (servicesToRender.length > 0) {
-                const firstChip = `<span style="${chipStyle}">${servicesToRender[0].service_name}</span>`;
-                if (servicesToRender.length === 1) {
-                    serviceHtml = firstChip;
-                } else {
-                    const extraCount = servicesToRender.length - 1;
-                    const extraId = `offer-svc-extra-${offerId}`;
-                    const toggleId = `offer-svc-toggle-${offerId}`;
-                    const extraChips = servicesToRender.slice(1).map(s => `<span style="${chipStyle}">${s.service_name}</span>`).join('');
-                    
-                    serviceHtml = `<div style="display:flex;flex-wrap:wrap;align-items:flex-start;gap:2px;width:100%;">
-                            ${firstChip}
-                            <span id="${toggleId}"
-                                onclick="window.toggleOfferSvcExtra('${extraId}', '${toggleId}', ${extraCount})"
-                                style="display:inline-block;padding:2px 7px;border-radius:20px;font-size:0.7rem;font-weight:600;background:#e0e7ff;color:#4f46e5;cursor:pointer;white-space:nowrap;user-select:none;">+${extraCount}</span>
-                            <div id="${extraId}" style="display:none;flex-wrap:wrap;gap:2px;width:100%;margin-top:3px;">
-                                ${extraChips}
-                            </div>
-                        </div>`;
-                }
-            } else {
-                serviceHtml = '—';
-            }
-
-            const fromText = offer.valid_from ? new Date(offer.valid_from).toLocaleDateString('en-GB') : '-';
-            const toText = offer.valid_to ? new Date(offer.valid_to).toLocaleDateString('en-GB') : 'No Expiry';
-            let validDatesHtml = `<div style="font-size: 0.9rem; color: #334155;">${fromText} – ${toText}</div>`;
-            if (!offer.valid_from && !offer.valid_to) {
-                validDatesHtml = `<div style="font-size: 0.9rem; color: #64748b; font-style: italic;">Always Active</div>`;
-            }
-
-
-            const valueBadge = offer.discount_type === 'percentage'
-                ? `<span style="font-weight:700;color:#0284c7;background:#e0f2fe;padding:4px 8px;border-radius:6px;font-size:0.85rem;">${offer.discount_value}% OFF</span>`
-                : `<span style="font-weight:700;color:#15803d;background:#dcfce7;padding:4px 8px;border-radius:6px;font-size:0.85rem;">₹${offer.discount_value} OFF</span>`;
-
-            return `
-                <tr style="border-bottom: 1px solid #e2e8f0; transition: background 0.2s;">
-                    <td style="padding: 16px 20px;">
-                        <div style="font-weight: 600; color: #1e293b; font-size: 0.95rem;">${offer.offer_name || 'N/A'}</div>
-                    </td>
-                    <td style="padding: 16px 20px;">${valueBadge}</td>
-                    <td style="padding: 16px 20px;">
-                        <div style="font-size: 0.9rem; color: #334155; text-transform: capitalize;">${offer.discount_type || 'N/A'}</div>
-                    </td>
-                    <td style="padding: 16px 20px;">${serviceHtml}</td>
-                    <td style="padding: 16px 20px; text-align: center;">${validDatesHtml}</td>
-                    <td style="padding: 16px 20px; text-align: center;">
-                        <div style="display:flex;gap:0.5rem;justify-content:center;">
-                            <button class="hover-lift edit-btn" data-sub-feature="update_offer" data-id="${offerId}" title="Edit Offer" style="display:flex;flex-direction:column;align-items:center;justify-content:center;padding:4px 8px;border-radius:8px;border:1px solid #e0e7ff;background:#eff6ff;cursor:pointer;color:#3b82f6;transition:all 0.2s;min-width:52px;">
-                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="margin-bottom:2px;"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path></svg>
-                                <span style="font-size:10px;font-weight:600;pointer-events:none;">Edit</span>
-                            </button>
-                            <button class="hover-lift delete-btn" data-sub-feature="delete_offer" data-id="${offerId}" title="Delete Offer" style="display:flex;flex-direction:column;align-items:center;justify-content:center;padding:4px 8px;border-radius:8px;border:1px solid #fee2e2;background:#fef2f2;cursor:pointer;color:#ef4444;transition:all 0.2s;min-width:52px;">
-                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="margin-bottom:2px;"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path><line x1="10" y1="11" x2="10" y2="17"></line><line x1="14" y1="11" x2="14" y2="17"></line></svg>
-                                <span style="font-size:10px;font-weight:600;pointer-events:none;">Delete</span>
-                            </button>
-                        </div>
-                    </td>
-                </tr>
-            `;
-        }).join('');
-
-        if (window.feather) window.feather.replace();
-        if (window.applySubFeatureGates) window.applySubFeatureGates();
-    }
-
-    // ─────────────────────────────────────────────────────────────────────────
-    // MODAL: Open for Create / Edit
-    // ─────────────────────────────────────────────────────────────────────────
-    function openModalForCreate() {
-        isEditMode = false;
-        editingOfferId = null;
-        document.querySelector('.modal-header h2').textContent = 'Create Offer';
-        document.getElementById('btnSaveOffer').textContent = 'Create Offer';
-
-        offerNameEl.value = '';
-        offerDiscountTypeEl.value = 'percentage';
-        offerDiscountValueEl.value = '';
-        offerStartDateEl.value = '';
-        offerEndDateEl.value = '';
-        offerMinBillAmountEl.value = '';
-
-        document.querySelectorAll('.serviceCheckboxes').forEach(chk => chk.checked = false);
-        offerServicesText.textContent = 'Select services...';
-        offerServicesText.style.color = '#94a3b8';
-
-        offerNameEl.removeAttribute('readonly');
-        offerNameEl.style.background = '';
-        offerNameEl.style.cursor = '';
-
-        modalOverlay.classList.add('active');
-    }
-
-    function openModalForEdit(id) {
-        isEditMode = true;
-        editingOfferId = id;
-        const o = offers.find(c => (c.offer_id || c.id) === id);
-        if (!o) return;
-
-        document.querySelector('.modal-header h2').textContent = 'Edit Offer';
-        document.getElementById('btnSaveOffer').textContent = 'Save Changes';
-
-        offerNameEl.value = o.offer_name || '';
-        offerDiscountTypeEl.value = o.discount_type || 'percentage';
-        offerDiscountValueEl.value = o.discount_value || '';
-        offerStartDateEl.value = o.valid_from ? o.valid_from.split('T')[0] : '';
-        offerEndDateEl.value = o.valid_to ? o.valid_to.split('T')[0] : '';
-        offerMinBillAmountEl.value = o.min_bill_amount || '';
-
-        // Populate multi-select
-        document.querySelectorAll('.serviceCheckboxes').forEach(chk => chk.checked = false);
-        let selectedCount = 0;
-        let firstName = '';
-
-        const hasExplicitAll = o.applicable_services.some(s => s.service_id === 'all');
-        const hasAllIndividual = services.length > 0 && o.applicable_services.length >= services.length;
-        const isAll = hasExplicitAll || hasAllIndividual;
-
-        if (isAll) {
-            const allChk = document.querySelector('.serviceCheckboxes[data-id="all"]');
-            if (allChk) { allChk.checked = true; }
-            document.querySelectorAll('.serviceCheckboxes:not([data-id="all"])').forEach(chk => chk.checked = true);
-            selectedCount = 1; // Treated as 1 conceptually to show 'All Categories' in display logic
-            firstName = 'All Categories';
-        } else {
-            o.applicable_services.forEach(srv => {
-                document.querySelectorAll('.serviceCheckboxes').forEach(chk => {
-                    if (chk.dataset.id === srv.service_id) {
-                        chk.checked = true;
-                        selectedCount++;
-                        if (!firstName) firstName = srv.service_name;
-                    }
-                });
-            });
-        }
-
-        if (selectedCount === 0) {
-            offerServicesText.textContent = 'Select services...';
-            offerServicesText.style.color = '#94a3b8';
-        } else if (firstName === 'All Categories') {
-            offerServicesText.textContent = 'All Categories';
-            offerServicesText.style.color = '#1e293b';
-        } else if (selectedCount === 1) {
-            offerServicesText.textContent = firstName;
-            offerServicesText.style.color = '#1e293b';
-        } else {
-            offerServicesText.textContent = `${firstName} +${selectedCount - 1} more`;
-            offerServicesText.style.color = '#1e293b';
-        }
-
-        offerNameEl.setAttribute('readonly', true);
-        offerNameEl.style.background = '#f8fafc';
-        offerNameEl.style.cursor = 'not-allowed';
-
-        modalOverlay.classList.add('active');
-    }
-
-    function closeModal() { modalOverlay.classList.remove('active'); }
-
-    // ─────────────────────────────────────────────────────────────────────────
-    // SUPABASE: Save (Create or Update) Offer
-    // ─────────────────────────────────────────────────────────────────────────
-    async function handleSaveOffer() {
-        if (!offerNameEl.value || !offerDiscountValueEl.value || !offerStartDateEl.value) {
-            alert('Please fill all required fields (*)');
-            return;
-        }
-
-        const checkName = offerNameEl.value.trim().toLowerCase();
-        const isDuplicate = offers.some(o => 
-            (o.offer_name || '').toLowerCase() === checkName && 
-            (!isEditMode || (o.offer_id || o.id) !== editingOfferId)
+    // Duplicate check on create
+    if (!isEditing) {
+        const isDuplicate = currentOffers.some(
+            o => (o.offer_name || '').toLowerCase() === offer_name.toLowerCase()
         );
-
         if (isDuplicate) {
-            alert('An offer with this name already exists. Please choose a different name.');
+            showToast('An offer with this name already exists.');
             return;
-        }
-
-        const checkedBoxes = Array.from(document.querySelectorAll('.serviceCheckboxes')).filter(c => c.checked);
-        if (checkedBoxes.length === 0) {
-            alert('Please select at least one applicable service.');
-            return;
-        }
-
-        const hasAllSelected = checkedBoxes.some(c => c.dataset.id === 'all');
-
-        // Build the services list for offer_services table
-        let applyServices = [];
-        const currentO = editingOfferId ? offers.find(o => (o.offer_id || o.id) === editingOfferId) : null;
-
-        if (hasAllSelected) {
-            // All services — map every service
-            applyServices = services.map(svc => {
-                const existing = currentO?.applicable_services.find(s => s.service_id === svc.service_id);
-                return {
-                    service_id: svc.service_id,
-                    service_name: svc.service_name,
-                    current_usage_count: existing?.current_usage_count || 0
-                };
-            });
-        } else {
-            checkedBoxes.forEach(chk => {
-                if (chk.dataset.id !== 'all') {
-                    const existing = currentO?.applicable_services.find(s => s.service_id === chk.dataset.id);
-                    applyServices.push({
-                        service_id: chk.dataset.id,
-                        service_name: chk.value,
-                        current_usage_count: existing?.current_usage_count || 0
-                    });
-                }
-            });
-        }
-
-        const offerPayload = {
-            company_id: getCompanyId(),
-            branch_id: getBranchId(),
-            offer_name: offerNameEl.value.trim(),
-            discount_type: offerDiscountTypeEl.value,
-            discount_value: parseFloat(offerDiscountValueEl.value) || 0,
-            status: 'active',
-            valid_from: offerStartDateEl.value || null,
-            valid_to: offerEndDateEl.value || null,
-            min_bill_amount: offerMinBillAmountEl.value ? parseFloat(offerMinBillAmountEl.value) : null
-        };
-
-        btnSaveOffer.textContent = isEditMode ? 'Saving...' : 'Creating...';
-        btnSaveOffer.disabled = true;
-
-        try {
-            let offerId = isEditMode ? editingOfferId : crypto.randomUUID();
-
-            const rowsToInsert = applyServices.map(srv => ({
-                offer_id: offerId,
-                company_id: getCompanyId(),
-                branch_id: getBranchId(),
-                offer_name: offerNameEl.value.trim(),
-                discount_type: offerDiscountTypeEl.value,
-                discount_value: parseFloat(offerDiscountValueEl.value) || 0,
-                status: 'active',
-                valid_from: offerStartDateEl.value || null,
-                valid_to: offerEndDateEl.value || null,
-                min_bill_amount: offerMinBillAmountEl.value ? parseFloat(offerMinBillAmountEl.value) : null,
-                service_id: srv.service_id,
-                service_name: srv.service_name,
-                current_usage_count: srv.current_usage_count
-            }));
-
-            if (isEditMode) {
-                // DELETE old rows
-                const { error: delErr } = await supabase
-                    .from('offers')
-                    .eq('offer_id', offerId)
-                    .delete();
-                if (delErr) throw delErr;
-            }
-
-            // INSERT all new mapped rows directly to flattened offers table
-            if (rowsToInsert.length > 0) {
-                const { error } = await supabase
-                    .from('offers')
-                    .insert(rowsToInsert);
-                if (error) throw error;
-            }
-
-            closeModal();
-            if (window.notifyEvent) {
-                window.notifyEvent('marketing', 'evt_marketing_offer', {
-                    title: isEditMode ? 'Offer Modified' : 'New Offer Created',
-                    message: `Offer "${offerNameEl.value.trim()}" was ${isEditMode ? 'updated' : 'created'}.`
-                });
-            }
-            // ── Marketing Notifications: notify customers ──
-            if (!isEditMode && window.notifyCustomer) {
-                const offerName = offerNameEl.value.trim();
-                window.notifyCustomer('new_offer', {
-                    title: 'New Offer Available!',
-                    message: `Check out our new offer: ${offerName}`,
-                    offerName
-                });
-                window.notifyCustomer('new_discount', {
-                    title: 'New Discount Available!',
-                    message: `Save more with our latest discount: ${offerName}`,
-                    offerName
-                });
-            }
-            await loadOffers();
-        } catch (error) {
-            console.error('Save Offer Error:', error);
-            alert('Failed to save offer: ' + (error.message || 'Unknown error'));
-        } finally {
-            btnSaveOffer.textContent = isEditMode ? 'Save Changes' : 'Create Offer';
-            btnSaveOffer.disabled = false;
         }
     }
 
-    // ─────────────────────────────────────────────────────────────────────────
-    // SUPABASE: Delete Offer (soft delete via status = 'deleted')
-    // ─────────────────────────────────────────────────────────────────────────
-    async function confirmDelete() {
-        if (!offerToDeleteId) return;
-        deleteOverlay.classList.remove('active');
-        if (deletingLoader) deletingLoader.classList.add('active');
+    if (btnSave) { btnSave.textContent = 'Saving...'; btnSave.disabled = true; }
 
-        try {
+    const all_services    = !!(document.getElementById('offerAppToServices')?.checked);
+    const all_products    = !!(document.getElementById('offerAppToProducts')?.checked);
+    const all_memberships = !!(document.getElementById('offerAppToMemberships')?.checked);
+
+    const payload = {
+        company_id:      getCompanyId(),
+        branch_id:       getBranchId(),
+        offer_name,
+        discount_type,
+        discount_value:  parseFloat(discount_value),
+        status:          'active',
+        min_bill_amount: document.getElementById('offerMinBillAmount').value
+            ? parseFloat(document.getElementById('offerMinBillAmount').value)
+            : null,
+        valid_from:      document.getElementById('offerStartDate').value || null,
+        valid_to:        document.getElementById('offerEndDate').value   || null,
+        all_services,
+        all_products,
+        all_memberships,
+        updated_at:      new Date().toISOString()
+    };
+
+    try {
+        if (isEditing) {
+            const offer = currentOffers.find(o => (o.id === currentEditId || o.offer_id === currentEditId));
+            const targetCol = offer?.id ? 'id' : 'offer_id';
+            const targetVal = offer?.id || offer?.offer_id || currentEditId;
+
             const { error } = await supabase
                 .from('offers')
-                .eq('offer_id', offerToDeleteId)
-                .update({ status: 'deleted' });
+                .update(payload)
+                .eq(targetCol, targetVal);
 
             if (error) throw error;
-            if (window.notifyEvent) {
-                window.notifyEvent('marketing', 'evt_marketing_offer', {
-                    title: 'Offer Deleted',
-                    message: 'An offer was deleted.'
-                });
-            }
-            await loadOffers();
-        } catch (err) {
-            console.error('Delete error:', err);
-            alert('Failed to delete offer: ' + (err.message || 'Unknown error'));
-        } finally {
-            if (deletingLoader) deletingLoader.classList.remove('active');
-            offerToDeleteId = null;
+        } else {
+            const { error } = await supabase
+                .from('offers')
+                .insert([{ ...payload, created_at: new Date().toISOString() }]);
+
+            if (error) throw error;
         }
-    }
 
-    // ─────────────────────────────────────────────────────────────────────────
-    // EVENT LISTENERS
-    // ─────────────────────────────────────────────────────────────────────────
-    tbody.addEventListener('click', (e) => {
-        const editBtn = e.target.closest('.edit-btn');
-        if (editBtn) { openModalForEdit(editBtn.dataset.id); return; }
-
-        const deleteBtn = e.target.closest('.delete-btn');
-        if (deleteBtn) {
-            offerToDeleteId = deleteBtn.dataset.id;
-            deleteOverlay.classList.add('active');
+        showToast(isEditing ? 'Offer updated successfully' : 'Offer created successfully');
+        if (window.notifyEvent) {
+            window.notifyEvent('marketing', 'evt_marketing_offer', {
+                title:   isEditing ? 'Offer Modified' : 'New Offer Created',
+                message: `Offer "${offer_name}" was ${isEditing ? 'updated' : 'created'}.`
+            });
         }
-    });
-
-    if (btnCreateOffer) {
-        btnCreateOffer.setAttribute('data-sub-feature', 'create_offer');
-        btnCreateOffer.addEventListener('click', openModalForCreate);
-    }
-    if (btnCancelOffer) btnCancelOffer.addEventListener('click', closeModal);
-    if (closeOfferModalBtn) closeOfferModalBtn.addEventListener('click', closeModal);
-    if (btnSaveOffer) btnSaveOffer.addEventListener('click', handleSaveOffer);
-
-    if (btnCancelDelete) btnCancelDelete.addEventListener('click', () => {
-        deleteOverlay.classList.remove('active');
-        offerToDeleteId = null;
-    });
-    if (btnConfirmDelete) btnConfirmDelete.addEventListener('click', confirmDelete);
-
-    modalOverlay.addEventListener('click', (e) => {
-        if (e.target === modalOverlay) closeModal();
-    });
-
-    if (offerServicesBtn) {
-        offerServicesBtn.addEventListener('click', (e) => {
-            e.stopPropagation();
-            offerServicesMenu.style.display = offerServicesMenu.style.display === 'block' ? 'none' : 'block';
-        });
-    }
-
-    document.addEventListener('click', (e) => {
-        if (offerServicesMenu && offerServicesBtn &&
-            !offerServicesBtn.contains(e.target) &&
-            !offerServicesMenu.contains(e.target)) {
-            offerServicesMenu.style.display = 'none';
+        if (!isEditing && window.notifyCustomer) {
+            window.notifyCustomer('new_offer', {
+                title:     'New Offer Available!',
+                message:   `Check out our new offer: ${offer_name}`,
+                offerName: offer_name
+            });
+            window.notifyCustomer('new_discount', {
+                title:     'New Discount Available!',
+                message:   `Save more with our latest discount: ${offer_name}`,
+                offerName: offer_name
+            });
         }
-    });
-
-    const searchInputEl = document.getElementById('offersSearchInput');
-    if (searchInputEl) {
-        searchInputEl.addEventListener('input', renderOffersTable);
+        closeModal();
+        await loadOffers();
+    } catch (err) {
+        console.error('handleSaveOffer error:', err);
+        showToast('Error saving offer: ' + (err.message || 'Unknown error'));
+    } finally {
+        if (btnSave) { btnSave.textContent = origText; btnSave.disabled = false; }
     }
+}
 
-    const filterCheckboxes = document.querySelectorAll('input[name="filterDiscountType"]');
-    filterCheckboxes.forEach(cb => {
-        cb.addEventListener('change', renderOffersTable);
-    });
-
-    initOffers();
-});
+// ─────────────────────────────────────────────────────────────────────────────
+// TOAST
+// ─────────────────────────────────────────────────────────────────────────────
+function showToast(message) {
+    const toast = document.getElementById('toastNotification');
+    if (toast) {
+        toast.textContent = message;
+        toast.classList.add('show');
+        setTimeout(() => toast.classList.remove('show'), 3000);
+    } else {
+        alert(message);
+    }
+}

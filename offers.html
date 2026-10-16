@@ -1,4 +1,4 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="en">
 
 <head>
@@ -68,8 +68,7 @@
                 style="display:flex; align-items:center; justify-content:space-between; padding:18px 32px 14px; background:#fff; border-bottom:1px solid #e2e8f0;">
                 <div>
                     <h1 style="font-size:1.45rem; font-weight:700; color:#1e293b; margin:0;">Offers</h1>
-                    <p style="font-size:0.92rem; color:#64748b; margin:2px 0 0;">Manage promotional discounts for
-                        services</p>
+                    <p style="font-size:0.92rem; color:#64748b; margin:2px 0 0;">Manage promotional discounts for your customers</p>
                 </div>
                 <div style="display:flex; align-items:center; gap:10px;">
                     <div
@@ -154,7 +153,7 @@
                                     Discount Type</th>
                                 <th
                                     style="width: 18%; padding: 14px 20px; font-weight: 600; color: #475569; font-size: 0.85rem; text-transform: uppercase; letter-spacing: 0.05em;">
-                                    Applicable Services</th>
+                                    Applicable To</th>
                                 <th
                                     style="width: 17%; padding: 14px 20px; font-weight: 600; color: #475569; font-size: 0.85rem; text-transform: uppercase; letter-spacing: 0.05em; text-align: center;">
                                     Validity</th>
@@ -193,7 +192,7 @@
         </div>
     </div>
 
-    <!-- Deleting Offer Full-Screen Overlay -->
+    <!-- Deleting offer... Full-Screen Overlay -->
     <style>
         #deletingOfferOverlay {
             display: none;
@@ -210,7 +209,7 @@
     <div id="deletingOfferOverlay">
         <div style="background: #fff; border-radius: 16px; padding: 2.25rem 2.75rem; display: flex; flex-direction: column; align-items: center; gap: 16px; box-shadow: 0 24px 64px rgba(0,0,0,0.25); animation: louFadeIn 0.2s ease;">
             <div style="width: 44px; height: 44px; border: 4px solid #e2e8f0; border-top-color: #ef4444; border-radius: 50%; animation: louSpin 0.75s linear infinite;"></div>
-            <p style="font-size: 1rem; font-weight: 600; color: #0f172a; margin: 0;">Deleting offer�</p>
+            <p style="font-size: 1rem; font-weight: 600; color: #0f172a; margin: 0;">Deleting offer...</p>
             <p style="font-size: 0.8rem; color: #64748b; margin: 0;">Please wait a moment.</p>
         </div>
     </div>
@@ -247,7 +246,7 @@
                                         class="text-rose">*</span></label>
                                 <select id="offerDiscountType" class="form-select">
                                     <option value="percentage" selected>Percentage (%)</option>
-                                    <option value="flat">Flat Amount (?)</option>
+                                    <option value="flat">Flat Amount (&#8377;)</option>
                                 </select>
                             </div>
                             <div class="form-group" style="margin-bottom: 0;">
@@ -257,107 +256,22 @@
                             </div>
                         </div>
 
-                        <!-- Applicable Services (Custom Dropdown) -->
-                        <div class="form-group" style="position: relative; margin-bottom: 0;">
-                            <label class="form-label">Applicable Services <span class="text-rose">*</span></label>
-                            <div class="filter-dropdown-container" style="width: 100%; position: relative;">
-                                <button type="button" class="form-input" id="offerServicesBtn"
-                                    style="display: flex; justify-content: space-between; align-items: center; text-align: left; background: #fff; cursor: pointer; height: 42px; width: 100%;">
-                                    <span id="offerServicesText" style="color: #94a3b8;">Select services...</span>
-                                    <i data-feather="chevron-down" style="width: 16px; height: 16px; color: #94a3b8;"></i>
-                                </button>
-
-                                <!-- Custom Dropdown Menu -->
-                                <div id="offerServicesMenu"
-                                    style="display: none; position: absolute; top: calc(100% + 4px); left: 0; width: 100%; background: #fff; border: 1px solid #e2e8f0; border-radius: 8px; box-shadow: 0 10px 15px -3px rgba(0,0,0,0.1), 0 4px 6px -2px rgba(0,0,0,0.05); z-index: 50;">
-                                    <div style="padding: 12px 16px; max-height: 220px; overflow-y: auto;">
-                                        <style>
-                                            .custom-chk-circle {
-                                                appearance: none;
-                                                -webkit-appearance: none;
-                                                width: 16px !important;
-                                                height: 16px !important;
-                                                border: 2px solid #cbd5e1;
-                                                border-radius: 50%;
-                                                background-color: #fff;
-                                                outline: none;
-                                                cursor: pointer;
-                                                position: relative;
-                                                transition: all 0.2s ease;
-                                                flex: 0 0 16px !important;
-                                                margin: 0 !important;
-                                                padding: 0 !important;
-                                            }
-
-                                            .custom-chk-circle:checked {
-                                                border-color: #4f46e5;
-                                                background-color: #4f46e5;
-                                            }
-
-                                            .custom-chk-circle:checked::after {
-                                                content: '';
-                                                position: absolute;
-                                                top: 50%;
-                                                left: 50%;
-                                                width: 6px;
-                                                height: 6px;
-                                                background-color: #ffffff;
-                                                border-radius: 50%;
-                                                transform: translate(-50%, -50%);
-                                            }
-
-                                            .service-lbl {
-                                                display: flex;
-                                                align-items: center;
-                                                justify-content: flex-start;
-                                                gap: 12px;
-                                                cursor: pointer;
-                                                padding: 10px 0;
-                                                margin: 0 !important;
-                                                border-bottom: 1px solid #f8fafc;
-                                            }
-
-                                            .service-lbl:last-child {
-                                                border-bottom: none;
-                                            }
-
-                                            .service-lbl span {
-                                                font-size: 0.9rem;
-                                                color: #1e293b;
-                                                font-weight: 500;
-                                                user-select: none;
-                                                margin: 0 !important;
-                                                padding: 0 !important;
-                                                line-height: 1;
-                                            }
-                                        </style>
-                                        <div id="servicesCheckboxList" style="display: flex; flex-direction: column;">
-                                            <label class="service-lbl">
-                                                <input type="checkbox" value="All Services" class="custom-chk-circle">
-                                                <span>All Services</span>
-                                            </label>
-                                            <label class="service-lbl">
-                                                <input type="checkbox" value="Hair Care" class="custom-chk-circle">
-                                                <span>Hair Care</span>
-                                            </label>
-                                            <label class="service-lbl">
-                                                <input type="checkbox" value="Styling" class="custom-chk-circle">
-                                                <span>Styling</span>
-                                            </label>
-                                            <label class="service-lbl">
-                                                <input type="checkbox" value="Skin Care" class="custom-chk-circle">
-                                                <span>Skin Care</span>
-                                            </label>
-                                        </div>
-                                    </div>
-                                    <div
-                                        style="padding: 12px 16px; border-top: 1px solid #f1f5f9; display: flex; justify-content: space-between; gap: 12px;">
-                                        <button type="button" id="resetServicesBtn"
-                                            style="flex: 1; padding: 10px 0; border: 1px solid #e2e8f0; border-radius: 6px; background: #fff; font-size: 0.9rem; font-weight: 600; color: #64748b; cursor: pointer;">Reset</button>
-                                        <button type="button" id="applyServicesBtn"
-                                            style="flex: 1; padding: 10px 0; border: none; border-radius: 6px; background: #6366f1; font-size: 0.9rem; font-weight: 600; color: #fff; cursor: pointer;">Apply</button>
-                                    </div>
-                                </div>
+                        <!-- Applicable To -->
+                        <div class="form-group" style="margin-bottom: 0;">
+                            <label class="form-label">Applicable To</label>
+                            <div style="display:flex; gap:8px; margin-top:4px;">
+                                <label id="offerAppToServicesLabel" style="flex:1; display:flex; align-items:center; gap:8px; padding:10px 12px; border:1px solid #e2e8f0; border-radius:8px; cursor:pointer; transition:all 0.2s; background:#f8fafc; user-select:none;">
+                                    <input type="checkbox" id="offerAppToServices" style="accent-color:#6366f1; width:15px; height:15px; flex-shrink:0; cursor:pointer;">
+                                    <span style="font-size:0.85rem; color:#334155; font-weight:500;">Services</span>
+                                </label>
+                                <label id="offerAppToProductsLabel" style="flex:1; display:flex; align-items:center; gap:8px; padding:10px 12px; border:1px solid #e2e8f0; border-radius:8px; cursor:pointer; transition:all 0.2s; background:#f8fafc; user-select:none;">
+                                    <input type="checkbox" id="offerAppToProducts" style="accent-color:#6366f1; width:15px; height:15px; flex-shrink:0; cursor:pointer;">
+                                    <span style="font-size:0.85rem; color:#334155; font-weight:500;">Products</span>
+                                </label>
+                                <label id="offerAppToMembershipsLabel" style="flex:1; display:flex; align-items:center; gap:8px; padding:10px 12px; border:1px solid #e2e8f0; border-radius:8px; cursor:pointer; transition:all 0.2s; background:#f8fafc; user-select:none;">
+                                    <input type="checkbox" id="offerAppToMemberships" style="accent-color:#6366f1; width:15px; height:15px; flex-shrink:0; cursor:pointer;">
+                                    <span style="font-size:0.85rem; color:#334155; font-weight:500;">Memberships</span>
+                                </label>
                             </div>
                         </div>
 
@@ -400,11 +314,9 @@
 
 
     <!-- Toast Notification -->
-    <div id="toastNotification" class="toast-notification">Booking created successfully (demo)</div>
+    <div id="toastNotification" class="toast-notification">Offer created successfully!</div>
 
-
-    <script type="module" src="scripts/offers/offers-ui.js"></script>
-<script src="logout.js"></script><script src="change-password.js"></script>    <script type="module" src="scripts/global-auth-guard.js"></script>
+    <script src="logout.js"></script><script src="change-password.js"></script>    <script type="module" src="scripts/global-auth-guard.js"></script>
     <script type="module" src="scripts/sub-features/sub-feature-gate.js"></script>
     <script type="module" src="scripts/offers.js"></script>
 </body>
