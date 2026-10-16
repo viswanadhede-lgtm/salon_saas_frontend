@@ -128,6 +128,13 @@ document.addEventListener('DOMContentLoaded', async () => {
             }
         });
     });
+
+    // Global Escape key listener to close modal
+    document.addEventListener('keydown', (e) => {
+        if (e.key === 'Escape') {
+            phCloseDrawer();
+        }
+    });
 });
 
 // ─── SUPABASE FETCH ─────────────────────────────────────────────────────────
@@ -285,8 +292,8 @@ function phRenderTable(data) {
             : `<span style="display:inline-block; padding:3px 10px; border-radius:20px; font-size:0.72rem; font-weight:700; color:#065f46; background:#d1fae5; text-transform:uppercase;">PAID</span>`;
 
         tr.innerHTML = `
-            <td style="padding:14px 16px 14px 24px; white-space:nowrap;">${displayDateTime}</td>
-            <td style="padding:14px 16px;">${customerHtml}</td>
+            <td style="padding:14px 16px 14px 24px;">${customerHtml}</td>
+            <td style="padding:14px 16px; white-space:nowrap;">${displayDateTime}</td>
             <td style="padding:14px 16px;">${typeBadge}</td>
             <td style="padding:14px 16px; color:#475569;">${itemHtml}</td>
             <td style="padding:14px 16px;">${origAmtHtml}</td>
@@ -296,9 +303,9 @@ function phRenderTable(data) {
             <td style="padding:14px 16px;">${staffHtml}</td>
             <td style="padding:14px 16px;">${statusBadgeHtml}</td>
             <td style="padding:14px 12px; text-align:center;" class="action-cell">
-                <button onclick="event.stopPropagation(); window.phOpenDrawer('${item.payment_id}')" title="View Invoice" style="background:#eff6ff; border:1px solid #bfdbfe; border-radius:8px; cursor:pointer; color:#1d4ed8; padding:6px 10px; font-size:0.7rem; font-weight:600; transition:all 0.2s; display:inline-flex; flex-direction:column; align-items:center; gap:2px; min-width:48px;" onmouseover="this.style.background='#dbeafe'; this.style.borderColor='#93c5fd';" onmouseout="this.style.background='#eff6ff'; this.style.borderColor='#bfdbfe';">
-                    <i data-feather="file-text" style="width:14px; height:14px;"></i>
-                    <span>Invoice</span>
+                <button onclick="event.stopPropagation(); window.phOpenDrawer('${item.payment_id}')" title="View Details" style="background:#eff6ff; border:1px solid #bfdbfe; border-radius:8px; cursor:pointer; color:#1d4ed8; padding:6px 12px; font-size:0.75rem; font-weight:600; transition:all 0.2s; display:inline-flex; align-items:center; gap:5px; min-width:54px;" onmouseover="this.style.background='#dbeafe'; this.style.borderColor='#93c5fd';" onmouseout="this.style.background='#eff6ff'; this.style.borderColor='#bfdbfe';">
+                    <i data-feather="eye" style="width:14px; height:14px;"></i>
+                    <span>View</span>
                 </button>
             </td>
         `;
@@ -373,12 +380,13 @@ window.phOpenDrawer = function(paymentId) {
 
     const overlay = document.getElementById('phDrawerOverlay');
     const drawer = document.getElementById('phSideDrawer');
-    overlay.style.display = 'block';
+    if (!overlay || !drawer) return;
+    overlay.style.display = 'flex';
     overlay.onclick = (e) => { if (e.target === overlay) phCloseDrawer(); };
     
     setTimeout(() => {
-        overlay.classList.add('active');
-        drawer.classList.add('active');
+        overlay.style.opacity = '1';
+        drawer.style.transform = 'scale(1)';
     }, 10);
 };
 
@@ -387,12 +395,12 @@ window.phCloseDrawer = function() {
     const drawer = document.getElementById('phSideDrawer');
     if (!overlay || !drawer) return;
     
-    overlay.classList.remove('active');
-    drawer.classList.remove('active');
+    overlay.style.opacity = '0';
+    drawer.style.transform = 'scale(0.95)';
 
     setTimeout(() => {
         overlay.style.display = 'none';
-    }, 300);
+    }, 250);
 };
 
 // ─── PRINT RECEIPT ──────────────────────────────────────────────────────────
