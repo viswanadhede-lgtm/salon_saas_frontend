@@ -1,4 +1,5 @@
 import { supabase } from '../lib/supabase.js';
+import { openBookingPayment } from './bookings/booking-payment-bridge.js';
 
 // ================================================================
 // BOOKINGS DATA
@@ -58,12 +59,13 @@ window.initPage = async function () {
                 raw_id: b.booking_id,
                 customer: b.customer_name || 'Walk-in Customer',
                 customer_id: b.customer_id || '',
+                phone: b.customer_phone || b.phone || '',
                 time: formattedTime,
                 raw_date: b.booking_date,
                 service: b.service_name || 'N/A',
                 staff: b.staff_name || 'Unassigned',
                 status: (b.status || 'booked').toLowerCase(),
-                amount: '\u20b9' + (b.total_price || 0).toLocaleString('en-IN'),
+                amount: '₹' + (b.total_price || 0).toLocaleString('en-IN'),
                 payment: (b.payment_status || 'pending').toLowerCase()
             };
         });
@@ -339,134 +341,37 @@ function showToast(msg, color) {
     }, 3000);
 }
 window.showToast = showToast;
+window.toast = showToast;
 
 // ================================================================
-// COLLECT PAYMENT
+// COLLECT PAYMENT — via booking-payment-bridge (RPC: process_booking_payment_atomic)
 // ================================================================
 window.openRowPayment = async function (bookingId) {
     const row = todaysBookingsData.find(p => p.raw_id === bookingId);
-    const targetId = row ? row.raw_id : bookingId;
-    if (!targetId || !row) return;
+    if (!row) return;
 
-    const totalOriginal = parseInt(String(row.amount || '0').replace(/[^0-9]/g, ''), 10) || 0;
+    // Map upcoming-appointments row shape → bridge-expected shape
+    const bridgeRow = {
+        booking_id:    row.raw_id,
+        customer_name: row.customer,
+        customer_id:   row.customer_id || null,
+        customer_phone: row.phone || '',
+        service_name:  row.service,
+        staff_name:    row.staff,
+        start_time:    row.time,
+        booking_date:  row.raw_date || null,
+        final_amount:  parseInt(String(row.amount || '0').replace(/[^0-9]/g, ''), 10) || 0,
+        total_price:   parseInt(String(row.amount || '0').replace(/[^0-9]/g, ''), 10) || 0,
+    };
 
-    if (!window.openGlobalPaymentModal) {
-        await new Promise((resolve) => {
-            const s = document.createElement('script');
-            s.src = 'scripts/global-payment-modal.js?v=2.2.0';
-            s.onload = resolve;
-            s.onerror = resolve;
-            document.head.appendChild(s);
-        });
-    }
-
-    if (window.openGlobalPaymentModal) {
-        window.openGlobalPaymentModal({
-            type: 'booking',
-            title: 'Appointment Payment',
-            saleId: String(targetId).slice(0, 8).toUpperCase(),
-            customerId: row.customer_id || null,
-            customerName: row.customer || 'Customer',
-            customerPhone: row.phone || '',
-            totalAmount: totalOriginal,
-            amountDue: totalOriginal,
-            items: [{
-                name: row.service || 'Service Appointment',
-                subtitle: `${row.time || ''} - Staff: ${row.staff || 'Assigned'}`,
-                quantity: 1,
-                price: totalOriginal
-            }],
-            onComplete: async (payload) => {
-                await processPaymentCallback(payload, row);
+    await openBookingPayment(bridgeRow, {
+        onSuccess: async () => {
+            if (typeof window.initPage === 'function') {
+                await window.initPage();
             }
-        });
-    } else {
-        alert('Payment modal not loaded. Please refresh the page.');
-    }
+        }
+    });
 };
-
-async function processPaymentCallback(payload, row) {
-    const amount = payload.amountCollected;
-    const payMethod = payload.paymentMethod;
-
-    try {
-        let companyId;
-        try {
-            const ctx = JSON.parse(localStorage.getItem('appContext') || '{}');
-            companyId = ctx.company?.id || localStorage.getItem('company_id') || null;
-        } catch {
-            companyId = localStorage.getItem('company_id') || null;
-        }
-
-        const branchId = localStorage.getItem('branch_id') || localStorage.getItem('active_branch_id');
-        const paidAt = new Date().toISOString().replace('Z', '');
-
-        const totalOriginal = parseInt(row.amount.replace(/[^0-9]/g, ''), 10) || 0;
-        const totalDiscount = totalOriginal - amount;
-        const d = payload.discounts || {};
-        let discountType = null;
-        let discountName = null;
-        if (d.couponCode) { discountType = 'coupon'; discountName = d.couponCode; }
-        else if (d.offerName) { discountType = 'offer'; discountName = d.offerName; }
-        else if (d.membershipName) { discountType = 'membership'; discountName = d.membershipName; }
-        else if (d.manualValue > 0) {
-            discountType = 'manual';
-            discountName = d.manualType === 'percent' ? `${d.manualValue}% off` : `Rs.${d.manualValue} off`;
-        }
-
-        const { error: txError } = await supabase
-            .from('business_transactions')
-            .insert({
-                company_id: companyId,
-                branch_id: branchId,
-                reference_id: row.raw_id,
-                reference_type: 'booking',
-                amount: amount,
-                currency: 'INR',
-                payment_method: payMethod.toLowerCase(),
-                status: 'paid',
-                notes: `Payment for booking ${row.raw_id.substring(0, 8)}`,
-                paid_at: paidAt,
-                final_amount: amount,
-                discount_type: discountType,
-                discount_name: discountName,
-                discount_amount: totalDiscount > 0 ? totalDiscount : null
-            });
-        if (txError) throw txError;
-
-        const { error: bftError } = await supabase
-            .from('bookings_for_business_transaction')
-            .update({
-                payment_status: 'paid',
-                status: 'completed',
-                final_amount: amount,
-                discount_amount: totalDiscount > 0 ? totalDiscount : null,
-                discount_type: discountType,
-                discount_name: discountName,
-                updated_at: new Date().toISOString()
-            })
-            .eq('booking_id', row.raw_id);
-        if (bftError) console.error('bft update error:', bftError);
-
-        const { error: bookingError } = await supabase
-            .from('bookings')
-            .update({
-                status: 'completed',
-                updated_at: new Date().toISOString()
-            })
-            .eq('id', row.raw_id);
-        if (bookingError) console.error('bookings update error:', bookingError);
-
-        showToast('Payment recorded successfully!', '#10b981');
-        if (typeof window.initPage === 'function') {
-            await window.initPage();
-        }
-    } catch (err) {
-        console.error(err);
-        showToast('Failed to record payment: ' + (err.message || 'Unknown error'), '#ef4444');
-        throw err;
-    }
-}
 
 // ================================================================
 // SIDEBAR & SUBMENU
