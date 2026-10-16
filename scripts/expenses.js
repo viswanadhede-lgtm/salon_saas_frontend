@@ -208,47 +208,42 @@ window.submitExpense = async () => {
     btn.disabled  = true;
 
     try {
-        if (editingExpenseId) {
             // ── UPDATE ──
-            // Try id first, fallback to expense_id
-            let updateError;
-            ({ error: updateError } = await supabase
-                .from('expenses')
-                .eq('id', editingExpenseId)
-                .update({
-                    date,
-                    category,
-                    amount,
-                    notes:      notes || null,
-                    status:     'active',
-                    updated_at: new Date().toISOString()
-                }));
+            const updatePayload = {
+                date,
+                category,
+                amount,
+                notes:      notes || null,
+                status:     'active',
+                updated_at: new Date().toISOString()
+            };
 
-            if (updateError) {
-                ({ error: updateError } = await supabase
+            let { error } = await supabase
+                .from('expenses')
+                .update(updatePayload)
+                .eq('expense_id', editingExpenseId);
+
+            if (error) {
+                // Fallback for id if expense_id is not mapped
+                ({ error } = await supabase
                     .from('expenses')
-                    .eq('expense_id', editingExpenseId)
-                    .update({
-                        date,
-                        category,
-                        amount,
-                        notes:      notes || null,
-                        status:     'active',
-                        updated_at: new Date().toISOString()
-                    }));
+                    .update(updatePayload)
+                    .eq('id', editingExpenseId));
             }
-            const error = updateError;
 
             if (error) throw error;
             showToast('Expense updated successfully!');
         } else {
             // ── CREATE ──
             const user = getUserInfo();
+            const rawBranch = getBranchId();
+            const branchId = rawBranch && rawBranch !== 'all' ? rawBranch : null;
+
             const { error } = await supabase
                 .from('expenses')
                 .insert({
                     company_id: getCompanyId(),
-                    branch_id:  getBranchId(),
+                    branch_id:  branchId,
                     date,
                     category,
                     amount,
@@ -265,7 +260,7 @@ window.submitExpense = async () => {
         }
 
         window.closeAddExpenseModal();
-        await fetchExpenses();
+        await loadAllExpenseData();
     } catch (err) {
         console.error('submitExpense error:', err);
         showToast('Failed to save expense: ' + (err.message || ''));
@@ -337,40 +332,245 @@ async function performDeleteExpense() {
     closeDeleteModal();
     
     try {
-        let error;
-        ({ error } = await supabase
+        let { error } = await supabase
             .from('expenses')
-            .eq('expense_id', id)
-            .update({ status: 'deleted', updated_at: new Date().toISOString() }));
+            .update({ status: 'deleted', updated_at: new Date().toISOString() })
+            .eq('expense_id', id);
 
         if (error) {
             // Fallback for ID if standard expense_id fails
             ({ error } = await supabase
                 .from('expenses')
-                .eq('id', id)
-                .update({ status: 'deleted', updated_at: new Date().toISOString() }));
+                .update({ status: 'deleted', updated_at: new Date().toISOString() })
+                .eq('id', id));
         }
 
         if (error) throw error;
 
         showToast('Expense has been removed.');
-        await fetchExpenses();
+        await loadAllExpenseData();
     } catch (err) {
         console.error("Error deleting expense:", err);
         showToast("Failed to delete expense", 'error');
     }
 }
 
-// ─── READ Expenses (Supabase) — excludes soft-deleted rows ───────────────────
+// ─── READ Stat Cards (PostgreSQL RPC: get_expenses_stat_cards) ───────────────
+async function fetchExpenseStatCards() {
+    try {
+        const companyId = getCompanyId();
+        if (!companyId) return;
+
+        const rawBranchId = getBranchId();
+        const branchId = rawBranchId && rawBranchId !== 'all' ? rawBranchId : null;
+
+        const { data, error } = await supabase.rpc('get_expenses_stat_cards', {
+            p_company_id: companyId,
+            p_branch_id:  branchId
+        });
+
+        if (error) {
+            console.warn('get_expenses_stat_cards RPC returned error, using fallback:', error);
+            computeAndRenderStatCardsClientSide();
+            return;
+        }
+
+        renderStatCardsFromData(data);
+    } catch (err) {
+        console.warn('get_expenses_stat_cards RPC exception, using fallback:', err);
+        computeAndRenderStatCardsClientSide();
+    }
+}
+
+// ─── Render Stat Cards from RPC Data ─────────────────────────────────────────
+function renderStatCardsFromData(data) {
+    if (!data) return;
+
+    const elTodayAmt = document.getElementById('cardTodayExpenses');
+    const elTodayTrend = document.getElementById('cardTodayTrend');
+    const elThisMonthAmt = document.getElementById('cardThisMonthExpenses');
+    const elThisMonthTrend = document.getElementById('cardThisMonthTrend');
+    const elTotalAmt = document.getElementById('cardTotalExpenses');
+    const elTopCatName = document.getElementById('cardTopCategoryName');
+    const elTopCatDetails = document.getElementById('cardTopCategoryDetails');
+
+    // 1. Today's Expenses
+    if (elTodayAmt) {
+        const todayAmt = parseFloat(data.today_expenses || 0);
+        elTodayAmt.innerText = `₹${todayAmt.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+    }
+    if (elTodayTrend) {
+        const pct = Math.abs(parseFloat(data.today_trend_pct || 0));
+        const dir = data.today_trend_direction || 'flat';
+        if (dir === 'up') {
+            // Expenses increased -> red alert
+            elTodayTrend.innerHTML = `<span style="color: #ef4444; display: inline-flex; align-items: center; gap: 4px;"><i data-feather="trending-up" style="width: 14px; height: 14px;"></i> ${pct}% vs yesterday</span>`;
+        } else if (dir === 'down') {
+            // Expenses decreased -> green savings
+            elTodayTrend.innerHTML = `<span style="color: #10b981; display: inline-flex; align-items: center; gap: 4px;"><i data-feather="trending-down" style="width: 14px; height: 14px;"></i> ${pct}% vs yesterday</span>`;
+        } else {
+            elTodayTrend.innerHTML = `<span style="color: #64748b; font-weight: 500;">0% vs yesterday</span>`;
+        }
+    }
+
+    // 2. This Month's Expenses
+    if (elThisMonthAmt) {
+        const monthAmt = parseFloat(data.this_month_expenses || 0);
+        elThisMonthAmt.innerText = `₹${monthAmt.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+    }
+    if (elThisMonthTrend) {
+        const pct = Math.abs(parseFloat(data.this_month_trend_pct || 0));
+        const dir = data.this_month_trend_direction || 'flat';
+        if (dir === 'up') {
+            elThisMonthTrend.innerHTML = `<span style="color: #ef4444; display: inline-flex; align-items: center; gap: 4px;"><i data-feather="trending-up" style="width: 14px; height: 14px;"></i> ${pct}% vs last month</span>`;
+        } else if (dir === 'down') {
+            elThisMonthTrend.innerHTML = `<span style="color: #10b981; display: inline-flex; align-items: center; gap: 4px;"><i data-feather="trending-down" style="width: 14px; height: 14px;"></i> ${pct}% vs last month</span>`;
+        } else {
+            elThisMonthTrend.innerHTML = `<span style="color: #64748b; font-weight: 500;">0% vs last month</span>`;
+        }
+    }
+
+    // 3. Total Expenses (Lifetime)
+    if (elTotalAmt) {
+        const totalAmt = parseFloat(data.total_expenses || 0);
+        elTotalAmt.innerText = `₹${totalAmt.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+    }
+
+    // 4. Top Expense Category
+    if (elTopCatName) {
+        const catName = data.top_category_name && data.top_category_name !== 'None' ? data.top_category_name : 'None';
+        elTopCatName.innerText = catName;
+        elTopCatName.title = catName;
+    }
+    if (elTopCatDetails) {
+        const topAmt = parseFloat(data.top_category_amount || 0);
+        const topPct = parseFloat(data.top_category_pct || 0);
+        if (topAmt > 0) {
+            elTopCatDetails.innerHTML = `₹${topAmt.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} &middot; ${topPct}% of total`;
+        } else {
+            elTopCatDetails.innerHTML = `₹0.00 &middot; 0% of total`;
+        }
+    }
+
+    if (window.feather) feather.replace();
+}
+
+// ─── Client-side Fallback Computation ─────────────────────────────────────────
+function computeAndRenderStatCardsClientSide() {
+    const now = new Date();
+    const pad2 = (n) => String(n).padStart(2, '0');
+    const todayStr = `${now.getFullYear()}-${pad2(now.getMonth() + 1)}-${pad2(now.getDate())}`;
+
+    const yesterdayObj = new Date(now);
+    yesterdayObj.setDate(now.getDate() - 1);
+    const yesterdayStr = `${yesterdayObj.getFullYear()}-${pad2(yesterdayObj.getMonth() + 1)}-${pad2(yesterdayObj.getDate())}`;
+
+    const currentYear = now.getFullYear();
+    const currentMonth = now.getMonth();
+
+    const lastMonthObj = new Date(now.getFullYear(), now.getMonth() - 1, 1);
+    const lastMonthYear = lastMonthObj.getFullYear();
+    const lastMonthNum = lastMonthObj.getMonth();
+
+    let todayTotal = 0;
+    let yesterdayTotal = 0;
+    let thisMonthTotal = 0;
+    let lastMonthTotal = 0;
+    let lifetimeTotal = 0;
+    const lifetimeCategoryTotals = {};
+
+    allExpenses.forEach(exp => {
+        const amt = parseFloat(exp.amount || 0);
+        if (isNaN(amt) || amt <= 0) return;
+
+        lifetimeTotal += amt;
+        const cat = exp.category || 'Other';
+        lifetimeCategoryTotals[cat] = (lifetimeCategoryTotals[cat] || 0) + amt;
+
+        if (exp.date) {
+            const expDateStr = String(exp.date).slice(0, 10);
+            if (expDateStr === todayStr) {
+                todayTotal += amt;
+            } else if (expDateStr === yesterdayStr) {
+                yesterdayTotal += amt;
+            }
+
+            const parts = expDateStr.split('-');
+            if (parts.length >= 2) {
+                const y = parseInt(parts[0], 10);
+                const m = parseInt(parts[1], 10) - 1;
+                if (y === currentYear && m === currentMonth) {
+                    thisMonthTotal += amt;
+                } else if (y === lastMonthYear && m === lastMonthNum) {
+                    lastMonthTotal += amt;
+                }
+            }
+        }
+    });
+
+    let topCatName = '-';
+    let topCatMax = 0;
+    for (const [cat, total] of Object.entries(lifetimeCategoryTotals)) {
+        if (total > topCatMax) {
+            topCatMax = total;
+            topCatName = cat;
+        }
+    }
+    const topCatPercent = lifetimeTotal > 0 && topCatMax > 0
+        ? ((topCatMax / lifetimeTotal) * 100).toFixed(1)
+        : '0.0';
+
+    const calcTrend = (cur, prev) => {
+        if (prev === 0 && cur === 0) return { pct: 0, dir: 'flat' };
+        if (prev === 0 && cur > 0) return { pct: 100, dir: 'up' };
+        if (cur === 0 && prev > 0) return { pct: 100, dir: 'down' };
+        const change = ((cur - prev) / prev) * 100;
+        return {
+            pct: Math.abs(Math.round(change)),
+            dir: change > 0 ? 'up' : change < 0 ? 'down' : 'flat'
+        };
+    };
+
+    const todayTrend = calcTrend(todayTotal, yesterdayTotal);
+    const monthTrend = calcTrend(thisMonthTotal, lastMonthTotal);
+
+    renderStatCardsFromData({
+        today_expenses: todayTotal,
+        yesterday_expenses: yesterdayTotal,
+        today_trend_pct: todayTrend.pct,
+        today_trend_direction: todayTrend.dir,
+        this_month_expenses: thisMonthTotal,
+        last_month_expenses: lastMonthTotal,
+        this_month_trend_pct: monthTrend.pct,
+        this_month_trend_direction: monthTrend.dir,
+        total_expenses: lifetimeTotal,
+        top_category_name: topCatName,
+        top_category_amount: topCatMax,
+        top_category_pct: topCatPercent
+    });
+}
+
+// ─── READ Expenses Table Data (Supabase) ─────────────────────────────────────
 async function fetchExpenses() {
     try {
-        const { data, error } = await supabase
+        const companyId = getCompanyId();
+        if (!companyId) return;
+
+        const rawBranchId = getBranchId();
+        const branchId = rawBranchId && rawBranchId !== 'all' ? rawBranchId : null;
+
+        let query = supabase
             .from('expenses')
             .select('*')
-            .eq('company_id', getCompanyId())
+            .eq('company_id', companyId)
             .neq('status', 'deleted')
             .order('date', { ascending: false });
 
+        if (branchId) {
+            query = query.eq('branch_id', branchId);
+        }
+
+        const { data, error } = await query;
         if (error) throw error;
         allExpenses = data || [];
     } catch (err) {
@@ -379,11 +579,19 @@ async function fetchExpenses() {
         allExpenses = [];
     }
 
-    renderExpenses();
+    renderExpensesTable();
 }
 
-// ─── Render ───────────────────────────────────────────────────────────────────
-function renderExpenses() {
+// ─── Master Loader ────────────────────────────────────────────────────────────
+async function loadAllExpenseData() {
+    await Promise.allSettled([
+        fetchExpenseStatCards(),
+        fetchExpenses()
+    ]);
+}
+
+// ─── Render Table ─────────────────────────────────────────────────────────────
+function renderExpensesTable() {
     const tbody           = document.getElementById('expensesTableBody');
     const dateRangeFilter = document.getElementById('expensesDateRange').value;
     const categoryFilter  = document.getElementById('filterCategory').value;
@@ -439,9 +647,6 @@ function renderExpenses() {
 
     filtered.sort((a, b) => new Date(b.date) - new Date(a.date));
 
-    let totalSelectedRange = 0;
-    const categoryTotals = {};
-
     const badgeMap = {
         'Rent':        'bg-indigo-light text-indigo',
         'Salary':      'bg-emerald-light text-emerald',
@@ -456,9 +661,6 @@ function renderExpenses() {
     } else {
         tbody.innerHTML = filtered.map(exp => {
             const amt        = parseFloat(exp.amount || 0);
-            totalSelectedRange += amt;
-            const cat = exp.category || 'Other';
-            categoryTotals[cat] = (categoryTotals[cat] || 0) + amt;
             const badgeClass = badgeMap[exp.category] || 'bg-gray-100 text-gray-800';
             const expId      = exp.id || exp.expense_id;
             
@@ -502,136 +704,16 @@ function renderExpenses() {
         }).join('');
     }
 
-    // ─── Stat Cards Calculation & Rendering ───
-    const pad2 = (n) => String(n).padStart(2, '0');
-    const todayStr = `${now.getFullYear()}-${pad2(now.getMonth() + 1)}-${pad2(now.getDate())}`;
-
-    const yesterdayObj = new Date(now);
-    yesterdayObj.setDate(now.getDate() - 1);
-    const yesterdayStr = `${yesterdayObj.getFullYear()}-${pad2(yesterdayObj.getMonth() + 1)}-${pad2(yesterdayObj.getDate())}`;
-
-    const currentYear = now.getFullYear();
-    const currentMonth = now.getMonth(); // 0-indexed
-
-    const lastMonthObj = new Date(now.getFullYear(), now.getMonth() - 1, 1);
-    const lastMonthYear = lastMonthObj.getFullYear();
-    const lastMonthNum = lastMonthObj.getMonth(); // 0-indexed
-
-    let todayTotal = 0;
-    let yesterdayTotal = 0;
-    let thisMonthTotal = 0;
-    let lastMonthTotal = 0;
-    let lifetimeTotal = 0;
-    const lifetimeCategoryTotals = {};
-
-    allExpenses.forEach(exp => {
-        const amt = parseFloat(exp.amount || 0);
-        if (isNaN(amt) || amt <= 0) return;
-
-        lifetimeTotal += amt;
-        const cat = exp.category || 'Other';
-        lifetimeCategoryTotals[cat] = (lifetimeCategoryTotals[cat] || 0) + amt;
-
-        if (exp.date) {
-            const expDateStr = String(exp.date).slice(0, 10);
-            if (expDateStr === todayStr) {
-                todayTotal += amt;
-            } else if (expDateStr === yesterdayStr) {
-                yesterdayTotal += amt;
-            }
-
-            const parts = expDateStr.split('-');
-            if (parts.length >= 2) {
-                const y = parseInt(parts[0], 10);
-                const m = parseInt(parts[1], 10) - 1;
-                if (y === currentYear && m === currentMonth) {
-                    thisMonthTotal += amt;
-                } else if (y === lastMonthYear && m === lastMonthNum) {
-                    lastMonthTotal += amt;
-                }
-            }
-        }
-    });
-
-    let topCatName = '-';
-    let topCatMax = 0;
-    for (const [cat, total] of Object.entries(lifetimeCategoryTotals)) {
-        if (total > topCatMax) {
-            topCatMax = total;
-            topCatName = cat;
-        }
-    }
-    const topCatPercent = lifetimeTotal > 0 && topCatMax > 0
-        ? ((topCatMax / lifetimeTotal) * 100).toFixed(1)
-        : '0.0';
-
-    // Helper to format trend indicators for expenses:
-    // Increased spend = alert/negative (red, trending-up)
-    // Decreased spend = good/savings (green, trending-down)
-    const formatTrend = (current, previous, vsLabel) => {
-        if (previous === 0 && current === 0) {
-            return `<span style="color: #64748b; font-weight: 500;">0% vs ${vsLabel}</span>`;
-        }
-        if (previous === 0 && current > 0) {
-            return `<span style="color: #ef4444; display: inline-flex; align-items: center; gap: 4px;"><i data-feather="trending-up" style="width: 14px; height: 14px;"></i> 100% vs ${vsLabel}</span>`;
-        }
-        if (current === 0 && previous > 0) {
-            return `<span style="color: #10b981; display: inline-flex; align-items: center; gap: 4px;"><i data-feather="trending-down" style="width: 14px; height: 14px;"></i> 100% vs ${vsLabel}</span>`;
-        }
-        const change = ((current - previous) / previous) * 100;
-        const absVal = Math.abs(Math.round(change));
-        if (change > 0) {
-            return `<span style="color: #ef4444; display: inline-flex; align-items: center; gap: 4px;"><i data-feather="trending-up" style="width: 14px; height: 14px;"></i> ${absVal}% vs ${vsLabel}</span>`;
-        } else if (change < 0) {
-            return `<span style="color: #10b981; display: inline-flex; align-items: center; gap: 4px;"><i data-feather="trending-down" style="width: 14px; height: 14px;"></i> ${absVal}% vs ${vsLabel}</span>`;
-        } else {
-            return `<span style="color: #64748b; font-weight: 500;">0% vs ${vsLabel}</span>`;
-        }
-    };
-
-    // Update DOM elements
-    const elTodayAmt = document.getElementById('cardTodayExpenses');
-    const elTodayTrend = document.getElementById('cardTodayTrend');
-    const elThisMonthAmt = document.getElementById('cardThisMonthExpenses');
-    const elThisMonthTrend = document.getElementById('cardThisMonthTrend');
-    const elTotalAmt = document.getElementById('cardTotalExpenses');
-    const elTopCatName = document.getElementById('cardTopCategoryName');
-    const elTopCatDetails = document.getElementById('cardTopCategoryDetails');
-
-    if (elTodayAmt) {
-        elTodayAmt.innerText = `₹${todayTotal.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
-    }
-    if (elTodayTrend) {
-        elTodayTrend.innerHTML = formatTrend(todayTotal, yesterdayTotal, 'yesterday');
-    }
-
-    if (elThisMonthAmt) {
-        elThisMonthAmt.innerText = `₹${thisMonthTotal.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
-    }
-    if (elThisMonthTrend) {
-        elThisMonthTrend.innerHTML = formatTrend(thisMonthTotal, lastMonthTotal, 'last month');
-    }
-
-    if (elTotalAmt) {
-        elTotalAmt.innerText = `₹${lifetimeTotal.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
-    }
-
-    if (elTopCatName) {
-        elTopCatName.innerText = topCatMax > 0 ? topCatName : 'None';
-        elTopCatName.title = topCatMax > 0 ? topCatName : 'None';
-    }
-    if (elTopCatDetails) {
-        elTopCatDetails.innerHTML = topCatMax > 0
-            ? `₹${topCatMax.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} &middot; ${topCatPercent}% of total`
-            : `₹0.00 &middot; 0% of total`;
-    }
-
     feather.replace();
     
     if (window.applySubFeatureGates) {
         window.applySubFeatureGates();
     }
 }
+
+// Backward compatibility alias
+const renderExpenses = renderExpensesTable;
+window.renderExpenses = renderExpensesTable;
 
 // ─── Toast ────────────────────────────────────────────────────────────────────
 function showToast(msg) {
@@ -643,4 +725,11 @@ function showToast(msg) {
 }
 
 // ─── Init ─────────────────────────────────────────────────────────────────────
-fetchExpenses();
+loadAllExpenseData();
+
+// Listen for active branch changes
+window.addEventListener('storage', (e) => {
+    if (e.key === 'active_branch_id') {
+        loadAllExpenseData();
+    }
+});
