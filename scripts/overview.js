@@ -499,6 +499,17 @@ async function loadOverviewPage() {
         if (elSourceProducts) elSourceProducts.textContent = Math.round(baseProductsCount * multiplier);
         if (elSourceMemberships) elSourceMemberships.textContent = Math.round(baseMembershipsCount * multiplier);
 
+        // Update Section 8 (Marketing Analytics)
+        const elMktCoupons = document.getElementById('mktCoupons');
+        const elMktMemberships = document.getElementById('mktMemberships');
+        const elMktOffers = document.getElementById('mktOffers');
+        const elMktDiscounts = document.getElementById('mktDiscounts');
+
+        if (elMktCoupons) elMktCoupons.textContent = Math.round(48 * multiplier);
+        if (elMktMemberships) elMktMemberships.textContent = Math.round(24 * multiplier);
+        if (elMktOffers) elMktOffers.textContent = Math.round(86 * multiplier);
+        if (elMktDiscounts) elMktDiscounts.textContent = fmtINR(Math.round(18450 * multiplier));
+
         // Update comparison periods
         document.querySelectorAll('.ov-trend-period').forEach(el => {
             if (el.textContent.includes('Sep 15') || el.textContent.includes('previous period')) {
