@@ -743,9 +743,16 @@
  // - Frontend: overview.html -> #staffTotal, #staffCompleted, #staffRevenue, #topStaffList
 
  // Section 8: Marketing Analytics
- // - Active Campaigns, Campaign Revenue, Offer Redemptions, Conversion Rate
- // - Source Table: campaigns, offers, coupons
- // - Frontend: overview.html -> #mktActive, #mktRevenue, #mktRedemptions, #mktConversion
+ // - Coupons Redeemed, Memberships Purchased, Offer Redemptions, Total Discounts Given
+ // - Source Tables: coupons/coupon_redemptions, membership_purchases, offers/offer_redemptions, sales/bookings (discount_amount)
+ // - Frontend: overview.html -> #mktCoupons, #mktMemberships, #mktOffers, #mktDiscounts
+ // - Icons: tag, award, gift, percent
+
+ // Section 9: Revenue Trend by Business Source
+ // - Bookings Trend, Product Sales Trend, Memberships Trend
+ // - Source Tables: bookings, sales, membership_purchases
+ // - Frontend: overview.html -> #sourceBookingsVal, #sourceProductsVal, #sourceMembershipsVal, #bookingsTrendChart, #productsTrendChart, #membershipsTrendChart
+ // - Icons: trending-up (header), calendar, shopping-bag, award
 
 
 
