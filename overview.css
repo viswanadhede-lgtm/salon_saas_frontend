@@ -631,6 +631,75 @@ body.dashboard-body {
     color: #0f172a;
 }
 
+/* ── Section 9: Sources Trend Cards ────────────────────── */
+.ov-source-trend-card {
+    background: #ffffff;
+    border: 1px solid var(--ov-border-light);
+    border-radius: 12px;
+    padding: 18px 20px 14px 20px;
+    box-shadow: 0 1px 2px rgba(0,0,0,0.02);
+    display: flex;
+    flex-direction: column;
+    transition: transform 0.15s ease, box-shadow 0.15s ease;
+}
+
+.ov-source-trend-card:hover {
+    box-shadow: 0 4px 12px rgba(15, 23, 42, 0.05);
+}
+
+.ov-source-trend-top {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 12px;
+}
+
+.ov-source-trend-left {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.ov-source-trend-title {
+    font-size: 0.95rem;
+    font-weight: 700;
+    color: #1e293b;
+    margin: 0;
+}
+
+.ov-source-trend-badge-wrap {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    gap: 2px;
+}
+
+.ov-source-trend-metric-group {
+    margin-bottom: 8px;
+}
+
+.ov-source-trend-value {
+    font-size: 1.65rem;
+    font-weight: 800;
+    color: #0f172a;
+    line-height: 1.1;
+    letter-spacing: -0.02em;
+}
+
+.ov-source-trend-sub {
+    font-size: 0.78rem;
+    font-weight: 500;
+    color: var(--ov-text-muted);
+    margin-top: 2px;
+}
+
+.ov-source-trend-canvas-wrap {
+    position: relative;
+    width: 100%;
+    height: 155px;
+    margin-top: 4px;
+}
+
 /* ── Responsive Behavior ───────────────────────────────── */
 @media (max-width: 1200px) {
     .ov-grid-4 {

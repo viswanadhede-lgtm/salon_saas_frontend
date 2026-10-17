@@ -986,6 +986,89 @@
                     </div>
                 </section>
 
+                <!-- ── 9. Sources Trend ───────────────────────────────────────── -->
+                <section class="ov-section-card">
+                    <div class="ov-section-header">
+                        <div class="ov-sec-icon-box" style="background:#eff6ff;">
+                            <i data-feather="bar-chart" style="color:#6366f1;"></i>
+                        </div>
+                        <div class="ov-sec-text">
+                            <h3>Sources Trend</h3>
+                            <p>Track how bookings, product sales and memberships are performing over time.</p>
+                        </div>
+                    </div>
+                    <div class="ov-grid-3">
+                        <!-- Card 1: Bookings Trend -->
+                        <div class="ov-source-trend-card">
+                            <div class="ov-source-trend-top">
+                                <div class="ov-source-trend-left">
+                                    <div class="ov-icon-circle" style="background:#eff6ff;">
+                                        <i data-feather="calendar" style="color:#2563eb;"></i>
+                                    </div>
+                                    <h4 class="ov-source-trend-title">Bookings Trend</h4>
+                                </div>
+                                <div class="ov-source-trend-badge-wrap">
+                                    <span class="ov-trend-badge up">↑ 12.5%</span>
+                                    <span class="ov-trend-period">vs previous period</span>
+                                </div>
+                            </div>
+                            <div class="ov-source-trend-metric-group">
+                                <div class="ov-source-trend-value" id="sourceBookingsVal">186</div>
+                                <div class="ov-source-trend-sub">Bookings</div>
+                            </div>
+                            <div class="ov-source-trend-canvas-wrap">
+                                <canvas id="bookingsTrendChart"></canvas>
+                            </div>
+                        </div>
+
+                        <!-- Card 2: Product Sales Trend -->
+                        <div class="ov-source-trend-card">
+                            <div class="ov-source-trend-top">
+                                <div class="ov-source-trend-left">
+                                    <div class="ov-icon-circle" style="background:#fff7ed;">
+                                        <i data-feather="shopping-bag" style="color:#ea580c;"></i>
+                                    </div>
+                                    <h4 class="ov-source-trend-title">Product Sales Trend</h4>
+                                </div>
+                                <div class="ov-source-trend-badge-wrap">
+                                    <span class="ov-trend-badge up">↑ 18.2%</span>
+                                    <span class="ov-trend-period">vs previous period</span>
+                                </div>
+                            </div>
+                            <div class="ov-source-trend-metric-group">
+                                <div class="ov-source-trend-value" id="sourceProductsVal">342</div>
+                                <div class="ov-source-trend-sub">Products Sold</div>
+                            </div>
+                            <div class="ov-source-trend-canvas-wrap">
+                                <canvas id="productsTrendChart"></canvas>
+                            </div>
+                        </div>
+
+                        <!-- Card 3: Memberships Trend -->
+                        <div class="ov-source-trend-card">
+                            <div class="ov-source-trend-top">
+                                <div class="ov-source-trend-left">
+                                    <div class="ov-icon-circle" style="background:#f3e8ff;">
+                                        <i data-feather="award" style="color:#9333ea;"></i>
+                                    </div>
+                                    <h4 class="ov-source-trend-title">Memberships Trend</h4>
+                                </div>
+                                <div class="ov-source-trend-badge-wrap">
+                                    <span class="ov-trend-badge up">↑ 9.1%</span>
+                                    <span class="ov-trend-period">vs previous period</span>
+                                </div>
+                            </div>
+                            <div class="ov-source-trend-metric-group">
+                                <div class="ov-source-trend-value" id="sourceMembershipsVal">24</div>
+                                <div class="ov-source-trend-sub">Memberships Purchased</div>
+                            </div>
+                            <div class="ov-source-trend-canvas-wrap">
+                                <canvas id="membershipsTrendChart"></canvas>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
             </div>
         </main>
     </div>

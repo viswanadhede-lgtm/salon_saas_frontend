@@ -12,10 +12,175 @@ if (typeof Chart !== 'undefined') {
 let revExpTrendChartInstance = null;
 let revDistDonutChartInstance = null;
 let expBreakdownDonutChartInstance = null;
+let bookingsTrendChartInstance = null;
+let productsTrendChartInstance = null;
+let membershipsTrendChartInstance = null;
 
 // Helper: Format Rupee Currency
 function fmtINR(val) {
     return '₹' + Number(val || 0).toLocaleString('en-IN');
+}
+
+// ── Chart Group: Section 9 Sources Trend (Bookings, Products, Memberships) ──
+function renderSourceTrendCharts(labels, bookingsData, productsData, membershipsData) {
+    // 1. Bookings Trend Chart
+    const bCanvas = document.getElementById('bookingsTrendChart');
+    if (bCanvas && typeof Chart !== 'undefined') {
+        if (bookingsTrendChartInstance) bookingsTrendChartInstance.destroy();
+        const ctx = bCanvas.getContext('2d');
+        const grad = ctx.createLinearGradient(0, 0, 0, 150);
+        grad.addColorStop(0, 'rgba(37, 99, 235, 0.22)');
+        grad.addColorStop(1, 'rgba(37, 99, 235, 0.00)');
+
+        bookingsTrendChartInstance = new Chart(ctx, {
+            type: 'line',
+            data: {
+                labels: labels,
+                datasets: [{
+                    data: bookingsData,
+                    borderColor: '#2563eb',
+                    backgroundColor: grad,
+                    borderWidth: 2.2,
+                    fill: true,
+                    tension: 0.38,
+                    pointRadius: 3.5,
+                    pointHoverRadius: 5.5,
+                    pointBackgroundColor: '#2563eb',
+                    pointBorderColor: '#ffffff',
+                    pointBorderWidth: 1.5
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: { display: false },
+                    tooltip: {
+                        callbacks: {
+                            label: (ctx) => ` Bookings: ${ctx.raw}`
+                        }
+                    }
+                },
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        grid: { color: '#f1f5f9', borderDash: [3, 3] },
+                        ticks: { font: { size: 10 }, stepSize: 10 }
+                    },
+                    x: {
+                        grid: { display: false },
+                        ticks: { font: { size: 10 }, color: '#64748b' }
+                    }
+                }
+            }
+        });
+    }
+
+    // 2. Product Sales Trend Chart
+    const pCanvas = document.getElementById('productsTrendChart');
+    if (pCanvas && typeof Chart !== 'undefined') {
+        if (productsTrendChartInstance) productsTrendChartInstance.destroy();
+        const ctx = pCanvas.getContext('2d');
+        const grad = ctx.createLinearGradient(0, 0, 0, 150);
+        grad.addColorStop(0, 'rgba(234, 88, 12, 0.22)');
+        grad.addColorStop(1, 'rgba(234, 88, 12, 0.00)');
+
+        productsTrendChartInstance = new Chart(ctx, {
+            type: 'line',
+            data: {
+                labels: labels,
+                datasets: [{
+                    data: productsData,
+                    borderColor: '#ea580c',
+                    backgroundColor: grad,
+                    borderWidth: 2.2,
+                    fill: true,
+                    tension: 0.38,
+                    pointRadius: 3.5,
+                    pointHoverRadius: 5.5,
+                    pointBackgroundColor: '#ea580c',
+                    pointBorderColor: '#ffffff',
+                    pointBorderWidth: 1.5
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: { display: false },
+                    tooltip: {
+                        callbacks: {
+                            label: (ctx) => ` Products Sold: ${ctx.raw}`
+                        }
+                    }
+                },
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        grid: { color: '#f1f5f9', borderDash: [3, 3] },
+                        ticks: { font: { size: 10 }, stepSize: 20 }
+                    },
+                    x: {
+                        grid: { display: false },
+                        ticks: { font: { size: 10 }, color: '#64748b' }
+                    }
+                }
+            }
+        });
+    }
+
+    // 3. Memberships Trend Chart
+    const mCanvas = document.getElementById('membershipsTrendChart');
+    if (mCanvas && typeof Chart !== 'undefined') {
+        if (membershipsTrendChartInstance) membershipsTrendChartInstance.destroy();
+        const ctx = mCanvas.getContext('2d');
+        const grad = ctx.createLinearGradient(0, 0, 0, 150);
+        grad.addColorStop(0, 'rgba(147, 51, 234, 0.22)');
+        grad.addColorStop(1, 'rgba(147, 51, 234, 0.00)');
+
+        membershipsTrendChartInstance = new Chart(ctx, {
+            type: 'line',
+            data: {
+                labels: labels,
+                datasets: [{
+                    data: membershipsData,
+                    borderColor: '#9333ea',
+                    backgroundColor: grad,
+                    borderWidth: 2.2,
+                    fill: true,
+                    tension: 0.38,
+                    pointRadius: 3.5,
+                    pointHoverRadius: 5.5,
+                    pointBackgroundColor: '#9333ea',
+                    pointBorderColor: '#ffffff',
+                    pointBorderWidth: 1.5
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: { display: false },
+                    tooltip: {
+                        callbacks: {
+                            label: (ctx) => ` Memberships: ${ctx.raw}`
+                        }
+                    }
+                },
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        grid: { color: '#f1f5f9', borderDash: [3, 3] },
+                        ticks: { font: { size: 10 }, stepSize: 5 }
+                    },
+                    x: {
+                        grid: { display: false },
+                        ticks: { font: { size: 10 }, color: '#64748b' }
+                    }
+                }
+            }
+        });
+    }
 }
 
 // ── Chart 1: Revenue & Expense Trend ─────────────────────────────────────────
@@ -260,6 +425,13 @@ async function loadOverviewPage() {
         other: 5400
     });
 
+    // Render Section 9 (Sources Trend)
+    const sourceLabels = ['Oct 1', 'Oct 4', 'Oct 7', 'Oct 10', 'Oct 13', 'Oct 16'];
+    const baselineBookingsTrend = [11, 18, 14, 23, 27, 33];
+    const baselineProductsTrend = [20, 43, 32, 47, 66, 53];
+    const baselineMembershipsTrend = [2, 5, 3, 4, 6, 4];
+    renderSourceTrendCharts(sourceLabels, baselineBookingsTrend, baselineProductsTrend, baselineMembershipsTrend);
+
     // 3. Connect filter listeners
     const dateRange = document.getElementById('overviewDateRange');
     const branchSelect = document.getElementById('branchSelect');
@@ -314,9 +486,22 @@ async function loadOverviewPage() {
         if (elDonutRev) elDonutRev.textContent = fmtINR(totalRev);
         if (elDonutExp) elDonutExp.textContent = fmtINR(totalExp);
 
+        // Update Section 9 (Sources Trend)
+        const baseBookingsCount = 186;
+        const baseProductsCount = 342;
+        const baseMembershipsCount = 24;
+
+        const elSourceBookings = document.getElementById('sourceBookingsVal');
+        const elSourceProducts = document.getElementById('sourceProductsVal');
+        const elSourceMemberships = document.getElementById('sourceMembershipsVal');
+
+        if (elSourceBookings) elSourceBookings.textContent = Math.round(baseBookingsCount * multiplier);
+        if (elSourceProducts) elSourceProducts.textContent = Math.round(baseProductsCount * multiplier);
+        if (elSourceMemberships) elSourceMemberships.textContent = Math.round(baseMembershipsCount * multiplier);
+
         // Update comparison periods
         document.querySelectorAll('.ov-trend-period').forEach(el => {
-            if (el.textContent.includes('Sep 15')) {
+            if (el.textContent.includes('Sep 15') || el.textContent.includes('previous period')) {
                 el.textContent = dateSubtext;
             }
         });
@@ -335,6 +520,12 @@ async function loadOverviewPage() {
         const scaledRev = baselineRev.map(v => Math.round(v * multiplier));
         const scaledExp = baselineExp.map(v => Math.round(v * multiplier));
         renderRevExpTrendChart(baselineLabels, scaledRev, scaledExp);
+
+        // Re-render Section 9 Source Trend Charts
+        const scaledBookingsTrend = baselineBookingsTrend.map(v => Math.max(1, Math.round(v * multiplier)));
+        const scaledProductsTrend = baselineProductsTrend.map(v => Math.max(1, Math.round(v * multiplier)));
+        const scaledMembershipsTrend = baselineMembershipsTrend.map(v => Math.max(1, Math.round(v * multiplier)));
+        renderSourceTrendCharts(sourceLabels, scaledBookingsTrend, scaledProductsTrend, scaledMembershipsTrend);
     };
 
     if (dateRange) dateRange.addEventListener('change', handleFilterChange);
