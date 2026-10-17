@@ -137,6 +137,17 @@ body.dashboard-body {
     gap: 18px;
 }
 
+/* Scoped style for Section 1: Revenue Summary Parent Card only */
+#revenueSummarySection {
+    background: #F0F6FF;
+    border-color: #CFE0FF;
+}
+
+#revenueSummarySection .ov-metric-card {
+    background: #FFFFFF;
+    border-color: #E7EDF5;
+}
+
 .ov-section-header {
     display: flex;
     align-items: center;
