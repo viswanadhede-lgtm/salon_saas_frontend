@@ -68,6 +68,7 @@
                     </div>
                 </div>
 
+
                 <!-- ── 1. Revenue Summary ──────────────────────────────────────── -->
                 <section class="ov-section-card" id="revenueSummarySection">
                     <div class="ov-section-header">
@@ -262,14 +263,160 @@
                     </div>
                 </section>
 
-                <!-- ── 3. Business Activity ────────────────────────────────────── -->
+                <!-- ── 3. Revenue & Expense Analysis ───────────────────────────── -->
+                <section class="ov-section-card" id="revExpAnalysisSection">
+                    <div class="ov-section-header">
+                        <div class="ov-sec-icon-box" style="background:#f0f9ff;">
+                            <i data-feather="activity" style="color:#0284c7;"></i>
+                        </div>
+                        <div class="ov-sec-text">
+                            <h3>3. Revenue &amp; Expense Analysis</h3>
+                            <p>Trends and distribution of revenue and expenses for the selected period.</p>
+                        </div>
+                    </div>
+                    <div class="ov-grid-mixed-3">
+                        <!-- Revenue & Expense Trend Line Chart -->
+                        <div class="ov-chart-card">
+                            <div class="ov-chart-header">
+                                <h4>Revenue &amp; Expense Trend</h4>
+                                <div class="ov-chart-legend">
+                                    <span class="ov-legend-item">
+                                        <span class="ov-legend-dot" style="background:#3b82f6;"></span>
+                                        <span style="color:#475569;">Revenue</span>
+                                    </span>
+                                    <span class="ov-legend-item">
+                                        <span class="ov-legend-dot" style="background:#f43f5e;"></span>
+                                        <span style="color:#475569;">Expenses</span>
+                                    </span>
+                                </div>
+                            </div>
+                            <div class="ov-canvas-wrap" style="height: 250px;">
+                                <canvas id="revExpTrendChart"></canvas>
+                            </div>
+                        </div>
+
+                        <!-- Revenue Distribution Donut -->
+                        <div class="ov-chart-card">
+                            <div class="ov-chart-header">
+                                <h4>Revenue Distribution</h4>
+                            </div>
+                            <div class="ov-donut-wrap">
+                                <canvas id="revDistDonutChart"></canvas>
+                                <div class="ov-donut-center">
+                                    <span class="ov-donut-center-val" id="donutRevCenterVal">₹1,24,500</span>
+                                    <span class="ov-donut-center-sub">Total Revenue</span>
+                                </div>
+                            </div>
+                            <div class="ov-donut-legend-list">
+                                <div class="ov-donut-legend-row">
+                                    <div class="ov-donut-legend-left">
+                                        <span class="ov-legend-dot" style="background:#3b82f6;"></span>
+                                        <span>Bookings</span>
+                                    </div>
+                                    <div class="ov-donut-legend-right">
+                                        <span class="ov-donut-legend-pct">62.7%</span>
+                                        <span class="ov-donut-legend-amt">₹78,000</span>
+                                    </div>
+                                </div>
+                                <div class="ov-donut-legend-row">
+                                    <div class="ov-donut-legend-left">
+                                        <span class="ov-legend-dot" style="background:#f97316;"></span>
+                                        <span>Products</span>
+                                    </div>
+                                    <div class="ov-donut-legend-right">
+                                        <span class="ov-donut-legend-pct">22.9%</span>
+                                        <span class="ov-donut-legend-amt">₹28,500</span>
+                                    </div>
+                                </div>
+                                <div class="ov-donut-legend-row">
+                                    <div class="ov-donut-legend-left">
+                                        <span class="ov-legend-dot" style="background:#8b5cf6;"></span>
+                                        <span>Memberships</span>
+                                    </div>
+                                    <div class="ov-donut-legend-right">
+                                        <span class="ov-donut-legend-pct">14.5%</span>
+                                        <span class="ov-donut-legend-amt">₹18,000</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Expense Breakdown Donut -->
+                        <div class="ov-chart-card">
+                            <div class="ov-chart-header">
+                                <h4>Expense Breakdown</h4>
+                            </div>
+                            <div class="ov-donut-wrap">
+                                <canvas id="expBreakdownDonutChart"></canvas>
+                                <div class="ov-donut-center">
+                                    <span class="ov-donut-center-val" id="donutExpCenterVal">₹32,400</span>
+                                    <span class="ov-donut-center-sub">Total Expenses</span>
+                                </div>
+                            </div>
+                            <div class="ov-donut-legend-list">
+                                <div class="ov-donut-legend-row">
+                                    <div class="ov-donut-legend-left">
+                                        <span class="ov-legend-dot" style="background:#f43f5e;"></span>
+                                        <span>Rent</span>
+                                    </div>
+                                    <div class="ov-donut-legend-right">
+                                        <span class="ov-donut-legend-pct">30.9%</span>
+                                        <span class="ov-donut-legend-amt">₹10,000</span>
+                                    </div>
+                                </div>
+                                <div class="ov-donut-legend-row">
+                                    <div class="ov-donut-legend-left">
+                                        <span class="ov-legend-dot" style="background:#f59e0b;"></span>
+                                        <span>Salaries</span>
+                                    </div>
+                                    <div class="ov-donut-legend-right">
+                                        <span class="ov-donut-legend-pct">24.7%</span>
+                                        <span class="ov-donut-legend-amt">₹8,000</span>
+                                    </div>
+                                </div>
+                                <div class="ov-donut-legend-row">
+                                    <div class="ov-donut-legend-left">
+                                        <span class="ov-legend-dot" style="background:#10b981;"></span>
+                                        <span>Utilities</span>
+                                    </div>
+                                    <div class="ov-donut-legend-right">
+                                        <span class="ov-donut-legend-pct">15.4%</span>
+                                        <span class="ov-donut-legend-amt">₹5,000</span>
+                                    </div>
+                                </div>
+                                <div class="ov-donut-legend-row">
+                                    <div class="ov-donut-legend-left">
+                                        <span class="ov-legend-dot" style="background:#3b82f6;"></span>
+                                        <span>Supplies</span>
+                                    </div>
+                                    <div class="ov-donut-legend-right">
+                                        <span class="ov-donut-legend-pct">12.3%</span>
+                                        <span class="ov-donut-legend-amt">₹4,000</span>
+                                    </div>
+                                </div>
+                                <div class="ov-donut-legend-row">
+                                    <div class="ov-donut-legend-left">
+                                        <span class="ov-legend-dot" style="background:#94a3b8;"></span>
+                                        <span>Other</span>
+                                    </div>
+                                    <div class="ov-donut-legend-right">
+                                        <span class="ov-donut-legend-pct">16.7%</span>
+                                        <span class="ov-donut-legend-amt">₹5,400</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- ── 4. Business Activity ────────────────────────────────────── -->
                 <section class="ov-section-card" id="businessActivitySection">
                     <div class="ov-section-header">
                         <div class="ov-sec-icon-box" style="background:#ecfdf5;">
                             <i data-feather="bar-chart-2" style="color:#10b981;"></i>
                         </div>
                         <div class="ov-sec-text">
-                            <h3>3. Business Activity</h3>
+                            <h3>4. Business Activity</h3>
                             <p>Total bookings, products sold and memberships purchased with comparison to the previous period.</p>
                         </div>
                     </div>
@@ -354,14 +501,97 @@
                     </div>
                 </section>
 
-                <!-- ── 4. Top 5 Performers ────────────────────────────────────── -->
+                <!-- ── 5. Revenue Trend by Business Source ────────────────────── -->
+                <section class="ov-section-card" id="sourcesTrendSection">
+                    <div class="ov-section-header">
+                        <div class="ov-sec-icon-box" style="background:#f0fdfa;">
+                            <i data-feather="trending-up" style="color:#0d9488;"></i>
+                        </div>
+                        <div class="ov-sec-text">
+                            <h3>5. Revenue Trend by Business Source</h3>
+                            <p>Track how bookings, product sales and memberships are performing over time.</p>
+                        </div>
+                    </div>
+                    <div class="ov-grid-3">
+                        <!-- Card 1: Bookings Trend -->
+                        <div class="ov-source-trend-card">
+                            <div class="ov-source-trend-top">
+                                <div class="ov-source-trend-left">
+                                    <div class="ov-icon-circle" style="background:#eff6ff;">
+                                        <i data-feather="calendar" style="color:#2563eb;"></i>
+                                    </div>
+                                    <h4 class="ov-source-trend-title">Bookings Trend</h4>
+                                </div>
+                                <div class="ov-source-trend-badge-wrap">
+                                    <span class="ov-trend-badge up">↑ 12.5%</span>
+                                    <span class="ov-trend-period">vs previous period</span>
+                                </div>
+                            </div>
+                            <div class="ov-source-trend-metric-group">
+                                <div class="ov-source-trend-value" id="sourceBookingsVal">186</div>
+                                <div class="ov-source-trend-sub">Bookings</div>
+                            </div>
+                            <div class="ov-source-trend-canvas-wrap">
+                                <canvas id="bookingsTrendChart"></canvas>
+                            </div>
+                        </div>
+
+                        <!-- Card 2: Product Sales Trend -->
+                        <div class="ov-source-trend-card">
+                            <div class="ov-source-trend-top">
+                                <div class="ov-source-trend-left">
+                                    <div class="ov-icon-circle" style="background:#fff7ed;">
+                                        <i data-feather="shopping-bag" style="color:#ea580c;"></i>
+                                    </div>
+                                    <h4 class="ov-source-trend-title">Product Sales Trend</h4>
+                                </div>
+                                <div class="ov-source-trend-badge-wrap">
+                                    <span class="ov-trend-badge up">↑ 18.2%</span>
+                                    <span class="ov-trend-period">vs previous period</span>
+                                </div>
+                            </div>
+                            <div class="ov-source-trend-metric-group">
+                                <div class="ov-source-trend-value" id="sourceProductsVal">342</div>
+                                <div class="ov-source-trend-sub">Products Sold</div>
+                            </div>
+                            <div class="ov-source-trend-canvas-wrap">
+                                <canvas id="productsTrendChart"></canvas>
+                            </div>
+                        </div>
+
+                        <!-- Card 3: Memberships Trend -->
+                        <div class="ov-source-trend-card">
+                            <div class="ov-source-trend-top">
+                                <div class="ov-source-trend-left">
+                                    <div class="ov-icon-circle" style="background:#f3e8ff;">
+                                        <i data-feather="award" style="color:#9333ea;"></i>
+                                    </div>
+                                    <h4 class="ov-source-trend-title">Memberships Trend</h4>
+                                </div>
+                                <div class="ov-source-trend-badge-wrap">
+                                    <span class="ov-trend-badge up">↑ 9.1%</span>
+                                    <span class="ov-trend-period">vs previous period</span>
+                                </div>
+                            </div>
+                            <div class="ov-source-trend-metric-group">
+                                <div class="ov-source-trend-value" id="sourceMembershipsVal">24</div>
+                                <div class="ov-source-trend-sub">Memberships Purchased</div>
+                            </div>
+                            <div class="ov-source-trend-canvas-wrap">
+                                <canvas id="membershipsTrendChart"></canvas>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- ── 6. Top 5 Performers ────────────────────────────────────── -->
                 <section class="ov-section-card" id="topPerformersSection">
                     <div class="ov-section-header">
                         <div class="ov-sec-icon-box" style="background:#fffbeb;">
                             <i data-feather="award" style="color:#f59e0b;"></i>
                         </div>
                         <div class="ov-sec-text">
-                            <h3>4. Top 5 Performers</h3>
+                            <h3>6. Top 5 Performers</h3>
                             <p>Top 5 services, products and memberships by revenue for the selected period.</p>
                         </div>
                     </div>
@@ -527,160 +757,14 @@
                     </div>
                 </section>
 
-                <!-- ── 5. Revenue & Expense Analysis ───────────────────────────── -->
-                <section class="ov-section-card" id="revExpAnalysisSection">
-                    <div class="ov-section-header">
-                        <div class="ov-sec-icon-box" style="background:#f0f9ff;">
-                            <i data-feather="activity" style="color:#0284c7;"></i>
-                        </div>
-                        <div class="ov-sec-text">
-                            <h3>5. Revenue &amp; Expense Analysis</h3>
-                            <p>Trends and distribution of revenue and expenses for the selected period.</p>
-                        </div>
-                    </div>
-                    <div class="ov-grid-mixed-3">
-                        <!-- Revenue & Expense Trend Line Chart -->
-                        <div class="ov-chart-card">
-                            <div class="ov-chart-header">
-                                <h4>Revenue &amp; Expense Trend</h4>
-                                <div class="ov-chart-legend">
-                                    <span class="ov-legend-item">
-                                        <span class="ov-legend-dot" style="background:#3b82f6;"></span>
-                                        <span style="color:#475569;">Revenue</span>
-                                    </span>
-                                    <span class="ov-legend-item">
-                                        <span class="ov-legend-dot" style="background:#f43f5e;"></span>
-                                        <span style="color:#475569;">Expenses</span>
-                                    </span>
-                                </div>
-                            </div>
-                            <div class="ov-canvas-wrap" style="height: 250px;">
-                                <canvas id="revExpTrendChart"></canvas>
-                            </div>
-                        </div>
-
-                        <!-- Revenue Distribution Donut -->
-                        <div class="ov-chart-card">
-                            <div class="ov-chart-header">
-                                <h4>Revenue Distribution</h4>
-                            </div>
-                            <div class="ov-donut-wrap">
-                                <canvas id="revDistDonutChart"></canvas>
-                                <div class="ov-donut-center">
-                                    <span class="ov-donut-center-val" id="donutRevCenterVal">₹1,24,500</span>
-                                    <span class="ov-donut-center-sub">Total Revenue</span>
-                                </div>
-                            </div>
-                            <div class="ov-donut-legend-list">
-                                <div class="ov-donut-legend-row">
-                                    <div class="ov-donut-legend-left">
-                                        <span class="ov-legend-dot" style="background:#3b82f6;"></span>
-                                        <span>Bookings</span>
-                                    </div>
-                                    <div class="ov-donut-legend-right">
-                                        <span class="ov-donut-legend-pct">62.7%</span>
-                                        <span class="ov-donut-legend-amt">₹78,000</span>
-                                    </div>
-                                </div>
-                                <div class="ov-donut-legend-row">
-                                    <div class="ov-donut-legend-left">
-                                        <span class="ov-legend-dot" style="background:#f97316;"></span>
-                                        <span>Products</span>
-                                    </div>
-                                    <div class="ov-donut-legend-right">
-                                        <span class="ov-donut-legend-pct">22.9%</span>
-                                        <span class="ov-donut-legend-amt">₹28,500</span>
-                                    </div>
-                                </div>
-                                <div class="ov-donut-legend-row">
-                                    <div class="ov-donut-legend-left">
-                                        <span class="ov-legend-dot" style="background:#8b5cf6;"></span>
-                                        <span>Memberships</span>
-                                    </div>
-                                    <div class="ov-donut-legend-right">
-                                        <span class="ov-donut-legend-pct">14.5%</span>
-                                        <span class="ov-donut-legend-amt">₹18,000</span>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-
-                        <!-- Expense Breakdown Donut -->
-                        <div class="ov-chart-card">
-                            <div class="ov-chart-header">
-                                <h4>Expense Breakdown</h4>
-                            </div>
-                            <div class="ov-donut-wrap">
-                                <canvas id="expBreakdownDonutChart"></canvas>
-                                <div class="ov-donut-center">
-                                    <span class="ov-donut-center-val" id="donutExpCenterVal">₹32,400</span>
-                                    <span class="ov-donut-center-sub">Total Expenses</span>
-                                </div>
-                            </div>
-                            <div class="ov-donut-legend-list">
-                                <div class="ov-donut-legend-row">
-                                    <div class="ov-donut-legend-left">
-                                        <span class="ov-legend-dot" style="background:#f43f5e;"></span>
-                                        <span>Rent</span>
-                                    </div>
-                                    <div class="ov-donut-legend-right">
-                                        <span class="ov-donut-legend-pct">30.9%</span>
-                                        <span class="ov-donut-legend-amt">₹10,000</span>
-                                    </div>
-                                </div>
-                                <div class="ov-donut-legend-row">
-                                    <div class="ov-donut-legend-left">
-                                        <span class="ov-legend-dot" style="background:#f59e0b;"></span>
-                                        <span>Salaries</span>
-                                    </div>
-                                    <div class="ov-donut-legend-right">
-                                        <span class="ov-donut-legend-pct">24.7%</span>
-                                        <span class="ov-donut-legend-amt">₹8,000</span>
-                                    </div>
-                                </div>
-                                <div class="ov-donut-legend-row">
-                                    <div class="ov-donut-legend-left">
-                                        <span class="ov-legend-dot" style="background:#10b981;"></span>
-                                        <span>Utilities</span>
-                                    </div>
-                                    <div class="ov-donut-legend-right">
-                                        <span class="ov-donut-legend-pct">15.4%</span>
-                                        <span class="ov-donut-legend-amt">₹5,000</span>
-                                    </div>
-                                </div>
-                                <div class="ov-donut-legend-row">
-                                    <div class="ov-donut-legend-left">
-                                        <span class="ov-legend-dot" style="background:#3b82f6;"></span>
-                                        <span>Supplies</span>
-                                    </div>
-                                    <div class="ov-donut-legend-right">
-                                        <span class="ov-donut-legend-pct">12.3%</span>
-                                        <span class="ov-donut-legend-amt">₹4,000</span>
-                                    </div>
-                                </div>
-                                <div class="ov-donut-legend-row">
-                                    <div class="ov-donut-legend-left">
-                                        <span class="ov-legend-dot" style="background:#94a3b8;"></span>
-                                        <span>Other</span>
-                                    </div>
-                                    <div class="ov-donut-legend-right">
-                                        <span class="ov-donut-legend-pct">16.7%</span>
-                                        <span class="ov-donut-legend-amt">₹5,400</span>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </section>
-
-                <!-- ── 6. Customer Analytics ──────────────────────────────────── -->
+                <!-- ── 7. Customer Analytics ──────────────────────────────────── -->
                 <section class="ov-section-card" id="customerAnalyticsSection">
                     <div class="ov-section-header">
                         <div class="ov-sec-icon-box" style="background:#f3e8ff;">
                             <i data-feather="user" style="color:#8b5cf6;"></i>
                         </div>
                         <div class="ov-sec-text">
-                            <h3>6. Customer Analytics</h3>
+                            <h3>7. Customer Analytics</h3>
                             <p>Understand your customer growth, retention and spending behavior.</p>
                         </div>
                     </div>
@@ -791,14 +875,14 @@
                     </div>
                 </section>
 
-                <!-- ── 7. Staff Analytics ─────────────────────────────────────── -->
+                <!-- ── 8. Staff Analytics ─────────────────────────────────────── -->
                 <section class="ov-section-card" id="staffAnalyticsSection">
                     <div class="ov-section-header">
                         <div class="ov-sec-icon-box" style="background:#ecfdf5;">
                             <i data-feather="user-check" style="color:#10b981;"></i>
                         </div>
                         <div class="ov-sec-text">
-                            <h3>7. Staff Analytics</h3>
+                            <h3>8. Staff Analytics</h3>
                             <p>Measure your staff performance and contribution.</p>
                         </div>
                     </div>
@@ -915,14 +999,14 @@
                     </div>
                 </section>
 
-                <!-- ── 8. Marketing Analytics ─────────────────────────────────── -->
+                <!-- ── 9. Marketing Analytics ─────────────────────────────────── -->
                 <section class="ov-section-card" id="marketingAnalyticsSection">
                     <div class="ov-section-header">
                         <div class="ov-sec-icon-box" style="background:#fff7ed;">
                             <i data-feather="volume-2" style="color:#ea580c;"></i>
                         </div>
                         <div class="ov-sec-text">
-                            <h3>8. Marketing Analytics</h3>
+                            <h3>9. Marketing Analytics</h3>
                             <p>Track the performance of your campaigns and offers.</p>
                         </div>
                     </div>
@@ -989,88 +1073,6 @@
                     </div>
                 </section>
 
-                <!-- ── 9. Revenue Trend by Business Source ────────────────────── -->
-                <section class="ov-section-card" id="sourcesTrendSection">
-                    <div class="ov-section-header">
-                        <div class="ov-sec-icon-box" style="background:#f0fdfa;">
-                            <i data-feather="trending-up" style="color:#0d9488;"></i>
-                        </div>
-                        <div class="ov-sec-text">
-                            <h3>9. Revenue Trend by Business Source</h3>
-                            <p>Track how bookings, product sales and memberships are performing over time.</p>
-                        </div>
-                    </div>
-                    <div class="ov-grid-3">
-                        <!-- Card 1: Bookings Trend -->
-                        <div class="ov-source-trend-card">
-                            <div class="ov-source-trend-top">
-                                <div class="ov-source-trend-left">
-                                    <div class="ov-icon-circle" style="background:#eff6ff;">
-                                        <i data-feather="calendar" style="color:#2563eb;"></i>
-                                    </div>
-                                    <h4 class="ov-source-trend-title">Bookings Trend</h4>
-                                </div>
-                                <div class="ov-source-trend-badge-wrap">
-                                    <span class="ov-trend-badge up">↑ 12.5%</span>
-                                    <span class="ov-trend-period">vs previous period</span>
-                                </div>
-                            </div>
-                            <div class="ov-source-trend-metric-group">
-                                <div class="ov-source-trend-value" id="sourceBookingsVal">186</div>
-                                <div class="ov-source-trend-sub">Bookings</div>
-                            </div>
-                            <div class="ov-source-trend-canvas-wrap">
-                                <canvas id="bookingsTrendChart"></canvas>
-                            </div>
-                        </div>
-
-                        <!-- Card 2: Product Sales Trend -->
-                        <div class="ov-source-trend-card">
-                            <div class="ov-source-trend-top">
-                                <div class="ov-source-trend-left">
-                                    <div class="ov-icon-circle" style="background:#fff7ed;">
-                                        <i data-feather="shopping-bag" style="color:#ea580c;"></i>
-                                    </div>
-                                    <h4 class="ov-source-trend-title">Product Sales Trend</h4>
-                                </div>
-                                <div class="ov-source-trend-badge-wrap">
-                                    <span class="ov-trend-badge up">↑ 18.2%</span>
-                                    <span class="ov-trend-period">vs previous period</span>
-                                </div>
-                            </div>
-                            <div class="ov-source-trend-metric-group">
-                                <div class="ov-source-trend-value" id="sourceProductsVal">342</div>
-                                <div class="ov-source-trend-sub">Products Sold</div>
-                            </div>
-                            <div class="ov-source-trend-canvas-wrap">
-                                <canvas id="productsTrendChart"></canvas>
-                            </div>
-                        </div>
-
-                        <!-- Card 3: Memberships Trend -->
-                        <div class="ov-source-trend-card">
-                            <div class="ov-source-trend-top">
-                                <div class="ov-source-trend-left">
-                                    <div class="ov-icon-circle" style="background:#f3e8ff;">
-                                        <i data-feather="award" style="color:#9333ea;"></i>
-                                    </div>
-                                    <h4 class="ov-source-trend-title">Memberships Trend</h4>
-                                </div>
-                                <div class="ov-source-trend-badge-wrap">
-                                    <span class="ov-trend-badge up">↑ 9.1%</span>
-                                    <span class="ov-trend-period">vs previous period</span>
-                                </div>
-                            </div>
-                            <div class="ov-source-trend-metric-group">
-                                <div class="ov-source-trend-value" id="sourceMembershipsVal">24</div>
-                                <div class="ov-source-trend-sub">Memberships Purchased</div>
-                            </div>
-                            <div class="ov-source-trend-canvas-wrap">
-                                <canvas id="membershipsTrendChart"></canvas>
-                            </div>
-                        </div>
-                    </div>
-                </section>
 
             </div>
         </main>

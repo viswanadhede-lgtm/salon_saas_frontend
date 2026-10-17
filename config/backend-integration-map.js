@@ -705,55 +705,7 @@
  // OVERVIEW (Analytics Business Overview)
  //==============================================================================================================================================================================
 
- // Section 1: Revenue Summary
- // - Total Revenue, Bookings Revenue, Products Revenue, Memberships Revenue
- // - Source Tables: business_transactions (reference_type IN ('booking', 'product', 'membership'), status = 'paid' minus 'refunded')
- // - Frontend: overview.html -> #kpiTotalRevenue, #kpiBookingsRevenue, #kpiProductsRevenue, #kpiMembershipsRevenue
-
- // Section 2: Expenses & Net Revenue
- // - Total Expenses, Net Operating Balance
- // - Source Tables: expenses (amount, date, status <> 'deleted') and business_transactions (net revenue minus total expenses)
- // - Frontend: overview.html -> #kpiTotalExpenses, #kpiNetRevenue
-
- // Section 3: Business Activity
- // - Total Bookings, Products Sold, Memberships Purchased
- // - Source Tables: bookings, sales, membership_purchases
- // - Frontend: overview.html -> #kpiActivityBookings, #kpiActivityProducts, #kpiActivityMemberships
-
- // Section 4: Top 5 Performers
- // - Top 5 Services (by Revenue) -> Source Table: bookings
- // - Top 5 Products (by Sales Revenue) -> Source Table: sales
- // - Top 5 Memberships (by Revenue) -> Source Table: membership_purchases
- // - Frontend: overview.html -> #topServicesTableBody, #topProductsTableBody, #topMembershipsTableBody
-
- // Section 5: Revenue & Expense Analysis
- // - Revenue & Expense Trend (Area Line Chart) -> #revExpTrendChart
- // - Revenue Distribution (Donut Chart) -> #revDistDonutChart
- // - Expense Breakdown (Donut Chart) -> #expBreakdownDonutChart
- // - Frontend: overview.html & scripts/overview.js
-
- // Section 6: Customer Analytics
- // - Total Customers, New Customers, Returning Customers, Repeat Visit Rate
- // - Source Table: customers, bookings
- // - Frontend: overview.html -> #custTotal, #custNew, #custReturning, #custRepeatRate
-
- // Section 7: Staff Analytics
- // - Total Staff, Completed Appointments, Staff Service Revenue, Top Performing Staff Leaderboard
- // - Source Table: staff, bookings
- // - Frontend: overview.html -> #staffTotal, #staffCompleted, #staffRevenue, #topStaffList
-
- // Section 8: Marketing Analytics
- // - Coupons Redeemed, Memberships Purchased, Offer Redemptions, Total Discounts Given
- // - Source Tables: coupons/coupon_redemptions, membership_purchases, offers/offer_redemptions, sales/bookings (discount_amount)
- // - Frontend: overview.html -> #mktCoupons, #mktMemberships, #mktOffers, #mktDiscounts
- // - Icons: tag, award, gift, percent
-
- // Section 9: Revenue Trend by Business Source
- // - Bookings Trend, Product Sales Trend, Memberships Trend
- // - Source Tables: bookings, sales, membership_purchases
- // - Frontend: overview.html -> #sourceBookingsVal, #sourceProductsVal, #sourceMembershipsVal, #bookingsTrendChart, #productsTrendChart, #membershipsTrendChart
- // - Icons: trending-up (header), calendar, shopping-bag, award
-
+ // 
 
 
 
