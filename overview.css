@@ -137,15 +137,116 @@ body.dashboard-body {
     gap: 18px;
 }
 
-/* Scoped style for Section 1: Revenue Summary Parent Card only */
+/* ═════════════════════════════════════════════════════════════════════════════
+   9 SECTION COLOR AUDITION PALETTES (Coordinated Parent, Inner Cards & Borders)
+   ═════════════════════════════════════════════════════════════════════════════ */
+
+/* 1. Revenue Summary - Soft Blue (Financial Trust & Core Revenue) */
 #revenueSummarySection {
     background: #F0F6FF;
-    border-color: #CFE0FF;
+    border-color: #BFDBFE;
 }
-
 #revenueSummarySection .ov-metric-card {
     background: #FFFFFF;
-    border-color: #E7EDF5;
+    border-color: #DBEAFE;
+    box-shadow: 0 1px 3px rgba(37, 99, 235, 0.04);
+}
+
+/* 2. Expenses & Net Revenue - Soft Rose / Coral (Caution & Operating Margin) */
+#expensesNetRevenueSection {
+    background: #FFF1F2;
+    border-color: #FECDD3;
+}
+#expensesNetRevenueSection .ov-metric-card-horizontal {
+    background: #FFFFFF;
+    border-color: #FFE4E6;
+    box-shadow: 0 1px 3px rgba(244, 63, 94, 0.04);
+}
+
+/* 3. Business Activity - Soft Indigo (Operational Volume & Appointments) */
+#businessActivitySection {
+    background: #EEF2FF;
+    border-color: #C7D2FE;
+}
+#businessActivitySection .ov-metric-with-bars {
+    background: #FFFFFF;
+    border-color: #E0E7FF;
+    box-shadow: 0 1px 3px rgba(99, 102, 241, 0.04);
+}
+
+/* 4. Top 5 Performers - Soft Amber / Gold (Star Offerings & High Achievers) */
+#topPerformersSection {
+    background: #FFFBEB;
+    border-color: #FDE68A;
+}
+#topPerformersSection .ov-table-card {
+    background: #FFFFFF;
+    border-color: #FEF3C7;
+    box-shadow: 0 1px 3px rgba(245, 158, 11, 0.04);
+}
+#topPerformersSection .ov-table-header {
+    border-bottom-color: #FEF3C7;
+}
+
+/* 5. Revenue & Expense Analysis - Soft Sky / Cyan (Deep Analytics & Breakdowns) */
+#revExpAnalysisSection {
+    background: #F0F9FF;
+    border-color: #BAE6FD;
+}
+#revExpAnalysisSection .ov-chart-card {
+    background: #FFFFFF;
+    border-color: #E0F2FE;
+    box-shadow: 0 1px 3px rgba(14, 165, 233, 0.04);
+}
+
+/* 6. Customer Analytics - Soft Purple (Client Loyalty & Retention) */
+#customerAnalyticsSection {
+    background: #FAF5FF;
+    border-color: #E9D5FF;
+}
+#customerAnalyticsSection .ov-metric-card,
+#customerAnalyticsSection .ov-metric-with-bars {
+    background: #FFFFFF;
+    border-color: #F3E8FF;
+    box-shadow: 0 1px 3px rgba(139, 92, 246, 0.04);
+}
+
+/* 7. Staff Analytics - Soft Emerald / Mint (Team Growth & Productivity) */
+#staffAnalyticsSection {
+    background: #ECFDF5;
+    border-color: #A7F3D0;
+}
+#staffAnalyticsSection .ov-metric-card,
+#staffAnalyticsSection .ov-metric-with-bars,
+#staffAnalyticsSection .ov-table-card {
+    background: #FFFFFF;
+    border-color: #D1FAE5;
+    box-shadow: 0 1px 3px rgba(16, 185, 129, 0.04);
+}
+#staffAnalyticsSection .ov-table-header {
+    border-bottom-color: #D1FAE5;
+}
+
+/* 8. Marketing Analytics - Soft Warm Orange / Peach (Campaigns & Redemptions) */
+#marketingAnalyticsSection {
+    background: #FFF7ED;
+    border-color: #FED7AA;
+}
+#marketingAnalyticsSection .ov-metric-card {
+    background: #FFFFFF;
+    border-color: #FFEDD5;
+    box-shadow: 0 1px 3px rgba(234, 88, 12, 0.04);
+}
+
+/* 9. Sources Trend - Soft Teal (Channel Trajectory & Velocity) */
+#sourcesTrendSection {
+    background: #F0FDFA;
+    border-color: #99F6E4;
+}
+#sourcesTrendSection .ov-source-trend-card {
+    background: #FFFFFF;
+    border-color: #CCFBF1;
+    box-shadow: 0 1px 3px rgba(13, 148, 136, 0.04);
 }
 
 .ov-section-header {
