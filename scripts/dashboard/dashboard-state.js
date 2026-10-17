@@ -6,6 +6,12 @@ export function getCompanyId() {
     let companyId = localStorage.getItem('company_id');
     if (!companyId) {
         try {
+            const actCtx = JSON.parse(localStorage.getItem('active_company_context') || '{}');
+            companyId = actCtx.company?.id || actCtx.company?.company_id || actCtx.id;
+        } catch (_) {}
+    }
+    if (!companyId) {
+        try {
             const ctx = JSON.parse(localStorage.getItem('appContext') || '{}');
             companyId = ctx.company?.company_id || ctx.company?.id;
         } catch (_) {}

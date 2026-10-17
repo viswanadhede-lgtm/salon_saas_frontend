@@ -2,6 +2,7 @@
 // Handles fetching and rendering dashboard appointments and tab switching logic.
 
 import { supabase } from '../../lib/supabase.js';
+import { getCompanyId } from './dashboard-state.js';
 
 export async function fetchAndRenderAppointments(currentBranchId) {
     const upcomingList = document.getElementById('tabUpcomingList');
@@ -10,15 +11,22 @@ export async function fetchAndRenderAppointments(currentBranchId) {
     if (!upcomingList || !completedList || !currentBranchId) return;
 
     try {
+        const companyId = getCompanyId();
         const now = new Date();
         const today = new Date(now.getTime() - (now.getTimezoneOffset() * 60000)).toISOString().split('T')[0];
 
-        const { data: bookings, error } = await supabase
+        let query = supabase
             .from('bookings_for_business_transaction')
             .select('*')
             .eq('branch_id', currentBranchId)
             .eq('booking_date', today)
             .order('start_time', { ascending: true });
+
+        if (companyId) {
+            query = query.eq('company_id', companyId);
+        }
+
+        const { data: bookings, error } = await query;
 
         if (error) throw error;
 
@@ -44,25 +52,31 @@ export async function fetchAndRenderAppointments(currentBranchId) {
             }
 
             container.innerHTML = list.map(b => {
-                // Time formatting
-                const [h, m] = b.start_time.split(':');
+                // Time formatting with null safety
+                const timeParts = (b.start_time || '00:00').split(':');
+                const h = parseInt(timeParts[0] || '0', 10);
+                const m = timeParts[1] || '00';
                 const ampm = h >= 12 ? 'PM' : 'AM';
                 const formattedTime = `${h % 12 || 12}:${m} ${ampm}`;
 
-                // Duration calculation
+                // Duration calculation with null safety
                 let durationStr = '—';
                 if (b.start_time && b.end_time) {
                     const startArr = b.start_time.split(':');
                     const endArr = b.end_time.split(':');
-                    const diff = (parseInt(endArr[0]) * 60 + parseInt(endArr[1])) - (parseInt(startArr[0]) * 60 + parseInt(startArr[1]));
-                    durationStr = diff >= 60 ? `${Math.floor(diff/60)}h${diff%60 > 0 ? ' '+(diff%60)+'m' : ''}` : `${diff}m`;
+                    const diff = (parseInt(endArr[0], 10) * 60 + parseInt(endArr[1] || '0', 10)) - (parseInt(startArr[0], 10) * 60 + parseInt(startArr[1] || '0', 10));
+                    if (!isNaN(diff) && diff > 0) {
+                        durationStr = diff >= 60 ? `${Math.floor(diff/60)}h${diff%60 > 0 ? ' '+(diff%60)+'m' : ''}` : `${diff}m`;
+                    }
                 }
 
-                const initials = b.customer_name ? b.customer_name.split(' ').slice(0,2).map(n => n[0]).join('').toUpperCase() : '??';
+                const custName = b.customer_name || 'Walk-in Customer';
+                const custId = b.customer_id || '';
+                const escapedCustName = custName.replace(/'/g, "\\'");
                 const statusClass = b.status ? b.status.toLowerCase() : 'booked';
 
                 return `
-                    <div class="appointment-item" style="cursor: pointer;" ondblclick="navigateToBooking('${b.status}', '${b.booking_id}')">
+                    <div class="appointment-item" style="cursor: pointer;" ondblclick="navigateToBooking('${b.status || ''}', '${b.booking_id || ''}')">
                         <div class="time-block">
                             <span class="time">${formattedTime}</span>
                             <span class="duration">${durationStr}</span>
@@ -70,17 +84,17 @@ export async function fetchAndRenderAppointments(currentBranchId) {
                         <div class="details-block">
                             <div class="client-info">
                                 <div class="avatar small">
-                                    <img src="https://ui-avatars.com/api/?name=${encodeURIComponent(b.customer_name)}&background=random" alt="${b.customer_name}">
+                                    <img src="https://ui-avatars.com/api/?name=${encodeURIComponent(custName)}&background=random" alt="${custName}">
                                 </div>
                                 <div class="name-service">
-                                    <h4><span class="customer-link" onclick="viewCustomerProfile('${b.customer_name}')">${b.customer_name}</span></h4>
+                                    <h4><span class="customer-link" onclick="if(window.viewCustomerProfile) window.viewCustomerProfile('${custId}', '${escapedCustName}')">${custName}</span></h4>
                                     <p>${b.service_name || 'N/A'}</p>
                                 </div>
                             </div>
                         </div>
                         <div class="staff-block"><span class="badge">${b.staff_name || 'Unassigned'}</span></div>
                         <div class="status-block">
-                            <span class="status-pill ${statusClass}">${b.status.charAt(0).toUpperCase() + b.status.slice(1)}</span>
+                            <span class="status-pill ${statusClass}">${(b.status || 'booked').charAt(0).toUpperCase() + (b.status || 'booked').slice(1)}</span>
                         </div>
                     </div>
                 `;
