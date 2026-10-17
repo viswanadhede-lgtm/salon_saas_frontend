@@ -705,7 +705,12 @@
  // OVERVIEW (Analytics Business Overview)
  //==============================================================================================================================================================================
 
- // 
+ // we will use one MASTER RPC for  all the analytics in the overview page - RPC FUNCTION - get_analytics_overview .
+ 
+      // TABLES INVOLVED:
+         
+         // 1. business_transactions
+         // 2. bookings
 
 
 
@@ -724,3 +729,4 @@
 
 
 
+ 
