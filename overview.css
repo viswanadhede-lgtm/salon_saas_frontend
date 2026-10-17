@@ -1,0 +1,658 @@
+/* overview.css - Analytics Business Overview Page Styles */
+/* Pixel-perfect recreation of the Analytics Business Overview design */
+
+:root {
+    --ov-bg: #f8fafc;
+    --ov-card-bg: #ffffff;
+    --ov-border: #e2e8f0;
+    --ov-border-light: #f1f5f9;
+    --ov-text-main: #0f172a;
+    --ov-text-muted: #64748b;
+    --ov-text-sub: #94a3b8;
+    
+    /* Accents */
+    --ov-blue: #3b82f6;
+    --ov-blue-light: #eff6ff;
+    --ov-emerald: #10b981;
+    --ov-emerald-light: #ecfdf5;
+    --ov-orange: #f97316;
+    --ov-orange-light: #fff7ed;
+    --ov-amber: #f59e0b;
+    --ov-amber-light: #fffbeb;
+    --ov-purple: #8b5cf6;
+    --ov-purple-light: #f3e8ff;
+    --ov-rose: #f43f5e;
+    --ov-rose-light: #fff1f2;
+    --ov-teal: #0d9488;
+    --ov-teal-light: #f0fdfa;
+}
+
+body.dashboard-body {
+    background-color: var(--ov-bg);
+    color: var(--ov-text-main);
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+}
+
+.overview-page-wrapper {
+    max-width: 1360px;
+    margin: 0 auto;
+    padding: 24px 28px 60px 28px;
+    display: flex;
+    flex-direction: column;
+    gap: 22px;
+}
+
+/* ── Top Header ────────────────────────────────────────── */
+.overview-top-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    margin-bottom: 4px;
+}
+
+.overview-title-group h1 {
+    font-size: 1.85rem;
+    font-weight: 800;
+    color: #0f172a;
+    letter-spacing: -0.025em;
+    margin: 0 0 2px 0;
+    line-height: 1.2;
+}
+
+.overview-title-group h2 {
+    font-size: 1.15rem;
+    font-weight: 700;
+    color: #1e293b;
+    margin: 0 0 4px 0;
+}
+
+.overview-title-group p {
+    font-size: 0.85rem;
+    color: var(--ov-text-muted);
+    margin: 0;
+}
+
+.overview-header-controls {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.ov-filter-pill {
+    position: relative;
+    display: inline-flex;
+    align-items: center;
+    background: #ffffff;
+    border: 1px solid #d1d5db;
+    border-radius: 8px;
+    padding: 0 12px;
+    height: 38px;
+    box-shadow: 0 1px 2px rgba(0,0,0,0.03);
+    transition: all 0.15s ease;
+}
+
+.ov-filter-pill:hover {
+    border-color: #9ca3af;
+}
+
+.ov-filter-pill i.feather-icon-lead {
+    width: 15px;
+    height: 15px;
+    color: #4b5563;
+    margin-right: 8px;
+    flex-shrink: 0;
+}
+
+.ov-filter-pill select {
+    border: none;
+    background: transparent;
+    font-size: 0.82rem;
+    font-weight: 600;
+    color: #1f2937;
+    cursor: pointer;
+    outline: none;
+    padding-right: 18px;
+    appearance: none;
+    -webkit-appearance: none;
+}
+
+.ov-filter-pill i.feather-icon-trail {
+    position: absolute;
+    right: 10px;
+    width: 14px;
+    height: 14px;
+    color: #6b7280;
+    pointer-events: none;
+}
+
+/* ── Section Container ─────────────────────────────────── */
+.ov-section-card {
+    background: #ffffff;
+    border: 1px solid var(--ov-border);
+    border-radius: 16px;
+    padding: 20px 22px 22px 22px;
+    box-shadow: 0 1px 3px rgba(15, 23, 42, 0.04);
+    display: flex;
+    flex-direction: column;
+    gap: 18px;
+}
+
+.ov-section-header {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+}
+
+.ov-sec-icon-box {
+    width: 42px;
+    height: 42px;
+    border-radius: 10px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+}
+
+.ov-sec-icon-box i {
+    width: 20px;
+    height: 20px;
+}
+
+.ov-sec-text h3 {
+    font-size: 1.05rem;
+    font-weight: 700;
+    color: #0f172a;
+    margin: 0 0 2px 0;
+    letter-spacing: -0.01em;
+}
+
+.ov-sec-text p {
+    font-size: 0.8rem;
+    color: var(--ov-text-muted);
+    margin: 0;
+}
+
+/* ── Card Grids ────────────────────────────────────────── */
+.ov-grid-4 {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 16px;
+}
+
+.ov-grid-2 {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 16px;
+}
+
+.ov-grid-3 {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 16px;
+}
+
+.ov-grid-mixed-3 {
+    display: grid;
+    grid-template-columns: 2fr 1fr 1fr;
+    gap: 16px;
+}
+
+/* ── Metric Card Base ──────────────────────────────────── */
+.ov-metric-card {
+    background: #ffffff;
+    border: 1px solid var(--ov-border-light);
+    border-radius: 12px;
+    padding: 18px 18px 14px 18px;
+    box-shadow: 0 1px 2px rgba(0,0,0,0.02);
+    display: flex;
+    flex-direction: column;
+    position: relative;
+    overflow: hidden;
+    transition: transform 0.15s ease, box-shadow 0.15s ease;
+}
+
+.ov-metric-card:hover {
+    box-shadow: 0 4px 12px rgba(15, 23, 42, 0.05);
+}
+
+.ov-metric-top {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 8px;
+}
+
+.ov-icon-circle {
+    width: 36px;
+    height: 36px;
+    border-radius: 10px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+}
+
+.ov-icon-circle i {
+    width: 18px;
+    height: 18px;
+}
+
+.ov-metric-label {
+    font-size: 0.82rem;
+    font-weight: 500;
+    color: var(--ov-text-muted);
+    margin: 0;
+}
+
+.ov-metric-value {
+    font-size: 1.65rem;
+    font-weight: 800;
+    color: #0f172a;
+    letter-spacing: -0.02em;
+    margin: 0 0 6px 0;
+    line-height: 1.15;
+}
+
+.ov-trend-row {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 0.76rem;
+    margin-bottom: 4px;
+}
+
+.ov-trend-badge {
+    font-weight: 700;
+    display: inline-flex;
+    align-items: center;
+    gap: 2px;
+}
+
+.ov-trend-badge.up {
+    color: #10b981;
+}
+
+.ov-trend-badge.down {
+    color: #ef4444;
+}
+
+.ov-trend-period {
+    color: var(--ov-text-sub);
+    font-weight: 500;
+}
+
+/* ── Sparklines ────────────────────────────────────────── */
+.ov-sparkline-wrap {
+    width: 100%;
+    height: 38px;
+    margin-top: 6px;
+}
+
+.ov-sparkline-wrap svg {
+    width: 100%;
+    height: 100%;
+    overflow: visible;
+}
+
+/* ── Section 2: Horizontal Metric Split ────────────────── */
+.ov-metric-card-horizontal {
+    background: #ffffff;
+    border: 1px solid var(--ov-border-light);
+    border-radius: 12px;
+    padding: 18px 20px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    position: relative;
+    box-shadow: 0 1px 2px rgba(0,0,0,0.02);
+}
+
+.ov-metric-left {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+}
+
+.ov-metric-card-horizontal .ov-sparkline-wrap {
+    width: 160px;
+    height: 48px;
+    margin-top: 0;
+    flex-shrink: 0;
+}
+
+/* ── Section 3: Metric with Mini Bar Clusters ─────────── */
+.ov-metric-with-bars {
+    background: #ffffff;
+    border: 1px solid var(--ov-border-light);
+    border-radius: 12px;
+    padding: 18px 20px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    box-shadow: 0 1px 2px rgba(0,0,0,0.02);
+}
+
+.ov-bar-cluster {
+    display: flex;
+    align-items: flex-end;
+    gap: 4px;
+    height: 42px;
+    width: 72px;
+    flex-shrink: 0;
+}
+
+.ov-bar-pill {
+    flex: 1;
+    border-radius: 3px;
+    transition: height 0.3s ease;
+}
+
+/* ── Section 4: Top 5 Performers Tables ────────────────── */
+.ov-table-card {
+    background: #ffffff;
+    border: 1px solid var(--ov-border-light);
+    border-radius: 12px;
+    padding: 16px 18px;
+    box-shadow: 0 1px 2px rgba(0,0,0,0.02);
+    display: flex;
+    flex-direction: column;
+}
+
+.ov-table-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 14px;
+    padding-bottom: 8px;
+    border-bottom: 1px solid #f1f5f9;
+}
+
+.ov-table-title-wrap {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.ov-table-title-wrap i {
+    width: 16px;
+    height: 16px;
+}
+
+.ov-table-title-wrap h4 {
+    font-size: 0.88rem;
+    font-weight: 700;
+    color: #1e293b;
+    margin: 0;
+}
+
+.ov-view-all-link {
+    font-size: 0.78rem;
+    font-weight: 600;
+    color: #2563eb;
+    text-decoration: none;
+    transition: color 0.15s;
+}
+
+.ov-view-all-link:hover {
+    color: #1d4ed8;
+    text-decoration: underline;
+}
+
+.ov-table {
+    width: 100%;
+    border-collapse: collapse;
+}
+
+.ov-table th {
+    font-size: 0.72rem;
+    font-weight: 600;
+    color: #94a3b8;
+    text-transform: capitalize;
+    padding: 6px 4px;
+    text-align: left;
+}
+
+.ov-table th.num, .ov-table td.num {
+    text-align: right;
+}
+
+.ov-table td {
+    font-size: 0.8rem;
+    padding: 9px 4px;
+    border-top: 1px solid #f8fafc;
+    color: #1e293b;
+}
+
+.ov-table td.rank {
+    width: 22px;
+    color: #94a3b8;
+    font-weight: 600;
+}
+
+.ov-table td.item-name {
+    font-weight: 500;
+    color: #334155;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-width: 130px;
+}
+
+.ov-table td.revenue-cell {
+    font-weight: 700;
+    color: #0f172a;
+}
+
+/* ── Section 5: Charts & Donut Breakdown ───────────────── */
+.ov-chart-card {
+    background: #ffffff;
+    border: 1px solid var(--ov-border-light);
+    border-radius: 12px;
+    padding: 18px 20px;
+    box-shadow: 0 1px 2px rgba(0,0,0,0.02);
+    display: flex;
+    flex-direction: column;
+}
+
+.ov-chart-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 16px;
+}
+
+.ov-chart-header h4 {
+    font-size: 0.92rem;
+    font-weight: 700;
+    color: #0f172a;
+    margin: 0;
+}
+
+.ov-chart-legend {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    font-size: 0.76rem;
+    font-weight: 600;
+}
+
+.ov-legend-item {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.ov-legend-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+}
+
+.ov-canvas-wrap {
+    position: relative;
+    width: 100%;
+    height: 220px;
+}
+
+/* Donut & Center Overlay */
+.ov-donut-wrap {
+    position: relative;
+    width: 140px;
+    height: 140px;
+    margin: 0 auto 16px auto;
+}
+
+.ov-donut-center {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    text-align: center;
+    pointer-events: none;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+}
+
+.ov-donut-center-val {
+    font-size: 1.05rem;
+    font-weight: 800;
+    color: #0f172a;
+    line-height: 1.1;
+}
+
+.ov-donut-center-sub {
+    font-size: 0.65rem;
+    font-weight: 600;
+    color: var(--ov-text-muted);
+    margin-top: 2px;
+}
+
+.ov-donut-legend-list {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    margin-top: 4px;
+}
+
+.ov-donut-legend-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    font-size: 0.78rem;
+}
+
+.ov-donut-legend-left {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    color: #334155;
+    font-weight: 500;
+}
+
+.ov-donut-legend-right {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+}
+
+.ov-donut-legend-pct {
+    color: #64748b;
+    font-weight: 500;
+    min-width: 38px;
+    text-align: right;
+}
+
+.ov-donut-legend-amt {
+    font-weight: 700;
+    color: #0f172a;
+    min-width: 55px;
+    text-align: right;
+}
+
+/* ── Section 7: Staff Leaderboard ──────────────────────── */
+.ov-staff-leaderboard {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.ov-staff-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 6px 0;
+}
+
+.ov-staff-left {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.ov-staff-rank {
+    font-size: 0.78rem;
+    font-weight: 600;
+    color: #94a3b8;
+    width: 14px;
+}
+
+.ov-staff-avatar {
+    width: 28px;
+    height: 28px;
+    border-radius: 50%;
+    object-fit: cover;
+}
+
+.ov-staff-name {
+    font-size: 0.82rem;
+    font-weight: 600;
+    color: #1e293b;
+}
+
+.ov-staff-right {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-size: 0.78rem;
+}
+
+.ov-staff-bookings {
+    color: #64748b;
+}
+
+.ov-staff-divider {
+    color: #cbd5e1;
+}
+
+.ov-staff-rev {
+    font-weight: 700;
+    color: #0f172a;
+}
+
+/* ── Responsive Behavior ───────────────────────────────── */
+@media (max-width: 1200px) {
+    .ov-grid-4 {
+        grid-template-columns: repeat(2, 1fr);
+    }
+    .ov-grid-3 {
+        grid-template-columns: 1fr;
+    }
+    .ov-grid-mixed-3 {
+        grid-template-columns: 1fr;
+    }
+}
+
+@media (max-width: 768px) {
+    .overview-page-wrapper {
+        padding: 16px;
+    }
+    .overview-top-header {
+        flex-direction: column;
+        gap: 14px;
+    }
+    .ov-grid-4, .ov-grid-2, .ov-grid-3, .ov-grid-mixed-3 {
+        grid-template-columns: 1fr;
+    }
+}

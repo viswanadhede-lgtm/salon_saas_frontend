@@ -1,4 +1,4 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="en">
 
 <head>
@@ -6,276 +6,23 @@
     <script type="module" src="scripts/sub-features/sub-feature-gate.js"></script>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta name="description" content="Dashboard for BharathBots Salon SaaS.">
-    <title>Analytics Overview - BharathBots</title>
+    <meta name="description" content="Business Performance and Analytics Overview for BharathBots Salon SaaS.">
+    <title>Analytics - BharathBots</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="styles.css">
     <link rel="stylesheet" href="dashboard.css">
     <link rel="stylesheet" href="submenu.css">
     <link rel="stylesheet" href="styles/global-layout.css">
-    <!-- Feather Icons for a clean SaaS look -->
+    <link rel="stylesheet" href="overview.css">
+    <!-- Feather Icons -->
     <script src="https://unpkg.com/feather-icons"></script>
-    <!-- Chart.js for beautiful analytics -->
+    <!-- Chart.js -->
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2.0.0"></script>
-    <style>
-        /* Advanced Infographic Styles */
-        .infographic-container {
-            display: grid;
-            grid-template-columns: 180px 1fr 200px;
-            gap: 20px;
-            align-items: center;
-            height: 300px;
-            padding: 10px 0;
-        }
-
-        .primary-insight {
-            text-align: left;
-            padding: 20px;
-            border-right: 1px solid #f1f5f9;
-        }
-
-        .primary-value {
-            font-size: 3rem;
-            font-weight: 800;
-            color: #1e293b;
-            line-height: 1;
-            margin-bottom: 8px;
-        }
-
-        .primary-label {
-            font-size: 0.875rem;
-            color: #64748b;
-            font-weight: 600;
-            text-transform: uppercase;
-            letter-spacing: 0.025em;
-        }
-
-        .chart-hub {
-            position: relative;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-        }
-
-        .result-center {
-            position: absolute;
-            width: 70px;
-            height: 70px;
-            background: #ffffff;
-            border-radius: 50%;
-            box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.15), 0 4px 8px rgba(0, 0, 0, 0.05);
-            display: flex;
-            flex-direction: column;
-            justify-content: center;
-            align-items: center;
-            z-index: 10;
-            border: 4px solid #f8fafc;
-            transform: translateZ(20px);
-        }
-
-        .result-title {
-            font-size: 0.65rem;
-            font-weight: 800;
-            color: #1e293b;
-            text-transform: uppercase;
-            letter-spacing: 0.05em;
-            margin-bottom: 1px;
-        }
-
-        .result-subtitle {
-            font-size: 0.5rem;
-            color: #64748b;
-            font-weight: 700;
-            letter-spacing: 0.02em;
-        }
-
-        .metric-list {
-            display: flex;
-            flex-direction: column;
-            gap: 16px;
-        }
-
-        .metric-item {
-            display: flex;
-            align-items: center;
-            gap: 12px;
-        }
-
-        .metric-icon-wrap {
-            width: 32px;
-            height: 32px;
-            border-radius: 8px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-        }
-
-        .metric-info h4 {
-            font-size: 0.85rem;
-            font-weight: 600;
-            margin: 0;
-            color: #1e293b;
-        }
-
-        .metric-info p {
-            font-size: 0.75rem;
-            color: #64748b;
-            margin: 0;
-        }
-
-        .connector-line {
-            height: 1px;
-            background: #e2e8f0;
-            flex: 1;
-            margin: 0 8px;
-        }
-
-        /* Modern Glassmorphism Hover Card */
-        #customChartTooltip {
-            position: absolute;
-            pointer-events: none;
-            opacity: 0;
-            background: rgba(255, 255, 255, 0.82);
-            backdrop-filter: blur(8px) saturate(160%);
-            -webkit-backdrop-filter: blur(8px) saturate(160%);
-            border: 1px solid rgba(255, 255, 255, 0.4);
-            border-radius: 12px;
-            box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1), 0 0 0 1px rgba(0, 0, 0, 0.02);
-            padding: 10px 14px;
-            z-index: 9999;
-            transition: opacity 0.15s ease;
-            min-width: 130px;
-            display: flex;
-            flex-direction: column;
-            gap: 6px;
-            /* Static position anchor - far RHS and all the way up */
-            right: -110px;
-            top: -100px;
-        }
-
-        #connectorLineSvg {
-            position: absolute;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            pointer-events: none;
-            z-index: 9998;
-            overflow: visible; /* Ensure line can reach outside hub bounds */
-        }
-
-        .tooltip-header {
-            display: flex;
-            align-items: center;
-            gap: 8px;
-        }
-
-        .tooltip-icon {
-            width: 28px;
-            height: 28px;
-            border-radius: 8px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 1rem;
-            background: #fff;
-            box-shadow: 0 2px 5px rgba(0,0,0,0.05);
-        }
-
-        .tooltip-title {
-            font-size: 0.8rem;
-            font-weight: 700;
-            color: #1e293b;
-            margin: 0;
-        }
-
-        .tooltip-body {
-            display: flex;
-            flex-direction: column;
-        }
-
-        .tooltip-value {
-            font-size: 1rem;
-            font-weight: 800;
-            color: #1e293b;
-        }
-
-        .tooltip-trend {
-            display: flex;
-            align-items: center;
-            gap: 3px;
-            font-size: 0.65rem;
-            font-weight: 600;
-            color: #10b981;
-            margin-top: 1px;
-        }
-
-        /* Toggle Switch Styles */
-        .toggle-container {
-            display: flex;
-            align-items: center;
-            gap: 8px;
-            cursor: pointer;
-        }
-
-        .toggle-label {
-            font-size: 0.75rem;
-            font-weight: 600;
-            color: #64748b;
-        }
-
-        .switch {
-            position: relative;
-            display: inline-block;
-            width: 28px;
-            height: 16px;
-        }
-
-        .switch input {
-            opacity: 0;
-            width: 0;
-            height: 0;
-        }
-
-        .slider {
-            position: absolute;
-            cursor: pointer;
-            top: 0;
-            left: 0;
-            right: 0;
-            bottom: 0;
-            background-color: #e2e8f0;
-            transition: .3s;
-            border-radius: 16px;
-        }
-
-        .slider:before {
-            position: absolute;
-            content: "";
-            height: 12px;
-            width: 12px;
-            left: 2px;
-            bottom: 2px;
-            background-color: white;
-            transition: .3s;
-            border-radius: 50%;
-        }
-
-        input:checked + .slider {
-            background-color: #6366f1;
-        }
-
-        input:checked + .slider:before {
-            transform: translateX(12px);
-        }
-    </style>
-
 </head>
 
-<body class="dashboard-body" style="min-height: calc(100vh / 0.93);">
+<body class="dashboard-body">
 
     <!-- Global Sidebar Shell Placeholder -->
     <div id="global-sidebar"></div>
@@ -287,320 +34,968 @@
         <div id="global-header"></div>
 
         <!-- Page Content -->
-        <main class="content-area">
-            <div class="content-header" style="display: flex; justify-content: space-between; align-items: flex-end; margin-bottom: 2rem;">
-                <div>
-                    <h1>Analytics Overview</h1>
-                    <p class="text-muted">Business performance insights and trends</p>
-                </div>
-                <div class="content-actions" style="display: flex; gap: 12px; align-items: center;">
-                    <div class="date-filter-wrap" style="position: relative;">
-                        <i data-feather="calendar" style="position: absolute; left: 12px; top: 50%; transform: translateY(-50%); width: 14px; color: #64748b;"></i>
-                        <select id="overviewDateRange" class="form-select" style="padding: 0 12px 0 36px; height: 40px; border-radius: 8px; font-size: 0.875rem; border: 1px solid #e2e8f0; background: #fff; cursor: pointer; outline: none; transition: border-color 0.2s;">
-                            <option value="today">Today</option>
-                            <option value="this_week">This Week</option>
-                            <option value="30days" selected>Last 30 Days</option>
-                            <option value="3months">Last 3 Months</option>
-                            <option value="6months">Last 6 Months</option>
-                            <option value="12months">Last 12 Months</option>
-                            <option disabled>------------</option>
-                            <option value="custom">Custom Range...</option>
-                        </select>
-                    </div>
-                    <!-- Hidden Custom Date Inputs -->
-                    <div id="customDateWrap" style="display: none; align-items: center; gap: 8px;">
-                        <input type="date" id="customStartDate" style="height: 40px; padding: 0 12px; border: 1px solid #e2e8f0; border-radius: 8px; font-size: 0.875rem; outline: none;">
-                        <span style="color: #64748b; font-size: 0.875rem;">to</span>
-                        <input type="date" id="customEndDate" style="height: 40px; padding: 0 12px; border: 1px solid #e2e8f0; border-radius: 8px; font-size: 0.875rem; outline: none;">
-                        <button id="btnApplyDate" style="height: 40px; background: #6366f1; color: white; border: none; border-radius: 8px; padding: 0 16px; font-size: 0.875rem; font-weight: 600; cursor: pointer;">Apply</button>
-                        <button id="btnResetDate" style="height: 40px; background: #f1f5f9; color: #64748b; border: 1px solid #e2e8f0; border-radius: 8px; padding: 0 16px; font-size: 0.875rem; font-weight: 600; cursor: pointer;">Reset</button>
-                    </div>
-                </div>
-            </div>
-            <!-- Section 1: Business Summary Cards -->
-            <div class="summary-cards" style="margin-bottom: 1.5rem;">
-                <div class="card stat-card">
-                    <div class="stat-icon bg-indigo-light">
-                        <i data-feather="dollar-sign" class="text-indigo"></i>
-                    </div>
-                    <div class="stat-details">
-                        <p class="stat-label">Gross Revenue (Total)</p>
-                        <h3 class="stat-value">?3,45,000</h3>
-                        <div class="stat-trend positive">
-                            <i data-feather="trending-up"></i>
-                            <span>12.5%</span>
-                        </div>
-                    </div>
-                </div>
-                <div class="card stat-card">
-                    <div class="stat-icon bg-emerald-light">
-                        <i data-feather="calendar" class="text-emerald"></i>
-                    </div>
-                    <div class="stat-details">
-                        <p class="stat-label">Total Bookings</p>
-                        <h3 class="stat-value">812</h3>
-                        <div class="stat-trend positive">
-                            <i data-feather="trending-up"></i>
-                            <span>8.2%</span>
-                        </div>
-                    </div>
-                </div>
-                <div class="card stat-card">
-                    <div class="stat-icon bg-blue-light">
-                        <i data-feather="users" class="text-blue"></i>
-                    </div>
-                    <div class="stat-details">
-                        <p class="stat-label">New Customers</p>
-                        <h3 class="stat-value">145</h3>
-                        <div class="stat-trend positive">
-                            <i data-feather="trending-up"></i>
-                            <span>15.3%</span>
-                        </div>
-                    </div>
-                </div>
-                <div class="card stat-card">
-                    <div class="stat-icon bg-amber-light">
-                        <i data-feather="activity" class="text-amber"></i>
-                    </div>
-                    <div class="stat-details">
-                        <p class="stat-label">Avg. Booking Value</p>
-                        <h3 class="stat-value">?850</h3>
-                        <div class="stat-trend negative">
-                            <i data-feather="trending-down"></i>
-                            <span>2.1%</span>
-                        </div>
-                    </div>
-                </div>
-            </div>
+        <main class="content-area" style="padding: 0;">
+            <div class="overview-page-wrapper">
 
-            <!-- Section 2: Business Trends -->
-            <div class="dashboard-grid" style="grid-template-columns: 1fr 1fr; gap: 1.5rem; margin-bottom: 1.5rem;">
-                <div class="card chart-card">
-                    <div class="card-header">
-                        <h2>Revenue Trend</h2>
-                        <i data-feather="more-horizontal" class="text-muted" style="cursor: pointer;"></i>
+                <!-- ── Page Top Header ────────────────────────────────────────── -->
+                <div class="overview-top-header">
+                    <div class="overview-title-group">
+                        <h1>Analytics</h1>
+                        <h2>Business Overview</h2>
+                        <p>Overview of your salon's performance for the selected period.</p>
                     </div>
-                    <div style="height: 300px;">
-                        <canvas id="revenueTrendChart"></canvas>
-                    </div>
-                </div>
-                <div class="card chart-card">
-                    <div class="card-header">
-                        <h2>Booking Trend</h2>
-                        <i data-feather="more-horizontal" class="text-muted" style="cursor: pointer;"></i>
-                    </div>
-                    <div style="height: 300px;">
-                        <canvas id="bookingTrendChart"></canvas>
-                    </div>
-                </div>
-            </div>
-            
-            <!-- Section 3: Staff & Product Performance -->
-            <div class="dashboard-grid" style="grid-template-columns: 1fr 1fr; gap: 1.5rem; margin-bottom: 1.5rem;">
-                <!-- Staff Performance -->
-                <div class="card chart-card">
-                    <div class="card-header">
-                        <h2>Staff Performance</h2>
-                        <i data-feather="more-horizontal" class="text-muted" style="cursor: pointer;"></i>
-                    </div>
-                    <div style="height: 300px;">
-                        <canvas id="newStaffPerformanceChart"></canvas>
+                    <div class="overview-header-controls">
+                        <!-- Branch Selector Pill -->
+                        <div class="ov-filter-pill">
+                            <i data-feather="home" class="feather-icon-lead"></i>
+                            <select id="branchSelect">
+                                <option value="main" selected>Main Branch</option>
+                            </select>
+                            <i data-feather="chevron-down" class="feather-icon-trail"></i>
+                        </div>
+                        <!-- Date Range Selector Pill -->
+                        <div class="ov-filter-pill">
+                            <i data-feather="calendar" class="feather-icon-lead"></i>
+                            <select id="overviewDateRange">
+                                <option value="oct1_16" selected>Oct 1, 2026 - Oct 16, 2026</option>
+                                <option value="today">Today</option>
+                                <option value="this_week">This Week</option>
+                                <option value="30days">Last 30 Days</option>
+                                <option value="this_month">This Month</option>
+                            </select>
+                            <i data-feather="chevron-down" class="feather-icon-trail"></i>
+                        </div>
                     </div>
                 </div>
-                <!-- Product Performance -->
-                <div class="card chart-card">
-                    <div class="card-header">
-                        <h2>Product Performance</h2>
-                        <i data-feather="more-horizontal" class="text-muted" style="cursor: pointer;"></i>
-                    </div>
-                    <div style="height: 300px;">
-                        <canvas id="newProductPerformanceChart"></canvas>
-                    </div>
-                </div>
-            </div>
 
-
-            <!-- Section 4 & 5: Insights & Revenue Split -->
-            <div class="dashboard-grid" style="grid-template-columns: 1fr 1fr; gap: 1.5rem; margin-bottom: 1.5rem;">
-                <div class="card">
-                    <div class="card-header">
-                        <h2>Customer Insights</h2>
-                        <i data-feather="users" class="text-muted" style="width: 16px;"></i>
-                    </div>
-                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 24px; padding: 12px 0;">
-                        <div>
-                            <div style="font-size: 0.875rem; color: #64748b; margin-bottom: 4px;">Returning Customers</div>
-                            <div id="overviewReturningCust" style="font-size: 1.5rem; font-weight: 700; color: #1e3a8a;">--%</div>
-                            <div class="stat-trend positive" style="margin-top: 4px;">
-                                <i data-feather="trending-up" style="width: 12px;"></i>
-                                <span style="font-size: 0.75rem;">Requires Reports Module</span>
-                            </div>
+                <!-- ── 1. Revenue Summary ──────────────────────────────────────── -->
+                <section class="ov-section-card">
+                    <div class="ov-section-header">
+                        <div class="ov-sec-icon-box" style="background:#eff6ff;">
+                            <i data-feather="file-text" style="color:#3b82f6;"></i>
                         </div>
-                        <div>
-                            <div style="font-size: 0.875rem; color: #64748b; margin-bottom: 4px;">Retention Rate</div>
-                            <div id="overviewRetentionRate" style="font-size: 1.5rem; font-weight: 700; color: #10b981;">--%</div>
-                            <div class="stat-trend positive" style="margin-top: 4px;">
-                                <i data-feather="trending-up" style="width: 12px;"></i>
-                                <span style="font-size: 0.75rem;">Requires Reports Module</span>
-                            </div>
+                        <div class="ov-sec-text">
+                            <h3>1. Revenue Summary</h3>
+                            <p>Total revenue and revenue by source with comparison to the previous period.</p>
                         </div>
                     </div>
-                    <div style="margin-top: 24px; padding-top: 24px; border-top: 1px solid #f1f5f9;">
-                         <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
-                            <span style="font-size: 0.875rem; color: #475569;">Loyal Customers (>5 visits)</span>
-                            <span id="overviewLoyalCust" style="font-weight: 600;">--</span>
-                         </div>
-                         <div style="width: 100%; height: 8px; background: #f1f5f9; border-radius: 4px; overflow: hidden;">
-                            <div id="overviewLoyalBar" style="width: 0%; height: 100%; background: #8b5cf6;"></div>
-                         </div>
-                    </div>
-                </div>
-                <div class="card chart-card" style="grid-column: span 1;">
-                    <div class="card-header">
-                        <div style="display: flex; flex-direction: column;">
-                            <h2>Revenue Distribution</h2>
-                            <span class="text-muted" style="font-size: 0.75rem;">Source Analysis</span>
-                        </div>
-                        <label class="toggle-container">
-                            <span class="toggle-label">Hover Info</span>
-                            <div class="switch">
-                                <input type="checkbox" id="hoverToggle" checked>
-                                <span class="slider"></span>
-                            </div>
-                        </label>
-                    </div>
-                    <div class="infographic-container">
-                        <!-- Left: Primary Insight -->
-                        <div class="primary-insight">
-                            <div class="primary-value">82%</div>
-                            <div class="primary-label">Revenue from Services</div>
-                            <p style="font-size: 0.75rem; color: #94a3b8; margin-top: 12px;">Primary driver of business growth this month.</p>
-                        </div>
-
-                        <!-- Center: Radial Diagram -->
-                        <div class="chart-hub" id="chartHub">
-                            <svg id="connectorLineSvg">
-                                <path id="connectorPath" d="" fill="none" stroke-width="1.5" stroke-dasharray="0" style="opacity: 0; transition: opacity 0.2s;"></path>
-                                <circle id="connectorAnchor" r="4" fill="#ccc" style="opacity: 0; transition: opacity 0.2s;"></circle>
-                            </svg>
-                            <div style="width: 240px; height: 240px; position: relative; z-index: 5;">
-                                <canvas id="revenueSplitChart"></canvas>
-                            </div>
-                            <div class="result-center">
-                                <span class="result-title">Result</span>
-                                <span class="result-subtitle">LOREM IPSUM</span>
-                            </div>
-                            
-                            <!-- Custom Tooltip (Nested for Absolute Position) -->
-                            <div id="customChartTooltip">
-                                <div class="tooltip-header">
-                                    <div class="tooltip-icon" id="tooltipIcon">??</div>
-                                    <h4 class="tooltip-title" id="tooltipTitle">Services</h4>
+                    <div class="ov-grid-4">
+                        <!-- Card 1: Total Revenue -->
+                        <div class="ov-metric-card">
+                            <div class="ov-metric-top">
+                                <div class="ov-icon-circle" style="background:#eff6ff;">
+                                    <i data-feather="layers" style="color:#3b82f6;"></i>
                                 </div>
-                                <div class="tooltip-body">
-                                    <div class="tooltip-value" id="tooltipValue">?2,82,900</div>
-                                    <div class="tooltip-trend">
-                                        <i data-feather="trending-up" style="width: 12px; height: 12px;"></i>
-                                        <span>+14.2%</span>
+                                <span class="ov-metric-label">Total Revenue</span>
+                            </div>
+                            <div class="ov-metric-value" id="kpiTotalRevenue">₹1,24,500</div>
+                            <div class="ov-trend-row">
+                                <span class="ov-trend-badge up">↑ 12.5%</span>
+                                <span class="ov-trend-period">vs Sep 15 - Sep 30, 2026</span>
+                            </div>
+                            <div class="ov-sparkline-wrap">
+                                <svg viewBox="0 0 160 40" preserveAspectRatio="none">
+                                    <defs>
+                                        <linearGradient id="gradBlue" x1="0" y1="0" x2="0" y2="1">
+                                            <stop offset="0%" stop-color="#3b82f6" stop-opacity="0.22" />
+                                            <stop offset="100%" stop-color="#3b82f6" stop-opacity="0.0" />
+                                        </linearGradient>
+                                    </defs>
+                                    <path d="M 0,32 Q 30,35 60,24 T 120,18 T 160,10 L 160,40 L 0,40 Z" fill="url(#gradBlue)" />
+                                    <path d="M 0,32 Q 30,35 60,24 T 120,18 T 160,10" fill="none" stroke="#3b82f6" stroke-width="2.2" stroke-linecap="round" />
+                                </svg>
+                            </div>
+                        </div>
+
+                        <!-- Card 2: Bookings Revenue -->
+                        <div class="ov-metric-card">
+                            <div class="ov-metric-top">
+                                <div class="ov-icon-circle" style="background:#ecfdf5;">
+                                    <i data-feather="calendar" style="color:#10b981;"></i>
+                                </div>
+                                <span class="ov-metric-label">Bookings Revenue</span>
+                            </div>
+                            <div class="ov-metric-value" id="kpiBookingsRevenue">₹78,000</div>
+                            <div class="ov-trend-row">
+                                <span class="ov-trend-badge up">↑ 8.2%</span>
+                                <span class="ov-trend-period">vs Sep 15 - Sep 30, 2026</span>
+                            </div>
+                            <div class="ov-sparkline-wrap">
+                                <svg viewBox="0 0 160 40" preserveAspectRatio="none">
+                                    <defs>
+                                        <linearGradient id="gradEmerald" x1="0" y1="0" x2="0" y2="1">
+                                            <stop offset="0%" stop-color="#10b981" stop-opacity="0.22" />
+                                            <stop offset="100%" stop-color="#10b981" stop-opacity="0.0" />
+                                        </linearGradient>
+                                    </defs>
+                                    <path d="M 0,30 Q 40,32 70,22 T 130,16 T 160,8 L 160,40 L 0,40 Z" fill="url(#gradEmerald)" />
+                                    <path d="M 0,30 Q 40,32 70,22 T 130,16 T 160,8" fill="none" stroke="#10b981" stroke-width="2.2" stroke-linecap="round" />
+                                </svg>
+                            </div>
+                        </div>
+
+                        <!-- Card 3: Products Revenue -->
+                        <div class="ov-metric-card">
+                            <div class="ov-metric-top">
+                                <div class="ov-icon-circle" style="background:#fff7ed;">
+                                    <i data-feather="shopping-bag" style="color:#f97316;"></i>
+                                </div>
+                                <span class="ov-metric-label">Products Revenue</span>
+                            </div>
+                            <div class="ov-metric-value" id="kpiProductsRevenue">₹28,500</div>
+                            <div class="ov-trend-row">
+                                <span class="ov-trend-badge up">↑ 15.4%</span>
+                                <span class="ov-trend-period">vs Sep 15 - Sep 30, 2026</span>
+                            </div>
+                            <div class="ov-sparkline-wrap">
+                                <svg viewBox="0 0 160 40" preserveAspectRatio="none">
+                                    <defs>
+                                        <linearGradient id="gradOrange" x1="0" y1="0" x2="0" y2="1">
+                                            <stop offset="0%" stop-color="#f97316" stop-opacity="0.22" />
+                                            <stop offset="100%" stop-color="#f97316" stop-opacity="0.0" />
+                                        </linearGradient>
+                                    </defs>
+                                    <path d="M 0,28 Q 35,32 75,20 T 130,15 T 160,9 L 160,40 L 0,40 Z" fill="url(#gradOrange)" />
+                                    <path d="M 0,28 Q 35,32 75,20 T 130,15 T 160,9" fill="none" stroke="#f97316" stroke-width="2.2" stroke-linecap="round" />
+                                </svg>
+                            </div>
+                        </div>
+
+                        <!-- Card 4: Memberships Revenue -->
+                        <div class="ov-metric-card">
+                            <div class="ov-metric-top">
+                                <div class="ov-icon-circle" style="background:#f3e8ff;">
+                                    <i data-feather="award" style="color:#8b5cf6;"></i>
+                                </div>
+                                <span class="ov-metric-label">Memberships Revenue</span>
+                            </div>
+                            <div class="ov-metric-value" id="kpiMembershipsRevenue">₹18,000</div>
+                            <div class="ov-trend-row">
+                                <span class="ov-trend-badge down">↓ 2.1%</span>
+                                <span class="ov-trend-period">vs Sep 15 - Sep 30, 2026</span>
+                            </div>
+                            <div class="ov-sparkline-wrap">
+                                <svg viewBox="0 0 160 40" preserveAspectRatio="none">
+                                    <defs>
+                                        <linearGradient id="gradPurple" x1="0" y1="0" x2="0" y2="1">
+                                            <stop offset="0%" stop-color="#8b5cf6" stop-opacity="0.22" />
+                                            <stop offset="100%" stop-color="#8b5cf6" stop-opacity="0.0" />
+                                        </linearGradient>
+                                    </defs>
+                                    <path d="M 0,22 Q 40,16 80,24 T 130,28 T 160,32 L 160,40 L 0,40 Z" fill="url(#gradPurple)" />
+                                    <path d="M 0,22 Q 40,16 80,24 T 130,28 T 160,32" fill="none" stroke="#8b5cf6" stroke-width="2.2" stroke-linecap="round" />
+                                </svg>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- ── 2. Expenses & Net Revenue ────────────────────────────────── -->
+                <section class="ov-section-card">
+                    <div class="ov-section-header">
+                        <div class="ov-sec-icon-box" style="background:#fff1f2;">
+                            <i data-feather="credit-card" style="color:#f43f5e;"></i>
+                        </div>
+                        <div class="ov-sec-text">
+                            <h3>2. Expenses &amp; Net Revenue</h3>
+                            <p>Total expenses and net operating balance for the selected period.</p>
+                        </div>
+                    </div>
+                    <div class="ov-grid-2">
+                        <!-- Total Expenses -->
+                        <div class="ov-metric-card-horizontal">
+                            <div class="ov-metric-left">
+                                <div class="ov-icon-circle" style="background:#fff1f2;">
+                                    <i data-feather="folder" style="color:#f43f5e;"></i>
+                                </div>
+                                <div>
+                                    <p class="ov-metric-label">Total Expenses</p>
+                                    <div class="ov-metric-value" id="kpiTotalExpenses">₹32,400</div>
+                                    <div class="ov-trend-row">
+                                        <span class="ov-trend-badge down">↑ 6.8%</span>
+                                        <span class="ov-trend-period">vs Sep 15 - Sep 30, 2026</span>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="ov-sparkline-wrap">
+                                <svg viewBox="0 0 160 48" preserveAspectRatio="none">
+                                    <defs>
+                                        <linearGradient id="gradRose" x1="0" y1="0" x2="0" y2="1">
+                                            <stop offset="0%" stop-color="#f43f5e" stop-opacity="0.22" />
+                                            <stop offset="100%" stop-color="#f43f5e" stop-opacity="0.0" />
+                                        </linearGradient>
+                                    </defs>
+                                    <path d="M 0,38 Q 30,42 60,30 T 110,24 T 160,14 L 160,48 L 0,48 Z" fill="url(#gradRose)" />
+                                    <path d="M 0,38 Q 30,42 60,30 T 110,24 T 160,14" fill="none" stroke="#f43f5e" stroke-width="2.2" stroke-linecap="round" />
+                                </svg>
+                            </div>
+                        </div>
+
+                        <!-- Net Operating Balance -->
+                        <div class="ov-metric-card-horizontal">
+                            <div class="ov-metric-left">
+                                <div class="ov-icon-circle" style="background:#ecfdf5;">
+                                    <i data-feather="trending-up" style="color:#10b981;"></i>
+                                </div>
+                                <div>
+                                    <p class="ov-metric-label">Net Operating Balance</p>
+                                    <div class="ov-metric-value" id="kpiNetRevenue">₹92,100</div>
+                                    <div class="ov-trend-row">
+                                        <span class="ov-trend-badge up">↑ 15.6%</span>
+                                        <span class="ov-trend-period">vs Sep 15 - Sep 30, 2026</span>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="ov-sparkline-wrap">
+                                <svg viewBox="0 0 160 48" preserveAspectRatio="none">
+                                    <defs>
+                                        <linearGradient id="gradMint" x1="0" y1="0" x2="0" y2="1">
+                                            <stop offset="0%" stop-color="#10b981" stop-opacity="0.22" />
+                                            <stop offset="100%" stop-color="#10b981" stop-opacity="0.0" />
+                                        </linearGradient>
+                                    </defs>
+                                    <path d="M 0,36 Q 35,38 70,26 T 120,20 T 160,10 L 160,48 L 0,48 Z" fill="url(#gradMint)" />
+                                    <path d="M 0,36 Q 35,38 70,26 T 120,20 T 160,10" fill="none" stroke="#10b981" stroke-width="2.2" stroke-linecap="round" />
+                                </svg>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- ── 3. Business Activity ────────────────────────────────────── -->
+                <section class="ov-section-card">
+                    <div class="ov-section-header">
+                        <div class="ov-sec-icon-box" style="background:#ecfdf5;">
+                            <i data-feather="bar-chart-2" style="color:#10b981;"></i>
+                        </div>
+                        <div class="ov-sec-text">
+                            <h3>3. Business Activity</h3>
+                            <p>Total bookings, products sold and memberships purchased with comparison to the previous period.</p>
+                        </div>
+                    </div>
+                    <div class="ov-grid-3">
+                        <!-- Total Bookings -->
+                        <div class="ov-metric-with-bars">
+                            <div>
+                                <div class="ov-metric-top">
+                                    <div class="ov-icon-circle" style="background:#eff6ff;">
+                                        <i data-feather="calendar" style="color:#3b82f6;"></i>
+                                    </div>
+                                    <span class="ov-metric-label">Total Bookings</span>
+                                </div>
+                                <div class="ov-metric-value" id="kpiActivityBookings">186</div>
+                                <div class="ov-trend-row">
+                                    <span class="ov-trend-badge up">↑ 10.7%</span>
+                                    <span class="ov-trend-period">vs Sep 15 - Sep 30, 2026</span>
+                                </div>
+                            </div>
+                            <div class="ov-bar-cluster">
+                                <div class="ov-bar-pill" style="height:35%; background:#bfdbfe;"></div>
+                                <div class="ov-bar-pill" style="height:50%; background:#bfdbfe;"></div>
+                                <div class="ov-bar-pill" style="height:65%; background:#bfdbfe;"></div>
+                                <div class="ov-bar-pill" style="height:45%; background:#bfdbfe;"></div>
+                                <div class="ov-bar-pill" style="height:75%; background:#bfdbfe;"></div>
+                                <div class="ov-bar-pill" style="height:90%; background:#bfdbfe;"></div>
+                                <div class="ov-bar-pill" style="height:100%; background:#93c5fd;"></div>
+                            </div>
+                        </div>
+
+                        <!-- Products Sold -->
+                        <div class="ov-metric-with-bars">
+                            <div>
+                                <div class="ov-metric-top">
+                                    <div class="ov-icon-circle" style="background:#fff7ed;">
+                                        <i data-feather="box" style="color:#f97316;"></i>
+                                    </div>
+                                    <span class="ov-metric-label">Products Sold</span>
+                                </div>
+                                <div class="ov-metric-value" id="kpiActivityProducts">342</div>
+                                <div class="ov-trend-row">
+                                    <span class="ov-trend-badge up">↑ 18.2%</span>
+                                    <span class="ov-trend-period">vs Sep 15 - Sep 30, 2026</span>
+                                </div>
+                            </div>
+                            <div class="ov-bar-cluster">
+                                <div class="ov-bar-pill" style="height:40%; background:#fed7aa;"></div>
+                                <div class="ov-bar-pill" style="height:55%; background:#fed7aa;"></div>
+                                <div class="ov-bar-pill" style="height:70%; background:#fed7aa;"></div>
+                                <div class="ov-bar-pill" style="height:50%; background:#fed7aa;"></div>
+                                <div class="ov-bar-pill" style="height:80%; background:#fed7aa;"></div>
+                                <div class="ov-bar-pill" style="height:95%; background:#fed7aa;"></div>
+                                <div class="ov-bar-pill" style="height:100%; background:#fdba74;"></div>
+                            </div>
+                        </div>
+
+                        <!-- Memberships Purchased -->
+                        <div class="ov-metric-with-bars">
+                            <div>
+                                <div class="ov-metric-top">
+                                    <div class="ov-icon-circle" style="background:#f3e8ff;">
+                                        <i data-feather="users" style="color:#8b5cf6;"></i>
+                                    </div>
+                                    <span class="ov-metric-label">Memberships Purchased</span>
+                                </div>
+                                <div class="ov-metric-value" id="kpiActivityMemberships">24</div>
+                                <div class="ov-trend-row">
+                                    <span class="ov-trend-badge up">↑ 9.1%</span>
+                                    <span class="ov-trend-period">vs Sep 15 - Sep 30, 2026</span>
+                                </div>
+                            </div>
+                            <div class="ov-bar-cluster">
+                                <div class="ov-bar-pill" style="height:30%; background:#e9d5ff;"></div>
+                                <div class="ov-bar-pill" style="height:45%; background:#e9d5ff;"></div>
+                                <div class="ov-bar-pill" style="height:60%; background:#e9d5ff;"></div>
+                                <div class="ov-bar-pill" style="height:40%; background:#e9d5ff;"></div>
+                                <div class="ov-bar-pill" style="height:75%; background:#e9d5ff;"></div>
+                                <div class="ov-bar-pill" style="height:85%; background:#e9d5ff;"></div>
+                                <div class="ov-bar-pill" style="height:100%; background:#d8b4fe;"></div>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- ── 4. Top 5 Performers ────────────────────────────────────── -->
+                <section class="ov-section-card">
+                    <div class="ov-section-header">
+                        <div class="ov-sec-icon-box" style="background:#fffbeb;">
+                            <i data-feather="award" style="color:#f59e0b;"></i>
+                        </div>
+                        <div class="ov-sec-text">
+                            <h3>4. Top 5 Performers</h3>
+                            <p>Top 5 services, products and memberships by revenue for the selected period.</p>
+                        </div>
+                    </div>
+                    <div class="ov-grid-3">
+                        <!-- Top 5 Services -->
+                        <div class="ov-table-card">
+                            <div class="ov-table-header">
+                                <div class="ov-table-title-wrap">
+                                    <i data-feather="scissors" style="color:#64748b;"></i>
+                                    <h4>Top 5 Services <span style="font-weight:400; color:#64748b; font-size:0.75rem;">(by Revenue)</span></h4>
+                                </div>
+                                <a href="services.html" class="ov-view-all-link">View All</a>
+                            </div>
+                            <table class="ov-table">
+                                <thead>
+                                    <tr>
+                                        <th style="width:20px;">#</th>
+                                        <th>Service</th>
+                                        <th class="num">Bookings</th>
+                                        <th class="num">Revenue</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="topServicesTableBody">
+                                    <tr>
+                                        <td class="rank">1</td>
+                                        <td class="item-name">Hair Cut &amp; Styling</td>
+                                        <td class="num">42</td>
+                                        <td class="num revenue-cell">₹18,900</td>
+                                    </tr>
+                                    <tr>
+                                        <td class="rank">2</td>
+                                        <td class="item-name">Facial</td>
+                                        <td class="num">28</td>
+                                        <td class="num revenue-cell">₹16,800</td>
+                                    </tr>
+                                    <tr>
+                                        <td class="rank">3</td>
+                                        <td class="item-name">Hair Colour</td>
+                                        <td class="num">20</td>
+                                        <td class="num revenue-cell">₹14,000</td>
+                                    </tr>
+                                    <tr>
+                                        <td class="rank">4</td>
+                                        <td class="item-name">Head Massage</td>
+                                        <td class="num">26</td>
+                                        <td class="num revenue-cell">₹10,400</td>
+                                    </tr>
+                                    <tr>
+                                        <td class="rank">5</td>
+                                        <td class="item-name">Manicure</td>
+                                        <td class="num">18</td>
+                                        <td class="num revenue-cell">₹8,600</td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+
+                        <!-- Top 5 Products -->
+                        <div class="ov-table-card">
+                            <div class="ov-table-header">
+                                <div class="ov-table-title-wrap">
+                                    <i data-feather="package" style="color:#64748b;"></i>
+                                    <h4>Top 5 Products <span style="font-weight:400; color:#64748b; font-size:0.75rem;">(by Sales Revenue)</span></h4>
+                                </div>
+                                <a href="products.html" class="ov-view-all-link">View All</a>
+                            </div>
+                            <table class="ov-table">
+                                <thead>
+                                    <tr>
+                                        <th style="width:20px;">#</th>
+                                        <th>Product</th>
+                                        <th class="num">Units Sold</th>
+                                        <th class="num">Revenue</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="topProductsTableBody">
+                                    <tr>
+                                        <td class="rank">1</td>
+                                        <td class="item-name">L'Oréal Shampoo</td>
+                                        <td class="num">45</td>
+                                        <td class="num revenue-cell">₹6,750</td>
+                                    </tr>
+                                    <tr>
+                                        <td class="rank">2</td>
+                                        <td class="item-name">Wella Hair Serum</td>
+                                        <td class="num">38</td>
+                                        <td class="num revenue-cell">₹5,700</td>
+                                    </tr>
+                                    <tr>
+                                        <td class="rank">3</td>
+                                        <td class="item-name">Skin Care Kit</td>
+                                        <td class="num">26</td>
+                                        <td class="num revenue-cell">₹5,200</td>
+                                    </tr>
+                                    <tr>
+                                        <td class="rank">4</td>
+                                        <td class="item-name">Conditioner</td>
+                                        <td class="num">32</td>
+                                        <td class="num revenue-cell">₹4,800</td>
+                                    </tr>
+                                    <tr>
+                                        <td class="rank">5</td>
+                                        <td class="item-name">Hair Oil</td>
+                                        <td class="num">28</td>
+                                        <td class="num revenue-cell">₹4,200</td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+
+                        <!-- Top 5 Memberships -->
+                        <div class="ov-table-card">
+                            <div class="ov-table-header">
+                                <div class="ov-table-title-wrap">
+                                    <i data-feather="shield" style="color:#64748b;"></i>
+                                    <h4>Top 5 Memberships <span style="font-weight:400; color:#64748b; font-size:0.75rem;">(by Revenue)</span></h4>
+                                </div>
+                                <a href="memberships.html" class="ov-view-all-link">View All</a>
+                            </div>
+                            <table class="ov-table">
+                                <thead>
+                                    <tr>
+                                        <th style="width:20px;">#</th>
+                                        <th>Membership</th>
+                                        <th class="num">Purchases</th>
+                                        <th class="num">Revenue</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="topMembershipsTableBody">
+                                    <tr>
+                                        <td class="rank">1</td>
+                                        <td class="item-name">Premium Package</td>
+                                        <td class="num">10</td>
+                                        <td class="num revenue-cell">₹6,000</td>
+                                    </tr>
+                                    <tr>
+                                        <td class="rank">2</td>
+                                        <td class="item-name">Hair Care Membership</td>
+                                        <td class="num">6</td>
+                                        <td class="num revenue-cell">₹4,800</td>
+                                    </tr>
+                                    <tr>
+                                        <td class="rank">3</td>
+                                        <td class="item-name">Skin Glow Membership</td>
+                                        <td class="num">5</td>
+                                        <td class="num revenue-cell">₹3,750</td>
+                                    </tr>
+                                    <tr>
+                                        <td class="rank">4</td>
+                                        <td class="item-name">Bridal Package</td>
+                                        <td class="num">3</td>
+                                        <td class="num revenue-cell">₹2,700</td>
+                                    </tr>
+                                    <tr>
+                                        <td class="rank">5</td>
+                                        <td class="item-name">Wellness Membership</td>
+                                        <td class="num">2</td>
+                                        <td class="num revenue-cell">₹1,800</td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- ── 5. Revenue & Expense Analysis ───────────────────────────── -->
+                <section class="ov-section-card">
+                    <div class="ov-section-header">
+                        <div class="ov-sec-icon-box" style="background:#f3e8ff;">
+                            <i data-feather="activity" style="color:#8b5cf6;"></i>
+                        </div>
+                        <div class="ov-sec-text">
+                            <h3>3. Revenue &amp; Expense Analysis</h3>
+                            <p>Trends and distribution of revenue and expenses for the selected period.</p>
+                        </div>
+                    </div>
+                    <div class="ov-grid-mixed-3">
+                        <!-- Revenue & Expense Trend Line Chart -->
+                        <div class="ov-chart-card">
+                            <div class="ov-chart-header">
+                                <h4>Revenue &amp; Expense Trend</h4>
+                                <div class="ov-chart-legend">
+                                    <span class="ov-legend-item">
+                                        <span class="ov-legend-dot" style="background:#3b82f6;"></span>
+                                        <span style="color:#475569;">Revenue</span>
+                                    </span>
+                                    <span class="ov-legend-item">
+                                        <span class="ov-legend-dot" style="background:#f43f5e;"></span>
+                                        <span style="color:#475569;">Expenses</span>
+                                    </span>
+                                </div>
+                            </div>
+                            <div class="ov-canvas-wrap" style="height: 250px;">
+                                <canvas id="revExpTrendChart"></canvas>
+                            </div>
+                        </div>
+
+                        <!-- Revenue Distribution Donut -->
+                        <div class="ov-chart-card">
+                            <div class="ov-chart-header">
+                                <h4>Revenue Distribution</h4>
+                            </div>
+                            <div class="ov-donut-wrap">
+                                <canvas id="revDistDonutChart"></canvas>
+                                <div class="ov-donut-center">
+                                    <span class="ov-donut-center-val" id="donutRevCenterVal">₹1,24,500</span>
+                                    <span class="ov-donut-center-sub">Total Revenue</span>
+                                </div>
+                            </div>
+                            <div class="ov-donut-legend-list">
+                                <div class="ov-donut-legend-row">
+                                    <div class="ov-donut-legend-left">
+                                        <span class="ov-legend-dot" style="background:#3b82f6;"></span>
+                                        <span>Bookings</span>
+                                    </div>
+                                    <div class="ov-donut-legend-right">
+                                        <span class="ov-donut-legend-pct">62.7%</span>
+                                        <span class="ov-donut-legend-amt">₹78,000</span>
+                                    </div>
+                                </div>
+                                <div class="ov-donut-legend-row">
+                                    <div class="ov-donut-legend-left">
+                                        <span class="ov-legend-dot" style="background:#f97316;"></span>
+                                        <span>Products</span>
+                                    </div>
+                                    <div class="ov-donut-legend-right">
+                                        <span class="ov-donut-legend-pct">22.9%</span>
+                                        <span class="ov-donut-legend-amt">₹28,500</span>
+                                    </div>
+                                </div>
+                                <div class="ov-donut-legend-row">
+                                    <div class="ov-donut-legend-left">
+                                        <span class="ov-legend-dot" style="background:#8b5cf6;"></span>
+                                        <span>Memberships</span>
+                                    </div>
+                                    <div class="ov-donut-legend-right">
+                                        <span class="ov-donut-legend-pct">14.5%</span>
+                                        <span class="ov-donut-legend-amt">₹18,000</span>
                                     </div>
                                 </div>
                             </div>
                         </div>
 
-                        <!-- Right: Detailed Metrics -->
-                        <div class="metric-list">
-                            <div class="metric-item">
-                                <div class="metric-icon-wrap" style="background: rgba(99, 102, 241, 0.1); color: #6366f1;">
-                                    <i data-feather="scissors" style="width: 14px;"></i>
-                                </div>
-                                <div class="metric-info">
-                                    <h4>Services</h4>
-                                    <p>?2,82,900</p>
+                        <!-- Expense Breakdown Donut -->
+                        <div class="ov-chart-card">
+                            <div class="ov-chart-header">
+                                <h4>Expense Breakdown</h4>
+                            </div>
+                            <div class="ov-donut-wrap">
+                                <canvas id="expBreakdownDonutChart"></canvas>
+                                <div class="ov-donut-center">
+                                    <span class="ov-donut-center-val" id="donutExpCenterVal">₹32,400</span>
+                                    <span class="ov-donut-center-sub">Total Expenses</span>
                                 </div>
                             </div>
-                            <div class="metric-item">
-                                <div class="metric-icon-wrap" style="background: rgba(245, 158, 11, 0.1); color: #f59e0b;">
-                                    <i data-feather="package" style="width: 14px;"></i>
+                            <div class="ov-donut-legend-list">
+                                <div class="ov-donut-legend-row">
+                                    <div class="ov-donut-legend-left">
+                                        <span class="ov-legend-dot" style="background:#f43f5e;"></span>
+                                        <span>Rent</span>
+                                    </div>
+                                    <div class="ov-donut-legend-right">
+                                        <span class="ov-donut-legend-pct">30.9%</span>
+                                        <span class="ov-donut-legend-amt">₹10,000</span>
+                                    </div>
                                 </div>
-                                <div class="metric-info">
-                                    <h4>Products</h4>
-                                    <p>?41,200</p>
+                                <div class="ov-donut-legend-row">
+                                    <div class="ov-donut-legend-left">
+                                        <span class="ov-legend-dot" style="background:#f59e0b;"></span>
+                                        <span>Salaries</span>
+                                    </div>
+                                    <div class="ov-donut-legend-right">
+                                        <span class="ov-donut-legend-pct">24.7%</span>
+                                        <span class="ov-donut-legend-amt">₹8,000</span>
+                                    </div>
                                 </div>
-                            </div>
-                            <div class="metric-item">
-                                <div class="metric-icon-wrap" style="background: rgba(16, 185, 129, 0.1); color: #10b981;">
-                                    <i data-feather="credit-card" style="width: 14px;"></i>
+                                <div class="ov-donut-legend-row">
+                                    <div class="ov-donut-legend-left">
+                                        <span class="ov-legend-dot" style="background:#10b981;"></span>
+                                        <span>Utilities</span>
+                                    </div>
+                                    <div class="ov-donut-legend-right">
+                                        <span class="ov-donut-legend-pct">15.4%</span>
+                                        <span class="ov-donut-legend-amt">₹5,000</span>
+                                    </div>
                                 </div>
-                                <div class="metric-info">
-                                    <h4>Members</h4>
-                                    <p>?12,400</p>
+                                <div class="ov-donut-legend-row">
+                                    <div class="ov-donut-legend-left">
+                                        <span class="ov-legend-dot" style="background:#3b82f6;"></span>
+                                        <span>Supplies</span>
+                                    </div>
+                                    <div class="ov-donut-legend-right">
+                                        <span class="ov-donut-legend-pct">12.3%</span>
+                                        <span class="ov-donut-legend-amt">₹4,000</span>
+                                    </div>
                                 </div>
-                            </div>
-                            <div class="metric-item">
-                                <div class="metric-icon-wrap" style="background: rgba(236, 72, 153, 0.1); color: #ec4899;">
-                                    <i data-feather="gift" style="width: 14px;"></i>
-                                </div>
-                                <div class="metric-info">
-                                    <h4>Other</h4>
-                                    <p>?8,500</p>
+                                <div class="ov-donut-legend-row">
+                                    <div class="ov-donut-legend-left">
+                                        <span class="ov-legend-dot" style="background:#94a3b8;"></span>
+                                        <span>Other</span>
+                                    </div>
+                                    <div class="ov-donut-legend-right">
+                                        <span class="ov-donut-legend-pct">16.7%</span>
+                                        <span class="ov-donut-legend-amt">₹5,400</span>
+                                    </div>
                                 </div>
                             </div>
                         </div>
                     </div>
-                </div>
-            </div>
+                </section>
 
-            <!-- Custom Tooltip Element -->
-            <div id="customChartTooltip" style="display: none;">
-                <!-- This is a backup element, we'll use the one nested in chart-hub -->
-            </div>
+                <!-- ── 6. Customer Analytics ──────────────────────────────────── -->
+                <section class="ov-section-card">
+                    <div class="ov-section-header">
+                        <div class="ov-sec-icon-box" style="background:#eff6ff;">
+                            <i data-feather="user" style="color:#2563eb;"></i>
+                        </div>
+                        <div class="ov-sec-text">
+                            <h3>6. Customer Analytics</h3>
+                            <p>Understand your customer growth, retention and spending behavior.</p>
+                        </div>
+                    </div>
+                    <div class="ov-grid-4">
+                        <!-- Total Customers -->
+                        <div class="ov-metric-with-bars">
+                            <div>
+                                <div class="ov-metric-top">
+                                    <div class="ov-icon-circle" style="background:#eff6ff;">
+                                        <i data-feather="users" style="color:#2563eb;"></i>
+                                    </div>
+                                    <span class="ov-metric-label">Total Customers</span>
+                                </div>
+                                <div class="ov-metric-value" id="custTotal">892</div>
+                                <div class="ov-trend-row">
+                                    <span class="ov-trend-badge up">↑ 6.4%</span>
+                                    <span class="ov-trend-period">vs previous period</span>
+                                </div>
+                            </div>
+                            <div class="ov-bar-cluster">
+                                <div class="ov-bar-pill" style="height:35%; background:#bfdbfe;"></div>
+                                <div class="ov-bar-pill" style="height:50%; background:#bfdbfe;"></div>
+                                <div class="ov-bar-pill" style="height:70%; background:#bfdbfe;"></div>
+                                <div class="ov-bar-pill" style="height:55%; background:#bfdbfe;"></div>
+                                <div class="ov-bar-pill" style="height:75%; background:#bfdbfe;"></div>
+                                <div class="ov-bar-pill" style="height:90%; background:#bfdbfe;"></div>
+                                <div class="ov-bar-pill" style="height:100%; background:#93c5fd;"></div>
+                            </div>
+                        </div>
 
-            <!-- Section 6 & 7: Marketing & Branch -->
-             <div class="dashboard-grid" style="grid-template-columns: 1fr 1fr; gap: 1.5rem;">
-                <div class="card">
-                    <div class="card-header">
-                        <h2>Marketing Performance</h2>
-                    </div>
-                    <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 16px;">
-                        <div style="text-align: center; padding: 16px; background: #f8fafc; border-radius: 12px;">
-                            <div style="font-size: 0.75rem; color: #64748b; margin-bottom: 8px;">Coupons Used</div>
-                            <div id="overviewCouponsUsed" style="font-size: 1.25rem; font-weight: 700;">--</div>
+                        <!-- New Customers -->
+                        <div class="ov-metric-with-bars">
+                            <div>
+                                <div class="ov-metric-top">
+                                    <div class="ov-icon-circle" style="background:#eff6ff;">
+                                        <i data-feather="user-plus" style="color:#2563eb;"></i>
+                                    </div>
+                                    <span class="ov-metric-label">New Customers</span>
+                                </div>
+                                <div class="ov-metric-value" id="custNew">124</div>
+                                <div class="ov-trend-row">
+                                    <span class="ov-trend-badge up">↑ 18.1%</span>
+                                    <span class="ov-trend-period">vs previous period</span>
+                                </div>
+                            </div>
+                            <div class="ov-bar-cluster">
+                                <div class="ov-bar-pill" style="height:30%; background:#bfdbfe;"></div>
+                                <div class="ov-bar-pill" style="height:45%; background:#bfdbfe;"></div>
+                                <div class="ov-bar-pill" style="height:60%; background:#bfdbfe;"></div>
+                                <div class="ov-bar-pill" style="height:50%; background:#bfdbfe;"></div>
+                                <div class="ov-bar-pill" style="height:80%; background:#bfdbfe;"></div>
+                                <div class="ov-bar-pill" style="height:90%; background:#bfdbfe;"></div>
+                                <div class="ov-bar-pill" style="height:100%; background:#93c5fd;"></div>
+                            </div>
                         </div>
-                        <div style="text-align: center; padding: 16px; background: #f8fafc; border-radius: 12px;">
-                            <div style="font-size: 0.75rem; color: #64748b; margin-bottom: 8px;">Offers Redeemed</div>
-                            <div id="overviewOffersRedeemed" style="font-size: 1.25rem; font-weight: 700;">--</div>
+
+                        <!-- Returning Customers -->
+                        <div class="ov-metric-with-bars">
+                            <div>
+                                <div class="ov-metric-top">
+                                    <div class="ov-icon-circle" style="background:#eff6ff;">
+                                        <i data-feather="repeat" style="color:#2563eb;"></i>
+                                    </div>
+                                    <span class="ov-metric-label">Returning Customers</span>
+                                </div>
+                                <div class="ov-metric-value" id="custReturning">768</div>
+                                <div class="ov-trend-row">
+                                    <span class="ov-trend-badge up">↑ 4.3%</span>
+                                    <span class="ov-trend-period">vs previous period</span>
+                                </div>
+                            </div>
+                            <div class="ov-bar-cluster">
+                                <div class="ov-bar-pill" style="height:45%; background:#bfdbfe;"></div>
+                                <div class="ov-bar-pill" style="height:60%; background:#bfdbfe;"></div>
+                                <div class="ov-bar-pill" style="height:50%; background:#bfdbfe;"></div>
+                                <div class="ov-bar-pill" style="height:70%; background:#bfdbfe;"></div>
+                                <div class="ov-bar-pill" style="height:85%; background:#bfdbfe;"></div>
+                                <div class="ov-bar-pill" style="height:95%; background:#bfdbfe;"></div>
+                                <div class="ov-bar-pill" style="height:100%; background:#93c5fd;"></div>
+                            </div>
                         </div>
-                        <div style="text-align: center; padding: 16px; background: #f8fafc; border-radius: 12px;">
-                            <div style="font-size: 0.75rem; color: #64748b; margin-bottom: 8px;">Memb. Revenue</div>
-                            <div id="overviewMembRevenue" style="font-size: 1.15rem; font-weight: 700;">--</div>
+
+                        <!-- Repeat Visit Rate -->
+                        <div class="ov-metric-with-bars">
+                            <div>
+                                <div class="ov-metric-top">
+                                    <div class="ov-icon-circle" style="background:#fff1f2;">
+                                        <i data-feather="heart" style="color:#f43f5e;"></i>
+                                    </div>
+                                    <span class="ov-metric-label">Repeat Visit Rate</span>
+                                </div>
+                                <div class="ov-metric-value" id="custRepeatRate">68.2%</div>
+                                <div class="ov-trend-row">
+                                    <span class="ov-trend-badge up">↑ 2.5%</span>
+                                    <span class="ov-trend-period">vs previous period</span>
+                                </div>
+                            </div>
+                            <div class="ov-bar-cluster">
+                                <div class="ov-bar-pill" style="height:50%; background:#bfdbfe;"></div>
+                                <div class="ov-bar-pill" style="height:60%; background:#bfdbfe;"></div>
+                                <div class="ov-bar-pill" style="height:75%; background:#bfdbfe;"></div>
+                                <div class="ov-bar-pill" style="height:65%; background:#bfdbfe;"></div>
+                                <div class="ov-bar-pill" style="height:80%; background:#bfdbfe;"></div>
+                                <div class="ov-bar-pill" style="height:90%; background:#bfdbfe;"></div>
+                                <div class="ov-bar-pill" style="height:100%; background:#93c5fd;"></div>
+                            </div>
                         </div>
                     </div>
-                </div>
-                <!-- Branch Performance -->
-                <div class="card chart-card" id="branchPerformanceCard">
-                    <div class="card-header">
-                        <h2>Branch Performance</h2>
-                        <i data-feather="more-horizontal" class="text-muted" style="cursor: pointer;"></i>
+                </section>
+
+                <!-- ── 7. Staff Analytics ─────────────────────────────────────── -->
+                <section class="ov-section-card">
+                    <div class="ov-section-header">
+                        <div class="ov-sec-icon-box" style="background:#f0fdfa;">
+                            <i data-feather="user-check" style="color:#0d9488;"></i>
+                        </div>
+                        <div class="ov-sec-text">
+                            <h3>7. Staff Analytics</h3>
+                            <p>Measure your staff performance and contribution.</p>
+                        </div>
                     </div>
-                    <div style="height: 300px;">
-                        <canvas id="branchPerformanceChart"></canvas>
+                    <div class="ov-grid-4">
+                        <!-- Total Staff -->
+                        <div class="ov-metric-card" style="justify-content:center;">
+                            <div class="ov-metric-top">
+                                <div class="ov-icon-circle" style="background:#f0fdfa;">
+                                    <i data-feather="users" style="color:#0d9488;"></i>
+                                </div>
+                                <span class="ov-metric-label">Total Staff</span>
+                            </div>
+                            <div class="ov-metric-value" id="staffTotal">12</div>
+                            <p style="font-size:0.75rem; color:#64748b; margin:0;">Active staff</p>
+                        </div>
+
+                        <!-- Completed Appointments -->
+                        <div class="ov-metric-with-bars">
+                            <div>
+                                <div class="ov-metric-top">
+                                    <div class="ov-icon-circle" style="background:#ecfdf5;">
+                                        <i data-feather="calendar" style="color:#10b981;"></i>
+                                    </div>
+                                    <span class="ov-metric-label">Completed Appointments</span>
+                                </div>
+                                <div class="ov-metric-value" id="staffCompleted">176</div>
+                                <div class="ov-trend-row">
+                                    <span class="ov-trend-badge up">↑ 11.4%</span>
+                                    <span class="ov-trend-period">vs previous period</span>
+                                </div>
+                            </div>
+                            <div class="ov-bar-cluster">
+                                <div class="ov-bar-pill" style="height:40%; background:#bfdbfe;"></div>
+                                <div class="ov-bar-pill" style="height:55%; background:#bfdbfe;"></div>
+                                <div class="ov-bar-pill" style="height:70%; background:#bfdbfe;"></div>
+                                <div class="ov-bar-pill" style="height:60%; background:#bfdbfe;"></div>
+                                <div class="ov-bar-pill" style="height:80%; background:#bfdbfe;"></div>
+                                <div class="ov-bar-pill" style="height:90%; background:#bfdbfe;"></div>
+                                <div class="ov-bar-pill" style="height:100%; background:#93c5fd;"></div>
+                            </div>
+                        </div>
+
+                        <!-- Staff Service Revenue -->
+                        <div class="ov-metric-with-bars">
+                            <div>
+                                <div class="ov-metric-top">
+                                    <div class="ov-icon-circle" style="background:#ecfdf5;">
+                                        <i data-feather="bar-chart-2" style="color:#10b981;"></i>
+                                    </div>
+                                    <span class="ov-metric-label">Staff Service Revenue</span>
+                                </div>
+                                <div class="ov-metric-value" id="staffRevenue">₹78,000</div>
+                                <div class="ov-trend-row">
+                                    <span class="ov-trend-badge up">↑ 8.2%</span>
+                                    <span class="ov-trend-period">vs previous period</span>
+                                </div>
+                            </div>
+                            <div class="ov-bar-cluster">
+                                <div class="ov-bar-pill" style="height:35%; background:#bfdbfe;"></div>
+                                <div class="ov-bar-pill" style="height:50%; background:#bfdbfe;"></div>
+                                <div class="ov-bar-pill" style="height:65%; background:#bfdbfe;"></div>
+                                <div class="ov-bar-pill" style="height:55%; background:#bfdbfe;"></div>
+                                <div class="ov-bar-pill" style="height:80%; background:#bfdbfe;"></div>
+                                <div class="ov-bar-pill" style="height:95%; background:#bfdbfe;"></div>
+                                <div class="ov-bar-pill" style="height:100%; background:#93c5fd;"></div>
+                            </div>
+                        </div>
+
+                        <!-- Top Performing Staff -->
+                        <div class="ov-table-card" style="padding: 14px 16px;">
+                            <div class="ov-table-header" style="margin-bottom:8px; padding-bottom:6px;">
+                                <h4 style="font-size:0.82rem;">Top Performing Staff</h4>
+                                <a href="staff.html" class="ov-view-all-link">View All</a>
+                            </div>
+                            <div class="ov-staff-leaderboard" id="topStaffList">
+                                <div class="ov-staff-row">
+                                    <div class="ov-staff-left">
+                                        <span class="ov-staff-rank">1</span>
+                                        <img src="https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=80&q=80" alt="Priya" class="ov-staff-avatar">
+                                        <span class="ov-staff-name">Priya</span>
+                                    </div>
+                                    <div class="ov-staff-right">
+                                        <span class="ov-staff-bookings">42 bookings</span>
+                                        <span class="ov-staff-divider">|</span>
+                                        <span class="ov-staff-rev">₹22,500</span>
+                                    </div>
+                                </div>
+                                <div class="ov-staff-row">
+                                    <div class="ov-staff-left">
+                                        <span class="ov-staff-rank">2</span>
+                                        <img src="https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&w=80&q=80" alt="Rahul" class="ov-staff-avatar">
+                                        <span class="ov-staff-name">Rahul</span>
+                                    </div>
+                                    <div class="ov-staff-right">
+                                        <span class="ov-staff-bookings">38 bookings</span>
+                                        <span class="ov-staff-divider">|</span>
+                                        <span class="ov-staff-rev">₹18,600</span>
+                                    </div>
+                                </div>
+                                <div class="ov-staff-row">
+                                    <div class="ov-staff-left">
+                                        <span class="ov-staff-rank">3</span>
+                                        <img src="https://images.unsplash.com/photo-1517841905240-472988babdf9?auto=format&fit=crop&w=80&q=80" alt="Anita" class="ov-staff-avatar">
+                                        <span class="ov-staff-name">Anita</span>
+                                    </div>
+                                    <div class="ov-staff-right">
+                                        <span class="ov-staff-bookings">32 bookings</span>
+                                        <span class="ov-staff-divider">|</span>
+                                        <span class="ov-staff-rev">₹16,200</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
                     </div>
-                </div>
-             </div>
+                </section>
+
+                <!-- ── 8. Marketing Analytics ─────────────────────────────────── -->
+                <section class="ov-section-card">
+                    <div class="ov-section-header">
+                        <div class="ov-sec-icon-box" style="background:#fff1f2;">
+                            <i data-feather="volume-2" style="color:#e11d48;"></i>
+                        </div>
+                        <div class="ov-sec-text">
+                            <h3>8. Marketing Analytics</h3>
+                            <p>Track the performance of your campaigns and offers.</p>
+                        </div>
+                    </div>
+                    <div class="ov-grid-4">
+                        <!-- Active Campaigns -->
+                        <div class="ov-metric-card">
+                            <div class="ov-metric-top">
+                                <div class="ov-icon-circle" style="background:#fff1f2;">
+                                    <i data-feather="volume-2" style="color:#e11d48;"></i>
+                                </div>
+                                <span class="ov-metric-label">Active Campaigns</span>
+                            </div>
+                            <div class="ov-metric-value" id="mktActive">5</div>
+                            <p style="font-size:0.75rem; color:#64748b; margin:0;">Running campaigns</p>
+                        </div>
+
+                        <!-- Campaign Revenue -->
+                        <div class="ov-metric-card">
+                            <div class="ov-metric-top">
+                                <div class="ov-icon-circle" style="background:#fff1f2;">
+                                    <i data-feather="bar-chart-2" style="color:#e11d48;"></i>
+                                </div>
+                                <span class="ov-metric-label">Campaign Revenue</span>
+                            </div>
+                            <div class="ov-metric-value" id="mktRevenue">₹12,800</div>
+                            <div class="ov-trend-row">
+                                <span class="ov-trend-badge up">↑ 22.3%</span>
+                                <span class="ov-trend-period">vs previous period</span>
+                            </div>
+                        </div>
+
+                        <!-- Offer Redemptions -->
+                        <div class="ov-metric-card">
+                            <div class="ov-metric-top">
+                                <div class="ov-icon-circle" style="background:#fff1f2;">
+                                    <i data-feather="tag" style="color:#e11d48;"></i>
+                                </div>
+                                <span class="ov-metric-label">Offer Redemptions</span>
+                            </div>
+                            <div class="ov-metric-value" id="mktRedemptions">86</div>
+                            <div class="ov-trend-row">
+                                <span class="ov-trend-badge up">↑ 15.0%</span>
+                                <span class="ov-trend-period">vs previous period</span>
+                            </div>
+                        </div>
+
+                        <!-- Conversion Rate -->
+                        <div class="ov-metric-card">
+                            <div class="ov-metric-top">
+                                <div class="ov-icon-circle" style="background:#fff1f2;">
+                                    <i data-feather="target" style="color:#e11d48;"></i>
+                                </div>
+                                <span class="ov-metric-label">Conversion Rate</span>
+                            </div>
+                            <div class="ov-metric-value" id="mktConversion">12.4%</div>
+                            <div class="ov-trend-row">
+                                <span class="ov-trend-badge up">↑ 3.2%</span>
+                                <span class="ov-trend-period">vs previous period</span>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
+            </div>
         </main>
     </div>
 
+    <!-- App Shell and Logic Scripts -->
     <script type="module" src="scripts/app-shell.js"></script>
-
-
-    <!-- Toast Notification -->
-    <div id="toastNotification" class="toast-notification">Booking created successfully (demo)</div>
-
-
-<script src="logout.js"></script><script src="change-password.js"></script>    <script type="module" src="scripts/global-auth-guard.js"></script>
-    <script type="module" src="scripts/sub-features/sub-feature-gate.js"></script>
+    <script type="module" src="scripts/global-auth-guard.js"></script>
     <script type="module" src="scripts/overview.js"></script>
+    <script src="logout.js"></script>
+    <script src="change-password.js"></script>
 </body>
 
 </html>
-
