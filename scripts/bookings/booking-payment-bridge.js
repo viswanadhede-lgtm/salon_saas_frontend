@@ -100,10 +100,23 @@ export async function processBookingPaymentCallback(payload, row, options = {}) 
         const d = payload.discounts || {};
         let discountType = null;
         let discountName = null;
-        if (d.couponCode) { discountType = 'coupon'; discountName = d.couponCode; }
-        else if (d.offerName) { discountType = 'offer'; discountName = d.offerName; }
-        else if (d.membershipName) { discountType = 'membership'; discountName = d.membershipName; }
-        else if (d.manualValue > 0) { discountType = 'manual'; discountName = d.manualType === 'percent' ? `${d.manualValue}% off` : `₹${d.manualValue} off`; }
+        let discountId = null;
+        if (d.couponCode) { 
+            discountType = 'coupon'; 
+            discountName = d.couponCode; 
+            discountId = d.couponId || null;
+        } else if (d.offerName) { 
+            discountType = 'offer'; 
+            discountName = d.offerName; 
+            discountId = d.offerId || null;
+        } else if (d.membershipName) { 
+            discountType = 'membership'; 
+            discountName = d.membershipName; 
+            discountId = d.membershipId || null;
+        } else if (d.manualValue > 0) { 
+            discountType = 'manual'; 
+            discountName = d.manualType === 'percent' ? `${d.manualValue}% off` : `₹${d.manualValue} off`; 
+        }
 
         // Single atomic RPC call — updates business_transactions, bookings_for_business_transaction, and bookings
         const { data: rpcResult, error: rpcError } = await supabase.rpc('process_booking_payment_atomic', {
@@ -111,6 +124,7 @@ export async function processBookingPaymentCallback(payload, row, options = {}) 
             p_payment_method:  (payMethod || 'cash').toLowerCase(),
             p_discount_type:   discountType,
             p_discount_name:   discountName,
+            p_discount_id:     discountId,
             p_discount_amount: totalDiscount > 0 ? totalDiscount : 0,
             p_final_amount:    amount,
             p_notes:           `Payment for booking ${String(bookingId).substring(0, 8)}`

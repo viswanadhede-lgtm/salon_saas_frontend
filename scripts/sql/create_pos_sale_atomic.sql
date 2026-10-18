@@ -2,7 +2,7 @@
 -- RPC FUNCTION: public.create_pos_sale_atomic
 -- Purpose: Atomically validate & deduct stock, insert line items in sales,
 --          insert consolidated receipt in sales_for_business_transactions,
---          and record discount in public.discount_usages.
+--          and record discount in public.discount_usages (including discount_id).
 -- ============================================================================
 
 CREATE OR REPLACE FUNCTION public.create_pos_sale_atomic(
@@ -19,7 +19,8 @@ CREATE OR REPLACE FUNCTION public.create_pos_sale_atomic(
     p_discount_type text DEFAULT NULL::text, 
     p_discount_name text DEFAULT NULL::text, 
     p_discount_amount numeric DEFAULT 0, 
-    p_final_amount numeric DEFAULT 0
+    p_final_amount numeric DEFAULT 0,
+    p_discount_id uuid DEFAULT NULL::uuid
 )
 RETURNS jsonb
 LANGUAGE plpgsql
@@ -42,6 +43,7 @@ DECLARE
     v_item_total numeric;
     v_item_prod_id uuid;
     v_item_cat_id uuid;
+    v_discount_id uuid := p_discount_id;
 BEGIN
     -- 1. Basic validation
     IF p_items IS NULL OR jsonb_array_length(p_items) = 0 THEN
@@ -210,6 +212,13 @@ BEGIN
 
     -- 4. [NEW] Track discount in public.discount_usages
     IF COALESCE(p_discount_amount, 0) > 0 THEN
+        -- Resolve discount_id from table if not directly provided
+        IF v_discount_id IS NULL AND p_discount_type = 'coupon' AND p_discount_name IS NOT NULL THEN
+            SELECT coupon_id INTO v_discount_id FROM public.coupons WHERE coupon_code = p_discount_name LIMIT 1;
+        ELSIF v_discount_id IS NULL AND p_discount_type = 'offer' AND p_discount_name IS NOT NULL THEN
+            SELECT offer_id INTO v_discount_id FROM public.offers WHERE offer_name = p_discount_name LIMIT 1;
+        END IF;
+
         INSERT INTO public.discount_usages (
             company_id,
             branch_id,
@@ -217,6 +226,7 @@ BEGIN
             reference_type,
             reference_id,
             discount_type,
+            discount_id,
             discount_name,
             discount_amount,
             status,
@@ -230,6 +240,7 @@ BEGIN
             'pos',
             p_sale_id,
             p_discount_type,
+            v_discount_id,
             p_discount_name,
             p_discount_amount,
             'applied',

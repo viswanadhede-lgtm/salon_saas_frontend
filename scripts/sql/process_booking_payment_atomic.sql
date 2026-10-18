@@ -1,7 +1,7 @@
 -- ============================================================================
 -- RPC FUNCTION: public.process_booking_payment_atomic
 -- Purpose: Atomically update booking, consolidated transaction, business ledger,
---          and record discount usage in public.discount_usages.
+--          and record discount usage in public.discount_usages (including discount_id).
 -- ============================================================================
 
 CREATE OR REPLACE FUNCTION public.process_booking_payment_atomic(
@@ -11,19 +11,21 @@ CREATE OR REPLACE FUNCTION public.process_booking_payment_atomic(
   p_discount_name text DEFAULT NULL::text, 
   p_discount_amount numeric DEFAULT 0, 
   p_final_amount numeric DEFAULT NULL::numeric, 
-  p_notes text DEFAULT NULL::text
+  p_notes text DEFAULT NULL::text,
+  p_discount_id uuid DEFAULT NULL::uuid
 )
 RETURNS jsonb
 LANGUAGE plpgsql
 SECURITY DEFINER
 AS $function$
 DECLARE
-  v_total_price NUMERIC;
-  v_final       NUMERIC;
-  v_customer_id UUID;
-  v_company_id  UUID;
-  v_branch_id   UUID;
-  v_payment_id  UUID;
+  v_total_price  NUMERIC;
+  v_final        NUMERIC;
+  v_customer_id  UUID;
+  v_company_id   UUID;
+  v_branch_id    UUID;
+  v_payment_id   UUID;
+  v_discount_id  UUID := p_discount_id;
 BEGIN
   -- ──────────────────────────────────────────────
   -- Get the total price and details from summary
@@ -90,6 +92,13 @@ BEGIN
   -- 4. [NEW] Track discount in discount_usages
   -- ──────────────────────────────────────────────
   IF COALESCE(p_discount_amount, 0) > 0 THEN
+    -- Resolve discount_id from table if not directly provided
+    IF v_discount_id IS NULL AND p_discount_type = 'coupon' AND p_discount_name IS NOT NULL THEN
+      SELECT coupon_id INTO v_discount_id FROM public.coupons WHERE coupon_code = p_discount_name LIMIT 1;
+    ELSIF v_discount_id IS NULL AND p_discount_type = 'offer' AND p_discount_name IS NOT NULL THEN
+      SELECT offer_id INTO v_discount_id FROM public.offers WHERE offer_name = p_discount_name LIMIT 1;
+    END IF;
+
     INSERT INTO public.discount_usages (
       company_id,
       branch_id,
@@ -98,6 +107,7 @@ BEGIN
       reference_id,
       payment_id,
       discount_type,
+      discount_id,
       discount_name,
       discount_amount,
       status,
@@ -112,6 +122,7 @@ BEGIN
       p_booking_id,
       v_payment_id,
       p_discount_type,
+      v_discount_id,
       p_discount_name,
       p_discount_amount,
       'applied',

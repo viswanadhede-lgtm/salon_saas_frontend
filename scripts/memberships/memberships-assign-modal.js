@@ -397,10 +397,23 @@ export async function executeMembershipAssignment(payload, newPurchaseId) {
     const d = payload.discounts || {};
     let discountType = null;
     let discountName = null;
+    let discountId = null;
     
-    if (d.couponCode) { discountType = 'coupon'; discountName = d.couponCode; }
-    else if (d.offerName) { discountType = 'offer'; discountName = d.offerName; }
-    else if (d.membershipName) { discountType = 'membership'; discountName = d.membershipName; }
+    if (d.couponCode) { 
+        discountType = 'coupon'; 
+        discountName = d.couponCode; 
+        discountId = d.couponId || null;
+    }
+    else if (d.offerName) { 
+        discountType = 'offer'; 
+        discountName = d.offerName; 
+        discountId = d.offerId || null;
+    }
+    else if (d.membershipName) { 
+        discountType = 'membership'; 
+        discountName = d.membershipName; 
+        discountId = d.membershipId || null;
+    }
     else if (d.manualValue > 0) {
         discountType = 'manual';
         discountName = d.manualType === 'percent' ? `${d.manualValue}% off` : `₹${d.manualValue} off`;
@@ -422,6 +435,7 @@ export async function executeMembershipAssignment(payload, newPurchaseId) {
         p_purchase_date: purchaseDate,
         p_discount_type: discountType,
         p_discount_name: discountName,
+        p_discount_id: discountId,
         p_discount_amount: discountAmount,
         p_final_amount: finalAmount,
         p_assigned_by_user_id: userId,

@@ -1,4 +1,4 @@
-﻿// scripts/global-payment-modal/gpm-payment.js
+// scripts/global-payment-modal/gpm-payment.js
 import { gpmState } from './gpm-state.js';
 import { closeGlobalPaymentModal } from './gpm-ui.js';
 
@@ -32,6 +32,7 @@ export async function finalizePayment() {
             offerId: paymentState.appliedOffer ? paymentState.appliedOffer.id : null,
             offerName: paymentState.appliedOffer ? paymentState.appliedOffer.name : null,
             offerDiscount: paymentState.offerDiscount || 0,
+            membershipId: paymentState.appliedMembership ? paymentState.appliedMembership.id : null,
             membershipName: paymentState.appliedMembership ? paymentState.appliedMembership.name : null,
             membershipDiscountPct: paymentState.appliedMembership ? paymentState.appliedMembership.value : 0
         }

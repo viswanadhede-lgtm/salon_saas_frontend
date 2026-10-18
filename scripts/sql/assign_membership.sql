@@ -20,7 +20,8 @@ CREATE OR REPLACE FUNCTION public.assign_membership(
     p_final_amount          numeric DEFAULT NULL,
     p_assigned_by_user_id   uuid    DEFAULT NULL,
     p_assigned_by_user_name text    DEFAULT NULL,
-    p_notes                 text    DEFAULT NULL
+    p_notes                 text    DEFAULT NULL,
+    p_discount_id           uuid    DEFAULT NULL
 )
 RETURNS jsonb
 LANGUAGE plpgsql
@@ -38,6 +39,7 @@ DECLARE
 
     v_purchase_id       uuid := gen_random_uuid();
     v_payment_id        uuid;
+    v_discount_id       uuid := p_discount_id;
     v_purchase_date     date := COALESCE(p_purchase_date, CURRENT_DATE);
     v_expiry_date       date;
     v_final_amount      numeric;
@@ -262,6 +264,13 @@ BEGIN
     -- 8. [NEW] TRACK DISCOUNT IN public.discount_usages
     -- -------------------------------------------------------------------------
     IF COALESCE(v_discount_amount, 0) > 0 THEN
+        -- Resolve discount_id from table if not passed directly
+        IF v_discount_id IS NULL AND p_discount_type = 'coupon' AND p_discount_name IS NOT NULL THEN
+            SELECT coupon_id INTO v_discount_id FROM public.coupons WHERE coupon_code = p_discount_name LIMIT 1;
+        ELSIF v_discount_id IS NULL AND p_discount_type = 'offer' AND p_discount_name IS NOT NULL THEN
+            SELECT offer_id INTO v_discount_id FROM public.offers WHERE offer_name = p_discount_name LIMIT 1;
+        END IF;
+
         INSERT INTO public.discount_usages (
             company_id,
             branch_id,
@@ -271,6 +280,7 @@ BEGIN
             payment_id,
             membership_plan_id,
             discount_type,
+            discount_id,
             discount_name,
             discount_amount,
             status,
@@ -286,6 +296,7 @@ BEGIN
             v_payment_id,
             p_membership_id,
             p_discount_type,
+            v_discount_id,
             p_discount_name,
             v_discount_amount,
             'applied',

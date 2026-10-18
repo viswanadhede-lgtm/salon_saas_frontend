@@ -1,4 +1,4 @@
-﻿// scripts/global-payment-modal/gpm-discounts.js
+// scripts/global-payment-modal/gpm-discounts.js
 import { gpmState, setLiveOffersDB } from './gpm-state.js';
 import { gpmFormatCurrency, calculateFinalDue } from './gpm-ui.js';
 
@@ -52,6 +52,7 @@ export async function fetchCustomerMembership(customerId) {
         }
 
         paymentState.appliedMembership = {
+            id: purchase.membership_id,
             name: membership.plan_name || purchase.plan_name,
             type: membership.discount_type,
             value: Number(membership.discount_value)
@@ -200,74 +201,77 @@ export async function loadAvailableOffers() {
         let companyId;
         try {
             const ctx = JSON.parse(localStorage.getItem('appContext') || '{}');
-            companyId = ctx.company?.id || localStorage.getItem('company_id') || null;
+            companyId = ctx.company?.company_id || ctx.company?.id || localStorage.getItem('company_id') || null;
         } catch {
             companyId = localStorage.getItem('company_id') || null;
         }
 
         const branchId = localStorage.getItem('active_branch_id')
+            || localStorage.getItem('branch_id')
             || document.getElementById('branchSelect')?.value
             || null;
 
         const { supabase } = await import('../../lib/supabase.js');
 
+        // Select * so we never fail if optional columns (like service_id, usage_limit) are missing from the table
         let query = supabase
             .from('offers')
-            .select('offer_id, offer_name, discount_type, discount_value, min_bill_amount, valid_from, valid_to, service_id, service_name, total_usage_limit, current_usage_count')
-            .eq('status', 'active');
+            .select('*')
+            .neq('status', 'deleted');
 
-        if (companyId) query = query.eq('company_id', companyId);
-        if (branchId) query = query.eq('branch_id', branchId);
+        if (companyId) {
+            query = query.or(`company_id.eq.${companyId},company_id.is.null`);
+        }
+        if (branchId) {
+            query = query.or(`branch_id.eq.${branchId},branch_id.is.null`);
+        }
 
         const { data, error } = await query;
-        if (error) throw error;
+        if (error) {
+            console.error('[PaymentModal] Error fetching offers:', error);
+            throw error;
+        }
 
         const seen = new Map();
         const todayStr = new Date().toISOString().split('T')[0];
+        const checkoutType = (globalPaymentConfig?.type || '').toLowerCase(); // 'booking', 'pos', 'membership'
 
         (data || []).forEach(o => {
+            // Check status is active
+            if (o.status && o.status !== 'active') return;
+
             // Check validity period
             if (o.valid_from && o.valid_from > todayStr) return;
             if (o.valid_to && o.valid_to < todayStr) return;
 
-            // Check overall usage limit
+            // Check overall usage limit if column exists
             if (o.total_usage_limit && Number(o.current_usage_count || 0) >= Number(o.total_usage_limit)) return;
 
-            if (!seen.has(o.offer_id)) {
-                seen.set(o.offer_id, {
-                    offer_id: o.offer_id,
-                    offer_name: o.offer_name,
+            // Check applicability flags from offers.html (all_services, all_products, all_memberships)
+            const hasAnyFlag = (o.all_services || o.all_products || o.all_memberships);
+            if (hasAnyFlag) {
+                if (checkoutType.includes('booking') && !o.all_services) return;
+                if (checkoutType === 'pos' && !o.all_products) return;
+                if (checkoutType.includes('membership') && !o.all_memberships) return;
+            }
+
+            const offerKey = o.offer_id || o.id;
+            if (!offerKey) return;
+
+            if (!seen.has(offerKey)) {
+                seen.set(offerKey, {
+                    offer_id: offerKey,
+                    id: offerKey,
+                    offer_name: o.offer_name || 'Special Offer',
                     discount_type: (o.discount_type || 'percentage').toLowerCase(),
                     discount_value: Number(o.discount_value || 0),
-                    min_bill_amount: Number(o.min_bill_amount || 0),
-                    applicable_services: []
-                });
-            }
-
-            if (o.service_id) {
-                seen.get(o.offer_id).applicable_services.push({
-                    service_id: o.service_id,
-                    service_name: o.service_name || ''
+                    min_bill_amount: Number(o.min_bill_amount || 0)
                 });
             }
         });
 
-        // Filter offers based on service applicability if current checkout has services
-        const currentServiceIds = [
-            ...(globalPaymentConfig?.serviceIds || []),
-            ...(globalPaymentConfig?.items || []).map(it => it.service_id || it.serviceId || it.id).filter(Boolean)
-        ];
-
-        const validOffers = Array.from(seen.values()).filter(o => {
-            if (!o.applicable_services || o.applicable_services.length === 0) return true;
-            if (currentServiceIds.length > 0) {
-                return o.applicable_services.some(s => currentServiceIds.includes(s.service_id));
-            }
-            return true;
-        });
-
-        gpmState.liveOffersDB = validOffers;
-        const liveOffersDB = validOffers;
+        const liveOffersDB = Array.from(seen.values());
+        gpmState.liveOffersDB = liveOffersDB;
 
         if (liveOffersDB.length === 0) {
             offerSelect.innerHTML = '<option value="">No active offers available</option>';
@@ -304,7 +308,7 @@ export function applySelectedOffer(offerId) {
         return;
     }
 
-    const found = liveOffersDB.find(x => x.offer_id === offerId);
+    const found = liveOffersDB.find(x => (x.offer_id === offerId || x.id === offerId));
     if (!found) {
         paymentState.appliedOffer = null;
         document.getElementById('gpmOffersSection')?.classList.remove('applied');
@@ -330,8 +334,8 @@ export function applySelectedOffer(offerId) {
     }
 
     paymentState.appliedOffer = {
-        id: found.offer_id,
-        name: found.offer_name,
+        id: found.offer_id || found.id,
+        name: found.offer_name || found.name,
         type: found.discount_type,
         value: found.discount_value
     };
