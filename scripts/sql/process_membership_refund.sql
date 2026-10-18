@@ -146,7 +146,21 @@ BEGIN
     END IF;
 
     -- -------------------------------------------------------------------------
-    -- 6. RETURN SUCCESS RESULT
+    -- 6. [NEW] REVERSE DISCOUNT IN public.discount_usages
+    -- -------------------------------------------------------------------------
+    UPDATE public.discount_usages
+    SET
+        status          = 'reversed',
+        reversal_amount = discount_amount,
+        reversed_at     = NOW(),
+        reversal_reason = COALESCE(p_refund_reason, 'Membership Refund'),
+        updated_at      = NOW()
+    WHERE reference_id   = p_purchase_id
+      AND reference_type = 'membership'
+      AND status         = 'applied';
+
+    -- -------------------------------------------------------------------------
+    -- 7. RETURN SUCCESS RESULT
     -- -------------------------------------------------------------------------
     RETURN jsonb_build_object(
         'success', true,

@@ -150,38 +150,38 @@
 
 //DB TRIGGERS:
 
-          // Trigger 1 : trg_create_initial_business_transaction -- Whenever a new booking summary row is inserted, it immediately inserts a row into business_transactions
-          // Trigger 2 : trg_update_customer_stats_on_complete -- updates the customers table's total spent and last visit columns ...
+// Trigger 1 : trg_create_initial_business_transaction -- Whenever a new booking summary row is inserted, it immediately inserts a row into business_transactions
+// Trigger 2 : trg_update_customer_stats_on_complete -- updates the customers table's total spent and last visit columns ...
 
 // RPC FUNCTIONS // ==============================================
 
 // 4 Core RPC Functions (plus 1 Calendar Aggregation RPC):
 
 // RPC 1: create_booking_atomic 
-  
-    //  Inserts all service rows into bookings Table (one row for one service) and Inserts the 1 consolidated summary row into bookings_for_business_transaction Table.
+
+//  Inserts all service rows into bookings Table (one row for one service) and Inserts the 1 consolidated summary row into bookings_for_business_transaction Table.
 
 // RPC 2: update_booking_atomic
 
-    // if the Booking is updated .. this function updates in all 4 tables - Bookings Table, bookings_for_business_transaction TABLE and Business Transactions TABLE.
+// if the Booking is updated .. this function updates in all 4 tables - Bookings Table, bookings_for_business_transaction TABLE and Business Transactions TABLE.
 
 // RPC 3: process_booking_payment_atomic
 
-    //   a.when payment is done it Updates the existing business_transactions row (reference_id = p_booking_id and status = 'created') ➔ status = 'paid', payment_method = p_payment_method,     		paid_at = NOW().
-    //   b. Updates bookings_for_business_transaction ➔ payment_status = 'paid', final_amount = p_amount_collected, discount fields.
-    //   c. Updates all service rows in bookings ➔ payment = 'paid'.
+//   a.when payment is done it Updates the existing business_transactions row (reference_id = p_booking_id and status = 'created') ➔ status = 'paid', payment_method = p_payment_method,     		paid_at = NOW().
+//   b. Updates bookings_for_business_transaction ➔ payment_status = 'paid', final_amount = p_amount_collected, discount fields.
+//   c. Updates all service rows in bookings ➔ payment = 'paid'.
 
 // RPC 4: process_booking_refund_atomic
 
-    //   a. Reads the paid amount from business_transactions.
-    //   b. Inserts a NEW row into business_transactions with status = 'refunded', amount = paid_amount, reference_id = p_booking_id.
-    //   c. Updates bookings_for_business_transaction ➔ payment_status = 'refunded', status = 'cancelled'.
-    //   d. Updates all service rows in bookings ➔ status = 'cancelled', payment = 'refunded'.
-    //   e. If the booking was previously 'completed', deducts the refund from customers.total_spent.
+//   a. Reads the paid amount from business_transactions.
+//   b. Inserts a NEW row into business_transactions with status = 'refunded', amount = paid_amount, reference_id = p_booking_id.
+//   c. Updates bookings_for_business_transaction ➔ payment_status = 'refunded', status = 'cancelled'.
+//   d. Updates all service rows in bookings ➔ status = 'cancelled', payment = 'refunded'.
+//   e. If the booking was previously 'completed', deducts the refund from customers.total_spent.
 
 // RPC 5: get_calendar_month_bookings_summary (For Tab 3 Calendar)
 
-    //   a. What it returns: Daily counts for each date (total, booked, confirmed, completed, cancelled, no_show).
+//   a. What it returns: Daily counts for each date (total, booked, confirmed, completed, cancelled, no_show).
 
 //
 //
@@ -291,20 +291,20 @@
 // BOOKING-STATUS, PAYMENT-STATUS  &  ACTIONS relation in Bookings Table
 //
 
-    //state 1 : IF Status = Booked/Confirmed  ||    AND  ||  Payment = Collect  || THEN ||  Actions show Update.
+//state 1 : IF Status = Booked/Confirmed  ||    AND  ||  Payment = Collect  || THEN ||  Actions show Update.
 
-    //state 2 : IF Status = Completed   ||  AND  ||  Payment = Paid     ||  THEN    ||  Actions will show view 
+//state 2 : IF Status = Completed   ||  AND  ||  Payment = Paid     ||  THEN    ||  Actions will show view 
 
-    //state 3 : IF Status = Cancelled   ||  AND  ||  Payment = Collect  || THEN     ||  Actions will show Rebook (when the booking status is updated to cancelled the payment collect button should grey out and show cancelled with grey color light weight under the collect button )
+//state 3 : IF Status = Cancelled   ||  AND  ||  Payment = Collect  || THEN     ||  Actions will show Rebook (when the booking status is updated to cancelled the payment collect button should grey out and show cancelled with grey color light weight under the collect button )
 
-    //state 4:  IF Status = Cancelled   ||  AND  ||  Payment = Paid     ||  THEN    ||  Actions will show Info [when clicked on it will show two options REFUND and REBOOK ]
+//state 4:  IF Status = Cancelled   ||  AND  ||  Payment = Paid     ||  THEN    ||  Actions will show Info [when clicked on it will show two options REFUND and REBOOK ]
 
-    //state 5:  IF Status = No-Show     ||  AND  ||  Payment = Collect  || THEN     ||  Actions will show Rebook (when the booking status is updated to No-Show the payment collect button should grey out and show cancelled with grey color light weight under the collect button )
+//state 5:  IF Status = No-Show     ||  AND  ||  Payment = Collect  || THEN     ||  Actions will show Rebook (when the booking status is updated to No-Show the payment collect button should grey out and show cancelled with grey color light weight under the collect button )
 
-    //state 6:  IF Status = No-Show     ||  AND  ||  Payment = Paid     ||  THEN    ||  Actions will show Info [when clicked on it will show two options Refund and Rebook ]
+//state 6:  IF Status = No-Show     ||  AND  ||  Payment = Paid     ||  THEN    ||  Actions will show Info [when clicked on it will show two options Refund and Rebook ]
 
 // NOTES:   
- 
+
 //1. Basically No-Show and Cancelled are the same
 
 //2. Booking status can not change to complete with out payment is paid.
@@ -332,33 +332,33 @@
 
 // WORKING SUMMARY
 
-  // When products are selected and Collect is clicked in POS, the Global Payment Modal opens.
-  // When 'Collect Payment' button is clicked in the modal, the RPC Function `create_pos_sale_atomic` runs:
-  //   1. Validates and deducts stock from `products` table atomically (locking rows to prevent overselling).
-  //   2. Inserts all product line items into `sales` table (one row for each product, status = 'paid').
-  //   3. Inserts 1 consolidated summary row into `sales_for_business_transactions` table (payment_status = 'paid').
-  // When the summary row is inserted into `sales_for_business_transactions`, the DB Trigger `trg_create_pos_business_transaction` fires:
-  //   - Automatically writes 1 financial ledger row into `business_transactions` (reference_type = 'product', reference_id = sale_id, status = 'paid', paid_at = NOW()).
+// When products are selected and Collect is clicked in POS, the Global Payment Modal opens.
+// When 'Collect Payment' button is clicked in the modal, the RPC Function `create_pos_sale_atomic` runs:
+//   1. Validates and deducts stock from `products` table atomically (locking rows to prevent overselling).
+//   2. Inserts all product line items into `sales` table (one row for each product, status = 'paid').
+//   3. Inserts 1 consolidated summary row into `sales_for_business_transactions` table (payment_status = 'paid').
+// When the summary row is inserted into `sales_for_business_transactions`, the DB Trigger `trg_create_pos_business_transaction` fires:
+//   - Automatically writes 1 financial ledger row into `business_transactions` (reference_type = 'product', reference_id = sale_id, status = 'paid', paid_at = NOW()).
 
 // TABLES USED:
-   
-    // 1. sales Table - 1 row per product item in a sale (status = 'paid')
-    // 2. sales_for_business_transactions Table - Consolidated 1 header/summary row per sale transaction (payment_status = 'paid')
-    // 3. business_transactions Table - Central financial ledger row (reference_type = 'product', status = 'paid')
-    // 4. products Table - Stock quantities decremented atomically
+
+// 1. sales Table - 1 row per product item in a sale (status = 'paid')
+// 2. sales_for_business_transactions Table - Consolidated 1 header/summary row per sale transaction (payment_status = 'paid')
+// 3. business_transactions Table - Central financial ledger row (reference_type = 'product', status = 'paid')
+// 4. products Table - Stock quantities decremented atomically
 
 // RPC FUNCTIONS USED:
 
-    // RPC 1: create_pos_sale_atomic
-    //   - Parameters: p_company_id, p_branch_id, p_sale_id, p_customer_id, p_customer_name, p_customer_phone, p_payment_method, p_staff_id, p_staff_name, p_items (jsonb), p_discount_type, p_discount_name, p_discount_amount, p_final_amount
-    //   - Actions: Validates & deducts inventory in products table, inserts line items into sales table, inserts consolidated summary row into sales_for_business_transactions table.
-    //   - Returns: JSON with success, sale_id, total_quantity, total_price, final_amount, and deducted_items (with remaining_stock for alerts).
+// RPC 1: create_pos_sale_atomic
+//   - Parameters: p_company_id, p_branch_id, p_sale_id, p_customer_id, p_customer_name, p_customer_phone, p_payment_method, p_staff_id, p_staff_name, p_items (jsonb), p_discount_type, p_discount_name, p_discount_amount, p_final_amount
+//   - Actions: Validates & deducts inventory in products table, inserts line items into sales table, inserts consolidated summary row into sales_for_business_transactions table.
+//   - Returns: JSON with success, sale_id, total_quantity, total_price, final_amount, and deducted_items (with remaining_stock for alerts).
 
 // DB TRIGGERS USED:
-  
-    // Trigger 1: trg_create_pos_business_transaction (Function: trg_pos_sale_business_transaction)
-    //   - Fires: AFTER INSERT ON sales_for_business_transactions FOR EACH ROW
-    //   - Action: Inserts a row into business_transactions with status = 'paid', reference_type = 'product', reference_id = sale_id, amount = final_amount, paid_at = NOW().
+
+// Trigger 1: trg_create_pos_business_transaction (Function: trg_pos_sale_business_transaction)
+//   - Fires: AFTER INSERT ON sales_for_business_transactions FOR EACH ROW
+//   - Action: Inserts a row into business_transactions with status = 'paid', reference_type = 'product', reference_id = sale_id, amount = final_amount, paid_at = NOW().
 
 
 //=============================================================================================================================================================
@@ -369,26 +369,26 @@
 
 // When clicked on refund in the actions column, it will open the refund modal (here the frontend will calculate the refund calculations and display it in the UI ) and once the issue refund button is clicked then it will call the RPC function *process_pos_refund_atomic* ... whose functionality is explained below ..
 
-   //   >>> Frontend will not modify anything from the existing table
+//   >>> Frontend will not modify anything from the existing table
 
-   //   >>> Even the RPC Function *process_pos_refund_atomic* should not update anytable except the products table the products count ... other three tables would be a new row insertion....rather it should add a new row in all the three tables
-         
-         // .. sales table - new row should be inserted (one row per one product status = refunded)  -  done by this RPC function [process_pos_refund_atomic]
-         //.. sales for business transaction - new row should be added (one consolidated row per transaction status = refunded)  -  done by this RPC function [process_pos_refund_atomic]
-         //.. Business Transactions - one row should be added (one consolidated row per transaction with status = refunded) - Done by the trigger [trg_create_pos_business_transaction ]
-         // .. Products table - Product count should be increased - -  done by this RPC function [process_pos_refund_atomic]
+//   >>> Even the RPC Function *process_pos_refund_atomic* should not update anytable except the products table the products count ... other three tables would be a new row insertion....rather it should add a new row in all the three tables
 
-   // how a refund row in business transaction table is inserted ?
+// .. sales table - new row should be inserted (one row per one product status = refunded)  -  done by this RPC function [process_pos_refund_atomic]
+//.. sales for business transaction - new row should be added (one consolidated row per transaction status = refunded)  -  done by this RPC function [process_pos_refund_atomic]
+//.. Business Transactions - one row should be added (one consolidated row per transaction with status = refunded) - Done by the trigger [trg_create_pos_business_transaction ]
+// .. Products table - Product count should be increased - -  done by this RPC function [process_pos_refund_atomic]
 
-       // we will use a trigger * trg_create_pos_business_transaction * 
-          
-       // This trigger is being used at two functions 
-          
-            //  1 is when a pos sale is happened, the create_pos_sale_atomic Function inserts into the sales table and sales for business transaction table and when a row is 
-                 //   inserted in the sales for business transactions table then this trigger * trg_create_pos_business_transaction * will create a new row in business transactions    	  table...
-            // 2: so we are using this trigger to do the insertion of new refund row in the business transaction table ... so it will use type = paid and type = refund ...
-                 //Based on the type this trigger writes the paid row and the refunded row ...
-   
+// how a refund row in business transaction table is inserted ?
+
+// we will use a trigger * trg_create_pos_business_transaction * 
+
+// This trigger is being used at two functions 
+
+//  1 is when a pos sale is happened, the create_pos_sale_atomic Function inserts into the sales table and sales for business transaction table and when a row is 
+//   inserted in the sales for business transactions table then this trigger * trg_create_pos_business_transaction * will create a new row in business transactions    	  table...
+// 2: so we are using this trigger to do the insertion of new refund row in the business transaction table ... so it will use type = paid and type = refund ...
+//Based on the type this trigger writes the paid row and the refunded row ...
+
 
 
 //=====================================================================================================================
@@ -429,13 +429,13 @@
 
 // ACTIVE MEMBERSHIPS TABLE - STATUS, PAYMENT & ACTIONS RELATIONSHIPS 
 
-     // State 1: If Status = Active || AND || Payment = Paid || THEN || Actions will show View & cancel
+// State 1: If Status = Active || AND || Payment = Paid || THEN || Actions will show View & cancel
 
-     // State 2: If Status = Expired || AND || Payment = Paid || THEN || Actions will show View & Renew
+// State 2: If Status = Expired || AND || Payment = Paid || THEN || Actions will show View & Renew
 
-     // State 3: If Status = Cancelled || AND || Payment = Paid || THEN || Actions will show View & Refund
+// State 3: If Status = Cancelled || AND || Payment = Paid || THEN || Actions will show View & Refund
 
-     // State 4: If Status = Refunded  || AND || Payment = Refunded || THEN || Actions will show View + Info
+// State 4: If Status = Refunded  || AND || Payment = Refunded || THEN || Actions will show View + Info
 
 
 // Renew Logic - When renew is clicked the assign membership modal opens with pre filled details.
@@ -447,139 +447,139 @@
 
 // ASSIGN MEMBERSHIP WORKING PROCESS --
 
-      // When user opened assign memberhsip modal and clicked on collect payment in the assign membership modal  then the frontend will activate this RPC And what this RPC does is 
+// When user opened assign memberhsip modal and clicked on collect payment in the assign membership modal  then the frontend will activate this RPC And what this RPC does is 
 
-          //1. RPC will read from the 3 tables mentioned (customers, memberships and memberhsip_purchases) 
-          //2. write to memberhsip_purchases table
-          //3. conditional write to customers table
-          //4. write to business transaction table ..
+//1. RPC will read from the 3 tables mentioned (customers, memberships and memberhsip_purchases) 
+//2. write to memberhsip_purchases table
+//3. conditional write to customers table
+//4. write to business transaction table ..
 
 //  EXPLANATION :-
 
 // RPC FUNCTION 1. assign_membership RPC: What Does It Do & Which Tables?
-         // What it does:
+// What it does:
 
-        //It executes the entire assignment workflow in one single database transaction (BEGIN ... COMMIT). If anything fails (e.g. invalid plan ID or network glitch), the whole transaction rolls back, preventing partial or broken records.
+//It executes the entire assignment workflow in one single database transaction (BEGIN ... COMMIT). If anything fails (e.g. invalid plan ID or network glitch), the whole transaction rolls back, preventing partial or broken records.
 
-    // Which tables does it READ from?
+// Which tables does it READ from?
 
-                // 1. memberships table (Read):
+// 1. memberships table (Read):
 
-                    // a. Reads the membership plan by membership_id to verify true plan price, duration, and discounts directly from the server (ensuring client-side tampering is      	   impossible).
-            
-                // 2. customers table (Read):
+// a. Reads the membership plan by membership_id to verify true plan price, duration, and discounts directly from the server (ensuring client-side tampering is      	   impossible).
 
-                    // a.Checks if a customer with the given phone number already exists.
+// 2. customers table (Read):
 
-                // 3. membership_purchases table (Read):
-    
-                    // a.Checks if the customer already has an active membership for this plan to prevent accidental duplicate purchases.
+// a.Checks if a customer with the given phone number already exists.
+
+// 3. membership_purchases table (Read):
+
+// a.Checks if the customer already has an active membership for this plan to prevent accidental duplicate purchases.
 
 
-   // Which tables does it WRITE to?
+// Which tables does it WRITE to?
 
-                // 1. customers table (Conditional Write):
+// 1. customers table (Conditional Write):
 
-	                // a.If the customer does not exist yet, it inserts a new customer record (customer_name, customer_phone, customer_email, company_id, branch_id).
+// a.If the customer does not exist yet, it inserts a new customer record (customer_name, customer_phone, customer_email, company_id, branch_id).
 
-                // 2. membership_purchases table (Write):
- 
-                    // a.Inserts the new purchase record (purchase_id, company_id, branch_id, customer_id, plan_name, price, duration, purchase_date, expiry_date, payment_method,   	    payment_status = 'paid', status = 'active').
+// 2. membership_purchases table (Write):
 
-                // 3. business_transactions table (Write):
-          
-                    // a.Inserts the financial ledger entry (reference_id = purchase_id, reference_type = 'membership', amount = final_amount, status = 'paid', payment_method).
+// a.Inserts the new purchase record (purchase_id, company_id, branch_id, customer_id, plan_name, price, duration, purchase_date, expiry_date, payment_method,   	    payment_status = 'paid', status = 'active').
+
+// 3. business_transactions table (Write):
+
+// a.Inserts the financial ledger entry (reference_id = purchase_id, reference_type = 'membership', amount = final_amount, status = 'paid', payment_method).
 
 
 //  --------------------------------------------------------------------------
 
 // MEMBERSHIP CANCELLATION WORKING PROCESS.
 
-   //   In the Active Memberships table, when a record is in State 1 (status = 'active' & payment_status = 'paid'), the action column displays View and Cancel.
-         // Clicking Cancel opens the confirmation modal displaying customer name, plan name, start date, elapsed duration, and an optional Reason / Notes textarea.
-         // Clicking "Cancel Membership" in the modal activates this RPC cancel_membership
+//   In the Active Memberships table, when a record is in State 1 (status = 'active' & payment_status = 'paid'), the action column displays View and Cancel.
+// Clicking Cancel opens the confirmation modal displaying customer name, plan name, start date, elapsed duration, and an optional Reason / Notes textarea.
+// Clicking "Cancel Membership" in the modal activates this RPC cancel_membership
 
-    // so what this RPC [cancel_membership]do is (it updates only one table) it will read from membership purchases table and updates the memberhsip purchases table ... 
+// so what this RPC [cancel_membership]do is (it updates only one table) it will read from membership purchases table and updates the memberhsip purchases table ... 
 
-        //it updates the below columns in the membership purchases table.
+//it updates the below columns in the membership purchases table.
 
-        // 1. status = cancelled
-        // 2. cancelled date = current date ?
-        // 3. udpated at = now
-        // 4. notes = if any.
+// 1. status = cancelled
+// 2. cancelled date = current date ?
+// 3. udpated at = now
+// 4. notes = if any.
 
 
 //  ----------------------------------------------------------------------------------
 
 // MEMBERSHIP REFUND WORKING PROCESS.
 
-     // In the Active Memberships table, when a record is in State 3 (status = 'cancelled' & payment_status = 'paid'), the action column displays View and Refund
-          
-     // Clicking Refund opens the Process Membership Refund modal displaying:
-               //  Original plan price & collected amount.
-               //  Refund amount input (defaults to the collected amount, with validation preventing refunds higher than paid).
-               //  Refund payment method selection (cash, upi, card).
-               //  Refund reason dropdown (e.g., Customer Relocation, Dissatisfied with Service, Medical Issues, Other) + optional notes.
-     
-     // Clicking the "Issue Refund" button activates this RPC: process_membership_refund.
-            
+// In the Active Memberships table, when a record is in State 3 (status = 'cancelled' & payment_status = 'paid'), the action column displays View and Refund
 
-    // So what this RPC [process_membership_refund]do is It executes the entire refund operation inside one atomic database transaction (BEGIN ... COMMIT). If any part fails (e.g., refund exceeds paid amount, invalid payment method), everything is rolled back:
-         
-         // Validates that the membership is cancelled and has not already been refunded.
-         // Updates the purchase record status to 'refunded'.
-         // Records a new financial refund entry in the central ledger (business_transactions).
-         // Reverses the refunded amount from the customer's lifetime spend (customers.total_spent).
+// Clicking Refund opens the Process Membership Refund modal displaying:
+//  Original plan price & collected amount.
+//  Refund amount input (defaults to the collected amount, with validation preventing refunds higher than paid).
+//  Refund payment method selection (cash, upi, card).
+//  Refund reason dropdown (e.g., Customer Relocation, Dissatisfied with Service, Medical Issues, Other) + optional notes.
+
+// Clicking the "Issue Refund" button activates this RPC: process_membership_refund.
 
 
-    // WHICH TABLES DOES IT READ FROM
+// So what this RPC [process_membership_refund]do is It executes the entire refund operation inside one atomic database transaction (BEGIN ... COMMIT). If any part fails (e.g., refund exceeds paid amount, invalid payment method), everything is rolled back:
 
-         // 1. membership_purchases (Read):
-
-              //Reads the purchase record by purchase_id to verify:
-              // Record exists and belongs to the active company/branch.
-              // status = 'cancelled' and payment_status = 'paid'.
-              // Fetches final_amount, customer_id, customer_name, and plan_name.
-         
-         // 2. business_transactions (Read):
-
-              // Checks existing transaction entries for this purchase_id to ensure total refunds do not exceed the original payment.
-         
-         // 3. customers (Read):
-
-              // Reads the customer's current total_spent for reversal.
+// Validates that the membership is cancelled and has not already been refunded.
+// Updates the purchase record status to 'refunded'.
+// Records a new financial refund entry in the central ledger (business_transactions).
+// Reverses the refunded amount from the customer's lifetime spend (customers.total_spent).
 
 
-    // WHICH TABLES DOES IT WRITE TO:
+// WHICH TABLES DOES IT READ FROM
 
-         // 1. membership_purchases (Write / Update):
+// 1. membership_purchases (Read):
 
-              //status = 'refunded'
-              //payment_status = 'refunded'
-              //notes = Appends the refund reason and notes to the existing notes.
-              //updated_at = NOW() (This immediately flips the row into State 4: Refunded + Refunded, displaying View + Info).
+//Reads the purchase record by purchase_id to verify:
+// Record exists and belongs to the active company/branch.
+// status = 'cancelled' and payment_status = 'paid'.
+// Fetches final_amount, customer_id, customer_name, and plan_name.
 
+// 2. business_transactions (Read):
 
-         // 2. business_transactions (Write / Insert):
+// Checks existing transaction entries for this purchase_id to ensure total refunds do not exceed the original payment.
 
-            //Inserts a new refund ledger row:
-            //reference_id = purchase_id
-            //reference_type = 'membership'
-            //amount = p_refund_amount
-            //final_amount = p_refund_amount
-            //currency = 'INR'
-            //payment_method = p_payment_method ('cash', 'upi', or 'card')
-            //status = 'refunded'
-            //notes = p_refund_reason
-            //created_by = p_staff_id
-            //paid_at = NOW()
+// 3. customers (Read):
+
+// Reads the customer's current total_spent for reversal.
 
 
-         // 3. customers (Write / Update):
+// WHICH TABLES DOES IT WRITE TO:
 
-            // Deducts the refunded amount from customer lifetime spend:
-                // total_spent = GREATEST(0, COALESCE(total_spent, 0) - p_refund_amount)
-            // updated_at = NOW()
+// 1. membership_purchases (Write / Update):
+
+//status = 'refunded'
+//payment_status = 'refunded'
+//notes = Appends the refund reason and notes to the existing notes.
+//updated_at = NOW() (This immediately flips the row into State 4: Refunded + Refunded, displaying View + Info).
+
+
+// 2. business_transactions (Write / Insert):
+
+//Inserts a new refund ledger row:
+//reference_id = purchase_id
+//reference_type = 'membership'
+//amount = p_refund_amount
+//final_amount = p_refund_amount
+//currency = 'INR'
+//payment_method = p_payment_method ('cash', 'upi', or 'card')
+//status = 'refunded'
+//notes = p_refund_reason
+//created_by = p_staff_id
+//paid_at = NOW()
+
+
+// 3. customers (Write / Update):
+
+// Deducts the refunded amount from customer lifetime spend:
+// total_spent = GREATEST(0, COALESCE(total_spent, 0) - p_refund_amount)
+// updated_at = NOW()
 
 // -----------------------------------------------------------------------------------------------------------------
 
@@ -600,19 +600,19 @@
 
 // How the View Works
 
-      //Aggregates all 3 revenue sources:
+//Aggregates all 3 revenue sources:
 
-         // Bookings (type: 'Service') from bookings_for_business_transaction
+// Bookings (type: 'Service') from bookings_for_business_transaction
 
-         // POS (type: 'Product') from sales_for_business_transactions (with array_to_string(product_names, ', '))
+// POS (type: 'Product') from sales_for_business_transactions (with array_to_string(product_names, ', '))
 
-         // Memberships (type: 'Membership') from membership_purchases
-      
-         // Filters for settled states only: payment_status IN ('paid', 'refunded').
+// Memberships (type: 'Membership') from membership_purchases
 
-         // Joins with business_transactions: Gathers the central ledger payment ID, method, and timestamps where recorded, with seamless fallback to the source table so zero transactions are lost.
+// Filters for settled states only: payment_status IN ('paid', 'refunded').
 
-         // Grants permissions: Automatically grants SELECT to anon, authenticated, and service_role.
+// Joins with business_transactions: Gathers the central ledger payment ID, method, and timestamps where recorded, with seamless fallback to the source table so zero transactions are lost.
+
+// Grants permissions: Automatically grants SELECT to anon, authenticated, and service_role.
 
 //================================================================================================================================================
 //PAYMENTS HISTORY VIEW uses the TABLES below
@@ -690,29 +690,99 @@
 
 // Today's revenue analytics - RPC FUNCTION - dashboard_todays_revenue_kpis.
 
- // Appointments Tab card - has 3 tabs - upcoming appointments, completed appointments, noshows& cancellations - Source Table = bookings_for_business_transaction .
+// Appointments Tab card - has 3 tabs - upcoming appointments, completed appointments, noshows& cancellations - Source Table = bookings_for_business_transaction .
 
- // Product sales today - direct supabase - source table = SALES Table .
+// Product sales today - direct supabase - source table = SALES Table .
 
- // Weekly Revenue (Bar Chart) -  RPC FUNCTION - dashboard_weekly_revenue .
+// Weekly Revenue (Bar Chart) -  RPC FUNCTION - dashboard_weekly_revenue .
 
- // Top Services This Week - RPC FUNCTION - dashboard_top_services   (Top Services This Week & Top Services Today)
+// Top Services This Week - RPC FUNCTION - dashboard_top_services   (Top Services This Week & Top Services Today)
 
- // Top Services Today - RPC FUNCTION - dashboard_top_services   (Top Services This Week & Top Services Today)
-
-
- //==============================================================================================================================================================================
- // OVERVIEW (Analytics Business Overview)
- //==============================================================================================================================================================================
-
- // we will use one MASTER RPC for  all the analytics in the overview page - RPC FUNCTION - get_analytics_overview .
- 
-      // TABLES INVOLVED:
-         
-         // 1. business_transactions
-         // 2. bookings
+// Top Services Today - RPC FUNCTION - dashboard_top_services   (Top Services This Week & Top Services Today)
 
 
+//==============================================================================================================================================================================
+// OVERVIEW (Analytics Business Overview)
+//==============================================================================================================================================================================
+
+// we will use one MASTER RPC for  all the analytics in the overview page - RPC FUNCTION - get_analytics_overview .
+
+// TABLES INVOLVED:
+
+//  1. business_transactions
+//  2. bookings
+//  3. bookings_for_business_transaction
+//  4. sales
+//  5. sales_for_business_transactions
+//  6. membership_purchases
+//  7. expenses  
+//  8. customers
+//  9. staff
+// 10. coupons
+// 11. offers   
+
+
+//====================================================================================================================
+// DISCOUNT TRACKING & REVERSAL PROCESS
+//======================================================================================================================
+
+// DISCOUNT TRACKING & REVERSAL PROCESS FOR THE 3 REVENUE SOURCES
+
+// 🔵 Flow 1: Bookings (Full Refund Only)
+
+// a.When you click "Collect Payment":
+
+// The system runs a database function called: process_booking_payment_atomic.
+// What we will add: If a discount was used (e.g. ₹50 off), it creates one row in your discount_usages table marked as "applied".
+
+// b.When a Booking is Cancelled & Refunded:
+
+// Bookings are always 100% full refund.
+// The system runs a database function called: process_booking_refund_atomic.
+// What we will add: It finds that discount row, sets status = 'reversed', and records reversal_amount = ₹50. Done!
+
+
+// 🟣 Flow 2: Memberships (Full Refund Only)
+
+// a.When you click "Collect Payment" / "Assign Plan":
+
+// The system runs a database function called: assign_membership.
+// What we will add: If a discount was given on the membership plan, it writes one row to your discount_usages table.
+
+
+//  b.When a Membership is Refunded:
+
+// Memberships only allow 100% full refund.
+// The system runs a database function called: process_membership_refund.
+// What we will add: It marks that discount as "reversed" and saves the full reversal amount.
+
+
+// 🟢 Flow 3: Sales / POS (Partial Returns Allowed)
+
+// a.When you click "Collect Payment" in POS:
+
+// The system runs a database function called: create_pos_sale_atomic.
+// What we will add: If an offer, coupon, or discount was applied, it writes one row to discount_usages.
+
+
+// b.When a Customer Returns Items (Partial Refund):  
+
+// In POS, a customer can return just 1 or 2 items instead of the whole cart.
+
+// How the discount is reversed (Simple example):
+
+// Suppose the bill before discount was ₹1,000.
+// You gave a ₹100 discount (so they paid ₹900).
+// If the customer comes back to return an item worth ₹200 (which is 20% of their total purchase):
+// They give back 20% of the discount = ₹20.
+// Their cash refund = ₹180 (₹200 - ₹20).
+// In your discount table, we record reversal_amount = ₹20 and set status to "partially_reversed".
+// The system runs a function called: process_pos_refund_atomic.
+
+
+
+
+------------------------------------------------------------------------------------------------
 
 
 
@@ -729,4 +799,5 @@
 
 
 
- 
+
+

@@ -259,7 +259,44 @@ BEGIN
     WHERE customer_id = v_customer_id;
 
     -- -------------------------------------------------------------------------
-    -- 8. RETURN JSON RESPONSE
+    -- 8. [NEW] TRACK DISCOUNT IN public.discount_usages
+    -- -------------------------------------------------------------------------
+    IF COALESCE(v_discount_amount, 0) > 0 THEN
+        INSERT INTO public.discount_usages (
+            company_id,
+            branch_id,
+            customer_id,
+            reference_type,
+            reference_id,
+            payment_id,
+            membership_plan_id,
+            discount_type,
+            discount_name,
+            discount_amount,
+            status,
+            used_at,
+            created_at,
+            updated_at
+        ) VALUES (
+            p_company_id,
+            p_branch_id,
+            v_customer_id,
+            'membership',
+            v_purchase_id,
+            v_payment_id,
+            p_membership_id,
+            p_discount_type,
+            p_discount_name,
+            v_discount_amount,
+            'applied',
+            NOW(),
+            NOW(),
+            NOW()
+        );
+    END IF;
+
+    -- -------------------------------------------------------------------------
+    -- 9. RETURN JSON RESPONSE
     -- -------------------------------------------------------------------------
     RETURN jsonb_build_object(
         'success', true,

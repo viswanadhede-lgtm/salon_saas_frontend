@@ -150,6 +150,19 @@ export async function openRefundModal(sale) {
                 }
             }).catch(() => {});
 
+        // Fetch active discount usage record if any
+        salesState.currentDiscountUsage = null;
+        try {
+            const { supabase } = await import('../../lib/supabase.js');
+            const { data: dRow } = await supabase
+                .from('discount_usages')
+                .select('*')
+                .eq('reference_id', sale.id)
+                .eq('reference_type', 'pos')
+                .maybeSingle();
+            salesState.currentDiscountUsage = dRow || null;
+        } catch (_) {}
+
         // Fetch individual items comprising this sale group
         const { data: allItems, error } = await fetchSaleLineItems(sale.id);
 
@@ -290,9 +303,9 @@ export function renderRefundItems() {
 }
 
 export function calculateRefundTotal() {
-    let total = 0;
+    let grossTotal = 0;
     let selectedCount = 0;
-    let unrefundedTotal = 0;
+    let unrefundedGrossTotal = 0;
     let unrefundedCount = 0;
     
     salesState.currentRefundItems.forEach(item => {
@@ -309,7 +322,7 @@ export function calculateRefundTotal() {
         } else {
             unrefundedCount++;
             const maxQty = remainingQty;
-            unrefundedTotal += price * maxQty;
+            unrefundedGrossTotal += price * maxQty;
 
             const cb = document.querySelector(`.rf-item-cb[data-id="${item.id}"]`);
             const qtyInput = document.querySelector(`.rf-qty-input[data-id="${item.id}"]`);
@@ -333,20 +346,67 @@ export function calculateRefundTotal() {
             }
             
             if (cb && cb.checked) {
-                total += displayVal;
+                grossTotal += displayVal;
                 selectedCount++;
             }
         }
     });
     
+    // ── Price-Weighted Proportional Discount Calculations ─────────────────
+    const sale = salesState.currentActionData?.sale;
+    const dUsage = salesState.currentDiscountUsage;
+
+    const origGross = Number(sale?.subtotal_price || sale?.total_price || 0);
+    const origDiscount = Number(dUsage?.discount_amount || sale?.discount_amount || 0);
+    const alreadyReversed = Number(dUsage?.reversal_amount || 0);
+    const remainingDiscount = Math.max(0, origDiscount - alreadyReversed);
+
+    let discountToReverse = 0;
+    if (origGross > 0 && origDiscount > 0) {
+        discountToReverse = Math.round((grossTotal / origGross) * origDiscount * 100) / 100;
+        discountToReverse = Math.min(discountToReverse, remainingDiscount);
+    }
+
+    const netRefund = Math.max(0, grossTotal - discountToReverse);
+
+    let maxDiscountToReverse = 0;
+    if (origGross > 0 && origDiscount > 0) {
+        maxDiscountToReverse = Math.round((unrefundedGrossTotal / origGross) * origDiscount * 100) / 100;
+        maxDiscountToReverse = Math.min(maxDiscountToReverse, remainingDiscount);
+    }
+    const maxRefund = Math.max(0, unrefundedGrossTotal - maxDiscountToReverse);
+
+    // ── Update Refund Displays ────────────────────────────────────────────
     const amountDisplay = document.getElementById('rfAmountDisplay');
     if (amountDisplay) {
-        amountDisplay.textContent = `₹${total.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+        amountDisplay.textContent = `₹${netRefund.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
     }
 
     const maxRefundText = document.getElementById('rfMaxRefundText');
     if (maxRefundText) {
-        maxRefundText.textContent = `₹${unrefundedTotal.toLocaleString('en-IN')}`;
+        maxRefundText.textContent = `₹${maxRefund.toLocaleString('en-IN')}`;
+    }
+
+    // ── Update Discount Breakdown Card ────────────────────────────────────
+    const breakdownEl = document.getElementById('rfDiscountBreakdown');
+    const grossEl = document.getElementById('rfGrossAmountText');
+    const discRevEl = document.getElementById('rfDiscountReversedText');
+    const netEl = document.getElementById('rfNetPayableText');
+    const discLabelEl = document.getElementById('rfDiscountLabelText');
+
+    if (breakdownEl) {
+        if (origDiscount > 0 && grossTotal > 0) {
+            breakdownEl.style.display = 'block';
+            if (grossEl) grossEl.textContent = `₹${grossTotal.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+            if (discRevEl) discRevEl.textContent = `-₹${discountToReverse.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+            if (netEl) netEl.textContent = `₹${netRefund.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+            if (discLabelEl) {
+                const dName = dUsage?.discount_name || sale?.discount_name || 'Offer/Coupon';
+                discLabelEl.textContent = `Less Discount (${dName}):`;
+            }
+        } else {
+            breakdownEl.style.display = 'none';
+        }
     }
 
     const typeBadge = document.getElementById('rfRefundTypeBadge');
@@ -355,7 +415,7 @@ export function calculateRefundTotal() {
             typeBadge.textContent = 'No Items';
             typeBadge.style.background = '#f1f5f9';
             typeBadge.style.color = '#64748b';
-        } else if (total === unrefundedTotal && selectedCount === unrefundedCount) {
+        } else if (grossTotal === unrefundedGrossTotal && selectedCount === unrefundedCount) {
             typeBadge.textContent = 'Full Amount';
             typeBadge.style.background = '#ffe4e6';
             typeBadge.style.color = '#e11d48';
@@ -368,9 +428,9 @@ export function calculateRefundTotal() {
     
     const btn = document.getElementById('confirmRefundBtn');
     if (btn) {
-        btn.disabled = (selectedCount === 0 || total <= 0);
-        btn.style.opacity = (selectedCount === 0 || total <= 0) ? '0.5' : '1';
-        btn.style.cursor = (selectedCount === 0 || total <= 0) ? 'not-allowed' : 'pointer';
+        btn.disabled = (selectedCount === 0 || grossTotal <= 0);
+        btn.style.opacity = (selectedCount === 0 || grossTotal <= 0) ? '0.5' : '1';
+        btn.style.cursor = (selectedCount === 0 || grossTotal <= 0) ? 'not-allowed' : 'pointer';
     }
 }
 

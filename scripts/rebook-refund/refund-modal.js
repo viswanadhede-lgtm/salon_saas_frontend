@@ -224,7 +224,7 @@ export async function openRefundModal(bookingId, optBookingObj) {
 
         // 5. COMPUTE REFUNDABLE AMOUNT & RIGHT COLUMN
         let activeRefundableAmount = transactions.reduce((sum, tx) => {
-            const val = Number(tx.amount || 0);
+            const val = Number(tx.final_amount ?? tx.amount ?? 0);
             const status = (tx.status || '').toLowerCase().trim();
             if (status === 'paid')     return sum + val;
             if (status === 'refunded') return sum - val;
