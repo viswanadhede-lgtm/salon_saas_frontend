@@ -191,7 +191,7 @@ function renderProducts(products) {
         card.innerHTML = `
             <div style="height: 120px; background: ${avatarBg}; position: relative; overflow: hidden; display: flex; align-items: center; justify-content: center;">
                 ${imgUrl 
-                    ? `<img src="${imgUrl}" style="width: 100%; height: 100%; object-fit: cover;" alt="${name}">`
+                    ? `<img src="${imgUrl}" style="width: 100%; height: 100%; object-fit: cover;" alt="${name}" data-initials="${initials}" data-color="${avatarColor}">`
                     : `<span style="font-size: 2.5rem; font-weight: 700; color: ${avatarColor}; letter-spacing: -2px;">${initials}</span>`
                 }
                 ${isOutOfStock ? `<div style="position: absolute; bottom: 8px; left: 50%; transform: translateX(-50%); background: #ef4444; color: white; font-size: 0.7rem; font-weight: 700; padding: 2px 8px; border-radius: 4px; white-space: nowrap;">OUT OF STOCK</div>` : ''}
@@ -215,6 +215,22 @@ function renderProducts(products) {
                 </button>
             </div>
         `;
+
+        // Attach onerror fallback AFTER innerHTML is set (can't use inline onerror with template literals safely)
+        if (imgUrl) {
+            const imgEl = card.querySelector('img');
+            if (imgEl) {
+                imgEl.onerror = function () {
+                    const fallbackInitials = this.dataset.initials || '?';
+                    const fallbackColor = this.dataset.color || '#4338ca';
+                    const span = document.createElement('span');
+                    span.style.cssText = `font-size: 2.5rem; font-weight: 700; color: ${fallbackColor}; letter-spacing: -2px;`;
+                    span.textContent = fallbackInitials;
+                    this.replaceWith(span);
+                };
+            }
+        }
+
 
         if (!isOutOfStock) {
             card.addEventListener('mouseenter', () => {
