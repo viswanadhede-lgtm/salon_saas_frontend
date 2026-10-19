@@ -1,4 +1,4 @@
-﻿// ============================================================================
+// ============================================================================
 // scripts/overview.js - Analytics Business Overview Controller
 // Live integration with Supabase RPC: get_analytics_overview
 // Covers all 9 rows: Revenue, Expenses, Rev/Exp Analysis, Activity,
@@ -52,6 +52,11 @@ function buildComparisonLabel(period) {
         return d.toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' });
     };
     return 'vs ' + fmt(s) + ' to ' + fmt(e);
+}
+
+// Utility: UUID validation
+function isValidUuid(val) {
+    return typeof val === 'string' && /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(val.trim());
 }
 
 // Utility: localStorage-safe branch id getter
@@ -119,14 +124,16 @@ async function initBranchSelector() {
     try {
         const companyId = getCompanyId();
         let query = supabase.from('branches').select('branch_id, branch_name, status');
-        if (companyId) query = query.eq('company_id', companyId);
+        if (isValidUuid(companyId)) query = query.eq('company_id', companyId);
         const { data: branches, error } = await query;
+        const activeId = getBranchId();
+        let html = '<option value=""' + (!activeId ? ' selected' : '') + '>All Branches</option>';
         if (!error && Array.isArray(branches) && branches.length > 0) {
-            const activeId = getBranchId();
-            branchSelect.innerHTML = branches.map(function(b) {
+            html += branches.map(function(b) {
                 return '<option value="' + b.branch_id + '"' + (b.branch_id === activeId ? ' selected' : '') + '>' + (b.branch_name || 'Branch') + '</option>';
             }).join('');
         }
+        branchSelect.innerHTML = html;
     } catch (e) {
         console.warn('[Overview] Branch selector error:', e);
     }
@@ -347,7 +354,13 @@ function renderSourceTrendCharts(labels, bookingsData, productsData, memberships
                 responsive: true, maintainAspectRatio: false,
                 plugins: {
                     legend: { display: false },
-                    tooltip: { callbacks: { label: function(c) { return ' ' + tooltipLabel + ': ' + c.raw; } } }
+                    tooltip: {
+                        callbacks: {
+                            label: function(c) {
+                                return ' ' + tooltipLabel + ': ' + fmtINR(c.raw);
+                            }
+                        }
+                    }
                 },
                 scales: {
                     y: { beginAtZero: true, grid: { color: '#f1f5f9', drawBorder: false }, ticks: { font: { size: 10 } } },
@@ -490,25 +503,31 @@ function bindTopPerformers(tp) {
 // Row 7: Customer Analytics
 function bindCustomerAnalytics(ca, compLabel) {
     function set(id, val) { var el = document.getElementById(id); if (el) el.textContent = val; }
-    set('custTotal',      ca.total_customers);
-    set('custNew',        ca.new_customers);
-    set('custReturning',  ca.returning_customers);
+    set('custTotal',      ca.total_customers || 0);
+    set('custNew',        ca.new_customers || 0);
+    set('custReturning',  ca.returning_customers || 0);
     set('custRepeatRate', Number(ca.repeat_visit_rate || 0).toFixed(1) + '%');
 
-    document.querySelectorAll('#customerAnalyticsSection .ov-trend-period').forEach(function(el) {
-        el.textContent = compLabel;
+    var cards   = document.querySelectorAll('#customerAnalyticsSection .ov-metric-with-bars');
+    var growths = [ca.total_growth_pct, ca.new_growth_pct, ca.returning_growth_pct, ca.repeat_growth_pct];
+    cards.forEach(function(card, i) {
+        var row = card.querySelector('.ov-trend-row');
+        if (row) renderTrendRow(row, growths[i], compLabel);
     });
 }
 
 // Row 8: Staff Analytics
 function bindStaffAnalytics(sa, compLabel) {
     function set(id, val) { var el = document.getElementById(id); if (el) el.textContent = val; }
-    set('staffTotal',     sa.total_staff);
-    set('staffCompleted', sa.completed_appointments);
+    set('staffTotal',     sa.total_staff || 0);
+    set('staffCompleted', sa.completed_appointments || 0);
     set('staffRevenue',   fmtINR(sa.staff_service_revenue));
 
-    document.querySelectorAll('#staffAnalyticsSection .ov-trend-period').forEach(function(el) {
-        el.textContent = compLabel;
+    var cards   = document.querySelectorAll('#staffAnalyticsSection .ov-metric-with-bars');
+    var growths = [sa.completed_growth_pct, sa.revenue_growth_pct];
+    cards.forEach(function(card, i) {
+        var row = card.querySelector('.ov-trend-row');
+        if (row) renderTrendRow(row, growths[i], compLabel);
     });
 
     var listEl   = document.getElementById('topStaffList');
@@ -607,12 +626,12 @@ async function loadOverviewData() {
 
         const { start, end } = getDateRange(selectorVal);
 
-        // Build RPC params (only include non-null values)
+        // Build RPC params (only include valid UUIDs for branch and company)
         const rpcParams = { p_start_date: start, p_end_date: end };
-        if (activeBranch && activeBranch !== 'null' && activeBranch !== 'undefined') {
+        if (isValidUuid(activeBranch)) {
             rpcParams.p_branch_id = activeBranch;
         }
-        if (companyId) {
+        if (isValidUuid(companyId)) {
             rpcParams.p_company_id = companyId;
         }
 

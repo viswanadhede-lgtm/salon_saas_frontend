@@ -1,103 +1,110 @@
 -- ============================================================================
--- RPC FUNCTION: public.overview_analytics
+-- RPC FUNCTION: public.get_analytics_overview
 -- Purpose: Complete single round-trip Master RPC for Analytics Business Overview.
--- Covers all 9 Rows with strict net revenue accounting (subtracting refunds)
+-- Covers all 9 Rows with strict net revenue accounting (subtracting refunds),
+-- discount_usages tracking, customer retention, staff performance,
 -- and comparison against the preceding date window.
 -- ============================================================================
 
-CREATE OR REPLACE FUNCTION public.overview_analytics(
-    p_branch_id  uuid DEFAULT NULL,
-    p_company_id uuid DEFAULT NULL,
-    p_start_date date DEFAULT (CURRENT_DATE - INTERVAL '15 days')::date,
+CREATE OR REPLACE FUNCTION public.get_analytics_overview(
+    p_branch_id  uuid DEFAULT NULL::uuid,
+    p_company_id uuid DEFAULT NULL::uuid,
+    p_start_date date DEFAULT ((CURRENT_DATE - '15 days'::interval))::date,
     p_end_date   date DEFAULT CURRENT_DATE
 )
 RETURNS jsonb
 LANGUAGE plpgsql
 SECURITY DEFINER
-SET search_path = public
-AS $$
+SET search_path TO 'public'
+AS $function$
 DECLARE
     -- Comparison timeframe (previous equal period)
-    v_period_days      int;
-    v_prev_end_date    date;
-    v_prev_start_date  date;
+    v_period_days          int;
+    v_prev_end_date        date;
+    v_prev_start_date      date;
 
     -- Row 1: Revenue Summary
-    v_rev_bookings     numeric := 0;
-    v_rev_products     numeric := 0;
-    v_rev_memberships  numeric := 0;
-    v_rev_total        numeric := 0;
-    v_prev_rev_total   numeric := 0;
-    v_prev_rev_book    numeric := 0;
-    v_prev_rev_prod    numeric := 0;
-    v_prev_rev_memb    numeric := 0;
+    v_rev_bookings         numeric := 0;
+    v_rev_products         numeric := 0;
+    v_rev_memberships      numeric := 0;
+    v_rev_total            numeric := 0;
+    v_prev_rev_total       numeric := 0;
+    v_prev_rev_book        numeric := 0;
+    v_prev_rev_prod        numeric := 0;
+    v_prev_rev_memb        numeric := 0;
 
     -- Row 2: Expenses & Net Revenue
-    v_total_expenses   numeric := 0;
-    v_prev_expenses    numeric := 0;
-    v_net_revenue      numeric := 0;
-    v_prev_net_rev     numeric := 0;
+    v_total_expenses       numeric := 0;
+    v_prev_expenses        numeric := 0;
+    v_net_revenue          numeric := 0;
+    v_prev_net_rev         numeric := 0;
 
     -- Row 3: Revenue & Expense Breakdown
-    v_chart_timeline   jsonb := '[]'::jsonb;
-    v_expense_cats     jsonb := '[]'::jsonb;
+    v_chart_timeline       jsonb := '[]'::jsonb;
+    v_expense_cats         jsonb := '[]'::jsonb;
 
     -- Row 4: Business Activity
-    v_act_bookings     bigint := 0;
-    v_act_products     bigint := 0;
-    v_act_memberships  bigint := 0;
-    v_prev_act_book    bigint := 0;
-    v_prev_act_prod    bigint := 0;
-    v_prev_act_memb    bigint := 0;
+    v_act_bookings         bigint := 0;
+    v_act_products         bigint := 0;
+    v_act_memberships      bigint := 0;
+    v_prev_act_book        bigint := 0;
+    v_prev_act_prod        bigint := 0;
+    v_prev_act_memb        bigint := 0;
 
     -- Row 5: Sources Trend
-    v_sources_trend    jsonb := '[]'::jsonb;
+    v_sources_trend        jsonb := '[]'::jsonb;
 
     -- Row 6: Top 5 Performers
-    v_top_services     jsonb := '[]'::jsonb;
-    v_top_products     jsonb := '[]'::jsonb;
-    v_top_memberships  jsonb := '[]'::jsonb;
+    v_top_services         jsonb := '[]'::jsonb;
+    v_top_products         jsonb := '[]'::jsonb;
+    v_top_memberships      jsonb := '[]'::jsonb;
 
     -- Row 7: Customer Analytics
-    v_cust_total       bigint := 0;
-    v_cust_new         bigint := 0;
-    v_cust_returning   bigint := 0;
-    v_cust_repeat_rate numeric := 0;
+    v_cust_total           bigint := 0;
+    v_cust_new             bigint := 0;
+    v_cust_returning       bigint := 0;
+    v_cust_repeat_rate     numeric := 0;
+    v_prev_cust_total      bigint := 0;
+    v_prev_cust_new        bigint := 0;
+    v_prev_cust_ret        bigint := 0;
+    v_prev_cust_repeat     numeric := 0;
 
     -- Row 8: Staff Analytics
-    v_staff_total      bigint := 0;
-    v_staff_completed  bigint := 0;
-    v_staff_revenue    numeric := 0;
-    v_top_staff        jsonb := '[]'::jsonb;
+    v_staff_total          bigint := 0;
+    v_staff_completed      bigint := 0;
+    v_staff_revenue        numeric := 0;
+    v_prev_staff_completed bigint := 0;
+    v_prev_staff_rev       numeric := 0;
+    v_top_staff            jsonb := '[]'::jsonb;
 
     -- Row 9: Marketing Analytics
-    v_mkt_coupons      bigint := 0;
-    v_prev_mkt_coupons bigint := 0;
-    v_mkt_memberships  bigint := 0;
-    v_prev_mkt_memb    bigint := 0;
-    v_mkt_offers       bigint := 0;
-    v_prev_mkt_offers  bigint := 0;
-    v_mkt_discounts    numeric := 0;
-    v_prev_mkt_disc    numeric := 0;
+    v_mkt_coupons          bigint := 0;
+    v_prev_mkt_coupons     bigint := 0;
+    v_mkt_memberships      bigint := 0;
+    v_prev_mkt_memb        bigint := 0;
+    v_mkt_offers           bigint := 0;
+    v_prev_mkt_offers      bigint := 0;
+    v_mkt_discounts        numeric := 0;
+    v_prev_mkt_disc        numeric := 0;
 
     -- Result JSON object
-    v_result           jsonb;
+    v_result               jsonb;
 BEGIN
-    -- -- 0. TIME WINDOW CALCULATIONS -------------------------------------------
+    -- ── 0. TIME WINDOW CALCULATIONS ───────────────────────────────────────────
     v_period_days     := GREATEST(1, (p_end_date - p_start_date) + 1);
     v_prev_end_date   := p_start_date - 1;
     v_prev_start_date := v_prev_end_date - v_period_days + 1;
 
-    -- -- 1. ROW 1: REVENUE SUMMARY (Net = Paid minus Refunded) ----------------
+    -- ── 1. ROW 1: REVENUE SUMMARY (Net = Paid minus Refunded) ────────────────
     -- Current Period
     SELECT
         GREATEST(0, COALESCE(SUM(CASE 
-            WHEN status = 'paid' AND reference_type = 'booking' THEN COALESCE(final_amount, amount, 0)
-            WHEN status = 'refunded' AND reference_type = 'booking' THEN -COALESCE(final_amount, amount, 0)
+            WHEN status = 'paid' AND reference_type IN ('booking', 'service') THEN COALESCE(final_amount, amount, 0)
+            WHEN status = 'refunded' AND reference_type IN ('booking', 'service') THEN -COALESCE(final_amount, amount, 0)
             ELSE 0 END), 0)),
         GREATEST(0, COALESCE(SUM(CASE 
-            WHEN status = 'paid' AND reference_type = 'product' THEN COALESCE(final_amount, amount, 0)
-            WHEN status = 'refunded' AND reference_type = 'product' THEN -COALESCE(final_amount, amount, 0)
+            WHEN status = 'paid' AND reference_type IN ('product', 'pos') THEN COALESCE(final_amount, amount, 0)
+            WHEN status = 'refunded' AND reference_type IN ('product', 'pos') THEN -COALESCE(final_amount, amount, 0)
             ELSE 0 END), 0)),
         GREATEST(0, COALESCE(SUM(CASE 
             WHEN status = 'paid' AND reference_type = 'membership' THEN COALESCE(final_amount, amount, 0)
@@ -115,12 +122,12 @@ BEGIN
     -- Previous Period (for Growth % badges)
     SELECT
         GREATEST(0, COALESCE(SUM(CASE 
-            WHEN status = 'paid' AND reference_type = 'booking' THEN COALESCE(final_amount, amount, 0)
-            WHEN status = 'refunded' AND reference_type = 'booking' THEN -COALESCE(final_amount, amount, 0)
+            WHEN status = 'paid' AND reference_type IN ('booking', 'service') THEN COALESCE(final_amount, amount, 0)
+            WHEN status = 'refunded' AND reference_type IN ('booking', 'service') THEN -COALESCE(final_amount, amount, 0)
             ELSE 0 END), 0)),
         GREATEST(0, COALESCE(SUM(CASE 
-            WHEN status = 'paid' AND reference_type = 'product' THEN COALESCE(final_amount, amount, 0)
-            WHEN status = 'refunded' AND reference_type = 'product' THEN -COALESCE(final_amount, amount, 0)
+            WHEN status = 'paid' AND reference_type IN ('product', 'pos') THEN COALESCE(final_amount, amount, 0)
+            WHEN status = 'refunded' AND reference_type IN ('product', 'pos') THEN -COALESCE(final_amount, amount, 0)
             ELSE 0 END), 0)),
         GREATEST(0, COALESCE(SUM(CASE 
             WHEN status = 'paid' AND reference_type = 'membership' THEN COALESCE(final_amount, amount, 0)
@@ -135,7 +142,7 @@ BEGIN
 
     v_prev_rev_total := v_prev_rev_book + v_prev_rev_prod + v_prev_rev_memb;
 
-    -- -- 2. ROW 2: EXPENSES & NET REVENUE --------------------------------------
+    -- ── 2. ROW 2: EXPENSES & NET REVENUE ──────────────────────────────────────
     SELECT COALESCE(SUM(amount), 0) INTO v_total_expenses
     FROM public.expenses
     WHERE (p_branch_id IS NULL OR branch_id = p_branch_id)
@@ -153,7 +160,7 @@ BEGIN
     v_net_revenue  := v_rev_total - v_total_expenses;
     v_prev_net_rev := v_prev_rev_total - v_prev_expenses;
 
-    -- -- 3. ROW 3: REVENUE & EXPENSE ANALYSIS ----------------------------------
+    -- ── 3. ROW 3: REVENUE & EXPENSE ANALYSIS ──────────────────────────────────
     -- Daily Net Revenue & Expenses Timeline
     WITH daily_calendar AS (
         SELECT generate_series(p_start_date, p_end_date, INTERVAL '1 day')::date AS d_date
@@ -213,8 +220,8 @@ BEGIN
         GROUP BY category
     ) sub;
 
-    -- -- 4. ROW 4: BUSINESS ACTIVITY -------------------------------------------
-    -- Total Bookings
+    -- ── 4. ROW 4: BUSINESS ACTIVITY ───────────────────────────────────────────
+    -- 1. Total Bookings (Unrefunded appointments)
     SELECT COUNT(*) INTO v_act_bookings
     FROM public.bookings_for_business_transaction
     WHERE (p_branch_id IS NULL OR branch_id = p_branch_id)
@@ -231,28 +238,35 @@ BEGIN
       AND (status IS NULL OR LOWER(TRIM(status)) NOT IN ('cancelled', 'no-show', 'noshow', 'no_show'))
       AND (payment_status IS NULL OR LOWER(TRIM(payment_status)) <> 'refunded');
 
-    -- Products Sold (Sum of physical units)
-    SELECT COALESCE(SUM(quantity), 0) INTO v_act_products
+    -- 2. Products Sold (NET: Paid units minus Refunded units)
+    SELECT GREATEST(0, COALESCE(SUM(CASE 
+        WHEN LOWER(TRIM(COALESCE(status, 'paid'))) = 'paid' THEN COALESCE(quantity, 1)
+        WHEN LOWER(TRIM(status)) = 'refunded' THEN -COALESCE(quantity, 1)
+        ELSE 0 END), 0))
+    INTO v_act_products
     FROM public.sales
     WHERE (p_branch_id IS NULL OR branch_id = p_branch_id)
       AND (p_company_id IS NULL OR company_id = p_company_id)
       AND created_at::date BETWEEN p_start_date AND p_end_date
-      AND (status IS NULL OR LOWER(TRIM(status)) NOT IN ('refunded', 'cancelled'));
+      AND (status IS NULL OR LOWER(TRIM(status)) IN ('paid', 'refunded'));
 
-    SELECT COALESCE(SUM(quantity), 0) INTO v_prev_act_prod
+    SELECT GREATEST(0, COALESCE(SUM(CASE 
+        WHEN LOWER(TRIM(COALESCE(status, 'paid'))) = 'paid' THEN COALESCE(quantity, 1)
+        WHEN LOWER(TRIM(status)) = 'refunded' THEN -COALESCE(quantity, 1)
+        ELSE 0 END), 0))
+    INTO v_prev_act_prod
     FROM public.sales
     WHERE (p_branch_id IS NULL OR branch_id = p_branch_id)
       AND (p_company_id IS NULL OR company_id = p_company_id)
       AND created_at::date BETWEEN v_prev_start_date AND v_prev_end_date
-      AND (status IS NULL OR LOWER(TRIM(status)) NOT IN ('refunded', 'cancelled'));
+      AND (status IS NULL OR LOWER(TRIM(status)) IN ('paid', 'refunded'));
 
-    -- Memberships Purchased
+    -- 3. Memberships Purchased (Valid purchases, excluding refunded)
     SELECT COUNT(*) INTO v_act_memberships
     FROM public.membership_purchases
     WHERE (p_branch_id IS NULL OR branch_id = p_branch_id)
       AND (p_company_id IS NULL OR company_id = p_company_id)
       AND COALESCE(purchase_date, created_at::date) BETWEEN p_start_date AND p_end_date
-      AND (status IS NULL OR LOWER(TRIM(status)) <> 'cancelled')
       AND (payment_status IS NULL OR LOWER(TRIM(payment_status)) <> 'refunded');
 
     SELECT COUNT(*) INTO v_prev_act_memb
@@ -260,10 +274,9 @@ BEGIN
     WHERE (p_branch_id IS NULL OR branch_id = p_branch_id)
       AND (p_company_id IS NULL OR company_id = p_company_id)
       AND COALESCE(purchase_date, created_at::date) BETWEEN v_prev_start_date AND v_prev_end_date
-      AND (status IS NULL OR LOWER(TRIM(status)) <> 'cancelled')
       AND (payment_status IS NULL OR LOWER(TRIM(payment_status)) <> 'refunded');
 
-    -- -- 5. ROW 5: REVENUE TREND BY BUSINESS SOURCE ---------------------------
+    -- ── 5. ROW 5: REVENUE TREND BY BUSINESS SOURCE ───────────────────────────
     WITH daily_calendar AS (
         SELECT generate_series(p_start_date, p_end_date, INTERVAL '1 day')::date AS d_date
     ),
@@ -271,12 +284,12 @@ BEGIN
         SELECT 
             DATE(COALESCE(paid_at, created_at)) AS tx_date,
             GREATEST(0, COALESCE(SUM(CASE 
-                WHEN status = 'paid' AND reference_type = 'booking' THEN COALESCE(final_amount, amount, 0)
-                WHEN status = 'refunded' AND reference_type = 'booking' THEN -COALESCE(final_amount, amount, 0)
+                WHEN status = 'paid' AND reference_type IN ('booking', 'service') THEN COALESCE(final_amount, amount, 0)
+                WHEN status = 'refunded' AND reference_type IN ('booking', 'service') THEN -COALESCE(final_amount, amount, 0)
                 ELSE 0 END), 0)) AS bookings_rev,
             GREATEST(0, COALESCE(SUM(CASE 
-                WHEN status = 'paid' AND reference_type = 'product' THEN COALESCE(final_amount, amount, 0)
-                WHEN status = 'refunded' AND reference_type = 'product' THEN -COALESCE(final_amount, amount, 0)
+                WHEN status = 'paid' AND reference_type IN ('product', 'pos') THEN COALESCE(final_amount, amount, 0)
+                WHEN status = 'refunded' AND reference_type IN ('product', 'pos') THEN -COALESCE(final_amount, amount, 0)
                 ELSE 0 END), 0)) AS products_rev,
             GREATEST(0, COALESCE(SUM(CASE 
                 WHEN status = 'paid' AND reference_type = 'membership' THEN COALESCE(final_amount, amount, 0)
@@ -301,8 +314,8 @@ BEGIN
     FROM daily_calendar c
     LEFT JOIN daily_sources s ON c.d_date = s.tx_date;
 
-    -- -- 6. ROW 6: TOP 5 PERFORMERS -------------------------------------------
-    -- Top 5 Services (from bookings)
+    -- ── 6. ROW 6: TOP 5 PERFORMERS ───────────────────────────────────────────
+    -- Top 5 Services (from bookings line items, unrefunded)
     SELECT COALESCE(jsonb_agg(
         jsonb_build_object(
             'rank', sub.r,
@@ -323,11 +336,12 @@ BEGIN
           AND (p_company_id IS NULL OR company_id = p_company_id)
           AND booking_date BETWEEN p_start_date AND p_end_date
           AND (status IS NULL OR LOWER(TRIM(status)) NOT IN ('cancelled', 'no-show', 'noshow', 'no_show'))
+          AND (payment IS NULL OR LOWER(TRIM(payment)) <> 'refunded')
         GROUP BY COALESCE(NULLIF(TRIM(service_name), ''), 'Other Service')
         LIMIT 5
     ) sub;
 
-    -- Top 5 Products (from sales)
+    -- Top 5 Products (from sales line items, NET of returns)
     SELECT COALESCE(jsonb_agg(
         jsonb_build_object(
             'rank', sub.r,
@@ -339,16 +353,20 @@ BEGIN
     INTO v_top_products
     FROM (
         SELECT 
-            ROW_NUMBER() OVER (ORDER BY SUM(COALESCE(quantity, 1)) DESC, SUM(COALESCE(total_amount, price * quantity, 0)) DESC) AS r,
+            ROW_NUMBER() OVER (
+                ORDER BY GREATEST(0, SUM(CASE WHEN LOWER(TRIM(COALESCE(status, 'paid'))) = 'paid' THEN COALESCE(quantity, 1) WHEN LOWER(TRIM(status)) = 'refunded' THEN -COALESCE(quantity, 1) ELSE 0 END)) DESC,
+                         GREATEST(0, SUM(CASE WHEN LOWER(TRIM(COALESCE(status, 'paid'))) = 'paid' THEN COALESCE(total_amount, price * quantity, 0) WHEN LOWER(TRIM(status)) = 'refunded' THEN -COALESCE(total_amount, price * quantity, 0) ELSE 0 END)) DESC
+            ) AS r,
             COALESCE(NULLIF(TRIM(product_name), ''), 'Other Product') AS product_name,
-            SUM(COALESCE(quantity, 1)) AS units_sold,
-            COALESCE(SUM(COALESCE(total_amount, price * quantity, 0)), 0) AS prod_rev
+            GREATEST(0, SUM(CASE WHEN LOWER(TRIM(COALESCE(status, 'paid'))) = 'paid' THEN COALESCE(quantity, 1) WHEN LOWER(TRIM(status)) = 'refunded' THEN -COALESCE(quantity, 1) ELSE 0 END)) AS units_sold,
+            GREATEST(0, SUM(CASE WHEN LOWER(TRIM(COALESCE(status, 'paid'))) = 'paid' THEN COALESCE(total_amount, price * quantity, 0) WHEN LOWER(TRIM(status)) = 'refunded' THEN -COALESCE(total_amount, price * quantity, 0) ELSE 0 END)) AS prod_rev
         FROM public.sales
         WHERE (p_branch_id IS NULL OR branch_id = p_branch_id)
           AND (p_company_id IS NULL OR company_id = p_company_id)
           AND created_at::date BETWEEN p_start_date AND p_end_date
-          AND (status IS NULL OR LOWER(TRIM(status)) NOT IN ('refunded', 'cancelled'))
+          AND (status IS NULL OR LOWER(TRIM(status)) IN ('paid', 'refunded'))
         GROUP BY COALESCE(NULLIF(TRIM(product_name), ''), 'Other Product')
+        HAVING GREATEST(0, SUM(CASE WHEN LOWER(TRIM(COALESCE(status, 'paid'))) = 'paid' THEN COALESCE(quantity, 1) WHEN LOWER(TRIM(status)) = 'refunded' THEN -COALESCE(quantity, 1) ELSE 0 END)) > 0
         LIMIT 5
     ) sub;
 
@@ -372,16 +390,14 @@ BEGIN
         WHERE (p_branch_id IS NULL OR branch_id = p_branch_id)
           AND (p_company_id IS NULL OR company_id = p_company_id)
           AND COALESCE(purchase_date, created_at::date) BETWEEN p_start_date AND p_end_date
-          AND (status IS NULL OR LOWER(TRIM(status)) <> 'cancelled')
           AND (payment_status IS NULL OR LOWER(TRIM(payment_status)) <> 'refunded')
         GROUP BY COALESCE(NULLIF(TRIM(plan_name), ''), 'Standard Membership')
         LIMIT 5
     ) sub;
 
-    -- -- 7. ROW 7: CUSTOMER ANALYTICS ------------------------------------------
-    -- Distinct customers transacting in current period across bookings, sales, and memberships
-    SELECT COUNT(DISTINCT customer_id) INTO v_cust_total
-    FROM (
+    -- ── 7. ROW 7: CUSTOMER ANALYTICS ──────────────────────────────────────────
+    -- Transacting customers in current period
+    WITH current_active_cust AS (
         SELECT customer_id 
         FROM public.bookings_for_business_transaction
         WHERE (p_branch_id IS NULL OR branch_id = p_branch_id)
@@ -404,42 +420,89 @@ BEGIN
           AND (p_company_id IS NULL OR company_id = p_company_id)
           AND COALESCE(purchase_date, created_at::date) BETWEEN p_start_date AND p_end_date
           AND customer_id IS NOT NULL
-          AND (status IS NULL OR LOWER(TRIM(status)) <> 'cancelled')
           AND (payment_status IS NULL OR LOWER(TRIM(payment_status)) <> 'refunded')
-    ) active_cust;
+    )
+    SELECT 
+        COUNT(*),
+        COUNT(*) FILTER (WHERE c.created_at::date >= p_start_date),
+        COUNT(*) FILTER (WHERE c.created_at::date < p_start_date)
+    INTO v_cust_total, v_cust_new, v_cust_returning
+    FROM current_active_cust a
+    LEFT JOIN public.customers c ON a.customer_id = c.customer_id;
 
-    -- New customers created during period
-    SELECT COUNT(*) INTO v_cust_new
-    FROM public.customers
-    WHERE (p_branch_id IS NULL OR branch_id = p_branch_id)
-      AND (p_company_id IS NULL OR company_id = p_company_id)
-      AND created_at::date BETWEEN p_start_date AND p_end_date;
-
-    v_cust_returning   := GREATEST(0, v_cust_total - v_cust_new);
     v_cust_repeat_rate := CASE 
         WHEN v_cust_total > 0 THEN ROUND((v_cust_returning::numeric / v_cust_total::numeric) * 100, 1)
         ELSE 0 
     END;
 
-    -- -- 8. ROW 8: STAFF ANALYTICS ---------------------------------------------
+    -- Transacting customers in previous period (for trend badges)
+    WITH prev_active_cust AS (
+        SELECT customer_id 
+        FROM public.bookings_for_business_transaction
+        WHERE (p_branch_id IS NULL OR branch_id = p_branch_id)
+          AND (p_company_id IS NULL OR company_id = p_company_id)
+          AND booking_date BETWEEN v_prev_start_date AND v_prev_end_date
+          AND customer_id IS NOT NULL
+          AND (status IS NULL OR LOWER(TRIM(status)) NOT IN ('cancelled', 'no-show', 'noshow', 'no_show'))
+        UNION
+        SELECT customer_id 
+        FROM public.sales_for_business_transactions
+        WHERE (p_branch_id IS NULL OR branch_id = p_branch_id)
+          AND (p_company_id IS NULL OR company_id = p_company_id)
+          AND created_at::date BETWEEN v_prev_start_date AND v_prev_end_date
+          AND customer_id IS NOT NULL
+          AND (payment_status IS NULL OR LOWER(TRIM(payment_status)) NOT IN ('cancelled', 'refunded'))
+        UNION
+        SELECT customer_id 
+        FROM public.membership_purchases
+        WHERE (p_branch_id IS NULL OR branch_id = p_branch_id)
+          AND (p_company_id IS NULL OR company_id = p_company_id)
+          AND COALESCE(purchase_date, created_at::date) BETWEEN v_prev_start_date AND v_prev_end_date
+          AND customer_id IS NOT NULL
+          AND (payment_status IS NULL OR LOWER(TRIM(payment_status)) <> 'refunded')
+    )
+    SELECT 
+        COUNT(*),
+        COUNT(*) FILTER (WHERE c.created_at::date >= v_prev_start_date),
+        COUNT(*) FILTER (WHERE c.created_at::date < v_prev_start_date)
+    INTO v_prev_cust_total, v_prev_cust_new, v_prev_cust_ret
+    FROM prev_active_cust a
+    LEFT JOIN public.customers c ON a.customer_id = c.customer_id;
+
+    v_prev_cust_repeat := CASE 
+        WHEN v_prev_cust_total > 0 THEN ROUND((v_prev_cust_ret::numeric / v_prev_cust_total::numeric) * 100, 1)
+        ELSE 0 
+    END;
+
+    -- ── 8. ROW 8: STAFF ANALYTICS ─────────────────────────────────────────────
     SELECT COUNT(*) INTO v_staff_total
     FROM public.staff
     WHERE (p_branch_id IS NULL OR branch_id = p_branch_id)
       AND (p_company_id IS NULL OR company_id = p_company_id)
       AND (status IS NULL OR LOWER(TRIM(status)) = 'active');
 
-    -- Completed appointments & service revenue
+    -- Completed appointments (distinct bookings) & service revenue
     SELECT 
         COUNT(*),
-        COALESCE(SUM(COALESCE(price, 0)), 0)
+        COALESCE(SUM(COALESCE(final_amount, total_price, 0)), 0)
     INTO v_staff_completed, v_staff_revenue
-    FROM public.bookings
+    FROM public.bookings_for_business_transaction
     WHERE (p_branch_id IS NULL OR branch_id = p_branch_id)
       AND (p_company_id IS NULL OR company_id = p_company_id)
       AND booking_date BETWEEN p_start_date AND p_end_date
       AND LOWER(TRIM(status)) = 'completed';
 
-    -- Top 3-5 Staff Leaderboard
+    SELECT 
+        COUNT(*),
+        COALESCE(SUM(COALESCE(final_amount, total_price, 0)), 0)
+    INTO v_prev_staff_completed, v_prev_staff_rev
+    FROM public.bookings_for_business_transaction
+    WHERE (p_branch_id IS NULL OR branch_id = p_branch_id)
+      AND (p_company_id IS NULL OR company_id = p_company_id)
+      AND booking_date BETWEEN v_prev_start_date AND v_prev_end_date
+      AND LOWER(TRIM(status)) = 'completed';
+
+    -- Top 5 Staff Leaderboard (Bookings served & Revenue)
     SELECT COALESCE(jsonb_agg(
         jsonb_build_object(
             'rank', sub.r,
@@ -451,9 +514,9 @@ BEGIN
     INTO v_top_staff
     FROM (
         SELECT 
-            ROW_NUMBER() OVER (ORDER BY COUNT(*) DESC, SUM(COALESCE(b.price, 0)) DESC) AS r,
+            ROW_NUMBER() OVER (ORDER BY COUNT(DISTINCT b.booking_id) DESC, SUM(COALESCE(b.price, 0)) DESC) AS r,
             COALESCE(NULLIF(TRIM(b.staff_name), ''), 'Staff Member') AS staff_name,
-            COUNT(*) AS completed_count,
+            COUNT(DISTINCT b.booking_id) AS completed_count,
             COALESCE(SUM(COALESCE(b.price, 0)), 0) AS staff_rev
         FROM public.bookings b
         WHERE (p_branch_id IS NULL OR b.branch_id = p_branch_id)
@@ -464,94 +527,145 @@ BEGIN
         LIMIT 5
     ) sub;
 
-    -- -- 9. ROW 9: MARKETING ANALYTICS -----------------------------------------
-    -- 1. Coupons Redeemed
-    SELECT COUNT(*) INTO v_mkt_coupons
-    FROM (
-        SELECT 1 FROM public.bookings_for_business_transaction 
-        WHERE (p_branch_id IS NULL OR branch_id = p_branch_id)
-          AND (p_company_id IS NULL OR company_id = p_company_id)
-          AND booking_date BETWEEN p_start_date AND p_end_date
-          AND (LOWER(discount_type) LIKE '%coupon%' OR discount_name IS NOT NULL)
-          AND (status IS NULL OR LOWER(TRIM(status)) <> 'cancelled')
-        UNION ALL
-        SELECT 1 FROM public.sales_for_business_transactions 
-        WHERE (p_branch_id IS NULL OR branch_id = p_branch_id)
-          AND (p_company_id IS NULL OR company_id = p_company_id)
-          AND created_at::date BETWEEN p_start_date AND p_end_date
-          AND (LOWER(discount_type) LIKE '%coupon%' OR discount_name IS NOT NULL)
-          AND (payment_status IS NULL OR LOWER(TRIM(payment_status)) NOT IN ('cancelled', 'refunded'))
-    ) c_curr;
+    -- ── 9. ROW 9: MARKETING ANALYTICS (Using discount_usages with fallback) ──
+    -- 1. Primary Query: discount_usages table
+    SELECT 
+        COUNT(*) FILTER (WHERE LOWER(TRIM(discount_type)) = 'coupon' AND status <> 'reversed'),
+        COUNT(*) FILTER (WHERE LOWER(TRIM(discount_type)) = 'offer' AND status <> 'reversed'),
+        GREATEST(0, COALESCE(SUM(CASE WHEN status <> 'reversed' THEN discount_amount - reversal_amount ELSE 0 END), 0))
+    INTO v_mkt_coupons, v_mkt_offers, v_mkt_discounts
+    FROM public.discount_usages
+    WHERE (p_branch_id IS NULL OR branch_id = p_branch_id)
+      AND (p_company_id IS NULL OR company_id = p_company_id)
+      AND COALESCE(used_at, created_at)::date BETWEEN p_start_date AND p_end_date;
 
-    SELECT COUNT(*) INTO v_prev_mkt_coupons
-    FROM (
-        SELECT 1 FROM public.bookings_for_business_transaction 
-        WHERE (p_branch_id IS NULL OR branch_id = p_branch_id)
-          AND (p_company_id IS NULL OR company_id = p_company_id)
-          AND booking_date BETWEEN v_prev_start_date AND v_prev_end_date
-          AND (LOWER(discount_type) LIKE '%coupon%' OR discount_name IS NOT NULL)
-        UNION ALL
-        SELECT 1 FROM public.sales_for_business_transactions 
-        WHERE (p_branch_id IS NULL OR branch_id = p_branch_id)
-          AND (p_company_id IS NULL OR company_id = p_company_id)
-          AND created_at::date BETWEEN v_prev_start_date AND v_prev_end_date
-          AND (LOWER(discount_type) LIKE '%coupon%' OR discount_name IS NOT NULL)
-    ) c_prev;
+    SELECT 
+        COUNT(*) FILTER (WHERE LOWER(TRIM(discount_type)) = 'coupon' AND status <> 'reversed'),
+        COUNT(*) FILTER (WHERE LOWER(TRIM(discount_type)) = 'offer' AND status <> 'reversed'),
+        GREATEST(0, COALESCE(SUM(CASE WHEN status <> 'reversed' THEN discount_amount - reversal_amount ELSE 0 END), 0))
+    INTO v_prev_mkt_coupons, v_prev_mkt_offers, v_prev_mkt_disc
+    FROM public.discount_usages
+    WHERE (p_branch_id IS NULL OR branch_id = p_branch_id)
+      AND (p_company_id IS NULL OR company_id = p_company_id)
+      AND COALESCE(used_at, created_at)::date BETWEEN v_prev_start_date AND v_prev_end_date;
 
-    -- 2. Memberships Purchased (via marketing/promotions)
+    -- 2. Fallback: If discount_usages has zero records (during migration/pre-population)
+    IF v_mkt_coupons = 0 AND v_mkt_offers = 0 AND v_mkt_discounts = 0 THEN
+        -- Fallback Coupons
+        SELECT COUNT(*) INTO v_mkt_coupons
+        FROM (
+            SELECT 1 FROM public.bookings_for_business_transaction 
+            WHERE (p_branch_id IS NULL OR branch_id = p_branch_id)
+              AND (p_company_id IS NULL OR company_id = p_company_id)
+              AND booking_date BETWEEN p_start_date AND p_end_date
+              AND LOWER(discount_type) LIKE '%coupon%'
+              AND (status IS NULL OR LOWER(TRIM(status)) <> 'cancelled')
+              AND (payment_status IS NULL OR LOWER(TRIM(payment_status)) <> 'refunded')
+            UNION ALL
+            SELECT 1 FROM public.sales_for_business_transactions 
+            WHERE (p_branch_id IS NULL OR branch_id = p_branch_id)
+              AND (p_company_id IS NULL OR company_id = p_company_id)
+              AND created_at::date BETWEEN p_start_date AND p_end_date
+              AND LOWER(discount_type) LIKE '%coupon%'
+              AND (payment_status IS NULL OR LOWER(TRIM(payment_status)) NOT IN ('cancelled', 'refunded'))
+            UNION ALL
+            SELECT 1 FROM public.membership_purchases
+            WHERE (p_branch_id IS NULL OR branch_id = p_branch_id)
+              AND (p_company_id IS NULL OR company_id = p_company_id)
+              AND COALESCE(purchase_date, created_at::date) BETWEEN p_start_date AND p_end_date
+              AND LOWER(discount_type) LIKE '%coupon%'
+              AND (payment_status IS NULL OR LOWER(TRIM(payment_status)) <> 'refunded')
+        ) c_fallback;
+
+        SELECT COUNT(*) INTO v_prev_mkt_coupons
+        FROM (
+            SELECT 1 FROM public.bookings_for_business_transaction 
+            WHERE (p_branch_id IS NULL OR branch_id = p_branch_id)
+              AND (p_company_id IS NULL OR company_id = p_company_id)
+              AND booking_date BETWEEN v_prev_start_date AND v_prev_end_date
+              AND LOWER(discount_type) LIKE '%coupon%'
+            UNION ALL
+            SELECT 1 FROM public.sales_for_business_transactions 
+            WHERE (p_branch_id IS NULL OR branch_id = p_branch_id)
+              AND (p_company_id IS NULL OR company_id = p_company_id)
+              AND created_at::date BETWEEN v_prev_start_date AND v_prev_end_date
+              AND LOWER(discount_type) LIKE '%coupon%'
+            UNION ALL
+            SELECT 1 FROM public.membership_purchases
+            WHERE (p_branch_id IS NULL OR branch_id = p_branch_id)
+              AND (p_company_id IS NULL OR company_id = p_company_id)
+              AND COALESCE(purchase_date, created_at::date) BETWEEN v_prev_start_date AND v_prev_end_date
+              AND LOWER(discount_type) LIKE '%coupon%'
+        ) c_prev_fallback;
+
+        -- Fallback Offers
+        SELECT COUNT(*) INTO v_mkt_offers
+        FROM (
+            SELECT 1 FROM public.bookings_for_business_transaction 
+            WHERE (p_branch_id IS NULL OR branch_id = p_branch_id)
+              AND (p_company_id IS NULL OR company_id = p_company_id)
+              AND booking_date BETWEEN p_start_date AND p_end_date
+              AND LOWER(discount_type) LIKE '%offer%'
+              AND (status IS NULL OR LOWER(TRIM(status)) <> 'cancelled')
+              AND (payment_status IS NULL OR LOWER(TRIM(payment_status)) <> 'refunded')
+            UNION ALL
+            SELECT 1 FROM public.sales_for_business_transactions 
+            WHERE (p_branch_id IS NULL OR branch_id = p_branch_id)
+              AND (p_company_id IS NULL OR company_id = p_company_id)
+              AND created_at::date BETWEEN p_start_date AND p_end_date
+              AND LOWER(discount_type) LIKE '%offer%'
+              AND (payment_status IS NULL OR LOWER(TRIM(payment_status)) NOT IN ('cancelled', 'refunded'))
+            UNION ALL
+            SELECT 1 FROM public.membership_purchases
+            WHERE (p_branch_id IS NULL OR branch_id = p_branch_id)
+              AND (p_company_id IS NULL OR company_id = p_company_id)
+              AND COALESCE(purchase_date, created_at::date) BETWEEN p_start_date AND p_end_date
+              AND LOWER(discount_type) LIKE '%offer%'
+              AND (payment_status IS NULL OR LOWER(TRIM(payment_status)) <> 'refunded')
+        ) o_fallback;
+
+        SELECT COUNT(*) INTO v_prev_mkt_offers
+        FROM (
+            SELECT 1 FROM public.bookings_for_business_transaction 
+            WHERE (p_branch_id IS NULL OR branch_id = p_branch_id)
+              AND (p_company_id IS NULL OR company_id = p_company_id)
+              AND booking_date BETWEEN v_prev_start_date AND v_prev_end_date
+              AND LOWER(discount_type) LIKE '%offer%'
+            UNION ALL
+            SELECT 1 FROM public.sales_for_business_transactions 
+            WHERE (p_branch_id IS NULL OR branch_id = p_branch_id)
+              AND (p_company_id IS NULL OR company_id = p_company_id)
+              AND created_at::date BETWEEN v_prev_start_date AND v_prev_end_date
+              AND LOWER(discount_type) LIKE '%offer%'
+            UNION ALL
+            SELECT 1 FROM public.membership_purchases
+            WHERE (p_branch_id IS NULL OR branch_id = p_branch_id)
+              AND (p_company_id IS NULL OR company_id = p_company_id)
+              AND COALESCE(purchase_date, created_at::date) BETWEEN v_prev_start_date AND v_prev_end_date
+              AND LOWER(discount_type) LIKE '%offer%'
+        ) o_prev_fallback;
+
+        -- Fallback Total Discounts
+        SELECT COALESCE(SUM(discount_amount), 0) INTO v_mkt_discounts
+        FROM public.business_transactions
+        WHERE (p_branch_id IS NULL OR branch_id = p_branch_id)
+          AND (p_company_id IS NULL OR company_id = p_company_id)
+          AND DATE(COALESCE(paid_at, created_at)) BETWEEN p_start_date AND p_end_date
+          AND status = 'paid';
+
+        SELECT COALESCE(SUM(discount_amount), 0) INTO v_prev_mkt_disc
+        FROM public.business_transactions
+        WHERE (p_branch_id IS NULL OR branch_id = p_branch_id)
+          AND (p_company_id IS NULL OR company_id = p_company_id)
+          AND DATE(COALESCE(paid_at, created_at)) BETWEEN v_prev_start_date AND v_prev_end_date
+          AND status = 'paid';
+    END IF;
+
+    -- 3. Memberships Purchased (acquisition count)
     v_mkt_memberships := v_act_memberships;
     v_prev_mkt_memb   := v_prev_act_memb;
 
-    -- 3. Offer Redemptions
-    SELECT COUNT(*) INTO v_mkt_offers
-    FROM (
-        SELECT 1 FROM public.bookings_for_business_transaction 
-        WHERE (p_branch_id IS NULL OR branch_id = p_branch_id)
-          AND (p_company_id IS NULL OR company_id = p_company_id)
-          AND booking_date BETWEEN p_start_date AND p_end_date
-          AND LOWER(discount_type) LIKE '%offer%'
-          AND (status IS NULL OR LOWER(TRIM(status)) <> 'cancelled')
-        UNION ALL
-        SELECT 1 FROM public.sales_for_business_transactions 
-        WHERE (p_branch_id IS NULL OR branch_id = p_branch_id)
-          AND (p_company_id IS NULL OR company_id = p_company_id)
-          AND created_at::date BETWEEN p_start_date AND p_end_date
-          AND LOWER(discount_type) LIKE '%offer%'
-          AND (payment_status IS NULL OR LOWER(TRIM(payment_status)) NOT IN ('cancelled', 'refunded'))
-    ) o_curr;
-
-    SELECT COUNT(*) INTO v_prev_mkt_offers
-    FROM (
-        SELECT 1 FROM public.bookings_for_business_transaction 
-        WHERE (p_branch_id IS NULL OR branch_id = p_branch_id)
-          AND (p_company_id IS NULL OR company_id = p_company_id)
-          AND booking_date BETWEEN v_prev_start_date AND v_prev_end_date
-          AND LOWER(discount_type) LIKE '%offer%'
-        UNION ALL
-        SELECT 1 FROM public.sales_for_business_transactions 
-        WHERE (p_branch_id IS NULL OR branch_id = p_branch_id)
-          AND (p_company_id IS NULL OR company_id = p_company_id)
-          AND created_at::date BETWEEN v_prev_start_date AND v_prev_end_date
-          AND LOWER(discount_type) LIKE '%offer%'
-    ) o_prev;
-
-    -- 4. Total Discounts Given (across business_transactions)
-    SELECT COALESCE(SUM(discount_amount), 0) INTO v_mkt_discounts
-    FROM public.business_transactions
-    WHERE (p_branch_id IS NULL OR branch_id = p_branch_id)
-      AND (p_company_id IS NULL OR company_id = p_company_id)
-      AND DATE(COALESCE(paid_at, created_at)) BETWEEN p_start_date AND p_end_date
-      AND status = 'paid';
-
-    SELECT COALESCE(SUM(discount_amount), 0) INTO v_prev_mkt_disc
-    FROM public.business_transactions
-    WHERE (p_branch_id IS NULL OR branch_id = p_branch_id)
-      AND (p_company_id IS NULL OR company_id = p_company_id)
-      AND DATE(COALESCE(paid_at, created_at)) BETWEEN v_prev_start_date AND v_prev_end_date
-      AND status = 'paid';
-
-
-    -- -- 10. CONSTRUCT COMPLETE JSON RETURN OBJECT -----------------------------
+    -- ── 10. CONSTRUCT COMPLETE JSON RETURN OBJECT ─────────────────────────────
     v_result := jsonb_build_object(
         'period', jsonb_build_object(
             'start_date', p_start_date,
@@ -601,14 +715,20 @@ BEGIN
         ),
         'customer_analytics', jsonb_build_object(
             'total_customers', v_cust_total,
+            'total_growth_pct', CASE WHEN v_prev_cust_total > 0 THEN ROUND(((v_cust_total - v_prev_cust_total)::numeric / v_prev_cust_total::numeric) * 100, 1) ELSE 0 END,
             'new_customers', v_cust_new,
+            'new_growth_pct', CASE WHEN v_prev_cust_new > 0 THEN ROUND(((v_cust_new - v_prev_cust_new)::numeric / v_prev_cust_new::numeric) * 100, 1) ELSE 0 END,
             'returning_customers', v_cust_returning,
-            'repeat_visit_rate', v_cust_repeat_rate
+            'returning_growth_pct', CASE WHEN v_prev_cust_ret > 0 THEN ROUND(((v_cust_returning - v_prev_cust_ret)::numeric / v_prev_cust_ret::numeric) * 100, 1) ELSE 0 END,
+            'repeat_visit_rate', v_cust_repeat_rate,
+            'repeat_growth_pct', CASE WHEN v_prev_cust_repeat > 0 THEN ROUND((v_cust_repeat_rate - v_prev_cust_repeat), 1) ELSE 0 END
         ),
         'staff_analytics', jsonb_build_object(
             'total_staff', v_staff_total,
             'completed_appointments', v_staff_completed,
+            'completed_growth_pct', CASE WHEN v_prev_staff_completed > 0 THEN ROUND(((v_staff_completed - v_prev_staff_completed)::numeric / v_prev_staff_completed::numeric) * 100, 1) ELSE 0 END,
             'staff_service_revenue', v_staff_revenue,
+            'revenue_growth_pct', CASE WHEN v_prev_staff_rev > 0 THEN ROUND(((v_staff_revenue - v_prev_staff_rev) / v_prev_staff_rev) * 100, 1) ELSE 0 END,
             'top_staff', v_top_staff
         ),
         'marketing_analytics', jsonb_build_object(
@@ -625,27 +745,6 @@ BEGIN
 
     RETURN v_result;
 END;
-$$;
-
--- Permissions
-GRANT EXECUTE ON FUNCTION public.overview_analytics(uuid, uuid, date, date) TO authenticated, service_role, anon;
-
--- Alias: get_analytics_overview
-CREATE OR REPLACE FUNCTION public.get_analytics_overview(
-    p_branch_id  uuid DEFAULT NULL,
-    p_company_id uuid DEFAULT NULL,
-    p_start_date date DEFAULT (CURRENT_DATE - INTERVAL '15 days')::date,
-    p_end_date   date DEFAULT CURRENT_DATE
-)
-RETURNS jsonb
-LANGUAGE plpgsql
-SECURITY DEFINER
-SET search_path = public
-AS $$
-BEGIN
-    RETURN public.overview_analytics(p_branch_id, p_company_id, p_start_date, p_end_date);
-END;
-$$;
+$function$;
 
 GRANT EXECUTE ON FUNCTION public.get_analytics_overview(uuid, uuid, date, date) TO authenticated, service_role, anon;
-
