@@ -1,4 +1,4 @@
-﻿// scripts/reports/report-builder.js
+// scripts/reports/report-builder.js
 // Thin orchestrator for report-detail.html based on the '?type=' query string
 
 import { supabase } from '../../lib/supabase.js';
@@ -342,82 +342,53 @@ const REPORT_TYPES = {
         rows: []
     },
     'bk-completed': {
-        title: 'Completed Bookings & Revenue',
-        subtitle: 'Completed appointments, realized revenue, and service performance',
+        title: 'Completed Appointments',
+        subtitle: 'Successfully completed appointments',
         icon: 'check-circle',
         backCat: 'bookings',
-        kpi1: { label: 'Completed Bookings', value: '1,120' },
-        kpi2: { label: 'Completion Rate', value: '88.5%' },
-        kpi3: { label: 'Completed Bookings Revenue', value: 'â‚¹2,45,800' },
-        kpi4: { label: 'Average Revenue per Booking', value: 'â‚¹1,240' },
-        tableTitle: 'Completed Booking Records',
-        headers: ['Booking ID', 'Date & Time', 'Customer Name', 'Services Delivered', 'Staff Assigned', 'Bill Amount', 'Payment Status'],
-        rows: [
-            ['BK-1082', '2026-10-19 10:30 AM', 'Anita Sharma', 'Haircut & Blowdry', 'Sarah M.', 'â‚¹1,200', '<span class="status-pill completed">Paid</span>'],
-            ['BK-1081', '2026-10-19 11:15 AM', 'Rajesh Patel', 'Beard Trim & Facial', 'Michael K.', 'â‚¹1,450', '<span class="status-pill completed">Paid</span>'],
-            ['BK-1079', '2026-10-19 12:00 PM', 'Sneha Reddy', 'Hair Spa & Styling', 'Priya S.', 'â‚¹2,200', '<span class="status-pill completed">Paid</span>'],
-            ['BK-1076', '2026-10-18 03:00 PM', 'Vikram Varma', 'Men Styling & Wash', 'Michael K.', 'â‚¹950', '<span class="status-pill completed">Paid</span>'],
-            ['BK-1070', '2026-10-18 04:30 PM', 'Meera Rao', 'Global Hair Color', 'Sarah M.', 'â‚¹4,500', '<span class="status-pill completed">Paid</span>']
-        ]
+        kpi1: { label: 'Completed', value: 'Loading...' },
+        kpi2: { label: 'This Month', value: 'Loading...' },
+        kpi3: { label: 'This Week', value: 'Loading...' },
+        kpi4: { label: 'Completion Rate', value: 'Loading...' },
+        tableTitle: 'Completed Appointments',
+        headers: ['Date', 'Time', 'Customer', 'Service', 'Staff', 'Duration', 'Amount'],
+        rows: []
     },
     'bk-cancelled': {
-        title: 'Cancelled Bookings',
-        subtitle: 'Cancellation count, reasons, and estimated revenue loss',
+        title: 'Cancelled Appointments',
+        subtitle: 'Cancellations by reason and time period',
         icon: 'x-circle',
         backCat: 'bookings',
-        kpi1: { label: 'Cancelled Bookings', value: '64' },
-        kpi2: { label: 'Cancellation Rate', value: '5.1%' },
-        kpi3: { label: 'Estimated Value Affected', value: 'â‚¹38,200' },
-        kpi4: { label: 'Same-Day Cancellations', value: '28 (43.8%)' },
-        tableTitle: 'Detailed Cancelled Bookings',
-        headers: ['Booking ID', 'Scheduled Date & Time', 'Customer Name', 'Services Cancelled', 'Staff Assigned', 'Estimated Value', 'Cancellation Reason'],
+        kpi1: { label: 'Cancelled', value: 'Loading...' },
+        kpi2: { label: 'This Month', value: 'Loading...' },
+        kpi3: { label: 'This Week', value: 'Loading...' },
+        kpi4: { label: 'Cancellation Rate', value: 'Loading...' },
+        tableTitle: 'Cancelled Appointments',
+        headers: ['Date', 'Customer', 'Service', 'Staff', 'Cancelled On', 'Reason', 'Status'],
         rows: [
-            ['BK-1075', '2026-10-19 02:00 PM', 'Vikram Rao', 'Premium Haircut', 'Sarah M.', 'â‚¹850', 'Customer Emergency'],
-            ['BK-1072', '2026-10-19 03:30 PM', 'Pooja Verma', 'Bridal Consultation', 'Priya S.', 'â‚¹2,500', 'Rescheduled to next week'],
-            ['BK-1068', '2026-10-18 05:00 PM', 'Arun Kumar', 'Hair Color & Wash', 'Michael K.', 'â‚¹3,200', 'Personal reasons'],
-            ['BK-1059', '2026-10-17 11:30 AM', 'Divya Nair', 'Keratin Treatment', 'Sarah M.', 'â‚¹5,500', 'Running late, cancelled'],
-            ['BK-1051', '2026-10-16 01:00 PM', 'Rohan Gupta', 'Beard & Haircut', 'Michael K.', 'â‚¹750', 'No reason given']
+            ['2024-03-21', 'Deepa R.', 'Hair Spa', 'Priya', '2024-03-20', 'Personal Reason', '<span class="status-pill cancelled">Cancelled</span>'],
+            ['2024-03-19', 'Mohan V.', 'Beard Trim', 'Ravi', '2024-03-18', 'No Reason Given', '<span class="status-pill cancelled">Cancelled</span>']
         ]
     },
     'bk-no-shows': {
-        title: 'No-Show Bookings',
-        subtitle: 'Missed appointments, repeat no-shows, and estimated loss',
+        title: 'No-Shows',
+        subtitle: 'Customers who missed their appointments',
         icon: 'user-x',
         backCat: 'bookings',
-        kpi1: { label: 'No-Show Bookings', value: '128' },
-        kpi2: { label: 'Estimated Value Missed', value: 'â‚¹64,000' },
-        kpi3: { label: 'No-Show Rate', value: '8.5%' },
-        kpi4: { label: 'Repeat No-Show Customers', value: '24' },
-        tableTitle: 'Detailed No-Show Records',
-        headers: ['Booking ID', 'Appointment Date & Time', 'Customer Name', 'Phone', 'Services Missed', 'Staff Assigned', 'Missed Value'],
+        kpi1: { label: 'No-Shows', value: 'Loading...' },
+        kpi2: { label: 'This Month', value: 'Loading...' },
+        kpi3: { label: 'This Week', value: 'Loading...' },
+        kpi4: { label: 'No-Show Rate', value: 'Loading...' },
+        tableTitle: 'No-Show Records',
+        headers: ['Date', 'Time', 'Customer', 'Service', 'Staff', 'Amount Lost', 'Status'],
         rows: [
-            ['BK-1065', '2026-10-19 11:00 AM', 'Karthik S.', '+91 98450 12345', 'Hair Spa', 'Sarah M.', 'â‚¹1,500'],
-            ['BK-1061', '2026-10-19 01:30 PM', 'Divya M.', '+91 99801 87654', 'Keratin Express', 'Priya S.', 'â‚¹4,500'],
-            ['BK-1054', '2026-10-18 04:00 PM', 'Naveen G.', '+91 97412 55432', 'Men Beard & Haircut', 'Michael K.', 'â‚¹900'],
-            ['BK-1048', '2026-10-17 06:00 PM', 'Ananya K.', '+91 98860 33211', 'Facial & Cleanup', 'Priya S.', 'â‚¹2,200'],
-            ['BK-1042', '2026-10-16 02:00 PM', 'Suresh B.', '+91 94480 99887', 'Hair Color', 'Sarah M.', 'â‚¹3,000']
-        ]
-    },
-    'bk-refunded': {
-        title: 'Refunded Bookings',
-        subtitle: 'Refunded appointments, amounts, and refund status',
-        icon: 'rotate-ccw',
-        backCat: 'bookings',
-        kpi1: { label: 'Refunded Bookings', value: '86' },
-        kpi2: { label: 'Total Refunded', value: 'â‚¹42,500' },
-        kpi3: { label: 'Average Refund', value: 'â‚¹494' },
-        kpi4: { label: 'Refund Rate', value: '5.7%' },
-        tableTitle: 'Detailed Refunded Bookings',
-        headers: ['Refund Ref', 'Refund Date', 'Original Booking ID', 'Customer Name', 'Payment Method', 'Refund Amount', 'Reason / Notes'],
-        rows: [
-            ['REF-501', '2026-10-19', 'BK-1049', 'Ritu Jain', 'UPI', 'â‚¹1,800', 'Customer cancellation'],
-            ['REF-498', '2026-10-18', 'BK-1041', 'Deepak Mehta', 'Card', 'â‚¹1,200', 'Service unavailable'],
-            ['REF-495', '2026-10-18', 'BK-1033', 'Sunita Rao', 'Cash', 'â‚¹650', 'Booking error'],
-            ['REF-490', '2026-10-17', 'BK-1025', 'Harish Nair', 'UPI', 'â‚¹2,500', 'Customer cancellation'],
-            ['REF-484', '2026-10-16', 'BK-1018', 'Pranitha K.', 'Card', 'â‚¹3,400', 'Service unsatisfactory']
+            ['2024-03-21', '10:00 AM', 'Ajay K.', 'Haircut', 'Michael', 'Ã¢â€šÂ¹600', '<span class="status-pill cancelled" style="background:#fef3c7;color:#92400e;">No-Show</span>'],
+            ['2024-03-20', '02:00 PM', 'Sneha M.', 'Facial', 'Priya', 'Ã¢â€šÂ¹1,200', '<span class="status-pill cancelled" style="background:#fef3c7;color:#92400e;">No-Show</span>']
         ]
     },
 
+    // Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬
+    // CUSTOMERS SUB-REPORTS
     // Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬
     'cust-metrics': {
         title: 'Customers Overview',
@@ -503,7 +474,6 @@ const TYPE_MODULE_MAP = {
     'bk-completed': './report-modules/bookings.js',
     'bk-cancelled': './report-modules/bookings.js',
     'bk-no-shows': './report-modules/bookings.js',
-    'bk-refunded': './report-modules/bookings.js',
 
     // Customers
     'customers': './report-modules/customers.js',
@@ -535,10 +505,10 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     const data = REPORT_TYPES[type];
     data.type = type;
-    console.log(`[report-builder] Initializing ${type} report views.`);
+    console.log([report-builder] Initializing  report views.);
 
     // 2. Update page <title>
-    document.title = `${data.title} - BharathBots Reports`;
+    document.title = ${data.title} - BharathBots Reports;
 
     // 3. Update page header elements dynamically
     const titleEl = document.getElementById('reportTitle');
@@ -560,10 +530,10 @@ document.addEventListener('DOMContentLoaded', async () => {
                 customers: 'Customers',
                 operations: 'Operations'
             };
-            backLinkEl.textContent = `← Back to ${catLabels[data.backCat] || data.backCat} Reports`;
-            backLinkEl.href = `report-category.html?cat=${data.backCat}`;
+            backLinkEl.textContent = Ã¢â€ Â Back to  Reports;
+            backLinkEl.href = eport-category.html?cat=;
         } else {
-            backLinkEl.textContent = '← Back to Report Library';
+            backLinkEl.textContent = 'Ã¢â€ Â Back to Report Library';
             backLinkEl.href = 'reports.html';
         }
     }
