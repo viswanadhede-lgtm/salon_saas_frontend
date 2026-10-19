@@ -788,19 +788,31 @@
 // REPORTS
 //======================================================================================================================================
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+// 📅 Section 1: Bookings Reports (Master RPC: get_bookings_report)
+//
+// 1. Overview:
+//    - Single round-trip master RPC: get_bookings_report(p_branch_id, p_company_id, p_start_date, p_end_date).
+//    - Returns hub stat cards + KPIs + table rows for all 5 sub-reports in a single query.
+//    - Database Tables/Views Used:
+//      a. public.bookings (booking status, dates, staff, customer, price)
+//      b. public.bookings_for_business_transaction (view for post-discount realized revenue)
+//      c. public.business_transactions (refunded bookings payment records)
+//
+// 2. Hub Stat Cards (Category Overview: report-category.html?cat=bookings):
+//    - Total Bookings: All relevant bookings in range
+//    - Completed Bookings: Completed count & realized revenue
+//    - Cancelled Bookings: Cancelled count & estimated value affected
+//    - No-Shows: Missed count & estimated revenue missed
+//
+// 3. Sub-Reports (Detailed Views: report-detail.html?type=...):
+//    a. bk-total: All appointments with status breakdown, timeline trend & status distribution
+//    b. bk-completed: Realized revenue, completion rate, avg revenue per booking
+//    c. bk-cancelled: Cancellation rate, estimated value lost, same-day cancellations, cancellation reasons
+//    d. bk-no-shows: Missed revenue, repeat no-show customer counts, service distribution
+//    e. bk-refunds: Transaction refunds linked to bookings, refund methods & notes
+//
+// 4. Frontend Integration:
+//    - Module: scripts/reports/report-modules/bookings.js
+//    - Category Hub: scripts/reports/report-category.js (renderBookingsCategoryStats)
+//    - Orchestrator: scripts/reports/report-builder.js
+//    - Response Normalization: handles raw jsonb, array wrappers, or aliased json wrappers automatically.

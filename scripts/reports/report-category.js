@@ -1,6 +1,7 @@
 // scripts/reports/report-category.js
 // Dynamically renders sub-report cards based on ?cat= URL parameter
 
+import { supabase } from '../../lib/supabase.js';
 
 // ============================================================
 // Category Configuration
@@ -117,6 +118,13 @@ const CATEGORIES = {
         colorClass: 'bg-indigo',
         subReports: [
             {
+                type: 'bk-total',
+                label: 'Total Appointments',
+                desc: 'All appointments across all statuses',
+                icon: 'calendar',
+                colorClass: 'bg-indigo'
+            },
+            {
                 type: 'bk-completed',
                 label: 'Completed Bookings & Revenue',
                 desc: 'Realized revenue and service performance',
@@ -193,31 +201,27 @@ const CATEGORIES = {
 };
 
 // ============================================================
-// Bookings Hub: Stat Cards (bookings category only)
-// Frontend placeholder — wired to live RPC after backend integration
+// Bookings Hub: Stat Cards — live from get_bookings_report RPC
 // ============================================================
 
-function renderBookingsCategoryStats() {
+async function renderBookingsCategoryStats() {
     const container = document.getElementById('categoryStatCards');
     if (!container) return;
 
     container.style.display = 'grid';
 
+    // Render skeleton immediately
     container.innerHTML = `
         <div class="bk-hub-stat">
-            <div class="bk-hub-stat-icon bk-hub-indigo">
-                <i data-feather="calendar"></i>
-            </div>
+            <div class="bk-hub-stat-icon bk-hub-indigo"><i data-feather="calendar"></i></div>
             <div class="bk-hub-stat-body">
                 <span class="bk-hub-stat-val" id="bkHubTotal">—</span>
                 <span class="bk-hub-stat-label">Total Bookings</span>
-                <span class="bk-hub-stat-desc">All statuses combined</span>
+                <span class="bk-hub-stat-desc">All relevant statuses</span>
             </div>
         </div>
         <div class="bk-hub-stat">
-            <div class="bk-hub-stat-icon bk-hub-green">
-                <i data-feather="check-circle"></i>
-            </div>
+            <div class="bk-hub-stat-icon bk-hub-green"><i data-feather="check-circle"></i></div>
             <div class="bk-hub-stat-body">
                 <span class="bk-hub-stat-val" id="bkHubCompleted">—</span>
                 <span class="bk-hub-stat-label">Completed Bookings</span>
@@ -225,9 +229,7 @@ function renderBookingsCategoryStats() {
             </div>
         </div>
         <div class="bk-hub-stat">
-            <div class="bk-hub-stat-icon bk-hub-red">
-                <i data-feather="x-circle"></i>
-            </div>
+            <div class="bk-hub-stat-icon bk-hub-red"><i data-feather="x-circle"></i></div>
             <div class="bk-hub-stat-body">
                 <span class="bk-hub-stat-val" id="bkHubCancelled">—</span>
                 <span class="bk-hub-stat-label">Cancelled Bookings</span>
@@ -235,9 +237,7 @@ function renderBookingsCategoryStats() {
             </div>
         </div>
         <div class="bk-hub-stat">
-            <div class="bk-hub-stat-icon bk-hub-amber">
-                <i data-feather="user-x"></i>
-            </div>
+            <div class="bk-hub-stat-icon bk-hub-amber"><i data-feather="user-x"></i></div>
             <div class="bk-hub-stat-body">
                 <span class="bk-hub-stat-val" id="bkHubNoShows">—</span>
                 <span class="bk-hub-stat-label">No-Shows</span>
@@ -247,7 +247,65 @@ function renderBookingsCategoryStats() {
     `;
 
     if (typeof feather !== 'undefined') feather.replace();
+
+    // Fetch live data
+    try {
+        const companyId = localStorage.getItem('company_id');
+        const branchId  = localStorage.getItem('active_branch_id');
+        const cid = (companyId && companyId !== 'null' && companyId !== 'undefined' && companyId !== 'all') ? companyId : null;
+        const bid = (branchId && branchId !== 'null' && branchId !== 'undefined' && branchId !== 'all') ? branchId : null;
+        const now       = new Date();
+        const startDate = new Date(now.getFullYear(), now.getMonth(), 1).toISOString().split('T')[0];
+        const endDate   = now.toISOString().split('T')[0];
+
+        const { data: rawResult, error } = await supabase.rpc('get_bookings_report', {
+            p_company_id: cid,
+            p_branch_id:  bid,
+            p_start_date: startDate,
+            p_end_date:   endDate
+        });
+
+        if (error || !rawResult) throw (error || new Error('Empty response'));
+
+        let result = rawResult;
+        if (typeof result === 'string') {
+            try { result = JSON.parse(result); } catch (e) {}
+        }
+        if (Array.isArray(result)) {
+            result = result[0] || {};
+        }
+        if (result && typeof result === 'object') {
+            if (result.bookings_report) {
+                result = result.bookings_report;
+            } else if (result.get_bookings_report) {
+                result = result.get_bookings_report;
+            }
+        }
+        if (typeof result === 'string') {
+            try { result = JSON.parse(result); } catch (e) {}
+        }
+
+        const sc = (result && result.stat_cards) ? result.stat_cards : {};
+
+        const fmt = (n) => Number(n || 0).toLocaleString('en-IN');
+        const cur = (n) => '\u20b9' + Number(n || 0).toLocaleString('en-IN', { maximumFractionDigits: 0 });
+
+        const setEl = (id, val) => { const el = document.getElementById(id); if (el) el.textContent = val; };
+
+        setEl('bkHubTotal',     fmt(sc.total_bookings));
+        setEl('bkHubCompleted', fmt(sc.completed_bookings));
+        setEl('bkHubRevenue',   'Realised revenue: ' + cur(sc.realized_revenue));
+        setEl('bkHubCancelled', fmt(sc.cancelled_bookings));
+        setEl('bkHubCancelVal', 'Estimated value: ' + cur(sc.estimated_value_affected));
+        setEl('bkHubNoShows',   fmt(sc.no_show_bookings));
+        setEl('bkHubNoShowVal', 'Estimated missed: ' + cur(sc.estimated_value_missed));
+
+    } catch (err) {
+        console.error('[report-category] Bookings stat cards RPC failed:', err);
+        // Stat cards stay as — (non-breaking graceful degradation)
+    }
 }
+
 
 // ============================================================
 // Render
@@ -278,7 +336,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // Bookings-only: inject live stat cards above the sub-reports grid
     if (cat === 'bookings') {
-        renderBookingsCategoryStats();
+        renderBookingsCategoryStats(); // async — updates DOM when RPC returns
     }
 
     // Render sub-report cards
