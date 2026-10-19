@@ -328,63 +328,71 @@ const REPORT_TYPES = {
     // Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬
     // BOOKINGS SUB-REPORTS
     // Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬
+    // ─── BOOKINGS SUB-REPORTS ────────────────────────────────────────────────
     'bk-total': {
         title: 'Total Appointments',
         subtitle: 'All appointments across all statuses',
         icon: 'calendar',
         backCat: 'bookings',
-        kpi1: { label: 'Total Bookings', value: 'Loading...' },
-        kpi2: { label: 'Completed', value: 'Loading...' },
-        kpi3: { label: 'Cancelled', value: 'Loading...' },
-        kpi4: { label: 'No-Shows', value: 'Loading...' },
+        kpi1: { label: 'Total Bookings',  value: 'Loading...' },
+        kpi2: { label: 'Completed',       value: 'Loading...' },
+        kpi3: { label: 'Cancelled',       value: 'Loading...' },
+        kpi4: { label: 'No-Shows',        value: 'Loading...' },
         tableTitle: 'All Appointments',
-        headers: ['Date', 'Time', 'Customer', 'Service', 'Staff', 'Duration', 'Status'],
+        headers: ['Date', 'Time', 'Customer', 'Service', 'Staff', 'Amount', 'Status'],
         rows: []
     },
     'bk-completed': {
-        title: 'Completed Appointments',
-        subtitle: 'Successfully completed appointments',
+        title: 'Completed Bookings & Revenue',
+        subtitle: 'Completed appointments, realized revenue, and service performance',
         icon: 'check-circle',
         backCat: 'bookings',
-        kpi1: { label: 'Completed', value: 'Loading...' },
-        kpi2: { label: 'This Month', value: 'Loading...' },
-        kpi3: { label: 'This Week', value: 'Loading...' },
-        kpi4: { label: 'Completion Rate', value: 'Loading...' },
-        tableTitle: 'Completed Appointments',
-        headers: ['Date', 'Time', 'Customer', 'Service', 'Staff', 'Duration', 'Amount'],
+        kpi1: { label: 'Completed Bookings',         value: 'Loading...' },
+        kpi2: { label: 'Completion Rate',             value: 'Loading...' },
+        kpi3: { label: 'Completed Bookings Revenue',  value: 'Loading...' },
+        kpi4: { label: 'Avg Revenue per Booking',     value: 'Loading...' },
+        tableTitle: 'Completed Booking Records',
+        headers: ['Booking ID', 'Date & Time', 'Customer Name', 'Services Delivered', 'Staff Assigned', 'Bill Amount', 'Payment Status'],
         rows: []
     },
     'bk-cancelled': {
-        title: 'Cancelled Appointments',
-        subtitle: 'Cancellations by reason and time period',
+        title: 'Cancelled Bookings',
+        subtitle: 'Cancellation count, reasons, and estimated revenue loss',
         icon: 'x-circle',
         backCat: 'bookings',
-        kpi1: { label: 'Cancelled', value: 'Loading...' },
-        kpi2: { label: 'This Month', value: 'Loading...' },
-        kpi3: { label: 'This Week', value: 'Loading...' },
-        kpi4: { label: 'Cancellation Rate', value: 'Loading...' },
-        tableTitle: 'Cancelled Appointments',
-        headers: ['Date', 'Customer', 'Service', 'Staff', 'Cancelled On', 'Reason', 'Status'],
-        rows: [
-            ['2024-03-21', 'Deepa R.', 'Hair Spa', 'Priya', '2024-03-20', 'Personal Reason', '<span class="status-pill cancelled">Cancelled</span>'],
-            ['2024-03-19', 'Mohan V.', 'Beard Trim', 'Ravi', '2024-03-18', 'No Reason Given', '<span class="status-pill cancelled">Cancelled</span>']
-        ]
+        kpi1: { label: 'Cancelled Bookings',      value: 'Loading...' },
+        kpi2: { label: 'Cancellation Rate',        value: 'Loading...' },
+        kpi3: { label: 'Estimated Value Affected', value: 'Loading...' },
+        kpi4: { label: 'Same-Day Cancellations',  value: 'Loading...' },
+        tableTitle: 'Detailed Cancelled Bookings',
+        headers: ['Booking ID', 'Scheduled Date & Time', 'Customer Name', 'Services Cancelled', 'Staff', 'Estimated Value', 'Cancellation Reason'],
+        rows: []
     },
     'bk-no-shows': {
-        title: 'No-Shows',
-        subtitle: 'Customers who missed their appointments',
+        title: 'No-Show Bookings',
+        subtitle: 'Missed appointments, repeat no-shows, and estimated loss',
         icon: 'user-x',
         backCat: 'bookings',
-        kpi1: { label: 'No-Shows', value: 'Loading...' },
-        kpi2: { label: 'This Month', value: 'Loading...' },
-        kpi3: { label: 'This Week', value: 'Loading...' },
-        kpi4: { label: 'No-Show Rate', value: 'Loading...' },
-        tableTitle: 'No-Show Records',
-        headers: ['Date', 'Time', 'Customer', 'Service', 'Staff', 'Amount Lost', 'Status'],
-        rows: [
-            ['2024-03-21', '10:00 AM', 'Ajay K.', 'Haircut', 'Michael', 'Ã¢â€šÂ¹600', '<span class="status-pill cancelled" style="background:#fef3c7;color:#92400e;">No-Show</span>'],
-            ['2024-03-20', '02:00 PM', 'Sneha M.', 'Facial', 'Priya', 'Ã¢â€šÂ¹1,200', '<span class="status-pill cancelled" style="background:#fef3c7;color:#92400e;">No-Show</span>']
-        ]
+        kpi1: { label: 'No-Show Bookings',         value: 'Loading...' },
+        kpi2: { label: 'Estimated Value Missed',    value: 'Loading...' },
+        kpi3: { label: 'No-Show Rate',              value: 'Loading...' },
+        kpi4: { label: 'Repeat No-Show Customers',  value: 'Loading...' },
+        tableTitle: 'No-Show Booking Records',
+        headers: ['Booking ID', 'Appointment Date & Time', 'Customer Name', 'Phone', 'Services Missed', 'Staff Assigned', 'Missed Value'],
+        rows: []
+    },
+    'bk-refunds': {
+        title: 'Refunded Bookings',
+        subtitle: 'Refunded appointments, amounts, and refund status',
+        icon: 'rotate-ccw',
+        backCat: 'bookings',
+        kpi1: { label: 'Refunded Bookings', value: 'Loading...' },
+        kpi2: { label: 'Total Refunded',    value: 'Loading...' },
+        kpi3: { label: 'Average Refund',    value: 'Loading...' },
+        kpi4: { label: 'Refund Rate',       value: 'Loading...' },
+        tableTitle: 'Refunded Booking Records',
+        headers: ['Refund Ref', 'Refund Date', 'Original Booking ID', 'Customer Name', 'Refund Method', 'Refund Amount', 'Reason / Notes'],
+        rows: []
     },
 
     // Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬
@@ -469,11 +477,12 @@ const TYPE_MODULE_MAP = {
     'sales-top-services': './report-modules/sales.js',
 
     // Bookings
-    'bookings': './report-modules/bookings.js',
-    'bk-total': './report-modules/bookings.js',
+    'bookings':     './report-modules/bookings.js',
+    'bk-total':     './report-modules/bookings.js',
     'bk-completed': './report-modules/bookings.js',
     'bk-cancelled': './report-modules/bookings.js',
-    'bk-no-shows': './report-modules/bookings.js',
+    'bk-no-shows':  './report-modules/bookings.js',
+    'bk-refunds':   './report-modules/bookings.js',
 
     // Customers
     'customers': './report-modules/customers.js',

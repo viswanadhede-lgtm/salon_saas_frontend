@@ -1,6 +1,9 @@
 // scripts/reports/report-category.js
 // Dynamically renders sub-report cards based on ?cat= URL parameter
 
+import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js/+esm';
+import { SUPABASE_URL, SUPABASE_ANON_KEY } from '../../config/supabase-config.js';
+
 // ============================================================
 // Category Configuration
 // Each category has: title, subtitle, icon, color, and an
@@ -111,37 +114,37 @@ const CATEGORIES = {
     },
     bookings: {
         title: 'Bookings',
-        subtitle: 'Appointment analytics and scheduling insights',
+        subtitle: 'Booking outcomes and their financial impact',
         icon: 'calendar',
         colorClass: 'bg-indigo',
         subReports: [
             {
-                type: 'bk-total',
-                label: 'Total Appointments',
-                desc: 'All appointments across all statuses',
-                icon: 'calendar',
-                colorClass: 'bg-indigo'
-            },
-            {
                 type: 'bk-completed',
-                label: 'Completed',
-                desc: 'Successfully completed appointments',
+                label: 'Completed Bookings & Revenue',
+                desc: 'Realized revenue and service performance',
                 icon: 'check-circle',
                 colorClass: 'bg-emerald'
             },
             {
                 type: 'bk-cancelled',
-                label: 'Cancelled',
-                desc: 'Cancellations by reason and time period',
+                label: 'Cancelled Bookings',
+                desc: 'Cancellation count, reasons, and value loss',
                 icon: 'x-circle',
                 colorClass: 'bg-rose'
             },
             {
                 type: 'bk-no-shows',
-                label: 'No-Shows',
-                desc: 'Customers who missed their appointments',
+                label: 'No-Show Bookings',
+                desc: 'Missed appointments and estimated value missed',
                 icon: 'user-x',
                 colorClass: 'bg-amber'
+            },
+            {
+                type: 'bk-refunds',
+                label: 'Refunded Bookings',
+                desc: 'Refund count, amounts, and refund rate',
+                icon: 'rotate-ccw',
+                colorClass: 'bg-purple'
             }
         ]
     },
@@ -192,6 +195,105 @@ const CATEGORIES = {
 };
 
 // ============================================================
+// Bookings Hub: Live Stat Cards (bookings category only)
+// ============================================================
+
+async function renderBookingsCategoryStats() {
+    const container = document.getElementById('categoryStatCards');
+    if (!container) return;
+
+    const companyId = localStorage.getItem('company_id');
+    if (!companyId) return;
+
+    // Show skeleton
+    container.style.display = 'grid';
+    container.innerHTML = `
+        <div class="bk-hub-stat skeleton"><div class="bk-hub-stat-icon"></div><div class="bk-hub-stat-body"><span class="bk-hub-stat-val">...</span><span class="bk-hub-stat-label">Loading</span></div></div>
+        <div class="bk-hub-stat skeleton"><div class="bk-hub-stat-icon"></div><div class="bk-hub-stat-body"><span class="bk-hub-stat-val">...</span><span class="bk-hub-stat-label">Loading</span></div></div>
+        <div class="bk-hub-stat skeleton"><div class="bk-hub-stat-icon"></div><div class="bk-hub-stat-body"><span class="bk-hub-stat-val">...</span><span class="bk-hub-stat-label">Loading</span></div></div>
+        <div class="bk-hub-stat skeleton"><div class="bk-hub-stat-icon"></div><div class="bk-hub-stat-body"><span class="bk-hub-stat-val">...</span><span class="bk-hub-stat-label">Loading</span></div></div>
+    `;
+
+    try {
+        const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+        // Single RPC: get hub summary counts
+        const { data, error } = await supabase.rpc('get_bookings_hub_summary', {
+            p_company_id: companyId
+        });
+
+        let total = 0, completed = 0, cancelled = 0, noShows = 0;
+        let completedRevenue = '—', cancelledValue = '—', noShowValue = '—';
+
+        if (!error && data) {
+            const row = Array.isArray(data) ? data[0] : data;
+            if (row) {
+                total     = Number(row.total_bookings   || 0);
+                completed = Number(row.completed        || 0);
+                cancelled = Number(row.cancelled        || 0);
+                noShows   = Number(row.no_shows         || 0);
+                if (row.completed_revenue != null)
+                    completedRevenue = '₹' + Number(row.completed_revenue).toLocaleString('en-IN');
+                if (row.cancelled_value != null)
+                    cancelledValue = '₹' + Number(row.cancelled_value).toLocaleString('en-IN');
+                if (row.no_show_value != null)
+                    noShowValue = '₹' + Number(row.no_show_value).toLocaleString('en-IN');
+            }
+        }
+
+        const fmt = n => Number(n).toLocaleString('en-IN');
+
+        container.innerHTML = `
+            <div class="bk-hub-stat">
+                <div class="bk-hub-stat-icon bk-hub-indigo">
+                    <i data-feather="calendar"></i>
+                </div>
+                <div class="bk-hub-stat-body">
+                    <span class="bk-hub-stat-val">${fmt(total)}</span>
+                    <span class="bk-hub-stat-label">Total Bookings</span>
+                    <span class="bk-hub-stat-desc">All statuses combined</span>
+                </div>
+            </div>
+            <div class="bk-hub-stat">
+                <div class="bk-hub-stat-icon bk-hub-green">
+                    <i data-feather="check-circle"></i>
+                </div>
+                <div class="bk-hub-stat-body">
+                    <span class="bk-hub-stat-val">${fmt(completed)}</span>
+                    <span class="bk-hub-stat-label">Completed Bookings</span>
+                    <span class="bk-hub-stat-desc bk-hub-green-txt">Realised revenue: ${completedRevenue}</span>
+                </div>
+            </div>
+            <div class="bk-hub-stat">
+                <div class="bk-hub-stat-icon bk-hub-red">
+                    <i data-feather="x-circle"></i>
+                </div>
+                <div class="bk-hub-stat-body">
+                    <span class="bk-hub-stat-val">${fmt(cancelled)}</span>
+                    <span class="bk-hub-stat-label">Cancelled Bookings</span>
+                    <span class="bk-hub-stat-desc bk-hub-red-txt">Estimated value: ${cancelledValue}</span>
+                </div>
+            </div>
+            <div class="bk-hub-stat">
+                <div class="bk-hub-stat-icon bk-hub-amber">
+                    <i data-feather="user-x"></i>
+                </div>
+                <div class="bk-hub-stat-body">
+                    <span class="bk-hub-stat-val">${fmt(noShows)}</span>
+                    <span class="bk-hub-stat-label">No-Shows</span>
+                    <span class="bk-hub-stat-desc bk-hub-red-txt">Estimated missed: ${noShowValue}</span>
+                </div>
+            </div>
+        `;
+    } catch (err) {
+        console.warn('Bookings hub stat cards failed:', err);
+        container.style.display = 'none';
+    }
+
+    if (typeof feather !== 'undefined') feather.replace();
+}
+
+// ============================================================
 // Render
 // ============================================================
 
@@ -218,9 +320,22 @@ document.addEventListener('DOMContentLoaded', () => {
         bannerIcon.innerHTML = `<i data-feather="${config.icon}"></i>`;
     }
 
+    // Bookings-only: inject live stat cards above the sub-reports grid
+    if (cat === 'bookings') {
+        renderBookingsCategoryStats();
+    }
+
     // Render sub-report cards
     const grid = document.getElementById('subReportsGrid');
     if (!grid) return;
+
+    // Add section heading for bookings
+    if (cat === 'bookings') {
+        const heading = document.createElement('p');
+        heading.className = 'sub-reports-section-label';
+        heading.textContent = 'Booking Reports';
+        grid.parentNode.insertBefore(heading, grid);
+    }
 
     grid.innerHTML = config.subReports.map(sr => `
         <a href="report-detail.html?type=${sr.type}&cat=${cat}" class="sub-report-card" id="sr-${sr.type}">

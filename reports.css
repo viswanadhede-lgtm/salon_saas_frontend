@@ -347,3 +347,143 @@
 .bg-pink    { background: rgba(236, 72,  153, 0.1); color: #ec4899; }
 .bg-lime    { background: rgba(132, 204, 22,  0.1); color: #84cc16; }
 .bg-slate   { background: rgba(100, 116, 139, 0.1); color: #64748b; }
+
+/* ================================================================
+   Bookings Hub — Stat Cards (report-category.html?cat=bookings)
+   ================================================================ */
+
+.bk-hub-stats-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 1rem;
+    margin-bottom: 0.75rem;
+}
+
+@media (max-width: 1024px) {
+    .bk-hub-stats-grid { grid-template-columns: repeat(2, 1fr); }
+}
+
+@media (max-width: 600px) {
+    .bk-hub-stats-grid { grid-template-columns: 1fr; }
+}
+
+.bk-hub-stat {
+    background: #ffffff;
+    border: 1px solid #f1f5f9;
+    border-radius: 16px;
+    padding: 1.25rem 1.5rem;
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    transition: transform 0.25s ease, box-shadow 0.25s ease;
+    position: relative;
+    overflow: hidden;
+}
+
+.bk-hub-stat::before {
+    content: '';
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    height: 3px;
+    background: linear-gradient(90deg, currentColor, transparent);
+    opacity: 0;
+    transition: opacity 0.3s ease;
+}
+
+.bk-hub-stat:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 8px 24px -6px rgba(0, 0, 0, 0.08);
+}
+
+.bk-hub-stat:hover::before {
+    opacity: 0.4;
+}
+
+/* Icon bubble */
+.bk-hub-stat-icon {
+    width: 46px;
+    height: 46px;
+    border-radius: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+}
+
+.bk-hub-stat-icon i {
+    width: 20px;
+    height: 20px;
+}
+
+/* Color variants */
+.bk-hub-indigo { background: rgba(99, 102, 241, 0.1); color: #6366f1; }
+.bk-hub-green  { background: rgba(16, 185, 129, 0.1); color: #10b981; }
+.bk-hub-red    { background: rgba(239, 68,  68,  0.1); color: #ef4444; }
+.bk-hub-amber  { background: rgba(245, 158, 11,  0.1); color: #f59e0b; }
+
+/* Text content */
+.bk-hub-stat-body {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    min-width: 0;
+}
+
+.bk-hub-stat-val {
+    font-size: 1.75rem;
+    font-weight: 700;
+    color: #0f172a;
+    line-height: 1;
+    letter-spacing: -0.02em;
+}
+
+.bk-hub-stat-label {
+    font-size: 0.8rem;
+    font-weight: 600;
+    color: #475569;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.bk-hub-stat-desc {
+    font-size: 0.72rem;
+    font-weight: 500;
+    color: #94a3b8;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+/* Coloured description variants */
+.bk-hub-green-txt { color: #10b981 !important; }
+.bk-hub-red-txt   { color: #ef4444 !important; }
+
+/* Section label above the sub-reports grid */
+.sub-reports-section-label {
+    font-size: 0.7rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: #94a3b8;
+    margin: 0.5rem 0 0;
+    padding: 0;
+}
+
+/* Skeleton loading pulse */
+.bk-hub-stat.skeleton {
+    animation: bk-pulse 1.4s ease-in-out infinite;
+}
+
+.bk-hub-stat.skeleton .bk-hub-stat-icon,
+.bk-hub-stat.skeleton .bk-hub-stat-body {
+    opacity: 0.3;
+}
+
+@keyframes bk-pulse {
+    0%, 100% { opacity: 1; }
+    50%       { opacity: 0.6; }
+}
+
