@@ -111,37 +111,72 @@ const CATEGORIES = {
     },
     bookings: {
         title: 'Bookings',
-        subtitle: 'Appointment analytics and scheduling insights',
+        subtitle: 'Booking outcomes and their financial impact.',
         icon: 'calendar',
         colorClass: 'bg-indigo',
-        subReports: [
+        sectionTitle: 'Booking Reports',
+        statCards: [
             {
-                type: 'bk-total',
-                label: 'Total Appointments',
-                desc: 'All appointments across all statuses',
+                label: 'Total bookings',
+                value: '—',
+                desc: 'All relevant statuses',
                 icon: 'calendar',
-                colorClass: 'bg-indigo'
+                iconColor: '#3b82f6',
+                descClass: ''
             },
             {
-                type: 'bk-completed',
                 label: 'Completed',
-                desc: 'Successfully completed appointments',
-                icon: 'check-circle',
-                colorClass: 'bg-emerald'
+                value: '—',
+                desc: 'Realized service revenue',
+                icon: 'calendar',
+                iconColor: '#10b981',
+                descClass: 'text-green'
+            },
+            {
+                label: 'Cancelled',
+                value: '—',
+                desc: 'Estimated value affected',
+                icon: 'calendar',
+                iconColor: '#ef4444',
+                descClass: 'text-red'
+            },
+            {
+                label: 'No-shows',
+                value: '—',
+                desc: 'Estimated value missed',
+                icon: 'user-x',
+                iconColor: '#f59e0b',
+                descClass: 'text-red'
+            }
+        ],
+        subReports: [
+            {
+                type: 'bk-completed',
+                label: 'Completed Bookings & Revenue',
+                desc: 'Completed appointments, realized revenue, and service performance.',
+                icon: 'calendar',
+                iconColor: '#10b981'
             },
             {
                 type: 'bk-cancelled',
-                label: 'Cancelled',
-                desc: 'Cancellations by reason and time period',
-                icon: 'x-circle',
-                colorClass: 'bg-rose'
+                label: 'Cancelled Bookings',
+                desc: 'Cancellation count, reasons, and estimated revenue loss.',
+                icon: 'calendar',
+                iconColor: '#ef4444'
             },
             {
                 type: 'bk-no-shows',
-                label: 'No-Shows',
-                desc: 'Customers who missed their appointments',
+                label: 'No-Show Bookings',
+                desc: 'Missed appointments, repeat no-shows, and estimated loss.',
                 icon: 'user-x',
-                colorClass: 'bg-amber'
+                iconColor: '#f59e0b'
+            },
+            {
+                type: 'bk-refunded',
+                label: 'Refunded Bookings',
+                desc: 'Refunded appointments, amounts, and refund status.',
+                icon: 'briefcase',
+                iconColor: '#8b5cf6'
             }
         ]
     },
@@ -204,36 +239,58 @@ document.addEventListener('DOMContentLoaded', () => {
     // Update page <title>
     document.title = `${config.title} Reports - BharathBots`;
 
-    // Update banner
-    const bannerIcon  = document.getElementById('bannerIcon');
+    // Update banner text
     const bannerTitle = document.getElementById('bannerTitle');
     const bannerSub   = document.getElementById('bannerSubtitle');
 
-    if (bannerIcon)  bannerIcon.className  = `category-banner-icon ${config.colorClass}`;
     if (bannerTitle) bannerTitle.textContent = `${config.title} Reports`;
     if (bannerSub)   bannerSub.textContent  = config.subtitle;
 
-    // Re-render the feather icon inside the banner
-    if (bannerIcon) {
-        bannerIcon.innerHTML = `<i data-feather="${config.icon}"></i>`;
+    // Render category-level Stat Cards if configured (e.g. Screenshot 1)
+    const statCardsRow = document.getElementById('categoryStatCardsRow');
+    const mockupNote = document.getElementById('mockupNote');
+    if (statCardsRow && config.statCards && config.statCards.length > 0) {
+        statCardsRow.style.display = 'grid';
+        statCardsRow.innerHTML = config.statCards.map(sc => `
+            <div class="category-stat-card">
+                <div class="cat-stat-top">
+                    <i data-feather="${sc.icon}" style="color: ${sc.iconColor || '#3b82f6'};"></i>
+                    <span>${sc.label}</span>
+                </div>
+                <div class="cat-stat-value">${sc.value}</div>
+                <div class="cat-stat-desc ${sc.descClass || ''}">${sc.desc}</div>
+            </div>
+        `).join('');
+        if (mockupNote) mockupNote.style.display = 'block';
+    } else {
+        if (statCardsRow) statCardsRow.style.display = 'none';
+        if (mockupNote) mockupNote.style.display = 'none';
     }
 
-    // Render sub-report cards
-    const grid = document.getElementById('subReportsGrid');
-    if (!grid) return;
+    // Update Section Title
+    const sectionTitleEl = document.getElementById('subReportsSectionTitle');
+    if (sectionTitleEl) {
+        sectionTitleEl.textContent = config.sectionTitle || 'Reports';
+        sectionTitleEl.style.display = 'block';
+    }
 
-    grid.innerHTML = config.subReports.map(sr => `
-        <a href="report-detail.html?type=${sr.type}&cat=${cat}" class="sub-report-card" id="sr-${sr.type}">
-            <div class="sub-report-icon-wrap ${sr.colorClass}">
-                <i data-feather="${sr.icon}"></i>
-            </div>
-            <div class="sub-report-details">
+    // Render sub-report cards (modern 2x2 grid style)
+    const grid = document.getElementById('subReportsGrid');
+    if (grid) {
+        grid.innerHTML = config.subReports.map(sr => `
+            <a href="report-detail.html?type=${sr.type}&cat=${cat}" class="sub-report-card-modern" id="sr-${sr.type}">
+                <div>
+                    <i data-feather="${sr.icon}" class="top-icon" style="color: ${sr.iconColor || '#6366f1'};"></i>
+                </div>
                 <h3>${sr.label}</h3>
                 <p>${sr.desc}</p>
-            </div>
-            <i data-feather="chevron-right" class="arrow"></i>
-        </a>
-    `).join('');
+                <div class="card-footer-link">
+                    <span>View report</span>
+                    <i data-feather="arrow-right"></i>
+                </div>
+            </a>
+        `).join('');
+    }
 
     // Re-render all feather icons (including newly injected ones)
     if (typeof feather !== 'undefined') {

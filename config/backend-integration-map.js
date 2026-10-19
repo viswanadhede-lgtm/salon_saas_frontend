@@ -91,15 +91,15 @@
 // 3. PACKAGES TAB
 //
 // Packages Table & package_services Table (when a new package is created package name is created in the packages table and the services inside the package are written into the package_services table)
-// 
+//
 //
 //    a. Create a New Package
 //       create_package_atomic [RPC Function] - This one creates a new package.
-//       
+//
 //
 //    b. Update a Package
 //       update_package_atomic [RPC Function] -  This one updates an existing package.
-//     
+//
 
 //===================================================================================================
 // STAFF PAGE
@@ -111,7 +111,7 @@
 //
 
 //========================================================================================================
-// STAFF SCHEDULE 
+// STAFF SCHEDULE
 //========================================================================================================
 
 // staff schedule page uses 3 tables
@@ -127,20 +127,20 @@
 
 // A. Core Transaction and Booking Tables
 //
-//  1. bookings_for_business_transaction TABLE - Written By RPC Function - create_booking_atomic 
-//  2. bookings TABLE  - written By RPC Function - Create_booking_atomic 
+//  1. bookings_for_business_transaction TABLE - Written By RPC Function - create_booking_atomic
+//  2. bookings TABLE  - written By RPC Function - Create_booking_atomic
 //  3. business_transactions TABLE -
 //  4. customers TABLE
 
 // B. Catalog and Dropdown Tables — Read Operations
-//  
+//
 //  1. Services TABLE - Populates service selection options in New Booking and Edit Booking modals.
 //  2. staff TABLE - Populates staff assignment dropdowns, staff filters, and staff name lookups.
 //  3. packages TABLE - Populates package selection options in the booking modal.
 //  4. package_services TABLE - Expands a selected package into its constituent services.
 
 // C. Auxiliary Tables — Customer Profile Modal
-//  
+//
 //  1. sales_for_business_transactions TABLE - Used to retrieve retail product sales for the customer's lifetime spend calculation in viewCustomerProfile().
 //  2. membership_purchases TABLE - Used to retrieve membership purchase information for the customer's lifetime spend calculation in viewCustomerProfile().
 
@@ -157,7 +157,7 @@
 
 // 4 Core RPC Functions (plus 1 Calendar Aggregation RPC):
 
-// RPC 1: create_booking_atomic 
+// RPC 1: create_booking_atomic
 
 //  Inserts all service rows into bookings Table (one row for one service) and Inserts the 1 consolidated summary row into bookings_for_business_transaction Table.
 
@@ -188,7 +188,7 @@
 //====================================================================================================================================================================================================================
 
 
-// Bookings summary 
+// Bookings summary
 
 // 1. New Booking Creation
 
@@ -293,7 +293,7 @@
 
 //state 1 : IF Status = Booked/Confirmed  ||    AND  ||  Payment = Collect  || THEN ||  Actions show Update.
 
-//state 2 : IF Status = Completed   ||  AND  ||  Payment = Paid     ||  THEN    ||  Actions will show view 
+//state 2 : IF Status = Completed   ||  AND  ||  Payment = Paid     ||  THEN    ||  Actions will show view
 
 //state 3 : IF Status = Cancelled   ||  AND  ||  Payment = Collect  || THEN     ||  Actions will show Rebook (when the booking status is updated to cancelled the payment collect button should grey out and show cancelled with grey color light weight under the collect button )
 
@@ -303,7 +303,7 @@
 
 //state 6:  IF Status = No-Show     ||  AND  ||  Payment = Paid     ||  THEN    ||  Actions will show Info [when clicked on it will show two options Refund and Rebook ]
 
-// NOTES:   
+// NOTES:
 
 //1. Basically No-Show and Cancelled are the same
 
@@ -380,11 +380,11 @@
 
 // how a refund row in business transaction table is inserted ?
 
-// we will use a trigger * trg_create_pos_business_transaction * 
+// we will use a trigger * trg_create_pos_business_transaction *
 
-// This trigger is being used at two functions 
+// This trigger is being used at two functions
 
-//  1 is when a pos sale is happened, the create_pos_sale_atomic Function inserts into the sales table and sales for business transaction table and when a row is 
+//  1 is when a pos sale is happened, the create_pos_sale_atomic Function inserts into the sales table and sales for business transaction table and when a row is
 //   inserted in the sales for business transactions table then this trigger * trg_create_pos_business_transaction * will create a new row in business transactions    	  table...
 // 2: so we are using this trigger to do the insertion of new refund row in the business transaction table ... so it will use type = paid and type = refund ...
 //Based on the type this trigger writes the paid row and the refunded row ...
@@ -393,11 +393,11 @@
 
 //=====================================================================================================================
 
-// RPC FUNCTIONS USED: 
+// RPC FUNCTIONS USED:
 //   process_pos_refund_atomic - (Refund RPC: to be implemented for atomic return)
 
 // TRIGGER USED:
-//   trg_create_pos_business_transaction 
+//   trg_create_pos_business_transaction
 
 
 //====================================================================================================
@@ -418,16 +418,16 @@
 
 // MEMBERHSIP PLANS TAB
 
-// For Membership Plans tab it used only 1 table -  MEMBERSHIPS TABLE -  No RPC or NO Nothing 
+// For Membership Plans tab it used only 1 table -  MEMBERSHIPS TABLE -  No RPC or NO Nothing
 
 //========================================================================================================
 
-// ACTIVE MEMBERSHIPS TAB----------------- 
+// ACTIVE MEMBERSHIPS TAB-----------------
 
 // MEMBERSHIP_PURCHASES TABLE
 
 
-// ACTIVE MEMBERSHIPS TABLE - STATUS, PAYMENT & ACTIONS RELATIONSHIPS 
+// ACTIVE MEMBERSHIPS TABLE - STATUS, PAYMENT & ACTIONS RELATIONSHIPS
 
 // State 1: If Status = Active || AND || Payment = Paid || THEN || Actions will show View & cancel
 
@@ -447,9 +447,9 @@
 
 // ASSIGN MEMBERSHIP WORKING PROCESS --
 
-// When user opened assign memberhsip modal and clicked on collect payment in the assign membership modal  then the frontend will activate this RPC And what this RPC does is 
+// When user opened assign memberhsip modal and clicked on collect payment in the assign membership modal  then the frontend will activate this RPC And what this RPC does is
 
-//1. RPC will read from the 3 tables mentioned (customers, memberships and memberhsip_purchases) 
+//1. RPC will read from the 3 tables mentioned (customers, memberships and memberhsip_purchases)
 //2. write to memberhsip_purchases table
 //3. conditional write to customers table
 //4. write to business transaction table ..
@@ -499,7 +499,7 @@
 // Clicking Cancel opens the confirmation modal displaying customer name, plan name, start date, elapsed duration, and an optional Reason / Notes textarea.
 // Clicking "Cancel Membership" in the modal activates this RPC cancel_membership
 
-// so what this RPC [cancel_membership]do is (it updates only one table) it will read from membership purchases table and updates the memberhsip purchases table ... 
+// so what this RPC [cancel_membership]do is (it updates only one table) it will read from membership purchases table and updates the memberhsip purchases table ...
 
 //it updates the below columns in the membership purchases table.
 
@@ -715,11 +715,11 @@
 //  4. sales
 //  5. sales_for_business_transactions
 //  6. membership_purchases
-//  7. expenses  
+//  7. expenses
 //  8. customers
 //  9. staff
 // 10. coupons
-// 11. offers   
+// 11. offers
 
 
 //====================================================================================================================
@@ -765,7 +765,7 @@
 // What we will add: If an offer, coupon, or discount was applied, it writes one row to discount_usages.
 
 
-// b.When a Customer Returns Items (Partial Refund):  
+// b.When a Customer Returns Items (Partial Refund):
 
 // In POS, a customer can return just 1 or 2 items instead of the whole cart.
 
@@ -782,8 +782,11 @@
 
 
 
-------------------------------------------------------------------------------------------------
+//------------------------------------------------------------------------------------------------
 
+//========================================================================================================================
+// REPORTS
+//======================================================================================================================================
 
 
 

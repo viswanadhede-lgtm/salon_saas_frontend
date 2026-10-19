@@ -1,4 +1,4 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="en">
 
 <head>
@@ -58,20 +58,29 @@
                 Back to Report Library
             </a>
 
-            <!-- Category Header Banner (populated by JS) -->
-            <div class="category-header-banner" id="categoryBanner">
-                <div class="category-banner-icon" id="bannerIcon">
-                    <i data-feather="bar-chart-2"></i>
+            <!-- Category Overview Card (matches Screenshot 1) -->
+            <div class="category-overview-card" id="categoryContainer">
+                <div class="category-overview-header">
+                    <h1 id="bannerTitle">Bookings Reports</h1>
+                    <p id="bannerSubtitle">Booking outcomes and their financial impact.</p>
                 </div>
-                <div class="category-banner-text">
-                    <h2 id="bannerTitle">Loading...</h2>
-                    <p id="bannerSubtitle">Select a sub-report to view detailed analytics</p>
-                </div>
-            </div>
 
-            <!-- Sub-reports grid (populated by JS) -->
-            <div class="sub-reports-grid" id="subReportsGrid">
-                <!-- Injected by report-category.js -->
+                <!-- 4 Top Stat Cards Row -->
+                <div class="category-stat-cards" id="categoryStatCardsRow" style="display: none;">
+                    <!-- Injected dynamically by report-category.js -->
+                </div>
+
+                <div class="mockup-note" id="mockupNote" style="display: none;">
+                    Design mockup only. Values are placeholders, not live data.
+                </div>
+
+                <!-- Sub-reports Section Title -->
+                <div class="reports-section-title" id="subReportsSectionTitle">Booking Reports</div>
+
+                <!-- Sub-reports grid -->
+                <div class="sub-reports-grid-2x2" id="subReportsGrid">
+                    <!-- Injected by report-category.js -->
+                </div>
             </div>
         </main>
     </div>
