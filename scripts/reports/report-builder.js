@@ -323,15 +323,15 @@ const REPORT_TYPES = {
 
     // ── BOOKINGS SUB-REPORTS ─────────────────────────────────────────────────
     'bk-total': {
-        title: 'Total Appointments',
-        subtitle: 'All appointments across all statuses',
+        title: 'Total Bookings',
+        subtitle: 'All bookings across all statuses',
         icon: 'calendar',
         backCat: 'bookings',
         kpi1: { label: 'Total Bookings', value: 'Loading...' },
         kpi2: { label: 'Completed',      value: 'Loading...' },
         kpi3: { label: 'Cancelled',      value: 'Loading...' },
         kpi4: { label: 'No-Shows',       value: 'Loading...' },
-        tableTitle: 'All Appointments',
+        tableTitle: 'All Bookings',
         headers: ['Date', 'Time', 'Customer', 'Service', 'Staff', 'Amount', 'Status'],
         rows: []
     },

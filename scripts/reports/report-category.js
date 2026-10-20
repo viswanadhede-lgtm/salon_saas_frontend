@@ -119,8 +119,8 @@ const CATEGORIES = {
         subReports: [
             {
                 type: 'bk-total',
-                label: 'Total Appointments',
-                desc: 'All appointments across all statuses',
+                label: 'Total Bookings',
+                desc: 'All bookings across all statuses',
                 icon: 'calendar',
                 colorClass: 'bg-indigo'
             },
@@ -396,14 +396,14 @@ async function renderBookingsLandingPage() {
 
         <!-- 5 Detailed Sub-Report Cards Grid -->
         <div class="bk-detailed-grid">
-            <!-- 1. Total Appointments -->
+            <!-- 1. Total Bookings -->
             <a href="report-detail.html?type=bk-total&cat=bookings" class="bk-detailed-card" id="cardBkTotal">
                 <div class="bk-card-top">
                     <div class="bk-card-icon bg-indigo-circle">
                         <i data-feather="calendar"></i>
                     </div>
                     <div class="bk-card-info">
-                        <h3>Total Appointments</h3>
+                        <h3>Total Bookings</h3>
                         <p>All bookings, dates, services and statuses</p>
                     </div>
                     <i data-feather="chevron-right" class="bk-card-arrow"></i>
