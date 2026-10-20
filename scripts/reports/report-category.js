@@ -301,7 +301,7 @@ async function renderBookingsLandingPage() {
                     <div class="bk-snap-body">
                         <span class="bk-snap-label">Completed Bookings</span>
                         <span class="bk-snap-val" id="bkSnapCompleted">—</span>
-                        <span class="bk-snap-sub txt-green" id="bkSnapRevenue">Realised revenue: —</span>
+                        <span class="bk-snap-sub txt-green" id="bkSnapRevenue">Realised revenue:<br>—</span>
                     </div>
                     <div class="bk-mini-bars green-bars" id="bkBarsCompleted">
                         <span style="height: 3px; opacity: 0.22;"></span>
@@ -322,7 +322,7 @@ async function renderBookingsLandingPage() {
                     <div class="bk-snap-body">
                         <span class="bk-snap-label">Cancelled Bookings</span>
                         <span class="bk-snap-val" id="bkSnapCancelled">—</span>
-                        <span class="bk-snap-sub txt-red" id="bkSnapCancelVal">Estimated value: —</span>
+                        <span class="bk-snap-sub txt-red" id="bkSnapCancelVal">Estimated value:<br>—</span>
                     </div>
                     <div class="bk-mini-bars red-bars" id="bkBarsCancelled">
                         <span style="height: 3px; opacity: 0.22;"></span>
@@ -343,7 +343,7 @@ async function renderBookingsLandingPage() {
                     <div class="bk-snap-body">
                         <span class="bk-snap-label">No-Shows</span>
                         <span class="bk-snap-val" id="bkSnapNoShows">—</span>
-                        <span class="bk-snap-sub txt-amber" id="bkSnapNoShowVal">Estimated missed: —</span>
+                        <span class="bk-snap-sub txt-amber" id="bkSnapNoShowVal">Estimated missed:<br>—</span>
                     </div>
                     <div class="bk-mini-bars amber-bars" id="bkBarsNoShows">
                         <span style="height: 3px; opacity: 0.22;"></span>
@@ -364,7 +364,7 @@ async function renderBookingsLandingPage() {
                     <div class="bk-snap-body">
                         <span class="bk-snap-label">Refunded Bookings</span>
                         <span class="bk-snap-val" id="bkSnapRefunded">—</span>
-                        <span class="bk-snap-sub txt-purple" id="bkSnapRefundVal">Total refunded: —</span>
+                        <span class="bk-snap-sub txt-purple" id="bkSnapRefundVal">Total refunded:<br>—</span>
                     </div>
                     <div class="bk-mini-bars purple-bars" id="bkBarsRefunded">
                         <span style="height: 3px; opacity: 0.22;"></span>
@@ -644,21 +644,22 @@ async function renderBookingsLandingPage() {
         const fmt = (n) => Number(n || 0).toLocaleString('en-IN');
         const cur = (n) => '\u20b9' + Number(n || 0).toLocaleString('en-IN', { maximumFractionDigits: 0 });
 
-        const setEl = (id, val) => { const el = document.getElementById(id); if (el) el.textContent = val; };
+        const setEl   = (id, val) => { const el = document.getElementById(id); if (el) el.textContent = val; };
+        const setHtml = (id, val) => { const el = document.getElementById(id); if (el) el.innerHTML = val; };
 
         const refCount = (ref.refunded_bookings !== undefined && ref.refunded_bookings !== null) ? ref.refunded_bookings : (sc.refunded_bookings || 0);
         const refVal   = (ref.total_refunded !== undefined && ref.total_refunded !== null) ? ref.total_refunded : (sc.total_refunded_amount || 0);
 
-        // Section 1: Snapshot Cards
-        setEl('bkSnapTotal',     fmt(sc.total_bookings));
-        setEl('bkSnapCompleted', fmt(sc.completed_bookings));
-        setEl('bkSnapRevenue',   'Realised revenue: ' + cur(sc.realized_revenue));
-        setEl('bkSnapCancelled', fmt(sc.cancelled_bookings));
-        setEl('bkSnapCancelVal', 'Estimated value: ' + cur(sc.estimated_value_affected));
-        setEl('bkSnapNoShows',   fmt(sc.no_show_bookings));
-        setEl('bkSnapNoShowVal', 'Estimated missed: ' + cur(sc.estimated_value_missed));
-        setEl('bkSnapRefunded',  fmt(refCount));
-        setEl('bkSnapRefundVal', 'Total refunded: ' + cur(refVal));
+        // Section 1: Snapshot Cards (Descriptions split onto 2 lines to never truncate)
+        setEl('bkSnapTotal',       fmt(sc.total_bookings));
+        setEl('bkSnapCompleted',   fmt(sc.completed_bookings));
+        setHtml('bkSnapRevenue',   'Realised revenue:<br>' + cur(sc.realized_revenue));
+        setEl('bkSnapCancelled',   fmt(sc.cancelled_bookings));
+        setHtml('bkSnapCancelVal', 'Estimated value:<br>' + cur(sc.estimated_value_affected));
+        setEl('bkSnapNoShows',     fmt(sc.no_show_bookings));
+        setHtml('bkSnapNoShowVal', 'Estimated missed:<br>' + cur(sc.estimated_value_missed));
+        setEl('bkSnapRefunded',    fmt(refCount));
+        setHtml('bkSnapRefundVal', 'Total refunded:<br>' + cur(refVal));
 
         // Section 1.1: Dynamic 7-Day Trend Mini Charts
         const totalRows     = (result && result.bk_total     && result.bk_total.rows)     ? result.bk_total.rows     : [];
