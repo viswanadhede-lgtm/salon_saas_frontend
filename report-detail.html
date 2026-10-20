@@ -386,6 +386,21 @@
             }
         }
 
+        @media (max-width: 768px) {
+            .table-top-bar {
+                flex-direction: column;
+                align-items: stretch;
+                gap: 12px;
+            }
+            .table-actions-group {
+                margin-left: 0;
+                max-width: 100%;
+            }
+            .search-box {
+                max-width: 100%;
+            }
+        }
+
         @media (max-width: 600px) {
             #reportDateFilterMenu {
                 width: calc(100vw - 24px);
@@ -618,6 +633,8 @@
             display: flex;
             align-items: center;
             gap: 12px;
+            flex-shrink: 0;
+            white-space: nowrap;
         }
 
         .table-title-area h2 {
@@ -637,80 +654,55 @@
         }
 
         .table-actions-group {
+            flex: 1;
             display: flex;
-            gap: 8px;
-        }
-
-        .btn-table-action {
-            display: inline-flex;
-            align-items: center;
-            gap: 6px;
-            padding: 7px 14px;
-            border: 1px solid #cbd5e1;
-            border-radius: 8px;
-            background: #ffffff;
-            color: #475569;
-            font-size: 0.825rem;
-            font-weight: 600;
-            cursor: pointer;
-            transition: all 0.2s ease;
-        }
-
-        .btn-table-action:hover {
-            background: #f8fafc;
-            color: #0f172a;
-            border-color: #94a3b8;
-        }
-
-        .btn-table-action i {
-            width: 14px;
-            height: 14px;
-        }
-
-        .table-filter-toolbar {
-            display: flex;
-            flex-wrap: wrap;
-            gap: 14px;
-            align-items: center;
-            justify-content: space-between;
-            padding: 0.85rem 1.5rem;
-            background: #f8fafc;
-            border-bottom: 1px solid #e2e8f0;
+            justify-content: flex-end;
+            margin-left: 2rem;
+            max-width: 650px;
+            width: 100%;
         }
 
         .search-box {
             position: relative;
-            flex: 1;
-            max-width: 320px;
-            min-width: 220px;
+            width: 100%;
+            max-width: 650px;
         }
 
-        .search-box i {
+        .search-box i,
+        .search-box svg {
             position: absolute;
-            left: 11px;
+            left: 14px;
             top: 50%;
             transform: translateY(-50%);
-            width: 15px;
-            height: 15px;
+            width: 17px;
+            height: 17px;
             color: #94a3b8;
             pointer-events: none;
+            display: block;
         }
 
         .search-box input {
             width: 100%;
-            padding: 8px 12px 8px 34px;
+            height: 42px;
+            padding: 0 16px 0 42px;
             border: 1px solid #cbd5e1;
-            border-radius: 8px;
-            font-size: 0.85rem;
+            border-radius: 9px;
+            font-size: 0.875rem;
             background: #ffffff;
             color: #0f172a;
             outline: none;
             transition: border-color 0.2s, box-shadow 0.2s;
+            box-shadow: 0 1px 2px rgba(0, 0, 0, 0.02);
         }
 
         .search-box input:focus {
             border-color: #6366f1;
             box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.12);
+        }
+
+        .search-box input::placeholder {
+            color: #94a3b8;
+            font-size: 0.85rem;
         }
 
         .filter-controls-wrap {
