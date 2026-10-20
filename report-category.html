@@ -58,23 +58,24 @@
                 Back to Report Library
             </a>
 
-            <!-- Category Header Banner (populated by JS) -->
-            <div class="category-header-banner" id="categoryBanner">
-                <div class="category-banner-icon" id="bannerIcon">
-                    <i data-feather="bar-chart-2"></i>
-                </div>
-                <div class="category-banner-text">
-                    <h2 id="bannerTitle">Loading...</h2>
-                    <p id="bannerSubtitle">Select a sub-report to view detailed analytics</p>
-                </div>
-            </div>
+            <!-- Dedicated Bookings Hub View (active when ?cat=bookings) -->
+            <div id="bookingsHubView" style="display: none;"></div>
 
-            <!-- Bookings Hub Stat Cards (injected by JS for ?cat=bookings only) -->
-            <div id="categoryStatCards" class="bk-hub-stats-grid" style="display:none;"></div>
+            <!-- Default Category View (active when ?cat !== 'bookings') -->
+            <div id="defaultCategoryView">
+                <div class="category-header-banner" id="categoryBanner">
+                    <div class="category-banner-icon" id="bannerIcon">
+                        <i data-feather="bar-chart-2"></i>
+                    </div>
+                    <div class="category-banner-text">
+                        <h2 id="bannerTitle">Loading...</h2>
+                        <p id="bannerSubtitle">Select a sub-report to view detailed analytics</p>
+                    </div>
+                </div>
 
-            <!-- Sub-reports grid (populated by JS) -->
-            <div class="sub-reports-grid" id="subReportsGrid">
-                <!-- Injected by report-category.js -->
+                <div class="sub-reports-grid" id="subReportsGrid">
+                    <!-- Injected by report-category.js -->
+                </div>
             </div>
         </main>
     </div>

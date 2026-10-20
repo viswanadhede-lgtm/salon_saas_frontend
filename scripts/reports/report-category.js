@@ -201,62 +201,342 @@ const CATEGORIES = {
 };
 
 // ============================================================
-// Bookings Hub: Stat Cards — live from get_bookings_report RPC
+// Bookings Hub: Landing Page — live from get_bookings_report RPC
 // ============================================================
 
-async function renderBookingsCategoryStats() {
-    const container = document.getElementById('categoryStatCards');
-    if (!container) return;
+async function renderBookingsLandingPage() {
+    const hubView     = document.getElementById('bookingsHubView');
+    const defaultView = document.getElementById('defaultCategoryView');
+    if (!hubView) return;
 
-    container.style.display = 'grid';
+    if (defaultView) defaultView.style.display = 'none';
+    hubView.style.display = 'block';
 
-    // Render skeleton immediately
-    container.innerHTML = `
-        <div class="bk-hub-stat">
-            <div class="bk-hub-stat-icon bk-hub-indigo"><i data-feather="calendar"></i></div>
-            <div class="bk-hub-stat-body">
-                <span class="bk-hub-stat-val" id="bkHubTotal">—</span>
-                <span class="bk-hub-stat-label">Total Bookings</span>
-                <span class="bk-hub-stat-desc">All relevant statuses</span>
+    const now          = new Date();
+    const todayStr     = now.toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' });
+    const storedBranch = localStorage.getItem('branch_name') || localStorage.getItem('active_branch_name') || 'Main Branch';
+
+    // 1. Render initial layout matching screenshot exactly
+    hubView.innerHTML = `
+        <!-- Hero Banner -->
+        <div class="bk-hero-banner">
+            <div class="bk-hero-left">
+                <div class="bk-hero-icon-box">
+                    <i data-feather="calendar"></i>
+                </div>
+                <div class="bk-hero-text">
+                    <h1>Bookings Reports</h1>
+                    <p>Booking outcomes and their financial impact</p>
+                </div>
+            </div>
+            <div class="bk-hero-right">
+                <div class="bk-hero-backdrop-glow"></div>
+                <div class="bk-hero-graphic-card">
+                    <div class="bk-hero-card-header">
+                        <div class="bk-hero-cal-mini">
+                            <i data-feather="calendar"></i>
+                        </div>
+                        <div class="bk-hero-cal-lines">
+                            <div class="bk-hero-line w-full"></div>
+                            <div class="bk-hero-line w-half"></div>
+                        </div>
+                    </div>
+                    <div class="bk-hero-card-bars">
+                        <div class="bk-hero-3d-bar bar-1"></div>
+                        <div class="bk-hero-3d-bar bar-2"></div>
+                        <div class="bk-hero-3d-bar bar-3"></div>
+                        <div class="bk-hero-3d-bar bar-4"></div>
+                    </div>
+                </div>
             </div>
         </div>
-        <div class="bk-hub-stat">
-            <div class="bk-hub-stat-icon bk-hub-green"><i data-feather="check-circle"></i></div>
-            <div class="bk-hub-stat-body">
-                <span class="bk-hub-stat-val" id="bkHubCompleted">—</span>
-                <span class="bk-hub-stat-label">Completed Bookings</span>
-                <span class="bk-hub-stat-desc bk-hub-green-txt" id="bkHubRevenue">Realised revenue: —</span>
+
+        <!-- Section 1: Quick Metrics -->
+        <div class="bk-section-header">
+            <div>
+                <h2>Quick Metrics</h2>
+                <p class="bk-section-subtitle" id="bkMetricsSubtitle">Key booking metrics for ${todayStr} • ${storedBranch}</p>
+            </div>
+            <div class="bk-section-badge-wrap">
+                <span class="bk-badge-blue">SUMMARY</span>
+                <span class="bk-info-text"><i data-feather="info"></i> Quick snapshot of bookings</span>
             </div>
         </div>
-        <div class="bk-hub-stat">
-            <div class="bk-hub-stat-icon bk-hub-red"><i data-feather="x-circle"></i></div>
-            <div class="bk-hub-stat-body">
-                <span class="bk-hub-stat-val" id="bkHubCancelled">—</span>
-                <span class="bk-hub-stat-label">Cancelled Bookings</span>
-                <span class="bk-hub-stat-desc bk-hub-red-txt" id="bkHubCancelVal">Estimated value: —</span>
+
+        <!-- 4 Snapshot Stat Cards -->
+        <div class="bk-snapshot-grid">
+            <!-- 1. Total Bookings -->
+            <div class="bk-snapshot-card">
+                <div class="bk-snap-icon bg-indigo-circle">
+                    <i data-feather="calendar"></i>
+                </div>
+                <div class="bk-snap-body">
+                    <span class="bk-snap-label">Total Bookings</span>
+                    <span class="bk-snap-val" id="bkSnapTotal">—</span>
+                    <span class="bk-snap-sub">All booking statuses</span>
+                </div>
+                <div class="bk-mini-bars blue-bars">
+                    <span style="height: 10px;"></span>
+                    <span style="height: 16px;"></span>
+                    <span style="height: 22px;"></span>
+                    <span style="height: 30px;"></span>
+                </div>
+            </div>
+
+            <!-- 2. Completed Bookings -->
+            <div class="bk-snapshot-card">
+                <div class="bk-snap-icon bg-green-circle">
+                    <i data-feather="check-circle"></i>
+                </div>
+                <div class="bk-snap-body">
+                    <span class="bk-snap-label">Completed Bookings</span>
+                    <span class="bk-snap-val" id="bkSnapCompleted">—</span>
+                    <span class="bk-snap-sub txt-green" id="bkSnapRevenue">Realised revenue: —</span>
+                </div>
+                <div class="bk-mini-bars green-bars">
+                    <span style="height: 10px;"></span>
+                    <span style="height: 16px;"></span>
+                    <span style="height: 22px;"></span>
+                    <span style="height: 30px;"></span>
+                </div>
+            </div>
+
+            <!-- 3. Cancelled Bookings -->
+            <div class="bk-snapshot-card">
+                <div class="bk-snap-icon bg-red-circle">
+                    <i data-feather="x-circle"></i>
+                </div>
+                <div class="bk-snap-body">
+                    <span class="bk-snap-label">Cancelled Bookings</span>
+                    <span class="bk-snap-val" id="bkSnapCancelled">—</span>
+                    <span class="bk-snap-sub txt-red" id="bkSnapCancelVal">Estimated value: —</span>
+                </div>
+                <div class="bk-mini-bars red-bars">
+                    <span style="height: 10px;"></span>
+                    <span style="height: 16px;"></span>
+                    <span style="height: 22px;"></span>
+                    <span style="height: 30px;"></span>
+                </div>
+            </div>
+
+            <!-- 4. No-Shows -->
+            <div class="bk-snapshot-card">
+                <div class="bk-snap-icon bg-amber-circle">
+                    <i data-feather="user-x"></i>
+                </div>
+                <div class="bk-snap-body">
+                    <span class="bk-snap-label">No-Shows</span>
+                    <span class="bk-snap-val" id="bkSnapNoShows">—</span>
+                    <span class="bk-snap-sub txt-amber" id="bkSnapNoShowVal">Estimated missed: —</span>
+                </div>
+                <div class="bk-mini-bars amber-bars">
+                    <span style="height: 10px;"></span>
+                    <span style="height: 16px;"></span>
+                    <span style="height: 22px;"></span>
+                    <span style="height: 30px;"></span>
+                </div>
             </div>
         </div>
-        <div class="bk-hub-stat">
-            <div class="bk-hub-stat-icon bk-hub-amber"><i data-feather="user-x"></i></div>
-            <div class="bk-hub-stat-body">
-                <span class="bk-hub-stat-val" id="bkHubNoShows">—</span>
-                <span class="bk-hub-stat-label">No-Shows</span>
-                <span class="bk-hub-stat-desc bk-hub-red-txt" id="bkHubNoShowVal">Estimated missed: —</span>
+
+        <!-- Section 2: Explore Detailed Reports -->
+        <div class="bk-section-header" style="margin-top: 2.25rem;">
+            <div>
+                <h2>Explore Detailed Reports</h2>
+                <p class="bk-section-subtitle">Get in-depth insights for each booking category</p>
             </div>
+            <div class="bk-section-badge-wrap">
+                <span class="bk-badge-purple">5 REPORTS</span>
+                <span class="bk-info-text"><i data-feather="info"></i> Click any report to view detailed records</span>
+            </div>
+        </div>
+
+        <!-- 5 Detailed Sub-Report Cards Grid -->
+        <div class="bk-detailed-grid">
+            <!-- 1. Total Appointments -->
+            <a href="report-detail.html?type=bk-total&cat=bookings" class="bk-detailed-card" id="cardBkTotal">
+                <div class="bk-card-top">
+                    <div class="bk-card-icon bg-indigo-circle">
+                        <i data-feather="calendar"></i>
+                    </div>
+                    <div class="bk-card-info">
+                        <h3>Total Appointments</h3>
+                        <p>All bookings, dates, services and statuses</p>
+                    </div>
+                    <i data-feather="chevron-right" class="bk-card-arrow"></i>
+                </div>
+                <div class="bk-card-bottom">
+                    <div class="bk-metric-chip chip-blue">
+                        <span class="bk-chip-val" id="bkCardTotalCount">—</span>
+                        <span class="bk-chip-lbl">Total bookings</span>
+                    </div>
+                </div>
+                <svg class="bk-card-wave" viewBox="0 0 160 70" preserveAspectRatio="none">
+                    <defs>
+                        <linearGradient id="waveBlue" x1="0%" y1="0%" x2="0%" y2="100%">
+                            <stop offset="0%" stop-color="#818cf8" stop-opacity="0.25"/>
+                            <stop offset="100%" stop-color="#c7d2fe" stop-opacity="0.04"/>
+                        </linearGradient>
+                    </defs>
+                    <path d="M0,52 Q40,50 80,34 T160,18 L160,70 L0,70 Z" fill="url(#waveBlue)"/>
+                </svg>
+            </a>
+
+            <!-- 2. Completed Bookings -->
+            <a href="report-detail.html?type=bk-completed&cat=bookings" class="bk-detailed-card" id="cardBkCompleted">
+                <div class="bk-card-top">
+                    <div class="bk-card-icon bg-green-circle">
+                        <i data-feather="check-circle"></i>
+                    </div>
+                    <div class="bk-card-info">
+                        <h3>Completed Bookings</h3>
+                        <p>Realised revenue, service performance and trends</p>
+                    </div>
+                    <i data-feather="chevron-right" class="bk-card-arrow"></i>
+                </div>
+                <div class="bk-card-bottom">
+                    <div class="bk-metric-chip chip-green">
+                        <span class="bk-chip-val txt-green" id="bkCardCompletedCount">—</span>
+                        <span class="bk-chip-lbl">Completed bookings</span>
+                    </div>
+                    <div class="bk-metric-chip chip-green">
+                        <span class="bk-chip-val txt-green" id="bkCardCompletedRevenue">—</span>
+                        <span class="bk-chip-lbl">Total revenue</span>
+                    </div>
+                </div>
+                <svg class="bk-card-wave" viewBox="0 0 160 70" preserveAspectRatio="none">
+                    <defs>
+                        <linearGradient id="waveGreen" x1="0%" y1="0%" x2="0%" y2="100%">
+                            <stop offset="0%" stop-color="#34d399" stop-opacity="0.25"/>
+                            <stop offset="100%" stop-color="#a7f3d0" stop-opacity="0.04"/>
+                        </linearGradient>
+                    </defs>
+                    <path d="M0,52 Q40,50 80,34 T160,18 L160,70 L0,70 Z" fill="url(#waveGreen)"/>
+                </svg>
+            </a>
+
+            <!-- 3. Cancelled Bookings -->
+            <a href="report-detail.html?type=bk-cancelled&cat=bookings" class="bk-detailed-card" id="cardBkCancelled">
+                <div class="bk-card-top">
+                    <div class="bk-card-icon bg-red-circle">
+                        <i data-feather="x-circle"></i>
+                    </div>
+                    <div class="bk-card-info">
+                        <h3>Cancelled Bookings</h3>
+                        <p>Cancellation count, reasons and estimated value affected</p>
+                    </div>
+                    <i data-feather="chevron-right" class="bk-card-arrow"></i>
+                </div>
+                <div class="bk-card-bottom">
+                    <div class="bk-metric-chip chip-red">
+                        <span class="bk-chip-val txt-red" id="bkCardCancelledCount">—</span>
+                        <span class="bk-chip-lbl">Cancelled bookings</span>
+                    </div>
+                    <div class="bk-metric-chip chip-red">
+                        <span class="bk-chip-val txt-red" id="bkCardCancelledValue">—</span>
+                        <span class="bk-chip-lbl">Estimated value</span>
+                    </div>
+                </div>
+                <svg class="bk-card-wave" viewBox="0 0 160 70" preserveAspectRatio="none">
+                    <defs>
+                        <linearGradient id="waveRed" x1="0%" y1="0%" x2="0%" y2="100%">
+                            <stop offset="0%" stop-color="#f87171" stop-opacity="0.25"/>
+                            <stop offset="100%" stop-color="#fecaca" stop-opacity="0.04"/>
+                        </linearGradient>
+                    </defs>
+                    <path d="M0,52 Q40,50 80,34 T160,18 L160,70 L0,70 Z" fill="url(#waveRed)"/>
+                </svg>
+            </a>
+
+            <!-- 4. No-Show Bookings -->
+            <a href="report-detail.html?type=bk-no-shows&cat=bookings" class="bk-detailed-card" id="cardBkNoShows">
+                <div class="bk-card-top">
+                    <div class="bk-card-icon bg-amber-circle">
+                        <i data-feather="user-x"></i>
+                    </div>
+                    <div class="bk-card-info">
+                        <h3>No-Show Bookings</h3>
+                        <p>Missed appointments and estimated lost value</p>
+                    </div>
+                    <i data-feather="chevron-right" class="bk-card-arrow"></i>
+                </div>
+                <div class="bk-card-bottom">
+                    <div class="bk-metric-chip chip-amber">
+                        <span class="bk-chip-val txt-amber" id="bkCardNoShowCount">—</span>
+                        <span class="bk-chip-lbl">No-show bookings</span>
+                    </div>
+                    <div class="bk-metric-chip chip-amber">
+                        <span class="bk-chip-val txt-amber" id="bkCardNoShowValue">—</span>
+                        <span class="bk-chip-lbl">Estimated missed</span>
+                    </div>
+                </div>
+                <svg class="bk-card-wave" viewBox="0 0 160 70" preserveAspectRatio="none">
+                    <defs>
+                        <linearGradient id="waveAmber" x1="0%" y1="0%" x2="0%" y2="100%">
+                            <stop offset="0%" stop-color="#fbbf24" stop-opacity="0.25"/>
+                            <stop offset="100%" stop-color="#fde68a" stop-opacity="0.04"/>
+                        </linearGradient>
+                    </defs>
+                    <path d="M0,52 Q40,50 80,34 T160,18 L160,70 L0,70 Z" fill="url(#waveAmber)"/>
+                </svg>
+            </a>
+
+            <!-- 5. Refunded Bookings -->
+            <a href="report-detail.html?type=bk-refunds&cat=bookings" class="bk-detailed-card" id="cardBkRefunds">
+                <div class="bk-card-top">
+                    <div class="bk-card-icon bg-purple-circle">
+                        <i data-feather="rotate-ccw"></i>
+                    </div>
+                    <div class="bk-card-info">
+                        <h3>Refunded Bookings</h3>
+                        <p>Refund transactions, amounts and refund rates</p>
+                    </div>
+                    <i data-feather="chevron-right" class="bk-card-arrow"></i>
+                </div>
+                <div class="bk-card-bottom">
+                    <div class="bk-metric-chip chip-purple">
+                        <span class="bk-chip-val txt-purple" id="bkCardRefundCount">—</span>
+                        <span class="bk-chip-lbl">Refunded bookings</span>
+                    </div>
+                    <div class="bk-metric-chip chip-purple">
+                        <span class="bk-chip-val txt-purple" id="bkCardRefundValue">—</span>
+                        <span class="bk-chip-lbl">Total refunded</span>
+                    </div>
+                </div>
+                <svg class="bk-card-wave" viewBox="0 0 160 70" preserveAspectRatio="none">
+                    <defs>
+                        <linearGradient id="wavePurple" x1="0%" y1="0%" x2="0%" y2="100%">
+                            <stop offset="0%" stop-color="#c084fc" stop-opacity="0.25"/>
+                            <stop offset="100%" stop-color="#f3e8ff" stop-opacity="0.04"/>
+                        </linearGradient>
+                    </defs>
+                    <path d="M0,52 Q40,50 80,34 T160,18 L160,70 L0,70 Z" fill="url(#wavePurple)"/>
+                </svg>
+            </a>
         </div>
     `;
 
     if (typeof feather !== 'undefined') feather.replace();
 
-    // Fetch live data
+    // Fetch live data from master RPC
     try {
         const companyId = localStorage.getItem('company_id');
         const branchId  = localStorage.getItem('active_branch_id');
         const cid = (companyId && companyId !== 'null' && companyId !== 'undefined' && companyId !== 'all') ? companyId : null;
         const bid = (branchId && branchId !== 'null' && branchId !== 'undefined' && branchId !== 'all') ? branchId : null;
-        const now       = new Date();
-        const startDate = new Date(now.getFullYear(), now.getMonth(), 1).toISOString().split('T')[0];
+        const thirtyDaysAgo = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
+        const startDate = thirtyDaysAgo.toISOString().split('T')[0];
         const endDate   = now.toISOString().split('T')[0];
+
+        // Fetch branch name from DB if branch ID is active
+        if (bid) {
+            try {
+                const { data: bData } = await supabase.from('branches').select('branch_name').eq('branch_id', bid).maybeSingle();
+                if (bData && bData.branch_name) {
+                    const subEl = document.getElementById('bkMetricsSubtitle');
+                    if (subEl) subEl.textContent = `Key booking metrics for ${todayStr} • ${bData.branch_name}`;
+                }
+            } catch (bErr) {}
+        }
 
         const { data: rawResult, error } = await supabase.rpc('get_bookings_report', {
             p_company_id: cid,
@@ -285,24 +565,36 @@ async function renderBookingsCategoryStats() {
             try { result = JSON.parse(result); } catch (e) {}
         }
 
-        const sc = (result && result.stat_cards) ? result.stat_cards : {};
+        const sc  = (result && result.stat_cards) ? result.stat_cards : {};
+        const ref = (result && result.bk_refunds && result.bk_refunds.kpis) ? result.bk_refunds.kpis : {};
 
         const fmt = (n) => Number(n || 0).toLocaleString('en-IN');
         const cur = (n) => '\u20b9' + Number(n || 0).toLocaleString('en-IN', { maximumFractionDigits: 0 });
 
         const setEl = (id, val) => { const el = document.getElementById(id); if (el) el.textContent = val; };
 
-        setEl('bkHubTotal',     fmt(sc.total_bookings));
-        setEl('bkHubCompleted', fmt(sc.completed_bookings));
-        setEl('bkHubRevenue',   'Realised revenue: ' + cur(sc.realized_revenue));
-        setEl('bkHubCancelled', fmt(sc.cancelled_bookings));
-        setEl('bkHubCancelVal', 'Estimated value: ' + cur(sc.estimated_value_affected));
-        setEl('bkHubNoShows',   fmt(sc.no_show_bookings));
-        setEl('bkHubNoShowVal', 'Estimated missed: ' + cur(sc.estimated_value_missed));
+        // Section 1: Snapshot Cards
+        setEl('bkSnapTotal',     fmt(sc.total_bookings));
+        setEl('bkSnapCompleted', fmt(sc.completed_bookings));
+        setEl('bkSnapRevenue',   'Realised revenue: ' + cur(sc.realized_revenue));
+        setEl('bkSnapCancelled', fmt(sc.cancelled_bookings));
+        setEl('bkSnapCancelVal', 'Estimated value: ' + cur(sc.estimated_value_affected));
+        setEl('bkSnapNoShows',   fmt(sc.no_show_bookings));
+        setEl('bkSnapNoShowVal', 'Estimated missed: ' + cur(sc.estimated_value_missed));
+
+        // Section 2: Detailed Cards
+        setEl('bkCardTotalCount',        fmt(sc.total_bookings));
+        setEl('bkCardCompletedCount',    fmt(sc.completed_bookings));
+        setEl('bkCardCompletedRevenue',  cur(sc.realized_revenue));
+        setEl('bkCardCancelledCount',    fmt(sc.cancelled_bookings));
+        setEl('bkCardCancelledValue',    cur(sc.estimated_value_affected));
+        setEl('bkCardNoShowCount',       fmt(sc.no_show_bookings));
+        setEl('bkCardNoShowValue',       cur(sc.estimated_value_missed));
+        setEl('bkCardRefundCount',       fmt(ref.refunded_bookings || sc.refunded_bookings));
+        setEl('bkCardRefundValue',       cur(ref.total_refunded || sc.total_refunded_amount));
 
     } catch (err) {
-        console.error('[report-category] Bookings stat cards RPC failed:', err);
-        // Stat cards stay as — (non-breaking graceful degradation)
+        console.error('[report-category] Bookings landing page RPC error:', err);
     }
 }
 
@@ -314,6 +606,21 @@ async function renderBookingsCategoryStats() {
 document.addEventListener('DOMContentLoaded', () => {
     const urlParams = new URLSearchParams(window.location.search);
     const cat = (urlParams.get('cat') || 'financial').toLowerCase();
+
+    // Bookings has its dedicated rich landing page view matching design
+    if (cat === 'bookings') {
+        document.title = 'Bookings Reports - BharathBots';
+        renderBookingsLandingPage();
+
+        // Update sidebar active state
+        const reportLinks = document.querySelectorAll('.submenu-link');
+        reportLinks.forEach(link => {
+            if (link.getAttribute('href') === 'reports.html') {
+                link.classList.add('active');
+            }
+        });
+        return;
+    }
 
     const config = CATEGORIES[cat] || CATEGORIES['financial'];
 
@@ -334,22 +641,9 @@ document.addEventListener('DOMContentLoaded', () => {
         bannerIcon.innerHTML = `<i data-feather="${config.icon}"></i>`;
     }
 
-    // Bookings-only: inject live stat cards above the sub-reports grid
-    if (cat === 'bookings') {
-        renderBookingsCategoryStats(); // async — updates DOM when RPC returns
-    }
-
-    // Render sub-report cards
+    // Render sub-report cards for other categories
     const grid = document.getElementById('subReportsGrid');
     if (!grid) return;
-
-    // Add section heading for bookings
-    if (cat === 'bookings') {
-        const heading = document.createElement('p');
-        heading.className = 'sub-reports-section-label';
-        heading.textContent = 'Booking Reports';
-        grid.parentNode.insertBefore(heading, grid);
-    }
 
     grid.innerHTML = config.subReports.map(sr => `
         <a href="report-detail.html?type=${sr.type}&cat=${cat}" class="sub-report-card" id="sr-${sr.type}">
@@ -364,7 +658,7 @@ document.addEventListener('DOMContentLoaded', () => {
         </a>
     `).join('');
 
-    // Re-render all feather icons (including newly injected ones)
+    // Re-render all feather icons
     if (typeof feather !== 'undefined') {
         feather.replace();
     }
