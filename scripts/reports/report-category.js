@@ -269,110 +269,112 @@ async function renderBookingsLandingPage() {
             <p>Booking outcomes and their financial impact</p>
         </div>
 
-        <!-- 5 Snapshot Stat Cards -->
-        <div class="bk-snapshot-grid">
-            <!-- 1. Total Bookings -->
-            <div class="bk-snapshot-card">
-                <div class="bk-snap-icon bg-indigo-circle">
-                    <i data-feather="calendar"></i>
+        <!-- 5 Snapshot Stat Cards in One Big Card Container -->
+        <div class="bk-snapshot-panel">
+            <div class="bk-snapshot-grid">
+                <!-- 1. Total Bookings -->
+                <div class="bk-snapshot-card">
+                    <div class="bk-snap-icon bg-indigo-circle">
+                        <i data-feather="calendar"></i>
+                    </div>
+                    <div class="bk-snap-body">
+                        <span class="bk-snap-label">Total Bookings</span>
+                        <span class="bk-snap-val" id="bkSnapTotal">—</span>
+                        <span class="bk-snap-sub">All booking statuses</span>
+                    </div>
+                    <div class="bk-mini-bars blue-bars" id="bkBarsTotal">
+                        <span style="height: 3px; opacity: 0.22;"></span>
+                        <span style="height: 3px; opacity: 0.22;"></span>
+                        <span style="height: 3px; opacity: 0.22;"></span>
+                        <span style="height: 3px; opacity: 0.22;"></span>
+                        <span style="height: 3px; opacity: 0.22;"></span>
+                        <span style="height: 3px; opacity: 0.22;"></span>
+                        <span style="height: 3px; opacity: 0.22;"></span>
+                    </div>
                 </div>
-                <div class="bk-snap-body">
-                    <span class="bk-snap-label">Total Bookings</span>
-                    <span class="bk-snap-val" id="bkSnapTotal">—</span>
-                    <span class="bk-snap-sub">All booking statuses</span>
-                </div>
-                <div class="bk-mini-bars blue-bars" id="bkBarsTotal">
-                    <span style="height: 3px; opacity: 0.22;"></span>
-                    <span style="height: 3px; opacity: 0.22;"></span>
-                    <span style="height: 3px; opacity: 0.22;"></span>
-                    <span style="height: 3px; opacity: 0.22;"></span>
-                    <span style="height: 3px; opacity: 0.22;"></span>
-                    <span style="height: 3px; opacity: 0.22;"></span>
-                    <span style="height: 3px; opacity: 0.22;"></span>
-                </div>
-            </div>
 
-            <!-- 2. Completed Bookings -->
-            <div class="bk-snapshot-card">
-                <div class="bk-snap-icon bg-green-circle">
-                    <i data-feather="check-circle"></i>
+                <!-- 2. Completed Bookings -->
+                <div class="bk-snapshot-card">
+                    <div class="bk-snap-icon bg-green-circle">
+                        <i data-feather="check-circle"></i>
+                    </div>
+                    <div class="bk-snap-body">
+                        <span class="bk-snap-label">Completed Bookings</span>
+                        <span class="bk-snap-val" id="bkSnapCompleted">—</span>
+                        <span class="bk-snap-sub txt-green" id="bkSnapRevenue">Realised revenue: —</span>
+                    </div>
+                    <div class="bk-mini-bars green-bars" id="bkBarsCompleted">
+                        <span style="height: 3px; opacity: 0.22;"></span>
+                        <span style="height: 3px; opacity: 0.22;"></span>
+                        <span style="height: 3px; opacity: 0.22;"></span>
+                        <span style="height: 3px; opacity: 0.22;"></span>
+                        <span style="height: 3px; opacity: 0.22;"></span>
+                        <span style="height: 3px; opacity: 0.22;"></span>
+                        <span style="height: 3px; opacity: 0.22;"></span>
+                    </div>
                 </div>
-                <div class="bk-snap-body">
-                    <span class="bk-snap-label">Completed Bookings</span>
-                    <span class="bk-snap-val" id="bkSnapCompleted">—</span>
-                    <span class="bk-snap-sub txt-green" id="bkSnapRevenue">Realised revenue: —</span>
-                </div>
-                <div class="bk-mini-bars green-bars" id="bkBarsCompleted">
-                    <span style="height: 3px; opacity: 0.22;"></span>
-                    <span style="height: 3px; opacity: 0.22;"></span>
-                    <span style="height: 3px; opacity: 0.22;"></span>
-                    <span style="height: 3px; opacity: 0.22;"></span>
-                    <span style="height: 3px; opacity: 0.22;"></span>
-                    <span style="height: 3px; opacity: 0.22;"></span>
-                    <span style="height: 3px; opacity: 0.22;"></span>
-                </div>
-            </div>
 
-            <!-- 3. Cancelled Bookings -->
-            <div class="bk-snapshot-card">
-                <div class="bk-snap-icon bg-red-circle">
-                    <i data-feather="x-circle"></i>
+                <!-- 3. Cancelled Bookings -->
+                <div class="bk-snapshot-card">
+                    <div class="bk-snap-icon bg-red-circle">
+                        <i data-feather="x-circle"></i>
+                    </div>
+                    <div class="bk-snap-body">
+                        <span class="bk-snap-label">Cancelled Bookings</span>
+                        <span class="bk-snap-val" id="bkSnapCancelled">—</span>
+                        <span class="bk-snap-sub txt-red" id="bkSnapCancelVal">Estimated value: —</span>
+                    </div>
+                    <div class="bk-mini-bars red-bars" id="bkBarsCancelled">
+                        <span style="height: 3px; opacity: 0.22;"></span>
+                        <span style="height: 3px; opacity: 0.22;"></span>
+                        <span style="height: 3px; opacity: 0.22;"></span>
+                        <span style="height: 3px; opacity: 0.22;"></span>
+                        <span style="height: 3px; opacity: 0.22;"></span>
+                        <span style="height: 3px; opacity: 0.22;"></span>
+                        <span style="height: 3px; opacity: 0.22;"></span>
+                    </div>
                 </div>
-                <div class="bk-snap-body">
-                    <span class="bk-snap-label">Cancelled Bookings</span>
-                    <span class="bk-snap-val" id="bkSnapCancelled">—</span>
-                    <span class="bk-snap-sub txt-red" id="bkSnapCancelVal">Estimated value: —</span>
-                </div>
-                <div class="bk-mini-bars red-bars" id="bkBarsCancelled">
-                    <span style="height: 3px; opacity: 0.22;"></span>
-                    <span style="height: 3px; opacity: 0.22;"></span>
-                    <span style="height: 3px; opacity: 0.22;"></span>
-                    <span style="height: 3px; opacity: 0.22;"></span>
-                    <span style="height: 3px; opacity: 0.22;"></span>
-                    <span style="height: 3px; opacity: 0.22;"></span>
-                    <span style="height: 3px; opacity: 0.22;"></span>
-                </div>
-            </div>
 
-            <!-- 4. No-Shows -->
-            <div class="bk-snapshot-card">
-                <div class="bk-snap-icon bg-amber-circle">
-                    <i data-feather="user-x"></i>
+                <!-- 4. No-Shows -->
+                <div class="bk-snapshot-card">
+                    <div class="bk-snap-icon bg-amber-circle">
+                        <i data-feather="user-x"></i>
+                    </div>
+                    <div class="bk-snap-body">
+                        <span class="bk-snap-label">No-Shows</span>
+                        <span class="bk-snap-val" id="bkSnapNoShows">—</span>
+                        <span class="bk-snap-sub txt-amber" id="bkSnapNoShowVal">Estimated missed: —</span>
+                    </div>
+                    <div class="bk-mini-bars amber-bars" id="bkBarsNoShows">
+                        <span style="height: 3px; opacity: 0.22;"></span>
+                        <span style="height: 3px; opacity: 0.22;"></span>
+                        <span style="height: 3px; opacity: 0.22;"></span>
+                        <span style="height: 3px; opacity: 0.22;"></span>
+                        <span style="height: 3px; opacity: 0.22;"></span>
+                        <span style="height: 3px; opacity: 0.22;"></span>
+                        <span style="height: 3px; opacity: 0.22;"></span>
+                    </div>
                 </div>
-                <div class="bk-snap-body">
-                    <span class="bk-snap-label">No-Shows</span>
-                    <span class="bk-snap-val" id="bkSnapNoShows">—</span>
-                    <span class="bk-snap-sub txt-amber" id="bkSnapNoShowVal">Estimated missed: —</span>
-                </div>
-                <div class="bk-mini-bars amber-bars" id="bkBarsNoShows">
-                    <span style="height: 3px; opacity: 0.22;"></span>
-                    <span style="height: 3px; opacity: 0.22;"></span>
-                    <span style="height: 3px; opacity: 0.22;"></span>
-                    <span style="height: 3px; opacity: 0.22;"></span>
-                    <span style="height: 3px; opacity: 0.22;"></span>
-                    <span style="height: 3px; opacity: 0.22;"></span>
-                    <span style="height: 3px; opacity: 0.22;"></span>
-                </div>
-            </div>
 
-            <!-- 5. Refunded Bookings -->
-            <div class="bk-snapshot-card">
-                <div class="bk-snap-icon bg-purple-circle">
-                    <i data-feather="rotate-ccw"></i>
-                </div>
-                <div class="bk-snap-body">
-                    <span class="bk-snap-label">Refunded Bookings</span>
-                    <span class="bk-snap-val" id="bkSnapRefunded">—</span>
-                    <span class="bk-snap-sub txt-purple" id="bkSnapRefundVal">Total refunded: —</span>
-                </div>
-                <div class="bk-mini-bars purple-bars" id="bkBarsRefunded">
-                    <span style="height: 3px; opacity: 0.22;"></span>
-                    <span style="height: 3px; opacity: 0.22;"></span>
-                    <span style="height: 3px; opacity: 0.22;"></span>
-                    <span style="height: 3px; opacity: 0.22;"></span>
-                    <span style="height: 3px; opacity: 0.22;"></span>
-                    <span style="height: 3px; opacity: 0.22;"></span>
-                    <span style="height: 3px; opacity: 0.22;"></span>
+                <!-- 5. Refunded Bookings -->
+                <div class="bk-snapshot-card">
+                    <div class="bk-snap-icon bg-purple-circle">
+                        <i data-feather="rotate-ccw"></i>
+                    </div>
+                    <div class="bk-snap-body">
+                        <span class="bk-snap-label">Refunded Bookings</span>
+                        <span class="bk-snap-val" id="bkSnapRefunded">—</span>
+                        <span class="bk-snap-sub txt-purple" id="bkSnapRefundVal">Total refunded: —</span>
+                    </div>
+                    <div class="bk-mini-bars purple-bars" id="bkBarsRefunded">
+                        <span style="height: 3px; opacity: 0.22;"></span>
+                        <span style="height: 3px; opacity: 0.22;"></span>
+                        <span style="height: 3px; opacity: 0.22;"></span>
+                        <span style="height: 3px; opacity: 0.22;"></span>
+                        <span style="height: 3px; opacity: 0.22;"></span>
+                        <span style="height: 3px; opacity: 0.22;"></span>
+                        <span style="height: 3px; opacity: 0.22;"></span>
+                    </div>
                 </div>
             </div>
         </div>
