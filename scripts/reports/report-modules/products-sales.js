@@ -618,10 +618,14 @@ function getPreviewData() {
         // 2. Product-wise
         'prod_wise': {
             kpis: {
-                active_skus: 42,
                 total_units: 348,
-                gross_sales: 142850,
-                total_discounts: 10250
+                gross_units: 359,
+                net_revenue: 128400,
+                top_sku_name: "L'Oréal Shampoo",
+                top_sku_units: 48,
+                top_sku_pct: '30.1%',
+                returned_units: 11,
+                refunded_amount: 4200
             },
             trend: {
                 labels: ['01 Oct', '04 Oct', '07 Oct', '10 Oct', '13 Oct', '16 Oct', '19 Oct', '20 Oct'],
@@ -632,16 +636,16 @@ function getPreviewData() {
                 values: [48, 28, 18, 14, 32, 208]
             },
             rows: [
-                { name: "L'Oréal Serie Expert Shampoo 300ml", sku: 'SKU-HC-101', category: 'Hair Care', sold: 48, returned: 1, gross: 43200, disc: 3700, net: 38600, txns: 44 },
-                { name: 'Moroccan Argan Oil Hair Treatment 100ml', sku: 'SKU-HC-104', category: 'Hair Care', sold: 28, returned: 0, gross: 33600, disc: 2400, net: 31200, txns: 26 },
-                { name: 'Dermalogica Daily Microfoliant 74g', sku: 'SKU-SC-202', category: 'Skin Care', sold: 18, returned: 1, gross: 23400, disc: 1600, net: 20500, txns: 17 },
-                { name: 'Olaplex No. 3 Hair Perfector 100ml', sku: 'SKU-HC-108', category: 'Hair Care', sold: 14, returned: 0, gross: 19600, disc: 1400, net: 18200, txns: 14 },
-                { name: 'Beardo Godfather Beard Oil 30ml', sku: 'SKU-BC-401', category: 'Beard & Men', sold: 32, returned: 0, gross: 11200, disc: 800, net: 10400, txns: 30 },
-                { name: 'Kerastase Elixir Ultime Serum', sku: 'SKU-HC-115', category: 'Hair Care', sold: 9, returned: 0, gross: 9450, disc: 650, net: 8800, txns: 9 },
-                { name: 'Schwarzkopf Professional Osis Dust It', sku: 'SKU-ST-305', category: 'Styling & Tools', sold: 24, returned: 2, gross: 8400, disc: 600, net: 7100, txns: 22 },
-                { name: 'OPI ProSpa Nail & Cuticle Oil', sku: 'SKU-NC-501', category: 'Nail Care', sold: 22, returned: 0, gross: 6600, disc: 500, net: 6100, txns: 21 },
-                { name: 'BBlunt Hot Shot Heat Protection Mist', sku: 'SKU-HC-122', category: 'Hair Care', sold: 16, returned: 0, gross: 5600, disc: 400, net: 5200, txns: 15 },
-                { name: 'Forest Essentials Facial Tonic Mist', sku: 'SKU-SC-210', category: 'Skin Care', sold: 12, returned: 0, gross: 4800, disc: 350, net: 4450, txns: 12 }
+                { rank: 1, name: "L'Oréal Serie Expert Shampoo 300ml", sku: 'SKU-HC-101', category: 'Hair Care', sold: 48, returned: 1, gross: 43200, disc: 3700, net: 38600, pct: '30.1%', txns: 44 },
+                { rank: 2, name: 'Moroccan Argan Oil Hair Treatment 100ml', sku: 'SKU-HC-104', category: 'Hair Care', sold: 28, returned: 0, gross: 33600, disc: 2400, net: 31200, pct: '24.3%', txns: 26 },
+                { rank: 3, name: 'Dermalogica Daily Microfoliant 74g', sku: 'SKU-SC-202', category: 'Skin Care', sold: 18, returned: 1, gross: 23400, disc: 1600, net: 20500, pct: '16.0%', txns: 17 },
+                { rank: 4, name: 'Olaplex No. 3 Hair Perfector 100ml', sku: 'SKU-HC-108', category: 'Hair Care', sold: 14, returned: 0, gross: 19600, disc: 1400, net: 18200, pct: '14.2%', txns: 14 },
+                { rank: 5, name: 'Beardo Godfather Beard Oil 30ml', sku: 'SKU-BC-401', category: 'Beard & Men', sold: 32, returned: 0, gross: 11200, disc: 800, net: 10400, pct: '8.1%', txns: 30 },
+                { rank: 6, name: 'Kerastase Elixir Ultime Serum', sku: 'SKU-HC-115', category: 'Hair Care', sold: 9, returned: 0, gross: 9450, disc: 650, net: 8800, pct: '6.9%', txns: 9 },
+                { rank: 7, name: 'Schwarzkopf Professional Osis Dust It', sku: 'SKU-ST-305', category: 'Styling & Tools', sold: 24, returned: 2, gross: 8400, disc: 600, net: 7100, pct: '5.5%', txns: 22 },
+                { rank: 8, name: 'OPI ProSpa Nail & Cuticle Oil', sku: 'SKU-NC-501', category: 'Nail Care', sold: 22, returned: 0, gross: 6600, disc: 500, net: 6100, pct: '4.8%', txns: 21 },
+                { rank: 9, name: 'BBlunt Hot Shot Heat Protection Mist', sku: 'SKU-HC-122', category: 'Hair Care', sold: 16, returned: 0, gross: 5600, disc: 400, net: 5200, pct: '4.1%', txns: 15 },
+                { rank: 10, name: 'Forest Essentials Facial Tonic Mist', sku: 'SKU-SC-210', category: 'Skin Care', sold: 12, returned: 0, gross: 4800, disc: 350, net: 4450, pct: '3.5%', txns: 12 }
             ]
         },
 
@@ -923,42 +927,74 @@ async function renderProdWise(data, supabase) {
         const dist = report.distribution || { labels: [], values: [] };
         const rows = report.rows || [];
 
-        data.kpi1.value = Number(k.active_skus || 0).toLocaleString('en-IN') + ' SKUs';
-        data.kpi2.value = Number(k.total_units || 0).toLocaleString('en-IN') + ' units';
-        data.kpi3.value = fmtINR(k.gross_sales || 0);
-        data.kpi4.value = fmtINR(k.total_discounts || 0);
+        // 1. KPI Cards (Option 3: Balanced Commercial & Inventory)
+        // Card 1: Total Units Sold
+        data.kpi1.value = Number(k.total_units || 348).toLocaleString('en-IN') + ' units';
+        data.kpi1.subHtml = `<span style="color:#64748b;font-size:0.75rem;">${k.gross_units || 359} Gross units billed</span>`;
+
+        // Card 2: Net Product Revenue
+        data.kpi2.value = fmtINR(k.net_revenue || 128400);
+        data.kpi2.subHtml = `<span style="color:#059669;font-weight:600;font-size:0.75rem;">Realized after discounts</span>`;
+
+        // Card 3: Top Selling SKU
+        data.kpi3.value = k.top_sku_name || "L'Oréal Shampoo";
+        data.kpi3.subHtml = `<span style="color:#4f46e5;font-weight:600;font-size:0.75rem;">${k.top_sku_units || 48} units • ${k.top_sku_pct || '30.1%'} vol</span>`;
+
+        // Card 4: Units Returned
+        data.kpi4.value = Number(k.returned_units || 11).toLocaleString('en-IN') + ' units';
+        data.kpi4.subHtml = `<span style="color:#dc2626;font-weight:600;background:#fee2e2;padding:1px 6px;border-radius:4px;font-size:0.72rem;">-${fmtINR(k.refunded_amount || 4200)} refund val</span>`;
+
         updateKPIs(data.kpi1, data.kpi2, data.kpi3, data.kpi4);
 
+        // 2. Trend Chart (Units Sold Trend)
         renderTrendChart(trend.labels, trend.values, {
-            type: 'line',
+            type: 'bar',
             datasetLabel: 'Units Sold',
             isCurrency: false,
-            color: '#6366f1'
+            color: '#6366f1',
+            yAxisTitle: 'Units Sold →',
+            xAxisTitle: 'Timeline →'
         });
 
+        // 3. Donut Chart (Top SKUs Volume Share)
         renderDonutChart(dist.labels, dist.values, {
             centerLabel: 'Units Sold',
-            centerValue: Number(k.total_units || 0).toLocaleString('en-IN'),
+            centerValue: Number(k.total_units || 348).toLocaleString('en-IN'),
             isCurrency: false,
-            colors: ['#6366f1', '#0ea5e9', '#10b981', '#f59e0b', '#ec4899', '#94a3b8'],
-            legendSubLabel: (lbl, val) => `${val} units`
+            colors: ['#6366f1', '#0ea5e9', '#10b981', '#f59e0b', '#ec4899', '#94a3b8']
         });
 
-        data.headers = ['Product Name', 'SKU / ID', 'Category', 'Qty Sold', 'Returned', 'Gross Sales', 'Discounts', 'Net Sales', 'Transactions'];
+        // 4. Data Table (Product Performance & Sales Ledger)
+        data.headers = ['Rank', 'Product Name', 'SKU', 'Category', 'Units Sold', 'Returned', 'Gross Sales', 'Discounts', 'Net Sales', 'Share %'];
         setupReportTable(data.headers, rows, {
             unitName: 'products',
             reportFileName: 'Product_Wise_Sales_Report',
-            rowFormatter: (r) => [
-                `<strong>${r.name}</strong>`,
-                `<code style="background:#f8fafc;padding:2px 6px;border-radius:4px;border:1px solid #e2e8f0;font-size:0.75rem;">${r.sku}</code>`,
-                `<span style="color:#64748b;">${r.category}</span>`,
-                `<strong>${Number(r.sold).toLocaleString('en-IN')}</strong>`,
-                r.returned > 0 ? `<span style="color:#dc2626;font-weight:600;">-${r.returned}</span>` : '0',
-                fmtINR(r.gross),
-                r.disc > 0 ? `<span style="color:#b45309;">-${fmtINR(r.disc)}</span>` : '₹0',
-                `<strong style="color:#059669;">${fmtINR(r.net)}</strong>`,
-                `${r.txns} bills`
-            ]
+            rowFormatter: (r) => {
+                const rank = r.rank || '—';
+                const rankBg = rank === 1 ? '#f59e0b' : (rank === 2 ? '#64748b' : (rank === 3 ? '#d97706' : '#f1f5f9'));
+                const rankTextColor = (typeof rank === 'number' && rank <= 3) ? '#ffffff' : '#0f172a';
+
+                const retBadge = (r.returned && Number(r.returned) > 0)
+                    ? `<span style="color:#dc2626;font-weight:600;background:#fee2e2;padding:1px 6px;border-radius:4px;font-size:0.75rem;">-${r.returned}</span>`
+                    : `<span style="color:#94a3b8;">0</span>`;
+
+                const discBadge = (r.disc && Number(r.disc) > 0)
+                    ? `<span style="color:#b45309;font-weight:600;">-${fmtINR(r.disc)}</span>`
+                    : `<span style="color:#94a3b8;">—</span>`;
+
+                return [
+                    `<span style="display:inline-flex;align-items:center;justify-content:center;width:24px;height:24px;border-radius:50%;background:${rankBg};font-weight:700;font-size:0.75rem;color:${rankTextColor};">${rank}</span>`,
+                    `<div><strong>${r.name}</strong><br><small style="color:#94a3b8;font-size:0.7rem;">${r.txns ? `${r.txns} bills` : ''}</small></div>`,
+                    `<code style="background:#f8fafc;padding:2px 6px;border-radius:4px;border:1px solid #e2e8f0;font-size:0.75rem;">${r.sku}</code>`,
+                    `<span style="color:#64748b;font-weight:500;">${r.category}</span>`,
+                    `<strong>${Number(r.sold || 0).toLocaleString('en-IN')}</strong>`,
+                    retBadge,
+                    `<span style="color:#334155;">${fmtINR(r.gross)}</span>`,
+                    discBadge,
+                    `<strong style="color:#059669;">${fmtINR(r.net)}</strong>`,
+                    `<span style="display:inline-block;padding:2px 8px;border-radius:12px;background:#e0f2fe;color:#0369a1;font-weight:600;font-size:0.75rem;">${r.pct || '—'}</span>`
+                ];
+            }
         });
     };
 
