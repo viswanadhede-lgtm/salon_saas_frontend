@@ -34,22 +34,26 @@
             display: flex;
             gap: 10px;
             align-items: center;
+            margin-left: auto;
         }
 
         .btn-top-action {
             display: inline-flex;
             align-items: center;
             gap: 8px;
-            padding: 8px 16px;
+            padding: 0.45rem 0.95rem;
+            height: 38px;
             border: 1px solid #cbd5e1;
-            border-radius: 8px;
+            border-radius: 9px;
             background: #ffffff;
-            color: #334155;
+            color: #0f172a;
             font-size: 0.85rem;
             font-weight: 600;
             cursor: pointer;
             transition: all 0.2s ease;
             box-shadow: 0 1px 2px rgba(0, 0, 0, 0.03);
+            font-family: inherit;
+            user-select: none;
         }
 
         .btn-top-action:hover {
@@ -58,9 +62,11 @@
             color: #0f172a;
         }
 
-        .btn-top-action i {
+        .btn-top-action i,
+        .btn-top-action svg {
             width: 15px;
             height: 15px;
+            color: #6366f1;
         }
 
         /* 2nd Row Layout: Left (Title), Middle (Filters), Right (Actions) */
@@ -85,12 +91,6 @@
             font-size: 0.875rem;
             color: #64748b;
             margin: 0;
-        }
-
-        .header-filters-middle {
-            display: flex;
-            align-items: center;
-            gap: 10px;
         }
 
         /* Filter Pills matching Global Header */
@@ -548,12 +548,10 @@
                 align-items: flex-start;
                 gap: 1rem;
             }
-            .header-filters-middle {
-                width: 100%;
-                flex-wrap: wrap;
-            }
             .header-actions {
                 width: 100%;
+                margin-left: 0;
+                flex-wrap: wrap;
             }
             #reportDateFilterMenu {
                 left: 0;
@@ -1073,7 +1071,7 @@
                 Back to Library
             </a>
 
-            <!-- 2nd Row: Title (Left) + Filters (Middle) + Action Buttons (Right) -->
+            <!-- 2nd Row: Title (Left) + Right-aligned Toolbar (Branch, Date, Download) -->
             <div class="content-header">
                 <!-- Left: Title & Subtitle -->
                 <div class="header-title">
@@ -1081,9 +1079,9 @@
                     <p class="subtitle" id="reportSubtitle">All bookings across all statuses</p>
                 </div>
 
-                <!-- Middle: Branch Selector & Date Filter Pill (with Popover Modal) -->
-                <div class="header-filters-middle" id="headerFiltersMiddle">
-                    <!-- Branch Selector Pill -->
+                <!-- Right: Branch Selector, Date Filter Pill, and Download Button -->
+                <div class="header-actions" id="headerRightActions">
+                    <!-- 1. Branch Selector Pill -->
                     <div class="report-filter-pill branch-filter-pill" id="branchFilterPill">
                         <i data-feather="map-pin" class="pill-icon"></i>
                         <select id="filterBranch" class="pill-select">
@@ -1091,7 +1089,7 @@
                         </select>
                     </div>
 
-                    <!-- Date Filter Pill & Floating Modal -->
+                    <!-- 2. Date Filter Pill & Floating Modal -->
                     <div class="filter-dropdown-container" id="dateFilterDropdownContainer">
                         <button type="button" class="report-filter-pill date-filter-btn" id="btnDateFilterModal">
                             <i data-feather="calendar" class="pill-icon"></i>
@@ -1201,17 +1199,11 @@
                             </div>
                         </div>
                     </div>
-                </div>
 
-                <!-- Right: Action Buttons -->
-                <div class="header-actions">
-                    <button class="btn-top-action" id="btnExportCSV" title="Export as CSV">
+                    <!-- 3. Download Button -->
+                    <button class="btn-top-action" id="btnExportCSV" title="Download Report">
                         <i data-feather="download"></i>
-                        <span>Export CSV</span>
-                    </button>
-                    <button class="btn-top-action" id="btnPrintTable" title="Print this report">
-                        <i data-feather="printer"></i>
-                        <span>Print</span>
+                        <span>Download</span>
                     </button>
                 </div>
             </div>
