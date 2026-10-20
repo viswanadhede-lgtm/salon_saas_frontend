@@ -494,18 +494,45 @@ const TYPE_MODULE_MAP = {
 // Report Date Range Popover Modal Controller
 // ============================================================
 function initReportDateFilterModal() {
-    const btnModal   = document.getElementById('btnDateFilterModal');
-    const menu       = document.getElementById('reportDateFilterMenu');
-    const labelEl    = document.getElementById('dateFilterLabel');
-    const startInput = document.getElementById('filterStartDate');
-    const endInput   = document.getElementById('filterEndDate');
-    const btnReset   = document.getElementById('btnFilterReset');
-    const btnApply   = document.getElementById('btnApplyFilters');
-    const radios     = document.querySelectorAll('input[name="reportPresetDate"]');
+    const btnModal       = document.getElementById('btnDateFilterModal');
+    const menu           = document.getElementById('reportDateFilterMenu');
+    const labelEl        = document.getElementById('dateFilterLabel');
+    const presetsView    = document.getElementById('datePresetsView');
+    const customView     = document.getElementById('dateCustomView');
+    const btnOpenCustom  = document.getElementById('btnOpenCustomDates');
+    const btnBackPresets = document.getElementById('btnBackToPresets');
+    const startInput     = document.getElementById('filterStartDate');
+    const endInput       = document.getElementById('filterEndDate');
+    const fromPreview    = document.getElementById('fromPreviewText');
+    const toPreview      = document.getElementById('toPreviewText');
+    const cardFrom       = document.getElementById('cardFromCalendar');
+    const cardTo         = document.getElementById('cardToCalendar');
+    const btnReset       = document.getElementById('btnFilterReset');
+    const btnApply       = document.getElementById('btnApplyFilters');
+    const presetBtns     = document.querySelectorAll('.preset-item-btn');
 
     if (!btnModal || !menu) return;
 
+    let activePreset = 'one_month';
+    let isCustomMode = false;
+
     const toIso = (d) => new Date(d.getTime() - d.getTimezoneOffset() * 60000).toISOString().split('T')[0];
+
+    const fmtDisplayDate = (dStr) => {
+        if (!dStr) return '';
+        const d = new Date(dStr);
+        if (isNaN(d.getTime())) return dStr;
+        return d.toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' });
+    };
+
+    const updatePreviews = () => {
+        if (fromPreview && startInput) {
+            fromPreview.textContent = startInput.value ? fmtDisplayDate(startInput.value) : 'Select start date';
+        }
+        if (toPreview && endInput) {
+            toPreview.textContent = endInput.value ? fmtDisplayDate(endInput.value) : 'Select end date';
+        }
+    };
 
     const calculatePreset = (val) => {
         const now = new Date();
@@ -517,13 +544,12 @@ function initReportDateFilterModal() {
             const todayStr = toIso(now);
             return { start: todayStr, end: todayStr, label: 'Today' };
         }
-        if (val === 'this_week') {
-            const dayOfWeek = now.getDay() || 7;
-            const monday = new Date(now);
-            monday.setDate(d - (dayOfWeek - 1));
-            return { start: toIso(monday), end: toIso(now), label: 'This Week' };
+        if (val === 'one_week') {
+            const past7 = new Date(now);
+            past7.setDate(d - 6);
+            return { start: toIso(past7), end: toIso(now), label: 'One Week' };
         }
-        if (val === 'current_month') {
+        if (val === 'one_month') {
             const first = new Date(y, m, 1);
             const last  = new Date(y, m + 1, 0);
             return { start: toIso(first), end: toIso(last), label: 'Current Month' };
@@ -546,10 +572,54 @@ function initReportDateFilterModal() {
         return null;
     };
 
+    const showPresetsView = () => {
+        isCustomMode = false;
+        if (presetsView) presetsView.style.display = 'block';
+        if (customView) customView.style.display = 'none';
+        if (window.feather) window.feather.replace();
+    };
+
+    const showCustomView = () => {
+        isCustomMode = true;
+        if (presetsView) presetsView.style.display = 'none';
+        if (customView) customView.style.display = 'block';
+        updatePreviews();
+        if (window.feather) window.feather.replace();
+    };
+
+    const setActivePresetUI = (presetKey) => {
+        activePreset = presetKey;
+        presetBtns.forEach(btn => {
+            if (btn.dataset.preset === presetKey) {
+                btn.classList.add('active');
+            } else {
+                btn.classList.remove('active');
+            }
+        });
+        if (btnOpenCustom) {
+            if (presetKey === 'custom') {
+                btnOpenCustom.classList.add('active');
+            } else {
+                btnOpenCustom.classList.remove('active');
+            }
+        }
+    };
+
     // Toggle popover menu
     btnModal.onclick = (e) => {
         e.stopPropagation();
-        menu.classList.toggle('show');
+        const willShow = !menu.classList.contains('show');
+        if (willShow) {
+            if (!isCustomMode) {
+                showPresetsView();
+            } else {
+                showCustomView();
+            }
+            menu.classList.add('show');
+            if (window.feather) window.feather.replace();
+        } else {
+            menu.classList.remove('show');
+        }
     };
 
     // Close when clicking outside
@@ -559,71 +629,107 @@ function initReportDateFilterModal() {
         }
     });
 
-    // Preset radio selection
-    radios.forEach(radio => {
-        radio.onchange = () => {
-            if (radio.value === 'custom') {
-                if (startInput) startInput.focus();
-                return;
-            }
-            const preset = calculatePreset(radio.value);
+    // Preset button clicks: immediately select, update dates & label, close modal, and trigger query!
+    presetBtns.forEach(btn => {
+        btn.onclick = (e) => {
+            e.stopPropagation();
+            const presetKey = btn.dataset.preset;
+            const preset = calculatePreset(presetKey);
             if (preset && startInput && endInput) {
                 startInput.value = preset.start;
                 endInput.value   = preset.end;
+                setActivePresetUI(presetKey);
+                isCustomMode = false;
+                if (labelEl) labelEl.textContent = preset.label;
+                menu.classList.remove('show');
+                // Trigger report reload
+                if (btnApply) btnApply.click();
             }
         };
     });
 
-    // When directly editing dates, auto-select custom radio
-    const onDateInputChange = () => {
-        const customRadio = document.querySelector('input[name="reportPresetDate"][value="custom"]');
-        if (customRadio) customRadio.checked = true;
-    };
-    if (startInput) startInput.onchange = onDateInputChange;
-    if (endInput)   endInput.onchange   = onDateInputChange;
+    // Custom Dates Tile click: transitions to View 2
+    if (btnOpenCustom) {
+        btnOpenCustom.onclick = (e) => {
+            e.stopPropagation();
+            showCustomView();
+        };
+    }
+
+    // Back to Presets click
+    if (btnBackPresets) {
+        btnBackPresets.onclick = (e) => {
+            e.stopPropagation();
+            showPresetsView();
+        };
+    }
+
+    // Clicking calendar cards opens date picker
+    if (cardFrom && startInput) {
+        cardFrom.onclick = (e) => {
+            if (e.target !== startInput) {
+                try { startInput.showPicker(); } catch (err) { startInput.focus(); }
+            }
+        };
+    }
+    if (cardTo && endInput) {
+        cardTo.onclick = (e) => {
+            if (e.target !== endInput) {
+                try { endInput.showPicker(); } catch (err) { endInput.focus(); }
+            }
+        };
+    }
+
+    if (startInput) startInput.onchange = updatePreviews;
+    if (endInput)   endInput.onchange   = updatePreviews;
 
     // Default to Current Month on initial load
-    const initialPreset = calculatePreset('current_month');
+    const initialPreset = calculatePreset('one_month');
     if (initialPreset && startInput && endInput && !startInput.value && !endInput.value) {
         startInput.value = initialPreset.start;
         endInput.value   = initialPreset.end;
         if (labelEl) labelEl.textContent = 'Current Month';
+        setActivePresetUI('one_month');
     }
 
-    // Reset button
+    // Reset button: resets to Current Month, switches to Presets view, closes modal, reloads
     if (btnReset) {
         btnReset.onclick = (e) => {
             e.stopPropagation();
-            const currRadio = document.querySelector('input[name="reportPresetDate"][value="current_month"]');
-            if (currRadio) currRadio.checked = true;
-            const preset = calculatePreset('current_month');
+            const preset = calculatePreset('one_month');
             if (preset && startInput && endInput) {
                 startInput.value = preset.start;
                 endInput.value   = preset.end;
+                setActivePresetUI('one_month');
+                if (labelEl) labelEl.textContent = 'Current Month';
             }
-            if (labelEl) labelEl.textContent = 'Current Month';
+            showPresetsView();
             menu.classList.remove('show');
             if (btnApply) btnApply.click();
         };
     }
 
-    // Apply button updates label and closes menu
+    // Apply button: updates label based on current mode and closes menu
     if (btnApply) {
         btnApply.addEventListener('click', () => {
             menu.classList.remove('show');
-            const checkedRadio = document.querySelector('input[name="reportPresetDate"]:checked');
-            if (checkedRadio) {
-                if (checkedRadio.value === 'custom') {
-                    if (startInput && endInput && startInput.value && endInput.value) {
-                        const fmtD = (s) => new Date(s).toLocaleDateString('en-IN', { day: '2-digit', month: 'short' });
-                        if (labelEl) labelEl.textContent = `${fmtD(startInput.value)} - ${fmtD(endInput.value)}`;
-                    } else if (labelEl) {
-                        labelEl.textContent = 'Custom Dates';
+            if (isCustomMode) {
+                if (startInput && endInput && startInput.value && endInput.value) {
+                    if (startInput.value > endInput.value) {
+                        const tmp = startInput.value;
+                        startInput.value = endInput.value;
+                        endInput.value = tmp;
                     }
-                } else {
-                    const preset = calculatePreset(checkedRadio.value);
-                    if (labelEl && preset) labelEl.textContent = preset.label;
+                    const fmtD = (s) => new Date(s).toLocaleDateString('en-IN', { day: '2-digit', month: 'short' });
+                    if (labelEl) labelEl.textContent = `${fmtD(startInput.value)} - ${fmtD(endInput.value)}`;
+                    setActivePresetUI('custom');
+                } else if (labelEl) {
+                    labelEl.textContent = 'Custom Dates';
+                    setActivePresetUI('custom');
                 }
+            } else {
+                const preset = calculatePreset(activePreset);
+                if (labelEl && preset) labelEl.textContent = preset.label;
             }
         });
     }
