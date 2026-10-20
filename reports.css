@@ -689,12 +689,21 @@
     height: 14px;
 }
 
+/* Section Divider */
+.bk-section-divider {
+    height: 1px;
+    background: #e2e8f0;
+    border: none;
+    margin: 2rem 0;
+    width: 100%;
+}
+
 /* Section 1: Snapshot Grid */
 .bk-snapshot-grid {
     display: grid;
     grid-template-columns: repeat(4, 1fr);
     gap: 1.25rem;
-    margin-bottom: 1.5rem;
+    margin-bottom: 0;
 }
 
 .bk-snapshot-card {

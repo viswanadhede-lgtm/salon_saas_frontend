@@ -296,8 +296,11 @@ async function renderBookingsLandingPage() {
             </div>
         </div>
 
+        <!-- Section Divider -->
+        <div class="bk-section-divider"></div>
+
         <!-- Section 2: Explore Detailed Reports -->
-        <div class="bk-section-header" style="margin-top: 2.25rem;">
+        <div class="bk-section-header">
             <div>
                 <h2>Explore Detailed Reports</h2>
                 <p class="bk-section-subtitle">Get in-depth insights for each booking category</p>
