@@ -218,37 +218,10 @@ async function renderBookingsLandingPage() {
 
     // 1. Render initial layout matching screenshot exactly
     hubView.innerHTML = `
-        <!-- Hero Banner -->
-        <div class="bk-hero-banner">
-            <div class="bk-hero-left">
-                <div class="bk-hero-icon-box">
-                    <i data-feather="calendar"></i>
-                </div>
-                <div class="bk-hero-text">
-                    <h1>Bookings Reports</h1>
-                    <p>Booking outcomes and their financial impact</p>
-                </div>
-            </div>
-            <div class="bk-hero-right">
-                <div class="bk-hero-backdrop-glow"></div>
-                <div class="bk-hero-graphic-card">
-                    <div class="bk-hero-card-header">
-                        <div class="bk-hero-cal-mini">
-                            <i data-feather="calendar"></i>
-                        </div>
-                        <div class="bk-hero-cal-lines">
-                            <div class="bk-hero-line w-full"></div>
-                            <div class="bk-hero-line w-half"></div>
-                        </div>
-                    </div>
-                    <div class="bk-hero-card-bars">
-                        <div class="bk-hero-3d-bar bar-1"></div>
-                        <div class="bk-hero-3d-bar bar-2"></div>
-                        <div class="bk-hero-3d-bar bar-3"></div>
-                        <div class="bk-hero-3d-bar bar-4"></div>
-                    </div>
-                </div>
-            </div>
+        <!-- Page Title Header (Bold Heading) -->
+        <div class="bk-page-header">
+            <h1>Bookings Reports</h1>
+            <p>Booking outcomes and their financial impact</p>
         </div>
 
         <!-- Section 1: Quick Metrics -->
