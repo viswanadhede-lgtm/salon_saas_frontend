@@ -563,7 +563,7 @@ function renderBkTotalStatusDonut(k, rows, revs = {}) {
             count: noShows,
             color: '#f59e0b',
             pct: getPct(noShows),
-            revLabel: 'Estimated Missed',
+            revLabel: 'Missed Revenue',
             revVal: cur(finalNoShowRev),
             revColor: '#d97706'
         }
@@ -588,16 +588,14 @@ function renderBkTotalStatusDonut(k, rows, revs = {}) {
         });
     }
 
-    // Update Legend (3 rows)
+    // Update Legend (3 single-line rows)
     const legendEl = document.getElementById('donutLegend');
     if (legendEl) {
         legendEl.innerHTML = legendItems.map(item => `
             <div class="donut-legend-item">
                 <span class="donut-legend-dot" style="background-color: ${item.color};"></span>
                 <span class="donut-legend-text">
-                    <span>${item.name} - <strong>${item.count}</strong></span>,
-                    <span>${item.pct} of total bookings</span>,
-                    <span>${item.revLabel}: <strong style="color: ${item.revColor};">${item.revVal}</strong></span>
+                    ${item.name} - <strong>${item.count}</strong> (${item.pct}), ${item.revLabel} - <strong style="color: ${item.revColor};">${item.revVal}</strong>
                 </span>
             </div>
         `).join('');
