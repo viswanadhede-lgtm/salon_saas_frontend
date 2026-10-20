@@ -643,6 +643,24 @@ function buildServiceCell(serviceStr) {
     </div>`;
 }
 
+// ─── Expandable staff chips (first + "+N" toggle) ─────────────────────────────
+function buildStaffCell(staffStr) {
+    if (!staffStr || staffStr === '-') return '<span style="color:#94a3b8;">—</span>';
+    const chipStyle = 'display:inline-block;padding:2px 8px;border-radius:20px;font-size:0.72rem;font-weight:500;background:#f8fafc;color:#475569;border:1px solid #e2e8f0;margin:1px 2px 1px 0;white-space:nowrap;';
+    const names = staffStr.split(',').map(s => s.trim()).filter(Boolean);
+    if (names.length === 0) return '<span style="color:#94a3b8;">—</span>';
+    const firstChip = `<span style="${chipStyle}">${names[0]}</span>`;
+    if (names.length === 1) return firstChip;
+    const extraCount = names.length - 1;
+    const extraChips = names.slice(1).map(s => `<span style="${chipStyle}">${s}</span>`).join('');
+    return `<div style="display:flex;flex-wrap:wrap;align-items:flex-start;gap:2px;width:100%;">
+        ${firstChip}
+        <span onclick="(function(btn){var el=btn.nextElementSibling;var hidden=el.style.display==='none'||el.style.display==='';el.style.display=hidden?'flex':'none';btn.textContent=hidden?'▲ less':'+${extraCount}';})(this)"
+            style="display:inline-block;padding:2px 7px;border-radius:20px;font-size:0.7rem;font-weight:600;background:#f3e8ff;color:#7e22ce;cursor:pointer;white-space:nowrap;user-select:none;">+${extraCount}</span>
+        <div style="display:none;flex-wrap:wrap;gap:2px;width:100%;margin-top:3px;">${extraChips}</div>
+    </div>`;
+}
+
 // Table Setup with Search, 25-item Pagination, Export CSV, and Print
 function setupBkTotalTable(rows, filterStart, filterEnd) {
     let currentPage = 1;
@@ -677,6 +695,9 @@ function setupBkTotalTable(rows, filterStart, filterEnd) {
                     // ── 2. Service: first chip + expandable +N
                     const serviceCell = buildServiceCell(r.service);
 
+                    // ── 2b. Staff: first chip + expandable +N
+                    const staffCell = buildStaffCell(r.staff);
+
                     // ── 3. Amount: color by booking status
                     const amtStyle = `color:${amountColor(r.status)};font-weight:700;`;
 
@@ -689,7 +710,7 @@ function setupBkTotalTable(rows, filterStart, filterEnd) {
                         <td style="padding:14px 8px;font-size:0.85rem;color:#64748b;">${r.time || '—'}</td>
                         <td style="padding:14px 8px;">${customerCell}</td>
                         <td style="padding:14px 8px;max-width:200px;">${serviceCell}</td>
-                        <td style="padding:14px 8px;font-size:0.85rem;color:#64748b;">${r.staff || '—'}</td>
+                        <td style="padding:14px 8px;max-width:180px;">${staffCell}</td>
                         <td style="padding:14px 8px;font-size:0.875rem;${amtStyle}">${formatCurrency(r.amount)}</td>
                         <td style="padding:14px 8px;">${payCell}</td>
                         <td style="padding:14px 8px;">${statusPill(r.status)}</td>
@@ -1281,6 +1302,7 @@ function setupBkCompletedTable(rows, filterStart, filterEnd) {
                         : '<span style="color:#94a3b8;">—</span>';
 
                     const serviceCell = buildServiceCell(r.service);
+                    const staffCell   = buildStaffCell(r.staff);
                     const payCell     = paymentBadge(r.payment_status);
 
                     let dt = r.datetime || '';
@@ -1298,7 +1320,7 @@ function setupBkCompletedTable(rows, filterStart, filterEnd) {
                         <td style="padding:14px 8px;font-size:0.85rem;color:#64748b;">${timeStr || '—'}</td>
                         <td style="padding:14px 8px;">${customerCell}</td>
                         <td style="padding:14px 8px;max-width:200px;">${serviceCell}</td>
-                        <td style="padding:14px 8px;font-size:0.85rem;color:#64748b;">${r.staff || '—'}</td>
+                        <td style="padding:14px 8px;max-width:180px;">${staffCell}</td>
                         <td style="padding:14px 8px;font-size:0.875rem;color:#059669;font-weight:700;">${formatCurrency(r.amount)}</td>
                         <td style="padding:14px 8px;">${payCell}</td>
                         <td style="padding:14px 8px;">${statusPill('completed')}</td>

@@ -188,6 +188,7 @@ BEGIN
             'booking_id',     LEFT(COALESCE(booking_id::text, '-'), 8) || '...',
             'datetime',       TO_CHAR(booking_date, 'DD Mon YYYY') || ', ' || COALESCE(TO_CHAR(start_time, 'HH12:MI AM'), '-'),
             'customer',       COALESCE(customer_name, 'Unknown'),
+            'customer_id',    COALESCE(customer_id::text, ''),
             'service',        COALESCE(service_name, '-'),
             'staff',          COALESCE(staff_name, '-'),
             'amount',         COALESCE(final_amount, total_price, 0),
@@ -196,7 +197,7 @@ BEGIN
     ), '[]'::jsonb)
     INTO v_completed_rows
     FROM (
-        SELECT booking_id, booking_date, start_time, customer_name, service_name,
+        SELECT booking_id, booking_date, start_time, customer_name, customer_id, service_name,
                staff_name, final_amount, total_price, payment_status
         FROM public.bookings_for_business_transaction
         WHERE (p_branch_id  IS NULL OR branch_id  = p_branch_id)
