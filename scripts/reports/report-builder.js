@@ -533,6 +533,9 @@ function initReportDateFilterModal() {
             const last  = new Date(y, m + 1, 0);
             return { start: toIso(first), end: toIso(last), label: 'Current Month' };
         }
+        if (val === 'all_time') {
+            return { start: '2000-01-01', end: '2099-12-31', label: 'All Time' };
+        }
         if (val === 'last_3_months') {
             const threeMonthsAgo = new Date(now);
             threeMonthsAgo.setMonth(m - 3);

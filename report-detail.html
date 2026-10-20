@@ -932,9 +932,8 @@
                                     <h3>Filter Period</h3>
                                 </div>
                                 <div class="filter-body" style="display: flex; gap: 28px; padding: 16px 20px;">
-                                    <!-- Column 1: RECENT -->
+                                    <!-- Column 1 -->
                                     <div class="filter-section" style="flex: 1;">
-                                        <div class="filter-section-title">RECENT</div>
                                         <div style="display: flex; flex-direction: column; gap: 9px;">
                                             <label class="filter-option">
                                                 <input type="radio" name="reportPresetDate" value="today">
@@ -948,12 +947,15 @@
                                                 <input type="radio" name="reportPresetDate" value="one_month" checked>
                                                 <span>One Month</span>
                                             </label>
+                                            <label class="filter-option">
+                                                <input type="radio" name="reportPresetDate" value="all_time">
+                                                <span>All Time</span>
+                                            </label>
                                         </div>
                                     </div>
 
-                                    <!-- Column 2: EXTENDED -->
+                                    <!-- Column 2 -->
                                     <div class="filter-section" style="flex: 1;">
-                                        <div class="filter-section-title">EXTENDED</div>
                                         <div style="display: flex; flex-direction: column; gap: 9px;">
                                             <label class="filter-option">
                                                 <input type="radio" name="reportPresetDate" value="last_3_months">
@@ -970,9 +972,8 @@
                                         </div>
                                     </div>
 
-                                    <!-- Column 3: CUSTOM -->
+                                    <!-- Column 3 -->
                                     <div class="filter-section" style="flex: 1;">
-                                        <div class="filter-section-title">CUSTOM</div>
                                         <div style="display: flex; flex-direction: column; gap: 9px;">
                                             <label class="filter-option" id="labelCustomDates">
                                                 <input type="radio" name="reportPresetDate" value="custom" id="radioCustomDates">
