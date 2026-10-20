@@ -2695,8 +2695,451 @@ async function renderBkNoShows(data, supabase) {
 }
 
 // =============================================================================
-// renderBkRefunds — Refunded Bookings
+// renderBkRefunds — Refunded Bookings (Enhanced)
 // =============================================================================
+
+// Module-level chart instances for Refunded Bookings
+let bkRefundTrendChart = null;
+let bkRefundDonutChart = null;
+
+// ── Dual-Axis Refund Trend: Refund Count (bars) vs Amount Refunded (line) ──────
+function renderBkRefundTrend(rows) {
+    const ctx = document.getElementById('trendChart');
+    if (!ctx) return;
+
+    if (bkRefundTrendChart)    { bkRefundTrendChart.destroy();    bkRefundTrendChart = null; }
+    if (bkNoShowTrendChart)    { bkNoShowTrendChart.destroy();    bkNoShowTrendChart = null; }
+    if (bkCancelledTrendChart) { bkCancelledTrendChart.destroy(); bkCancelledTrendChart = null; }
+    if (bkTotalTrendChart)     { bkTotalTrendChart.destroy();     bkTotalTrendChart = null; }
+    if (bkCompletedTrendChart) { bkCompletedTrendChart.destroy(); bkCompletedTrendChart = null; }
+    const existingChart = (typeof Chart !== 'undefined' && Chart.getChart) ? Chart.getChart(ctx) : null;
+    if (existingChart) existingChart.destroy();
+
+    const titleEl = document.getElementById('leftChartTitle');
+    if (titleEl) titleEl.textContent = 'Refund Trend (Volume vs Refunded Amount)';
+
+    if (!rows || rows.length === 0) {
+        bkRefundTrendChart = new Chart(ctx, {
+            type: 'bar',
+            data: { labels: ['No Data'], datasets: [] },
+            options: { responsive: true, maintainAspectRatio: false }
+        });
+        return;
+    }
+
+    const dateMap = {};
+    rows.forEach(r => {
+        let d = r.refund_date || r.datetime || r.date || 'Unknown';
+        if (d.includes(',')) d = d.split(',')[0].trim();
+        if (!dateMap[d]) dateMap[d] = { count: 0, amount: 0, rawDate: new Date(d) };
+        dateMap[d].count += 1;
+        dateMap[d].amount += Number(r.amount || 0);
+    });
+
+    const sortedDates = Object.keys(dateMap).sort((a, b) => {
+        const da = dateMap[a].rawDate.getTime();
+        const db = dateMap[b].rawDate.getTime();
+        if (!isNaN(da) && !isNaN(db)) return da - db;
+        return a.localeCompare(b);
+    });
+
+    const labels  = sortedDates.map(d => {
+        const dt = dateMap[d].rawDate;
+        return !isNaN(dt.getTime()) ? dt.toLocaleDateString('en-IN', { day: '2-digit', month: 'short' }) : d;
+    });
+    const counts  = sortedDates.map(d => dateMap[d].count);
+    const amounts = sortedDates.map(d => Math.round(dateMap[d].amount));
+
+    bkRefundTrendChart = new Chart(ctx, {
+        type: 'bar',
+        data: {
+            labels,
+            datasets: [
+                {
+                    type: 'bar',
+                    label: 'Refunds Count',
+                    data: counts,
+                    backgroundColor: 'rgba(244, 63, 94, 0.75)',
+                    hoverBackgroundColor: '#f43f5e',
+                    borderRadius: 6,
+                    borderSkipped: false,
+                    yAxisID: 'y',
+                    order: 2,
+                    maxBarThickness: 32
+                },
+                {
+                    type: 'line',
+                    label: 'Amount Refunded (₹)',
+                    data: amounts,
+                    borderColor: '#f59e0b',
+                    backgroundColor: 'rgba(245, 158, 11, 0.08)',
+                    borderWidth: 2.5,
+                    pointBackgroundColor: '#f59e0b',
+                    pointBorderColor: '#ffffff',
+                    pointBorderWidth: 1.5,
+                    pointRadius: 4,
+                    pointHoverRadius: 6,
+                    fill: true,
+                    tension: 0.35,
+                    yAxisID: 'y1',
+                    order: 1
+                }
+            ]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            interaction: { mode: 'index', intersect: false },
+            plugins: {
+                legend: {
+                    display: true,
+                    position: 'top',
+                    labels: { boxWidth: 12, font: { size: 12, weight: '500' }, color: '#475569' }
+                },
+                tooltip: {
+                    backgroundColor: '#0f172a',
+                    padding: 12,
+                    cornerRadius: 8,
+                    callbacks: {
+                        label: function(context) {
+                            if (context.dataset.type === 'line') {
+                                return ` Amount Refunded: ₹${Number(context.raw || 0).toLocaleString('en-IN')}`;
+                            }
+                            return ` Refunds: ${context.raw}`;
+                        }
+                    }
+                }
+            },
+            scales: {
+                x: {
+                    grid: { display: false },
+                    ticks: { color: '#64748b', font: { size: 11 } }
+                },
+                y: {
+                    type: 'linear',
+                    display: true,
+                    position: 'left',
+                    beginAtZero: true,
+                    grid: { color: '#f1f5f9' },
+                    ticks: {
+                        stepSize: 1,
+                        precision: 0,
+                        color: '#f43f5e',
+                        font: { size: 11 }
+                    },
+                    title: { display: true, text: 'Refunds Count', color: '#f43f5e', font: { size: 11 } }
+                },
+                y1: {
+                    type: 'linear',
+                    display: true,
+                    position: 'right',
+                    beginAtZero: true,
+                    grid: { drawOnChartArea: false },
+                    ticks: {
+                        font: { size: 11 },
+                        color: '#f59e0b',
+                        callback: val => '₹' + Number(val).toLocaleString('en-IN')
+                    },
+                    title: { display: true, text: 'Amount Refunded (₹)', color: '#f59e0b', font: { size: 11 } }
+                }
+            }
+        }
+    });
+}
+
+// ── Clean Donut Chart for Refunds by Payment Method ──────────────────────────
+function renderBkRefundMethodDonut(rows, k) {
+    const ctx = document.getElementById('distributionChart');
+    if (!ctx) return;
+
+    if (bkRefundDonutChart)    { bkRefundDonutChart.destroy();    bkRefundDonutChart = null; }
+    if (bkNoShowDonutChart)    { bkNoShowDonutChart.destroy();    bkNoShowDonutChart = null; }
+    if (bkCancelledDonutChart) { bkCancelledDonutChart.destroy(); bkCancelledDonutChart = null; }
+    if (bkTotalDonutChart)     { bkTotalDonutChart.destroy();     bkTotalDonutChart = null; }
+    if (bkCompletedDonutChart) { bkCompletedDonutChart.destroy(); bkCompletedDonutChart = null; }
+    const existing = (typeof Chart !== 'undefined' && Chart.getChart) ? Chart.getChart(ctx) : null;
+    if (existing) existing.destroy();
+
+    const titleEl = document.getElementById('rightChartTitle');
+    if (titleEl) titleEl.textContent = 'Refunds by Payment Method';
+
+    // Aggregate by payment method
+    const methodMap = {};
+    (rows || []).forEach(r => {
+        let m = (r.method || 'Not Specified').trim();
+        if (!m || m === '-') m = 'Not Specified';
+        m = m.charAt(0).toUpperCase() + m.slice(1);
+        if (!methodMap[m]) methodMap[m] = { count: 0, totalAmount: 0 };
+        methodMap[m].count += 1;
+        methodMap[m].totalAmount += Number(r.amount || 0);
+    });
+
+    const sortedMethods = Object.keys(methodMap).sort((a, b) => methodMap[b].count - methodMap[a].count);
+    const totalRefundCount = sortedMethods.reduce((sum, m) => sum + methodMap[m].count, 0) || 0;
+    const totalRefundVal = sortedMethods.reduce((sum, m) => sum + methodMap[m].totalAmount, 0) || Number(k.total_refunded || 0);
+
+    const paletteMap = {
+        'Upi': '#3b82f6',
+        'Cash': '#10b981',
+        'Card': '#8b5cf6',
+        'Wallet': '#f59e0b',
+        'Net Banking': '#ec4899',
+        'Not Specified': '#94a3b8'
+    };
+    const fallbackPalette = ['#3b82f6', '#10b981', '#8b5cf6', '#f59e0b', '#ec4899', '#06b6d4', '#64748b'];
+
+    const labels   = sortedMethods;
+    const dataVals = sortedMethods.map(m => methodMap[m].count);
+    const amtVals  = sortedMethods.map(m => methodMap[m].totalAmount);
+    const colors   = sortedMethods.map((m, i) => paletteMap[m] || fallbackPalette[i % fallbackPalette.length]);
+
+    bkRefundDonutChart = new Chart(ctx, {
+        type: 'doughnut',
+        data: {
+            labels: labels.length ? labels : ['No Data'],
+            datasets: [{
+                data: dataVals.length ? dataVals : [1],
+                backgroundColor: colors.length ? colors : ['#e2e8f0'],
+                borderWidth: 2,
+                borderColor: '#ffffff',
+                hoverOffset: 6
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            cutout: '72%',
+            plugins: {
+                legend: { display: false },
+                tooltip: {
+                    backgroundColor: '#0f172a',
+                    padding: 12,
+                    cornerRadius: 8,
+                    callbacks: {
+                        label: function(context) {
+                            if (!labels.length) return ' No data';
+                            const idx = context.dataIndex;
+                            const count = dataVals[idx] || 0;
+                            const pct = totalRefundCount > 0 ? ((count / totalRefundCount) * 100).toFixed(1) : 0;
+                            const amt = Math.round(amtVals[idx] || 0).toLocaleString('en-IN');
+                            return ` ${labels[idx]}: ${count} (${pct}%) — Total: ₹${amt}`;
+                        }
+                    }
+                }
+            }
+        }
+    });
+
+    // Center Stat
+    const centerVal = document.getElementById('donutCenterValue');
+    const centerLbl = document.getElementById('donutCenterLabel');
+    if (centerVal) centerVal.textContent = formatCurrency(totalRefundVal);
+    if (centerLbl) centerLbl.textContent = 'TOTAL REFUNDED';
+
+    // Interactive Legend
+    const getPct = (count) => {
+        if (!totalRefundCount || totalRefundCount <= 0) return '0%';
+        const v = (count / totalRefundCount) * 100;
+        return (v % 1 === 0 ? v.toFixed(0) : v.toFixed(1)) + '%';
+    };
+
+    const legendEl = document.getElementById('donutLegend');
+    if (legendEl) {
+        if (labels.length === 0) {
+            legendEl.innerHTML = '<div style="color:#94a3b8;font-size:0.8rem;text-align:center;padding:8px;">No refund records found.</div>';
+        } else {
+            legendEl.innerHTML = labels.map((name, i) => `
+                <div class="donut-legend-item">
+                    <span class="donut-legend-dot" style="background-color: ${colors[i]};"></span>
+                    <span class="donut-legend-text">
+                        ${name} - <strong>${dataVals[i]}</strong> (${getPct(dataVals[i])}), Amount - <strong style="color: ${colors[i]};">₹${Math.round(amtVals[i]).toLocaleString('en-IN')}</strong>
+                    </span>
+                </div>
+            `).join('');
+        }
+    }
+}
+
+// ── Refunded Bookings Table with 25-item Pagination, Search, Export & Print ───
+function setupBkRefundTable(rows, filterStart, filterEnd) {
+    let currentPage = 1;
+    const pageSize  = 25;
+    let currentFilteredRows = [...(rows || [])];
+
+    const titleText = document.getElementById('tableTitleText');
+    if (titleText) titleText.textContent = 'Refunded Booking Records';
+
+    const thead = document.getElementById('tableHead');
+    if (thead) {
+        thead.innerHTML = `
+            <tr>
+                <th>Refund Ref</th>
+                <th>Date</th>
+                <th>Booking ID</th>
+                <th>Customer</th>
+                <th>Method</th>
+                <th>Amount</th>
+                <th>Reason / Notes</th>
+                <th>Status</th>
+            </tr>`;
+    }
+
+    const methodStyle = m => {
+        const map = {
+            'cash': 'background:#f0fdf4;color:#166534;',
+            'upi': 'background:#eff6ff;color:#1e40af;',
+            'card': 'background:#f5f3ff;color:#5b21b6;',
+            'wallet': 'background:#fffbeb;color:#92400e;',
+            'net banking': 'background:#fdf4ff;color:#86198f;',
+            'netbanking': 'background:#fdf4ff;color:#86198f;'
+        };
+        return map[(m || '').toLowerCase()] || 'background:#f1f5f9;color:#64748b;';
+    };
+
+    function renderPage(page) {
+        currentPage = page;
+        const total      = currentFilteredRows.length;
+        const totalPages = Math.ceil(total / pageSize) || 1;
+        if (currentPage > totalPages) currentPage = totalPages;
+        if (currentPage < 1)          currentPage = 1;
+
+        const startIdx = (currentPage - 1) * pageSize;
+        const endIdx   = Math.min(startIdx + pageSize, total);
+        const pageRows = currentFilteredRows.slice(startIdx, endIdx);
+
+        const tbody = document.getElementById('tableBody');
+        if (tbody) {
+            if (pageRows.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="8" style="text-align:center;padding:2.5rem;color:#94a3b8;">No refund records match your filter criteria.</td></tr>';
+            } else {
+                tbody.innerHTML = pageRows.map(r => {
+                    const custId   = (r.customer_id || '').replace(/'/g, "\\'");
+                    const custName = (r.customer || '—').replace(/'/g, "\\'");
+                    const customerCell = r.customer && r.customer !== 'Unknown'
+                        ? `<span class="customer-link" onclick="if(window.viewCustomerProfile) window.viewCustomerProfile('${custId}', '${custName}')">${r.customer}</span>`
+                        : `<span style="color:#94a3b8;">${r.customer || '—'}</span>`;
+
+                    const notesCell = r.notes && r.notes !== 'Not specified'
+                        ? `<span style="font-size:0.85rem;color:#334155;">${r.notes}</span>`
+                        : '<span style="color:#94a3b8;font-style:italic;">Not specified</span>';
+
+                    return `
+                    <tr style="border-bottom:1px solid #f8fafc;transition:background 0.15s;" onmouseover="this.style.background='#fafafa'" onmouseout="this.style.background=''">
+                        <td style="padding:14px 8px 14px 16px;"><strong style="font-size:0.85rem;color:#0f172a;font-family:monospace;">${r.refund_ref || '—'}</strong></td>
+                        <td style="padding:14px 8px;font-size:0.85rem;color:#64748b;">${r.refund_date || '—'}</td>
+                        <td style="padding:14px 8px;font-size:0.85rem;color:#475569;font-family:monospace;">${r.booking_id || '—'}</td>
+                        <td style="padding:14px 8px;">${customerCell}</td>
+                        <td style="padding:14px 8px;"><span class="status-pill" style="${methodStyle(r.method)}">${r.method || '—'}</span></td>
+                        <td style="padding:14px 8px;"><strong style="color:#ef4444;">${formatCurrency(r.amount)}</strong></td>
+                        <td style="padding:14px 8px;max-width:220px;">${notesCell}</td>
+                        <td style="padding:14px 8px;">${statusPill('refunded')}</td>
+                    </tr>`;
+                }).join('');
+            }
+        }
+
+        const badge = document.getElementById('tableRecordCountBadge');
+        if (badge) badge.textContent = `${total} refunds`;
+
+        const info = document.getElementById('paginationInfo');
+        if (info) {
+            info.textContent = total === 0
+                ? 'Showing 0 to 0 of 0 refunds'
+                : `Showing ${startIdx + 1} to ${endIdx} of ${total} refunds`;
+        }
+
+        const controls = document.getElementById('paginationControls');
+        if (controls) {
+            if (totalPages <= 1) { controls.innerHTML = ''; return; }
+
+            let html = `<button class="page-btn" id="btnPagePrevRefund" ${currentPage === 1 ? 'disabled' : ''}>&larr; Prev</button>`;
+            for (let p = 1; p <= totalPages; p++) {
+                if (p === 1 || p === totalPages || (p >= currentPage - 2 && p <= currentPage + 2)) {
+                    html += `<button class="page-btn ${p === currentPage ? 'active' : ''}" data-page="${p}">${p}</button>`;
+                } else if (p === currentPage - 3 || p === currentPage + 3) {
+                    html += `<span style="padding:0 4px;color:#94a3b8;">...</span>`;
+                }
+            }
+            html += `<button class="page-btn" id="btnPageNextRefund" ${currentPage === totalPages ? 'disabled' : ''}>Next &rarr;</button>`;
+            controls.innerHTML = html;
+
+            controls.querySelectorAll('[data-page]').forEach(btn => {
+                btn.onclick = () => renderPage(Number(btn.getAttribute('data-page')));
+            });
+            const prevBtn = document.getElementById('btnPagePrevRefund');
+            if (prevBtn) prevBtn.onclick = () => renderPage(currentPage - 1);
+            const nextBtn = document.getElementById('btnPageNextRefund');
+            if (nextBtn) nextBtn.onclick = () => renderPage(currentPage + 1);
+        }
+    }
+
+    // Search
+    const searchInput = document.getElementById('tableSearchInput');
+    if (searchInput) {
+        searchInput.value = '';
+        searchInput.oninput = (e) => {
+            const query = (e.target.value || '').toLowerCase().trim();
+            if (!query) {
+                currentFilteredRows = [...(rows || [])];
+            } else {
+                currentFilteredRows = (rows || []).filter(r => {
+                    const cust   = (r.customer    || '').toLowerCase();
+                    const ref    = (r.refund_ref  || '').toLowerCase();
+                    const bid    = (r.booking_id  || '').toLowerCase();
+                    const meth   = (r.method      || '').toLowerCase();
+                    const notes  = (r.notes       || '').toLowerCase();
+                    const dt     = (r.refund_date || '').toLowerCase();
+                    return cust.includes(query) || ref.includes(query) || bid.includes(query) || meth.includes(query) || notes.includes(query) || dt.includes(query) || query === 'refunded';
+                });
+            }
+            renderPage(1);
+        };
+    }
+
+    // Export CSV
+    const exportBtn = document.getElementById('btnExportCSV');
+    if (exportBtn) {
+        exportBtn.onclick = () => {
+            if (!currentFilteredRows || currentFilteredRows.length === 0) {
+                alert('No refunded bookings data to export.');
+                return;
+            }
+            const csvHeaders = ['Refund Ref', 'Date', 'Booking ID', 'Customer', 'Method', 'Amount', 'Reason / Notes', 'Status'];
+            const csvLines   = [csvHeaders.join(',')];
+            currentFilteredRows.forEach(r => {
+                csvLines.push([
+                    `"${(r.refund_ref  || '').replace(/"/g, '""')}"`,
+                    `"${(r.refund_date || '').replace(/"/g, '""')}"`,
+                    `"${(r.booking_id  || '').replace(/"/g, '""')}"`,
+                    `"${(r.customer    || '').replace(/"/g, '""')}"`,
+                    `"${(r.method      || '').replace(/"/g, '""')}"`,
+                    `"${r.amount || 0}"`,
+                    `"${(r.notes       || '').replace(/"/g, '""')}"`,
+                    `"Refunded"`
+                ].join(','));
+            });
+            const blob = new Blob([csvLines.join('\n')], { type: 'text/csv;charset=utf-8;' });
+            const url  = URL.createObjectURL(blob);
+            const a    = document.createElement('a');
+            a.href     = url;
+            const sDate = filterStart ? filterStart.value : 'all';
+            const eDate = filterEnd   ? filterEnd.value   : 'all';
+            a.download = `Refunded_Bookings_${sDate}_to_${eDate}.csv`;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+        };
+    }
+
+    // Print
+    const printBtn = document.getElementById('btnPrintTable');
+    if (printBtn) printBtn.onclick = () => window.print();
+
+    renderPage(1);
+}
+
+// ── Main renderer for Refunded Bookings ──────────────────────────────────────
 async function renderBkRefunds(data, supabase) {
     const companyId    = resolveCompanyId();
     const filterStart  = document.getElementById('filterStartDate');
@@ -2704,53 +3147,109 @@ async function renderBkRefunds(data, supabase) {
     const filterBranch = document.getElementById('filterBranch');
     const btnApply     = document.getElementById('btnApplyFilters');
 
+    // Panel visibility
+    const snapPanel  = document.getElementById('bkSnapshotPanel');
+    const snapComp   = document.getElementById('bkCompletedSnapshotPanel');
+    const snapCanc   = document.getElementById('bkCancelledSnapshotPanel');
+    const snapNoShow = document.getElementById('bkNoShowSnapshotPanel');
+    const snapRefund = document.getElementById('bkRefundSnapshotPanel');
+    const kpiRow     = document.getElementById('kpiRow');
+
+    if (snapPanel)  snapPanel.style.display  = 'none';
+    if (snapComp)   snapComp.style.display   = 'none';
+    if (snapCanc)   snapCanc.style.display   = 'none';
+    if (snapNoShow) snapNoShow.style.display = 'none';
+    if (snapRefund) snapRefund.style.display = 'block';
+    if (kpiRow)     kpiRow.style.display     = 'none';
+
     setDefaultDateRange(filterStart, filterEnd);
+
+    const setEl = (id, val) => { const el = document.getElementById(id); if (el) el.textContent = val; };
 
     const loadData = async () => {
         const start = filterStart ? filterStart.value : '2000-01-01';
         const end   = filterEnd   ? filterEnd.value   : '2099-12-31';
         const bid   = resolveBranchId(filterBranch);
 
-        setLoading(data, 7);
         try {
             const result  = await callMasterRpc(supabase, companyId, bid, start, end);
             const section = result.bk_refunds || {};
             const k       = section.kpis      || {};
             const rows    = section.rows      || [];
 
-            data.kpi1.value = Number(k.refunded_bookings || 0).toLocaleString('en-IN');
-            data.kpi2.value = formatCurrency(k.total_refunded || 0);
-            data.kpi3.value = formatCurrency(k.avg_refund     || 0);
-            data.kpi4.value = Number(k.refund_rate || 0).toFixed(1) + '%';
-            updateKPIs(data.kpi1, data.kpi2, data.kpi3, data.kpi4);
+            // If rows are missing customer_id, resolve them so customer links work immediately
+            const needsCustId = rows.some(r => (!r.customer_id || r.customer_id === '') && r.customer && r.customer !== 'Unknown');
+            if (needsCustId) {
+                const names = [...new Set(rows.map(r => r.customer).filter(n => n && n !== 'Unknown' && n !== '—'))];
+                try {
+                    let q = supabase.from('customers').select('customer_id, customer_name');
+                    if (companyId && companyId !== 'all') q = q.eq('company_id', companyId);
+                    const { data: custList } = await q.in('customer_name', names);
+                    if (custList && custList.length > 0) {
+                        const nameToId = {};
+                        custList.forEach(c => { nameToId[c.customer_name] = c.customer_id; });
+                        rows.forEach(r => {
+                            if (!r.customer_id && nameToId[r.customer]) {
+                                r.customer_id = nameToId[r.customer];
+                            }
+                        });
+                    }
+                } catch (e) {
+                    console.warn('[bookings] Error fetching missing customer_ids for refunds:', e);
+                }
+            }
 
-            const trend = buildTrendFromRows(rows, 'refund_date', 'amount');
-            if (typeof renderTrendChart === 'function') renderTrendChart(trend.labels, trend.values);
+            const refundCount   = Number(k.refunded_bookings || rows.length || 0);
+            const totalRefunded = Number(k.total_refunded || 0);
+            const avgRefund     = Number(k.avg_refund || 0);
+            const refundRate    = Number(k.refund_rate || 0);
+            const sc            = result.stat_cards || {};
+            const totalBookings = Number(sc.total_bookings || (result.bk_total && result.bk_total.kpis && result.bk_total.kpis.total_bookings) || 0) || refundCount;
 
-            const dist = buildDistFromRows(rows, 'method');
-            if (typeof renderDistributionChart === 'function') renderDistributionChart(dist.labels, dist.values);
+            // ── Stat Card 1: Refunded Bookings
+            setEl('bkRefundSnapCount',    refundCount.toLocaleString('en-IN'));
+            setEl('bkRefundSnapCountSub', `${refundRate.toFixed(1)}% of ${totalBookings.toLocaleString('en-IN')} total appointments`);
+            const barsCount = document.getElementById('bkRefundBarsCount');
+            if (barsCount) barsCount.innerHTML = build7DayTrend(rows, 'refunds');
 
-            const methodStyle = m => {
-                const map = { 'cash': 'background:#f0fdf4;color:#166534;', 'upi': 'background:#eff6ff;color:#1e40af;', 'card': 'background:#f5f3ff;color:#5b21b6;' };
-                return map[(m || '').toLowerCase()] || 'background:#f1f5f9;color:#64748b;';
-            };
-            data.headers = ['Refund Ref', 'Refund Date', 'Original Booking ID', 'Customer Name', 'Refund Method', 'Refund Amount', 'Reason / Notes'];
-            updateTable(data.headers, rows.map(r => [
-                r.refund_ref,
-                r.refund_date,
-                r.booking_id,
-                r.customer,
-                '<span class="status-pill" style="' + methodStyle(r.method) + '">' + (r.method || '\u2014') + '</span>',
-                '<strong style="color:#ef4444;">' + formatCurrency(r.amount) + '</strong>',
-                r.notes || '<span style="color:#94a3b8;font-style:italic;">Not specified</span>'
-            ]));
+            // ── Stat Card 2: Total Refunded
+            setEl('bkRefundSnapTotal',    formatCurrency(totalRefunded));
+            setEl('bkRefundSnapTotalSub', 'Direct revenue returned to clients');
+            const barsTotal = document.getElementById('bkRefundBarsTotal');
+            if (barsTotal) barsTotal.innerHTML = build7DayTrend(rows, 'refunds');
+
+            // ── Stat Card 3: Average Refund
+            setEl('bkRefundSnapAvg',    formatCurrency(avgRefund));
+            setEl('bkRefundSnapAvgSub', 'Per refunded transaction');
+            const barsAvg = document.getElementById('bkRefundBarsAvg');
+            if (barsAvg) barsAvg.innerHTML = build7DayTrend(rows, 'refunds');
+
+            // ── Stat Card 4: Refund Rate
+            setEl('bkRefundSnapRate',    refundRate.toFixed(1) + '%');
+            setEl('bkRefundSnapRateSub', `${refundCount} refunded out of ${totalBookings.toLocaleString('en-IN')} bookings`);
+            const barsRate = document.getElementById('bkRefundBarsRate');
+            if (barsRate) barsRate.innerHTML = build7DayTrend(rows, 'refunds');
+
+            // ── Charts
+            renderBkRefundTrend(rows);
+            renderBkRefundMethodDonut(rows, k);
+
+            // ── Table
+            setupBkRefundTable(rows, filterStart, filterEnd);
+
+            if (typeof feather !== 'undefined') feather.replace();
+
         } catch (err) {
             console.error('[bookings] renderBkRefunds error:', err);
-            setError(data);
+            setEl('bkRefundSnapCount', 'Error');
+            setEl('bkRefundSnapTotal', 'Error');
+            setEl('bkRefundSnapAvg',   'Error');
+            setEl('bkRefundSnapRate',  'Error');
         }
     };
 
     await initBranchDropdown(supabase, companyId, filterBranch);
+    if (filterBranch) filterBranch.onchange = loadData;
     if (btnApply) btnApply.onclick = loadData;
     loadData();
 }
@@ -2775,11 +3274,13 @@ export async function render(data, supabase, type) {
     const snapComp   = document.getElementById('bkCompletedSnapshotPanel');
     const snapCanc   = document.getElementById('bkCancelledSnapshotPanel');
     const snapNoShow = document.getElementById('bkNoShowSnapshotPanel');
+    const snapRefund = document.getElementById('bkRefundSnapshotPanel');
     const kpiRow     = document.getElementById('kpiRow');
     if (snapTotal)  snapTotal.style.display  = 'none';
     if (snapComp)   snapComp.style.display   = 'none';
     if (snapCanc)   snapCanc.style.display   = 'none';
     if (snapNoShow) snapNoShow.style.display = 'none';
+    if (snapRefund) snapRefund.style.display = 'none';
 
     // Show the correct panel per type; hide kpiRow for snapshot sub-reports
     if (t === 'bk-total') {
@@ -2794,8 +3295,11 @@ export async function render(data, supabase, type) {
     } else if (t === 'bk-no-shows') {
         if (snapNoShow) snapNoShow.style.display = 'block';
         if (kpiRow)     kpiRow.style.display     = 'none';
+    } else if (t === 'bk-refunds') {
+        if (snapRefund) snapRefund.style.display = 'block';
+        if (kpiRow)     kpiRow.style.display     = 'none';
     } else {
-        // bk-refunds, bookings overview — use standard kpiRow
+        // bookings overview — use standard kpiRow
         if (kpiRow)    kpiRow.style.display    = 'grid';
     }
 

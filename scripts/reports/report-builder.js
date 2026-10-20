@@ -384,7 +384,7 @@ const REPORT_TYPES = {
         kpi3: { label: 'Average Refund',    value: 'Loading...' },
         kpi4: { label: 'Refund Rate',       value: 'Loading...' },
         tableTitle: 'Refunded Booking Records',
-        headers: ['Refund Ref', 'Refund Date', 'Original Booking ID', 'Customer Name', 'Refund Method', 'Refund Amount', 'Reason / Notes'],
+        headers: ['Refund Ref', 'Refund Date', 'Original Booking ID', 'Customer Name', 'Refund Method', 'Refund Amount', 'Reason / Notes', 'Status'],
         rows: []
     },
 
@@ -762,20 +762,23 @@ document.addEventListener('DOMContentLoaded', async () => {
     const snapComp   = document.getElementById('bkCompletedSnapshotPanel');
     const snapCanc   = document.getElementById('bkCancelledSnapshotPanel');
     const snapNoShow = document.getElementById('bkNoShowSnapshotPanel');
+    const snapRefund = document.getElementById('bkRefundSnapshotPanel');
     const kpiRow     = document.getElementById('kpiRow');
 
-    const isSnapshotReport = ['bk-total', 'bk-completed', 'bk-cancelled', 'bk-no-shows'].includes(type);
+    const isSnapshotReport = ['bk-total', 'bk-completed', 'bk-cancelled', 'bk-no-shows', 'bk-refunds'].includes(type);
     if (isSnapshotReport) {
         if (snapPanel)  snapPanel.style.display  = (type === 'bk-total')     ? 'block' : 'none';
         if (snapComp)   snapComp.style.display   = (type === 'bk-completed') ? 'block' : 'none';
         if (snapCanc)   snapCanc.style.display   = (type === 'bk-cancelled') ? 'block' : 'none';
         if (snapNoShow) snapNoShow.style.display = (type === 'bk-no-shows')  ? 'block' : 'none';
+        if (snapRefund) snapRefund.style.display = (type === 'bk-refunds')   ? 'block' : 'none';
         if (kpiRow)     kpiRow.style.display     = 'none';
     } else {
         if (snapPanel)  snapPanel.style.display  = 'none';
         if (snapComp)   snapComp.style.display   = 'none';
         if (snapCanc)   snapCanc.style.display   = 'none';
         if (snapNoShow) snapNoShow.style.display = 'none';
+        if (snapRefund) snapRefund.style.display = 'none';
         if (kpiRow)     kpiRow.style.display     = 'grid';
         updateKPIs(data.kpi1, data.kpi2, data.kpi3, data.kpi4);
     }
