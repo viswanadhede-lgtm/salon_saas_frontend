@@ -761,7 +761,7 @@
 }
 
 .bk-snap-label {
-    font-size: 0.9rem;
+    font-size: 0.825rem;
     font-weight: 600;
     color: #1e293b;
     white-space: nowrap;
@@ -777,7 +777,7 @@
 }
 
 .bk-snap-sub {
-    font-size: 0.8125rem;
+    font-size: 0.74rem;
     font-weight: 500;
     color: #64748b;
     white-space: nowrap;
