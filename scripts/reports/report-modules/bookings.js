@@ -233,6 +233,55 @@ async function renderBookings(data, supabase) {
     loadData();
 }
 
+// Date parser & 7-Day Trend Mini Sparklines for Snapshot Cards
+function parseRowDate(row) {
+    if (!row) return null;
+    const raw = row.date || row.datetime || row.refund_date || '';
+    if (!raw) return null;
+    const cleanDateStr = String(raw).split(',')[0].trim();
+    const parsed = new Date(cleanDateStr);
+    if (!isNaN(parsed.getTime())) return parsed;
+    return null;
+}
+
+function build7DayTrend(rows, unitLabel = 'bookings') {
+    const days = [];
+    const now = new Date();
+    // 7 days ending today
+    for (let i = 6; i >= 0; i--) {
+        const d = new Date(now.getFullYear(), now.getMonth(), now.getDate() - i);
+        const y = d.getFullYear();
+        const m = d.getMonth();
+        const dt = d.getDate();
+        const shortLabel = d.toLocaleDateString('en-GB', { day: 'numeric', month: 'short' });
+        days.push({ y, m, dt, shortLabel, count: 0 });
+    }
+
+    if (Array.isArray(rows)) {
+        rows.forEach(r => {
+            const rd = parseRowDate(r);
+            if (!rd) return;
+            const y = rd.getFullYear();
+            const m = rd.getMonth();
+            const dt = rd.getDate();
+            const match = days.find(d => d.y === y && d.m === m && d.dt === dt);
+            if (match) {
+                match.count += 1;
+            }
+        });
+    }
+
+    const max = Math.max(...days.map(d => d.count), 1);
+
+    return days.map((d, idx) => {
+        const isToday = (idx === 6);
+        const h = d.count > 0 ? Math.min(28, Math.round(6 + (d.count / max) * 22)) : 3;
+        const opacity = d.count > 0 ? (isToday ? '1' : '0.82') : '0.22';
+        const tooltip = `${d.shortLabel}: ${d.count} ${unitLabel}`;
+        return `<span style="height: ${h}px; opacity: ${opacity};" title="${tooltip}"></span>`;
+    }).join('');
+}
+
 // Module-level chart instances for Total Bookings
 let bkTotalTrendChart = null;
 let bkTotalDonutChart = null;
@@ -644,7 +693,24 @@ async function renderBkTotal(data, supabase) {
     const filterBranch = document.getElementById('filterBranch');
     const btnApply     = document.getElementById('btnApplyFilters');
 
+    // Ensure 4-card snapshot panel is displayed and plain KPI row is hidden
+    const snapPanel = document.getElementById('bkSnapshotPanel');
+    const kpiRow    = document.getElementById('kpiRow');
+    if (snapPanel) snapPanel.style.display = 'block';
+    if (kpiRow)    kpiRow.style.display    = 'none';
+
     setDefaultDateRange(filterStart, filterEnd);
+
+    const setSnapLoading = () => {
+        const elTotal     = document.getElementById('bkSnapTotal');
+        const elCompleted = document.getElementById('bkSnapCompleted');
+        const elCancelled = document.getElementById('bkSnapCancelled');
+        const elNoShows   = document.getElementById('bkSnapNoShows');
+        if (elTotal)     elTotal.textContent     = 'Loading...';
+        if (elCompleted) elCompleted.textContent = 'Loading...';
+        if (elCancelled) elCancelled.textContent = 'Loading...';
+        if (elNoShows)   elNoShows.textContent   = 'Loading...';
+    };
 
     const loadData = async () => {
         const start = filterStart ? filterStart.value : '2000-01-01';
@@ -652,31 +718,73 @@ async function renderBkTotal(data, supabase) {
         const bid   = resolveBranchId(filterBranch);
 
         setLoading(data, 7);
+        setSnapLoading();
         try {
-            const result = await callMasterRpc(supabase, companyId, bid, start, end);
-            const section = result.bk_total || {};
-            const k       = section.kpis    || {};
-            const rows    = section.rows    || [];
+            const result  = await callMasterRpc(supabase, companyId, bid, start, end);
+            const sc      = result.stat_cards || {};
+            const section = result.bk_total   || {};
+            const k       = section.kpis      || {};
+            const rows    = section.rows      || [];
 
-            data.kpi1.value = Number(k.total_bookings || 0).toLocaleString('en-IN');
-            data.kpi2.value = Number(k.completed      || 0).toLocaleString('en-IN');
-            data.kpi3.value = Number(k.cancelled      || 0).toLocaleString('en-IN');
-            data.kpi4.value = Number(k.no_shows       || 0).toLocaleString('en-IN');
-            updateKPIs(data.kpi1, data.kpi2, data.kpi3, data.kpi4);
+            // 1. Populate the 4 Snapshot Cards
+            const fmt = (n) => Number(n || 0).toLocaleString('en-IN');
+            const cur = (n) => '₹' + Number(n || 0).toLocaleString('en-IN', { maximumFractionDigits: 0 });
 
-            // 1. Performance Trend: Booking Volume & Revenue
+            const setEl   = (id, val) => { const el = document.getElementById(id); if (el) el.textContent = val; };
+            const setHtml = (id, val) => { const el = document.getElementById(id); if (el) el.innerHTML = val; };
+
+            const totalCount     = (sc.total_bookings !== undefined)     ? sc.total_bookings     : (k.total_bookings || 0);
+            const completedCount = (sc.completed_bookings !== undefined) ? sc.completed_bookings : (k.completed || 0);
+            const cancelledCount = (sc.cancelled_bookings !== undefined) ? sc.cancelled_bookings : (k.cancelled || 0);
+            const noShowCount    = (sc.no_show_bookings !== undefined)    ? sc.no_show_bookings    : (k.no_shows || 0);
+
+            const realizedRev = (sc.realized_revenue !== undefined)         ? sc.realized_revenue         : 0;
+            const cancelVal   = (sc.estimated_value_affected !== undefined) ? sc.estimated_value_affected : 0;
+            const noShowVal   = (sc.estimated_value_missed !== undefined)   ? sc.estimated_value_missed   : 0;
+
+            setEl('bkSnapTotal',       fmt(totalCount));
+            setEl('bkSnapCompleted',   fmt(completedCount));
+            setHtml('bkSnapRevenue',   'Realised revenue:<br>' + cur(realizedRev));
+            setEl('bkSnapCancelled',   fmt(cancelledCount));
+            setHtml('bkSnapCancelVal', 'Estimated value:<br>' + cur(cancelVal));
+            setEl('bkSnapNoShows',     fmt(noShowCount));
+            setHtml('bkSnapNoShowVal', 'Estimated missed:<br>' + cur(noShowVal));
+
+            // Populate mini sparkline bars for the 4 cards
+            const completedRows = (result.bk_completed && result.bk_completed.rows) ? result.bk_completed.rows : [];
+            const cancelledRows = (result.bk_cancelled && result.bk_cancelled.rows) ? result.bk_cancelled.rows : [];
+            const noShowRows    = (result.bk_no_shows  && result.bk_no_shows.rows)  ? result.bk_no_shows.rows  : [];
+
+            const elTotalBars = document.getElementById('bkBarsTotal');
+            if (elTotalBars) elTotalBars.innerHTML = build7DayTrend(rows, 'bookings');
+
+            const elCompBars = document.getElementById('bkBarsCompleted');
+            if (elCompBars) elCompBars.innerHTML = build7DayTrend(completedRows, 'completed');
+
+            const elCancBars = document.getElementById('bkBarsCancelled');
+            if (elCancBars) elCancBars.innerHTML = build7DayTrend(cancelledRows, 'cancelled');
+
+            const elNoShowBars = document.getElementById('bkBarsNoShows');
+            if (elNoShowBars) elNoShowBars.innerHTML = build7DayTrend(noShowRows, 'no-shows');
+
+            // 2. Performance Trend: Booking Volume & Revenue
             renderBkTotalPerformanceTrend(rows);
 
-            // 2. Status Distribution: Completed, Cancelled, No-Shows
+            // 3. Status Distribution: Completed, Cancelled, No-Shows
             renderBkTotalStatusDonut(k, rows);
 
-            // 3. All Bookings Table: Search, 25-item Pagination, Export CSV, and Print
+            // 4. All Bookings Table: Search, 25-item Pagination, Export CSV, and Print
             setupBkTotalTable(rows, filterStart, filterEnd);
 
             if (window.feather) window.feather.replace();
         } catch (err) {
             console.error('[bookings] renderBkTotal error:', err);
             setError(data);
+            const setEl = (id, val) => { const el = document.getElementById(id); if (el) el.textContent = val; };
+            setEl('bkSnapTotal', '—');
+            setEl('bkSnapCompleted', '—');
+            setEl('bkSnapCancelled', '—');
+            setEl('bkSnapNoShows', '—');
         }
     };
 
@@ -930,7 +1038,16 @@ const handlers = {
 };
 
 export async function render(data, supabase, type) {
-    const t       = type || data?.type || 'bookings';
+    const t         = type || data?.type || 'bookings';
+    const snapPanel = document.getElementById('bkSnapshotPanel');
+    const kpiRow    = document.getElementById('kpiRow');
+    if (t === 'bk-total') {
+        if (snapPanel) snapPanel.style.display = 'block';
+        if (kpiRow)    kpiRow.style.display    = 'none';
+    } else {
+        if (snapPanel) snapPanel.style.display = 'none';
+        if (kpiRow)    kpiRow.style.display    = 'grid';
+    }
     const handler = handlers[t];
     if (handler) return await handler(data, supabase);
     updateTable(data.headers, data.rows || []);

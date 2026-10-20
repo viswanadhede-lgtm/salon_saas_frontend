@@ -543,8 +543,17 @@ document.addEventListener('DOMContentLoaded', async () => {
         tableHeaderTitle.textContent = data.tableTitle;
     }
 
-    // 6. Render KPI cards
-    updateKPIs(data.kpi1, data.kpi2, data.kpi3, data.kpi4);
+    // 6. Render KPI cards or Snapshot panel
+    const snapPanel = document.getElementById('bkSnapshotPanel');
+    const kpiRow    = document.getElementById('kpiRow');
+    if (type === 'bk-total') {
+        if (snapPanel) snapPanel.style.display = 'block';
+        if (kpiRow)    kpiRow.style.display    = 'none';
+    } else {
+        if (snapPanel) snapPanel.style.display = 'none';
+        if (kpiRow)    kpiRow.style.display    = 'grid';
+        updateKPIs(data.kpi1, data.kpi2, data.kpi3, data.kpi4);
+    }
 
     // 7. Delegate to the category module
     const modulePath = TYPE_MODULE_MAP[type] || './report-modules/misc.js';
