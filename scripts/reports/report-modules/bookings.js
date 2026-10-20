@@ -667,6 +667,21 @@ function setupBkTotalTable(rows, filterStart, filterEnd) {
     const pageSize = 25;
     let currentFilteredRows = [...(rows || [])];
 
+    const thead = document.getElementById('tableHead');
+    if (thead) {
+        thead.innerHTML = `
+            <tr>
+                <th>Date</th>
+                <th>Time</th>
+                <th>Customer</th>
+                <th>Service</th>
+                <th>Staff</th>
+                <th>Amount</th>
+                <th>Payment</th>
+                <th>Status</th>
+            </tr>`;
+    }
+
     function renderPage(page) {
         currentPage = page;
         const total = currentFilteredRows.length;
@@ -848,9 +863,11 @@ async function renderBkTotal(data, supabase) {
     // Ensure 4-card snapshot panel is displayed and other panels are hidden
     const snapPanel = document.getElementById('bkSnapshotPanel');
     const snapComp  = document.getElementById('bkCompletedSnapshotPanel');
+    const snapCanc  = document.getElementById('bkCancelledSnapshotPanel');
     const kpiRow    = document.getElementById('kpiRow');
     if (snapPanel) snapPanel.style.display = 'block';
     if (snapComp)  snapComp.style.display  = 'none';
+    if (snapCanc)  snapCanc.style.display  = 'none';
     if (kpiRow)    kpiRow.style.display    = 'none';
 
     setDefaultDateRange(filterStart, filterEnd);
@@ -1277,6 +1294,21 @@ function setupBkCompletedTable(rows, filterStart, filterEnd) {
     const titleText = document.getElementById('tableTitleText');
     if (titleText) titleText.textContent = 'Completed Booking Records';
 
+    const thead = document.getElementById('tableHead');
+    if (thead) {
+        thead.innerHTML = `
+            <tr>
+                <th>Date</th>
+                <th>Time</th>
+                <th>Customer</th>
+                <th>Service</th>
+                <th>Staff</th>
+                <th>Amount</th>
+                <th>Payment</th>
+                <th>Status</th>
+            </tr>`;
+    }
+
     function renderPage(page) {
         currentPage = page;
         const total = currentFilteredRows.length;
@@ -1460,9 +1492,11 @@ async function renderBkCompleted(data, supabase) {
     // Display the enhanced Completed Bookings snapshot panel
     const snapPanel = document.getElementById('bkSnapshotPanel');
     const snapComp  = document.getElementById('bkCompletedSnapshotPanel');
+    const snapCanc  = document.getElementById('bkCancelledSnapshotPanel');
     const kpiRow    = document.getElementById('kpiRow');
     if (snapPanel) snapPanel.style.display = 'none';
     if (snapComp)  snapComp.style.display  = 'block';
+    if (snapCanc)  snapCanc.style.display  = 'none';
     if (kpiRow)    kpiRow.style.display    = 'none';
 
     setDefaultDateRange(filterStart, filterEnd);
@@ -1816,6 +1850,20 @@ function setupBkCancelledTable(rows, filterStart, filterEnd) {
 
     const titleText = document.getElementById('tableTitleText');
     if (titleText) titleText.textContent = 'Cancelled Booking Records';
+
+    const thead = document.getElementById('tableHead');
+    if (thead) {
+        thead.innerHTML = `
+            <tr>
+                <th>Date</th>
+                <th>Time</th>
+                <th>Customer</th>
+                <th>Service</th>
+                <th>Staff</th>
+                <th>Est. Value</th>
+                <th>Reason</th>
+            </tr>`;
+    }
 
     function renderPage(page) {
         currentPage = page;
@@ -2193,7 +2241,7 @@ const handlers = {
 export async function render(data, supabase, type) {
     const t = type || data?.type || 'bookings';
 
-    // Reset all snapshot panels — each renderer shows the one it needs
+    // Hide all snapshot panels first; each renderer shows only what it needs
     const snapTotal = document.getElementById('bkSnapshotPanel');
     const snapComp  = document.getElementById('bkCompletedSnapshotPanel');
     const snapCanc  = document.getElementById('bkCancelledSnapshotPanel');
@@ -2201,7 +2249,21 @@ export async function render(data, supabase, type) {
     if (snapTotal) snapTotal.style.display = 'none';
     if (snapComp)  snapComp.style.display  = 'none';
     if (snapCanc)  snapCanc.style.display  = 'none';
-    if (kpiRow)    kpiRow.style.display    = 'none';
+
+    // Show the correct panel per type; hide kpiRow for snapshot sub-reports
+    if (t === 'bk-total') {
+        if (snapTotal) snapTotal.style.display = 'block';
+        if (kpiRow)    kpiRow.style.display    = 'none';
+    } else if (t === 'bk-completed') {
+        if (snapComp)  snapComp.style.display  = 'block';
+        if (kpiRow)    kpiRow.style.display    = 'none';
+    } else if (t === 'bk-cancelled') {
+        if (snapCanc)  snapCanc.style.display  = 'block';
+        if (kpiRow)    kpiRow.style.display    = 'none';
+    } else {
+        // bk-no-shows, bk-refunds, bookings overview — use standard kpiRow
+        if (kpiRow)    kpiRow.style.display    = 'grid';
+    }
 
     const handler = handlers[t];
     if (handler) return await handler(data, supabase);

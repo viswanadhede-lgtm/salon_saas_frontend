@@ -759,12 +759,20 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     // 6. Render KPI cards or Snapshot panel
     const snapPanel = document.getElementById('bkSnapshotPanel');
+    const snapComp  = document.getElementById('bkCompletedSnapshotPanel');
+    const snapCanc  = document.getElementById('bkCancelledSnapshotPanel');
     const kpiRow    = document.getElementById('kpiRow');
-    if (type === 'bk-total') {
-        if (snapPanel) snapPanel.style.display = 'block';
+
+    const isSnapshotReport = ['bk-total', 'bk-completed', 'bk-cancelled'].includes(type);
+    if (isSnapshotReport) {
+        if (snapPanel) snapPanel.style.display = (type === 'bk-total')     ? 'block' : 'none';
+        if (snapComp)  snapComp.style.display  = (type === 'bk-completed') ? 'block' : 'none';
+        if (snapCanc)  snapCanc.style.display  = (type === 'bk-cancelled') ? 'block' : 'none';
         if (kpiRow)    kpiRow.style.display    = 'none';
     } else {
         if (snapPanel) snapPanel.style.display = 'none';
+        if (snapComp)  snapComp.style.display  = 'none';
+        if (snapCanc)  snapCanc.style.display  = 'none';
         if (kpiRow)    kpiRow.style.display    = 'grid';
         updateKPIs(data.kpi1, data.kpi2, data.kpi3, data.kpi4);
     }
