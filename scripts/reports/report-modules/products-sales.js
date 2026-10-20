@@ -288,6 +288,13 @@ function renderTrendChart(labels, values, options = {}) {
             scales: {
                 y: {
                     beginAtZero: true,
+                    title: {
+                        display: true,
+                        text: options.yAxisTitle || (isCurrency ? 'Revenue (₹) ↑' : 'Units ↑'),
+                        color: '#64748b',
+                        font: { size: 12, weight: '600' },
+                        padding: { bottom: 6 }
+                    },
                     grid: { color: '#f1f5f9', drawBorder: false },
                     ticks: {
                         color: '#94a3b8',
@@ -296,6 +303,13 @@ function renderTrendChart(labels, values, options = {}) {
                     }
                 },
                 x: {
+                    title: {
+                        display: true,
+                        text: options.xAxisTitle || 'Timeline →',
+                        color: '#64748b',
+                        font: { size: 12, weight: '600' },
+                        padding: { top: 6 }
+                    },
                     grid: { display: false },
                     ticks: { color: '#94a3b8', font: { size: 11 } }
                 }
