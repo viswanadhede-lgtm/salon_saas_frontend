@@ -1307,6 +1307,95 @@
                 </div>
             </div>
 
+            <!-- No-Show Bookings Snapshot Panel (Enhanced 4-Card Snapshot with icons, subtexts, and mini bars) -->
+            <div class="bk-snapshot-panel" id="bkNoShowSnapshotPanel" style="display: none; margin-bottom: 1.5rem;">
+                <div class="bk-snapshot-grid-4">
+                    <!-- 1. No-Show Bookings -->
+                    <div class="bk-snapshot-card">
+                        <div class="bk-snap-icon bg-amber-circle">
+                            <i data-feather="user-x"></i>
+                        </div>
+                        <div class="bk-snap-body">
+                            <span class="bk-snap-label">No-Show Bookings</span>
+                            <span class="bk-snap-val" id="bkNoShowSnapCount">—</span>
+                            <span class="bk-snap-sub txt-amber" id="bkNoShowSnapCountSub">—</span>
+                        </div>
+                        <div class="bk-mini-bars amber-bars" id="bkNoShowBarsCount">
+                            <span style="height: 3px; opacity: 0.22;"></span>
+                            <span style="height: 3px; opacity: 0.22;"></span>
+                            <span style="height: 3px; opacity: 0.22;"></span>
+                            <span style="height: 3px; opacity: 0.22;"></span>
+                            <span style="height: 3px; opacity: 0.22;"></span>
+                            <span style="height: 3px; opacity: 0.22;"></span>
+                            <span style="height: 3px; opacity: 0.22;"></span>
+                        </div>
+                    </div>
+
+                    <!-- 2. Estimated Value Missed -->
+                    <div class="bk-snapshot-card">
+                        <div class="bk-snap-icon bg-red-circle">
+                            <i data-feather="trending-down"></i>
+                        </div>
+                        <div class="bk-snap-body">
+                            <span class="bk-snap-label">Estimated Value Missed</span>
+                            <span class="bk-snap-val" id="bkNoShowSnapValue">—</span>
+                            <span class="bk-snap-sub txt-red" id="bkNoShowSnapValueSub">Revenue lost to unfulfilled slots</span>
+                        </div>
+                        <div class="bk-mini-bars red-bars" id="bkNoShowBarsValue">
+                            <span style="height: 3px; opacity: 0.22;"></span>
+                            <span style="height: 3px; opacity: 0.22;"></span>
+                            <span style="height: 3px; opacity: 0.22;"></span>
+                            <span style="height: 3px; opacity: 0.22;"></span>
+                            <span style="height: 3px; opacity: 0.22;"></span>
+                            <span style="height: 3px; opacity: 0.22;"></span>
+                            <span style="height: 3px; opacity: 0.22;"></span>
+                        </div>
+                    </div>
+
+                    <!-- 3. No-Show Rate -->
+                    <div class="bk-snapshot-card">
+                        <div class="bk-snap-icon bg-amber-circle">
+                            <i data-feather="pie-chart"></i>
+                        </div>
+                        <div class="bk-snap-body">
+                            <span class="bk-snap-label">No-Show Rate</span>
+                            <span class="bk-snap-val" id="bkNoShowSnapRate">—</span>
+                            <span class="bk-snap-sub txt-amber" id="bkNoShowSnapRateSub">—</span>
+                        </div>
+                        <div class="bk-mini-bars amber-bars" id="bkNoShowBarsRate">
+                            <span style="height: 3px; opacity: 0.22;"></span>
+                            <span style="height: 3px; opacity: 0.22;"></span>
+                            <span style="height: 3px; opacity: 0.22;"></span>
+                            <span style="height: 3px; opacity: 0.22;"></span>
+                            <span style="height: 3px; opacity: 0.22;"></span>
+                            <span style="height: 3px; opacity: 0.22;"></span>
+                            <span style="height: 3px; opacity: 0.22;"></span>
+                        </div>
+                    </div>
+
+                    <!-- 4. Repeat No-Shows -->
+                    <div class="bk-snapshot-card">
+                        <div class="bk-snap-icon bg-purple-circle">
+                            <i data-feather="alert-triangle"></i>
+                        </div>
+                        <div class="bk-snap-body">
+                            <span class="bk-snap-label">Repeat No-Show Customers</span>
+                            <span class="bk-snap-val" id="bkNoShowSnapRepeat">—</span>
+                            <span class="bk-snap-sub txt-purple" id="bkNoShowSnapRepeatSub">Customers with 2+ missed visits</span>
+                        </div>
+                        <div class="bk-mini-bars purple-bars" id="bkNoShowBarsRepeat">
+                            <span style="height: 3px; opacity: 0.22;"></span>
+                            <span style="height: 3px; opacity: 0.22;"></span>
+                            <span style="height: 3px; opacity: 0.22;"></span>
+                            <span style="height: 3px; opacity: 0.22;"></span>
+                            <span style="height: 3px; opacity: 0.22;"></span>
+                            <span style="height: 3px; opacity: 0.22;"></span>
+                            <span style="height: 3px; opacity: 0.22;"></span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
             <!-- KPIs (Directly below filter ribbon) -->
             <div class="kpi-row" id="kpiRow">
                 <div class="kpi-card">

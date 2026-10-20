@@ -355,7 +355,7 @@ BEGIN
     SELECT COALESCE(
         jsonb_agg(
             jsonb_build_object(
-                'booking_id', LEFT(b.booking_id::text, 8) || '...',
+                'booking_id',  LEFT(b.booking_id::text, 8) || '...',
                 'datetime',
                     TO_CHAR(b.booking_date, 'DD Mon YYYY')
                     || ', '
@@ -416,7 +416,7 @@ BEGIN
     SELECT COALESCE(
         jsonb_agg(
             jsonb_build_object(
-                'booking_id', LEFT(b.booking_id::text, 8) || '...',
+                'booking_id',   LEFT(b.booking_id::text, 8) || '...',
                 'datetime',
                     TO_CHAR(b.booking_date, 'DD Mon YYYY')
                     || ', '
@@ -468,6 +468,7 @@ BEGIN
                 'refund_date', TO_CHAR(DATE(COALESCE(bt.paid_at, bt.created_at)), 'DD Mon YYYY'),
                 'booking_id',  LEFT(bt.reference_id::text, 8) || '...',
                 'customer',    COALESCE(bv.customer_name, 'Unknown'),
+                'customer_id', COALESCE(bv.customer_id::text, ''),
                 'method',      INITCAP(COALESCE(bt.payment_method, '-')),
                 'amount',      COALESCE(bt.final_amount, bt.amount, 0),
                 'notes',       COALESCE(NULLIF(TRIM(bt.notes), ''), 'Not specified')
@@ -494,7 +495,8 @@ BEGIN
     LEFT JOIN (
         SELECT DISTINCT ON (booking_id)
             booking_id,
-            customer_name
+            customer_name,
+            customer_id
         FROM public.bookings_for_business_transaction
         ORDER BY booking_id
     ) bv ON bv.booking_id = bt.reference_id;
