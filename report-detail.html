@@ -21,74 +21,92 @@
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <style>
         /* Detail View Specific Styles */
-        .report-actions {
+        .content-header {
             display: flex;
-            gap: 12px;
+            justify-content: space-between;
+            align-items: flex-end;
+            margin-bottom: 1.25rem;
+            flex-wrap: wrap;
+            gap: 1rem;
+        }
+
+        .header-actions {
+            display: flex;
+            gap: 10px;
             align-items: center;
         }
 
-        .btn-outline {
-            display: flex;
+        .btn-top-action {
+            display: inline-flex;
             align-items: center;
             gap: 8px;
             padding: 8px 16px;
-            border: 1px solid #e2e8f0;
+            border: 1px solid #cbd5e1;
             border-radius: 8px;
-            background: white;
-            color: #64748b;
-            font-size: 0.875rem;
-            font-weight: 500;
+            background: #ffffff;
+            color: #334155;
+            font-size: 0.85rem;
+            font-weight: 600;
             cursor: pointer;
             transition: all 0.2s ease;
+            box-shadow: 0 1px 2px rgba(0, 0, 0, 0.03);
         }
 
-        .btn-outline:hover {
-            border-color: #cbd5e1;
+        .btn-top-action:hover {
             background: #f8fafc;
-            color: #1e293b;
+            border-color: #94a3b8;
+            color: #0f172a;
         }
 
-        .btn-outline i {
-            width: 14px;
-            height: 14px;
+        .btn-top-action i {
+            width: 15px;
+            height: 15px;
         }
 
-        .filter-bar {
+        /* Slim Global Filter Ribbon */
+        .filter-ribbon {
             display: flex;
             flex-wrap: wrap;
-            gap: 16px;
-            background: white;
-            padding: 1rem 1.5rem;
-            border-radius: 12px;
-            border: 1px solid #f1f5f9;
-            margin-bottom: 1.5rem;
             align-items: center;
+            gap: 14px;
+            background: #ffffff;
+            padding: 0.85rem 1.25rem;
+            border-radius: 12px;
+            border: 1px solid #e2e8f0;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.02);
+            margin-bottom: 1.5rem;
         }
 
-        .filter-group {
+        .filter-ribbon-group {
             display: flex;
-            flex-direction: column;
-            gap: 4px;
+            align-items: center;
+            gap: 8px;
         }
 
-        .filter-group label {
+        .filter-ribbon-group label {
             font-size: 0.75rem;
             font-weight: 600;
-            color: #94a3b8;
+            color: #64748b;
             text-transform: uppercase;
-            letter-spacing: 0.025em;
+            letter-spacing: 0.03em;
         }
 
-        .filter-group select, 
-        .filter-group input {
-            padding: 8px 12px;
+        .filter-ribbon-group input, 
+        .filter-ribbon-group select {
+            padding: 7px 12px;
+            border: 1px solid #cbd5e1;
             border-radius: 8px;
-            border: 1px solid #e2e8f0;
-            font-size: 0.875rem;
+            font-size: 0.825rem;
+            background: #ffffff;
             color: #1e293b;
             outline: none;
-            background: #f8fafc;
-            min-width: 160px;
+            transition: border-color 0.2s, box-shadow 0.2s;
+        }
+
+        .filter-ribbon-group input:focus,
+        .filter-ribbon-group select:focus {
+            border-color: #4f46e5;
+            box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.1);
         }
 
         .kpi-row {
@@ -558,6 +576,7 @@
         <div id="global-header"></div>
 
         <main class="content-area">
+            <!-- Page Header: Title + Top Action Buttons -->
             <div class="content-header">
                 <div class="header-title">
                     <a href="reports.html" class="back-link" id="reportBackLink">
@@ -567,9 +586,38 @@
                     <h1 id="reportTitle">Total Bookings</h1>
                     <p class="subtitle" id="reportSubtitle">All bookings across all statuses</p>
                 </div>
+                <div class="header-actions">
+                    <button class="btn-top-action" id="btnExportCSV" title="Export as CSV">
+                        <i data-feather="download"></i>
+                        <span>Export CSV</span>
+                    </button>
+                    <button class="btn-top-action" id="btnPrintTable" title="Print this report">
+                        <i data-feather="printer"></i>
+                        <span>Print</span>
+                    </button>
+                </div>
             </div>
 
-            <!-- KPIs (Directly below header) -->
+            <!-- Slim Global Filter Ribbon (Governs KPIs, Charts & Table) -->
+            <div class="filter-ribbon" id="reportFilterBar">
+                <div class="filter-ribbon-group">
+                    <label for="filterStartDate">Start Date</label>
+                    <input type="date" id="filterStartDate">
+                </div>
+                <div class="filter-ribbon-group">
+                    <label for="filterEndDate">End Date</label>
+                    <input type="date" id="filterEndDate">
+                </div>
+                <div class="filter-ribbon-group">
+                    <label for="filterBranch">Branch</label>
+                    <select id="filterBranch">
+                        <option value="all">All Branches</option>
+                    </select>
+                </div>
+                <button class="btn-filter-apply" id="btnApplyFilters">Apply Filters</button>
+            </div>
+
+            <!-- KPIs (Directly below filter ribbon) -->
             <div class="kpi-row" id="kpiRow">
                 <div class="kpi-card">
                     <div class="label" id="kpiLabel1">Total Bookings</div>
@@ -630,48 +678,19 @@
                 </div>
             </div>
 
-            <!-- Table Container with Integrated Toolbar and Pagination -->
+            <!-- Table Container with Table-Specific Search and Pagination -->
             <div class="data-table-container">
-                <!-- Table Top Bar: Title, Count Badge, and Action Buttons -->
+                <!-- Table Top Bar: Title, Count Badge, and Search Bar -->
                 <div class="table-top-bar">
                     <div class="table-title-area">
                         <h2 id="tableTitleText">All Bookings</h2>
                         <span class="table-badge" id="tableRecordCountBadge">0 bookings</span>
                     </div>
                     <div class="table-actions-group">
-                        <button class="btn-table-action" id="btnExportCSV" title="Export as CSV">
-                            <i data-feather="download"></i>
-                            <span>Export CSV</span>
-                        </button>
-                        <button class="btn-table-action" id="btnPrintTable" title="Print this report">
-                            <i data-feather="printer"></i>
-                            <span>Print</span>
-                        </button>
-                    </div>
-                </div>
-
-                <!-- Table Filter & Search Toolbar -->
-                <div class="table-filter-toolbar" id="reportFilterBar">
-                    <div class="search-box">
-                        <i data-feather="search"></i>
-                        <input type="text" id="tableSearchInput" placeholder="Search customer, service, staff, status...">
-                    </div>
-                    <div class="filter-controls-wrap">
-                        <div class="toolbar-filter-item">
-                            <label for="filterStartDate">From</label>
-                            <input type="date" id="filterStartDate">
+                        <div class="search-box">
+                            <i data-feather="search"></i>
+                            <input type="text" id="tableSearchInput" placeholder="Search customer, service, staff, status...">
                         </div>
-                        <div class="toolbar-filter-item">
-                            <label for="filterEndDate">To</label>
-                            <input type="date" id="filterEndDate">
-                        </div>
-                        <div class="toolbar-filter-item">
-                            <label for="filterBranch">Branch</label>
-                            <select id="filterBranch">
-                                <option value="all">All Branches</option>
-                            </select>
-                        </div>
-                        <button class="btn-filter-apply" id="btnApplyFilters">Apply</button>
                     </div>
                 </div>
 
