@@ -345,7 +345,7 @@ const REPORT_TYPES = {
         kpi3: { label: 'Completed Bookings Revenue', value: 'Loading...' },
         kpi4: { label: 'Avg Revenue per Booking',    value: 'Loading...' },
         tableTitle: 'Completed Booking Records',
-        headers: ['Booking ID', 'Date & Time', 'Customer Name', 'Services Delivered', 'Staff Assigned', 'Bill Amount', 'Payment Status'],
+        headers: ['Date', 'Time', 'Customer', 'Service', 'Staff', 'Amount', 'Payment', 'Status'],
         rows: []
     },
     'bk-cancelled': {

@@ -824,10 +824,12 @@ async function renderBkTotal(data, supabase) {
     const filterBranch = document.getElementById('filterBranch');
     const btnApply     = document.getElementById('btnApplyFilters');
 
-    // Ensure 4-card snapshot panel is displayed and plain KPI row is hidden
+    // Ensure 4-card snapshot panel is displayed and other panels are hidden
     const snapPanel = document.getElementById('bkSnapshotPanel');
+    const snapComp  = document.getElementById('bkCompletedSnapshotPanel');
     const kpiRow    = document.getElementById('kpiRow');
     if (snapPanel) snapPanel.style.display = 'block';
+    if (snapComp)  snapComp.style.display  = 'none';
     if (kpiRow)    kpiRow.style.display    = 'none';
 
     setDefaultDateRange(filterStart, filterEnd);
@@ -926,6 +928,504 @@ async function renderBkTotal(data, supabase) {
 }
 
 // =============================================================================
+// Dual-axis Trend for Completed Bookings (Bookings vs Revenue)
+// =============================================================================
+let bkCompletedTrendChart = null;
+function renderBkCompletedPerformanceTrend(rows) {
+    const ctx = document.getElementById('trendChart');
+    if (!ctx) return;
+
+    if (bkCompletedTrendChart) { bkCompletedTrendChart.destroy(); bkCompletedTrendChart = null; }
+    if (bkTotalTrendChart)     { bkTotalTrendChart.destroy();     bkTotalTrendChart = null; }
+    const existing = (typeof Chart !== 'undefined' && Chart.getChart) ? Chart.getChart(ctx) : null;
+    if (existing) existing.destroy();
+
+    const titleEl = document.getElementById('leftChartTitle');
+    if (titleEl) titleEl.textContent = 'Performance Trend (Bookings vs Revenue)';
+
+    if (!rows || rows.length === 0) {
+        bkCompletedTrendChart = new Chart(ctx, {
+            type: 'bar',
+            data: { labels: ['No Data'], datasets: [] },
+            options: { responsive: true, maintainAspectRatio: false }
+        });
+        return;
+    }
+
+    const dateMap = {};
+    rows.forEach(r => {
+        let d = r.date || r.datetime || 'Unknown';
+        if (d.includes(',')) d = d.split(',')[0].trim();
+        if (!dateMap[d]) {
+            dateMap[d] = {
+                count: 0,
+                revenue: 0,
+                rawDate: new Date(d)
+            };
+        }
+        dateMap[d].count += 1;
+        dateMap[d].revenue += Number(r.amount || 0);
+    });
+
+    const sortedDates = Object.keys(dateMap).sort((a, b) => {
+        const da = dateMap[a].rawDate.getTime();
+        const db = dateMap[b].rawDate.getTime();
+        if (!isNaN(da) && !isNaN(db)) return da - db;
+        return a.localeCompare(b);
+    });
+
+    const labels = sortedDates.map(d => {
+        const dt = dateMap[d].rawDate;
+        return !isNaN(dt.getTime())
+            ? dt.toLocaleDateString('en-IN', { day: '2-digit', month: 'short' })
+            : d;
+    });
+
+    const bookingCounts  = sortedDates.map(d => dateMap[d].count);
+    const revenueAmounts = sortedDates.map(d => dateMap[d].revenue);
+
+    bkCompletedTrendChart = new Chart(ctx, {
+        type: 'bar',
+        data: {
+            labels,
+            datasets: [
+                {
+                    type: 'bar',
+                    label: 'Completed Bookings',
+                    data: bookingCounts,
+                    backgroundColor: 'rgba(99, 102, 241, 0.75)',
+                    hoverBackgroundColor: '#6366f1',
+                    borderRadius: 6,
+                    borderSkipped: false,
+                    yAxisID: 'y',
+                    order: 2,
+                    maxBarThickness: 32
+                },
+                {
+                    type: 'line',
+                    label: 'Realized Revenue (₹)',
+                    data: revenueAmounts,
+                    borderColor: '#10b981',
+                    backgroundColor: 'rgba(16, 185, 129, 0.10)',
+                    borderWidth: 2.5,
+                    pointBackgroundColor: '#10b981',
+                    pointBorderColor: '#ffffff',
+                    pointBorderWidth: 1.5,
+                    pointRadius: 4,
+                    pointHoverRadius: 6,
+                    fill: true,
+                    tension: 0.35,
+                    yAxisID: 'y1',
+                    order: 1
+                }
+            ]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            interaction: {
+                mode: 'index',
+                intersect: false
+            },
+            plugins: {
+                legend: {
+                    display: true,
+                    position: 'top',
+                    align: 'end',
+                    labels: {
+                        boxWidth: 12,
+                        boxHeight: 12,
+                        font: { size: 12, weight: '500' },
+                        color: '#64748b',
+                        padding: 16
+                    }
+                },
+                tooltip: {
+                    backgroundColor: '#0f172a',
+                    titleColor: '#f8fafc',
+                    bodyColor: '#cbd5e1',
+                    padding: 12,
+                    cornerRadius: 8,
+                    callbacks: {
+                        label: function(context) {
+                            if (context.dataset.yAxisID === 'y1') {
+                                return ` Revenue: ₹${Number(context.parsed.y || 0).toLocaleString('en-IN')}`;
+                            }
+                            return ` Completed: ${context.parsed.y} booking${context.parsed.y === 1 ? '' : 's'}`;
+                        }
+                    }
+                }
+            },
+            scales: {
+                x: {
+                    grid: { display: false },
+                    ticks: { color: '#94a3b8', font: { size: 11 } }
+                },
+                y: {
+                    type: 'linear',
+                    display: true,
+                    position: 'left',
+                    beginAtZero: true,
+                    title: {
+                        display: true,
+                        text: 'Bookings',
+                        color: '#6366f1',
+                        font: { size: 11, weight: '600' }
+                    },
+                    grid: { color: '#f1f5f9' },
+                    ticks: {
+                        precision: 0,
+                        color: '#94a3b8',
+                        font: { size: 11 }
+                    }
+                },
+                y1: {
+                    type: 'linear',
+                    display: true,
+                    position: 'right',
+                    beginAtZero: true,
+                    title: {
+                        display: true,
+                        text: 'Revenue (₹)',
+                        color: '#10b981',
+                        font: { size: 11, weight: '600' }
+                    },
+                    grid: { drawOnChartArea: false },
+                    ticks: {
+                        color: '#94a3b8',
+                        font: { size: 11 },
+                        callback: (v) => '₹' + (v >= 1000 ? (v / 1000).toFixed(0) + 'k' : v)
+                    }
+                }
+            }
+        }
+    });
+}
+
+// =============================================================================
+// Service Revenue Breakdown Donut Chart for Completed Bookings
+// =============================================================================
+let bkCompletedDonutChart = null;
+function renderBkCompletedServiceDonut(rows, k) {
+    const ctx = document.getElementById('distributionChart');
+    if (!ctx) return;
+
+    if (bkCompletedDonutChart) { bkCompletedDonutChart.destroy(); bkCompletedDonutChart = null; }
+    if (bkTotalDonutChart)     { bkTotalDonutChart.destroy();     bkTotalDonutChart = null; }
+    const existing = (typeof Chart !== 'undefined' && Chart.getChart) ? Chart.getChart(ctx) : null;
+    if (existing) existing.destroy();
+
+    const titleEl = document.getElementById('rightChartTitle');
+    if (titleEl) titleEl.textContent = 'Completed Revenue by Service';
+
+    const serviceMap = {};
+    let totalComputedRevenue = 0;
+
+    (rows || []).forEach(r => {
+        const rawService = r.service || 'Other';
+        const amt = Number(r.amount || 0);
+        const names = rawService.split(',').map(s => s.trim()).filter(Boolean);
+        const svcCount = names.length || 1;
+        const perSvcAmt = amt / svcCount;
+
+        if (names.length === 0) {
+            names.push('Unspecified');
+        }
+
+        names.forEach(name => {
+            if (!serviceMap[name]) {
+                serviceMap[name] = { count: 0, revenue: 0 };
+            }
+            serviceMap[name].count   += 1;
+            serviceMap[name].revenue += perSvcAmt;
+            totalComputedRevenue    += perSvcAmt;
+        });
+    });
+
+    const entries = Object.entries(serviceMap).sort((a, b) => b[1].revenue - a[1].revenue);
+    const palette = ['#10b981', '#6366f1', '#f59e0b', '#ec4899', '#8b5cf6', '#06b6d4', '#64748b'];
+
+    let labels   = [];
+    let dataVals = [];
+    let counts   = [];
+    let colors   = [];
+
+    if (entries.length <= 5) {
+        entries.forEach((e, idx) => {
+            labels.push(e[0]);
+            dataVals.push(Math.round(e[1].revenue));
+            counts.push(e[1].count);
+            colors.push(palette[idx % palette.length]);
+        });
+    } else {
+        const top5 = entries.slice(0, 5);
+        const rest = entries.slice(5);
+
+        top5.forEach((e, idx) => {
+            labels.push(e[0]);
+            dataVals.push(Math.round(e[1].revenue));
+            counts.push(e[1].count);
+            colors.push(palette[idx % palette.length]);
+        });
+
+        const otherRev   = rest.reduce((sum, e) => sum + e[1].revenue, 0);
+        const otherCount = rest.reduce((sum, e) => sum + e[1].count, 0);
+        labels.push('Other Services');
+        dataVals.push(Math.round(otherRev));
+        counts.push(otherCount);
+        colors.push('#64748b');
+    }
+
+    const grandRevenue = Number(k?.completed_revenue) || totalComputedRevenue;
+
+    bkCompletedDonutChart = new Chart(ctx, {
+        type: 'doughnut',
+        data: {
+            labels,
+            datasets: [{
+                data: dataVals,
+                backgroundColor: colors,
+                borderWidth: 2,
+                borderColor: '#ffffff',
+                hoverOffset: 6
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            cutout: '72%',
+            plugins: {
+                legend: { display: false },
+                tooltip: {
+                    backgroundColor: '#0f172a',
+                    padding: 12,
+                    cornerRadius: 8,
+                    callbacks: {
+                        label: function(context) {
+                            const rev = context.parsed || 0;
+                            const pct = grandRevenue > 0 ? ((rev / grandRevenue) * 100).toFixed(1) : 0;
+                            const idx = context.dataIndex;
+                            const c = counts[idx] || 0;
+                            return ` ${context.label}: ₹${rev.toLocaleString('en-IN')} (${pct}%) • ${c} service${c === 1 ? '' : 's'}`;
+                        }
+                    }
+                }
+            }
+        }
+    });
+
+    // Update Center Stat
+    const centerVal = document.getElementById('donutCenterValue');
+    const centerLbl = document.getElementById('donutCenterLabel');
+    if (centerVal) centerVal.textContent = '₹' + Math.round(grandRevenue).toLocaleString('en-IN');
+    if (centerLbl) centerLbl.textContent = 'Total Revenue';
+
+    // Update Legend (Single-line items: Service - Count (%), Revenue - ₹X)
+    const cur = (v) => '₹' + Math.round(Number(v) || 0).toLocaleString('en-IN');
+    const getPct = (rev) => {
+        if (!grandRevenue || grandRevenue <= 0) return '0%';
+        const val = (rev / grandRevenue) * 100;
+        return (val % 1 === 0 ? val.toFixed(0) : val.toFixed(1)) + '%';
+    };
+
+    const legendEl = document.getElementById('donutLegend');
+    if (legendEl) {
+        if (labels.length === 0) {
+            legendEl.innerHTML = '<div style="color:#94a3b8;font-size:0.8rem;text-align:center;padding:8px;">No completed services found.</div>';
+        } else {
+            legendEl.innerHTML = labels.map((name, i) => `
+                <div class="donut-legend-item">
+                    <span class="donut-legend-dot" style="background-color: ${colors[i]};"></span>
+                    <span class="donut-legend-text">
+                        ${name} - <strong>${counts[i]}</strong> (${getPct(dataVals[i])}), Revenue - <strong style="color: ${colors[i]};">${cur(dataVals[i])}</strong>
+                    </span>
+                </div>
+            `).join('');
+        }
+    }
+}
+
+// =============================================================================
+// Table Setup for Completed Bookings with 25-item Pagination, Search, CSV & Print
+// =============================================================================
+function setupBkCompletedTable(rows, filterStart, filterEnd) {
+    let currentPage = 1;
+    const pageSize = 25;
+    let currentFilteredRows = [...(rows || [])];
+
+    const titleText = document.getElementById('tableTitleText');
+    if (titleText) titleText.textContent = 'Completed Booking Records';
+
+    function renderPage(page) {
+        currentPage = page;
+        const total = currentFilteredRows.length;
+        const totalPages = Math.ceil(total / pageSize) || 1;
+        if (currentPage > totalPages) currentPage = totalPages;
+        if (currentPage < 1) currentPage = 1;
+
+        const startIdx = (currentPage - 1) * pageSize;
+        const endIdx = Math.min(startIdx + pageSize, total);
+        const pageRows = currentFilteredRows.slice(startIdx, endIdx);
+
+        // Update table body
+        const tbody = document.getElementById('tableBody');
+        if (tbody) {
+            if (pageRows.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="8" style="text-align:center;padding:2.5rem;color:#94a3b8;">No completed bookings match your filter criteria.</td></tr>';
+            } else {
+                tbody.innerHTML = pageRows.map(r => {
+                    const custId   = (r.customer_id || '').replace(/'/g, "\\'");
+                    const custName = (r.customer || '—').replace(/'/g, "\\'");
+                    const customerCell = r.customer
+                        ? `<span class="customer-link" onclick="if(window.viewCustomerProfile) window.viewCustomerProfile('${custId}', '${custName}')">${r.customer}</span>`
+                        : '<span style="color:#94a3b8;">—</span>';
+
+                    const serviceCell = buildServiceCell(r.service);
+                    const payCell     = paymentBadge(r.payment_status);
+
+                    let dt = r.datetime || '';
+                    let dateStr = r.date || '';
+                    let timeStr = r.time || '';
+                    if (!dateStr && dt) {
+                        const parts = dt.split(',');
+                        dateStr = parts[0] ? parts[0].trim() : '—';
+                        timeStr = parts[1] ? parts[1].trim() : '—';
+                    }
+
+                    return `
+                    <tr style="border-bottom:1px solid #f8fafc;transition:background 0.15s;" onmouseover="this.style.background='#fafafa'" onmouseout="this.style.background=''">
+                        <td style="padding:14px 8px 14px 16px;"><strong style="font-size:0.85rem;color:#0f172a;">${dateStr || '—'}</strong></td>
+                        <td style="padding:14px 8px;font-size:0.85rem;color:#64748b;">${timeStr || '—'}</td>
+                        <td style="padding:14px 8px;">${customerCell}</td>
+                        <td style="padding:14px 8px;max-width:200px;">${serviceCell}</td>
+                        <td style="padding:14px 8px;font-size:0.85rem;color:#64748b;">${r.staff || '—'}</td>
+                        <td style="padding:14px 8px;font-size:0.875rem;color:#059669;font-weight:700;">${formatCurrency(r.amount)}</td>
+                        <td style="padding:14px 8px;">${payCell}</td>
+                        <td style="padding:14px 8px;">${statusPill('completed')}</td>
+                    </tr>`;
+                }).join('');
+            }
+        }
+
+        // Update record count badge
+        const badge = document.getElementById('tableRecordCountBadge');
+        if (badge) badge.textContent = `${total} bookings`;
+
+        // Update pagination info text
+        const info = document.getElementById('paginationInfo');
+        if (info) {
+            if (total === 0) {
+                info.textContent = 'Showing 0 to 0 of 0 bookings';
+            } else {
+                info.textContent = `Showing ${startIdx + 1} to ${endIdx} of ${total} bookings`;
+            }
+        }
+
+        // Render pagination controls
+        const controls = document.getElementById('paginationControls');
+        if (controls) {
+            if (totalPages <= 1) {
+                controls.innerHTML = '';
+                return;
+            }
+
+            let html = '';
+            html += `<button class="page-btn" id="btnPagePrevComp" ${currentPage === 1 ? 'disabled' : ''}>&larr; Prev</button>`;
+
+            for (let p = 1; p <= totalPages; p++) {
+                if (p === 1 || p === totalPages || (p >= currentPage - 2 && p <= currentPage + 2)) {
+                    html += `<button class="page-btn ${p === currentPage ? 'active' : ''}" data-page="${p}">${p}</button>`;
+                } else if (p === currentPage - 3 || p === currentPage + 3) {
+                    html += `<span style="padding:0 4px;color:#94a3b8;">...</span>`;
+                }
+            }
+
+            html += `<button class="page-btn" id="btnPageNextComp" ${currentPage === totalPages ? 'disabled' : ''}>Next &rarr;</button>`;
+            controls.innerHTML = html;
+
+            controls.querySelectorAll('[data-page]').forEach(btn => {
+                btn.onclick = () => renderPage(Number(btn.getAttribute('data-page')));
+            });
+            const prevBtn = document.getElementById('btnPagePrevComp');
+            if (prevBtn) prevBtn.onclick = () => renderPage(currentPage - 1);
+            const nextBtn = document.getElementById('btnPageNextComp');
+            if (nextBtn) nextBtn.onclick = () => renderPage(currentPage + 1);
+        }
+    }
+
+    // Wire Search Filter
+    const searchInput = document.getElementById('tableSearchInput');
+    if (searchInput) {
+        searchInput.value = '';
+        searchInput.oninput = (e) => {
+            const query = (e.target.value || '').toLowerCase().trim();
+            if (!query) {
+                currentFilteredRows = [...(rows || [])];
+            } else {
+                currentFilteredRows = (rows || []).filter(r => {
+                    const cust = (r.customer || '').toLowerCase();
+                    const srv  = (r.service || '').toLowerCase();
+                    const stf  = (r.staff || '').toLowerCase();
+                    const dt   = (r.datetime || r.date || '').toLowerCase();
+                    const pay  = (r.payment_status || '').toLowerCase();
+                    return cust.includes(query) || srv.includes(query) || stf.includes(query) || dt.includes(query) || pay.includes(query);
+                });
+            }
+            renderPage(1);
+        };
+    }
+
+    // Wire Export CSV
+    const exportBtn = document.getElementById('btnExportCSV');
+    if (exportBtn) {
+        exportBtn.onclick = () => {
+            if (!currentFilteredRows || currentFilteredRows.length === 0) {
+                alert('No completed bookings data to export.');
+                return;
+            }
+            const csvHeaders = ['Date', 'Time', 'Customer', 'Service', 'Staff', 'Amount', 'Payment', 'Status'];
+            const csvLines = [csvHeaders.join(',')];
+            currentFilteredRows.forEach(r => {
+                let dt = r.datetime || '';
+                let d = r.date || (dt.includes(',') ? dt.split(',')[0].trim() : dt);
+                let t = r.time || (dt.includes(',') ? dt.split(',')[1].trim() : '');
+                const line = [
+                    `"${d || ''}"`,
+                    `"${t || ''}"`,
+                    `"${(r.customer || '').replace(/"/g, '""')}"`,
+                    `"${(r.service || '').replace(/"/g, '""')}"`,
+                    `"${(r.staff || '').replace(/"/g, '""')}"`,
+                    `"${r.amount || 0}"`,
+                    `"${r.payment_status || ''}"`,
+                    `"Completed"`
+                ];
+                csvLines.push(line.join(','));
+            });
+            const blob = new Blob([csvLines.join('\n')], { type: 'text/csv;charset=utf-8;' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            const sDate = filterStart ? filterStart.value : 'all';
+            const eDate = filterEnd ? filterEnd.value : 'all';
+            a.download = `Completed_Bookings_${sDate}_to_${eDate}.csv`;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+        };
+    }
+
+    // Wire Print Table
+    const printBtn = document.getElementById('btnPrintTable');
+    if (printBtn) {
+        printBtn.onclick = () => window.print();
+    }
+
+    // Initial render
+    renderPage(1);
+}
+
+// =============================================================================
 // renderBkCompleted — Completed Bookings & Revenue
 // =============================================================================
 async function renderBkCompleted(data, supabase) {
@@ -935,49 +1435,102 @@ async function renderBkCompleted(data, supabase) {
     const filterBranch = document.getElementById('filterBranch');
     const btnApply     = document.getElementById('btnApplyFilters');
 
+    // Display the enhanced Completed Bookings snapshot panel
+    const snapPanel = document.getElementById('bkSnapshotPanel');
+    const snapComp  = document.getElementById('bkCompletedSnapshotPanel');
+    const kpiRow    = document.getElementById('kpiRow');
+    if (snapPanel) snapPanel.style.display = 'none';
+    if (snapComp)  snapComp.style.display  = 'block';
+    if (kpiRow)    kpiRow.style.display    = 'none';
+
     setDefaultDateRange(filterStart, filterEnd);
+
+    const setCompSnapLoading = () => {
+        const elCount   = document.getElementById('bkCompSnapCount');
+        const elRate    = document.getElementById('bkCompSnapRate');
+        const elRevenue = document.getElementById('bkCompSnapRevenue');
+        const elAvg     = document.getElementById('bkCompSnapAvg');
+        if (elCount)   elCount.textContent   = 'Loading...';
+        if (elRate)    elRate.textContent    = 'Loading...';
+        if (elRevenue) elRevenue.textContent = 'Loading...';
+        if (elAvg)     elAvg.textContent     = 'Loading...';
+    };
 
     const loadData = async () => {
         const start = filterStart ? filterStart.value : '2000-01-01';
         const end   = filterEnd   ? filterEnd.value   : '2099-12-31';
         const bid   = resolveBranchId(filterBranch);
 
-        setLoading(data, 7);
+        setLoading(data, 8);
+        setCompSnapLoading();
         try {
             const result  = await callMasterRpc(supabase, companyId, bid, start, end);
+            const sc      = result.stat_cards || {};
             const section = result.bk_completed || {};
             const k       = section.kpis        || {};
             const rows    = section.rows        || [];
 
-            data.kpi1.value = Number(k.completed_bookings || 0).toLocaleString('en-IN');
-            data.kpi2.value = Number(k.completion_rate    || 0).toFixed(1) + '%';
-            data.kpi3.value = formatCurrency(k.completed_revenue       || 0);
-            data.kpi4.value = formatCurrency(k.avg_revenue_per_booking || 0);
-            updateKPIs(data.kpi1, data.kpi2, data.kpi3, data.kpi4);
+            const totalBookings     = sc.total_bookings || k.completed_bookings || rows.length || 0;
+            const completedBookings = k.completed_bookings !== undefined ? k.completed_bookings : rows.length;
+            const completionRate    = Number(k.completion_rate || (totalBookings > 0 ? (completedBookings / totalBookings * 100) : 0)).toFixed(1);
+            const completedRevenue  = Number(k.completed_revenue || 0);
+            const avgRev            = Number(k.avg_revenue_per_booking || (completedBookings > 0 ? completedRevenue / completedBookings : 0));
 
-            const trend = buildTrendFromRows(rows, 'datetime', 'amount');
-            if (typeof renderTrendChart === 'function') renderTrendChart(trend.labels, trend.values);
+            const fmt = (n) => Number(n || 0).toLocaleString('en-IN');
+            const cur = (n) => '₹' + Math.round(Number(n || 0)).toLocaleString('en-IN');
 
-            const dist = buildDistFromRows(rows, 'service');
-            if (typeof renderDistributionChart === 'function') renderDistributionChart(dist.labels, dist.values);
+            const setEl   = (id, val) => { const el = document.getElementById(id); if (el) el.textContent = val; };
+            const setHtml = (id, val) => { const el = document.getElementById(id); if (el) el.innerHTML = val; };
 
-            data.headers = ['Booking ID', 'Date & Time', 'Customer Name', 'Services Delivered', 'Staff Assigned', 'Bill Amount', 'Payment Status'];
-            updateTable(data.headers, rows.map(r => [
-                r.booking_id,
-                r.datetime,
-                r.customer,
-                r.service,
-                r.staff,
-                '<strong style="color:#10b981;">' + formatCurrency(r.amount) + '</strong>',
-                statusPill(r.payment_status)
-            ]));
+            // 1. Populate the 4 Enhanced Stat Cards
+            setEl('bkCompSnapCount',        fmt(completedBookings));
+            setHtml('bkCompSnapCountSub',   `${completionRate}% of ${fmt(totalBookings)} total appointments`);
+
+            setEl('bkCompSnapRate',         completionRate + '%');
+            setHtml('bkCompSnapRateSub',    `${fmt(completedBookings)} completed out of ${fmt(totalBookings)} bookings`);
+
+            setEl('bkCompSnapRevenue',      cur(completedRevenue));
+            setHtml('bkCompSnapRevenueSub', 'Realized revenue collected');
+
+            setEl('bkCompSnapAvg',          cur(avgRev));
+            setHtml('bkCompSnapAvgSub',     'Avg spend per completed visit');
+
+            // Populate mini sparkline bars for the 4 cards
+            const elCountBars = document.getElementById('bkCompBarsCount');
+            if (elCountBars) elCountBars.innerHTML = build7DayTrend(rows, 'completed');
+
+            const elRateBars = document.getElementById('bkCompBarsRate');
+            if (elRateBars) elRateBars.innerHTML = build7DayTrend(rows, 'completed');
+
+            const elRevBars = document.getElementById('bkCompBarsRevenue');
+            if (elRevBars) elRevBars.innerHTML = build7DayTrend(rows, 'completed');
+
+            const elAvgBars = document.getElementById('bkCompBarsAvg');
+            if (elAvgBars) elAvgBars.innerHTML = build7DayTrend(rows, 'completed');
+
+            // 2. Dual-axis Performance Trend: Bookings vs Revenue
+            renderBkCompletedPerformanceTrend(rows);
+
+            // 3. Service Performance Donut Chart
+            renderBkCompletedServiceDonut(rows, k);
+
+            // 4. Completed Bookings Table with 25-item Pagination & Search
+            setupBkCompletedTable(rows, filterStart, filterEnd);
+
+            if (window.feather) window.feather.replace();
         } catch (err) {
             console.error('[bookings] renderBkCompleted error:', err);
             setError(data);
+            const setEl = (id, val) => { const el = document.getElementById(id); if (el) el.textContent = val; };
+            setEl('bkCompSnapCount',   '—');
+            setEl('bkCompSnapRate',    '—');
+            setEl('bkCompSnapRevenue', '—');
+            setEl('bkCompSnapAvg',     '—');
         }
     };
 
     await initBranchDropdown(supabase, companyId, filterBranch);
+    if (filterBranch) filterBranch.onchange = loadData;
     if (btnApply) btnApply.onclick = loadData;
     loadData();
 }

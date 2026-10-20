@@ -1129,6 +1129,95 @@
                 </div>
             </div>
 
+            <!-- Completed Bookings Snapshot Panel (Enhanced 4-Card Snapshot with icons, subtexts, and mini bars) -->
+            <div class="bk-snapshot-panel" id="bkCompletedSnapshotPanel" style="display: none; margin-bottom: 1.5rem;">
+                <div class="bk-snapshot-grid-4">
+                    <!-- 1. Completed Bookings -->
+                    <div class="bk-snapshot-card">
+                        <div class="bk-snap-icon bg-green-circle">
+                            <i data-feather="check-circle"></i>
+                        </div>
+                        <div class="bk-snap-body">
+                            <span class="bk-snap-label">Completed Bookings</span>
+                            <span class="bk-snap-val" id="bkCompSnapCount">—</span>
+                            <span class="bk-snap-sub txt-green" id="bkCompSnapCountSub">—</span>
+                        </div>
+                        <div class="bk-mini-bars green-bars" id="bkCompBarsCount">
+                            <span style="height: 3px; opacity: 0.22;"></span>
+                            <span style="height: 3px; opacity: 0.22;"></span>
+                            <span style="height: 3px; opacity: 0.22;"></span>
+                            <span style="height: 3px; opacity: 0.22;"></span>
+                            <span style="height: 3px; opacity: 0.22;"></span>
+                            <span style="height: 3px; opacity: 0.22;"></span>
+                            <span style="height: 3px; opacity: 0.22;"></span>
+                        </div>
+                    </div>
+
+                    <!-- 2. Completion Rate -->
+                    <div class="bk-snapshot-card">
+                        <div class="bk-snap-icon bg-indigo-circle">
+                            <i data-feather="pie-chart"></i>
+                        </div>
+                        <div class="bk-snap-body">
+                            <span class="bk-snap-label">Completion Rate</span>
+                            <span class="bk-snap-val" id="bkCompSnapRate">—</span>
+                            <span class="bk-snap-sub" id="bkCompSnapRateSub">—</span>
+                        </div>
+                        <div class="bk-mini-bars blue-bars" id="bkCompBarsRate">
+                            <span style="height: 3px; opacity: 0.22;"></span>
+                            <span style="height: 3px; opacity: 0.22;"></span>
+                            <span style="height: 3px; opacity: 0.22;"></span>
+                            <span style="height: 3px; opacity: 0.22;"></span>
+                            <span style="height: 3px; opacity: 0.22;"></span>
+                            <span style="height: 3px; opacity: 0.22;"></span>
+                            <span style="height: 3px; opacity: 0.22;"></span>
+                        </div>
+                    </div>
+
+                    <!-- 3. Completed Bookings Revenue -->
+                    <div class="bk-snapshot-card">
+                        <div class="bk-snap-icon bg-green-circle">
+                            <i data-feather="credit-card"></i>
+                        </div>
+                        <div class="bk-snap-body">
+                            <span class="bk-snap-label">Completed Bookings Revenue</span>
+                            <span class="bk-snap-val" id="bkCompSnapRevenue">—</span>
+                            <span class="bk-snap-sub txt-green" id="bkCompSnapRevenueSub">Realized revenue collected</span>
+                        </div>
+                        <div class="bk-mini-bars green-bars" id="bkCompBarsRevenue">
+                            <span style="height: 3px; opacity: 0.22;"></span>
+                            <span style="height: 3px; opacity: 0.22;"></span>
+                            <span style="height: 3px; opacity: 0.22;"></span>
+                            <span style="height: 3px; opacity: 0.22;"></span>
+                            <span style="height: 3px; opacity: 0.22;"></span>
+                            <span style="height: 3px; opacity: 0.22;"></span>
+                            <span style="height: 3px; opacity: 0.22;"></span>
+                        </div>
+                    </div>
+
+                    <!-- 4. Avg Revenue per Booking -->
+                    <div class="bk-snapshot-card">
+                        <div class="bk-snap-icon bg-purple-circle">
+                            <i data-feather="trending-up"></i>
+                        </div>
+                        <div class="bk-snap-body">
+                            <span class="bk-snap-label">Avg Revenue per Booking</span>
+                            <span class="bk-snap-val" id="bkCompSnapAvg">—</span>
+                            <span class="bk-snap-sub txt-purple" id="bkCompSnapAvgSub">Avg spend per completed visit</span>
+                        </div>
+                        <div class="bk-mini-bars purple-bars" id="bkCompBarsAvg">
+                            <span style="height: 3px; opacity: 0.22;"></span>
+                            <span style="height: 3px; opacity: 0.22;"></span>
+                            <span style="height: 3px; opacity: 0.22;"></span>
+                            <span style="height: 3px; opacity: 0.22;"></span>
+                            <span style="height: 3px; opacity: 0.22;"></span>
+                            <span style="height: 3px; opacity: 0.22;"></span>
+                            <span style="height: 3px; opacity: 0.22;"></span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
             <!-- KPIs (Directly below filter ribbon) -->
             <div class="kpi-row" id="kpiRow">
                 <div class="kpi-card">
