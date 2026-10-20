@@ -290,10 +290,12 @@ function renderTrendChart(labels, values, options = {}) {
                     beginAtZero: true,
                     title: {
                         display: true,
-                        text: options.yAxisTitle || (isCurrency ? 'Revenue (₹) ↑' : 'Units ↑'),
+                        // Note: Chart.js rotates the Y-axis title counter-clockwise by 90°.
+                        // Therefore, a rightward arrow '→' in the string points straight UPWARDS on screen.
+                        text: options.yAxisTitle || (isCurrency ? 'Revenue (₹) →' : 'Units →'),
                         color: '#64748b',
-                        font: { size: 12, weight: '600' },
-                        padding: { bottom: 6 }
+                        font: { size: 12, weight: '600', family: 'Inter, system-ui, -apple-system, sans-serif' },
+                        padding: { bottom: 8 }
                     },
                     grid: { color: '#f1f5f9', drawBorder: false },
                     ticks: {
@@ -307,8 +309,8 @@ function renderTrendChart(labels, values, options = {}) {
                         display: true,
                         text: options.xAxisTitle || 'Timeline →',
                         color: '#64748b',
-                        font: { size: 12, weight: '600' },
-                        padding: { top: 6 }
+                        font: { size: 12, weight: '600', family: 'Inter, system-ui, -apple-system, sans-serif' },
+                        padding: { top: 8 }
                     },
                     grid: { display: false },
                     ticks: { color: '#94a3b8', font: { size: 11 } }
