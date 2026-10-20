@@ -498,22 +498,62 @@ async function renderBookingsLandingPage() {
 
     // Fetch live data from master RPC
     try {
-        const companyId = localStorage.getItem('company_id');
-        const branchId  = localStorage.getItem('active_branch_id');
-        const cid = (companyId && companyId !== 'null' && companyId !== 'undefined' && companyId !== 'all') ? companyId : null;
-        const bid = (branchId && branchId !== 'null' && branchId !== 'undefined' && branchId !== 'all') ? branchId : null;
-        const thirtyDaysAgo = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
-        const startDate = thirtyDaysAgo.toISOString().split('T')[0];
-        const endDate   = now.toISOString().split('T')[0];
+        const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+        const sanitizeUuid = (val) => {
+            if (!val || typeof val !== 'string') return null;
+            const t = val.trim();
+            if (['all', 'null', 'undefined', 'none', '', 'branch_1'].includes(t.toLowerCase())) return null;
+            return UUID_REGEX.test(t) ? t : null;
+        };
 
-        const { data: rawResult, error } = await supabase.rpc('get_bookings_report', {
+        const rawCompany = localStorage.getItem('company_id');
+        const rawBranch  = localStorage.getItem('active_branch_id') || localStorage.getItem('branch_id');
+
+        let cid = sanitizeUuid(rawCompany);
+        let bid = sanitizeUuid(rawBranch);
+
+        // If rawBranch is a branch name like "Main Branch", resolve its UUID from branches table
+        if (!bid && rawBranch && typeof rawBranch === 'string' && rawBranch !== 'all' && rawBranch !== 'branch_1') {
+            try {
+                const { data: bMatch } = await supabase
+                    .from('branches')
+                    .select('branch_id')
+                    .ilike('branch_name', `%${rawBranch}%`)
+                    .limit(1)
+                    .maybeSingle();
+                if (bMatch && bMatch.branch_id && UUID_REGEX.test(bMatch.branch_id)) {
+                    bid = bMatch.branch_id;
+                }
+            } catch (bErr) {}
+        }
+
+        const today = new Date(now.getTime() - now.getTimezoneOffset() * 60000);
+        const sixtyDaysAgo = new Date(now.getTime() - 60 * 24 * 60 * 60 * 1000);
+        const startDate = sixtyDaysAgo.toISOString().split('T')[0];
+        const endDate   = today.toISOString().split('T')[0];
+
+        let rawResult = null;
+        const { data: callData, error: callError } = await supabase.rpc('get_bookings_report', {
             p_company_id: cid,
             p_branch_id:  bid,
             p_start_date: startDate,
             p_end_date:   endDate
         });
 
-        if (error || !rawResult) throw (error || new Error('Empty response'));
+        if (callError || !callData) {
+            console.warn('[report-category] Initial RPC call failed, retrying with p_branch_id: null:', callError);
+            const { data: fallbackData } = await supabase.rpc('get_bookings_report', {
+                p_company_id: cid,
+                p_branch_id:  null,
+                p_start_date: startDate,
+                p_end_date:   endDate
+            });
+            rawResult = fallbackData;
+        } else {
+            rawResult = callData;
+        }
+
+        if (!rawResult) throw (callError || new Error('Empty response'));
 
         let result = rawResult;
         if (typeof result === 'string') {
@@ -590,6 +630,14 @@ document.addEventListener('DOMContentLoaded', () => {
         reportLinks.forEach(link => {
             if (link.getAttribute('href') === 'reports.html') {
                 link.classList.add('active');
+            }
+        });
+
+        // Listen for branch changes from global header
+        window.addEventListener('branchChanged', () => renderBookingsLandingPage());
+        document.addEventListener('change', (e) => {
+            if (e.target && (e.target.id === 'branchSelect' || e.target.name === 'branchSelect')) {
+                renderBookingsLandingPage();
             }
         });
         return;
