@@ -233,8 +233,409 @@ async function renderBookings(data, supabase) {
     loadData();
 }
 
+// Module-level chart instances for Total Bookings
+let bkTotalTrendChart = null;
+let bkTotalDonutChart = null;
+
+// Dual-axis Performance Trend: Bookings vs Revenue
+function renderBkTotalPerformanceTrend(rows) {
+    const ctx = document.getElementById('trendChart');
+    if (!ctx) return;
+    if (bkTotalTrendChart) {
+        bkTotalTrendChart.destroy();
+        bkTotalTrendChart = null;
+    }
+
+    if (!rows || rows.length === 0) {
+        bkTotalTrendChart = new Chart(ctx, {
+            type: 'bar',
+            data: { labels: ['No Data'], datasets: [] },
+            options: { responsive: true, maintainAspectRatio: false }
+        });
+        return;
+    }
+
+    const dateMap = {};
+    rows.forEach(r => {
+        let d = r.date || 'Unknown';
+        if (d.includes(',')) d = d.split(',')[0].trim();
+        if (!dateMap[d]) {
+            dateMap[d] = {
+                count: 0,
+                revenue: 0,
+                rawDate: new Date(d)
+            };
+        }
+        dateMap[d].count += 1;
+        dateMap[d].revenue += Number(r.amount || 0);
+    });
+
+    const sortedDates = Object.keys(dateMap).sort((a, b) => {
+        const da = dateMap[a].rawDate.getTime();
+        const db = dateMap[b].rawDate.getTime();
+        if (!isNaN(da) && !isNaN(db)) return da - db;
+        return a.localeCompare(b);
+    });
+
+    const labels = sortedDates.map(d => {
+        const dt = dateMap[d].rawDate;
+        return !isNaN(dt.getTime())
+            ? dt.toLocaleDateString('en-IN', { day: '2-digit', month: 'short' })
+            : d;
+    });
+
+    const bookingCounts = sortedDates.map(d => dateMap[d].count);
+    const revenueAmounts = sortedDates.map(d => dateMap[d].revenue);
+
+    bkTotalTrendChart = new Chart(ctx, {
+        type: 'bar',
+        data: {
+            labels,
+            datasets: [
+                {
+                    type: 'bar',
+                    label: 'Bookings',
+                    data: bookingCounts,
+                    backgroundColor: 'rgba(99, 102, 241, 0.75)',
+                    hoverBackgroundColor: '#6366f1',
+                    borderRadius: 6,
+                    borderSkipped: false,
+                    yAxisID: 'y',
+                    order: 2,
+                    maxBarThickness: 32
+                },
+                {
+                    type: 'line',
+                    label: 'Revenue (₹)',
+                    data: revenueAmounts,
+                    borderColor: '#10b981',
+                    backgroundColor: 'rgba(16, 185, 129, 0.10)',
+                    borderWidth: 2.5,
+                    pointBackgroundColor: '#10b981',
+                    pointBorderColor: '#ffffff',
+                    pointBorderWidth: 1.5,
+                    pointRadius: 4,
+                    pointHoverRadius: 6,
+                    fill: true,
+                    tension: 0.35,
+                    yAxisID: 'y1',
+                    order: 1
+                }
+            ]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            interaction: {
+                mode: 'index',
+                intersect: false
+            },
+            plugins: {
+                legend: {
+                    display: true,
+                    position: 'top',
+                    align: 'end',
+                    labels: {
+                        boxWidth: 12,
+                        boxHeight: 12,
+                        usePointStyle: true,
+                        font: { size: 12, weight: '500' },
+                        color: '#475569'
+                    }
+                },
+                tooltip: {
+                    backgroundColor: '#0f172a',
+                    padding: 12,
+                    titleFont: { size: 13, weight: '600' },
+                    bodyFont: { size: 12 },
+                    cornerRadius: 8,
+                    callbacks: {
+                        label: function(context) {
+                            if (context.dataset.yAxisID === 'y1') {
+                                return ' Revenue: ₹' + Number(context.parsed.y || 0).toLocaleString('en-IN');
+                            }
+                            return ' Bookings: ' + Number(context.parsed.y || 0).toLocaleString('en-IN');
+                        }
+                    }
+                }
+            },
+            scales: {
+                x: {
+                    grid: { display: false },
+                    ticks: { color: '#94a3b8', font: { size: 11 } }
+                },
+                y: {
+                    type: 'linear',
+                    display: true,
+                    position: 'left',
+                    beginAtZero: true,
+                    title: {
+                        display: true,
+                        text: 'Bookings',
+                        color: '#6366f1',
+                        font: { size: 11, weight: '600' }
+                    },
+                    grid: { color: '#f1f5f9', drawBorder: false },
+                    ticks: { precision: 0, color: '#94a3b8', font: { size: 11 } }
+                },
+                y1: {
+                    type: 'linear',
+                    display: true,
+                    position: 'right',
+                    beginAtZero: true,
+                    title: {
+                        display: true,
+                        text: 'Revenue (₹)',
+                        color: '#10b981',
+                        font: { size: 11, weight: '600' }
+                    },
+                    grid: { drawOnChartArea: false },
+                    ticks: {
+                        color: '#94a3b8',
+                        font: { size: 11 },
+                        callback: (v) => '₹' + (v >= 1000 ? (v / 1000).toFixed(0) + 'k' : v)
+                    }
+                }
+            }
+        }
+    });
+}
+
+// Clean Donut Chart for Booking Status Breakdown
+function renderBkTotalStatusDonut(k, rows) {
+    const ctx = document.getElementById('distributionChart');
+    if (!ctx) return;
+    if (bkTotalDonutChart) {
+        bkTotalDonutChart.destroy();
+        bkTotalDonutChart = null;
+    }
+
+    const completed = Number(k.completed || 0);
+    const cancelled = Number(k.cancelled || 0);
+    const noShows   = Number(k.no_shows || 0);
+    const total     = Number(k.total_bookings || (completed + cancelled + noShows) || 0);
+    const other     = Math.max(0, total - (completed + cancelled + noShows));
+
+    const labels   = ['Completed Bookings', 'Cancelled Bookings', 'No-Shows'];
+    const dataVals = [completed, cancelled, noShows];
+    const colors   = ['#10b981', '#ef4444', '#f59e0b'];
+
+    if (other > 0) {
+        labels.push('Confirmed / Other');
+        dataVals.push(other);
+        colors.push('#6366f1');
+    }
+
+    bkTotalDonutChart = new Chart(ctx, {
+        type: 'doughnut',
+        data: {
+            labels,
+            datasets: [{
+                data: dataVals,
+                backgroundColor: colors,
+                borderWidth: 2,
+                borderColor: '#ffffff',
+                hoverOffset: 6
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            cutout: '72%',
+            plugins: {
+                legend: { display: false },
+                tooltip: {
+                    backgroundColor: '#0f172a',
+                    padding: 12,
+                    cornerRadius: 8,
+                    callbacks: {
+                        label: function(context) {
+                            const val = context.parsed || 0;
+                            const pct = total > 0 ? ((val / total) * 100).toFixed(1) : 0;
+                            return ` ${context.label}: ${val} (${pct}%)`;
+                        }
+                    }
+                }
+            }
+        }
+    });
+
+    // Update Center Stat
+    const centerVal = document.getElementById('donutCenterValue');
+    const centerLbl = document.getElementById('donutCenterLabel');
+    if (centerVal) centerVal.textContent = total.toLocaleString('en-IN');
+    if (centerLbl) centerLbl.textContent = 'Total Bookings';
+
+    // Update Legend
+    const legendEl = document.getElementById('donutLegend');
+    if (legendEl) {
+        legendEl.innerHTML = labels.map((lbl, i) => {
+            const count = dataVals[i];
+            const pct = total > 0 ? ((count / total) * 100).toFixed(1) : '0';
+            return `
+                <div class="donut-legend-item">
+                    <span class="donut-legend-dot" style="background-color: ${colors[i]};"></span>
+                    <span class="donut-legend-name">${lbl}</span>
+                    <span class="donut-legend-count"><strong>${count}</strong> (${pct}%)</span>
+                </div>
+            `;
+        }).join('');
+    }
+}
+
+// Table Setup with Search, 25-item Pagination, Export CSV, and Print
+function setupBkTotalTable(rows, filterStart, filterEnd) {
+    let currentPage = 1;
+    const pageSize = 25;
+    let currentFilteredRows = [...(rows || [])];
+
+    function renderPage(page) {
+        currentPage = page;
+        const total = currentFilteredRows.length;
+        const totalPages = Math.ceil(total / pageSize) || 1;
+        if (currentPage > totalPages) currentPage = totalPages;
+        if (currentPage < 1) currentPage = 1;
+
+        const startIdx = (currentPage - 1) * pageSize;
+        const endIdx = Math.min(startIdx + pageSize, total);
+        const pageRows = currentFilteredRows.slice(startIdx, endIdx);
+
+        // Update table body
+        const tbody = document.getElementById('tableBody');
+        if (tbody) {
+            if (pageRows.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="7" style="text-align:center;padding:2.5rem;color:#94a3b8;">No bookings match your filter criteria.</td></tr>';
+            } else {
+                tbody.innerHTML = pageRows.map(r => `
+                    <tr>
+                        <td><strong>${r.date || '—'}</strong></td>
+                        <td style="color:#64748b;">${r.time || '—'}</td>
+                        <td><strong>${r.customer || '—'}</strong></td>
+                        <td>${r.service || '—'}</td>
+                        <td style="color:#64748b;">${r.staff || '—'}</td>
+                        <td><strong style="color:#0f172a;">${formatCurrency(r.amount)}</strong></td>
+                        <td>${statusPill(r.status)}</td>
+                    </tr>
+                `).join('');
+            }
+        }
+
+        // Update record count badge
+        const badge = document.getElementById('tableRecordCountBadge');
+        if (badge) badge.textContent = `${total} bookings`;
+
+        // Update pagination info text
+        const info = document.getElementById('paginationInfo');
+        if (info) {
+            if (total === 0) {
+                info.textContent = 'Showing 0 to 0 of 0 bookings';
+            } else {
+                info.textContent = `Showing ${startIdx + 1} to ${endIdx} of ${total} bookings`;
+            }
+        }
+
+        // Render pagination controls
+        const controls = document.getElementById('paginationControls');
+        if (controls) {
+            if (totalPages <= 1) {
+                controls.innerHTML = '';
+                return;
+            }
+
+            let html = '';
+            html += `<button class="page-btn" id="btnPagePrev" ${currentPage === 1 ? 'disabled' : ''}>&larr; Prev</button>`;
+
+            for (let p = 1; p <= totalPages; p++) {
+                if (p === 1 || p === totalPages || (p >= currentPage - 2 && p <= currentPage + 2)) {
+                    html += `<button class="page-btn ${p === currentPage ? 'active' : ''}" data-page="${p}">${p}</button>`;
+                } else if (p === currentPage - 3 || p === currentPage + 3) {
+                    html += `<span style="padding:0 4px;color:#94a3b8;">...</span>`;
+                }
+            }
+
+            html += `<button class="page-btn" id="btnPageNext" ${currentPage === totalPages ? 'disabled' : ''}>Next &rarr;</button>`;
+            controls.innerHTML = html;
+
+            controls.querySelectorAll('[data-page]').forEach(btn => {
+                btn.onclick = () => renderPage(Number(btn.getAttribute('data-page')));
+            });
+            const prevBtn = document.getElementById('btnPagePrev');
+            if (prevBtn) prevBtn.onclick = () => renderPage(currentPage - 1);
+            const nextBtn = document.getElementById('btnPageNext');
+            if (nextBtn) nextBtn.onclick = () => renderPage(currentPage + 1);
+        }
+    }
+
+    // Wire Search Filter
+    const searchInput = document.getElementById('tableSearchInput');
+    if (searchInput) {
+        searchInput.value = '';
+        searchInput.oninput = (e) => {
+            const query = (e.target.value || '').toLowerCase().trim();
+            if (!query) {
+                currentFilteredRows = [...(rows || [])];
+            } else {
+                currentFilteredRows = (rows || []).filter(r => {
+                    const cust = (r.customer || '').toLowerCase();
+                    const srv  = (r.service || '').toLowerCase();
+                    const stf  = (r.staff || '').toLowerCase();
+                    const st   = (r.status || '').toLowerCase();
+                    const dt   = (r.date || '').toLowerCase();
+                    return cust.includes(query) || srv.includes(query) || stf.includes(query) || st.includes(query) || dt.includes(query);
+                });
+            }
+            renderPage(1);
+        };
+    }
+
+    // Wire Export CSV
+    const exportBtn = document.getElementById('btnExportCSV');
+    if (exportBtn) {
+        exportBtn.onclick = () => {
+            if (!currentFilteredRows || currentFilteredRows.length === 0) {
+                alert('No bookings data to export.');
+                return;
+            }
+            const csvHeaders = ['Date', 'Time', 'Customer', 'Service', 'Staff', 'Amount', 'Status'];
+            const csvLines = [csvHeaders.join(',')];
+            currentFilteredRows.forEach(r => {
+                const line = [
+                    `"${r.date || ''}"`,
+                    `"${r.time || ''}"`,
+                    `"${(r.customer || '').replace(/"/g, '""')}"`,
+                    `"${(r.service || '').replace(/"/g, '""')}"`,
+                    `"${(r.staff || '').replace(/"/g, '""')}"`,
+                    `"${r.amount || 0}"`,
+                    `"${r.status || ''}"`
+                ];
+                csvLines.push(line.join(','));
+            });
+            const blob = new Blob([csvLines.join('\n')], { type: 'text/csv;charset=utf-8;' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            const sDate = filterStart ? filterStart.value : 'all';
+            const eDate = filterEnd ? filterEnd.value : 'all';
+            a.download = `Total_Bookings_${sDate}_to_${eDate}.csv`;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+        };
+    }
+
+    // Wire Print Table
+    const printBtn = document.getElementById('btnPrintTable');
+    if (printBtn) {
+        printBtn.onclick = () => window.print();
+    }
+
+    // Initial render
+    renderPage(1);
+}
+
 // =============================================================================
-// renderBkTotal — All appointments with status breakdown
+// renderBkTotal — All bookings with status breakdown
 // =============================================================================
 async function renderBkTotal(data, supabase) {
     const companyId    = resolveCompanyId();
@@ -263,17 +664,16 @@ async function renderBkTotal(data, supabase) {
             data.kpi4.value = Number(k.no_shows       || 0).toLocaleString('en-IN');
             updateKPIs(data.kpi1, data.kpi2, data.kpi3, data.kpi4);
 
-            const trend = buildTrendFromRows(rows, 'date', 'amount');
-            if (typeof renderTrendChart === 'function') renderTrendChart(trend.labels, trend.values);
+            // 1. Performance Trend: Booking Volume & Revenue
+            renderBkTotalPerformanceTrend(rows);
 
-            const dist = buildDistFromRows(rows, 'status');
-            if (typeof renderDistributionChart === 'function') renderDistributionChart(dist.labels, dist.values);
+            // 2. Status Distribution: Completed, Cancelled, No-Shows
+            renderBkTotalStatusDonut(k, rows);
 
-            data.headers = ['Date', 'Time', 'Customer', 'Service', 'Staff', 'Amount', 'Status'];
-            updateTable(data.headers, rows.map(r => [
-                r.date, r.time, r.customer, r.service, r.staff,
-                formatCurrency(r.amount), statusPill(r.status)
-            ]));
+            // 3. All Bookings Table: Search, 25-item Pagination, Export CSV, and Print
+            setupBkTotalTable(rows, filterStart, filterEnd);
+
+            if (window.feather) window.feather.replace();
         } catch (err) {
             console.error('[bookings] renderBkTotal error:', err);
             setError(data);

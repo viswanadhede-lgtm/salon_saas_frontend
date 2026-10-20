@@ -514,7 +514,9 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     if (titleEl)           titleEl.textContent           = data.title;
     if (subtitleEl)        subtitleEl.textContent        = data.subtitle;
-    if (rightChartTitleEl) rightChartTitleEl.textContent = 'Distribution';
+    if (rightChartTitleEl) {
+        rightChartTitleEl.textContent = (type === 'bk-total') ? 'Booking Status Distribution' : 'Distribution';
+    }
 
     // 4. Wire Back breadcrumb
     const backLinkEl = document.getElementById('reportBackLink');
@@ -536,7 +538,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
 
     // 5. Set table section title
-    const tableHeaderTitle = document.querySelector('.data-table-container .table-header h2');
+    const tableHeaderTitle = document.getElementById('tableTitleText') || document.querySelector('.data-table-container .table-header h2');
     if (tableHeaderTitle && data.tableTitle) {
         tableHeaderTitle.textContent = data.tableTitle;
     }
