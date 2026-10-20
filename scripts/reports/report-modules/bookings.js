@@ -2054,6 +2054,28 @@ async function renderBkCancelled(data, supabase) {
             const k       = section.kpis        || {};
             const rows    = section.rows        || [];
 
+            // If rows are missing customer_id, resolve them so customer links open their profile
+            const needsCustId = rows.some(r => (!r.customer_id || r.customer_id === '') && r.customer && r.customer !== 'Unknown');
+            if (needsCustId) {
+                const names = [...new Set(rows.map(r => r.customer).filter(n => n && n !== 'Unknown' && n !== '—'))];
+                try {
+                    let q = supabase.from('customers').select('customer_id, customer_name');
+                    if (companyId && companyId !== 'all') q = q.eq('company_id', companyId);
+                    const { data: custList } = await q.in('customer_name', names);
+                    if (custList && custList.length > 0) {
+                        const nameToId = {};
+                        custList.forEach(c => { nameToId[c.customer_name] = c.customer_id; });
+                        rows.forEach(r => {
+                            if (!r.customer_id && nameToId[r.customer]) {
+                                r.customer_id = nameToId[r.customer];
+                            }
+                        });
+                    }
+                } catch (e) {
+                    console.warn('[bookings] Error fetching missing customer_ids for cancelled bookings:', e);
+                }
+            }
+
             const cancelledCount = Number(k.cancelled_bookings  || 0);
             const totalBookings  = Number(k.total_bookings      || 0) || cancelledCount;
             const cancelRate     = Number(k.cancellation_rate   || 0);
