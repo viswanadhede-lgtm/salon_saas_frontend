@@ -490,7 +490,150 @@ const TYPE_MODULE_MAP = {
     'products':   './report-modules/misc.js'
 };
 
+// ============================================================
+// Report Date Range Popover Modal Controller
+// ============================================================
+function initReportDateFilterModal() {
+    const btnModal   = document.getElementById('btnDateFilterModal');
+    const menu       = document.getElementById('reportDateFilterMenu');
+    const labelEl    = document.getElementById('dateFilterLabel');
+    const startInput = document.getElementById('filterStartDate');
+    const endInput   = document.getElementById('filterEndDate');
+    const btnReset   = document.getElementById('btnFilterReset');
+    const btnApply   = document.getElementById('btnApplyFilters');
+    const radios     = document.querySelectorAll('input[name="reportPresetDate"]');
+
+    if (!btnModal || !menu) return;
+
+    const toIso = (d) => new Date(d.getTime() - d.getTimezoneOffset() * 60000).toISOString().split('T')[0];
+
+    const calculatePreset = (val) => {
+        const now = new Date();
+        const y   = now.getFullYear();
+        const m   = now.getMonth();
+        const d   = now.getDate();
+
+        if (val === 'today') {
+            const todayStr = toIso(now);
+            return { start: todayStr, end: todayStr, label: 'Today' };
+        }
+        if (val === 'this_week') {
+            const dayOfWeek = now.getDay() || 7;
+            const monday = new Date(now);
+            monday.setDate(d - (dayOfWeek - 1));
+            return { start: toIso(monday), end: toIso(now), label: 'This Week' };
+        }
+        if (val === 'current_month') {
+            const first = new Date(y, m, 1);
+            const last  = new Date(y, m + 1, 0);
+            return { start: toIso(first), end: toIso(last), label: 'Current Month' };
+        }
+        if (val === 'last_3_months') {
+            const threeMonthsAgo = new Date(now);
+            threeMonthsAgo.setMonth(m - 3);
+            return { start: toIso(threeMonthsAgo), end: toIso(now), label: 'Last 3 Months' };
+        }
+        if (val === 'last_6_months') {
+            const sixMonthsAgo = new Date(now);
+            sixMonthsAgo.setMonth(m - 6);
+            return { start: toIso(sixMonthsAgo), end: toIso(now), label: 'Last 6 Months' };
+        }
+        if (val === 'one_year') {
+            const oneYearAgo = new Date(now);
+            oneYearAgo.setFullYear(y - 1);
+            return { start: toIso(oneYearAgo), end: toIso(now), label: 'One Year' };
+        }
+        return null;
+    };
+
+    // Toggle popover menu
+    btnModal.onclick = (e) => {
+        e.stopPropagation();
+        menu.classList.toggle('show');
+    };
+
+    // Close when clicking outside
+    document.addEventListener('click', (e) => {
+        if (!menu.contains(e.target) && !btnModal.contains(e.target)) {
+            menu.classList.remove('show');
+        }
+    });
+
+    // Preset radio selection
+    radios.forEach(radio => {
+        radio.onchange = () => {
+            if (radio.value === 'custom') {
+                if (startInput) startInput.focus();
+                return;
+            }
+            const preset = calculatePreset(radio.value);
+            if (preset && startInput && endInput) {
+                startInput.value = preset.start;
+                endInput.value   = preset.end;
+            }
+        };
+    });
+
+    // When directly editing dates, auto-select custom radio
+    const onDateInputChange = () => {
+        const customRadio = document.querySelector('input[name="reportPresetDate"][value="custom"]');
+        if (customRadio) customRadio.checked = true;
+    };
+    if (startInput) startInput.onchange = onDateInputChange;
+    if (endInput)   endInput.onchange   = onDateInputChange;
+
+    // Default to Current Month on initial load
+    const initialPreset = calculatePreset('current_month');
+    if (initialPreset && startInput && endInput && !startInput.value && !endInput.value) {
+        startInput.value = initialPreset.start;
+        endInput.value   = initialPreset.end;
+        if (labelEl) labelEl.textContent = 'Current Month';
+    }
+
+    // Reset button
+    if (btnReset) {
+        btnReset.onclick = (e) => {
+            e.stopPropagation();
+            const currRadio = document.querySelector('input[name="reportPresetDate"][value="current_month"]');
+            if (currRadio) currRadio.checked = true;
+            const preset = calculatePreset('current_month');
+            if (preset && startInput && endInput) {
+                startInput.value = preset.start;
+                endInput.value   = preset.end;
+            }
+            if (labelEl) labelEl.textContent = 'Current Month';
+            menu.classList.remove('show');
+            if (btnApply) btnApply.click();
+        };
+    }
+
+    // Apply button updates label and closes menu
+    if (btnApply) {
+        btnApply.addEventListener('click', () => {
+            menu.classList.remove('show');
+            const checkedRadio = document.querySelector('input[name="reportPresetDate"]:checked');
+            if (checkedRadio) {
+                if (checkedRadio.value === 'custom') {
+                    if (startInput && endInput && startInput.value && endInput.value) {
+                        const fmtD = (s) => new Date(s).toLocaleDateString('en-IN', { day: '2-digit', month: 'short' });
+                        if (labelEl) labelEl.textContent = `${fmtD(startInput.value)} - ${fmtD(endInput.value)}`;
+                    } else if (labelEl) {
+                        labelEl.textContent = 'Custom Dates';
+                    }
+                } else {
+                    const preset = calculatePreset(checkedRadio.value);
+                    if (labelEl && preset) labelEl.textContent = preset.label;
+                }
+            }
+        });
+    }
+
+    if (window.feather) window.feather.replace();
+}
+
 document.addEventListener('DOMContentLoaded', async () => {
+    // 0. Initialize Date Range Filter Popover Modal
+    initReportDateFilterModal();
     // 1. Read ?type= from URL
     const urlParams = new URLSearchParams(window.location.search);
     let type = urlParams.get('type') || 'financial';

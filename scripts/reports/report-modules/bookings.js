@@ -37,11 +37,12 @@ function resolveCompanyId() {
 
 function setDefaultDateRange(filterStart, filterEnd) {
     if (!filterStart || !filterEnd) return;
-    const now   = new Date();
-    const today = new Date(now.getTime() - now.getTimezoneOffset() * 60000);
-    const thirtyDaysAgo = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
-    if (!filterStart.value) filterStart.value = thirtyDaysAgo.toISOString().split('T')[0];
-    if (!filterEnd.value)   filterEnd.value   = today.toISOString().split('T')[0];
+    const now      = new Date();
+    const firstDay = new Date(now.getFullYear(), now.getMonth(), 1);
+    const lastDay  = new Date(now.getFullYear(), now.getMonth() + 1, 0);
+    const toIso    = (d) => new Date(d.getTime() - d.getTimezoneOffset() * 60000).toISOString().split('T')[0];
+    if (!filterStart.value) filterStart.value = toIso(firstDay);
+    if (!filterEnd.value)   filterEnd.value   = toIso(lastDay);
 }
 
 function fmtDate(val) {
@@ -789,6 +790,7 @@ async function renderBkTotal(data, supabase) {
     };
 
     await initBranchDropdown(supabase, companyId, filterBranch);
+    if (filterBranch) filterBranch.onchange = loadData;
     if (btnApply) btnApply.onclick = loadData;
     loadData();
 }
