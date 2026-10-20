@@ -580,6 +580,7 @@ function initReportDateFilterModal() {
         e.stopPropagation();
         const willShow = !menu.classList.contains('show');
         if (willShow) {
+            setRadioChecked(activePreset);
             if (!isCustomMode) {
                 showPresetsView();
             } else {
@@ -601,12 +602,21 @@ function initReportDateFilterModal() {
 
     // Preset radio selection
     radios.forEach(radio => {
+        radio.addEventListener('click', () => {
+            radios.forEach(r => {
+                if (r !== radio) r.checked = false;
+            });
+            radio.checked = true;
+        });
+
         radio.addEventListener('change', () => {
             if (radio.value === 'custom') {
                 showCustomView();
                 if (startInput) startInput.focus();
                 return;
             }
+            setRadioChecked(radio.value);
+
             const preset = calculatePreset(radio.value);
             if (preset && startInput && endInput) {
                 startInput.value = preset.start;
