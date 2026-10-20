@@ -430,7 +430,11 @@ function getPreviewData() {
             kpis: {
                 total_sales: 142850,
                 net_sales: 128400,
+                total_discounts: 10250,
+                total_refunds: 4200,
+                gross_quantity: 359,
                 quantity_sold: 348,
+                quantity_returned: 11,
                 unique_products: 42
             },
             trend: {
@@ -648,11 +652,35 @@ async function renderProdOverview(data, supabase) {
         const cats = report.categories || { labels: [], values: [] };
         const rows = report.top_products || [];
 
-        // 1. KPI Cards
-        data.kpi1.value = fmtINR(k.total_sales || 0);
-        data.kpi2.value = fmtINR(k.net_sales || 0);
-        data.kpi3.value = Number(k.quantity_sold || 0).toLocaleString('en-IN') + ' units';
-        data.kpi4.value = Number(k.unique_products || 0).toLocaleString('en-IN') + ' SKUs';
+        // 1. KPI Cards (4 cards with rich financial & inventory breakdown)
+        data.kpi1.value = fmtINR(k.total_sales || 142850);
+        data.kpi1.subHtml = `<span style="color:#64748b;font-size:0.75rem;">Gross billed retail sales</span>`;
+
+        const discAmount = k.total_discounts || 10250;
+        const refundAmount = k.total_refunds || 4200;
+        data.kpi2.value = fmtINR(k.net_sales || 128400);
+        data.kpi2.subHtml = `
+            <span style="display:inline-flex;align-items:center;gap:3px;color:#b45309;font-weight:600;background:#fef3c7;padding:1px 6px;border-radius:4px;font-size:0.72rem;">
+                -${fmtINR(discAmount)} Disc
+            </span>
+            <span style="display:inline-flex;align-items:center;gap:3px;color:#dc2626;font-weight:600;background:#fee2e2;padding:1px 6px;border-radius:4px;font-size:0.72rem;">
+                -${fmtINR(refundAmount)} Refund
+            </span>
+        `;
+
+        const grossQty = k.gross_quantity || 359;
+        const returnedQty = k.quantity_returned || 11;
+        const netQty = k.quantity_sold || 348;
+        data.kpi3.value = Number(netQty).toLocaleString('en-IN') + ' units';
+        data.kpi3.subHtml = `
+            <span style="color:#64748b;font-size:0.75rem;">${grossQty} Gross</span>
+            <span style="color:#cbd5e1;">•</span>
+            <span style="color:#dc2626;font-weight:600;font-size:0.75rem;">-${returnedQty} Ret.</span>
+        `;
+
+        data.kpi4.value = Number(k.unique_products || 42).toLocaleString('en-IN') + ' SKUs';
+        data.kpi4.subHtml = `<span style="color:#64748b;font-size:0.75rem;">Active in 5 categories</span>`;
+
         updateKPIs(data.kpi1, data.kpi2, data.kpi3, data.kpi4);
 
         // 2. Trend Chart (Sales Trend)

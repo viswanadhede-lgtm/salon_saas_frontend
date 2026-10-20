@@ -7,38 +7,49 @@ export function formatCurrency(num) {
 }
 
 export function updateKPIs(k1, k2, k3, k4 = null, k5 = null) {
-    const lbl1 = document.getElementById('kpiLabel1'); const val1 = document.getElementById('kpiValue1');
-    if (lbl1 && val1 && k1) { lbl1.textContent = k1.label; val1.textContent = k1.value; }
+    const setCard = (idx, k) => {
+        const lbl = document.getElementById(`kpiLabel${idx}`);
+        const val = document.getElementById(`kpiValue${idx}`);
+        const sub = document.getElementById(`kpiSub${idx}`);
+        if (lbl && val && k) {
+            lbl.textContent = k.label;
+            val.textContent = k.value;
+            if (sub) {
+                if (k.subHtml) {
+                    sub.innerHTML = k.subHtml;
+                    sub.style.display = 'flex';
+                } else if (k.sub) {
+                    sub.textContent = k.sub;
+                    sub.style.display = 'block';
+                } else {
+                    sub.innerHTML = '';
+                    sub.style.display = 'none';
+                }
+            }
+        }
+    };
 
-    const lbl2 = document.getElementById('kpiLabel2'); const val2 = document.getElementById('kpiValue2');
-    if (lbl2 && val2 && k2) { lbl2.textContent = k2.label; val2.textContent = k2.value; }
-
-    const lbl3 = document.getElementById('kpiLabel3'); const val3 = document.getElementById('kpiValue3');
-    if (lbl3 && val3 && k3) { lbl3.textContent = k3.label; val3.textContent = k3.value; }
+    setCard(1, k1);
+    setCard(2, k2);
+    setCard(3, k3);
 
     const kpiRow = document.getElementById('kpiRow');
     const card4 = document.getElementById('kpiLabel4')?.closest('.kpi-card') || (kpiRow && kpiRow.children.length > 3 ? kpiRow.children[3] : null);
-    const lbl4 = document.getElementById('kpiLabel4');
-    const val4 = document.getElementById('kpiValue4');
-    if (lbl4 && val4 && k4) {
-        lbl4.textContent = k4.label; val4.textContent = k4.value;
+    if (k4) {
+        setCard(4, k4);
         if (card4) card4.style.display = 'flex';
     } else if (card4) {
         card4.style.display = 'none';
     }
 
     const card5 = document.getElementById('kpiCard5');
-    const lbl5 = document.getElementById('kpiLabel5');
-    const val5 = document.getElementById('kpiValue5');
     let visibleCount = 3;
     if (k4) visibleCount = 4;
-    if (k5) visibleCount = 5;
-
-    if (k5 && card5 && lbl5 && val5 && kpiRow) {
-        lbl5.textContent = k5.label;
-        val5.textContent = k5.value;
-        card5.style.display = 'flex';
-    } else if (card5 && kpiRow) {
+    if (k5) {
+        setCard(5, k5);
+        if (card5) card5.style.display = 'flex';
+        visibleCount = 5;
+    } else if (card5) {
         card5.style.display = 'none';
     }
 
