@@ -2973,10 +2973,10 @@ function setupBkRefundTable(rows, filterStart, filterEnd) {
     if (thead) {
         thead.innerHTML = `
             <tr>
-                <th>Refund Ref</th>
                 <th>Date</th>
-                <th>Booking ID</th>
+                <th>Time</th>
                 <th>Customer</th>
+                <th>Service</th>
                 <th>Method</th>
                 <th>Amount</th>
                 <th>Reason / Notes</th>
@@ -3019,16 +3019,25 @@ function setupBkRefundTable(rows, filterStart, filterEnd) {
                         ? `<span class="customer-link" onclick="if(window.viewCustomerProfile) window.viewCustomerProfile('${custId}', '${custName}')">${r.customer}</span>`
                         : `<span style="color:#94a3b8;">${r.customer || '—'}</span>`;
 
+                    const serviceCell = buildServiceCell(r.service || '—');
+
                     const notesCell = r.notes && r.notes !== 'Not specified'
                         ? `<span style="font-size:0.85rem;color:#334155;">${r.notes}</span>`
                         : '<span style="color:#94a3b8;font-style:italic;">Not specified</span>';
 
+                    let dateStr = r.refund_date || r.date || '—';
+                    let timeStr = r.time || '—';
+                    if (r.datetime && r.datetime.includes(',')) {
+                        dateStr = r.datetime.split(',')[0].trim();
+                        timeStr = r.datetime.split(',')[1].trim();
+                    }
+
                     return `
                     <tr style="border-bottom:1px solid #f8fafc;transition:background 0.15s;" onmouseover="this.style.background='#fafafa'" onmouseout="this.style.background=''">
-                        <td style="padding:14px 8px 14px 16px;"><strong style="font-size:0.85rem;color:#0f172a;font-family:monospace;">${r.refund_ref || '—'}</strong></td>
-                        <td style="padding:14px 8px;font-size:0.85rem;color:#64748b;">${r.refund_date || '—'}</td>
-                        <td style="padding:14px 8px;font-size:0.85rem;color:#475569;font-family:monospace;">${r.booking_id || '—'}</td>
+                        <td style="padding:14px 8px 14px 16px;"><strong style="font-size:0.85rem;color:#0f172a;">${dateStr}</strong></td>
+                        <td style="padding:14px 8px;font-size:0.85rem;color:#64748b;">${timeStr}</td>
                         <td style="padding:14px 8px;">${customerCell}</td>
+                        <td style="padding:14px 8px;max-width:200px;">${serviceCell}</td>
                         <td style="padding:14px 8px;"><span class="status-pill" style="${methodStyle(r.method)}">${r.method || '—'}</span></td>
                         <td style="padding:14px 8px;"><strong style="color:#ef4444;">${formatCurrency(r.amount)}</strong></td>
                         <td style="padding:14px 8px;max-width:220px;">${notesCell}</td>
@@ -3084,12 +3093,14 @@ function setupBkRefundTable(rows, filterStart, filterEnd) {
             } else {
                 currentFilteredRows = (rows || []).filter(r => {
                     const cust   = (r.customer    || '').toLowerCase();
+                    const srv    = (r.service     || '').toLowerCase();
                     const ref    = (r.refund_ref  || '').toLowerCase();
                     const bid    = (r.booking_id  || '').toLowerCase();
                     const meth   = (r.method      || '').toLowerCase();
                     const notes  = (r.notes       || '').toLowerCase();
-                    const dt     = (r.refund_date || '').toLowerCase();
-                    return cust.includes(query) || ref.includes(query) || bid.includes(query) || meth.includes(query) || notes.includes(query) || dt.includes(query) || query === 'refunded';
+                    const dt     = (r.refund_date || r.date || '').toLowerCase();
+                    const tm     = (r.time        || '').toLowerCase();
+                    return cust.includes(query) || srv.includes(query) || ref.includes(query) || bid.includes(query) || meth.includes(query) || notes.includes(query) || dt.includes(query) || tm.includes(query) || query === 'refunded';
                 });
             }
             renderPage(1);
@@ -3104,18 +3115,26 @@ function setupBkRefundTable(rows, filterStart, filterEnd) {
                 alert('No refunded bookings data to export.');
                 return;
             }
-            const csvHeaders = ['Refund Ref', 'Date', 'Booking ID', 'Customer', 'Method', 'Amount', 'Reason / Notes', 'Status'];
+            const csvHeaders = ['Date', 'Time', 'Customer', 'Service', 'Method', 'Amount', 'Reason / Notes', 'Status', 'Refund Ref', 'Booking ID'];
             const csvLines   = [csvHeaders.join(',')];
             currentFilteredRows.forEach(r => {
+                let d = r.refund_date || r.date || '';
+                let t = r.time || '';
+                if (r.datetime && r.datetime.includes(',')) {
+                    d = r.datetime.split(',')[0].trim();
+                    t = r.datetime.split(',')[1].trim();
+                }
                 csvLines.push([
-                    `"${(r.refund_ref  || '').replace(/"/g, '""')}"`,
-                    `"${(r.refund_date || '').replace(/"/g, '""')}"`,
-                    `"${(r.booking_id  || '').replace(/"/g, '""')}"`,
+                    `"${d}"`,
+                    `"${t}"`,
                     `"${(r.customer    || '').replace(/"/g, '""')}"`,
+                    `"${(r.service     || '').replace(/"/g, '""')}"`,
                     `"${(r.method      || '').replace(/"/g, '""')}"`,
                     `"${r.amount || 0}"`,
                     `"${(r.notes       || '').replace(/"/g, '""')}"`,
-                    `"Refunded"`
+                    `"Refunded"`,
+                    `"${(r.refund_ref  || '').replace(/"/g, '""')}"`,
+                    `"${(r.booking_id  || '').replace(/"/g, '""')}"`
                 ].join(','));
             });
             const blob = new Blob([csvLines.join('\n')], { type: 'text/csv;charset=utf-8;' });

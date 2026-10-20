@@ -384,7 +384,7 @@ const REPORT_TYPES = {
         kpi3: { label: 'Average Refund',    value: 'Loading...' },
         kpi4: { label: 'Refund Rate',       value: 'Loading...' },
         tableTitle: 'Refunded Booking Records',
-        headers: ['Refund Ref', 'Refund Date', 'Original Booking ID', 'Customer Name', 'Refund Method', 'Refund Amount', 'Reason / Notes', 'Status'],
+        headers: ['Date', 'Time', 'Customer', 'Service', 'Method', 'Amount', 'Reason / Notes', 'Status'],
         rows: []
     },
 
