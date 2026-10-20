@@ -508,7 +508,7 @@ function initReportDateFilterModal() {
 
     if (!btnModal || !menu) return;
 
-    let activePreset = 'one_month';
+    let activePreset = 'last_30_days';
     let isCustomMode = false;
 
     const toIso = (d) => new Date(d.getTime() - d.getTimezoneOffset() * 60000).toISOString().split('T')[0];
@@ -523,15 +523,15 @@ function initReportDateFilterModal() {
             const todayStr = toIso(now);
             return { start: todayStr, end: todayStr, label: 'Today' };
         }
-        if (val === 'one_week') {
+        if (val === 'last_7_days' || val === 'one_week') {
             const past7 = new Date(now);
             past7.setDate(d - 6);
-            return { start: toIso(past7), end: toIso(now), label: 'One Week' };
+            return { start: toIso(past7), end: toIso(now), label: 'Last 7 Days' };
         }
-        if (val === 'one_month') {
-            const first = new Date(y, m, 1);
-            const last  = new Date(y, m + 1, 0);
-            return { start: toIso(first), end: toIso(last), label: 'Current Month' };
+        if (val === 'last_30_days' || val === 'one_month') {
+            const past30 = new Date(now);
+            past30.setDate(d - 29);
+            return { start: toIso(past30), end: toIso(now), label: 'Last 30 Days' };
         }
         if (val === 'all_time') {
             return { start: '2000-01-01', end: '2099-12-31', label: 'All Time' };
@@ -546,10 +546,10 @@ function initReportDateFilterModal() {
             sixMonthsAgo.setMonth(m - 6);
             return { start: toIso(sixMonthsAgo), end: toIso(now), label: 'Last 6 Months' };
         }
-        if (val === 'one_year') {
+        if (val === 'last_12_months' || val === 'one_year') {
             const oneYearAgo = new Date(now);
             oneYearAgo.setFullYear(y - 1);
-            return { start: toIso(oneYearAgo), end: toIso(now), label: 'One Year' };
+            return { start: toIso(oneYearAgo), end: toIso(now), label: 'Last 12 Months' };
         }
         return null;
     };
@@ -648,25 +648,25 @@ function initReportDateFilterModal() {
         };
     }
 
-    // Default to Current Month on initial load
-    const initialPreset = calculatePreset('one_month');
+    // Default to Last 30 Days on initial load
+    const initialPreset = calculatePreset('last_30_days');
     if (initialPreset && startInput && endInput && !startInput.value && !endInput.value) {
         startInput.value = initialPreset.start;
         endInput.value   = initialPreset.end;
-        if (labelEl) labelEl.textContent = 'Current Month';
-        setRadioChecked('one_month');
+        if (labelEl) labelEl.textContent = 'Last 30 Days';
+        setRadioChecked('last_30_days');
     }
 
-    // Reset button: resets to Current Month, switches to Presets view, closes modal, reloads
+    // Reset button: resets to Last 30 Days, switches to Presets view, closes modal, reloads
     if (btnReset) {
         btnReset.onclick = (e) => {
             e.stopPropagation();
-            const preset = calculatePreset('one_month');
+            const preset = calculatePreset('last_30_days');
             if (preset && startInput && endInput) {
                 startInput.value = preset.start;
                 endInput.value   = preset.end;
-                setRadioChecked('one_month');
-                if (labelEl) labelEl.textContent = 'Current Month';
+                setRadioChecked('last_30_days');
+                if (labelEl) labelEl.textContent = 'Last 30 Days';
             }
             showPresetsView();
             menu.classList.remove('show');
