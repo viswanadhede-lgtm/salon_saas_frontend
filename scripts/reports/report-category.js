@@ -221,7 +221,7 @@ async function renderBookingsLandingPage() {
             <p>Booking outcomes and their financial impact</p>
         </div>
 
-        <!-- 4 Snapshot Stat Cards -->
+        <!-- 5 Snapshot Stat Cards -->
         <div class="bk-snapshot-grid">
             <!-- 1. Total Bookings -->
             <div class="bk-snapshot-card">
@@ -288,6 +288,24 @@ async function renderBookingsLandingPage() {
                     <span class="bk-snap-sub txt-amber" id="bkSnapNoShowVal">Estimated missed: —</span>
                 </div>
                 <div class="bk-mini-bars amber-bars">
+                    <span style="height: 10px;"></span>
+                    <span style="height: 16px;"></span>
+                    <span style="height: 22px;"></span>
+                    <span style="height: 30px;"></span>
+                </div>
+            </div>
+
+            <!-- 5. Refunded Bookings -->
+            <div class="bk-snapshot-card">
+                <div class="bk-snap-icon bg-purple-circle">
+                    <i data-feather="rotate-ccw"></i>
+                </div>
+                <div class="bk-snap-body">
+                    <span class="bk-snap-label">Refunded Bookings</span>
+                    <span class="bk-snap-val" id="bkSnapRefunded">—</span>
+                    <span class="bk-snap-sub txt-purple" id="bkSnapRefundVal">Total refunded: —</span>
+                </div>
+                <div class="bk-mini-bars purple-bars">
                     <span style="height: 10px;"></span>
                     <span style="height: 16px;"></span>
                     <span style="height: 22px;"></span>
@@ -523,6 +541,9 @@ async function renderBookingsLandingPage() {
 
         const setEl = (id, val) => { const el = document.getElementById(id); if (el) el.textContent = val; };
 
+        const refCount = (ref.refunded_bookings !== undefined && ref.refunded_bookings !== null) ? ref.refunded_bookings : (sc.refunded_bookings || 0);
+        const refVal   = (ref.total_refunded !== undefined && ref.total_refunded !== null) ? ref.total_refunded : (sc.total_refunded_amount || 0);
+
         // Section 1: Snapshot Cards
         setEl('bkSnapTotal',     fmt(sc.total_bookings));
         setEl('bkSnapCompleted', fmt(sc.completed_bookings));
@@ -531,6 +552,8 @@ async function renderBookingsLandingPage() {
         setEl('bkSnapCancelVal', 'Estimated value: ' + cur(sc.estimated_value_affected));
         setEl('bkSnapNoShows',   fmt(sc.no_show_bookings));
         setEl('bkSnapNoShowVal', 'Estimated missed: ' + cur(sc.estimated_value_missed));
+        setEl('bkSnapRefunded',  fmt(refCount));
+        setEl('bkSnapRefundVal', 'Total refunded: ' + cur(refVal));
 
         // Section 2: Detailed Cards
         setEl('bkCardTotalCount',        fmt(sc.total_bookings));
