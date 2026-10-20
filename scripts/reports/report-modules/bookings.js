@@ -1558,8 +1558,422 @@ async function renderBkCompleted(data, supabase) {
 }
 
 // =============================================================================
-// renderBkCancelled — Cancelled Bookings
+// renderBkCancelled — Cancelled Bookings (Enhanced)
 // =============================================================================
+
+// Module-level chart instances for Cancelled Bookings
+let bkCancelledTrendChart = null;
+let bkCancelledDonutChart  = null;
+
+// ── Dual-Axis Cancellation Trend: Volume (bars) vs Lost Value (line) ──────────
+function renderBkCancelledPerformanceTrend(rows) {
+    const ctx = document.getElementById('trendChart');
+    if (!ctx) return;
+
+    if (bkCancelledTrendChart) { bkCancelledTrendChart.destroy(); bkCancelledTrendChart = null; }
+    if (bkTotalTrendChart)     { bkTotalTrendChart.destroy();     bkTotalTrendChart = null; }
+    if (bkCompletedTrendChart) { bkCompletedTrendChart.destroy(); bkCompletedTrendChart = null; }
+    const existingChart = (typeof Chart !== 'undefined' && Chart.getChart) ? Chart.getChart(ctx) : null;
+    if (existingChart) existingChart.destroy();
+
+    const titleEl = document.getElementById('leftChartTitle');
+    if (titleEl) titleEl.textContent = 'Cancellation Trend (Volume vs Lost Value)';
+
+    if (!rows || rows.length === 0) {
+        bkCancelledTrendChart = new Chart(ctx, {
+            type: 'bar',
+            data: { labels: ['No Data'], datasets: [] },
+            options: { responsive: true, maintainAspectRatio: false }
+        });
+        return;
+    }
+
+    const dateMap = {};
+    rows.forEach(r => {
+        let d = r.datetime || r.date || 'Unknown';
+        if (d.includes(',')) d = d.split(',')[0].trim();
+        if (!dateMap[d]) dateMap[d] = { count: 0, lostValue: 0, rawDate: new Date(d) };
+        dateMap[d].count += 1;
+        dateMap[d].lostValue += Number(r.est_value || 0);
+    });
+
+    const sortedDates = Object.keys(dateMap).sort((a, b) => {
+        const da = dateMap[a].rawDate.getTime();
+        const db = dateMap[b].rawDate.getTime();
+        if (!isNaN(da) && !isNaN(db)) return da - db;
+        return a.localeCompare(b);
+    });
+
+    const labels      = sortedDates.map(d => {
+        const dt = dateMap[d].rawDate;
+        return !isNaN(dt.getTime()) ? dt.toLocaleDateString('en-IN', { day: '2-digit', month: 'short' }) : d;
+    });
+    const counts      = sortedDates.map(d => dateMap[d].count);
+    const lostValues  = sortedDates.map(d => Math.round(dateMap[d].lostValue));
+
+    bkCancelledTrendChart = new Chart(ctx, {
+        type: 'bar',
+        data: {
+            labels,
+            datasets: [
+                {
+                    type: 'bar',
+                    label: 'Cancellations',
+                    data: counts,
+                    backgroundColor: 'rgba(239, 68, 68, 0.75)',
+                    hoverBackgroundColor: '#ef4444',
+                    borderRadius: 6,
+                    borderSkipped: false,
+                    yAxisID: 'y',
+                    order: 2,
+                    maxBarThickness: 32
+                },
+                {
+                    type: 'line',
+                    label: 'Lost Value (₹)',
+                    data: lostValues,
+                    borderColor: '#f59e0b',
+                    backgroundColor: 'rgba(245, 158, 11, 0.08)',
+                    borderWidth: 2.5,
+                    pointBackgroundColor: '#f59e0b',
+                    pointBorderColor: '#ffffff',
+                    pointBorderWidth: 1.5,
+                    pointRadius: 4,
+                    pointHoverRadius: 6,
+                    fill: true,
+                    tension: 0.35,
+                    yAxisID: 'y1',
+                    order: 1
+                }
+            ]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            interaction: { mode: 'index', intersect: false },
+            plugins: {
+                legend: {
+                    display: true,
+                    position: 'top',
+                    align: 'end',
+                    labels: {
+                        boxWidth: 12,
+                        boxHeight: 12,
+                        usePointStyle: true,
+                        font: { size: 12, weight: '500' },
+                        color: '#475569'
+                    }
+                },
+                tooltip: {
+                    backgroundColor: '#0f172a',
+                    padding: 12,
+                    titleFont: { size: 13, weight: '600' },
+                    bodyFont: { size: 12 },
+                    cornerRadius: 8,
+                    callbacks: {
+                        label: function(context) {
+                            if (context.dataset.yAxisID === 'y1') {
+                                return ' Lost Value: ₹' + Number(context.parsed.y || 0).toLocaleString('en-IN');
+                            }
+                            return ' Cancelled: ' + Number(context.parsed.y || 0) + ' booking' + (context.parsed.y === 1 ? '' : 's');
+                        }
+                    }
+                }
+            },
+            scales: {
+                x: { grid: { display: false }, ticks: { color: '#94a3b8', font: { size: 11 } } },
+                y: {
+                    type: 'linear',
+                    display: true,
+                    position: 'left',
+                    beginAtZero: true,
+                    title: { display: true, text: 'Cancellations', color: '#ef4444', font: { size: 11, weight: '600' } },
+                    grid: { color: '#f1f5f9', drawBorder: false },
+                    ticks: { precision: 0, color: '#94a3b8', font: { size: 11 } }
+                },
+                y1: {
+                    type: 'linear',
+                    display: true,
+                    position: 'right',
+                    beginAtZero: true,
+                    title: { display: true, text: 'Lost Value (₹)', color: '#f59e0b', font: { size: 11, weight: '600' } },
+                    grid: { drawOnChartArea: false },
+                    ticks: {
+                        color: '#94a3b8',
+                        font: { size: 11 },
+                        callback: (v) => '₹' + (v >= 1000 ? (v / 1000).toFixed(0) + 'k' : v)
+                    }
+                }
+            }
+        }
+    });
+}
+
+// ── Cancellation by Reason Donut Chart ───────────────────────────────────────
+function renderBkCancelledReasonDonut(rows, k) {
+    const ctx = document.getElementById('distributionChart');
+    if (!ctx) return;
+
+    if (bkCancelledDonutChart) { bkCancelledDonutChart.destroy(); bkCancelledDonutChart = null; }
+    if (bkTotalDonutChart)     { bkTotalDonutChart.destroy();     bkTotalDonutChart = null; }
+    if (bkCompletedDonutChart) { bkCompletedDonutChart.destroy(); bkCompletedDonutChart = null; }
+    const existingChart = (typeof Chart !== 'undefined' && Chart.getChart) ? Chart.getChart(ctx) : null;
+    if (existingChart) existingChart.destroy();
+
+    const titleEl = document.getElementById('rightChartTitle');
+    if (titleEl) titleEl.textContent = 'Cancellations by Reason';
+
+    const reasonMap = {};
+    (rows || []).forEach(r => {
+        const reason = (r.reason || 'Not specified').trim();
+        if (!reasonMap[reason]) reasonMap[reason] = { count: 0, lostValue: 0 };
+        reasonMap[reason].count++;
+        reasonMap[reason].lostValue += Number(r.est_value || 0);
+    });
+
+    const entries  = Object.entries(reasonMap).sort((a, b) => b[1].count - a[1].count);
+    const palette  = ['#ef4444', '#f59e0b', '#8b5cf6', '#06b6d4', '#ec4899', '#10b981', '#64748b'];
+
+    const labels   = entries.map(e => e[0]);
+    const dataVals = entries.map(e => e[1].count);
+    const lostVals = entries.map(e => e[1].lostValue);
+    const colors   = entries.map((_, i) => palette[i % palette.length]);
+
+    const totalCancelled = Number(k.cancelled_bookings || rows.length || 0);
+
+    bkCancelledDonutChart = new Chart(ctx, {
+        type: 'doughnut',
+        data: {
+            labels,
+            datasets: [{
+                data: dataVals,
+                backgroundColor: colors,
+                borderWidth: 2,
+                borderColor: '#ffffff',
+                hoverOffset: 6
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            cutout: '72%',
+            plugins: {
+                legend: { display: false },
+                tooltip: {
+                    backgroundColor: '#0f172a',
+                    padding: 12,
+                    cornerRadius: 8,
+                    callbacks: {
+                        label: function(context) {
+                            const val = context.parsed || 0;
+                            const pct = totalCancelled > 0 ? ((val / totalCancelled) * 100).toFixed(1) : 0;
+                            const lv  = lostVals[context.dataIndex] || 0;
+                            return [
+                                ` ${context.label}: ${val} (${pct}%)`,
+                                ` Lost Value: ₹${Math.round(lv).toLocaleString('en-IN')}`
+                            ];
+                        }
+                    }
+                }
+            }
+        }
+    });
+
+    // Center stat
+    const centerVal = document.getElementById('donutCenterValue');
+    const centerLbl = document.getElementById('donutCenterLabel');
+    if (centerVal) centerVal.textContent = totalCancelled.toLocaleString('en-IN');
+    if (centerLbl) centerLbl.textContent = 'Total Cancelled';
+
+    // Legend
+    const legendEl = document.getElementById('donutLegend');
+    if (legendEl) {
+        if (labels.length === 0) {
+            legendEl.innerHTML = '<div style="color:#94a3b8;font-size:0.8rem;text-align:center;padding:8px;">No cancellation data found.</div>';
+        } else {
+            const getPct = (count) => {
+                if (!totalCancelled || totalCancelled <= 0) return '0%';
+                const v = (count / totalCancelled) * 100;
+                return (v % 1 === 0 ? v.toFixed(0) : v.toFixed(1)) + '%';
+            };
+            legendEl.innerHTML = labels.map((name, i) => `
+                <div class="donut-legend-item">
+                    <span class="donut-legend-dot" style="background-color: ${colors[i]};"></span>
+                    <span class="donut-legend-text">
+                        ${name} - <strong>${dataVals[i]}</strong> (${getPct(dataVals[i])}), Lost Value - <strong style="color: ${colors[i]};">₹${Math.round(lostVals[i]).toLocaleString('en-IN')}</strong>
+                    </span>
+                </div>
+            `).join('');
+        }
+    }
+}
+
+// ── Cancelled Bookings Table with 25-item Pagination, Search, Export & Print ──
+function setupBkCancelledTable(rows, filterStart, filterEnd) {
+    let currentPage = 1;
+    const pageSize  = 25;
+    let currentFilteredRows = [...(rows || [])];
+
+    const titleText = document.getElementById('tableTitleText');
+    if (titleText) titleText.textContent = 'Cancelled Booking Records';
+
+    function renderPage(page) {
+        currentPage = page;
+        const total      = currentFilteredRows.length;
+        const totalPages = Math.ceil(total / pageSize) || 1;
+        if (currentPage > totalPages) currentPage = totalPages;
+        if (currentPage < 1)          currentPage = 1;
+
+        const startIdx = (currentPage - 1) * pageSize;
+        const endIdx   = Math.min(startIdx + pageSize, total);
+        const pageRows = currentFilteredRows.slice(startIdx, endIdx);
+
+        const tbody = document.getElementById('tableBody');
+        if (tbody) {
+            if (pageRows.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="7" style="text-align:center;padding:2.5rem;color:#94a3b8;">No cancelled bookings match your filter criteria.</td></tr>';
+            } else {
+                tbody.innerHTML = pageRows.map(r => {
+                    const custId   = (r.customer_id || '').replace(/'/g, "\\'");
+                    const custName = (r.customer || '—').replace(/'/g, "\\'");
+                    const customerCell = r.customer
+                        ? `<span class="customer-link" onclick="if(window.viewCustomerProfile) window.viewCustomerProfile('${custId}', '${custName}')">${r.customer}</span>`
+                        : '<span style="color:#94a3b8;">—</span>';
+
+                    const serviceCell = buildServiceCell(r.service);
+                    const staffCell   = buildStaffCell(r.staff);
+
+                    const reasonStyle = 'display:inline-block;padding:3px 10px;border-radius:20px;font-size:0.75rem;font-weight:500;background:#fee2e2;color:#991b1b;';
+                    const reasonCell  = r.reason
+                        ? `<span style="${reasonStyle}">${r.reason}</span>`
+                        : '<span style="color:#94a3b8;font-style:italic;">Not specified</span>';
+
+                    let dateStr = '', timeStr = '';
+                    const dt = r.datetime || '';
+                    if (dt.includes(',')) {
+                        dateStr = dt.split(',')[0].trim();
+                        timeStr = dt.split(',')[1].trim();
+                    } else {
+                        dateStr = dt || '—';
+                    }
+
+                    return `
+                    <tr style="border-bottom:1px solid #f8fafc;transition:background 0.15s;" onmouseover="this.style.background='#fafafa'" onmouseout="this.style.background=''">
+                        <td style="padding:14px 8px 14px 16px;"><strong style="font-size:0.85rem;color:#0f172a;">${dateStr || '—'}</strong></td>
+                        <td style="padding:14px 8px;font-size:0.85rem;color:#64748b;">${timeStr || '—'}</td>
+                        <td style="padding:14px 8px;">${customerCell}</td>
+                        <td style="padding:14px 8px;max-width:200px;">${serviceCell}</td>
+                        <td style="padding:14px 8px;max-width:180px;">${staffCell}</td>
+                        <td style="padding:14px 8px;"><strong style="color:#ef4444;">${formatCurrency(r.est_value)}</strong></td>
+                        <td style="padding:14px 8px;">${reasonCell}</td>
+                    </tr>`;
+                }).join('');
+            }
+        }
+
+        const badge = document.getElementById('tableRecordCountBadge');
+        if (badge) badge.textContent = `${total} cancelled`;
+
+        const info = document.getElementById('paginationInfo');
+        if (info) {
+            info.textContent = total === 0
+                ? 'Showing 0 to 0 of 0 cancellations'
+                : `Showing ${startIdx + 1} to ${endIdx} of ${total} cancellations`;
+        }
+
+        const controls = document.getElementById('paginationControls');
+        if (controls) {
+            if (totalPages <= 1) { controls.innerHTML = ''; return; }
+
+            let html = `<button class="page-btn" id="btnPagePrevCanc" ${currentPage === 1 ? 'disabled' : ''}>&larr; Prev</button>`;
+            for (let p = 1; p <= totalPages; p++) {
+                if (p === 1 || p === totalPages || (p >= currentPage - 2 && p <= currentPage + 2)) {
+                    html += `<button class="page-btn ${p === currentPage ? 'active' : ''}" data-page="${p}">${p}</button>`;
+                } else if (p === currentPage - 3 || p === currentPage + 3) {
+                    html += `<span style="padding:0 4px;color:#94a3b8;">...</span>`;
+                }
+            }
+            html += `<button class="page-btn" id="btnPageNextCanc" ${currentPage === totalPages ? 'disabled' : ''}>Next &rarr;</button>`;
+            controls.innerHTML = html;
+
+            controls.querySelectorAll('[data-page]').forEach(btn => {
+                btn.onclick = () => renderPage(Number(btn.getAttribute('data-page')));
+            });
+            const prevBtn = document.getElementById('btnPagePrevCanc');
+            if (prevBtn) prevBtn.onclick = () => renderPage(currentPage - 1);
+            const nextBtn = document.getElementById('btnPageNextCanc');
+            if (nextBtn) nextBtn.onclick = () => renderPage(currentPage + 1);
+        }
+    }
+
+    // Search
+    const searchInput = document.getElementById('tableSearchInput');
+    if (searchInput) {
+        searchInput.value = '';
+        searchInput.oninput = (e) => {
+            const query = (e.target.value || '').toLowerCase().trim();
+            if (!query) {
+                currentFilteredRows = [...(rows || [])];
+            } else {
+                currentFilteredRows = (rows || []).filter(r => {
+                    const cust   = (r.customer || '').toLowerCase();
+                    const srv    = (r.service  || '').toLowerCase();
+                    const stf    = (r.staff    || '').toLowerCase();
+                    const dt     = (r.datetime || '').toLowerCase();
+                    const reason = (r.reason   || '').toLowerCase();
+                    return cust.includes(query) || srv.includes(query) || stf.includes(query) || dt.includes(query) || reason.includes(query);
+                });
+            }
+            renderPage(1);
+        };
+    }
+
+    // Export CSV
+    const exportBtn = document.getElementById('btnExportCSV');
+    if (exportBtn) {
+        exportBtn.onclick = () => {
+            if (!currentFilteredRows || currentFilteredRows.length === 0) {
+                alert('No cancelled bookings data to export.');
+                return;
+            }
+            const csvHeaders = ['Date', 'Time', 'Customer', 'Service', 'Staff', 'Est. Value', 'Reason'];
+            const csvLines   = [csvHeaders.join(',')];
+            currentFilteredRows.forEach(r => {
+                const dt = r.datetime || '';
+                const d  = dt.includes(',') ? dt.split(',')[0].trim() : dt;
+                const t  = dt.includes(',') ? dt.split(',')[1].trim() : '';
+                csvLines.push([
+                    `"${d}"`,
+                    `"${t}"`,
+                    `"${(r.customer || '').replace(/"/g, '""')}"`,
+                    `"${(r.service  || '').replace(/"/g, '""')}"`,
+                    `"${(r.staff    || '').replace(/"/g, '""')}"`,
+                    `"${r.est_value || 0}"`,
+                    `"${(r.reason   || '').replace(/"/g, '""')}"`
+                ].join(','));
+            });
+            const blob = new Blob([csvLines.join('\n')], { type: 'text/csv;charset=utf-8;' });
+            const url  = URL.createObjectURL(blob);
+            const a    = document.createElement('a');
+            a.href     = url;
+            const sDate = filterStart ? filterStart.value : 'all';
+            const eDate = filterEnd   ? filterEnd.value   : 'all';
+            a.download = `Cancelled_Bookings_${sDate}_to_${eDate}.csv`;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+        };
+    }
+
+    // Print
+    const printBtn = document.getElementById('btnPrintTable');
+    if (printBtn) printBtn.onclick = () => window.print();
+
+    renderPage(1);
+}
+
+// ── Main renderer ─────────────────────────────────────────────────────────────
 async function renderBkCancelled(data, supabase) {
     const companyId    = resolveCompanyId();
     const filterStart  = document.getElementById('filterStartDate');
@@ -1567,49 +1981,81 @@ async function renderBkCancelled(data, supabase) {
     const filterBranch = document.getElementById('filterBranch');
     const btnApply     = document.getElementById('btnApplyFilters');
 
+    // Panel visibility
+    const snapPanel      = document.getElementById('bkSnapshotPanel');
+    const snapComp       = document.getElementById('bkCompletedSnapshotPanel');
+    const snapCanc       = document.getElementById('bkCancelledSnapshotPanel');
+    const kpiRow         = document.getElementById('kpiRow');
+    if (snapPanel)  snapPanel.style.display  = 'none';
+    if (snapComp)   snapComp.style.display   = 'none';
+    if (snapCanc)   snapCanc.style.display   = 'block';
+    if (kpiRow)     kpiRow.style.display     = 'none';
+
     setDefaultDateRange(filterStart, filterEnd);
+
+    const setEl = (id, val) => { const el = document.getElementById(id); if (el) el.textContent = val; };
 
     const loadData = async () => {
         const start = filterStart ? filterStart.value : '2000-01-01';
         const end   = filterEnd   ? filterEnd.value   : '2099-12-31';
         const bid   = resolveBranchId(filterBranch);
 
-        setLoading(data, 7);
         try {
             const result  = await callMasterRpc(supabase, companyId, bid, start, end);
             const section = result.bk_cancelled || {};
             const k       = section.kpis        || {};
             const rows    = section.rows        || [];
 
-            data.kpi1.value = Number(k.cancelled_bookings       || 0).toLocaleString('en-IN');
-            data.kpi2.value = Number(k.cancellation_rate        || 0).toFixed(1) + '%';
-            data.kpi3.value = formatCurrency(k.estimated_value_affected || 0);
-            data.kpi4.value = Number(k.same_day_cancellations   || 0).toLocaleString('en-IN');
-            updateKPIs(data.kpi1, data.kpi2, data.kpi3, data.kpi4);
+            const cancelledCount = Number(k.cancelled_bookings  || 0);
+            const totalBookings  = Number(k.total_bookings      || 0) || cancelledCount;
+            const cancelRate     = Number(k.cancellation_rate   || 0);
+            const lostValue      = Number(k.estimated_value_affected || 0);
+            const sameDayCount   = Number(k.same_day_cancellations || 0);
 
-            const trend = buildTrendFromRows(rows, 'datetime', 'est_value');
-            if (typeof renderTrendChart === 'function') renderTrendChart(trend.labels, trend.values);
+            // ── Stat Card 1: Cancelled Bookings
+            setEl('bkCancSnapCount',    cancelledCount.toLocaleString('en-IN'));
+            setEl('bkCancSnapCountSub', `${cancelRate.toFixed(1)}% of ${totalBookings.toLocaleString('en-IN')} total appointments`);
+            const barsCount = document.getElementById('bkCancBarsCount');
+            if (barsCount) barsCount.innerHTML = build7DayTrend(rows, 'cancelled');
 
-            const dist = buildDistFromRows(rows, 'reason');
-            if (typeof renderDistributionChart === 'function') renderDistributionChart(dist.labels, dist.values);
+            // ── Stat Card 2: Cancellation Rate
+            setEl('bkCancSnapRate',    cancelRate.toFixed(1) + '%');
+            setEl('bkCancSnapRateSub', `${cancelledCount} cancelled out of ${totalBookings.toLocaleString('en-IN')} bookings`);
+            const barsRate = document.getElementById('bkCancBarsRate');
+            if (barsRate) barsRate.innerHTML = build7DayTrend(rows, 'cancelled');
 
-            data.headers = ['Booking ID', 'Scheduled Date & Time', 'Customer Name', 'Services Cancelled', 'Staff', 'Estimated Value', 'Cancellation Reason'];
-            updateTable(data.headers, rows.map(r => [
-                r.booking_id,
-                r.datetime,
-                r.customer,
-                r.service,
-                r.staff,
-                '<strong style="color:#ef4444;">' + formatCurrency(r.est_value) + '</strong>',
-                r.reason || '<span style="color:#94a3b8;font-style:italic;">Not specified</span>'
-            ]));
+            // ── Stat Card 3: Estimated Value Affected
+            setEl('bkCancSnapValue',    formatCurrency(lostValue));
+            setEl('bkCancSnapValueSub', 'Potential revenue lost to cancellations');
+            const barsValue = document.getElementById('bkCancBarsValue');
+            if (barsValue) barsValue.innerHTML = build7DayTrend(rows, 'cancelled');
+
+            // ── Stat Card 4: Same-Day Cancellations
+            setEl('bkCancSnapSameDay',    sameDayCount.toLocaleString('en-IN'));
+            setEl('bkCancSnapSameDaySub', `${sameDayCount} of ${cancelledCount} cancelled on the day`);
+            const barsSameDay = document.getElementById('bkCancBarsSameDay');
+            if (barsSameDay) barsSameDay.innerHTML = build7DayTrend(rows, 'cancelled');
+
+            // ── Charts
+            renderBkCancelledPerformanceTrend(rows);
+            renderBkCancelledReasonDonut(rows, k);
+
+            // ── Table
+            setupBkCancelledTable(rows, filterStart, filterEnd);
+
+            if (typeof feather !== 'undefined') feather.replace();
+
         } catch (err) {
             console.error('[bookings] renderBkCancelled error:', err);
-            setError(data);
+            setEl('bkCancSnapCount',   'Error');
+            setEl('bkCancSnapRate',    'Error');
+            setEl('bkCancSnapValue',   'Error');
+            setEl('bkCancSnapSameDay', 'Error');
         }
     };
 
     await initBranchDropdown(supabase, companyId, filterBranch);
+    if (filterBranch) filterBranch.onchange = loadData;
     if (btnApply) btnApply.onclick = loadData;
     loadData();
 }
@@ -1745,17 +2191,20 @@ const handlers = {
 };
 
 export async function render(data, supabase, type) {
-    const t         = type || data?.type || 'bookings';
-    const snapPanel = document.getElementById('bkSnapshotPanel');
+    const t = type || data?.type || 'bookings';
+
+    // Reset all snapshot panels — each renderer shows the one it needs
+    const snapTotal = document.getElementById('bkSnapshotPanel');
+    const snapComp  = document.getElementById('bkCompletedSnapshotPanel');
+    const snapCanc  = document.getElementById('bkCancelledSnapshotPanel');
     const kpiRow    = document.getElementById('kpiRow');
-    if (t === 'bk-total') {
-        if (snapPanel) snapPanel.style.display = 'block';
-        if (kpiRow)    kpiRow.style.display    = 'none';
-    } else {
-        if (snapPanel) snapPanel.style.display = 'none';
-        if (kpiRow)    kpiRow.style.display    = 'grid';
-    }
+    if (snapTotal) snapTotal.style.display = 'none';
+    if (snapComp)  snapComp.style.display  = 'none';
+    if (snapCanc)  snapCanc.style.display  = 'none';
+    if (kpiRow)    kpiRow.style.display    = 'none';
+
     const handler = handlers[t];
     if (handler) return await handler(data, supabase);
     updateTable(data.headers, data.rows || []);
 }
+

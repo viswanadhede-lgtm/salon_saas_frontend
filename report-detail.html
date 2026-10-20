@@ -1215,6 +1215,94 @@
                             <span style="height: 3px; opacity: 0.22;"></span>
                         </div>
                     </div>
+            </div>
+
+            <!-- Cancelled Bookings Snapshot Panel (Enhanced 4-Card Snapshot with icons, subtexts, and mini bars) -->
+            <div class="bk-snapshot-panel" id="bkCancelledSnapshotPanel" style="display: none; margin-bottom: 1.5rem;">
+                <div class="bk-snapshot-grid-4">
+                    <!-- 1. Cancelled Bookings -->
+                    <div class="bk-snapshot-card">
+                        <div class="bk-snap-icon bg-red-circle">
+                            <i data-feather="x-circle"></i>
+                        </div>
+                        <div class="bk-snap-body">
+                            <span class="bk-snap-label">Cancelled Bookings</span>
+                            <span class="bk-snap-val" id="bkCancSnapCount">—</span>
+                            <span class="bk-snap-sub txt-red" id="bkCancSnapCountSub">—</span>
+                        </div>
+                        <div class="bk-mini-bars red-bars" id="bkCancBarsCount">
+                            <span style="height: 3px; opacity: 0.22;"></span>
+                            <span style="height: 3px; opacity: 0.22;"></span>
+                            <span style="height: 3px; opacity: 0.22;"></span>
+                            <span style="height: 3px; opacity: 0.22;"></span>
+                            <span style="height: 3px; opacity: 0.22;"></span>
+                            <span style="height: 3px; opacity: 0.22;"></span>
+                            <span style="height: 3px; opacity: 0.22;"></span>
+                        </div>
+                    </div>
+
+                    <!-- 2. Cancellation Rate -->
+                    <div class="bk-snapshot-card">
+                        <div class="bk-snap-icon bg-amber-circle">
+                            <i data-feather="alert-triangle"></i>
+                        </div>
+                        <div class="bk-snap-body">
+                            <span class="bk-snap-label">Cancellation Rate</span>
+                            <span class="bk-snap-val" id="bkCancSnapRate">—</span>
+                            <span class="bk-snap-sub txt-amber" id="bkCancSnapRateSub">—</span>
+                        </div>
+                        <div class="bk-mini-bars amber-bars" id="bkCancBarsRate">
+                            <span style="height: 3px; opacity: 0.22;"></span>
+                            <span style="height: 3px; opacity: 0.22;"></span>
+                            <span style="height: 3px; opacity: 0.22;"></span>
+                            <span style="height: 3px; opacity: 0.22;"></span>
+                            <span style="height: 3px; opacity: 0.22;"></span>
+                            <span style="height: 3px; opacity: 0.22;"></span>
+                            <span style="height: 3px; opacity: 0.22;"></span>
+                        </div>
+                    </div>
+
+                    <!-- 3. Estimated Value Affected -->
+                    <div class="bk-snapshot-card">
+                        <div class="bk-snap-icon bg-red-circle">
+                            <i data-feather="trending-down"></i>
+                        </div>
+                        <div class="bk-snap-body">
+                            <span class="bk-snap-label">Estimated Value Affected</span>
+                            <span class="bk-snap-val" id="bkCancSnapValue">—</span>
+                            <span class="bk-snap-sub txt-red" id="bkCancSnapValueSub">Potential revenue lost</span>
+                        </div>
+                        <div class="bk-mini-bars red-bars" id="bkCancBarsValue">
+                            <span style="height: 3px; opacity: 0.22;"></span>
+                            <span style="height: 3px; opacity: 0.22;"></span>
+                            <span style="height: 3px; opacity: 0.22;"></span>
+                            <span style="height: 3px; opacity: 0.22;"></span>
+                            <span style="height: 3px; opacity: 0.22;"></span>
+                            <span style="height: 3px; opacity: 0.22;"></span>
+                            <span style="height: 3px; opacity: 0.22;"></span>
+                        </div>
+                    </div>
+
+                    <!-- 4. Same-Day Cancellations -->
+                    <div class="bk-snapshot-card">
+                        <div class="bk-snap-icon bg-amber-circle">
+                            <i data-feather="clock"></i>
+                        </div>
+                        <div class="bk-snap-body">
+                            <span class="bk-snap-label">Same-Day Cancellations</span>
+                            <span class="bk-snap-val" id="bkCancSnapSameDay">—</span>
+                            <span class="bk-snap-sub txt-amber" id="bkCancSnapSameDaySub">Last-minute slot cancellations</span>
+                        </div>
+                        <div class="bk-mini-bars amber-bars" id="bkCancBarsSameDay">
+                            <span style="height: 3px; opacity: 0.22;"></span>
+                            <span style="height: 3px; opacity: 0.22;"></span>
+                            <span style="height: 3px; opacity: 0.22;"></span>
+                            <span style="height: 3px; opacity: 0.22;"></span>
+                            <span style="height: 3px; opacity: 0.22;"></span>
+                            <span style="height: 3px; opacity: 0.22;"></span>
+                            <span style="height: 3px; opacity: 0.22;"></span>
+                        </div>
+                    </div>
                 </div>
             </div>
 
