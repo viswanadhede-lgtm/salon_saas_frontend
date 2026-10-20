@@ -499,17 +499,12 @@ function initReportDateFilterModal() {
     const labelEl        = document.getElementById('dateFilterLabel');
     const presetsView    = document.getElementById('datePresetsView');
     const customView     = document.getElementById('dateCustomView');
-    const btnOpenCustom  = document.getElementById('btnOpenCustomDates');
     const btnBackPresets = document.getElementById('btnBackToPresets');
     const startInput     = document.getElementById('filterStartDate');
     const endInput       = document.getElementById('filterEndDate');
-    const fromPreview    = document.getElementById('fromPreviewText');
-    const toPreview      = document.getElementById('toPreviewText');
-    const cardFrom       = document.getElementById('cardFromCalendar');
-    const cardTo         = document.getElementById('cardToCalendar');
     const btnReset       = document.getElementById('btnFilterReset');
     const btnApply       = document.getElementById('btnApplyFilters');
-    const presetBtns     = document.querySelectorAll('.preset-item-btn');
+    const radios         = document.querySelectorAll('input[name="reportPresetDate"]');
 
     if (!btnModal || !menu) return;
 
@@ -517,22 +512,6 @@ function initReportDateFilterModal() {
     let isCustomMode = false;
 
     const toIso = (d) => new Date(d.getTime() - d.getTimezoneOffset() * 60000).toISOString().split('T')[0];
-
-    const fmtDisplayDate = (dStr) => {
-        if (!dStr) return '';
-        const d = new Date(dStr);
-        if (isNaN(d.getTime())) return dStr;
-        return d.toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' });
-    };
-
-    const updatePreviews = () => {
-        if (fromPreview && startInput) {
-            fromPreview.textContent = startInput.value ? fmtDisplayDate(startInput.value) : 'Select start date';
-        }
-        if (toPreview && endInput) {
-            toPreview.textContent = endInput.value ? fmtDisplayDate(endInput.value) : 'Select end date';
-        }
-    };
 
     const calculatePreset = (val) => {
         const now = new Date();
@@ -583,26 +562,14 @@ function initReportDateFilterModal() {
         isCustomMode = true;
         if (presetsView) presetsView.style.display = 'none';
         if (customView) customView.style.display = 'block';
-        updatePreviews();
         if (window.feather) window.feather.replace();
     };
 
-    const setActivePresetUI = (presetKey) => {
-        activePreset = presetKey;
-        presetBtns.forEach(btn => {
-            if (btn.dataset.preset === presetKey) {
-                btn.classList.add('active');
-            } else {
-                btn.classList.remove('active');
-            }
+    const setRadioChecked = (val) => {
+        radios.forEach(r => {
+            r.checked = (r.value === val);
         });
-        if (btnOpenCustom) {
-            if (presetKey === 'custom') {
-                btnOpenCustom.classList.add('active');
-            } else {
-                btnOpenCustom.classList.remove('active');
-            }
-        }
+        activePreset = val;
     };
 
     // Toggle popover menu
@@ -629,34 +596,38 @@ function initReportDateFilterModal() {
         }
     });
 
-    // Preset button clicks: immediately select, update dates & label, close modal, and trigger query!
-    presetBtns.forEach(btn => {
-        btn.onclick = (e) => {
-            e.stopPropagation();
-            const presetKey = btn.dataset.preset;
-            const preset = calculatePreset(presetKey);
+    // Preset radio selection
+    radios.forEach(radio => {
+        radio.addEventListener('change', () => {
+            if (radio.value === 'custom') {
+                showCustomView();
+                if (startInput) startInput.focus();
+                return;
+            }
+            const preset = calculatePreset(radio.value);
             if (preset && startInput && endInput) {
                 startInput.value = preset.start;
                 endInput.value   = preset.end;
-                setActivePresetUI(presetKey);
+                activePreset = radio.value;
                 isCustomMode = false;
                 if (labelEl) labelEl.textContent = preset.label;
                 menu.classList.remove('show');
-                // Trigger report reload
                 if (btnApply) btnApply.click();
             }
-        };
+        });
     });
 
-    // Custom Dates Tile click: transitions to View 2
-    if (btnOpenCustom) {
-        btnOpenCustom.onclick = (e) => {
-            e.stopPropagation();
+    // Support clicking label of custom dates
+    const labelCustom = document.getElementById('labelCustomDates');
+    if (labelCustom) {
+        labelCustom.onclick = (e) => {
+            const radioCustom = document.getElementById('radioCustomDates');
+            if (radioCustom) radioCustom.checked = true;
             showCustomView();
         };
     }
 
-    // Back to Presets click
+    // Back button in Custom view
     if (btnBackPresets) {
         btnBackPresets.onclick = (e) => {
             e.stopPropagation();
@@ -664,32 +635,13 @@ function initReportDateFilterModal() {
         };
     }
 
-    // Clicking calendar cards opens date picker
-    if (cardFrom && startInput) {
-        cardFrom.onclick = (e) => {
-            if (e.target !== startInput) {
-                try { startInput.showPicker(); } catch (err) { startInput.focus(); }
-            }
-        };
-    }
-    if (cardTo && endInput) {
-        cardTo.onclick = (e) => {
-            if (e.target !== endInput) {
-                try { endInput.showPicker(); } catch (err) { endInput.focus(); }
-            }
-        };
-    }
-
-    if (startInput) startInput.onchange = updatePreviews;
-    if (endInput)   endInput.onchange   = updatePreviews;
-
     // Default to Current Month on initial load
     const initialPreset = calculatePreset('one_month');
     if (initialPreset && startInput && endInput && !startInput.value && !endInput.value) {
         startInput.value = initialPreset.start;
         endInput.value   = initialPreset.end;
         if (labelEl) labelEl.textContent = 'Current Month';
-        setActivePresetUI('one_month');
+        setRadioChecked('one_month');
     }
 
     // Reset button: resets to Current Month, switches to Presets view, closes modal, reloads
@@ -700,7 +652,7 @@ function initReportDateFilterModal() {
             if (preset && startInput && endInput) {
                 startInput.value = preset.start;
                 endInput.value   = preset.end;
-                setActivePresetUI('one_month');
+                setRadioChecked('one_month');
                 if (labelEl) labelEl.textContent = 'Current Month';
             }
             showPresetsView();
@@ -722,10 +674,10 @@ function initReportDateFilterModal() {
                     }
                     const fmtD = (s) => new Date(s).toLocaleDateString('en-IN', { day: '2-digit', month: 'short' });
                     if (labelEl) labelEl.textContent = `${fmtD(startInput.value)} - ${fmtD(endInput.value)}`;
-                    setActivePresetUI('custom');
+                    setRadioChecked('custom');
                 } else if (labelEl) {
                     labelEl.textContent = 'Custom Dates';
-                    setActivePresetUI('custom');
+                    setRadioChecked('custom');
                 }
             } else {
                 const preset = calculatePreset(activePreset);
