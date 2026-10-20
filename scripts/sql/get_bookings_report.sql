@@ -369,7 +369,7 @@ BEGIN
                 'staff',       COALESCE(sd.staff_members, b.staff_name, '-'),
                 'est_value',   COALESCE(b.total_price, b.final_amount, 0),
                 'reason',      COALESCE(sd.cancellation_notes, 'Not specified'),
-                'status',      COALESCE(b.status, 'cancelled')
+                'status',      'cancelled'
             )
             ORDER BY b.booking_date DESC
         ),
@@ -386,8 +386,7 @@ BEGIN
             service_name,
             staff_name,
             total_price,
-            final_amount,
-            status
+            final_amount
         FROM public.bookings_for_business_transaction
         WHERE (p_branch_id IS NULL OR branch_id = p_branch_id)
           AND (p_company_id IS NULL OR company_id = p_company_id)
@@ -432,7 +431,7 @@ BEGIN
                 'service',      COALESCE(sd.services, b.service_name, '-'),
                 'staff',        COALESCE(sd.staff_members, b.staff_name, '-'),
                 'missed_value', COALESCE(b.total_price, b.final_amount, 0),
-                'status',       COALESCE(b.status, 'no-show')
+                'status',       'no-show'
             )
             ORDER BY b.booking_date DESC
         ),
@@ -449,8 +448,7 @@ BEGIN
             service_name,
             staff_name,
             total_price,
-            final_amount,
-            status
+            final_amount
         FROM public.bookings_for_business_transaction
         WHERE (p_branch_id IS NULL OR branch_id = p_branch_id)
           AND (p_company_id IS NULL OR company_id = p_company_id)
@@ -465,17 +463,29 @@ BEGIN
     /*
      * 10. REFUND TRANSACTION ROWS
      */
+    WITH service_details AS (
+        SELECT
+            booking_id,
+            STRING_AGG(DISTINCT service_name, ', ') AS services
+        FROM public.bookings
+        WHERE (p_branch_id IS NULL OR branch_id = p_branch_id)
+          AND (p_company_id IS NULL OR company_id = p_company_id)
+        GROUP BY booking_id
+    )
     SELECT COALESCE(
         jsonb_agg(
             jsonb_build_object(
                 'refund_ref',  LEFT(bt.payment_id::text, 8) || '...',
                 'refund_date', TO_CHAR(DATE(COALESCE(bt.paid_at, bt.created_at)), 'DD Mon YYYY'),
+                'time',        COALESCE(TO_CHAR(COALESCE(bt.paid_at, bt.created_at), 'HH12:MI AM'), TO_CHAR(bv.start_time, 'HH12:MI AM'), '-'),
                 'booking_id',  LEFT(bt.reference_id::text, 8) || '...',
                 'customer',    COALESCE(bv.customer_name, 'Unknown'),
                 'customer_id', COALESCE(bv.customer_id::text, ''),
+                'service',     COALESCE(sd.services, bv.service_name, '-'),
                 'method',      INITCAP(COALESCE(bt.payment_method, '-')),
                 'amount',      COALESCE(bt.final_amount, bt.amount, 0),
-                'notes',       COALESCE(NULLIF(TRIM(bt.notes), ''), 'Not specified')
+                'notes',       COALESCE(NULLIF(TRIM(bt.notes), ''), 'Not specified'),
+                'status',      'refunded'
             )
             ORDER BY DATE(COALESCE(bt.paid_at, bt.created_at)) DESC
         ),
@@ -500,10 +510,13 @@ BEGIN
         SELECT DISTINCT ON (booking_id)
             booking_id,
             customer_name,
-            customer_id
+            customer_id,
+            service_name,
+            start_time
         FROM public.bookings_for_business_transaction
         ORDER BY booking_id
-    ) bv ON bv.booking_id = bt.reference_id;
+    ) bv ON bv.booking_id = bt.reference_id
+    LEFT JOIN service_details sd ON sd.booking_id = bt.reference_id;
 
 
     /*
