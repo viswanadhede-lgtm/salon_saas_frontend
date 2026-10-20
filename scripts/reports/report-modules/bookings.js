@@ -745,11 +745,11 @@ async function renderBkTotal(data, supabase) {
 
             setEl('bkSnapTotal',       fmt(totalCount));
             setEl('bkSnapCompleted',   fmt(completedCount));
-            setHtml('bkSnapRevenue',   'Realised revenue:<br>' + cur(realizedRev));
+            setHtml('bkSnapRevenue',   'Realised revenue: ' + cur(realizedRev));
             setEl('bkSnapCancelled',   fmt(cancelledCount));
-            setHtml('bkSnapCancelVal', 'Estimated value:<br>' + cur(cancelVal));
+            setHtml('bkSnapCancelVal', 'Estimated value: ' + cur(cancelVal));
             setEl('bkSnapNoShows',     fmt(noShowCount));
-            setHtml('bkSnapNoShowVal', 'Estimated missed:<br>' + cur(noShowVal));
+            setHtml('bkSnapNoShowVal', 'Estimated missed: ' + cur(noShowVal));
 
             // Populate mini sparkline bars for the 4 cards
             const completedRows = (result.bk_completed && result.bk_completed.rows) ? result.bk_completed.rows : [];
