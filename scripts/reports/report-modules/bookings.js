@@ -452,7 +452,7 @@ function renderBkTotalPerformanceTrend(rows) {
 }
 
 // Clean Donut Chart for Booking Status Breakdown
-function renderBkTotalStatusDonut(k, rows) {
+function renderBkTotalStatusDonut(k, rows, revs = {}) {
     const ctx = document.getElementById('distributionChart');
     if (!ctx) return;
     if (bkTotalDonutChart) {
@@ -516,20 +516,91 @@ function renderBkTotalStatusDonut(k, rows) {
     if (centerVal) centerVal.textContent = total.toLocaleString('en-IN');
     if (centerLbl) centerLbl.textContent = 'Total Bookings';
 
-    // Update Legend
+    // Calculate revenue amounts
+    let fallbackCompletedRev = 0;
+    let fallbackCancelRev = 0;
+    let fallbackNoShowRev = 0;
+    (rows || []).forEach(r => {
+        const s = (r.status || '').toLowerCase().replace(/[\s_]/g, '-');
+        const amt = Number(r.amount || 0);
+        if (s === 'completed') fallbackCompletedRev += amt;
+        else if (s === 'cancelled') fallbackCancelRev += amt;
+        else if (s === 'no-show' || s === 'noshow') fallbackNoShowRev += amt;
+    });
+
+    const finalCompletedRev = (revs.realizedRev !== undefined && revs.realizedRev !== 0) ? revs.realizedRev : fallbackCompletedRev;
+    const finalCancelRev    = (revs.cancelVal !== undefined && revs.cancelVal !== 0)     ? revs.cancelVal   : fallbackCancelRev;
+    const finalNoShowRev    = (revs.noShowVal !== undefined && revs.noShowVal !== 0)     ? revs.noShowVal   : fallbackNoShowRev;
+
+    const cur = (v) => '₹' + Math.round(Number(v) || 0).toLocaleString('en-IN');
+    const getPct = (count) => {
+        if (!total || total <= 0) return '0%';
+        const val = (count / total) * 100;
+        return (val % 1 === 0 ? val.toFixed(0) : val.toFixed(1)) + '%';
+    };
+
+    const legendItems = [
+        {
+            name: 'Completed Bookings',
+            count: completed,
+            color: '#10b981',
+            pct: getPct(completed),
+            revLabel: 'Revenue Generated',
+            revVal: cur(finalCompletedRev),
+            revColor: '#10b981'
+        },
+        {
+            name: 'Cancelled Bookings',
+            count: cancelled,
+            color: '#ef4444',
+            pct: getPct(cancelled),
+            revLabel: 'Estimated Revenue',
+            revVal: cur(finalCancelRev),
+            revColor: '#ef4444'
+        },
+        {
+            name: 'No-Shows',
+            count: noShows,
+            color: '#f59e0b',
+            pct: getPct(noShows),
+            revLabel: 'Estimated Missed',
+            revVal: cur(finalNoShowRev),
+            revColor: '#d97706'
+        }
+    ];
+
+    if (other > 0) {
+        let otherAmt = 0;
+        (rows || []).forEach(r => {
+            const s = (r.status || '').toLowerCase().replace(/[\s_]/g, '-');
+            if (s !== 'completed' && s !== 'cancelled' && s !== 'no-show' && s !== 'noshow') {
+                otherAmt += Number(r.amount || 0);
+            }
+        });
+        legendItems.push({
+            name: 'Confirmed / Other',
+            count: other,
+            color: '#6366f1',
+            pct: getPct(other),
+            revLabel: 'Estimated Value',
+            revVal: cur(otherAmt),
+            revColor: '#6366f1'
+        });
+    }
+
+    // Update Legend (3 rows)
     const legendEl = document.getElementById('donutLegend');
     if (legendEl) {
-        legendEl.innerHTML = labels.map((lbl, i) => {
-            const count = dataVals[i];
-            const pct = total > 0 ? ((count / total) * 100).toFixed(1) : '0';
-            return `
-                <div class="donut-legend-item">
-                    <span class="donut-legend-dot" style="background-color: ${colors[i]};"></span>
-                    <span class="donut-legend-name">${lbl}</span>
-                    <span class="donut-legend-count"><strong>${count}</strong> (${pct}%)</span>
-                </div>
-            `;
-        }).join('');
+        legendEl.innerHTML = legendItems.map(item => `
+            <div class="donut-legend-item">
+                <span class="donut-legend-dot" style="background-color: ${item.color};"></span>
+                <span class="donut-legend-text">
+                    <span>${item.name} - <strong>${item.count}</strong></span>,
+                    <span>${item.pct} of total bookings</span>,
+                    <span>${item.revLabel}: <strong style="color: ${item.revColor};">${item.revVal}</strong></span>
+                </span>
+            </div>
+        `).join('');
     }
 }
 
@@ -772,7 +843,7 @@ async function renderBkTotal(data, supabase) {
             renderBkTotalPerformanceTrend(rows);
 
             // 3. Status Distribution: Completed, Cancelled, No-Shows
-            renderBkTotalStatusDonut(k, rows);
+            renderBkTotalStatusDonut(k, rows, { realizedRev, cancelVal, noShowVal });
 
             // 4. All Bookings Table: Search, 25-item Pagination, Export CSV, and Print
             setupBkTotalTable(rows, filterStart, filterEnd);

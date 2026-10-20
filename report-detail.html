@@ -522,37 +522,48 @@
 
         .donut-legend-row {
             display: flex;
-            flex-wrap: wrap;
-            justify-content: center;
-            gap: 10px;
-            margin-top: 1.25rem;
+            flex-direction: column;
+            gap: 8px;
+            margin-top: 1.15rem;
             width: 100%;
         }
 
         .donut-legend-item {
-            display: inline-flex;
+            display: flex;
             align-items: center;
-            gap: 7px;
+            gap: 10px;
             background: #f8fafc;
-            border: 1px solid #e2e8f0;
-            border-radius: 20px;
-            padding: 5px 12px;
-            font-size: 0.78rem;
+            border: 1px solid #f1f5f9;
+            border-radius: 8px;
+            padding: 8px 12px;
+            font-size: 0.775rem;
             color: #475569;
+            line-height: 1.4;
+            transition: background 0.15s ease;
+        }
+
+        .donut-legend-item:hover {
+            background: #f1f5f9;
         }
 
         .donut-legend-dot {
-            width: 9px;
-            height: 9px;
+            width: 8px;
+            height: 8px;
             border-radius: 50%;
             display: inline-block;
             flex-shrink: 0;
         }
 
-        .donut-legend-count {
+        .donut-legend-text {
+            display: inline-flex;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 5px;
+            width: 100%;
+        }
+
+        .donut-legend-text strong {
             color: #0f172a;
-            font-weight: 700;
-            margin-left: 2px;
         }
 
         @media (max-width: 1024px) {
