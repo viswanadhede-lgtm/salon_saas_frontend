@@ -213,27 +213,12 @@ async function renderBookingsLandingPage() {
     hubView.style.display = 'block';
 
     const now          = new Date();
-    const todayStr     = now.toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' });
-    const storedBranch = localStorage.getItem('branch_name') || localStorage.getItem('active_branch_name') || 'Main Branch';
-
     // 1. Render initial layout matching screenshot exactly
     hubView.innerHTML = `
         <!-- Page Title Header (Bold Heading) -->
         <div class="bk-page-header">
             <h1>Bookings Reports</h1>
             <p>Booking outcomes and their financial impact</p>
-        </div>
-
-        <!-- Section 1: Quick Metrics -->
-        <div class="bk-section-header">
-            <div>
-                <h2>Quick Metrics</h2>
-                <p class="bk-section-subtitle" id="bkMetricsSubtitle">Key booking metrics for ${todayStr} • ${storedBranch}</p>
-            </div>
-            <div class="bk-section-badge-wrap">
-                <span class="bk-badge-blue">SUMMARY</span>
-                <span class="bk-info-text"><i data-feather="info"></i> Quick snapshot of bookings</span>
-            </div>
         </div>
 
         <!-- 4 Snapshot Stat Cards -->
@@ -499,17 +484,6 @@ async function renderBookingsLandingPage() {
         const thirtyDaysAgo = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
         const startDate = thirtyDaysAgo.toISOString().split('T')[0];
         const endDate   = now.toISOString().split('T')[0];
-
-        // Fetch branch name from DB if branch ID is active
-        if (bid) {
-            try {
-                const { data: bData } = await supabase.from('branches').select('branch_name').eq('branch_id', bid).maybeSingle();
-                if (bData && bData.branch_name) {
-                    const subEl = document.getElementById('bkMetricsSubtitle');
-                    if (subEl) subEl.textContent = `Key booking metrics for ${todayStr} • ${bData.branch_name}`;
-                }
-            } catch (bErr) {}
-        }
 
         const { data: rawResult, error } = await supabase.rpc('get_bookings_report', {
             p_company_id: cid,
