@@ -93,7 +93,7 @@ const STATUS_STYLES = {
 function statusPill(rawStatus) {
     const key   = (rawStatus || 'unknown').toLowerCase().replace('_', '-');
     const style = STATUS_STYLES[key.replace('-', '_')] || STATUS_STYLES[key] || 'background:#f1f5f9;color:#64748b;';
-    const label = key.charAt(0).toUpperCase() + key.slice(1);
+    const label = key.split('-').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join('-');
     return '<span class="status-pill" style="' + style + '">' + label + '</span>';
 }
 
@@ -1866,6 +1866,7 @@ function setupBkCancelledTable(rows, filterStart, filterEnd) {
                 <th>Staff</th>
                 <th>Est. Value</th>
                 <th>Reason</th>
+                <th>Status</th>
             </tr>`;
     }
 
@@ -1883,7 +1884,7 @@ function setupBkCancelledTable(rows, filterStart, filterEnd) {
         const tbody = document.getElementById('tableBody');
         if (tbody) {
             if (pageRows.length === 0) {
-                tbody.innerHTML = '<tr><td colspan="7" style="text-align:center;padding:2.5rem;color:#94a3b8;">No cancelled bookings match your filter criteria.</td></tr>';
+                tbody.innerHTML = '<tr><td colspan="8" style="text-align:center;padding:2.5rem;color:#94a3b8;">No cancelled bookings match your filter criteria.</td></tr>';
             } else {
                 tbody.innerHTML = pageRows.map(r => {
                     const custId   = (r.customer_id || '').replace(/'/g, "\\'");
@@ -1918,6 +1919,7 @@ function setupBkCancelledTable(rows, filterStart, filterEnd) {
                         <td style="padding:14px 8px;max-width:180px;">${staffCell}</td>
                         <td style="padding:14px 8px;"><strong style="color:#ef4444;">${formatCurrency(r.est_value)}</strong></td>
                         <td style="padding:14px 8px;">${reasonCell}</td>
+                        <td style="padding:14px 8px;">${statusPill(r.status || 'cancelled')}</td>
                     </tr>`;
                 }).join('');
             }
@@ -1973,7 +1975,8 @@ function setupBkCancelledTable(rows, filterStart, filterEnd) {
                     const stf    = (r.staff    || '').toLowerCase();
                     const dt     = (r.datetime || '').toLowerCase();
                     const reason = (r.reason   || '').toLowerCase();
-                    return cust.includes(query) || srv.includes(query) || stf.includes(query) || dt.includes(query) || reason.includes(query);
+                    const status = (r.status   || 'cancelled').toLowerCase();
+                    return cust.includes(query) || srv.includes(query) || stf.includes(query) || dt.includes(query) || reason.includes(query) || status.includes(query);
                 });
             }
             renderPage(1);
@@ -1988,7 +1991,7 @@ function setupBkCancelledTable(rows, filterStart, filterEnd) {
                 alert('No cancelled bookings data to export.');
                 return;
             }
-            const csvHeaders = ['Date', 'Time', 'Customer', 'Service', 'Staff', 'Est. Value', 'Reason'];
+            const csvHeaders = ['Date', 'Time', 'Customer', 'Service', 'Staff', 'Est. Value', 'Reason', 'Status'];
             const csvLines   = [csvHeaders.join(',')];
             currentFilteredRows.forEach(r => {
                 const dt = r.datetime || '';
@@ -2001,7 +2004,8 @@ function setupBkCancelledTable(rows, filterStart, filterEnd) {
                     `"${(r.service  || '').replace(/"/g, '""')}"`,
                     `"${(r.staff    || '').replace(/"/g, '""')}"`,
                     `"${r.est_value || 0}"`,
-                    `"${(r.reason   || '').replace(/"/g, '""')}"`
+                    `"${(r.reason   || '').replace(/"/g, '""')}"`,
+                    `"${(r.status   || 'Cancelled').replace(/"/g, '""')}"`
                 ].join(','));
             });
             const blob = new Blob([csvLines.join('\n')], { type: 'text/csv;charset=utf-8;' });
@@ -2418,6 +2422,7 @@ function setupBkNoShowTable(rows, filterStart, filterEnd) {
                 <th>Services Missed</th>
                 <th>Staff Assigned</th>
                 <th>Missed Value</th>
+                <th>Status</th>
             </tr>`;
     }
 
@@ -2435,7 +2440,7 @@ function setupBkNoShowTable(rows, filterStart, filterEnd) {
         const tbody = document.getElementById('tableBody');
         if (tbody) {
             if (pageRows.length === 0) {
-                tbody.innerHTML = '<tr><td colspan="7" style="text-align:center;padding:2.5rem;color:#94a3b8;">No no-show bookings match your filter criteria.</td></tr>';
+                tbody.innerHTML = '<tr><td colspan="8" style="text-align:center;padding:2.5rem;color:#94a3b8;">No no-show bookings match your filter criteria.</td></tr>';
             } else {
                 tbody.innerHTML = pageRows.map(r => {
                     const custId   = (r.customer_id || '').replace(/'/g, "\\'");
@@ -2467,6 +2472,7 @@ function setupBkNoShowTable(rows, filterStart, filterEnd) {
                         <td style="padding:14px 8px;max-width:200px;">${serviceCell}</td>
                         <td style="padding:14px 8px;max-width:180px;">${staffCell}</td>
                         <td style="padding:14px 8px;"><strong style="color:#ef4444;">${formatCurrency(r.missed_value)}</strong></td>
+                        <td style="padding:14px 8px;">${statusPill(r.status || 'no-show')}</td>
                     </tr>`;
                 }).join('');
             }
@@ -2517,12 +2523,13 @@ function setupBkNoShowTable(rows, filterStart, filterEnd) {
                 currentFilteredRows = [...(rows || [])];
             } else {
                 currentFilteredRows = (rows || []).filter(r => {
-                    const cust  = (r.customer || '').toLowerCase();
-                    const phone = (r.phone    || '').toLowerCase();
-                    const srv   = (r.service  || '').toLowerCase();
-                    const stf   = (r.staff    || '').toLowerCase();
-                    const dt    = (r.datetime || '').toLowerCase();
-                    return cust.includes(query) || phone.includes(query) || srv.includes(query) || stf.includes(query) || dt.includes(query);
+                    const cust   = (r.customer || '').toLowerCase();
+                    const phone  = (r.phone    || '').toLowerCase();
+                    const srv    = (r.service  || '').toLowerCase();
+                    const stf    = (r.staff    || '').toLowerCase();
+                    const dt     = (r.datetime || '').toLowerCase();
+                    const status = (r.status   || 'no-show').toLowerCase();
+                    return cust.includes(query) || phone.includes(query) || srv.includes(query) || stf.includes(query) || dt.includes(query) || status.includes(query);
                 });
             }
             renderPage(1);
@@ -2537,7 +2544,7 @@ function setupBkNoShowTable(rows, filterStart, filterEnd) {
                 alert('No no-show bookings data to export.');
                 return;
             }
-            const csvHeaders = ['Date', 'Time', 'Customer', 'Phone', 'Services Missed', 'Staff Assigned', 'Missed Value'];
+            const csvHeaders = ['Date', 'Time', 'Customer', 'Phone', 'Services Missed', 'Staff Assigned', 'Missed Value', 'Status'];
             const csvLines   = [csvHeaders.join(',')];
             currentFilteredRows.forEach(r => {
                 const dt = r.datetime || '';
@@ -2550,7 +2557,8 @@ function setupBkNoShowTable(rows, filterStart, filterEnd) {
                     `"${(r.phone    || '').replace(/"/g, '""')}"`,
                     `"${(r.service  || '').replace(/"/g, '""')}"`,
                     `"${(r.staff    || '').replace(/"/g, '""')}"`,
-                    `"${r.missed_value || 0}"`
+                    `"${r.missed_value || 0}"`,
+                    `"${(r.status   || 'No-Show').replace(/"/g, '""')}"`
                 ].join(','));
             });
             const blob = new Blob([csvLines.join('\n')], { type: 'text/csv;charset=utf-8;' });

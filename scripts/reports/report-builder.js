@@ -357,8 +357,8 @@ const REPORT_TYPES = {
         kpi2: { label: 'Cancellation Rate',        value: 'Loading...' },
         kpi3: { label: 'Estimated Value Affected', value: 'Loading...' },
         kpi4: { label: 'Same-Day Cancellations',   value: 'Loading...' },
-        tableTitle: 'Detailed Cancelled Bookings',
-        headers: ['Booking ID', 'Scheduled Date & Time', 'Customer Name', 'Services Cancelled', 'Staff', 'Estimated Value', 'Cancellation Reason'],
+        tableTitle: 'Cancelled Booking Records',
+        headers: ['Date', 'Time', 'Customer', 'Service', 'Staff', 'Est. Value', 'Reason', 'Status'],
         rows: []
     },
     'bk-no-shows': {
@@ -371,7 +371,7 @@ const REPORT_TYPES = {
         kpi3: { label: 'No-Show Rate',             value: 'Loading...' },
         kpi4: { label: 'Repeat No-Show Customers', value: 'Loading...' },
         tableTitle: 'No-Show Booking Records',
-        headers: ['Booking ID', 'Appointment Date & Time', 'Customer Name', 'Phone', 'Services Missed', 'Staff Assigned', 'Missed Value'],
+        headers: ['Date', 'Time', 'Customer', 'Phone', 'Services Missed', 'Staff Assigned', 'Missed Value', 'Status'],
         rows: []
     },
     'bk-refunds': {

@@ -368,7 +368,8 @@ BEGIN
                 'service',     COALESCE(sd.services, b.service_name, '-'),
                 'staff',       COALESCE(sd.staff_members, b.staff_name, '-'),
                 'est_value',   COALESCE(b.total_price, b.final_amount, 0),
-                'reason',      COALESCE(sd.cancellation_notes, 'Not specified')
+                'reason',      COALESCE(sd.cancellation_notes, 'Not specified'),
+                'status',      COALESCE(b.status, 'cancelled')
             )
             ORDER BY b.booking_date DESC
         ),
@@ -385,7 +386,8 @@ BEGIN
             service_name,
             staff_name,
             total_price,
-            final_amount
+            final_amount,
+            status
         FROM public.bookings_for_business_transaction
         WHERE (p_branch_id IS NULL OR branch_id = p_branch_id)
           AND (p_company_id IS NULL OR company_id = p_company_id)
@@ -429,7 +431,8 @@ BEGIN
                 'phone',        COALESCE(sd.customer_phone, '-'),
                 'service',      COALESCE(sd.services, b.service_name, '-'),
                 'staff',        COALESCE(sd.staff_members, b.staff_name, '-'),
-                'missed_value', COALESCE(b.total_price, b.final_amount, 0)
+                'missed_value', COALESCE(b.total_price, b.final_amount, 0),
+                'status',       COALESCE(b.status, 'no-show')
             )
             ORDER BY b.booking_date DESC
         ),
@@ -446,7 +449,8 @@ BEGIN
             service_name,
             staff_name,
             total_price,
-            final_amount
+            final_amount,
+            status
         FROM public.bookings_for_business_transaction
         WHERE (p_branch_id IS NULL OR branch_id = p_branch_id)
           AND (p_company_id IS NULL OR company_id = p_company_id)
