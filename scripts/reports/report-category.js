@@ -204,6 +204,54 @@ const CATEGORIES = {
 // Bookings Hub: Landing Page — live from get_bookings_report RPC
 // ============================================================
 
+function parseRowDate(row) {
+    if (!row) return null;
+    const raw = row.date || row.datetime || row.refund_date || '';
+    if (!raw) return null;
+    const cleanDateStr = String(raw).split(',')[0].trim();
+    const parsed = new Date(cleanDateStr);
+    if (!isNaN(parsed.getTime())) return parsed;
+    return null;
+}
+
+function build7DayTrend(rows, unitLabel = 'bookings') {
+    const days = [];
+    const now = new Date();
+    // 7 days ending today
+    for (let i = 6; i >= 0; i--) {
+        const d = new Date(now.getFullYear(), now.getMonth(), now.getDate() - i);
+        const y = d.getFullYear();
+        const m = d.getMonth();
+        const dt = d.getDate();
+        const shortLabel = d.toLocaleDateString('en-GB', { day: 'numeric', month: 'short' });
+        days.push({ y, m, dt, shortLabel, count: 0 });
+    }
+
+    if (Array.isArray(rows)) {
+        rows.forEach(r => {
+            const rd = parseRowDate(r);
+            if (!rd) return;
+            const y = rd.getFullYear();
+            const m = rd.getMonth();
+            const dt = rd.getDate();
+            const match = days.find(d => d.y === y && d.m === m && d.dt === dt);
+            if (match) {
+                match.count += 1;
+            }
+        });
+    }
+
+    const max = Math.max(...days.map(d => d.count), 1);
+
+    return days.map((d, idx) => {
+        const isToday = (idx === 6);
+        const h = d.count > 0 ? Math.min(28, Math.round(6 + (d.count / max) * 22)) : 3;
+        const opacity = d.count > 0 ? (isToday ? '1' : '0.82') : '0.22';
+        const tooltip = `${d.shortLabel}: ${d.count} ${unitLabel}`;
+        return `<span style="height: ${h}px; opacity: ${opacity};" title="${tooltip}"></span>`;
+    }).join('');
+}
+
 async function renderBookingsLandingPage() {
     const hubView     = document.getElementById('bookingsHubView');
     const defaultView = document.getElementById('defaultCategoryView');
@@ -233,11 +281,14 @@ async function renderBookingsLandingPage() {
                     <span class="bk-snap-val" id="bkSnapTotal">—</span>
                     <span class="bk-snap-sub">All booking statuses</span>
                 </div>
-                <div class="bk-mini-bars blue-bars">
-                    <span style="height: 10px;"></span>
-                    <span style="height: 16px;"></span>
-                    <span style="height: 22px;"></span>
-                    <span style="height: 30px;"></span>
+                <div class="bk-mini-bars blue-bars" id="bkBarsTotal">
+                    <span style="height: 3px; opacity: 0.22;"></span>
+                    <span style="height: 3px; opacity: 0.22;"></span>
+                    <span style="height: 3px; opacity: 0.22;"></span>
+                    <span style="height: 3px; opacity: 0.22;"></span>
+                    <span style="height: 3px; opacity: 0.22;"></span>
+                    <span style="height: 3px; opacity: 0.22;"></span>
+                    <span style="height: 3px; opacity: 0.22;"></span>
                 </div>
             </div>
 
@@ -251,11 +302,14 @@ async function renderBookingsLandingPage() {
                     <span class="bk-snap-val" id="bkSnapCompleted">—</span>
                     <span class="bk-snap-sub txt-green" id="bkSnapRevenue">Realised revenue: —</span>
                 </div>
-                <div class="bk-mini-bars green-bars">
-                    <span style="height: 10px;"></span>
-                    <span style="height: 16px;"></span>
-                    <span style="height: 22px;"></span>
-                    <span style="height: 30px;"></span>
+                <div class="bk-mini-bars green-bars" id="bkBarsCompleted">
+                    <span style="height: 3px; opacity: 0.22;"></span>
+                    <span style="height: 3px; opacity: 0.22;"></span>
+                    <span style="height: 3px; opacity: 0.22;"></span>
+                    <span style="height: 3px; opacity: 0.22;"></span>
+                    <span style="height: 3px; opacity: 0.22;"></span>
+                    <span style="height: 3px; opacity: 0.22;"></span>
+                    <span style="height: 3px; opacity: 0.22;"></span>
                 </div>
             </div>
 
@@ -269,11 +323,14 @@ async function renderBookingsLandingPage() {
                     <span class="bk-snap-val" id="bkSnapCancelled">—</span>
                     <span class="bk-snap-sub txt-red" id="bkSnapCancelVal">Estimated value: —</span>
                 </div>
-                <div class="bk-mini-bars red-bars">
-                    <span style="height: 10px;"></span>
-                    <span style="height: 16px;"></span>
-                    <span style="height: 22px;"></span>
-                    <span style="height: 30px;"></span>
+                <div class="bk-mini-bars red-bars" id="bkBarsCancelled">
+                    <span style="height: 3px; opacity: 0.22;"></span>
+                    <span style="height: 3px; opacity: 0.22;"></span>
+                    <span style="height: 3px; opacity: 0.22;"></span>
+                    <span style="height: 3px; opacity: 0.22;"></span>
+                    <span style="height: 3px; opacity: 0.22;"></span>
+                    <span style="height: 3px; opacity: 0.22;"></span>
+                    <span style="height: 3px; opacity: 0.22;"></span>
                 </div>
             </div>
 
@@ -287,11 +344,14 @@ async function renderBookingsLandingPage() {
                     <span class="bk-snap-val" id="bkSnapNoShows">—</span>
                     <span class="bk-snap-sub txt-amber" id="bkSnapNoShowVal">Estimated missed: —</span>
                 </div>
-                <div class="bk-mini-bars amber-bars">
-                    <span style="height: 10px;"></span>
-                    <span style="height: 16px;"></span>
-                    <span style="height: 22px;"></span>
-                    <span style="height: 30px;"></span>
+                <div class="bk-mini-bars amber-bars" id="bkBarsNoShows">
+                    <span style="height: 3px; opacity: 0.22;"></span>
+                    <span style="height: 3px; opacity: 0.22;"></span>
+                    <span style="height: 3px; opacity: 0.22;"></span>
+                    <span style="height: 3px; opacity: 0.22;"></span>
+                    <span style="height: 3px; opacity: 0.22;"></span>
+                    <span style="height: 3px; opacity: 0.22;"></span>
+                    <span style="height: 3px; opacity: 0.22;"></span>
                 </div>
             </div>
 
@@ -305,11 +365,14 @@ async function renderBookingsLandingPage() {
                     <span class="bk-snap-val" id="bkSnapRefunded">—</span>
                     <span class="bk-snap-sub txt-purple" id="bkSnapRefundVal">Total refunded: —</span>
                 </div>
-                <div class="bk-mini-bars purple-bars">
-                    <span style="height: 10px;"></span>
-                    <span style="height: 16px;"></span>
-                    <span style="height: 22px;"></span>
-                    <span style="height: 30px;"></span>
+                <div class="bk-mini-bars purple-bars" id="bkBarsRefunded">
+                    <span style="height: 3px; opacity: 0.22;"></span>
+                    <span style="height: 3px; opacity: 0.22;"></span>
+                    <span style="height: 3px; opacity: 0.22;"></span>
+                    <span style="height: 3px; opacity: 0.22;"></span>
+                    <span style="height: 3px; opacity: 0.22;"></span>
+                    <span style="height: 3px; opacity: 0.22;"></span>
+                    <span style="height: 3px; opacity: 0.22;"></span>
                 </div>
             </div>
         </div>
@@ -594,6 +657,28 @@ async function renderBookingsLandingPage() {
         setEl('bkSnapNoShowVal', 'Estimated missed: ' + cur(sc.estimated_value_missed));
         setEl('bkSnapRefunded',  fmt(refCount));
         setEl('bkSnapRefundVal', 'Total refunded: ' + cur(refVal));
+
+        // Section 1.1: Dynamic 7-Day Trend Mini Charts
+        const totalRows     = (result && result.bk_total     && result.bk_total.rows)     ? result.bk_total.rows     : [];
+        const completedRows = (result && result.bk_completed && result.bk_completed.rows) ? result.bk_completed.rows : [];
+        const cancelledRows = (result && result.bk_cancelled && result.bk_cancelled.rows) ? result.bk_cancelled.rows : [];
+        const noShowRows    = (result && result.bk_no_shows  && result.bk_no_shows.rows)  ? result.bk_no_shows.rows  : [];
+        const refundRows    = (result && result.bk_refunds   && result.bk_refunds.rows)   ? result.bk_refunds.rows   : [];
+
+        const elTotalBars = document.getElementById('bkBarsTotal');
+        if (elTotalBars) elTotalBars.innerHTML = build7DayTrend(totalRows, 'bookings');
+
+        const elCompBars = document.getElementById('bkBarsCompleted');
+        if (elCompBars) elCompBars.innerHTML = build7DayTrend(completedRows, 'completed');
+
+        const elCancBars = document.getElementById('bkBarsCancelled');
+        if (elCancBars) elCancBars.innerHTML = build7DayTrend(cancelledRows, 'cancelled');
+
+        const elNoShowBars = document.getElementById('bkBarsNoShows');
+        if (elNoShowBars) elNoShowBars.innerHTML = build7DayTrend(noShowRows, 'no-shows');
+
+        const elRefBars = document.getElementById('bkBarsRefunded');
+        if (elRefBars) elRefBars.innerHTML = build7DayTrend(refundRows, 'refunds');
 
         // Section 2: Detailed Cards
         setEl('bkCardTotalCount',        fmt(sc.total_bookings));

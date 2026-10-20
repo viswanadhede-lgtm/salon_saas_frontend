@@ -788,31 +788,28 @@
 .bk-mini-bars {
     display: flex;
     align-items: flex-end;
-    gap: 3px;
+    gap: 2.5px;
     height: 30px;
     margin-left: auto;
     flex-shrink: 0;
 }
 
 .bk-mini-bars span {
-    width: 4px;
+    width: 3.5px;
     border-radius: 2px;
+    transition: height 0.3s ease, opacity 0.2s ease, transform 0.2s ease;
+    cursor: default;
 }
 
-.blue-bars span { background: #c7d2fe; }
-.blue-bars span:last-child { background: #6366f1; }
+.bk-mini-bars span:hover {
+    transform: scaleY(1.15);
+}
 
-.green-bars span { background: #a7f3d0; }
-.green-bars span:last-child { background: #10b981; }
-
-.red-bars span { background: #fecaca; }
-.red-bars span:last-child { background: #ef4444; }
-
-.amber-bars span { background: #fde68a; }
-.amber-bars span:last-child { background: #f59e0b; }
-
-.purple-bars span { background: #e9d5ff; }
-.purple-bars span:last-child { background: #a855f7; }
+.blue-bars span { background: #6366f1; }
+.green-bars span { background: #10b981; }
+.red-bars span { background: #ef4444; }
+.amber-bars span { background: #f59e0b; }
+.purple-bars span { background: #a855f7; }
 
 /* Section 2: Detailed Cards Grid */
 .bk-detailed-grid {
