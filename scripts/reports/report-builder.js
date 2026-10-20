@@ -373,8 +373,8 @@ const REPORT_TYPES = {
         kpi2: { label: 'Net Sales',          value: 'Loading...' },
         kpi3: { label: 'Quantity Sold',      value: 'Loading...' },
         kpi4: { label: 'Unique Products',    value: 'Loading...' },
-        tableTitle: 'Top Selling Products',
-        headers: ['Rank', 'Product Name', 'SKU', 'Category', 'Units Sold', 'Gross Sales', 'Net Sales', 'Contribution %'],
+        tableTitle: 'Sales Transactions',
+        headers: ['Date & Time', 'Sale Ref', 'Customer', 'Staff / Stylist', 'Items & Qty', 'Gross Total', 'Discount', 'Final Amount', 'Payment', 'Status'],
         rows: []
     },
     'prod-wise': {

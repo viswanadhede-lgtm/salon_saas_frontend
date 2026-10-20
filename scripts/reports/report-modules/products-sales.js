@@ -461,14 +461,157 @@ function getPreviewData() {
                 labels: ['Hair Care', 'Skin Care', 'Styling & Tools', 'Beard & Men', 'Nail Care'],
                 values: [58200, 34500, 18200, 11400, 6100]
             },
-            top_products: [
-                { rank: 1, name: "L'Oréal Serie Expert Shampoo 300ml", sku: 'SKU-HC-101', category: 'Hair Care', units: 48, gross: 43200, net: 39500, pct: '30.8%' },
-                { rank: 2, name: 'Moroccan Argan Oil Hair Treatment 100ml', sku: 'SKU-HC-104', category: 'Hair Care', units: 28, gross: 33600, net: 31200, pct: '24.3%' },
-                { rank: 3, name: 'Dermalogica Daily Microfoliant 74g', sku: 'SKU-SC-202', category: 'Skin Care', units: 18, gross: 23400, net: 21800, pct: '17.0%' },
-                { rank: 4, name: 'Olaplex No. 3 Hair Perfector 100ml', sku: 'SKU-HC-108', category: 'Hair Care', units: 14, gross: 19600, net: 18200, pct: '14.2%' },
-                { rank: 5, name: 'Beardo Godfather Beard Oil 30ml', sku: 'SKU-BC-401', category: 'Beard & Men', units: 32, gross: 11200, net: 10400, pct: '8.1%' },
-                { rank: 6, name: 'OPI ProSpa Nail & Cuticle Oil', sku: 'SKU-NC-501', category: 'Nail Care', units: 22, gross: 6600, net: 6100, pct: '4.8%' },
-                { rank: 7, name: 'GHD Ceramic Vented Radial Brush', sku: 'SKU-ST-302', category: 'Styling & Tools', units: 6, gross: 5250, net: 4800, pct: '3.7%' }
+            sales_transactions: [
+                {
+                    sale_id: 'POS-2024-1082',
+                    created_at: '2024-10-20, 04:30 PM',
+                    customer_name: 'Priya Sharma',
+                    customer_phone: '98765 43210',
+                    staff_name: 'Aakash Verma',
+                    product_names: ["L'Oréal Serie Expert Shampoo", "Moroccan Argan Oil"],
+                    total_quantity: 2,
+                    total_price: 2100,
+                    discount_amount: 200,
+                    discount_name: 'FESTIVE10',
+                    final_amount: 1900,
+                    payment_method: 'upi',
+                    payment_status: 'paid'
+                },
+                {
+                    sale_id: 'POS-2024-1081',
+                    created_at: '2024-10-20, 03:15 PM',
+                    customer_name: 'Rahul Mehta',
+                    customer_phone: '98123 45678',
+                    staff_name: 'Sneha Rao',
+                    product_names: ['Beardo Godfather Beard Oil 30ml'],
+                    total_quantity: 2,
+                    total_price: 700,
+                    discount_amount: 0,
+                    discount_name: null,
+                    final_amount: 700,
+                    payment_method: 'card',
+                    payment_status: 'paid'
+                },
+                {
+                    sale_id: 'POS-2024-1080',
+                    created_at: '2024-10-20, 01:45 PM',
+                    customer_name: 'Ananya Roy',
+                    customer_phone: '97654 32109',
+                    staff_name: 'Kavita Nair',
+                    product_names: ['Dermalogica Daily Microfoliant 74g'],
+                    total_quantity: 1,
+                    total_price: 1300,
+                    discount_amount: 130,
+                    discount_name: 'SILVER-10',
+                    final_amount: 1170,
+                    payment_method: 'upi',
+                    payment_status: 'paid'
+                },
+                {
+                    sale_id: 'POS-2024-1079',
+                    created_at: '2024-10-20, 12:20 PM',
+                    customer_name: 'Vikram Joshi',
+                    customer_phone: '96543 21098',
+                    staff_name: 'Aakash Verma',
+                    product_names: ['Schwarzkopf Osis Dust It', 'Matte Hair Wax'],
+                    total_quantity: 2,
+                    total_price: 1100,
+                    discount_amount: 100,
+                    discount_name: 'COMBO-SAVER',
+                    final_amount: 1000,
+                    payment_method: 'cash',
+                    payment_status: 'paid'
+                },
+                {
+                    sale_id: 'POS-2024-1078',
+                    created_at: '2024-10-19, 06:10 PM',
+                    customer_name: 'Deepika Sen',
+                    customer_phone: '95432 10987',
+                    staff_name: 'Meera Iyer',
+                    product_names: ['Olaplex No. 3 Hair Perfector 100ml'],
+                    total_quantity: 1,
+                    total_price: 1400,
+                    discount_amount: 140,
+                    discount_name: 'GOLD-10',
+                    final_amount: 1260,
+                    payment_method: 'upi',
+                    payment_status: 'paid'
+                },
+                {
+                    sale_id: 'POS-2024-1077',
+                    created_at: '2024-10-19, 04:50 PM',
+                    customer_name: 'Walk-in Client',
+                    customer_phone: '—',
+                    staff_name: 'Sneha Rao',
+                    product_names: ['OPI ProSpa Nail & Cuticle Oil'],
+                    total_quantity: 1,
+                    total_price: 300,
+                    discount_amount: 0,
+                    discount_name: null,
+                    final_amount: 300,
+                    payment_method: 'cash',
+                    payment_status: 'paid'
+                },
+                {
+                    sale_id: 'POS-2024-1076',
+                    created_at: '2024-10-19, 02:40 PM',
+                    customer_name: 'Rohan Nambiar',
+                    customer_phone: '94321 09876',
+                    staff_name: 'Aakash Verma',
+                    product_names: ['Kerastase Elixir Ultime Serum'],
+                    total_quantity: 1,
+                    total_price: 1050,
+                    discount_amount: 100,
+                    discount_name: 'STYLIST-PERK',
+                    final_amount: 950,
+                    payment_method: 'card',
+                    payment_status: 'paid'
+                },
+                {
+                    sale_id: 'POS-2024-1075',
+                    created_at: '2024-10-18, 05:25 PM',
+                    customer_name: 'Sunita Menon',
+                    customer_phone: '93210 98765',
+                    staff_name: 'Kavita Nair',
+                    product_names: ["L'Oréal Serie Expert Shampoo 300ml"],
+                    total_quantity: 2,
+                    total_price: 1800,
+                    discount_amount: 180,
+                    discount_name: 'RETAIL10',
+                    final_amount: 1620,
+                    payment_method: 'upi',
+                    payment_status: 'paid'
+                },
+                {
+                    sale_id: 'POS-2024-1074',
+                    created_at: '2024-10-18, 01:10 PM',
+                    customer_name: 'Arjun Das',
+                    customer_phone: '92109 87654',
+                    staff_name: 'Sneha Rao',
+                    product_names: ['Forest Essentials Facial Tonic Mist'],
+                    total_quantity: 1,
+                    total_price: 400,
+                    discount_amount: 0,
+                    discount_name: null,
+                    final_amount: 400,
+                    payment_method: 'upi',
+                    payment_status: 'paid'
+                },
+                {
+                    sale_id: 'POS-2024-1073',
+                    created_at: '2024-10-17, 07:05 PM',
+                    customer_name: 'Megha Rao',
+                    customer_phone: '91098 76543',
+                    staff_name: 'Meera Iyer',
+                    product_names: ['BBlunt Hot Shot Heat Protection Mist'],
+                    total_quantity: 1,
+                    total_price: 350,
+                    discount_amount: 35,
+                    discount_name: 'AUTUMN50',
+                    final_amount: 315,
+                    payment_method: 'card',
+                    payment_status: 'paid'
+                }
             ]
         },
 
@@ -666,7 +809,7 @@ async function renderProdOverview(data, supabase) {
         const k = report.kpis || {};
         const trend = report.trend || { labels: [], values: [] };
         const cats = report.categories || { labels: [], values: [] };
-        const rows = report.top_products || [];
+        const rows = report.sales_transactions || report.rows || [];
 
         // 1. KPI Cards (4 cards with rich financial & inventory breakdown)
         data.kpi1.value = fmtINR(k.total_sales || 142850);
@@ -713,21 +856,43 @@ async function renderProdOverview(data, supabase) {
             colors: ['#0ea5e9', '#6366f1', '#10b981', '#f59e0b', '#ec4899']
         });
 
-        // 4. Data Table (Top Selling Products)
-        data.headers = ['Rank', 'Product Name', 'SKU', 'Category', 'Units Sold', 'Gross Sales', 'Net Sales', 'Revenue Share'];
+        // 4. Data Table (Sales Transactions Ledger)
+        data.headers = ['Date & Time', 'Sale Ref', 'Customer', 'Staff / Stylist', 'Items & Qty', 'Gross Total', 'Discount', 'Final Amount', 'Payment', 'Status'];
         setupReportTable(data.headers, rows, {
-            unitName: 'products',
-            reportFileName: 'Product_Sales_Overview',
-            rowFormatter: (r) => [
-                `<span style="display:inline-flex;align-items:center;justify-content:center;width:24px;height:24px;border-radius:50%;background:#f1f5f9;font-weight:700;font-size:0.75rem;color:#0f172a;">${r.rank}</span>`,
-                `<strong>${r.name}</strong>`,
-                `<code style="background:#f8fafc;padding:2px 6px;border-radius:4px;border:1px solid #e2e8f0;font-size:0.75rem;">${r.sku}</code>`,
-                `<span style="color:#64748b;font-weight:500;">${r.category}</span>`,
-                `<strong>${Number(r.units).toLocaleString('en-IN')}</strong>`,
-                fmtINR(r.gross),
-                `<strong style="color:#059669;">${fmtINR(r.net)}</strong>`,
-                `<span style="display:inline-block;padding:2px 8px;border-radius:12px;background:#e0f2fe;color:#0369a1;font-weight:600;font-size:0.75rem;">${r.pct}</span>`
-            ]
+            unitName: 'transactions',
+            reportFileName: 'Product_Sales_Overview_Transactions',
+            rowFormatter: (r) => {
+                const prodList = Array.isArray(r.product_names) ? r.product_names : [r.product_names || '—'];
+                const prodDisplay = prodList.length > 1
+                    ? `<span>${prodList[0]}</span> <span style="font-size:0.75rem;color:#6366f1;font-weight:600;">+${prodList.length - 1} more</span>`
+                    : `<span>${prodList[0] || '—'}</span>`;
+
+                const discDisplay = (r.discount_amount && Number(r.discount_amount) > 0)
+                    ? `<span style="color:#b45309;font-weight:600;">-${fmtINR(r.discount_amount)}</span>${r.discount_name ? `<br><small style="color:#92400e;font-size:0.7rem;">(${r.discount_name})</small>` : ''}`
+                    : `<span style="color:#94a3b8;">—</span>`;
+
+                const payMethod = (r.payment_method || 'other').toUpperCase();
+                const payBadgeStyle = payMethod === 'UPI' 
+                    ? 'background:#ecfdf5;color:#047857;border:1px solid #a7f3d0;'
+                    : payMethod === 'CARD'
+                    ? 'background:#eff6ff;color:#1d4ed8;border:1px solid #bfdbfe;'
+                    : payMethod === 'CASH'
+                    ? 'background:#fefce8;color:#a16207;border:1px solid #fef08a;'
+                    : 'background:#f1f5f9;color:#475569;border:1px solid #e2e8f0;';
+
+                return [
+                    `<span style="white-space:nowrap;font-size:0.8rem;color:#475569;">${r.created_at || '—'}</span>`,
+                    `<strong style="color:#4f46e5;font-size:0.82rem;letter-spacing:0.3px;">#${r.sale_id || '—'}</strong>`,
+                    `<div><strong>${r.customer_name || 'Walk-in'}</strong>${r.customer_phone && r.customer_phone !== '—' ? `<br><small style="color:#64748b;font-size:0.75rem;">${r.customer_phone}</small>` : ''}</div>`,
+                    `<span style="color:#334155;font-weight:500;">${r.staff_name || '—'}</span>`,
+                    `<div>${prodDisplay}<br><span style="display:inline-block;margin-top:2px;font-size:0.72rem;background:#f1f5f9;color:#475569;padding:1px 6px;border-radius:4px;font-weight:600;">${r.total_quantity || 1} ${r.total_quantity === 1 ? 'item' : 'items'}</span></div>`,
+                    `<span style="font-weight:500;color:#334155;">${fmtINR(r.total_price || 0)}</span>`,
+                    discDisplay,
+                    `<strong style="color:#059669;font-size:0.9rem;">${fmtINR(r.final_amount || 0)}</strong>`,
+                    `<span style="display:inline-block;padding:2px 8px;border-radius:6px;font-size:0.72rem;font-weight:700;letter-spacing:0.5px;${payBadgeStyle}">${payMethod}</span>`,
+                    statusBadge(r.payment_status || 'paid')
+                ];
+            }
         });
     };
 
