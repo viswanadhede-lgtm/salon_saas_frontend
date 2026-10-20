@@ -332,7 +332,7 @@ const REPORT_TYPES = {
         kpi3: { label: 'Cancelled',      value: 'Loading...' },
         kpi4: { label: 'No-Shows',       value: 'Loading...' },
         tableTitle: 'All Bookings',
-        headers: ['Date', 'Time', 'Customer', 'Service', 'Staff', 'Amount', 'Status'],
+        headers: ['Date', 'Time', 'Customer', 'Service', 'Staff', 'Amount', 'Payment', 'Status'],
         rows: []
     },
     'bk-completed': {

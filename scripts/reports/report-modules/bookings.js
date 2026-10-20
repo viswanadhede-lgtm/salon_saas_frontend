@@ -57,7 +57,7 @@ function fmtDateTime(dateVal, timeVal) {
 }
 
 function setLoading(data, colSpan) {
-    colSpan = colSpan || 7;
+    colSpan = colSpan || 8;
     data.kpi1.value = 'Loading...'; data.kpi2.value = 'Loading...';
     data.kpi3.value = 'Loading...'; data.kpi4.value = 'Loading...';
     updateKPIs(data.kpi1, data.kpi2, data.kpi3, data.kpi4);
@@ -602,6 +602,47 @@ function renderBkTotalStatusDonut(k, rows, revs = {}) {
     }
 }
 
+// ─── Payment badge HTML helper (for the report table) ────────────────────────
+function paymentBadge(rawStatus) {
+    const s = (rawStatus || '').toLowerCase().trim();
+    const map = {
+        'paid':     { color: '#065f46', bg: '#d1fae5', label: 'Paid' },
+        'unpaid':   { color: '#991b1b', bg: '#fee2e2', label: 'Unpaid' },
+        'pending':  { color: '#92400e', bg: '#fef3c7', label: 'Pending' },
+        'partial':  { color: '#86198f', bg: '#f5d0fe', label: 'Partial' },
+        'refunded': { color: '#b45309', bg: '#fef3c7', label: 'Refunded' },
+    };
+    const cfg = map[s] || { color: '#475569', bg: '#f1f5f9', label: rawStatus || '—' };
+    return `<span style="display:inline-block;padding:3px 10px;border-radius:20px;font-size:0.75rem;font-weight:600;color:${cfg.color};background:${cfg.bg};">${cfg.label}</span>`;
+}
+
+// ─── Amount colour based on booking status ────────────────────────────────────
+function amountColor(status) {
+    const s = (status || '').toLowerCase().replace(/[\s_]/g, '-');
+    if (s === 'completed')                         return '#059669'; // green
+    if (s === 'cancelled')                         return '#dc2626'; // red
+    if (s === 'no-show' || s === 'noshow')         return '#d97706'; // amber
+    return '#0f172a';                                                 // default dark
+}
+
+// ─── Expandable service chips (first + "+N" toggle) ───────────────────────────
+function buildServiceCell(serviceStr) {
+    if (!serviceStr || serviceStr === '-') return '<span style="color:#94a3b8;">—</span>';
+    const chipStyle = 'display:inline-block;padding:2px 8px;border-radius:20px;font-size:0.72rem;font-weight:500;background:#f1f5f9;color:#334155;margin:1px 2px 1px 0;white-space:nowrap;';
+    const names = serviceStr.split(',').map(s => s.trim()).filter(Boolean);
+    if (names.length === 0) return '<span style="color:#94a3b8;">—</span>';
+    const firstChip = `<span style="${chipStyle}">${names[0]}</span>`;
+    if (names.length === 1) return firstChip;
+    const extraCount = names.length - 1;
+    const extraChips = names.slice(1).map(s => `<span style="${chipStyle}">${s}</span>`).join('');
+    return `<div style="display:flex;flex-wrap:wrap;align-items:flex-start;gap:2px;width:100%;">
+        ${firstChip}
+        <span onclick="(function(btn){var el=btn.nextElementSibling;var hidden=el.style.display==='none'||el.style.display==='';el.style.display=hidden?'flex':'none';btn.textContent=hidden?'▲ less':'+${extraCount}';})(this)"
+            style="display:inline-block;padding:2px 7px;border-radius:20px;font-size:0.7rem;font-weight:600;background:#e0e7ff;color:#4f46e5;cursor:pointer;white-space:nowrap;user-select:none;">+${extraCount}</span>
+        <div style="display:none;flex-wrap:wrap;gap:2px;width:100%;margin-top:3px;">${extraChips}</div>
+    </div>`;
+}
+
 // Table Setup with Search, 25-item Pagination, Export CSV, and Print
 function setupBkTotalTable(rows, filterStart, filterEnd) {
     let currentPage = 1;
@@ -623,19 +664,37 @@ function setupBkTotalTable(rows, filterStart, filterEnd) {
         const tbody = document.getElementById('tableBody');
         if (tbody) {
             if (pageRows.length === 0) {
-                tbody.innerHTML = '<tr><td colspan="7" style="text-align:center;padding:2.5rem;color:#94a3b8;">No bookings match your filter criteria.</td></tr>';
+                tbody.innerHTML = '<tr><td colspan="8" style="text-align:center;padding:2.5rem;color:#94a3b8;">No bookings match your filter criteria.</td></tr>';
             } else {
-                tbody.innerHTML = pageRows.map(r => `
-                    <tr>
-                        <td><strong>${r.date || '—'}</strong></td>
-                        <td style="color:#64748b;">${r.time || '—'}</td>
-                        <td><strong>${r.customer || '—'}</strong></td>
-                        <td>${r.service || '—'}</td>
-                        <td style="color:#64748b;">${r.staff || '—'}</td>
-                        <td><strong style="color:#0f172a;">${formatCurrency(r.amount)}</strong></td>
-                        <td>${statusPill(r.status)}</td>
-                    </tr>
-                `).join('');
+                tbody.innerHTML = pageRows.map(r => {
+                    // ── 1. Customer: clickable indigo link opening global profile modal
+                    const custId   = (r.customer_id || '').replace(/'/g, "\\'");
+                    const custName = (r.customer || '—').replace(/'/g, "\\'");
+                    const customerCell = r.customer
+                        ? `<span class="customer-link" onclick="if(window.viewCustomerProfile) window.viewCustomerProfile('${custId}', '${custName}')">${r.customer}</span>`
+                        : '<span style="color:#94a3b8;">—</span>';
+
+                    // ── 2. Service: first chip + expandable +N
+                    const serviceCell = buildServiceCell(r.service);
+
+                    // ── 3. Amount: color by booking status
+                    const amtStyle = `color:${amountColor(r.status)};font-weight:700;`;
+
+                    // ── 4. Payment badge
+                    const payCell = paymentBadge(r.payment_status);
+
+                    return `
+                    <tr style="border-bottom:1px solid #f8fafc;transition:background 0.15s;" onmouseover="this.style.background='#fafafa'" onmouseout="this.style.background=''">
+                        <td style="padding:14px 8px 14px 16px;"><strong style="font-size:0.85rem;color:#0f172a;">${r.date || '—'}</strong></td>
+                        <td style="padding:14px 8px;font-size:0.85rem;color:#64748b;">${r.time || '—'}</td>
+                        <td style="padding:14px 8px;">${customerCell}</td>
+                        <td style="padding:14px 8px;max-width:200px;">${serviceCell}</td>
+                        <td style="padding:14px 8px;font-size:0.85rem;color:#64748b;">${r.staff || '—'}</td>
+                        <td style="padding:14px 8px;font-size:0.875rem;${amtStyle}">${formatCurrency(r.amount)}</td>
+                        <td style="padding:14px 8px;">${payCell}</td>
+                        <td style="padding:14px 8px;">${statusPill(r.status)}</td>
+                    </tr>`;
+                }).join('');
             }
         }
 
@@ -685,7 +744,7 @@ function setupBkTotalTable(rows, filterStart, filterEnd) {
         }
     }
 
-    // Wire Search Filter
+    // Wire Search Filter (also searches payment_status)
     const searchInput = document.getElementById('tableSearchInput');
     if (searchInput) {
         searchInput.value = '';
@@ -700,7 +759,8 @@ function setupBkTotalTable(rows, filterStart, filterEnd) {
                     const stf  = (r.staff || '').toLowerCase();
                     const st   = (r.status || '').toLowerCase();
                     const dt   = (r.date || '').toLowerCase();
-                    return cust.includes(query) || srv.includes(query) || stf.includes(query) || st.includes(query) || dt.includes(query);
+                    const pay  = (r.payment_status || '').toLowerCase();
+                    return cust.includes(query) || srv.includes(query) || stf.includes(query) || st.includes(query) || dt.includes(query) || pay.includes(query);
                 });
             }
             renderPage(1);
@@ -715,7 +775,7 @@ function setupBkTotalTable(rows, filterStart, filterEnd) {
                 alert('No bookings data to export.');
                 return;
             }
-            const csvHeaders = ['Date', 'Time', 'Customer', 'Service', 'Staff', 'Amount', 'Status'];
+            const csvHeaders = ['Date', 'Time', 'Customer', 'Service', 'Staff', 'Amount', 'Payment', 'Status'];
             const csvLines = [csvHeaders.join(',')];
             currentFilteredRows.forEach(r => {
                 const line = [
@@ -725,6 +785,7 @@ function setupBkTotalTable(rows, filterStart, filterEnd) {
                     `"${(r.service || '').replace(/"/g, '""')}"`,
                     `"${(r.staff || '').replace(/"/g, '""')}"`,
                     `"${r.amount || 0}"`,
+                    `"${r.payment_status || ''}"`,
                     `"${r.status || ''}"`
                 ];
                 csvLines.push(line.join(','));

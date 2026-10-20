@@ -644,6 +644,19 @@
             margin: 0;
         }
 
+        .customer-link {
+            font-weight: 600;
+            color: #4f46e5;
+            cursor: pointer;
+            text-decoration: none;
+            transition: color 0.15s ease;
+        }
+
+        .customer-link:hover {
+            color: #4338ca;
+            text-decoration: underline;
+        }
+
         .table-badge {
             background: #e0e7ff;
             color: #4338ca;
@@ -1204,6 +1217,7 @@
                                 <th>Service</th>
                                 <th>Staff</th>
                                 <th>Amount</th>
+                                <th>Payment</th>
                                 <th>Status</th>
                             </tr>
                         </thead>
@@ -1245,6 +1259,7 @@
     </script>
     <script type="module" src="scripts/reports/report-builder.js"></script>
 <script src="logout.js"></script><script src="change-password.js"></script>    <script type="module" src="scripts/global-auth-guard.js"></script>
+    <script type="module" src="scripts/global-customer-profile-modal.js"></script>
     <script type="module" src="scripts/sub-features/sub-feature-gate.js"></script>
 </body>
 

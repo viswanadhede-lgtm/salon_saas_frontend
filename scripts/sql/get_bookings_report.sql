@@ -158,18 +158,20 @@ BEGIN
     -- =========================================================================
     SELECT COALESCE(jsonb_agg(
         jsonb_build_object(
-            'date',     TO_CHAR(booking_date, 'DD Mon YYYY'),
-            'time',     COALESCE(TO_CHAR(start_time, 'HH12:MI AM'), '-'),
-            'customer', COALESCE(customer_name, 'Unknown'),
-            'service',  COALESCE(service_name, '-'),
-            'staff',    COALESCE(staff_name, '-'),
-            'amount',   COALESCE(price, 0),
-            'status',   COALESCE(status, '-')
+            'date',           TO_CHAR(booking_date, 'DD Mon YYYY'),
+            'time',           COALESCE(TO_CHAR(start_time, 'HH12:MI AM'), '-'),
+            'customer',       COALESCE(customer_name, 'Unknown'),
+            'customer_id',    COALESCE(customer_id::text, ''),
+            'service',        COALESCE(service_name, '-'),
+            'staff',          COALESCE(staff_name, '-'),
+            'amount',         COALESCE(price, 0),
+            'status',         COALESCE(status, '-'),
+            'payment_status', COALESCE(payment_status, '')
         ) ORDER BY booking_date DESC, start_time DESC
     ), '[]'::jsonb)
     INTO v_total_rows
     FROM (
-        SELECT booking_date, start_time, customer_name, service_name, staff_name, price, status
+        SELECT booking_date, start_time, customer_name, customer_id, service_name, staff_name, price, status, payment_status
         FROM public.bookings
         WHERE (p_branch_id  IS NULL OR branch_id  = p_branch_id)
           AND (p_company_id IS NULL OR company_id = p_company_id)
