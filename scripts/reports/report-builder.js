@@ -399,10 +399,10 @@ const REPORT_TYPES = {
         backCat: 'products',
         leftChartTitle: 'Category Revenue Comparison',
         rightChartTitle: 'Category Revenue Share',
-        kpi1: { label: 'Total Categories',     value: 'Loading...' },
-        kpi2: { label: 'Top Category',         value: 'Loading...' },
+        kpi1: { label: 'Active Categories',     value: 'Loading...' },
+        kpi2: { label: 'Top Revenue Category', value: 'Loading...' },
         kpi3: { label: 'Total Items Sold',     value: 'Loading...' },
-        kpi4: { label: 'Avg Rev / Category',   value: 'Loading...' },
+        kpi4: { label: 'Avg Category Revenue', value: 'Loading...' },
         tableTitle: 'Category Breakdown',
         headers: ['Category Name', 'Active SKUs', 'Units Sold', 'Gross Revenue', 'Discounts', 'Net Revenue', 'Revenue %', 'Top Product'],
         rows: []
