@@ -273,6 +273,41 @@
     margin: 0;
 }
 
+/* Plain Category Header (No white card container for Bookings) */
+.category-header-banner.banner-plain {
+    background: transparent;
+    border: none;
+    border-radius: 0;
+    padding: 0.25rem 0 0.5rem 0;
+    box-shadow: none;
+    margin-bottom: 1.5rem;
+}
+
+.category-header-banner.banner-plain .category-banner-icon {
+    width: 52px;
+    height: 52px;
+    border-radius: 14px;
+}
+
+.category-header-banner.banner-plain .category-banner-icon i {
+    width: 24px;
+    height: 24px;
+}
+
+.category-header-banner.banner-plain .category-banner-text h2 {
+    font-size: 1.5rem;
+    font-weight: 700;
+    color: #0f172a;
+    letter-spacing: -0.02em;
+    margin: 0 0 4px;
+}
+
+.category-header-banner.banner-plain .category-banner-text p {
+    font-size: 0.875rem;
+    color: #64748b;
+    margin: 0;
+}
+
 /* ---- Legacy Report Card (keep for compatibility) ---- */
 .reports-grid {
     display: grid;

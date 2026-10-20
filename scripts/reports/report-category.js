@@ -214,9 +214,18 @@ document.addEventListener('DOMContentLoaded', () => {
     document.title = `${config.title} Reports - BharathBots`;
 
     // Update banner
+    const banner      = document.getElementById('categoryBanner');
     const bannerIcon  = document.getElementById('bannerIcon');
     const bannerTitle = document.getElementById('bannerTitle');
     const bannerSub   = document.getElementById('bannerSubtitle');
+
+    if (banner) {
+        if (cat === 'bookings') {
+            banner.classList.add('banner-plain');
+        } else {
+            banner.classList.remove('banner-plain');
+        }
+    }
 
     if (bannerIcon)  bannerIcon.className  = `category-banner-icon ${config.colorClass}`;
     if (bannerTitle) bannerTitle.textContent = `${config.title} Reports`;
