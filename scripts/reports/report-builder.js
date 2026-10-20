@@ -442,6 +442,113 @@ const REPORT_TYPES = {
         tableTitle: 'Branch Comparison',
         headers: ['Branch', 'Active Staff', 'Bookings', 'Completed', 'Cancelled', 'No-Shows', 'Revenue', 'Expenses', 'Net Revenue', 'Completion Rate', 'Status'],
         rows: []
+    },
+
+    // ── PRODUCT SALES SUB-REPORTS ──────────────────────────────────────────
+    'prod-overview': {
+        title: 'Product Sales Overview',
+        subtitle: 'Executive summary of retail performance for the selected date range and branch',
+        icon: 'bar-chart-2',
+        backCat: 'products',
+        leftChartTitle: 'Sales Revenue Trend',
+        rightChartTitle: 'Sales by Category',
+        kpi1: { label: 'Total Sales',        value: 'Loading...' },
+        kpi2: { label: 'Net Sales',          value: 'Loading...' },
+        kpi3: { label: 'Quantity Sold',      value: 'Loading...' },
+        kpi4: { label: 'Unique Products',    value: 'Loading...' },
+        tableTitle: 'Top Selling Products',
+        headers: ['Rank', 'Product Name', 'SKU', 'Category', 'Units Sold', 'Gross Sales', 'Net Sales', 'Contribution %'],
+        rows: []
+    },
+    'prod-wise': {
+        title: 'Product-wise Sales Report',
+        subtitle: 'Detailed performance metrics for each retail product SKU',
+        icon: 'box',
+        backCat: 'products',
+        leftChartTitle: 'Product Sales Volume Trend',
+        rightChartTitle: 'Top 5 Products Volume',
+        kpi1: { label: 'Active SKUs Sold',   value: 'Loading...' },
+        kpi2: { label: 'Total Units Sold',   value: 'Loading...' },
+        kpi3: { label: 'Gross Sales',        value: 'Loading...' },
+        kpi4: { label: 'Total Discounts',    value: 'Loading...' },
+        tableTitle: 'Product Performance Ledger',
+        headers: ['Product Name', 'SKU / ID', 'Category', 'Qty Sold', 'Qty Returned', 'Gross Sales', 'Discounts', 'Net Sales', 'Transactions'],
+        rows: []
+    },
+    'prod-category': {
+        title: 'Sales by Category',
+        subtitle: 'Compare product categories and identify top revenue drivers',
+        icon: 'grid',
+        backCat: 'products',
+        leftChartTitle: 'Category Revenue Comparison',
+        rightChartTitle: 'Category Revenue Share',
+        kpi1: { label: 'Total Categories',     value: 'Loading...' },
+        kpi2: { label: 'Top Category',         value: 'Loading...' },
+        kpi3: { label: 'Total Items Sold',     value: 'Loading...' },
+        kpi4: { label: 'Avg Rev / Category',   value: 'Loading...' },
+        tableTitle: 'Category Breakdown',
+        headers: ['Category Name', 'Active SKUs', 'Units Sold', 'Gross Revenue', 'Discounts', 'Net Revenue', 'Revenue %', 'Top Product'],
+        rows: []
+    },
+    'prod-transactions': {
+        title: 'Sales Transactions Report',
+        subtitle: 'Searchable ledger of individual retail POS sales and line items',
+        icon: 'file-text',
+        backCat: 'products',
+        leftChartTitle: 'Daily POS Transaction Volume',
+        rightChartTitle: 'Payment Method Breakdown',
+        kpi1: { label: 'Total Transactions',   value: 'Loading...' },
+        kpi2: { label: 'Avg Order Value (AOV)',value: 'Loading...' },
+        kpi3: { label: 'Total Items Sold',     value: 'Loading...' },
+        kpi4: { label: 'Total Collected',      value: 'Loading...' },
+        tableTitle: 'POS Sales Ledger',
+        headers: ['Invoice Ref', 'Date & Time', 'Customer', 'Staff / Stylist', 'Items & Qty', 'Gross Amount', 'Discount', 'Net Amount', 'Payment', 'Status'],
+        rows: []
+    },
+    'prod-discounts': {
+        title: 'Product Discounts Report',
+        subtitle: 'Understand how discounts, coupons, and membership perks impact sales',
+        icon: 'tag',
+        backCat: 'products',
+        leftChartTitle: 'Discounts vs Net Sales Trend',
+        rightChartTitle: 'Discounts by Type',
+        kpi1: { label: 'Total Discounts',     value: 'Loading...' },
+        kpi2: { label: 'Discounted Sales',    value: 'Loading...' },
+        kpi3: { label: 'Avg Discount / Sale', value: 'Loading...' },
+        kpi4: { label: 'Discount Rate %',     value: 'Loading...' },
+        tableTitle: 'Discount & Coupon Usage Log',
+        headers: ['Invoice Ref', 'Date', 'Customer', 'Discount Type', 'Code / Campaign', 'Gross Amount', 'Discount (₹)', 'Final Amount', 'Effective %'],
+        rows: []
+    },
+    'prod-returns': {
+        title: 'Product Returns & Refunds Report',
+        subtitle: 'Track returned retail products, refunds, and their impact on net revenue',
+        icon: 'rotate-ccw',
+        backCat: 'products',
+        leftChartTitle: 'Returns & Refunds Trend',
+        rightChartTitle: 'Return Reasons Breakdown',
+        kpi1: { label: 'Return Requests',    value: 'Loading...' },
+        kpi2: { label: 'Units Returned',     value: 'Loading...' },
+        kpi3: { label: 'Total Refunded',     value: 'Loading...' },
+        kpi4: { label: 'Return Rate %',      value: 'Loading...' },
+        tableTitle: 'Product Returns Ledger',
+        headers: ['Return Ref', 'Original Invoice', 'Return Date', 'Product', 'Qty', 'Returned Value', 'Refunded Amount', 'Payment Method', 'Reason', 'Status'],
+        rows: []
+    },
+    'prod-payments': {
+        title: 'Sales Payments Report',
+        subtitle: 'Reconcile sales against payments recorded across cash, UPI, card, and refunds',
+        icon: 'credit-card',
+        backCat: 'products',
+        leftChartTitle: 'Daily Payment Collections Trend',
+        rightChartTitle: 'Payment Tender Split',
+        kpi1: { label: 'Total Collected',    value: 'Loading...' },
+        kpi2: { label: 'Pending Dues',       value: 'Loading...' },
+        kpi3: { label: 'Refunded Amount',    value: 'Loading...' },
+        kpi4: { label: 'Net Reconciled',     value: 'Loading...' },
+        tableTitle: 'Sales Payment Reconciliation',
+        headers: ['Payment Ref', 'Invoice Ref', 'Date & Time', 'Customer', 'Sale Total', 'Collected', 'Payment Mode', 'Status'],
+        rows: []
     }
 };
 
@@ -463,6 +570,15 @@ const TYPE_MODULE_MAP = {
     'sales-top-services':      './report-modules/sales.js',
     'sales-top-products':      './report-modules/sales.js',
     'sales-membership-revenue':'./report-modules/sales.js',
+
+    // Product Sales
+    'prod-overview':     './report-modules/products-sales.js',
+    'prod-wise':         './report-modules/products-sales.js',
+    'prod-category':     './report-modules/products-sales.js',
+    'prod-transactions': './report-modules/products-sales.js',
+    'prod-discounts':    './report-modules/products-sales.js',
+    'prod-returns':      './report-modules/products-sales.js',
+    'prod-payments':     './report-modules/products-sales.js',
 
     // Bookings
     'bookings':     './report-modules/bookings.js',
@@ -724,12 +840,20 @@ document.addEventListener('DOMContentLoaded', async () => {
     // 3. Update header elements
     const titleEl           = document.getElementById('reportTitle');
     const subtitleEl        = document.getElementById('reportSubtitle');
+    const leftChartTitleEl  = document.getElementById('leftChartTitle');
     const rightChartTitleEl = document.getElementById('rightChartTitle');
 
     if (titleEl)           titleEl.textContent           = data.title;
     if (subtitleEl)        subtitleEl.textContent        = data.subtitle;
+    if (leftChartTitleEl && data.leftChartTitle) {
+        leftChartTitleEl.textContent = data.leftChartTitle;
+    }
     if (rightChartTitleEl) {
-        rightChartTitleEl.textContent = (type === 'bk-total') ? 'Booking Status Distribution' : 'Distribution';
+        if (data.rightChartTitle) {
+            rightChartTitleEl.textContent = data.rightChartTitle;
+        } else {
+            rightChartTitleEl.textContent = (type === 'bk-total') ? 'Booking Status Distribution' : 'Distribution';
+        }
     }
 
     // 4. Wire Back breadcrumb
@@ -741,7 +865,8 @@ document.addEventListener('DOMContentLoaded', async () => {
                 sales:      'Sales & Services',
                 bookings:   'Bookings',
                 customers:  'Customers',
-                operations: 'Operations'
+                operations: 'Operations',
+                products:   'Product Sales'
             };
             backLinkEl.textContent = '\u2190 Back to ' + (catLabels[data.backCat] || data.backCat) + ' Reports';
             backLinkEl.href        = 'report-category.html?cat=' + data.backCat;

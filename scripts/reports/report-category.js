@@ -197,8 +197,67 @@ const CATEGORIES = {
                 colorClass: 'bg-cyan'
             }
         ]
+    },
+    products: {
+        title: 'Product Sales',
+        subtitle: 'Retail performance, product metrics, line items, discounts & payment reconciliation',
+        icon: 'package',
+        colorClass: 'bg-sky',
+        subReports: [
+            {
+                type: 'prod-overview',
+                label: 'Product Sales Overview',
+                desc: 'Executive summary of sales, top products, trends & category split',
+                icon: 'bar-chart-2',
+                colorClass: 'bg-emerald'
+            },
+            {
+                type: 'prod-wise',
+                label: 'Product-wise Sales Report',
+                desc: 'Detailed SKU-level performance, quantities sold, returned & net sales',
+                icon: 'box',
+                colorClass: 'bg-blue'
+            },
+            {
+                type: 'prod-category',
+                label: 'Sales by Category',
+                desc: 'Compare category contributions, volume and revenue performance',
+                icon: 'grid',
+                colorClass: 'bg-purple'
+            },
+            {
+                type: 'prod-transactions',
+                label: 'Sales Transactions Report',
+                desc: 'Searchable record of individual POS retail sales and line items',
+                icon: 'file-text',
+                colorClass: 'bg-indigo'
+            },
+            {
+                type: 'prod-discounts',
+                label: 'Discounts Report',
+                desc: 'Analyze coupon codes, membership perks, and revenue impact',
+                icon: 'tag',
+                colorClass: 'bg-rose'
+            },
+            {
+                type: 'prod-returns',
+                label: 'Product Returns & Refunds Report',
+                desc: 'Track return reasons, refunded amounts and inventory adjustments',
+                icon: 'rotate-ccw',
+                colorClass: 'bg-amber'
+            },
+            {
+                type: 'prod-payments',
+                label: 'Sales Payments Report',
+                desc: 'Reconcile sales against cash, UPI, card and pending collections',
+                icon: 'credit-card',
+                colorClass: 'bg-cyan'
+            }
+        ]
     }
 };
+
+CATEGORIES['product-sales'] = CATEGORIES.products;
 
 // ============================================================
 // Render
