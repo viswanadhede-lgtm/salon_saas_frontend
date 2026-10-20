@@ -61,56 +61,6 @@ const CATEGORIES = {
             }
         ]
     },
-    sales: {
-        title: 'Sales & Services',
-        subtitle: 'Performance metrics across all sales channels',
-        icon: 'shopping-bag',
-        colorClass: 'bg-emerald',
-        subReports: [
-            {
-                type: 'sales-total',
-                label: 'Total Sales',
-                desc: 'Combined POS and service sales overview',
-                icon: 'bar-chart-2',
-                colorClass: 'bg-emerald'
-            },
-            {
-                type: 'sales-service-revenue',
-                label: 'Service Revenue',
-                desc: 'Revenue generated from service bookings',
-                icon: 'scissors',
-                colorClass: 'bg-teal'
-            },
-            {
-                type: 'sales-product-sales',
-                label: 'Product Sales',
-                desc: 'Retail product units sold and revenue',
-                icon: 'package',
-                colorClass: 'bg-amber'
-            },
-            {
-                type: 'sales-top-services',
-                label: 'Top Services',
-                desc: 'Highest performing services by bookings',
-                icon: 'award',
-                colorClass: 'bg-violet'
-            },
-            {
-                type: 'sales-top-products',
-                label: 'Top Products',
-                desc: 'Best-selling retail products by units',
-                icon: 'box',
-                colorClass: 'bg-sky'
-            },
-            {
-                type: 'sales-membership-revenue',
-                label: 'Membership Revenue',
-                desc: 'Revenue generated from membership plans',
-                icon: 'award',
-                colorClass: 'bg-purple'
-            }
-        ]
-    },
     bookings: {
         title: 'Bookings',
         subtitle: 'Booking outcomes and their financial impact',

@@ -238,89 +238,6 @@ const REPORT_TYPES = {
         rows: []
     },
 
-    // ── SALES & SERVICES SUB-REPORTS ─────────────────────────────────────────
-    'sales-total': {
-        title: 'Total Sales',
-        subtitle: 'Combined POS and service sales overview',
-        icon: 'bar-chart-2',
-        backCat: 'sales',
-        kpi1: { label: 'Total Sales',       value: '\u2014' },
-        kpi2: { label: 'Total Orders',      value: '\u2014' },
-        kpi3: { label: 'Avg Order Value',   value: '\u2014' },
-        kpi4: { label: 'Total Items Sold',  value: '\u2014' },
-        tableTitle: 'Sales Ledger',
-        headers: ['Date', 'Type', 'Customer', 'Description', 'Qty', 'Amount', 'Status'],
-        rows: [
-            ['2024-03-21', 'Service', 'Anita S.', 'Bridal Makeup',   '1', '\u20b94,500', '<span class="status-pill completed">Completed</span>'],
-            ['2024-03-21', 'Product', 'Walk-in',  'Argan Oil Serum', '2', '\u20b93,000', '<span class="status-pill completed">Completed</span>']
-        ]
-    },
-    'sales-service-revenue': {
-        title: 'Service Revenue',
-        subtitle: 'Revenue generated from service bookings',
-        icon: 'scissors',
-        backCat: 'sales',
-        kpi1: { label: 'Total Service Revenue',    value: 'Loading...' },
-        kpi2: { label: 'Total Service Bookings',   value: 'Loading...' },
-        kpi3: { label: 'Avg Service Value',        value: 'Loading...' },
-        kpi4: { label: 'Total Services Delivered', value: 'Loading...' },
-        tableTitle: 'Service Revenue Details',
-        headers: ['Service Name', 'Category', 'Duration', 'Price', 'Times Booked', 'Revenue Generated', 'Status'],
-        rows: []
-    },
-    'sales-product-sales': {
-        title: 'Product Sales',
-        subtitle: 'Retail product units sold and revenue',
-        icon: 'package',
-        backCat: 'sales',
-        kpi1: { label: 'Total Product Revenue',       value: 'Loading...' },
-        kpi2: { label: 'Total Items Sold',             value: 'Loading...' },
-        kpi3: { label: 'Total Orders',                 value: 'Loading...' },
-        kpi4: { label: 'Average Order Value (AOV)',    value: 'Loading...' },
-        tableTitle: 'Product Inventory',
-        headers: ['Product Name', 'Category', 'Unit Price', 'Stock Status', 'Stock Value', 'Status'],
-        rows: []
-    },
-    'sales-top-services': {
-        title: 'Top Services',
-        subtitle: 'Highest performing services by bookings and revenue',
-        icon: 'award',
-        backCat: 'sales',
-        kpi1: { label: 'Top Service Name',      value: 'Loading...' },
-        kpi2: { label: 'Top Service Revenue',   value: 'Loading...' },
-        kpi3: { label: 'Top 5 Revenue',         value: 'Loading...' },
-        kpi4: { label: 'Top 5 Contribution %',  value: 'Loading...' },
-        tableTitle: 'Service Rankings',
-        headers: ['Service Name', 'Category', 'Duration', 'Price', 'Times Booked', 'Revenue Generated', 'Status'],
-        rows: []
-    },
-    'sales-top-products': {
-        title: 'Top Products',
-        subtitle: 'Best-selling retail products by units and revenue',
-        icon: 'box',
-        backCat: 'sales',
-        kpi1: { label: 'Top Product',                value: 'Loading...' },
-        kpi2: { label: 'Top 5 Revenue',              value: 'Loading...' },
-        kpi3: { label: 'Top 5 Contribution %',       value: 'Loading...' },
-        kpi4: { label: 'Best Seller (by quantity)',   value: 'Loading...' },
-        tableTitle: 'Product Rankings',
-        headers: ['Product Name', 'Category', 'Unit Price', 'Stock Status', 'Stock Value', 'Status'],
-        rows: []
-    },
-    'sales-membership-revenue': {
-        title: 'Membership Revenue',
-        subtitle: 'Revenue generated from membership plans',
-        icon: 'award',
-        backCat: 'sales',
-        kpi1: { label: 'Total Membership Revenue', value: 'Loading...' },
-        kpi2: { label: 'Total Memberships Sold',   value: 'Loading...' },
-        kpi3: { label: 'Total Plans Sold',         value: 'Loading...' },
-        kpi4: { label: 'Avg Membership Value',     value: 'Loading...' },
-        tableTitle: 'Membership Sales Details',
-        headers: ['Plan Name', 'Duration', 'Price', 'Times Sold', 'Revenue Generated', 'Status'],
-        rows: []
-    },
-
     // ── BOOKINGS SUB-REPORTS ─────────────────────────────────────────────────
     'bk-total': {
         title: 'Total Bookings',
@@ -562,14 +479,6 @@ const TYPE_MODULE_MAP = {
     'fin-discounts':    './report-modules/financial.js',
     'fin-expenses':     './report-modules/financial.js',
     'expenses':         './report-modules/financial.js',
-
-    // Sales
-    'sales-total':             './report-modules/sales.js',
-    'sales-service-revenue':   './report-modules/sales.js',
-    'sales-product-sales':     './report-modules/sales.js',
-    'sales-top-services':      './report-modules/sales.js',
-    'sales-top-products':      './report-modules/sales.js',
-    'sales-membership-revenue':'./report-modules/sales.js',
 
     // Product Sales
     'prod-overview':     './report-modules/products-sales.js',
@@ -862,7 +771,6 @@ document.addEventListener('DOMContentLoaded', async () => {
         if (data.backCat) {
             const catLabels = {
                 financial:  'Financial',
-                sales:      'Sales & Services',
                 bookings:   'Bookings',
                 customers:  'Customers',
                 operations: 'Operations',
