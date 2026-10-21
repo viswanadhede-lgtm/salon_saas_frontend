@@ -389,6 +389,12 @@ export async function render(data, supabase, type) {
     const filterBranch = document.getElementById('filterBranch');
     const btnApply     = document.getElementById('btnApplyFilters');
 
+    // Remove any leftover tab bars from other sub-reports
+    const oldStaffTabs = document.getElementById('staffOverviewTabsBar');
+    if (oldStaffTabs) oldStaffTabs.remove();
+    const oldCustTabs = document.getElementById('custOverviewTabsBar');
+    if (oldCustTabs) oldCustTabs.remove();
+
     // ── Load & Display Data ──────────────────────────────────────────────────
     const loadDiscountReport = async () => {
         const start = filterStart ? filterStart.value : (new Date(Date.now() - 30 * 86400000)).toISOString().split('T')[0];
@@ -855,6 +861,9 @@ export async function render(data, supabase, type) {
 
     if (btnApply) {
         btnApply.onclick = loadDiscountReport;
+    }
+    if (filterBranch) {
+        filterBranch.onchange = loadDiscountReport;
     }
 
     await loadDiscountReport();
