@@ -374,7 +374,7 @@ const REPORT_TYPES = {
         kpi3: { label: 'Quantity Sold',      value: 'Loading...' },
         kpi4: { label: 'Unique Products',    value: 'Loading...' },
         tableTitle: 'Sales Transactions',
-        headers: ['Date & Time', 'Sale Ref', 'Customer', 'Staff / Stylist', 'Items & Qty', 'Gross Total', 'Discount', 'Final Amount', 'Payment', 'Status'],
+        headers: ['Date & Time', 'Sale Ref', 'Customer', 'Product', 'Category', 'Staff', 'Qty', 'Gross Amount', 'Discount', 'Final Amount', 'Payment Method', 'Payment Status'],
         rows: []
     },
     'prod-wise': {
@@ -389,7 +389,7 @@ const REPORT_TYPES = {
         kpi3: { label: 'Top Selling SKU',    value: 'Loading...' },
         kpi4: { label: 'Units Returned',     value: 'Loading...' },
         tableTitle: 'Product Performance & Sales Ledger',
-        headers: ['Rank', 'Product Name', 'SKU', 'Category', 'Units Sold', 'Returned', 'Gross Sales', 'Discounts', 'Net Sales', 'Share %'],
+        headers: ['Rank', 'Product', 'Category', 'Units Sold', 'Units Returned', 'Gross Sales', 'Discounts', 'Refund Amount', 'Net Sales', 'Share'],
         rows: []
     },
     'prod-category': {
@@ -404,7 +404,7 @@ const REPORT_TYPES = {
         kpi3: { label: 'Total Items Sold',     value: 'Loading...' },
         kpi4: { label: 'Avg Category Revenue', value: 'Loading...' },
         tableTitle: 'Category Breakdown',
-        headers: ['Category Name', 'Active SKUs', 'Units Sold', 'Gross Revenue', 'Discounts', 'Net Revenue', 'Revenue %', 'Top Product'],
+        headers: ['Category Name', 'Active Products', 'Units Sold', 'Units Returned', 'Gross Revenue', 'Discounts', 'Refunds', 'Net Revenue', 'Revenue %', 'Top Selling Product'],
         rows: []
     },
     'prod-transactions': {
@@ -419,7 +419,7 @@ const REPORT_TYPES = {
         kpi3: { label: 'Net Collected Amount',     value: 'Loading...' },
         kpi4: { label: 'Average Ticket Size (AOV)',value: 'Loading...' },
         tableTitle: 'POS Sales Ledger',
-        headers: ['Invoice Ref', 'Date & Time', 'Customer', 'Staff / Stylist', 'Line Items', 'Gross Amount', 'Discount', 'Net Amount', 'Payment', 'Status'],
+        headers: ['Date & Time', 'Bill / Sale Ref', 'Customer', 'Staff', 'Items & Qty', 'Gross Amount', 'Discount', 'Refunds', 'Net Amount', 'Payment Method', 'Payment Status'],
         rows: []
     },
     'prod-discounts': {
@@ -433,7 +433,7 @@ const REPORT_TYPES = {
         kpi3: { label: 'Avg Discount / Bill',     value: 'Loading...' },
         kpi4: { label: 'Top Discount Driver',     value: 'Loading...' },
         tableTitle: 'Discount & Coupon Usage Log',
-        headers: ['Invoice Ref', 'Date', 'Customer', 'Discount Type', 'Code / Campaign', 'Gross Amount', 'Discount (₹)', 'Final Amount', 'Effective %'],
+        headers: ['Date & Time', 'Sale Ref', 'Customer', 'Product', 'Category', 'Discount Type', 'Discount Name', 'Gross Amount', 'Discount Amount', 'Final Amount', 'Effective %'],
         rows: []
     },
     'prod-returns': {
@@ -448,7 +448,7 @@ const REPORT_TYPES = {
         kpi3: { label: 'Total Refund Value',  value: 'Loading...' },
         kpi4: { label: 'Product Return Rate', value: 'Loading...' },
         tableTitle: 'Product Returns Ledger',
-        headers: ['Return Ref', 'Original Sale', 'Date', 'Product', 'Qty', 'Product Value', 'Refunded Amount', 'Refund Method', 'Reason', 'Status'],
+        headers: ['Return Ref', 'Original Sale', 'Date', 'Product', 'Category', 'Qty', 'Product Value', 'Refunded Amount', 'Refund Method', 'Reason', 'Status'],
         rows: []
     },
     'prod-payments': {
@@ -463,7 +463,7 @@ const REPORT_TYPES = {
         kpi3: { label: 'Refunded Amount',     value: 'Loading...' },
         kpi4: { label: 'Net Liquid Realized', value: 'Loading...' },
         tableTitle: 'Sales Payment Reconciliation',
-        headers: ['Payment Ref', 'Invoice Ref', 'Date & Time', 'Customer', 'Sale Total', 'Collected Amount', 'Payment Mode', 'Status'],
+        headers: ['Payment Ref', 'Invoice Ref', 'Date & Time', 'Customer', 'Product', 'Category', 'Sale Total', 'Collected Amount', 'Payment Mode', 'Status'],
         rows: []
     }
 };

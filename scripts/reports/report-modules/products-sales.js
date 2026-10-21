@@ -666,11 +666,11 @@ function getPreviewData() {
                 values: [62400, 34500, 18200, 11400, 6100]
             },
             rows: [
-                { name: 'Hair Care', skus: 18, units: 162, gross: 67850, disc: 5450, net: 62400, pct: '48.6%', top: "L'Oréal Serie Expert Shampoo" },
-                { name: 'Skin Care', skus: 11, units: 68, gross: 37400, disc: 2900, net: 34500, pct: '26.9%', top: 'Dermalogica Daily Microfoliant' },
-                { name: 'Styling & Tools', skus: 6, units: 48, gross: 19800, disc: 1600, net: 18200, pct: '14.2%', top: 'Schwarzkopf Osis Dust It' },
-                { name: 'Beard & Men', skus: 4, units: 44, gross: 12200, disc: 800, net: 11400, pct: '8.9%', top: 'Beardo Godfather Beard Oil' },
-                { name: 'Nail Care', skus: 3, units: 26, gross: 6600, disc: 500, net: 6100, pct: '4.8%', top: 'OPI ProSpa Nail & Cuticle Oil' }
+                { name: 'Hair Care', skus: 18, units: 162, returned: 5, gross: 67850, disc: 5450, refund: 1900, net: 60500, pct: '48.6%', top: "L'Oréal Serie Expert Shampoo" },
+                { name: 'Skin Care', skus: 11, units: 68, returned: 2, gross: 37400, disc: 2900, refund: 1300, net: 33200, pct: '26.9%', top: 'Dermalogica Daily Microfoliant' },
+                { name: 'Styling & Tools', skus: 6, units: 48, returned: 2, gross: 19800, disc: 1600, refund: 700, net: 17500, pct: '14.2%', top: 'Schwarzkopf Osis Dust It' },
+                { name: 'Beard & Men', skus: 4, units: 44, returned: 1, gross: 12200, disc: 800, refund: 350, net: 11050, pct: '8.9%', top: 'Beardo Godfather Beard Oil' },
+                { name: 'Nail Care', skus: 3, units: 26, returned: 0, gross: 6600, disc: 500, refund: 0, net: 6100, pct: '4.8%', top: 'OPI ProSpa Nail & Cuticle Oil' }
             ]
         },
 
@@ -699,16 +699,16 @@ function getPreviewData() {
                 values: [74500, 36200, 13700, 4000]
             },
             rows: [
-                { ref: 'POS-2024-1082', datetime: '2024-10-20, 04:30 PM', customer: 'Priya Sharma', staff: 'Aakash Verma', items: "L'Oréal Shampoo (1), Moroccan Oil (1)", gross: 2100, disc: 200, net: 1900, method: 'UPI', status: 'Completed' },
-                { ref: 'POS-2024-1081', datetime: '2024-10-20, 03:15 PM', customer: 'Rahul Mehta', staff: 'Sneha Rao', items: 'Beardo Beard Oil (2)', gross: 700, disc: 0, net: 700, method: 'Card', status: 'Completed' },
-                { ref: 'POS-2024-1080', datetime: '2024-10-20, 01:45 PM', customer: 'Ananya Roy', staff: 'Kavita Nair', items: 'Dermalogica Microfoliant (1)', gross: 1300, disc: 130, net: 1170, method: 'UPI', status: 'Completed' },
-                { ref: 'POS-2024-1079', datetime: '2024-10-20, 12:20 PM', customer: 'Vikram Joshi', staff: 'Aakash Verma', items: 'Osis Dust It (1), Hair Wax (1)', gross: 1100, disc: 100, net: 1000, method: 'Cash', status: 'Completed' },
-                { ref: 'POS-2024-1078', datetime: '2024-10-19, 06:10 PM', customer: 'Deepika Sen', staff: 'Meera Iyer', items: 'Olaplex No. 3 (1)', gross: 1400, disc: 140, net: 1260, method: 'UPI', status: 'Completed' },
-                { ref: 'POS-2024-1077', datetime: '2024-10-19, 04:50 PM', customer: 'Walk-in Client', staff: 'Sneha Rao', items: 'OPI Nail Oil (1)', gross: 300, disc: 0, net: 300, method: 'Cash', status: 'Completed' },
-                { ref: 'POS-2024-1076', datetime: '2024-10-19, 02:40 PM', customer: 'Rohan Nambiar', staff: 'Aakash Verma', items: 'Kerastase Serum (1)', gross: 1050, disc: 100, net: 950, method: 'Card', status: 'Completed' },
-                { ref: 'POS-2024-1075', datetime: '2024-10-18, 05:25 PM', customer: 'Sunita Menon', staff: 'Kavita Nair', items: "L'Oréal Shampoo (2)", gross: 1800, disc: 180, net: 1620, method: 'UPI', status: 'Completed' },
-                { ref: 'POS-2024-1074', datetime: '2024-10-18, 01:10 PM', customer: 'Arjun Das', staff: 'Sneha Rao', items: 'Forest Essentials Mist (1)', gross: 400, disc: 0, net: 400, method: 'UPI', status: 'Completed' },
-                { ref: 'POS-2024-1073', datetime: '2024-10-17, 07:05 PM', customer: 'Megha Rao', staff: 'Meera Iyer', items: 'BBlunt Heat Protection (1)', gross: 350, disc: 35, net: 315, method: 'Card', status: 'Completed' }
+                { ref: 'POS-2024-1082', datetime: '2024-10-20, 04:30 PM', customer: 'Priya Sharma', staff: 'Aakash Verma', items: "L'Oréal Shampoo (1), Moroccan Oil (1)", gross: 2100, disc: 200, refund: 0, net: 1900, method: 'UPI', status: 'Completed' },
+                { ref: 'POS-2024-1081', datetime: '2024-10-20, 03:15 PM', customer: 'Rahul Mehta', staff: 'Sneha Rao', items: 'Beardo Beard Oil (2)', gross: 700, disc: 0, refund: 0, net: 700, method: 'Card', status: 'Completed' },
+                { ref: 'POS-2024-1080', datetime: '2024-10-20, 01:45 PM', customer: 'Ananya Roy', staff: 'Kavita Nair', items: 'Dermalogica Microfoliant (1)', gross: 1300, disc: 130, refund: 0, net: 1170, method: 'UPI', status: 'Completed' },
+                { ref: 'POS-2024-1079', datetime: '2024-10-20, 12:20 PM', customer: 'Vikram Joshi', staff: 'Aakash Verma', items: 'Osis Dust It (1), Hair Wax (1)', gross: 1100, disc: 100, refund: 0, net: 1000, method: 'Cash', status: 'Completed' },
+                { ref: 'POS-2024-1078', datetime: '2024-10-19, 06:10 PM', customer: 'Deepika Sen', staff: 'Meera Iyer', items: 'Olaplex No. 3 (1)', gross: 1400, disc: 140, refund: 0, net: 1260, method: 'UPI', status: 'Completed' },
+                { ref: 'POS-2024-1077', datetime: '2024-10-19, 04:50 PM', customer: 'Walk-in Client', staff: 'Sneha Rao', items: 'OPI Nail Oil (1)', gross: 300, disc: 0, refund: 0, net: 300, method: 'Cash', status: 'Completed' },
+                { ref: 'POS-2024-1076', datetime: '2024-10-19, 02:40 PM', customer: 'Rohan Nambiar', staff: 'Aakash Verma', items: 'Kerastase Serum (1)', gross: 1050, disc: 100, refund: 0, net: 950, method: 'Card', status: 'Completed' },
+                { ref: 'POS-2024-1075', datetime: '2024-10-18, 05:25 PM', customer: 'Sunita Menon', staff: 'Kavita Nair', items: "L'Oréal Shampoo (2)", gross: 1800, disc: 180, refund: 0, net: 1620, method: 'UPI', status: 'Completed' },
+                { ref: 'POS-2024-1074', datetime: '2024-10-18, 01:10 PM', customer: 'Arjun Das', staff: 'Sneha Rao', items: 'Forest Essentials Mist (1)', gross: 400, disc: 0, refund: 0, net: 400, method: 'UPI', status: 'Completed' },
+                { ref: 'POS-2024-1073', datetime: '2024-10-17, 07:05 PM', customer: 'Megha Rao', staff: 'Meera Iyer', items: 'BBlunt Heat Protection (1)', gross: 350, disc: 35, refund: 0, net: 315, method: 'Card', status: 'Completed' }
             ]
         },
 
@@ -735,16 +735,16 @@ function getPreviewData() {
                 values: [4600, 3100, 1800, 750]
             },
             rows: [
-                { ref: 'POS-2024-1082', date: '2024-10-20', customer: 'Priya Sharma', type: 'Coupon', code: 'FESTIVE10', before: 2100, discount: 200, after: 1900, pct: '9.5%' },
-                { ref: 'POS-2024-1080', date: '2024-10-20', customer: 'Ananya Roy', type: 'Membership', code: 'SILVER-10', before: 1300, discount: 130, after: 1170, pct: '10.0%' },
-                { ref: 'POS-2024-1079', date: '2024-10-20', customer: 'Vikram Joshi', type: 'Promo', code: 'COMBO-SAVER', before: 1100, discount: 100, after: 1000, pct: '9.1%' },
-                { ref: 'POS-2024-1078', date: '2024-10-19', customer: 'Deepika Sen', type: 'Membership', code: 'GOLD-10', before: 1400, discount: 140, after: 1260, pct: '10.0%' },
-                { ref: 'POS-2024-1075', date: '2024-10-18', customer: 'Sunita Menon', type: 'Coupon', code: 'RETAIL10', before: 1800, discount: 180, after: 1620, pct: '10.0%' },
-                { ref: 'POS-2024-1073', date: '2024-10-17', customer: 'Megha Rao', type: 'Coupon', code: 'AUTUMN50', before: 350, discount: 35, after: 315, pct: '10.0%' },
-                { ref: 'POS-2024-1071', date: '2024-10-17', customer: 'Kunal Kapoor', type: 'Manual', code: 'Stylist Discretion', before: 900, discount: 90, after: 810, pct: '10.0%' },
-                { ref: 'POS-2024-1068', date: '2024-10-16', customer: 'Swati Nair', type: 'Membership', code: 'PLATINUM-15', before: 2400, discount: 360, after: 2040, pct: '15.0%' },
-                { ref: 'POS-2024-1065', date: '2024-10-15', customer: 'Rishi Varma', type: 'Promo', code: 'BEARD-FEST', before: 700, discount: 100, after: 600, pct: '14.3%' },
-                { ref: 'POS-2024-1062', date: '2024-10-14', customer: 'Nisha Pillai', type: 'Coupon', code: 'WELCOME10', before: 1200, discount: 120, after: 1080, pct: '10.0%' }
+                { ref: 'POS-2024-1082', date: '2024-10-20, 04:30 PM', customer: 'Priya Sharma', product: "L'Oréal Serie Expert Shampoo", category: 'Hair Care', type: 'Coupon', code: 'FESTIVE10', before: 2100, discount: 200, after: 1900, pct: '9.5%' },
+                { ref: 'POS-2024-1080', date: '2024-10-20, 01:45 PM', customer: 'Ananya Roy', product: 'Dermalogica Daily Microfoliant', category: 'Skin Care', type: 'Membership', code: 'SILVER-10', before: 1300, discount: 130, after: 1170, pct: '10.0%' },
+                { ref: 'POS-2024-1079', date: '2024-10-20, 12:20 PM', customer: 'Vikram Joshi', product: 'Schwarzkopf Osis Dust It', category: 'Styling & Tools', type: 'Promo', code: 'COMBO-SAVER', before: 1100, discount: 100, after: 1000, pct: '9.1%' },
+                { ref: 'POS-2024-1078', date: '2024-10-19, 06:10 PM', customer: 'Deepika Sen', product: 'Olaplex No. 3 Hair Perfector', category: 'Hair Care', type: 'Membership', code: 'GOLD-10', before: 1400, discount: 140, after: 1260, pct: '10.0%' },
+                { ref: 'POS-2024-1075', date: '2024-10-18, 05:25 PM', customer: 'Sunita Menon', product: "L'Oréal Serie Expert Shampoo", category: 'Hair Care', type: 'Coupon', code: 'RETAIL10', before: 1800, discount: 180, after: 1620, pct: '10.0%' },
+                { ref: 'POS-2024-1073', date: '2024-10-17, 07:05 PM', customer: 'Megha Rao', product: 'BBlunt Hot Shot Heat Protection', category: 'Hair Care', type: 'Coupon', code: 'AUTUMN50', before: 350, discount: 35, after: 315, pct: '10.0%' },
+                { ref: 'POS-2024-1071', date: '2024-10-17, 03:20 PM', customer: 'Kunal Kapoor', product: 'Kerastase Elixir Ultime Serum', category: 'Hair Care', type: 'Manual', code: 'Stylist Discretion', before: 900, discount: 90, after: 810, pct: '10.0%' },
+                { ref: 'POS-2024-1068', date: '2024-10-16, 02:50 PM', customer: 'Swati Nair', product: 'Moroccan Argan Oil 100ml', category: 'Hair Care', type: 'Membership', code: 'PLATINUM-15', before: 2400, discount: 360, after: 2040, pct: '15.0%' },
+                { ref: 'POS-2024-1065', date: '2024-10-15, 04:10 PM', customer: 'Rishi Varma', product: 'Beardo Godfather Beard Oil', category: 'Beard & Men', type: 'Promo', code: 'BEARD-FEST', before: 700, discount: 100, after: 600, pct: '14.3%' },
+                { ref: 'POS-2024-1062', date: '2024-10-14, 11:30 AM', customer: 'Nisha Pillai', product: 'OPI ProSpa Nail & Cuticle Oil', category: 'Nail Care', type: 'Coupon', code: 'WELCOME10', before: 1200, discount: 120, after: 1080, pct: '10.0%' }
             ]
         },
 
@@ -769,13 +769,13 @@ function getPreviewData() {
                 values: [1600, 1100, 800, 450, 250]
             },
             rows: [
-                { ref: 'RET-2024-041', originalRef: 'POS-2024-1062', date: '2024-10-20', product: "L'Oréal Serie Expert Shampoo 300ml", qty: 1, val: 900, refund: 900, method: 'UPI', reason: 'Damaged / Leaking', status: 'Refunded' },
-                { ref: 'RET-2024-040', originalRef: 'POS-2024-1054', date: '2024-10-17', product: 'Dermalogica Daily Microfoliant 74g', qty: 1, val: 1300, refund: 1300, method: 'Card', reason: 'Customer Skin Reaction', status: 'Refunded' },
-                { ref: 'RET-2024-039', originalRef: 'POS-2024-1049', date: '2024-10-15', product: 'Schwarzkopf Osis Dust It', qty: 2, val: 700, refund: 700, method: 'Cash', reason: 'Wrong Item Purchased', status: 'Refunded' },
-                { ref: 'RET-2024-038', originalRef: 'POS-2024-1038', date: '2024-10-12', product: 'Beardo Godfather Beard Oil 30ml', qty: 1, val: 350, refund: 350, method: 'UPI', reason: 'Defective Pump/Nozzle', status: 'Refunded' },
-                { ref: 'RET-2024-037', originalRef: 'POS-2024-1025', date: '2024-10-09', product: 'Forest Essentials Mist', qty: 1, val: 400, refund: 400, method: 'Store Credit', reason: 'Exchange for Shade', status: 'Completed' },
-                { ref: 'RET-2024-036', originalRef: 'POS-2024-1014', date: '2024-10-05', product: 'BBlunt Heat Protection Mist', qty: 1, val: 350, refund: 350, method: 'UPI', reason: 'Damaged / Leaking', status: 'Refunded' },
-                { ref: 'RET-2024-035', originalRef: 'POS-2024-1002', date: '2024-10-02', product: 'Moroccan Argan Oil 100ml', qty: 1, val: 1200, refund: 1200, method: 'Card', reason: 'Wrong Item Purchased', status: 'Refunded' }
+                { ref: 'RET-2024-041', originalRef: 'POS-2024-1062', date: '2024-10-20', product: "L'Oréal Serie Expert Shampoo 300ml", category: 'Hair Care', qty: 1, val: 900, refund: 900, method: 'UPI', reason: 'Damaged / Leaking', status: 'Refunded' },
+                { ref: 'RET-2024-040', originalRef: 'POS-2024-1054', date: '2024-10-17', product: 'Dermalogica Daily Microfoliant 74g', category: 'Skin Care', qty: 1, val: 1300, refund: 1300, method: 'Card', reason: 'Customer Skin Reaction', status: 'Refunded' },
+                { ref: 'RET-2024-039', originalRef: 'POS-2024-1049', date: '2024-10-15', product: 'Schwarzkopf Osis Dust It', category: 'Styling & Tools', qty: 2, val: 700, refund: 700, method: 'Cash', reason: 'Wrong Item Purchased', status: 'Refunded' },
+                { ref: 'RET-2024-038', originalRef: 'POS-2024-1038', date: '2024-10-12', product: 'Beardo Godfather Beard Oil 30ml', category: 'Beard & Men', qty: 1, val: 350, refund: 350, method: 'UPI', reason: 'Defective Pump/Nozzle', status: 'Refunded' },
+                { ref: 'RET-2024-037', originalRef: 'POS-2024-1025', date: '2024-10-09', product: 'Forest Essentials Mist', category: 'Skin Care', qty: 1, val: 400, refund: 400, method: 'Store Credit', reason: 'Exchange for Shade', status: 'Completed' },
+                { ref: 'RET-2024-036', originalRef: 'POS-2024-1014', date: '2024-10-05', product: 'BBlunt Heat Protection Mist', category: 'Hair Care', qty: 1, val: 350, refund: 350, method: 'UPI', reason: 'Damaged / Leaking', status: 'Refunded' },
+                { ref: 'RET-2024-035', originalRef: 'POS-2024-1002', date: '2024-10-02', product: 'Moroccan Argan Oil 100ml', category: 'Hair Care', qty: 1, val: 1200, refund: 1200, method: 'Card', reason: 'Wrong Item Purchased', status: 'Refunded' }
             ]
         },
 
@@ -800,16 +800,16 @@ function getPreviewData() {
                 values: [74500, 36200, 13700, 4000]
             },
             rows: [
-                { payRef: 'PAY-2024-9102', saleRef: 'POS-2024-1082', datetime: '2024-10-20, 04:31 PM', customer: 'Priya Sharma', bill: 1900, collected: 1900, mode: 'UPI', status: 'Paid' },
-                { payRef: 'PAY-2024-9101', saleRef: 'POS-2024-1081', datetime: '2024-10-20, 03:16 PM', customer: 'Rahul Mehta', bill: 700, collected: 700, mode: 'Card', status: 'Paid' },
-                { payRef: 'PAY-2024-9100', saleRef: 'POS-2024-1080', datetime: '2024-10-20, 01:46 PM', customer: 'Ananya Roy', bill: 1170, collected: 1170, mode: 'UPI', status: 'Paid' },
-                { payRef: 'PAY-2024-9099', saleRef: 'POS-2024-1079', datetime: '2024-10-20, 12:21 PM', customer: 'Vikram Joshi', bill: 1000, collected: 1000, mode: 'Cash', status: 'Paid' },
-                { payRef: 'PAY-2024-9098', saleRef: 'POS-2024-1078', datetime: '2024-10-19, 06:12 PM', customer: 'Deepika Sen', bill: 1260, collected: 1260, mode: 'UPI', status: 'Paid' },
-                { payRef: 'PAY-2024-9097', saleRef: 'POS-2024-1077', datetime: '2024-10-19, 04:51 PM', customer: 'Walk-in Client', bill: 300, collected: 300, mode: 'Cash', status: 'Paid' },
-                { payRef: 'PAY-2024-9096', saleRef: 'POS-2024-1076', datetime: '2024-10-19, 02:41 PM', customer: 'Rohan Nambiar', bill: 950, collected: 950, mode: 'Card', status: 'Paid' },
-                { payRef: 'PAY-2024-9095', saleRef: 'POS-2024-1075', datetime: '2024-10-18, 05:26 PM', customer: 'Sunita Menon', bill: 1620, collected: 1620, mode: 'UPI', status: 'Paid' },
-                { payRef: 'PAY-2024-9094', saleRef: 'POS-2024-1074', datetime: '2024-10-18, 01:11 PM', customer: 'Arjun Das', bill: 400, collected: 400, mode: 'UPI', status: 'Paid' },
-                { payRef: 'PAY-2024-9093', saleRef: 'POS-2024-1073', datetime: '2024-10-17, 07:06 PM', customer: 'Megha Rao', bill: 315, collected: 315, mode: 'Card', status: 'Paid' }
+                { payRef: 'PAY-2024-9102', saleRef: 'POS-2024-1082', datetime: '2024-10-20, 04:31 PM', customer: 'Priya Sharma', product: "L'Oréal Shampoo + Moroccan Oil", category: 'Hair Care', bill: 1900, collected: 1900, mode: 'UPI', status: 'Paid' },
+                { payRef: 'PAY-2024-9101', saleRef: 'POS-2024-1081', datetime: '2024-10-20, 03:16 PM', customer: 'Rahul Mehta', product: 'Beardo Godfather Beard Oil', category: 'Beard & Men', bill: 700, collected: 700, mode: 'Card', status: 'Paid' },
+                { payRef: 'PAY-2024-9100', saleRef: 'POS-2024-1080', datetime: '2024-10-20, 01:46 PM', customer: 'Ananya Roy', product: 'Dermalogica Daily Microfoliant', category: 'Skin Care', bill: 1170, collected: 1170, mode: 'UPI', status: 'Paid' },
+                { payRef: 'PAY-2024-9099', saleRef: 'POS-2024-1079', datetime: '2024-10-20, 12:21 PM', customer: 'Vikram Joshi', product: 'Osis Dust It + Hair Wax', category: 'Styling & Tools', bill: 1000, collected: 1000, mode: 'Cash', status: 'Paid' },
+                { payRef: 'PAY-2024-9098', saleRef: 'POS-2024-1078', datetime: '2024-10-19, 06:12 PM', customer: 'Deepika Sen', product: 'Olaplex No. 3 Hair Perfector', category: 'Hair Care', bill: 1260, collected: 1260, mode: 'UPI', status: 'Paid' },
+                { payRef: 'PAY-2024-9097', saleRef: 'POS-2024-1077', datetime: '2024-10-19, 04:51 PM', customer: 'Walk-in Client', product: 'OPI ProSpa Nail & Cuticle Oil', category: 'Nail Care', bill: 300, collected: 300, mode: 'Cash', status: 'Paid' },
+                { payRef: 'PAY-2024-9096', saleRef: 'POS-2024-1076', datetime: '2024-10-19, 02:41 PM', customer: 'Rohan Nambiar', product: 'Kerastase Elixir Ultime Serum', category: 'Hair Care', bill: 950, collected: 950, mode: 'Card', status: 'Paid' },
+                { payRef: 'PAY-2024-9095', saleRef: 'POS-2024-1075', datetime: '2024-10-18, 05:26 PM', customer: 'Sunita Menon', product: "L'Oréal Serie Expert Shampoo", category: 'Hair Care', bill: 1620, collected: 1620, mode: 'UPI', status: 'Paid' },
+                { payRef: 'PAY-2024-9094', saleRef: 'POS-2024-1074', datetime: '2024-10-18, 01:11 PM', customer: 'Arjun Das', product: 'Forest Essentials Facial Tonic Mist', category: 'Skin Care', bill: 400, collected: 400, mode: 'UPI', status: 'Paid' },
+                { payRef: 'PAY-2024-9093', saleRef: 'POS-2024-1073', datetime: '2024-10-17, 07:06 PM', customer: 'Megha Rao', product: 'BBlunt Hot Shot Heat Protection', category: 'Hair Care', bill: 315, collected: 315, mode: 'Card', status: 'Paid' }
             ]
         }
     };
@@ -886,16 +886,16 @@ async function renderProdOverview(data, supabase) {
             colors: ['#0ea5e9', '#6366f1', '#10b981', '#f59e0b', '#ec4899']
         });
 
-        // 4. Data Table (Sales Transactions Ledger)
-        data.headers = ['Date & Time', 'Sale Ref', 'Customer', 'Staff / Stylist', 'Items & Qty', 'Gross Total', 'Discount', 'Final Amount', 'Payment', 'Status'];
+        // 4. Data Table — headers: Date & Time | Sale Ref | Customer | Product | Category | Staff | Qty | Gross Amount | Discount | Final Amount | Payment Method | Payment Status
         setupReportTable(data.headers, rows, {
             unitName: 'transactions',
             reportFileName: 'Product_Sales_Overview_Transactions',
             rowFormatter: (r) => {
                 const prodList = Array.isArray(r.product_names) ? r.product_names : [r.product_names || '—'];
-                const prodDisplay = prodList.length > 1
-                    ? `<span>${prodList[0]}</span> <span style="font-size:0.75rem;color:#6366f1;font-weight:600;">+${prodList.length - 1} more</span>`
-                    : `<span>${prodList[0] || '—'}</span>`;
+                const firstProd = prodList[0] || '—';
+                // Derive category from product name for preview data
+                const catMap = { "L'Oréal": 'Hair Care', 'Moroccan': 'Hair Care', 'Olaplex': 'Hair Care', 'Kerastase': 'Hair Care', 'BBlunt': 'Hair Care', 'Dermalogica': 'Skin Care', 'Forest Essentials': 'Skin Care', 'Beardo': 'Beard & Men', 'Schwarzkopf': 'Styling & Tools', 'Osis': 'Styling & Tools', 'Matte': 'Styling & Tools', 'OPI': 'Nail Care' };
+                const category = r.category || Object.entries(catMap).find(([k]) => firstProd.includes(k))?.[1] || 'General';
 
                 const discDisplay = (r.discount_amount && Number(r.discount_amount) > 0)
                     ? `<span style="color:#b45309;font-weight:600;">-${fmtINR(r.discount_amount)}</span>${r.discount_name ? `<br><small style="color:#92400e;font-size:0.7rem;">(${r.discount_name})</small>` : ''}`
@@ -910,12 +910,18 @@ async function renderProdOverview(data, supabase) {
                     ? 'background:#fefce8;color:#a16207;border:1px solid #fef08a;'
                     : 'background:#f1f5f9;color:#475569;border:1px solid #e2e8f0;';
 
+                const prodDisplay = prodList.length > 1
+                    ? `<span>${firstProd}</span> <span style="font-size:0.75rem;color:#6366f1;font-weight:600;">+${prodList.length - 1} more</span>`
+                    : `<span>${firstProd}</span>`;
+
                 return [
                     `<span style="white-space:nowrap;font-size:0.8rem;color:#475569;">${r.created_at || '—'}</span>`,
                     `<strong style="color:#4f46e5;font-size:0.82rem;letter-spacing:0.3px;">#${r.sale_id || '—'}</strong>`,
                     `<div><strong>${r.customer_name || 'Walk-in'}</strong>${r.customer_phone && r.customer_phone !== '—' ? `<br><small style="color:#64748b;font-size:0.75rem;">${r.customer_phone}</small>` : ''}</div>`,
+                    prodDisplay,
+                    `<span style="display:inline-block;padding:2px 8px;border-radius:12px;background:#f1f5f9;color:#475569;font-weight:600;font-size:0.75rem;">${category}</span>`,
                     `<span style="color:#334155;font-weight:500;">${r.staff_name || '—'}</span>`,
-                    `<div>${prodDisplay}<br><span style="display:inline-block;margin-top:2px;font-size:0.72rem;background:#f1f5f9;color:#475569;padding:1px 6px;border-radius:4px;font-weight:600;">${r.total_quantity || 1} ${r.total_quantity === 1 ? 'item' : 'items'}</span></div>`,
+                    `<strong>${r.total_quantity || 1}</strong>`,
                     `<span style="font-weight:500;color:#334155;">${fmtINR(r.total_price || 0)}</span>`,
                     discDisplay,
                     `<strong style="color:#059669;font-size:0.9rem;">${fmtINR(r.final_amount || 0)}</strong>`,
@@ -990,8 +996,7 @@ async function renderProdWise(data, supabase) {
             colors: ['#6366f1', '#0ea5e9', '#10b981', '#f59e0b', '#ec4899', '#94a3b8']
         });
 
-        // 4. Data Table (Product Performance & Sales Ledger)
-        data.headers = ['Rank', 'Product Name', 'SKU', 'Category', 'Units Sold', 'Returned', 'Gross Sales', 'Discounts', 'Net Sales', 'Share %'];
+        // 4. Data Table — headers: Rank | Product | Category | Units Sold | Units Returned | Gross Sales | Discounts | Refund Amount | Net Sales | Share
         setupReportTable(data.headers, rows, {
             unitName: 'products',
             reportFileName: 'Product_Wise_Sales_Report',
@@ -1008,15 +1013,21 @@ async function renderProdWise(data, supabase) {
                     ? `<span style="color:#b45309;font-weight:600;">-${fmtINR(r.disc)}</span>`
                     : `<span style="color:#94a3b8;">—</span>`;
 
+                // Refund Amount derived from returned units × avg unit price where available
+                const refundAmt = r.refund_amount || (r.returned > 0 ? Math.round((r.gross / Math.max(r.sold, 1)) * r.returned) : 0);
+                const refundBadge = refundAmt > 0
+                    ? `<span style="color:#dc2626;font-weight:600;">-${fmtINR(refundAmt)}</span>`
+                    : `<span style="color:#94a3b8;">—</span>`;
+
                 return [
                     `<span style="display:inline-flex;align-items:center;justify-content:center;width:24px;height:24px;border-radius:50%;background:${rankBg};font-weight:700;font-size:0.75rem;color:${rankTextColor};">${rank}</span>`,
                     `<div><strong>${r.name}</strong><br><small style="color:#94a3b8;font-size:0.7rem;">${r.txns ? `${r.txns} bills` : ''}</small></div>`,
-                    `<code style="background:#f8fafc;padding:2px 6px;border-radius:4px;border:1px solid #e2e8f0;font-size:0.75rem;">${r.sku}</code>`,
-                    `<span style="color:#64748b;font-weight:500;">${r.category}</span>`,
+                    `<span style="display:inline-block;padding:2px 8px;border-radius:12px;background:#f1f5f9;color:#475569;font-weight:600;font-size:0.75rem;">${r.category}</span>`,
                     `<strong>${Number(r.sold || 0).toLocaleString('en-IN')}</strong>`,
                     retBadge,
                     `<span style="color:#334155;">${fmtINR(r.gross)}</span>`,
                     discBadge,
+                    refundBadge,
                     `<strong style="color:#059669;">${fmtINR(r.net)}</strong>`,
                     `<span style="display:inline-block;padding:2px 8px;border-radius:12px;background:#e0f2fe;color:#0369a1;font-weight:600;font-size:0.75rem;">${r.pct || '—'}</span>`
                 ];
@@ -1091,16 +1102,18 @@ async function renderProdCategory(data, supabase) {
             colors: ['#8b5cf6', '#0ea5e9', '#10b981', '#f59e0b', '#ec4899']
         });
 
-        data.headers = ['Category Name', 'Active SKUs', 'Units Sold', 'Gross Revenue', 'Discounts', 'Net Revenue', 'Revenue %', 'Top Selling Product'];
+        // headers: Category Name | Active Products | Units Sold | Units Returned | Gross Revenue | Discounts | Refunds | Net Revenue | Revenue % | Top Selling Product
         setupReportTable(data.headers, rows, {
             unitName: 'categories',
             reportFileName: 'Sales_By_Category_Report',
             rowFormatter: (r) => [
                 `<strong>${r.name}</strong>`,
-                `${r.skus} SKUs`,
-                `<strong>${r.units}</strong>`,
+                `<span style="display:inline-block;padding:2px 8px;border-radius:12px;background:#f0fdf4;color:#166534;font-weight:600;font-size:0.75rem;">${r.skus} SKUs</span>`,
+                `<strong>${Number(r.units || 0).toLocaleString('en-IN')}</strong>`,
+                (r.returned > 0) ? `<span style="color:#dc2626;font-weight:600;background:#fee2e2;padding:1px 6px;border-radius:4px;font-size:0.75rem;">-${r.returned}</span>` : `<span style="color:#94a3b8;">0</span>`,
                 fmtINR(r.gross),
-                r.disc > 0 ? `<span style="color:#b45309;">-${fmtINR(r.disc)}</span>` : '₹0',
+                r.disc > 0 ? `<span style="color:#b45309;font-weight:600;">-${fmtINR(r.disc)}</span>` : `<span style="color:#94a3b8;">—</span>`,
+                r.refund > 0 ? `<span style="color:#dc2626;font-weight:600;">-${fmtINR(r.refund)}</span>` : `<span style="color:#94a3b8;">—</span>`,
                 `<strong style="color:#059669;">${fmtINR(r.net)}</strong>`,
                 `<span style="display:inline-block;padding:2px 8px;border-radius:12px;background:#f3e8ff;color:#6b21a8;font-weight:600;font-size:0.75rem;">${r.pct}</span>`,
                 `<span style="color:#334155;">${r.top}</span>`
@@ -1186,8 +1199,7 @@ async function renderProdTransactions(data, supabase) {
             colors: ['#10b981', '#3b82f6', '#f59e0b', '#8b5cf6']
         });
 
-        // 4. Data Table (POS Sales Ledger)
-        data.headers = ['Invoice Ref', 'Date & Time', 'Customer', 'Staff / Stylist', 'Line Items', 'Gross Amount', 'Discount', 'Net Amount', 'Payment', 'Status'];
+        // 4. Data Table — headers: Date & Time | Bill / Sale Ref | Customer | Staff | Items & Qty | Gross Amount | Discount | Refunds | Net Amount | Payment Method | Payment Status
         setupReportTable(data.headers, rows, {
             unitName: 'transactions',
             reportFileName: 'Sales_Transactions_Report',
@@ -1205,14 +1217,19 @@ async function renderProdTransactions(data, supabase) {
                     ? `<span style="color:#b45309;font-weight:600;">-${fmtINR(r.disc)}</span>`
                     : `<span style="color:#94a3b8;">—</span>`;
 
+                const refundDisplay = (r.refund && Number(r.refund) > 0)
+                    ? `<span style="color:#dc2626;font-weight:600;">-${fmtINR(r.refund)}</span>`
+                    : `<span style="color:#94a3b8;">—</span>`;
+
                 return [
-                    `<strong style="color:#4f46e5;font-size:0.82rem;letter-spacing:0.3px;">#${r.ref}</strong>`,
                     `<span style="white-space:nowrap;font-size:0.8rem;color:#475569;">${r.datetime}</span>`,
+                    `<strong style="color:#4f46e5;font-size:0.82rem;letter-spacing:0.3px;">#${r.ref}</strong>`,
                     `<strong>${r.customer}</strong>`,
                     `<span style="color:#334155;font-weight:500;">${r.staff}</span>`,
                     `<span style="font-size:0.825rem;color:#334155;">${r.items}</span>`,
                     `<span style="font-weight:500;color:#334155;">${fmtINR(r.gross)}</span>`,
                     discDisplay,
+                    refundDisplay,
                     `<strong style="color:#059669;font-size:0.9rem;">${fmtINR(r.net)}</strong>`,
                     `<span style="display:inline-block;padding:2px 8px;border-radius:6px;font-size:0.72rem;font-weight:700;letter-spacing:0.5px;${payBadgeStyle}">${payMethod}</span>`,
                     statusBadge(r.status)
@@ -1296,14 +1313,16 @@ async function renderProdDiscounts(data, supabase) {
             colors: ['#f43f5e', '#a855f7', '#0ea5e9', '#f59e0b']
         });
 
-        data.headers = ['Invoice Ref', 'Date', 'Customer', 'Discount Type', 'Code / Campaign', 'Gross Amount', 'Discount (₹)', 'Final Amount', 'Effective %'];
+        // headers: Date & Time | Sale Ref | Customer | Product | Category | Discount Type | Discount Name | Gross Amount | Discount Amount | Final Amount | Effective %
         setupReportTable(data.headers, rows, {
             unitName: 'discounts',
             reportFileName: 'Product_Discounts_Report',
             rowFormatter: (r) => [
-                `<strong style="color:#4f46e5;">${r.ref}</strong>`,
-                fmtDate(r.date),
+                `<span style="white-space:nowrap;font-size:0.8rem;color:#475569;">${r.date}</span>`,
+                `<strong style="color:#4f46e5;">#${r.ref}</strong>`,
                 `<strong>${r.customer}</strong>`,
+                `<span style="color:#334155;font-size:0.85rem;">${r.product || '—'}</span>`,
+                `<span style="display:inline-block;padding:2px 8px;border-radius:12px;background:#f1f5f9;color:#475569;font-weight:600;font-size:0.75rem;">${r.category || '—'}</span>`,
                 statusBadge(r.type),
                 `<code style="background:#f8fafc;padding:2px 6px;border-radius:4px;border:1px solid #e2e8f0;font-weight:600;font-size:0.75rem;">${r.code}</code>`,
                 fmtINR(r.before),
@@ -1380,7 +1399,7 @@ async function renderProdReturns(data, supabase) {
             colors: ['#ef4444', '#f59e0b', '#ec4899', '#6366f1', '#14b8a6']
         });
 
-        data.headers = ['Return Ref', 'Original Sale', 'Date', 'Product', 'Qty', 'Product Value', 'Refunded Amount', 'Refund Method', 'Reason', 'Status'];
+        // headers: Return Ref | Original Sale | Date | Product | Category | Qty | Product Value | Refunded Amount | Refund Method | Reason | Status
         setupReportTable(data.headers, rows, {
             unitName: 'returns',
             reportFileName: 'Product_Returns_Report',
@@ -1389,6 +1408,7 @@ async function renderProdReturns(data, supabase) {
                 `<span style="color:#64748b;">${r.originalRef}</span>`,
                 fmtDate(r.date),
                 `<strong>${r.product}</strong>`,
+                `<span style="display:inline-block;padding:2px 8px;border-radius:12px;background:#f1f5f9;color:#475569;font-weight:600;font-size:0.75rem;">${r.category || '—'}</span>`,
                 `<strong>${r.qty}</strong>`,
                 fmtINR(r.val),
                 `<strong style="color:#dc2626;">-${fmtINR(r.refund)}</strong>`,
@@ -1465,7 +1485,7 @@ async function renderProdPayments(data, supabase) {
             colors: ['#06b6d4', '#3b82f6', '#10b981', '#f59e0b']
         });
 
-        data.headers = ['Payment Ref', 'Invoice Ref', 'Date & Time', 'Customer', 'Sale Total', 'Collected Amount', 'Payment Mode', 'Status'];
+        // headers: Payment Ref | Invoice Ref | Date & Time | Customer | Product | Category | Sale Total | Collected Amount | Payment Mode | Status
         setupReportTable(data.headers, rows, {
             unitName: 'payments',
             reportFileName: 'Sales_Payments_Report',
@@ -1474,6 +1494,8 @@ async function renderProdPayments(data, supabase) {
                 `<span style="color:#64748b;">${r.saleRef}</span>`,
                 `<span style="color:#64748b;font-size:0.8rem;">${r.datetime}</span>`,
                 `<strong>${r.customer}</strong>`,
+                `<span style="color:#334155;font-size:0.85rem;">${r.product || '—'}</span>`,
+                `<span style="display:inline-block;padding:2px 8px;border-radius:12px;background:#f1f5f9;color:#475569;font-weight:600;font-size:0.75rem;">${r.category || '—'}</span>`,
                 fmtINR(r.bill),
                 `<strong style="color:#059669;">${fmtINR(r.collected)}</strong>`,
                 `<span style="display:inline-block;padding:2px 8px;border-radius:12px;background:#cffafe;color:#155e75;font-weight:600;font-size:0.75rem;">${r.mode}</span>`,
