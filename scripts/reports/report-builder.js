@@ -531,7 +531,7 @@ const REPORT_TYPES = {
         kpi3: { label: 'Avg Bookings per Staff', value: 'Loading...' },
         kpi4: { label: 'Inactive Staff',         value: 'Loading...' },
         tableTitle: 'Staff Directory & Performance Leaderboard',
-        headers: ['Staff Member', 'Role', 'Phone', 'Completed Bookings', 'Service Revenue', 'Retail Sales', 'Membership Sales', 'Total Revenue', 'Avg Ticket', 'Status', 'Action'],
+        headers: ['Staff Member', 'Role', 'Contact', 'Bookings', 'Service Rev', 'Retail Sales', 'Membership Sales', 'Total Revenue', 'Avg Ticket', 'Discount Given', 'Status', 'Action'],
         rows: []
     },
     'staff-insights': {
@@ -547,6 +547,36 @@ const REPORT_TYPES = {
         kpi4: { label: 'Membership Sales',        value: 'Loading...' },
         tableTitle: 'Staff Activity & Transaction History',
         headers: ['Date & Time', 'Service / Items', 'Customer', 'Gross Amount', 'Discount', 'Final Paid', 'Payment Status', 'Status'],
+        rows: []
+    },
+    'discount-usages': {
+        title: 'Discount Usages',
+        subtitle: 'Comprehensive breakdown of coupon redemptions, promotional offers, and membership benefits',
+        icon: 'tag',
+        backCat: 'discounts',
+        leftChartTitle: 'Discounts Trend (Coupons vs Offers vs Memberships)',
+        rightChartTitle: 'Discounts Share by Type',
+        kpi1: { label: 'Total Discounts Given', value: 'Loading...' },
+        kpi2: { label: 'Coupon Discounts',      value: 'Loading...' },
+        kpi3: { label: 'Offer Discounts',       value: 'Loading...' },
+        kpi4: { label: 'Membership Discounts',  value: 'Loading...' },
+        tableTitle: 'Discount Usage History & Audit Ledger',
+        headers: ['Date & Time', 'Customer', 'Staff', 'Type', 'Discount Name', 'Applied On', 'Gross Discount', 'Reversal', 'Net Discount', 'Status'],
+        rows: []
+    },
+    'discounts': {
+        title: 'Discount Usages',
+        subtitle: 'Comprehensive breakdown of coupon redemptions, promotional offers, and membership benefits',
+        icon: 'tag',
+        backCat: 'discounts',
+        leftChartTitle: 'Discounts Trend (Coupons vs Offers vs Memberships)',
+        rightChartTitle: 'Discounts Share by Type',
+        kpi1: { label: 'Total Discounts Given', value: 'Loading...' },
+        kpi2: { label: 'Coupon Discounts',      value: 'Loading...' },
+        kpi3: { label: 'Offer Discounts',       value: 'Loading...' },
+        kpi4: { label: 'Membership Discounts',  value: 'Loading...' },
+        tableTitle: 'Discount Usage History & Audit Ledger',
+        headers: ['Date & Time', 'Customer', 'Staff', 'Type', 'Discount Name', 'Applied On', 'Gross Discount', 'Reversal', 'Net Discount', 'Status'],
         rows: []
     }
 };
@@ -596,6 +626,10 @@ const TYPE_MODULE_MAP = {
     'staff':          './report-modules/staff.js?v=2',
     'staff-overview': './report-modules/staff.js?v=2',
     'staff-insights': './report-modules/staff.js?v=2',
+
+    // Discounts
+    'discount-usages': './report-modules/discounts.js?v=1',
+    'discounts':       './report-modules/discounts.js?v=1',
 
     // Misc
     'membership': './report-modules/memberships.js',
@@ -863,7 +897,8 @@ document.addEventListener('DOMContentLoaded', async () => {
                 customers:   'Customers',
                 products:    'Product Sales',
                 memberships: 'Memberships',
-                membership:  'Memberships'
+                membership:  'Memberships',
+                discounts:   'Discount Usages'
             };
             backLinkEl.textContent = '\u2190 Back to ' + (catLabels[data.backCat] || data.backCat) + ' Reports';
             backLinkEl.href        = 'report-category.html?cat=' + data.backCat;

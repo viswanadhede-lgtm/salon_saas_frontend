@@ -247,11 +247,27 @@ const CATEGORIES = {
                 colorClass: 'bg-rose'
             }
         ]
+    },
+    discounts: {
+        title: 'Discount Usages',
+        subtitle: 'Coupon redemptions, promotional offers, and membership discount analytics',
+        icon: 'tag',
+        colorClass: 'bg-rose',
+        subReports: [
+            {
+                type: 'discount-usages',
+                label: 'Discount Usages Report',
+                desc: 'Comprehensive breakdown of coupon codes, special offers, and membership perks',
+                icon: 'tag',
+                colorClass: 'bg-rose'
+            }
+        ]
     }
 };
 
-CATEGORIES['product-sales'] = CATEGORIES.products;
-CATEGORIES['membership']    = CATEGORIES.memberships;
+CATEGORIES['product-sales']   = CATEGORIES.products;
+CATEGORIES['membership']      = CATEGORIES.memberships;
+CATEGORIES['discount-usages'] = CATEGORIES.discounts;
 
 // ============================================================
 // Render
@@ -273,7 +289,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const bannerSub   = document.getElementById('bannerSubtitle');
 
     if (banner) {
-        if (['bookings', 'products', 'product-sales', 'memberships', 'membership'].includes(cat)) {
+        if (['bookings', 'products', 'product-sales', 'memberships', 'membership', 'discounts', 'discount-usages'].includes(cat)) {
             banner.classList.add('banner-plain');
         } else {
             banner.classList.remove('banner-plain');
