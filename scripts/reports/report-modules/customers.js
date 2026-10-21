@@ -78,6 +78,169 @@ async function callCustomersRpc(supabase, companyId, branchId, start, end, custo
 }
 
 // ============================================================================
+// REUSABLE PAGINATION & TABLE CONTROLLER
+// ============================================================================
+
+function setupReportTable(headers, rows, options = {}) {
+    const thead = document.getElementById('tableHead');
+    const tbody = document.getElementById('tableBody');
+    const recordBadge = document.getElementById('tableRecordCountBadge');
+    const searchInput = document.getElementById('tableSearchInput');
+    const exportBtn = document.getElementById('btnExportCSV');
+    const printBtn = document.getElementById('btnPrintTable');
+    const paginationInfo = document.getElementById('paginationInfo');
+    const paginationControls = document.getElementById('paginationControls');
+
+    const pageSize = options.pageSize || 10;
+    const unitName = options.unitName || 'records';
+    let currentPage = 1;
+    let filteredRows = [...(rows || [])];
+
+    // Set table headers
+    if (thead) {
+        thead.innerHTML = `<tr>${headers.map(h => `<th>${h}</th>`).join('')}</tr>`;
+    }
+
+    function renderPage(page) {
+        currentPage = page;
+        const total = filteredRows.length;
+        const totalPages = Math.max(1, Math.ceil(total / pageSize));
+        if (currentPage > totalPages) currentPage = totalPages;
+        if (currentPage < 1) currentPage = 1;
+
+        const startIdx = (currentPage - 1) * pageSize;
+        const endIdx = Math.min(startIdx + pageSize, total);
+        const pageItems = filteredRows.slice(startIdx, endIdx);
+
+        // Update record count badge
+        if (recordBadge) {
+            recordBadge.textContent = `${total.toLocaleString('en-IN')} ${unitName}`;
+        }
+
+        // Render rows
+        if (!tbody) return;
+        if (pageItems.length === 0) {
+            tbody.innerHTML = `<tr><td colspan="${headers.length}" style="text-align:center;padding:2.5rem;color:#94a3b8;">No matching ${unitName} found.</td></tr>`;
+        } else {
+            tbody.innerHTML = pageItems.map(r => {
+                const cells = Array.isArray(r) ? r : Object.values(r);
+                return `<tr>${cells.map(c => `<td>${c}</td>`).join('')}</tr>`;
+            }).join('');
+        }
+
+        // Update pagination text
+        if (paginationInfo) {
+            if (total === 0) {
+                paginationInfo.textContent = `Showing 0 to 0 of 0 ${unitName}`;
+            } else {
+                paginationInfo.textContent = `Showing ${(startIdx + 1).toLocaleString('en-IN')} to ${endIdx.toLocaleString('en-IN')} of ${total.toLocaleString('en-IN')} ${unitName}`;
+            }
+        }
+
+        // Update pagination controls
+        if (paginationControls) {
+            if (totalPages <= 1) {
+                paginationControls.innerHTML = '';
+            } else {
+                let html = '';
+                html += `<button class="page-btn" ${currentPage === 1 ? 'disabled' : ''} data-page="${currentPage - 1}">Previous</button>`;
+                for (let p = 1; p <= totalPages; p++) {
+                    if (p === 1 || p === totalPages || (p >= currentPage - 1 && p <= currentPage + 1)) {
+                        html += `<button class="page-btn ${p === currentPage ? 'active' : ''}" data-page="${p}">${p}</button>`;
+                    } else if (p === currentPage - 2 || p === currentPage + 2) {
+                        html += `<span class="page-dots" style="color:#94a3b8;padding:0 4px;font-size:0.85rem;">...</span>`;
+                    }
+                }
+                html += `<button class="page-btn" ${currentPage === totalPages ? 'disabled' : ''} data-page="${currentPage + 1}">Next</button>`;
+                paginationControls.innerHTML = html;
+
+                paginationControls.querySelectorAll('.page-btn:not([disabled])').forEach(btn => {
+                    btn.onclick = () => {
+                        const target = parseInt(btn.getAttribute('data-page'));
+                        if (!isNaN(target)) renderPage(target);
+                    };
+                });
+            }
+        }
+
+        if (window.feather) {
+            try { feather.replace(); } catch (e) {}
+        }
+    }
+
+    // Wire live search
+    if (searchInput) {
+        if (options.clearSearch !== false) {
+            searchInput.value = '';
+        }
+        if (options.searchPlaceholder) {
+            searchInput.placeholder = options.searchPlaceholder;
+        }
+        searchInput.oninput = (e) => {
+            const q = (e.target.value || '').toLowerCase().trim();
+            if (!q) {
+                filteredRows = [...(rows || [])];
+            } else {
+                filteredRows = (rows || []).filter(r => {
+                    if (options.searchPredicate) {
+                        return options.searchPredicate(r, q);
+                    }
+                    if (r && r._raw) {
+                        const raw = r._raw;
+                        const match = (raw.name || '').toLowerCase().includes(q) ||
+                                      (raw.phone || '').toLowerCase().includes(q) ||
+                                      (raw.email || '').toLowerCase().includes(q) ||
+                                      (raw.tag || '').toLowerCase().includes(q);
+                        if (match) return true;
+                    }
+                    const text = Array.isArray(r)
+                        ? r.map(c => String(c).replace(/<[^>]*>?/gm, '')).join(' ').toLowerCase()
+                        : JSON.stringify(r).toLowerCase();
+                    return text.includes(q);
+                });
+            }
+            renderPage(1);
+        };
+    }
+
+    // Wire Export CSV
+    if (exportBtn) {
+        exportBtn.onclick = () => {
+            if (!filteredRows || filteredRows.length === 0) {
+                alert(`No ${unitName} to export.`);
+                return;
+            }
+            const cleanHeaders = headers.map(h => `"${h.replace(/"/g, '""')}"`);
+            const csvLines = [cleanHeaders.join(',')];
+            filteredRows.forEach(r => {
+                const rawCells = Array.isArray(r) ? r : Object.values(r);
+                const line = rawCells.map(c => {
+                    const plain = String(c).replace(/<[^>]*>?/gm, '').replace(/\s+/g, ' ').trim();
+                    return `"${plain.replace(/"/g, '""')}"`;
+                });
+                csvLines.push(line.join(','));
+            });
+            const blob = new Blob([csvLines.join('\n')], { type: 'text/csv;charset=utf-8;' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `${options.reportFileName || 'Customer_Report'}_${new Date().toISOString().split('T')[0]}.csv`;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+        };
+    }
+
+    // Wire Print
+    if (printBtn) {
+        printBtn.onclick = () => window.print();
+    }
+
+    renderPage(1);
+}
+
+// ============================================================================
 // 1. SUB-REPORT 1: CUSTOMER OVERVIEW (Macro Salon-Wide View)
 // ============================================================================
 
@@ -90,9 +253,11 @@ async function renderCustMetrics(data, supabase) {
     const filterBranch = document.getElementById('filterBranch');
     const btnApply     = document.getElementById('btnApplyFilters');
 
-    // Remove any leftover Customer Insights container if user switched sub-reports
+    // Remove any leftover Customer Insights container or tabs if user switched sub-reports
     const oldInsightsWrap = document.getElementById('custInsightsTopWrap');
     if (oldInsightsWrap) oldInsightsWrap.remove();
+    const oldInsightsTabs = document.getElementById('custInsightsTabsBar');
+    if (oldInsightsTabs) oldInsightsTabs.remove();
 
     const loadCustomerOverview = async () => {
         const start = filterStart ? filterStart.value : ((new Date(Date.now() - 30 * 86400000)).toISOString().split('T')[0]);
@@ -337,10 +502,13 @@ async function renderCustMetrics(data, supabase) {
         }
     };
 
-    // Helper: Build Table with 4 Cohort Tabs
+    // Helper: Build Table with 4 Cohort Tabs and Interactive Pagination
     const renderOverviewTableWithTabs = (clients) => {
         const tableContainer = document.querySelector('.data-table-container');
         if (!tableContainer) return;
+
+        const titleEl = document.getElementById('tableTitleText');
+        if (titleEl) titleEl.textContent = 'Customer Registry';
 
         let tabBar = document.getElementById('custOverviewTabsBar');
         if (!tabBar) {
@@ -375,80 +543,71 @@ async function renderCustMetrics(data, supabase) {
             </button>
         `;
 
-        let activeTab = 'all';
-        let searchQuery = '';
-
         const headers = [
             'Customer', 'Joined Date', 'Total Visits', 'Total Spent',
             'Bookings', 'Products', 'Membership', 'Discounts Saved',
             'Last Visit', 'Tag', 'Action'
         ];
 
-        const filterRows = () => {
-            let filtered = clients;
-            if (activeTab === 'loyal')  filtered = clients.filter(c => c.is_loyal);
-            if (activeTab === 'vip')    filtered = clients.filter(c => c.is_vip);
-            if (activeTab === 'member') filtered = clients.filter(c => c.is_member);
+        const formatCustomerRows = (list) => {
+            return list.map(c => {
+                const row = [
+                    `<div style="display:flex;align-items:center;gap:10px;">
+                        <div class="cust-avatar-pill">${(c.name || 'C').charAt(0).toUpperCase()}</div>
+                        <div>
+                            <strong style="color:#0f172a;display:block;">${c.name}</strong>
+                            <span style="color:#64748b;font-size:0.75rem;">${c.phone}</span>
+                        </div>
+                    </div>`,
+                    c.joined,
+                    `<strong>${c.visits}</strong>`,
+                    `<strong>${formatCurrency(c.spent)}</strong>`,
+                    `<span style="color:#2563eb;font-weight:500;">${formatCurrency(c.spent_bookings)}</span>`,
+                    `<span style="color:#d97706;font-weight:500;">${formatCurrency(c.spent_products)}</span>`,
+                    `<span style="color:#ca8a04;font-weight:500;">${formatCurrency(c.spent_memberships)}</span>`,
+                    `<span style="color:#e11d48;font-weight:600;">${c.discounts > 0 ? '-' + formatCurrency(c.discounts) : '₹0'}</span>`,
+                    c.last_visit,
+                    `<span class="status-pill ${c.tag.toLowerCase()}">${c.tag}</span>`,
+                    `<a href="report-detail.html?type=cust-insights&customerId=${c.id}&cat=customers" class="btn-view-360">
+                        <i data-feather="user-check" style="width:13px;height:13px;"></i> View 360°
+                    </a>`
+                ];
+                row._raw = c;
+                return row;
+            });
+        };
 
-            if (searchQuery) {
-                const q = searchQuery.toLowerCase();
-                filtered = filtered.filter(c =>
-                    c.name.toLowerCase().includes(q) ||
-                    c.phone.toLowerCase().includes(q) ||
-                    c.email.toLowerCase().includes(q)
-                );
-            }
+        const tabDatasets = {
+            all:    { name: 'All Customers', rows: formatCustomerRows(clients) },
+            loyal:  { name: 'Loyal Clients', rows: formatCustomerRows(clients.filter(c => c.is_loyal)) },
+            vip:    { name: 'VIP Clients', rows: formatCustomerRows(clients.filter(c => c.is_vip)) },
+            member: { name: 'Membership Clients', rows: formatCustomerRows(clients.filter(c => c.is_member)) }
+        };
 
-            const badge = document.getElementById('tableRecordCountBadge');
-            if (badge) badge.textContent = `${filtered.length} customers`;
+        const activateTab = (tabKey) => {
+            tabBar.querySelectorAll('.report-tab-btn').forEach(btn => {
+                btn.classList.toggle('active', btn.getAttribute('data-tab') === tabKey);
+            });
 
-            const rows = filtered.map(c => [
-                `<div style="display:flex;align-items:center;gap:10px;">
-                    <div class="cust-avatar-pill">${c.name.charAt(0).toUpperCase()}</div>
-                    <div>
-                        <strong style="color:#0f172a;display:block;">${c.name}</strong>
-                        <span style="color:#64748b;font-size:0.75rem;">${c.phone}</span>
-                    </div>
-                </div>`,
-                c.joined,
-                `<strong>${c.visits}</strong>`,
-                `<strong>${formatCurrency(c.spent)}</strong>`,
-                `<span style="color:#2563eb;font-weight:500;">${formatCurrency(c.spent_bookings)}</span>`,
-                `<span style="color:#d97706;font-weight:500;">${formatCurrency(c.spent_products)}</span>`,
-                `<span style="color:#ca8a04;font-weight:500;">${formatCurrency(c.spent_memberships)}</span>`,
-                `<span style="color:#e11d48;font-weight:600;">-${formatCurrency(c.discounts)}</span>`,
-                c.last_visit,
-                `<span class="status-pill ${c.tag.toLowerCase()}">${c.tag}</span>`,
-                `<a href="report-detail.html?type=cust-insights&customerId=${c.id}&cat=customers" class="btn-view-360">
-                    <i data-feather="user-check" style="width:13px;height:13px;"></i> View 360°
-                </a>`
-            ]);
-
-            updateTable(headers, rows);
-            if (window.feather) feather.replace();
+            const ds = tabDatasets[tabKey] || tabDatasets.all;
+            setupReportTable(headers, ds.rows, {
+                unitName: 'customers',
+                reportFileName: `Customer_Registry_${tabKey}`,
+                searchPlaceholder: 'Search customer by name, phone, or email...',
+                pageSize: 10
+            });
         };
 
         // Wire Tab click
         tabBar.querySelectorAll('.report-tab-btn').forEach(btn => {
             btn.addEventListener('click', () => {
-                tabBar.querySelectorAll('.report-tab-btn').forEach(b => b.classList.remove('active'));
-                btn.classList.add('active');
-                activeTab = btn.getAttribute('data-tab');
-                filterRows();
+                const tabKey = btn.getAttribute('data-tab');
+                activateTab(tabKey);
             });
         });
 
-        // Wire Search input
-        const searchInput = document.getElementById('tableSearchInput');
-        if (searchInput) {
-            searchInput.placeholder = 'Search customer by name, phone, or email...';
-            searchInput.oninput = (e) => {
-                searchQuery = e.target.value.trim();
-                filterRows();
-            };
-        }
-
-        filterRows();
+        // Initialize with 'all' tab
+        activateTab('all');
     };
 
     if (btnApply) {
@@ -474,6 +633,10 @@ async function renderCustInsights(data, supabase) {
     // Read target customerId from URL parameter
     const urlParams = new URLSearchParams(window.location.search);
     let targetCustomerId = urlParams.get('customerId') || null;
+
+    // Remove any leftover Customer Overview tab bar if user switched sub-reports
+    const oldOverviewTabs = document.getElementById('custOverviewTabsBar');
+    if (oldOverviewTabs) oldOverviewTabs.remove();
 
     // ── Inject Top Search & Profile Dossier Container ───────────────────────
     let topWrap = document.getElementById('custInsightsTopWrap');
@@ -829,34 +992,35 @@ async function renderCustInsights(data, supabase) {
             </button>
         `;
 
-        let activeTab = 'bookings';
-        let searchQuery = '';
-
         const tabConfigs = {
             bookings: {
                 title: `${profile.name || 'Customer'}'s Booking History`,
                 headers: ['Date & Time', 'Service(s)', 'Staff', 'Gross Total', 'Discount', 'Final Paid', 'Payment', 'Status'],
-                getRows: () => rawBookings.map(b => [
+                unitName: 'bookings',
+                reportFileName: `${(profile.name || 'Customer').replace(/\s+/g, '_')}_Bookings`,
+                rows: rawBookings.map(b => [
                     b.col_datetime,
                     `<span class="status-pill active" style="background:#e0e7ff;color:#3730a3;">${b.col_service}</span>`,
                     b.col_staff,
                     formatCurrency(b.col_gross),
-                    b.col_discount.startsWith('-') ? `<span style="color:#e11d48;font-weight:600;">${b.col_discount}</span>` : b.col_discount,
+                    (b.col_discount && b.col_discount.startsWith('-')) ? `<span style="color:#e11d48;font-weight:600;">${b.col_discount}</span>` : (b.col_discount || '—'),
                     `<strong>${formatCurrency(b.col_final)}</strong>`,
                     `<span class="status-pill completed">${b.col_payment}</span>`,
-                    `<span class="status-pill ${b.col_status.toLowerCase()}">${b.col_status}</span>`
+                    `<span class="status-pill ${(b.col_status || '').toLowerCase()}">${b.col_status}</span>`
                 ])
             },
             products: {
                 title: `${profile.name || 'Customer'}'s Retail POS Purchases`,
                 headers: ['Sale Date', 'Products', 'Categories', 'Qty', 'Gross Total', 'Discount', 'Final Amount', 'Payment Mode', 'Billed By'],
-                getRows: () => rawProducts.map(p => [
+                unitName: 'product purchases',
+                reportFileName: `${(profile.name || 'Customer').replace(/\s+/g, '_')}_Retail_POS`,
+                rows: rawProducts.map(p => [
                     p.col_date,
                     p.col_products,
                     p.col_categories,
                     p.col_qty,
                     formatCurrency(p.col_gross),
-                    p.col_discount.startsWith('-') ? `<span style="color:#e11d48;font-weight:600;">${p.col_discount}</span>` : p.col_discount,
+                    (p.col_discount && p.col_discount.startsWith('-')) ? `<span style="color:#e11d48;font-weight:600;">${p.col_discount}</span>` : (p.col_discount || '—'),
                     `<strong>${formatCurrency(p.col_final)}</strong>`,
                     p.col_payment,
                     p.col_billed_by
@@ -865,58 +1029,49 @@ async function renderCustInsights(data, supabase) {
             memberships: {
                 title: `${profile.name || 'Customer'}'s Membership Plans`,
                 headers: ['Plan Name', 'Purchase Date', 'Duration', 'Expiry Date', 'Plan Price', 'Discount', 'Final Paid', 'Payment Mode', 'Status'],
-                getRows: () => rawMemberships.map(m => [
+                unitName: 'membership plans',
+                reportFileName: `${(profile.name || 'Customer').replace(/\s+/g, '_')}_Memberships`,
+                rows: rawMemberships.map(m => [
                     m.col_plan,
                     m.col_purchase_date,
                     m.col_duration,
                     m.col_expiry_date,
                     formatCurrency(m.col_plan_price),
-                    m.col_discount.startsWith('-') ? `<span style="color:#e11d48;font-weight:600;">${m.col_discount}</span>` : m.col_discount,
+                    (m.col_discount && m.col_discount.startsWith('-')) ? `<span style="color:#e11d48;font-weight:600;">${m.col_discount}</span>` : (m.col_discount || '—'),
                     `<strong>${formatCurrency(m.col_final)}</strong>`,
                     m.col_payment,
-                    `<span class="status-pill ${m.col_status.toLowerCase() === 'active' ? 'active' : 'cancelled'}">${m.col_status}</span>`
+                    `<span class="status-pill ${(m.col_status || '').toLowerCase() === 'active' ? 'active' : 'cancelled'}">${m.col_status}</span>`
                 ])
             }
         };
 
-        const switchTabAndRender = () => {
-            const config = tabConfigs[activeTab];
+        const activateTab = (tabKey) => {
+            tabBar.querySelectorAll('.report-tab-btn').forEach(btn => {
+                btn.classList.toggle('active', btn.getAttribute('data-tab') === tabKey);
+            });
+
+            const config = tabConfigs[tabKey] || tabConfigs.bookings;
             const titleEl = document.getElementById('tableTitleText');
             if (titleEl) titleEl.textContent = config.title;
 
-            let rows = config.getRows();
-
-            if (searchQuery) {
-                const q = searchQuery.toLowerCase();
-                rows = rows.filter(r => r.some(cell => String(cell).toLowerCase().includes(q)));
-            }
-
-            const countBadge = document.getElementById('tableRecordCountBadge');
-            if (countBadge) countBadge.textContent = `${rows.length} records`;
-
-            updateTable(config.headers, rows);
-            if (window.feather) feather.replace();
+            setupReportTable(config.headers, config.rows, {
+                unitName: config.unitName,
+                reportFileName: config.reportFileName,
+                searchPlaceholder: 'Search within selected ledger tab...',
+                pageSize: 10
+            });
         };
 
+        // Wire Tab click
         tabBar.querySelectorAll('.report-tab-btn').forEach(btn => {
             btn.addEventListener('click', () => {
-                tabBar.querySelectorAll('.report-tab-btn').forEach(b => b.classList.remove('active'));
-                btn.classList.add('active');
-                activeTab = btn.getAttribute('data-tab');
-                switchTabAndRender();
+                const tabKey = btn.getAttribute('data-tab');
+                activateTab(tabKey);
             });
         });
 
-        const searchInput = document.getElementById('tableSearchInput');
-        if (searchInput) {
-            searchInput.placeholder = 'Search within selected ledger tab...';
-            searchInput.oninput = (e) => {
-                searchQuery = e.target.value.trim();
-                switchTabAndRender();
-            };
-        }
-
-        switchTabAndRender();
+        // Initialize with 'bookings' tab
+        activateTab('bookings');
     };
 
     if (btnApply) {
