@@ -318,7 +318,7 @@ const REPORT_TYPES = {
         kpi3: { label: 'VIP Clients',                value: 'Loading...' },
         kpi4: { label: 'Loyal Customers (2+ Visits)', value: 'Loading...' },
         tableTitle: 'Customer Registry',
-        headers: ['Customer', 'Joined Date', 'Total Visits', 'Total Spent', 'Discounts Saved', 'Last Visit', 'Tag', 'Action'],
+        headers: ['Customer', 'Joined Date', 'Total Visits', 'Total Spent', 'Bookings', 'Products', 'Membership', 'Discounts Saved', 'Last Visit', 'Tag', 'Action'],
         rows: []
     },
     'cust-insights': {

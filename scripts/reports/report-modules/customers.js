@@ -36,16 +36,16 @@ async function renderCustMetrics(data, supabase) {
     // ── Demo / Fallback Data Store for Customer Overview ──────────────────
     const getOverviewData = () => {
         const clients = [
-            { id: 'c1', name: 'Anita Sharma', phone: '+91 98765 43210', email: 'anita.s@gmail.com', joined: '12 Jan 2024', visits: 6, spent: 18450, discounts: 1450, lastVisit: '18 Oct 2026 (3 days ago)', tag: 'VIP', isLoyal: true },
-            { id: 'c2', name: 'Rajesh Patel', phone: '+91 98450 12345', email: 'rajesh.p@yahoo.com', joined: '04 Mar 2024', visits: 4, spent: 9200, discounts: 600, lastVisit: '16 Oct 2026 (5 days ago)', tag: 'Member', isLoyal: true },
-            { id: 'c3', name: 'Priya Sundaram', phone: '+91 97411 98765', email: 'priya.sun@outlook.com', joined: '22 Feb 2024', visits: 5, spent: 14200, discounts: 1100, lastVisit: '14 Oct 2026 (7 days ago)', tag: 'VIP', isLoyal: true },
-            { id: 'c4', name: 'Vikram Malhotra', phone: '+91 96320 87654', email: 'vikram.m@gmail.com', joined: '19 May 2024', visits: 2, spent: 3400, discounts: 250, lastVisit: '10 Oct 2026 (11 days ago)', tag: 'Regular', isLoyal: true },
-            { id: 'c5', name: 'Sneha Reddy', phone: '+91 95123 45678', email: 'sneha.r@gmail.com', joined: '08 Jun 2024', visits: 3, spent: 6800, discounts: 500, lastVisit: '08 Oct 2026 (13 days ago)', tag: 'Member', isLoyal: true },
-            { id: 'c6', name: 'Arjun Das', phone: '+91 94231 65498', email: 'arjun.das@gmail.com', joined: '14 Jul 2024', visits: 1, spent: 1200, discounts: 0, lastVisit: '25 Sep 2026 (26 days ago)', tag: 'Regular', isLoyal: false },
-            { id: 'c7', name: 'Kavita Menon', phone: '+91 93120 78945', email: 'kavita.m@gmail.com', joined: '29 Aug 2024', visits: 3, spent: 7500, discounts: 800, lastVisit: '20 Sep 2026 (31 days ago)', tag: 'VIP', isLoyal: true },
-            { id: 'c8', name: 'Rohan Mehra', phone: '+91 92014 36587', email: 'rohan.m@rediffmail.com', joined: '02 Sep 2024', visits: 1, spent: 950, discounts: 0, lastVisit: '15 Sep 2026 (36 days ago)', tag: 'Regular', isLoyal: false },
-            { id: 'c9', name: 'Meera Nambiar', phone: '+91 91547 89632', email: 'meera.n@gmail.com', joined: '15 Sep 2024', visits: 2, spent: 4800, discounts: 350, lastVisit: '12 Sep 2026 (39 days ago)', tag: 'Member', isLoyal: true },
-            { id: 'c10', name: 'Siddharth Rao', phone: '+91 90874 12563', email: 'sid.rao@gmail.com', joined: '01 Oct 2024', visits: 1, spent: 1500, discounts: 100, lastVisit: '05 Sep 2026 (46 days ago)', tag: 'Regular', isLoyal: false }
+            { id: 'c1', name: 'Anita Sharma', phone: '+91 98765 43210', email: 'anita.s@gmail.com', joined: '12 Jan 2024', visits: 6, spent: 18450, spentBookings: 12200, spentProducts: 3750, spentMemberships: 2500, discounts: 1450, lastVisit: '18 Oct 2026 (3 days ago)', tag: 'VIP', isLoyal: true },
+            { id: 'c2', name: 'Rajesh Patel', phone: '+91 98450 12345', email: 'rajesh.p@yahoo.com', joined: '04 Mar 2024', visits: 4, spent: 9200, spentBookings: 5600, spentProducts: 1600, spentMemberships: 2000, discounts: 600, lastVisit: '16 Oct 2026 (5 days ago)', tag: 'Member', isLoyal: true },
+            { id: 'c3', name: 'Priya Sundaram', phone: '+91 97411 98765', email: 'priya.sun@outlook.com', joined: '22 Feb 2024', visits: 5, spent: 14200, spentBookings: 9800, spentProducts: 4400, spentMemberships: 0, discounts: 1100, lastVisit: '14 Oct 2026 (7 days ago)', tag: 'VIP', isLoyal: true },
+            { id: 'c4', name: 'Vikram Malhotra', phone: '+91 96320 87654', email: 'vikram.m@gmail.com', joined: '19 May 2024', visits: 2, spent: 3400, spentBookings: 2600, spentProducts: 800, spentMemberships: 0, discounts: 250, lastVisit: '10 Oct 2026 (11 days ago)', tag: 'Regular', isLoyal: true },
+            { id: 'c5', name: 'Sneha Reddy', phone: '+91 95123 45678', email: 'sneha.r@gmail.com', joined: '08 Jun 2024', visits: 3, spent: 6800, spentBookings: 3800, spentProducts: 1000, spentMemberships: 2000, discounts: 500, lastVisit: '08 Oct 2026 (13 days ago)', tag: 'Member', isLoyal: true },
+            { id: 'c6', name: 'Arjun Das', phone: '+91 94231 65498', email: 'arjun.das@gmail.com', joined: '14 Jul 2024', visits: 1, spent: 1200, spentBookings: 1200, spentProducts: 0, spentMemberships: 0, discounts: 0, lastVisit: '25 Sep 2026 (26 days ago)', tag: 'Regular', isLoyal: false },
+            { id: 'c7', name: 'Kavita Menon', phone: '+91 93120 78945', email: 'kavita.m@gmail.com', joined: '29 Aug 2024', visits: 3, spent: 7500, spentBookings: 5200, spentProducts: 2300, spentMemberships: 0, discounts: 800, lastVisit: '20 Sep 2026 (31 days ago)', tag: 'VIP', isLoyal: true },
+            { id: 'c8', name: 'Rohan Mehra', phone: '+91 92014 36587', email: 'rohan.m@rediffmail.com', joined: '02 Sep 2024', visits: 1, spent: 950, spentBookings: 950, spentProducts: 0, spentMemberships: 0, discounts: 0, lastVisit: '15 Sep 2026 (36 days ago)', tag: 'Regular', isLoyal: false },
+            { id: 'c9', name: 'Meera Nambiar', phone: '+91 91547 89632', email: 'meera.n@gmail.com', joined: '15 Sep 2024', visits: 2, spent: 4800, spentBookings: 2400, spentProducts: 900, spentMemberships: 1500, discounts: 350, lastVisit: '12 Sep 2026 (39 days ago)', tag: 'Member', isLoyal: true },
+            { id: 'c10', name: 'Siddharth Rao', phone: '+91 90874 12563', email: 'sid.rao@gmail.com', joined: '01 Oct 2024', visits: 1, spent: 1500, spentBookings: 1500, spentProducts: 0, spentMemberships: 0, discounts: 100, lastVisit: '05 Sep 2026 (46 days ago)', tag: 'Regular', isLoyal: false }
         ];
 
         return {
@@ -236,7 +236,7 @@ async function renderCustMetrics(data, supabase) {
         let activeTab = 'all';
         let searchQuery = '';
 
-        const headers = ['Customer', 'Joined Date', 'Total Visits', 'Total Spent', 'Discounts Saved', 'Last Visit', 'Tag', 'Action'];
+        const headers = ['Customer', 'Joined Date', 'Total Visits', 'Total Spent', 'Bookings', 'Products', 'Membership', 'Discounts Saved', 'Last Visit', 'Tag', 'Action'];
 
         const filterAndRenderRows = () => {
             let filtered = clientsList;
@@ -264,6 +264,11 @@ async function renderCustMetrics(data, supabase) {
                 const custCell = `<div><strong>${c.name}</strong><br><small style="color:#64748b;">${c.phone}</small></div>`;
                 const visits = `<strong>${c.visits}</strong>`;
                 const spent = `<strong style="color:#059669;">${formatCurrency(c.spent)}</strong>`;
+                const bkSpent = `<span style="font-weight:600;color:#3b82f6;">${formatCurrency(c.spentBookings)}</span>`;
+                const prodSpent = `<span style="font-weight:600;color:#f59e0b;">${formatCurrency(c.spentProducts)}</span>`;
+                const memSpent = c.spentMemberships > 0
+                    ? `<span style="font-weight:600;color:#eab308;">${formatCurrency(c.spentMemberships)}</span>`
+                    : `<span style="color:#94a3b8;font-weight:400;">—</span>`;
                 const discounts = c.discounts > 0 ? `<span style="color:#e11d48;font-weight:600;">-${formatCurrency(c.discounts)}</span>` : '<span style="color:#94a3b8;">—</span>';
                 
                 const tagStyle = c.tag === 'VIP' ? 'background:#f3e8ff;color:#6b21a8;' :
@@ -277,7 +282,7 @@ async function renderCustMetrics(data, supabase) {
                     </a>
                 `;
 
-                return [custCell, c.joined, visits, spent, discounts, c.lastVisit, tagHtml, actionBtn];
+                return [custCell, c.joined, visits, spent, bkSpent, prodSpent, memSpent, discounts, c.lastVisit, tagHtml, actionBtn];
             });
 
             updateTable(headers, rows);
