@@ -112,16 +112,16 @@ const CATEGORIES = {
         subReports: [
             {
                 type: 'cust-metrics',
-                label: 'Customers Overview',
-                desc: 'Total, new, active and inactive customers',
+                label: 'Customer Overview',
+                desc: 'Total base, membership, VIP and loyal repeat clientele',
                 icon: 'users',
                 colorClass: 'bg-violet'
             },
             {
                 type: 'cust-insights',
-                label: 'Customer Insights',
-                desc: 'Deep-dive into customer behaviour and spend',
-                icon: 'bar-chart-2',
+                label: 'Customer 360° Insights',
+                desc: 'Individual customer dossier, multi-channel spend & activity history',
+                icon: 'user-check',
                 colorClass: 'bg-purple'
             }
         ]

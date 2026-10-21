@@ -1054,3 +1054,293 @@
     }
 }
 
+/* ============================================================
+   CUSTOMER REPORTS SPECIFIC STYLES (Sub-Reports 1 & 2)
+   ============================================================ */
+
+/* Filter Tab Bar above Report Table */
+.report-tabs-bar {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 12px 18px;
+    border-bottom: 1px solid #f1f5f9;
+    background: #fafbfc;
+    overflow-x: auto;
+    scrollbar-width: none;
+}
+.report-tabs-bar::-webkit-scrollbar {
+    display: none;
+}
+
+.report-tab-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 7px 14px;
+    border-radius: 9px;
+    border: 1px solid #e2e8f0;
+    background: #ffffff;
+    font-size: 0.825rem;
+    font-weight: 600;
+    color: #475569;
+    cursor: pointer;
+    transition: all 0.15s ease;
+    white-space: nowrap;
+    user-select: none;
+}
+
+.report-tab-btn:hover {
+    background: #f8fafc;
+    border-color: #cbd5e1;
+    color: #0f172a;
+}
+
+.report-tab-btn.active {
+    background: #4f46e5;
+    border-color: #4f46e5;
+    color: #ffffff;
+    box-shadow: 0 2px 6px rgba(79, 70, 229, 0.25);
+}
+
+.report-tab-btn .tab-badge {
+    display: inline-block;
+    padding: 2px 7px;
+    border-radius: 12px;
+    font-size: 0.72rem;
+    font-weight: 700;
+    background: #f1f5f9;
+    color: #475569;
+    transition: all 0.15s ease;
+}
+
+.report-tab-btn.active .tab-badge {
+    background: rgba(255, 255, 255, 0.22);
+    color: #ffffff;
+}
+
+/* View 360° Action Button */
+.btn-view-360 {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    padding: 4px 10px;
+    border-radius: 7px;
+    border: 1px solid #c7d2fe;
+    background: #eef2ff;
+    color: #4338ca;
+    font-size: 0.76rem;
+    font-weight: 600;
+    text-decoration: none;
+    transition: all 0.15s ease;
+    white-space: nowrap;
+}
+
+.btn-view-360:hover {
+    background: #4338ca;
+    color: #ffffff;
+    border-color: #4338ca;
+    box-shadow: 0 2px 6px rgba(67, 56, 202, 0.25);
+}
+
+.btn-view-360 svg {
+    width: 12px;
+    height: 12px;
+}
+
+/* Customer Insights: Progressive Search & Header Dossier */
+.cust-insights-top-wrap {
+    margin-bottom: 1.5rem;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.cust-search-bar-wrap {
+    position: relative;
+    width: 100%;
+}
+
+.cust-search-input-box {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    background: #ffffff;
+    border: 1.5px solid #cbd5e1;
+    border-radius: 12px;
+    padding: 10px 16px;
+    box-shadow: 0 2px 8px rgba(15, 23, 42, 0.04);
+    transition: all 0.2s ease;
+}
+
+.cust-search-input-box:focus-within {
+    border-color: #4f46e5;
+    box-shadow: 0 4px 16px rgba(79, 70, 229, 0.15);
+}
+
+.cust-search-input-box svg {
+    width: 18px;
+    height: 18px;
+    color: #6366f1;
+    flex-shrink: 0;
+}
+
+.cust-search-input-box input {
+    flex: 1;
+    border: none;
+    outline: none;
+    font-size: 0.95rem;
+    font-family: inherit;
+    color: #0f172a;
+    background: transparent;
+}
+
+.cust-search-dropdown {
+    position: absolute;
+    top: calc(100% + 6px);
+    left: 0;
+    right: 0;
+    background: #ffffff;
+    border: 1px solid #cbd5e1;
+    border-radius: 12px;
+    box-shadow: 0 12px 32px rgba(15, 23, 42, 0.12);
+    z-index: 1000;
+    max-height: 320px;
+    overflow-y: auto;
+    display: none;
+}
+
+.cust-search-item {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 10px 16px;
+    border-bottom: 1px solid #f1f5f9;
+    cursor: pointer;
+    transition: background 0.15s ease;
+}
+
+.cust-search-item:last-child {
+    border-bottom: none;
+}
+
+.cust-search-item:hover {
+    background: #f8fafc;
+}
+
+.cust-search-left {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.cust-avatar-circle {
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    background: #e0e7ff;
+    color: #3730a3;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.825rem;
+    font-weight: 700;
+    flex-shrink: 0;
+}
+
+.cust-info-text strong {
+    font-size: 0.88rem;
+    color: #0f172a;
+    display: block;
+}
+
+.cust-info-text span {
+    font-size: 0.77rem;
+    color: #64748b;
+}
+
+.cust-search-right {
+    text-align: right;
+}
+
+.cust-search-spend {
+    font-size: 0.88rem;
+    font-weight: 700;
+    color: #059669;
+}
+
+/* Customer 360 Dossier Header Card */
+.cust-profile-dossier {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    background: linear-gradient(135deg, #ffffff 0%, #f8fafc 100%);
+    border: 1px solid #e2e8f0;
+    border-radius: 14px;
+    padding: 16px 20px;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.03);
+    flex-wrap: wrap;
+    gap: 14px;
+}
+
+.cust-dossier-left {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+}
+
+.cust-dossier-avatar {
+    width: 48px;
+    height: 48px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, #6366f1, #8b5cf6);
+    color: #ffffff;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.1rem;
+    font-weight: 700;
+    box-shadow: 0 2px 8px rgba(99, 102, 241, 0.3);
+}
+
+.cust-dossier-name {
+    margin: 0;
+    font-size: 1.15rem;
+    font-weight: 700;
+    color: #0f172a;
+}
+
+.cust-dossier-meta {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-top: 4px;
+    font-size: 0.8rem;
+    color: #64748b;
+    flex-wrap: wrap;
+}
+
+.cust-dossier-right {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    flex-wrap: wrap;
+}
+
+.badge-discounts-used {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 6px 12px;
+    border-radius: 20px;
+    background: #ecfdf5;
+    border: 1px solid #a7f3d0;
+    color: #047857;
+    font-size: 0.78rem;
+    font-weight: 700;
+}
+
+.badge-discounts-used svg {
+    width: 13px;
+    height: 13px;
+}
