@@ -84,7 +84,7 @@ DECLARE
     v_staff_products_share_pct   numeric := 0;
     v_staff_memberships_share_pct numeric := 0;
 
-    -- Personal Revenue Mix Percentages
+    -- Personal Revenue Mix Percentages (% of this staff's total revenue)
     v_mix_bookings_pct     numeric := 0;
     v_mix_products_pct     numeric := 0;
     v_mix_memberships_pct  numeric := 0;
@@ -116,7 +116,7 @@ BEGIN
             COALESCE(s.services_offered, 'All Services') AS services_offered,
             TO_CHAR(COALESCE(s.joined_at, s.created_at), 'DD Mon YYYY') AS joined_formatted,
 
-            -- Bookings attribution (by staff_id or staff_name fallback)
+            -- Bookings attribution
             COALESCE(bk.completed_bookings, 0) AS completed_bookings,
             COALESCE(bk.service_revenue, 0) AS service_revenue,
 
@@ -138,49 +138,61 @@ BEGIN
 
         FROM public.staff s
 
-        -- Bookings aggregation
+        -- Bookings aggregation (UUID-safe match with name fallback; aggregated to 1 row per staff)
         LEFT JOIN (
             SELECT
-                b.staff_id::uuid AS staff_uuid,
-                b.staff_name,
+                COALESCE(st.staff_id, s_name.staff_id) AS resolved_staff_id,
                 COUNT(*) AS completed_bookings,
                 COALESCE(SUM(b.final_amount), 0) AS service_revenue
             FROM public.bookings_for_business_transaction b
+            LEFT JOIN public.staff st 
+              ON NULLIF(TRIM(b.staff_id), '') = st.staff_id::text
+              AND (p_company_id IS NULL OR st.company_id = p_company_id)
+            LEFT JOIN public.staff s_name 
+              ON NULLIF(TRIM(b.staff_id), '') IS NULL 
+              AND LOWER(TRIM(b.staff_name)) = LOWER(TRIM(s_name.staff_name))
+              AND (p_company_id IS NULL OR s_name.company_id = p_company_id)
+              AND (b.branch_id IS NULL OR s_name.branch_id = b.branch_id)
             WHERE (p_company_id IS NULL OR b.company_id = p_company_id)
               AND (p_branch_id IS NULL OR b.branch_id = p_branch_id)
               AND b.booking_date BETWEEN p_start_date AND p_end_date
               AND LOWER(TRIM(COALESCE(b.status, ''))) = 'completed'
-            GROUP BY 1, 2
-        ) bk ON (bk.staff_uuid IS NOT NULL AND bk.staff_uuid = s.staff_id)
-             OR (bk.staff_uuid IS NULL AND LOWER(TRIM(bk.staff_name)) = LOWER(TRIM(s.staff_name)))
+            GROUP BY 1
+        ) bk ON bk.resolved_staff_id = s.staff_id
 
-        -- Product Sales aggregation
+        -- Product Sales aggregation (UUID-safe match with name fallback)
         LEFT JOIN (
             SELECT
-                sale.staff_id,
-                sale.staff_name,
+                COALESCE(sale.staff_id, s_name.staff_id) AS resolved_staff_id,
                 COALESCE(SUM(sale.final_amount), 0) AS retail_sales
             FROM public.sales_for_business_transactions sale
+            LEFT JOIN public.staff s_name 
+              ON sale.staff_id IS NULL 
+              AND LOWER(TRIM(sale.staff_name)) = LOWER(TRIM(s_name.staff_name))
+              AND (p_company_id IS NULL OR s_name.company_id = p_company_id)
+              AND (sale.branch_id IS NULL OR s_name.branch_id = sale.branch_id)
             WHERE (p_company_id IS NULL OR sale.company_id = p_company_id)
               AND (p_branch_id IS NULL OR sale.branch_id = p_branch_id)
               AND sale.created_at::date BETWEEN p_start_date AND p_end_date
-            GROUP BY 1, 2
-        ) ps ON (ps.staff_id IS NOT NULL AND ps.staff_id = s.staff_id)
-             OR (ps.staff_id IS NULL AND LOWER(TRIM(ps.staff_name)) = LOWER(TRIM(s.staff_name)))
+            GROUP BY 1
+        ) ps ON ps.resolved_staff_id = s.staff_id
 
         -- Membership Purchases aggregation (assigned_by_user_id is the staff id)
         LEFT JOIN (
             SELECT
-                mp.assigned_by_user_id,
-                mp.assigned_by_user_name,
+                COALESCE(mp.assigned_by_user_id, s_name.staff_id) AS resolved_staff_id,
                 COALESCE(SUM(mp.final_amount), 0) AS membership_sales
             FROM public.membership_purchases mp
+            LEFT JOIN public.staff s_name 
+              ON mp.assigned_by_user_id IS NULL 
+              AND LOWER(TRIM(mp.assigned_by_user_name)) = LOWER(TRIM(s_name.staff_name))
+              AND (p_company_id IS NULL OR s_name.company_id = p_company_id)
+              AND (mp.branch_id IS NULL OR s_name.branch_id = mp.branch_id)
             WHERE (p_company_id IS NULL OR mp.company_id = p_company_id)
               AND (p_branch_id IS NULL OR mp.branch_id = p_branch_id)
               AND mp.purchase_date BETWEEN p_start_date AND p_end_date
-            GROUP BY 1, 2
-        ) ms ON (ms.assigned_by_user_id IS NOT NULL AND ms.assigned_by_user_id = s.staff_id)
-             OR (ms.assigned_by_user_id IS NULL AND LOWER(TRIM(ms.assigned_by_user_name)) = LOWER(TRIM(s.staff_name)))
+            GROUP BY 1
+        ) ms ON ms.resolved_staff_id = s.staff_id
 
         WHERE (p_company_id IS NULL OR s.company_id = p_company_id)
           AND (p_branch_id IS NULL OR s.branch_id = p_branch_id)
@@ -287,10 +299,10 @@ BEGIN
             ORDER BY ms.month_start ASC
         )
         SELECT
-            jsonb_agg(month_label ORDER BY month_start),
-            jsonb_agg(active_count ORDER BY month_start),
-            jsonb_agg(leave_count ORDER BY month_start),
-            jsonb_agg(new_joined ORDER BY month_start)
+            COALESCE(jsonb_agg(month_label ORDER BY month_start), '[]'::jsonb),
+            COALESCE(jsonb_agg(active_count ORDER BY month_start), '[]'::jsonb),
+            COALESCE(jsonb_agg(leave_count ORDER BY month_start), '[]'::jsonb),
+            COALESCE(jsonb_agg(new_joined ORDER BY month_start), '[]'::jsonb)
         INTO
             v_trend_months,
             v_trend_active,
@@ -358,6 +370,36 @@ BEGIN
         FROM public.staff s
         WHERE s.staff_id = p_staff_id;
 
+        -- Fallback if p_staff_id was deleted or not found
+        IF v_s_name IS NULL THEN
+            SELECT
+                s.staff_id,
+                s.staff_name,
+                COALESCE(s.role_name, 'Staff'),
+                COALESCE(s.phone, '—'),
+                COALESCE(s.email, '—'),
+                TO_CHAR(COALESCE(s.joined_at, s.created_at), 'DD Mon YYYY'),
+                COALESCE(s.status, 'active'),
+                COALESCE(s.services_offered, 'All Services'),
+                COALESCE(s.notes, '—')
+            INTO
+                p_staff_id,
+                v_s_name,
+                v_s_role,
+                v_s_phone,
+                v_s_email,
+                v_s_joined,
+                v_s_status,
+                v_s_services,
+                v_s_notes
+            FROM public.staff s
+            WHERE (p_company_id IS NULL OR s.company_id = p_company_id)
+              AND (p_branch_id IS NULL OR s.branch_id = p_branch_id)
+              AND LOWER(TRIM(COALESCE(s.status, ''))) != 'deleted'
+            ORDER BY s.staff_name ASC
+            LIMIT 1;
+        END IF;
+
         -- 2. Fetch Salon Totals in Period (for benchmarking % of all other staff)
         SELECT COALESCE(SUM(b.final_amount), 0)
         INTO v_salon_bookings_rev
@@ -387,20 +429,35 @@ BEGIN
         SELECT COALESCE(SUM(b.final_amount), 0)
         INTO v_staff_bookings_rev
         FROM public.bookings_for_business_transaction b
-        WHERE (b.staff_id::text = p_staff_id::text OR LOWER(TRIM(b.staff_name)) = LOWER(TRIM(v_s_name)))
+        WHERE (p_company_id IS NULL OR b.company_id = p_company_id)
+          AND (p_branch_id IS NULL OR b.branch_id = p_branch_id)
+          AND (
+              (NULLIF(TRIM(b.staff_id), '') IS NOT NULL AND b.staff_id = p_staff_id::text)
+              OR (NULLIF(TRIM(b.staff_id), '') IS NULL AND v_s_name IS NOT NULL AND LOWER(TRIM(b.staff_name)) = LOWER(TRIM(v_s_name)))
+          )
           AND b.booking_date BETWEEN p_start_date AND p_end_date
           AND LOWER(TRIM(COALESCE(b.status, ''))) = 'completed';
 
         SELECT COALESCE(SUM(sale.final_amount), 0)
         INTO v_staff_products_rev
         FROM public.sales_for_business_transactions sale
-        WHERE (sale.staff_id = p_staff_id OR LOWER(TRIM(sale.staff_name)) = LOWER(TRIM(v_s_name)))
+        WHERE (p_company_id IS NULL OR sale.company_id = p_company_id)
+          AND (p_branch_id IS NULL OR sale.branch_id = p_branch_id)
+          AND (
+              (sale.staff_id IS NOT NULL AND sale.staff_id = p_staff_id)
+              OR (sale.staff_id IS NULL AND v_s_name IS NOT NULL AND LOWER(TRIM(sale.staff_name)) = LOWER(TRIM(v_s_name)))
+          )
           AND sale.created_at::date BETWEEN p_start_date AND p_end_date;
 
         SELECT COALESCE(SUM(mp.final_amount), 0)
         INTO v_staff_memberships_rev
         FROM public.membership_purchases mp
-        WHERE (mp.assigned_by_user_id = p_staff_id OR LOWER(TRIM(mp.assigned_by_user_name)) = LOWER(TRIM(v_s_name)))
+        WHERE (p_company_id IS NULL OR mp.company_id = p_company_id)
+          AND (p_branch_id IS NULL OR mp.branch_id = p_branch_id)
+          AND (
+              (mp.assigned_by_user_id IS NOT NULL AND mp.assigned_by_user_id = p_staff_id)
+              OR (mp.assigned_by_user_id IS NULL AND v_s_name IS NOT NULL AND LOWER(TRIM(mp.assigned_by_user_name)) = LOWER(TRIM(v_s_name)))
+          )
           AND mp.purchase_date BETWEEN p_start_date AND p_end_date;
 
         v_staff_total_rev := v_staff_bookings_rev + v_staff_products_rev + v_staff_memberships_rev;
@@ -422,7 +479,7 @@ BEGIN
             v_staff_memberships_share_pct := ROUND((v_staff_memberships_rev / v_salon_memberships_rev) * 100.0, 1);
         END IF;
 
-        -- Personal Revenue Mix Percentages (Donut)
+        -- Personal Revenue Mix Percentages (% of this staff's total revenue)
         IF v_staff_total_rev > 0 THEN
             v_mix_bookings_pct    := ROUND((v_staff_bookings_rev    / v_staff_total_rev) * 100.0, 1);
             v_mix_products_pct    := ROUND((v_staff_products_rev    / v_staff_total_rev) * 100.0, 1);
@@ -445,7 +502,12 @@ BEGIN
                 DATE_TRUNC('month', b.booking_date)::date AS m_start,
                 COALESCE(SUM(b.final_amount), 0) AS amt
             FROM public.bookings_for_business_transaction b
-            WHERE (b.staff_id::text = p_staff_id::text OR LOWER(TRIM(b.staff_name)) = LOWER(TRIM(v_s_name)))
+            WHERE (p_company_id IS NULL OR b.company_id = p_company_id)
+              AND (p_branch_id IS NULL OR b.branch_id = p_branch_id)
+              AND (
+                  (NULLIF(TRIM(b.staff_id), '') IS NOT NULL AND b.staff_id = p_staff_id::text)
+                  OR (NULLIF(TRIM(b.staff_id), '') IS NULL AND v_s_name IS NOT NULL AND LOWER(TRIM(b.staff_name)) = LOWER(TRIM(v_s_name)))
+              )
               AND LOWER(TRIM(COALESCE(b.status, ''))) = 'completed'
               AND b.booking_date >= (CURRENT_DATE - '6 months'::interval)::date
             GROUP BY 1
@@ -455,7 +517,12 @@ BEGIN
                 DATE_TRUNC('month', sale.created_at::date)::date AS m_start,
                 COALESCE(SUM(sale.final_amount), 0) AS amt
             FROM public.sales_for_business_transactions sale
-            WHERE (sale.staff_id = p_staff_id OR LOWER(TRIM(sale.staff_name)) = LOWER(TRIM(v_s_name)))
+            WHERE (p_company_id IS NULL OR sale.company_id = p_company_id)
+              AND (p_branch_id IS NULL OR sale.branch_id = p_branch_id)
+              AND (
+                  (sale.staff_id IS NOT NULL AND sale.staff_id = p_staff_id)
+                  OR (sale.staff_id IS NULL AND v_s_name IS NOT NULL AND LOWER(TRIM(sale.staff_name)) = LOWER(TRIM(v_s_name)))
+              )
               AND sale.created_at >= (CURRENT_DATE - '6 months'::interval)
             GROUP BY 1
         ),
@@ -464,15 +531,20 @@ BEGIN
                 DATE_TRUNC('month', mp.purchase_date)::date AS m_start,
                 COALESCE(SUM(mp.final_amount), 0) AS amt
             FROM public.membership_purchases mp
-            WHERE (mp.assigned_by_user_id = p_staff_id OR LOWER(TRIM(mp.assigned_by_user_name)) = LOWER(TRIM(v_s_name)))
+            WHERE (p_company_id IS NULL OR mp.company_id = p_company_id)
+              AND (p_branch_id IS NULL OR mp.branch_id = p_branch_id)
+              AND (
+                  (mp.assigned_by_user_id IS NOT NULL AND mp.assigned_by_user_id = p_staff_id)
+                  OR (mp.assigned_by_user_id IS NULL AND v_s_name IS NOT NULL AND LOWER(TRIM(mp.assigned_by_user_name)) = LOWER(TRIM(v_s_name)))
+              )
               AND mp.purchase_date >= (CURRENT_DATE - '6 months'::interval)::date
             GROUP BY 1
         )
         SELECT
-            jsonb_agg(ms.month_label ORDER BY ms.month_start),
-            jsonb_agg(ROUND(COALESCE(sb.amt, 0)) ORDER BY ms.month_start),
-            jsonb_agg(ROUND(COALESCE(ss.amt, 0)) ORDER BY ms.month_start),
-            jsonb_agg(ROUND(COALESCE(sm.amt, 0)) ORDER BY ms.month_start)
+            COALESCE(jsonb_agg(ms.month_label ORDER BY ms.month_start), '[]'::jsonb),
+            COALESCE(jsonb_agg(ROUND(COALESCE(sb.amt, 0)) ORDER BY ms.month_start), '[]'::jsonb),
+            COALESCE(jsonb_agg(ROUND(COALESCE(ss.amt, 0)) ORDER BY ms.month_start), '[]'::jsonb),
+            COALESCE(jsonb_agg(ROUND(COALESCE(sm.amt, 0)) ORDER BY ms.month_start), '[]'::jsonb)
         INTO
             v_staff_monthly_months,
             v_staff_monthly_bks,
@@ -505,7 +577,12 @@ BEGIN
                 COALESCE(b.payment_status, 'Paid') AS col_payment,
                 COALESCE(b.status, 'Completed') AS col_status
             FROM public.bookings_for_business_transaction b
-            WHERE (b.staff_id::text = p_staff_id::text OR LOWER(TRIM(b.staff_name)) = LOWER(TRIM(v_s_name)))
+            WHERE (p_company_id IS NULL OR b.company_id = p_company_id)
+              AND (p_branch_id IS NULL OR b.branch_id = p_branch_id)
+              AND (
+                  (NULLIF(TRIM(b.staff_id), '') IS NOT NULL AND b.staff_id = p_staff_id::text)
+                  OR (NULLIF(TRIM(b.staff_id), '') IS NULL AND v_s_name IS NOT NULL AND LOWER(TRIM(b.staff_name)) = LOWER(TRIM(v_s_name)))
+              )
             ORDER BY b.booking_date DESC, b.start_time DESC NULLS LAST
             LIMIT 50
         ) br;
@@ -530,7 +607,12 @@ BEGIN
                 sale.final_amount AS col_final,
                 COALESCE(sale.payment_method, 'Cash') AS col_payment
             FROM public.sales_for_business_transactions sale
-            WHERE (sale.staff_id = p_staff_id OR LOWER(TRIM(sale.staff_name)) = LOWER(TRIM(v_s_name)))
+            WHERE (p_company_id IS NULL OR sale.company_id = p_company_id)
+              AND (p_branch_id IS NULL OR sale.branch_id = p_branch_id)
+              AND (
+                  (sale.staff_id IS NOT NULL AND sale.staff_id = p_staff_id)
+                  OR (sale.staff_id IS NULL AND v_s_name IS NOT NULL AND LOWER(TRIM(sale.staff_name)) = LOWER(TRIM(v_s_name)))
+              )
             ORDER BY sale.created_at DESC
             LIMIT 50
         ) pr;
@@ -555,7 +637,12 @@ BEGIN
                 COALESCE(mp.payment_method, 'UPI') AS col_payment,
                 COALESCE(mp.status, 'active') AS col_status
             FROM public.membership_purchases mp
-            WHERE (mp.assigned_by_user_id = p_staff_id OR LOWER(TRIM(mp.assigned_by_user_name)) = LOWER(TRIM(v_s_name)))
+            WHERE (p_company_id IS NULL OR mp.company_id = p_company_id)
+              AND (p_branch_id IS NULL OR mp.branch_id = p_branch_id)
+              AND (
+                  (mp.assigned_by_user_id IS NOT NULL AND mp.assigned_by_user_id = p_staff_id)
+                  OR (mp.assigned_by_user_id IS NULL AND v_s_name IS NOT NULL AND LOWER(TRIM(mp.assigned_by_user_name)) = LOWER(TRIM(v_s_name)))
+              )
             ORDER BY mp.purchase_date DESC
             LIMIT 20
         ) mr;

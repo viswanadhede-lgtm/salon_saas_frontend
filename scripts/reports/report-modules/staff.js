@@ -749,6 +749,17 @@ async function renderStaffInsights(data, supabase) {
 
         let report = await callStaffRpc(supabase, companyId, bid, start, end, staffIdToLoad);
 
+        // If no staffId was specified, auto-pick the top staff member from the returned directory
+        if (!staffIdToLoad && report && report.staff_directory && report.staff_directory.length > 0) {
+            targetStaffId = report.staff_directory[0].id;
+            try {
+                const newUrl = new URL(window.location.href);
+                newUrl.searchParams.set('staffId', targetStaffId);
+                window.history.replaceState({}, '', newUrl);
+            } catch (e) {}
+            return await loadStaffProfile(targetStaffId);
+        }
+
         // Fallback demo/initial data if RPC not yet deployed
         if (!report || !report.profile) {
             report = {
