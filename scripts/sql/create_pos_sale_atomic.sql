@@ -1,10 +1,3 @@
--- ============================================================================
--- RPC FUNCTION: public.create_pos_sale_atomic
--- Purpose: Atomically validate & deduct stock, insert line items in sales,
---          insert consolidated receipt in sales_for_business_transactions,
---          and record discount in public.discount_usages (including discount_id).
--- ============================================================================
-
 CREATE OR REPLACE FUNCTION public.create_pos_sale_atomic(
     p_company_id uuid, 
     p_branch_id uuid, 
@@ -19,7 +12,7 @@ CREATE OR REPLACE FUNCTION public.create_pos_sale_atomic(
     p_discount_type text DEFAULT NULL::text, 
     p_discount_name text DEFAULT NULL::text, 
     p_discount_amount numeric DEFAULT 0, 
-    p_final_amount numeric DEFAULT 0,
+    p_final_amount numeric DEFAULT 0, 
     p_discount_id uuid DEFAULT NULL::uuid
 )
 RETURNS jsonb
@@ -111,6 +104,7 @@ BEGIN
             product_id,
             product_name,
             category_id,
+            category_name,
             customer_id,
             customer_name,
             customer_phone,
@@ -128,6 +122,7 @@ BEGIN
             v_item_prod_id,
             COALESCE(v_item.product_name, v_current_name),
             v_item_cat_id,
+            v_item.category_name,
             p_customer_id,
             p_customer_name,
             p_customer_phone,
@@ -210,23 +205,28 @@ BEGIN
         NOW()
     );
 
-    -- 4. [NEW] Track discount in public.discount_usages
+    -- 4. Track discount in public.discount_usages (WITH discount_id and staff details)
     IF COALESCE(p_discount_amount, 0) > 0 THEN
-        -- Resolve discount_id from table if not directly provided
+        -- Auto-resolve discount_id if not directly passed
         IF v_discount_id IS NULL AND p_discount_type = 'coupon' AND p_discount_name IS NOT NULL THEN
             SELECT coupon_id INTO v_discount_id FROM public.coupons WHERE coupon_code = p_discount_name LIMIT 1;
         ELSIF v_discount_id IS NULL AND p_discount_type = 'offer' AND p_discount_name IS NOT NULL THEN
             SELECT offer_id INTO v_discount_id FROM public.offers WHERE offer_name = p_discount_name LIMIT 1;
+        ELSIF v_discount_id IS NULL AND p_discount_type = 'membership' AND p_discount_name IS NOT NULL THEN
+            SELECT membership_id INTO v_discount_id FROM public.memberships WHERE plan_name = p_discount_name LIMIT 1;
         END IF;
 
         INSERT INTO public.discount_usages (
             company_id,
             branch_id,
             customer_id,
+            staff_id,
+            staff_name,
             reference_type,
             reference_id,
             discount_type,
             discount_id,
+            membership_plan_id,
             discount_name,
             discount_amount,
             status,
@@ -237,10 +237,13 @@ BEGIN
             p_company_id,
             p_branch_id,
             p_customer_id,
+            p_staff_id,
+            p_staff_name,
             'pos',
             p_sale_id,
             p_discount_type,
             v_discount_id,
+            CASE WHEN p_discount_type = 'membership' THEN v_discount_id ELSE NULL END,
             p_discount_name,
             p_discount_amount,
             'applied',

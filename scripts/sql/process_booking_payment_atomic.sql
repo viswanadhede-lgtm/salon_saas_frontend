@@ -26,12 +26,14 @@ DECLARE
   v_branch_id    UUID;
   v_payment_id   UUID;
   v_discount_id  UUID := p_discount_id;
+  v_staff_id     UUID;
+  v_staff_name   TEXT;
 BEGIN
   -- ──────────────────────────────────────────────
   -- Get the total price and details from summary
   -- ──────────────────────────────────────────────
-  SELECT total_price, customer_id, company_id, branch_id 
-  INTO v_total_price, v_customer_id, v_company_id, v_branch_id
+  SELECT total_price, customer_id, company_id, branch_id, staff_id, staff_name
+  INTO v_total_price, v_customer_id, v_company_id, v_branch_id, v_staff_id, v_staff_name
   FROM bookings_for_business_transaction
   WHERE booking_id = p_booking_id;
 
@@ -89,25 +91,30 @@ BEGIN
   WHERE booking_id = p_booking_id;
 
   -- ──────────────────────────────────────────────
-  -- 4. [NEW] Track discount in discount_usages
+  -- 4. Track discount in discount_usages (WITH discount_id and staff details)
   -- ──────────────────────────────────────────────
   IF COALESCE(p_discount_amount, 0) > 0 THEN
-    -- Resolve discount_id from table if not directly provided
+    -- Auto-resolve discount_id if not directly passed
     IF v_discount_id IS NULL AND p_discount_type = 'coupon' AND p_discount_name IS NOT NULL THEN
       SELECT coupon_id INTO v_discount_id FROM public.coupons WHERE coupon_code = p_discount_name LIMIT 1;
     ELSIF v_discount_id IS NULL AND p_discount_type = 'offer' AND p_discount_name IS NOT NULL THEN
       SELECT offer_id INTO v_discount_id FROM public.offers WHERE offer_name = p_discount_name LIMIT 1;
+    ELSIF v_discount_id IS NULL AND p_discount_type = 'membership' AND p_discount_name IS NOT NULL THEN
+      SELECT membership_id INTO v_discount_id FROM public.memberships WHERE plan_name = p_discount_name LIMIT 1;
     END IF;
 
     INSERT INTO public.discount_usages (
       company_id,
       branch_id,
       customer_id,
+      staff_id,
+      staff_name,
       reference_type,
       reference_id,
       payment_id,
       discount_type,
       discount_id,
+      membership_plan_id,
       discount_name,
       discount_amount,
       status,
@@ -118,11 +125,14 @@ BEGIN
       v_company_id,
       v_branch_id,
       v_customer_id,
+      v_staff_id,
+      v_staff_name,
       'booking',
       p_booking_id,
       v_payment_id,
       p_discount_type,
       v_discount_id,
+      CASE WHEN p_discount_type = 'membership' THEN v_discount_id ELSE NULL END,
       p_discount_name,
       p_discount_amount,
       'applied',

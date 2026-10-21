@@ -1,32 +1,26 @@
--- ============================================================================
--- RPC FUNCTION: public.assign_membership
--- Purpose: Atomically validate plan, ensure customer exists, prevent duplicates,
---          create membership purchase, log business transaction, and update customer spend.
--- ============================================================================
-
 CREATE OR REPLACE FUNCTION public.assign_membership(
-    p_company_id            uuid,
-    p_branch_id             uuid,
-    p_membership_id         uuid,
-    p_customer_id           uuid    DEFAULT NULL,
-    p_customer_phone        text    DEFAULT NULL,
-    p_customer_name         text    DEFAULT NULL,
-    p_customer_email        text    DEFAULT NULL,
-    p_payment_method        text    DEFAULT 'cash',
-    p_purchase_date         date    DEFAULT CURRENT_DATE,
-    p_discount_type         text    DEFAULT NULL,
-    p_discount_name         text    DEFAULT NULL,
-    p_discount_amount       numeric DEFAULT NULL,
-    p_final_amount          numeric DEFAULT NULL,
-    p_assigned_by_user_id   uuid    DEFAULT NULL,
-    p_assigned_by_user_name text    DEFAULT NULL,
-    p_notes                 text    DEFAULT NULL,
-    p_discount_id           uuid    DEFAULT NULL
+    p_company_id uuid, 
+    p_branch_id uuid, 
+    p_membership_id uuid, 
+    p_customer_id uuid DEFAULT NULL::uuid, 
+    p_customer_phone text DEFAULT NULL::text, 
+    p_customer_name text DEFAULT NULL::text, 
+    p_customer_email text DEFAULT NULL::text, 
+    p_payment_method text DEFAULT 'cash'::text, 
+    p_purchase_date date DEFAULT CURRENT_DATE, 
+    p_discount_type text DEFAULT NULL::text, 
+    p_discount_name text DEFAULT NULL::text, 
+    p_discount_amount numeric DEFAULT NULL::numeric, 
+    p_final_amount numeric DEFAULT NULL::numeric, 
+    p_assigned_by_user_id uuid DEFAULT NULL::uuid, 
+    p_assigned_by_user_name text DEFAULT NULL::text, 
+    p_notes text DEFAULT NULL::text, 
+    p_discount_id uuid DEFAULT NULL::uuid
 )
 RETURNS jsonb
 LANGUAGE plpgsql
 SECURITY DEFINER
-AS $$
+AS $function$
 DECLARE
     v_plan_name         text;
     v_plan_price        numeric;
@@ -60,68 +54,71 @@ BEGIN
         RETURN jsonb_build_object('success', false, 'error', 'Membership plan not found.');
     END IF;
 
-    IF v_plan_status IS DISTINCT FROM 'active' THEN
-        RETURN jsonb_build_object('success', false, 'error', 'Selected membership plan is inactive.');
+    IF v_plan_status IS NOT NULL AND LOWER(v_plan_status) NOT IN ('active', 'enabled') THEN
+        RETURN jsonb_build_object('success', false, 'error', 'Membership plan is not active.');
     END IF;
 
     -- -------------------------------------------------------------------------
-    -- 2. READ & CONDITIONAL WRITE TO CUSTOMER (public.customers)
+    -- 2. RESOLVE OR CREATE CUSTOMER (public.customers)
     -- -------------------------------------------------------------------------
-    -- A. If customer_id provided, verify customer exists
     IF v_customer_id IS NOT NULL THEN
-        SELECT customer_name, customer_phone INTO v_customer_name, v_customer_phone
+        SELECT customer_name, customer_phone
+        INTO v_customer_name, v_customer_phone
         FROM public.customers
-        WHERE customer_id = v_customer_id;
-    END IF;
-
-    -- B. If not found by ID or ID not passed, check by phone
-    IF v_customer_id IS NULL AND v_customer_phone IS NOT NULL AND v_customer_phone <> '' THEN
-        SELECT customer_id, customer_name INTO v_customer_id, v_customer_name
-        FROM public.customers
-        WHERE (company_id = p_company_id OR company_id IS NULL)
-          AND REPLACE(customer_phone, ' ', '') = REPLACE(v_customer_phone, ' ', '')
+        WHERE customer_id = v_customer_id
+          AND company_id = p_company_id
         LIMIT 1;
-    END IF;
 
-    -- C. If customer still does NOT exist, insert new customer row
-    IF v_customer_id IS NULL THEN
-        IF v_customer_phone IS NULL OR LENGTH(v_customer_phone) < 10 THEN
-            RETURN jsonb_build_object('success', false, 'error', 'Valid 10-digit phone number is required for new customer.');
+        IF v_customer_name IS NULL THEN
+            RETURN jsonb_build_object('success', false, 'error', 'Customer not found.');
+        END IF;
+    ELSE
+        IF v_customer_phone IS NULL OR v_customer_phone = '' THEN
+            RETURN jsonb_build_object('success', false, 'error', 'Customer phone number is required.');
         END IF;
 
-        INSERT INTO public.customers (
-            company_id,
-            branch_id,
-            customer_name,
-            customer_phone,
-            customer_email,
-            status,
-            total_spent,
-            last_visit,
-            created_at,
-            updated_at
-        ) VALUES (
-            p_company_id,
-            p_branch_id,
-            COALESCE(NULLIF(v_customer_name, ''), 'New Customer'),
-            v_customer_phone,
-            NULLIF(TRIM(p_customer_email), ''),
-            'active',
-            0,
-            v_purchase_date,
-            NOW(),
-            NOW()
-        )
-        RETURNING customer_id, customer_name INTO v_customer_id, v_customer_name;
-    ELSE
-        -- Fallback to provided name if DB has empty name
         IF v_customer_name IS NULL OR v_customer_name = '' THEN
-            v_customer_name := COALESCE(NULLIF(TRIM(p_customer_name), ''), 'Customer');
+            v_customer_name := 'Walk-in Customer';
+        END IF;
+
+        SELECT customer_id INTO v_customer_id
+        FROM public.customers
+        WHERE customer_phone = v_customer_phone
+          AND company_id = p_company_id
+        LIMIT 1;
+
+        IF v_customer_id IS NULL THEN
+            v_customer_id := gen_random_uuid();
+            INSERT INTO public.customers (\
+                customer_id,\
+                company_id,\
+                branch_id,\
+                customer_name,\
+                customer_phone,\
+                customer_email,\
+                status,\
+                total_visits,\
+                total_spent,\
+                created_at,\
+                updated_at\
+            ) VALUES (\
+                v_customer_id,\
+                p_company_id,\
+                p_branch_id,\
+                v_customer_name,\
+                v_customer_phone,\
+                NULLIF(TRIM(p_customer_email), ''),\
+                'active',\
+                1,\
+                0,\
+                NOW(),\
+                NOW()\
+            );
         END IF;
     END IF;
 
     -- -------------------------------------------------------------------------
-    -- 3. CHECK FOR DUPLICATE ACTIVE MEMBERSHIP (public.membership_purchases)
+    -- 3. CHECK FOR DUPLICATE ACTIVE MEMBERSHIP
     -- -------------------------------------------------------------------------
     IF EXISTS (
         SELECT 1 FROM public.membership_purchases
@@ -139,18 +136,15 @@ BEGIN
     -- -------------------------------------------------------------------------
     -- 4. PREPARE DATES & AMOUNTS
     -- -------------------------------------------------------------------------
-    -- Calculate expiry date from plan duration
     IF v_plan_duration IS NOT NULL AND v_plan_duration > 0 THEN
         v_expiry_date := (v_purchase_date + (v_plan_duration || ' months')::interval)::date;
     ELSE
         v_expiry_date := (v_purchase_date + '12 months'::interval)::date;
     END IF;
 
-    -- Determine financial numbers
     v_final_amount := COALESCE(p_final_amount, v_plan_price);
     v_discount_amount := COALESCE(p_discount_amount, GREATEST(0, v_plan_price - v_final_amount));
 
-    -- Enforce business_transactions check constraint: 'cash', 'upi', 'card'
     v_payment_method := LOWER(COALESCE(TRIM(p_payment_method), 'cash'));
     IF v_payment_method NOT IN ('cash', 'upi', 'card') THEN
         v_payment_method := 'cash';
@@ -261,10 +255,10 @@ BEGIN
     WHERE customer_id = v_customer_id;
 
     -- -------------------------------------------------------------------------
-    -- 8. [NEW] TRACK DISCOUNT IN public.discount_usages
+    -- 8. TRACK DISCOUNT IN public.discount_usages (WITH discount_id and staff details)
     -- -------------------------------------------------------------------------
     IF COALESCE(v_discount_amount, 0) > 0 THEN
-        -- Resolve discount_id from table if not passed directly
+        -- Auto-resolve discount_id if not directly passed
         IF v_discount_id IS NULL AND p_discount_type = 'coupon' AND p_discount_name IS NOT NULL THEN
             SELECT coupon_id INTO v_discount_id FROM public.coupons WHERE coupon_code = p_discount_name LIMIT 1;
         ELSIF v_discount_id IS NULL AND p_discount_type = 'offer' AND p_discount_name IS NOT NULL THEN
@@ -275,6 +269,8 @@ BEGIN
             company_id,
             branch_id,
             customer_id,
+            staff_id,
+            staff_name,
             reference_type,
             reference_id,
             payment_id,
@@ -291,6 +287,8 @@ BEGIN
             p_company_id,
             p_branch_id,
             v_customer_id,
+            p_assigned_by_user_id,
+            p_assigned_by_user_name,
             'membership',
             v_purchase_id,
             v_payment_id,
@@ -329,4 +327,4 @@ EXCEPTION
             'error', SQLERRM
         );
 END;
-$$;
+$function$;
