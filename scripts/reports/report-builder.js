@@ -465,6 +465,83 @@ const REPORT_TYPES = {
         tableTitle: 'Sales Payment Reconciliation',
         headers: ['Payment Ref', 'Invoice Ref', 'Date & Time', 'Customer', 'Product', 'Category', 'Sale Total', 'Collected Amount', 'Payment Mode', 'Status'],
         rows: []
+    },
+
+    // ── MEMBERSHIPS SUB-REPORTS ──────────────────────────────────────────
+    'mem-overview': {
+        title: 'Memberships Overview',
+        subtitle: 'Executive summary of subscription revenue, active member base, and benefits ROI',
+        icon: 'bar-chart-2',
+        backCat: 'memberships',
+        leftChartTitle: 'Membership Revenue & Sales Trend',
+        rightChartTitle: 'Active Members by Plan Tier',
+        kpi1: { label: 'Total Membership Revenue', value: 'Loading...' },
+        kpi2: { label: 'Active Members Base',      value: 'Loading...' },
+        kpi3: { label: 'Total Benefits Redeemed',  value: 'Loading...' },
+        kpi4: { label: 'Program Value (ROI)',      value: 'Loading...' },
+        tableTitle: 'Recent Membership Activity & Subscriptions',
+        headers: ['Date & Time', 'Sale Ref #', 'Member Name', 'Plan Name', 'Validity', 'Expiry Date', 'Final Amount', 'Payment Mode', 'Sold By Staff', 'Status'],
+        rows: []
+    },
+    'mem-sales': {
+        title: 'Membership Sales & Revenue',
+        subtitle: 'Audit ledger for plan purchases, revenue collections, discounts, and staff sales attribution',
+        icon: 'dollar-sign',
+        backCat: 'memberships',
+        leftChartTitle: 'Plan Sales Volume & Collections Trend',
+        rightChartTitle: 'Collections by Payment Mode',
+        kpi1: { label: 'Gross Billed Value',       value: 'Loading...' },
+        kpi2: { label: 'Plan Discounts Given',     value: 'Loading...' },
+        kpi3: { label: 'Net Realized Revenue',     value: 'Loading...' },
+        kpi4: { label: 'Average Plan Ticket Size', value: 'Loading...' },
+        tableTitle: 'Membership Sales & Payment Ledger',
+        headers: ['Purchase Date', 'Invoice #', 'Customer Name', 'Phone', 'Plan Name', 'Validity', 'Gross Price', 'Discount', 'Net Paid', 'Payment Mode', 'Sold By (Staff)'],
+        rows: []
+    },
+    'mem-members': {
+        title: 'Active Members & Renewal Pipeline',
+        subtitle: 'Member directory, upcoming expiry alerts, and actionable renewal call list',
+        icon: 'users',
+        backCat: 'memberships',
+        leftChartTitle: 'Upcoming Expiry Horizon (Call Timeline)',
+        rightChartTitle: 'Member Retention Breakdown',
+        kpi1: { label: 'Total Active Members',     value: 'Loading...' },
+        kpi2: { label: 'Expiring in 30 Days',      value: 'Loading...' },
+        kpi3: { label: 'Expired Members',          value: 'Loading...' },
+        kpi4: { label: 'Program Retention Rate',   value: 'Loading...' },
+        tableTitle: 'Member Directory & Renewal Call List',
+        headers: ['Customer Name', 'Phone Number', 'Active Plan', 'Join Date', 'Expiry Date', 'Days Remaining', 'Salon Visits Made', 'Total Salon Spend', 'Branch', 'Renewal Status'],
+        rows: []
+    },
+    'mem-usage': {
+        title: 'Member Benefits & Usage Analysis',
+        subtitle: 'Track discounts enjoyed by members on appointments, salon visits frequency, and spend',
+        icon: 'tag',
+        backCat: 'memberships',
+        leftChartTitle: 'Monthly Discounts Claimed vs Revenue Generated',
+        rightChartTitle: 'Benefits Redeemed by Service Department',
+        kpi1: { label: 'Discounts Given to Members', value: 'Loading...' },
+        kpi2: { label: 'Member Salon Visits',         value: 'Loading...' },
+        kpi3: { label: 'Total Service Spend',        value: 'Loading...' },
+        kpi4: { label: 'Member Spend Multiplier',    value: 'Loading...' },
+        tableTitle: 'Member Benefit Redemptions & Service Visit Log',
+        headers: ['Date & Time', 'Booking / Bill Ref', 'Member Name', 'Membership Tier', 'Service / Product', 'Stylist / Staff', 'Standard Bill', 'Member Discount', 'Amount Paid', 'Benefit Status'],
+        rows: []
+    },
+    'mem-cancellations': {
+        title: 'Cancellations, Churn & Refunds',
+        subtitle: 'Audit log of cancelled memberships, refund payouts, churn rate, and reasons',
+        icon: 'rotate-ccw',
+        backCat: 'memberships',
+        leftChartTitle: 'Monthly Cancellation Volume & Refund Value',
+        rightChartTitle: 'Cancellations by Plan Tier',
+        kpi1: { label: 'Total Cancelled Plans',   value: 'Loading...' },
+        kpi2: { label: 'Total Refund Value',      value: 'Loading...' },
+        kpi3: { label: 'Program Churn Rate',      value: 'Loading...' },
+        kpi4: { label: 'Avg Lifespan to Cancel',  value: 'Loading...' },
+        tableTitle: 'Membership Cancellation & Refund Audit Log',
+        headers: ['Cancellation Date', 'Original Purchase Date', 'Purchase Ref #', 'Customer Name', 'Phone', 'Plan Name', 'Original Paid', 'Refund Amount', 'Refund Mode', 'Days Active', 'Reason / Notes'],
+        rows: []
     }
 };
 
@@ -488,6 +565,14 @@ const TYPE_MODULE_MAP = {
     'prod-returns':      './report-modules/products-sales.js',
     'prod-payments':     './report-modules/products-sales.js',
 
+    // Memberships
+    'mem-overview':      './report-modules/memberships.js',
+    'mem-sales':         './report-modules/memberships.js',
+    'mem-members':       './report-modules/memberships.js',
+    'mem-usage':         './report-modules/memberships.js',
+    'mem-cancellations': './report-modules/memberships.js',
+    'memberships':       './report-modules/memberships.js',
+
     // Bookings
     'bookings':     './report-modules/bookings.js',
     'bk-total':     './report-modules/bookings.js',
@@ -509,7 +594,7 @@ const TYPE_MODULE_MAP = {
     'ops-branch': './report-modules/operations.js',
 
     // Misc
-    'membership': './report-modules/misc.js',
+    'membership': './report-modules/memberships.js',
     'marketing':  './report-modules/misc.js',
     'products':   './report-modules/misc.js'
 };
@@ -769,11 +854,13 @@ document.addEventListener('DOMContentLoaded', async () => {
     if (backLinkEl) {
         if (data.backCat) {
             const catLabels = {
-                financial:  'Financial',
-                bookings:   'Bookings',
-                customers:  'Customers',
-                operations: 'Operations',
-                products:   'Product Sales'
+                financial:   'Financial',
+                bookings:    'Bookings',
+                customers:   'Customers',
+                operations:  'Operations',
+                products:    'Product Sales',
+                memberships: 'Memberships',
+                membership:  'Memberships'
             };
             backLinkEl.textContent = '\u2190 Back to ' + (catLabels[data.backCat] || data.backCat) + ' Reports';
             backLinkEl.href        = 'report-category.html?cat=' + data.backCat;

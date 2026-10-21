@@ -204,10 +204,54 @@ const CATEGORIES = {
                 colorClass: 'bg-cyan'
             }
         ]
+    },
+    memberships: {
+        title: 'Memberships',
+        subtitle: 'Subscriptions, plan sales, active members, renewals, usage & cancellations',
+        icon: 'award',
+        colorClass: 'bg-purple',
+        subReports: [
+            {
+                type: 'mem-overview',
+                label: 'Memberships Overview',
+                desc: 'Executive summary of subscription revenue, active members base, and benefits ROI',
+                icon: 'bar-chart-2',
+                colorClass: 'bg-purple'
+            },
+            {
+                type: 'mem-sales',
+                label: 'Membership Sales & Revenue',
+                desc: 'Plan sales ledger, collected payments, discounts and staff sales attribution',
+                icon: 'dollar-sign',
+                colorClass: 'bg-blue'
+            },
+            {
+                type: 'mem-members',
+                label: 'Active Members & Renewals',
+                desc: 'Member directory, upcoming expiry alerts, call list and retention tracking',
+                icon: 'users',
+                colorClass: 'bg-emerald'
+            },
+            {
+                type: 'mem-usage',
+                label: 'Member Benefits & Usage',
+                desc: 'Track member discounts redeemed on bookings, salon visits and service spend',
+                icon: 'tag',
+                colorClass: 'bg-violet'
+            },
+            {
+                type: 'mem-cancellations',
+                label: 'Cancellations & Refunds',
+                desc: 'Cancelled subscriptions, refund payouts, churn rate and cancellation reasons',
+                icon: 'rotate-ccw',
+                colorClass: 'bg-rose'
+            }
+        ]
     }
 };
 
 CATEGORIES['product-sales'] = CATEGORIES.products;
+CATEGORIES['membership']    = CATEGORIES.memberships;
 
 // ============================================================
 // Render
@@ -229,7 +273,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const bannerSub   = document.getElementById('bannerSubtitle');
 
     if (banner) {
-        if (cat === 'bookings' || cat === 'products' || cat === 'product-sales') {
+        if (['bookings', 'products', 'product-sales', 'memberships', 'membership'].includes(cat)) {
             banner.classList.add('banner-plain');
         } else {
             banner.classList.remove('banner-plain');
