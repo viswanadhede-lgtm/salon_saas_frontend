@@ -793,6 +793,14 @@
 
 // MEMBERSHIP SUBSCRIPTIONS REPORT - One Master RPC Function - public.get_memberships_report.
 
+// FINANCIAL REPORT -
+
+// CUSTOMERS REPORT -
+
+// STAFF REPORT -
+
+// DISCOUNTS REPORT - 
+
 
 
 
