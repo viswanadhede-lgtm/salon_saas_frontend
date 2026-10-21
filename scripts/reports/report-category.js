@@ -229,7 +229,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const bannerSub   = document.getElementById('bannerSubtitle');
 
     if (banner) {
-        if (cat === 'bookings') {
+        if (cat === 'bookings' || cat === 'products' || cat === 'product-sales') {
             banner.classList.add('banner-plain');
         } else {
             banner.classList.remove('banner-plain');
