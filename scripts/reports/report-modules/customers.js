@@ -333,6 +333,7 @@ async function renderCustInsights(data, supabase) {
             dob: '15 Aug 1992',
             joined: '12 Jan 2024',
             tag: 'VIP',
+            visits: 6,
             spentTotal: 18450,
             spentBookings: 12200,
             spentProducts: 3750,
@@ -374,6 +375,7 @@ async function renderCustInsights(data, supabase) {
             dob: '24 Nov 1988',
             joined: '04 Mar 2024',
             tag: 'Member',
+            visits: 4,
             spentTotal: 9200,
             spentBookings: 5600,
             spentProducts: 1600,
@@ -534,12 +536,36 @@ async function renderCustInsights(data, supabase) {
     const renderCompleteInsights = () => {
         renderTopSearchAndDossier();
 
-        // 1. Render 4 Spending KPI Cards
+        // 1. Render 4 Spending KPI Cards with Sub-Metrics
+        const total = currentCustomer.spentTotal || 1;
+        const visits = currentCustomer.visits || (currentCustomer.bookings ? currentCustomer.bookings.length : 1);
+        const avgPerVisit = Math.round(currentCustomer.spentTotal / visits);
+
+        const bookingsPct = ((currentCustomer.spentBookings / total) * 100).toFixed(1);
+        const productsPct = ((currentCustomer.spentProducts / total) * 100).toFixed(1);
+        const membershipsPct = ((currentCustomer.spentMemberships / total) * 100).toFixed(1);
+
         updateKPIs(
-            { label: 'Total Spent',           value: formatCurrency(currentCustomer.spentTotal),       sub: 'Lifetime spend across all streams' },
-            { label: 'Spent on Bookings',     value: formatCurrency(currentCustomer.spentBookings),    sub: 'Service appointments' },
-            { label: 'Spent on Products',     value: formatCurrency(currentCustomer.spentProducts),    sub: 'Retail POS purchases' },
-            { label: 'Spent on Memberships',  value: formatCurrency(currentCustomer.spentMemberships), sub: 'Plan fees paid' }
+            { 
+                label: 'Total Spent',           
+                value: formatCurrency(currentCustomer.spentTotal),       
+                subHtml: `From <strong>${visits} total visits</strong> • <span>Avg ${formatCurrency(avgPerVisit)} / visit</span>` 
+            },
+            { 
+                label: 'Spent on Bookings',     
+                value: formatCurrency(currentCustomer.spentBookings),    
+                subHtml: `<strong style="color:#2563eb;">${bookingsPct}%</strong> of total spend` 
+            },
+            { 
+                label: 'Spent on Products',     
+                value: formatCurrency(currentCustomer.spentProducts),    
+                subHtml: `<strong style="color:#d97706;">${productsPct}%</strong> of total spend` 
+            },
+            { 
+                label: 'Spent on Memberships',  
+                value: formatCurrency(currentCustomer.spentMemberships), 
+                subHtml: `<strong style="color:#ca8a04;">${membershipsPct}%</strong> of total spend` 
+            }
         );
 
         // 2. Render Left Chart: Clustered 3-Bar Spend over Time
