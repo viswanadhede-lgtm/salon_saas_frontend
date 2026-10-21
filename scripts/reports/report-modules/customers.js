@@ -705,9 +705,6 @@ async function renderCustInsights(data, supabase) {
             <button class="report-tab-btn" data-tab="memberships">
                 Memberships <span class="tab-badge">${currentCustomer.memberships.length}</span>
             </button>
-            <button class="report-tab-btn" data-tab="discounts">
-                Discounts & Coupons <span class="tab-badge">${currentCustomer.discounts.length}</span>
-            </button>
         `;
 
         let activeTab = 'bookings';
@@ -728,11 +725,6 @@ async function renderCustInsights(data, supabase) {
                 title: `${currentCustomer.name}'s Membership Plans`,
                 headers: ['Plan Name', 'Purchase Date', 'Duration', 'Expiry Date', 'Plan Price', 'Discount', 'Final Paid', 'Payment Mode', 'Status'],
                 getRows: () => currentCustomer.memberships
-            },
-            discounts: {
-                title: `${currentCustomer.name}'s Discounts & Coupons Claimed`,
-                headers: ['Date Used', 'Discount Name / Code', 'Type', 'Applied On', 'Amount Saved', 'Status'],
-                getRows: () => currentCustomer.discounts
             }
         };
 
