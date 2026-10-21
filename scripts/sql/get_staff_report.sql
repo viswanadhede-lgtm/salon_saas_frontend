@@ -578,10 +578,13 @@ BEGIN
                 'total_revenue', v_staff_total_rev,
                 'total_revenue_share_pct', v_staff_total_share_pct,
                 'bookings_revenue', v_staff_bookings_rev,
+                'bookings_staff_pct', v_mix_bookings_pct,
                 'bookings_revenue_share_pct', v_staff_bookings_share_pct,
                 'products_revenue', v_staff_products_rev,
+                'products_staff_pct', v_mix_products_pct,
                 'products_revenue_share_pct', v_staff_products_share_pct,
                 'memberships_revenue', v_staff_memberships_rev,
+                'memberships_staff_pct', v_mix_memberships_pct,
                 'memberships_revenue_share_pct', v_staff_memberships_share_pct
             ),
             'monthly_trend', jsonb_build_object(

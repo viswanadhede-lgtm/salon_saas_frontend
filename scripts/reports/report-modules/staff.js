@@ -767,11 +767,11 @@ async function renderStaffInsights(data, supabase) {
                     total_revenue: 68400,
                     total_revenue_share_pct: 28.5,
                     bookings_revenue: 52400,
-                    bookings_revenue_share_pct: 31.2,
+                    bookings_staff_pct: 76.6,
                     products_revenue: 12000,
-                    products_revenue_share_pct: 24.8,
+                    products_staff_pct: 17.5,
                     memberships_revenue: 4000,
-                    memberships_revenue_share_pct: 19.5
+                    memberships_staff_pct: 5.9
                 },
                 monthly_trend: {
                     months: ['May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct'],
@@ -881,7 +881,11 @@ async function renderStaffInsights(data, supabase) {
         // 1. Render Top Search & Staff Dossier Header Card
         renderTopSearchAndDossier(profile, staffDirect);
 
-        // 2. Render 4 Stat Cards with Sub-Metrics (% of all other staff)
+        // 2. Render 4 Stat Cards with Sub-Metrics
+        const bksShare = kpis.bookings_staff_pct !== undefined ? kpis.bookings_staff_pct : (mix.bookings_pct || 0);
+        const prodsShare = kpis.products_staff_pct !== undefined ? kpis.products_staff_pct : (mix.products_pct || 0);
+        const memsShare = kpis.memberships_staff_pct !== undefined ? kpis.memberships_staff_pct : (mix.memberships_pct || 0);
+
         updateKPIs(
             {
                 label: 'Total Revenue by Staff',
@@ -891,17 +895,17 @@ async function renderStaffInsights(data, supabase) {
             {
                 label: 'Bookings Revenue',
                 value: formatCurrency(kpis.bookings_revenue || 0),
-                subHtml: `<span style="color:#3b82f6; font-weight:700;">${kpis.bookings_revenue_share_pct || 0}% of all bookings</span>`
+                subHtml: `<span style="color:#3b82f6; font-weight:700;">${bksShare}% of staff's total revenue</span>`
             },
             {
                 label: 'Product Sales Revenue',
                 value: formatCurrency(kpis.products_revenue || 0),
-                subHtml: `<span style="color:#f59e0b; font-weight:700;">${kpis.products_revenue_share_pct || 0}% of retail sales</span>`
+                subHtml: `<span style="color:#f59e0b; font-weight:700;">${prodsShare}% of staff's total revenue</span>`
             },
             {
                 label: 'Membership Sales',
                 value: formatCurrency(kpis.memberships_revenue || 0),
-                subHtml: `<span style="color:#8b5cf6; font-weight:700;">${kpis.memberships_revenue_share_pct || 0}% of memberships</span>`
+                subHtml: `<span style="color:#8b5cf6; font-weight:700;">${memsShare}% of staff's total revenue</span>`
             }
         );
 
