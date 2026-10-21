@@ -134,7 +134,10 @@ BEGIN
                 WHEN COALESCE(bk.completed_bookings, 0) > 0 THEN
                     ROUND(COALESCE(bk.service_revenue, 0) / bk.completed_bookings)
                 ELSE 0
-            END AS avg_ticket
+            END AS avg_ticket,
+
+            -- Discount Given (total discounts applied by this staff member)
+            COALESCE(dg.discount_given, 0) AS discount_given
 
         FROM public.staff s
 
@@ -194,6 +197,24 @@ BEGIN
             GROUP BY 1
         ) ms ON ms.resolved_staff_id = s.staff_id
 
+        -- Discount Given aggregation (from discount_usages, matched by staff_id or staff_name)
+        LEFT JOIN (
+            SELECT
+                COALESCE(du.staff_id, s_name.staff_id) AS resolved_staff_id,
+                COALESCE(SUM(CASE WHEN du.status != 'reversed' THEN du.discount_amount - COALESCE(du.reversal_amount, 0) ELSE 0 END), 0) AS discount_given
+            FROM public.discount_usages du
+            LEFT JOIN public.staff s_name
+              ON du.staff_id IS NULL
+              AND du.staff_name IS NOT NULL
+              AND LOWER(TRIM(du.staff_name)) = LOWER(TRIM(s_name.staff_name))
+              AND (p_company_id IS NULL OR s_name.company_id = p_company_id)
+              AND (du.branch_id IS NULL OR s_name.branch_id = du.branch_id)
+            WHERE (p_company_id IS NULL OR du.company_id = p_company_id)
+              AND (p_branch_id IS NULL OR du.branch_id = p_branch_id)
+              AND du.used_at::date BETWEEN p_start_date AND p_end_date
+            GROUP BY 1
+        ) dg ON dg.resolved_staff_id = s.staff_id
+
         WHERE (p_company_id IS NULL OR s.company_id = p_company_id)
           AND (p_branch_id IS NULL OR s.branch_id = p_branch_id)
           AND LOWER(TRIM(COALESCE(s.status, ''))) != 'deleted'
@@ -214,7 +235,8 @@ BEGIN
             'retail_sales', sm.retail_sales,
             'membership_sales', sm.membership_sales,
             'total_revenue', sm.total_revenue,
-            'avg_ticket', sm.avg_ticket
+            'avg_ticket', sm.avg_ticket,
+            'discount_given', sm.discount_given
         )
     ), '[]'::jsonb)
     INTO v_staff_directory

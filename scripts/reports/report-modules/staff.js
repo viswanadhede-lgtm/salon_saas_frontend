@@ -631,6 +631,9 @@ async function renderStaffOverview(data, supabase) {
                 formatCurrency(s.membership_sales || 0),
                 `<strong style="color:#059669;">${formatCurrency(s.total_revenue || 0)}</strong>`,
                 formatCurrency(s.avg_ticket || 0),
+                (s.discount_given || 0) > 0
+                    ? `<span style="color:#dc2626; font-weight:600;">${formatCurrency(s.discount_given)}</span>`
+                    : `<span style="color:#94a3b8;">—</span>`,
                 `<span class="status-pill ${statusClass}">${statusLabel}</span>`,
                 `<a href="report-detail.html?type=staff-insights&staffId=${s.id}&cat=staff" class="btn-view-360">
                     View 360° <i data-feather="arrow-right"></i>
@@ -638,7 +641,7 @@ async function renderStaffOverview(data, supabase) {
             ];
         };
 
-        const headers = ['Staff Member', 'Role', 'Contact', 'Bookings', 'Service Rev', 'Retail Sales', 'Membership Sales', 'Total Revenue', 'Avg Ticket', 'Status', 'Action'];
+        const headers = ['Staff Member', 'Role', 'Contact', 'Bookings', 'Service Rev', 'Retail Sales', 'Membership Sales', 'Total Revenue', 'Avg Ticket', 'Discount Given', 'Status', 'Action'];
 
         const tabDatasets = {
             all: {
