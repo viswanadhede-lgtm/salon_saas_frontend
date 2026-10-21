@@ -632,7 +632,7 @@ async function renderStaffOverview(data, supabase) {
                 `<strong style="color:#059669;">${formatCurrency(s.total_revenue || 0)}</strong>`,
                 formatCurrency(s.avg_ticket || 0),
                 `<span class="status-pill ${statusClass}">${statusLabel}</span>`,
-                `<a href="report-detail.html?type=staff-insights&staffId=${s.id}" class="btn-view-360">
+                `<a href="report-detail.html?type=staff-insights&staffId=${s.id}&cat=staff" class="btn-view-360">
                     View 360° <i data-feather="arrow-right"></i>
                 </a>`
             ];
@@ -749,15 +749,28 @@ async function renderStaffInsights(data, supabase) {
 
         let report = await callStaffRpc(supabase, companyId, bid, start, end, staffIdToLoad);
 
-        // If no staffId was specified, auto-pick the top staff member from the returned directory
-        if (!staffIdToLoad && report && report.staff_directory && report.staff_directory.length > 0) {
-            targetStaffId = report.staff_directory[0].id;
+        // If no staffId was passed (or no profile in report), auto-select top staff from directory and load their 360 profile
+        if ((!staffIdToLoad || !report || !report.profile) && report && Array.isArray(report.staff_directory) && report.staff_directory.length > 0) {
+            const firstStaff = report.staff_directory[0];
+            targetStaffId = firstStaff.id;
             try {
                 const newUrl = new URL(window.location.href);
                 newUrl.searchParams.set('staffId', targetStaffId);
                 window.history.replaceState({}, '', newUrl);
             } catch (e) {}
             return await loadStaffProfile(targetStaffId);
+        }
+
+        // If a profile was returned, sync URL with the active staff ID
+        if (report && report.profile && report.profile.id) {
+            targetStaffId = report.profile.id;
+            try {
+                const newUrl = new URL(window.location.href);
+                if (newUrl.searchParams.get('staffId') !== targetStaffId) {
+                    newUrl.searchParams.set('staffId', targetStaffId);
+                    window.history.replaceState({}, '', newUrl);
+                }
+            } catch (e) {}
         }
 
         // Fallback demo/initial data if RPC not yet deployed

@@ -593,9 +593,9 @@ const TYPE_MODULE_MAP = {
     'cust-insights': './report-modules/customers.js',
 
     // Staff
-    'staff':          './report-modules/staff.js',
-    'staff-overview': './report-modules/staff.js',
-    'staff-insights': './report-modules/staff.js',
+    'staff':          './report-modules/staff.js?v=2',
+    'staff-overview': './report-modules/staff.js?v=2',
+    'staff-insights': './report-modules/staff.js?v=2',
 
     // Misc
     'membership': './report-modules/memberships.js',

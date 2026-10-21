@@ -344,9 +344,14 @@ BEGIN
         RETURN v_result;
 
     -- =========================================================================
-    -- ROUTE 2: SUB-REPORT 2: STAFF 360° INSIGHTS (when p_staff_id IS NOT NULL)
+    -- ROUTE 2: SUB-REPORT 2: STAFF 360° INSIGHTS (when p_staff_id IS NOT NULL OR p_sub_report = 'staff-insights')
     -- =========================================================================
     ELSE
+
+        -- If p_staff_id was not provided, auto-pick the top staff member from directory
+        IF p_staff_id IS NULL AND jsonb_array_length(v_staff_directory) > 0 THEN
+            p_staff_id := (v_staff_directory->0->>'id')::uuid;
+        END IF;
 
         -- 1. Fetch Staff Profile Dossier
         SELECT
