@@ -402,6 +402,11 @@ async function callMasterMembershipsRpc(supabase, companyId, branchId, start, en
     const cid = (companyId && companyId !== 'null' && companyId !== 'undefined' && companyId !== 'all') ? companyId : null;
     const bid = (branchId && branchId !== 'null' && branchId !== 'undefined' && branchId !== 'all') ? branchId : null;
 
+    if (!cid) {
+        console.warn('[memberships] No company_id found in session — cannot call RPC. Using preview data.');
+        return getPreviewData();
+    }
+
     try {
         const { data, error } = await supabase.rpc('get_memberships_report', {
             p_company_id: cid,
@@ -410,7 +415,12 @@ async function callMasterMembershipsRpc(supabase, companyId, branchId, start, en
             p_end_date:   end
         });
 
-        if (!error && data) {
+        if (error) {
+            console.error('[memberships] RPC error from Supabase:', error.message || error);
+            return getPreviewData();
+        }
+
+        if (data) {
             let res = data;
             if (typeof res === 'string') {
                 try { res = JSON.parse(res); } catch (e) { }
@@ -422,12 +432,14 @@ async function callMasterMembershipsRpc(supabase, companyId, branchId, start, en
                 try { res = JSON.parse(res); } catch (e) { }
             }
             if (res && typeof res === 'object' && Object.keys(res).length > 0) {
-                console.log('[memberships] Master RPC get_memberships_report loaded successfully:', res);
+                console.log('[memberships] RPC loaded successfully:', Object.keys(res));
                 return res;
             }
         }
+
+        console.warn('[memberships] RPC returned empty data.');
     } catch (e) {
-        console.info('[memberships] Master RPC not yet defined in database. Rendering standard preview dataset.');
+        console.error('[memberships] RPC JS exception:', e.message || e);
     }
 
     return getPreviewData();
@@ -611,26 +623,26 @@ async function renderMemOverview(data, supabase) {
 
         // 1. KPI Cards
         // Card 1: Total Membership Revenue
-        data.kpi1.value = fmtINR(k.total_revenue || 185000);
+        data.kpi1.value = fmtINR(k.total_revenue ?? 0);
         data.kpi1.subHtml = `
             <span style="display:inline-flex;align-items:center;gap:3px;color:#b45309;font-weight:600;background:#fef3c7;padding:1px 6px;border-radius:4px;font-size:0.72rem;">
-                -${fmtINR(k.total_discounts || 15000)} Disc
+                -${fmtINR(k.total_discounts ?? 0)} Disc
             </span>
             <span style="display:inline-flex;align-items:center;gap:3px;color:#dc2626;font-weight:600;background:#fee2e2;padding:1px 6px;border-radius:4px;font-size:0.72rem;">
-                -${fmtINR(k.total_refunds || 9000)} Ref
+                -${fmtINR(k.total_refunds ?? 0)} Ref
             </span>
         `;
 
         // Card 2: Active Member Base
-        data.kpi2.value = `${k.active_members || 68} Members`;
-        data.kpi2.subHtml = `<span style="color:#059669;font-weight:600;font-size:0.75rem;">${k.total_clients_pct || '24.2%'} of client base</span>`;
+        data.kpi2.value = `${k.active_members ?? 0} Members`;
+        data.kpi2.subHtml = `<span style="color:#059669;font-weight:600;font-size:0.75rem;">${k.total_clients_pct ?? '0%'} of client base</span>`;
 
         // Card 3: Total Benefits Redeemed
-        data.kpi3.value = fmtINR(k.benefits_redeemed || 32400);
-        data.kpi3.subHtml = `<span style="color:#64748b;font-size:0.75rem;">Across ${k.benefits_visits_count || 142} visits</span>`;
+        data.kpi3.value = fmtINR(k.benefits_redeemed ?? 0);
+        data.kpi3.subHtml = `<span style="color:#64748b;font-size:0.75rem;">Across ${k.benefits_visits_count ?? 0} visits</span>`;
 
         // Card 4: Program Value ROI
-        data.kpi4.value = `${k.program_multiplier || '4.8x'} Return`;
+        data.kpi4.value = `${k.program_multiplier ?? '0x'} Return`;
         data.kpi4.subHtml = `<span style="display:inline-flex;align-items:center;gap:3px;color:#059669;font-weight:600;background:#d1fae5;padding:1px 6px;border-radius:4px;font-size:0.72rem;">Profitable Retention</span>`;
 
         updateKPIs(data.kpi1, data.kpi2, data.kpi3, data.kpi4);
@@ -645,7 +657,7 @@ async function renderMemOverview(data, supabase) {
         // 3. Donut Chart
         renderDonutChart(plans.labels, plans.values, {
             centerLabel: 'Active Base',
-            centerValue: `${k.active_members || 68}`,
+            centerValue: `${k.active_members ?? 0}`,
             isCurrency: false,
             colors: ['#7c3aed', '#6366f1', '#0ea5e9', '#10b981', '#f59e0b']
         });
@@ -709,24 +721,24 @@ async function renderMemSales(data, supabase) {
 
         // 1. KPI Cards
         // Card 1: Gross Billed Value
-        data.kpi1.value = fmtINR(k.gross_billed || 209000);
-        data.kpi1.subHtml = `<span style="color:#64748b;font-size:0.75rem;">Across ${k.plans_sold || 26} plans sold</span>`;
+        data.kpi1.value = fmtINR(k.gross_billed ?? 0);
+        data.kpi1.subHtml = `<span style="color:#64748b;font-size:0.75rem;">Across ${k.plans_sold ?? 0} plans sold</span>`;
 
         // Card 2: Plan Discounts Given
-        data.kpi2.value = fmtINR(k.discounts_given || 15000);
+        data.kpi2.value = fmtINR(k.discounts_given ?? 0);
         data.kpi2.subHtml = `<span style="color:#b45309;font-weight:600;font-size:0.75rem;">Promo & Welcome Perks</span>`;
 
         // Card 3: Net Realized Revenue
-        data.kpi3.value = fmtINR(k.net_revenue || 185000);
+        data.kpi3.value = fmtINR(k.net_revenue ?? 0);
         data.kpi3.subHtml = `
-            <span style="color:#4f46e5;font-weight:600;font-size:0.75rem;">${k.upi_share || '58%'} UPI</span>
+            <span style="color:#4f46e5;font-weight:600;font-size:0.75rem;">${k.upi_share ?? '0%'} UPI</span>
             <span style="color:#cbd5e1;">•</span>
-            <span style="color:#64748b;font-size:0.75rem;">${k.card_share || '32%'} Card</span>
+            <span style="color:#64748b;font-size:0.75rem;">${k.card_share ?? '0%'} Card</span>
         `;
 
         // Card 4: Average Plan Ticket Size (AOV)
-        data.kpi4.value = `${fmtINR(k.aov || 7115)} / plan`;
-        data.kpi4.subHtml = `<span style="color:#64748b;font-size:0.75rem;">Avg duration ${k.avg_duration_days || 284} days</span>`;
+        data.kpi4.value = `${fmtINR(k.aov ?? 0)} / plan`;
+        data.kpi4.subHtml = `<span style="color:#64748b;font-size:0.75rem;">Avg duration ${k.avg_duration_days ?? 0} days</span>`;
 
         updateKPIs(data.kpi1, data.kpi2, data.kpi3, data.kpi4);
 
@@ -810,20 +822,20 @@ async function renderMemMembers(data, supabase) {
 
         // 1. KPI Cards
         // Card 1: Total Active Members
-        data.kpi1.value = `${k.active_members || 68} Members`;
+        data.kpi1.value = `${k.active_members ?? 0} Members`;
         data.kpi1.subHtml = `<span style="color:#059669;font-weight:600;font-size:0.75rem;">Currently eligible for benefits</span>`;
 
         // Card 2: Expiring in 30 Days (Urgent Call Target!)
-        data.kpi2.value = `${k.expiring_30d || 14} Members`;
+        data.kpi2.value = `${k.expiring_30d ?? 0} Members`;
         data.kpi2.subHtml = `<span style="display:inline-flex;align-items:center;gap:3px;color:#b45309;font-weight:600;background:#fef3c7;padding:1px 6px;border-radius:4px;font-size:0.72rem;">Renewal Call Target</span>`;
 
         // Card 3: Expired Members
-        data.kpi3.value = `${k.expired_count || 8} Lapsed`;
+        data.kpi3.value = `${k.expired_count ?? 0} Lapsed`;
         data.kpi3.subHtml = `<span style="color:#64748b;font-size:0.75rem;">Win-back opportunity</span>`;
 
         // Card 4: Program Retention Rate
-        data.kpi4.value = k.retention_rate || '82.4%';
-        data.kpi4.subHtml = `<span style="color:#059669;font-weight:600;font-size:0.75rem;">${k.healthy_target || '> 75% target'}</span>`;
+        data.kpi4.value = k.retention_rate ?? '0%';
+        data.kpi4.subHtml = `<span style="color:#059669;font-weight:600;font-size:0.75rem;">${k.healthy_target ?? '> 75% target'}</span>`;
 
         updateKPIs(data.kpi1, data.kpi2, data.kpi3, data.kpi4);
 
@@ -840,7 +852,7 @@ async function renderMemMembers(data, supabase) {
         // 3. Donut Chart (Status Breakdown)
         renderDonutChart(statusSplit.labels, statusSplit.values, {
             centerLabel: 'Member Pool',
-            centerValue: `${(k.active_members || 68) + (k.expired_count || 8)}`,
+            centerValue: `${(k.active_members ?? 0) + (k.expired_count ?? 0)}`,
             isCurrency: false,
             colors: ['#10b981', '#f59e0b', '#64748b', '#ef4444']
         });
@@ -907,19 +919,19 @@ async function renderMemUsage(data, supabase) {
 
         // 1. KPI Cards
         // Card 1: Discounts Given to Members
-        data.kpi1.value = fmtINR(k.discounts_claimed || 32400);
+        data.kpi1.value = fmtINR(k.discounts_claimed ?? 0);
         data.kpi1.subHtml = `<span style="color:#7c3aed;font-weight:600;font-size:0.75rem;">Total member perks claimed</span>`;
 
         // Card 2: Member Salon Visits
-        data.kpi2.value = `${k.member_visits || 142} Visits`;
-        data.kpi2.subHtml = `<span style="color:#64748b;font-size:0.75rem;">Avg ${k.avg_visit_spend ? fmtINR(k.avg_visit_spend) : '₹1,095'} / visit spend</span>`;
+        data.kpi2.value = `${k.member_visits ?? 0} Visits`;
+        data.kpi2.subHtml = `<span style="color:#64748b;font-size:0.75rem;">Avg ${k.avg_visit_spend ? fmtINR(k.avg_visit_spend) : '₹0'} / visit spend</span>`;
 
         // Card 3: Total Service Spend by Members
-        data.kpi3.value = fmtINR(k.total_service_spend || 155500);
+        data.kpi3.value = fmtINR(k.total_service_spend ?? 0);
         data.kpi3.subHtml = `<span style="color:#059669;font-weight:600;font-size:0.75rem;">Service & retail billing generated</span>`;
 
         // Card 4: Member Spend Multiplier
-        data.kpi4.value = `${k.spend_multiplier || '4.8x'} Multiplier`;
+        data.kpi4.value = `${k.spend_multiplier ?? '0x'} Multiplier`;
         data.kpi4.subHtml = `<span style="display:inline-flex;align-items:center;gap:3px;color:#059669;font-weight:600;background:#d1fae5;padding:1px 6px;border-radius:4px;font-size:0.72rem;">Revenue per ₹1 discount</span>`;
 
         updateKPIs(data.kpi1, data.kpi2, data.kpi3, data.kpi4);
@@ -936,7 +948,7 @@ async function renderMemUsage(data, supabase) {
         // 3. Donut Chart (Benefits by Department)
         renderDonutChart(categories.labels, categories.values, {
             centerLabel: 'Discounts',
-            centerValue: fmtINR(k.discounts_claimed || 32400),
+            centerValue: fmtINR(k.discounts_claimed ?? 0),
             colors: ['#8b5cf6', '#ec4899', '#3b82f6', '#10b981', '#f59e0b']
         });
 
@@ -988,19 +1000,19 @@ async function renderMemCancellations(data, supabase) {
 
         // 1. KPI Cards
         // Card 1: Total Cancelled Plans
-        data.kpi1.value = `${k.total_cancelled || 2} Plans`;
+        data.kpi1.value = `${k.total_cancelled ?? 0} Plans`;
         data.kpi1.subHtml = `<span style="color:#dc2626;font-weight:600;font-size:0.75rem;">Refunded & Cancelled</span>`;
 
         // Card 2: Total Refund Value
-        data.kpi2.value = fmtINR(k.total_refunded || 9000);
+        data.kpi2.value = fmtINR(k.total_refunded ?? 0);
         data.kpi2.subHtml = `<span style="color:#92400e;font-weight:600;background:#fef3c7;padding:1px 6px;border-radius:4px;font-size:0.72rem;">Refund payouts issued</span>`;
 
         // Card 3: Program Churn Rate
-        data.kpi3.value = k.churn_rate || '2.8%';
+        data.kpi3.value = k.churn_rate ?? '0%';
         data.kpi3.subHtml = `<span style="display:inline-flex;align-items:center;gap:3px;color:#059669;font-weight:600;background:#d1fae5;padding:1px 6px;border-radius:4px;font-size:0.72rem;">Healthy &lt; 5%</span>`;
 
         // Card 4: Avg Lifespan to Cancel
-        data.kpi4.value = `${k.avg_lifespan_days || 61} Days`;
+        data.kpi4.value = `${k.avg_lifespan_days ?? 0} Days`;
         data.kpi4.subHtml = `<span style="color:#64748b;font-size:0.75rem;">Average tenure before cancel</span>`;
 
         updateKPIs(data.kpi1, data.kpi2, data.kpi3, data.kpi4);
