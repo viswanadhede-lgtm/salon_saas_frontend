@@ -126,6 +126,28 @@ const CATEGORIES = {
             }
         ]
     },
+    staff: {
+        title: 'Staff Performance',
+        subtitle: 'Staff headcount, capacity timeline, service volume, revenue generation and individual performance 360°',
+        icon: 'user-check',
+        colorClass: 'bg-amber',
+        subReports: [
+            {
+                type: 'staff-overview',
+                label: 'Staff Overview',
+                desc: 'Staff headcount, capacity timeline, status distribution & team performance leaderboard',
+                icon: 'users',
+                colorClass: 'bg-amber'
+            },
+            {
+                type: 'staff-insights',
+                label: 'Staff 360° Insights',
+                desc: 'Individual staff profile, service bookings, retail POS sales, membership sales & revenue contribution share',
+                icon: 'award',
+                colorClass: 'bg-indigo'
+            }
+        ]
+    },
     products: {
         title: 'Product Sales',
         subtitle: 'Retail performance, product metrics, line items, discounts & payment reconciliation',

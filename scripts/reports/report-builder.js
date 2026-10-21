@@ -518,6 +518,36 @@ const REPORT_TYPES = {
         tableTitle: 'Membership Cancellation & Refund Audit Log',
         headers: ['Cancellation Date', 'Original Purchase Date', 'Purchase Ref #', 'Customer Name', 'Phone', 'Plan Name', 'Original Paid', 'Refund Amount', 'Refund Mode', 'Days Active', 'Reason / Notes'],
         rows: []
+    },
+    'staff-overview': {
+        title: 'Staff Overview',
+        subtitle: 'Staff headcount, capacity timeline, status distribution and team performance leaderboard',
+        icon: 'users',
+        backCat: 'staff',
+        leftChartTitle: 'Staff Capacity & Headcount Trend',
+        rightChartTitle: 'Staff Status Distribution',
+        kpi1: { label: 'Total Staff',            value: 'Loading...' },
+        kpi2: { label: 'Top Performer',          value: 'Loading...' },
+        kpi3: { label: 'Avg Bookings per Staff', value: 'Loading...' },
+        kpi4: { label: 'Inactive Staff',         value: 'Loading...' },
+        tableTitle: 'Staff Directory & Performance Leaderboard',
+        headers: ['Staff Member', 'Role', 'Phone', 'Completed Bookings', 'Service Revenue', 'Retail Sales', 'Membership Sales', 'Total Revenue', 'Avg Ticket', 'Status', 'Action'],
+        rows: []
+    },
+    'staff-insights': {
+        title: 'Staff 360° Insights',
+        subtitle: 'Individual staff profile, service bookings, retail POS sales, membership sales & revenue contribution share',
+        icon: 'award',
+        backCat: 'staff',
+        leftChartTitle: 'Monthly Revenue Breakdown by Stream',
+        rightChartTitle: 'Personal Revenue Contribution Mix',
+        kpi1: { label: 'Total Revenue by Staff',  value: 'Loading...' },
+        kpi2: { label: 'Bookings Revenue',        value: 'Loading...' },
+        kpi3: { label: 'Product Sales Revenue',   value: 'Loading...' },
+        kpi4: { label: 'Membership Sales',        value: 'Loading...' },
+        tableTitle: 'Staff Activity & Transaction History',
+        headers: ['Date & Time', 'Service / Items', 'Customer', 'Gross Amount', 'Discount', 'Final Paid', 'Payment Status', 'Status'],
+        rows: []
     }
 };
 
@@ -561,6 +591,11 @@ const TYPE_MODULE_MAP = {
     'customers':     './report-modules/customers.js',
     'cust-metrics':  './report-modules/customers.js',
     'cust-insights': './report-modules/customers.js',
+
+    // Staff
+    'staff':          './report-modules/staff.js',
+    'staff-overview': './report-modules/staff.js',
+    'staff-insights': './report-modules/staff.js',
 
     // Misc
     'membership': './report-modules/memberships.js',

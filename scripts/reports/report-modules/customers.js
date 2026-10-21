@@ -925,10 +925,12 @@ async function renderCustInsights(data, supabase) {
 
                 dropdown.innerHTML = matches.slice(0, 8).map(c => `
                     <div class="cust-search-item" data-id="${c.id}">
-                        <div class="cust-search-item-avatar">${(c.name || 'C').charAt(0).toUpperCase()}</div>
-                        <div class="cust-search-item-info">
-                            <div class="cust-search-item-name">${c.name} <span class="status-pill ${c.tag.toLowerCase()}">${c.tag}</span></div>
-                            <div class="cust-search-item-sub">${c.phone} • ${c.email}</div>
+                        <div class="cust-search-left">
+                            <div class="cust-avatar-circle">${(c.name || 'C').charAt(0).toUpperCase()}</div>
+                            <div class="cust-info-text">
+                                <strong>${c.name} <span style="display:inline-block;margin-left:4px;padding:1px 8px;border-radius:10px;font-size:0.7rem;font-weight:700;background:#e0e7ff;color:#3730a3;">${c.tag || 'Regular'}</span></strong>
+                                <span>${c.phone || '—'} • ${c.email || '—'}</span>
+                            </div>
                         </div>
                     </div>
                 `).join('');

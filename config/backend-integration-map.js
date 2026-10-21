@@ -797,9 +797,21 @@
 
 // CUSTOMERS REPORT - One Master RPC Function - get_customers_report
 
-// STAFF REPORT -
+// STAFF REPORT - One Master RPC Function - get_staff_report
+// Dual Sub-Report Architecture:
+// 1. Staff Overview (p_staff_id = NULL):
+//    - 4 Stat Cards: Total Staff (active/on-leave/inactive breakdown), Top Performer, Avg Bookings/Staff, Inactive Staff
+//    - Graph: Staff Capacity & Headcount Trend (3 Lines: Active Staff, Staff on Leave, New Staff Joined)
+//    - Donut Chart: Staff Status Distribution (Active [Green], On-Leave [Amber], Inactive [Grey]) with exact percentage share legend
+//    - Table: 4 Cohort Tabs (All Staff, Top Stylists, Active Staff, On Leave/Inactive) with search, 10/page pagination, CSV export & "View 360°" button
+// 2. Staff 360° Insights (p_staff_id = UUID):
+//    - Top Progressive Search Bar & Staff Dossier Header Card
+//    - 4 Stat Cards: Total Revenue, Bookings Revenue, Product Sales Revenue, Membership Sales Revenue (each with sub-metric comparing % share of total salon revenue)
+//    - Graph: 3-Bar Monthly Spend Breakdown (Bookings, Products, Memberships)
+//    - Donut Chart: Personal Revenue Mix (Bookings %, Products %, Memberships %)
+//    - Table: 3 Ledger Tabs (Booking Sales, Product Sales, Membership Sales) with search, pagination & CSV export
 
-// DISCOUNTS REPORT - 
+// DISCOUNT_USAGES REPORT - 
 
 
 
