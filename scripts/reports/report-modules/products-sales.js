@@ -893,9 +893,9 @@ async function renderProdOverview(data, supabase) {
             rowFormatter: (r) => {
                 const prodList = Array.isArray(r.product_names) ? r.product_names : [r.product_names || '—'];
                 const firstProd = prodList[0] || '—';
-                // Derive category from product name for preview data
-                const catMap = { "L'Oréal": 'Hair Care', 'Moroccan': 'Hair Care', 'Olaplex': 'Hair Care', 'Kerastase': 'Hair Care', 'BBlunt': 'Hair Care', 'Dermalogica': 'Skin Care', 'Forest Essentials': 'Skin Care', 'Beardo': 'Beard & Men', 'Schwarzkopf': 'Styling & Tools', 'Osis': 'Styling & Tools', 'Matte': 'Styling & Tools', 'OPI': 'Nail Care' };
-                const category = r.category || Object.entries(catMap).find(([k]) => firstProd.includes(k))?.[1] || 'General';
+                // Use real category_names from RPC; fall back to generic label
+                const catList = Array.isArray(r.category_names) ? r.category_names : [];
+                const category = catList[0] || r.category || 'General';
 
                 const discDisplay = (r.discount_amount && Number(r.discount_amount) > 0)
                     ? `<span style="color:#b45309;font-weight:600;">-${fmtINR(r.discount_amount)}</span>${r.discount_name ? `<br><small style="color:#92400e;font-size:0.7rem;">(${r.discount_name})</small>` : ''}`
