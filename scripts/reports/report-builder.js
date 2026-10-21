@@ -414,12 +414,12 @@ const REPORT_TYPES = {
         backCat: 'products',
         leftChartTitle: 'Daily POS Transaction Volume',
         rightChartTitle: 'Payment Method Breakdown',
-        kpi1: { label: 'Total Transactions',   value: 'Loading...' },
-        kpi2: { label: 'Avg Order Value (AOV)',value: 'Loading...' },
-        kpi3: { label: 'Total Items Sold',     value: 'Loading...' },
-        kpi4: { label: 'Total Collected',      value: 'Loading...' },
+        kpi1: { label: 'Total Invoices / Bills',   value: 'Loading...' },
+        kpi2: { label: 'Gross Retail Billed',      value: 'Loading...' },
+        kpi3: { label: 'Net Collected Amount',     value: 'Loading...' },
+        kpi4: { label: 'Average Ticket Size (AOV)',value: 'Loading...' },
         tableTitle: 'POS Sales Ledger',
-        headers: ['Invoice Ref', 'Date & Time', 'Customer', 'Staff / Stylist', 'Items & Qty', 'Gross Amount', 'Discount', 'Net Amount', 'Payment', 'Status'],
+        headers: ['Invoice Ref', 'Date & Time', 'Customer', 'Staff / Stylist', 'Line Items', 'Gross Amount', 'Discount', 'Net Amount', 'Payment', 'Status'],
         rows: []
     },
     'prod-discounts': {

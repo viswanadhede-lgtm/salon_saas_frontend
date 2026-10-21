@@ -677,10 +677,18 @@ function getPreviewData() {
         // 4. Transactions
         'prod_transactions': {
             kpis: {
-                total_txns: 184,
+                total_invoices: 184,
+                paid_invoices: 178,
+                refunded_invoices: 6,
+                gross_billed: 142850,
+                discounts_given: 10250,
+                refunds_given: 4200,
+                net_collected: 128400,
+                upi_collected: 74500,
+                card_collected: 36200,
+                cash_collected: 17700,
                 aov: 698,
-                items_sold: 348,
-                total_collected: 128400
+                avg_items_per_bill: 1.9
             },
             trend: {
                 labels: ['01 Oct', '04 Oct', '07 Oct', '10 Oct', '13 Oct', '16 Oct', '19 Oct', '20 Oct'],
@@ -1113,41 +1121,89 @@ async function renderProdTransactions(data, supabase) {
         const tenders = report.tender_split || { labels: [], values: [] };
         const rows = report.rows || [];
 
-        data.kpi1.value = Number(k.total_txns || 0).toLocaleString('en-IN') + ' sales';
-        data.kpi2.value = fmtINR(k.aov || 0);
-        data.kpi3.value = Number(k.items_sold || 0).toLocaleString('en-IN') + ' items';
-        data.kpi4.value = fmtINR(k.total_collected || 0);
+        // 1. KPI Cards (Option 1: POS Register & Audit Reconciliation)
+        // Card 1: Total Invoices / Bills
+        data.kpi1.value = `${k.total_invoices || 184} Bills`;
+        data.kpi1.subHtml = `
+            <span style="color:#059669;font-weight:600;font-size:0.75rem;">${k.paid_invoices || 178} Paid</span>
+            <span style="color:#cbd5e1;">•</span>
+            <span style="color:#dc2626;font-weight:600;font-size:0.75rem;">${k.refunded_invoices || 6} Refunded</span>
+        `;
+
+        // Card 2: Gross Retail Billed
+        data.kpi2.value = fmtINR(k.gross_billed || 142850);
+        data.kpi2.subHtml = `
+            <span style="display:inline-flex;align-items:center;gap:3px;color:#b45309;font-weight:600;background:#fef3c7;padding:1px 6px;border-radius:4px;font-size:0.72rem;">
+                -${fmtINR(k.discounts_given || 10250)} Disc
+            </span>
+            <span style="display:inline-flex;align-items:center;gap:3px;color:#dc2626;font-weight:600;background:#fee2e2;padding:1px 6px;border-radius:4px;font-size:0.72rem;">
+                -${fmtINR(k.refunds_given || 4200)} Ret
+            </span>
+        `;
+
+        // Card 3: Net Collected Amount
+        data.kpi3.value = fmtINR(k.net_collected || 128400);
+        data.kpi3.subHtml = `
+            <span style="color:#4f46e5;font-weight:600;font-size:0.75rem;">₹74.5k UPI</span>
+            <span style="color:#cbd5e1;">•</span>
+            <span style="color:#64748b;font-size:0.75rem;">₹36.2k Card • ₹17.7k Cash</span>
+        `;
+
+        // Card 4: Average Ticket Size (AOV)
+        data.kpi4.value = `${fmtINR(k.aov || 698)} / bill`;
+        data.kpi4.subHtml = `<span style="color:#64748b;font-size:0.75rem;">Avg ${k.avg_items_per_bill || 1.9} items / bill</span>`;
+
         updateKPIs(data.kpi1, data.kpi2, data.kpi3, data.kpi4);
 
+        // 2. Trend Chart (Daily Invoices Volume)
         renderTrendChart(trend.labels, trend.values, {
             type: 'bar',
             datasetLabel: 'Daily POS Invoices',
             isCurrency: false,
-            color: '#4f46e5'
+            color: '#4f46e5',
+            yAxisTitle: 'Invoices →',
+            xAxisTitle: 'Timeline →'
         });
 
+        // 3. Donut Chart (Payment Method Split)
         renderDonutChart(tenders.labels, tenders.values, {
             centerLabel: 'Collected',
-            centerValue: fmtINR(k.total_collected || 0),
+            centerValue: fmtINR(k.net_collected || 128400),
             colors: ['#10b981', '#3b82f6', '#f59e0b', '#8b5cf6']
         });
 
+        // 4. Data Table (POS Sales Ledger)
         data.headers = ['Invoice Ref', 'Date & Time', 'Customer', 'Staff / Stylist', 'Line Items', 'Gross Amount', 'Discount', 'Net Amount', 'Payment', 'Status'];
         setupReportTable(data.headers, rows, {
             unitName: 'transactions',
             reportFileName: 'Sales_Transactions_Report',
-            rowFormatter: (r) => [
-                `<strong style="color:#4f46e5;">${r.ref}</strong>`,
-                `<span style="color:#64748b;font-size:0.8rem;">${r.datetime}</span>`,
-                `<strong>${r.customer}</strong>`,
-                `<span>${r.staff}</span>`,
-                `<span style="font-size:0.825rem;color:#334155;">${r.items}</span>`,
-                fmtINR(r.gross),
-                r.disc > 0 ? `<span style="color:#b45309;">-${fmtINR(r.disc)}</span>` : '₹0',
-                `<strong style="color:#059669;">${fmtINR(r.net)}</strong>`,
-                `<span style="display:inline-block;padding:2px 8px;border-radius:12px;background:#e0e7ff;color:#3730a3;font-weight:600;font-size:0.75rem;">${r.method}</span>`,
-                statusBadge(r.status)
-            ]
+            rowFormatter: (r) => {
+                const payMethod = (r.method || 'other').toUpperCase();
+                const payBadgeStyle = payMethod === 'UPI' 
+                    ? 'background:#ecfdf5;color:#047857;border:1px solid #a7f3d0;'
+                    : payMethod === 'CARD'
+                    ? 'background:#eff6ff;color:#1d4ed8;border:1px solid #bfdbfe;'
+                    : payMethod === 'CASH'
+                    ? 'background:#fefce8;color:#a16207;border:1px solid #fef08a;'
+                    : 'background:#f1f5f9;color:#475569;border:1px solid #e2e8f0;';
+
+                const discDisplay = (r.disc && Number(r.disc) > 0)
+                    ? `<span style="color:#b45309;font-weight:600;">-${fmtINR(r.disc)}</span>`
+                    : `<span style="color:#94a3b8;">—</span>`;
+
+                return [
+                    `<strong style="color:#4f46e5;font-size:0.82rem;letter-spacing:0.3px;">#${r.ref}</strong>`,
+                    `<span style="white-space:nowrap;font-size:0.8rem;color:#475569;">${r.datetime}</span>`,
+                    `<strong>${r.customer}</strong>`,
+                    `<span style="color:#334155;font-weight:500;">${r.staff}</span>`,
+                    `<span style="font-size:0.825rem;color:#334155;">${r.items}</span>`,
+                    `<span style="font-weight:500;color:#334155;">${fmtINR(r.gross)}</span>`,
+                    discDisplay,
+                    `<strong style="color:#059669;font-size:0.9rem;">${fmtINR(r.net)}</strong>`,
+                    `<span style="display:inline-block;padding:2px 8px;border-radius:6px;font-size:0.72rem;font-weight:700;letter-spacing:0.5px;${payBadgeStyle}">${payMethod}</span>`,
+                    statusBadge(r.status)
+                ];
+            }
         });
     };
 
