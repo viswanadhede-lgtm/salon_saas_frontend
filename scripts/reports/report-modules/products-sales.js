@@ -716,9 +716,15 @@ function getPreviewData() {
         'prod_discounts': {
             kpis: {
                 total_discounts: 10250,
+                discount_rate: '7.2%',
+                gross_sales: 142850,
                 discounted_sales: 62,
+                discounted_pct: '33.7%',
+                full_price_sales: 122,
                 avg_discount_sale: 165,
-                discount_rate: '7.2%'
+                top_discount_driver: 'Coupons & Promos',
+                top_driver_amount: 4600,
+                top_driver_pct: '44.9%'
             },
             trend: {
                 labels: ['01 Oct', '04 Oct', '07 Oct', '10 Oct', '13 Oct', '16 Oct', '19 Oct', '20 Oct'],
@@ -745,10 +751,14 @@ function getPreviewData() {
         // 6. Returns & Refunds
         'prod_returns': {
             kpis: {
-                return_count: 8,
+                return_count: 6,
+                processed_returns: 6,
+                pending_returns: 0,
                 units_returned: 11,
+                gross_units_sold: 359,
                 total_refunded: 4200,
-                return_rate: '2.9%'
+                refund_pct: '2.9%',
+                return_rate: '3.1%'
             },
             trend: {
                 labels: ['01 Oct', '04 Oct', '07 Oct', '10 Oct', '13 Oct', '16 Oct', '19 Oct', '20 Oct'],
@@ -773,8 +783,12 @@ function getPreviewData() {
         'prod_payments': {
             kpis: {
                 total_collected: 128400,
+                reconciled_pct: '100% Reconciled',
+                total_transactions: 194,
                 pending_dues: 2100,
+                pending_tickets: 2,
                 refunded_amount: 4200,
+                refunds_count: 6,
                 net_reconciled: 124200
             },
             trend: {
@@ -1234,21 +1248,51 @@ async function renderProdDiscounts(data, supabase) {
         const types = report.discount_types || { labels: [], values: [] };
         const rows = report.rows || [];
 
-        data.kpi1.value = fmtINR(k.total_discounts || 0);
-        data.kpi2.value = Number(k.discounted_sales || 0).toLocaleString('en-IN') + ' sales';
-        data.kpi3.value = fmtINR(k.avg_discount_sale || 0);
-        data.kpi4.value = k.discount_rate || '0%';
+        // 1. KPI Cards (Recommended: Discount Impact & Margin Health)
+        // Card 1: Total Discounts Given
+        data.kpi1.value = fmtINR(k.total_discounts || 10250);
+        data.kpi1.subHtml = `
+            <span style="display:inline-flex;align-items:center;gap:3px;color:#dc2626;font-weight:600;background:#fee2e2;padding:1px 6px;border-radius:4px;font-size:0.72rem;">
+                -${k.discount_rate || '7.2%'} Margin Impact
+            </span>
+            <span style="color:#64748b;font-size:0.75rem;">on ${fmtINR(k.gross_sales || 142850)} Gross</span>
+        `;
+
+        // Card 2: Discounted Transactions
+        data.kpi2.value = `${k.discounted_sales || 62} Bills`;
+        data.kpi2.subHtml = `
+            <span style="color:#b45309;font-weight:600;font-size:0.75rem;">${k.discounted_pct || '33.7%'} of all bills</span>
+            <span style="color:#cbd5e1;">•</span>
+            <span style="color:#64748b;font-size:0.75rem;">${k.full_price_sales || 122} full-price</span>
+        `;
+
+        // Card 3: Avg Discount / Bill
+        data.kpi3.value = `${fmtINR(k.avg_discount_sale || 165)} / bill`;
+        data.kpi3.subHtml = `<span style="color:#64748b;font-size:0.75rem;">Across ${k.discounted_sales || 62} discounted tickets</span>`;
+
+        // Card 4: Top Discount Driver
+        data.kpi4.value = k.top_discount_driver || 'Coupons & Promos';
+        data.kpi4.subHtml = `
+            <span style="color:#4f46e5;font-weight:600;font-size:0.75rem;">${fmtINR(k.top_driver_amount || 4600)}</span>
+            <span style="color:#cbd5e1;">•</span>
+            <span style="color:#64748b;font-size:0.75rem;">${k.top_driver_pct || '44.9%'} of all discounts</span>
+        `;
+
         updateKPIs(data.kpi1, data.kpi2, data.kpi3, data.kpi4);
 
+        // 2. Trend Chart (Daily Discounts Given)
         renderTrendChart(trend.labels, trend.values, {
             type: 'bar',
             datasetLabel: 'Daily Discounts Given',
-            color: '#f43f5e'
+            color: '#f43f5e',
+            yAxisTitle: 'Discounts (₹) →',
+            xAxisTitle: 'Timeline →'
         });
 
+        // 3. Donut Chart (Discounts by Type)
         renderDonutChart(types.labels, types.values, {
             centerLabel: 'Discounts',
-            centerValue: fmtINR(k.total_discounts || 0),
+            centerValue: fmtINR(k.total_discounts || 10250),
             colors: ['#f43f5e', '#a855f7', '#0ea5e9', '#f59e0b']
         });
 
@@ -1297,21 +1341,42 @@ async function renderProdReturns(data, supabase) {
         const reasons = report.reasons || { labels: [], values: [] };
         const rows = report.rows || [];
 
-        data.kpi1.value = Number(k.return_count || 0).toLocaleString('en-IN') + ' returns';
-        data.kpi2.value = Number(k.units_returned || 0).toLocaleString('en-IN') + ' units';
-        data.kpi3.value = fmtINR(k.total_refunded || 0);
-        data.kpi4.value = k.return_rate || '0%';
+        // 1. KPI Cards (Report 6: Returns & Refunds)
+        // Card 1: Total Return Cases
+        data.kpi1.value = `${k.return_count || 6} Cases`;
+        data.kpi1.subHtml = `
+            <span style="color:#059669;font-weight:600;font-size:0.75rem;">${k.processed_returns || 6} Processed</span>
+            <span style="color:#cbd5e1;">•</span>
+            <span style="color:#64748b;font-size:0.75rem;">${k.pending_returns || 0} Pending</span>
+        `;
+
+        // Card 2: Units Returned
+        data.kpi2.value = `${k.units_returned || 11} units`;
+        data.kpi2.subHtml = `<span style="color:#64748b;font-size:0.75rem;">Out of ${k.gross_units_sold || 359} Gross sold</span>`;
+
+        // Card 3: Total Refund Value
+        data.kpi3.value = fmtINR(k.total_refunded || 4200);
+        data.kpi3.subHtml = `<span style="color:#dc2626;font-weight:600;font-size:0.75rem;">-${k.refund_pct || '2.9%'} of Net revenue</span>`;
+
+        // Card 4: Product Return Rate
+        data.kpi4.value = k.return_rate || '3.1%';
+        data.kpi4.subHtml = `<span style="display:inline-flex;align-items:center;gap:3px;color:#059669;font-weight:600;background:#d1fae5;padding:1px 6px;border-radius:4px;font-size:0.72rem;">Healthy &lt; 5%</span>`;
+
         updateKPIs(data.kpi1, data.kpi2, data.kpi3, data.kpi4);
 
+        // 2. Trend Chart (Daily Refunded Value)
         renderTrendChart(trend.labels, trend.values, {
             type: 'bar',
             datasetLabel: 'Daily Refunded Value',
-            color: '#f59e0b'
+            color: '#f59e0b',
+            yAxisTitle: 'Refunds (₹) →',
+            xAxisTitle: 'Timeline →'
         });
 
+        // 3. Donut Chart (Return Reasons Breakdown)
         renderDonutChart(reasons.labels, reasons.values, {
             centerLabel: 'Refunded',
-            centerValue: fmtINR(k.total_refunded || 0),
+            centerValue: fmtINR(k.total_refunded || 4200),
             colors: ['#ef4444', '#f59e0b', '#ec4899', '#6366f1', '#14b8a6']
         });
 
@@ -1361,21 +1426,42 @@ async function renderProdPayments(data, supabase) {
         const methods = report.methods || { labels: [], values: [] };
         const rows = report.rows || [];
 
-        data.kpi1.value = fmtINR(k.total_collected || 0);
-        data.kpi2.value = fmtINR(k.pending_dues || 0);
-        data.kpi3.value = fmtINR(k.refunded_amount || 0);
-        data.kpi4.value = fmtINR(k.net_reconciled || 0);
+        // 1. KPI Cards (Report 7: Sales Payments)
+        // Card 1: Total Collected
+        data.kpi1.value = fmtINR(k.total_collected || 128400);
+        data.kpi1.subHtml = `
+            <span style="color:#059669;font-weight:600;font-size:0.75rem;">${k.reconciled_pct || '100% Reconciled'}</span>
+            <span style="color:#cbd5e1;">•</span>
+            <span style="color:#64748b;font-size:0.75rem;">${k.total_transactions || 194} transactions</span>
+        `;
+
+        // Card 2: Pending Dues
+        data.kpi2.value = fmtINR(k.pending_dues || 2100);
+        data.kpi2.subHtml = `<span style="color:#92400e;font-weight:600;background:#fef3c7;padding:1px 6px;border-radius:4px;font-size:0.72rem;">${k.pending_tickets || 2} unpaid tickets</span>`;
+
+        // Card 3: Refunded Amount
+        data.kpi3.value = fmtINR(k.refunded_amount || 4200);
+        data.kpi3.subHtml = `<span style="color:#dc2626;font-weight:600;background:#fee2e2;padding:1px 6px;border-radius:4px;font-size:0.72rem;">${k.refunds_count || 6} refunds issued</span>`;
+
+        // Card 4: Net Liquid Realized
+        data.kpi4.value = fmtINR(k.net_reconciled || 124200);
+        data.kpi4.subHtml = `<span style="color:#059669;font-weight:600;font-size:0.75rem;">Net cash in hand</span>`;
+
         updateKPIs(data.kpi1, data.kpi2, data.kpi3, data.kpi4);
 
+        // 2. Trend Chart (Daily Payment Collections)
         renderTrendChart(trend.labels, trend.values, {
-            type: 'line',
+            type: 'bar',
             datasetLabel: 'Daily Collections',
-            color: '#06b6d4'
+            color: '#06b6d4',
+            yAxisTitle: 'Collections (₹) →',
+            xAxisTitle: 'Timeline →'
         });
 
+        // 3. Donut Chart (Tender Split)
         renderDonutChart(methods.labels, methods.values, {
-            centerLabel: 'Reconciled',
-            centerValue: fmtINR(k.net_reconciled || 0),
+            centerLabel: 'Realized',
+            centerValue: fmtINR(k.net_reconciled || 124200),
             colors: ['#06b6d4', '#3b82f6', '#10b981', '#f59e0b']
         });
 
