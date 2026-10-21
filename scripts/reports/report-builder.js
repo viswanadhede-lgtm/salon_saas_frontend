@@ -311,7 +311,7 @@ const REPORT_TYPES = {
         subtitle: 'Executive overview of total, membership, VIP and loyal salon clientele',
         icon: 'users',
         backCat: 'customers',
-        leftChartTitle: 'Customer Footfall & Visits Trend',
+        leftChartTitle: 'Total Customers vs. Total Revenue',
         rightChartTitle: 'Client Tier Distribution',
         kpi1: { label: 'Total Customers',            value: 'Loading...' },
         kpi2: { label: 'Membership Clients',         value: 'Loading...' },

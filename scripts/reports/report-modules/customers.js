@@ -50,13 +50,17 @@ async function renderCustMetrics(data, supabase) {
 
         return {
             totalCustomers: 2450,
+            newCustomers: 84,
+            returningCustomers: 2366,
             membershipClients: 94,
+            membershipExpiringSoon: 8,
             vipClients: 185,
             regularClients: 2171,
             loyalCustomers: 312,
+            loyalAvgVisits: 2.8,
             trendMonths: ['May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct'],
-            trendUniqueCustomers: [140, 165, 190, 210, 245, 280],
-            trendTotalVisits:     [230, 290, 340, 395, 470, 560],
+            trendTotalCustomers: [140, 165, 190, 210, 245, 280],
+            trendTotalRevenue:   [210000, 265000, 320000, 385000, 440000, 520000],
             donutData: [
                 { label: 'Regular Clients', count: 2171, perc: 88, color: '#6366f1' },
                 { label: 'VIP Clients',     count: 185,  perc: 8,  color: '#8b5cf6' },
@@ -69,15 +73,40 @@ async function renderCustMetrics(data, supabase) {
     const loadCustomerOverview = async () => {
         const ov = getOverviewData();
 
-        // 1. Render 4 Stat Cards
+        const memberPen = ((ov.membershipClients / ov.totalCustomers) * 100).toFixed(1);
+        const vipPen = ((ov.vipClients / ov.totalCustomers) * 100).toFixed(1);
+        const regPen = ((ov.regularClients / ov.totalCustomers) * 100).toFixed(1);
+        const repeatRate = ((ov.loyalCustomers / ov.totalCustomers) * 100).toFixed(1);
+
+        // 1. Render 4 Stat Cards with Rich High-Value Sub-Metrics
         updateKPIs(
-            { label: 'Total Customers',            value: ov.totalCustomers.toLocaleString('en-IN'), sub: 'All registered profiles' },
-            { label: 'Membership Clients',         value: ov.membershipClients.toLocaleString('en-IN'), sub: 'Active subscription plans' },
-            { label: 'VIP Clients',                value: ov.vipClients.toLocaleString('en-IN'), subHtml: `<span style="color:#64748b;font-weight:600;font-size:0.75rem;">Regular: ${ov.regularClients.toLocaleString('en-IN')}</span>` },
-            { label: 'Loyal Customers (2+ Visits)', value: ov.loyalCustomers.toLocaleString('en-IN'), sub: '2+ visits in selected period' }
+            { 
+                label: 'Total Customers',            
+                value: ov.totalCustomers.toLocaleString('en-IN'), 
+                subHtml: `<strong style="color:#059669;">+${ov.newCustomers} New Joined</strong> • <span>${ov.returningCustomers.toLocaleString('en-IN')} Returning</span>` 
+            },
+            { 
+                label: 'Membership Clients',         
+                value: ov.membershipClients.toLocaleString('en-IN'), 
+                subHtml: `<strong style="color:#d97706;">${memberPen}%</strong> Penetration Rate • <span>${ov.membershipExpiringSoon} Expiring Soon</span>` 
+            },
+            { 
+                label: 'VIP Clients',                
+                value: ov.vipClients.toLocaleString('en-IN'), 
+                subHtml: `<strong style="color:#7c3aed;">${vipPen}%</strong> of Base • <span>Regular: ${ov.regularClients.toLocaleString('en-IN')} (${regPen}%)</span>` 
+            },
+            { 
+                label: 'Loyal Customers (2+ Visits)', 
+                value: ov.loyalCustomers.toLocaleString('en-IN'), 
+                subHtml: `<strong style="color:#059669;">${repeatRate}%</strong> Repeat Rate • <span>Avg ${ov.loyalAvgVisits} visits / client</span>` 
+            }
         );
 
-        // 2. Render Left Chart: Dual-Bar (Unique Customers vs. Total Visits)
+        // Update Left Chart Header Title
+        const leftChartTitleEl = document.getElementById('leftChartTitle');
+        if (leftChartTitleEl) leftChartTitleEl.textContent = 'Total Customers vs. Total Revenue';
+
+        // 2. Render Left Chart: Dual-Bar with Dual Y-Axis (Total Customers vs. Total Revenue)
         const trendCanvas = document.getElementById('trendChart');
         if (trendCanvas) {
             trendChartInstance = destroyChart(trendChartInstance);
@@ -87,26 +116,32 @@ async function renderCustMetrics(data, supabase) {
                     labels: ov.trendMonths,
                     datasets: [
                         {
-                            label: 'Unique Customers',
-                            data: ov.trendUniqueCustomers,
+                            label: 'Total Customers',
+                            data: ov.trendTotalCustomers,
                             backgroundColor: '#6366f1',
                             borderRadius: 6,
                             barPercentage: 0.65,
-                            categoryPercentage: 0.75
+                            categoryPercentage: 0.75,
+                            yAxisID: 'y'
                         },
                         {
-                            label: 'Total Visits',
-                            data: ov.trendTotalVisits,
+                            label: 'Total Revenue',
+                            data: ov.trendTotalRevenue,
                             backgroundColor: '#10b981',
                             borderRadius: 6,
                             barPercentage: 0.65,
-                            categoryPercentage: 0.75
+                            categoryPercentage: 0.75,
+                            yAxisID: 'y1'
                         }
                     ]
                 },
                 options: {
                     responsive: true,
                     maintainAspectRatio: false,
+                    interaction: {
+                        mode: 'index',
+                        intersect: false
+                    },
                     plugins: {
                         legend: {
                             display: true,
@@ -121,14 +156,49 @@ async function renderCustMetrics(data, supabase) {
                         tooltip: {
                             backgroundColor: '#0f172a',
                             padding: 12,
-                            cornerRadius: 8
+                            cornerRadius: 8,
+                            callbacks: {
+                                label: (ctx) => {
+                                    if (ctx.dataset.yAxisID === 'y1') {
+                                        return ` Total Revenue: ${formatCurrency(ctx.raw)}`;
+                                    }
+                                    return ` Total Customers: ${ctx.raw.toLocaleString('en-IN')}`;
+                                }
+                            }
                         }
                     },
                     scales: {
                         y: {
+                            type: 'linear',
+                            display: true,
+                            position: 'left',
                             beginAtZero: true,
                             grid: { color: '#f1f5f9' },
-                            ticks: { color: '#64748b', font: { size: 11 } }
+                            title: {
+                                display: true,
+                                text: 'Customers (Count)',
+                                color: '#6366f1',
+                                font: { size: 11, weight: '600' }
+                            },
+                            ticks: { color: '#6366f1', font: { size: 11 } }
+                        },
+                        y1: {
+                            type: 'linear',
+                            display: true,
+                            position: 'right',
+                            beginAtZero: true,
+                            grid: { drawOnChartArea: false },
+                            title: {
+                                display: true,
+                                text: 'Revenue (₹)',
+                                color: '#10b981',
+                                font: { size: 11, weight: '600' }
+                            },
+                            ticks: { 
+                                color: '#10b981', 
+                                font: { size: 11 },
+                                callback: (v) => formatCurrency(v)
+                            }
                         },
                         x: {
                             grid: { display: false },
