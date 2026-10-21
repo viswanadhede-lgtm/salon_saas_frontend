@@ -179,7 +179,7 @@ function setupTokenRefresh() {
     refreshInterval = setInterval(() => {
         console.log('[Auth Guard] Running scheduled token refresh...');
         silentTokenRefresh();
-    }, 50 * 60 * 1000); // every 50 minutes
+    }, 25 * 60 * 1000); // every 25 minutes — safely within both 30-min and 1-hour expiry windows
 }
 
 // ─── Authoritative Subscription Helper ─────────────────────────────────────────
@@ -436,9 +436,30 @@ export async function runGlobalAuthGuard() {
     try {
         console.log('[Auth Guard] Cache miss — running cold start via Supabase...');
 
+        // 1a. Proactively refresh token if it's close to expiry (within 5 minutes)
+        //     This prevents the DB queries below from silently failing with 401
+        //     because the stale token is used before the /auth/v1/user check returns.
+        try {
+            const rawToken = token;
+            const payloadB64 = rawToken.split('.')[1];
+            if (payloadB64) {
+                const payload = JSON.parse(atob(payloadB64));
+                const expiresAt = payload.exp * 1000; // ms
+                const fiveMinutes = 5 * 60 * 1000;
+                if (expiresAt - Date.now() < fiveMinutes) {
+                    console.log('[Auth Guard] Token expiring soon — proactive refresh...');
+                    const refreshed = await silentTokenRefresh();
+                    if (!refreshed) {
+                        showAuthBlockModal('INVALID_SESSION', 'Your session has expired. Please sign in again.', 'Sign In', 'signin.html');
+                        return;
+                    }
+                }
+            }
+        } catch (_) { /* malformed token — will be caught by /auth/v1/user check below */ }
+
         // 1. Validate token
         const userRes = await fetch(`${SUPABASE_URL}/auth/v1/user`, {
-            headers: { 'apikey': SUPABASE_ANON, 'Authorization': `Bearer ${token}` }
+            headers: { 'apikey': SUPABASE_ANON, 'Authorization': `Bearer ${localStorage.getItem('token')}` }
         });
 
         if (userRes.status === 401) {
