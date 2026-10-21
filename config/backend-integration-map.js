@@ -795,7 +795,7 @@
 
 // FINANCIAL REPORT -
 
-// CUSTOMERS REPORT -
+// CUSTOMERS REPORT - One Master RPC Function - get_customers_report
 
 // STAFF REPORT -
 
