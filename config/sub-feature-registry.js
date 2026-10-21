@@ -100,7 +100,6 @@ export const SUB_FEATURES = {
 
     // ---- ANALYTICS / REPORTS ----
     REPORT_VIEW_BASIC: 'report_view_basic',
-    REPORT_VIEW_ADVANCED: 'report_view_advanced',
     REPORT_EXPORT: 'report_export',
     REPORTS_CREATE_BOOKING: 'reports_create_booking',
 
@@ -254,7 +253,6 @@ export const SUB_FEATURES_MAP = {
     ],
     [FEATURES.REPORTS_ACCESS]: [
         { key: SUB_FEATURES.REPORT_VIEW_BASIC, label: 'View Basic Reports' },
-        { key: SUB_FEATURES.REPORT_VIEW_ADVANCED, label: 'View Adv. Reports' },
         { key: SUB_FEATURES.REPORT_EXPORT, label: 'Export Reports' },
         { key: SUB_FEATURES.REPORTS_CREATE_BOOKING, label: 'Create Booking (Quick Action)' }
     ],

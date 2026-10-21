@@ -126,28 +126,6 @@ const CATEGORIES = {
             }
         ]
     },
-    operations: {
-        title: 'Operations',
-        subtitle: 'Staff and branch performance metrics',
-        icon: 'activity',
-        colorClass: 'bg-rose',
-        subReports: [
-            {
-                type: 'ops-staff',
-                label: 'Staff Performance',
-                desc: 'Revenue, bookings and ratings by staff',
-                icon: 'user-check',
-                colorClass: 'bg-rose'
-            },
-            {
-                type: 'ops-branch',
-                label: 'Branch Performance',
-                desc: 'Multi-location comparison and trends',
-                icon: 'map-pin',
-                colorClass: 'bg-cyan'
-            }
-        ]
-    },
     products: {
         title: 'Product Sales',
         subtitle: 'Retail performance, product metrics, line items, discounts & payment reconciliation',

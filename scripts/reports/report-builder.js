@@ -333,34 +333,6 @@ const REPORT_TYPES = {
         rows: []
     },
 
-    // ── OPERATIONS SUB-REPORTS ───────────────────────────────────────────────
-    'ops-staff': {
-        title: 'Staff Performance',
-        subtitle: 'Revenue, bookings and ratings by staff member',
-        icon: 'user-check',
-        backCat: 'operations',
-        kpi1: { label: 'Total Bookings Handled',  value: 'Loading...' },
-        kpi2: { label: 'Total Revenue Generated', value: 'Loading...' },
-        kpi3: { label: 'Avg Bookings / Staff',    value: 'Loading...' },
-        kpi4: { label: 'Avg Revenue / Staff',     value: 'Loading...' },
-        tableTitle: 'Staff Performance Breakdown',
-        headers: ['Staff Name', 'Total Bookings', 'Completed', 'Completion Rate', 'Revenue', 'Avg / Booking', 'Last Booking', 'Status'],
-        rows: []
-    },
-    'ops-branch': {
-        title: 'Branch Performance',
-        subtitle: 'Multi-location comparison and trends',
-        icon: 'map-pin',
-        backCat: 'operations',
-        kpi1: { label: 'Total Branches',      value: 'Loading...' },
-        kpi2: { label: 'Total Revenue',        value: 'Loading...' },
-        kpi3: { label: 'Top Branch',           value: 'Loading...' },
-        kpi4: { label: 'Avg Revenue / Branch', value: 'Loading...' },
-        tableTitle: 'Branch Comparison',
-        headers: ['Branch', 'Active Staff', 'Bookings', 'Completed', 'Cancelled', 'No-Shows', 'Revenue', 'Expenses', 'Net Revenue', 'Completion Rate', 'Status'],
-        rows: []
-    },
-
     // ── PRODUCT SALES SUB-REPORTS ──────────────────────────────────────────
     'prod-overview': {
         title: 'Product Sales Overview',
@@ -585,13 +557,6 @@ const TYPE_MODULE_MAP = {
     'customers':     './report-modules/customers.js',
     'cust-metrics':  './report-modules/customers.js',
     'cust-insights': './report-modules/customers.js',
-
-    // Operations
-    'staff':      './report-modules/operations.js',
-    'services':   './report-modules/operations.js',
-    'branch':     './report-modules/operations.js',
-    'ops-staff':  './report-modules/operations.js',
-    'ops-branch': './report-modules/operations.js',
 
     // Misc
     'membership': './report-modules/memberships.js',
@@ -857,7 +822,6 @@ document.addEventListener('DOMContentLoaded', async () => {
                 financial:   'Financial',
                 bookings:    'Bookings',
                 customers:   'Customers',
-                operations:  'Operations',
                 products:    'Product Sales',
                 memberships: 'Memberships',
                 membership:  'Memberships'
