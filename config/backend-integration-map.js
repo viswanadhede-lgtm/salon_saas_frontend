@@ -373,10 +373,10 @@
 
 //   >>> Even the RPC Function *process_pos_refund_atomic* should not update anytable except the products table the products count ... other three tables would be a new row insertion....rather it should add a new row in all the three tables
 
-// .. sales table - new row should be inserted (one row per one product status = refunded)  -  done by this RPC function [process_pos_refund_atomic]
-//.. sales for business transaction - new row should be added (one consolidated row per transaction status = refunded)  -  done by this RPC function [process_pos_refund_atomic]
-//.. Business Transactions - one row should be added (one consolidated row per transaction with status = refunded) - Done by the trigger [trg_create_pos_business_transaction ]
-// .. Products table - Product count should be increased - -  done by this RPC function [process_pos_refund_atomic]
+// .. sales table - new row would be inserted (one row per one product status = refunded)  -  done by this RPC function [process_pos_refund_atomic]
+//.. sales for business transaction - new row would be added (one consolidated row per transaction status = refunded)  -  done by this RPC function [process_pos_refund_atomic]
+//.. Business Transactions - one row would be added (one consolidated row per transaction with status = refunded) - Done by the trigger [trg_create_pos_business_transaction ]
+// .. Products table - Product count would be increased - -  done by this RPC function [process_pos_refund_atomic]
 
 // how a refund row in business transaction table is inserted ?
 
@@ -789,7 +789,9 @@
 
 // BOOKINGS REPORT - One Master RPC Function - get_bookings_report
 
-// PRODUCT SALES REPORT - 
+// PRODUCT SALES REPORT -  One Master RPC Function - get_product_sales_report
+
+//  
 
 
 
