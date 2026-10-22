@@ -843,4 +843,13 @@
 
 //  5. PAYMENTS SETTINGS
 
-         // 
+         // Direct supabase upsert - No RPC FUNCTION 
+
+
+         
+//  6. NOTIFICATION SETTINGS
+
+         //  Direct supabse upsert - No RPC FUNCTION 
+
+
+//  7.         
