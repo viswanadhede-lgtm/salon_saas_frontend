@@ -148,16 +148,20 @@ window.saveBusinessSettings = async function () {
         let logoUrl = currentLogoUrl;
         if (logoInput?.files?.[0]) {
             const file = logoInput.files[0];
+            if (file.size > 2 * 1024 * 1024) {
+                throw new Error('Logo file size exceeds 2 MB limit.');
+            }
             const ext = file.name.split('.').pop() || 'png';
-            const path = `logos/${companyId}/logo_${Date.now()}.${ext}`;
+            const path = `${companyId}/logo_${Date.now()}.${ext}`;
             const { error: uploadErr } = await supabase.storage
-                .from('company-assets')
+                .from('company-logos')
                 .upload(path, file, { upsert: true });
 
             if (uploadErr) {
-                console.warn('[settings-business] Logo upload error:', uploadErr);
+                console.error('[settings-business] Logo upload error:', uploadErr);
+                throw new Error('Failed to upload logo: ' + (uploadErr.message || 'Storage error'));
             } else {
-                const { data: urlData } = supabase.storage.from('company-assets').getPublicUrl(path);
+                const { data: urlData } = supabase.storage.from('company-logos').getPublicUrl(path);
                 if (urlData?.publicUrl) {
                     logoUrl = urlData.publicUrl;
                     currentLogoUrl = logoUrl;
@@ -170,16 +174,20 @@ window.saveBusinessSettings = async function () {
         let coverUrl = currentCoverUrl;
         if (coverInput?.files?.[0]) {
             const file = coverInput.files[0];
+            if (file.size > 5 * 1024 * 1024) {
+                throw new Error('Cover image file size exceeds 5 MB limit.');
+            }
             const ext = file.name.split('.').pop() || 'png';
-            const path = `covers/${companyId}/cover_${Date.now()}.${ext}`;
+            const path = `${companyId}/cover_${Date.now()}.${ext}`;
             const { error: uploadErr } = await supabase.storage
-                .from('company-assets')
+                .from('company-cover-images')
                 .upload(path, file, { upsert: true });
 
             if (uploadErr) {
-                console.warn('[settings-business] Cover upload error:', uploadErr);
+                console.error('[settings-business] Cover upload error:', uploadErr);
+                throw new Error('Failed to upload cover image: ' + (uploadErr.message || 'Storage error'));
             } else {
-                const { data: urlData } = supabase.storage.from('company-assets').getPublicUrl(path);
+                const { data: urlData } = supabase.storage.from('company-cover-images').getPublicUrl(path);
                 if (urlData?.publicUrl) {
                     coverUrl = urlData.publicUrl;
                     currentCoverUrl = coverUrl;

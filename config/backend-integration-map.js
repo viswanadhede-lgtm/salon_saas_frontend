@@ -802,8 +802,17 @@
 // DISCOUNT_USAGES REPORT - One Master RPC Function - get_discount_report .
 
 
+//============================================================================================================================
+// SETTINGS
+//==================================================================================================================================
 
-
+// COMPANY SETTINGS
+// 1. BUSINESS SETTINGS:
+//    - Storage Buckets:
+//      * `company-logos` (Public): Stores business logo assets at `${company_id}/logo_${timestamp}.${ext}`.
+//      * `company-cover-images` (Public): Stores business cover images at `${company_id}/cover_${timestamp}.${ext}`.
+//    - Primary Table: `company_settings` (logo_url, cover_image_url, legal_business_name, display_name, etc.)
+//    - Sync Table: `companies` (logo_url, company_name, display_name)
 
 
 
