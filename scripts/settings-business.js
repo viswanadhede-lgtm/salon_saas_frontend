@@ -195,20 +195,8 @@ window.saveBusinessSettings = async function () {
             }
         }
 
-        // 3. Check if record already exists in company_settings
-        const { data: existingRows, error: checkErr } = await supabase
-            .from('company_settings')
-            .select('company_id')
-            .eq('company_id', companyId);
-
-        if (checkErr) {
-            console.warn('[settings-business] Check existing error:', checkErr);
-        }
-
-        const recordExists = Array.isArray(existingRows) && existingRows.length > 0;
-        const now = new Date().toISOString();
-
-        const commonPayload = {
+        // 3. Atomically save business settings & sync with companies table via RPC
+        const payload = {
             legal_business_name:         companyName,
             display_name:                displayName,
             logo_url:                    logoUrl || null,
@@ -219,49 +207,24 @@ window.saveBusinessSettings = async function () {
             website:                     getVal('companyWebsite'),
             google_business_profile_url: getVal('googleBusinessUrl'),
             instagram_url:               getVal('instagramUrl'),
-            facebook_url:                getVal('facebookUrl'),
-            updated_at:                  now
+            facebook_url:                getVal('facebookUrl')
         };
 
-        if (recordExists) {
-            // Update existing record (preserve created_at)
-            const { error: updateErr } = await supabase
-                .from('company_settings')
-                .eq('company_id', companyId)
-                .update(commonPayload);
+        const { data: rpcRes, error: rpcErr } = await supabase.rpc('save_business_settings', {
+            p_company_id: companyId,
+            p_data: payload
+        });
 
-            if (updateErr) throw new Error(updateErr.message || 'Failed to update company settings');
-        } else {
-            // Insert new record (write created_at and updated_at)
-            const insertPayload = {
-                company_id: companyId,
-                ...commonPayload,
-                created_at: now
-            };
-
-            const { error: insertErr } = await supabase
-                .from('company_settings')
-                .insert(insertPayload);
-
-            if (insertErr) throw new Error(insertErr.message || 'Failed to create company settings');
+        if (rpcErr) {
+            console.error('[settings-business] save_business_settings RPC error:', rpcErr);
+            throw new Error(rpcErr.message || 'Failed to save business settings via RPC');
         }
 
-        // 4. Best-effort sync with companies table for cross-app consistency
-        try {
-            await supabase
-                .from('companies')
-                .eq('company_id', companyId)
-                .update({
-                    company_name:  companyName,
-                    display_name:  displayName,
-                    logo_url:      logoUrl || null,
-                    updated_at:    now
-                });
-        } catch (syncErr) {
-            console.warn('[settings-business] companies table sync note:', syncErr);
+        if (rpcRes && rpcRes.success === false) {
+            throw new Error(rpcRes.message || 'Failed to save business settings');
         }
 
-        // 5. Update cached appContext in localStorage
+        // 4. Update cached appContext in localStorage
         try {
             const appContext = JSON.parse(localStorage.getItem('appContext') || '{}');
             if (appContext.company) {

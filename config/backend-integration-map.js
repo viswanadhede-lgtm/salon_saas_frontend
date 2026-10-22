@@ -807,19 +807,12 @@
 //==================================================================================================================================
 
 // COMPANY SETTINGS
-// 1. BUSINESS SETTINGS:
+// 1. BUSINESS SETTINGS (settings-business.html / scripts/settings-business.js)
+//    - Read: Direct query from `company_settings` (with fallback to `companies` if uninitialized)
 //    - Storage Buckets:
-//      * `company-logos` (Public): Stores business logo assets at `${company_id}/logo_${timestamp}.${ext}`.
-//      * `company-cover-images` (Public): Stores business cover images at `${company_id}/cover_${timestamp}.${ext}`.
-//    - Primary Table: `company_settings` (logo_url, cover_image_url, legal_business_name, display_name, etc.)
-//    - Sync Table: `companies` (logo_url, company_name, display_name)
-
-
-
-
-
-
-
-
-
-
+//        * Logo: `company-logos` (${companyId}/logo_${timestamp}.${ext}, max 2MB)
+//        * Cover Image: `company-cover-images` (${companyId}/cover_${timestamp}.${ext}, max 5MB)
+//    - Save: Atomic Master RPC Function `save_business_settings(p_company_id uuid, p_data jsonb)`
+//        * Upserts into `company_settings` table (all business metadata, branding URLs, social handles).
+//        * Atomically synchronizes `companies` table (company_name, display_name, logo_url, updated_at).
+//        * Guaranteed single-transaction consistency across both tables.
