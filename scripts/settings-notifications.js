@@ -637,6 +637,14 @@ document.addEventListener('DOMContentLoaded', () => {
 
     initBranchSwitcher();
 
+    // ── Unsaved Changes Guard ────────────────────────────────────────────────
+    window.addEventListener('beforeunload', (e) => {
+        if (savebar && savebar.classList.contains('visible')) {
+            e.preventDefault();
+            e.returnValue = '';
+        }
+    });
+
     // ── Init ─────────────────────────────────────────────────────────────────
     loadPreferences();
 });
