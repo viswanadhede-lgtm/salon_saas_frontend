@@ -858,26 +858,8 @@
 
  
 //  8. INVOICE SETTINGS  
-//
-//     Direct Supabase upsert - No RPC FUNCTION
-//     Table: public.invoice_settings
-//     Constraint: invoice_settings_company_branch_key UNIQUE (company_id, branch_id)
-//     Architecture: 1 Atomic row per branch with 4 JSONB configuration columns
-//     Columns:
-//       - id uuid
-//       - company_id uuid
-//       - branch_id uuid
-//       - common_invoice jsonb (prefix, startingNumber, header, customer, transaction, items, totals, footer)
-//       - booking_invoice jsonb (showAppointmentNumber, showAppointmentDate, showAppointmentTime, showServiceDuration, showStylistName, showBranchName, showBookingNotes, bookingNotesText)
-//       - pos_invoice jsonb (showProductName, showSku, showQuantity, showUnitPrice, showDiscount, showTax, showCashierStaff, showPosTransactionNo, showPaymentRef)
-//       - membership_invoice jsonb (showMembershipName, showPlan, showStartDate, showExpiryDate, showDuration, showPrice, showDiscount, showBenefits, showMembershipRef)
-//       - created_at, updated_at
-//     State Manager: scripts/invoice-state.js (loadInvoiceSettingsFromDB, saveInvoiceSettingsToDB, renderLiveInvoicePreview, loadBusinessPreviewData)
-//     UI Bindings:
-//       - scripts/settings/settings-invoice-common-ui.js (settings-invoice-common.html)
-//       - scripts/settings/settings-invoice-booking-ui.js (settings-invoice-booking.html)
-//       - scripts/settings/settings-invoice-pos-ui.js (settings-invoice-pos.html)
-//       - scripts/settings/settings-invoice-membership-ui.js (settings-invoice-membership.html)
+
+         // Direct supabse upsert - No RPC FUNCTION 
 
 
          
@@ -886,7 +868,8 @@
 // ===================================================================================================================         
 
 //
-
+//
+//
 
 
 
