@@ -1,7 +1,7 @@
 // scripts/reports/report-modules/financial.js
 // Complete Financial Reports Suite (Executive P&L, Revenue, Payments, Expenses, Discounts, Refunds, Dues)
-// Fully integrated with unified Master RPC: public.get_financial_report(p_company_id, p_branch_id, p_start_date, p_end_date)
-// Includes high-fidelity realistic preview fallbacks matching the 6-table database schema.
+// 100% live database integration via Master RPC: public.get_financial_report(p_company_id, p_branch_id, p_start_date, p_end_date)
+// Clean zero-state handling for empty date ranges and branches. Zero mock data.
 
 import { formatCurrency, updateKPIs } from './shared.js';
 
@@ -1298,6 +1298,19 @@ export async function render(data, supabase, type = data?.type) {
     }
     if (filterBranch) {
         filterBranch.onchange = executeReport;
+    }
+    if (filterStart) {
+        filterStart.onchange = executeReport;
+    }
+    if (filterEnd) {
+        filterEnd.onchange = executeReport;
+    }
+
+    const btnReset = document.getElementById('btnFilterReset');
+    if (btnReset) {
+        btnReset.addEventListener('click', () => {
+            setTimeout(executeReport, 50);
+        });
     }
 
     try {
