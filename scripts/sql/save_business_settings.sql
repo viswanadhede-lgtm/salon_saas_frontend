@@ -1,7 +1,7 @@
 -- ============================================================================
 -- RPC FUNCTION: public.save_business_settings
 -- Purpose: Atomically upserts company business settings in company_settings 
---          and synchronizes core fields with the companies table in one transaction.
+--          and synchronizes branding & category in the companies table.
 -- ============================================================================
 
 CREATE OR REPLACE FUNCTION public.save_business_settings(
@@ -113,10 +113,11 @@ BEGIN
     -- 4. Atomically sync branding with companies table
     UPDATE public.companies
     SET
-        company_name = v_legal_name,
-        display_name = v_display_name,
-        logo_url     = v_logo_url,
-        updated_at   = v_updated_at
+        company_name      = v_legal_name,
+        display_name      = v_display_name,
+        logo_url          = v_logo_url,
+        business_category = v_business_category,
+        updated_at        = v_updated_at
     WHERE company_id = p_company_id;
 
     RETURN jsonb_build_object(

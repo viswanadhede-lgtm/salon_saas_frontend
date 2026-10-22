@@ -271,9 +271,9 @@ function setupHourlyHeartbeat() {
                 return;
             }
 
-            // Load company row for plan/membership details
+            // Load company row for identity and membership details
             const { data: compRows } = await supabase.from('companies')
-                .select('company_id, plan_id, plan_name, subscription_type')
+                .select('company_id, company_name, display_name, logo_url, plan_id, plan_name')
                 .eq('company_id', company_id);
 
             const company = compRows?.[0];
@@ -504,9 +504,9 @@ export async function runGlobalAuthGuard() {
         const resolvedCompanyId = userRow.company_id || company_id;
         const resolvedBranchId  = branch_id  || userRow.branch_id;
 
-        // 3. Load company (for identity and membership, not authoritative subscription state)
+        // 3. Load company (for identity and branding, not authoritative subscription state)
         const { data: compRows } = await supabase.from('companies')
-            .select('company_id, plan_id, plan_name, subscription_type')
+            .select('company_id, company_name, display_name, logo_url, plan_id, plan_name')
             .eq('company_id', resolvedCompanyId);
 
         const company = compRows?.[0];
@@ -615,9 +615,12 @@ export async function runGlobalAuthGuard() {
             },
             company: {
                 company_id:          resolvedCompanyId,
+                company_name:        company.company_name || '',
+                display_name:        company.display_name || company.company_name || '',
+                logo_url:            company.logo_url || null,
                 plan:                subscription?.plan_name || company.plan_name || 'Free Trial',
                 subscription_status: subscription?.status || 'inactive',
-                subscription_type:   subscription?.billing_cycle || company.subscription_type || 'monthly'
+                subscription_type:   subscription?.billing_cycle || 'monthly'
             },
             branches: (branches || []).map(b => ({ id: b.branch_id, branch_id: b.branch_id, branch_name: b.branch_name })),
             current_branch_id: resolvedBranchId

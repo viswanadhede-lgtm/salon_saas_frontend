@@ -814,5 +814,5 @@
 //        * Cover Image: `company-cover-images` (${companyId}/cover_${timestamp}.${ext}, max 5MB)
 //    - Save: Atomic Master RPC Function `save_business_settings(p_company_id uuid, p_data jsonb)`
 //        * Upserts into `company_settings` table (all business metadata, branding URLs, social handles).
-//        * Atomically synchronizes `companies` table (company_name, display_name, logo_url, updated_at).
+//        * Atomically synchronizes `companies` table (company_name, display_name, logo_url, business_category, updated_at).
 //        * Guaranteed single-transaction consistency across both tables.
