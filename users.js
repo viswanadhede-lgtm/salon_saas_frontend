@@ -217,7 +217,7 @@ import { supabase } from './lib/supabase.js';
         try {
             const { data, error } = await supabase
                 .from('users')
-                .select('*')
+                .select('user_id, name, email, phone, role_id, role_name, branch_id, status, last_login_at, created_at')
                 .eq('company_id', cid)
                 .neq('status', 'deleted')
                 .order('created_at', { ascending: false });
@@ -368,7 +368,7 @@ import { supabase } from './lib/supabase.js';
         if (!user) return; 
 
         // Protect Owner role against any action
-        const role = (user.role_name || roleMap[user.role_id] || '').toLowerCase();
+        const role = (user.role_name || '').toLowerCase();
         if (role === 'owner') {
             showToast('Owner is a protected role and cannot be modified.', true);
             return;
@@ -381,10 +381,14 @@ import { supabase } from './lib/supabase.js';
         } else if (action === 'toggle') {
             const newStatus = user.status === 'active' ? 'inactive' : 'active';
             try {
-                const { error } = await supabase.from('users').eq(user.user_id ? 'user_id' : 'id', id).update({ status: newStatus });
+                const { error } = await supabase
+                    .from('users')
+                    .update({ status: newStatus, updated_at: new Date().toISOString() })
+                    .eq('user_id', id)
+                    .eq('company_id', getCompanyId());
                 if (error) throw error;
                 await loadUsers();
-                showToast(`\${user.name} is now \${newStatus}.`);
+                showToast(`${user.name} is now ${newStatus}.`);
             } catch (err) {
                 console.error("Error toggling status:", err);
                 showToast("Failed to update status", true);
@@ -392,7 +396,11 @@ import { supabase } from './lib/supabase.js';
         } else if (action === 'delete') {
             showDeleteConfirmModal(user.name, async () => {
                 try {
-                    const { error } = await supabase.from('users').eq(user.user_id ? 'user_id' : 'id', id).update({ status: 'deleted' });
+                    const { error } = await supabase
+                        .from('users')
+                        .update({ status: 'deleted', updated_at: new Date().toISOString() })
+                        .eq('user_id', id)
+                        .eq('company_id', getCompanyId());
                     if (error) throw error;
                     await loadUsers();
                     showToast(`User "${user.name}" has been deleted.`);
@@ -545,16 +553,8 @@ import { supabase } from './lib/supabase.js';
                 status: status
             };
 
-            if (password) {
-                // When a new plain English password is typed, convert it to SHA-256 hash
-                const msgBuffer = new TextEncoder().encode(password);
-                const hashBuffer = await crypto.subtle.digest('SHA-256', msgBuffer);
-                const hashArray = Array.from(new Uint8Array(hashBuffer));
-                payload.password_hash = hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
-            } else if (editingId !== null && editingOriginalPasswordHash) {
-                // Keep the existing hash unchanged if password field was left blank
-                payload.password_hash = editingOriginalPasswordHash;
-            }
+            // Password auth is handled separately via Supabase Auth (signUp / RPC)
+            // password_hash column is intentionally excluded from payload
 
             if (editingId !== null) {
                 // If a new password was provided for existing user, update Supabase Auth via RPC
@@ -573,11 +573,11 @@ import { supabase } from './lib/supabase.js';
                 }
 
                 payload.updated_at = new Date().toISOString();
-                const targetCol = String(editingId).length > 10 ? 'user_id' : 'id';
                 const { error } = await supabase
                     .from('users')
                     .update(payload)
-                    .eq(targetCol, editingId);
+                    .eq('user_id', editingId)
+                    .eq('company_id', cid);
 
                 if (error) throw error;
                 showToast('User updated successfully!');
