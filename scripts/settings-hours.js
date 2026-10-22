@@ -232,66 +232,23 @@ window.saveHours = async function () {
     try {
         const now = new Date().toISOString();
 
-        // 1. Fetch existing rows for this company & branch to distinguish updates from inserts
-        const { data: existingRows, error: fetchErr } = await supabase
+        // Build all 7 day rows in one array for a single atomic upsert
+        // Unique constraint: business_hours_unique_day (company_id, branch_id, day_of_week)
+        const rows = DAYS.map(day => ({
+            company_id:   companyId,
+            branch_id:    branchId,
+            day_of_week:  day,
+            is_open:      document.getElementById('open_' + day)?.checked ?? true,
+            opening_time: (document.getElementById('from_' + day)?.value || '09:00') + ':00',
+            closing_time: (document.getElementById('to_' + day)?.value  || '18:00') + ':00',
+            updated_at:   now
+        }));
+
+        const { error: upsertErr } = await supabase
             .from('business_hours')
-            .select('id, day_of_week')
-            .eq('company_id', companyId)
-            .eq('branch_id', branchId);
+            .upsert(rows, { onConflict: 'company_id,branch_id,day_of_week' });
 
-        if (fetchErr) {
-            console.warn('[settings-hours] Error checking existing rows:', fetchErr);
-        }
-
-        const existingMap = {};
-        if (Array.isArray(existingRows)) {
-            existingRows.forEach(r => {
-                existingMap[r.day_of_week] = r.id;
-            });
-        }
-
-        // 2. Process all 7 days using exact day names
-        for (const day of DAYS) {
-            const isOpen  = document.getElementById('open_' + day)?.checked ?? true;
-            const fromVal = document.getElementById('from_' + day)?.value || '09:00';
-            const toVal   = document.getElementById('to_' + day)?.value || '18:00';
-
-            const openingTime = `${fromVal}:00`;
-            const closingTime = `${toVal}:00`;
-
-            const existingId = existingMap[day];
-
-            if (existingId) {
-                // Update existing day record (preserve created_at)
-                const { error: updErr } = await supabase
-                    .from('business_hours')
-                    .eq('id', existingId)
-                    .update({
-                        opening_time: openingTime,
-                        closing_time: closingTime,
-                        is_open:      isOpen,
-                        updated_at:   now
-                    });
-
-                if (updErr) throw new Error(updErr.message || `Failed to update ${day}`);
-            } else {
-                // Insert new day record
-                const { error: insErr } = await supabase
-                    .from('business_hours')
-                    .insert({
-                        company_id:   companyId,
-                        branch_id:    branchId,
-                        day_of_week:  day,
-                        opening_time: openingTime,
-                        closing_time: closingTime,
-                        is_open:      isOpen,
-                        created_at:   now,
-                        updated_at:   now
-                    });
-
-                if (insErr) throw new Error(insErr.message || `Failed to insert ${day}`);
-            }
-        }
+        if (upsertErr) throw new Error(upsertErr.message || 'Failed to save business hours');
 
         showToast('Business hours saved successfully!', 'success');
         window.isDirty = false;
