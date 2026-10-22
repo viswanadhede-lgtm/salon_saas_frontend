@@ -1,15 +1,17 @@
 // scripts/reports/report-modules/financial.js
 // Complete Financial Reports Suite (Executive P&L, Revenue, Payments, Expenses, Discounts, Refunds, Dues)
-// Designed for unified Master RPC: public.get_financial_report(p_company_id, p_branch_id, p_start_date, p_end_date)
+// Fully integrated with unified Master RPC: public.get_financial_report(p_company_id, p_branch_id, p_start_date, p_end_date)
 // Includes high-fidelity realistic preview fallbacks matching the 6-table database schema.
 
 import { formatCurrency, updateKPIs } from './shared.js';
 
 let trendChartInstance = null;
 let distChartInstance = null;
+let cachedRpcPayload = null;
+let lastRpcKey = null;
 
 // =============================================================================
-// Helper Functions
+// Helper Functions & State Resolvers
 // =============================================================================
 
 function resolveCompanyId() {
@@ -61,6 +63,64 @@ function destroyChart(instance) {
     return null;
 }
 
+// Safely Unwrap RPC result from Supabase
+function unwrapRpcResult(data) {
+    if (!data) return null;
+    let res = data;
+    if (typeof res === 'string') {
+        try { res = JSON.parse(res); } catch (e) { console.warn('[financial] JSON parse warning:', e); }
+    }
+    if (Array.isArray(res)) {
+        res = res[0] || {};
+    }
+    if (res && typeof res === 'object') {
+        if (res.get_financial_report) {
+            res = res.get_financial_report;
+        } else if (res.financial_report) {
+            res = res.financial_report;
+        }
+    }
+    if (typeof res === 'string') {
+        try { res = JSON.parse(res); } catch (e) {}
+    }
+    return (res && typeof res === 'object') ? res : null;
+}
+
+// Master RPC Caller with Caching for Smooth Tab/Sub-report Switching
+async function fetchFinancialReportData(supabase, companyId, branchId, start, end, forceRefresh = false) {
+    const cid = (companyId && companyId !== 'null' && companyId !== 'undefined' && companyId !== 'all') ? companyId : null;
+    const bid = (branchId && branchId !== 'null' && branchId !== 'undefined' && branchId !== 'all') ? branchId : null;
+    const key = `${cid || 'all'}_${bid || 'all'}_${start || 'none'}_${end || 'none'}`;
+
+    if (!forceRefresh && cachedRpcPayload && lastRpcKey === key) {
+        return cachedRpcPayload;
+    }
+
+    try {
+        console.log('[financial] Calling get_financial_report Master RPC:', { cid, bid, start, end });
+        const { data, error } = await supabase.rpc('get_financial_report', {
+            p_company_id: cid,
+            p_branch_id:  bid,
+            p_start_date: start,
+            p_end_date:   end
+        });
+
+        if (error) {
+            console.error('[financial] get_financial_report RPC error:', error);
+            return null;
+        }
+
+        const unwrapped = unwrapRpcResult(data);
+        console.log('[financial] Loaded financial payload:', unwrapped);
+        cachedRpcPayload = unwrapped;
+        lastRpcKey = key;
+        return unwrapped;
+    } catch (err) {
+        console.error('[financial] Failed to execute get_financial_report RPC:', err);
+        return null;
+    }
+}
+
 // Custom Styled Bar/Line Trend Chart
 function renderFinTrendChart(labels, values, options = {}) {
     const ctx = document.getElementById('trendChart');
@@ -69,16 +129,15 @@ function renderFinTrendChart(labels, values, options = {}) {
 
     const chartType = options.type || 'bar';
     const primaryColor = options.color || '#3b82f6';
-    const secondaryColor = options.secondaryColor || '#818cf8';
 
     let datasets = [];
     if (options.multiSeries && options.series) {
         datasets = options.series;
     } else {
-        const backgroundColors = values.map((_, i) => i === values.length - 1 ? primaryColor : '#e2e8f0');
+        const backgroundColors = (values || []).map((_, i) => i === values.length - 1 ? primaryColor : '#e2e8f0');
         datasets = [{
             label: options.seriesLabel || 'Amount (₹)',
-            data: values,
+            data: values || [],
             backgroundColor: chartType === 'bar' ? backgroundColors : 'rgba(59, 130, 246, 0.1)',
             borderColor: primaryColor,
             borderWidth: chartType === 'line' ? 2.5 : 0,
@@ -91,7 +150,7 @@ function renderFinTrendChart(labels, values, options = {}) {
 
     trendChartInstance = new Chart(ctx, {
         type: chartType,
-        data: { labels, datasets },
+        data: { labels: labels || [], datasets },
         options: {
             responsive: true,
             maintainAspectRatio: false,
@@ -99,7 +158,11 @@ function renderFinTrendChart(labels, values, options = {}) {
                 legend: {
                     display: !!(options.multiSeries && options.series),
                     position: 'top',
-                    labels: { boxWidth: 12, font: { size: 11, family: 'Inter' } }
+                    labels: {
+                        boxWidth: 12,
+                        padding: 14,
+                        font: { size: 12, weight: '500' }
+                    }
                 },
                 tooltip: {
                     backgroundColor: '#0f172a',
@@ -108,45 +171,44 @@ function renderFinTrendChart(labels, values, options = {}) {
                     bodyFont: { size: 12 },
                     cornerRadius: 8,
                     callbacks: {
-                        label: (ctx) => ` ${(ctx.dataset.label || 'Amount')}: ${formatCurrency(ctx.parsed.y !== undefined ? ctx.parsed.y : ctx.parsed)}`
+                        label: (ctx) => ` ${ctx.dataset.label || 'Amount'}: ${formatCurrency(ctx.parsed.y)}`
                     }
                 }
             },
             scales: {
-                y: {
-                    beginAtZero: true,
-                    grid: { color: '#f1f5f9', drawBorder: false },
-                    ticks: {
-                        color: '#94a3b8',
-                        font: { size: 11 },
-                        callback: (v) => formatCurrency(v)
-                    }
-                },
                 x: {
                     grid: { display: false },
-                    ticks: { color: '#94a3b8', font: { size: 11 } }
+                    ticks: { font: { size: 11 }, color: '#64748b' }
+                },
+                y: {
+                    grid: { color: '#f1f5f9' },
+                    ticks: {
+                        font: { size: 11 },
+                        color: '#64748b',
+                        callback: (v) => formatCurrency(v)
+                    }
                 }
             }
         }
     });
 }
 
-// Custom Styled Donut Distribution Chart
+// Custom Styled Donut Chart
 function renderFinDistributionChart(labels, values, options = {}) {
-    const ctx = document.getElementById('distributionChart');
+    const ctx = document.getElementById('distChart');
     if (!ctx) return;
     distChartInstance = destroyChart(distChartInstance);
 
-    const defaultColors = ['#3b82f6', '#10b981', '#f59e0b', '#ec4899', '#8b5cf6', '#06b6d4', '#f43f5e'];
-    const colors = options.colors || defaultColors.slice(0, labels.length);
+    const defaultColors = ['#3b82f6', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6', '#06b6d4', '#ec4899'];
+    const colors = options.colors || defaultColors;
 
     distChartInstance = new Chart(ctx, {
         type: 'doughnut',
         data: {
-            labels,
+            labels: labels || [],
             datasets: [{
-                data: values,
-                backgroundColor: colors,
+                data: values || [],
+                backgroundColor: colors.slice(0, (labels || []).length),
                 borderWidth: 0,
                 hoverOffset: 4
             }]
@@ -173,12 +235,12 @@ function renderFinDistributionChart(labels, values, options = {}) {
 
     const legendContainer = document.getElementById('infographicLegend');
     if (legendContainer) {
-        const total = values.reduce((a, b) => a + b, 0);
-        if (labels.length === 0 || total === 0) {
-            legendContainer.innerHTML = '<div style="color:#94a3b8; font-size:0.875rem; text-align:center;">No data available</div>';
+        const total = (values || []).reduce((a, b) => a + Number(b || 0), 0);
+        if (!labels || labels.length === 0 || total === 0) {
+            legendContainer.innerHTML = '<div style="color:#94a3b8; font-size:0.875rem; text-align:center; padding:1rem;">No data available</div>';
         } else {
             legendContainer.innerHTML = labels.map((l, i) => {
-                const val = values[i] || 0;
+                const val = Number(values[i] || 0);
                 const perc = total > 0 ? Math.round((val / total) * 100) : 0;
                 return `
                     <div class="metric-item">
@@ -197,7 +259,7 @@ function renderFinDistributionChart(labels, values, options = {}) {
     const hmVal = document.getElementById('heroMetricValue');
     const hmLabel = document.getElementById('heroMetricLabel');
     if (hmVal && hmLabel) {
-        const total = values.reduce((a, b) => a + b, 0);
+        const total = (values || []).reduce((a, b) => a + Number(b || 0), 0);
         if (total > 0) {
             const maxIdx = values.indexOf(Math.max(...values));
             const perc = Math.round((values[maxIdx] / total) * 100);
@@ -435,7 +497,6 @@ function showDrilldownModal(refId, supabase) {
         });
 }
 
-// Ensure clean tab bar between report switches
 function ensureTabBar(container) {
     let tabBar = document.getElementById('reportTabBar');
     if (!tabBar) {
@@ -454,318 +515,112 @@ function removeTabBar() {
     if (tabBar) tabBar.style.display = 'none';
 }
 
-// Status Pill helper
 function makeStatusPill(status) {
     const s = (status || 'active').toLowerCase();
-    if (['paid', 'completed', 'active', 'confirmed'].includes(s)) {
+    if (['paid', 'completed', 'active', 'confirmed', 'applied'].includes(s)) {
         return `<span class="status-pill completed" style="text-transform:capitalize;">${status || 'Paid'}</span>`;
     }
-    if (['refunded', 'cancelled', 'deleted'].includes(s)) {
+    if (['refunded', 'cancelled', 'deleted', 'reversed'].includes(s)) {
         return `<span class="status-pill cancelled" style="text-transform:capitalize;">${status || 'Cancelled'}</span>`;
     }
     return `<span class="status-pill pending" style="text-transform:capitalize;">${status || 'Pending'}</span>`;
 }
 
 // =============================================================================
-// Realistic Mock Fallback Generator (Step 1 Frontend Design)
-// Matches schemas: business_transactions, bookings, sales, memberships, expenses, discount_usages
-// =============================================================================
-
-function generateMockFinancialData() {
-    const customers = [
-        { name: 'Ananya Sharma', phone: '+91 98765 43210' },
-        { name: 'Rajesh Patel', phone: '+91 98234 56789' },
-        { name: 'Sneha Reddy', phone: '+91 99887 76655' },
-        { name: 'Vikram Mehta', phone: '+91 97654 32109' },
-        { name: 'Kavita Nair', phone: '+91 98450 12345' },
-        { name: 'Deepak Joshi', phone: '+91 91234 56780' },
-        { name: 'Pooja Iyer', phone: '+91 99112 23344' },
-        { name: 'Arjun Das', phone: '+91 98334 55667' }
-    ];
-
-    const staffMembers = ['Sarah Jenkins', 'Michael Chang', 'Priya Rao', 'David Miller', 'Anita Desai'];
-
-    // 1. Overview Daily Reconciliation
-    const overviewDays = [];
-    const dateLabels = [];
-    const inflowTrend = [];
-    const outflowTrend = [];
-    let grossTotal = 0, expensesTotal = 0, refundsTotal = 0, discountsTotal = 0;
-
-    for (let i = 14; i >= 0; i--) {
-        const d = new Date();
-        d.setDate(d.getDate() - i);
-        const dStr = d.toISOString().split('T')[0];
-        dateLabels.push(d.toLocaleDateString('en-IN', { month: 'short', day: 'numeric' }));
-
-        const bRev = 6000 + Math.floor(Math.random() * 8000);
-        const pRev = 2500 + Math.floor(Math.random() * 4500);
-        const mRev = (i % 3 === 0) ? 3500 + Math.floor(Math.random() * 4000) : 0;
-        const dayGross = bRev + pRev + mRev;
-        const dayDisc = Math.floor(dayGross * (0.08 + Math.random() * 0.07));
-        const dayExp = 1800 + Math.floor(Math.random() * 2500);
-        const dayRef = (i % 4 === 0) ? 800 + Math.floor(Math.random() * 1200) : 0;
-        const netRealized = dayGross - dayDisc - dayExp - dayRef;
-        const marginPerc = Math.round((netRealized / dayGross) * 100);
-
-        grossTotal += dayGross;
-        expensesTotal += dayExp;
-        refundsTotal += dayRef;
-        discountsTotal += dayDisc;
-
-        inflowTrend.push(dayGross);
-        outflowTrend.push(dayExp + dayRef);
-
-        overviewDays.push({
-            date: dStr,
-            bookingsRev: bRev,
-            retailRev: pRev,
-            membershipRev: mRev,
-            gross: dayGross,
-            discounts: dayDisc,
-            expenses: dayExp,
-            refunds: dayRef,
-            net: netRealized,
-            margin: marginPerc
-        });
-    }
-
-    // 2. Revenue Ledger (Bookings, Sales, Memberships)
-    const revenueItems = [];
-    for (let i = 0; i < 24; i++) {
-        const c = customers[i % customers.length];
-        const staff = staffMembers[i % staffMembers.length];
-        const streamType = i % 3 === 0 ? 'Service' : (i % 3 === 1 ? 'Product' : 'Membership');
-        const refCode = `${streamType.slice(0, 2).toUpperCase()}-${1000 + i}`;
-        const refId = `00000000-0000-0000-0000-${String(1000 + i).padStart(12, '0')}`;
-        const d = new Date();
-        d.setHours(d.getHours() - (i * 3));
-        const dStr = d.toLocaleDateString('en-IN', { day: '2-digit', month: 'short' }) + ', ' + d.toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' });
-
-        const gross = streamType === 'Service' ? 1200 + (i * 150) : (streamType === 'Product' ? 850 + (i * 110) : 4500);
-        const disc = Math.round(gross * 0.1);
-        const finalAmt = gross - disc;
-
-        revenueItems.push({
-            refCode,
-            refId,
-            date: dStr,
-            streamType,
-            customerName: c.name,
-            customerPhone: c.phone,
-            staff,
-            gross,
-            discount: disc,
-            finalPaid: finalAmt,
-            status: 'paid'
-        });
-    }
-
-    // 3. Payments Ledger
-    const paymentItems = [];
-    const methods = ['cash', 'upi', 'card', 'upi', 'cash'];
-    for (let i = 0; i < 20; i++) {
-        const c = customers[i % customers.length];
-        const method = methods[i % methods.length];
-        const refType = i % 2 === 0 ? 'booking' : 'product';
-        const d = new Date();
-        d.setHours(d.getHours() - (i * 4));
-        const dStr = d.toLocaleDateString('en-IN', { day: '2-digit', month: 'short' }) + ', ' + d.toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' });
-        const gross = 1500 + (i * 120);
-        const disc = i % 2 === 0 ? 150 : 0;
-        const settled = gross - disc;
-
-        paymentItems.push({
-            paymentId: `PAY-${5000 + i}`,
-            date: dStr,
-            orderRef: `#${refType.slice(0, 2).toUpperCase()}-${2000 + i}`,
-            stream: refType === 'booking' ? 'Service' : 'Product',
-            customer: c.name,
-            method,
-            gross,
-            discount: disc,
-            settled,
-            notes: `${method.toUpperCase()} Settlement Verified`
-        });
-    }
-
-    // 4. Expenses Ledger
-    const expenseCategories = ['Salaries', 'Salon Supplies', 'Rent', 'Electricity & Utilities', 'Marketing', 'Maintenance'];
-    const expenseItems = [];
-    for (let i = 0; i < 18; i++) {
-        const cat = expenseCategories[i % expenseCategories.length];
-        const d = new Date();
-        d.setDate(d.getDate() - (i * 2));
-        const dStr = d.toISOString().split('T')[0];
-        const amt = cat === 'Rent' ? 45000 : (cat === 'Salaries' ? 22000 : (1200 + Math.floor(Math.random() * 4500)));
-
-        expenseItems.push({
-            date: dStr,
-            expenseId: `EXP-${7000 + i}`,
-            category: cat,
-            recipient: cat === 'Salaries' ? 'Staff Payroll' : (cat === 'Rent' ? 'Property Owner' : 'Salon Store Vendor'),
-            amount: amt,
-            loggedBy: staffMembers[i % staffMembers.length],
-            notes: `Monthly operational voucher #${i + 1}`,
-            status: 'completed'
-        });
-    }
-
-    // 5. Discounts Ledger
-    const discountTypes = ['offer', 'coupon', 'membership'];
-    const discountItems = [];
-    for (let i = 0; i < 20; i++) {
-        const c = customers[i % customers.length];
-        const dt = discountTypes[i % discountTypes.length];
-        const d = new Date();
-        d.setHours(d.getHours() - (i * 5));
-        const dStr = d.toLocaleDateString('en-IN', { day: '2-digit', month: 'short' }) + ', ' + d.toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' });
-        const gross = 1800 + (i * 140);
-        const disc = dt === 'membership' ? Math.round(gross * 0.2) : (dt === 'coupon' ? 300 : 250);
-        const reversal = (i === 4 || i === 11) ? disc : 0;
-        const net = disc - reversal;
-
-        discountItems.push({
-            date: dStr,
-            refId: `#ORD-${3000 + i}`,
-            type: dt,
-            name: dt === 'membership' ? 'Gold Tier 20% Off' : (dt === 'coupon' ? 'WELCOME15' : 'Summer Combo Deal'),
-            customer: c.name,
-            appliedOn: i % 2 === 0 ? 'Service' : 'Product',
-            gross,
-            discount: disc,
-            reversal,
-            net,
-            staff: staffMembers[i % staffMembers.length],
-            status: reversal > 0 ? 'reversed' : 'applied'
-        });
-    }
-
-    // 6. Refunds Ledger
-    const refundItems = [];
-    for (let i = 0; i < 12; i++) {
-        const c = customers[i % customers.length];
-        const stream = i % 3 === 0 ? 'Booking' : (i % 3 === 1 ? 'Product Return' : 'Membership Cancel');
-        const d = new Date();
-        d.setDate(d.getDate() - (i * 3));
-        const dStr = d.toLocaleDateString('en-IN', { day: '2-digit', month: 'short' });
-        const orig = stream === 'Membership Cancel' ? 4999 : (stream === 'Booking' ? 1800 : 950);
-        const refundAmt = stream === 'Membership Cancel' ? 3500 : orig;
-
-        refundItems.push({
-            date: dStr,
-            refundId: `REF-${8000 + i}`,
-            orderRef: `#ORD-${1000 + i}`,
-            stream,
-            customer: c.name,
-            phone: c.phone,
-            originalPrice: orig,
-            refundAmount: refundAmt,
-            method: i % 2 === 0 ? 'Original Payment Source' : 'Cash Drawer',
-            reason: stream === 'Booking' ? 'Client Schedule Conflict' : (stream === 'Product Return' ? 'Unopened Return' : 'Customer Relocated')
-        });
-    }
-
-    // 7. Pending Dues Ledger
-    const duesItems = [];
-    for (let i = 0; i < 14; i++) {
-        const c = customers[i % customers.length];
-        const stream = i % 2 === 0 ? 'Service' : 'Product';
-        const d = new Date();
-        d.setDate(d.getDate() - (i * 4 + 2));
-        const dStr = d.toLocaleDateString('en-IN', { day: '2-digit', month: 'short' });
-        const total = 2400 + (i * 300);
-        const paid = Math.round(total * 0.4);
-        const due = total - paid;
-        const agingDays = i * 4 + 2;
-
-        duesItems.push({
-            invoiceRef: `#INV-${9000 + i}`,
-            date: dStr,
-            stream,
-            customer: c.name,
-            phone: c.phone,
-            total,
-            paid,
-            due,
-            aging: `${agingDays} Days`,
-            status: 'pending'
-        });
-    }
-
-    return {
-        overviewDays,
-        dateLabels,
-        inflowTrend,
-        outflowTrend,
-        grossTotal,
-        expensesTotal,
-        refundsTotal,
-        discountsTotal,
-        revenueItems,
-        paymentItems,
-        expenseItems,
-        discountItems,
-        refundItems,
-        duesItems
-    };
-}
-
-// =============================================================================
-// SUB-REPORT 1: Financial Overview (Executive P&L)
+// SUB-REPORT 1: Executive Overview (P&L Reconciliation)
 // =============================================================================
 
 async function renderFinOverview(data, supabase) {
-    const mock = generateMockFinancialData();
     removeTabBar();
+    const filterBranch = document.getElementById('filterBranch');
+    const filterStart = document.getElementById('filterStartDate');
+    const filterEnd = document.getElementById('filterEndDate');
+    const companyId = resolveCompanyId();
+    const branchId = resolveBranchId(filterBranch);
+    const start = filterStart?.value || null;
+    const end = filterEnd?.value || null;
 
-    const gross = mock.grossTotal;
-    const outflow = mock.expensesTotal + mock.refundsTotal;
-    const netProfit = gross - outflow;
-    const margin = Math.round((netProfit / gross) * 100);
+    const rpcPayload = await fetchFinancialReportData(supabase, companyId, branchId, start, end);
+    const live = rpcPayload?.overview || rpcPayload?.fin_overview;
 
-    data.kpi1 = { label: 'Gross Revenue (Inflow)', value: formatCurrency(gross), sub: 'Bookings + Retail + Plans' };
-    data.kpi2 = { label: 'Total Outflow (Costs)',   value: formatCurrency(outflow), sub: 'Expenses + Refunds Paid' };
-    data.kpi3 = { label: 'Net Profit / Cashflow',  value: formatCurrency(netProfit), sub: 'Gross Inflow - Outflows' };
-    data.kpi4 = { label: 'Operating Profit Margin',value: `${margin}%`, sub: 'Net Operating Ratio' };
+    if (!live || !live.kpis) {
+        console.warn('[financial] Overview data unavailable from RPC. Rendering zeroed view.');
+        data.kpi1 = { label: 'Gross Revenue', value: '₹0', sub: '+0% Realized Inflows' };
+        data.kpi2 = { label: 'Total Realized Outflow', value: '₹0', sub: 'Expenses + Refunds' };
+        data.kpi3 = { label: 'Net Profit', value: '₹0', sub: 'Net Operating Profit' };
+        data.kpi4 = { label: 'Operating Margin', value: '0%', sub: 'Realized Margin' };
+        updateKPIs(data.kpi1, data.kpi2, data.kpi3, data.kpi4);
+        renderFinTrendChart([], []);
+        renderFinDistributionChart([], []);
+        setupReportTable(['Period (Date)', 'Services Rev', 'Retail Rev', 'Membership Rev', 'Gross Inflow', 'Discounts', 'Expenses', 'Refunds', 'Net Realized', 'Margin %'], []);
+        return;
+    }
+
+    const k = live.kpis;
+    data.kpi1 = { label: 'Gross Revenue',          value: formatCurrency(k.gross_revenue), sub: '+100% Total Inflows' };
+    data.kpi2 = { label: 'Total Realized Outflow',  value: formatCurrency(k.total_outflow), sub: 'Expenses + Customer Refunds' };
+    data.kpi3 = { label: 'Net Profit',             value: formatCurrency(k.net_profit),    sub: `${k.net_profit >= 0 ? '+' : ''}${k.operating_margin_pct}% Operating Margin` };
+    data.kpi4 = { label: 'Operating Margin',       value: `${k.operating_margin_pct}%`,   sub: 'Net / Gross Revenue' };
     updateKPIs(data.kpi1, data.kpi2, data.kpi3, data.kpi4);
 
-    // Left Chart: Dual Series (Inflow vs Outflow)
-    renderFinTrendChart(mock.dateLabels, mock.inflowTrend, {
-        multiSeries: true,
-        series: [
-            { label: 'Inflow (Revenue)', data: mock.inflowTrend, borderColor: '#10b981', backgroundColor: 'rgba(16, 185, 129, 0.1)', fill: true, tension: 0.35, borderWidth: 2 },
-            { label: 'Outflow (Expenses & Refunds)', data: mock.outflowTrend, borderColor: '#f43f5e', backgroundColor: 'rgba(244, 63, 94, 0.08)', fill: true, tension: 0.35, borderWidth: 2 }
-        ],
-        type: 'line'
-    });
-
-    // Right Chart: Outflow Cost Allocation
-    renderFinDistributionChart(
-        ['Operating Expenses', 'Discounts Given', 'Customer Refunds'],
-        [mock.expensesTotal, mock.discountsTotal, mock.refundsTotal],
-        { heroLabelPrefix: 'Primary Outflow:' }
+    // Left Chart: Inflow vs Outflow Trend
+    const timeline = live.timeline || [];
+    renderFinTrendChart(
+        timeline.map(t => t.date),
+        [],
+        {
+            multiSeries: true,
+            series: [
+                {
+                    label: 'Gross Inflow (₹)',
+                    data: timeline.map(t => t.inflow),
+                    borderColor: '#10b981',
+                    backgroundColor: 'rgba(16, 185, 129, 0.08)',
+                    fill: true,
+                    tension: 0.35,
+                    borderWidth: 2.5
+                },
+                {
+                    label: 'Outflow (Exp + Ref) (₹)',
+                    data: timeline.map(t => t.outflow),
+                    borderColor: '#ef4444',
+                    backgroundColor: 'rgba(239, 68, 68, 0.08)',
+                    fill: true,
+                    tension: 0.35,
+                    borderWidth: 2.5
+                }
+            ],
+            type: 'line'
+        }
     );
 
-    // Table: Reconciliation Ledger
+    // Right Chart: Outflow Distribution
+    const distLabels = live.outflow_distribution?.labels || ['Operating Expenses', 'Discounts Given', 'Customer Refunds'];
+    const distValues = live.outflow_distribution?.values || [k.total_expenses, k.total_discounts, k.total_refunds];
+    renderFinDistributionChart(distLabels, distValues, {
+        colors: ['#f59e0b', '#6366f1', '#ef4444'],
+        heroLabelPrefix: 'Primary Outflow:'
+    });
+
+    // Table: Daily Ledger
     const headers = ['Period (Date)', 'Services Rev', 'Retail Rev', 'Membership Rev', 'Gross Inflow', 'Discounts', 'Expenses', 'Refunds', 'Net Realized', 'Margin %'];
-    const rows = mock.overviewDays.map(d => [
+    const rows = (live.ledger || []).map(d => [
         `<span style="font-weight:600; color:#0f172a;">${d.date}</span>`,
-        formatCurrency(d.bookingsRev),
-        formatCurrency(d.retailRev),
-        formatCurrency(d.membershipRev),
+        formatCurrency(d.bookings_rev),
+        formatCurrency(d.retail_rev),
+        formatCurrency(d.membership_rev),
         `<strong style="color:#0f172a;">${formatCurrency(d.gross)}</strong>`,
         `<span style="color:#6366f1;">-${formatCurrency(d.discounts)}</span>`,
         `<span style="color:#f59e0b;">-${formatCurrency(d.expenses)}</span>`,
         `<span style="color:#ef4444;">-${formatCurrency(d.refunds)}</span>`,
-        `<strong style="color:#10b981;">${formatCurrency(d.net)}</strong>`,
-        `<span class="status-pill ${d.margin >= 30 ? 'completed' : 'pending'}">${d.margin}%</span>`
+        `<strong style="color:${d.net >= 0 ? '#10b981' : '#ef4444'};">${formatCurrency(d.net)}</strong>`,
+        `<span class="status-pill ${d.margin >= 25 ? 'completed' : (d.margin >= 0 ? 'pending' : 'cancelled')}">${d.margin}%</span>`
     ]);
 
     setupReportTable(headers, rows, {
-        unitName: 'daily entries',
+        unitName: 'daily records',
         reportFileName: 'Financial_Overview_Ledger',
-        searchPlaceholder: 'Search by date, amounts or margins...'
+        searchPlaceholder: 'Search date, amounts or margins...'
     });
 }
 
@@ -774,68 +629,114 @@ async function renderFinOverview(data, supabase) {
 // =============================================================================
 
 async function renderFinRevenue(data, supabase) {
-    const mock = generateMockFinancialData();
     const tableContainer = document.querySelector('.data-table-container');
     const tabBar = ensureTabBar(tableContainer);
 
-    const serviceItems = mock.revenueItems.filter(r => r.streamType === 'Service');
-    const productItems = mock.revenueItems.filter(r => r.streamType === 'Product');
-    const memItems     = mock.revenueItems.filter(r => r.streamType === 'Membership');
+    const filterBranch = document.getElementById('filterBranch');
+    const filterStart = document.getElementById('filterStartDate');
+    const filterEnd = document.getElementById('filterEndDate');
+    const companyId = resolveCompanyId();
+    const branchId = resolveBranchId(filterBranch);
+    const start = filterStart?.value || null;
+    const end = filterEnd?.value || null;
 
-    const totalRev = mock.revenueItems.reduce((acc, r) => acc + r.finalPaid, 0);
-    const servRev  = serviceItems.reduce((acc, r) => acc + r.finalPaid, 0);
-    const prodRev  = productItems.reduce((acc, r) => acc + r.finalPaid, 0);
-    const memRev   = memItems.reduce((acc, r) => acc + r.finalPaid, 0);
+    const rpcPayload = await fetchFinancialReportData(supabase, companyId, branchId, start, end);
+    const live = rpcPayload?.revenue || rpcPayload?.fin_revenue;
 
-    data.kpi1 = { label: 'Total Incoming Revenue', value: formatCurrency(totalRev), sub: 'Realized Collections' };
-    data.kpi2 = { label: 'Service Bookings',       value: formatCurrency(servRev), sub: `${Math.round((servRev / totalRev) * 100)}% of Total Revenue` };
-    data.kpi3 = { label: 'Retail Product Sales',   value: formatCurrency(prodRev), sub: `${Math.round((prodRev / totalRev) * 100)}% of Total Revenue` };
-    data.kpi4 = { label: 'Membership Plans',       value: formatCurrency(memRev), sub: `${Math.round((memRev / totalRev) * 100)}% of Total Revenue` };
+    if (!live || !live.kpis) {
+        data.kpi1 = { label: 'Total Incoming Revenue', value: '₹0', sub: 'No collections' };
+        data.kpi2 = { label: 'Service Bookings',       value: '₹0', sub: '0% of Total' };
+        data.kpi3 = { label: 'Retail Product Sales',   value: '₹0', sub: '0% of Total' };
+        data.kpi4 = { label: 'Membership Plans',       value: '₹0', sub: '0% of Total' };
+        updateKPIs(data.kpi1, data.kpi2, data.kpi3, data.kpi4);
+        renderFinTrendChart([], []);
+        renderFinDistributionChart([], []);
+        setupReportTable(['Reference #', 'Date & Time', 'Stream', 'Customer', 'Staff', 'Gross Price', 'Discount', 'Final Paid', 'Status', 'Action'], []);
+        return;
+    }
+
+    const k = live.kpis;
+    data.kpi1 = { label: 'Total Incoming Revenue', value: formatCurrency(k.total_revenue),      sub: 'Realized Collections' };
+    data.kpi2 = { label: 'Service Bookings',       value: formatCurrency(k.service_revenue),    sub: `${k.service_pct}% of Total Revenue` };
+    data.kpi3 = { label: 'Retail Product Sales',   value: formatCurrency(k.retail_revenue),     sub: `${k.retail_pct}% of Total Revenue` };
+    data.kpi4 = { label: 'Membership Plans',       value: formatCurrency(k.membership_revenue), sub: `${k.membership_pct}% of Total Revenue` };
     updateKPIs(data.kpi1, data.kpi2, data.kpi3, data.kpi4);
 
-    // Left Chart: Multi-Stream Revenue Timeline
-    renderFinTrendChart(mock.dateLabels, mock.inflowTrend, {
-        color: '#3b82f6',
-        seriesLabel: 'Gross Revenue (₹)'
+    // Left Chart: Multi-Stream Daily Timeline
+    const timeline = live.timeline || [];
+    renderFinTrendChart(
+        timeline.map(t => t.date),
+        [],
+        {
+            multiSeries: true,
+            series: [
+                {
+                    label: 'Services (₹)',
+                    data: timeline.map(t => t.service_rev),
+                    backgroundColor: '#6366f1',
+                    borderRadius: 4
+                },
+                {
+                    label: 'Retail POS (₹)',
+                    data: timeline.map(t => t.retail_rev),
+                    backgroundColor: '#0ea5e9',
+                    borderRadius: 4
+                },
+                {
+                    label: 'Memberships (₹)',
+                    data: timeline.map(t => t.membership_rev),
+                    backgroundColor: '#8b5cf6',
+                    borderRadius: 4
+                }
+            ],
+            type: 'bar'
+        }
+    );
+
+    // Right Chart: Contribution
+    const distLabels = live.distribution?.labels || ['Service Bookings', 'Retail Products', 'Membership Plans'];
+    const distValues = live.distribution?.values || [k.service_revenue, k.retail_revenue, k.membership_revenue];
+    renderFinDistributionChart(distLabels, distValues, {
+        colors: ['#6366f1', '#0ea5e9', '#8b5cf6'],
+        heroLabelPrefix: 'Top Stream:'
     });
 
-    // Right Chart: Revenue Stream Contribution
-    renderFinDistributionChart(
-        ['Service Bookings', 'Retail Products', 'Membership Plans'],
-        [servRev, prodRev, memRev],
-        { colors: ['#6366f1', '#0ea5e9', '#8b5cf6'], heroLabelPrefix: 'Top Stream:' }
-    );
+    const ledgers = live.ledgers || {};
+    const services = ledgers.services || [];
+    const products = ledgers.products || [];
+    const memberships = ledgers.memberships || [];
+    const all = [...services, ...products, ...memberships].sort((a, b) => (b.date || '').localeCompare(a.date || ''));
 
     // Tabs Setup
     tabBar.innerHTML = `
-        <button class="report-tab-btn active" data-tab="all"><i data-feather="grid" style="width:13px;height:13px;"></i> All Streams <span class="tab-badge">${mock.revenueItems.length}</span></button>
-        <button class="report-tab-btn" data-tab="service"><i data-feather="calendar" style="width:13px;height:13px;"></i> Services <span class="tab-badge">${serviceItems.length}</span></button>
-        <button class="report-tab-btn" data-tab="product"><i data-feather="package" style="width:13px;height:13px;"></i> Retail POS <span class="tab-badge">${productItems.length}</span></button>
-        <button class="report-tab-btn" data-tab="membership"><i data-feather="award" style="width:13px;height:13px;"></i> Memberships <span class="tab-badge">${memItems.length}</span></button>
+        <button class="report-tab-btn active" data-tab="all"><i data-feather="grid" style="width:13px;height:13px;"></i> All Streams <span class="tab-badge">${all.length}</span></button>
+        <button class="report-tab-btn" data-tab="services"><i data-feather="calendar" style="width:13px;height:13px;"></i> Services <span class="tab-badge">${services.length}</span></button>
+        <button class="report-tab-btn" data-tab="products"><i data-feather="package" style="width:13px;height:13px;"></i> Retail POS <span class="tab-badge">${products.length}</span></button>
+        <button class="report-tab-btn" data-tab="memberships"><i data-feather="award" style="width:13px;height:13px;"></i> Memberships <span class="tab-badge">${memberships.length}</span></button>
     `;
     if (window.feather) feather.replace();
 
-    const headers = ['Reference #', 'Date & Time', 'Stream', 'Customer', 'Staff / Attribution', 'Gross Price', 'Discount', 'Final Paid', 'Status', 'Action'];
-    const formatRow = (r) => [
-        `<span style="font-family:monospace; font-weight:700; color:#3b82f6;">#${r.refCode}</span>`,
-        `<span style="font-size:0.82rem; color:#475569;">${r.date}</span>`,
-        `<span class="status-pill active">${r.streamType}</span>`,
-        `<div><strong style="font-size:0.83rem; color:#0f172a;">${r.customerName}</strong><span style="display:block; font-size:0.72rem; color:#64748b;">${r.customerPhone}</span></div>`,
-        `<span style="font-size:0.83rem; font-weight:500; color:#334155;">${r.staff}</span>`,
-        formatCurrency(r.gross),
-        `<span style="color:#f43f5e;">-${formatCurrency(r.discount)}</span>`,
-        `<strong style="color:#10b981; font-size:0.85rem;">${formatCurrency(r.finalPaid)}</strong>`,
-        makeStatusPill(r.status),
-        `<button class="btn-top-action" style="padding:3px 8px; font-size:0.75rem;" onclick="window.showFinDrilldown('${r.refId}')">Audit</button>`
-    ];
-
     window.showFinDrilldown = (refId) => showDrilldownModal(refId, supabase);
 
+    const headers = ['Reference #', 'Date & Time', 'Stream', 'Customer', 'Staff / Desk', 'Gross Price', 'Discount', 'Final Paid', 'Status', 'Action'];
+    const formatRow = (r) => [
+        `<span style="font-family:monospace; font-weight:700; color:#3b82f6;">#${r.ref_code || 'ORD'}</span>`,
+        `<span style="font-size:0.82rem; color:#475569;">${r.date}</span>`,
+        `<span class="status-pill active">${r.stream_type}</span>`,
+        `<div><strong style="font-size:0.83rem; color:#0f172a;">${r.customer_name || 'Guest'}</strong><span style="display:block; font-size:0.72rem; color:#64748b;">${r.customer_phone || '—'}</span></div>`,
+        `<span style="font-size:0.83rem; font-weight:500; color:#334155;">${r.staff_name || 'Staff'}</span>`,
+        formatCurrency(r.gross),
+        `<span style="color:#f43f5e;">-${formatCurrency(r.discount)}</span>`,
+        `<strong style="color:#10b981; font-size:0.85rem;">${formatCurrency(r.final_paid)}</strong>`,
+        makeStatusPill(r.status),
+        `<button class="btn-top-action" style="padding:3px 8px; font-size:0.75rem;" onclick="window.showFinDrilldown('${r.ref_id}')">Audit</button>`
+    ];
+
     const tabData = {
-        all: mock.revenueItems.map(formatRow),
-        service: serviceItems.map(formatRow),
-        product: productItems.map(formatRow),
-        membership: memItems.map(formatRow)
+        all: all.map(formatRow),
+        services: services.map(formatRow),
+        products: products.map(formatRow),
+        memberships: memberships.map(formatRow)
     };
 
     const activateTab = (tab) => {
@@ -861,65 +762,86 @@ async function renderFinRevenue(data, supabase) {
 // =============================================================================
 
 async function renderFinPayments(data, supabase) {
-    const mock = generateMockFinancialData();
     const tableContainer = document.querySelector('.data-table-container');
     const tabBar = ensureTabBar(tableContainer);
 
-    const cashItems = mock.paymentItems.filter(p => p.method === 'cash');
-    const upiItems  = mock.paymentItems.filter(p => p.method === 'upi');
-    const cardItems = mock.paymentItems.filter(p => p.method === 'card');
+    const filterBranch = document.getElementById('filterBranch');
+    const filterStart = document.getElementById('filterStartDate');
+    const filterEnd = document.getElementById('filterEndDate');
+    const companyId = resolveCompanyId();
+    const branchId = resolveBranchId(filterBranch);
+    const start = filterStart?.value || null;
+    const end = filterEnd?.value || null;
 
-    const totalCollected = mock.paymentItems.reduce((acc, p) => acc + p.settled, 0);
-    const cashTotal      = cashItems.reduce((acc, p) => acc + p.settled, 0);
-    const upiTotal       = upiItems.reduce((acc, p) => acc + p.settled, 0);
-    const cardTotal      = cardItems.reduce((acc, p) => acc + p.settled, 0);
+    const rpcPayload = await fetchFinancialReportData(supabase, companyId, branchId, start, end);
+    const live = rpcPayload?.payments || rpcPayload?.fin_payments;
 
-    data.kpi1 = { label: 'Total Collected',   value: formatCurrency(totalCollected), sub: `${mock.paymentItems.length} Settled Transactions` };
-    data.kpi2 = { label: 'Cash in Drawer',    value: formatCurrency(cashTotal), sub: 'Physical Cash Drawer' };
-    data.kpi3 = { label: 'UPI & QR Codes',    value: formatCurrency(upiTotal), sub: 'Instant Bank Deposits' };
-    data.kpi4 = { label: 'Cards & Terminal',  value: formatCurrency(cardTotal), sub: 'POS Terminal Swipes' };
+    if (!live || !live.kpis) {
+        data.kpi1 = { label: 'Total Collections', value: '₹0', sub: '0 transactions' };
+        data.kpi2 = { label: 'Cash in Drawer',   value: '₹0', sub: 'Cash on hand' };
+        data.kpi3 = { label: 'UPI / QR Codes',   value: '₹0', sub: 'Digital payments' };
+        data.kpi4 = { label: 'Cards & POS',      value: '₹0', sub: 'POS machines' };
+        updateKPIs(data.kpi1, data.kpi2, data.kpi3, data.kpi4);
+        renderFinTrendChart([], []);
+        renderFinDistributionChart([], []);
+        setupReportTable(['Payment ID', 'Settlement Date', 'Order Ref', 'Stream', 'Tender Method', 'Gross Bill', 'Discount', 'Settled Amount', 'Notes / Audit'], []);
+        return;
+    }
+
+    const k = live.kpis;
+    data.kpi1 = { label: 'Total Collections', value: formatCurrency(k.total_collected), sub: `${k.payment_count} verified settlements` };
+    data.kpi2 = { label: 'Cash in Drawer',   value: formatCurrency(k.cash_in_drawer),  sub: 'Physical Cash on Hand' };
+    data.kpi3 = { label: 'UPI / QR Codes',   value: formatCurrency(k.upi_amount),      sub: 'Instant Digital Collections' };
+    data.kpi4 = { label: 'Cards & Others',   value: formatCurrency((k.card_amount || 0) + (k.other_amount || 0)), sub: 'POS Terminal & Bank Modes' };
     updateKPIs(data.kpi1, data.kpi2, data.kpi3, data.kpi4);
 
-    // Left Chart: Payment Settlements Timeline
-    renderFinTrendChart(mock.dateLabels, mock.inflowTrend.map(v => Math.round(v * 0.95)), {
-        color: '#6366f1',
-        seriesLabel: 'Settled Payments (₹)'
-    });
-
-    // Right Chart: Tender Mode Split
-    renderFinDistributionChart(
-        ['Cash in Drawer', 'UPI / QR Codes', 'Cards & POS'],
-        [cashTotal, upiTotal, cardTotal],
-        { colors: ['#10b981', '#6366f1', '#0ea5e9'], heroLabelPrefix: 'Primary Tender:' }
+    // Left Chart: Daily Collections Timeline
+    const timeline = live.timeline || [];
+    renderFinTrendChart(
+        timeline.map(t => t.date),
+        timeline.map(t => t.amount),
+        { color: '#10b981', seriesLabel: 'Collected (₹)' }
     );
 
-    // Tabs Setup
+    // Right Chart: Tender Distribution
+    const distLabels = live.distribution?.labels || ['Cash in Drawer', 'UPI / QR Codes', 'Cards & POS', 'Others / Bank'];
+    const distValues = live.distribution?.values || [k.cash_in_drawer, k.upi_amount, k.card_amount, k.other_amount];
+    renderFinDistributionChart(distLabels, distValues, {
+        colors: ['#10b981', '#3b82f6', '#8b5cf6', '#64748b'],
+        heroLabelPrefix: 'Primary Mode:'
+    });
+
+    const allPayments = live.ledgers?.all || [];
+    const cashPayments = allPayments.filter(p => (p.method || '').toLowerCase() === 'cash');
+    const upiPayments = allPayments.filter(p => (p.method || '').toLowerCase().includes('upi'));
+    const otherPayments = allPayments.filter(p => !['cash'].includes((p.method || '').toLowerCase()) && !(p.method || '').toLowerCase().includes('upi'));
+
     tabBar.innerHTML = `
-        <button class="report-tab-btn active" data-tab="all"><i data-feather="grid" style="width:13px;height:13px;"></i> All Settlements <span class="tab-badge">${mock.paymentItems.length}</span></button>
-        <button class="report-tab-btn" data-tab="cash"><i data-feather="dollar-sign" style="width:13px;height:13px;"></i> Cash Drawer <span class="tab-badge">${cashItems.length}</span></button>
-        <button class="report-tab-btn" data-tab="upi"><i data-feather="smartphone" style="width:13px;height:13px;"></i> UPI / QR <span class="tab-badge">${upiItems.length}</span></button>
-        <button class="report-tab-btn" data-tab="card"><i data-feather="credit-card" style="width:13px;height:13px;"></i> Cards <span class="tab-badge">${cardItems.length}</span></button>
+        <button class="report-tab-btn active" data-tab="all"><i data-feather="list" style="width:13px;height:13px;"></i> All Payments <span class="tab-badge">${allPayments.length}</span></button>
+        <button class="report-tab-btn" data-tab="cash"><i data-feather="dollar-sign" style="width:13px;height:13px;"></i> Cash Drawer <span class="tab-badge">${cashPayments.length}</span></button>
+        <button class="report-tab-btn" data-tab="upi"><i data-feather="smartphone" style="width:13px;height:13px;"></i> UPI / QR <span class="tab-badge">${upiPayments.length}</span></button>
+        <button class="report-tab-btn" data-tab="others"><i data-feather="credit-card" style="width:13px;height:13px;"></i> Cards & Other <span class="tab-badge">${otherPayments.length}</span></button>
     `;
     if (window.feather) feather.replace();
 
-    const headers = ['Payment Ref', 'Date & Time', 'Order Ref', 'Stream', 'Payment Mode', 'Gross', 'Discount', 'Settled Amount', 'Notes'];
+    const headers = ['Payment ID', 'Settlement Date', 'Order Ref', 'Stream', 'Tender Method', 'Gross Bill', 'Discount', 'Settled Amount', 'Notes / Audit'];
     const formatRow = (p) => [
-        `<span style="font-family:monospace; font-weight:700; color:#6366f1;">#${p.paymentId}</span>`,
+        `<span style="font-family:monospace; font-weight:700; color:#3b82f6;">#${p.payment_id}</span>`,
         `<span style="font-size:0.82rem; color:#475569;">${p.date}</span>`,
-        `<span style="font-family:monospace; font-size:0.8rem; color:#334155;">${p.orderRef}</span>`,
+        `<span style="font-family:monospace; font-weight:600; color:#0f172a;">${p.order_ref}</span>`,
         `<span class="status-pill active">${p.stream}</span>`,
-        `<strong style="text-transform:uppercase; font-size:0.8rem; color:#0f172a;">${p.method}</strong>`,
+        `<span style="font-weight:700; font-size:0.8rem; color:${p.method === 'CASH' ? '#10b981' : (p.method.includes('UPI') ? '#3b82f6' : '#8b5cf6')};">${p.method}</span>`,
         formatCurrency(p.gross),
         `<span style="color:#f43f5e;">-${formatCurrency(p.discount)}</span>`,
-        `<strong style="color:#10b981; font-size:0.85rem;">${formatCurrency(p.settled)}</strong>`,
-        `<span style="font-size:0.78rem; color:#64748b;">${p.notes}</span>`
+        `<strong style="color:#0f172a; font-size:0.85rem;">${formatCurrency(p.settled)}</strong>`,
+        `<span style="font-size:0.78rem; color:#64748b;">${p.notes || 'Settled Verified'}</span>`
     ];
 
     const tabData = {
-        all: mock.paymentItems.map(formatRow),
-        cash: cashItems.map(formatRow),
-        upi: upiItems.map(formatRow),
-        card: cardItems.map(formatRow)
+        all: allPayments.map(formatRow),
+        cash: cashPayments.map(formatRow),
+        upi: upiPayments.map(formatRow),
+        others: otherPayments.map(formatRow)
     };
 
     const activateTab = (tab) => {
@@ -927,9 +849,9 @@ async function renderFinPayments(data, supabase) {
             btn.classList.toggle('active', btn.getAttribute('data-tab') === tab);
         });
         setupReportTable(headers, tabData[tab] || tabData.all, {
-            unitName: 'payment settlements',
+            unitName: 'settlement entries',
             reportFileName: `Payments_${tab}`,
-            searchPlaceholder: 'Search payment ref, method, order or customer...'
+            searchPlaceholder: 'Search payment ref, method, order or amount...'
         });
     };
 
@@ -945,150 +867,159 @@ async function renderFinPayments(data, supabase) {
 // =============================================================================
 
 async function renderFinExpenses(data, supabase) {
-    const mock = generateMockFinancialData();
-    const tableContainer = document.querySelector('.data-table-container');
-    const tabBar = ensureTabBar(tableContainer);
+    removeTabBar();
+    const filterBranch = document.getElementById('filterBranch');
+    const filterStart = document.getElementById('filterStartDate');
+    const filterEnd = document.getElementById('filterEndDate');
+    const companyId = resolveCompanyId();
+    const branchId = resolveBranchId(filterBranch);
+    const start = filterStart?.value || null;
+    const end = filterEnd?.value || null;
 
-    const operationalItems = mock.expenseItems.filter(e => ['Rent', 'Electricity & Utilities', 'Maintenance'].includes(e.category));
-    const supplyItems      = mock.expenseItems.filter(e => e.category === 'Salon Supplies');
-    const salaryItems      = mock.expenseItems.filter(e => e.category === 'Salaries');
+    const rpcPayload = await fetchFinancialReportData(supabase, companyId, branchId, start, end);
+    const live = rpcPayload?.expenses || rpcPayload?.fin_expenses;
 
-    const totalExp = mock.expenseItems.reduce((acc, e) => acc + e.amount, 0);
-    const avgExp   = Math.round(totalExp / mock.expenseItems.length);
-    const topCat   = 'Staff Salaries';
-    const expRatio = Math.round((totalExp / mock.grossTotal) * 100);
+    if (!live || !live.kpis) {
+        data.kpi1 = { label: 'Total Operating Expenses', value: '₹0', sub: '0 vouchers logged' };
+        data.kpi2 = { label: 'Average Voucher',         value: '₹0', sub: 'Per voucher' };
+        data.kpi3 = { label: 'Expense Ratio',            value: '0%', sub: '0% of Gross Revenue' };
+        data.kpi4 = { label: 'Top Cost Category',        value: 'None', sub: 'No expenditures' };
+        updateKPIs(data.kpi1, data.kpi2, data.kpi3, data.kpi4);
+        renderFinTrendChart([], []);
+        renderFinDistributionChart([], []);
+        setupReportTable(['Expense Date', 'Voucher #', 'Category', 'Vendor / Recipient', 'Amount', 'Logged By', 'Notes', 'Status'], []);
+        return;
+    }
 
-    data.kpi1 = { label: 'Total Operating Expenses', value: formatCurrency(totalExp), sub: `${mock.expenseItems.length} Logged Vouchers` };
-    data.kpi2 = { label: 'Top Cost Center',          value: topCat, sub: 'Highest Expenditure Category' };
-    data.kpi3 = { label: 'Average Voucher Cost',     value: formatCurrency(avgExp), sub: 'Mean Cost per Entry' };
-    data.kpi4 = { label: 'Expense-to-Revenue Ratio',  value: `${expRatio}%`, sub: 'Operational Cost Overhead' };
+    const k = live.kpis;
+    data.kpi1 = { label: 'Total Operating Expenses', value: formatCurrency(k.total_expenses), sub: `${k.expense_count} vouchers logged` };
+    data.kpi2 = { label: 'Average Voucher',         value: formatCurrency(k.avg_expense),    sub: 'Per Logged Outflow' };
+    data.kpi3 = { label: 'Expense Ratio',            value: `${k.expense_ratio_pct}%`,        sub: 'Expenses / Gross Revenue' };
+    data.kpi4 = { label: 'Top Cost Category',        value: k.top_category,                   sub: 'Highest Outflow Bucket' };
     updateKPIs(data.kpi1, data.kpi2, data.kpi3, data.kpi4);
 
-    // Left Chart: Expense Trajectory
-    renderFinTrendChart(mock.dateLabels, mock.outflowTrend.map(v => Math.round(v * 0.75)), {
-        color: '#f59e0b',
-        seriesLabel: 'Daily Expenses (₹)'
-    });
-
-    // Right Chart: Category Breakdown
-    renderFinDistributionChart(
-        ['Salaries & Payroll', 'Salon Supplies', 'Rent', 'Utilities & Bills', 'Marketing'],
-        [48000, 24000, 45000, 14000, 8500],
-        { colors: ['#f59e0b', '#ec4899', '#3b82f6', '#10b981', '#8b5cf6'], heroLabelPrefix: 'Major Cost:' }
+    // Left Chart: Daily Expense Outflows
+    const timeline = live.timeline || [];
+    renderFinTrendChart(
+        timeline.map(t => t.date),
+        timeline.map(t => t.amount),
+        { color: '#f59e0b', seriesLabel: 'Expense (₹)' }
     );
 
-    // Tabs Setup
-    tabBar.innerHTML = `
-        <button class="report-tab-btn active" data-tab="all"><i data-feather="grid" style="width:13px;height:13px;"></i> All Expenses <span class="tab-badge">${mock.expenseItems.length}</span></button>
-        <button class="report-tab-btn" data-tab="op"><i data-feather="home" style="width:13px;height:13px;"></i> Operational <span class="tab-badge">${operationalItems.length}</span></button>
-        <button class="report-tab-btn" data-tab="supplies"><i data-feather="box" style="width:13px;height:13px;"></i> Supplies <span class="tab-badge">${supplyItems.length}</span></button>
-        <button class="report-tab-btn" data-tab="salaries"><i data-feather="users" style="width:13px;height:13px;"></i> Salaries <span class="tab-badge">${salaryItems.length}</span></button>
-    `;
-    if (window.feather) feather.replace();
-
-    const headers = ['Date', 'Expense Ref #', 'Category', 'Vendor / Recipient', 'Amount', 'Logged By', 'Notes / Bill Ref', 'Status'];
-    const formatRow = (e) => [
-        `<span style="font-weight:600; color:#0f172a;">${e.date}</span>`,
-        `<span style="font-family:monospace; font-weight:700; color:#f59e0b;">#${e.expenseId}</span>`,
-        `<span class="status-pill active">${e.category}</span>`,
-        `<span style="font-size:0.83rem; color:#334155; font-weight:500;">${e.recipient}</span>`,
-        `<strong style="color:#ef4444; font-size:0.85rem;">${formatCurrency(e.amount)}</strong>`,
-        `<span style="font-size:0.82rem; color:#64748b;">${e.loggedBy}</span>`,
-        `<span style="font-size:0.78rem; color:#64748b;">${e.notes}</span>`,
-        makeStatusPill(e.status)
-    ];
-
-    const tabData = {
-        all: mock.expenseItems.map(formatRow),
-        op: operationalItems.map(formatRow),
-        supplies: supplyItems.map(formatRow),
-        salaries: salaryItems.map(formatRow)
-    };
-
-    const activateTab = (tab) => {
-        tabBar.querySelectorAll('.report-tab-btn').forEach(btn => {
-            btn.classList.toggle('active', btn.getAttribute('data-tab') === tab);
-        });
-        setupReportTable(headers, tabData[tab] || tabData.all, {
-            unitName: 'expense records',
-            reportFileName: `Expenses_${tab}`,
-            searchPlaceholder: 'Search category, vendor, recipient or notes...'
-        });
-    };
-
-    tabBar.querySelectorAll('.report-tab-btn').forEach(btn => {
-        btn.onclick = () => activateTab(btn.getAttribute('data-tab'));
+    // Right Chart: Category Distribution
+    const distLabels = live.distribution?.labels || [];
+    const distValues = live.distribution?.values || [];
+    renderFinDistributionChart(distLabels, distValues, {
+        colors: ['#f59e0b', '#3b82f6', '#10b981', '#8b5cf6', '#ec4899', '#64748b'],
+        heroLabelPrefix: 'Top Cost:'
     });
 
-    activateTab('all');
+    const headers = ['Expense Date', 'Voucher #', 'Category', 'Vendor / Recipient', 'Amount', 'Logged By', 'Notes', 'Status'];
+    const rows = (live.ledgers?.all || []).map(e => [
+        `<span style="font-weight:600; color:#0f172a;">${e.date}</span>`,
+        `<span style="font-family:monospace; font-weight:700; color:#3b82f6;">#${e.expense_id}</span>`,
+        `<span class="status-pill active">${e.category}</span>`,
+        `<strong style="font-size:0.83rem; color:#334155;">${e.recipient || 'Vendor / Store'}</strong>`,
+        `<strong style="color:#ef4444; font-size:0.85rem;">-${formatCurrency(e.amount)}</strong>`,
+        `<span style="font-size:0.82rem; color:#475569;">${e.logged_by || 'Staff'}</span>`,
+        `<span style="font-size:0.78rem; color:#64748b;">${e.notes || '—'}</span>`,
+        makeStatusPill(e.status)
+    ]);
+
+    setupReportTable(headers, rows, {
+        unitName: 'expense items',
+        reportFileName: 'Operating_Expenses_Ledger',
+        searchPlaceholder: 'Search category, vendor, voucher or notes...'
+    });
 }
 
 // =============================================================================
-// SUB-REPORT 5: Discounts & Deductions (Revenue Leaks)
+// SUB-REPORT 5: Discounts & Deductions (Revenue Erosion)
 // =============================================================================
 
 async function renderFinDiscounts(data, supabase) {
-    const mock = generateMockFinancialData();
     const tableContainer = document.querySelector('.data-table-container');
     const tabBar = ensureTabBar(tableContainer);
 
-    const offerItems  = mock.discountItems.filter(d => d.type === 'offer');
-    const couponItems = mock.discountItems.filter(d => d.type === 'coupon');
-    const memItems    = mock.discountItems.filter(d => d.type === 'membership');
+    const filterBranch = document.getElementById('filterBranch');
+    const filterStart = document.getElementById('filterStartDate');
+    const filterEnd = document.getElementById('filterEndDate');
+    const companyId = resolveCompanyId();
+    const branchId = resolveBranchId(filterBranch);
+    const start = filterStart?.value || null;
+    const end = filterEnd?.value || null;
 
-    const totalNetDisc = mock.discountItems.reduce((acc, d) => acc + d.net, 0);
-    const offerNet     = offerItems.reduce((acc, d) => acc + d.net, 0);
-    const couponNet    = couponItems.reduce((acc, d) => acc + d.net, 0);
-    const memNet       = memItems.reduce((acc, d) => acc + d.net, 0);
-    const erosionRate  = Math.round((totalNetDisc / mock.grossTotal) * 100);
+    const rpcPayload = await fetchFinancialReportData(supabase, companyId, branchId, start, end);
+    const live = rpcPayload?.discounts || rpcPayload?.fin_discounts;
 
-    data.kpi1 = { label: 'Total Net Discounts',    value: formatCurrency(totalNetDisc), sub: 'Gross Discount - Reversals' };
-    data.kpi2 = { label: 'Discount Erosion %',     value: `${erosionRate}%`, sub: 'Margin Deducted from Gross' };
-    data.kpi3 = { label: 'Promotional Offers',     value: formatCurrency(offerNet), sub: 'Combo & Deal Redemptions' };
-    data.kpi4 = { label: 'Coupons & Member Perks', value: formatCurrency(couponNet + memNet), sub: 'Vouchers & Plan Discounts' };
+    if (!live || !live.kpis) {
+        data.kpi1 = { label: 'Total Net Discounts',  value: '₹0', sub: '0% Margin Leak' };
+        data.kpi2 = { label: 'Revenue Erosion Rate', value: '0%', sub: 'Discounts / Gross' };
+        data.kpi3 = { label: 'Special Offers',       value: '₹0', sub: 'Promo campaigns' };
+        data.kpi4 = { label: 'Coupons & Perks',      value: '₹0', sub: 'Coupons + Memberships' };
+        updateKPIs(data.kpi1, data.kpi2, data.kpi3, data.kpi4);
+        renderFinTrendChart([], []);
+        renderFinDistributionChart([], []);
+        setupReportTable(['Date Applied', 'Order Ref', 'Discount Type', 'Campaign / Plan', 'Customer', 'Applied On', 'Gross Disc', 'Reversal', 'Net Erosion', 'Staff', 'Status'], []);
+        return;
+    }
+
+    const k = live.kpis;
+    data.kpi1 = { label: 'Total Net Discounts',  value: formatCurrency(k.total_net_discounts), sub: 'Realized Margin Leak' };
+    data.kpi2 = { label: 'Revenue Erosion Rate', value: `${k.erosion_rate_pct}%`,              sub: 'Discounts / Gross Revenue' };
+    data.kpi3 = { label: 'Special Offers',       value: formatCurrency(k.offer_discounts),     sub: 'Campaign Reductions' };
+    data.kpi4 = { label: 'Coupons & Perks',      value: formatCurrency((k.coupon_discounts || 0) + (k.membership_discounts || 0)), sub: `Coupons: ${formatCurrency(k.coupon_discounts)} | Perks: ${formatCurrency(k.membership_discounts)}` };
     updateKPIs(data.kpi1, data.kpi2, data.kpi3, data.kpi4);
 
-    // Left Chart: Discounts Given Timeline
-    renderFinTrendChart(mock.dateLabels, mock.dateLabels.map((_, i) => Math.round(1800 + Math.sin(i) * 600)), {
-        color: '#8b5cf6',
-        seriesLabel: 'Net Discount Value (₹)'
-    });
-
-    // Right Chart: Discounts Share by Type
-    renderFinDistributionChart(
-        ['Special Offers', 'Coupon Codes', 'Membership Perks'],
-        [offerNet, couponNet, memNet],
-        { colors: ['#f59e0b', '#ec4899', '#8b5cf6'], heroLabelPrefix: 'Top Discount:' }
+    // Left Chart: Daily Net Discount Leak
+    const timeline = live.timeline || [];
+    renderFinTrendChart(
+        timeline.map(t => t.date),
+        timeline.map(t => t.amount),
+        { color: '#6366f1', seriesLabel: 'Net Discount (₹)' }
     );
 
-    // Tabs Setup
+    // Right Chart: Discount Distribution
+    const distLabels = live.distribution?.labels || ['Special Offers', 'Coupon Codes', 'Membership Perks'];
+    const distValues = live.distribution?.values || [k.offer_discounts, k.coupon_discounts, k.membership_discounts];
+    renderFinDistributionChart(distLabels, distValues, {
+        colors: ['#3b82f6', '#10b981', '#8b5cf6'],
+        heroLabelPrefix: 'Top Leak:'
+    });
+
+    const allDiscounts = live.ledgers?.all || [];
+    const couponItems = allDiscounts.filter(d => (d.type || '').toLowerCase() === 'coupon');
+    const offerItems = allDiscounts.filter(d => (d.type || '').toLowerCase() === 'offer');
+    const memberItems = allDiscounts.filter(d => (d.type || '').toLowerCase() === 'membership');
+
     tabBar.innerHTML = `
-        <button class="report-tab-btn active" data-tab="all"><i data-feather="grid" style="width:13px;height:13px;"></i> All Discounts <span class="tab-badge">${mock.discountItems.length}</span></button>
-        <button class="report-tab-btn" data-tab="offer"><i data-feather="percent" style="width:13px;height:13px;"></i> Offers <span class="tab-badge">${offerItems.length}</span></button>
+        <button class="report-tab-btn active" data-tab="all"><i data-feather="percent" style="width:13px;height:13px;"></i> All Deductions <span class="tab-badge">${allDiscounts.length}</span></button>
         <button class="report-tab-btn" data-tab="coupon"><i data-feather="tag" style="width:13px;height:13px;"></i> Coupons <span class="tab-badge">${couponItems.length}</span></button>
-        <button class="report-tab-btn" data-tab="membership"><i data-feather="award" style="width:13px;height:13px;"></i> Membership <span class="tab-badge">${memItems.length}</span></button>
+        <button class="report-tab-btn" data-tab="offer"><i data-feather="gift" style="width:13px;height:13px;"></i> Offers <span class="tab-badge">${offerItems.length}</span></button>
+        <button class="report-tab-btn" data-tab="membership"><i data-feather="award" style="width:13px;height:13px;"></i> Member Perks <span class="tab-badge">${memberItems.length}</span></button>
     `;
     if (window.feather) feather.replace();
 
-    const headers = ['Date & Time', 'Order Ref', 'Type', 'Discount Code/Name', 'Customer', 'Applied On', 'Gross Price', 'Discount Deducted', 'Net Paid', 'Staff'];
+    const headers = ['Date Applied', 'Order Ref', 'Discount Type', 'Campaign / Plan', 'Customer', 'Applied On', 'Gross Disc', 'Reversal', 'Net Erosion', 'Staff', 'Status'];
     const formatRow = (d) => [
         `<span style="font-size:0.82rem; color:#475569;">${d.date}</span>`,
-        `<span style="font-family:monospace; font-weight:700; color:#3b82f6;">${d.refId}</span>`,
+        `<span style="font-family:monospace; font-weight:700; color:#3b82f6;">${d.ref_id}</span>`,
         `<span class="status-pill active" style="text-transform:capitalize;">${d.type}</span>`,
-        `<strong style="color:#0f172a; font-size:0.83rem;">${d.name}</strong>`,
-        `<span style="font-size:0.83rem; color:#334155;">${d.customer}</span>`,
-        `<span style="font-size:0.8rem; color:#64748b;">${d.appliedOn}</span>`,
+        `<strong style="font-size:0.83rem; color:#0f172a;">${d.name}</strong>`,
+        `<span style="font-size:0.83rem; color:#334155;">${d.customer || 'Customer'}</span>`,
+        `<span class="status-pill pending">${d.applied_on}</span>`,
         formatCurrency(d.gross),
+        `<span style="color:#10b981;">+${formatCurrency(d.reversal)}</span>`,
         `<strong style="color:#f43f5e; font-size:0.85rem;">-${formatCurrency(d.net)}</strong>`,
-        `<span style="color:#10b981; font-weight:600;">${formatCurrency(d.gross - d.net)}</span>`,
-        `<span style="font-size:0.8rem; color:#64748b;">${d.staff}</span>`
+        `<span style="font-size:0.82rem; color:#475569;">${d.staff || 'Staff'}</span>`,
+        makeStatusPill(d.status)
     ];
 
     const tabData = {
-        all: mock.discountItems.map(formatRow),
-        offer: offerItems.map(formatRow),
+        all: allDiscounts.map(formatRow),
         coupon: couponItems.map(formatRow),
-        membership: memItems.map(formatRow)
+        offer: offerItems.map(formatRow),
+        membership: memberItems.map(formatRow)
     };
 
     const activateTab = (tab) => {
@@ -1098,7 +1029,7 @@ async function renderFinDiscounts(data, supabase) {
         setupReportTable(headers, tabData[tab] || tabData.all, {
             unitName: 'discount usages',
             reportFileName: `Discounts_${tab}`,
-            searchPlaceholder: 'Search discount name, code, customer or staff...'
+            searchPlaceholder: 'Search promo code, plan name, order or staff...'
         });
     };
 
@@ -1110,91 +1041,75 @@ async function renderFinDiscounts(data, supabase) {
 }
 
 // =============================================================================
-// SUB-REPORT 6: Refunds & Payouts (Outgoing Leaks)
+// SUB-REPORT 6: Refunds & Returns (Outgoing Revenue Leaks)
 // =============================================================================
 
 async function renderFinRefunds(data, supabase) {
-    const mock = generateMockFinancialData();
-    const tableContainer = document.querySelector('.data-table-container');
-    const tabBar = ensureTabBar(tableContainer);
+    removeTabBar();
+    const filterBranch = document.getElementById('filterBranch');
+    const filterStart = document.getElementById('filterStartDate');
+    const filterEnd = document.getElementById('filterEndDate');
+    const companyId = resolveCompanyId();
+    const branchId = resolveBranchId(filterBranch);
+    const start = filterStart?.value || null;
+    const end = filterEnd?.value || null;
 
-    const bookingRefunds = mock.refundItems.filter(r => r.stream === 'Booking');
-    const productRefunds = mock.refundItems.filter(r => r.stream === 'Product Return');
-    const memRefunds     = mock.refundItems.filter(r => r.stream === 'Membership Cancel');
+    const rpcPayload = await fetchFinancialReportData(supabase, companyId, branchId, start, end);
+    const live = rpcPayload?.refunds || rpcPayload?.fin_refunds;
 
-    const totalRefunded = mock.refundItems.reduce((acc, r) => acc + r.refundAmount, 0);
-    const refundCount   = mock.refundItems.length;
-    const avgRefund     = Math.round(totalRefunded / (refundCount || 1));
-    const refundRate    = Math.round((totalRefunded / mock.grossTotal) * 100);
+    if (!live || !live.kpis) {
+        data.kpi1 = { label: 'Total Customer Refunds', value: '₹0', sub: '0 refunds processed' };
+        data.kpi2 = { label: 'Refund Rate',             value: '0%', sub: '0% of Gross Revenue' };
+        data.kpi3 = { label: 'Average Refund',          value: '₹0', sub: 'Per dispute' };
+        data.kpi4 = { label: 'Plan & Product Refunds',  value: '₹0', sub: 'Memberships + Retail' };
+        updateKPIs(data.kpi1, data.kpi2, data.kpi3, data.kpi4);
+        renderFinTrendChart([], []);
+        renderFinDistributionChart([], []);
+        setupReportTable(['Refund ID', 'Date Processed', 'Original Order', 'Stream', 'Customer', 'Original Price', 'Refund Amount', 'Tender Method', 'Reason / Notes'], []);
+        return;
+    }
 
-    data.kpi1 = { label: 'Total Refunded Outflow', value: formatCurrency(totalRefunded), sub: 'Paid Out Back to Clients' };
-    data.kpi2 = { label: 'Refund Events Count',    value: `${refundCount} Payouts`, sub: 'Cancelled / Returned Items' };
-    data.kpi3 = { label: 'Gross Refund Rate',       value: `${refundRate}%`, sub: 'Refunds / Gross Inflow' };
-    data.kpi4 = { label: 'Average Refund Payout',  value: formatCurrency(avgRefund), sub: 'Mean Refund Ticket Size' };
+    const k = live.kpis;
+    data.kpi1 = { label: 'Total Customer Refunds', value: formatCurrency(k.total_refunded), sub: `${k.refund_count} refunds processed` };
+    data.kpi2 = { label: 'Refund Rate',             value: `${k.refund_rate_pct}%`,          sub: 'Refunds / Gross Revenue' };
+    data.kpi3 = { label: 'Average Refund',          value: formatCurrency(k.avg_refund),     sub: 'Per Disputed Order' };
+    data.kpi4 = { label: 'Plan & Product Refunds',  value: formatCurrency((k.membership_refunds || 0) + (k.product_refunds || 0)), sub: `Bookings: ${formatCurrency(k.booking_refunds)}` };
     updateKPIs(data.kpi1, data.kpi2, data.kpi3, data.kpi4);
 
-    // Left Chart: Refund Trend Timeline
-    renderFinTrendChart(mock.dateLabels, mock.outflowTrend.map(v => Math.round(v * 0.25)), {
-        color: '#f43f5e',
-        seriesLabel: 'Refund Payouts (₹)'
-    });
-
-    // Right Chart: Refunds by Source Stream
-    renderFinDistributionChart(
-        ['Booking Cancellations', 'POS Product Returns', 'Membership Cancellations'],
-        [
-            bookingRefunds.reduce((a, r) => a + r.refundAmount, 0),
-            productRefunds.reduce((a, r) => a + r.refundAmount, 0),
-            memRefunds.reduce((a, r) => a + r.refundAmount, 0)
-        ],
-        { colors: ['#6366f1', '#0ea5e9', '#ec4899'], heroLabelPrefix: 'Highest Returns:' }
+    // Left Chart: Daily Refund Trend
+    const timeline = live.timeline || [];
+    renderFinTrendChart(
+        timeline.map(t => t.date),
+        timeline.map(t => t.amount),
+        { color: '#ef4444', seriesLabel: 'Refunded (₹)' }
     );
 
-    // Tabs Setup
-    tabBar.innerHTML = `
-        <button class="report-tab-btn active" data-tab="all"><i data-feather="grid" style="width:13px;height:13px;"></i> All Refunds <span class="tab-badge">${mock.refundItems.length}</span></button>
-        <button class="report-tab-btn" data-tab="booking"><i data-feather="calendar" style="width:13px;height:13px;"></i> Bookings <span class="tab-badge">${bookingRefunds.length}</span></button>
-        <button class="report-tab-btn" data-tab="product"><i data-feather="package" style="width:13px;height:13px;"></i> Product Returns <span class="tab-badge">${productRefunds.length}</span></button>
-        <button class="report-tab-btn" data-tab="membership"><i data-feather="award" style="width:13px;height:13px;"></i> Membership Cancels <span class="tab-badge">${memRefunds.length}</span></button>
-    `;
-    if (window.feather) feather.replace();
-
-    const headers = ['Refund Date', 'Payment Ref', 'Original Order Ref', 'Stream', 'Customer', 'Original Total', 'Refund Amount', 'Payment Method', 'Notes / Reason'];
-    const formatRow = (r) => [
-        `<span style="font-weight:600; color:#0f172a;">${r.date}</span>`,
-        `<span style="font-family:monospace; font-weight:700; color:#f43f5e;">#${r.refundId}</span>`,
-        `<span style="font-family:monospace; font-size:0.8rem; color:#475569;">${r.orderRef}</span>`,
-        `<span class="status-pill active">${r.stream}</span>`,
-        `<div><strong style="font-size:0.83rem; color:#0f172a;">${r.customer}</strong><span style="display:block; font-size:0.72rem; color:#64748b;">${r.phone}</span></div>`,
-        formatCurrency(r.originalPrice),
-        `<strong style="color:#ef4444; font-size:0.85rem;">-${formatCurrency(r.refundAmount)}</strong>`,
-        `<span style="font-size:0.8rem; color:#334155;">${r.method}</span>`,
-        `<span style="font-size:0.78rem; color:#64748b;">${r.reason}</span>`
-    ];
-
-    const tabData = {
-        all: mock.refundItems.map(formatRow),
-        booking: bookingRefunds.map(formatRow),
-        product: productRefunds.map(formatRow),
-        membership: memRefunds.map(formatRow)
-    };
-
-    const activateTab = (tab) => {
-        tabBar.querySelectorAll('.report-tab-btn').forEach(btn => {
-            btn.classList.toggle('active', btn.getAttribute('data-tab') === tab);
-        });
-        setupReportTable(headers, tabData[tab] || tabData.all, {
-            unitName: 'refund records',
-            reportFileName: `Refunds_${tab}`,
-            searchPlaceholder: 'Search customer, payment ref, reason or stream...'
-        });
-    };
-
-    tabBar.querySelectorAll('.report-tab-btn').forEach(btn => {
-        btn.onclick = () => activateTab(btn.getAttribute('data-tab'));
+    // Right Chart: Refund Stream Distribution
+    const distLabels = live.distribution?.labels || ['Booking Cancellations', 'POS Product Returns', 'Membership Cancellations'];
+    const distValues = live.distribution?.values || [k.booking_refunds, k.product_refunds, k.membership_refunds];
+    renderFinDistributionChart(distLabels, distValues, {
+        colors: ['#ef4444', '#f59e0b', '#8b5cf6'],
+        heroLabelPrefix: 'Primary Leak:'
     });
 
-    activateTab('all');
+    const headers = ['Refund ID', 'Date Processed', 'Original Order', 'Stream', 'Customer', 'Original Price', 'Refund Amount', 'Tender Method', 'Reason / Notes'];
+    const rows = (live.ledgers?.all || []).map(r => [
+        `<span style="font-family:monospace; font-weight:700; color:#ef4444;">#${r.refund_id}</span>`,
+        `<span style="font-size:0.82rem; color:#475569;">${r.date}</span>`,
+        `<span style="font-family:monospace; font-weight:600; color:#0f172a;">${r.order_ref}</span>`,
+        `<span class="status-pill cancelled">${r.stream}</span>`,
+        `<div><strong style="font-size:0.83rem; color:#0f172a;">${r.customer}</strong><span style="display:block; font-size:0.72rem; color:#64748b;">${r.phone}</span></div>`,
+        formatCurrency(r.original_price),
+        `<strong style="color:#ef4444; font-size:0.85rem;">-${formatCurrency(r.refund_amount)}</strong>`,
+        `<span style="font-weight:600; font-size:0.8rem; color:#475569; text-transform:uppercase;">${r.method}</span>`,
+        `<span style="font-size:0.78rem; color:#64748b;">${r.reason}</span>`
+    ]);
+
+    setupReportTable(headers, rows, {
+        unitName: 'refund records',
+        reportFileName: 'Customer_Refunds_Ledger',
+        searchPlaceholder: 'Search refund ID, customer, order or reason...'
+    });
 }
 
 // =============================================================================
@@ -1202,54 +1117,74 @@ async function renderFinRefunds(data, supabase) {
 // =============================================================================
 
 async function renderFinPendingDues(data, supabase) {
-    const mock = generateMockFinancialData();
     const tableContainer = document.querySelector('.data-table-container');
     const tabBar = ensureTabBar(tableContainer);
 
-    const serviceDues = mock.duesItems.filter(d => d.stream === 'Service');
-    const productDues = mock.duesItems.filter(d => d.stream === 'Product');
-    const overdueDues = mock.duesItems.filter(d => parseInt(d.aging) > 15);
+    const filterBranch = document.getElementById('filterBranch');
+    const filterStart = document.getElementById('filterStartDate');
+    const filterEnd = document.getElementById('filterEndDate');
+    const companyId = resolveCompanyId();
+    const branchId = resolveBranchId(filterBranch);
+    const start = filterStart?.value || null;
+    const end = filterEnd?.value || null;
 
-    const totalDues   = mock.duesItems.reduce((acc, d) => acc + d.due, 0);
-    const pendingCnt  = mock.duesItems.length;
-    const avgDue      = Math.round(totalDues / (pendingCnt || 1));
-    const agedDues    = overdueDues.reduce((acc, d) => acc + d.due, 0);
+    const rpcPayload = await fetchFinancialReportData(supabase, companyId, branchId, start, end);
+    const live = rpcPayload?.dues || rpcPayload?.fin_pending_dues;
 
-    data.kpi1 = { label: 'Total Pending Dues',     value: formatCurrency(totalDues), sub: 'Uncollected Customer Balances' };
-    data.kpi2 = { label: 'Pending Invoices',       value: `${pendingCnt} Open Bills`, sub: 'Awaiting Settlement' };
-    data.kpi3 = { label: 'Average Due / Client',   value: formatCurrency(avgDue), sub: 'Mean Outstanding Amount' };
-    data.kpi4 = { label: 'Overdue Dues (>15 Days)',value: formatCurrency(agedDues), sub: 'Aging Receivables Risk' };
+    if (!live || !live.kpis) {
+        data.kpi1 = { label: 'Total Outstanding Dues', value: '₹0', sub: '0 open balances' };
+        data.kpi2 = { label: 'Open Balances',          value: '0',  sub: 'Clients with dues' };
+        data.kpi3 = { label: 'Average Due per Client',  value: '₹0', sub: 'Receivable / Count' };
+        data.kpi4 = { label: 'Aged Dues (>15 Days)',   value: '₹0', sub: 'Critical aging' };
+        updateKPIs(data.kpi1, data.kpi2, data.kpi3, data.kpi4);
+        renderFinTrendChart([], []);
+        renderFinDistributionChart([], []);
+        setupReportTable(['Invoice Ref', 'Date Created', 'Stream', 'Customer', 'Total Bill', 'Paid So Far', 'Balance Due', 'Aging', 'Action'], []);
+        return;
+    }
+
+    const k = live.kpis;
+    data.kpi1 = { label: 'Total Outstanding Dues', value: formatCurrency(k.total_pending_dues), sub: 'Uncollected Accounts Receivable' };
+    data.kpi2 = { label: 'Open Balances',          value: `${k.pending_count}`,                 sub: 'Clients with Pending Dues' };
+    data.kpi3 = { label: 'Average Due per Client',  value: formatCurrency(k.avg_due_per_client), sub: 'Receivable / Client Count' };
+    data.kpi4 = { label: 'Aged Dues (>15 Days)',   value: formatCurrency(k.aged_dues_over_15d), sub: 'Critical Overdue Exposure' };
     updateKPIs(data.kpi1, data.kpi2, data.kpi3, data.kpi4);
 
-    // Left Chart: Dues Generated vs Recovered
-    renderFinTrendChart(mock.dateLabels, mock.dateLabels.map((_, i) => Math.round(2200 + Math.sin(i * 1.5) * 800)), {
-        color: '#f59e0b',
-        seriesLabel: 'Open Dues (₹)'
-    });
-
-    // Right Chart: Pending Dues by Stream
-    renderFinDistributionChart(
-        ['Service Appointments', 'Retail POS Sales', 'Membership Dues'],
-        [
-            serviceDues.reduce((a, d) => a + d.due, 0),
-            productDues.reduce((a, d) => a + d.due, 0),
-            Math.round(totalDues * 0.15)
-        ],
-        { colors: ['#6366f1', '#0ea5e9', '#8b5cf6'], heroLabelPrefix: 'Highest Dues:' }
+    // Left Chart: Pending Dues Inflow Timeline
+    const timeline = live.timeline || [];
+    renderFinTrendChart(
+        timeline.map(t => t.date),
+        timeline.map(t => t.amount),
+        { color: '#ef4444', seriesLabel: 'Due Amount (₹)' }
     );
 
-    // Tabs Setup
+    // Right Chart: Stream Breakdown
+    const distLabels = live.distribution?.labels || ['Service Appointments', 'Retail POS Sales', 'Membership Dues'];
+    const distValues = live.distribution?.values || [];
+    renderFinDistributionChart(distLabels, distValues, {
+        colors: ['#3b82f6', '#0ea5e9', '#8b5cf6'],
+        heroLabelPrefix: 'Primary Stream:'
+    });
+
+    const allDues = live.ledgers?.all || [];
+    const serviceDues = allDues.filter(d => (d.stream || '').toLowerCase().includes('service'));
+    const productDues = allDues.filter(d => (d.stream || '').toLowerCase().includes('product'));
+    const overdueDues = allDues.filter(d => {
+        const days = parseInt(d.aging);
+        return !isNaN(days) && days > 15;
+    });
+
     tabBar.innerHTML = `
-        <button class="report-tab-btn active" data-tab="all"><i data-feather="grid" style="width:13px;height:13px;"></i> All Pending Dues <span class="tab-badge">${mock.duesItems.length}</span></button>
+        <button class="report-tab-btn active" data-tab="all"><i data-feather="clock" style="width:13px;height:13px;"></i> All Receivables <span class="tab-badge">${allDues.length}</span></button>
         <button class="report-tab-btn" data-tab="service"><i data-feather="calendar" style="width:13px;height:13px;"></i> Services <span class="tab-badge">${serviceDues.length}</span></button>
-        <button class="report-tab-btn" data-tab="product"><i data-feather="package" style="width:13px;height:13px;"></i> Retail POS <span class="tab-badge">${productDues.length}</span></button>
-        <button class="report-tab-btn" data-tab="overdue"><i data-feather="clock" style="width:13px;height:13px;"></i> Overdue (>15d) <span class="tab-badge">${overdueDues.length}</span></button>
+        <button class="report-tab-btn" data-tab="product"><i data-feather="shopping-bag" style="width:13px;height:13px;"></i> Retail POS <span class="tab-badge">${productDues.length}</span></button>
+        <button class="report-tab-btn" data-tab="overdue"><i data-feather="alert-circle" style="width:13px;height:13px;"></i> Aged >15d <span class="tab-badge">${overdueDues.length}</span></button>
     `;
     if (window.feather) feather.replace();
 
     const headers = ['Invoice Ref', 'Date Created', 'Stream', 'Customer', 'Total Bill', 'Paid So Far', 'Balance Due', 'Aging', 'Action'];
     const formatRow = (d) => [
-        `<span style="font-family:monospace; font-weight:700; color:#3b82f6;">${d.invoiceRef}</span>`,
+        `<span style="font-family:monospace; font-weight:700; color:#3b82f6;">${d.invoice_ref}</span>`,
         `<span style="font-size:0.82rem; color:#475569;">${d.date}</span>`,
         `<span class="status-pill active">${d.stream}</span>`,
         `<div><strong style="font-size:0.83rem; color:#0f172a;">${d.customer}</strong><span style="display:block; font-size:0.72rem; color:#64748b;">${d.phone}</span></div>`,
@@ -1257,11 +1192,11 @@ async function renderFinPendingDues(data, supabase) {
         `<span style="color:#10b981; font-weight:500;">${formatCurrency(d.paid)}</span>`,
         `<strong style="color:#ef4444; font-size:0.85rem;">${formatCurrency(d.due)}</strong>`,
         `<span class="status-pill pending" style="font-size:0.75rem;">${d.aging}</span>`,
-        `<button class="btn-top-action" style="padding:3px 10px; font-size:0.75rem; background:#6366f1; color:#fff;" onclick="alert('Open collection modal for ${d.customer} (${formatCurrency(d.due)})')">Collect</button>`
+        `<button class="btn-top-action" style="padding:3px 10px; font-size:0.75rem; background:#6366f1; color:#fff;" onclick="alert('Client: ${d.customer}\\nPending: ${formatCurrency(d.due)}\\nPhone: ${d.phone}')">Collect</button>`
     ];
 
     const tabData = {
-        all: mock.duesItems.map(formatRow),
+        all: allDues.map(formatRow),
         service: serviceDues.map(formatRow),
         product: productDues.map(formatRow),
         overdue: overdueDues.map(formatRow)
@@ -1316,12 +1251,21 @@ export async function render(data, supabase, type = data?.type) {
 
     const handler = handlers[type] || handlers['fin-overview'];
 
-    // Wire apply button
+    // Invalidate cached RPC data whenever the user triggers a filter refresh
+    const executeReport = async () => {
+        cachedRpcPayload = null;
+        try {
+            await handler(data, supabase);
+        } catch (err) {
+            console.error('[financial] Error executing report renderer:', err);
+        }
+    };
+
     if (btnApply) {
-        btnApply.onclick = () => handler(data, supabase);
+        btnApply.onclick = executeReport;
     }
     if (filterBranch) {
-        filterBranch.onchange = () => handler(data, supabase);
+        filterBranch.onchange = executeReport;
     }
 
     try {
