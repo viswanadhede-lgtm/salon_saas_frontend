@@ -115,41 +115,36 @@ export function renderDistributionChart(labels, values) {
             }
         }
     });
-    const legendContainer = document.getElementById('infographicLegend');
+    const legendContainer = document.getElementById('donutLegend') || document.getElementById('infographicLegend');
+    const total = (values || []).reduce((a, b) => a + (Number(b) || 0), 0);
+    const centerVal = document.getElementById('donutCenterValue') || document.getElementById('heroMetricValue');
+    const centerLbl = document.getElementById('donutCenterLabel') || document.getElementById('heroMetricLabel');
+
+    if (centerVal) {
+        centerVal.textContent = total > 0 ? formatCurrency(total) : '₹0';
+    }
+    if (centerLbl) {
+        centerLbl.textContent = 'Total';
+    }
+
     if (legendContainer) {
-        if (labels.length === 0 || values.every(v => v === 0)) {
-            legendContainer.innerHTML = '<div style="color:#94a3b8; font-size:0.875rem;">No data to display</div>';
+        if (!labels || labels.length === 0 || total === 0) {
+            legendContainer.innerHTML = '<div style="color:#94a3b8; font-size:0.85rem; text-align:center; padding:0.75rem 0;">No data to display</div>';
         } else {
-            const total = values.reduce((a, b) => a + b, 0);
             legendContainer.innerHTML = labels.map((l, i) => {
-                const val = values[i];
+                const val = Number(values[i]) || 0;
                 const perc = total > 0 ? Math.round((val / total) * 100) : 0;
+                const color = colors[i % colors.length];
                 return `
-                    <div class="metric-item">
-                        <span class="metric-dot" style="background-color: ${colors[i % colors.length]};"></span>
-                        <div class="metric-label">
-                            <span class="name">${l}</span>
-                            <span class="perc">${perc}%</span>
-                        </div>
-                        <div class="metric-value">${formatCurrency(val)}</div>
+                    <div class="donut-legend-item">
+                        <span class="donut-legend-dot" style="background-color: ${color};"></span>
+                        <span class="donut-legend-text">
+                            ${l} - <strong>${formatCurrency(val)}</strong> <span style="color:#64748b;font-weight:500;">(${perc}%)</span>
+                        </span>
                     </div>
                 `;
             }).join('');
         }
-    }
-    if (values.length > 0 && !values.every(v => v === 0)) {
-        const maxIdx = values.indexOf(Math.max(...values));
-        const total = values.reduce((a, b) => a + b, 0);
-        const perc = total > 0 ? Math.round((values[maxIdx] / total) * 100) : 0;
-        const hmVal = document.getElementById('heroMetricValue');
-        const hmLabel = document.getElementById('heroMetricLabel');
-        if (hmVal) hmVal.textContent = perc + '%';
-        if (hmLabel) hmLabel.textContent = 'Revenue from ' + labels[maxIdx];
-    } else {
-        const hmVal = document.getElementById('heroMetricValue');
-        const hmLabel = document.getElementById('heroMetricLabel');
-        if (hmVal) hmVal.textContent = '0%';
-        if (hmLabel) hmLabel.textContent = 'No Data Available';
     }
 }
 

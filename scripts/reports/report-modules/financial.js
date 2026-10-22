@@ -195,22 +195,57 @@ function renderFinTrendChart(labels, values, options = {}) {
 
 // Custom Styled Donut Chart
 function renderFinDistributionChart(labels, values, options = {}) {
-    const ctx = document.getElementById('distChart');
+    const ctx = document.getElementById('distributionChart') || document.getElementById('distChart');
+    const centerValEl = document.getElementById('donutCenterValue') || document.getElementById('heroMetricValue');
+    const centerLblEl = document.getElementById('donutCenterLabel') || document.getElementById('heroMetricLabel');
+    const legendEl = document.getElementById('donutLegend') || document.getElementById('infographicLegend');
+
     if (!ctx) return;
     distChartInstance = destroyChart(distChartInstance);
 
     const defaultColors = ['#3b82f6', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6', '#06b6d4', '#ec4899'];
     const colors = options.colors || defaultColors;
+    const isCurrency = options.isCurrency !== false;
+
+    const safeLabels = Array.isArray(labels) ? labels : [];
+    const safeValues = Array.isArray(values) ? values.map(v => Number(v) || 0) : [];
+    const total = safeValues.reduce((a, b) => a + b, 0);
+
+    // Update Center Stat
+    const centerLabel = options.centerLabel || 'Total';
+    const centerValue = options.centerValue || (isCurrency ? formatCurrency(total) : total.toLocaleString('en-IN'));
+
+    if (centerValEl) {
+        centerValEl.textContent = centerValue;
+        // Dynamically scale font size so amounts never overflow the doughnut hole
+        if (centerValue.length > 10) {
+            centerValEl.style.fontSize = '1.15rem';
+        } else if (centerValue.length > 7) {
+            centerValEl.style.fontSize = '1.35rem';
+        } else {
+            centerValEl.style.fontSize = '1.75rem';
+        }
+    }
+    if (centerLblEl) {
+        centerLblEl.textContent = centerLabel;
+    }
+
+    // Determine chart dataset (renders subtle placeholder if no data)
+    const hasData = safeLabels.length > 0 && total > 0;
+    const chartLabels = hasData ? safeLabels : ['No Data'];
+    const chartData = hasData ? safeValues : [1];
+    const chartColors = hasData ? colors.slice(0, safeLabels.length) : ['#e2e8f0'];
 
     distChartInstance = new Chart(ctx, {
         type: 'doughnut',
         data: {
-            labels: labels || [],
+            labels: chartLabels,
             datasets: [{
-                data: values || [],
-                backgroundColor: colors.slice(0, (labels || []).length),
-                borderWidth: 0,
-                hoverOffset: 4
+                data: chartData,
+                backgroundColor: chartColors,
+                borderWidth: hasData ? 2 : 0,
+                borderColor: '#ffffff',
+                hoverOffset: hasData ? 6 : 0
             }]
         },
         options: {
@@ -220,54 +255,44 @@ function renderFinDistributionChart(labels, values, options = {}) {
             plugins: {
                 legend: { display: false },
                 tooltip: {
+                    enabled: hasData,
                     backgroundColor: '#0f172a',
                     padding: 10,
                     titleFont: { size: 12, weight: '600' },
                     bodyFont: { size: 12 },
                     cornerRadius: 8,
                     callbacks: {
-                        label: (ctx) => ` ${ctx.label}: ${formatCurrency(ctx.parsed)}`
+                        label: (tooltipCtx) => {
+                            const val = tooltipCtx.parsed;
+                            const pct = total > 0 ? ((val / total) * 100).toFixed(1) + '%' : '0%';
+                            const formatted = isCurrency ? formatCurrency(val) : Number(val).toLocaleString('en-IN');
+                            return ` ${tooltipCtx.label}: ${formatted} (${pct})`;
+                        }
                     }
                 }
             }
         }
     });
 
-    const legendContainer = document.getElementById('infographicLegend');
-    if (legendContainer) {
-        const total = (values || []).reduce((a, b) => a + Number(b || 0), 0);
-        if (!labels || labels.length === 0 || total === 0) {
-            legendContainer.innerHTML = '<div style="color:#94a3b8; font-size:0.875rem; text-align:center; padding:1rem;">No data available</div>';
+    // Populate Right Donut Legend matching the application design system
+    if (legendEl) {
+        if (!hasData) {
+            legendEl.innerHTML = '<div style="color:#94a3b8; font-size:0.85rem; text-align:center; padding:0.75rem 0;">No distribution data available</div>';
         } else {
-            legendContainer.innerHTML = labels.map((l, i) => {
-                const val = Number(values[i] || 0);
-                const perc = total > 0 ? Math.round((val / total) * 100) : 0;
+            legendEl.innerHTML = safeLabels.map((lbl, i) => {
+                const val = safeValues[i] || 0;
+                const pct = total > 0 ? ((val / total) * 100).toFixed(1) : '0';
+                const color = colors[i % colors.length];
+                const displayVal = isCurrency ? formatCurrency(val) : Number(val).toLocaleString('en-IN');
                 return `
-                    <div class="metric-item">
-                        <span class="metric-dot" style="background-color: ${colors[i % colors.length]};"></span>
-                        <div class="metric-label">
-                            <span class="name">${l}</span>
-                            <span class="perc">${perc}%</span>
-                        </div>
-                        <div class="metric-value">${formatCurrency(val)}</div>
+                    <div class="donut-legend-item">
+                        <span class="donut-legend-dot" style="background-color: ${color};"></span>
+                        <span class="donut-legend-text">
+                            ${lbl} - <strong>${displayVal}</strong> <span style="color:#64748b;font-weight:500;">(${pct}%)</span>
+                        </span>
                     </div>
                 `;
             }).join('');
-        }
-    }
-
-    const hmVal = document.getElementById('heroMetricValue');
-    const hmLabel = document.getElementById('heroMetricLabel');
-    if (hmVal && hmLabel) {
-        const total = (values || []).reduce((a, b) => a + Number(b || 0), 0);
-        if (total > 0) {
-            const maxIdx = values.indexOf(Math.max(...values));
-            const perc = Math.round((values[maxIdx] / total) * 100);
-            hmVal.textContent = perc + '%';
-            hmLabel.textContent = options.heroLabelPrefix ? `${options.heroLabelPrefix} ${labels[maxIdx]}` : labels[maxIdx];
-        } else {
-            hmVal.textContent = '0%';
-            hmLabel.textContent = 'No Data';
         }
     }
 }
@@ -599,6 +624,7 @@ async function renderFinOverview(data, supabase) {
     const distValues = live.outflow_distribution?.values || [k.total_expenses, k.total_discounts, k.total_refunds];
     renderFinDistributionChart(distLabels, distValues, {
         colors: ['#f59e0b', '#6366f1', '#ef4444'],
+        centerLabel: 'Outflow',
         heroLabelPrefix: 'Primary Outflow:'
     });
 
@@ -698,6 +724,7 @@ async function renderFinRevenue(data, supabase) {
     const distValues = live.distribution?.values || [k.service_revenue, k.retail_revenue, k.membership_revenue];
     renderFinDistributionChart(distLabels, distValues, {
         colors: ['#6366f1', '#0ea5e9', '#8b5cf6'],
+        centerLabel: 'Revenue',
         heroLabelPrefix: 'Top Stream:'
     });
 
@@ -808,6 +835,7 @@ async function renderFinPayments(data, supabase) {
     const distValues = live.distribution?.values || [k.cash_in_drawer, k.upi_amount, k.card_amount, k.other_amount];
     renderFinDistributionChart(distLabels, distValues, {
         colors: ['#10b981', '#3b82f6', '#8b5cf6', '#64748b'],
+        centerLabel: 'Collections',
         heroLabelPrefix: 'Primary Mode:'
     });
 
@@ -911,6 +939,7 @@ async function renderFinExpenses(data, supabase) {
     const distValues = live.distribution?.values || [];
     renderFinDistributionChart(distLabels, distValues, {
         colors: ['#f59e0b', '#3b82f6', '#10b981', '#8b5cf6', '#ec4899', '#64748b'],
+        centerLabel: 'Expenses',
         heroLabelPrefix: 'Top Cost:'
     });
 
@@ -984,6 +1013,7 @@ async function renderFinDiscounts(data, supabase) {
     const distValues = live.distribution?.values || [k.offer_discounts, k.coupon_discounts, k.membership_discounts];
     renderFinDistributionChart(distLabels, distValues, {
         colors: ['#3b82f6', '#10b981', '#8b5cf6'],
+        centerLabel: 'Discounts',
         heroLabelPrefix: 'Top Leak:'
     });
 
@@ -1089,6 +1119,7 @@ async function renderFinRefunds(data, supabase) {
     const distValues = live.distribution?.values || [k.booking_refunds, k.product_refunds, k.membership_refunds];
     renderFinDistributionChart(distLabels, distValues, {
         colors: ['#ef4444', '#f59e0b', '#8b5cf6'],
+        centerLabel: 'Refunds',
         heroLabelPrefix: 'Primary Leak:'
     });
 
@@ -1160,9 +1191,10 @@ async function renderFinPendingDues(data, supabase) {
 
     // Right Chart: Stream Breakdown
     const distLabels = live.distribution?.labels || ['Service Appointments', 'Retail POS Sales', 'Membership Dues'];
-    const distValues = live.distribution?.values || [];
+    const distValues = live.distribution?.values || [k.total_pending_dues || 0, 0, 0];
     renderFinDistributionChart(distLabels, distValues, {
         colors: ['#3b82f6', '#0ea5e9', '#8b5cf6'],
+        centerLabel: 'Dues',
         heroLabelPrefix: 'Primary Stream:'
     });
 
