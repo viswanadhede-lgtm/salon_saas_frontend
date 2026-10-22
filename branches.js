@@ -99,6 +99,15 @@ document.addEventListener('DOMContentLoaded', async () => {
                 branch_name: b.branch_name
             }));
 
+            // Fallback active_branch_id if the current one was deleted or deactivated
+            const currentActiveId = localStorage.getItem('active_branch_id');
+            const isStillActive = activeBranches.some(b => String(b.branch_id) === String(currentActiveId));
+            if (!isStillActive && activeBranches.length > 0) {
+                const fallbackId = activeBranches[0].branch_id;
+                localStorage.setItem('active_branch_id', fallbackId);
+                context.current_branch_id = fallbackId;
+            }
+
             localStorage.setItem('appContext', JSON.stringify(context));
             if (typeof populateGlobalHeader === 'function') {
                 populateGlobalHeader(); // Instantly update header dropdown

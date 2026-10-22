@@ -132,12 +132,22 @@
             const start = parseInt(getVal('cfgStartingNumber'), 10) || 1001;
             const previewEl = document.getElementById('numberingPreviewText');
             if (previewEl) {
-                previewEl.textContent = `${pfx}00${start} � ${pfx}00${start+1} � ${pfx}00${start+2}`;
+                previewEl.textContent = `${pfx}00${start} • ${pfx}00${start+1} • ${pfx}00${start+2}`;
             }
         }
 
         function renderPreview() {
             renderLiveInvoicePreview('common', 'invoicePreviewContainer', config);
+        }
+
+        let currentBranchId = null;
+
+        async function reloadForBranch(branchId) {
+            currentBranchId = branchId;
+            await loadBusinessPreviewData();
+            config = await loadInvoiceSettingsFromDB('common', branchId);
+            syncUIFromConfig();
+            document.getElementById('savebar')?.classList.remove('visible');
         }
 
         window.saveCommonConfig = async function() {
@@ -148,8 +158,8 @@
             }
 
             try {
-                await saveInvoiceSettingsToDB('common', config);
-                showToast('? Common invoice settings saved!', 'success');
+                await saveInvoiceSettingsToDB('common', config, currentBranchId);
+                showToast('✓ Common invoice settings saved!', 'success');
                 document.getElementById('savebar')?.classList.remove('visible');
             } catch (err) {
                 console.error('Error saving common invoice settings:', err);
@@ -164,7 +174,7 @@
         };
 
         window.cancelCommonConfig = async function() {
-            config = await loadInvoiceSettingsFromDB('common');
+            config = await loadInvoiceSettingsFromDB('common', currentBranchId);
             syncUIFromConfig();
             document.getElementById('savebar')?.classList.remove('visible');
         };
@@ -188,25 +198,53 @@
             setTimeout(() => { t.classList.remove('visible'); t.style.background = ''; }, 3500);
         }
 
+        function initBranchSwitcher() {
+            const select = document.getElementById('branchSelect');
+            if (select) {
+                select.addEventListener('change', async (e) => {
+                    const bId = e.target.value;
+                    if (bId && bId !== 'all' && bId !== currentBranchId) {
+                        localStorage.setItem('active_branch_id', bId);
+                        await reloadForBranch(bId);
+                    }
+                });
+            }
+
+            window.addEventListener('storage', async (e) => {
+                if (e.key === 'active_branch_id' && e.newValue && e.newValue !== currentBranchId) {
+                    await reloadForBranch(e.newValue);
+                }
+            });
+        }
 
 // Expose window APIs for inline HTML handlers
 window.saveCommonConfig = saveCommonConfig;
 window.cancelCommonConfig = cancelCommonConfig;
 
 export async function initInvoiceCommon() {
-            if (typeof feather !== 'undefined') feather.replace();
-            
-            // Load live company info for preview and settings from Supabase
-            await loadBusinessPreviewData();
-            config = await loadInvoiceSettingsFromDB('common');
-            syncUIFromConfig();
+    if (typeof feather !== 'undefined') feather.replace();
+    
+    // Load live company info for preview and settings from Supabase
+    await loadBusinessPreviewData();
+    config = await loadInvoiceSettingsFromDB('common');
+    syncUIFromConfig();
 
-            document.querySelectorAll('.form-input, .form-textarea, input[type=checkbox]').forEach(el => {
-                el.addEventListener(el.type === 'checkbox' ? 'change' : 'input', syncConfigFromUI);
-            });
+    document.querySelectorAll('.form-input, .form-textarea, input[type=checkbox]').forEach(el => {
+        el.addEventListener(el.type === 'checkbox' ? 'change' : 'input', syncConfigFromUI);
+    });
+
+    initBranchSwitcher();
+
+    // Guard against navigating away with unsaved changes
+    window.addEventListener('beforeunload', (e) => {
+        const savebar = document.getElementById('savebar');
+        if (savebar && savebar.classList.contains('visible')) {
+            e.preventDefault();
+            e.returnValue = '';
+        }
+    });
 }
 
-// Safe initialization guard
 if (document.readyState === 'loading') {
     document.addEventListener('DOMContentLoaded', initInvoiceCommon);
 } else {

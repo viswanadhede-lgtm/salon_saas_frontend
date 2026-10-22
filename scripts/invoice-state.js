@@ -19,21 +19,37 @@ export function getCompanyId() {
 }
 
 export async function getBranchId(companyId) {
-    let bId = localStorage.getItem('active_branch_id');
-    if (bId && bId !== 'Downtown Branch' && bId !== 'all') return bId;
     try {
+        const saved = localStorage.getItem('active_branch_id');
+        if (saved && saved !== 'all' && saved !== 'Downtown Branch') return saved;
+
+        const domSelect = document.getElementById('branchSelect')?.value;
+        if (domSelect && domSelect !== 'all' && domSelect !== 'Downtown Branch') {
+            localStorage.setItem('active_branch_id', domSelect);
+            return domSelect;
+        }
+
         const ctx = JSON.parse(localStorage.getItem('appContext') || '{}');
         if (ctx.current_branch_id) return ctx.current_branch_id;
-        if (ctx.branches && ctx.branches.length > 0 && (ctx.branches[0].id || ctx.branches[0].branch_id)) {
-            return ctx.branches[0].id || ctx.branches[0].branch_id;
+        if (ctx.branches && ctx.branches.length > 0) {
+            const first = ctx.branches[0].branch_id || ctx.branches[0].id;
+            if (first) {
+                localStorage.setItem('active_branch_id', first);
+                return first;
+            }
         }
     } catch {}
-    if (companyId) {
+
+    const cId = companyId || getCompanyId();
+    if (cId) {
         const { data: bList } = await supabase
             .from('branches')
             .select('branch_id')
-            .eq('company_id', companyId)
+            .eq('company_id', cId)
+            .neq('status', 'deleted')
+            .order('created_at', { ascending: true })
             .limit(1);
+
         if (bList && bList.length > 0 && bList[0].branch_id) {
             localStorage.setItem('active_branch_id', bList[0].branch_id);
             return bList[0].branch_id;
@@ -378,11 +394,11 @@ export function buildRowsFromConfig(companyId, branchId, invoiceType, config) {
     return rows;
 }
 
-// ── Supabase Load & Save Functions ──────────────────────────────────────────
-export async function loadInvoiceSettingsFromDB(invoiceType) {
+// ── Supabase Load & Save Functions (Direct JSONB Columns) ─────────────────────
+export async function loadInvoiceSettingsFromDB(invoiceType, targetBranchId = null) {
     const companyId = getCompanyId();
     if (!companyId) return getInvoiceConfig();
-    const branchId = await getBranchId(companyId);
+    const branchId = targetBranchId || await getBranchId(companyId);
 
     try {
         let query = supabase
@@ -394,37 +410,48 @@ export async function loadInvoiceSettingsFromDB(invoiceType) {
             query = query.eq('branch_id', branchId);
         }
 
-        // Always also include common settings if on a sub-invoice page so inherited branding cascades
-        if (invoiceType && invoiceType !== 'common') {
-            query = query.in('invoice_type', [invoiceType, 'common']);
-        } else if (invoiceType) {
-            query = query.eq('invoice_type', invoiceType);
-        }
-
-        const { data: rows, error } = await query;
+        const { data: row, error } = await query.maybeSingle();
         if (error) {
             console.warn('[invoice-state] Error loading invoice settings from DB:', error);
             return getInvoiceConfig();
         }
 
-        let cfg = getInvoiceConfig();
-        if (rows && rows.length > 0) {
-            // Apply common rows first
-            const commonRows = rows.filter(r => r.invoice_type === 'common');
-            if (commonRows.length > 0) {
-                cfg = mapRowsToConfig(commonRows, 'common', cfg);
+        // Start from pristine default template
+        let cfg = JSON.parse(JSON.stringify(DEFAULT_INVOICE_CONFIG));
+
+        if (row) {
+            // 1. Merge common_invoice settings
+            if (row.common_invoice && typeof row.common_invoice === 'object') {
+                const ci = row.common_invoice;
+                if (ci.prefix !== undefined && ci.prefix !== null) cfg.prefix = ci.prefix;
+                if (ci.startingNumber !== undefined && ci.startingNumber !== null) cfg.startingNumber = ci.startingNumber;
+                if (ci.header && typeof ci.header === 'object') Object.assign(cfg.header, ci.header);
+                if (ci.customer && typeof ci.customer === 'object') Object.assign(cfg.customer, ci.customer);
+                if (ci.transaction && typeof ci.transaction === 'object') Object.assign(cfg.transaction, ci.transaction);
+                if (ci.items && typeof ci.items === 'object') Object.assign(cfg.items, ci.items);
+                if (ci.totals && typeof ci.totals === 'object') Object.assign(cfg.totals, ci.totals);
+                if (ci.footer && typeof ci.footer === 'object') Object.assign(cfg.footer, ci.footer);
             }
-            // Apply specific type rows
-            if (invoiceType && invoiceType !== 'common') {
-                const specificRows = rows.filter(r => r.invoice_type === invoiceType);
-                if (specificRows.length > 0) {
-                    cfg = mapRowsToConfig(specificRows, invoiceType, cfg);
-                }
+
+            // 2. Merge booking_invoice settings
+            if (row.booking_invoice && typeof row.booking_invoice === 'object') {
+                Object.assign(cfg.booking, row.booking_invoice);
             }
-            saveInvoiceConfig(cfg);
-            if (branchId) {
-                localStorage.setItem(`bharathbots_invoice_config_${companyId}_${branchId}`, JSON.stringify(cfg));
+
+            // 3. Merge pos_invoice settings
+            if (row.pos_invoice && typeof row.pos_invoice === 'object') {
+                Object.assign(cfg.pos, row.pos_invoice);
             }
+
+            // 4. Merge membership_invoice settings
+            if (row.membership_invoice && typeof row.membership_invoice === 'object') {
+                Object.assign(cfg.membership, row.membership_invoice);
+            }
+        }
+
+        saveInvoiceConfig(cfg);
+        if (branchId) {
+            localStorage.setItem(`bharathbots_invoice_config_${companyId}_${branchId}`, JSON.stringify(cfg));
         }
         return cfg;
     } catch (err) {
@@ -433,27 +460,69 @@ export async function loadInvoiceSettingsFromDB(invoiceType) {
     }
 }
 
-export async function saveInvoiceSettingsToDB(invoiceType, config) {
+export async function saveInvoiceSettingsToDB(invoiceType, config, targetBranchId = null) {
     const companyId = getCompanyId();
     if (!companyId) throw new Error('No company ID found. Please log in.');
-    const branchId = await getBranchId(companyId);
+    const branchId = targetBranchId || await getBranchId(companyId);
     if (!branchId) throw new Error('No active branch found. Please select a branch.');
 
-    const rows = buildRowsFromConfig(companyId, branchId, invoiceType, config);
-    console.log(`[invoice-state] Saving ${rows.length} rows for type=${invoiceType}, branch=${branchId}`);
+    const cfg = config || getInvoiceConfig();
+    const now = new Date().toISOString();
 
-    // Upsert using the unique constraint on (company_id, branch_id, invoice_type, setting_key)
+    const payload = {
+        company_id: companyId,
+        branch_id: branchId,
+        updated_at: now
+    };
+
+    if (invoiceType === 'common') {
+        payload.common_invoice = {
+            prefix: cfg.prefix || 'INV-',
+            startingNumber: cfg.startingNumber || '1001',
+            header: cfg.header || {},
+            customer: cfg.customer || {},
+            transaction: cfg.transaction || {},
+            items: cfg.items || {},
+            totals: cfg.totals || {},
+            footer: cfg.footer || {}
+        };
+    } else if (invoiceType === 'booking') {
+        payload.booking_invoice = cfg.booking || {};
+    } else if (invoiceType === 'pos') {
+        payload.pos_invoice = cfg.pos || {};
+    } else if (invoiceType === 'membership') {
+        payload.membership_invoice = cfg.membership || {};
+    } else {
+        // Save all sub-sections
+        payload.common_invoice = {
+            prefix: cfg.prefix || 'INV-',
+            startingNumber: cfg.startingNumber || '1001',
+            header: cfg.header || {},
+            customer: cfg.customer || {},
+            transaction: cfg.transaction || {},
+            items: cfg.items || {},
+            totals: cfg.totals || {},
+            footer: cfg.footer || {}
+        };
+        payload.booking_invoice = cfg.booking || {};
+        payload.pos_invoice = cfg.pos || {};
+        payload.membership_invoice = cfg.membership || {};
+    }
+
+    console.log(`[invoice-state] Saving invoice settings (${invoiceType}) for company=${companyId}, branch=${branchId}`);
+
+    // Atomic single-row upsert via unique (company_id, branch_id)
     const { data, error } = await supabase
         .from('invoice_settings')
-        .upsert(rows, { onConflict: 'company_id,branch_id,invoice_type,setting_key' });
+        .upsert(payload, { onConflict: 'company_id,branch_id' });
 
     if (error) {
         console.error('[invoice-state] Supabase save error:', error);
         throw error;
     }
 
-    saveInvoiceConfig(config);
-    localStorage.setItem(`bharathbots_invoice_config_${companyId}_${branchId}`, JSON.stringify(config));
+    saveInvoiceConfig(cfg);
+    localStorage.setItem(`bharathbots_invoice_config_${companyId}_${branchId}`, JSON.stringify(cfg));
     return true;
 }
 
@@ -481,14 +550,15 @@ export async function loadBusinessPreviewData() {
         if (branchId) {
             const { data: bData } = await supabase
                 .from('branches')
-                .select('branch_name, address, phone')
+                .select('branch_name, branch_address, address_line_1, city, state, branch_phone')
                 .eq('branch_id', branchId)
                 .maybeSingle();
 
             if (bData) {
                 if (bData.branch_name) SAMPLE_COMPANY.branchName = bData.branch_name;
-                if (bData.address) SAMPLE_COMPANY.address = bData.address;
-                if (bData.phone) SAMPLE_COMPANY.phone = bData.phone;
+                const addr = bData.branch_address || [bData.address_line_1, bData.city, bData.state].filter(Boolean).join(', ');
+                if (addr) SAMPLE_COMPANY.address = addr;
+                if (bData.branch_phone) SAMPLE_COMPANY.phone = bData.branch_phone;
             }
         }
 
