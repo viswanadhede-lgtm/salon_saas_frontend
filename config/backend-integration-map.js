@@ -807,12 +807,27 @@
 //==================================================================================================================================
 
 // COMPANY SETTINGS
-// 1. BUSINESS SETTINGS (settings-business.html / scripts/settings-business.js)
-//    - Read: Direct query from `company_settings` (with fallback to `companies` if uninitialized)
-//    - Storage Buckets:
-//        * Logo: `company-logos` (${companyId}/logo_${timestamp}.${ext}, max 2MB)
-//        * Cover Image: `company-cover-images` (${companyId}/cover_${timestamp}.${ext}, max 5MB)
-//    - Save: Atomic Master RPC Function `save_business_settings(p_company_id uuid, p_data jsonb)`
-//        * Upserts into `company_settings` table (all business metadata, branding URLs, social handles).
-//        * Atomically synchronizes `companies` table (company_name, display_name, logo_url, business_category, updated_at).
-//        * Guaranteed single-transaction consistency across both tables.
+// 
+
+// 1. BUSINESS SETTINGS
+    
+       // Upon Clicking on Save changes - frontend will trigger this RPC FUNCTION - save_business_settings.
+          
+             // What This RPC FUNCTION -  save_business_settings does:
+                
+                 // This RPC will write into the company settings Table and sync with companies table.
+
+
+
+
+// 2. CONTACT SETTINGS
+
+        // Upon Clicking on Save changes - frontend will trigger this RPC FUNCTION - save_contact_settings.
+           
+              // What This RPC FUNCTION -  save_contact_settings does:
+                 
+                  // This RPC will write into the company_contacts Table and sync with companies table.
+
+      
+                  
+// 3.                  

@@ -166,107 +166,55 @@ window.saveContactSettings = async function () {
         const latNum = latVal !== '' && !isNaN(Number(latVal)) ? Number(latVal) : null;
         const lngNum = lngVal !== '' && !isNaN(Number(lngVal)) ? Number(lngVal) : null;
 
-        const now = new Date().toISOString();
+        // Atomically save contact settings & sync with companies table via RPC
+        const payload = {
+            primary_phone:        phone,
+            whatsapp_number:      getVal('contactWhatsApp') || null,
+            email:                email,
+            alternate_phone:      getVal('contactAlternatePhone') || null,
+            support_phone:        getVal('contactSupportPhone') || null,
+            support_email:        getVal('contactSupportEmail') || null,
 
-        const commonPayload = {
-            primary_phone:         phone,
-            whatsapp_number:       getVal('contactWhatsApp') || null,
-            email:                 email,
-            alternate_phone:       getVal('contactAlternatePhone') || null,
-            support_phone:         getVal('contactSupportPhone') || null,
-            support_email:         getVal('contactSupportEmail') || null,
+            address_line_1:       addressLine1,
+            address_line_2:       getVal('addressLine2') || null,
+            locality_area:        getVal('addressLocality') || null,
+            landmark:             getVal('addressLandmark') || null,
+            city:                 city,
+            district:             getVal('addressDistrict') || null,
+            state:                state,
+            pin_code:             pincode,
+            country:              country,
+            google_maps_url:      getVal('mapLink') || null,
+            latitude:             latNum,
+            longitude:            lngNum,
 
-            address_line_1:        addressLine1,
-            address_line_2:        getVal('addressLine2') || null,
-            locality_area:         getVal('addressLocality') || null,
-            landmark:              getVal('addressLandmark') || null,
-            city:                  city,
-            district:              getVal('addressDistrict') || null,
-            state:                 state,
-            pin_code:              pincode,
-            country:               country,
-            google_maps_url:       getVal('mapLink') || null,
-            latitude:              latNum,
-            longitude:             lngNum,
-
-            contact_person_name:   getVal('primaryContactName') || null,
-            contact_person_phone:  getVal('primaryContactPhone') || null,
-            contact_person_email:  getVal('primaryContactEmail') || null,
-
-            updated_at:            now
+            contact_person_name:  getVal('primaryContactName') || null,
+            contact_person_phone: getVal('primaryContactPhone') || null,
+            contact_person_email: getVal('primaryContactEmail') || null
         };
 
-        // Check if record already exists in company_contacts
-        const { data: existingRows, error: checkErr } = await supabase
-            .from('company_contacts')
-            .select('id')
-            .eq('company_id', companyId);
+        const { data: rpcRes, error: rpcErr } = await supabase.rpc('save_contact_settings', {
+            p_company_id: companyId,
+            p_data: payload
+        });
 
-        if (checkErr) {
-            console.warn('[settings-contact] Check existing error:', checkErr);
+        if (rpcErr) {
+            console.error('[settings-contact] save_contact_settings RPC error:', rpcErr);
+            throw new Error(rpcErr.message || 'Failed to save contact settings via RPC');
         }
 
-        const recordExists = Array.isArray(existingRows) && existingRows.length > 0;
-
-        if (recordExists) {
-            // Update existing record (preserve created_at)
-            const { error: updateErr } = await supabase
-                .from('company_contacts')
-                .eq('company_id', companyId)
-                .update(commonPayload);
-
-            if (updateErr) throw new Error(updateErr.message || 'Failed to update contact settings');
-        } else {
-            // Insert new record (write created_at and updated_at)
-            const insertPayload = {
-                company_id: companyId,
-                ...commonPayload,
-                created_at: now
-            };
-
-            const { error: insertErr } = await supabase
-                .from('company_contacts')
-                .insert(insertPayload);
-
-            if (insertErr) throw new Error(insertErr.message || 'Failed to create contact settings');
-        }
-
-        // Best-effort sync with companies table for cross-app consistency
-        try {
-            const compositeAddress = [
-                addressLine1,
-                getVal('addressLine2'),
-                getVal('addressLocality'),
-                getVal('addressLandmark') ? `Near ${getVal('addressLandmark')}` : '',
-                city,
-                state,
-                pincode
-            ].filter(Boolean).join(', ');
-
-            await supabase
-                .from('companies')
-                .eq('company_id', companyId)
-                .update({
-                    phone:                 phone,
-                    email:                 email,
-                    address:               compositeAddress || addressLine1,
-                    city:                  city,
-                    state:                 state,
-                    pincode:               pincode,
-                    country:               country,
-                    google_maps_url:       getVal('mapLink') || null,
-                    updated_at:            now
-                });
-        } catch (syncErr) {
-            console.warn('[settings-contact] companies table sync note:', syncErr);
+        if (rpcRes && rpcRes.success === false) {
+            throw new Error(rpcRes.message || 'Failed to save contact settings');
         }
 
         // Update cached appContext in localStorage
         try {
             const appContext = JSON.parse(localStorage.getItem('appContext') || '{}');
             if (appContext.company) {
-                appContext.company.phone = phone;
-                appContext.company.email = email;
+                appContext.company.owner_phone = phone;
+                appContext.company.owner_email = email;
+                const contactName = getVal('primaryContactName');
+                if (contactName) appContext.company.owner_name = contactName;
                 localStorage.setItem('appContext', JSON.stringify(appContext));
             }
         } catch (e) {}
@@ -277,6 +225,7 @@ window.saveContactSettings = async function () {
 
         // Reload data to reflect clean saved state
         await loadContactData();
+
 
     } catch (err) {
         console.error('[settings-contact] save error:', err);
