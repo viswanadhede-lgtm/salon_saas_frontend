@@ -830,4 +830,17 @@
 
       
                   
-// 3.                  
+// 3. TAX SETTINGS
+
+         // Direct supabase insert - NO RPC FUNCTION.
+
+
+
+//  4. BUSINESS HOURS SETTINGS
+
+         // Direct supabase upsert - No RPC FUNCITON 
+
+
+//  5. PAYMENTS SETTINGS
+
+         // 

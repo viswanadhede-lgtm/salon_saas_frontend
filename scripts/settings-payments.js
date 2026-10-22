@@ -1,7 +1,9 @@
 import { supabase } from '../lib/supabase.js';
 
 let currentQrUrl = null;
+let initialQrUrl = null;
 let selectedQrFile = null;
+let currentBranchId = null;
 
 // ── Resolve Company ID ───────────────────────────────────────────────────────
 export function getCompanyId() {
@@ -11,6 +13,47 @@ export function getCompanyId() {
         if (ctx.company?.id) return ctx.company.id;
     } catch (e) {}
     return localStorage.getItem('company_id') || null;
+}
+
+// ── Resolve Branch ID ────────────────────────────────────────────────────────
+export async function getBranchId() {
+    try {
+        const saved = localStorage.getItem('active_branch_id');
+        if (saved && saved !== 'all') return saved;
+
+        const domSelect = document.getElementById('branchSelect')?.value;
+        if (domSelect && domSelect !== 'all') {
+            localStorage.setItem('active_branch_id', domSelect);
+            return domSelect;
+        }
+
+        const ctx = JSON.parse(localStorage.getItem('appContext') || '{}');
+        if (ctx.branches && ctx.branches.length > 0) {
+            const first = ctx.branches[0].branch_id || ctx.branches[0].id;
+            if (first) {
+                localStorage.setItem('active_branch_id', first);
+                return first;
+            }
+        }
+    } catch (e) {}
+
+    const companyId = getCompanyId();
+    if (companyId) {
+        const { data } = await supabase
+            .from('branches')
+            .select('branch_id, branch_name')
+            .eq('company_id', companyId)
+            .neq('status', 'deleted')
+            .order('created_at', { ascending: true })
+            .limit(1);
+
+        if (data && data.length > 0) {
+            const bId = data[0].branch_id;
+            localStorage.setItem('active_branch_id', bId);
+            return bId;
+        }
+    }
+    return null;
 }
 
 // ── Helper: UI Setters & Getters ─────────────────────────────────────────────
@@ -67,8 +110,19 @@ export function updateQrPreview(url) {
     if (typeof feather !== 'undefined') feather.replace();
 }
 
+// ── Helper: Extract storage path from public URL ─────────────────────────────
+function extractStoragePath(url, bucketName = 'upi-qr-codes') {
+    if (!url || typeof url !== 'string') return null;
+    const marker = `/${bucketName}/`;
+    const idx = url.indexOf(marker);
+    if (idx !== -1) {
+        return url.substring(idx + marker.length).split('?')[0];
+    }
+    return null;
+}
+
 // ── Load Payment Settings ───────────────────────────────────────────────────
-export async function loadPaymentSettings() {
+export async function loadPaymentSettings(branchIdOverride = null) {
     let companyId = getCompanyId();
     if (!companyId) {
         await new Promise(r => setTimeout(r, 150));
@@ -80,11 +134,26 @@ export async function loadPaymentSettings() {
         return;
     }
 
+    const branchId = branchIdOverride || await getBranchId();
+    if (!branchId) {
+        console.warn('[settings-payments] No active branch_id found.');
+        return;
+    }
+
+    currentBranchId = branchId;
+
+    // Sync header branchSelect if present and different
+    const branchSelect = document.getElementById('branchSelect');
+    if (branchSelect && branchSelect.value !== branchId) {
+        branchSelect.value = branchId;
+    }
+
     try {
         const { data, error } = await supabase
             .from('business_payment_settings')
             .select('*')
             .eq('company_id', companyId)
+            .eq('branch_id', branchId)
             .maybeSingle();
 
         if (error) {
@@ -102,6 +171,7 @@ export async function loadPaymentSettings() {
             setVal('defaultPaymentMethod', data.default_payment_method || 'cash');
 
             currentQrUrl = data.upi_qr_code_url || null;
+            initialQrUrl = currentQrUrl;
             selectedQrFile = null;
             updateQrPreview(currentQrUrl);
         } else {
@@ -114,12 +184,15 @@ export async function loadPaymentSettings() {
             setVal('paymentNote', '');
             setVal('defaultPaymentMethod', 'cash');
             currentQrUrl = null;
+            initialQrUrl = null;
             selectedQrFile = null;
             updateQrPreview(null);
         }
 
-        // Cache for offline/quick reads in pos / checkout modules
+        // Cache for POS / checkout screens
         const cachePayload = {
+            company_id: companyId,
+            branch_id: branchId,
             cash_enabled: getChecked('pmCash', true),
             upi_enabled: getChecked('pmUpi', true),
             cards_enabled: getChecked('pmCard', true),
@@ -129,7 +202,8 @@ export async function loadPaymentSettings() {
             payment_note: getVal('paymentNote'),
             default_payment_method: getVal('defaultPaymentMethod') || 'cash'
         };
-        localStorage.setItem('salon_payment_settings_' + companyId, JSON.stringify(cachePayload));
+        localStorage.setItem(`salon_payment_settings_${companyId}_${branchId}`, JSON.stringify(cachePayload));
+        localStorage.setItem(`salon_payment_settings_${companyId}`, JSON.stringify(cachePayload));
 
     } catch (err) {
         console.error('[settings-payments] Unexpected load error:', err);
@@ -144,6 +218,12 @@ export async function savePaymentSettings() {
         return;
     }
 
+    const branchId = currentBranchId || await getBranchId();
+    if (!branchId) {
+        showToast('No active branch selected. Please select a branch first.', 'error');
+        return;
+    }
+
     const btn = document.getElementById('btnSave');
     const originalHtml = btn ? btn.innerHTML : 'Save Changes';
     if (btn) {
@@ -155,44 +235,58 @@ export async function savePaymentSettings() {
     try {
         let qrUrl = currentQrUrl;
 
-        // 1. Upload new QR file if selected
+        // 1. Upload new QR file to 'upi-qr-codes' bucket if selected
         if (selectedQrFile) {
-            const ext = selectedQrFile.name.split('.').pop() || 'png';
-            const filePath = `payments/${companyId}/qr_${Date.now()}.${ext}`;
+            const ext = selectedQrFile.name.split('.').pop()?.toLowerCase() || 'png';
+            const filePath = `${companyId}/${branchId}/qr_${Date.now()}.${ext}`;
 
             const { error: uploadErr } = await supabase.storage
-                .from('company-assets')
-                .upload(filePath, selectedQrFile, { upsert: true });
+                .from('upi-qr-codes')
+                .upload(filePath, selectedQrFile, {
+                    cacheControl: '3600',
+                    upsert: true
+                });
 
             if (uploadErr) {
-                console.warn('[settings-payments] QR storage upload error:', uploadErr);
-                showToast('Failed to upload QR code image. Saving remaining settings...', 'error');
-            } else {
-                const { data: urlData } = supabase.storage
-                    .from('company-assets')
-                    .getPublicUrl(filePath);
+                console.error('[settings-payments] QR storage upload error:', uploadErr);
+                throw new Error('Failed to upload QR code image: ' + (uploadErr.message || 'Storage error'));
+            }
 
-                if (urlData?.publicUrl) {
-                    qrUrl = urlData.publicUrl;
-                    currentQrUrl = qrUrl;
+            const { data: urlData } = supabase.storage
+                .from('upi-qr-codes')
+                .getPublicUrl(filePath);
+
+            if (!urlData?.publicUrl) {
+                throw new Error('Failed to get public URL for uploaded QR code.');
+            }
+
+            qrUrl = urlData.publicUrl;
+            currentQrUrl = qrUrl;
+
+            // Delete old QR image from storage if replaced
+            if (initialQrUrl && initialQrUrl !== qrUrl) {
+                const oldPath = extractStoragePath(initialQrUrl, 'upi-qr-codes');
+                if (oldPath && oldPath !== filePath) {
+                    supabase.storage.from('upi-qr-codes').remove([oldPath]).catch(err => {
+                        console.warn('[settings-payments] Could not delete old QR code file:', err);
+                    });
                 }
+            }
+        } else if (initialQrUrl && !currentQrUrl) {
+            // QR was explicitly removed by the user
+            const oldPath = extractStoragePath(initialQrUrl, 'upi-qr-codes');
+            if (oldPath) {
+                supabase.storage.from('upi-qr-codes').remove([oldPath]).catch(err => {
+                    console.warn('[settings-payments] Could not delete removed QR code file:', err);
+                });
             }
         }
 
-        // 2. Check if row exists in business_payment_settings
-        const { data: existingRows, error: checkErr } = await supabase
-            .from('business_payment_settings')
-            .select('company_id')
-            .eq('company_id', companyId);
-
-        if (checkErr) {
-            console.warn('[settings-payments] Check existing error:', checkErr);
-        }
-
-        const recordExists = Array.isArray(existingRows) && existingRows.length > 0;
+        // 2. Single Atomic Upsert using composite unique constraint (company_id, branch_id)
         const now = new Date().toISOString();
-
-        const commonPayload = {
+        const payload = {
+            company_id: companyId,
+            branch_id: branchId,
             cash_enabled: getChecked('pmCash', true),
             upi_enabled: getChecked('pmUpi', true),
             cards_enabled: getChecked('pmCard', true),
@@ -204,38 +298,25 @@ export async function savePaymentSettings() {
             updated_at: now
         };
 
-        if (recordExists) {
-            // Update existing record (preserve created_at)
-            const { error: updateErr } = await supabase
-                .from('business_payment_settings')
-                .eq('company_id', companyId)
-                .update(commonPayload);
+        const { error: upsertErr } = await supabase
+            .from('business_payment_settings')
+            .upsert(payload, { onConflict: 'company_id,branch_id' });
 
-            if (updateErr) throw new Error(updateErr.message || 'Failed to update payment settings');
-        } else {
-            // Insert new record (write created_at and updated_at)
-            const insertPayload = {
-                company_id: companyId,
-                ...commonPayload,
-                created_at: now
-            };
-
-            const { error: insertErr } = await supabase
-                .from('business_payment_settings')
-                .insert(insertPayload);
-
-            if (insertErr) throw new Error(insertErr.message || 'Failed to insert payment settings');
+        if (upsertErr) {
+            throw new Error(upsertErr.message || 'Failed to save payment settings');
         }
 
-        // Update local cache for POS / checkout screens
-        localStorage.setItem('salon_payment_settings_' + companyId, JSON.stringify(commonPayload));
+        // 3. Update local caches for POS & billing checkout screens
+        localStorage.setItem(`salon_payment_settings_${companyId}_${branchId}`, JSON.stringify(payload));
+        localStorage.setItem(`salon_payment_settings_${companyId}`, JSON.stringify(payload));
         if (qrUrl) {
-            localStorage.setItem('salon_upi_qr_' + companyId, qrUrl);
+            localStorage.setItem(`salon_upi_qr_${companyId}_${branchId}`, qrUrl);
         } else {
-            localStorage.removeItem('salon_upi_qr_' + companyId);
+            localStorage.removeItem(`salon_upi_qr_${companyId}_${branchId}`);
         }
 
         selectedQrFile = null;
+        initialQrUrl = currentQrUrl;
         showToast('Payment settings saved successfully!', 'success');
 
         // Reset dirty state
@@ -260,7 +341,7 @@ export async function savePaymentSettings() {
 export function handleQrFileSelect(file) {
     if (!file) return;
     if (!file.type.startsWith('image/')) {
-        showToast('Please select a valid image file.', 'error');
+        showToast('Please select a valid image file (PNG, JPG, WEBP).', 'error');
         return;
     }
     if (file.size > 5 * 1024 * 1024) {
@@ -290,15 +371,44 @@ export function removeQrCode() {
     }
 }
 
+export function cancelPaymentSettings() {
+    if (typeof window.isDirty !== 'undefined') {
+        window.isDirty = false;
+    }
+    document.getElementById('savebar')?.classList.remove('visible');
+    loadPaymentSettings(currentBranchId);
+}
+
+// ── Branch Switcher Listener ────────────────────────────────────────────────
+function initBranchSwitcher() {
+    const select = document.getElementById('branchSelect');
+    if (!select) return;
+
+    select.addEventListener('change', (e) => {
+        const selectedBranch = e.target.value;
+        if (selectedBranch && selectedBranch !== 'all' && selectedBranch !== currentBranchId) {
+            localStorage.setItem('active_branch_id', selectedBranch);
+            loadPaymentSettings(selectedBranch);
+        }
+    });
+
+    // Also listen to storage events if branch changed in another tab
+    window.addEventListener('storage', (e) => {
+        if (e.key === 'active_branch_id' && e.newValue && e.newValue !== currentBranchId) {
+            loadPaymentSettings(e.newValue);
+        }
+    });
+}
+
 // ── Global Window Exports ────────────────────────────────────────────────────
 window.loadPaymentSettings = loadPaymentSettings;
 window.savePaymentSettings = savePaymentSettings;
+window.cancelPaymentSettings = cancelPaymentSettings;
 window.removeQrCode = removeQrCode;
 window.showToast = showToast;
 
-
 // ── Auto-initialize ─────────────────────────────────────────────────────────
-document.addEventListener('DOMContentLoaded', () => {
+function setupEventListeners() {
     const qrInput = document.getElementById('qrFileInput');
     if (qrInput) {
         qrInput.addEventListener('change', (e) => {
@@ -306,6 +416,15 @@ document.addEventListener('DOMContentLoaded', () => {
             if (file) handleQrFileSelect(file);
         });
     }
+    initBranchSwitcher();
+}
 
+if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', async () => {
+        setupEventListeners();
+        await loadPaymentSettings();
+    });
+} else {
+    setupEventListeners();
     loadPaymentSettings();
-});
+}
