@@ -13,51 +13,58 @@ import { supabase } from '../../lib/supabase.js';
 const CATEGORIES = {
     financial: {
         title: 'Financial',
-        subtitle: 'Detailed breakdown of your business finances',
+        subtitle: 'Executive P&L, incoming revenue streams, payments, operating costs, discounts and refunds',
         icon: 'dollar-sign',
         colorClass: 'bg-blue',
         subReports: [
             {
+                type: 'fin-overview',
+                label: 'Financial Overview',
+                desc: 'Executive P&L summary, gross revenue, net cash flow and operating margin',
+                icon: 'bar-chart-2',
+                colorClass: 'bg-emerald'
+            },
+            {
                 type: 'fin-revenue',
-                label: 'Revenue',
-                desc: 'Total income from all sources over time',
+                label: 'Revenue Streams',
+                desc: 'Income breakdown from bookings, product sales and memberships',
                 icon: 'trending-up',
                 colorClass: 'bg-blue'
             },
             {
                 type: 'fin-payments',
-                label: 'Payments',
-                desc: 'Breakdown by payment method and channel',
+                label: 'Payments & Collections',
+                desc: 'Reconcile cash in drawer, UPI, cards, and digital settlements',
                 icon: 'credit-card',
                 colorClass: 'bg-indigo'
             },
             {
+                type: 'fin-expenses',
+                label: 'Operating Expenses',
+                desc: 'All salon expenditures, staff wages, supplies and utility bills',
+                icon: 'shopping-cart',
+                colorClass: 'bg-orange'
+            },
+            {
+                type: 'fin-discounts',
+                label: 'Discounts & Deductions',
+                desc: 'Track margin erosion across coupon codes, offers and member perks',
+                icon: 'tag',
+                colorClass: 'bg-violet'
+            },
+            {
                 type: 'fin-refunds',
-                label: 'Refunds',
-                desc: 'Refunded transactions and reasons',
+                label: 'Refunds & Returns',
+                desc: 'Audit booking cancellations, POS product returns and membership refunds',
                 icon: 'rotate-ccw',
                 colorClass: 'bg-rose'
             },
             {
                 type: 'fin-pending-dues',
-                label: 'Pending Dues',
-                desc: 'Unpaid balances and outstanding dues',
+                label: 'Pending Dues & Receivables',
+                desc: 'Track uncollected balances, customer aging dues and recovery',
                 icon: 'clock',
                 colorClass: 'bg-amber'
-            },
-            {
-                type: 'fin-discounts',
-                label: 'Discounts',
-                desc: 'Total discounts given and their impact',
-                icon: 'tag',
-                colorClass: 'bg-violet'
-            },
-            {
-                type: 'fin-expenses',
-                label: 'Expenses',
-                desc: 'All business expenditures by category',
-                icon: 'shopping-cart',
-                colorClass: 'bg-orange'
             }
         ]
     },

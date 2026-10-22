@@ -791,9 +791,9 @@
 
 // PRODUCT SALES REPORT -  One Master RPC Function - get_product_sales_report
 
-// MEMBERSHIP SUBSCRIPTIONS REPORT - One Master RPC Function - public.get_memberships_report.
+// MEMBERSHIP SUBSCRIPTIONS REPORT - One Master RPC Function - get_memberships_report.
 
-// FINANCIAL REPORT -
+// FINANCIAL REPORT - one Master RPC Function - get_financial_report
 
 // CUSTOMERS REPORT - One Master RPC Function - get_customers_report
 
