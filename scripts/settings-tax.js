@@ -129,10 +129,10 @@ window.saveTaxSettings = async function () {
     }
 
     try {
-        const now = new Date().toISOString();
         const rateNum = defaultTaxRate !== '' && !isNaN(Number(defaultTaxRate)) ? Number(defaultTaxRate) : null;
 
-        const commonPayload = {
+        const payload = {
+            company_id:                   companyId,
             business_registration_number: regNumber || null,
             gstin:                        gstin || null,
             pan:                          pan || null,
@@ -141,58 +141,14 @@ window.saveTaxSettings = async function () {
             tax_label:                    taxLabel,
             prices_include_tax:           taxInclusive,
             show_tax_breakdown:           showTaxBreakdown,
-            updated_at:                   now
+            updated_at:                   new Date().toISOString()
         };
 
-        // Check if record exists in company_tax_settings
-        const { data: existingRows, error: checkErr } = await supabase
+        const { error: upsertErr } = await supabase
             .from('company_tax_settings')
-            .select('id')
-            .eq('company_id', companyId);
+            .upsert(payload, { onConflict: 'company_id' });
 
-        if (checkErr) {
-            console.warn('[settings-tax] check existing error:', checkErr);
-        }
-
-        const recordExists = Array.isArray(existingRows) && existingRows.length > 0;
-
-        if (recordExists) {
-            // Update existing record (preserve created_at)
-            const { error: updateErr } = await supabase
-                .from('company_tax_settings')
-                .eq('company_id', companyId)
-                .update(commonPayload);
-
-            if (updateErr) throw new Error(updateErr.message || 'Failed to update tax settings');
-        } else {
-            // Insert new record (write created_at & updated_at)
-            const insertPayload = {
-                company_id: companyId,
-                ...commonPayload,
-                created_at: now
-            };
-
-            const { error: insertErr } = await supabase
-                .from('company_tax_settings')
-                .insert(insertPayload);
-
-            if (insertErr) throw new Error(insertErr.message || 'Failed to create tax settings');
-        }
-
-        // Best-effort sync to companies table for backwards compatibility
-        try {
-            await supabase
-                .from('companies')
-                .eq('company_id', companyId)
-                .update({
-                    business_registration_number: regNumber || null,
-                    tax_id:                       gstin || null,
-                    pan:                          pan || null,
-                    updated_at:                   now
-                });
-        } catch (syncErr) {
-            console.warn('[settings-tax] companies sync note:', syncErr);
-        }
+        if (upsertErr) throw new Error(upsertErr.message || 'Failed to save tax settings');
 
         showToast('Tax settings saved successfully!', 'success');
         window.isDirty = false;
@@ -211,6 +167,7 @@ window.saveTaxSettings = async function () {
             if (typeof feather !== 'undefined') feather.replace();
         }
     }
+
 };
 
 window.loadTaxData = loadTaxData;
