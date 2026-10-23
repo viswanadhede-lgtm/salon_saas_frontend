@@ -53,6 +53,79 @@
         return null;
     }
 
+    // ── Helper: Snooze (Mute Toast Popups) State ──
+    function getSnoozeStorageKey() {
+        const userId = getUserId() || 'guest';
+        return `notif_snooze_toasts_${userId}`;
+    }
+
+    function isToastsMuted() {
+        try {
+            return localStorage.getItem(getSnoozeStorageKey()) === 'true';
+        } catch {
+            return false;
+        }
+    }
+
+    function setToastsMuted(muted) {
+        try {
+            localStorage.setItem(getSnoozeStorageKey(), muted ? 'true' : 'false');
+        } catch {}
+    }
+
+    async function syncUserPreferences() {
+        const userId = getUserId();
+        const client = window.supabase;
+        if (!userId || !client) return;
+
+        try {
+            const { data, error } = await client
+                .from('user_preferences')
+                .select('notifications')
+                .eq('user_id', userId)
+                .maybeSingle();
+
+            if (!error && data && typeof data.notifications === 'boolean') {
+                // In user_preferences, notifications: false means toasts are snoozed/muted
+                const isMuted = data.notifications === false;
+                setToastsMuted(isMuted);
+                const dropdown = document.getElementById('notificationDropdown');
+                if (dropdown && dropdown.classList.contains('show')) {
+                    renderDropdown();
+                }
+            }
+        } catch (err) {
+            console.warn('[NotificationManager] user_preferences sync warning:', err);
+        }
+    }
+
+    async function toggleSnooze() {
+        const currentlyMuted = isToastsMuted();
+        const newMuted = !currentlyMuted;
+        setToastsMuted(newMuted);
+
+        const userId = getUserId();
+        const companyId = getCompanyId();
+        const branchId = getBranchId();
+        const client = window.supabase;
+
+        if (userId && client) {
+            try {
+                await client
+                    .from('user_preferences')
+                    .upsert({
+                        user_id: userId,
+                        company_id: companyId || null,
+                        branch_id: branchId || null,
+                        notifications: !newMuted, // true if normal/active, false if snoozed
+                        updated_at: new Date().toISOString()
+                    }, { onConflict: 'user_id' });
+            } catch (err) {
+                console.warn('[NotificationManager] Could not persist snooze to user_preferences:', err);
+            }
+        }
+    }
+
     // ── Helper: Notification Preferences ──
     function getPrefs() {
         const companyId = getCompanyId();
@@ -298,6 +371,34 @@
                 padding: 2px 7px;
                 border-radius: 10px;
             }
+            .notif-snooze-btn {
+                display: inline-flex;
+                align-items: center;
+                justify-content: center;
+                width: 24px;
+                height: 24px;
+                border-radius: 6px;
+                border: 1px solid transparent;
+                background: transparent;
+                color: #94a3b8;
+                cursor: pointer;
+                padding: 0;
+                transition: all 0.15s ease;
+                flex-shrink: 0;
+            }
+            .notif-snooze-btn:hover {
+                background: #f1f5f9;
+                color: #334155;
+            }
+            .notif-snooze-btn.snoozed {
+                background: #fef3c7;
+                border-color: #fde68a;
+                color: #d97706;
+            }
+            .notif-snooze-btn.snoozed:hover {
+                background: #fde68a;
+                color: #b45309;
+            }
             .notif-actions {
                 display: flex;
                 align-items: center;
@@ -474,6 +575,9 @@
      * Show in-app popup toast notification.
      */
     function showPopupNotification(title, message, category) {
+        // If toasts are snoozed/muted, suppress the popup banner
+        if (isToastsMuted()) return;
+
         let container = document.getElementById('notif-popup-container');
         if (!container) {
             container = document.createElement('div');
@@ -608,11 +712,18 @@
 
         const history = getHistory();
         const unreadCount = history.filter(n => !n.read).length;
+        const isMuted = isToastsMuted();
 
         dropdown.innerHTML = `
             <div class="notif-header">
                 <div class="notif-title-wrap">
                     <h3 class="notif-title">Notifications</h3>
+                    <button type="button" class="notif-snooze-btn ${isMuted ? 'snoozed' : ''}" id="notifBtnSnooze" title="${isMuted ? 'Toasts snoozed (Click to unmute)' : 'Snooze toast alerts'}">
+                        ${isMuted
+                            ? `<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M13.73 21a2 2 0 0 1-3.46 0"/><path d="M18.63 13A17.89 17.89 0 0 1 18 8"/><path d="M6.26 6.26A5.86 5.86 0 0 0 6 8c0 7-3 9-3 9h14"/><path d="M18 8a6 6 0 0 0-9.33-5"/><line x1="1" y1="1" x2="23" y2="23"/></svg>`
+                            : `<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>`
+                        }
+                    </button>
                     ${unreadCount > 0 ? `<span class="notif-unread-pill">${unreadCount} new</span>` : ''}
                 </div>
                 <div class="notif-actions">
@@ -661,6 +772,13 @@
                 </a>
             </div>
         `;
+
+        // Wire: Snooze (Mute Popups)
+        dropdown.querySelector('#notifBtnSnooze')?.addEventListener('click', async (e) => {
+            e.stopPropagation();
+            await toggleSnooze();
+            renderDropdown();
+        });
 
         // Wire: Mark all read
         dropdown.querySelector('#notifBtnMarkAllRead')?.addEventListener('click', async (e) => {
@@ -794,6 +912,9 @@
         }
 
         updateBellBadge();
+
+        // Sync user preference for snooze from Supabase
+        syncUserPreferences();
 
         // Fetch fresh notifications from Supabase
         fetchNotificationsFromSupabase(20);
@@ -1105,6 +1226,7 @@
     document.addEventListener('app-shell:ready', () => {
         initBellDropdown();
         refreshUnreadCount();
+        syncUserPreferences();
     });
 
     // Also run after a short delay in case header elements were injected dynamically
@@ -1120,4 +1242,6 @@
     window.notifyMarketing = notifyMarketing;
     window.initNotificationBell = initBellDropdown;
     window.refreshNotificationBadge = refreshUnreadCount;
+    window.isNotificationToastsMuted = isToastsMuted;
+    window.toggleNotificationSnooze = toggleSnooze;
 })();
