@@ -224,7 +224,7 @@ async function fetchNotifications() {
         renderList();
         renderPagination();
         updateResultsInfo();
-        refreshUnreadBadgeCount();
+        refreshCategoryCounts();
 
     } catch (err) {
         console.error('[NotificationCenter] Unexpected fetch error:', err);
@@ -236,32 +236,87 @@ async function fetchNotifications() {
     }
 }
 
-// ── Refresh Unread Counter for Tab Badges ──
-async function refreshUnreadBadgeCount() {
+// ── Refresh Counts for All Category Tabs ──
+async function refreshCategoryCounts() {
     const companyId = getCompanyId();
     if (!companyId) return;
 
     try {
-        const { count, error } = await supabase
+        let countQuery = supabase
             .from('notifications')
-            .select('id', { count: 'exact' })
-            .eq('company_id', companyId)
-            .eq('is_read', false)
-            .limit(1);
+            .select('category, is_read')
+            .eq('company_id', companyId);
 
-        if (!error && typeof count === 'number') {
-            totalUnread = count;
-            if (badgeUnreadEl) {
-                if (totalUnread > 0) {
-                    badgeUnreadEl.textContent = totalUnread > 99 ? '99+' : totalUnread;
-                    badgeUnreadEl.style.display = 'inline-flex';
-                } else {
-                    badgeUnreadEl.style.display = 'none';
-                }
-            }
+        const branchId = getBranchId();
+        if (branchId) {
+            countQuery = countQuery.or(`branch_id.is.null,branch_id.eq.${branchId}`);
         }
+
+        if (dateRange === 'today') {
+            const todayStart = new Date();
+            todayStart.setHours(0, 0, 0, 0);
+            countQuery = countQuery.gte('created_at', todayStart.toISOString());
+        } else if (dateRange === '7') {
+            countQuery = countQuery.gte('created_at', new Date(Date.now() - 7 * 86400000).toISOString());
+        } else if (dateRange === '30') {
+            countQuery = countQuery.gte('created_at', new Date(Date.now() - 30 * 86400000).toISOString());
+        } else if (dateRange === '90') {
+            countQuery = countQuery.gte('created_at', new Date(Date.now() - 90 * 86400000).toISOString());
+        }
+
+        const { data, error } = await countQuery;
+
+        let rows = Array.isArray(data) ? data : [];
+
+        // Fallback to local history if query fails or returns empty while local storage has records
+        if (error || rows.length === 0) {
+            try {
+                const local = JSON.parse(localStorage.getItem(`notification_history_${companyId}`) || '[]');
+                if (local.length > rows.length) {
+                    rows = local.map(x => ({ category: x.category, is_read: !!x.read }));
+                }
+            } catch {}
+        }
+
+        const counts = {
+            all: rows.length,
+            unread: rows.filter(r => !r.is_read).length,
+            bookings: rows.filter(r => (r.category || '').toLowerCase() === 'bookings').length,
+            customers: rows.filter(r => (r.category || '').toLowerCase() === 'customers').length,
+            staff: rows.filter(r => (r.category || '').toLowerCase() === 'staff').length,
+            sales: rows.filter(r => (r.category || '').toLowerCase() === 'sales').length,
+            pos: rows.filter(r => (r.category || '').toLowerCase() === 'pos').length,
+            payments: rows.filter(r => (r.category || '').toLowerCase() === 'payments').length,
+            marketing: rows.filter(r => (r.category || '').toLowerCase() === 'marketing').length,
+            system: rows.filter(r => (r.category || '').toLowerCase() === 'system').length,
+        };
+
+        totalUnread = counts.unread;
+
+        updateBadgeEl('ncBadgeAll', counts.all);
+        updateBadgeEl('ncBadgeBookings', counts.bookings);
+        updateBadgeEl('ncBadgeCustomers', counts.customers);
+        updateBadgeEl('ncBadgeStaff', counts.staff);
+        updateBadgeEl('ncBadgeSales', counts.sales);
+        updateBadgeEl('ncBadgePos', counts.pos);
+        updateBadgeEl('ncBadgePayments', counts.payments);
+        updateBadgeEl('ncBadgeMarketing', counts.marketing);
+        updateBadgeEl('ncBadgeSystem', counts.system);
+        updateBadgeEl('ncBadgeUnread', counts.unread);
+
     } catch (e) {
-        console.warn('[NotificationCenter] Could not refresh unread count:', e);
+        console.warn('[NotificationCenter] Could not refresh category counts:', e);
+    }
+}
+
+function updateBadgeEl(id, count) {
+    const el = document.getElementById(id);
+    if (!el) return;
+    if (typeof count === 'number' && count > 0) {
+        el.textContent = count > 99 ? '99+' : count;
+        el.style.display = 'inline-flex';
+    } else {
+        el.style.display = 'none';
     }
 }
 
@@ -391,8 +446,8 @@ async function handleItemClick(item, rowEl) {
                 .update({ is_read: true, read_at: new Date().toISOString() })
                 .eq('id', item.id)
                 .then(() => {
-                    // Refresh unread count in header & badge
-                    refreshUnreadBadgeCount();
+                    // Refresh category counts & header bell badge
+                    refreshCategoryCounts();
                     if (window.NotificationManager?.refreshUnreadCount) {
                         window.NotificationManager.refreshUnreadCount();
                     }
@@ -668,7 +723,7 @@ function initEventListeners() {
 function init() {
     initEventListeners();
     fetchNotifications();
-    refreshUnreadBadgeCount();
+    refreshCategoryCounts();
 }
 
 if (document.readyState === 'loading') {

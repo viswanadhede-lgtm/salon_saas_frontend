@@ -127,11 +127,33 @@
             height: 18px;
             padding: 0 5px;
             border-radius: 9px;
-            background: #3b82f6;
-            color: #fff;
+            background: #e2e8f0;
+            color: #475569;
             font-size: 0.7rem;
             font-weight: 700;
             line-height: 1;
+            margin-left: 2px;
+            transition: all 0.15s ease;
+        }
+
+        .nc-tab:hover .nc-tab-badge {
+            background: #cbd5e1;
+            color: #0f172a;
+        }
+
+        .nc-tab.active .nc-tab-badge {
+            background: #2563eb;
+            color: #ffffff;
+        }
+
+        .nc-tab-badge.badge-unread {
+            background: #ef4444;
+            color: #ffffff;
+        }
+
+        .nc-tab.active .nc-tab-badge.badge-unread {
+            background: #ef4444;
+            color: #ffffff;
         }
 
         /* ─── Toolbar ─────────────────────────────────────────────────── */
@@ -482,31 +504,39 @@
                 </button>
                 <button class="nc-tab" data-category="bookings" type="button">
                     <i data-feather="calendar"></i> Bookings
+                    <span class="nc-tab-badge" id="ncBadgeBookings" style="display:none;"></span>
                 </button>
                 <button class="nc-tab" data-category="customers" type="button">
                     <i data-feather="users"></i> Customers
+                    <span class="nc-tab-badge" id="ncBadgeCustomers" style="display:none;"></span>
                 </button>
                 <button class="nc-tab" data-category="staff" type="button">
                     <i data-feather="user-check"></i> Staff
+                    <span class="nc-tab-badge" id="ncBadgeStaff" style="display:none;"></span>
                 </button>
                 <button class="nc-tab" data-category="sales" type="button">
                     <i data-feather="shopping-cart"></i> Sales
+                    <span class="nc-tab-badge" id="ncBadgeSales" style="display:none;"></span>
                 </button>
                 <button class="nc-tab" data-category="pos" type="button">
                     <i data-feather="monitor"></i> POS
+                    <span class="nc-tab-badge" id="ncBadgePos" style="display:none;"></span>
                 </button>
                 <button class="nc-tab" data-category="payments" type="button">
                     <i data-feather="credit-card"></i> Payments
+                    <span class="nc-tab-badge" id="ncBadgePayments" style="display:none;"></span>
                 </button>
                 <button class="nc-tab" data-category="marketing" type="button">
                     <i data-feather="tag"></i> Marketing
+                    <span class="nc-tab-badge" id="ncBadgeMarketing" style="display:none;"></span>
                 </button>
                 <button class="nc-tab" data-category="system" type="button">
                     <i data-feather="cpu"></i> System
+                    <span class="nc-tab-badge" id="ncBadgeSystem" style="display:none;"></span>
                 </button>
                 <button class="nc-tab" data-category="unread" type="button" id="ncTabUnread">
                     Unread only
-                    <span class="nc-tab-badge" id="ncBadgeUnread" style="display:none;"></span>
+                    <span class="nc-tab-badge badge-unread" id="ncBadgeUnread" style="display:none;"></span>
                 </button>
             </div>
 
