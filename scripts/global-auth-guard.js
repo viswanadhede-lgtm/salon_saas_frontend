@@ -392,9 +392,13 @@ export async function runGlobalAuthGuard() {
             const userFeatures    = JSON.parse(cachedFeatures);
             const userSubFeatures = JSON.parse(localStorage.getItem('userSubFeatures') || '[]');
 
-            // Ensure branch_id is synchronized with active_branch_id
+            // Ensure branch_id and user_id are synchronized
             if (!localStorage.getItem('branch_id') && localStorage.getItem('active_branch_id')) {
                 localStorage.setItem('branch_id', localStorage.getItem('active_branch_id'));
+            }
+            if (!localStorage.getItem('user_id')) {
+                const parsedCtx = JSON.parse(cachedContext || '{}');
+                if (parsedCtx.user?.user_id) localStorage.setItem('user_id', parsedCtx.user.user_id);
             }
 
             // Verify current page is still allowed per cached permissions
@@ -634,6 +638,7 @@ export async function runGlobalAuthGuard() {
         if (!localStorage.getItem('company_id')) localStorage.setItem('company_id', resolvedCompanyId);
         if (!localStorage.getItem('active_branch_id')) localStorage.setItem('active_branch_id', resolvedBranchId);
         if (!localStorage.getItem('branch_id')) localStorage.setItem('branch_id', resolvedBranchId);
+        if (user_id) localStorage.setItem('user_id', user_id);
 
         // 13. Start background token refresh + hourly heartbeat
         setupTokenRefresh();

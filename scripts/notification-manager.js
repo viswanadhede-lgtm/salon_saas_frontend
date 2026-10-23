@@ -30,6 +30,29 @@
         return localStorage.getItem('active_branch_id') || localStorage.getItem('branch_id') || null;
     }
 
+    // ── Helper: User ID ──
+    function getUserId() {
+        try {
+            const ctx = JSON.parse(localStorage.getItem('appContext') || '{}');
+            if (ctx.user?.user_id) return ctx.user.user_id;
+            if (ctx.user?.id) return ctx.user.id;
+        } catch {}
+        const directId = localStorage.getItem('user_id');
+        if (directId) return directId;
+        try {
+            const token = localStorage.getItem('token');
+            if (token && token.includes('.')) {
+                const payload = JSON.parse(atob(token.split('.')[1]));
+                if (payload.sub) return payload.sub;
+            }
+        } catch {}
+        try {
+            const sbUser = window.supabase?.auth?.user?.() || window.supabase?.auth?.session?.()?.user;
+            if (sbUser?.id) return sbUser.id;
+        } catch {}
+        return null;
+    }
+
     // ── Helper: Notification Preferences ──
     function getPrefs() {
         const companyId = getCompanyId();
@@ -84,7 +107,7 @@
         try {
             const { data, error } = await client
                 .from('notifications')
-                .select('id, category, event_key, title, message, link, metadata, is_read, created_at')
+                .select('id, user_id, category, event_key, title, message, link, metadata, is_read, created_at')
                 .eq('company_id', companyId)
                 .order('created_at', { ascending: false })
                 .limit(limit);
@@ -92,6 +115,7 @@
             if (!error && Array.isArray(data)) {
                 const history = data.map(row => ({
                     id: row.id,
+                    userId: row.user_id,
                     category: row.category,
                     eventKey: row.event_key,
                     title: row.title,
@@ -102,6 +126,7 @@
                 }));
                 saveHistory(history);
                 updateBellBadge();
+                refreshUnreadCount();
                 const dropdown = document.getElementById('notificationDropdown');
                 if (dropdown && dropdown.classList.contains('show')) {
                     renderDropdown();
@@ -823,8 +848,10 @@
         showPopupNotification(title, message, category);
 
         // 2. Add to localStorage history (optimistic UI)
+        const resolvedUserId = opts.userId || opts.user_id || getUserId() || null;
         const localItem = {
             id: null,
+            userId: resolvedUserId,
             category,
             eventKey,
             title,
@@ -860,6 +887,7 @@
             client.from('notifications').insert({
                 company_id: companyId,
                 branch_id: getBranchId(),
+                user_id: resolvedUserId,
                 category: category,
                 event_key: eventKey,
                 title: title,
@@ -868,6 +896,9 @@
                 metadata: metadata,
                 is_read: false
             }).then(({ data, error }) => {
+                if (error) {
+                    console.warn('[NotificationManager] Supabase insert error:', error.message || error);
+                }
                 if (!error && data && data[0]?.id) {
                     localItem.id = data[0].id;
                     const hist = getHistory();
