@@ -50,6 +50,13 @@ if (document.readyState === 'loading') {
     fetchCustomers();
 }
 
+// -- BRANCH SWITCH LISTENER --
+window.addEventListener('branch:changed', async (e) => {
+    console.log('[Customers] Branch changed to:', e.detail?.branchName, e.detail?.branchId);
+    currentPage = 1;
+    await fetchCustomers();
+});
+
 // -- SEARCH LISTENER (debounced 300ms, server-side) --
 if (customerSearchInput) {
     customerSearchInput.addEventListener('input', debounce((e) => {

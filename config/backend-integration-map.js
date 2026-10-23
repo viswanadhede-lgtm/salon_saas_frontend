@@ -926,9 +926,17 @@
 // GLOBAL HEADER.
 //=======================================================================================================================================================================================
 
-// 1. NOTIFICATION BELL:
+// 1. NOTIFICATION BELL: 
 
-     // 
+     // Frontend Directly writes to the NOTIFICATIONS Table.
 
+
+// 2. BRANCH SELECTOR:
+
+     // When a user logged in the frontend will read from the USERS Table and it will populate the branch.
+     // If the user has permission to toggle the branches in the roles & Permissions table via subfeature ...then the user can switch btwn the branches.
+
+
+// 3. 
 
 

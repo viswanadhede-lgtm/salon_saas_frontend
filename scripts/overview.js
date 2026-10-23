@@ -119,7 +119,7 @@ function getDateRange(selectorVal) {
 // BRANCH SELECTOR
 // =============================================================================
 async function initBranchSelector() {
-    const branchSelect = document.getElementById('branchSelect');
+    const branchSelect = document.getElementById('overviewBranchSelect') || document.getElementById('branchSelect');
     if (!branchSelect) return;
     try {
         const companyId = getCompanyId();
@@ -620,7 +620,7 @@ async function loadOverviewData() {
 
         // Read selected values from UI filters
         const dateRangeEl  = document.getElementById('overviewDateRange');
-        const branchEl     = document.getElementById('branchSelect');
+        const branchEl     = document.getElementById('overviewBranchSelect') || document.getElementById('branchSelect');
         const selectorVal  = dateRangeEl ? dateRangeEl.value : 'oct1_16';
         const activeBranch = branchEl    ? branchEl.value    : (getBranchId() || null);
 
@@ -702,9 +702,17 @@ async function initOverviewPage() {
 
     // Re-fire on filter changes
     const dateRangeEl = document.getElementById('overviewDateRange');
-    const branchEl    = document.getElementById('branchSelect');
+    const branchEl    = document.getElementById('overviewBranchSelect') || document.getElementById('branchSelect');
     if (dateRangeEl) dateRangeEl.addEventListener('change', loadOverviewData);
     if (branchEl)    branchEl.addEventListener('change', loadOverviewData);
+
+    // Listen for global header branch switch
+    window.addEventListener('branch:changed', (e) => {
+        if (branchEl && e.detail?.branchId) {
+            branchEl.value = e.detail.branchId;
+        }
+        loadOverviewData();
+    });
 }
 
 // DOM-ready guard

@@ -49,6 +49,16 @@ function initPos() {
         fetchProducts();
         fetchCustomers();
         if (typeof updateCartUI === 'function') updateCartUI();
+
+        // Listen for global branch switch
+        window.addEventListener('branch:changed', async (e) => {
+            console.log('[POS] Branch changed to:', e.detail?.branchName, e.detail?.branchId);
+            cart = [];
+            selectedCustomer = null;
+            if (typeof updateCartUI === 'function') updateCartUI();
+            await fetchProducts();
+            await fetchCustomers();
+        });
     }
 }
 

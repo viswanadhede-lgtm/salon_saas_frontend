@@ -705,6 +705,11 @@ function initEventListeners() {
         fetchNotifications();
     });
 
+    window.addEventListener('branch:changed', () => {
+        currentPage = 1;
+        fetchNotifications();
+    });
+
     // 7. Global Notifications Changed Event
     window.addEventListener('notifications:changed', () => {
         fetchNotifications();

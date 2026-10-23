@@ -141,6 +141,8 @@ document.addEventListener('DOMContentLoaded', async () => {
         branchSelect.addEventListener('change', () => fetchPaymentHistory());
     }
     document.addEventListener('branchChanged', () => fetchPaymentHistory());
+    document.addEventListener('branch:changed', () => fetchPaymentHistory());
+    window.addEventListener('branch:changed', () => fetchPaymentHistory());
 
     // Hydration retry safeguard: in case auth-loader / app-shell fills company/branch slightly after DOMContentLoaded
     setTimeout(() => {

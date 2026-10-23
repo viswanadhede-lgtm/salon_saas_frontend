@@ -86,6 +86,11 @@ function setupEventListeners() {
         }
     });
 
+    window.addEventListener('branch:changed', async () => {
+        await fetchStaff();
+        await fetchSchedules(renderTable);
+    });
+
     window.addEventListener('storage', async (e) => {
         if (e.key === 'active_branch_id') {
             await fetchStaff();

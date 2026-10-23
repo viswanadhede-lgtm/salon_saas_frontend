@@ -932,6 +932,11 @@ function setupExpensesEvents() {
             loadAllExpenseData();
         }
     });
+
+    window.addEventListener('branch:changed', () => {
+        currentPage = 1;
+        loadAllExpenseData();
+    });
 }
 
 // ─── Module Initialization ────────────────────────────────────────────────────

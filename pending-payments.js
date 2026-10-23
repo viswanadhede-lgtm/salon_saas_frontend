@@ -380,6 +380,12 @@ document.addEventListener('DOMContentLoaded', async () => {
             await fetchPayments();
         });
     }
+    window.addEventListener('branch:changed', async () => {
+        await fetchPayments();
+    });
+    document.addEventListener('branch:changed', async () => {
+        await fetchPayments();
+    });
 
     // ─── TOAST ─────────────────────────────────────────────────────────────
     function ppShowToast(msg, isError = false) {

@@ -404,6 +404,48 @@ html:has(.dashboard-body) {
     padding-right: 0.5rem;
 }
 
+.branch-switcher.branch-locked {
+    background-color: #f8fafc;
+    border-color: var(--shell-border, #e2e8f0);
+    cursor: default;
+}
+
+.branch-switcher.branch-locked:hover {
+    background-color: #f8fafc;
+    border-color: var(--shell-border, #e2e8f0);
+}
+
+.branch-switcher.branch-locked .branch-select {
+    cursor: default;
+    color: var(--shell-text-muted, #475569);
+    pointer-events: none;
+}
+
+.branch-lock-badge {
+    display: none;
+    align-items: center;
+    gap: 4px;
+    font-size: 0.7rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    padding: 2px 7px;
+    border-radius: 999px;
+    background: #e2e8f0;
+    color: #475569;
+    border: 1px solid #cbd5e1;
+    line-height: 1.2;
+}
+
+.branch-lock-badge .lock-icon {
+    width: 10px;
+    height: 10px;
+}
+
+.branch-switcher.branch-locked .branch-lock-badge {
+    display: inline-flex;
+}
+
 /* Date Chip */
 .date-chip {
     display: inline-flex;

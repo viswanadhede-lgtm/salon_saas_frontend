@@ -392,13 +392,21 @@ export async function runGlobalAuthGuard() {
             const userFeatures    = JSON.parse(cachedFeatures);
             const userSubFeatures = JSON.parse(localStorage.getItem('userSubFeatures') || '[]');
 
-            // Ensure branch_id and user_id are synchronized
-            if (!localStorage.getItem('branch_id') && localStorage.getItem('active_branch_id')) {
+            const parsedCtx = JSON.parse(cachedContext || '{}');
+
+            // If user cannot switch branches, enforce their assigned branch
+            if (parsedCtx.user?.can_switch_branch === false && parsedCtx.user?.assigned_branch_id) {
+                localStorage.setItem('active_branch_id', parsedCtx.user.assigned_branch_id);
+                localStorage.setItem('branch_id', parsedCtx.user.assigned_branch_id);
+            } else if (!localStorage.getItem('branch_id') && localStorage.getItem('active_branch_id')) {
                 localStorage.setItem('branch_id', localStorage.getItem('active_branch_id'));
             }
-            if (!localStorage.getItem('user_id')) {
-                const parsedCtx = JSON.parse(cachedContext || '{}');
-                if (parsedCtx.user?.user_id) localStorage.setItem('user_id', parsedCtx.user.user_id);
+
+            if (!localStorage.getItem('user_id') && parsedCtx.user?.user_id) {
+                localStorage.setItem('user_id', parsedCtx.user.user_id);
+            }
+            if (!localStorage.getItem('role_id') && parsedCtx.user?.role_id) {
+                localStorage.setItem('role_id', parsedCtx.user.role_id);
             }
 
             // Verify current page is still allowed per cached permissions
@@ -506,7 +514,6 @@ export async function runGlobalAuthGuard() {
         }
 
         const resolvedCompanyId = userRow.company_id || company_id;
-        const resolvedBranchId  = branch_id  || userRow.branch_id;
 
         // 3. Load company (for identity and branding, not authoritative subscription state)
         const { data: compRows } = await supabase.from('companies')
@@ -565,6 +572,9 @@ export async function runGlobalAuthGuard() {
             userSubFeatures = keys.filter(k => !allMainFeatures.includes(k));
         }
 
+        const isOwner = (userRow.role_name || '').toLowerCase() === 'owner';
+        const canSwitchBranch = hasAllPerms || isOwner || userSubFeatures.includes('branch_switch') || userFeatures.includes('branch_management');
+
         // 8. Check if current page's feature is allowed
         function hasFeatureAccess(featList, fKey) {
             if (!fKey) return true;
@@ -596,11 +606,50 @@ export async function runGlobalAuthGuard() {
             .eq('user_id', user_id);
         const profile = profileRows?.[0];
 
+        // 9b. Load user preferences (branch_id, notifications)
+        let userPref = null;
+        try {
+            const { data: prefRows } = await supabase.from('user_preferences')
+                .select('branch_id, notifications')
+                .eq('user_id', user_id);
+            userPref = prefRows?.[0] || null;
+        } catch (prefErr) {
+            console.warn('[Auth Guard] Could not load user preferences:', prefErr);
+        }
+
         // 10. Load branches for branch switcher
         const { data: branches } = await supabase.from('branches')
             .select('branch_id, branch_name')
             .eq('company_id', resolvedCompanyId)
             .eq('status', 'active');
+
+        const activeBranches = (branches || []).map(b => ({
+            id: b.branch_id,
+            branch_id: b.branch_id,
+            branch_name: b.branch_name
+        }));
+
+        // Authoritative active branch resolution
+        let resolvedBranchId = null;
+        if (canSwitchBranch) {
+            const savedBranch = localStorage.getItem('active_branch_id');
+            const isSavedValid = activeBranches.some(b => b.branch_id === savedBranch);
+            const isPrefValid = activeBranches.some(b => b.branch_id === userPref?.branch_id);
+            const isAssignedValid = activeBranches.some(b => b.branch_id === userRow.branch_id);
+
+            if (isSavedValid) {
+                resolvedBranchId = savedBranch;
+            } else if (isPrefValid) {
+                resolvedBranchId = userPref.branch_id;
+            } else if (isAssignedValid) {
+                resolvedBranchId = userRow.branch_id;
+            } else {
+                resolvedBranchId = activeBranches[0]?.branch_id || null;
+            }
+        } else {
+            // Non-switching roles are strictly locked to their assigned branch
+            resolvedBranchId = userRow.branch_id || activeBranches[0]?.branch_id || null;
+        }
 
         // 11. Build and cache app context
         const appContext = {
@@ -609,7 +658,10 @@ export async function runGlobalAuthGuard() {
                 name:          userRow.name,
                 email:         userRow.email,
                 phone:         userRow.phone,
+                role_id:       userRow.role_id,
                 role_name:     userRow.role_name,
+                assigned_branch_id: userRow.branch_id || null,
+                can_switch_branch:  canSwitchBranch,
                 first_name:    profile?.first_name || '',
                 last_name:     profile?.last_name  || '',
                 joined_on:     profile?.joined_on  || '',
@@ -626,7 +678,7 @@ export async function runGlobalAuthGuard() {
                 subscription_status: subscription?.status || 'inactive',
                 subscription_type:   subscription?.billing_cycle || 'monthly'
             },
-            branches: (branches || []).map(b => ({ id: b.branch_id, branch_id: b.branch_id, branch_name: b.branch_name })),
+            branches: activeBranches,
             current_branch_id: resolvedBranchId
         };
 
@@ -636,8 +688,9 @@ export async function runGlobalAuthGuard() {
         localStorage.setItem('appContext',        JSON.stringify(appContext));
         localStorage.setItem('authCacheTimestamp', Date.now().toString()); // ← cache TTL clock
         if (!localStorage.getItem('company_id')) localStorage.setItem('company_id', resolvedCompanyId);
-        if (!localStorage.getItem('active_branch_id')) localStorage.setItem('active_branch_id', resolvedBranchId);
-        if (!localStorage.getItem('branch_id')) localStorage.setItem('branch_id', resolvedBranchId);
+        localStorage.setItem('active_branch_id', resolvedBranchId);
+        localStorage.setItem('branch_id', resolvedBranchId);
+        if (userRow.role_id) localStorage.setItem('role_id', userRow.role_id);
         if (user_id) localStorage.setItem('user_id', user_id);
 
         // 13. Start background token refresh + hourly heartbeat
@@ -661,6 +714,14 @@ export async function runGlobalAuthGuard() {
 
 document.addEventListener('DOMContentLoaded', runGlobalAuthGuard);
 window.populateGlobalHeader = populateGlobalHeader;
+
+// ─── Global Authoritative Branch Helper ───────────────────────────────────────
+window.getActiveBranchId = function() {
+    const fromDom = document.getElementById('branchSelect')?.value;
+    const fromStorage = localStorage.getItem('active_branch_id') || localStorage.getItem('branch_id');
+    const val = (fromDom && fromDom !== 'branch_1' && fromDom !== 'branch_2' && fromDom !== 'all') ? fromDom : fromStorage;
+    return (val && val !== 'branch_1' && val !== 'branch_2' && val !== 'all') ? val : null;
+};
 
 // ─── Global Header Hydration ──────────────────────────────────────────────────
 export function populateGlobalHeader() {
@@ -759,22 +820,87 @@ export function populateGlobalHeader() {
         }
 
         // Branch dropdown
-        if (branchSelect && Array.isArray(context.branches) && context.branches.length > 0) {
-            branchSelect.innerHTML = '';
-            context.branches.forEach(b => {
-                const opt = document.createElement('option');
-                opt.value       = b.branch_id || b.id;
-                opt.textContent = b.branch_name || b.name;
-                branchSelect.appendChild(opt);
-            });
+        if (branchSelect) {
+            const branchSwitcher = document.getElementById('headerBranchSwitcher') || branchSelect.closest('.branch-switcher');
+            const canSwitch = context.user?.can_switch_branch !== false;
+            const branchList = Array.isArray(context.branches) ? context.branches : [];
 
-            const saved = localStorage.getItem('active_branch_id');
-            branchSelect.value = saved || context.current_branch_id || context.branches[0].branch_id;
+            if (!canSwitch) {
+                // Single-branch locked staff
+                const assignedId = context.user?.assigned_branch_id || context.current_branch_id || localStorage.getItem('active_branch_id');
+                const assignedBranch = branchList.find(b => (b.branch_id || b.id) === assignedId) || {
+                    branch_id: assignedId,
+                    branch_name: 'Assigned Branch'
+                };
 
-            branchSelect.addEventListener('change', e => {
-                localStorage.setItem('active_branch_id', e.target.value);
-                localStorage.setItem('branch_id', e.target.value);
-            });
+                branchSelect.innerHTML = `<option value="${assignedBranch.branch_id || assignedBranch.id}" selected>${assignedBranch.branch_name || assignedBranch.name || 'Assigned Branch'}</option>`;
+                branchSelect.disabled = true;
+                if (branchSwitcher) {
+                    branchSwitcher.classList.add('branch-locked');
+                    branchSwitcher.setAttribute('title', 'Branch assigned to your account (Read-only for your role)');
+                }
+            } else if (branchList.length > 0) {
+                // Multi-branch authorized user
+                branchSelect.disabled = false;
+                if (branchSwitcher) {
+                    branchSwitcher.classList.remove('branch-locked');
+                    branchSwitcher.removeAttribute('title');
+                }
+
+                branchSelect.innerHTML = '';
+                branchList.forEach(b => {
+                    const opt = document.createElement('option');
+                    opt.value       = b.branch_id || b.id;
+                    opt.textContent = b.branch_name || b.name;
+                    branchSelect.appendChild(opt);
+                });
+
+                const currentActive = localStorage.getItem('active_branch_id') || context.current_branch_id || branchList[0].branch_id;
+                branchSelect.value = currentActive;
+
+                // Idempotently attach listener
+                if (!branchSelect.dataset.branchListenerBound) {
+                    branchSelect.dataset.branchListenerBound = '1';
+                    branchSelect.addEventListener('change', async (e) => {
+                        const newBranchId = e.target.value;
+                        if (!newBranchId || newBranchId === 'branch_1' || newBranchId === 'branch_2') return;
+
+                        localStorage.setItem('active_branch_id', newBranchId);
+                        localStorage.setItem('branch_id', newBranchId);
+
+                        // Update appContext in local cache
+                        try {
+                            const ctx = JSON.parse(localStorage.getItem('appContext') || '{}');
+                            ctx.current_branch_id = newBranchId;
+                            localStorage.setItem('appContext', JSON.stringify(ctx));
+                        } catch (_) {}
+
+                        // Background sync to user_preferences
+                        const userId = localStorage.getItem('user_id');
+                        const compId = localStorage.getItem('company_id');
+                        if (userId && supabase) {
+                            supabase.from('user_preferences')
+                                .upsert({
+                                    user_id: userId,
+                                    company_id: compId || null,
+                                    branch_id: newBranchId,
+                                    updated_at: new Date().toISOString()
+                                }, { onConflict: 'user_id' })
+                                .then(({ error }) => {
+                                    if (error) console.warn('[Auth Guard] Failed to persist branch preference:', error);
+                                });
+                        }
+
+                        const selectedBranchName = branchSelect.selectedOptions[0]?.textContent || '';
+                        console.log('[Branch Switcher] Switched to branch:', selectedBranchName, newBranchId);
+
+                        // Dispatch standard events for all pages and components
+                        const evtPayload = { detail: { branchId: newBranchId, branchName: selectedBranchName } };
+                        window.dispatchEvent(new CustomEvent('branch:changed', evtPayload));
+                        document.dispatchEvent(new CustomEvent('branch:changed', evtPayload));
+                    });
+                }
+            }
         }
 
         // Date chip — populate with today's date (e.g. "Saturday, 20 Sep 2026")

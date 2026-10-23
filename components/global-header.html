@@ -6,12 +6,14 @@
         </button>
 
         <!-- Branch Switcher -->
-        <div class="branch-switcher">
-            <i data-feather="map-pin" class="branch-icon"></i>
-            <select id="branchSelect" class="branch-select">
-                <option value="branch_1">Downtown Branch</option>
-                <option value="branch_2">Uptown Spa</option>
+        <div class="branch-switcher" id="headerBranchSwitcher">
+            <i data-feather="map-pin" class="branch-icon" id="headerBranchIcon"></i>
+            <select id="branchSelect" class="branch-select" aria-label="Select salon branch">
+                <option value="" disabled selected>Loading branch...</option>
             </select>
+            <span class="branch-lock-badge" id="branchLockBadge" title="Assigned branch for your account">
+                <i data-feather="lock" class="lock-icon"></i> Assigned
+            </span>
         </div>
         <!-- Date Chip -->
         <div class="date-chip" id="headerDateChip">

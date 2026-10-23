@@ -125,6 +125,7 @@ export const SUB_FEATURES = {
     BRANCH_CREATE: 'branch_create',
     BRANCH_UPDATE: 'branch_update',
     BRANCH_DELETE: 'branch_delete',
+    BRANCH_SWITCH: 'branch_switch',
     BRANCH_CREATE_BOOKING: 'branch_create_booking',
 
     // ---- SETTINGS / USERS ----
@@ -275,6 +276,7 @@ export const SUB_FEATURES_MAP = {
         { key: SUB_FEATURES.COMPANY_CREATE_BOOKING, label: 'Create Booking (Quick Action)' }
     ],
     [FEATURES.BRANCH_MANAGEMENT]: [
+        { key: SUB_FEATURES.BRANCH_SWITCH, label: 'Switch Branches (Multi-Branch Access)' },
         { key: SUB_FEATURES.BRANCH_CREATE, label: 'Add Branch' },
         { key: SUB_FEATURES.BRANCH_UPDATE, label: 'Edit Branch' },
         { key: SUB_FEATURES.BRANCH_DELETE, label: 'Delete Branch' },

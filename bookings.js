@@ -110,6 +110,12 @@ export async function initBookings() {
         await fetchBookings();
     });
 
+    // Listen for global branch change event
+    window.addEventListener('branch:changed', async (e) => {
+        console.log('[Bookings] Branch changed event received:', e.detail?.branchName, e.detail?.branchId);
+        await fetchBookings();
+    });
+
     await fetchBookings();
 
     // Catch any delayed branch or auth context population
