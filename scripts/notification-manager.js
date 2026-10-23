@@ -152,7 +152,8 @@
     // ── Helper: Notification History in LocalStorage & Supabase ──
     function getHistoryKey() {
         const companyId = getCompanyId() || 'default';
-        return `notification_history_${companyId}`;
+        const branchId  = getBranchId()  || 'all';
+        return `notification_history_${companyId}_${branchId}`;
     }
 
     function getHistory() {
@@ -174,28 +175,34 @@
      */
     async function fetchNotificationsFromSupabase(limit = 20) {
         const companyId = getCompanyId();
+        const branchId  = getBranchId();
         const client = window.supabase;
         if (!companyId || !client) return;
 
         try {
-            const { data, error } = await client
+            let query = client
                 .from('notifications')
                 .select('id, user_id, category, event_key, title, message, link, metadata, is_read, created_at')
                 .eq('company_id', companyId)
                 .order('created_at', { ascending: false })
                 .limit(limit);
 
+            // Scope to active branch if available
+            if (branchId) query = query.eq('branch_id', branchId);
+
+            const { data, error } = await query;
+
             if (!error && Array.isArray(data)) {
                 const history = data.map(row => ({
-                    id: row.id,
-                    userId: row.user_id,
+                    id:       row.id,
+                    userId:   row.user_id,
                     category: row.category,
                     eventKey: row.event_key,
-                    title: row.title,
-                    message: row.message,
-                    link: row.link,
+                    title:    row.title,
+                    message:  row.message,
+                    link:     row.link,
                     timestamp: row.created_at,
-                    read: row.is_read === true
+                    read:     row.is_read === true
                 }));
                 saveHistory(history);
                 updateBellBadge();
@@ -691,6 +698,7 @@
      */
     async function refreshUnreadCount() {
         const companyId = getCompanyId();
+        const branchId  = getBranchId();
         const client = window.supabase;
         if (!companyId || !client) {
             updateBellBadge();
@@ -698,11 +706,16 @@
         }
 
         try {
-            const { count, error } = await client
+            let query = client
                 .from('notifications')
                 .select('id', { count: 'exact', head: true })
                 .eq('company_id', companyId)
                 .eq('is_read', false);
+
+            // Scope to active branch if available
+            if (branchId) query = query.eq('branch_id', branchId);
+
+            const { count, error } = await query;
 
             if (!error && typeof count === 'number') {
                 renderBadge(count);
@@ -973,6 +986,17 @@
     document.addEventListener('keydown', (e) => {
         if (e.key === 'Escape') closeDropdown();
     });
+
+    // ── Refresh on branch switch ──────────────────────────────────────────────
+    // When the user switches branches, clear the dropdown and re-fetch so
+    // the bell only ever shows the currently active branch's notifications.
+    window.addEventListener('branch:changed', () => {
+        closeDropdown();
+        updateBellBadge();           // reflects new branch's local cache (likely empty = 0)
+        refreshUnreadCount();        // fetch authoritative count from Supabase for new branch
+        fetchNotificationsFromSupabase(20); // load new branch's notification history
+    });
+
 
     // ── Main Notify Event Handler ──
     function notifyEvent(category, eventKey, opts = {}) {

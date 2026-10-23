@@ -9,6 +9,36 @@ import { openSettingsModal, handleSettingsSave } from './settings.js';
 
 let pendingProfilePhoto = null;
 
+// ── Date formatting helpers (mirrors global-auth-guard.js) ───────────────────
+function formatProfileDate(isoStr) {
+    if (!isoStr) return '';
+    try {
+        const d = new Date(isoStr);
+        if (isNaN(d.getTime())) return '';
+        return d.toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' });
+    } catch { return ''; }
+}
+
+function formatLastLogin(isoStr) {
+    if (!isoStr) return 'Never';
+    try {
+        const d = new Date(isoStr);
+        if (isNaN(d.getTime())) return 'Never';
+        const now = new Date();
+        const diffMs   = now - d;
+        const diffMins = Math.floor(diffMs / 60000);
+        const diffHrs  = Math.floor(diffMs / 3600000);
+        const diffDays = Math.floor(diffMs / 86400000);
+        if (diffMins < 2)   return 'Just now';
+        if (diffMins < 60)  return `${diffMins} mins ago`;
+        if (diffHrs  < 2)   return '1 hour ago';
+        if (diffHrs  < 24)  return `${diffHrs} hours ago`;
+        if (diffDays === 1) return 'Yesterday';
+        if (diffDays < 7)   return `${diffDays} days ago`;
+        return d.toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' });
+    } catch { return 'Unknown'; }
+}
+
 /**
  * 4. Header User Profile Dropdown
  */
@@ -575,8 +605,10 @@ export async function handleProfileSave() {
             first_name:               firstName,
             last_name:                lastName,
             phone:                    phone,
+            email:                    context.user?.email || '',   // keep email in sync
             emergency_contact_name:   emergencyName,
-            emergency_contact_number: emergencyPhone
+            emergency_contact_number: emergencyPhone,
+            updated_at:               new Date().toISOString()
         };
         if (newPhotoUrl) profilePayload.profile_photo = newPhotoUrl;
 
@@ -648,6 +680,7 @@ export function hydrateProfileFromContext() {
         const email     = document.getElementById('profileEmail');
         const role      = document.getElementById('profileRole');
         const joined    = document.getElementById('profileJoined');
+        const lastLogin = document.getElementById('profileLastLogin');
         const branch    = document.getElementById('profileBranch');
         const emName    = document.getElementById('profileEmergencyName');
         const emPhone   = document.getElementById('profileEmergencyPhone');
@@ -656,16 +689,20 @@ export function hydrateProfileFromContext() {
         if (!avatarUrl && user.name) {
             avatarUrl = `https://ui-avatars.com/api/?name=${encodeURIComponent(user.name)}&background=1E3A8A&color=fff`;
         }
-        if (avatarImg && avatarUrl) avatarImg.src = avatarUrl;
-        if (nameDisp && user.name) nameDisp.textContent = user.name;
-        if (roleDisp && user.role_name) roleDisp.textContent = user.role_name;
-        if (fName && user.first_name) fName.value = user.first_name;
-        if (lName && user.last_name) lName.value = user.last_name;
-        if (phone && user.phone) phone.value = user.phone;
-        if (email && user.email) email.value = user.email;
-        if (role && user.role_name) role.value = user.role_name;
-        if (joined && user.joined_on) joined.value = user.joined_on;
-        if (emName && user.emergency_name) emName.value = user.emergency_name;
+        if (avatarImg  && avatarUrl)    avatarImg.src         = avatarUrl;
+        if (nameDisp   && user.name)    nameDisp.textContent  = user.name;
+        if (roleDisp   && user.role_name) roleDisp.textContent = user.role_name;
+        if (fName      && user.first_name) fName.value         = user.first_name;
+        if (lName      && user.last_name)  lName.value         = user.last_name;
+        if (phone      && user.phone)   phone.value            = user.phone;
+        if (email      && user.email)   email.value            = user.email;
+        if (role       && user.role_name) role.value           = user.role_name;
+
+        // Formatted dates
+        if (joined)    joined.value    = formatProfileDate(user.joined_on) || 'N/A';
+        if (lastLogin) lastLogin.value = formatLastLogin(user.last_login_at);
+
+        if (emName  && user.emergency_name)  emName.value  = user.emergency_name;
         if (emPhone && user.emergency_phone) emPhone.value = user.emergency_phone;
         if (branch) {
             const currentBranch = (ctx.branches || []).find(b => (b.branch_id || b.id) === (ctx.current_branch_id || localStorage.getItem('active_branch_id')));

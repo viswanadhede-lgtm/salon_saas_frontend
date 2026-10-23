@@ -102,20 +102,41 @@ export function initQuickActions() {
 
 /**
  * 6. Date Chip Population
+ * Renders the current date and auto-refreshes at midnight so long sessions
+ * (overnight shifts, open tabs) always show the correct date.
  */
+let _dateChipMidnightTimer = null;
+
 export function populateDateChip() {
-    const chip = document.getElementById('headerDateChip');
+    const chip   = document.getElementById('headerDateChip');
     if (!chip) return;
     const textEl = chip.querySelector('.date-chip-text');
     if (!textEl) return;
 
+    // Write today's date
     const now = new Date();
     textEl.textContent = now.toLocaleDateString('en-GB', {
         weekday: 'long',
-        day: 'numeric',
-        month: 'short',
-        year: 'numeric'
+        day:     'numeric',
+        month:   'short',
+        year:    'numeric'
     });
+
+    // Schedule a refresh at the next midnight (only once per session)
+    if (_dateChipMidnightTimer) return;
+
+    const msUntilMidnight = (() => {
+        const tomorrow = new Date(now);
+        tomorrow.setDate(tomorrow.getDate() + 1);
+        tomorrow.setHours(0, 0, 0, 0);
+        return tomorrow - now;
+    })();
+
+    _dateChipMidnightTimer = setTimeout(() => {
+        _dateChipMidnightTimer = null;
+        populateDateChip();                         // refresh for the new day
+        setInterval(() => populateDateChip(), 24 * 60 * 60 * 1000); // daily thereafter
+    }, msUntilMidnight);
 }
 
 /**

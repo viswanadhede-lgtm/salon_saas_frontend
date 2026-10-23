@@ -937,6 +937,41 @@
      // If the user has permission to toggle the branches in the roles & Permissions table via subfeature ...then the user can switch btwn the branches.
 
 
-// 3. 
+// 3. NEW BOOKING Qucik Action Button:
+
+     // Functioning well
+
+
+
+// 4. PROFILE DROPDOWN:
+
+     // writes to PROFILES TABLE.
+  
+
+
+// 5. PLAN BADGE:
+
+      // Reading from the TABLE - SUBSCRIPTIONS TABLE.
+
+
+
+// 6. DAY & TIME CHIP:
+
+      // Read only - Auto Refreshes at 00:00:00 every night .
+
+
+
+// ===============================================================================================================================================================
+//
+// ===============================================================================================================================================================
+
+
+
+
+
+
+
+
+
 
 

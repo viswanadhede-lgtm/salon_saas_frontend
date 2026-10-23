@@ -498,7 +498,7 @@ export async function runGlobalAuthGuard() {
         const branch_id   = localStorage.getItem('active_branch_id');
 
         const { data: userRows } = await supabase.from('users')
-            .select('company_id, branch_id, role_id, role_name, name, email, phone, status')
+            .select('company_id, branch_id, role_id, role_name, name, email, phone, status, last_login_at, created_at')
             .eq('user_id', user_id);
 
         const userRow = userRows?.[0];
@@ -652,19 +652,27 @@ export async function runGlobalAuthGuard() {
         }
 
         // 11. Build and cache app context
+        // Update last_login_at to now (current session)
+        try {
+            await supabase.from('users')
+                .update({ last_login_at: new Date().toISOString() })
+                .eq('user_id', user_id);
+        } catch (_) { /* non-critical */ }
+
         const appContext = {
             user: {
                 user_id,
                 name:          userRow.name,
                 email:         userRow.email,
-                phone:         userRow.phone,
+                phone:         userRow.phone || profile?.phone || '',
                 role_id:       userRow.role_id,
                 role_name:     userRow.role_name,
                 assigned_branch_id: userRow.branch_id || null,
                 can_switch_branch:  canSwitchBranch,
                 first_name:    profile?.first_name || '',
                 last_name:     profile?.last_name  || '',
-                joined_on:     profile?.joined_on  || '',
+                joined_on:     profile?.joined_on  || userRow.created_at || '',
+                last_login_at: userRow.last_login_at || null,
                 profile_photo: profile?.profile_photo || '',
                 emergency_name:  profile?.emergency_contact_name || '',
                 emergency_phone: profile?.emergency_contact_number || ''
@@ -724,6 +732,37 @@ window.getActiveBranchId = function() {
 };
 
 // ─── Global Header Hydration ──────────────────────────────────────────────────
+// ── Shared date formatting helpers ────────────────────────────────────────────
+function formatProfileDate(isoStr) {
+    if (!isoStr) return '';
+    try {
+        const d = new Date(isoStr);
+        if (isNaN(d.getTime())) return '';
+        return d.toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' });
+    } catch { return ''; }
+}
+
+function formatLastLogin(isoStr) {
+    if (!isoStr) return 'Never';
+    try {
+        const d = new Date(isoStr);
+        if (isNaN(d.getTime())) return 'Never';
+        const now = new Date();
+        const diffMs = now - d;
+        const diffMins = Math.floor(diffMs / 60000);
+        const diffHrs  = Math.floor(diffMs / 3600000);
+        const diffDays = Math.floor(diffMs / 86400000);
+
+        if (diffMins < 2)  return 'Just now';
+        if (diffMins < 60) return `${diffMins} mins ago`;
+        if (diffHrs < 2)   return '1 hour ago';
+        if (diffHrs < 24)  return `${diffHrs} hours ago`;
+        if (diffDays === 1) return 'Yesterday';
+        if (diffDays < 7)  return `${diffDays} days ago`;
+        return d.toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' });
+    } catch { return 'Unknown'; }
+}
+
 export function populateGlobalHeader() {
     const contextStr = localStorage.getItem('appContext');
     if (!contextStr) return;
@@ -742,7 +781,7 @@ export function populateGlobalHeader() {
             planBadge.textContent = p.charAt(0).toUpperCase() + p.slice(1);
         }
 
-        // Profile dropdown
+        // Profile dropdown name + role
         if (profileMenu && context.user) {
             const nameEl = profileMenu.querySelector('.dropdown-name');
             const roleEl = profileMenu.querySelector('.dropdown-role');
@@ -768,35 +807,40 @@ export function populateGlobalHeader() {
             const profileEmail        = document.getElementById('profileEmail');
             const profileRoleInput    = document.getElementById('profileRole');
             const profileJoined       = document.getElementById('profileJoined');
-
             const profileBranch       = document.getElementById('profileBranch');
             const profileLastLogin    = document.getElementById('profileLastLogin');
 
             if (profileAvatarImg && avatarUrl) profileAvatarImg.src = avatarUrl;
-            if (profileNameDisplay && context.user.name)                profileNameDisplay.textContent = context.user.name;
-            if (profileRoleDisplay && context.user.role_name)           profileRoleDisplay.textContent = context.user.role_name;
-            if (profileFirstName   && context.user.first_name)          profileFirstName.value  = context.user.first_name;
-            if (profileLastName    && context.user.last_name)           profileLastName.value   = context.user.last_name;
-            if (profilePhone       && context.user.phone)               profilePhone.value      = context.user.phone;
-            if (profileEmail       && context.user.email)               profileEmail.value      = context.user.email;
-            if (profileRoleInput   && context.user.role_name)           profileRoleInput.value  = context.user.role_name;
-            if (profileJoined      && context.user.joined_on)           profileJoined.value     = context.user.joined_on;
+            if (profileNameDisplay && context.user.name)      profileNameDisplay.textContent = context.user.name;
+            if (profileRoleDisplay && context.user.role_name) profileRoleDisplay.textContent = context.user.role_name;
+            if (profileFirstName   && context.user.first_name) profileFirstName.value = context.user.first_name;
+            if (profileLastName    && context.user.last_name)  profileLastName.value  = context.user.last_name;
+            if (profilePhone       && context.user.phone)      profilePhone.value     = context.user.phone;
+            if (profileEmail       && context.user.email)      profileEmail.value     = context.user.email;
+            if (profileRoleInput   && context.user.role_name)  profileRoleInput.value = context.user.role_name;
 
-            // Assigned Branch & Last Login (read-only)
+            // Format joined date (joined_on from profiles, fallback created_at from users)
+            if (profileJoined) {
+                profileJoined.value = formatProfileDate(context.user.joined_on) || 'N/A';
+            }
+
+            // Assigned Branch (read-only)
             if (profileBranch) {
                 const currentBranch = (context.branches || []).find(b => (b.branch_id || b.id) === (context.current_branch_id || localStorage.getItem('active_branch_id')));
                 profileBranch.value = currentBranch?.branch_name || currentBranch?.name || 'Main Branch';
             }
+
+            // Last Login — formatted relative time
             if (profileLastLogin) {
-                profileLastLogin.value = 'Today';
+                profileLastLogin.value = formatLastLogin(context.user.last_login_at);
             }
 
-            const profileEmergencyName = document.getElementById('profileEmergencyName');
+            const profileEmergencyName  = document.getElementById('profileEmergencyName');
             const profileEmergencyPhone = document.getElementById('profileEmergencyPhone');
-            if (profileEmergencyName && context.user.emergency_name)    profileEmergencyName.value = context.user.emergency_name;
-            if (profileEmergencyPhone && context.user.emergency_phone)  profileEmergencyPhone.value = context.user.emergency_phone;
+            if (profileEmergencyName  && context.user.emergency_name)  profileEmergencyName.value  = context.user.emergency_name;
+            if (profileEmergencyPhone && context.user.emergency_phone) profileEmergencyPhone.value = context.user.emergency_phone;
 
-            // Schedule modal fields (Left column 35%)
+            // Schedule modal identity panel (left column)
             const scheduleUserAvatarImg   = document.getElementById('scheduleUserAvatarImg');
             const scheduleUserName        = document.getElementById('scheduleUserName');
             const scheduleUserRole        = document.getElementById('scheduleUserRole');
@@ -806,10 +850,10 @@ export function populateGlobalHeader() {
             const scheduleUserDesignation = document.getElementById('scheduleUserDesignation');
 
             if (scheduleUserAvatarImg && avatarUrl) scheduleUserAvatarImg.src = avatarUrl;
-            if (scheduleUserName && context.user.name) scheduleUserName.textContent = context.user.name;
-            if (scheduleUserRole && context.user.role_name) scheduleUserRole.textContent = context.user.role_name;
-            if (scheduleUserEmail && context.user.email) scheduleUserEmail.textContent = context.user.email;
-            if (scheduleUserPhone) scheduleUserPhone.textContent = context.user.phone || '-';
+            if (scheduleUserName  && context.user.name)      scheduleUserName.textContent  = context.user.name;
+            if (scheduleUserRole  && context.user.role_name) scheduleUserRole.textContent  = context.user.role_name;
+            if (scheduleUserEmail && context.user.email)     scheduleUserEmail.textContent = context.user.email;
+            if (scheduleUserPhone)  scheduleUserPhone.textContent = context.user.phone || '-';
             if (scheduleUserBranch) {
                 const currentBranch = (context.branches || []).find(b => (b.branch_id || b.id) === (context.current_branch_id || localStorage.getItem('active_branch_id')));
                 scheduleUserBranch.textContent = currentBranch?.branch_name || currentBranch?.name || 'Main Branch';
