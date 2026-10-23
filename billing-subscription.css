@@ -447,6 +447,19 @@
     flex-shrink: 0;
 }
 
+.badge-status-cancelling {
+    font-size: 0.7rem;
+    font-weight: 700;
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+    background: var(--status-amber-subtle, #fef3c7);
+    color: var(--status-amber-dark, #b45309);
+    border: 1px solid var(--status-amber-border, #fcd34d);
+    padding: 3px 8px;
+    border-radius: 6px;
+    flex-shrink: 0;
+}
+
 .neutral-badge {
     font-size: 0.74rem;
     font-weight: 700;

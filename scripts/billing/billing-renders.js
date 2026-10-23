@@ -4,7 +4,7 @@
 'use strict';
 
 import { state, CATALOG_ADDONS } from './billing-state.js';
-import { fmtCurrency, formatBillingAddress, showToast } from './billing-helpers.js';
+import { fmtCurrency, formatBillingAddress, showToast, formatDateDisplay } from './billing-helpers.js';
 
 // DOM reference object — populated by initRenders() called from the orchestrator
 let dom = {};
@@ -181,7 +181,13 @@ export function renderActiveAddons() {
     }
 
     dom.activeAddonsList.innerHTML = activeItems.map(item => {
-        const rawStatus = (item.status || 'Active').toUpperCase();
+        const isCancelling = (item.status || '').toLowerCase() === 'cancelling';
+        const formattedEndDate = item.endedAt ? formatDateDisplay(item.endedAt) : '';
+        const badgeClass = isCancelling ? 'badge-status-cancelling' : 'badge-status-active';
+        const badgeText = isCancelling
+            ? (formattedEndDate ? `Cancels ${formattedEndDate}` : 'Cancelling')
+            : (item.status || 'Active').toUpperCase();
+
         return `
         <div class="active-addon-row">
             <div class="addon-icon-tile addon-icon-tile--${item.theme || 'blue'}">
@@ -191,7 +197,7 @@ export function renderActiveAddons() {
                 <p class="active-addon-name">${item.name}</p>
                 <p class="active-addon-price">${fmtCurrency(item.price)} / month</p>
             </div>
-            <span class="badge-status-active">${rawStatus}</span>
+            <span class="${badgeClass}">${badgeText}</span>
         </div>
         `;
     }).join('');
@@ -336,10 +342,16 @@ export function renderBillingSummary() {
     `;
 
     activeItems.forEach(item => {
+        const isCancelling = (item.status || '').toLowerCase() === 'cancelling';
+        const formattedEndDate = item.endedAt ? formatDateDisplay(item.endedAt) : '';
+        const priceDisplay = isCancelling
+            ? `<span style="text-decoration: line-through; color: #94a3b8; font-size: 0.82rem; margin-right: 4px;">${fmtCurrency(item.price)}</span> ₹0`
+            : fmtCurrency(item.price);
+
         itemsHtml += `
             <div class="summary-row">
-                <span class="summary-row-label">${item.name}</span>
-                <span class="summary-row-value">${fmtCurrency(item.price)}</span>
+                <span class="summary-row-label">${item.name}${isCancelling ? ` <span style="font-size: 0.72rem; color: #d97706; font-weight: 600;">(Cancels ${formattedEndDate})</span>` : ''}</span>
+                <span class="summary-row-value">${priceDisplay}</span>
             </div>
         `;
     });
@@ -358,7 +370,9 @@ export function renderBillingSummary() {
         summarySubtotalLabel.textContent = state.plan.cycle === 'annual' ? 'Annual Subtotal' : 'Monthly Subtotal';
     }
 
-    const subtotal = basePlanCost + activeItems.reduce((acc, cur) => acc + (Number(cur.price) || 0), 0);
+    // Only non-cancelling add-ons renew in next cycle
+    const renewingAddons = activeItems.filter(item => (item.status || '').toLowerCase() !== 'cancelling');
+    const subtotal = basePlanCost + renewingAddons.reduce((acc, cur) => acc + (Number(cur.price) || 0), 0);
 
     // Live tax from billing_settings
     const taxSettings = state.taxSettings || {};

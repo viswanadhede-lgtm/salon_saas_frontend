@@ -449,9 +449,13 @@ export function renderManageAddonsSummary() {
 
 export function openManageAddonsModal() {
     syncCatalogWithActiveAddons();
-    // Snapshot the current active add-ons
-    initialActiveAddonIds = [...state.activeAddonIds];
-    localSelectedAddonIds = [...state.activeAddonIds];
+    // Snapshot active (non-cancelling) add-ons
+    const nonCancellingIds = (state.activeAddons || [])
+        .filter(a => (a.status || '').toLowerCase() !== 'cancelling')
+        .map(a => a.id);
+
+    initialActiveAddonIds = [...nonCancellingIds];
+    localSelectedAddonIds = [...nonCancellingIds];
 
     renderManageAddonsList();
     openModal(dom.modalManageAddons);
@@ -470,19 +474,26 @@ export function bindManageAddonsEvents() {
         dom.btnCloseManageAddons.addEventListener('click', closeManageAddonsModal);
     }
 
-    // Save Changes: Wire deactivations to purchase-addon Edge Function
+    // Save Changes: Direct Supabase update for add-on cancellation and reactivation
     if (dom.btnSaveManageAddons) {
         dom.btnSaveManageAddons.addEventListener('click', async function () {
             const addedIds = localSelectedAddonIds.filter(id => !initialActiveAddonIds.includes(id));
             const removedIds = initialActiveAddonIds.filter(id => !localSelectedAddonIds.includes(id));
 
-            if (addedIds.length === 0 && removedIds.length === 0) {
+            // Check if any of the added IDs are reactivating an unexpired cancelling add-on
+            const reactivatingIds = addedIds.filter(id => {
+                const existing = (state.activeAddons || []).find(a => a.id === id);
+                return existing && (existing.status || '').toLowerCase() === 'cancelling';
+            });
+            const brandNewAddedIds = addedIds.filter(id => !reactivatingIds.includes(id));
+
+            if (brandNewAddedIds.length === 0 && reactivatingIds.length === 0 && removedIds.length === 0) {
                 closeModal(dom.modalManageAddons);
                 return;
             }
 
-            // If user only selected new add-ons, clarify that new add-ons require payment checkout
-            if (addedIds.length > 0 && removedIds.length === 0) {
+            // If user only selected brand-new add-ons, clarify that new add-ons require payment checkout
+            if (brandNewAddedIds.length > 0 && reactivatingIds.length === 0 && removedIds.length === 0) {
                 closeModal(dom.modalManageAddons);
                 showToast('To activate new add-ons, please use "+ Add" on the specific add-on card to checkout.', 'info');
                 return;
@@ -498,50 +509,58 @@ export function bindManageAddonsEvents() {
                     throw new Error('Salon company ID not found. Please refresh the page.');
                 }
 
-                let accessToken = localStorage.getItem('token') || '';
-                if (!accessToken) {
-                    try {
-                        const { supabase } = await import('../../lib/supabase.js');
-                        const { data: sessData } = await supabase.auth.getSession();
-                        accessToken = sessData?.session?.access_token || '';
-                    } catch (_) {}
-                }
+                const { supabase } = await import('../../lib/supabase.js');
 
-                if (!accessToken) {
-                    throw new Error('Your session has expired. Please sign in again.');
-                }
-
-                const SUPABASE_URL = 'https://qxmgyxjwpxkdbgldpdil.supabase.co';
-                const SUPABASE_ANON_KEY = 'sb_publishable_aqCSbMiVxH5cSZxgssdNqw_jQZvzmA0';
-
-                // Process deactivation for each unselected active add-on
+                // 1. Direct Supabase update for unselected active add-ons: set status = 'cancelling'
                 for (const addonId of removedIds) {
-                    const deactRes = await fetch(`${SUPABASE_URL}/functions/v1/purchase-addon`, {
-                        method: 'POST',
-                        headers: {
-                            'Content-Type': 'application/json',
-                            'apikey': SUPABASE_ANON_KEY,
-                            'Authorization': `Bearer ${accessToken}`
-                        },
-                        body: JSON.stringify({
-                            action: 'deactivate',
-                            company_id: companyId,
-                            addon_id: addonId
+                    const { error: updErr } = await supabase
+                        .from('subscription_add_ons')
+                        .update({
+                            status: 'cancelling',
+                            updated_at: new Date().toISOString()
                         })
-                    });
+                        .eq('company_id', companyId)
+                        .eq('addon_id', addonId)
+                        .eq('status', 'active');
 
-                    const deactData = await deactRes.json().catch(() => ({}));
-                    if (!deactRes.ok || deactData.error) {
-                        throw new Error(deactData.error || `Failed to remove add-on.`);
+                    if (updErr) {
+                        console.error('[Billing] Direct Supabase add-on cancellation error:', updErr);
+                        throw new Error(updErr.message || 'Failed to cancel add-on.');
+                    }
+                }
+
+                // 2. Direct Supabase update for reactivated add-ons (cancelling -> active)
+                for (const addonId of reactivatingIds) {
+                    const { error: reactErr } = await supabase
+                        .from('subscription_add_ons')
+                        .update({
+                            status: 'active',
+                            updated_at: new Date().toISOString()
+                        })
+                        .eq('company_id', companyId)
+                        .eq('addon_id', addonId)
+                        .eq('status', 'cancelling');
+
+                    if (reactErr) {
+                        console.error('[Billing] Direct Supabase add-on reactivation error:', reactErr);
+                        throw new Error(reactErr.message || 'Failed to reactivate add-on.');
                     }
                 }
 
                 closeModal(dom.modalManageAddons);
 
-                if (addedIds.length > 0) {
-                    showToast('Add-on(s) removed successfully. Note: newly checked add-ons require payment via "+ Add".', 'info');
+                if (removedIds.length > 0 && reactivatingIds.length === 0) {
+                    showToast('Add-on scheduled to cancel at end of billing cycle. Access remains active until then.', 'success');
+                } else if (reactivatingIds.length > 0 && removedIds.length === 0) {
+                    showToast('Add-on auto-renewal restored successfully.', 'success');
                 } else {
                     showToast('Add-ons updated successfully.', 'success');
+                }
+
+                if (brandNewAddedIds.length > 0) {
+                    setTimeout(() => {
+                        showToast('Note: Brand new add-ons require payment checkout via "+ Add".', 'info');
+                    }, 1800);
                 }
 
                 // Refresh active add-ons and billing summary from DB

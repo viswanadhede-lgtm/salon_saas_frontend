@@ -88,11 +88,11 @@ export async function loadActiveAddons(supabase, subscriptionId, companyId) {
     }
 
     try {
-        // Query subscription_add_ons for current company/subscription where status = 'active'
+        // Query subscription_add_ons for current company/subscription where status is active or cancelling
         let query = supabase
             .from('subscription_add_ons')
             .select('id, subscription_id, company_id, addon_id, addon_name, price, status, started_at, ended_at')
-            .eq('status', 'active');
+            .in('status', ['active', 'cancelling']);
 
         if (companyId) {
             query = query.eq('company_id', companyId);
@@ -126,18 +126,29 @@ export async function loadActiveAddons(supabase, subscriptionId, companyId) {
             } catch (_) {}
         }
 
-        const items = (addOnsData || []).map(row => {
+        const now = Date.now();
+        const validRows = (addOnsData || []).filter(row => {
+            const st = (row.status || '').toLowerCase();
+            if (st === 'cancelled' || st === 'superseded') return false;
+            if (row.ended_at && new Date(row.ended_at).getTime() < now) {
+                return false; // Period has passed
+            }
+            return true;
+        });
+
+        const items = validRows.map(row => {
             const master = masterMap[row.addon_id] || {};
             const rawName = row.addon_name || master.name || 'Add-on';
             // Capitalize add-on names nicely (e.g. "add-on 1" -> "Add-on 1")
             const displayName = rawName.charAt(0).toUpperCase() + rawName.slice(1);
             const visual = getAddonVisualMeta(rawName + ' ' + (master.description || ''));
+            const isCancelling = (row.status || '').toLowerCase() === 'cancelling';
             return {
                 id: row.addon_id,
                 subAddonId: row.id,
                 name: displayName,
                 price: Number(row.price) != null ? Number(row.price) : (Number(master.price) || 0),
-                status: row.status || 'active',
+                status: isCancelling ? 'cancelling' : (row.status || 'active'),
                 startedAt: row.started_at,
                 endedAt: row.ended_at,
                 icon: visual.icon,

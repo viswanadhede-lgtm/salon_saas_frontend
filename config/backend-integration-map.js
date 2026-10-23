@@ -907,44 +907,15 @@
 
 
  
-//  Feature - 2, 4 - Add-on Purchase Checkout & Add-on Management:
-//            EDGE FUNCTION - [purchase-addon]
-//            RPC FUNCTIONS - [activate_subscription_addon, deactivate_subscription_addon]
-//
-//            Tables Involved:
-//              1. add_ons (Master catalog: addon_id, name, description, price_monthly, price_yearly, duration_monthly, duration_yearly, status)
-//              2. subscription_add_ons (Active add-on records: id, subscription_id, company_id, addon_id, addon_name, price, status, started_at, ended_at)
-//              3. payments (Payment ledger: id, order_id, company_id, subscription_id, amount, payment_id, status, payment_method, created_at)
-//
-//            Architecture & Execution Flow:
-//              A. Add-on Purchase (+ Add Button):
-//                 1. Frontend prompts user to select duration (Monthly vs Yearly).
-//                 2. Frontend calls Edge Function [purchase-addon] with action: 'create_order'.
-//                 3. Edge Function resolves addon pricing and creates Razorpay Order via Razorpay Orders API.
-//                 4. Frontend opens Razorpay Checkout modal (window.Razorpay).
-//                 5. Upon successful checkout, Razorpay returns { razorpay_order_id, razorpay_payment_id, razorpay_signature }.
-//                 6. Frontend calls Edge Function [purchase-addon] with action: 'verify_and_activate'.
-//                 7. Edge Function verifies HMAC-SHA256 signature using server-side RAZORPAY_KEY_SECRET, confirms payment with Razorpay API.
-//                 8. Edge Function invokes RPC [activate_subscription_addon] to atomically write subscription_add_ons and payments ledger.
-//                 9. Frontend reloads active subscription state and updates UI.
-//
-//              B. Add-on Management / Removal (Manage Add-ons Button):
-//                 1. Manage Add-ons modal allows unchecking existing active add-ons.
-//                 2. When clicking 'Save Changes', frontend calls Edge Function [purchase-addon] with action: 'deactivate'.
-//                 3. Edge Function verifies caller authentication and company membership, then executes RPC [deactivate_subscription_addon].
-//                 4. RPC sets subscription_add_ons.status = 'cancelled' and ended_at = NOW().
-//                 5. Frontend reloads active subscription state and updates UI.
-//
-// Feature - 5 - Payment Method Card & Change Payment Method Option
+//  Feature - 2, 4 - right we have RPC FUNCTION - [activate_subscription_addon] & EDGE FUNCTION - [purchase-addon].
+
+           // so how this works is ?
+
+                // The Frontend would talk directly to the Edge Funciton & Upon Success or Failure the Edge Function will update the RPC Function and the RPC Function would Update the table.
+                    // remember - This is not like the auto renewal ... add ons donot get auto renewed.
 
 
-
-
-
-
-
-
-
+//  Feature - 5 - Payment Method.
 
 
 
