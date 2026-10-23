@@ -182,7 +182,7 @@ BEGIN
         FROM public.subscription_add_ons sa
         LEFT JOIN public.add_ons a ON a.addon_id = sa.addon_id
         WHERE sa.subscription_id = v_subscription_id
-          AND LOWER(COALESCE(sa.status, '')) = 'active';
+          AND LOWER(COALESCE(sa.status, '')) IN ('active', 'cancelling');
     END IF;
 
     -- 5. Available Add-ons Master Catalog

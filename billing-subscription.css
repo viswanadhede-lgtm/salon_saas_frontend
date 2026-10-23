@@ -2899,6 +2899,34 @@
     display: inline-flex;
 }
 
+/* Toast type variants */
+.billing-toast.is-success {
+    background: #064e3b;
+    border-left: 4px solid #34d399;
+    color: #d1fae5;
+}
+.billing-toast.is-success i {
+    stroke: #34d399;
+}
+
+.billing-toast.is-error {
+    background: #450a0a;
+    border-left: 4px solid #f87171;
+    color: #fee2e2;
+}
+.billing-toast.is-error i {
+    stroke: #f87171;
+}
+
+.billing-toast.is-info {
+    background: #0c1a2e;
+    border-left: 4px solid #38bdf8;
+    color: #e0f2fe;
+}
+.billing-toast.is-info i {
+    stroke: #38bdf8;
+}
+
 @keyframes toast-in {
     from {
         opacity: 0;

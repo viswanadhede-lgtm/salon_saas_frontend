@@ -45,7 +45,14 @@ export function openInvoiceModal(invoiceId) {
             amount: subtotal
         }];
     }
-    const gst = Math.round(subtotal * 0.18);
+    // Use company tax settings; fallback to 18% if not configured
+    const taxRateFraction = (state.taxSettings?.isActive && Number(state.taxSettings?.taxRate) > 0)
+        ? Number(state.taxSettings.taxRate) / 100
+        : 0.18;
+    const taxLabel = (state.taxSettings?.isActive && Number(state.taxSettings?.taxRate) > 0)
+        ? `${state.taxSettings.taxName || 'GST'} (${state.taxSettings.taxRate}%)`
+        : 'GST (18%)';
+    const gst = Math.round(subtotal * taxRateFraction);
     const total = subtotal + gst;
 
     const itemsRowsHtml = items.map(line => `
@@ -131,7 +138,7 @@ export function openInvoiceModal(invoiceId) {
                     <span class="summary-val">${fmtCurrency(subtotal)}</span>
                 </div>
                 <div class="invoice-summary-row">
-                    <span class="summary-label">GST (18%)</span>
+                    <span class="summary-label">${taxLabel}</span>
                     <span class="summary-val">${fmtCurrency(gst)}</span>
                 </div>
                 <div class="invoice-summary-divider"></div>

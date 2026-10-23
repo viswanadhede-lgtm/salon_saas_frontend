@@ -1,4 +1,4 @@
-﻿// billing-helpers.js — Pure & DOM utility helpers for the Billing page
+// billing-helpers.js — Pure & DOM utility helpers for the Billing page
 // Part of scripts/billing/ modularization of billing-subscription.js
 
 'use strict';
@@ -41,11 +41,18 @@ export const getCompanyId = () => {
 
 // ── Toast Notification ─────────────────────────────────────────
 
-export const showToast = (msg) => {
+export const showToast = (msg, type) => {
     const toast = document.getElementById('billingToast');
     const toastMsg = document.getElementById('billingToastMsg');
     if (!toast || !toastMsg) return;
     toastMsg.textContent = msg;
+
+    // Remove previous type classes, apply new one
+    toast.classList.remove('is-success', 'is-error', 'is-info');
+    if (type === 'success') toast.classList.add('is-success');
+    else if (type === 'error') toast.classList.add('is-error');
+    else if (type === 'info') toast.classList.add('is-info');
+
     toast.classList.add('is-visible');
     clearTimeout(toast._timeout);
     toast._timeout = setTimeout(() => {

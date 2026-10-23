@@ -142,58 +142,14 @@ export function bindPaymentModalEvents() {
         });
     }
 
-    // Save payment method — UI-only, updates state.paymentMethod, no DB write
+    // V1: Save payment method button is intentionally disabled.
+    // Payment method data is read-only from the payments ledger.
+    // V2 will implement tokenized card/UPI mandate update flows here.
     if (dom.btnSavePaymentMethod) {
-        dom.btnSavePaymentMethod.addEventListener('click', function () {
-            if (activePaymentTab === 'upi') {
-                const upiVal = dom.inputUpiId ? dom.inputUpiId.value.trim() : '';
-                if (!upiVal) {
-                    showToast('Please enter a valid UPI ID.');
-                    return;
-                }
-                const finalUpi = upiVal.includes('@') ? upiVal : `${upiVal}@upi`;
-
-                state.paymentMethod.type = 'upi';
-                state.paymentMethod.upiId = finalUpi;
-                state.paymentMethod.upiApp = selectedUpiApp || 'UPI';
-                state.paymentMethod.holder = dom.inputCardHolder ? dom.inputCardHolder.value.trim() : '';
-
-                if (dom.modalChangePayment) dom.modalChangePayment.classList.remove('is-open');
-                renderPaymentMethod();
-                showToast(`Payment method updated to UPI AutoPay (${state.paymentMethod.upiApp}).`);
-            } else if (activePaymentTab === 'netbanking') {
-                const finalBank = selectedBank || 'HDFC Bank';
-
-                state.paymentMethod.type = 'netbanking';
-                state.paymentMethod.bankName = finalBank;
-                state.paymentMethod.holder = dom.inputCardHolder ? dom.inputCardHolder.value.trim() : '';
-
-                if (dom.modalChangePayment) dom.modalChangePayment.classList.remove('is-open');
-                renderPaymentMethod();
-                showToast(`Payment method updated to ${finalBank} e-Mandate.`);
-            } else {
-                // Card tab
-                const rawCard = dom.inputCardNumber ? dom.inputCardNumber.value.trim().replace(/\s+/g, '') : '';
-                const holder = (dom.inputCardHolder && dom.inputCardHolder.value.trim()) || '';
-                const expiry = (dom.inputCardExpiry && dom.inputCardExpiry.value.trim()) || '';
-                const brand = detectCardBrand(rawCard);
-
-                let mask = state.paymentMethod.cardMask || '';
-                if (rawCard.length >= 4) {
-                    mask = `•••• •••• •••• ${rawCard.slice(-4)}`;
-                }
-
-                state.paymentMethod.type = 'card';
-                state.paymentMethod.holder = holder;
-                state.paymentMethod.cardMask = mask;
-                state.paymentMethod.expiry = expiry;
-                state.paymentMethod.brand = brand;
-                state.paymentMethod.network = brand;
-
-                if (dom.modalChangePayment) dom.modalChangePayment.classList.remove('is-open');
-                renderPaymentMethod();
-                showToast(`Payment method updated to ${brand} Card.`);
-            }
+        dom.btnSavePaymentMethod.disabled = true;
+        dom.btnSavePaymentMethod.addEventListener('click', function (e) {
+            e.preventDefault();
+            // Inert in V1 — no DB write, no state mutation
         });
     }
 }

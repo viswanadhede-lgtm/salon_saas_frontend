@@ -21,6 +21,12 @@ export function initSubFeatures() {
  */
 export function hasSubFeature(featureKey) {
     if (!featureKey) return true;
+    try {
+        const role = localStorage.getItem('role_name');
+        if (role === 'Owner') return true;
+        const ctx = JSON.parse(localStorage.getItem('appContext') || '{}');
+        if (ctx.user?.role_name === 'Owner' || ctx.user?.is_owner) return true;
+    } catch {}
     return userSubFeatures.includes(featureKey);
 }
 

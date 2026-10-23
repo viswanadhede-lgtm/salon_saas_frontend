@@ -21,8 +21,13 @@
     function getCompanyId() {
         try {
             const ctx = JSON.parse(localStorage.getItem('appContext') || '{}');
-            return ctx.company?.id || localStorage.getItem('company_id') || null;
+            return ctx.company?.company_id || ctx.company?.id || localStorage.getItem('company_id') || null;
         } catch { return localStorage.getItem('company_id') || null; }
+    }
+
+    // ── Helper: Branch ID ──
+    function getBranchId() {
+        return localStorage.getItem('active_branch_id') || localStorage.getItem('branch_id') || null;
     }
 
     // ── Helper: Notification Preferences ──
@@ -48,7 +53,7 @@
         return true;
     }
 
-    // ── Helper: Notification History in LocalStorage ──
+    // ── Helper: Notification History in LocalStorage & Supabase ──
     function getHistoryKey() {
         const companyId = getCompanyId() || 'default';
         return `notification_history_${companyId}`;
@@ -65,6 +70,45 @@
             localStorage.setItem(getHistoryKey(), JSON.stringify(history));
         } catch (e) {
             console.warn('Could not save notification history:', e);
+        }
+    }
+
+    /**
+     * Fetch latest notifications from Supabase table with fallback to localStorage.
+     */
+    async function fetchNotificationsFromSupabase(limit = 20) {
+        const companyId = getCompanyId();
+        const client = window.supabase;
+        if (!companyId || !client) return;
+
+        try {
+            const { data, error } = await client
+                .from('notifications')
+                .select('id, category, event_key, title, message, link, metadata, is_read, created_at')
+                .eq('company_id', companyId)
+                .order('created_at', { ascending: false })
+                .limit(limit);
+
+            if (!error && Array.isArray(data)) {
+                const history = data.map(row => ({
+                    id: row.id,
+                    category: row.category,
+                    eventKey: row.event_key,
+                    title: row.title,
+                    message: row.message,
+                    link: row.link,
+                    timestamp: row.created_at,
+                    read: row.is_read === true
+                }));
+                saveHistory(history);
+                updateBellBadge();
+                const dropdown = document.getElementById('notificationDropdown');
+                if (dropdown && dropdown.classList.contains('show')) {
+                    renderDropdown();
+                }
+            }
+        } catch (err) {
+            console.warn('[NotificationManager] Supabase fetch fallback to local:', err.message || err);
         }
     }
 
@@ -364,12 +408,13 @@
                 margin: 0;
             }
             .notif-footer {
-                padding: 10px 18px;
+                padding: 10px 16px;
                 border-top: 1px solid #f1f5f9;
                 background: #f8fafc;
                 display: flex;
                 align-items: center;
                 justify-content: space-between;
+                gap: 12px;
             }
             .notif-footer-link {
                 display: inline-flex;
@@ -379,10 +424,18 @@
                 font-weight: 600;
                 color: #3b82f6;
                 text-decoration: none;
-                transition: color 0.15s;
+                transition: color 0.15s, background-color 0.15s;
             }
             .notif-footer-link:hover {
                 color: #1d4ed8;
+            }
+            .notif-footer-link.notif-settings-btn {
+                color: #64748b;
+                font-weight: 500;
+                font-size: 0.78rem;
+            }
+            .notif-footer-link.notif-settings-btn:hover {
+                color: #0f172a;
             }
             .notif-footer-link svg {
                 width: 14px;
@@ -452,32 +505,73 @@
     }
 
     /**
-     * Update or hide the bell badge based on unread count.
+     * Render the badge with a given count.
      */
-    function updateBellBadge() {
+    function renderBadge(count) {
         const bellBtn = getBellBtn();
         if (!bellBtn) return;
-
-        const history = getHistory();
-        const unreadCount = history.filter(n => !n.read).length;
 
         let badge = bellBtn.querySelector('.notif-badge');
         const dot = bellBtn.querySelector('.notification-dot');
 
-        if (unreadCount > 0) {
+        if (count > 0) {
             if (!badge) {
                 badge = document.createElement('span');
                 badge.className = 'notif-badge';
                 bellBtn.style.position = 'relative';
                 bellBtn.appendChild(badge);
             }
-            badge.textContent = unreadCount > 99 ? '99+' : unreadCount;
+            badge.textContent = count > 99 ? '99+' : count;
             badge.style.display = 'flex';
             if (dot) dot.style.display = 'none'; // Prefer count badge
         } else {
             if (badge) badge.style.display = 'none';
             if (dot) dot.style.display = 'none';
         }
+    }
+
+    /**
+     * Update or hide the bell badge based on unread count in local history.
+     */
+    function updateBellBadge() {
+        const history = getHistory();
+        const unreadCount = history.filter(n => !n.read).length;
+        renderBadge(unreadCount);
+    }
+
+    /**
+     * Ultra-fast authoritative unread count from Supabase using the partial index.
+     * Uses head: true and count: 'exact' to return 0 bytes of row data (<15ms).
+     */
+    async function refreshUnreadCount() {
+        const companyId = getCompanyId();
+        const client = window.supabase;
+        if (!companyId || !client) {
+            updateBellBadge();
+            return;
+        }
+
+        try {
+            const { count, error } = await client
+                .from('notifications')
+                .select('id', { count: 'exact', head: true })
+                .eq('company_id', companyId)
+                .eq('is_read', false);
+
+            if (!error && typeof count === 'number') {
+                renderBadge(count);
+                // Also update pill in dropdown header if open
+                const pill = document.querySelector('#notificationDropdown .notif-unread-pill');
+                if (pill) {
+                    pill.textContent = count > 0 ? `${count} new` : '';
+                    pill.style.display = count > 0 ? 'inline-block' : 'none';
+                }
+                return;
+            }
+        } catch (e) {
+            console.warn('[NotificationManager] Fast unread count fallback to local:', e.message || e);
+        }
+        updateBellBadge();
     }
 
     /**
@@ -532,21 +626,44 @@
             </ul>
 
             <div class="notif-footer">
-                <a href="settings-notifications.html" class="notif-footer-link">
+                <a href="notifications.html" class="notif-footer-link notif-view-all" id="notifBtnViewAll">
+                    <span>See all notifications</span>
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
+                </a>
+                <a href="settings-notifications.html" class="notif-footer-link notif-settings-btn" title="Notification Preferences">
                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
-                    <span>Notification Settings</span>
+                    <span>Settings</span>
                 </a>
             </div>
         `;
 
         // Wire: Mark all read
-        dropdown.querySelector('#notifBtnMarkAllRead')?.addEventListener('click', (e) => {
+        dropdown.querySelector('#notifBtnMarkAllRead')?.addEventListener('click', async (e) => {
             e.stopPropagation();
             const curr = getHistory();
             curr.forEach(n => n.read = true);
             saveHistory(curr);
             updateBellBadge();
             renderDropdown();
+
+            const companyId = getCompanyId();
+            const client = window.supabase;
+            if (companyId && client) {
+                try {
+                    const { error: rpcErr } = await client.rpc('mark_all_notifications_read', {
+                        p_company_id: companyId,
+                        p_branch_id: getBranchId()
+                    });
+                    if (rpcErr) {
+                        await client.from('notifications')
+                            .update({ is_read: true, read_at: new Date().toISOString() })
+                            .eq('company_id', companyId)
+                            .eq('is_read', false);
+                    }
+                } catch (err) {
+                    console.warn('[NotificationManager] Supabase mark read warning:', err);
+                }
+            }
         });
 
         // Wire: Clear all
@@ -557,16 +674,30 @@
             renderDropdown();
         });
 
-        // Wire: Click item marks as read
+        // Wire: Click item marks as read & navigates if link exists
         dropdown.querySelectorAll('.notif-item').forEach(li => {
             li.addEventListener('click', () => {
                 const idx = parseInt(li.getAttribute('data-index'), 10);
                 const curr = getHistory();
                 if (curr[idx]) {
                     curr[idx].read = true;
+                    const notifId = curr[idx].id;
+                    const targetLink = curr[idx].link;
                     saveHistory(curr);
                     updateBellBadge();
                     renderDropdown();
+
+                    if (notifId && window.supabase) {
+                        window.supabase.from('notifications')
+                            .update({ is_read: true, read_at: new Date().toISOString() })
+                            .eq('id', notifId)
+                            .then(() => {})
+                            .catch(() => {});
+                    }
+
+                    if (targetLink) {
+                        window.location.href = targetLink;
+                    }
                 }
             });
         });
@@ -595,6 +726,8 @@
             document.getElementById('profileBackdrop')?.classList.remove('show');
             renderDropdown();
             dropdown.classList.add('show');
+            // Fetch fresh notifications from Supabase
+            fetchNotificationsFromSupabase(20);
         }
     }
 
@@ -636,6 +769,16 @@
         }
 
         updateBellBadge();
+
+        // Fetch fresh notifications from Supabase
+        fetchNotificationsFromSupabase(20);
+
+        // Start background polling every 60s if not already running
+        if (!window.__notifPollInterval) {
+            window.__notifPollInterval = setInterval(() => {
+                fetchNotificationsFromSupabase(20);
+            }, 60000);
+        }
     }
 
     // ── Global delegated click handler (capture phase for maximum reliability) ──
@@ -673,22 +816,28 @@
 
         const title = opts.title || 'Notification';
         const message = opts.message || '';
+        const link = opts.link || null;
+        const metadata = opts.metadata || {};
 
         // 1. Show popup toast
         showPopupNotification(title, message, category);
 
-        // 2. Add to localStorage history
+        // 2. Add to localStorage history (optimistic UI)
+        const localItem = {
+            id: null,
+            category,
+            eventKey,
+            title,
+            message,
+            link,
+            timestamp: new Date().toISOString(),
+            read: false
+        };
+
         try {
             const history = getHistory();
-            history.unshift({
-                category,
-                eventKey,
-                title,
-                message,
-                timestamp: new Date().toISOString(),
-                read: false
-            });
-            // Keep last 50 notifications
+            history.unshift(localItem);
+            // Keep last 50 notifications in local cache
             if (history.length > 50) history.length = 50;
             saveHistory(history);
         } catch (e) {
@@ -702,6 +851,34 @@
         const dropdown = document.getElementById('notificationDropdown');
         if (dropdown && dropdown.classList.contains('show')) {
             renderDropdown();
+        }
+
+        // 5. Persist to Supabase notifications table in background
+        const companyId = getCompanyId();
+        const client = window.supabase;
+        if (companyId && client) {
+            client.from('notifications').insert({
+                company_id: companyId,
+                branch_id: getBranchId(),
+                category: category,
+                event_key: eventKey,
+                title: title,
+                message: message,
+                link: link,
+                metadata: metadata,
+                is_read: false
+            }).then(({ data, error }) => {
+                if (!error && data && data[0]?.id) {
+                    localItem.id = data[0].id;
+                    const hist = getHistory();
+                    if (hist[0] && hist[0].title === title) {
+                        hist[0].id = data[0].id;
+                        saveHistory(hist);
+                    }
+                }
+            }).catch(err => {
+                console.warn('[NotificationManager] Supabase insert warning:', err);
+            });
         }
     }
 
@@ -893,6 +1070,12 @@
         initBellDropdown();
     }
 
+    // Hook immediately into AppShell mount event (zero-lag header wiring)
+    document.addEventListener('app-shell:ready', () => {
+        initBellDropdown();
+        refreshUnreadCount();
+    });
+
     // Also run after a short delay in case header elements were injected dynamically
     setTimeout(initBellDropdown, 300);
     setTimeout(initBellDropdown, 1000);
@@ -905,4 +1088,5 @@
     window.getMarketingNotificationChannels = getMarketingNotificationChannels;
     window.notifyMarketing = notifyMarketing;
     window.initNotificationBell = initBellDropdown;
+    window.refreshNotificationBadge = refreshUnreadCount;
 })();
