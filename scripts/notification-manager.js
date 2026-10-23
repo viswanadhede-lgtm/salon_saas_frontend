@@ -370,39 +370,46 @@
                 font-weight: 700;
                 padding: 2px 7px;
                 border-radius: 10px;
-            }
-            .notif-snooze-btn {
-                display: inline-flex;
-                align-items: center;
-                justify-content: center;
-                width: 24px;
-                height: 24px;
-                border-radius: 6px;
-                border: 1px solid transparent;
-                background: transparent;
-                color: #94a3b8;
-                cursor: pointer;
-                padding: 0;
-                transition: all 0.15s ease;
-                flex-shrink: 0;
-            }
-            .notif-snooze-btn:hover {
-                background: #f1f5f9;
-                color: #334155;
-            }
-            .notif-snooze-btn.snoozed {
-                background: #fef3c7;
-                border-color: #fde68a;
-                color: #d97706;
-            }
-            .notif-snooze-btn.snoozed:hover {
-                background: #fde68a;
-                color: #b45309;
+                line-height: 1.3;
             }
             .notif-actions {
                 display: flex;
                 align-items: center;
-                gap: 6px;
+                gap: 4px;
+            }
+            .notif-icon-btn {
+                display: inline-flex;
+                align-items: center;
+                justify-content: center;
+                width: 28px;
+                height: 28px;
+                border-radius: 7px;
+                border: 1px solid transparent;
+                background: transparent;
+                color: #64748b;
+                cursor: pointer;
+                padding: 0;
+                text-decoration: none;
+                transition: all 0.15s ease;
+                flex-shrink: 0;
+            }
+            .notif-icon-btn:hover {
+                background: #f1f5f9;
+                color: #0f172a;
+            }
+            .notif-icon-btn.snoozed {
+                background: #fef3c7;
+                border-color: #fde68a;
+                color: #d97706;
+            }
+            .notif-icon-btn.snoozed:hover {
+                background: #fde68a;
+                color: #b45309;
+            }
+            .notif-footer-actions {
+                display: flex;
+                align-items: center;
+                gap: 8px;
             }
             .notif-btn-link {
                 background: none;
@@ -418,6 +425,14 @@
             .notif-btn-link:hover {
                 background: #eff6ff;
                 color: #1d4ed8;
+            }
+            .notif-btn-link.notif-btn-clear {
+                color: #94a3b8;
+                font-weight: 500;
+            }
+            .notif-btn-link.notif-btn-clear:hover {
+                color: #64748b;
+                background: #f1f5f9;
             }
             .notif-list {
                 list-style: none;
@@ -718,17 +733,18 @@
             <div class="notif-header">
                 <div class="notif-title-wrap">
                     <h3 class="notif-title">Notifications</h3>
-                    <button type="button" class="notif-snooze-btn ${isMuted ? 'snoozed' : ''}" id="notifBtnSnooze" title="${isMuted ? 'Toasts snoozed (Click to unmute)' : 'Snooze toast alerts'}">
+                    ${unreadCount > 0 ? `<span class="notif-unread-pill">${unreadCount} new</span>` : ''}
+                </div>
+                <div class="notif-actions">
+                    <button type="button" class="notif-icon-btn ${isMuted ? 'snoozed' : ''}" id="notifBtnSnooze" title="${isMuted ? 'Toasts snoozed (Click to unmute)' : 'Snooze toast alerts'}">
                         ${isMuted
                             ? `<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M13.73 21a2 2 0 0 1-3.46 0"/><path d="M18.63 13A17.89 17.89 0 0 1 18 8"/><path d="M6.26 6.26A5.86 5.86 0 0 0 6 8c0 7-3 9-3 9h14"/><path d="M18 8a6 6 0 0 0-9.33-5"/><line x1="1" y1="1" x2="23" y2="23"/></svg>`
                             : `<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>`
                         }
                     </button>
-                    ${unreadCount > 0 ? `<span class="notif-unread-pill">${unreadCount} new</span>` : ''}
-                </div>
-                <div class="notif-actions">
-                    ${unreadCount > 0 ? `<button class="notif-btn-link" id="notifBtnMarkAllRead">Mark all read</button>` : ''}
-                    ${history.length > 0 ? `<button class="notif-btn-link" id="notifBtnClearAll" style="color:#94a3b8;">Clear</button>` : ''}
+                    <a href="settings-notifications.html" class="notif-icon-btn" id="notifBtnSettings" title="Notification Settings">
+                        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+                    </a>
                 </div>
             </div>
 
@@ -766,10 +782,10 @@
                     <span>See all notifications</span>
                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
                 </a>
-                <a href="settings-notifications.html" class="notif-footer-link notif-settings-btn" title="Notification Preferences">
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
-                    <span>Settings</span>
-                </a>
+                <div class="notif-footer-actions">
+                    ${unreadCount > 0 ? `<button class="notif-btn-link" id="notifBtnMarkAllRead">Mark all read</button>` : ''}
+                    ${history.length > 0 ? `<button class="notif-btn-link notif-btn-clear" id="notifBtnClearAll">Clear</button>` : ''}
+                </div>
             </div>
         `;
 
