@@ -810,67 +810,82 @@
 // 
 
 // 1. BUSINESS SETTINGS
-    
-       // Upon Clicking on Save changes - frontend will trigger this RPC FUNCTION - save_business_settings.
-          
-             // What This RPC FUNCTION -  save_business_settings does:
-                
-                 // This RPC will write into the company settings Table and sync with companies table.
+
+// Upon Clicking on Save changes - frontend will trigger this RPC FUNCTION - save_business_settings.
+
+// What This RPC FUNCTION -  save_business_settings does:
+
+// This RPC will write into the company settings Table and sync with companies table.
 
 
 
 
 // 2. CONTACT SETTINGS
 
-        // Upon Clicking on Save changes - frontend will trigger this RPC FUNCTION - save_contact_settings.
-           
-              // What This RPC FUNCTION -  save_contact_settings does:
-                 
-                  // This RPC will write into the company_contacts Table and sync with companies table.
+// Upon Clicking on Save changes - frontend will trigger this RPC FUNCTION - save_contact_settings.
 
-      
-                  
+// What This RPC FUNCTION -  save_contact_settings does:
+
+// This RPC will write into the company_contacts Table and sync with companies table.
+
+
+
 // 3. TAX SETTINGS
 
-         // Direct supabase insert - NO RPC FUNCTION.
+// Direct supabase insert - NO RPC FUNCTION.
 
 
 
 //  4. BUSINESS HOURS SETTINGS
 
-         // Direct supabase upsert - No RPC FUNCITON 
+// Direct supabase upsert - No RPC FUNCITON 
 
 
 //  5. PAYMENTS SETTINGS
 
-         // Direct supabase upsert - No RPC FUNCTION 
+// Direct supabase upsert - No RPC FUNCTION 
 
 
-         
+
 //  6. NOTIFICATION SETTINGS
 
-         //  Direct supabse upsert - No RPC FUNCTION 
+//  Direct supabse upsert - No RPC FUNCTION 
 
 
 //  7. BRANCH SETTINS
 
-         // Direct supabase upsert - No RPC FUNCTION
+// Direct supabase upsert - No RPC FUNCTION
 
- 
+
 //  8. INVOICE SETTINGS  
 
-         // Direct supabse upsert - No RPC FUNCTION 
+// Direct supabse upsert - No RPC FUNCTION 
 
 
-         
+
 // ====================================================================================================================
 //  USERS SETTINGS
 // ===================================================================================================================         
 
-//
-//
-//
+// Direct supabase - No RPC FUNCTION Used.
 
+
+
+// ==================================================================================================================================
+//  BILLING & SUBSCRIPTIONS
+// ===================================================================================================================================
+
+// FEATURES LIST
+ 
+    // 1. current plan card with change plan button
+    // 2. Active add-ons card with manage add ons button
+    // 3. plan features
+    // 4. Available add ons card with status = active and those which are not subscribed with add option - add_ons
+    // 5. payment method with change payment method option
+    // 6. Billing summary  (read only) 
+    // 7. payment history card with (export all)
+    // 8. billing information card with edit billing information button
+    // 9. Subscription management card where customer can cancel the subscription 
 
 
 

@@ -1,4 +1,4 @@
-﻿// billing-api.js — Backend data loaders and subscription orchestrator
+// billing-api.js — Backend data loaders and subscription orchestrator
 // Part of scripts/billing/ modularization of billing-subscription.js
 // READ-ONLY with respect to subscriptions, subscription_add_ons, and payments.
 
@@ -13,7 +13,9 @@ import {
     renderAvailableAddons,
     renderBillingSummary,
     renderBillingInfo,
-    renderPaymentHistory
+    renderPaymentHistory,
+    renderPaymentMethod,
+    renderSubscriptionManagement
 } from './billing-renders.js';
 
 // ── Loading Mutex ──────────────────────────────────────────────
@@ -419,6 +421,241 @@ export async function loadPlanFeatures(supabase, planId) {
     }
 }
 
+// ── Master Unified Read RPC Loader ─────────────────────────────
+
+export async function loadActiveSubscriptionViaRpc(supabase, companyId) {
+    if (!supabase || !companyId) return false;
+    try {
+        const { data: rpcRes, error: rpcErr } = await supabase.rpc('get_company_subscription_details', {
+            p_company_id: companyId
+        });
+
+        if (rpcErr) {
+            console.warn('[Billing] RPC get_company_subscription_details error, using fallback:', rpcErr.message || rpcErr);
+            return false;
+        }
+
+        if (!rpcRes || rpcRes.success === false) {
+            console.warn('[Billing] RPC get_company_subscription_details unsuccessful:', rpcRes?.message);
+            return false;
+        }
+
+        // 1. Process Subscription
+        const sub = rpcRes.subscription;
+        if (!sub) {
+            state.currentMode = 'noplan';
+            state.subscriptionId = null;
+            state.planId = null;
+            state.features = { included: [], excluded: [], loaded: true };
+            state.activeAddons = [];
+            state.activeAddonIds = [];
+            state.addonsLoaded = true;
+        } else {
+            state.subscriptionId = sub.subscription_id || null;
+            state.planId = sub.plan_id || null;
+            const rawStatus = (sub.status || 'Active').trim().toLowerCase();
+            const isAutoRenew = sub.auto_renew !== false;
+            const isExpired = rawStatus === 'expired';
+            const isScheduledCancellation = (rawStatus === 'active' || rawStatus === 'trial' || rawStatus === 'past_due' || rawStatus === 'cancelled') && !isAutoRenew;
+
+            if (isExpired) {
+                state.currentMode = 'noplan';
+            } else if (isScheduledCancellation || rawStatus === 'cancelled') {
+                state.currentMode = 'cancelled';
+            } else {
+                state.currentMode = 'active';
+            }
+
+            const rawCycle = (sub.billing_cycle || 'monthly').toLowerCase().trim();
+            const cycleKey = (rawCycle === 'annual' || rawCycle === 'annually' || rawCycle === 'yearly') ? 'annual' : 'monthly';
+            const formattedPlanName = sub.plan_name
+                ? sub.plan_name.charAt(0).toUpperCase() + sub.plan_name.slice(1)
+                : 'Growth';
+
+            state.plan = {
+                name: formattedPlanName,
+                cycle: cycleKey,
+                price: sub.billing_amount != null ? Number(sub.billing_amount) : 0,
+                startDate: formatDateDisplay(sub.subscription_start_date),
+                validUntil: formatDateDisplay(sub.subscription_end_date),
+                nextBillingDate: (!isAutoRenew || isScheduledCancellation || rawStatus === 'cancelled')
+                    ? 'None'
+                    : (sub.next_billing_at ? formatDateDisplay(sub.next_billing_at) : 'None'),
+                status: isScheduledCancellation ? 'Active' : (rawStatus.charAt(0).toUpperCase() + rawStatus.slice(1)),
+                autoRenew: isAutoRenew
+            };
+        }
+
+        // 2. Process Features with feature-registry labels
+        let modulesMeta = [];
+        try {
+            const mod = await import('../../config/feature-registry.js');
+            if (mod && mod.MODULES_META) modulesMeta = mod.MODULES_META;
+        } catch (_) {}
+        const metaMap = new Map((modulesMeta || []).map((m, idx) => [m.key, { label: m.label, order: idx }]));
+
+        function getFeatureInfo(key) {
+            if (metaMap.has(key)) return metaMap.get(key);
+            const label = key
+                .split('_')
+                .map(w => w.charAt(0).toUpperCase() + w.slice(1).toLowerCase())
+                .join(' ');
+            return { label, order: 999 };
+        }
+
+        const sortFeatures = (keys) => {
+            return [...keys].sort((a, b) => {
+                const orderA = getFeatureInfo(a).order;
+                const orderB = getFeatureInfo(b).order;
+                if (orderA !== orderB) return orderA - orderB;
+                return a.localeCompare(b);
+            });
+        };
+
+        const includedKeys = rpcRes.features?.included_keys || [];
+        const excludedKeys = rpcRes.features?.excluded_keys || [];
+        state.features = {
+            included: sortFeatures(includedKeys).map(k => getFeatureInfo(k).label),
+            excluded: sortFeatures(excludedKeys).map(k => getFeatureInfo(k).label),
+            loaded: true
+        };
+
+        // 3. Process Available Add-ons Catalog
+        if (rpcRes.available_addons && rpcRes.available_addons.length > 0) {
+            const dynamicList = rpcRes.available_addons.map(item => {
+                const rawName = item.name || 'Add-on';
+                const displayName = rawName.charAt(0).toUpperCase() + rawName.slice(1);
+                const visual = getAddonVisualMeta(rawName + ' ' + (item.description || ''));
+                return {
+                    id: item.id,
+                    name: displayName,
+                    desc: item.description || '',
+                    price: Number(item.price) != null ? Number(item.price) : 0,
+                    priceMonthly: Number(item.price_monthly) || 0,
+                    priceYearly: Number(item.price_yearly) || 0,
+                    icon: visual.icon,
+                    theme: visual.theme
+                };
+            });
+            setCatalogAddons(dynamicList);
+        }
+
+        // 4. Process Active Add-ons
+        const activeItems = (rpcRes.active_addons || []).map(row => {
+            const rawName = row.name || 'Add-on';
+            const displayName = rawName.charAt(0).toUpperCase() + rawName.slice(1);
+            const visual = getAddonVisualMeta(rawName + ' ' + (row.description || ''));
+            return {
+                id: row.id,
+                subAddonId: row.sub_addon_id,
+                name: displayName,
+                price: Number(row.price) != null ? Number(row.price) : 0,
+                status: row.status || 'active',
+                startedAt: row.started_at,
+                endedAt: row.ended_at,
+                icon: visual.icon,
+                theme: visual.theme
+            };
+        });
+        state.activeAddons = activeItems;
+        state.activeAddonIds = activeItems.map(item => item.id);
+        state.addonsLoaded = true;
+        syncCatalogWithActiveAddons();
+
+        // 5. Process Billing Settings (Tax)
+        const bSettings = rpcRes.billing_settings || {};
+        state.taxSettings = {
+            taxName: (bSettings.tax_name || 'GST').trim(),
+            taxRate: Number(bSettings.tax_rate) || 0,
+            isActive: bSettings.is_active !== false,
+            loaded: true
+        };
+
+        // 6. Process Company Billing Information
+        const bInfo = rpcRes.billing_information;
+        if (bInfo) {
+            state.billingInfo = {
+                id: bInfo.id,
+                legalName: bInfo.legal_business_name || '',
+                gstin: bInfo.gstin || '',
+                pan: bInfo.pan || '',
+                email: bInfo.billing_email || '',
+                phone: bInfo.billing_phone || '',
+                addressLine1: bInfo.address_line_1 || '',
+                addressLine2: bInfo.address_line_2 || '',
+                city: bInfo.city || '',
+                district: bInfo.district || '',
+                state: bInfo.state || '',
+                pincode: bInfo.pin_code || '',
+                country: bInfo.country || 'India',
+                loaded: true
+            };
+        }
+
+        // 7. Process Payment History
+        const planTitle = (state.plan && state.plan.name) ? `${state.plan.name} Plan` : 'Subscription';
+        state.paymentHistory = (rpcRes.payment_history || []).map(row => {
+            const formattedDate = formatDateDisplay(row.created_at);
+            const amt = Number(row.amount) || 0;
+            const rawMethod = (row.payment_method || 'Razorpay').trim();
+            const displayMethod = rawMethod.charAt(0).toUpperCase() + rawMethod.slice(1);
+            const rawStatus = (row.status || 'paid').trim();
+            const displayStatus = rawStatus.charAt(0).toUpperCase() + rawStatus.slice(1);
+
+            return {
+                id: row.id,
+                date: formattedDate,
+                rawDate: row.created_at,
+                description: planTitle,
+                amount: amt,
+                method: displayMethod,
+                paymentRef: row.payment_id || row.order_id || '—',
+                status: displayStatus,
+                addons: [],
+                items: [
+                    {
+                        name: `${planTitle} — Subscription Payment`,
+                        subtitle: 'Core salon management & features',
+                        amount: amt,
+                        isPlan: true
+                    }
+                ]
+            };
+        });
+
+        // 8. Process Payment Method (if available from payments)
+        const pm = rpcRes.payment_method;
+        if (pm && pm.payment_method) {
+            const normPm = pm.payment_method.toLowerCase();
+            if (normPm.includes('card')) {
+                state.paymentMethod.type = 'card';
+            } else if (normPm.includes('upi')) {
+                state.paymentMethod.type = 'upi';
+            } else if (normPm.includes('netbanking')) {
+                state.paymentMethod.type = 'netbanking';
+            }
+        }
+
+        // 9. Re-render all cards
+        renderCurrentPlan(_renderCallbacks.handleRenewSubscription);
+        renderPlanFeatures();
+        renderActiveAddons();
+        renderAvailableAddons(_renderCallbacks.openAddAddonModal);
+        renderBillingSummary();
+        renderBillingInfo();
+        renderPaymentHistory(_renderCallbacks.openInvoiceModal);
+        renderPaymentMethod();
+        renderSubscriptionManagement(_renderCallbacks.openCancelSubscriptionModal, _renderCallbacks.handleRenewSubscription);
+
+        if (window.feather) feather.replace();
+        console.log('[Billing] Successfully loaded subscription via unified RPC get_company_subscription_details');
+        return true;
+    } catch (err) {
+        console.error('[Billing] Error in loadActiveSubscriptionViaRpc:', err);
+        return false;
+    }
+}
+
 // ── Main Subscription Orchestrator ────────────────────────────
 
 export async function loadActiveSubscription() {
@@ -459,6 +696,14 @@ export async function loadActiveSubscription() {
 
     try {
         const { supabase } = await import('../../lib/supabase.js');
+
+        // 0. Attempt Master Unified Read RPC first
+        const rpcLoaded = await loadActiveSubscriptionViaRpc(supabase, companyId);
+        if (rpcLoaded) {
+            return;
+        }
+
+        console.log('[Billing] RPC unavailable or returned error, falling back to direct table queries...');
 
         // 1. Fetch subscription for current company (prefer active/trial/past_due/cancelled status)
         let { data: subRows, error: subErr } = await supabase
