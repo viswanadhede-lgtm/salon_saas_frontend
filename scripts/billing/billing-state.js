@@ -53,7 +53,10 @@ export const state = {
         brand: '',
         upiId: '',
         upiApp: '',
-        bankName: ''
+        bankName: '',
+        paymentRef: '',
+        lastPaidDate: '',
+        methodName: ''
     },
     billingInfo: {
         id: null,

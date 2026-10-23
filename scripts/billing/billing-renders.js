@@ -425,6 +425,7 @@ export function renderPaymentMethod() {
     const hasCard = pm.type === 'card' && pm.cardMask;
     const hasUpi = pm.type === 'upi' && pm.upiId;
     const hasNetbanking = pm.type === 'netbanking' && pm.bankName;
+    const hasOnline = Boolean(pm.paymentRef || pm.type === 'online' || pm.methodName);
 
     if (hasUpi) {
         if (dom.cardNetworkLabel) dom.cardNetworkLabel.textContent = 'UPI AUTOPAY';
@@ -499,15 +500,48 @@ export function renderPaymentMethod() {
                 </div>
             </div>
         `;
+    } else if (hasOnline) {
+        // Razorpay Verified Payment Channel (V1 from payments ledger)
+        if (dom.cardNetworkLabel) dom.cardNetworkLabel.textContent = 'RAZORPAY';
+        visualClass = 'payment-card-visual payment-card-visual--razorpay';
+        const displayChannel = pm.methodName && pm.methodName.toLowerCase() !== 'online'
+            ? (pm.methodName.charAt(0).toUpperCase() + pm.methodName.slice(1))
+            : 'Online Checkout';
+        const maskedRef = pm.paymentRef
+            ? (pm.paymentRef.length > 20 ? `${pm.paymentRef.slice(0, 10)}...${pm.paymentRef.slice(-6)}` : pm.paymentRef)
+            : 'Verified Gateway';
+
+        visualHtml = `
+            <div class="payment-card-top">
+                <div style="display: flex; align-items: center; gap: 8px;">
+                    <i data-feather="shield" style="width: 18px; height: 18px; color: #38bdf8;"></i>
+                    <span style="font-size: 1.05rem; font-weight: 800; letter-spacing: 0.04em; color: #ffffff;">Razorpay Secure</span>
+                </div>
+                <span class="card-network-label" style="background: rgba(56, 189, 248, 0.2); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.35); padding: 2px 8px; border-radius: 4px; font-weight: 700;">VERIFIED</span>
+            </div>
+            <div class="payment-card-number" style="font-family: monospace; font-size: 0.95rem; letter-spacing: 0.04em; color: #f1f5f9;">
+                ${maskedRef}
+            </div>
+            <div class="payment-card-meta">
+                <div>
+                    <span class="meta-field-label">Payment Channel</span>
+                    <span class="meta-field-value">${displayChannel}</span>
+                </div>
+                <div style="text-align: right;">
+                    <span class="meta-field-label">Last Active</span>
+                    <span class="meta-field-value" style="color: #4ade80; font-weight: 700;">${pm.lastPaidDate || 'Active'}</span>
+                </div>
+            </div>
+        `;
     } else {
         // No saved payment method (Empty State)
-        if (dom.cardNetworkLabel) dom.cardNetworkLabel.textContent = 'NO CARD';
+        if (dom.cardNetworkLabel) dom.cardNetworkLabel.textContent = 'NO METHOD';
         visualClass = 'payment-card-visual payment-card-visual--empty';
         visualHtml = `
             <div style="display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100%; min-height: 140px; text-align: center; color: rgba(255,255,255,0.85); padding: 1rem;">
                 <i data-feather="credit-card" style="width: 32px; height: 32px; margin-bottom: 8px; opacity: 0.7;"></i>
                 <span style="font-size: 0.95rem; font-weight: 700; color: #ffffff;">No Payment Method Saved</span>
-                <span style="font-size: 0.8rem; margin-top: 4px; opacity: 0.75;">Add a card or UPI for recurring renewals</span>
+                <span style="font-size: 0.8rem; margin-top: 4px; opacity: 0.75;">Payment details are recorded upon checkout</span>
             </div>
         `;
     }

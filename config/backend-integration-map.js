@@ -915,8 +915,34 @@
                     // remember - This is not like the auto renewal ... add ons donot get auto renewed.
 
 
-//  Feature - 5 - Payment Method.
+//  Feature - 5 - Payment Method (V1 Read-Only):
+//            Direct Supabase read / RPC from public.payments table (latest paid transaction for company).
+//            
+//            Source Table:
+//              - public.payments (columns: payment_method, payment_id, created_at, status = 'paid')
+//            
+//            Implementation Details:
+//              1. Queried via unified RPC [get_company_subscription_details] (section 9: latest payment method) 
+//                 or fallback query in [loadPaymentHistory] ordering by created_at DESC LIMIT 1.
+//              2. If a completed transaction exists:
+//                 - Renders Razorpay Secure card visual with 'VERIFIED' badge.
+//                 - Displays transaction reference ID (payment_id), channel, and last active timestamp.
+//              3. If no payment exists yet:
+//                 - Displays clean empty state: 'No Payment Method Saved — Payment details are recorded upon checkout'.
+//              4. V1 Strategy:
+//                 - Read-only display of verified payment gateway channel.
+//                 - Changes to payment method are automatically captured and updated during subsequent plan checkouts.
+//                 - Standalone tokenized mandate management scheduled for V2.
 
 
+
+            
+//=======================================================================================================================================================================================
+// ROLES & PERMISSIONS.
+//=======================================================================================================================================================================================
+
+//
+//
+//
 
 

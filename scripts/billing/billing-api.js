@@ -359,6 +359,29 @@ export async function loadPaymentHistory(supabase, companyId) {
             };
         });
 
+        // Set payment method display from most recent paid transaction
+        if (data && data.length > 0) {
+            const latest = data[0];
+            const rawMethod = (latest.payment_method || '').toLowerCase().trim();
+            state.paymentMethod.paymentRef = latest.payment_id || latest.order_id || '';
+            state.paymentMethod.lastPaidDate = formatDateDisplay(latest.created_at);
+            state.paymentMethod.methodName = latest.payment_method || 'Razorpay';
+
+            if (rawMethod.includes('card')) {
+                state.paymentMethod.type = 'card';
+                state.paymentMethod.brand = 'Card';
+            } else if (rawMethod.includes('upi')) {
+                state.paymentMethod.type = 'upi';
+                state.paymentMethod.upiApp = 'UPI';
+            } else if (rawMethod.includes('netbanking')) {
+                state.paymentMethod.type = 'netbanking';
+            } else {
+                state.paymentMethod.type = 'online';
+                state.paymentMethod.brand = 'Razorpay';
+            }
+            renderPaymentMethod();
+        }
+
         renderPaymentHistory(_renderCallbacks.openInvoiceModal);
     } catch (err) {
         console.warn('[Billing] Non-blocking warning in loadPaymentHistory:', err);
@@ -654,14 +677,23 @@ export async function loadActiveSubscriptionViaRpc(supabase, companyId) {
 
         // 8. Process Payment Method (if available from payments)
         const pm = rpcRes.payment_method;
-        if (pm && pm.payment_method) {
-            const normPm = pm.payment_method.toLowerCase();
-            if (normPm.includes('card')) {
+        if (pm && (pm.payment_method || pm.payment_id)) {
+            const rawMethod = (pm.payment_method || '').toLowerCase().trim();
+            state.paymentMethod.paymentRef = pm.payment_id || '';
+            state.paymentMethod.lastPaidDate = formatDateDisplay(pm.created_at);
+            state.paymentMethod.methodName = pm.payment_method || 'Razorpay';
+
+            if (rawMethod.includes('card')) {
                 state.paymentMethod.type = 'card';
-            } else if (normPm.includes('upi')) {
+                state.paymentMethod.brand = 'Card';
+            } else if (rawMethod.includes('upi')) {
                 state.paymentMethod.type = 'upi';
-            } else if (normPm.includes('netbanking')) {
+                state.paymentMethod.upiApp = 'UPI';
+            } else if (rawMethod.includes('netbanking')) {
                 state.paymentMethod.type = 'netbanking';
+            } else {
+                state.paymentMethod.type = 'online';
+                state.paymentMethod.brand = 'Razorpay';
             }
         }
 
@@ -870,6 +902,7 @@ export async function loadActiveSubscription() {
 
         renderBillingSummary();
         renderBillingInfo();
+        renderPaymentMethod();
 
         if (window.feather) feather.replace();
     } catch (err) {
