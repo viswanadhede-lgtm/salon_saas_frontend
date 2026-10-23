@@ -247,95 +247,126 @@ Deno.serve(async (req: Request) => {
       );
     }
 
-    // ── 5. CANCEL IN RAZORPAY (IF RAZORPAY SUBSCRIPTION) ────────────────────
+    // ── 5. CANCEL IN RAZORPAY (STRICT ATOMIC REQUIREMENT) ─────────────────
     const rzpSubId =
       currentSub.razorpay_subscription_id ||
       (String(currentSub.subscription_id).startsWith("sub_") ? currentSub.subscription_id : null);
+
+    // If there is no Razorpay Subscription ID, recurring billing cannot be safely stopped.
+    // We MUST NOT mark it cancelled locally while recurring debits might still be active.
+    if (!rzpSubId) {
+      console.error(`cancel-subscription: Subscription [${currentSub.subscription_id}] has no Razorpay ID. Aborting.`);
+      return new Response(
+        JSON.stringify({
+          error: "No active Razorpay subscription ID found for this account. Cannot verify mandate cancellation. Please contact support.",
+        }),
+        {
+          status: 400,
+          headers: {
+            ...corsHeaders,
+            "Content-Type": "application/json",
+          },
+        }
+      );
+    }
+
+    if (!RAZORPAY_KEY_ID || !RAZORPAY_KEY_SECRET) {
+      console.error("cancel-subscription: RAZORPAY_KEY_ID or RAZORPAY_KEY_SECRET not configured");
+      return new Response(
+        JSON.stringify({ error: "Payment gateway credentials are not configured on server." }),
+        {
+          status: 500,
+          headers: {
+            ...corsHeaders,
+            "Content-Type": "application/json",
+          },
+        }
+      );
+    }
 
     let rzpCancelled = false;
     let rzpError: string | null = null;
     let isImmediateCancel = !cancel_at_cycle_end;
 
-    if (rzpSubId && RAZORPAY_KEY_ID && RAZORPAY_KEY_SECRET) {
-      const rzpAuthHeader = "Basic " + btoa(`${RAZORPAY_KEY_ID}:${RAZORPAY_KEY_SECRET}`);
+    const rzpAuthHeader = "Basic " + btoa(`${RAZORPAY_KEY_ID}:${RAZORPAY_KEY_SECRET}`);
 
-      console.log(`cancel-subscription: Cancelling Razorpay subscription [${rzpSubId}], cancel_at_cycle_end=${cancel_at_cycle_end}`);
+    console.log(`cancel-subscription: Calling Razorpay API to cancel subscription [${rzpSubId}], cancel_at_cycle_end=${cancel_at_cycle_end}`);
 
-      // Attempt cancellation at cycle end first
-      let rzpRes = await fetch(
-        `https://api.razorpay.com/v1/subscriptions/${rzpSubId}/cancel`,
-        {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            "Authorization": rzpAuthHeader,
-          },
-          body: JSON.stringify({
-            cancel_at_cycle_end: cancel_at_cycle_end ? 1 : 0,
-          }),
-        }
-      );
-
-      let rzpData = await rzpRes.json().catch(() => ({}));
-
-      // If Razorpay rejects cycle-end cancellation (e.g. trial or unbilled subscription),
-      // fallback to immediate cancellation (cancel_at_cycle_end: 0)
-      if (!rzpRes.ok) {
-        const errorDesc = rzpData?.error?.description || "";
-        console.warn(`cancel-subscription: Razorpay cancel with cycle_end=${cancel_at_cycle_end ? 1 : 0} responded:`, errorDesc);
-
-        if (
-          errorDesc.toLowerCase().includes("already cancelled") ||
-          errorDesc.toLowerCase().includes("cannot be cancelled")
-        ) {
-          // Subscription already cancelled in Razorpay dashboard
-          rzpCancelled = true;
-        } else if (cancel_at_cycle_end) {
-          console.log(`cancel-subscription: Retrying with immediate cancel for [${rzpSubId}]...`);
-          rzpRes = await fetch(
-            `https://api.razorpay.com/v1/subscriptions/${rzpSubId}/cancel`,
-            {
-              method: "POST",
-              headers: {
-                "Content-Type": "application/json",
-                "Authorization": rzpAuthHeader,
-              },
-              body: JSON.stringify({
-                cancel_at_cycle_end: 0,
-              }),
-            }
-          );
-          rzpData = await rzpRes.json().catch(() => ({}));
-
-          if (rzpRes.ok) {
-            rzpCancelled = true;
-            isImmediateCancel = true;
-          } else {
-            rzpError = rzpData?.error?.description || "Razorpay cancellation failed";
-          }
-        } else {
-          rzpError = errorDesc || "Razorpay cancellation failed";
-        }
-      } else {
-        rzpCancelled = true;
+    // Attempt cancellation at cycle end first
+    let rzpRes = await fetch(
+      `https://api.razorpay.com/v1/subscriptions/${rzpSubId}/cancel`,
+      {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": rzpAuthHeader,
+        },
+        body: JSON.stringify({
+          cancel_at_cycle_end: cancel_at_cycle_end ? 1 : 0,
+        }),
       }
+    );
 
-      if (rzpError && !rzpCancelled) {
-        console.error(`cancel-subscription: Razorpay cancellation error:`, rzpError);
-        return new Response(
-          JSON.stringify({ error: `Payment gateway error: ${rzpError}` }),
+    let rzpData = await rzpRes.json().catch(() => ({}));
+
+    // If Razorpay rejects cycle-end cancellation (e.g. unbilled trial or pending mandate),
+    // fallback to immediate cancellation (cancel_at_cycle_end: 0)
+    if (!rzpRes.ok) {
+      const errorDesc = rzpData?.error?.description || "";
+      console.warn(`cancel-subscription: Razorpay cancel with cycle_end=${cancel_at_cycle_end ? 1 : 0} responded:`, errorDesc);
+
+      if (
+        errorDesc.toLowerCase().includes("already cancelled") ||
+        errorDesc.toLowerCase().includes("cannot be cancelled")
+      ) {
+        // Subscription already cancelled in Razorpay dashboard
+        rzpCancelled = true;
+      } else if (cancel_at_cycle_end) {
+        console.log(`cancel-subscription: Retrying with immediate cancel for [${rzpSubId}]...`);
+        rzpRes = await fetch(
+          `https://api.razorpay.com/v1/subscriptions/${rzpSubId}/cancel`,
           {
-            status: 400,
+            method: "POST",
             headers: {
-              ...corsHeaders,
               "Content-Type": "application/json",
+              "Authorization": rzpAuthHeader,
             },
+            body: JSON.stringify({
+              cancel_at_cycle_end: 0,
+            }),
           }
         );
+        rzpData = await rzpRes.json().catch(() => ({}));
+
+        if (rzpRes.ok) {
+          rzpCancelled = true;
+          isImmediateCancel = true;
+        } else {
+          rzpError = rzpData?.error?.description || "Razorpay cancellation failed";
+        }
+      } else {
+        rzpError = errorDesc || "Razorpay cancellation failed";
       }
     } else {
-      console.log(`cancel-subscription: Subscription [${currentSub.subscription_id}] has no Razorpay ID; updating local DB only.`);
+      rzpCancelled = true;
     }
+
+    // STRICT ATOMICITY: If Razorpay failed, STOP! Do not touch the database!
+    if (rzpError && !rzpCancelled) {
+      console.error(`cancel-subscription: Razorpay cancellation rejected:`, rzpError);
+      return new Response(
+        JSON.stringify({ error: `Payment gateway error: ${rzpError}. Subscription was NOT cancelled.` }),
+        {
+          status: 400,
+          headers: {
+            ...corsHeaders,
+            "Content-Type": "application/json",
+          },
+        }
+      );
+    }
+
+    console.log(`cancel-subscription: Razorpay cancellation confirmed for [${rzpSubId}]. Proceeding to update local DB.`);
 
     // ── 6. ATOMICALLY UPDATE SUPABASE DATABASE VIA RPC ──────────────────────
     const { data: rpcResult, error: rpcErr } = await supabaseAdmin.rpc(

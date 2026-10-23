@@ -1,12 +1,13 @@
-﻿// billing-modal-addons.js — Modal 1 (Add Add-on) + Modal 2 (Manage Add-ons)
+// billing-modal-addons.js — Modal 1 (Add Add-on) + Modal 2 (Manage Add-ons)
 // Part of scripts/billing/ modularization of billing-subscription.js
-// IMPORTANT: Current behavior is UI-only (contact support) — no DB writes.
+// Features 2 & 4: Add-on Purchase Checkout (Razorpay) & Management (Deactivation)
 
 'use strict';
 
 import { state, CATALOG_ADDONS, getAddonById, syncCatalogWithActiveAddons } from './billing-state.js';
-import { fmtCurrency, showToast } from './billing-helpers.js';
+import { fmtCurrency, showToast, getCompanyId } from './billing-helpers.js';
 import { openModal, closeModal } from './billing-renders.js';
+import { loadActiveSubscriptionOnce } from './billing-api.js';
 
 // DOM references — injected via initModalAddons()
 let dom = {};
@@ -18,6 +19,7 @@ export function initModalAddons(domRefs) {
 // ── Modal 2: Manage Add-ons — local ephemeral state ────────────
 let localSelectedAddonIds = [];
 let initialActiveAddonIds = [];
+let currentSelectedCycle = 'monthly';
 
 // ── Helper ─────────────────────────────────────────────────────
 
@@ -28,20 +30,78 @@ export function calcAddonsTotal(addonIdList) {
     }, 0);
 }
 
-// ── Modal 1: Add Add-on Confirmation ──────────────────────────
+// ── Modal 1: Add Add-on Confirmation & Purchase ────────────────
 
 export function openAddAddonModal(addonId) {
     const addon = getAddonById(addonId);
     if (!addon) return;
 
     state.pendingAddonId = addonId;
-    dom.addAddonModalTitle.textContent = `Add ${addon.name}?`;
-    dom.addAddonModalPrice.textContent = `${fmtCurrency(addon.price)} / month`;
-    dom.addAddonModalDesc.textContent = addon.desc || '';
+    currentSelectedCycle = 'monthly';
+
+    if (dom.addAddonModalTitle) {
+        dom.addAddonModalTitle.textContent = `Add ${addon.name}`;
+    }
+
+    const priceMonthly = Number(addon.priceMonthly) || Number(addon.price) || 0;
+    const priceYearly = Number(addon.priceYearly) || Math.round(priceMonthly * 10);
+
+    const monthlyPriceEl = document.getElementById('addonMonthlyPriceText');
+    const yearlyPriceEl = document.getElementById('addonYearlyPriceText');
+    const pillMonthly = document.getElementById('pillDurationMonthly');
+    const pillYearly = document.getElementById('pillDurationYearly');
+
+    if (monthlyPriceEl) monthlyPriceEl.textContent = `${fmtCurrency(priceMonthly)}/mo`;
+    if (yearlyPriceEl) yearlyPriceEl.textContent = `${fmtCurrency(priceYearly)}/yr`;
+
+    function updateCycleDisplay(cycle) {
+        currentSelectedCycle = cycle;
+        const currentAmount = cycle === 'yearly' ? priceYearly : priceMonthly;
+        const currentFreq = cycle === 'yearly' ? 'year' : 'month';
+
+        if (dom.addAddonModalPrice) {
+            dom.addAddonModalPrice.textContent = `${fmtCurrency(currentAmount)} / ${currentFreq}`;
+        }
+        if (dom.addAddonModalDesc) {
+            dom.addAddonModalDesc.textContent = addon.desc || 'Premium feature add-on for your salon management.';
+        }
+
+        if (pillMonthly && pillYearly) {
+            if (cycle === 'yearly') {
+                pillYearly.style.borderColor = 'var(--primary, #0ea5e9)';
+                pillYearly.style.background = 'rgba(14, 165, 233, 0.06)';
+                pillMonthly.style.borderColor = 'var(--border-color, #e2e8f0)';
+                pillMonthly.style.background = 'var(--card-bg, #ffffff)';
+            } else {
+                pillMonthly.style.borderColor = 'var(--primary, #0ea5e9)';
+                pillMonthly.style.background = 'rgba(14, 165, 233, 0.06)';
+                pillYearly.style.borderColor = 'var(--border-color, #e2e8f0)';
+                pillYearly.style.background = 'var(--card-bg, #ffffff)';
+            }
+        }
+    }
+
+    // Attach cycle selector listeners
+    if (pillMonthly) {
+        pillMonthly.onclick = () => {
+            const radio = pillMonthly.querySelector('input[type="radio"]');
+            if (radio) radio.checked = true;
+            updateCycleDisplay('monthly');
+        };
+    }
+    if (pillYearly) {
+        pillYearly.onclick = () => {
+            const radio = pillYearly.querySelector('input[type="radio"]');
+            if (radio) radio.checked = true;
+            updateCycleDisplay('yearly');
+        };
+    }
+
+    updateCycleDisplay('monthly');
 
     if (dom.btnConfirmAddAddon) {
         dom.btnConfirmAddAddon.disabled = false;
-        dom.btnConfirmAddAddon.innerHTML = 'Add Add-on';
+        dom.btnConfirmAddAddon.textContent = 'Proceed to Payment';
     }
 
     const closeButtons = dom.modalAddAddon.querySelectorAll('[data-close-modal], .billing-modal-close');
@@ -54,9 +114,153 @@ export function bindAddAddonConfirm() {
     if (!dom.btnConfirmAddAddon) return;
     dom.btnConfirmAddAddon.addEventListener('click', async function () {
         if (!state.pendingAddonId) return;
-        closeModal(dom.modalAddAddon);
-        state.pendingAddonId = null;
-        showToast('Add-on activation is managed via billing support. Please contact support or purchase via checkout.');
+
+        const addon = getAddonById(state.pendingAddonId);
+        if (!addon) {
+            showToast('Selected add-on not found.');
+            return;
+        }
+
+        const companyId = getCompanyId();
+        if (!companyId) {
+            showToast('Company ID not found. Please refresh and try again.');
+            return;
+        }
+
+        // Retrieve auth token
+        let accessToken = localStorage.getItem('token') || '';
+        if (!accessToken) {
+            try {
+                const { supabase } = await import('../../lib/supabase.js');
+                const { data: sessData } = await supabase.auth.getSession();
+                accessToken = sessData?.session?.access_token || '';
+            } catch (_) {}
+        }
+
+        if (!accessToken) {
+            showToast('Your session has expired. Please sign in again.');
+            return;
+        }
+
+        const originalBtnText = dom.btnConfirmAddAddon.textContent;
+        dom.btnConfirmAddAddon.disabled = true;
+        dom.btnConfirmAddAddon.textContent = 'Preparing checkout...';
+
+        try {
+            const SUPABASE_URL = 'https://qxmgyxjwpxkdbgldpdil.supabase.co';
+            const SUPABASE_ANON_KEY = 'sb_publishable_aqCSbMiVxH5cSZxgssdNqw_jQZvzmA0';
+
+            // 1. Call purchase-addon Edge Function to create Razorpay Order
+            const orderRes = await fetch(`${SUPABASE_URL}/functions/v1/purchase-addon`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'apikey': SUPABASE_ANON_KEY,
+                    'Authorization': `Bearer ${accessToken}`
+                },
+                body: JSON.stringify({
+                    action: 'create_order',
+                    company_id: companyId,
+                    addon_id: addon.id,
+                    billing_cycle: currentSelectedCycle
+                })
+            });
+
+            const orderData = await orderRes.json().catch(() => ({}));
+
+            if (!orderRes.ok || orderData.error) {
+                throw new Error(orderData.error || 'Failed to initialize payment.');
+            }
+
+            if (!window.Razorpay) {
+                throw new Error('Razorpay SDK failed to load. Please check your internet connection and refresh.');
+            }
+
+            // 2. Open Razorpay Standard Checkout Popup
+            const rzpOptions = {
+                key: orderData.key_id,
+                amount: Math.round(orderData.amount * 100),
+                currency: orderData.currency || 'INR',
+                name: 'BharathBots',
+                description: `${orderData.addon_name} (${orderData.billing_cycle === 'yearly' ? 'Yearly' : 'Monthly'})`,
+                order_id: orderData.order_id,
+                prefill: {
+                    name: orderData.customer_name || '',
+                    email: orderData.customer_email || '',
+                    contact: orderData.customer_phone || ''
+                },
+                theme: {
+                    color: '#0ea5e9'
+                },
+                modal: {
+                    ondismiss: function () {
+                        dom.btnConfirmAddAddon.disabled = false;
+                        dom.btnConfirmAddAddon.textContent = originalBtnText;
+                    }
+                },
+                handler: async function (response) {
+                    dom.btnConfirmAddAddon.textContent = 'Verifying payment...';
+                    showToast('Payment received! Activating add-on...', 'info');
+
+                    try {
+                        // 3. Verify signature and activate add-on in DB
+                        const verifyRes = await fetch(`${SUPABASE_URL}/functions/v1/purchase-addon`, {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/json',
+                                'apikey': SUPABASE_ANON_KEY,
+                                'Authorization': `Bearer ${accessToken}`
+                            },
+                            body: JSON.stringify({
+                                action: 'verify_and_activate',
+                                company_id: companyId,
+                                addon_id: addon.id,
+                                billing_cycle: currentSelectedCycle,
+                                razorpay_order_id: response.razorpay_order_id,
+                                razorpay_payment_id: response.razorpay_payment_id,
+                                razorpay_signature: response.razorpay_signature
+                            })
+                        });
+
+                        const verifyData = await verifyRes.json().catch(() => ({}));
+
+                        if (!verifyRes.ok || verifyData.error) {
+                            throw new Error(verifyData.error || 'Payment verification failed.');
+                        }
+
+                        closeModal(dom.modalAddAddon);
+                        state.pendingAddonId = null;
+                        showToast(`${addon.name} activated successfully!`, 'success');
+
+                        // Refresh active add-ons and billing summary from DB
+                        await loadActiveSubscriptionOnce();
+
+                    } catch (vErr) {
+                        console.error('[Billing] Add-on activation error:', vErr);
+                        showToast(vErr.message || 'Could not verify payment. Please contact support.', 'error');
+                    } finally {
+                        dom.btnConfirmAddAddon.disabled = false;
+                        dom.btnConfirmAddAddon.textContent = originalBtnText;
+                    }
+                }
+            };
+
+            const rzp = new window.Razorpay(rzpOptions);
+            rzp.on('payment.failed', function (resp) {
+                console.error('[Billing] Razorpay payment failed:', resp.error);
+                showToast(`Payment failed: ${resp.error?.description || 'Transaction declined'}`, 'error');
+                dom.btnConfirmAddAddon.disabled = false;
+                dom.btnConfirmAddAddon.textContent = originalBtnText;
+            });
+
+            rzp.open();
+
+        } catch (err) {
+            console.error('[Billing] Add-on checkout error:', err);
+            showToast(err.message || 'Checkout failed. Please try again.', 'error');
+            dom.btnConfirmAddAddon.disabled = false;
+            dom.btnConfirmAddAddon.textContent = originalBtnText;
+        }
     });
 }
 
@@ -266,7 +470,7 @@ export function bindManageAddonsEvents() {
         dom.btnCloseManageAddons.addEventListener('click', closeManageAddonsModal);
     }
 
-    // Save Changes: UI-only, no DB write
+    // Save Changes: Wire deactivations to purchase-addon Edge Function
     if (dom.btnSaveManageAddons) {
         dom.btnSaveManageAddons.addEventListener('click', async function () {
             const addedIds = localSelectedAddonIds.filter(id => !initialActiveAddonIds.includes(id));
@@ -277,8 +481,79 @@ export function bindManageAddonsEvents() {
                 return;
             }
 
-            closeModal(dom.modalManageAddons);
-            showToast('Add-on modifications are managed via billing support. Please contact support or update via checkout.');
+            // If user only selected new add-ons, clarify that new add-ons require payment checkout
+            if (addedIds.length > 0 && removedIds.length === 0) {
+                closeModal(dom.modalManageAddons);
+                showToast('To activate new add-ons, please use "+ Add" on the specific add-on card to checkout.', 'info');
+                return;
+            }
+
+            const originalBtnText = dom.btnSaveManageAddons.textContent;
+            dom.btnSaveManageAddons.disabled = true;
+            dom.btnSaveManageAddons.textContent = 'Updating add-ons...';
+
+            try {
+                const companyId = getCompanyId();
+                if (!companyId) {
+                    throw new Error('Salon company ID not found. Please refresh the page.');
+                }
+
+                let accessToken = localStorage.getItem('token') || '';
+                if (!accessToken) {
+                    try {
+                        const { supabase } = await import('../../lib/supabase.js');
+                        const { data: sessData } = await supabase.auth.getSession();
+                        accessToken = sessData?.session?.access_token || '';
+                    } catch (_) {}
+                }
+
+                if (!accessToken) {
+                    throw new Error('Your session has expired. Please sign in again.');
+                }
+
+                const SUPABASE_URL = 'https://qxmgyxjwpxkdbgldpdil.supabase.co';
+                const SUPABASE_ANON_KEY = 'sb_publishable_aqCSbMiVxH5cSZxgssdNqw_jQZvzmA0';
+
+                // Process deactivation for each unselected active add-on
+                for (const addonId of removedIds) {
+                    const deactRes = await fetch(`${SUPABASE_URL}/functions/v1/purchase-addon`, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'apikey': SUPABASE_ANON_KEY,
+                            'Authorization': `Bearer ${accessToken}`
+                        },
+                        body: JSON.stringify({
+                            action: 'deactivate',
+                            company_id: companyId,
+                            addon_id: addonId
+                        })
+                    });
+
+                    const deactData = await deactRes.json().catch(() => ({}));
+                    if (!deactRes.ok || deactData.error) {
+                        throw new Error(deactData.error || `Failed to remove add-on.`);
+                    }
+                }
+
+                closeModal(dom.modalManageAddons);
+
+                if (addedIds.length > 0) {
+                    showToast('Add-on(s) removed successfully. Note: newly checked add-ons require payment via "+ Add".', 'info');
+                } else {
+                    showToast('Add-ons updated successfully.', 'success');
+                }
+
+                // Refresh active add-ons and billing summary from DB
+                await loadActiveSubscriptionOnce();
+
+            } catch (err) {
+                console.error('[Billing] Error updating manage add-ons:', err);
+                showToast(err.message || 'Failed to update add-ons.', 'error');
+            } finally {
+                dom.btnSaveManageAddons.disabled = false;
+                dom.btnSaveManageAddons.textContent = originalBtnText;
+            }
         });
     }
 

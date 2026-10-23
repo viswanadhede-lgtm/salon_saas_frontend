@@ -343,7 +343,7 @@
 
     <!-- Modals for Billing & Subscription Interactions -->
 
-    <!-- Modal 1: Add Add-on Confirmation Modal -->
+    <!-- Modal 1: Add Add-on Confirmation & Purchase Modal -->
     <div class="billing-modal-overlay" id="modalAddAddon">
         <div class="billing-modal-box">
             <div class="billing-modal-header">
@@ -352,16 +352,43 @@
             </div>
             <div class="billing-modal-body">
                 <div class="modal-callout-box">
-                    <p style="margin: 0; font-weight: 600; font-size: 1rem; color: var(--text-primary);" id="addAddonModalPrice">â€”</p>
-                    <p style="margin: 4px 0 0 0; font-size: 0.82rem; color: var(--text-muted);" id="addAddonModalDesc">â€”</p>
+                    <p style="margin: 0; font-weight: 600; font-size: 1.05rem; color: var(--text-primary);" id="addAddonModalPrice">—</p>
+                    <p style="margin: 4px 0 0 0; font-size: 0.84rem; color: var(--text-muted);" id="addAddonModalDesc">—</p>
                 </div>
-                <p style="margin: 0; font-size: 0.88rem; color: var(--text-secondary);">
-                    You'll be charged according to your current subscription billing cycle.
-                </p>
+
+                <!-- Duration / Billing Cycle Selector -->
+                <div style="margin: 1.25rem 0 0.5rem 0;">
+                    <label style="display: block; font-size: 0.82rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.04em; color: var(--text-secondary); margin-bottom: 0.5rem;">
+                        Select Duration
+                    </label>
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;" id="addonDurationGroup">
+                        <label class="addon-cycle-pill is-selected" id="pillDurationMonthly" style="display: flex; flex-direction: column; padding: 12px 14px; border: 1.5px solid var(--primary, #0ea5e9); border-radius: 8px; cursor: pointer; background: rgba(14, 165, 233, 0.06); transition: all 0.2s;">
+                            <div style="display: flex; justify-content: space-between; align-items: center;">
+                                <span style="font-weight: 600; font-size: 0.88rem; color: var(--text-primary);">Monthly</span>
+                                <input type="radio" name="addonCycleSelect" value="monthly" checked style="accent-color: var(--primary, #0ea5e9);">
+                            </div>
+                            <span style="font-size: 0.95rem; font-weight: 700; margin-top: 4px; color: var(--text-primary);" id="addonMonthlyPriceText">—</span>
+                            <span style="font-size: 0.75rem; color: var(--text-muted); margin-top: 2px;">30 days access</span>
+                        </label>
+                        <label class="addon-cycle-pill" id="pillDurationYearly" style="display: flex; flex-direction: column; padding: 12px 14px; border: 1.5px solid var(--border-color, #e2e8f0); border-radius: 8px; cursor: pointer; background: var(--card-bg, #ffffff); transition: all 0.2s;">
+                            <div style="display: flex; justify-content: space-between; align-items: center;">
+                                <span style="font-weight: 600; font-size: 0.88rem; color: var(--text-primary);">Yearly</span>
+                                <input type="radio" name="addonCycleSelect" value="yearly" style="accent-color: var(--primary, #0ea5e9);">
+                            </div>
+                            <span style="font-size: 0.95rem; font-weight: 700; margin-top: 4px; color: var(--text-primary);" id="addonYearlyPriceText">—</span>
+                            <span style="font-size: 0.75rem; color: var(--text-muted); margin-top: 2px;">365 days access</span>
+                        </label>
+                    </div>
+                </div>
+
+                <div style="margin-top: 0.85rem; display: flex; align-items: center; gap: 8px; font-size: 0.82rem; color: var(--text-muted);">
+                    <i data-feather="shield" style="width: 14px; height: 14px; color: #10b981;"></i>
+                    <span>Secure instant activation via Razorpay.</span>
+                </div>
             </div>
             <div class="billing-modal-footer">
                 <button type="button" class="btn-plain btn-plain-secondary" data-close-modal>Cancel</button>
-                <button type="button" class="btn-plain btn-plain-primary" id="btnConfirmAddAddon">Add Add-on</button>
+                <button type="button" class="btn-plain btn-plain-primary" id="btnConfirmAddAddon">Proceed to Payment</button>
             </div>
         </div>
     </div>
@@ -848,6 +875,9 @@
         <i data-feather="check"></i>
         <span id="billingToastMsg">Action completed successfully.</span>
     </div>
+
+    <!-- Razorpay Checkout SDK -->
+    <script src="https://checkout.razorpay.com/v1/checkout.js"></script>
 
     <script type="module" src="scripts/app-shell.js"></script>
     <script src="billing-subscription.js"></script>

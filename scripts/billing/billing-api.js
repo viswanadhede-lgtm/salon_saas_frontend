@@ -78,8 +78,8 @@ export async function resolveCompanyId() {
 
 // ── Active Add-ons Loader ──────────────────────────────────────
 
-export async function loadActiveAddons(supabase, subscriptionId) {
-    if (!subscriptionId) {
+export async function loadActiveAddons(supabase, subscriptionId, companyId) {
+    if (!subscriptionId && !companyId) {
         state.activeAddons = [];
         state.activeAddonIds = [];
         state.addonsLoaded = true;
@@ -88,12 +88,19 @@ export async function loadActiveAddons(supabase, subscriptionId) {
     }
 
     try {
-        // Query subscription_add_ons for current subscription where status = 'active'
-        const { data: addOnsData, error: addOnsErr } = await supabase
+        // Query subscription_add_ons for current company/subscription where status = 'active'
+        let query = supabase
             .from('subscription_add_ons')
             .select('id, subscription_id, company_id, addon_id, addon_name, price, status, started_at, ended_at')
-            .eq('subscription_id', subscriptionId)
             .eq('status', 'active');
+
+        if (companyId) {
+            query = query.eq('company_id', companyId);
+        } else if (subscriptionId) {
+            query = query.eq('subscription_id', subscriptionId);
+        }
+
+        const { data: addOnsData, error: addOnsErr } = await query;
 
         if (addOnsErr) {
             console.error('[Billing] Error fetching active add-ons:', addOnsErr);
@@ -185,7 +192,11 @@ export async function loadAvailableAddonsCatalog(supabase) {
                     id: item.addon_id || item.id,
                     name: displayName,
                     desc: item.description || '',
-                    price: Number(item.price) != null ? Number(item.price) : 0,
+                    price: Number(item.price_monthly) || Number(item.price) || 0,
+                    priceMonthly: Number(item.price_monthly) || Number(item.price) || 0,
+                    priceYearly: Number(item.price_yearly) || 0,
+                    durationMonthly: Number(item.duration_monthly) || 30,
+                    durationYearly: Number(item.duration_yearly) || 365,
                     icon: visual.icon,
                     theme: visual.theme
                 };
@@ -839,7 +850,7 @@ export async function loadActiveSubscription() {
         // billing information, and payment history in parallel
         await Promise.all([
             loadPlanFeatures(supabase, sub.plan_id),
-            loadActiveAddons(supabase, sub.subscription_id),
+            loadActiveAddons(supabase, sub.subscription_id, companyId),
             loadAvailableAddonsCatalog(supabase),
             loadBillingSettings(supabase, companyId),
             loadBillingInformation(supabase, companyId),
