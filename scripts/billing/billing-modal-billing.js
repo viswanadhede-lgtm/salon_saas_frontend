@@ -1,4 +1,4 @@
-﻿// billing-modal-billing.js — Modal 4: Edit Billing Information
+// billing-modal-billing.js — Modal 4: Edit Billing Information
 // Part of scripts/billing/ modularization of billing-subscription.js
 // THIS IS THE ONE DB WRITE MODULE — writes to company_billing_information only.
 
@@ -95,21 +95,7 @@ export function bindBillingInfoEvents() {
                 if (companyId) {
                     const { supabase } = await import('../../lib/supabase.js');
                     if (supabase) {
-                        let rowId = state.billingInfo.id;
-                        if (!rowId) {
-                            const { data: existingRows } = await supabase
-                                .from('company_billing_information')
-                                .select('id')
-                                .eq('company_id', companyId)
-                                .order('created_at', { ascending: false })
-                                .limit(1);
-                            if (existingRows && existingRows.length > 0) {
-                                rowId = existingRows[0].id;
-                            }
-                        }
-
                         const payload = {
-                            company_id: companyId,
                             legal_business_name: legalName,
                             gstin: gstin,
                             pan: pan,
@@ -121,33 +107,64 @@ export function bindBillingInfoEvents() {
                             district: district,
                             state: stateVal,
                             pin_code: pincode,
-                            country: country,
-                            updated_at: new Date().toISOString()
+                            country: country
                         };
 
-                        if (rowId) {
-                            const { error: updErr } = await supabase
-                                .from('company_billing_information')
-                                .update(payload)
-                                .eq('id', rowId);
-                            if (updErr) {
-                                console.error('[Billing] Error updating billing information:', updErr);
-                                throw updErr;
+                        let savedViaRpc = false;
+                        try {
+                            const { data: rpcRes, error: rpcErr } = await supabase.rpc('save_billing_information', {
+                                p_company_id: companyId,
+                                p_data: payload
+                            });
+
+                            if (!rpcErr && rpcRes && rpcRes.success !== false) {
+                                if (rpcRes.id) state.billingInfo.id = rpcRes.id;
+                                savedViaRpc = true;
+                                console.log('[Billing] Billing info saved and synchronized via RPC save_billing_information');
+                            } else if (rpcErr) {
+                                console.warn('[Billing] RPC save_billing_information error, falling back to direct table write:', rpcErr.message || rpcErr);
                             }
-                            state.billingInfo.id = rowId;
-                        } else {
-                            payload.created_at = new Date().toISOString();
-                            const { data: insData, error: insErr } = await supabase
-                                .from('company_billing_information')
-                                .insert([payload])
-                                .select('id')
-                                .maybeSingle();
-                            if (insErr) {
-                                console.error('[Billing] Error inserting billing information:', insErr);
-                                throw insErr;
+                        } catch (rpcEx) {
+                            console.warn('[Billing] RPC exception, falling back to direct table write:', rpcEx);
+                        }
+
+                        // Direct table fallback if RPC is not yet created in DB
+                        if (!savedViaRpc) {
+                            let rowId = state.billingInfo.id;
+                            if (!rowId) {
+                                const { data: existingRows } = await supabase
+                                    .from('company_billing_information')
+                                    .select('id')
+                                    .eq('company_id', companyId)
+                                    .order('created_at', { ascending: false })
+                                    .limit(1);
+                                if (existingRows && existingRows.length > 0) {
+                                    rowId = existingRows[0].id;
+                                }
                             }
-                            if (insData?.id) {
-                                state.billingInfo.id = insData.id;
+
+                            const directPayload = {
+                                ...payload,
+                                company_id: companyId,
+                                updated_at: new Date().toISOString()
+                            };
+
+                            if (rowId) {
+                                const { error: updErr } = await supabase
+                                    .from('company_billing_information')
+                                    .update(directPayload)
+                                    .eq('id', rowId);
+                                if (updErr) throw updErr;
+                                state.billingInfo.id = rowId;
+                            } else {
+                                directPayload.created_at = new Date().toISOString();
+                                const { data: insData, error: insErr } = await supabase
+                                    .from('company_billing_information')
+                                    .insert([directPayload])
+                                    .select('id')
+                                    .maybeSingle();
+                                if (insErr) throw insErr;
+                                if (insData?.id) state.billingInfo.id = insData.id;
                             }
                         }
                     }

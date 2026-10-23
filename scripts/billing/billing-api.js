@@ -426,13 +426,20 @@ export async function loadPlanFeatures(supabase, planId) {
 export async function loadActiveSubscriptionViaRpc(supabase, companyId) {
     if (!supabase || !companyId) return false;
     try {
-        const { data: rpcRes, error: rpcErr } = await supabase.rpc('get_company_subscription_details', {
+        const { data: rawRes, error: rpcErr } = await supabase.rpc('get_company_subscription_details', {
             p_company_id: companyId
         });
 
         if (rpcErr) {
             console.warn('[Billing] RPC get_company_subscription_details error, using fallback:', rpcErr.message || rpcErr);
             return false;
+        }
+
+        let rpcRes = rawRes;
+        if (Array.isArray(rawRes) && rawRes[0]) {
+            rpcRes = rawRes[0].subscription_details || rawRes[0];
+        } else if (rawRes?.subscription_details) {
+            rpcRes = rawRes.subscription_details;
         }
 
         if (!rpcRes || rpcRes.success === false) {
