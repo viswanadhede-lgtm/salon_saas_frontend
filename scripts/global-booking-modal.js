@@ -31,6 +31,13 @@ let livePackageServicesDB = [];
 let rowCounter      = 0;
 let isGlobalBookingModalInitialized = false;
 
+// Expose liveCustomersDB on window so the submit handler's duplicate-phone
+// guard can always reference it regardless of module boundary.
+Object.defineProperty(window, 'liveCustomersDB', {
+    get() { return liveCustomersDB; },
+    configurable: true
+});
+
 export function ensureBookingModalHtml() {
     if (document.getElementById('bookingModalOverlay')) return;
     if (!document.body) return;
@@ -580,6 +587,21 @@ export function initGlobalBookingModal() {
         }
     });
 
+    // ── Branch change → refresh modal dropdowns ──────────────────────────
+    window.addEventListener('branch:changed', async () => {
+        // Only refresh if the modal is currently open
+        if (modalOverlay.classList.contains('active')) {
+            await populateBookingDropdowns();
+        } else {
+            // Invalidate cached data so next open gets fresh branch data
+            liveCustomersDB = [];
+            liveServicesDB  = [];
+            liveStaffDB     = [];
+            livePackagesDB  = [];
+            livePackageServicesDB = [];
+        }
+    });
+
     // Handle auto-open if navigated with ?action=new
     try {
         const urlParams = new URLSearchParams(window.location.search);
@@ -873,18 +895,28 @@ export function initGlobalBookingModal() {
                 }
                 overrideOverlay?.classList.remove('active');
                 closeModal();
-                if (window.fetchBookings) await window.fetchBookings();
+
+                // Refresh page-specific data if available
+                try {
+                    if (typeof window.fetchBookings === 'function') await window.fetchBookings();
+                } catch (refreshErr) {
+                    console.warn('[Booking Modal] fetchBookings refresh error:', refreshErr);
+                }
                 
                 // Refresh dashboard data if the functions are available globally
-                if (typeof window.refreshAllData === 'function') {
-                    window.refreshAllData(getBranchId());
-                } else {
-                    if (typeof window.fetchAndRenderDashboardKPIs === 'function') {
-                        window.fetchAndRenderDashboardKPIs(getBranchId());
+                try {
+                    if (typeof window.refreshAllData === 'function') {
+                        window.refreshAllData(getBranchId());
+                    } else {
+                        if (typeof window.fetchAndRenderDashboardKPIs === 'function') {
+                            window.fetchAndRenderDashboardKPIs(getBranchId());
+                        }
+                        if (typeof window.fetchAndRenderAppointments === 'function') {
+                            window.fetchAndRenderAppointments(getBranchId());
+                        }
                     }
-                    if (typeof window.fetchAndRenderAppointments === 'function') {
-                        window.fetchAndRenderAppointments(getBranchId());
-                    }
+                } catch (dashErr) {
+                    console.warn('[Booking Modal] Dashboard refresh error:', dashErr);
                 }
             } else {
                 showMsg('Error saving booking: ' + error.message, true);
@@ -910,14 +942,14 @@ export function initGlobalBookingModal() {
             const typedPhone = phoneSearch.value.trim();
             const digitsOnly = typedPhone.replace(/\D/g, '');
             
-            // Check if phone already exists
-            const existingCust = window.liveCustomersDB?.find(c => {
-                const cPhone = String(c.customer_phone || '').replace(/\D/g, '');
+            // Check if phone already exists (use module-scoped liveCustomersDB directly)
+            const existingCust = liveCustomersDB.find(c => {
+                const cPhone = String(c.customer_phone || c.phone || '').replace(/\D/g, '');
                 return cPhone === digitsOnly || cPhone === typedPhone;
             });
             
             if (existingCust) {
-                showMsg('Customer with this phone number already exists! Please select them from the dropdown list.', true);
+                showMsg('Customer with this phone number already exists! Please select them from the search results above.', true);
                 btnConfirmBooking.textContent = originalText;
                 btnConfirmBooking.disabled    = false;
                 return;
