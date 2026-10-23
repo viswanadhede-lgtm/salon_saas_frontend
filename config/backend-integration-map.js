@@ -899,10 +899,14 @@
               //   3. companies (Synchronized Table 2) - Update [company_name (updated to legal_business_name), updated_at ]
 
 
-//  Feature - 9 - Subscription Management -
+//  Feature - 9 - Subscription Management -  RPC FUNCTION - cancel_company_subscription (the frontend talks to this DB FUNCTION  - This DB or RPC Function will then talk to the Edge Function - cancel-subscription )
+
+           // What this edge Funciton does in Supabase 
+            
+                // 1. Subscriptions Table - updated columns [auto_renew to false], [remarks to "Cancelled by user: [Reason] - [Feedback]" ], [updated_at to NOW() (ISO timestamp) ], [status - Remains 'active' (until cycle end)]
 
 
-
+ 
 
 
 

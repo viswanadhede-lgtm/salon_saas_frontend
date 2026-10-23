@@ -5,8 +5,9 @@
 'use strict';
 
 import { state } from './billing-state.js';
-import { showToast } from './billing-helpers.js';
+import { showToast, getCompanyId } from './billing-helpers.js';
 import { openModal, closeModal } from './billing-renders.js';
+import { loadActiveSubscriptionOnce } from './billing-api.js';
 
 // DOM references — injected via initModalCancel()
 let dom = {};
@@ -133,26 +134,86 @@ export function bindCancelModalEvents() {
                 return;
             }
 
-            if (selectedRadio.value === 'other') {
-                const customText = dom.cancelOtherTextarea ? dom.cancelOtherTextarea.value.trim() : '';
+            const reasonKey = selectedRadio.value;
+            let customText = '';
+            if (reasonKey === 'other') {
+                customText = dom.cancelOtherTextarea ? dom.cancelOtherTextarea.value.trim() : '';
                 if (!customText) {
                     showToast('Please enter your cancellation reason.');
                     if (dom.cancelOtherTextarea) dom.cancelOtherTextarea.focus();
                     return;
                 }
+            } else {
+                customText = CANCELLATION_REASONS[reasonKey] || reasonKey;
             }
 
-            if (!state.subscriptionId) {
-                console.warn('[Billing] No active subscription_id in state to cancel.');
-                showToast('No active subscription found to cancel.');
+            const companyId = getCompanyId();
+            if (!companyId) {
+                showToast('Company ID not found. Please reload and try again.');
                 return;
             }
 
-            // Close modal and reset form without client-side DB mutation
-            closeModal(dom.modalCancelSub);
-            resetCancelModalForm();
+            // Retrieve authenticated JWT
+            let accessToken = localStorage.getItem('token') || '';
+            if (!accessToken) {
+                try {
+                    const { supabase } = await import('../../lib/supabase.js');
+                    const { data: sessData } = await supabase.auth.getSession();
+                    accessToken = sessData?.session?.access_token || '';
+                } catch (_) {}
+            }
 
-            showToast('Subscription cancellation is managed via billing support. Please contact support to cancel your plan.');
+            if (!accessToken) {
+                showToast('Your session has expired. Please sign in again.');
+                return;
+            }
+
+            const originalBtnText = dom.btnConfirmCancelSubscription.textContent;
+            dom.btnConfirmCancelSubscription.disabled = true;
+            dom.btnConfirmCancelSubscription.textContent = 'Cancelling...';
+
+            try {
+                const SUPABASE_URL = 'https://qxmgyxjwpxkdbgldpdil.supabase.co';
+                const SUPABASE_ANON_KEY = 'sb_publishable_aqCSbMiVxH5cSZxgssdNqw_jQZvzmA0';
+
+                const response = await fetch(`${SUPABASE_URL}/functions/v1/cancel-subscription`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'apikey': SUPABASE_ANON_KEY,
+                        'Authorization': `Bearer ${accessToken}`
+                    },
+                    body: JSON.stringify({
+                        company_id: companyId,
+                        subscription_id: state.subscriptionId || null,
+                        reason: reasonKey,
+                        feedback: customText,
+                        cancel_at_cycle_end: true
+                    })
+                });
+
+                const result = await response.json().catch(() => ({}));
+
+                if (!response.ok || result.error) {
+                    throw new Error(result.error || 'Failed to cancel subscription.');
+                }
+
+                closeModal(dom.modalCancelSub);
+                resetCancelModalForm();
+
+                showToast(result.message || 'Subscription scheduled for cancellation at billing cycle end.', 'success');
+
+                // Reload active subscription data from DB so plan card & state update immediately
+                await loadActiveSubscriptionOnce();
+
+            } catch (err) {
+                console.error('[Billing] Cancellation failed:', err);
+                showToast(err.message || 'Could not cancel subscription. Please try again.', 'error');
+            } finally {
+                dom.btnConfirmCancelSubscription.disabled = false;
+                dom.btnConfirmCancelSubscription.textContent = originalBtnText;
+            }
         });
     }
 }
+
