@@ -514,12 +514,12 @@ export function renderPaymentMethod() {
         visualHtml = `
             <div class="payment-card-top">
                 <div style="display: flex; align-items: center; gap: 8px;">
-                    <i data-feather="shield" style="width: 18px; height: 18px; color: #38bdf8;"></i>
-                    <span style="font-size: 1.05rem; font-weight: 800; letter-spacing: 0.04em; color: #ffffff;">Razorpay Secure</span>
+                    <i data-feather="shield" style="width: 18px; height: 18px; color: #0284c7;"></i>
+                    <span style="font-size: 1.05rem; font-weight: 800; letter-spacing: 0.02em; color: #0f172a;">Razorpay Secure</span>
                 </div>
-                <span class="card-network-label" style="background: rgba(56, 189, 248, 0.2); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.35); padding: 2px 8px; border-radius: 4px; font-weight: 700;">VERIFIED</span>
+                <span class="card-badge-verified">VERIFIED</span>
             </div>
-            <div class="payment-card-number" style="font-family: monospace; font-size: 0.95rem; letter-spacing: 0.04em; color: #f1f5f9;">
+            <div class="payment-card-number" style="font-family: monospace; font-size: 0.95rem; letter-spacing: 0.04em; color: #334155; text-shadow: none; margin-bottom: 1.25rem;">
                 ${maskedRef}
             </div>
             <div class="payment-card-meta">
@@ -528,8 +528,8 @@ export function renderPaymentMethod() {
                     <span class="meta-field-value">${displayChannel}</span>
                 </div>
                 <div style="text-align: right;">
-                    <span class="meta-field-label">Last Active</span>
-                    <span class="meta-field-value" style="color: #4ade80; font-weight: 700;">${pm.lastPaidDate || 'Active'}</span>
+                    <span class="meta-field-label">Last Paid On</span>
+                    <span class="meta-field-value meta-field-value--date">${pm.lastPaidDate || '—'}</span>
                 </div>
             </div>
         `;

@@ -133,17 +133,12 @@ export function bindPaymentModalEvents() {
         });
     }
 
-    // Payment method action (V1: Managed via Razorpay)
+    // Payment method action (V1: inert)
     const btnChangePaymentMethod = document.getElementById('btnChangePaymentMethod');
     if (btnChangePaymentMethod) {
-        btnChangePaymentMethod.addEventListener('click', function () {
-            const pm = state.paymentMethod || {};
-            if (pm.paymentRef) {
-                const shortRef = pm.paymentRef.length > 15 ? pm.paymentRef.slice(0, 14) + '...' : pm.paymentRef;
-                showToast(`Payment method verified via Razorpay (${shortRef}). Updates apply automatically upon next checkout.`);
-            } else {
-                showToast('Payment methods are securely verified and saved via Razorpay upon checkout.');
-            }
+        btnChangePaymentMethod.addEventListener('click', function (e) {
+            e.preventDefault();
+            // Inert in V1: does nothing when clicked
         });
     }
 

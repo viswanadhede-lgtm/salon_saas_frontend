@@ -926,7 +926,7 @@
 //                 or fallback query in [loadPaymentHistory] ordering by created_at DESC LIMIT 1.
 //              2. If a completed transaction exists:
 //                 - Renders Razorpay Secure card visual with 'VERIFIED' badge.
-//                 - Displays transaction reference ID (payment_id), channel, and last active timestamp.
+//                 - Displays transaction reference ID (payment_id), channel, and 'Last Paid On' timestamp.
 //              3. If no payment exists yet:
 //                 - Displays clean empty state: 'No Payment Method Saved — Payment details are recorded upon checkout'.
 //              4. V1 Strategy:

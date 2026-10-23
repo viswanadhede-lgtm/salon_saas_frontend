@@ -2482,7 +2482,43 @@
 }
 
 .payment-card-visual--razorpay {
-    background: linear-gradient(135deg, #091e3a 0%, #0d2b52 50%, #1a365d 100%) !important;
+    background: linear-gradient(145deg, #ffffff 0%, #f8fafc 45%, #f1f5f9 100%) !important;
+    border: 1px solid #e2e8f0 !important;
+    box-shadow: 0 4px 16px -2px rgba(15, 23, 42, 0.06), 0 2px 6px -1px rgba(15, 23, 42, 0.04) !important;
+    color: #0f172a !important;
+}
+
+.payment-card-visual--razorpay::before {
+    background: radial-gradient(circle, rgba(14, 165, 233, 0.1) 0%, transparent 70%) !important;
+}
+
+.payment-card-visual--razorpay .payment-card-number {
+    color: #334155 !important;
+    text-shadow: none !important;
+}
+
+.payment-card-visual--razorpay .meta-field-label {
+    color: #64748b !important;
+    font-size: 0.68rem;
+    font-weight: 700;
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+}
+
+.payment-card-visual--razorpay .meta-field-value {
+    color: #0f172a !important;
+    font-weight: 700;
+}
+
+.payment-card-visual--razorpay .card-badge-verified {
+    background: #dcfce7 !important;
+    color: #15803d !important;
+    border: 1px solid #bbf7d0 !important;
+    font-size: 0.7rem;
+    font-weight: 700;
+    letter-spacing: 0.06em;
+    padding: 3px 8px;
+    border-radius: 6px;
 }
 
 .payment-card-visual--empty {
