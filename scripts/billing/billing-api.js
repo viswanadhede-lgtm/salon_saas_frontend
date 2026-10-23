@@ -477,7 +477,7 @@ export async function loadActiveSubscriptionViaRpc(supabase, companyId) {
             const cycleKey = (rawCycle === 'annual' || rawCycle === 'annually' || rawCycle === 'yearly') ? 'annual' : 'monthly';
             const formattedPlanName = sub.plan_name
                 ? sub.plan_name.charAt(0).toUpperCase() + sub.plan_name.slice(1)
-                : 'Growth';
+                : '';
 
             state.plan = {
                 name: formattedPlanName,
@@ -818,7 +818,7 @@ export async function loadActiveSubscription() {
         // Clean plan display name (e.g., "advance" -> "Advance")
         const formattedPlanName = planName
             ? planName.charAt(0).toUpperCase() + planName.slice(1)
-            : 'Growth';
+            : '';
 
         state.plan = {
             name: formattedPlanName,

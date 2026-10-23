@@ -1,4 +1,4 @@
-﻿// billing-renders.js — All render functions for the Billing page
+// billing-renders.js — All render functions for the Billing page
 // Part of scripts/billing/ modularization of billing-subscription.js
 
 'use strict';
@@ -59,27 +59,38 @@ export function renderCurrentPlan(handleRenewSubscription) {
 
     // Active or Cancelled
     dom.planMetaGrid.style.display = 'grid';
-    const planDisplayName = state.plan.name || 'Growth';
-    dom.planNameBadge.textContent = planDisplayName.toLowerCase().includes('plan') ? planDisplayName : `${planDisplayName} Plan`;
+    const planDisplayName = state.plan.name || '—';
+    dom.planNameBadge.textContent = planDisplayName === '—' ? '—' : (planDisplayName.toLowerCase().includes('plan') ? planDisplayName : `${planDisplayName} Plan`);
     if (dom.headerPlanBadge) dom.headerPlanBadge.textContent = planDisplayName;
 
-    const cycleLabel = (state.plan.cycle === 'annual' || state.plan.cycle === 'annually' || state.plan.cycle === 'yearly') ? '/ year' : '/ month';
-    dom.planPriceBlock.innerHTML = `
-        <span class="plan-price-amount">${fmtCurrency(state.plan.price)}</span>
-        <span class="plan-price-frequency">${cycleLabel}</span>
-    `;
+    if (!state.plan.name && !state.plan.price) {
+        dom.planPriceBlock.innerHTML = `
+            <span class="plan-price-amount">—</span>
+            <span class="plan-price-frequency"></span>
+        `;
+    } else {
+        const cycleLabel = (state.plan.cycle === 'annual' || state.plan.cycle === 'annually' || state.plan.cycle === 'yearly') ? '/ year' : '/ month';
+        dom.planPriceBlock.innerHTML = `
+            <span class="plan-price-amount">${fmtCurrency(state.plan.price)}</span>
+            <span class="plan-price-frequency">${cycleLabel}</span>
+        `;
+    }
 
     if (state.currentMode === 'cancelled' || state.plan.status?.toLowerCase() === 'cancelled') {
         if (dom.currentPlanCard) dom.currentPlanCard.className = 'billing-plan-card billing-plan-card--cancelled';
         dom.planStatusPill.className = 'status-pill is-cancelling';
-        dom.planStatusText.textContent = `Cancels on ${state.plan.validUntil}`;
+        dom.planStatusText.textContent = state.plan.validUntil && state.plan.validUntil !== '—'
+            ? `Cancels on ${state.plan.validUntil}`
+            : 'Cancels at end of cycle';
 
         dom.planSubNotice.style.display = 'block';
-        dom.planSubNotice.textContent = `Your subscription remains active until ${state.plan.validUntil}.`;
+        dom.planSubNotice.textContent = state.plan.validUntil && state.plan.validUntil !== '—'
+            ? `Your subscription remains active until ${state.plan.validUntil}.`
+            : 'Your subscription is scheduled for cancellation.';
 
         dom.metaStatus.textContent = 'Cancels at end of cycle';
-        dom.metaStartDate.textContent = state.plan.startDate;
-        dom.metaValidUntil.textContent = state.plan.validUntil;
+        dom.metaStartDate.textContent = state.plan.startDate || '—';
+        dom.metaValidUntil.textContent = state.plan.validUntil || '—';
         dom.metaNextBilling.textContent = 'None';
 
         dom.planActionsContainer.innerHTML = `
@@ -104,16 +115,17 @@ export function renderCurrentPlan(handleRenewSubscription) {
             ? 'Your current plan and subscription details (Auto-renew disabled)'
             : 'Your current plan and subscription details';
 
-        dom.metaStatus.textContent = state.plan.status || 'Active';
-        dom.metaStartDate.textContent = state.plan.startDate;
-        dom.metaValidUntil.textContent = state.plan.validUntil;
+        dom.metaStatus.textContent = state.plan.status || '—';
+        dom.metaStartDate.textContent = state.plan.startDate || '—';
+        dom.metaValidUntil.textContent = state.plan.validUntil || '—';
         dom.metaNextBilling.textContent = state.plan.autoRenew === false
             ? (state.plan.nextBillingDate && state.plan.nextBillingDate !== 'None' ? `${state.plan.nextBillingDate} (No renewal)` : 'None')
             : (state.plan.nextBillingDate || '—');
 
-        const currentPlanParam = encodeURIComponent((state.plan.name || 'growth').toLowerCase().replace(/\s+plan$/, ''));
+        const currentPlanParam = encodeURIComponent((state.plan.name || '').toLowerCase().replace(/\s+plan$/, ''));
+        const changePlanHref = currentPlanParam ? `plans.html?current=${currentPlanParam}` : 'plans.html';
         dom.planActionsContainer.innerHTML = `
-            <button type="button" class="btn-plain btn-plain-primary" id="btnChangePlan" onclick="window.location.href='plans.html?current=${currentPlanParam}'">
+            <button type="button" class="btn-plain btn-plain-primary" id="btnChangePlan" onclick="window.location.href='${changePlanHref}'">
                 <i data-feather="refresh-cw"></i>
                 <span>Change Plan</span>
             </button>
@@ -259,6 +271,15 @@ export function renderPlanFeatures() {
 export function renderAvailableAddons(openAddAddonModal) {
     dom.availableAddonsBadge.textContent = `${CATALOG_ADDONS.length} Available`;
 
+    if (!CATALOG_ADDONS || CATALOG_ADDONS.length === 0) {
+        dom.availableAddonsList.innerHTML = `
+            <div class="empty-neutral-state" style="padding: 1.5rem; text-align: center; color: var(--text-muted);">
+                No available add-ons.
+            </div>
+        `;
+        return;
+    }
+
     dom.availableAddonsList.innerHTML = CATALOG_ADDONS.map(addon => {
         const isActive = state.currentMode !== 'noplan' && state.activeAddonIds.includes(addon.id);
         const buttonHtml = isActive
@@ -305,12 +326,12 @@ export function renderAvailableAddons(openAddAddonModal) {
 
 export function renderBillingSummary() {
     const activeItems = state.currentMode === 'noplan' ? [] : (state.activeAddons || []);
-    const basePlanCost = state.currentMode === 'noplan' ? 0 : state.plan.price;
+    const basePlanCost = state.currentMode === 'noplan' ? 0 : (Number(state.plan.price) || 0);
 
     let itemsHtml = `
         <div class="summary-row summary-row--highlight">
-            <span class="summary-row-label">${state.currentMode === 'noplan' ? 'No Plan Active' : `${state.plan.name} Plan`}</span>
-            <span class="summary-row-value">${fmtCurrency(basePlanCost)}</span>
+            <span class="summary-row-label">${state.currentMode === 'noplan' ? 'No Plan Active' : (state.plan.name ? `${state.plan.name} Plan` : '—')}</span>
+            <span class="summary-row-value">${state.plan.name ? fmtCurrency(basePlanCost) : '—'}</span>
         </div>
     `;
 
@@ -359,16 +380,20 @@ export function renderBillingSummary() {
 
     const total = subtotal + taxAmount;
 
-    if (dom.summarySubtotal) dom.summarySubtotal.textContent = fmtCurrency(subtotal);
-    if (dom.summaryTotalAmount) dom.summaryTotalAmount.textContent = fmtCurrency(total);
+    if (dom.summarySubtotal) dom.summarySubtotal.textContent = state.plan.name ? fmtCurrency(subtotal) : '—';
+    if (dom.summaryTotalAmount) dom.summaryTotalAmount.textContent = state.plan.name ? fmtCurrency(total) : '—';
 
     if (dom.summaryBillingDateNote) {
         if (state.currentMode === 'noplan') {
             dom.summaryBillingDateNote.textContent = 'No recurring subscription active.';
         } else if (state.currentMode === 'cancelled') {
-            dom.summaryBillingDateNote.textContent = `Subscription cancels on ${state.plan.validUntil}. No further renewal.`;
+            dom.summaryBillingDateNote.textContent = state.plan.validUntil && state.plan.validUntil !== '—'
+                ? `Subscription cancels on ${state.plan.validUntil}. No further renewal.`
+                : 'Subscription scheduled for cancellation. No further renewal.';
         } else {
-            dom.summaryBillingDateNote.textContent = `Auto-renews on ${state.plan.nextBillingDate}.`;
+            dom.summaryBillingDateNote.textContent = state.plan.nextBillingDate && state.plan.nextBillingDate !== '—' && state.plan.nextBillingDate !== 'None'
+                ? `Auto-renews on ${state.plan.nextBillingDate}.`
+                : (state.plan.autoRenew === false ? 'Auto-renew disabled.' : '—');
         }
     }
 }
@@ -378,12 +403,16 @@ export function renderBillingSummary() {
 export function renderPaymentMethod() {
     const visual = document.getElementById('paymentCardVisual');
     const modalVisual = document.getElementById('modalCurrentPaymentCardVisual');
-    const pm = state.paymentMethod;
+    const pm = state.paymentMethod || {};
 
     let visualClass = 'payment-card-visual';
     let visualHtml = '';
 
-    if (pm.type === 'upi') {
+    const hasCard = pm.type === 'card' && pm.cardMask;
+    const hasUpi = pm.type === 'upi' && pm.upiId;
+    const hasNetbanking = pm.type === 'netbanking' && pm.bankName;
+
+    if (hasUpi) {
         if (dom.cardNetworkLabel) dom.cardNetworkLabel.textContent = 'UPI AUTOPAY';
         visualClass = 'payment-card-visual payment-card-visual--upi';
         visualHtml = `
@@ -392,15 +421,15 @@ export function renderPaymentMethod() {
                     <span style="font-size: 1.15rem; font-weight: 800; letter-spacing: 0.05em; color: #ffffff;">UPI</span>
                     <span style="font-size: 0.76rem; background: rgba(255,255,255,0.2); padding: 2px 7px; border-radius: 4px; font-weight: 600;">AUTOPAY</span>
                 </div>
-                <span class="card-network-label" style="background: rgba(255,255,255,0.15); color: #ffffff; padding: 2px 8px; border-radius: 4px;">${pm.upiApp || 'Google Pay'}</span>
+                <span class="card-network-label" style="background: rgba(255,255,255,0.15); color: #ffffff; padding: 2px 8px; border-radius: 4px;">${pm.upiApp || 'UPI'}</span>
             </div>
             <div class="payment-card-number" style="font-family: inherit; font-size: 1.15rem; letter-spacing: 0.03em; word-break: break-all;">
-                ${pm.upiId || 'salonadmin@okhdfcbank'}
+                ${pm.upiId}
             </div>
             <div class="payment-card-meta">
                 <div>
                     <span class="meta-field-label">Account Holder</span>
-                    <span class="meta-field-value">${pm.holder || 'Admin User'}</span>
+                    <span class="meta-field-value">${pm.holder || '—'}</span>
                 </div>
                 <div style="text-align: right;">
                     <span class="meta-field-label">Status</span>
@@ -408,24 +437,24 @@ export function renderPaymentMethod() {
                 </div>
             </div>
         `;
-    } else if (pm.type === 'netbanking') {
+    } else if (hasNetbanking) {
         if (dom.cardNetworkLabel) dom.cardNetworkLabel.textContent = 'NET BANKING (e-NACH)';
         visualClass = 'payment-card-visual payment-card-visual--netbanking';
         visualHtml = `
             <div class="payment-card-top">
                 <div style="display: flex; align-items: center; gap: 8px;">
                     <i data-feather="home" style="width: 18px; height: 18px; color: #ffffff;"></i>
-                    <span style="font-size: 1.05rem; font-weight: 800; letter-spacing: 0.04em; color: #ffffff;">${pm.bankName || 'HDFC Bank'}</span>
+                    <span style="font-size: 1.05rem; font-weight: 800; letter-spacing: 0.04em; color: #ffffff;">${pm.bankName}</span>
                 </div>
                 <span class="card-network-label" style="background: rgba(255,255,255,0.15); color: #ffffff; padding: 2px 8px; border-radius: 4px;">e-Mandate</span>
             </div>
             <div class="payment-card-number" style="font-family: inherit; font-size: 1.05rem; letter-spacing: 0.05em;">
-                Mandate ID: •••• 8492
+                ${pm.mandateId ? `Mandate ID: ${pm.mandateId}` : 'e-NACH Mandate'}
             </div>
             <div class="payment-card-meta">
                 <div>
                     <span class="meta-field-label">Account Holder</span>
-                    <span class="meta-field-value">${pm.holder || 'Admin User'}</span>
+                    <span class="meta-field-value">${pm.holder || '—'}</span>
                 </div>
                 <div style="text-align: right;">
                     <span class="meta-field-label">Auto-Debit</span>
@@ -433,31 +462,38 @@ export function renderPaymentMethod() {
                 </div>
             </div>
         `;
-    } else {
-        // Default Card
-        if (dom.cardNetworkLabel) dom.cardNetworkLabel.textContent = (pm.brand || 'VISA') + ' / MASTERCARD';
+    } else if (hasCard) {
+        // Saved Card
+        if (dom.cardNetworkLabel) dom.cardNetworkLabel.textContent = pm.brand || 'CARD';
         visualClass = 'payment-card-visual';
         visualHtml = `
             <div class="payment-card-top">
                 <div class="card-chip-plain"></div>
                 <div style="display: flex; align-items: center; gap: 8px;">
-                    <svg viewBox="0 0 38 24" height="20" xmlns="http://www.w3.org/2000/svg">
-                        <circle cx="14" cy="12" r="9" fill="#ef4444" opacity="0.9" />
-                        <circle cx="24" cy="12" r="9" fill="#f59e0b" opacity="0.9" />
-                    </svg>
-                    <span class="card-network-label">${pm.brand || 'MASTERCARD'}</span>
+                    <span class="card-network-label">${pm.brand || 'CARD'}</span>
                 </div>
             </div>
-            <div class="payment-card-number">${pm.cardMask || '•••• •••• •••• 4242'}</div>
+            <div class="payment-card-number">${pm.cardMask}</div>
             <div class="payment-card-meta">
                 <div>
                     <span class="meta-field-label">Card Holder</span>
-                    <span class="meta-field-value">${pm.holder || 'Admin User'}</span>
+                    <span class="meta-field-value">${pm.holder || '—'}</span>
                 </div>
                 <div style="text-align: right;">
                     <span class="meta-field-label">Expires</span>
-                    <span class="meta-field-value">${pm.expiry || '09 / 2028'}</span>
+                    <span class="meta-field-value">${pm.expiry || '—'}</span>
                 </div>
+            </div>
+        `;
+    } else {
+        // No saved payment method (Empty State)
+        if (dom.cardNetworkLabel) dom.cardNetworkLabel.textContent = 'NO CARD';
+        visualClass = 'payment-card-visual payment-card-visual--empty';
+        visualHtml = `
+            <div style="display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100%; min-height: 140px; text-align: center; color: rgba(255,255,255,0.85); padding: 1rem;">
+                <i data-feather="credit-card" style="width: 32px; height: 32px; margin-bottom: 8px; opacity: 0.7;"></i>
+                <span style="font-size: 0.95rem; font-weight: 700; color: #ffffff;">No Payment Method Saved</span>
+                <span style="font-size: 0.8rem; margin-top: 4px; opacity: 0.75;">Add a card or UPI for recurring renewals</span>
             </div>
         `;
     }
@@ -477,14 +513,19 @@ export function renderPaymentMethod() {
     const modalCurrentNextBilling = document.getElementById('modalCurrentNextBilling');
     const modalCurrentAmount = document.getElementById('modalCurrentAmount');
 
-    if (modalCurrentPlanName) modalCurrentPlanName.textContent = `${state.plan.name} Plan`;
-    if (modalCurrentNextBilling) modalCurrentNextBilling.textContent = state.plan.nextBillingDate || '09 Oct 2026';
+    if (modalCurrentPlanName) modalCurrentPlanName.textContent = state.plan.name ? `${state.plan.name} Plan` : '—';
+    if (modalCurrentNextBilling) modalCurrentNextBilling.textContent = state.plan.nextBillingDate || '—';
     if (modalCurrentAmount) {
-        const activeItems = state.currentMode === 'noplan' ? [] : (state.activeAddons || []);
-        const basePlanCost = state.currentMode === 'noplan' ? 0 : state.plan.price;
-        const subtotal = basePlanCost + activeItems.reduce((acc, cur) => acc + cur.price, 0);
-        const total = subtotal + Math.round(subtotal * 0.18);
-        modalCurrentAmount.textContent = `${fmtCurrency(total)} / mo`;
+        if (!state.plan.name && !state.plan.price) {
+            modalCurrentAmount.textContent = '—';
+        } else {
+            const activeItems = state.currentMode === 'noplan' ? [] : (state.activeAddons || []);
+            const basePlanCost = state.currentMode === 'noplan' ? 0 : (Number(state.plan.price) || 0);
+            const subtotal = basePlanCost + activeItems.reduce((acc, cur) => acc + (Number(cur.price) || 0), 0);
+            const taxRate = (state.taxSettings?.isActive && Number(state.taxSettings?.taxRate) > 0) ? Number(state.taxSettings.taxRate) : 0;
+            const total = subtotal + Math.round(subtotal * (taxRate / 100));
+            modalCurrentAmount.textContent = `${fmtCurrency(total)} / mo`;
+        }
     }
 
     if (window.feather) feather.replace();
@@ -562,12 +603,12 @@ export function renderPaymentHistory(openInvoiceModal) {
 // ── Billing Info ───────────────────────────────────────────────
 
 export function renderBillingInfo() {
-    if (dom.infoBusinessName) dom.infoBusinessName.textContent = state.billingInfo.legalName;
-    if (dom.infoGstin) dom.infoGstin.textContent = state.billingInfo.gstin;
+    if (dom.infoBusinessName) dom.infoBusinessName.textContent = state.billingInfo.legalName || '—';
+    if (dom.infoGstin) dom.infoGstin.textContent = state.billingInfo.gstin || '—';
     if (dom.infoPan) dom.infoPan.textContent = state.billingInfo.pan || '—';
-    if (dom.infoBillingEmail) dom.infoBillingEmail.textContent = state.billingInfo.email;
+    if (dom.infoBillingEmail) dom.infoBillingEmail.textContent = state.billingInfo.email || '—';
     if (dom.infoBillingPhone) dom.infoBillingPhone.textContent = state.billingInfo.phone || '—';
-    if (dom.infoBillingAddress) dom.infoBillingAddress.textContent = formatBillingAddress(state.billingInfo);
+    if (dom.infoBillingAddress) dom.infoBillingAddress.textContent = formatBillingAddress(state.billingInfo) || '—';
 }
 
 // ── Subscription Management Section ───────────────────────────

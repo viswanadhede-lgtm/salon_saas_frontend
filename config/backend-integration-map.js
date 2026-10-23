@@ -888,10 +888,18 @@
     // 9. Subscription management card where customer can cancel the subscription 
 
 
+// Features (1, 3, 6, 7) - Read Only Op. - Unified read RPC Function - get_company_subscription_details [Tables used - subscriptions, plans, plan_features, subscription_add_ons, add_ons, billing_settings, company_billing_information, payments]
+
+// Feature - 8 - Billing Information  - we will use this RPC FUNCTION - we will use RPC - save_billing_information.
+    
+          // What this Funciton does and what tables does it update ??
+             
+              //   1. company_billing_information (Primary Target Table) - Updates All Columns
+              //   2. company_tax_settings (Synchronized Table 1) - Update [gstin, pan, gst_registration_state, updated_at], INSERT (if row not created yet)-[company_id, gstin,pan, gst_registration_state, updated_at]
+              //   3. companies (Synchronized Table 2) - Update [company_name (updated to legal_business_name), updated_at ]
 
 
-
-
+//  Feature - 9 - Subscription Management -
 
 
 

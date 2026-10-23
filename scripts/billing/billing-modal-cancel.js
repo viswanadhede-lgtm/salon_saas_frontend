@@ -1,4 +1,4 @@
-﻿// billing-modal-cancel.js — Modal 3: Cancel Subscription + Renewal handler
+// billing-modal-cancel.js — Modal 3: Cancel Subscription + Renewal handler
 // Part of scripts/billing/ modularization of billing-subscription.js
 // IMPORTANT: No subscription mutations — contact-support flow only.
 
@@ -69,7 +69,7 @@ export function openCancelSubscriptionModal() {
         return;
     }
 
-    const rawPlanName = state.plan.name || 'Growth';
+    const rawPlanName = state.plan.name || 'Current';
     const planDisplay = rawPlanName.toLowerCase().includes('plan') ? rawPlanName : `${rawPlanName} Plan`;
     const validUntil = state.plan.validUntil && state.plan.validUntil !== '—' ? state.plan.validUntil : '';
 

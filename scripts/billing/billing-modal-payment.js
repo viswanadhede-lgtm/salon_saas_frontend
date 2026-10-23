@@ -1,4 +1,4 @@
-﻿// billing-modal-payment.js — Modal 5: Change Payment Method
+// billing-modal-payment.js — Modal 5: Change Payment Method
 // Part of scripts/billing/ modularization of billing-subscription.js
 // UI-only — updates state.paymentMethod in memory, no DB write.
 
@@ -140,11 +140,11 @@ export function bindPaymentModalEvents() {
             const pm = state.paymentMethod;
             setPaymentTab(pm.type || 'card');
 
-            if (dom.inputCardHolder) dom.inputCardHolder.value = pm.holder || 'Admin User';
+            if (dom.inputCardHolder) dom.inputCardHolder.value = pm.holder || '';
             if (dom.inputCardNumber) dom.inputCardNumber.value = '';
-            if (dom.inputCardExpiry) dom.inputCardExpiry.value = (pm.expiry || '09/28').replace(/\s+/g, '');
+            if (dom.inputCardExpiry) dom.inputCardExpiry.value = (pm.expiry || '').replace(/\s+/g, '');
             if (dom.inputCardCvv) dom.inputCardCvv.value = '';
-            if (dom.inputUpiId) dom.inputUpiId.value = pm.upiId || 'salonadmin@okhdfcbank';
+            if (dom.inputUpiId) dom.inputUpiId.value = pm.upiId || '';
 
             renderPaymentMethod();
             openModal(dom.modalChangePayment);
@@ -156,23 +156,26 @@ export function bindPaymentModalEvents() {
         dom.btnSavePaymentMethod.addEventListener('click', function () {
             if (activePaymentTab === 'upi') {
                 const upiVal = dom.inputUpiId ? dom.inputUpiId.value.trim() : '';
-                const finalUpi = upiVal && upiVal.includes('@') ? upiVal : (upiVal ? upiVal + '@okhdfcbank' : 'salonadmin@okhdfcbank');
+                if (!upiVal) {
+                    showToast('Please enter a valid UPI ID.');
+                    return;
+                }
+                const finalUpi = upiVal.includes('@') ? upiVal : `${upiVal}@upi`;
 
                 state.paymentMethod.type = 'upi';
                 state.paymentMethod.upiId = finalUpi;
-                state.paymentMethod.upiApp = selectedUpiApp || 'Google Pay';
-                state.paymentMethod.holder = dom.inputCardHolder ? dom.inputCardHolder.value.trim() || 'Admin User' : 'Admin User';
+                state.paymentMethod.upiApp = selectedUpiApp || 'UPI';
+                state.paymentMethod.holder = dom.inputCardHolder ? dom.inputCardHolder.value.trim() : '';
 
-                const { closeModal: close } = { closeModal: (el) => el && el.classList.remove('is-open') };
                 if (dom.modalChangePayment) dom.modalChangePayment.classList.remove('is-open');
                 renderPaymentMethod();
-                showToast(`Payment method updated to UPI AutoPay (${selectedUpiApp}).`);
+                showToast(`Payment method updated to UPI AutoPay (${state.paymentMethod.upiApp}).`);
             } else if (activePaymentTab === 'netbanking') {
                 const finalBank = selectedBank || 'HDFC Bank';
 
                 state.paymentMethod.type = 'netbanking';
                 state.paymentMethod.bankName = finalBank;
-                state.paymentMethod.holder = dom.inputCardHolder ? dom.inputCardHolder.value.trim() || 'Admin User' : 'Admin User';
+                state.paymentMethod.holder = dom.inputCardHolder ? dom.inputCardHolder.value.trim() : '';
 
                 if (dom.modalChangePayment) dom.modalChangePayment.classList.remove('is-open');
                 renderPaymentMethod();
@@ -180,11 +183,11 @@ export function bindPaymentModalEvents() {
             } else {
                 // Card tab
                 const rawCard = dom.inputCardNumber ? dom.inputCardNumber.value.trim().replace(/\s+/g, '') : '';
-                const holder = (dom.inputCardHolder && dom.inputCardHolder.value.trim()) || 'Admin User';
-                const expiry = (dom.inputCardExpiry && dom.inputCardExpiry.value.trim()) || '09 / 2028';
+                const holder = (dom.inputCardHolder && dom.inputCardHolder.value.trim()) || '';
+                const expiry = (dom.inputCardExpiry && dom.inputCardExpiry.value.trim()) || '';
                 const brand = detectCardBrand(rawCard);
 
-                let mask = state.paymentMethod.cardMask || '•••• •••• •••• 4242';
+                let mask = state.paymentMethod.cardMask || '';
                 if (rawCard.length >= 4) {
                     mask = `•••• •••• •••• ${rawCard.slice(-4)}`;
                 }
@@ -192,9 +195,9 @@ export function bindPaymentModalEvents() {
                 state.paymentMethod.type = 'card';
                 state.paymentMethod.holder = holder;
                 state.paymentMethod.cardMask = mask;
-                state.paymentMethod.expiry = expiry.includes('/') ? expiry : '09 / 2028';
+                state.paymentMethod.expiry = expiry;
                 state.paymentMethod.brand = brand;
-                state.paymentMethod.network = `${brand} / MASTERCARD`;
+                state.paymentMethod.network = brand;
 
                 if (dom.modalChangePayment) dom.modalChangePayment.classList.remove('is-open');
                 renderPaymentMethod();

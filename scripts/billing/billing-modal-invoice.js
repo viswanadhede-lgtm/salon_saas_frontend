@@ -1,4 +1,4 @@
-﻿// billing-modal-invoice.js — Modal 6: View Invoice + Payment History Export
+// billing-modal-invoice.js — Modal 6: View Invoice + Payment History Export
 // Part of scripts/billing/ modularization of billing-subscription.js
 
 'use strict';
@@ -97,10 +97,10 @@ export function openInvoiceModal(invoiceId) {
             <div class="invoice-bill-to-header">
                 <span class="invoice-bill-to-label">BILL TO</span>
             </div>
-            <p class="invoice-customer-name">${state.billingInfo.legalName || 'Salon ABC'}</p>
-            <p class="invoice-customer-detail">${formatBillingAddress(state.billingInfo)}</p>
+            <p class="invoice-customer-name">${state.billingInfo.legalName || '—'}</p>
+            <p class="invoice-customer-detail">${formatBillingAddress(state.billingInfo) || '—'}</p>
             <div class="invoice-customer-meta-row">
-                <span>GSTIN: <strong>${state.billingInfo.gstin || '37ABCDE1234F1Z5'}</strong></span>
+                <span>GSTIN: <strong>${state.billingInfo.gstin || '—'}</strong></span>
                 ${state.billingInfo.email ? `<span style="margin-left: 14px;">Email: <strong>${state.billingInfo.email}</strong></span>` : ''}
             </div>
         </div>

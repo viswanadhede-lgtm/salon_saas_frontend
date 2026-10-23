@@ -1,4 +1,4 @@
-﻿// billing-state.js — Shared mutable state for the Billing page
+// billing-state.js — Shared mutable state for the Billing page
 // Part of scripts/billing/ modularization of billing-subscription.js
 
 'use strict';
@@ -6,40 +6,7 @@
 // ── Catalog Data & Plan Definitions ───────────────────────────
 // IMPORTANT: must remain `let` — syncCatalogWithActiveAddons() and
 // loadAvailableAddonsCatalog() both mutate this array.
-export let CATALOG_ADDONS = [
-    {
-        id: 'whatsapp',
-        name: 'WhatsApp Reminders',
-        desc: 'Automated appointment reminders via WhatsApp',
-        price: 499,
-        icon: 'message-circle',
-        theme: 'green'
-    },
-    {
-        id: 'ai_receptionist',
-        name: 'AI Receptionist',
-        desc: 'AI-powered call handling & booking assistant',
-        price: 999,
-        icon: 'cpu',
-        theme: 'purple'
-    },
-    {
-        id: 'advanced_reports',
-        name: 'Advanced Reports',
-        desc: 'Deep-dive revenue, staff & service analytics',
-        price: 299,
-        icon: 'bar-chart-2',
-        theme: 'blue'
-    },
-    {
-        id: 'smart_notifications',
-        name: 'Smart Notifications',
-        desc: 'Push & SMS alerts for bookings and updates',
-        price: 199,
-        icon: 'bell',
-        theme: 'amber'
-    }
-];
+export let CATALOG_ADDONS = [];
 
 // ── URL-based dev mode resolution ─────────────────────────────
 const _urlParams = new URLSearchParams(window.location.search);
@@ -67,40 +34,40 @@ export const state = {
         loaded: false
     },
     plan: {
-        name: 'Growth',
+        name: '',
         cycle: 'monthly',
-        price: 4999,
-        startDate: '10 Sep 2026',
-        validUntil: '09 Oct 2026',
-        nextBillingDate: '10 Oct 2026',
-        status: 'Active',
+        price: 0,
+        startDate: '—',
+        validUntil: '—',
+        nextBillingDate: '—',
+        status: '',
         autoRenew: true
     },
     activeAddonIds: [],
     paymentMethod: {
-        type: 'card',
-        cardMask: '•••• •••• •••• 4242',
-        holder: 'Admin User',
-        expiry: '09 / 2028',
-        network: 'VISA / MASTERCARD',
-        brand: 'MASTERCARD',
-        upiId: 'salonadmin@okhdfcbank',
-        upiApp: 'Google Pay',
-        bankName: 'HDFC Bank'
+        type: '',
+        cardMask: '',
+        holder: '',
+        expiry: '',
+        network: '',
+        brand: '',
+        upiId: '',
+        upiApp: '',
+        bankName: ''
     },
     billingInfo: {
         id: null,
-        legalName: 'Salon ABC',
-        gstin: '37ABCDE1234F1Z5',
-        pan: 'ABCDE1234F',
-        email: 'billing@salonabc.com',
-        phone: '+91 98765 43210',
-        addressLine1: 'Main Road',
+        legalName: '',
+        gstin: '',
+        pan: '',
+        email: '',
+        phone: '',
+        addressLine1: '',
         addressLine2: '',
-        city: 'Machilipatnam',
-        district: 'Krishna',
-        state: 'Andhra Pradesh',
-        pincode: '521001',
+        city: '',
+        district: '',
+        state: '',
+        pincode: '',
         country: 'India',
         loaded: false
     },

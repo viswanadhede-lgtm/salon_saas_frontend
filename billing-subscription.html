@@ -1,4 +1,4 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="en">
 
 <head>
@@ -49,17 +49,17 @@
                             <div class="plan-header-top">
                                 <div class="plan-badge" id="planBadge">
                                     <i data-feather="zap"></i>
-                                    <span id="planNameBadge">Growth Plan</span>
+                                    <span id="planNameBadge">—</span>
                                 </div>
                                 <span class="status-pill is-active" id="planStatusPill">
                                     <span class="status-indicator-dot"></span>
-                                    <span id="planStatusText">Active</span>
+                                    <span id="planStatusText">—</span>
                                 </span>
                             </div>
 
                             <div class="plan-price-block" id="planPriceBlock">
-                                <span class="plan-price-amount" id="planPriceAmount">?4,999</span>
-                                <span class="plan-price-frequency" id="planPricePeriod">/ month</span>
+                                <span class="plan-price-amount" id="planPriceAmount">—</span>
+                                <span class="plan-price-frequency" id="planPricePeriod"></span>
                             </div>
 
                             <p class="billing-card-subtitle" id="planSubNotice" style="margin-top: 0.5rem; margin-bottom: 0; font-size: 0.95rem; font-weight: 600;">Your current plan and subscription details</p>
@@ -67,25 +67,25 @@
                             <div class="plan-meta-grid" id="planMetaGrid">
                                 <div class="meta-field-item">
                                     <span class="meta-field-label">Status</span>
-                                    <span class="meta-field-value" id="metaStatus">Active</span>
+                                    <span class="meta-field-value" id="metaStatus">—</span>
                                 </div>
                                 <div class="meta-field-item">
                                     <span class="meta-field-label">Start Date</span>
-                                    <span class="meta-field-value" id="metaStartDate">10 Sep 2026</span>
+                                    <span class="meta-field-value" id="metaStartDate">—</span>
                                 </div>
                                 <div class="meta-field-item">
                                     <span class="meta-field-label">Ends On</span>
-                                    <span class="meta-field-value" id="metaValidUntil">09 Oct 2026</span>
+                                    <span class="meta-field-value" id="metaValidUntil">—</span>
                                 </div>
                                 <div class="meta-field-item">
                                     <span class="meta-field-label">Next Billing Date</span>
-                                    <span class="meta-field-value" id="metaNextBilling">10 Oct 2026</span>
+                                    <span class="meta-field-value" id="metaNextBilling">—</span>
                                 </div>
                             </div>
                         </div>
 
                         <div class="plan-card-actions" id="planActionsContainer">
-                            <button type="button" class="btn-plain btn-plain-primary" id="btnChangePlan" onclick="window.location.href='plans.html?current=growth'">
+                            <button type="button" class="btn-plain btn-plain-primary" id="btnChangePlan" onclick="window.location.href='plans.html'">
                                 <i data-feather="refresh-cw"></i>
                                 <span>Change Plan</span>
                             </button>
@@ -100,7 +100,7 @@
                                     <h3 class="billing-card-title">Active Add-ons</h3>
                                     <p class="billing-card-subtitle" style="font-weight:600; font-size:0.95rem;">Add-ons currently active on your account</p>
                                 </div>
-                                <span class="neutral-badge" id="activeAddonsCountBadge">2 Active</span>
+                                <span class="neutral-badge" id="activeAddonsCountBadge">—</span>
                             </div>
 
                             <div class="active-addons-list" id="activeAddonsList">
@@ -111,7 +111,7 @@
                         <div class="active-addons-footer">
                             <div class="addons-total-row">
                                 <span class="addons-total-label">Add-ons Total</span>
-                                <span class="addons-total-val" id="activeAddonsTotalVal">?1,498 / month</span>
+                                <span class="addons-total-val" id="activeAddonsTotalVal">—</span>
                             </div>
                             <button type="button" class="btn-plain btn-plain-secondary btn-plain-full" id="btnManageAddonsBottom" style="margin-top: 0.5rem;">
                                 <i data-feather="sliders"></i>
@@ -130,7 +130,7 @@
                                 <h3 class="billing-card-title">Plan Features</h3>
                                 <p class="billing-card-subtitle" id="featuresCardSubtitle" style="font-weight:600; font-size:0.95rem;">Features included in your Current Plan</p>
                             </div>
-                            <span class="neutral-badge" id="featuresIncludedCountBadge">7 Included</span>
+                            <span class="neutral-badge" id="featuresIncludedCountBadge">—</span>
                         </div>
 
                         <div class="plan-features-columns">
@@ -167,7 +167,7 @@
                                 <h3 class="billing-card-title">Available Add-ons</h3>
                                 <p class="billing-card-subtitle" style="font-weight:600; font-size:0.95rem;">Add extra features to your plan</p>
                             </div>
-                            <span class="neutral-badge" id="availableAddonsBadge">4 Available</span>
+                            <span class="neutral-badge" id="availableAddonsBadge">—</span>
                         </div>
 
                         <div class="available-addons-list" id="availableAddonsList">
@@ -187,27 +187,11 @@
                             </div>
                         </div>
 
-                        <div class="payment-card-visual" id="paymentCardVisual">
-                            <div class="payment-card-top">
-                                <div class="card-chip-plain"></div>
-                                <div style="display: flex; align-items: center; gap: 8px;">
-                                    <svg viewBox="0 0 38 24" height="20" xmlns="http://www.w3.org/2000/svg">
-                                        <circle cx="14" cy="12" r="9" fill="#ef4444" opacity="0.9" />
-                                        <circle cx="24" cy="12" r="9" fill="#f59e0b" opacity="0.9" />
-                                    </svg>
-                                    <span class="card-network-label" id="cardNetworkLabel">MASTERCARD</span>
-                                </div>
-                            </div>
-                            <div class="payment-card-number" id="cardMaskDisplay">���� ���� ���� 4242</div>
-                            <div class="payment-card-meta">
-                                <div>
-                                    <span class="meta-field-label">Card Holder</span>
-                                    <span class="meta-field-value" id="cardHolderDisplay">Admin User</span>
-                                </div>
-                                <div style="text-align: right;">
-                                    <span class="meta-field-label">Expires</span>
-                                    <span class="meta-field-value" id="cardExpiryDisplay">09 / 2028</span>
-                                </div>
+                        <div class="payment-card-visual payment-card-visual--empty" id="paymentCardVisual">
+                            <div style="display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100%; min-height: 140px; text-align: center; color: rgba(255,255,255,0.85); padding: 1rem;">
+                                <i data-feather="credit-card" style="width: 32px; height: 32px; margin-bottom: 8px; opacity: 0.7;"></i>
+                                <span style="font-size: 0.95rem; font-weight: 700; color: #ffffff;">No Payment Method Saved</span>
+                                <span style="font-size: 0.8rem; margin-top: 4px; opacity: 0.75;">Add a card or UPI for recurring renewals</span>
                             </div>
                         </div>
 
@@ -229,7 +213,7 @@
                                 <h3 class="billing-card-title">Billing Summary</h3>
                                 <p class="billing-card-subtitle" style="font-weight:600; font-size:0.95rem;">Your next billing breakdown</p>
                             </div>
-                            <span class="neutral-badge" id="summaryCycleBadge">Monthly</span>
+                            <span class="neutral-badge" id="summaryCycleBadge">â€”</span>
                         </div>
 
                         <div class="summary-line-items" id="summaryLineItems">
@@ -241,11 +225,11 @@
                         <div class="summary-line-items">
                             <div class="summary-row">
                                 <span id="summarySubtotalLabel">Monthly Subtotal</span>
-                                <span class="summary-row-value" id="summarySubtotal">?6,497</span>
+                                <span class="summary-row-value" id="summarySubtotal">â€”</span>
                             </div>
                             <div class="summary-row" id="summaryTaxRow">
                                 <span id="summaryTaxLabel">GST (18%)</span>
-                                <span class="summary-row-value" id="summaryGst">?1,169</span>
+                                <span class="summary-row-value" id="summaryGst">â€”</span>
                             </div>
                         </div>
 
@@ -253,10 +237,10 @@
 
                         <div class="summary-row summary-row--total">
                             <span>Next Billing Amount</span>
-                            <span class="summary-row-value" id="summaryTotalAmount">?7,666</span>
+                            <span class="summary-row-value" id="summaryTotalAmount">â€”</span>
                         </div>
                         <p class="billing-card-subtitle" id="summaryBillingDateNote" style="margin-top: 6px; font-size: 0.78rem;">
-                            Auto-renews on 10 Oct 2026.
+                            â€”
                         </p>
                     </div>
                 </div>
@@ -309,27 +293,27 @@
                     <div class="billing-info-grid">
                         <div class="billing-info-field">
                             <span class="billing-info-label">Legal Business Name</span>
-                            <span class="billing-info-value" id="infoBusinessName">Salon ABC</span>
+                            <span class="billing-info-value" id="infoBusinessName">â€”</span>
                         </div>
                         <div class="billing-info-field">
                             <span class="billing-info-label">GSTIN</span>
-                            <span class="billing-info-value" id="infoGstin">37ABCDE1234F1Z5</span>
+                            <span class="billing-info-value" id="infoGstin">â€”</span>
                         </div>
                         <div class="billing-info-field">
                             <span class="billing-info-label">PAN</span>
-                            <span class="billing-info-value" id="infoPan">ABCDE1234F</span>
+                            <span class="billing-info-value" id="infoPan">â€”</span>
                         </div>
                         <div class="billing-info-field">
                             <span class="billing-info-label">Billing Email</span>
-                            <span class="billing-info-value" id="infoBillingEmail">billing@salonabc.com</span>
+                            <span class="billing-info-value" id="infoBillingEmail">â€”</span>
                         </div>
                         <div class="billing-info-field">
                             <span class="billing-info-label">Billing Phone</span>
-                            <span class="billing-info-value" id="infoBillingPhone">+91 98765 43210</span>
+                            <span class="billing-info-value" id="infoBillingPhone">â€”</span>
                         </div>
                         <div class="billing-info-field billing-info-field--full">
                             <span class="billing-info-label">Billing Address</span>
-                            <span class="billing-info-value" id="infoBillingAddress">Main Road, Machilipatnam, Andhra Pradesh - 521001, India</span>
+                            <span class="billing-info-value" id="infoBillingAddress">â€”</span>
                         </div>
                     </div>
 
@@ -368,8 +352,8 @@
             </div>
             <div class="billing-modal-body">
                 <div class="modal-callout-box">
-                    <p style="margin: 0; font-weight: 600; font-size: 1rem; color: var(--text-primary);" id="addAddonModalPrice">?299 / month</p>
-                    <p style="margin: 4px 0 0 0; font-size: 0.82rem; color: var(--text-muted);" id="addAddonModalDesc">Deep-dive revenue, staff & service analytics</p>
+                    <p style="margin: 0; font-weight: 600; font-size: 1rem; color: var(--text-primary);" id="addAddonModalPrice">â€”</p>
+                    <p style="margin: 4px 0 0 0; font-size: 0.82rem; color: var(--text-muted);" id="addAddonModalDesc">â€”</p>
                 </div>
                 <p style="margin: 0; font-size: 0.88rem; color: var(--text-secondary);">
                     You'll be charged according to your current subscription billing cycle.
@@ -428,7 +412,7 @@
                 <div>
                     <h3 class="billing-modal-title">Cancel Subscription?</h3>
                     <p class="billing-modal-subtitle" id="cancelModalSubtitle">
-                        Your Growth Plan will remain active until 09 Oct 2026. Your subscription will not renew after this date.
+                        Your subscription will remain active until the end of your billing cycle. Your subscription will not renew after this date.
                     </p>
                 </div>
                 <button type="button" class="billing-modal-close" data-close-modal><i data-feather="x"></i></button>
@@ -481,7 +465,7 @@
                 <div class="cancel-modal-section cancel-info-card">
                     <h4 class="cancel-section-title">What happens after cancellation?</h4>
                     <ul class="cancel-info-list" id="cancelInfoList">
-                        <li>Your subscription remains active until <strong id="cancelInfoActiveDate">09 Oct 2026</strong>.</li>
+                        <li>Your subscription remains active until <strong id="cancelInfoActiveDate">â€”</strong>.</li>
                         <li>It will not renew after that date.</li>
                         <li>No further subscription payment will be charged after cancellation.</li>
                         <li>Your active add-ons will also end when your subscription ends.</li>
@@ -522,16 +506,16 @@
                                 <label class="modal-form-label" for="inputLegalName">
                                     Legal Business Name <span class="required-star">*</span>
                                 </label>
-                                <input type="text" id="inputLegalName" class="modal-form-input" placeholder="e.g. Salon ABC Private Limited" required>
+                                <input type="text" id="inputLegalName" class="modal-form-input" placeholder="Legal Business Name (as registered)" required>
                             </div>
                             <div class="modal-form-row-2col">
                                 <div class="modal-form-group">
                                     <label class="modal-form-label" for="inputGstin">GSTIN</label>
-                                    <input type="text" id="inputGstin" class="modal-form-input modal-form-input--mono" placeholder="e.g. 37ABCDE1234F1Z5" maxlength="15">
+                                    <input type="text" id="inputGstin" class="modal-form-input modal-form-input--mono" placeholder="15-digit GSTIN (optional)" maxlength="15">
                                 </div>
                                 <div class="modal-form-group">
                                     <label class="modal-form-label" for="inputPan">PAN</label>
-                                    <input type="text" id="inputPan" class="modal-form-input modal-form-input--mono" placeholder="e.g. ABCDE1234F" maxlength="10">
+                                    <input type="text" id="inputPan" class="modal-form-input modal-form-input--mono" placeholder="10-digit PAN (optional)" maxlength="10">
                                 </div>
                             </div>
                         </div>
@@ -546,7 +530,7 @@
                                 <label class="modal-form-label" for="inputBillingEmail">
                                     Billing Email <span class="required-star">*</span>
                                 </label>
-                                <input type="email" id="inputBillingEmail" class="modal-form-input" placeholder="e.g. billing@salonabc.com" required>
+                                <input type="email" id="inputBillingEmail" class="modal-form-input" placeholder="billing@yourdomain.com" required>
                             </div>
                             <div class="modal-form-group">
                                 <label class="modal-form-label" for="inputBillingPhone">
@@ -655,7 +639,7 @@
                         <div class="current-payment-meta-box">
                             <div class="current-meta-row">
                                 <span class="current-meta-label">Plan Renewal</span>
-                                <span class="current-meta-val" id="modalCurrentPlanName">Growth Plan</span>
+                                <span class="current-meta-val" id="modalCurrentPlanName">â€”</span>
                             </div>
                             <div class="current-meta-row">
                                 <span class="current-meta-label">Billing Frequency</span>
@@ -663,11 +647,11 @@
                             </div>
                             <div class="current-meta-row">
                                 <span class="current-meta-label">Next Renewal Date</span>
-                                <span class="current-meta-val" id="modalCurrentNextBilling">09 Oct 2026</span>
+                                <span class="current-meta-val" id="modalCurrentNextBilling">â€”</span>
                             </div>
                             <div class="current-meta-row">
                                 <span class="current-meta-label">Recurring Amount</span>
-                                <span class="current-meta-val current-meta-val--price" id="modalCurrentAmount">?2,597 / mo</span>
+                                <span class="current-meta-val current-meta-val--price" id="modalCurrentAmount">â€”</span>
                             </div>
                         </div>
 
@@ -706,7 +690,7 @@
                         <div class="payment-tab-panel is-active" id="panelPaymentCard">
                             <div class="modal-form-group">
                                 <label class="modal-form-label" for="inputCardHolder">Cardholder Name</label>
-                                <input type="text" id="inputCardHolder" class="modal-form-input" placeholder="e.g. Ramesh Kumar" value="Admin User">
+                                <input type="text" id="inputCardHolder" class="modal-form-input" placeholder="e.g. Ramesh Kumar" >
                             </div>
                             <div class="modal-form-group">
                                 <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 2px;">
@@ -714,13 +698,13 @@
                                     <span class="card-brand-pill" id="inputCardBrandBadge">VISA</span>
                                 </div>
                                 <div class="input-with-icon-wrap">
-                                    <input type="text" id="inputCardNumber" class="modal-form-input" placeholder="4242 ���� ���� 4242" maxlength="19">
+                                    <input type="text" id="inputCardNumber" class="modal-form-input" placeholder="Card Number" maxlength="19">
                                 </div>
                             </div>
                             <div class="payment-form-row-2col">
                                 <div class="modal-form-group">
                                     <label class="modal-form-label" for="inputCardExpiry">Expiry (MM/YY)</label>
-                                    <input type="text" id="inputCardExpiry" class="modal-form-input" placeholder="09/28" maxlength="5">
+                                    <input type="text" id="inputCardExpiry" class="modal-form-input" placeholder="MM/YY" maxlength="5">
                                 </div>
                                 <div class="modal-form-group">
                                     <label class="modal-form-label" for="inputCardCvv">CVV / CVC</label>
@@ -757,7 +741,7 @@
 
                             <div class="modal-form-group" style="margin-top: 1rem;">
                                 <label class="modal-form-label" for="inputUpiId">UPI ID / Virtual Payment Address (VPA)</label>
-                                <input type="text" id="inputUpiId" class="modal-form-input" placeholder="e.g. username@okhdfcbank or 9876543210@paytm">
+                                <input type="text" id="inputUpiId" class="modal-form-input" placeholder="e.g. username@upi or mobile@upi">
                             </div>
 
                             <div class="upi-handles-row" id="upiHandlesRow">
@@ -841,7 +825,7 @@
         <div class="billing-modal-box billing-modal-box--invoice">
             <div class="billing-modal-header" style="align-items: center;">
                 <div style="display: flex; align-items: center; gap: 12px;">
-                    <h3 class="billing-modal-title" id="invoiceModalTitle">Invoice #INV-2026-00009</h3>
+                    <h3 class="billing-modal-title" id="invoiceModalTitle">Invoice</h3>
                     <span class="invoice-status-badge is-paid" id="invoiceModalStatusBadge">PAID</span>
                 </div>
                 <button type="button" class="billing-modal-close" data-close-modal><i data-feather="x"></i></button>
@@ -871,7 +855,7 @@
 
 
     <!-- Toast Notification -->
-    <div id="toastNotification" class="toast-notification">Booking created successfully (demo)</div>
+    
 
 
 <script src="logout.js"></script><script src="change-password.js"></script>    <script type="module" src="scripts/global-auth-guard.js"></script>
