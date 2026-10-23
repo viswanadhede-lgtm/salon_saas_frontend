@@ -74,7 +74,8 @@ export const ROUTE_NAV_MAP = {
     'billing-subscription.html':    { route: 'settings', subroute: 'billing-subscription' },
     'branches.html':                { route: 'settings', subroute: 'company' },
     'support.html':                 { route: 'settings', subroute: null },
-    'issue-history.html':           { route: 'settings', subroute: null }
+    'issue-history.html':           { route: 'settings', subroute: null },
+    'notifications.html':           { route: null, subroute: null }
 };
 
 /**

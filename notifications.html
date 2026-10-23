@@ -1,0 +1,624 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <script src="scripts/auth-loader.js"></script>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Notification Center – view all your alerts, system messages and activity feed for your Salon.">
+    <title>Notifications – BharathBots</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="styles.css">
+    <link rel="stylesheet" href="dashboard.css">
+    <link rel="stylesheet" href="submenu.css">
+    <link rel="stylesheet" href="styles/global-layout.css">
+    <script src="https://unpkg.com/feather-icons"></script>
+
+    <style>
+        /* ─── Notification Center Page ───────────────────────────────────── */
+        .notif-center-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 0.75rem 0;
+            gap: 1rem;
+            border-bottom: 1px solid #e2e8f0;
+            margin-bottom: 1.5rem;
+        }
+
+        .notif-center-title-block {
+            display: flex;
+            flex-direction: column;
+            gap: 2px;
+        }
+
+        .notif-center-title {
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: #0f172a;
+            margin: 0;
+            line-height: 1.2;
+            letter-spacing: -0.3px;
+        }
+
+        .notif-center-caption {
+            font-size: 0.875rem;
+            color: #64748b;
+            margin: 0;
+        }
+
+        .notif-center-actions {
+            display: flex;
+            align-items: center;
+            gap: 0.625rem;
+        }
+
+        .nc-btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.4rem;
+            padding: 0.5rem 0.875rem;
+            border: 1px solid #e2e8f0;
+            border-radius: 0.5rem;
+            background: #fff;
+            font-size: 0.875rem;
+            font-weight: 500;
+            font-family: inherit;
+            color: #334155;
+            cursor: pointer;
+            height: 38px;
+            transition: all 0.2s ease;
+            white-space: nowrap;
+            text-decoration: none;
+        }
+
+        .nc-btn:hover {
+            background: #f8fafc;
+            border-color: #cbd5e1;
+            color: #0f172a;
+        }
+
+        /* ─── Filter Tabs ──────────────────────────────────────────────── */
+        .nc-filter-bar {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            margin-bottom: 1.25rem;
+            flex-wrap: wrap;
+            border-bottom: 1px solid #e2e8f0;
+            padding-bottom: 0.75rem;
+        }
+
+        .nc-tab {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.4rem;
+            padding: 0.4rem 0.875rem;
+            border: 1px solid transparent;
+            border-radius: 20px;
+            font-size: 0.825rem;
+            font-weight: 500;
+            font-family: inherit;
+            color: #64748b;
+            background: transparent;
+            cursor: pointer;
+            transition: all 0.15s ease;
+            white-space: nowrap;
+        }
+
+        .nc-tab:hover { background: #f1f5f9; color: #0f172a; }
+
+        .nc-tab.active {
+            background: #eff6ff;
+            border-color: #bfdbfe;
+            color: #2563eb;
+            font-weight: 600;
+        }
+
+        .nc-tab svg { width: 13px; height: 13px; }
+
+        .nc-tab-badge {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            min-width: 18px;
+            height: 18px;
+            padding: 0 5px;
+            border-radius: 9px;
+            background: #3b82f6;
+            color: #fff;
+            font-size: 0.7rem;
+            font-weight: 700;
+            line-height: 1;
+        }
+
+        /* ─── Toolbar ─────────────────────────────────────────────────── */
+        .nc-toolbar {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 0.75rem;
+            margin-bottom: 1rem;
+            flex-wrap: wrap;
+        }
+
+        .nc-toolbar-left, .nc-toolbar-right {
+            display: flex;
+            align-items: center;
+            gap: 0.625rem;
+            flex-wrap: wrap;
+        }
+
+        .nc-search-wrap { position: relative; display: flex; align-items: center; }
+
+        .nc-search-icon {
+            position: absolute;
+            left: 10px;
+            width: 15px;
+            height: 15px;
+            color: #94a3b8;
+            pointer-events: none;
+        }
+
+        .nc-search-input {
+            padding: 0.45rem 0.875rem 0.45rem 2.2rem;
+            border: 1px solid #e2e8f0;
+            border-radius: 0.5rem;
+            font-size: 0.875rem;
+            font-family: inherit;
+            color: #0f172a;
+            background: #fff;
+            width: 240px;
+            height: 38px;
+            transition: all 0.2s ease;
+        }
+
+        .nc-search-input:focus {
+            outline: none;
+            border-color: #93c5fd;
+            box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.12);
+        }
+
+        .nc-filter-select {
+            padding: 0.4rem 0.75rem;
+            border: 1px solid #e2e8f0;
+            border-radius: 0.5rem;
+            font-size: 0.8125rem;
+            font-family: inherit;
+            color: #334155;
+            background: #fff;
+            height: 38px;
+            cursor: pointer;
+        }
+
+        .nc-filter-select:focus { outline: none; border-color: #93c5fd; }
+
+        .nc-results-info { font-size: 0.8125rem; color: #64748b; }
+
+        /* ─── List ─────────────────────────────────────────────────────── */
+        .nc-list-wrap {
+            background: #fff;
+            border: 1px solid #e2e8f0;
+            border-radius: 12px;
+            overflow: hidden;
+        }
+
+        .nc-list { list-style: none; margin: 0; padding: 0; }
+
+        .nc-item {
+            display: flex;
+            align-items: flex-start;
+            gap: 1rem;
+            padding: 1rem 1.25rem;
+            border-bottom: 1px solid #f1f5f9;
+            cursor: pointer;
+            transition: background 0.12s ease;
+            position: relative;
+        }
+
+        .nc-item:last-child { border-bottom: none; }
+        .nc-item:hover { background: #f8fafc; }
+        .nc-item.unread { background: #f0f7ff; }
+        .nc-item.unread:hover { background: #e0f0ff; }
+
+        .nc-item-icon-wrap {
+            width: 40px;
+            height: 40px;
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+        }
+
+        .nc-item-icon-wrap svg { width: 18px; height: 18px; }
+
+        .nc-item-body { flex: 1; min-width: 0; }
+
+        .nc-item-top {
+            display: flex;
+            align-items: flex-start;
+            justify-content: space-between;
+            gap: 0.75rem;
+            margin-bottom: 3px;
+        }
+
+        .nc-item-title {
+            font-size: 0.875rem;
+            font-weight: 600;
+            color: #0f172a;
+            margin: 0;
+            line-height: 1.35;
+        }
+
+        .nc-item-time {
+            font-size: 0.75rem;
+            color: #94a3b8;
+            white-space: nowrap;
+            flex-shrink: 0;
+        }
+
+        .nc-item-msg {
+            font-size: 0.8125rem;
+            color: #475569;
+            margin: 0;
+            line-height: 1.5;
+        }
+
+        .nc-item-footer {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            margin-top: 6px;
+            flex-wrap: wrap;
+        }
+
+        .nc-item-chip {
+            display: inline-flex;
+            align-items: center;
+            padding: 2px 8px;
+            border-radius: 12px;
+            font-size: 0.7rem;
+            font-weight: 600;
+            text-transform: capitalize;
+        }
+
+        .nc-unread-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: #3b82f6;
+            flex-shrink: 0;
+            margin-top: 5px;
+        }
+
+        /* ─── Category colours ────────────────────────────────────────── */
+        .cat-bookings  { background: #eff6ff; color: #1d4ed8; }
+        .cat-customers { background: #faf5ff; color: #7c3aed; }
+        .cat-staff     { background: #f0fdf4; color: #16a34a; }
+        .cat-services  { background: #ecfdf5; color: #059669; }
+        .cat-sales     { background: #fffbeb; color: #b45309; }
+        .cat-pos       { background: #fff7ed; color: #c2410c; }
+        .cat-payments  { background: #fefce8; color: #92400e; }
+        .cat-marketing { background: #fdf4ff; color: #9333ea; }
+        .cat-system,
+        .cat-default   { background: #f1f5f9; color: #475569; }
+
+        /* ─── Empty / Skeleton ────────────────────────────────────────── */
+        .nc-empty {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 4rem 2rem;
+            text-align: center;
+            gap: 1rem;
+        }
+
+        .nc-empty-icon {
+            width: 60px;
+            height: 60px;
+            border-radius: 50%;
+            background: #f1f5f9;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #cbd5e1;
+        }
+
+        .nc-empty-icon svg { width: 28px; height: 28px; }
+        .nc-empty-title { font-size: 1rem; font-weight: 700; color: #0f172a; margin: 0; }
+        .nc-empty-desc { font-size: 0.875rem; color: #64748b; margin: 0; max-width: 320px; }
+
+        .nc-skeleton-item {
+            display: flex;
+            align-items: flex-start;
+            gap: 1rem;
+            padding: 1rem 1.25rem;
+            border-bottom: 1px solid #f1f5f9;
+        }
+
+        .skeleton {
+            border-radius: 6px;
+            background: linear-gradient(90deg, #f1f5f9 25%, #e2e8f0 50%, #f1f5f9 75%);
+            background-size: 400% 100%;
+            animation: shimmer 1.4s infinite;
+        }
+
+        @keyframes shimmer {
+            0%   { background-position: 200% 0; }
+            100% { background-position: -200% 0; }
+        }
+
+        .sk-icon { width: 40px; height: 40px; border-radius: 10px; flex-shrink: 0; }
+        .sk-body { flex: 1; display: flex; flex-direction: column; gap: 8px; padding-top: 4px; }
+        .sk-line { height: 12px; border-radius: 6px; }
+        .sk-w40 { width: 40%; }
+        .sk-w60 { width: 60%; }
+        .sk-w80 { width: 80%; }
+
+        /* ─── Pagination ──────────────────────────────────────────────── */
+        .nc-pagination {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 1rem 1.25rem;
+            border-top: 1px solid #f1f5f9;
+            background: #fafafa;
+            border-radius: 0 0 12px 12px;
+        }
+
+        .nc-pagination-info { font-size: 0.8125rem; color: #64748b; }
+
+        .nc-pagination-controls {
+            display: flex;
+            align-items: center;
+            gap: 0.375rem;
+        }
+
+        .nc-page-btn {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            min-width: 34px;
+            height: 34px;
+            padding: 0 8px;
+            border: 1px solid #e2e8f0;
+            border-radius: 8px;
+            background: #fff;
+            color: #475569;
+            font-size: 0.8125rem;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.15s ease;
+        }
+
+        .nc-page-btn:hover:not(:disabled) {
+            background: #f8fafc;
+            border-color: #cbd5e1;
+            color: #0f172a;
+        }
+
+        .nc-page-btn.active {
+            background: #3b82f6;
+            border-color: #3b82f6;
+            color: #fff;
+            font-weight: 700;
+        }
+
+        .nc-page-btn:disabled { opacity: 0.4; cursor: not-allowed; }
+
+        /* ─── Spinner ─────────────────────────────────────────────────── */
+        .nc-spinner {
+            display: none;
+            align-items: center;
+            justify-content: center;
+            padding: 3rem;
+            gap: 0.75rem;
+            color: #64748b;
+            font-size: 0.875rem;
+        }
+
+        .nc-spinner.show { display: flex; }
+
+        .nc-spinner-ring {
+            width: 28px;
+            height: 28px;
+            border: 3px solid #e2e8f0;
+            border-top-color: #3b82f6;
+            border-radius: 50%;
+            animation: nc-spin 0.7s linear infinite;
+        }
+
+        @keyframes nc-spin { to { transform: rotate(360deg); } }
+
+        @media (max-width: 768px) {
+            .nc-search-input { width: 160px; }
+            .notif-center-header { flex-direction: column; align-items: flex-start; }
+        }
+    </style>
+</head>
+
+<body class="dashboard-body" style="min-height: calc(100vh / 0.93);">
+
+    <!-- Global Sidebar Shell -->
+    <div id="global-sidebar"></div>
+
+    <!-- Main Content Wrapper -->
+    <div class="main-wrapper" id="mainWrapper">
+
+        <!-- Global Header Shell -->
+        <div id="global-header"></div>
+
+        <!-- Page Content -->
+        <main class="content-area" style="display: flex; flex-direction: column; gap: 0;">
+
+            <!-- ===== Page Header ===== -->
+            <div class="notif-center-header">
+                <div class="notif-center-title-block">
+                    <h1 class="notif-center-title">Notification Center</h1>
+                    <p class="notif-center-caption">All your alerts, activity and system messages</p>
+                </div>
+
+                <div class="notif-center-actions">
+                    <button class="nc-btn" id="ncBtnMarkAllRead" type="button">
+                        <i data-feather="check-circle"></i>
+                        <span>Mark all read</span>
+                    </button>
+                    <a href="settings-notifications.html" class="nc-btn">
+                        <i data-feather="settings"></i>
+                        <span>Settings</span>
+                    </a>
+                </div>
+            </div>
+
+            <!-- ===== Category Filter Tabs ===== -->
+            <div class="nc-filter-bar" id="ncFilterBar">
+                <button class="nc-tab active" data-category="all" type="button">
+                    All
+                    <span class="nc-tab-badge" id="ncBadgeAll" style="display:none;"></span>
+                </button>
+                <button class="nc-tab" data-category="bookings" type="button">
+                    <i data-feather="calendar"></i> Bookings
+                </button>
+                <button class="nc-tab" data-category="customers" type="button">
+                    <i data-feather="users"></i> Customers
+                </button>
+                <button class="nc-tab" data-category="staff" type="button">
+                    <i data-feather="user-check"></i> Staff
+                </button>
+                <button class="nc-tab" data-category="sales" type="button">
+                    <i data-feather="shopping-cart"></i> Sales
+                </button>
+                <button class="nc-tab" data-category="pos" type="button">
+                    <i data-feather="monitor"></i> POS
+                </button>
+                <button class="nc-tab" data-category="payments" type="button">
+                    <i data-feather="credit-card"></i> Payments
+                </button>
+                <button class="nc-tab" data-category="marketing" type="button">
+                    <i data-feather="tag"></i> Marketing
+                </button>
+                <button class="nc-tab" data-category="system" type="button">
+                    <i data-feather="cpu"></i> System
+                </button>
+                <button class="nc-tab" data-category="unread" type="button" id="ncTabUnread">
+                    Unread only
+                    <span class="nc-tab-badge" id="ncBadgeUnread" style="display:none;"></span>
+                </button>
+            </div>
+
+            <!-- ===== Toolbar ===== -->
+            <div class="nc-toolbar">
+                <div class="nc-toolbar-left">
+                    <div class="nc-search-wrap">
+                        <i data-feather="search" class="nc-search-icon"></i>
+                        <input type="text" id="ncSearch" class="nc-search-input" placeholder="Search notifications…" autocomplete="off">
+                    </div>
+
+                    <select id="ncDateRange" class="nc-filter-select">
+                        <option value="all">All time</option>
+                        <option value="today">Today</option>
+                        <option value="7">Last 7 days</option>
+                        <option value="30">Last 30 days</option>
+                        <option value="90">Last 3 months</option>
+                    </select>
+                </div>
+
+                <div class="nc-toolbar-right">
+                    <span class="nc-results-info" id="ncResultsInfo"></span>
+                    <select id="ncPerPage" class="nc-filter-select">
+                        <option value="50">50 per page</option>
+                        <option value="25">25 per page</option>
+                        <option value="100">100 per page</option>
+                    </select>
+                </div>
+            </div>
+
+            <!-- ===== Notification List ===== -->
+            <div class="nc-list-wrap">
+
+                <!-- Skeleton loader -->
+                <div id="ncSkeleton">
+                    <div class="nc-skeleton-item">
+                        <div class="skeleton sk-icon"></div>
+                        <div class="sk-body">
+                            <div class="skeleton sk-line sk-w40"></div>
+                            <div class="skeleton sk-line sk-w80"></div>
+                            <div class="skeleton sk-line sk-w60"></div>
+                        </div>
+                    </div>
+                    <div class="nc-skeleton-item">
+                        <div class="skeleton sk-icon"></div>
+                        <div class="sk-body">
+                            <div class="skeleton sk-line sk-w60"></div>
+                            <div class="skeleton sk-line sk-w80"></div>
+                        </div>
+                    </div>
+                    <div class="nc-skeleton-item">
+                        <div class="skeleton sk-icon"></div>
+                        <div class="sk-body">
+                            <div class="skeleton sk-line sk-w40"></div>
+                            <div class="skeleton sk-line sk-w60"></div>
+                            <div class="skeleton sk-line sk-w80"></div>
+                        </div>
+                    </div>
+                    <div class="nc-skeleton-item">
+                        <div class="skeleton sk-icon"></div>
+                        <div class="sk-body">
+                            <div class="skeleton sk-line sk-w80"></div>
+                            <div class="skeleton sk-line sk-w40"></div>
+                        </div>
+                    </div>
+                    <div class="nc-skeleton-item">
+                        <div class="skeleton sk-icon"></div>
+                        <div class="sk-body">
+                            <div class="skeleton sk-line sk-w60"></div>
+                            <div class="skeleton sk-line sk-w80"></div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Spinner (for subsequent loads) -->
+                <div class="nc-spinner" id="ncSpinner">
+                    <div class="nc-spinner-ring"></div>
+                    <span>Loading notifications…</span>
+                </div>
+
+                <!-- Empty State -->
+                <div class="nc-empty" id="ncEmpty" style="display:none;">
+                    <div class="nc-empty-icon">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/>
+                            <path d="M13.73 21a2 2 0 0 1-3.46 0"/>
+                        </svg>
+                    </div>
+                    <p class="nc-empty-title" id="ncEmptyTitle">No notifications found</p>
+                    <p class="nc-empty-desc" id="ncEmptyDesc">When bookings, payments, or system events occur they'll show here.</p>
+                </div>
+
+                <!-- The list -->
+                <ul class="nc-list" id="ncList"></ul>
+
+                <!-- Pagination -->
+                <div class="nc-pagination" id="ncPagination" style="display:none;">
+                    <span class="nc-pagination-info" id="ncPaginationInfo"></span>
+                    <div class="nc-pagination-controls" id="ncPaginationControls"></div>
+                </div>
+            </div>
+
+        </main>
+    </div>
+
+    <script type="module" src="scripts/app-shell.js"></script>
+    <script src="logout.js"></script>
+    <script src="change-password.js"></script>
+    <script type="module" src="scripts/global-auth-guard.js"></script>
+    <script type="module" src="scripts/sub-features/sub-feature-gate.js"></script>
+    <script type="module" src="scripts/notification-manager.js"></script>
+    <script type="module" src="notifications.js"></script>
+</body>
+
+</html>
