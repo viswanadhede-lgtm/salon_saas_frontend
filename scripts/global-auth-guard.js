@@ -236,6 +236,33 @@ async function getAuthoritativeSubscription(supabaseClient, companyId) {
     return null;
 }
 
+/**
+ * Safely parses permission keys from role_permissions rows.
+ * Supports both the new single-row JSON array string and legacy multi-row formats.
+ */
+function extractPermissionKeys(permRows) {
+    const keys = [];
+    (permRows || []).forEach(p => {
+        if (!p || !p.permission_key) return;
+        const raw = String(p.permission_key).trim();
+        if (raw.startsWith('[') && raw.endsWith(']')) {
+            try {
+                const parsed = JSON.parse(raw);
+                if (Array.isArray(parsed)) {
+                    keys.push(...parsed);
+                }
+            } catch {
+                keys.push(raw);
+            }
+        } else if (raw.includes(',')) {
+            keys.push(...raw.split(',').map(s => s.trim()).filter(Boolean));
+        } else {
+            keys.push(raw);
+        }
+    });
+    return [...new Set(keys)];
+}
+
 // ─── Hourly Heartbeat ─────────────────────────────────────────────────────────
 // Re-validates subscription, features and role_permissions silently every hour.
 function setupHourlyHeartbeat() {
@@ -291,7 +318,7 @@ function setupHourlyHeartbeat() {
                     .eq('role_id', role_id)
                     .eq('company_id', company_id);
 
-                const keys = permRows?.map(p => p.permission_key) || [];
+                const keys = extractPermissionKeys(permRows);
                 const hasAllPerms = keys.includes('ALL');
                 const allMainFeatures = Object.values(FEATURES);
 
@@ -300,7 +327,7 @@ function setupHourlyHeartbeat() {
                     userFeatures = planFeatures;
                     userFeatures.forEach(feat => {
                         const children = SUB_FEATURES_MAP[feat] || [];
-                        children.forEach(sf => userSubFeatures.push(sf.key));
+                        children.forEach(sf => userSubFeatures.push(sf?.key || sf));
                     });
                 } else {
                     userFeatures = keys.filter(k => allMainFeatures.includes(k));
@@ -543,7 +570,7 @@ export async function runGlobalAuthGuard() {
             .eq('role_id', userRow.role_id)
             .eq('company_id', resolvedCompanyId);
 
-        const keys = permRows?.map(p => p.permission_key) || [];
+        const keys = extractPermissionKeys(permRows);
         const hasAllPerms = keys.includes('ALL');
         const allMainFeatures = Object.values(FEATURES);
 
@@ -559,7 +586,7 @@ export async function runGlobalAuthGuard() {
             
             userFeatures.forEach(feat => {
                 const children = SUB_FEATURES_MAP[feat] || [];
-                children.forEach(sf => userSubFeatures.push(sf.key));
+                children.forEach(sf => userSubFeatures.push(sf?.key || sf));
             });
         } else {
             // Split raw database permission keys into main vs sub-features

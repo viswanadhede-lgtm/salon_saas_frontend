@@ -160,23 +160,17 @@ async function submitOnboarding() {
                 const subFeatureKeys = (planSubFeatsRes.data || []).map(s => s.sub_feature_key).filter(Boolean);
                 const allAllowedKeys = [...new Set([...featureKeys, ...subFeatureKeys])];
 
-                if (allAllowedKeys.length > 0) {
-                    const permissionRows = allAllowedKeys.map(key => ({
-                        company_id,
-                        branch_id,
-                        role_id,
-                        role_name: 'Owner',
-                        permission_key: key,
-                        status: 'active'
-                    }));
-                    const { error: permErr } = await supabase.from('role_permissions').insert(permissionRows);
-                    if (permErr) console.warn("Failed to insert granular owner permissions:", permErr.message);
-                } else {
-                    console.warn("No plan features found. Inserting fallback 'ALL' key.");
-                    await supabase.from('role_permissions').insert({
-                        company_id, branch_id, role_id, role_name: 'Owner', permission_key: 'ALL', status: 'active'
-                    });
-                }
+                const ownerKeys = allAllowedKeys.length > 0 ? allAllowedKeys : ['ALL'];
+                const singlePermRow = {
+                    company_id,
+                    branch_id,
+                    role_id,
+                    role_name: 'Owner',
+                    permission_key: JSON.stringify(ownerKeys),
+                    status: 'active'
+                };
+                const { error: permErr } = await supabase.from('role_permissions').insert(singlePermRow);
+                if (permErr) console.warn("Failed to insert single-row owner permissions:", permErr.message);
             } catch (permException) {
                 console.error("Error setting up role permissions:", permException);
             }
