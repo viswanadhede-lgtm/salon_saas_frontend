@@ -526,3 +526,6 @@ export function clearPlanFeaturesCache() {
         sessionStorage.removeItem(PLAN_CACHE_STORAGE_KEY);
     } catch { /* Non-blocking */ }
 }
+
+// Backward-compatible export alias for Global Auth Guard
+export const resolvePlanFeatures = getCurrentPlanFeatures;

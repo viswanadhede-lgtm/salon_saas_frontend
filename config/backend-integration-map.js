@@ -1047,8 +1047,41 @@
 //     • If plan upgraded: unlocks the newly purchased features.
     
 
-// ==========================================================================================================================
+// -----------------------------------------------------------------------------------------------------------
+// IMPORTANT NOTES
+// ------------------------------------------------------------------------------------------------------------
 
+// WHICH FILE NEEDS TO BE UPDATED IN THE 5 CONFIG FILES WHEN 
+   
+    // CASE 1: You added a NEW PAGE (A New Feature)
+
+            // We need to update 
+
+            // a. Feature Registry
+            // b. Sub Feature Registry Only when adding a new write access sub feature exists in that page
+            // c. Subscription State Manager 
+            // d. RBAC Manager
+            // e. Plan Features Manager
+            
+            // f. Plus 1 line in global-auth-guard.js to link the HTML file URL to the page key
+
+   
+             
+     // CASE 2: You added a NEW SUB FEATURE WITH WRITE ACCESS (A Button that Adds, Edits, or Deletes Data)
+      
+            //  We need to update 
+            
+            // a. Feature Registry - Not needed since the page already exists
+            // b. Sub Feature Registry	
+            // c. Subscription State Manager
+            // d. RBAC Manager
+            // e. Plan Features Manager - NOT NEEDED because Pricing plans only unlock whole pages, not individual buttons
+            
+            //  f. Plus 1 line in global-auth-guard.js to link the HTML file URL to the page key
+
+
+            
+//===========================================================================================================================================================================
 
 
 
