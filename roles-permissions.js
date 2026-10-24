@@ -106,10 +106,34 @@ async function fetchRoles() {
         if (rolesRes.error) throw rolesRes.error;
 
         // Build permission_key map: { role_id -> [permission_key, ...] }
+        // Supports both single-row JSON array string and legacy multi-row formats
         const permMap = {};
         (permsRes.data || []).forEach(row => {
+            if (!row.role_id) return;
             if (!permMap[row.role_id]) permMap[row.role_id] = [];
-            if (row.permission_key) permMap[row.role_id].push(row.permission_key);
+
+            if (row.permission_key) {
+                const raw = String(row.permission_key).trim();
+                if (raw.startsWith('[') && raw.endsWith(']')) {
+                    try {
+                        const parsed = JSON.parse(raw);
+                        if (Array.isArray(parsed)) {
+                            permMap[row.role_id].push(...parsed);
+                        }
+                    } catch {
+                        permMap[row.role_id].push(raw);
+                    }
+                } else if (raw.includes(',')) {
+                    permMap[row.role_id].push(...raw.split(',').map(s => s.trim()).filter(Boolean));
+                } else {
+                    permMap[row.role_id].push(raw);
+                }
+            }
+        });
+
+        // De-duplicate any keys for safety
+        Object.keys(permMap).forEach(rid => {
+            permMap[rid] = [...new Set(permMap[rid])];
         });
 
         // Build user count map: { role_id -> count }
@@ -481,33 +505,63 @@ async function saveInlinePerms() {
 }
 
 /**
- * Core helper: wipe all existing permission rows for a role_id, then reinsert.
+ * Single-row atomic writer: stores all permissions for a role in a single row
+ * as a JSON-encoded array inside `permission_key`.
  */
 async function syncRolePermissions(roleId, companyId, branchId, roleName, permissionKeys, now) {
-    // Step 1: Delete all existing perm rows for this role
-    const { error: delErr } = await supabase
+    const jsonPermissions = JSON.stringify(permissionKeys || []);
+
+    // 1. Check if a row already exists for this role
+    const { data: existingRows, error: checkErr } = await supabase
         .from('role_permissions')
+        .select('id')
         .eq('role_id', roleId)
-        .eq('company_id', companyId)
-        .delete();
+        .eq('company_id', companyId);
 
-    if (delErr) console.warn('syncRolePermissions: delete warning:', delErr);
+    if (checkErr) {
+        console.warn('syncRolePermissions check error:', checkErr);
+    }
 
-    // Step 2: Reinsert — one row per permission key
-    if (permissionKeys.length > 0) {
-        const rows = permissionKeys.map(key => ({
-            company_id:     companyId,
-            branch_id:      branchId,
-            role_id:        roleId,
-            role_name:      roleName,
-            permission_key: key,
-            status:         'active',
-            created_at:     now,
-            updated_at:     now
-        }));
+    if (existingRows && existingRows.length > 0) {
+        // 2a. Update the primary single row
+        const primaryRowId = existingRows[0].id;
+        const { error: updateErr } = await supabase
+            .from('role_permissions')
+            .eq('id', primaryRowId)
+            .update({
+                branch_id:      branchId,
+                role_name:      roleName,
+                permission_key: jsonPermissions,
+                status:         'active',
+                updated_at:     now
+            });
 
-        const { error: insErr } = await supabase.from('role_permissions').insert(rows);
-        if (insErr) throw insErr;
+        if (updateErr) throw updateErr;
+
+        // Clean up any historical multi-rows if they existed previously
+        if (existingRows.length > 1) {
+            const extraIds = existingRows.slice(1).map(r => r.id);
+            await supabase
+                .from('role_permissions')
+                .in('id', extraIds)
+                .delete();
+        }
+    } else {
+        // 2b. Insert exactly one single row for this role
+        const { error: insertErr } = await supabase
+            .from('role_permissions')
+            .insert({
+                company_id:     companyId,
+                branch_id:      branchId,
+                role_id:        roleId,
+                role_name:      roleName,
+                permission_key: jsonPermissions,
+                status:         'active',
+                created_at:     now,
+                updated_at:     now
+            });
+
+        if (insertErr) throw insertErr;
     }
 }
 

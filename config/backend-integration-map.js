@@ -962,8 +962,39 @@
 
 
 // ===============================================================================================================================================================
-//
+//  GLOBAL AUTH GUARD:
 // ===============================================================================================================================================================
+
+
+// CONFIG FILE 1:- FEATURE REGISTRY
+
+     // FEATURE REGISTRY is basically PAGE LEVEL ACCESS & List of all the HTML pages currently categorised as two groups.. 
+
+           // GROUP A - CORE LEVEL FEATURE PAGES - Total 22 HTML PAGES - these are the pages present in the SIDE BAR
+        
+           // GROUP B - SUB LEVEL FEATURE PAGES - Total 22 HTML PAGES - These are the sub - pages that are not the direct pages but are accessed from the SIDE BAR Pages.
+       
+
+// CONFIG FILE 2:- SUB FEATURE REGISTRY 
+
+     // SUB FEATURE REGISTRY  is basically the Features that are present in the HTML PAGE & the Total list of the features currently categorised same as the FEATURES REGISTRY. 
+
+           // GROUP A - CORE LEVEL FEATURES.
+
+           // GROUP B - SUB CORE LEVEL FEATURES.
+
+
+
+// CONFIG FILE 3:- 
+
+
+
+
+
+
+
+
+
 
 
 
