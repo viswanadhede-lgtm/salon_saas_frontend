@@ -26,19 +26,15 @@ export const ROUTE_NAV_MAP = {
 
     // Services section
     'services.html':                { route: 'services', subroute: null },
-    'service-categories.html':      { route: 'services', subroute: null },
 
     // Sales section
     'pos.html':                     { route: 'sales', subroute: 'pos' },
     'products.html':                { route: 'sales', subroute: 'products' },
     'sales-history.html':           { route: 'sales', subroute: 'sales-history' },
-    'payment-pos.html':             { route: 'sales', subroute: 'pos' },
 
     // Payments section
     'pending-payments.html':        { route: 'payments', subroute: 'pending-payments' },
     'payments-history.html':        { route: 'payments', subroute: 'payments-history' },
-    'payment-booking.html':         { route: 'payments', subroute: 'pending-payments' },
-    'payment-membership.html':      { route: 'payments', subroute: 'pending-payments' },
 
     // Marketing section
     'offers.html':                  { route: 'marketing', subroute: 'offers' },
@@ -57,16 +53,13 @@ export const ROUTE_NAV_MAP = {
     'company.html':                 { route: 'settings', subroute: 'company' },
     'settings-business.html':       { route: 'settings', subroute: 'company' },
     'settings-contact.html':        { route: 'settings', subroute: 'company' },
-    'settings-branding.html':       { route: 'settings', subroute: 'company' },
     'settings-hours.html':          { route: 'settings', subroute: 'company' },
     'settings-tax.html':            { route: 'settings', subroute: 'company' },
-    'settings-billing.html':        { route: 'settings', subroute: 'company' },
     'settings-invoice.html':        { route: 'settings', subroute: 'company' },
     'settings-invoice-common.html': { route: 'settings', subroute: 'company' },
     'settings-invoice-booking.html':{ route: 'settings', subroute: 'company' },
     'settings-invoice-pos.html':    { route: 'settings', subroute: 'company' },
     'settings-invoice-membership.html': { route: 'settings', subroute: 'company' },
-    'settings-booking.html':        { route: 'settings', subroute: 'company' },
     'settings-payments.html':       { route: 'settings', subroute: 'company' },
     'settings-notifications.html':  { route: 'settings', subroute: 'company' },
     'users.html':                   { route: 'settings', subroute: 'users' },
