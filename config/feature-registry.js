@@ -75,7 +75,7 @@ export const FEATURES = {
 
 
     // =========================================================================
-    // GROUP B — SUPPORTING FEATURES  (25 Sub-pages, organized by parent)
+    // GROUP B — SUPPORTING FEATURES  (22 Sub-pages, organized by parent)
     // =========================================================================
 
     // ── DASHBOARD ─────────────────────────────────────────────────────────────
