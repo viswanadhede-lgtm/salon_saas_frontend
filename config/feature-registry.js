@@ -93,20 +93,20 @@ export const FEATURES = {
     SETTINGS_BUSINESS:                   'settings_business',               // 30. settings-business.html
     SETTINGS_CONTACT:                    'settings_contact',                // 31. settings-contact.html
     SETTINGS_HOURS:                      'settings_hours',                  // 32. settings-hours.html
-    SETTINGS_TAX:                        'settings_tax',                    // 34. settings-tax.html
-    SETTINGS_PAYMENTS:                   'settings_payments',               // 35. settings-payments.html
-    SETTINGS_NOTIFICATIONS:              'settings_notifications',          // 36. settings-notifications.html
-    SETTINGS_INVOICE:                    'settings_invoice',                // 37. settings-invoice.html
-    SETTINGS_INVOICE_COMMON:             'settings_invoice_common',         // 38. settings-invoice-common.html
-    SETTINGS_INVOICE_BOOKING:            'settings_invoice_booking',        // 39. settings-invoice-booking.html
-    SETTINGS_INVOICE_POS:                'settings_invoice_pos',            // 40. settings-invoice-pos.html
-    SETTINGS_INVOICE_MEMBERSHIP:         'settings_invoice_membership',     // 41. settings-invoice-membership.html
+    SETTINGS_TAX:                        'settings_tax',                    // 33. settings-tax.html
+    SETTINGS_PAYMENTS:                   'settings_payments',               // 34. settings-payments.html
+    SETTINGS_NOTIFICATIONS:              'settings_notifications',          // 35. settings-notifications.html
+    SETTINGS_INVOICE:                    'settings_invoice',                // 36. settings-invoice.html
+    SETTINGS_INVOICE_COMMON:             'settings_invoice_common',         // 37. settings-invoice-common.html
+    SETTINGS_INVOICE_BOOKING:            'settings_invoice_booking',        // 38. settings-invoice-booking.html
+    SETTINGS_INVOICE_POS:                'settings_invoice_pos',            // 39. settings-invoice-pos.html
+    SETTINGS_INVOICE_MEMBERSHIP:         'settings_invoice_membership',     // 40. settings-invoice-membership.html
 
     // ── HEADER ────────────────────────────────────────────────────────────────
-    NOTIFICATIONS:                       'notifications',                   // 44. notifications.html
-    SUPPORT:                             'support',                         // 45. support.html
-    ISSUE_HISTORY:                       'issue_history',                   // 46. issue-history.html
-    USER_GUIDE:                          'user_guide',                      // 47. user_guide.html
+    NOTIFICATIONS:                       'notifications',                   // 41. notifications.html
+    SUPPORT:                             'support',                         // 42. support.html
+    ISSUE_HISTORY:                       'issue_history',                   // 43. issue-history.html
+    USER_GUIDE:                          'user_guide',                      // 44. user_guide.html
 };
 
 
