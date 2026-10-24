@@ -921,6 +921,13 @@
 
 
 
+// ==============================================================================================================================
+//  ROLES & PERMISSIONS
+// ============================================================================================================================================
+
+// Direct supabase insert - one row insert only. just like notifications table write.
+
+
             
 //=======================================================================================================================================================================================
 // GLOBAL HEADER.
@@ -985,13 +992,62 @@
 
 
 
-// CONFIG FILE 3:- 
+// CONFIG FILE 3:- SUBSCRIPTION STATE MANAGER 
+
+     // SUBSCRIPTION STATE MANAGER -  It checks the current subscription state of the company from the SUBSCRIPTIONS table using the columns ... like subscription end date column and for safety falls to status column  ... 
+
+           // If the subscrption end date is with in the today's date then this subscription state manager will allow both read & write (FULL) access.
+           // If the subscription end date is more than today's date then this subscrption manager will allow only the read access so that the user can view all the data but cannot write anything..
 
 
 
+// CONFIG FILE 4:- RBAC MANAGER
+
+     // RBAC MANAGER - IT gets all the features from the ROLE_PERMISSIONS Table which are permitted to the logged in user and ensures only those features which are allowed to the user are accessable and rest are not accessable
+      
+              // It reads the features which are allowed from the ROLE_PERMISSIONS TABLE's PERMISSION KEY column.
 
 
 
+// CONFIG FILE 5:- PLAN-FEATURES-MANAGER
+
+     // PLAN-FEATURES-MANAGER - It gets all the features permitted for the plan that a logged in user and allows only those features to be accessed by the user and will not allow the other features that are available in the App.
+
+              // It reads from the PLAN_FEATURES TABLE
+
+
+//-----------------------------------------------------------------------
+// GLOABAL AUTH GUARD WORKING PRINCIPLE
+//----------------------------------------------------------------------- 
+              
+
+//               [Cold Start / Login]
+//                       │
+//                       ▼
+//     Evaluates the 3 Config Files once via Supabase:
+//       
+//         • Gate 1: Subscription State (Active vs Expired)
+//         • Gate 2: Plan Features (Purchased vs Locked)
+//         • Gate 3: RBAC (Role permissions)
+//                      │
+//                      ▼
+//     Saves unified profile into `localStorage` (appContext, userFeatures, etc.)
+//                      │
+//                      ▼
+//              [Page-to-Page Navigation] ──────────────────────────────────────────────┐
+//    
+//     ➔ Instant! (< 2 milliseconds, zero network calls, zero screen flash).           │
+//                                                                                      ▼
+//              [Background Silent Heartbeat (Every 30 Mins)] ◄─────────────────────────┘
+//   
+//     ➔ Silently re-queries the 3 config files in the background:
+//    
+//     • If subscription expired: silently updates cache to Read-Only mode.
+//     • If permissions changed: updates allowed buttons/routes.
+//     • If plan upgraded: unlocks the newly purchased features.
+    
+
+// ==========================================================================================================================
 
 
 

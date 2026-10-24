@@ -437,10 +437,28 @@ export async function loadPlanFeatures(supabase, planId) {
             console.error('[Billing] Error fetching plan-specific features:', planRes.error);
         }
 
-        const allFeatureKeys = [...new Set((allRes.data || []).map(r => r.feature_key).filter(Boolean))];
-        const includedKeySet = new Set((planRes.data || []).map(r => r.feature_key).filter(Boolean));
+        function extractKeys(rows) {
+            const list = [];
+            (rows || []).forEach(r => {
+                if (!r || !r.feature_key) return;
+                const raw = String(r.feature_key).trim();
+                if (raw.startsWith('[') && raw.endsWith(']')) {
+                    try {
+                        const parsed = JSON.parse(raw);
+                        if (Array.isArray(parsed)) list.push(...parsed);
+                    } catch { list.push(raw); }
+                } else if (raw.includes(',')) {
+                    list.push(...raw.split(',').map(s => s.trim()).filter(Boolean));
+                } else {
+                    list.push(raw);
+                }
+            });
+            return [...new Set(list)];
+        }
 
-        const includedKeys = allFeatureKeys.filter(k => includedKeySet.has(k));
+        const allFeatureKeys = extractKeys(allRes.data);
+        const includedKeys = extractKeys(planRes.data);
+        const includedKeySet = new Set(includedKeys);
         const notIncludedKeys = allFeatureKeys.filter(k => !includedKeySet.has(k));
 
         const sortFeatures = (keys) => {

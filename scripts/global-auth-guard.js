@@ -1,11 +1,79 @@
+/**
+ * scripts/global-auth-guard.js
+ * ─────────────────────────────────────────────────────────────────────────────
+ * GLOBAL AUTH GUARD — Master Orchestrator for Application Authorization
+ * ─────────────────────────────────────────────────────────────────────────────
+ *
+ * ARCHITECTURAL DESIGN:
+ *   Orchestrates authorization using a 3-Gate Model backed by modular configuration files:
+ *     - GATE 1: Subscription State Manager (Tenant lifecycle & read/write mode)
+ *     - GATE 2: In-App RBAC Manager (User role permissions & action policies)
+ *     - GATE 3: Plan Features Manager (Commercial tier gating & paywalls)
+ *
+ * PERFORMANCE & SECURITY STRATEGY:
+ *   1. COLD START (First Login / Stale Cache):
+ *      - Authoritatively verifies session via Supabase Auth (/auth/v1/user)
+ *      - Evaluates Gate 1 (Tenant subscription active vs expired read-only)
+ *      - Evaluates Gate 3 (Commercial plan tier features from single-row plan_features)
+ *      - Evaluates Gate 2 (Role permissions from single-row role_permissions)
+ *      - Caches full validated context into localStorage with timestamp
+ *
+ *   2. HOT NAVIGATION (Optimistic Cache Hit < 2ms):
+ *      - Validates page access instantly from localStorage cache without network latency
+ *      - Hydrates header, user profile, branch selector, and action gates immediately
+ *      - Enforces Read-Only banner if subscription is expired
+ *
+ *   3. 30-MINUTE SILENT HEARTBEAT:
+ *      - Runs in background every 30 minutes
+ *      - Silently re-queries authoritative tables via the 3 Managers
+ *      - Detects plan upgrades, subscription expiry, or role changes without disrupting user
+ *      - Updates cache seamlessly; triggers polite upgrade/renew alerts if current page lost
+ *
+ * CONTRACTS PRESERVED:
+ *   - window.populateGlobalHeader
+ *   - window.getActiveBranchId
+ *   - window.uploadProfilePhoto
+ *   - export populateGlobalHeader
+ *   - export populateDateChip
+ *   - export initProfilePhotoLightbox
+ *   - export runGlobalAuthGuard
+ * ─────────────────────────────────────────────────────────────────────────────
+ */
+
 import { supabase } from '../lib/supabase.js';
 import { FEATURES } from '../config/feature-registry.js';
 import { SUB_FEATURES_MAP } from '../config/sub-feature-registry.js';
+
+// Gate 1: Subscription Lifecycle Gatekeeper
+import {
+    getSubscriptionAccess,
+    canWrite,
+    canRead,
+    renderSubscriptionBanner,
+    clearSubscriptionCache
+} from '../config/subscription-state-manager.js';
+
+// Gate 2: In-App Role-Based Access Control Gatekeeper
+import {
+    getUserRoleAndPermissions,
+    hasRolePermission,
+    clearRbacCache
+} from '../config/rbac-manager.js';
+
+// Gate 3: Commercial Plan Tier Gatekeeper
+import {
+    resolvePlanFeatures,
+    isFeatureUnlocked,
+    showPlanUpgradeModal,
+    clearPlanFeaturesCache
+} from '../config/plan-features-manager.js';
+
+// Sub-feature Action Management & DOM Gating
 import { initSubFeatures } from './sub-features/sub-feature-manager.js';
 import { applySubFeatureGates } from './sub-features/sub-feature-gate.js';
 import { initGlobalBookingModal } from './global-booking-modal.js';
 
-// ─── Load notification manager globally ───────────────────────────────────────
+// ─── Global Notification Manager Loader ──────────────────────────────────────
 (function loadNotificationManager() {
     if (window.__notifManagerLoaded) return;
     window.__notifManagerLoaded = true;
@@ -15,135 +83,99 @@ import { initGlobalBookingModal } from './global-booking-modal.js';
 })();
 
 
-// ─── Route → Feature mapping ──────────────────────────────────────────────────
+// ─────────────────────────────────────────────────────────────────────────────
+// SECTION 1 — ROUTE TO FEATURE DICTIONARY (All 44 Application Pages)
+// ─────────────────────────────────────────────────────────────────────────────
 const ROUTE_MAP = {
-    '/dashboard.html':             FEATURES.DASHBOARD_ACCESS,
-    '/bookings.html':              FEATURES.BOOKINGS_MANAGEMENT,
-    '/customers.html':             FEATURES.CUSTOMERS_MANAGEMENT,
-    '/staff.html':                 FEATURES.STAFF_MANAGEMENT,
-    '/staff-schedule.html':        FEATURES.STAFF_SCHEDULES,
-    '/services.html':              FEATURES.SERVICES_MANAGEMENT,
-    '/pos.html':                   FEATURES.POS_SYSTEM,
-    '/products.html':              FEATURES.PRODUCT_MANAGEMENT,
-    '/sales-history.html':         FEATURES.SALES_HISTORY,
-    '/pending-payments.html':      FEATURES.PENDING_PAYMENTS,
-    '/payments-history.html':      FEATURES.PAYMENTS_HISTORY,
-    '/offers.html':                FEATURES.MARKETING_OFFERS,
-    '/coupons.html':               FEATURES.MARKETING_COUPONS,
-    '/memberships.html':           FEATURES.MARKETING_MEMBERSHIPS,
-    '/ad-campaigns.html':          FEATURES.MARKETING_CAMPAIGNS,
-    '/overview.html':              FEATURES.ANALYTICS_OVERVIEW,
-    '/reports.html':               FEATURES.REPORTS_ACCESS,
-    '/report-detail.html':         FEATURES.REPORTS_ACCESS,
-    '/expenses.html':              FEATURES.ANALYTICS_EXPENSES,
-    '/company.html':               FEATURES.COMPANY_SETTINGS,
-    '/settings-business.html':     FEATURES.COMPANY_SETTINGS,
-    '/settings-contact.html':      FEATURES.COMPANY_SETTINGS,
-    '/settings-tax.html':          FEATURES.COMPANY_SETTINGS,
-    '/settings-invoice.html':      FEATURES.COMPANY_SETTINGS,
-    '/settings-invoice-common.html': FEATURES.COMPANY_SETTINGS,
-    '/settings-invoice-booking.html': FEATURES.COMPANY_SETTINGS,
-    '/settings-invoice-pos.html':  FEATURES.COMPANY_SETTINGS,
-    '/settings-invoice-membership.html': FEATURES.COMPANY_SETTINGS,
-    '/settings-hours.html':        FEATURES.COMPANY_SETTINGS,
-    '/settings-payments.html':     FEATURES.COMPANY_SETTINGS,
-    '/settings-notifications.html':FEATURES.COMPANY_SETTINGS,
-    '/branches.html':              FEATURES.BRANCH_MANAGEMENT,
-    '/users.html':                 FEATURES.USER_MANAGEMENT,
-    '/roles-permissions.html':     FEATURES.ROLES_PERMISSIONS,
-    '/billing-subscription.html':  FEATURES.BILLING_SUBSCRIPTION_MANAGEMENT
+    // ── Group A: Core System Features (22 Sidebar Pages) ─────────────────────
+    '/dashboard.html':                  FEATURES.DASHBOARD_ACCESS,                 // 1.  dashboard.html
+    '/bookings.html':                   FEATURES.BOOKINGS_MANAGEMENT,              // 2.  bookings.html
+    '/customers.html':                  FEATURES.CUSTOMERS_MANAGEMENT,             // 3.  customers.html
+    '/staff.html':                      FEATURES.STAFF_MANAGEMENT,                 // 4.  staff.html
+    '/staff-schedule.html':             FEATURES.STAFF_SCHEDULES,                  // 5.  staff-schedule.html
+    '/services.html':                   FEATURES.SERVICES_MANAGEMENT,              // 6.  services.html
+    '/pos.html':                        FEATURES.POS_SYSTEM,                       // 7.  pos.html
+    '/products.html':                   FEATURES.PRODUCT_MANAGEMENT,               // 8.  products.html
+    '/sales-history.html':              FEATURES.SALES_HISTORY,                    // 9.  sales-history.html
+    '/pending-payments.html':           FEATURES.PENDING_PAYMENTS,                 // 10. pending-payments.html
+    '/payments-history.html':           FEATURES.PAYMENTS_HISTORY,                 // 11. payments-history.html
+    '/offers.html':                     FEATURES.MARKETING_OFFERS,                 // 12. offers.html
+    '/coupons.html':                    FEATURES.MARKETING_COUPONS,                // 13. coupons.html
+    '/memberships.html':                FEATURES.MARKETING_MEMBERSHIPS,            // 14. memberships.html
+    '/ad-campaigns.html':               FEATURES.MARKETING_CAMPAIGNS,              // 15. ad-campaigns.html
+    '/overview.html':                   FEATURES.ANALYTICS_OVERVIEW,               // 16. overview.html
+    '/reports.html':                    FEATURES.REPORTS_ACCESS,                   // 17. reports.html
+    '/expenses.html':                   FEATURES.ANALYTICS_EXPENSES,               // 18. expenses.html
+    '/company.html':                    FEATURES.COMPANY_SETTINGS,                 // 19. company.html
+    '/users.html':                      FEATURES.USER_MANAGEMENT,                  // 20. users.html
+    '/roles-permissions.html':          FEATURES.ROLES_PERMISSIONS,                // 21. roles-permissions.html
+    '/billing-subscription.html':       FEATURES.BILLING_SUBSCRIPTION_MANAGEMENT,  // 22. billing-subscription.html
+
+    // ── Group B: Supporting Features (22 Sub-Pages) ──────────────────────────
+    // Dashboard widgets
+    '/todays-revenue.html':             FEATURES.DASHBOARD_TODAYS_REVENUE,         // 23. todays-revenue.html
+    '/upcoming-appointments.html':      FEATURES.DASHBOARD_UPCOMING_APPOINTMENTS,  // 24. upcoming-appointments.html
+    '/completed-appointments.html':     FEATURES.DASHBOARD_COMPLETED_APPOINTMENTS, // 25. completed-appointments.html
+    '/no-shows-cancellations.html':     FEATURES.DASHBOARD_NO_SHOWS_CANCELLATIONS, // 26. no-shows-cancellations.html
+
+    // Reports sub-pages
+    '/report-category.html':            FEATURES.REPORTS_CATEGORY,                 // 27. report-category.html
+    '/report-detail.html':              FEATURES.REPORTS_DETAIL,                   // 28. report-detail.html
+
+    // Company & Settings sub-pages
+    '/branches.html':                   FEATURES.BRANCH_MANAGEMENT,                // 29. branches.html
+    '/settings-business.html':          FEATURES.SETTINGS_BUSINESS,                // 30. settings-business.html
+    '/settings-contact.html':           FEATURES.SETTINGS_CONTACT,                 // 31. settings-contact.html
+    '/settings-hours.html':             FEATURES.SETTINGS_HOURS,                   // 32. settings-hours.html
+    '/settings-tax.html':               FEATURES.SETTINGS_TAX,                     // 33. settings-tax.html
+    '/settings-payments.html':          FEATURES.SETTINGS_PAYMENTS,                // 34. settings-payments.html
+    '/settings-notifications.html':     FEATURES.SETTINGS_NOTIFICATIONS,           // 35. settings-notifications.html
+    '/settings-invoice.html':           FEATURES.SETTINGS_INVOICE,                 // 36. settings-invoice.html
+    '/settings-invoice-common.html':    FEATURES.SETTINGS_INVOICE_COMMON,          // 37. settings-invoice-common.html
+    '/settings-invoice-booking.html':   FEATURES.SETTINGS_INVOICE_BOOKING,         // 38. settings-invoice-booking.html
+    '/settings-invoice-pos.html':       FEATURES.SETTINGS_INVOICE_POS,             // 39. settings-invoice-pos.html
+    '/settings-invoice-membership.html': FEATURES.SETTINGS_INVOICE_MEMBERSHIP,      // 40. settings-invoice-membership.html
+
+    // Header & Utility sub-pages
+    '/notifications.html':              FEATURES.NOTIFICATIONS,                    // 41. notifications.html
+    '/support.html':                    FEATURES.SUPPORT,                          // 42. support.html
+    '/issue-history.html':              FEATURES.ISSUE_HISTORY,                    // 43. issue-history.html
+    '/user_guide.html':                 FEATURES.USER_GUIDE,                       // 44. user_guide.html
+    '/user-guide.html':                 FEATURES.USER_GUIDE                        // 44 (alias)
 };
 
+// Granular sub-route action map for nested settings
 const SUB_ROUTE_MAP = {
-    '/settings-business.html':      'settings_business',
-    '/settings-contact.html':       'settings_contact',
-    '/settings-tax.html':           'settings_tax',
-    '/settings-invoice.html':       'settings_billing',
-    '/settings-invoice-common.html':'settings_billing',
-    '/settings-invoice-booking.html':'settings_billing',
-    '/settings-invoice-pos.html':   'settings_billing',
-    '/settings-invoice-membership.html':'settings_billing',
-    '/settings-hours.html':         'settings_hours',
-    '/settings-payments.html':      'settings_payments',
-    '/settings-notifications.html': 'settings_notifications',
+    '/settings-business.html':           'settings_business',
+    '/settings-contact.html':            'settings_contact',
+    '/settings-hours.html':              'settings_hours',
+    '/settings-tax.html':                'settings_tax',
+    '/settings-payments.html':           'settings_payments',
+    '/settings-notifications.html':      'settings_notifications',
+    '/settings-invoice.html':            'settings_billing',
+    '/settings-invoice-common.html':     'settings_billing',
+    '/settings-invoice-booking.html':    'settings_billing',
+    '/settings-invoice-pos.html':        'settings_billing',
+    '/settings-invoice-membership.html': 'settings_billing'
 };
 
-// ─── Plan → Feature access map ────────────────────────────────────────────────
-// ALL_FEATURES: the complete list of every feature key
-const ALL_FEATURES = Object.values(FEATURES);
 
-// Plan UUID → feature list mapping
-// Owners with permission_key = 'ALL' always get everything.
-// This map is used only for non-Owner roles.
-const PLAN_FEATURES = {
-    // plan_01 — Basic
-    'd0d4cc8f-3498-4da1-b5e5-2887b9b39dce': [
-        FEATURES.DASHBOARD_ACCESS,
-        FEATURES.BOOKINGS_MANAGEMENT,
-        FEATURES.CUSTOMERS_MANAGEMENT,
-        FEATURES.STAFF_MANAGEMENT,
-        FEATURES.STAFF_SCHEDULES,
-        FEATURES.SERVICES_MANAGEMENT,
-        FEATURES.PENDING_PAYMENTS,
-        FEATURES.PAYMENTS_HISTORY,
-        FEATURES.PAYMENT_BOOKINGS,
-        FEATURES.ANALYTICS_OVERVIEW,
-        FEATURES.COMPANY_SETTINGS,
-        FEATURES.BRANCH_MANAGEMENT,
-        FEATURES.USER_MANAGEMENT,
-        FEATURES.ROLES_PERMISSIONS,
-        FEATURES.BILLING_SUBSCRIPTION_MANAGEMENT
-    ],
-    // plan_02 — Advance
-    'b42bcd41-217a-4ddb-9451-20e040984277': [
-        FEATURES.DASHBOARD_ACCESS,
-        FEATURES.BOOKINGS_MANAGEMENT,
-        FEATURES.CUSTOMERS_MANAGEMENT,
-        FEATURES.STAFF_MANAGEMENT,
-        FEATURES.STAFF_SCHEDULES,
-        FEATURES.SERVICES_MANAGEMENT,
-        FEATURES.POS_SYSTEM,
-        FEATURES.PRODUCT_MANAGEMENT,
-        FEATURES.SALES_HISTORY,
-        FEATURES.PENDING_PAYMENTS,
-        FEATURES.PAYMENTS_HISTORY,
-        FEATURES.PAYMENT_BOOKINGS,
-        FEATURES.PAYMENT_POS,
-        FEATURES.MARKETING_OFFERS,
-        FEATURES.MARKETING_COUPONS,
-        FEATURES.ANALYTICS_OVERVIEW,
-        FEATURES.REPORTS_ACCESS,
-        FEATURES.ANALYTICS_EXPENSES,
-        FEATURES.COMPANY_SETTINGS,
-        FEATURES.BRANCH_MANAGEMENT,
-        FEATURES.USER_MANAGEMENT,
-        FEATURES.ROLES_PERMISSIONS,
-        FEATURES.BILLING_SUBSCRIPTION_MANAGEMENT
-    ],
-    // plan_03 — Pro
-    'b32fe38d-a715-4166-acf1-b970bd845c21': ALL_FEATURES,
-    // plan_04 / Enterprise or trial — full access
-    '7e0af07f-b57b-40e7-a23a-6e8104c8033c': ALL_FEATURES
-};
-// Default: any unrecognized plan_id gets all features (fail-open for trials)
-const DEFAULT_FEATURES = ALL_FEATURES;
-
-function hasFeatureAccess(featList, fKey) {
-    if (!fKey) return true;
-    if (!Array.isArray(featList)) return false;
-    if (featList.includes(fKey)) return true;
-    if (fKey === FEATURES.PAYMENT_BOOKINGS && featList.includes(FEATURES.BOOKINGS_MANAGEMENT)) return true;
-    if (fKey === FEATURES.PAYMENT_POS && featList.includes(FEATURES.POS_SYSTEM)) return true;
-    if (fKey === FEATURES.PAYMENT_MEMBERSHIPS && featList.includes(FEATURES.MARKETING_MEMBERSHIPS)) return true;
-    return false;
-}
-
-// ─── Token Refresh ────────────────────────────────────────────────────────────
+// ─────────────────────────────────────────────────────────────────────────────
+// SECTION 2 — SESSION & TOKEN MANAGEMENT
+// ─────────────────────────────────────────────────────────────────────────────
 const SUPABASE_URL  = 'https://qxmgyxjwpxkdbgldpdil.supabase.co';
 const SUPABASE_ANON = 'sb_publishable_aqCSbMiVxH5cSZxgssdNqw_jQZvzmA0';
-let refreshInterval   = null;
-let heartbeatInterval = null;
 
+const CACHE_TTL_MS       = 30 * 60 * 1000; // 30 minutes cache TTL
+const HEARTBEAT_FREQ_MS  = 30 * 60 * 1000; // 30 minutes background heartbeat
+const TOKEN_REFRESH_FREQ = 25 * 60 * 1000; // 25 minutes proactive token refresh
+
+let tokenRefreshTimer = null;
+let heartbeatTimer    = null;
+
+/**
+ * Silently refreshes Supabase auth token using the stored refresh_token.
+ */
 async function silentTokenRefresh() {
     const refreshToken = localStorage.getItem('refresh_token');
     if (!refreshToken) return false;
@@ -154,11 +186,13 @@ async function silentTokenRefresh() {
             headers: { 'apikey': SUPABASE_ANON, 'Content-Type': 'application/json' },
             body: JSON.stringify({ refresh_token: refreshToken })
         });
+
         const data = await res.json().catch(() => null);
         if (!res.ok || !data?.access_token) {
             console.warn('[Auth Guard] Silent token refresh failed.');
             return false;
         }
+
         localStorage.setItem('token', data.access_token);
         if (data.refresh_token) localStorage.setItem('refresh_token', data.refresh_token);
         console.log('[Auth Guard] Token silently refreshed ✓');
@@ -169,225 +203,114 @@ async function silentTokenRefresh() {
     }
 }
 
-function setupTokenRefresh() {
-    if (refreshInterval) return;
-    refreshInterval = setInterval(() => {
-        console.log('[Auth Guard] Running scheduled token refresh...');
-        silentTokenRefresh();
-    }, 25 * 60 * 1000); // every 25 minutes — safely within both 30-min and 1-hour expiry windows
-}
-
-// ─── Authoritative Subscription Helper ─────────────────────────────────────────
-// Reads current subscription state from the authoritative subscriptions table.
-async function getAuthoritativeSubscription(supabaseClient, companyId) {
-    if (!companyId) return null;
-
-    const selectFields = 'subscription_id, company_id, plan_id, plan_name, status, subscription_start_date, subscription_end_date, billing_cycle, auto_renew, created_at';
-    const STATUS_TIER = {
-        'active': 1,
-        'trial': 1,
-        'trialing': 1,
-        'cancelled': 2
-    };
-
-    function pickBestSubscription(rows) {
-        if (!rows || rows.length === 0) return null;
-
-        const today = new Date();
-
-        // 1. Find all currently valid (unexpired) subscriptions
-        const validSubs = rows.filter(sub => {
-            const rawStatus = (sub.status || '').toLowerCase().trim();
-            if (!STATUS_TIER[rawStatus]) return false;
-            const endDate = sub.subscription_end_date ? new Date(sub.subscription_end_date) : null;
-            return endDate && !isNaN(endDate.getTime()) && endDate > today;
-        });
-
-        // If unexpired subscriptions exist, prioritize active/trial over cancelled, then newest created_at
-        if (validSubs.length > 0) {
-            validSubs.sort((a, b) => {
-                const tierA = STATUS_TIER[(a.status || '').toLowerCase().trim()] || 99;
-                const tierB = STATUS_TIER[(b.status || '').toLowerCase().trim()] || 99;
-                if (tierA !== tierB) return tierA - tierB;
-                return new Date(b.created_at || 0) - new Date(a.created_at || 0);
-            });
-            return validSubs[0];
-        }
-
-        // 2. If no unexpired subscription exists, fall back to the most recent subscription overall
-        return rows[0];
-    }
-
-    try {
-        // Query candidate subscriptions strictly for the current company
-        const { data: compSubs, error: compErr } = await supabaseClient
-            .from('subscriptions')
-            .select(selectFields)
-            .eq('company_id', companyId)
-            .order('created_at', { ascending: false });
-
-        if (!compErr && compSubs && compSubs.length > 0) {
-            return pickBestSubscription(compSubs);
-        }
-    } catch (err) {
-        console.warn('[Auth Guard] Error fetching authoritative subscription:', err.message || err);
-    }
-
-    return null;
-}
-
 /**
- * Safely parses permission keys from role_permissions rows.
- * Supports both the new single-row JSON array string and legacy multi-row formats.
+ * Sets up background proactive token refresh timer.
  */
-function extractPermissionKeys(permRows) {
-    const keys = [];
-    (permRows || []).forEach(p => {
-        if (!p || !p.permission_key) return;
-        const raw = String(p.permission_key).trim();
-        if (raw.startsWith('[') && raw.endsWith(']')) {
-            try {
-                const parsed = JSON.parse(raw);
-                if (Array.isArray(parsed)) {
-                    keys.push(...parsed);
-                }
-            } catch {
-                keys.push(raw);
-            }
-        } else if (raw.includes(',')) {
-            keys.push(...raw.split(',').map(s => s.trim()).filter(Boolean));
-        } else {
-            keys.push(raw);
-        }
-    });
-    return [...new Set(keys)];
+function setupTokenRefresh() {
+    if (tokenRefreshTimer) return;
+    tokenRefreshTimer = setInterval(() => {
+        console.log('[Auth Guard] Running scheduled proactive token refresh...');
+        silentTokenRefresh();
+    }, TOKEN_REFRESH_FREQ);
 }
 
-// ─── Hourly Heartbeat ─────────────────────────────────────────────────────────
-// Re-validates subscription, features and role_permissions silently every hour.
-function setupHourlyHeartbeat() {
-    if (heartbeatInterval) return;
 
-    heartbeatInterval = setInterval(async () => {
-        console.log('[Auth Guard] Hourly heartbeat running...');
+// ─────────────────────────────────────────────────────────────────────────────
+// SECTION 3 — 30-MINUTE SILENT HEARTBEAT
+// Periodically synchronizes Gate 1, Gate 2, Gate 3 state in the background.
+// ─────────────────────────────────────────────────────────────────────────────
+function setupHeartbeat() {
+    if (heartbeatTimer) return;
+
+    heartbeatTimer = setInterval(async () => {
+        console.log('[Auth Guard] 30-minute silent heartbeat running...');
         try {
-            const company_id = localStorage.getItem('company_id');
-            const user_id_raw = localStorage.getItem('token');
-            if (!company_id) return;
+            const token = localStorage.getItem('token');
+            const companyId = localStorage.getItem('company_id');
+            if (!token || !companyId) return;
 
-            // 1. Re-check authoritative subscription from subscriptions table
-            const subscription = await getAuthoritativeSubscription(supabase, company_id);
+            // 1. Refresh Gate 1 (Subscription Lifecycle)
+            const subProfile = await getSubscriptionAccess(true);
 
-            const today = new Date();
-            const endDate = subscription?.subscription_end_date ? new Date(subscription.subscription_end_date) : null;
-            const subStatus = (subscription?.status || '').toLowerCase().trim();
-            const isValidStatus = ['active', 'trial', 'trialing', 'cancelled'].includes(subStatus);
-            const isExpired = !subscription || !isValidStatus || !endDate || isNaN(endDate.getTime()) || endDate <= today;
+            // 2. Refresh Gate 3 (Commercial Plan Features)
+            const planProfile = await resolvePlanFeatures(true);
 
-            if (isExpired) {
-                clearInterval(heartbeatInterval);
-                console.warn('[Auth Guard] Heartbeat: subscription expired or inactive.');
-                showAuthBlockModal('SUBSCRIPTION_INACTIVE',
-                    'Your subscription has expired. Please renew to continue.',
-                    'Renew', 'plans.html?flow=renew');
-                return;
-            }
+            // 3. Refresh Gate 2 (In-App RBAC Permissions)
+            const rbacProfile = await getUserRoleAndPermissions(true);
 
-            // Load company row for identity and membership details
-            const { data: compRows } = await supabase.from('companies')
-                .select('company_id, company_name, display_name, logo_url, plan_id, plan_name')
-                .eq('company_id', company_id);
-
-            const company = compRows?.[0];
-            if (!company) return;
-
-            // 2. Re-derive features from plan (authoritative subscription plan_id takes precedence)
-            const activePlanId = subscription?.plan_id || company.plan_id;
-            const planFeatures = PLAN_FEATURES[activePlanId] || DEFAULT_FEATURES;
-
-            // 3. Re-check role permissions
-            const cachedContext = JSON.parse(localStorage.getItem('appContext') || '{}');
-            const role_id = localStorage.getItem('role_id');
-
+            // Re-derive userFeatures & userSubFeatures
             let userFeatures = [];
             let userSubFeatures = [];
 
-            if (role_id) {
-                const { data: permRows } = await supabase.from('role_permissions')
-                    .select('permission_key')
-                    .eq('role_id', role_id)
-                    .eq('company_id', company_id);
-
-                const keys = extractPermissionKeys(permRows);
-                const hasAllPerms = keys.includes('ALL');
-                const allMainFeatures = Object.values(FEATURES);
-
-                if (hasAllPerms) {
-                    const planFeatures = PLAN_FEATURES[activePlanId] || DEFAULT_FEATURES;
-                    userFeatures = planFeatures;
-                    userFeatures.forEach(feat => {
-                        const children = SUB_FEATURES_MAP[feat] || [];
-                        children.forEach(sf => userSubFeatures.push(sf?.key || sf));
-                    });
-                } else {
-                    userFeatures = keys.filter(k => allMainFeatures.includes(k));
-                    userSubFeatures = keys.filter(k => !allMainFeatures.includes(k));
-                }
-            } else {
-                userFeatures = PLAN_FEATURES[company.plan_id] || DEFAULT_FEATURES;
+            if (rbacProfile.isOwner || rbacProfile.hasUniversalAccess) {
+                userFeatures = planProfile.features || [];
                 userFeatures.forEach(feat => {
                     const children = SUB_FEATURES_MAP[feat] || [];
-                    children.forEach(sf => userSubFeatures.push(sf.key));
+                    children.forEach(sf => userSubFeatures.push(sf?.key || sf));
                 });
+            } else {
+                const allMainFeatures = Object.values(FEATURES);
+                userFeatures = (rbacProfile.permissions || []).filter(k => allMainFeatures.includes(k));
+                userSubFeatures = (rbacProfile.permissions || []).filter(k => !allMainFeatures.includes(k));
             }
 
-            // 5. Update cache
-            localStorage.setItem('userFeatures',      JSON.stringify(userFeatures));
-            localStorage.setItem('userSubFeatures',   JSON.stringify(userSubFeatures));
-            localStorage.setItem('authCacheTimestamp', Date.now().toString()); // ← reset TTL clock
+            // Update local storage cache
+            localStorage.setItem('userFeatures',        JSON.stringify(userFeatures));
+            localStorage.setItem('userSubFeatures',     JSON.stringify(userSubFeatures));
+            localStorage.setItem('subscriptionState',   JSON.stringify(subProfile));
+            localStorage.setItem('planFeatures',        JSON.stringify(planProfile));
+            localStorage.setItem('authCacheTimestamp',  Date.now().toString());
 
-            // 6. Check current page is still allowed
+            // Check if current active page is still valid under new state
             const path = window.location.pathname;
             const filename = path.substring(path.lastIndexOf('/')) || '/';
             const currentFeatureKey = ROUTE_MAP[filename] || null;
 
-            if (currentFeatureKey && !hasFeatureAccess(userFeatures, currentFeatureKey)) {
-                clearInterval(heartbeatInterval);
-                console.warn('[Auth Guard] Heartbeat: current page no longer allowed.');
-                showAuthBlockModal('FEATURE_NOT_ALLOWED',
-                    "You no longer have access to this feature.",
-                    'Go to Dashboard', 'dashboard.html');
-                return;
+            if (currentFeatureKey) {
+                // Gate 3 re-check: Was feature removed from plan?
+                if (!isFeatureUnlocked(currentFeatureKey, planProfile)) {
+                    console.warn('[Auth Guard] Heartbeat: Current page locked by plan tier.');
+                    showPlanUpgradeModal(currentFeatureKey);
+                    return;
+                }
+
+                // Gate 2 re-check: Was role permission revoked?
+                if (!hasRolePermission(currentFeatureKey, rbacProfile)) {
+                    console.warn('[Auth Guard] Heartbeat: Current page permission revoked.');
+                    showAuthBlockModal('FEATURE_NOT_ALLOWED',
+                        'Your role permissions have been updated. You no longer have access to this page.',
+                        'Go to Dashboard', 'dashboard.html');
+                    return;
+                }
             }
 
-            const currentSubFeat = SUB_ROUTE_MAP[filename];
-            if (currentSubFeat && !userSubFeatures.includes(currentSubFeat)) {
-                clearInterval(heartbeatInterval);
-                showAuthBlockModal('FEATURE_NOT_ALLOWED',
-                    "Your role no longer has permission to access this settings section.",
-                    'Back to Settings', 'company.html');
-                return;
+            // Gate 1: If subscription expired, render read-only banner
+            if (subProfile.isExpired || subProfile.accessLevel === 'read-only') {
+                renderSubscriptionBanner('mainWrapper');
             }
 
-            // 7. Re-apply sub-feature gates with refreshed permissions
+            // Re-apply sub-feature gates with refreshed permissions
             initSubFeatures();
             applySubFeatureGates();
 
-            console.log('[Auth Guard] Heartbeat complete ✓ Subscription active, features refreshed.');
-
+            console.log('[Auth Guard] 30-minute silent heartbeat complete ✓ All 3 gates in sync.');
         } catch (err) {
-            console.warn('[Auth Guard] Heartbeat error (will retry next hour):', err.message);
+            console.warn('[Auth Guard] Heartbeat sync error (will retry next interval):', err.message);
         }
-    }, 60 * 60 * 1000); // every 60 minutes
+    }, HEARTBEAT_FREQ_MS);
 }
 
-// ─── Main Guard ───────────────────────────────────────────────────────────────
+
+// ─────────────────────────────────────────────────────────────────────────────
+// SECTION 4 — MAIN AUTH GUARD ORCHESTRATOR
+// Handles cold starts, hot cache navigation (< 2ms), and page gate enforcement.
+// ─────────────────────────────────────────────────────────────────────────────
 export async function runGlobalAuthGuard() {
     const path     = window.location.pathname;
     const filename = path.substring(path.lastIndexOf('/')) || '/';
     const featureKey = ROUTE_MAP[filename] || null;
 
-    // Public routes — skip auth
+    // Public routes (signin, signup, onboarding, plans) bypass authentication
     if (!featureKey) {
         console.log(`[Auth Guard] Public route: ${filename}. Bypassing.`);
         removeAuthSpinner();
@@ -396,27 +319,30 @@ export async function runGlobalAuthGuard() {
 
     const token = localStorage.getItem('token');
     if (!token) {
-        console.warn('[Auth Guard] No token found → signin');
+        console.warn('[Auth Guard] No session token found → redirecting to signin');
         window.location.href = 'signin.html';
         return;
     }
 
-    // ── OPTIMISTIC CACHE HIT: skip network on page-to-page navigation ─────────────────────────────
-    const cachedFeatures  = localStorage.getItem('userFeatures');
-    const cachedContext   = localStorage.getItem('appContext');
-    const cacheTimestamp  = parseInt(localStorage.getItem('authCacheTimestamp') || '0', 10);
-    const CACHE_TTL_MS    = 60 * 60 * 1000; // 1 hour — aligned with heartbeat
-    const isCacheValid    = cachedFeatures && cachedContext &&
-                            (Date.now() - cacheTimestamp) < CACHE_TTL_MS;
+    // ── HOT NAVIGATION: Instant cache evaluation (< 2ms) ─────────────────────
+    const cachedFeatures    = localStorage.getItem('userFeatures');
+    const cachedContext     = localStorage.getItem('appContext');
+    const cachedSubState    = localStorage.getItem('subscriptionState');
+    const cachedPlan        = localStorage.getItem('planFeatures');
+    const cacheTimestamp    = parseInt(localStorage.getItem('authCacheTimestamp') || '0', 10);
+
+    const isCacheValid = cachedFeatures && cachedContext &&
+                         (Date.now() - cacheTimestamp) < CACHE_TTL_MS;
 
     if (isCacheValid) {
         try {
             const userFeatures    = JSON.parse(cachedFeatures);
             const userSubFeatures = JSON.parse(localStorage.getItem('userSubFeatures') || '[]');
+            const parsedCtx       = JSON.parse(cachedContext || '{}');
+            const subProfile      = cachedSubState ? JSON.parse(cachedSubState) : null;
+            const planProfile     = cachedPlan ? JSON.parse(cachedPlan) : null;
 
-            const parsedCtx = JSON.parse(cachedContext || '{}');
-
-            // If user cannot switch branches, enforce their assigned branch
+            // Enforce branch assignment constraints
             if (parsedCtx.user?.can_switch_branch === false && parsedCtx.user?.assigned_branch_id) {
                 localStorage.setItem('active_branch_id', parsedCtx.user.assigned_branch_id);
                 localStorage.setItem('branch_id', parsedCtx.user.assigned_branch_id);
@@ -431,57 +357,66 @@ export async function runGlobalAuthGuard() {
                 localStorage.setItem('role_id', parsedCtx.user.role_id);
             }
 
-            // Verify current page is still allowed per cached permissions
-            if (!hasFeatureAccess(userFeatures, featureKey)) {
-                showAuthBlockModal('FEATURE_NOT_ALLOWED',
-                    "You currently don't have access to this feature. Please upgrade your plan.",
-                    'Upgrade', 'plans.html?flow=upgrade');
+            // GATE 3 CHECK: Commercial Plan Tier
+            if (planProfile && !isFeatureUnlocked(featureKey, planProfile)) {
+                showPlanUpgradeModal(featureKey);
                 return;
             }
 
+            // GATE 2 CHECK: Role-Based Access Control
+            const isOwner = (parsedCtx.user?.role_name || '').toLowerCase() === 'owner';
+            if (!isOwner && !userFeatures.includes(featureKey)) {
+                showAuthBlockModal('FEATURE_NOT_ALLOWED',
+                    "You do not have permission to access this page. Please contact your salon administrator.",
+                    'Go to Dashboard', 'dashboard.html');
+                return;
+            }
+
+            // Granular sub-route check
             const requiredSubFeature = SUB_ROUTE_MAP[filename];
-            if (requiredSubFeature && !userSubFeatures.includes(requiredSubFeature)) {
+            if (!isOwner && requiredSubFeature && !userSubFeatures.includes(requiredSubFeature)) {
                 showAuthBlockModal('FEATURE_NOT_ALLOWED',
                     "Your role does not have permission to access this settings section.",
                     'Back to Settings', 'company.html');
                 return;
             }
 
-            // Hydrate UI from cache (instant, no network)
+            // GATE 1 CHECK: Subscription Lifecycle (Read-Only Mode)
+            if (subProfile && (subProfile.isExpired || subProfile.accessLevel === 'read-only')) {
+                renderSubscriptionBanner('mainWrapper');
+            }
+
+            // Instant UI Hydration from Cache
             populateGlobalHeader();
             initGlobalBookingModal();
             initSubFeatures();
             applySubFeatureGates();
             removeAuthSpinner();
 
-            // Ensure background jobs are running
+            // Ensure background services are running
             setupTokenRefresh();
-            setupHourlyHeartbeat();
+            setupHeartbeat();
 
-            console.log('[Auth Guard] Cache hit ✓ Page unlocked instantly.');
-            return; // ← skip cold start entirely
+            console.log(`[Auth Guard] Hot navigation cache hit ✓ Page '${filename}' unlocked instantly.`);
+            return; // Skip cold start completely
         } catch (cacheErr) {
-            console.warn('[Auth Guard] Cache parse error, falling through to cold start:', cacheErr.message);
-            // fall-through to cold start below
+            console.warn('[Auth Guard] Cache evaluation error, falling back to cold start:', cacheErr.message);
         }
     }
 
-    // ── COLD START: authoritative validation via Supabase (first login or stale cache) ───────────
+    // ── COLD START: Authoritative Supabase Validation ────────────────────────
     try {
-        console.log('[Auth Guard] Cache miss — running cold start via Supabase...');
+        console.log('[Auth Guard] Cache miss or stale — executing authoritative cold start...');
 
-        // 1a. Proactively refresh token if it's close to expiry (within 5 minutes)
-        //     This prevents the DB queries below from silently failing with 401
-        //     because the stale token is used before the /auth/v1/user check returns.
+        // 1. Proactive Token Refresh check (if token expires within 5 minutes)
         try {
             const rawToken = token;
             const payloadB64 = rawToken.split('.')[1];
             if (payloadB64) {
                 const payload = JSON.parse(atob(payloadB64));
-                const expiresAt = payload.exp * 1000; // ms
-                const fiveMinutes = 5 * 60 * 1000;
-                if (expiresAt - Date.now() < fiveMinutes) {
-                    console.log('[Auth Guard] Token expiring soon — proactive refresh...');
+                const expiresAt = (payload.exp || 0) * 1000;
+                if (expiresAt - Date.now() < 5 * 60 * 1000) {
+                    console.log('[Auth Guard] Token near expiry — refreshing before DB queries...');
                     const refreshed = await silentTokenRefresh();
                     if (!refreshed) {
                         showAuthBlockModal('INVALID_SESSION', 'Your session has expired. Please sign in again.', 'Sign In', 'signin.html');
@@ -489,22 +424,22 @@ export async function runGlobalAuthGuard() {
                     }
                 }
             }
-        } catch (_) { /* malformed token — will be caught by /auth/v1/user check below */ }
+        } catch (_) { /* malformed token handled below */ }
 
-        // 1. Validate token
+        // 2. Validate session against Supabase Auth endpoint
+        const currentToken = localStorage.getItem('token');
         const userRes = await fetch(`${SUPABASE_URL}/auth/v1/user`, {
-            headers: { 'apikey': SUPABASE_ANON, 'Authorization': `Bearer ${localStorage.getItem('token')}` }
+            headers: { 'apikey': SUPABASE_ANON, 'Authorization': `Bearer ${currentToken}` }
         });
 
         if (userRes.status === 401) {
-            // Try silent refresh
             const refreshed = await silentTokenRefresh();
             if (!refreshed) {
                 showAuthBlockModal('INVALID_SESSION', 'Your session has expired. Please sign in again.', 'Sign In', 'signin.html');
                 return;
             }
         } else if (!userRes.ok) {
-            showAuthBlockModal('ERROR', 'Unable to verify session. Please try again.', 'Refresh', window.location.href);
+            showAuthBlockModal('ERROR', 'Unable to verify session with server. Please try again.', 'Refresh', window.location.href);
             return;
         }
 
@@ -515,131 +450,93 @@ export async function runGlobalAuthGuard() {
             return;
         }
 
-        // 2. Load user row
-        const company_id  = localStorage.getItem('company_id');
-        const branch_id   = localStorage.getItem('active_branch_id');
-
-        const { data: userRows } = await supabase.from('users')
+        // 3. Load user record from public.users
+        const cachedCompanyId = localStorage.getItem('company_id');
+        const { data: userRows, error: userErr } = await supabase.from('users')
             .select('company_id, branch_id, role_id, role_name, name, email, phone, status, last_login_at, created_at')
             .eq('user_id', user_id);
 
         const userRow = userRows?.[0];
-        if (!userRow) {
+        if (userErr || !userRow) {
             showAuthBlockModal('ERROR', 'User profile not found. Please contact support.', 'Sign In', 'signin.html');
             return;
         }
 
         if (userRow.status === 'deleted' || userRow.status === 'inactive') {
-            showAuthBlockModal('ERROR', 'Your account has been deactivated. Please contact your administrator.', 'Sign In', 'signin.html');
+            showAuthBlockModal('ERROR', 'Your account has been deactivated. Please contact your salon administrator.', 'Sign In', 'signin.html');
             localStorage.removeItem('token');
             return;
         }
 
-        const resolvedCompanyId = userRow.company_id || company_id;
+        const resolvedCompanyId = userRow.company_id || cachedCompanyId;
 
-        // 3. Load company (for identity and branding, not authoritative subscription state)
+        // 4. Load company record
         const { data: compRows } = await supabase.from('companies')
             .select('company_id, company_name, display_name, logo_url, plan_id, plan_name')
             .eq('company_id', resolvedCompanyId);
 
-        const company = compRows?.[0];
-        if (!company) {
-            showAuthBlockModal('ERROR', 'Company data not found. Please contact support.', 'Sign In', 'signin.html');
+        const company = compRows?.[0] || {};
+
+        // 5. EVALUATE GATE 1: Subscription Lifecycle via SubscriptionStateManager
+        const subProfile = await getSubscriptionAccess(true);
+
+        // 6. EVALUATE GATE 3: Commercial Plan Features via PlanFeaturesManager
+        const planProfile = await resolvePlanFeatures(true);
+
+        if (!isFeatureUnlocked(featureKey, planProfile)) {
+            showPlanUpgradeModal(featureKey);
             return;
         }
 
-        // 4. Authoritative subscription status & expiry check from subscriptions table
-        const subscription = await getAuthoritativeSubscription(supabase, resolvedCompanyId);
+        // 7. EVALUATE GATE 2: In-App RBAC Permissions via RbacManager
+        const rbacProfile = await getUserRoleAndPermissions(true);
 
-        const today = new Date();
-        const endDate = subscription?.subscription_end_date ? new Date(subscription.subscription_end_date) : null;
-        const subStatus = (subscription?.status || '').toLowerCase().trim();
-        const isValidStatus = ['active', 'trial', 'trialing', 'cancelled'].includes(subStatus);
-        const isExpired = !subscription || !isValidStatus || !endDate || isNaN(endDate.getTime()) || endDate <= today;
-
-        if (isExpired) {
-            showAuthBlockModal('SUBSCRIPTION_INACTIVE',
-                'Your subscription has expired. Please subscribe to access the dashboard.',
-                'Renew', 'plans.html?flow=renew');
-            return;
-        }
-
-        // 5. Role permissions — Read directly from the database table
-        const { data: permRows } = await supabase.from('role_permissions')
-            .select('permission_key')
-            .eq('role_id', userRow.role_id)
-            .eq('company_id', resolvedCompanyId);
-
-        const keys = extractPermissionKeys(permRows);
-        const hasAllPerms = keys.includes('ALL');
-        const allMainFeatures = Object.values(FEATURES);
-
-        let userFeatures = [];
-        let userSubFeatures = [];
-
-        const activePlanId = subscription?.plan_id || company.plan_id;
-
-        if (hasAllPerms) {
-            // For roles with 'ALL' (e.g., Owners), fall back to checking the subscription plan
-            const planFeatures = PLAN_FEATURES[activePlanId] || DEFAULT_FEATURES;
-            userFeatures = planFeatures;
-            
-            userFeatures.forEach(feat => {
-                const children = SUB_FEATURES_MAP[feat] || [];
-                children.forEach(sf => userSubFeatures.push(sf?.key || sf));
-            });
-        } else {
-            // Split raw database permission keys into main vs sub-features
-            userFeatures = keys.filter(k => allMainFeatures.includes(k));
-            userSubFeatures = keys.filter(k => !allMainFeatures.includes(k));
-        }
-
-        const isOwner = (userRow.role_name || '').toLowerCase() === 'owner';
-        const canSwitchBranch = hasAllPerms || isOwner || userSubFeatures.includes('branch_switch') || userFeatures.includes('branch_management');
-
-        // 8. Check if current page's feature is allowed
-        function hasFeatureAccess(featList, fKey) {
-            if (!fKey) return true;
-            if (featList.includes(fKey)) return true;
-            if (fKey === FEATURES.PAYMENT_BOOKINGS && featList.includes(FEATURES.BOOKINGS_MANAGEMENT)) return true;
-            if (fKey === FEATURES.PAYMENT_POS && featList.includes(FEATURES.POS_SYSTEM)) return true;
-            if (fKey === FEATURES.PAYMENT_MEMBERSHIPS && featList.includes(FEATURES.MARKETING_MEMBERSHIPS)) return true;
-            return false;
-        }
-
-        if (!hasFeatureAccess(userFeatures, featureKey)) {
+        if (!hasRolePermission(featureKey, rbacProfile)) {
             showAuthBlockModal('FEATURE_NOT_ALLOWED',
-                "You currently don't have access to this feature. Please upgrade your plan.",
-                'Upgrade', 'plans.html?flow=upgrade');
+                "You do not have permission to access this page. Please contact your salon administrator.",
+                'Go to Dashboard', 'dashboard.html');
             return;
         }
 
+        // Sub-route check (nested settings pages)
         const requiredSubFeature = SUB_ROUTE_MAP[filename];
-        if (requiredSubFeature && !userSubFeatures.includes(requiredSubFeature)) {
+        if (requiredSubFeature && !hasRolePermission(requiredSubFeature, rbacProfile)) {
             showAuthBlockModal('FEATURE_NOT_ALLOWED',
                 "Your role does not have permission to access this settings section.",
                 'Back to Settings', 'company.html');
             return;
         }
 
-        // 9. Load profile for header hydration
+        // 8. Derive unified userFeatures & userSubFeatures sets
+        let userFeatures = [];
+        let userSubFeatures = [];
+
+        if (rbacProfile.isOwner || rbacProfile.hasUniversalAccess) {
+            userFeatures = planProfile.features || [];
+            userFeatures.forEach(feat => {
+                const children = SUB_FEATURES_MAP[feat] || [];
+                children.forEach(sf => userSubFeatures.push(sf?.key || sf));
+            });
+        } else {
+            const allMainFeatures = Object.values(FEATURES);
+            userFeatures = (rbacProfile.permissions || []).filter(k => allMainFeatures.includes(k));
+            userSubFeatures = (rbacProfile.permissions || []).filter(k => !allMainFeatures.includes(k));
+        }
+
+        // 9. Load user profile, preferences, and branch switcher options
         const { data: profileRows } = await supabase.from('profiles')
             .select('first_name, last_name, phone, email, joined_on, emergency_contact_name, emergency_contact_number, profile_photo')
             .eq('user_id', user_id);
         const profile = profileRows?.[0];
 
-        // 9b. Load user preferences (branch_id, notifications)
         let userPref = null;
         try {
             const { data: prefRows } = await supabase.from('user_preferences')
                 .select('branch_id, notifications')
                 .eq('user_id', user_id);
             userPref = prefRows?.[0] || null;
-        } catch (prefErr) {
-            console.warn('[Auth Guard] Could not load user preferences:', prefErr);
-        }
+        } catch (_) {}
 
-        // 10. Load branches for branch switcher
         const { data: branches } = await supabase.from('branches')
             .select('branch_id, branch_name')
             .eq('company_id', resolvedCompanyId)
@@ -651,7 +548,13 @@ export async function runGlobalAuthGuard() {
             branch_name: b.branch_name
         }));
 
-        // Authoritative active branch resolution
+        const isOwner = (userRow.role_name || '').toLowerCase() === 'owner';
+        const canSwitchBranch = isOwner ||
+                                rbacProfile.hasUniversalAccess ||
+                                userSubFeatures.includes('branch_switch') ||
+                                userFeatures.includes('branch_management');
+
+        // Resolve active branch
         let resolvedBranchId = null;
         if (canSwitchBranch) {
             const savedBranch = localStorage.getItem('active_branch_id');
@@ -659,93 +562,101 @@ export async function runGlobalAuthGuard() {
             const isPrefValid = activeBranches.some(b => b.branch_id === userPref?.branch_id);
             const isAssignedValid = activeBranches.some(b => b.branch_id === userRow.branch_id);
 
-            if (isSavedValid) {
-                resolvedBranchId = savedBranch;
-            } else if (isPrefValid) {
-                resolvedBranchId = userPref.branch_id;
-            } else if (isAssignedValid) {
-                resolvedBranchId = userRow.branch_id;
-            } else {
-                resolvedBranchId = activeBranches[0]?.branch_id || null;
-            }
+            if (isSavedValid) resolvedBranchId = savedBranch;
+            else if (isPrefValid) resolvedBranchId = userPref.branch_id;
+            else if (isAssignedValid) resolvedBranchId = userRow.branch_id;
+            else resolvedBranchId = activeBranches[0]?.branch_id || null;
         } else {
-            // Non-switching roles are strictly locked to their assigned branch
             resolvedBranchId = userRow.branch_id || activeBranches[0]?.branch_id || null;
         }
 
-        // 11. Build and cache app context
-        // Update last_login_at to now (current session)
+        // 10. Construct unified App Context
         try {
             await supabase.from('users')
                 .update({ last_login_at: new Date().toISOString() })
                 .eq('user_id', user_id);
-        } catch (_) { /* non-critical */ }
+        } catch (_) {}
 
         const appContext = {
             user: {
                 user_id,
-                name:          userRow.name,
-                email:         userRow.email,
-                phone:         userRow.phone || profile?.phone || '',
-                role_id:       userRow.role_id,
-                role_name:     userRow.role_name,
+                name:               userRow.name,
+                email:              userRow.email,
+                phone:              userRow.phone || profile?.phone || '',
+                role_id:            userRow.role_id,
+                role_name:          userRow.role_name,
                 assigned_branch_id: userRow.branch_id || null,
                 can_switch_branch:  canSwitchBranch,
-                first_name:    profile?.first_name || '',
-                last_name:     profile?.last_name  || '',
-                joined_on:     profile?.joined_on  || userRow.created_at || '',
-                last_login_at: userRow.last_login_at || null,
-                profile_photo: profile?.profile_photo || '',
-                emergency_name:  profile?.emergency_contact_name || '',
-                emergency_phone: profile?.emergency_contact_number || ''
+                first_name:         profile?.first_name || '',
+                last_name:          profile?.last_name  || '',
+                joined_on:          profile?.joined_on  || userRow.created_at || '',
+                last_login_at:      userRow.last_login_at || null,
+                profile_photo:      profile?.profile_photo || '',
+                emergency_name:     profile?.emergency_contact_name || '',
+                emergency_phone:    profile?.emergency_contact_number || ''
             },
             company: {
                 company_id:          resolvedCompanyId,
                 company_name:        company.company_name || '',
                 display_name:        company.display_name || company.company_name || '',
                 logo_url:            company.logo_url || null,
-                plan:                subscription?.plan_name || company.plan_name || 'Free Trial',
-                subscription_status: subscription?.status || 'inactive',
-                subscription_type:   subscription?.billing_cycle || 'monthly'
+                plan:                planProfile.planName || company.plan_name || 'Basic',
+                subscription_status: subProfile.status || 'active',
+                subscription_type:   subProfile.billingCycle || 'monthly'
             },
             branches: activeBranches,
             current_branch_id: resolvedBranchId
         };
 
-        // 12. Persist to cache
-        localStorage.setItem('userFeatures',      JSON.stringify(userFeatures));
-        localStorage.setItem('userSubFeatures',   JSON.stringify(userSubFeatures));
-        localStorage.setItem('appContext',        JSON.stringify(appContext));
-        localStorage.setItem('authCacheTimestamp', Date.now().toString()); // ← cache TTL clock
-        if (!localStorage.getItem('company_id')) localStorage.setItem('company_id', resolvedCompanyId);
-        localStorage.setItem('active_branch_id', resolvedBranchId);
-        localStorage.setItem('branch_id', resolvedBranchId);
+        // 11. Persist authenticated context to localStorage
+        localStorage.setItem('userFeatures',        JSON.stringify(userFeatures));
+        localStorage.setItem('userSubFeatures',     JSON.stringify(userSubFeatures));
+        localStorage.setItem('subscriptionState',   JSON.stringify(subProfile));
+        localStorage.setItem('planFeatures',        JSON.stringify(planProfile));
+        localStorage.setItem('appContext',          JSON.stringify(appContext));
+        localStorage.setItem('authCacheTimestamp',  Date.now().toString());
+
+        localStorage.setItem('company_id',          resolvedCompanyId);
+        localStorage.setItem('active_branch_id',    resolvedBranchId);
+        localStorage.setItem('branch_id',           resolvedBranchId);
         if (userRow.role_id) localStorage.setItem('role_id', userRow.role_id);
         if (user_id) localStorage.setItem('user_id', user_id);
 
-        // 13. Start background token refresh + hourly heartbeat
-        setupTokenRefresh();
-        setupHourlyHeartbeat();
+        // 12. Gate 1 UI feedback (attach read-only alert if expired)
+        if (subProfile.isExpired || subProfile.accessLevel === 'read-only') {
+            renderSubscriptionBanner('mainWrapper');
+        }
 
-        // 14. Hydrate UI and reveal page
+        // 13. Hydrate UI and reveal page
         populateGlobalHeader();
         initGlobalBookingModal();
         initSubFeatures();
         applySubFeatureGates();
         removeAuthSpinner();
 
-        console.log('[Auth Guard] Cold start complete. Page unlocked ✓');
+        // 14. Start background token refresh and 30-minute silent heartbeat
+        setupTokenRefresh();
+        setupHeartbeat();
+
+        console.log('[Auth Guard] Authoritative cold start complete. Page unlocked ✓');
 
     } catch (err) {
-        console.error('[Auth Guard] Unexpected error:', err);
+        console.error('[Auth Guard] Unexpected authorization error:', err);
         showAuthBlockModal('ERROR', 'A network error occurred while verifying access.', 'Refresh Page', window.location.href);
     }
 }
 
+// Attach listener on DOMContentLoaded
 document.addEventListener('DOMContentLoaded', runGlobalAuthGuard);
-window.populateGlobalHeader = populateGlobalHeader;
 
-// ─── Global Authoritative Branch Helper ───────────────────────────────────────
+
+// ─────────────────────────────────────────────────────────────────────────────
+// SECTION 5 — GLOBAL HEADER & ACTIVE BRANCH RESOLUTION
+// ─────────────────────────────────────────────────────────────────────────────
+
+/**
+ * Authoritative branch ID getter. Used across all modules for querying tenant data.
+ */
 window.getActiveBranchId = function() {
     const fromDom = document.getElementById('branchSelect')?.value;
     const fromStorage = localStorage.getItem('active_branch_id') || localStorage.getItem('branch_id');
@@ -753,8 +664,6 @@ window.getActiveBranchId = function() {
     return (val && val !== 'branch_1' && val !== 'branch_2' && val !== 'all') ? val : null;
 };
 
-// ─── Global Header Hydration ──────────────────────────────────────────────────
-// ── Shared date formatting helpers ────────────────────────────────────────────
 function formatProfileDate(isoStr) {
     if (!isoStr) return '';
     try {
@@ -785,6 +694,9 @@ function formatLastLogin(isoStr) {
     } catch { return 'Unknown'; }
 }
 
+/**
+ * Populates global header elements, profile modal, and branch switcher.
+ */
 export function populateGlobalHeader() {
     const contextStr = localStorage.getItem('appContext');
     if (!contextStr) return;
@@ -811,7 +723,7 @@ export function populateGlobalHeader() {
             if (roleEl && context.user.role_name) roleEl.textContent = context.user.role_name;
         }
 
-        // Avatar: use saved profile_photo if available, else fallback to ui-avatars initials
+        // Avatar
         let avatarUrl = context.user?.profile_photo || '';
         if (!avatarUrl && context.user?.name) {
             avatarUrl = `https://ui-avatars.com/api/?name=${encodeURIComponent(context.user.name)}&background=1E3A8A&color=fff`;
@@ -841,18 +753,15 @@ export function populateGlobalHeader() {
             if (profileEmail       && context.user.email)      profileEmail.value     = context.user.email;
             if (profileRoleInput   && context.user.role_name)  profileRoleInput.value = context.user.role_name;
 
-            // Format joined date (joined_on from profiles, fallback created_at from users)
             if (profileJoined) {
                 profileJoined.value = formatProfileDate(context.user.joined_on) || 'N/A';
             }
 
-            // Assigned Branch (read-only)
             if (profileBranch) {
                 const currentBranch = (context.branches || []).find(b => (b.branch_id || b.id) === (context.current_branch_id || localStorage.getItem('active_branch_id')));
                 profileBranch.value = currentBranch?.branch_name || currentBranch?.name || 'Main Branch';
             }
 
-            // Last Login — formatted relative time
             if (profileLastLogin) {
                 profileLastLogin.value = formatLastLogin(context.user.last_login_at);
             }
@@ -862,7 +771,7 @@ export function populateGlobalHeader() {
             if (profileEmergencyName  && context.user.emergency_name)  profileEmergencyName.value  = context.user.emergency_name;
             if (profileEmergencyPhone && context.user.emergency_phone) profileEmergencyPhone.value = context.user.emergency_phone;
 
-            // Schedule modal identity panel (left column)
+            // Schedule modal identity panel
             const scheduleUserAvatarImg   = document.getElementById('scheduleUserAvatarImg');
             const scheduleUserName        = document.getElementById('scheduleUserName');
             const scheduleUserRole        = document.getElementById('scheduleUserRole');
@@ -885,14 +794,13 @@ export function populateGlobalHeader() {
             }
         }
 
-        // Branch dropdown
+        // Branch switcher dropdown
         if (branchSelect) {
             const branchSwitcher = document.getElementById('headerBranchSwitcher') || branchSelect.closest('.branch-switcher');
             const canSwitch = context.user?.can_switch_branch !== false;
             const branchList = Array.isArray(context.branches) ? context.branches : [];
 
             if (!canSwitch) {
-                // Single-branch locked staff
                 const assignedId = context.user?.assigned_branch_id || context.current_branch_id || localStorage.getItem('active_branch_id');
                 const assignedBranch = branchList.find(b => (b.branch_id || b.id) === assignedId) || {
                     branch_id: assignedId,
@@ -906,7 +814,6 @@ export function populateGlobalHeader() {
                     branchSwitcher.setAttribute('title', 'Branch assigned to your account (Read-only for your role)');
                 }
             } else if (branchList.length > 0) {
-                // Multi-branch authorized user
                 branchSelect.disabled = false;
                 if (branchSwitcher) {
                     branchSwitcher.classList.remove('branch-locked');
@@ -924,7 +831,6 @@ export function populateGlobalHeader() {
                 const currentActive = localStorage.getItem('active_branch_id') || context.current_branch_id || branchList[0].branch_id;
                 branchSelect.value = currentActive;
 
-                // Idempotently attach listener
                 if (!branchSelect.dataset.branchListenerBound) {
                     branchSelect.dataset.branchListenerBound = '1';
                     branchSelect.addEventListener('change', async (e) => {
@@ -934,14 +840,12 @@ export function populateGlobalHeader() {
                         localStorage.setItem('active_branch_id', newBranchId);
                         localStorage.setItem('branch_id', newBranchId);
 
-                        // Update appContext in local cache
                         try {
                             const ctx = JSON.parse(localStorage.getItem('appContext') || '{}');
                             ctx.current_branch_id = newBranchId;
                             localStorage.setItem('appContext', JSON.stringify(ctx));
                         } catch (_) {}
 
-                        // Background sync to user_preferences
                         const userId = localStorage.getItem('user_id');
                         const compId = localStorage.getItem('company_id');
                         if (userId && supabase) {
@@ -960,7 +864,6 @@ export function populateGlobalHeader() {
                         const selectedBranchName = branchSelect.selectedOptions[0]?.textContent || '';
                         console.log('[Branch Switcher] Switched to branch:', selectedBranchName, newBranchId);
 
-                        // Dispatch standard events for all pages and components
                         const evtPayload = { detail: { branchId: newBranchId, branchName: selectedBranchName } };
                         window.dispatchEvent(new CustomEvent('branch:changed', evtPayload));
                         document.dispatchEvent(new CustomEvent('branch:changed', evtPayload));
@@ -969,7 +872,6 @@ export function populateGlobalHeader() {
             }
         }
 
-        // Date chip — populate with today's date (e.g. "Saturday, 20 Sep 2026")
         populateDateChip();
 
     } catch (e) {
@@ -977,10 +879,16 @@ export function populateGlobalHeader() {
     }
 }
 
-// ─── Profile Photo Upload ─────────────────────────────────────────────────────
-// Uploads a File to the profile-photos bucket under {user_id}/{filename}.
-// Uses the user's auth token (required by Storage RLS policy).
-// Returns the public URL string on success, or null on failure.
+window.populateGlobalHeader = populateGlobalHeader;
+
+
+// ─────────────────────────────────────────────────────────────────────────────
+// SECTION 6 — PROFILE PHOTO UPLOAD & LIGHTBOX
+// ─────────────────────────────────────────────────────────────────────────────
+
+/**
+ * Uploads user profile photo to Supabase Storage bucket.
+ */
 window.uploadProfilePhoto = async function(file, userId) {
     if (!file || !userId) return null;
 
@@ -1009,10 +917,10 @@ window.uploadProfilePhoto = async function(file, userId) {
     const storagePath  = `${userId}/${filename}`;
 
     try {
-        const res = await fetch(`${supabase._url}/storage/v1/object/profile-photos/${storagePath}`, {
+        const res = await fetch(`${SUPABASE_URL}/storage/v1/object/profile-photos/${storagePath}`, {
             method: 'POST',
             headers: {
-                'apikey':        supabase._key,
+                'apikey':        SUPABASE_ANON,
                 'Authorization': `Bearer ${token}`,
                 'Content-Type':  file.type || 'application/octet-stream'
             },
@@ -1022,7 +930,7 @@ window.uploadProfilePhoto = async function(file, userId) {
         const data = await res.json().catch(() => null);
         if (!res.ok) throw new Error(data?.message || data?.error || `HTTP ${res.status}`);
 
-        return `${supabase._url}/storage/v1/object/public/profile-photos/${storagePath}`;
+        return `${SUPABASE_URL}/storage/v1/object/public/profile-photos/${storagePath}`;
     } catch (err) {
         console.error('[Profile Photo] Upload failed:', err);
         alert('Failed to upload profile photo. Please try again.');
@@ -1030,9 +938,9 @@ window.uploadProfilePhoto = async function(file, userId) {
     }
 };
 
-// ─── Date Chip ────────────────────────────────────────────────────────────────
-// Called both from populateGlobalHeader() and on DOMContentLoaded so the chip
-// shows even on pages that don't wait for auth context (e.g. fast loads).
+/**
+ * Populates header date chip (e.g., "Saturday, 24 Oct 2026").
+ */
 export function populateDateChip() {
     const chip = document.getElementById('headerDateChip');
     if (!chip) return;
@@ -1046,97 +954,50 @@ export function populateDateChip() {
         month:   'short',
         year:    'numeric'
     });
-    textEl.textContent = formatted;     // e.g. "Saturday, 20 Sep 2026"
+    textEl.textContent = formatted;
 }
 
-// ─── Profile Photo Lightbox (Double-click to View Enlarged) ───────────────────
+/**
+ * Initializes double-click preview lightbox for profile photos.
+ */
 export function initProfilePhotoLightbox() {
     if (window._profilePhotoLightboxInitialized) return;
     window._profilePhotoLightboxInitialized = true;
 
-    // Inject styles once
     if (!document.getElementById('profilePhotoLightboxStyles')) {
         const style = document.createElement('style');
         style.id = 'profilePhotoLightboxStyles';
         style.textContent = `
             .profile-photo-lightbox {
-                position: fixed;
-                inset: 0;
-                z-index: 100000;
-                display: flex;
-                flex-direction: column;
-                align-items: center;
-                justify-content: center;
-                background: rgba(15, 23, 42, 0.85);
-                backdrop-filter: blur(12px);
-                -webkit-backdrop-filter: blur(12px);
-                opacity: 0;
-                pointer-events: none;
-                transition: opacity 0.25s cubic-bezier(0.16, 1, 0.3, 1);
-                cursor: default;
-                padding: 24px;
-                box-sizing: border-box;
+                position: fixed; inset: 0; z-index: 100000;
+                display: flex; flex-direction: column; align-items: center; justify-content: center;
+                background: rgba(15, 23, 42, 0.85); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px);
+                opacity: 0; pointer-events: none; transition: opacity 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+                cursor: default; padding: 24px; box-sizing: border-box;
             }
-            .profile-photo-lightbox.active {
-                opacity: 1;
-                pointer-events: auto;
-            }
+            .profile-photo-lightbox.active { opacity: 1; pointer-events: auto; }
             .profile-photo-lightbox-close {
-                position: absolute;
-                top: 24px;
-                right: 28px;
-                width: 44px;
-                height: 44px;
-                border-radius: 50%;
-                border: 1px solid rgba(255, 255, 255, 0.2);
-                background: rgba(255, 255, 255, 0.12);
-                color: #ffffff;
-                font-size: 28px;
-                line-height: 1;
-                display: flex;
-                align-items: center;
-                justify-content: center;
-                cursor: pointer;
-                transition: all 0.2s ease;
-                backdrop-filter: blur(8px);
-                z-index: 100001;
+                position: absolute; top: 24px; right: 28px; width: 44px; height: 44px;
+                border-radius: 50%; border: 1px solid rgba(255, 255, 255, 0.2);
+                background: rgba(255, 255, 255, 0.12); color: #ffffff; font-size: 28px;
+                line-height: 1; display: flex; align-items: center; justify-content: center;
+                cursor: pointer; transition: all 0.2s ease; backdrop-filter: blur(8px); z-index: 100001;
             }
-            .profile-photo-lightbox-close:hover {
-                background: rgba(255, 255, 255, 0.25);
-                transform: scale(1.08);
-            }
+            .profile-photo-lightbox-close:hover { background: rgba(255, 255, 255, 0.25); transform: scale(1.08); }
             .profile-photo-lightbox-body {
-                position: relative;
-                max-width: 90vw;
-                max-height: 82vh;
-                display: flex;
-                align-items: center;
-                justify-content: center;
-                cursor: default;
+                position: relative; max-width: 90vw; max-height: 82vh;
+                display: flex; align-items: center; justify-content: center; cursor: default;
             }
             .profile-photo-lightbox-img {
-                max-width: min(85vw, 680px);
-                max-height: min(80vh, 680px);
-                width: auto;
-                height: auto;
-                object-fit: contain;
-                border-radius: 16px;
+                max-width: min(85vw, 680px); max-height: min(80vh, 680px); width: auto; height: auto;
+                object-fit: contain; border-radius: 16px;
                 box-shadow: 0 25px 60px -15px rgba(0, 0, 0, 0.7), 0 0 0 1px rgba(255, 255, 255, 0.15);
-                transform: scale(0.92);
-                transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1);
-                user-select: none;
+                transform: scale(0.92); transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1); user-select: none;
             }
-            .profile-photo-lightbox.active .profile-photo-lightbox-img {
-                transform: scale(1);
-            }
+            .profile-photo-lightbox.active .profile-photo-lightbox-img { transform: scale(1); }
             .profile-photo-lightbox-caption {
-                margin-top: 14px;
-                font-size: 0.85rem;
-                color: rgba(255, 255, 255, 0.7);
-                font-family: Inter, system-ui, -apple-system, sans-serif;
-                letter-spacing: 0.2px;
-                user-select: none;
-                cursor: default;
+                margin-top: 14px; font-size: 0.85rem; color: rgba(255, 255, 255, 0.7);
+                font-family: Inter, system-ui, -apple-system, sans-serif; letter-spacing: 0.2px; user-select: none;
             }
         `;
         document.head.appendChild(style);
@@ -1160,14 +1021,10 @@ export function initProfilePhotoLightbox() {
             `;
             document.body.appendChild(el);
 
-            // Close when clicking outside image or clicking close button
             el.addEventListener('click', (e) => {
-                if (!e.target.closest('.profile-photo-lightbox-img')) {
-                    closeLightbox();
-                }
+                if (!e.target.closest('.profile-photo-lightbox-img')) closeLightbox();
             });
 
-            // Close on Escape key
             document.addEventListener('keydown', (e) => {
                 if (e.key === 'Escape') closeLightbox();
             });
@@ -1193,7 +1050,6 @@ export function initProfilePhotoLightbox() {
     window.openProfilePhotoLightbox = openLightbox;
     window.closeProfilePhotoLightbox = closeLightbox;
 
-    // Listen for double clicks on profile avatar elements
     document.addEventListener('dblclick', (e) => {
         const avatarWrap = e.target.closest('#profileAvatarImg, .profile-avatar-wrap, #scheduleUserAvatarImg, .schedule-avatar-wrap');
         if (!avatarWrap) return;
@@ -1202,16 +1058,12 @@ export function initProfilePhotoLightbox() {
             ? avatarWrap
             : (avatarWrap.querySelector('#profileAvatarImg') || avatarWrap.querySelector('img'));
 
-        if (!img || !img.src) return;
-
-        // Skip generic ui-avatars initials placeholder
-        if (img.src.includes('ui-avatars.com')) return;
-
+        if (!img || !img.src || img.src.includes('ui-avatars.com')) return;
         openLightbox(img.src);
     });
 }
 
-// Run on DOM ready so the date chip and photo lightbox are initialized as early as possible
+// Early initialization of lightweight UI helpers
 if (document.readyState === 'loading') {
     document.addEventListener('DOMContentLoaded', () => {
         populateDateChip();
@@ -1222,7 +1074,10 @@ if (document.readyState === 'loading') {
     initProfilePhotoLightbox();
 }
 
-// ─── Auth Spinner ─────────────────────────────────────────────────────────────
+
+// ─────────────────────────────────────────────────────────────────────────────
+// SECTION 7 — AUTH SPINNER & BLOCK MODAL
+// ─────────────────────────────────────────────────────────────────────────────
 function removeAuthSpinner() {
     document.documentElement.style.display = '';
     const loader      = document.getElementById('bbAuthLoader');
@@ -1231,7 +1086,6 @@ function removeAuthSpinner() {
     if (loaderStyle) loaderStyle.remove();
 }
 
-// ─── Auth Block Modal (full-screen, un-closable) ──────────────────────────────
 function showAuthBlockModal(errorType, messageText, buttonText, buttonLink) {
     if (document.getElementById('authGuardBlockOverlay')) return;
 

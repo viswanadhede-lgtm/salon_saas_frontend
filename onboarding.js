@@ -156,8 +156,28 @@ async function submitOnboarding() {
                     supabase.from('plan_sub_features').select('sub_feature_key').eq('plan_id', planId)
                 ]);
                 
-                const featureKeys = (planFeatsRes.data || []).map(f => f.feature_key).filter(Boolean);
-                const subFeatureKeys = (planSubFeatsRes.data || []).map(s => s.sub_feature_key).filter(Boolean);
+                const parseKeys = (rows, col) => {
+                    const list = [];
+                    (rows || []).forEach(r => {
+                        const val = r?.[col];
+                        if (!val) return;
+                        const raw = String(val).trim();
+                        if (raw.startsWith('[') && raw.endsWith(']')) {
+                            try {
+                                const parsed = JSON.parse(raw);
+                                if (Array.isArray(parsed)) list.push(...parsed);
+                            } catch { list.push(raw); }
+                        } else if (raw.includes(',')) {
+                            list.push(...raw.split(',').map(s => s.trim()).filter(Boolean));
+                        } else {
+                            list.push(raw);
+                        }
+                    });
+                    return list;
+                };
+
+                const featureKeys = parseKeys(planFeatsRes.data, 'feature_key');
+                const subFeatureKeys = parseKeys(planSubFeatsRes.data, 'sub_feature_key');
                 const allAllowedKeys = [...new Set([...featureKeys, ...subFeatureKeys])];
 
                 const ownerKeys = allAllowedKeys.length > 0 ? allAllowedKeys : ['ALL'];
