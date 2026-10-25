@@ -40,7 +40,7 @@ export const ROUTE_NAV_MAP = {
     'offers.html':                  { route: 'marketing', subroute: 'offers' },
     'coupons.html':                 { route: 'marketing', subroute: 'coupons' },
     'memberships.html':             { route: 'marketing', subroute: 'memberships' },
-    'ad-campaigns.html':            { route: 'marketing', subroute: 'ad-campaigns' },
+
 
 
     // Analytics section

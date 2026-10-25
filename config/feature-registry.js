@@ -60,7 +60,6 @@ export const FEATURES = {
     MARKETING_OFFERS:                    'marketing_offers',                // 12. offers.html
     MARKETING_COUPONS:                   'marketing_coupons',               // 13. coupons.html
     MARKETING_MEMBERSHIPS:               'marketing_memberships',           // 14. memberships.html
-    MARKETING_CAMPAIGNS:                 'marketing_campaigns',             // 15. ad-campaigns.html
 
     // Analytics
     ANALYTICS_OVERVIEW:                  'analytics_overview',              // 16. overview.html
@@ -132,7 +131,6 @@ export const MODULES_META = [
     { key: FEATURES.MARKETING_OFFERS,                label: 'Offers',                          icon: 'tag'           },
     { key: FEATURES.MARKETING_COUPONS,               label: 'Coupons',                         icon: 'percent'       },
     { key: FEATURES.MARKETING_MEMBERSHIPS,           label: 'Memberships',                     icon: 'award'         },
-    { key: FEATURES.MARKETING_CAMPAIGNS,             label: 'Ad Campaigns',                    icon: 'speaker'       },
     { key: FEATURES.ANALYTICS_OVERVIEW,              label: 'Overview',                        icon: 'pie-chart'     },
     { key: FEATURES.REPORTS_ACCESS,                  label: 'Reports',                         icon: 'bar-chart-2'   },
     { key: FEATURES.ANALYTICS_EXPENSES,              label: 'Expenses',                        icon: 'dollar-sign'   },

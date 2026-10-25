@@ -198,8 +198,7 @@ export function getPlanUpgradeMetadata(featureKey) {
     const marketingFeatures = [
         FEATURES.MARKETING_OFFERS,
         FEATURES.MARKETING_COUPONS,
-        FEATURES.MARKETING_MEMBERSHIPS,
-        FEATURES.MARKETING_CAMPAIGNS
+        FEATURES.MARKETING_MEMBERSHIPS
     ];
     const analyticsFeatures = [
         FEATURES.REPORTS_ACCESS,

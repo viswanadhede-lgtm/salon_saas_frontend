@@ -62,7 +62,7 @@ export const READ_ACCESS_FEATURES = {
         FEATURES.MARKETING_OFFERS,                     // 12. offers.html
         FEATURES.MARKETING_COUPONS,                    // 13. coupons.html
         FEATURES.MARKETING_MEMBERSHIPS,                // 14. memberships.html
-        FEATURES.MARKETING_CAMPAIGNS,                  // 15. ad-campaigns.html
+
         FEATURES.ANALYTICS_OVERVIEW,                   // 16. overview.html
         FEATURES.REPORTS_ACCESS,                       // 17. reports.html
         FEATURES.ANALYTICS_EXPENSES,                   // 18. expenses.html

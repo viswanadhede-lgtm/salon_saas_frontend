@@ -119,8 +119,6 @@ export const SUB_FEATURES = {
     REFUND_MEMBERSHIP:                   'refund_membership',
     EXPORT_MEMBERSHIP_USAGE:             'export_membership_usage',
 
-    // ── Page 15: Marketing: Ad Campaigns (ad-campaigns.html) ─────────────────
-    // (Coming soon placeholder — no granular action keys)
 
     // ── Page 16: Analytics Overview (overview.html) ──────────────────────────
     // (View-only analytics dashboard — no granular action keys)
@@ -354,8 +352,6 @@ export const SUB_FEATURES_MAP = {
         { key: SUB_FEATURES.EXPORT_MEMBERSHIP_USAGE, label: 'Export Usage' }
     ],
 
-    // 15. Marketing: Ad Campaigns (ad-campaigns.html)
-    [FEATURES.MARKETING_CAMPAIGNS]: [],
 
 
     // 16. Analytics Overview (overview.html)
