@@ -35,134 +35,18 @@ const PLAN_CACHE_TTL_MS = 5 * 60 * 1000; // 5 minutes cache TTL
 
 
 // ─────────────────────────────────────────────────────────────────────────────
-// SECTION 1 — PLAN TIERS & DEFAULT MATRICES
-// Baseline feature assignments per commercial tier.
+// SECTION 1 — FEATURE CATALOG
+// Complete master list of all application features, sourced from the feature
+// registry. Permissions are resolved dynamically from `public.plan_features`
+// at runtime — no hardcoded plan names or UUIDs.
 // ─────────────────────────────────────────────────────────────────────────────
-export const PLAN_NAMES = {
-    BASIC:      'Basic',
-    ADVANCE:    'Advance',
-    ENTERPRISE: 'Enterprise'
-};
-
-// Known default Plan UUIDs (used as fallbacks during cold start)
-export const PLAN_IDS = {
-    BASIC:      'd0d4cc8f-3498-4da1-b5e5-2887b9b39dce',
-    ADVANCE:    'b42bcd41-217a-4ddb-9451-20e040984277',
-    ENTERPRISE: 'c51ade32-108a-4efb-8321-31f050893188'
-};
 
 /**
- * Universal catalog: all 44 application features.
+ * Universal catalog of every feature the app can expose.
+ * Which features a salon can ACCESS is determined solely by the rows in
+ * `public.plan_features` that match the salon's active plan_id.
  */
 export const ALL_APP_FEATURES = Object.values(FEATURES);
-
-/**
- * Baseline feature matrix per commercial tier.
- * Once a page is included in a plan, the salon has complete access to that page.
- */
-export const DEFAULT_PLAN_MATRICES = {
-
-    // ── BASIC / STARTER: Core salon management for single-location salons ─────
-    [PLAN_NAMES.BASIC]: [
-        // Sidebar Pages (Group A)
-        FEATURES.DASHBOARD_ACCESS,                     // 1.  dashboard.html
-        FEATURES.BOOKINGS_MANAGEMENT,                  // 2.  bookings.html
-        FEATURES.CUSTOMERS_MANAGEMENT,                 // 3.  customers.html
-        FEATURES.STAFF_MANAGEMENT,                     // 4.  staff.html
-        FEATURES.STAFF_SCHEDULES,                      // 5.  staff-schedule.html
-        FEATURES.SERVICES_MANAGEMENT,                  // 6.  services.html
-        FEATURES.POS_SYSTEM,                           // 7.  pos.html
-        FEATURES.PRODUCT_MANAGEMENT,                   // 8.  products.html
-        FEATURES.SALES_HISTORY,                        // 9.  sales-history.html
-        FEATURES.PENDING_PAYMENTS,                     // 10. pending-payments.html
-        FEATURES.PAYMENTS_HISTORY,                     // 11. payments-history.html
-        FEATURES.ANALYTICS_OVERVIEW,                   // 16. overview.html
-        FEATURES.COMPANY_SETTINGS,                     // 19. company.html
-        FEATURES.USER_MANAGEMENT,                      // 20. users.html
-        FEATURES.ROLES_PERMISSIONS,                    // 21. roles-permissions.html
-        FEATURES.BILLING_SUBSCRIPTION_MANAGEMENT,      // 22. billing-subscription.html
-
-        // Sub-Pages (Group B)
-        FEATURES.DASHBOARD_TODAYS_REVENUE,             // 23. todays-revenue.html
-        FEATURES.DASHBOARD_UPCOMING_APPOINTMENTS,      // 24. upcoming-appointments.html
-        FEATURES.DASHBOARD_COMPLETED_APPOINTMENTS,     // 25. completed-appointments.html
-        FEATURES.DASHBOARD_NO_SHOWS_CANCELLATIONS,     // 26. no-shows-cancellations.html
-        FEATURES.BRANCH_MANAGEMENT,                    // 29. branches.html (single branch)
-        FEATURES.SETTINGS_BUSINESS,                    // 30. settings-business.html
-        FEATURES.SETTINGS_CONTACT,                     // 31. settings-contact.html
-        FEATURES.SETTINGS_HOURS,                       // 32. settings-hours.html
-        FEATURES.SETTINGS_TAX,                         // 33. settings-tax.html
-        FEATURES.SETTINGS_PAYMENTS,                    // 34. settings-payments.html
-        FEATURES.SETTINGS_NOTIFICATIONS,               // 35. settings-notifications.html
-        FEATURES.SETTINGS_INVOICE,                     // 36. settings-invoice.html
-        FEATURES.SETTINGS_INVOICE_COMMON,              // 37. settings-invoice-common.html
-        FEATURES.SETTINGS_INVOICE_BOOKING,             // 38. settings-invoice-booking.html
-        FEATURES.SETTINGS_INVOICE_POS,                 // 39. settings-invoice-pos.html
-        FEATURES.SETTINGS_INVOICE_MEMBERSHIP,          // 40. settings-invoice-membership.html
-        FEATURES.NOTIFICATIONS,                        // 41. notifications.html
-        FEATURES.SUPPORT,                              // 42. support.html
-        FEATURES.ISSUE_HISTORY,                        // 43. issue-history.html
-        FEATURES.USER_GUIDE                            // 44. user_guide.html
-    ],
-
-    // ── ADVANCE / GROWTH: Marketing, expenses, advanced reporting & multi-branch ─
-    [PLAN_NAMES.ADVANCE]: [
-        // Includes everything in Basic, plus:
-        FEATURES.DASHBOARD_ACCESS,
-        FEATURES.BOOKINGS_MANAGEMENT,
-        FEATURES.CUSTOMERS_MANAGEMENT,
-        FEATURES.STAFF_MANAGEMENT,
-        FEATURES.STAFF_SCHEDULES,
-        FEATURES.SERVICES_MANAGEMENT,
-        FEATURES.POS_SYSTEM,
-        FEATURES.PRODUCT_MANAGEMENT,
-        FEATURES.SALES_HISTORY,
-        FEATURES.PENDING_PAYMENTS,
-        FEATURES.PAYMENTS_HISTORY,
-        FEATURES.MARKETING_OFFERS,                     // 12. offers.html (Unlocked)
-        FEATURES.MARKETING_COUPONS,                    // 13. coupons.html (Unlocked)
-        FEATURES.MARKETING_MEMBERSHIPS,                // 14. memberships.html (Unlocked)
-        FEATURES.ANALYTICS_OVERVIEW,
-        FEATURES.REPORTS_ACCESS,                       // 17. reports.html (Unlocked)
-        FEATURES.ANALYTICS_EXPENSES,                   // 18. expenses.html (Unlocked)
-        FEATURES.COMPANY_SETTINGS,
-        FEATURES.USER_MANAGEMENT,
-        FEATURES.ROLES_PERMISSIONS,
-        FEATURES.BILLING_SUBSCRIPTION_MANAGEMENT,
-
-        // Sub-Pages
-        FEATURES.DASHBOARD_TODAYS_REVENUE,
-        FEATURES.DASHBOARD_UPCOMING_APPOINTMENTS,
-        FEATURES.DASHBOARD_COMPLETED_APPOINTMENTS,
-        FEATURES.DASHBOARD_NO_SHOWS_CANCELLATIONS,
-        FEATURES.REPORTS_CATEGORY,                     // 27. report-category.html (Unlocked)
-        FEATURES.REPORTS_DETAIL,                       // 28. report-detail.html (Unlocked)
-        FEATURES.BRANCH_MANAGEMENT,                    // 29. branches.html (Multi-branch)
-        FEATURES.SETTINGS_BUSINESS,
-        FEATURES.SETTINGS_CONTACT,
-        FEATURES.SETTINGS_HOURS,
-        FEATURES.SETTINGS_TAX,
-        FEATURES.SETTINGS_PAYMENTS,
-        FEATURES.SETTINGS_NOTIFICATIONS,
-        FEATURES.SETTINGS_INVOICE,
-        FEATURES.SETTINGS_INVOICE_COMMON,
-        FEATURES.SETTINGS_INVOICE_BOOKING,
-        FEATURES.SETTINGS_INVOICE_POS,
-        FEATURES.SETTINGS_INVOICE_MEMBERSHIP,
-        FEATURES.NOTIFICATIONS,
-        FEATURES.SUPPORT,
-        FEATURES.ISSUE_HISTORY,
-        FEATURES.USER_GUIDE
-    ],
-
-    // ── ENTERPRISE: Unrestricted full access across all 44 modules ───────────
-    [PLAN_NAMES.ENTERPRISE]: ALL_APP_FEATURES
-};
-
-// Map known UUIDs to matrices
-DEFAULT_PLAN_MATRICES[PLAN_IDS.BASIC] = DEFAULT_PLAN_MATRICES[PLAN_NAMES.BASIC];
-DEFAULT_PLAN_MATRICES[PLAN_IDS.ADVANCE] = DEFAULT_PLAN_MATRICES[PLAN_NAMES.ADVANCE];
-DEFAULT_PLAN_MATRICES[PLAN_IDS.ENTERPRISE] = DEFAULT_PLAN_MATRICES[PLAN_NAMES.ENTERPRISE];
 
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -324,11 +208,11 @@ export function getPlanUpgradeMetadata(featureKey) {
         FEATURES.ANALYTICS_EXPENSES
     ];
 
-    let minimumPlan = PLAN_NAMES.ADVANCE;
+    let minimumPlan = 'Advance';
     let category = 'Premium Module';
 
     if (marketingFeatures.includes(featureKey)) {
-        minimumPlan = PLAN_NAMES.ADVANCE;
+        minimumPlan = 'Advance';
         category = 'Marketing & Growth Suite';
     } else if (analyticsFeatures.includes(featureKey)) {
         minimumPlan = PLAN_NAMES.ADVANCE;
@@ -382,17 +266,8 @@ export async function getCurrentPlanFeatures(forceRefresh = false) {
         }
     }
 
-    // 2. Fallback to default matrix by planId or planName
-    if (features.length === 0) {
-        if (planId && DEFAULT_PLAN_MATRICES[planId]) {
-            features = DEFAULT_PLAN_MATRICES[planId];
-        } else if (planName && DEFAULT_PLAN_MATRICES[planName]) {
-            features = DEFAULT_PLAN_MATRICES[planName];
-        } else {
-            // Default safe fallback to Basic
-            features = DEFAULT_PLAN_MATRICES[PLAN_NAMES.BASIC];
-        }
-    }
+    // If DB returned no features, the plan has no permissions configured yet.
+    // features stays [] — the auth guard will treat all modules as locked.
 
     const profile = {
         planId,
@@ -434,15 +309,12 @@ export function getCurrentPlanFeaturesSync() {
         }
     } catch { /* fall through */ }
 
-    // Fallback: check localStorage for plan_name or default to Basic
-    const planName = localStorage.getItem('plan_name') || PLAN_NAMES.BASIC;
-    const features = DEFAULT_PLAN_MATRICES[planName] || DEFAULT_PLAN_MATRICES[PLAN_NAMES.BASIC];
-
+    // No valid cache — return empty profile (cold start, pending DB resolution via getCurrentPlanFeatures)
     return {
         planId: localStorage.getItem('plan_id') || null,
-        planName,
-        features,
-        isEnterprise: planName.toLowerCase().includes('enterprise')
+        planName: localStorage.getItem('plan_name') || null,
+        features: [],
+        isEnterprise: false
     };
 }
 
