@@ -6,163 +6,53 @@
  *
  * PURPOSE:
  *   Governs commercial page-level access based on the salon's purchased plan
- *   tier from `public.plans` and `public.plan_features` tables.
+ *   tier. ALL plan names, plan IDs, and feature keys are resolved exclusively
+ *   from the Supabase backend:
+ *     - public.plans         → plan_id, plan_name
+ *     - public.plan_features → plan_id, feature_key (one row per feature)
+ *
+ *   No plan names, plan IDs, or feature lists are hardcoded here.
+ *   The DB is the single source of truth.
  *
  * ARCHITECTURAL ROLE:
  *   - Gate 1: Subscription State Manager (Is the salon account active or expired?)
  *   - Gate 2: In-App RBAC Manager (What is this user's role, and what are they permitted to do?)
  *   - Gate 3: PLAN FEATURES MANAGER (Did the salon purchase the plan tier that includes this page?)
  *
- * STORAGE PATTERN:
- *   Reads and writes to the unified single-row `public.plan_features` schema
- *   where all allowed feature keys for a plan are stored as a JSON stringified
- *   array in the `feature_key` column (e.g. '["dashboard_access", "pos_system", ...]').
+ * HOW PLAN RESOLUTION WORKS:
+ *   1. plan_id is read from appContext.company.plan_id (set by auth guard from companies table)
+ *   2. Features are fetched from public.plan_features WHERE plan_id = resolved_plan_id
+ *   3. plan_name is fetched from public.plans if not already in context
+ *   4. Results are cached in sessionStorage for 5 minutes
  *
  * SECTIONS:
- *   1. PLAN TIERS & DEFAULT MATRICES — Baseline feature sets per tier.
- *   2. DATABASE RESOLVER & CACHE     — Single-row loader & sessionStorage caching.
- *   3. PLAN EVALUATION LOGIC         — Feature inclusion & upgrade prompt metadata.
- *   4. INTEGRATION & EXPORT API      — Public helpers (isFeatureUnlocked, showPlanUpgradeModal).
+ *   1. CACHE CONFIG
+ *   2. CONTEXT RESOLVER  — Reads plan_id / plan_name from appContext
+ *   3. DATABASE FETCHERS — Queries plans + plan_features tables
+ *   4. MAIN ASYNC RESOLVER — getCurrentPlanFeatures (with sessionStorage cache)
+ *   5. SYNC RESOLVER     — getCurrentPlanFeaturesSync (reads cache only)
+ *   6. EVALUATION HELPERS
+ *   7. UPGRADE MODAL     — Dynamic messaging, no hardcoded tier names
+ *   8. CACHE UTILS + DB WRITER + EXPORTS
  * ─────────────────────────────────────────────────────────────────────────────
  */
 
-import { FEATURES } from './feature-registry.js';
 import { supabase } from '../lib/supabase.js';
 
-// Cache configuration
+// ─────────────────────────────────────────────────────────────────────────────
+// SECTION 1 — CACHE CONFIG
+// ─────────────────────────────────────────────────────────────────────────────
 const PLAN_CACHE_STORAGE_KEY = 'salon_plan_features_cache';
-const PLAN_CACHE_TTL_MS = 5 * 60 * 1000; // 5 minutes cache TTL
+const PLAN_CACHE_TTL_MS      = 5 * 60 * 1000; // 5-minute sessionStorage TTL
 
 
 // ─────────────────────────────────────────────────────────────────────────────
-// SECTION 1 — PLAN TIERS & DEFAULT MATRICES
-// Baseline feature assignments per commercial tier.
+// SECTION 2 — CONTEXT RESOLVER
+// Reads plan_id, plan_name, and company_id from localStorage appContext.
+// The appContext is written by global-auth-guard.js during cold start.
+// Priority for plan_id:   appContext.company.plan_id  > localStorage 'plan_id'
+// Priority for plan_name: appContext.company.plan_name > appContext.company.plan > localStorage 'plan_name'
 // ─────────────────────────────────────────────────────────────────────────────
-export const PLAN_NAMES = {
-    BASIC:      'Basic',
-    ADVANCE:    'Advance',
-    ENTERPRISE: 'Enterprise'
-};
-
-// Known default Plan UUIDs (used as fallbacks during cold start)
-export const PLAN_IDS = {
-    BASIC:      'd0d4cc8f-3498-4da1-b5e5-2887b9b39dce',
-    ADVANCE:    'b42bcd41-217a-4ddb-9451-20e040984277',
-    ENTERPRISE: 'c51ade32-108a-4efb-8321-31f050893188'
-};
-
-/**
- * Universal catalog: all 44 application features.
- */
-export const ALL_APP_FEATURES = Object.values(FEATURES);
-
-/**
- * Baseline feature matrix per commercial tier.
- * Once a page is included in a plan, the salon has complete access to that page.
- */
-export const DEFAULT_PLAN_MATRICES = {
-
-    // ── BASIC / STARTER: Core salon management for single-location salons ─────
-    [PLAN_NAMES.BASIC]: [
-        // Sidebar Pages (Group A)
-        FEATURES.DASHBOARD_ACCESS,                     // 1.  dashboard.html
-        FEATURES.BOOKINGS_MANAGEMENT,                  // 2.  bookings.html
-        FEATURES.CUSTOMERS_MANAGEMENT,                 // 3.  customers.html
-        FEATURES.STAFF_MANAGEMENT,                     // 4.  staff.html
-        FEATURES.STAFF_SCHEDULES,                      // 5.  staff-schedule.html
-        FEATURES.SERVICES_MANAGEMENT,                  // 6.  services.html
-        FEATURES.POS_SYSTEM,                           // 7.  pos.html
-        FEATURES.PRODUCT_MANAGEMENT,                   // 8.  products.html
-        FEATURES.SALES_HISTORY,                        // 9.  sales-history.html
-        FEATURES.PENDING_PAYMENTS,                     // 10. pending-payments.html
-        FEATURES.PAYMENTS_HISTORY,                     // 11. payments-history.html
-        FEATURES.ANALYTICS_OVERVIEW,                   // 16. overview.html
-        FEATURES.COMPANY_SETTINGS,                     // 19. company.html
-        FEATURES.USER_MANAGEMENT,                      // 20. users.html
-        FEATURES.ROLES_PERMISSIONS,                    // 21. roles-permissions.html
-        FEATURES.BILLING_SUBSCRIPTION_MANAGEMENT,      // 22. billing-subscription.html
-
-        // Sub-Pages (Group B)
-        FEATURES.DASHBOARD_TODAYS_REVENUE,             // 23. todays-revenue.html
-        FEATURES.DASHBOARD_UPCOMING_APPOINTMENTS,      // 24. upcoming-appointments.html
-        FEATURES.DASHBOARD_COMPLETED_APPOINTMENTS,     // 25. completed-appointments.html
-        FEATURES.DASHBOARD_NO_SHOWS_CANCELLATIONS,     // 26. no-shows-cancellations.html
-        FEATURES.BRANCH_MANAGEMENT,                    // 29. branches.html (single branch)
-        FEATURES.SETTINGS_BUSINESS,                    // 30. settings-business.html
-        FEATURES.SETTINGS_CONTACT,                     // 31. settings-contact.html
-        FEATURES.SETTINGS_HOURS,                       // 32. settings-hours.html
-        FEATURES.SETTINGS_TAX,                         // 33. settings-tax.html
-        FEATURES.SETTINGS_PAYMENTS,                    // 34. settings-payments.html
-        FEATURES.SETTINGS_NOTIFICATIONS,               // 35. settings-notifications.html
-        FEATURES.SETTINGS_INVOICE,                     // 36. settings-invoice.html
-        FEATURES.SETTINGS_INVOICE_COMMON,              // 37. settings-invoice-common.html
-        FEATURES.SETTINGS_INVOICE_BOOKING,             // 38. settings-invoice-booking.html
-        FEATURES.SETTINGS_INVOICE_POS,                 // 39. settings-invoice-pos.html
-        FEATURES.SETTINGS_INVOICE_MEMBERSHIP,          // 40. settings-invoice-membership.html
-        FEATURES.NOTIFICATIONS,                        // 41. notifications.html
-        FEATURES.SUPPORT,                              // 42. support.html
-        FEATURES.ISSUE_HISTORY,                        // 43. issue-history.html
-        FEATURES.USER_GUIDE                            // 44. user_guide.html
-    ],
-
-    // ── ADVANCE / GROWTH: Marketing, expenses, advanced reporting & multi-branch ─
-    [PLAN_NAMES.ADVANCE]: [
-        // Includes everything in Basic, plus:
-        FEATURES.DASHBOARD_ACCESS,
-        FEATURES.BOOKINGS_MANAGEMENT,
-        FEATURES.CUSTOMERS_MANAGEMENT,
-        FEATURES.STAFF_MANAGEMENT,
-        FEATURES.STAFF_SCHEDULES,
-        FEATURES.SERVICES_MANAGEMENT,
-        FEATURES.POS_SYSTEM,
-        FEATURES.PRODUCT_MANAGEMENT,
-        FEATURES.SALES_HISTORY,
-        FEATURES.PENDING_PAYMENTS,
-        FEATURES.PAYMENTS_HISTORY,
-        FEATURES.MARKETING_OFFERS,                     // 12. offers.html (Unlocked)
-        FEATURES.MARKETING_COUPONS,                    // 13. coupons.html (Unlocked)
-        FEATURES.MARKETING_MEMBERSHIPS,                // 14. memberships.html (Unlocked)
-        FEATURES.ANALYTICS_OVERVIEW,
-        FEATURES.REPORTS_ACCESS,                       // 17. reports.html (Unlocked)
-        FEATURES.ANALYTICS_EXPENSES,                   // 18. expenses.html (Unlocked)
-        FEATURES.COMPANY_SETTINGS,
-        FEATURES.USER_MANAGEMENT,
-        FEATURES.ROLES_PERMISSIONS,
-        FEATURES.BILLING_SUBSCRIPTION_MANAGEMENT,
-
-        // Sub-Pages
-        FEATURES.DASHBOARD_TODAYS_REVENUE,
-        FEATURES.DASHBOARD_UPCOMING_APPOINTMENTS,
-        FEATURES.DASHBOARD_COMPLETED_APPOINTMENTS,
-        FEATURES.DASHBOARD_NO_SHOWS_CANCELLATIONS,
-        FEATURES.REPORTS_CATEGORY,                     // 27. report-category.html (Unlocked)
-        FEATURES.REPORTS_DETAIL,                       // 28. report-detail.html (Unlocked)
-        FEATURES.BRANCH_MANAGEMENT,                    // 29. branches.html (Multi-branch)
-        FEATURES.SETTINGS_BUSINESS,
-        FEATURES.SETTINGS_CONTACT,
-        FEATURES.SETTINGS_HOURS,
-        FEATURES.SETTINGS_TAX,
-        FEATURES.SETTINGS_PAYMENTS,
-        FEATURES.SETTINGS_NOTIFICATIONS,
-        FEATURES.SETTINGS_INVOICE,
-        FEATURES.SETTINGS_INVOICE_COMMON,
-        FEATURES.SETTINGS_INVOICE_BOOKING,
-        FEATURES.SETTINGS_INVOICE_POS,
-        FEATURES.SETTINGS_INVOICE_MEMBERSHIP,
-        FEATURES.NOTIFICATIONS,
-        FEATURES.SUPPORT,
-        FEATURES.ISSUE_HISTORY,
-        FEATURES.USER_GUIDE
-    ],
-
-    // ── ENTERPRISE: Unrestricted full access across all 44 modules ───────────
-    [PLAN_NAMES.ENTERPRISE]: ALL_APP_FEATURES
-};
-
-// Map known UUIDs to matrices
-DEFAULT_PLAN_MATRICES[PLAN_IDS.BASIC] = DEFAULT_PLAN_MATRICES[PLAN_NAMES.BASIC];
-DEFAULT_PLAN_MATRICES[PLAN_IDS.ADVANCE] = DEFAULT_PLAN_MATRICES[PLAN_NAMES.ADVANCE];
-DEFAULT_PLAN_MATRICES[PLAN_IDS.ENTERPRISE] = DEFAULT_PLAN_MATRICES[PLAN_NAMES.ENTERPRISE];
 
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -192,94 +82,110 @@ export function parsePlanFeatureKeys(rows) {
     return [...new Set(list)];
 }
 
-/**
- * Resolves current company's plan_id and plan_name from session/storage.
- */
 function resolveCurrentPlanMeta() {
     try {
-        const ctx = JSON.parse(localStorage.getItem('appContext') || '{}');
-        const planId = ctx.company?.plan_id || localStorage.getItem('plan_id') || null;
-        const planName = ctx.company?.plan_name || localStorage.getItem('plan_name') || null;
-        const companyId = ctx.company?.id || localStorage.getItem('company_id') || null;
+        const ctx     = JSON.parse(localStorage.getItem('appContext') || '{}');
+        const company = ctx.company || {};
+
+        // plan_id: DB value from auth guard takes priority
+        const planId    = company.plan_id    || localStorage.getItem('plan_id')    || null;
+        // plan_name: DB value takes priority; 'plan' is the legacy key written by the old auth guard
+        const planName  = company.plan_name  || company.plan || localStorage.getItem('plan_name') || null;
+        // company_id: check both keys the auth guard may write
+        const companyId = company.company_id || company.id   || localStorage.getItem('company_id') || null;
 
         return { planId, planName, companyId };
     } catch {
         return {
-            planId: localStorage.getItem('plan_id') || null,
-            planName: localStorage.getItem('plan_name') || null,
+            planId:    localStorage.getItem('plan_id')    || null,
+            planName:  localStorage.getItem('plan_name')  || null,
             companyId: localStorage.getItem('company_id') || null
         };
     }
 }
 
-/**
- * Queries Supabase `public.plan_features` for the plan's single feature row.
- */
-async function fetchPlanFeaturesFromDb(planId) {
-    if (!planId) return null;
+// ─────────────────────────────────────────────────────────────────────────────
+// SECTION 3 — DATABASE FETCHERS
+// All plan data comes exclusively from Supabase — nothing is hardcoded.
+// ─────────────────────────────────────────────────────────────────────────────
 
+/**
+ * Fetches plan_name from public.plans for a given plan_id.
+ * Used to hydrate the plan name when it is missing from appContext.
+ *
+ * @param {string} planId
+ * @returns {Promise<string|null>}
+ */
+async function fetchPlanNameFromDb(planId) {
+    if (!planId) return null;
     try {
         const { data, error } = await supabase
-            .from('plan_features')
-            .select('plan_id, feature_key')
-            .eq('plan_id', planId);
-
+            .from('plans')
+            .select('plan_name')
+            .eq('plan_id', planId)
+            .maybeSingle();
         if (error) {
-            console.warn('[PlanFeaturesManager] Error querying plan_features:', error);
+            console.warn('[PlanFeaturesManager] Error fetching plan name:', error);
             return null;
         }
-
-        return data;
+        return data?.plan_name || null;
     } catch (err) {
-        console.warn('[PlanFeaturesManager] Exception querying plan_features:', err);
+        console.warn('[PlanFeaturesManager] Exception fetching plan name:', err);
         return null;
     }
 }
 
 /**
- * Atomic Single-Row Writer: Saves all feature keys for a plan into a single row.
- * Call this when configuring or creating plans in the admin panel.
+ * Queries Supabase public.plan_features for the plan's feature rows.
+ * The table stores one row per feature (feature_key string).
+ * Returns deduplicated feature key array — or [] if DB query fails.
+ *
+ * @param {string} planId
+ * @returns {Promise<string[]>}
+ */
+async function fetchPlanFeaturesFromDb(planId) {
+    if (!planId) return [];
+    try {
+        const { data, error } = await supabase
+            .from('plan_features')
+            .select('feature_key')
+            .eq('plan_id', planId);
+
+        if (error) {
+            console.warn('[PlanFeaturesManager] Error querying plan_features:', error);
+            return [];
+        }
+        return parsePlanFeatureKeys(data || []);
+    } catch (err) {
+        console.warn('[PlanFeaturesManager] Exception querying plan_features:', err);
+        return [];
+    }
+}
+
+/**
+ * Full sync writer: replaces all feature rows for a plan.
+ * Deletes existing rows then inserts one row per feature key.
+ * This matches the one-row-per-feature schema of public.plan_features.
  *
  * @param {string} planId - UUID of the plan
- * @param {Array<string>} featureKeys - Array of feature keys from FEATURES
+ * @param {string[]} featureKeys - Array of feature key strings
  */
 export async function syncPlanFeaturesToDb(planId, featureKeys) {
     if (!planId) throw new Error('Missing planId');
 
-    const jsonFeatures = JSON.stringify(featureKeys || []);
-
-    // 1. Check if a single row already exists
-    const { data: existingRows } = await supabase
+    // 1. Delete all existing rows for this plan
+    const { error: deleteErr } = await supabase
         .from('plan_features')
-        .select('id')
+        .delete()
         .eq('plan_id', planId);
+    if (deleteErr) throw deleteErr;
 
-    if (existingRows && existingRows.length > 0) {
-        // 2a. Update the primary single row
-        const primaryId = existingRows[0].id;
-        const { error: updateErr } = await supabase
-            .from('plan_features')
-            .eq('id', primaryId)
-            .update({
-                feature_key: jsonFeatures
-            });
-
-        if (updateErr) throw updateErr;
-
-        // Clean up legacy multi-rows if any existed
-        if (existingRows.length > 1) {
-            const extraIds = existingRows.slice(1).map(r => r.id);
-            await supabase.from('plan_features').in('id', extraIds).delete();
-        }
-    } else {
-        // 2b. Insert single row
+    // 2. Insert one row per feature key
+    if (featureKeys && featureKeys.length > 0) {
+        const rows = featureKeys.map(key => ({ plan_id: planId, feature_key: key }));
         const { error: insertErr } = await supabase
             .from('plan_features')
-            .insert({
-                plan_id: planId,
-                feature_key: jsonFeatures
-            });
-
+            .insert(rows);
         if (insertErr) throw insertErr;
     }
 }
@@ -306,42 +212,22 @@ export function evaluatePlanFeature(featureKey, planFeatures = []) {
 
 /**
  * Returns user-friendly metadata for triggering an Upgrade Modal when a feature is locked.
+ * Fully dynamic — no hardcoded tier names, all messaging based on feature key.
  *
  * @param {string} featureKey - Locked feature key
- * @returns {Object} { featureTitle, minimumPlan, upgradeUrl }
+ * @returns {Object} { featureKey, category, upgradeUrl, promptTitle, promptMessage }
  */
 export function getPlanUpgradeMetadata(featureKey) {
-    const marketingFeatures = [
-        FEATURES.MARKETING_OFFERS,
-        FEATURES.MARKETING_COUPONS,
-        FEATURES.MARKETING_MEMBERSHIPS,
-        FEATURES.MARKETING_CAMPAIGNS
-    ];
-    const analyticsFeatures = [
-        FEATURES.REPORTS_ACCESS,
-        FEATURES.REPORTS_CATEGORY,
-        FEATURES.REPORTS_DETAIL,
-        FEATURES.ANALYTICS_EXPENSES
-    ];
-
-    let minimumPlan = PLAN_NAMES.ADVANCE;
-    let category = 'Premium Module';
-
-    if (marketingFeatures.includes(featureKey)) {
-        minimumPlan = PLAN_NAMES.ADVANCE;
-        category = 'Marketing & Growth Suite';
-    } else if (analyticsFeatures.includes(featureKey)) {
-        minimumPlan = PLAN_NAMES.ADVANCE;
-        category = 'Advanced Analytics & Financial Reporting';
-    }
+    const friendlyName = featureKey
+        ? featureKey.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase())
+        : 'This Module';
 
     return {
         featureKey,
-        category,
-        minimumPlan,
-        upgradeUrl: 'plans.html?flow=upgrade',
-        promptTitle: `Upgrade to ${minimumPlan} Plan`,
-        promptMessage: `This module is part of the ${minimumPlan} Plan. Upgrade today to unlock ${category} for your salon.`
+        category:      friendlyName,
+        upgradeUrl:    'plans.html?flow=upgrade',
+        promptTitle:   'Upgrade Your Plan',
+        promptMessage: `${friendlyName} is not included in your current plan. Upgrade to a higher tier to unlock this feature for your salon.`
     };
 }
 
@@ -359,6 +245,7 @@ export function getPlanUpgradeMetadata(featureKey) {
  * @returns {Promise<Object>} Evaluated plan features profile
  */
 export async function getCurrentPlanFeatures(forceRefresh = false) {
+    // 1. Return cached profile if still valid
     if (!forceRefresh) {
         try {
             const rawCache = sessionStorage.getItem(PLAN_CACHE_STORAGE_KEY);
@@ -371,48 +258,41 @@ export async function getCurrentPlanFeatures(forceRefresh = false) {
         } catch { /* Cache read error: fall through */ }
     }
 
-    const { planId, planName, companyId } = resolveCurrentPlanMeta();
-    let features = [];
+    // 2. Resolve plan meta from appContext / localStorage
+    let { planId, planName, companyId } = resolveCurrentPlanMeta();
 
-    // 1. Try querying DB for custom single-row feature assignments
-    if (planId) {
-        const rows = await fetchPlanFeaturesFromDb(planId);
-        if (rows && rows.length > 0) {
-            features = parsePlanFeatureKeys(rows);
-        }
+    // 3. Fetch features from DB — this is the ONLY source of truth; no hardcoded fallback
+    const features = planId ? await fetchPlanFeaturesFromDb(planId) : [];
+
+    // 4. Fetch plan_name from public.plans if still unknown
+    if (!planName && planId) {
+        planName = await fetchPlanNameFromDb(planId);
     }
 
-    // 2. Fallback to default matrix by planId or planName
-    if (features.length === 0) {
-        if (planId && DEFAULT_PLAN_MATRICES[planId]) {
-            features = DEFAULT_PLAN_MATRICES[planId];
-        } else if (planName && DEFAULT_PLAN_MATRICES[planName]) {
-            features = DEFAULT_PLAN_MATRICES[planName];
-        } else {
-            // Default safe fallback to Basic
-            features = DEFAULT_PLAN_MATRICES[PLAN_NAMES.BASIC];
-        }
-    }
+    const resolvedName = planName || 'Unknown Plan';
+    const isEnterprise = resolvedName.toLowerCase().includes('enterprise');
 
     const profile = {
         planId,
-        planName: planName || 'Basic Plan',
+        planName:    resolvedName,
         companyId,
         features,
         featuresSet: new Set(features),
-        isEnterprise: (planName || '').toLowerCase().includes('enterprise')
+        isEnterprise,
+        dbLoaded:    true
     };
 
-    // Cache in sessionStorage
+    // 5. Persist to sessionStorage (Set is not JSON-serializable)
     try {
         sessionStorage.setItem(PLAN_CACHE_STORAGE_KEY, JSON.stringify({
             timestamp: Date.now(),
             profile: {
-                planId: profile.planId,
-                planName: profile.planName,
-                companyId: profile.companyId,
-                features: profile.features,
-                isEnterprise: profile.isEnterprise
+                planId:       profile.planId,
+                planName:     profile.planName,
+                companyId:    profile.companyId,
+                features:     profile.features,
+                isEnterprise: profile.isEnterprise,
+                dbLoaded:     profile.dbLoaded
             }
         }));
     } catch { /* Non-blocking */ }
@@ -422,7 +302,10 @@ export async function getCurrentPlanFeatures(forceRefresh = false) {
 
 /**
  * Synchronous resolver using cached plan features.
- * Ideal for template rendering and click handlers.
+ * Returns cached profile from sessionStorage — never hits the DB.
+ * If cache is absent, returns a safe empty-feature profile.
+ * Does NOT use any hardcoded plan matrices.
+ *
  * @returns {Object} Cached plan profile
  */
 export function getCurrentPlanFeaturesSync() {
@@ -430,19 +313,26 @@ export function getCurrentPlanFeaturesSync() {
         const rawCache = sessionStorage.getItem(PLAN_CACHE_STORAGE_KEY);
         if (rawCache) {
             const parsed = JSON.parse(rawCache);
-            return parsed.profile;
+            if (parsed?.profile) {
+                // Rebuild Set (not JSON-serializable)
+                parsed.profile.featuresSet = new Set(parsed.profile.features || []);
+                return parsed.profile;
+            }
         }
     } catch { /* fall through */ }
 
-    // Fallback: check localStorage for plan_name or default to Basic
-    const planName = localStorage.getItem('plan_name') || PLAN_NAMES.BASIC;
-    const features = DEFAULT_PLAN_MATRICES[planName] || DEFAULT_PLAN_MATRICES[PLAN_NAMES.BASIC];
-
+    // Cache miss — return safe empty profile
+    // The auth guard always calls the async getCurrentPlanFeatures() on cold start,
+    // so this sync path only triggers on subsequent in-page calls.
+    const { planId, planName, companyId } = resolveCurrentPlanMeta();
     return {
-        planId: localStorage.getItem('plan_id') || null,
-        planName,
-        features,
-        isEnterprise: planName.toLowerCase().includes('enterprise')
+        planId:      planId    || null,
+        planName:    planName  || 'Unknown',
+        companyId:   companyId || null,
+        features:    [],
+        featuresSet: new Set(),
+        isEnterprise: false,
+        dbLoaded:    false
     };
 }
 

@@ -600,7 +600,13 @@ export async function runGlobalAuthGuard() {
                 company_name:        company.company_name || '',
                 display_name:        company.display_name || company.company_name || '',
                 logo_url:            company.logo_url || null,
-                plan:                planProfile.planName || company.plan_name || 'Basic',
+                // plan_id and plan_name come directly from the companies DB row.
+                // planProfile.planName is NOT used here — it defaults to 'Basic Plan'
+                // before the DB-driven plan-features-manager has context, which would
+                // overwrite the real DB plan name stored in the companies table.
+                plan_id:             company.plan_id   || null,
+                plan_name:           company.plan_name || null,
+                plan:                company.plan_name || company.plan_id || 'Unknown',
                 subscription_status: subProfile.status || 'active',
                 subscription_type:   subProfile.billingCycle || 'monthly'
             },
@@ -619,8 +625,10 @@ export async function runGlobalAuthGuard() {
         localStorage.setItem('company_id',          resolvedCompanyId);
         localStorage.setItem('active_branch_id',    resolvedBranchId);
         localStorage.setItem('branch_id',           resolvedBranchId);
-        if (userRow.role_id) localStorage.setItem('role_id', userRow.role_id);
-        if (user_id) localStorage.setItem('user_id', user_id);
+        if (company.plan_id)   localStorage.setItem('plan_id',   company.plan_id);
+        if (company.plan_name) localStorage.setItem('plan_name', company.plan_name);
+        if (userRow.role_id)   localStorage.setItem('role_id',   userRow.role_id);
+        if (user_id)           localStorage.setItem('user_id',   user_id);
 
         // 12. Gate 1 UI feedback (attach read-only alert if expired)
         if (subProfile.isExpired || subProfile.accessLevel === 'read-only') {
