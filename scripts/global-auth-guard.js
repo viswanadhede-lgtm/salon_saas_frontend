@@ -629,6 +629,7 @@ export async function runGlobalAuthGuard() {
         localStorage.setItem('active_branch_id',    resolvedBranchId);
         localStorage.setItem('branch_id',           resolvedBranchId);
         if (userRow.role_id) localStorage.setItem('role_id', userRow.role_id);
+        if (userRow.role_name) localStorage.setItem('role_name', userRow.role_name);
         if (user_id) localStorage.setItem('user_id', user_id);
 
         // 12. Gate 1 UI feedback (attach read-only alert if expired)

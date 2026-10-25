@@ -249,7 +249,9 @@ export const SUB_FEATURES_MAP = {
     // =========================================================================
 
     // 1. Dashboard (dashboard.html)
-    [FEATURES.DASHBOARD_ACCESS]: [],
+    [FEATURES.DASHBOARD_ACCESS]: [
+        { key: SUB_FEATURES.DASHBOARD_CREATE_BOOKING, label: 'Create Booking (Quick Action)' }
+    ],
 
     // 2. Bookings (bookings.html)
     [FEATURES.BOOKINGS_MANAGEMENT]: [

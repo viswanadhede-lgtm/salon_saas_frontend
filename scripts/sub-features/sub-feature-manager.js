@@ -22,11 +22,32 @@ export function initSubFeatures() {
 export function hasSubFeature(featureKey) {
     if (!featureKey) return true;
     try {
-        const role = localStorage.getItem('role_name');
-        if (role === 'Owner') return true;
+        const role = (localStorage.getItem('role_name') || '').toLowerCase();
+        if (role === 'owner') return true;
         const ctx = JSON.parse(localStorage.getItem('appContext') || '{}');
-        if (ctx.user?.role_name === 'Owner' || ctx.user?.is_owner) return true;
+        const userRole = (ctx.user?.role_name || ctx.user?.role || '').toLowerCase();
+        if (userRole === 'owner' || ctx.user?.is_owner) return true;
     } catch {}
+
+    // Universal permission bypass
+    try {
+        const userFeats = JSON.parse(localStorage.getItem('userFeatures') || '[]');
+        if (userFeats.includes('ALL')) return true;
+    } catch {}
+
+    // Synchronize userSubFeatures cache from localStorage if empty
+    if (!userSubFeatures || userSubFeatures.length === 0) {
+        try {
+            const saved = localStorage.getItem('userSubFeatures');
+            if (saved) userSubFeatures = JSON.parse(saved);
+        } catch {}
+    }
+
+    // Header New Booking alias: allow if user has create_booking or dashboard_create_booking
+    if (featureKey === 'dashboard_create_booking' && (userSubFeatures.includes('create_booking') || userSubFeatures.includes('dashboard_create_booking'))) {
+        return true;
+    }
+
     return userSubFeatures.includes(featureKey);
 }
 
