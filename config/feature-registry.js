@@ -106,6 +106,9 @@ export const FEATURES = {
     SUPPORT:                             'support',                         // 42. support.html
     ISSUE_HISTORY:                       'issue_history',                   // 43. issue-history.html
     USER_GUIDE:                          'user_guide',                      // 44. user_guide.html
+
+    // ── BILLING ───────────────────────────────────────────────────────────────
+    MANAGE_ADDONS:                       'manage_addons',                   // 45. manage-addons.html
 };
 
 
@@ -170,4 +173,7 @@ export const MODULES_META = [
     { key: FEATURES.SUPPORT,                        label: 'Support',                             icon: 'help-circle'  },
     { key: FEATURES.ISSUE_HISTORY,                  label: 'Issue History',                       icon: 'alert-circle' },
     { key: FEATURES.USER_GUIDE,                     label: 'User Guide',                          icon: 'book-open'    },
+
+    // Billing Sub-Pages
+    { key: FEATURES.MANAGE_ADDONS,                  label: 'Manage Add-ons',                      icon: 'sliders'      },
 ];

@@ -927,6 +927,26 @@
 
 // Direct supabase insert - one row insert only. just like notifications table write.
 
+// ==============================================================================================================================
+//  MANAGE ADD-ONS (manage-addons.html)
+// ==============================================================================================================================
+
+// 1. Available Add-ons Catalog:
+//    Direct Supabase read from the ADD_ONS table (where status = 'active').
+//
+// 2. Active Subscription & Active Add-ons:
+//    - Subscriptions read from the SUBSCRIPTIONS table.
+//    - Active Add-ons read from SUBSCRIPTION_ADD_ONS table (where status in ('active', 'cancelling')).
+//
+// 3. Save Changes (Cancellations & Reactivations):
+//    - Removals: Direct Supabase update on SUBSCRIPTION_ADD_ONS table (sets status = 'cancelling'). No payment gateway required.
+//    - Reactivations: Direct Supabase update on SUBSCRIPTION_ADD_ONS table (sets status = 'active'). No payment gateway required.
+//
+// 4. New Add-on Purchase (Razorpay Checkout):
+//    - Step 1: Calls `purchase-addon` Supabase Edge Function (`action: 'create_order'`) to generate Razorpay Order.
+//    - Step 2: Opens standard Razorpay Checkout modal.
+//    - Step 3: On payment success, calls `purchase-addon` Edge Function (`action: 'verify_payment'`) to verify signature and insert active record into SUBSCRIPTION_ADD_ONS table.
+
 
             
 //=======================================================================================================================================================================================
@@ -979,7 +999,7 @@
 
            // GROUP A - CORE LEVEL FEATURE PAGES - Total 22 HTML PAGES - these are the pages present in the SIDE BAR
         
-           // GROUP B - SUB LEVEL FEATURE PAGES - Total 22 HTML PAGES - These are the sub - pages that are not the direct pages but are accessed from the SIDE BAR Pages.
+           // GROUP B - SUB LEVEL FEATURE PAGES - Total 23 HTML PAGES - These are the sub - pages that are not the direct pages but are accessed from the SIDE BAR Pages.
        
 
 // CONFIG FILE 2:- SUB FEATURE REGISTRY 

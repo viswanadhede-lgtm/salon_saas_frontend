@@ -110,9 +110,8 @@ const ROUTE_MAP = {
     '/users.html':                      FEATURES.USER_MANAGEMENT,                  // 20. users.html
     '/roles-permissions.html':          FEATURES.ROLES_PERMISSIONS,                // 21. roles-permissions.html
     '/billing-subscription.html':       FEATURES.BILLING_SUBSCRIPTION_MANAGEMENT,  // 22. billing-subscription.html
-    '/manage-addons.html':              FEATURES.BILLING_SUBSCRIPTION_MANAGEMENT,  // 22a. manage-addons.html (Dedicated Page)
 
-    // ── Group B: Supporting Features (22 Sub-Pages) ──────────────────────────
+    // ── Group B: Supporting Features (23 Sub-Pages) ──────────────────────────
     // Dashboard widgets
     '/todays-revenue.html':             FEATURES.DASHBOARD_TODAYS_REVENUE,         // 23. todays-revenue.html
     '/upcoming-appointments.html':      FEATURES.DASHBOARD_UPCOMING_APPOINTMENTS,  // 24. upcoming-appointments.html
@@ -142,7 +141,10 @@ const ROUTE_MAP = {
     '/support.html':                    FEATURES.SUPPORT,                          // 42. support.html
     '/issue-history.html':              FEATURES.ISSUE_HISTORY,                    // 43. issue-history.html
     '/user_guide.html':                 FEATURES.USER_GUIDE,                       // 44. user_guide.html
-    '/user-guide.html':                 FEATURES.USER_GUIDE                        // 44 (alias)
+    '/user-guide.html':                 FEATURES.USER_GUIDE,                       // 44 (alias)
+
+    // Billing sub-pages
+    '/manage-addons.html':              FEATURES.MANAGE_ADDONS                     // 45. manage-addons.html
 };
 
 // Granular sub-route action map for nested settings

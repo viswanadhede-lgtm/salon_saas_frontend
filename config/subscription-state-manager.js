@@ -97,7 +97,8 @@ export const READ_ACCESS_FEATURES = {
         FEATURES.NOTIFICATIONS,                        // 41. notifications.html
         FEATURES.SUPPORT,                              // 42. support.html
         FEATURES.ISSUE_HISTORY,                        // 43. issue-history.html
-        FEATURES.USER_GUIDE                            // 44. user_guide.html
+        FEATURES.USER_GUIDE,                           // 44. user_guide.html
+        FEATURES.MANAGE_ADDONS                         // 45. manage-addons.html
     ],
 
     // Specific actions explicitly allowed even in read-only / expired mode (e.g. renewal & support)

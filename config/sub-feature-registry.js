@@ -231,6 +231,9 @@ export const SUB_FEATURES = {
     // ── Page 44: User Guide (user_guide.html) ────────────────────────────────
     // (View-only documentation manual — no granular action keys)
 
+    // ── Page 45: Manage Add-ons (manage-addons.html) ──────────────────────────
+    // Uses SUB_FEATURES.BILLING_MANAGE_ADDONS
+
 };
 
 
@@ -510,5 +513,11 @@ export const SUB_FEATURES_MAP = {
 
     // 44. User Guide (user_guide.html)
     [FEATURES.USER_GUIDE]: [],
+
+    // ── BILLING SUB-PAGES ─────────────────────────────────────────────────────
+    // 45. Manage Add-ons (manage-addons.html)
+    [FEATURES.MANAGE_ADDONS]: [
+        { key: SUB_FEATURES.BILLING_MANAGE_ADDONS,         label: 'Manage Add-ons' }
+    ],
 
 };
