@@ -1,4 +1,4 @@
-﻿// billing-subscription.js — Thin Orchestrator (IIFE with dynamic imports)
+// billing-subscription.js — Thin Orchestrator (IIFE with dynamic imports)
 // BharathBots Salon Management SaaS
 //
 // Modularized from monolith (2,513 lines) into:
@@ -133,6 +133,7 @@
             // Modal: Manage Add-ons
             modalManageAddons: document.getElementById('modalManageAddons'),
             modalManageAddonsList: document.getElementById('modalManageAddonsList'),
+            modalManageAddonsChanges: document.getElementById('modalManageAddonsChanges'),
             modalManageAddonsSummary: document.getElementById('modalManageAddonsSummary'),
             btnCancelManageAddons: document.getElementById('btnCancelManageAddons'),
             btnSaveManageAddons: document.getElementById('btnSaveManageAddons'),

@@ -392,9 +392,9 @@
         </div>
     </div>
 
-    <!-- Modal 2: Manage Add-ons Modal (Two-Column Layout) -->
+    <!-- Modal 2: Manage Add-ons Modal (Three-Column Layout) -->
     <div class="billing-modal-overlay" id="modalManageAddons">
-        <div class="billing-modal-box billing-modal-box--two-col">
+        <div class="billing-modal-box billing-modal-box--two-col billing-modal-box--three-col">
             <div class="billing-modal-header">
                 <div>
                     <h3 class="billing-modal-title">Manage Add-ons</h3>
@@ -405,7 +405,7 @@
                 <button type="button" class="billing-modal-close" id="btnCloseManageAddons" title="Close"><i data-feather="x"></i></button>
             </div>
             <div class="billing-modal-body manage-addons-modal-body">
-                <!-- Left Column: Available Add-ons -->
+                <!-- Column 1: Available Add-ons -->
                 <div class="manage-addons-col manage-addons-col--left">
                     <div class="manage-addons-section-heading">AVAILABLE ADD-ONS</div>
                     <div class="manage-addons-selection-list" id="modalManageAddonsList">
@@ -413,12 +413,23 @@
                     </div>
                 </div>
 
-                <!-- Vertical Divider -->
+                <!-- Vertical Divider 1 -->
                 <div class="manage-addons-vdivider"></div>
 
-                <!-- Right Column: Billing Changes -->
+                <!-- Column 2: New Additions & Removals -->
+                <div class="manage-addons-col manage-addons-col--mid">
+                    <div class="manage-addons-section-heading">CHANGES</div>
+                    <div class="manage-addons-changes-content" id="modalManageAddonsChanges">
+                        <!-- Populated dynamically by JS -->
+                    </div>
+                </div>
+
+                <!-- Vertical Divider 2 -->
+                <div class="manage-addons-vdivider"></div>
+
+                <!-- Column 3: Billing Summary -->
                 <div class="manage-addons-col manage-addons-col--right">
-                    <div class="manage-addons-section-heading">BILLING CHANGES</div>
+                    <div class="manage-addons-section-heading">BILLING SUMMARY</div>
                     <div class="manage-addons-summary-content" id="modalManageAddonsSummary">
                         <!-- Populated dynamically by JS -->
                     </div>
