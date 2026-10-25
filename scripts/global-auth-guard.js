@@ -477,6 +477,10 @@ export async function runGlobalAuthGuard() {
 
         const company = compRows?.[0] || {};
 
+        // Store plan_id immediately so resolvePlanFeatures can resolve it via localStorage
+        if (company.plan_id) localStorage.setItem('plan_id', company.plan_id);
+        if (company.plan_name) localStorage.setItem('plan_name', company.plan_name);
+
         // 5. EVALUATE GATE 1: Subscription Lifecycle via SubscriptionStateManager
         const subProfile = await getSubscriptionAccess(true);
 
@@ -484,6 +488,7 @@ export async function runGlobalAuthGuard() {
         const planProfile = await resolvePlanFeatures(true);
 
         if (!isFeatureUnlocked(featureKey, planProfile)) {
+            removeAuthSpinner();
             showPlanUpgradeModal(featureKey);
             return;
         }
@@ -492,6 +497,7 @@ export async function runGlobalAuthGuard() {
         const rbacProfile = await getUserRoleAndPermissions(true);
 
         if (!hasRolePermission(featureKey, rbacProfile)) {
+            removeAuthSpinner();
             showAuthBlockModal('FEATURE_NOT_ALLOWED',
                 "You do not have permission to access this page. Please contact your salon administrator.",
                 'Go to Dashboard', 'dashboard.html');
@@ -501,6 +507,7 @@ export async function runGlobalAuthGuard() {
         // Sub-route check (nested settings pages)
         const requiredSubFeature = SUB_ROUTE_MAP[filename];
         if (requiredSubFeature && !hasRolePermission(requiredSubFeature, rbacProfile)) {
+            removeAuthSpinner();
             showAuthBlockModal('FEATURE_NOT_ALLOWED',
                 "Your role does not have permission to access this settings section.",
                 'Back to Settings', 'company.html');
@@ -600,6 +607,8 @@ export async function runGlobalAuthGuard() {
                 company_name:        company.company_name || '',
                 display_name:        company.display_name || company.company_name || '',
                 logo_url:            company.logo_url || null,
+                plan_id:             company.plan_id || null,
+                plan_name:           planProfile.planName || company.plan_name || null,
                 plan:                planProfile.planName || company.plan_name || 'Basic',
                 subscription_status: subProfile.status || 'active',
                 subscription_type:   subProfile.billingCycle || 'monthly'
