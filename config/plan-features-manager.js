@@ -207,10 +207,6 @@ export function getPlanUpgradeMetadata(featureKey) {
         FEATURES.REPORTS_DETAIL,
         FEATURES.ANALYTICS_EXPENSES
     ];
-    const integrationsFeatures = [
-        FEATURES.INTEGRATIONS_WEBSITE_BOOKING,
-        FEATURES.INTEGRATIONS_WHATSAPP
-    ];
 
     let minimumPlan = 'Advance';
     let category = 'Premium Module';
@@ -228,12 +224,6 @@ export function getPlanUpgradeMetadata(featureKey) {
         category = 'Advanced Analytics & Financial Reporting';
         promptTitle = `Upgrade to ${minimumPlan} Plan`;
         promptMessage = `This module is part of the ${minimumPlan} Plan. Upgrade today to unlock ${category} for your salon.`;
-    } else if (integrationsFeatures.includes(featureKey)) {
-        minimumPlan = 'Add-on';
-        category = 'Integrations & Add-on Suite';
-        upgradeUrl = 'billing-subscription.html';
-        promptTitle = 'Add-on Module';
-        promptMessage = `This integration is available as an add-on module. Visit Billing & Subscriptions to manage your add-on integrations.`;
     }
 
     return {
@@ -345,14 +335,6 @@ export function getCurrentPlanFeaturesSync() {
 export function isFeatureUnlocked(featureKey, optionalProfile = null) {
     const profile = optionalProfile || getCurrentPlanFeaturesSync();
     if (profile.isEnterprise) return true;
-
-    // Planned add-on preview scaffolding pages remain viewable across active plans
-    if (
-        featureKey === FEATURES.INTEGRATIONS_WEBSITE_BOOKING ||
-        featureKey === FEATURES.INTEGRATIONS_WHATSAPP
-    ) {
-        return true;
-    }
 
     return evaluatePlanFeature(featureKey, profile.features);
 }
