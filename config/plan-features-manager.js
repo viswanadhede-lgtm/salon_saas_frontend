@@ -136,12 +136,15 @@ async function fetchPlanNameFromDb(planId) {
 }
 
 /**
- * Queries Supabase public.plan_features for the plan's feature rows.
- * The table stores one row per feature (feature_key string).
- * Returns deduplicated feature key array — or [] if DB query fails.
+ * Queries public.plan_features for the plan's single row.
+ * The table stores ONE ROW per plan, where feature_key holds a
+ * JSON-stringified array of all feature keys e.g.:
+ *   ["dashboard_access","bookings_management", ...]
+ *
+ * parsePlanFeatureKeys() handles the JSON array parsing.
  *
  * @param {string} planId
- * @returns {Promise<string[]>}
+ * @returns {Promise<string[]>} Flat deduplicated array of feature key strings
  */
 async function fetchPlanFeaturesFromDb(planId) {
     if (!planId) return [];
@@ -163,30 +166,41 @@ async function fetchPlanFeaturesFromDb(planId) {
 }
 
 /**
- * Full sync writer: replaces all feature rows for a plan.
- * Deletes existing rows then inserts one row per feature key.
- * This matches the one-row-per-feature schema of public.plan_features.
+ * Single-row upsert writer: stores all feature keys for a plan as a
+ * JSON-stringified array in the feature_key column (one row per plan).
  *
- * @param {string} planId - UUID of the plan
+ * DB schema: plan_features(plan_id, feature_key)
+ *   - plan_id    → UUID (unique per plan)
+ *   - feature_key → TEXT containing JSON array e.g. '["dashboard_access",...]'
+ *
+ * @param {string}   planId     - UUID of the plan
  * @param {string[]} featureKeys - Array of feature key strings
  */
 export async function syncPlanFeaturesToDb(planId, featureKeys) {
     if (!planId) throw new Error('Missing planId');
 
-    // 1. Delete all existing rows for this plan
-    const { error: deleteErr } = await supabase
-        .from('plan_features')
-        .delete()
-        .eq('plan_id', planId);
-    if (deleteErr) throw deleteErr;
+    const jsonValue = JSON.stringify(featureKeys || []);
 
-    // 2. Insert one row per feature key
-    if (featureKeys && featureKeys.length > 0) {
-        const rows = featureKeys.map(key => ({ plan_id: planId, feature_key: key }));
-        const { error: insertErr } = await supabase
+    // Check if a row already exists for this plan
+    const { data: existing } = await supabase
+        .from('plan_features')
+        .select('id')
+        .eq('plan_id', planId)
+        .maybeSingle();
+
+    if (existing?.id) {
+        // Update the existing single row
+        const { error } = await supabase
             .from('plan_features')
-            .insert(rows);
-        if (insertErr) throw insertErr;
+            .update({ feature_key: jsonValue })
+            .eq('id', existing.id);
+        if (error) throw error;
+    } else {
+        // Insert a new single row
+        const { error } = await supabase
+            .from('plan_features')
+            .insert({ plan_id: planId, feature_key: jsonValue });
+        if (error) throw error;
     }
 }
 
