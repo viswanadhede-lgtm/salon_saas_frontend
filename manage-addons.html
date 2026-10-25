@@ -1,0 +1,187 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <script src="scripts/auth-loader.js"></script>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Manage your salon add-ons, features, and subscriptions on BharathBots.">
+    <title>Manage Add-ons - BharathBots</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="styles.css">
+    <link rel="stylesheet" href="dashboard.css">
+    <link rel="stylesheet" href="submenu.css">
+    <link rel="stylesheet" href="styles/global-layout.css">
+    <link rel="stylesheet" href="billing-subscription.css">
+    <link rel="stylesheet" href="manage-addons.css">
+    <!-- Feather Icons -->
+    <script src="https://unpkg.com/feather-icons"></script>
+</head>
+
+<body class="dashboard-body" style="min-height: calc(100vh / 0.93);">
+
+    <!-- Global Sidebar Shell Placeholder -->
+    <div id="global-sidebar"></div>
+
+    <!-- Main Content Wrapper -->
+    <div class="main-wrapper" id="mainWrapper">
+
+        <!-- Global Header Shell Placeholder -->
+        <div id="global-header"></div>
+
+        <!-- Page Content Area -->
+        <main class="content-area" style="display: flex; flex-direction: column; gap: 0.5rem;">
+
+            <!-- 1st Row: Back Link matching reports style -->
+            <a href="billing-subscription.html" class="back-link" id="billingBackLink">
+                <i data-feather="arrow-left"></i>
+                <span>Go to Billing &amp; Subscriptions</span>
+            </a>
+
+            <!-- 2nd Row: Title & Subtitle -->
+            <div class="content-header">
+                <div class="header-title">
+                    <h1>Manage Add-ons</h1>
+                    <p class="subtitle">Review, activate, or cancel additional tools and modules for your salon.</p>
+                </div>
+            </div>
+
+            <!-- 3rd Row: Three-Column Dedicated Grid -->
+            <div class="manage-addons-page-grid">
+
+                <!-- Column 1: Available Add-ons Catalog -->
+                <div class="addons-page-col" id="colAvailable">
+                    <div class="col-header">
+                        <div>
+                            <h2 class="col-header-title">
+                                <i data-feather="grid"></i>
+                                <span>AVAILABLE ADD-ONS</span>
+                            </h2>
+                            <p class="col-header-desc">Select the tools and modules to include</p>
+                        </div>
+                        <span class="col-badge" id="pageAvailableCountBadge" style="background: #e0f2fe; color: #0369a1;">Loading...</span>
+                    </div>
+
+                    <div class="page-addons-list" id="pageManageAddonsList">
+                        <div style="padding: 3rem 1rem; text-align: center; color: #94a3b8;">
+                            Loading add-ons catalog...
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Column 2: Pending Changes -->
+                <div class="addons-page-col" id="colChanges">
+                    <div class="col-header">
+                        <div>
+                            <h2 class="col-header-title">
+                                <i data-feather="repeat"></i>
+                                <span>CHANGES</span>
+                            </h2>
+                            <p class="col-header-desc">Modifications scheduled for your account</p>
+                        </div>
+                    </div>
+
+                    <div class="page-changes-container" id="pageManageAddonsChanges">
+                        <div style="padding: 3rem 1rem; text-align: center; color: #94a3b8;">
+                            Analyzing subscription changes...
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Column 3: Billing & Payment Summary -->
+                <div class="addons-page-col addons-page-col--sticky" id="colSummary">
+                    <div class="col-header">
+                        <div>
+                            <h2 class="col-header-title">
+                                <i data-feather="credit-card"></i>
+                                <span>BILLING SUMMARY</span>
+                            </h2>
+                            <p class="col-header-desc">Financial impact &amp; action</p>
+                        </div>
+                    </div>
+
+                    <div class="page-summary-container" id="pageManageAddonsSummary">
+                        <div style="padding: 3rem 1rem; text-align: center; color: #94a3b8;">
+                            Calculating billing summary...
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+
+        </main>
+    </div>
+
+    <!-- Duration Selection & Payment Checkout Modal -->
+    <div class="billing-modal-overlay" id="modalAddAddon">
+        <div class="billing-modal-box">
+            <div class="billing-modal-header">
+                <h3 class="billing-modal-title" id="addAddonModalTitle">Add Add-on?</h3>
+                <button type="button" class="billing-modal-close" data-close-modal title="Close"><i data-feather="x"></i></button>
+            </div>
+            <div class="billing-modal-body">
+                <div class="modal-callout-box">
+                    <p style="margin: 0; font-weight: 600; font-size: 1.05rem; color: var(--text-primary);" id="addAddonModalPrice">—</p>
+                    <p style="margin: 4px 0 0 0; font-size: 0.84rem; color: var(--text-muted);" id="addAddonModalDesc">—</p>
+                </div>
+
+                <!-- Duration / Billing Cycle Selector -->
+                <div style="margin: 1.25rem 0 0.5rem 0;">
+                    <label style="display: block; font-size: 0.82rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.04em; color: var(--text-secondary); margin-bottom: 0.5rem;">
+                        Select Duration
+                    </label>
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;" id="addonDurationGroup">
+                        <label class="addon-cycle-pill is-selected" id="pillDurationMonthly" style="display: flex; flex-direction: column; padding: 12px 14px; border: 1.5px solid var(--primary, #0ea5e9); border-radius: 8px; cursor: pointer; background: rgba(14, 165, 233, 0.06); transition: all 0.2s;">
+                            <div style="display: flex; justify-content: space-between; align-items: center;">
+                                <span style="font-weight: 600; font-size: 0.88rem; color: var(--text-primary);">Monthly</span>
+                                <input type="radio" name="addonCycleSelect" value="monthly" checked style="accent-color: var(--primary, #0ea5e9);">
+                            </div>
+                            <span style="font-size: 0.95rem; font-weight: 700; margin-top: 4px; color: var(--text-primary);" id="addonMonthlyPriceText">—</span>
+                            <span style="font-size: 0.75rem; color: var(--text-muted); margin-top: 2px;">30 days access</span>
+                        </label>
+                        <label class="addon-cycle-pill" id="pillDurationYearly" style="display: flex; flex-direction: column; padding: 12px 14px; border: 1.5px solid var(--border-color, #e2e8f0); border-radius: 8px; cursor: pointer; background: #ffffff; transition: all 0.2s;">
+                            <div style="display: flex; justify-content: space-between; align-items: center;">
+                                <span style="font-weight: 600; font-size: 0.88rem; color: var(--text-primary);">Yearly</span>
+                                <input type="radio" name="addonCycleSelect" value="yearly" style="accent-color: var(--primary, #0ea5e9);">
+                            </div>
+                            <span style="font-size: 0.95rem; font-weight: 700; margin-top: 4px; color: var(--text-primary);" id="addonYearlyPriceText">—</span>
+                            <span style="font-size: 0.75rem; color: var(--text-muted); margin-top: 2px;">365 days access</span>
+                        </label>
+                    </div>
+                </div>
+
+                <div style="margin-top: 0.85rem; display: flex; align-items: center; gap: 8px; font-size: 0.82rem; color: var(--text-muted);">
+                    <i data-feather="shield" style="width: 14px; height: 14px; color: #10b981;"></i>
+                    <span>Secure instant activation via Razorpay.</span>
+                </div>
+            </div>
+            <div class="billing-modal-footer">
+                <button type="button" class="btn-plain btn-plain-secondary" data-close-modal>Cancel</button>
+                <button type="button" class="btn-plain btn-plain-primary" id="btnConfirmAddAddon">Proceed to Payment</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Toast Notification -->
+    <div class="billing-toast" id="billingToast">
+        <i data-feather="check"></i>
+        <span id="billingToastMsg">Action completed successfully.</span>
+    </div>
+
+    <!-- Razorpay Checkout SDK -->
+    <script src="https://checkout.razorpay.com/v1/checkout.js"></script>
+
+    <!-- App Shell & Auth Modules -->
+    <script type="module" src="scripts/app-shell.js"></script>
+    <script src="logout.js"></script>
+    <script src="change-password.js"></script>
+    <script type="module" src="scripts/global-auth-guard.js"></script>
+    <script type="module" src="scripts/sub-features/sub-feature-gate.js"></script>
+
+    <!-- Dedicated Manage Add-ons Page Controller -->
+    <script type="module" src="scripts/billing/manage-addons-page.js"></script>
+</body>
+
+</html>

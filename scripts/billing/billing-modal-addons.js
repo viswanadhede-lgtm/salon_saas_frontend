@@ -603,6 +603,8 @@ export function bindManageAddonsEvents() {
 
     const btnManageAddonsBottom = document.getElementById('btnManageAddonsBottom');
     if (btnManageAddonsBottom) {
-        btnManageAddonsBottom.onclick = openManageAddonsModal;
+        btnManageAddonsBottom.onclick = () => {
+            window.location.href = 'manage-addons.html';
+        };
     }
 }

@@ -110,6 +110,7 @@ const ROUTE_MAP = {
     '/users.html':                      FEATURES.USER_MANAGEMENT,                  // 20. users.html
     '/roles-permissions.html':          FEATURES.ROLES_PERMISSIONS,                // 21. roles-permissions.html
     '/billing-subscription.html':       FEATURES.BILLING_SUBSCRIPTION_MANAGEMENT,  // 22. billing-subscription.html
+    '/manage-addons.html':              FEATURES.BILLING_SUBSCRIPTION_MANAGEMENT,  // 22a. manage-addons.html (Dedicated Page)
 
     // ── Group B: Supporting Features (22 Sub-Pages) ──────────────────────────
     // Dashboard widgets

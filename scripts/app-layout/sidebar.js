@@ -66,6 +66,7 @@ export const ROUTE_NAV_MAP = {
     'users.html':                   { route: 'settings', subroute: 'users' },
     'roles-permissions.html':       { route: 'settings', subroute: 'roles-permissions' },
     'billing-subscription.html':    { route: 'settings', subroute: 'billing-subscription' },
+    'manage-addons.html':           { route: 'settings', subroute: 'billing-subscription' },
     'branches.html':                { route: 'settings', subroute: 'company' },
     'support.html':                 { route: 'settings', subroute: null },
     'issue-history.html':           { route: 'settings', subroute: null },
