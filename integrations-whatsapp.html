@@ -14,238 +14,206 @@
     <link rel="stylesheet" href="dashboard.css">
     <link rel="stylesheet" href="submenu.css">
     <link rel="stylesheet" href="styles/global-layout.css">
-    <!-- Feather Icons -->
     <script src="https://unpkg.com/feather-icons"></script>
     <style>
-        .integration-scaffold-container {
-            max-width: 1040px;
+        .addon-page-content {
+            max-width: 720px;
             margin: 0 auto;
             display: flex;
             flex-direction: column;
-            gap: 24px;
-        }
-
-        .integration-hero-card {
-            background: #ffffff;
-            border: 1px solid #e2e8f0;
-            border-radius: 16px;
-            padding: 40px 36px;
-            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.04), 0 2px 4px -2px rgba(0, 0, 0, 0.03);
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            text-align: center;
-            position: relative;
-            overflow: hidden;
-        }
-
-        .integration-hero-card::before {
-            content: '';
-            position: absolute;
-            top: 0;
-            left: 0;
-            right: 0;
-            height: 4px;
-            background: linear-gradient(90deg, #10b981 0%, #059669 100%);
-        }
-
-        .integration-hero-icon-wrap {
-            width: 72px;
-            height: 72px;
-            border-radius: 20px;
-            background: #ecfdf5;
-            color: #059669;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            margin-bottom: 20px;
-            box-shadow: 0 4px 12px rgba(16, 185, 129, 0.15);
-        }
-
-        .integration-badge-row {
-            display: flex;
-            align-items: center;
-            gap: 8px;
-            margin-bottom: 12px;
-        }
-
-        .badge-status {
-            display: inline-flex;
-            align-items: center;
-            gap: 6px;
-            font-size: 0.75rem;
-            font-weight: 600;
-            text-transform: uppercase;
-            letter-spacing: 0.05em;
-            padding: 4px 12px;
-            border-radius: 9999px;
-            background: #fef3c7;
-            color: #92400e;
-            border: 1px solid #fde68a;
-        }
-
-        .badge-addon-tier {
-            display: inline-flex;
-            align-items: center;
-            gap: 6px;
-            font-size: 0.75rem;
-            font-weight: 600;
-            text-transform: uppercase;
-            letter-spacing: 0.05em;
-            padding: 4px 12px;
-            border-radius: 9999px;
-            background: #f1f5f9;
-            color: #475569;
-            border: 1px solid #e2e8f0;
-        }
-
-        .integration-hero-title {
-            font-size: 1.85rem;
-            font-weight: 700;
-            color: #0f172a;
-            margin: 0 0 10px 0;
-            font-family: 'Inter', system-ui, sans-serif;
-        }
-
-        .integration-hero-desc {
-            font-size: 1.05rem;
-            color: #64748b;
-            max-width: 680px;
-            margin: 0 auto 28px auto;
-            line-height: 1.6;
-        }
-
-        .features-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(230px, 1fr));
-            gap: 20px;
-            width: 100%;
-            text-align: left;
-            margin-top: 12px;
-        }
-
-        .feature-card {
-            background: #f8fafc;
-            border: 1px solid #e2e8f0;
-            border-radius: 12px;
-            padding: 22px 20px;
-            transition: all 0.2s ease;
-            display: flex;
-            flex-direction: column;
-            gap: 10px;
-        }
-
-        .feature-card:hover {
-            background: #ffffff;
-            border-color: #cbd5e1;
-            transform: translateY(-2px);
-            box-shadow: 0 6px 16px rgba(0, 0, 0, 0.05);
-        }
-
-        .feature-icon-circle {
-            width: 40px;
-            height: 40px;
-            border-radius: 10px;
-            background: #ffffff;
-            border: 1px solid #e2e8f0;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            color: #059669;
-            box-shadow: 0 1px 3px rgba(0,0,0,0.04);
-        }
-
-        .feature-card-title {
-            font-size: 0.95rem;
-            font-weight: 600;
-            color: #1e293b;
-            margin: 0;
-        }
-
-        .feature-card-desc {
-            font-size: 0.84rem;
-            color: #64748b;
-            line-height: 1.5;
-            margin: 0;
-        }
-
-        .integration-notice-card {
-            background: #ffffff;
-            border: 1px solid #e2e8f0;
-            border-radius: 12px;
-            padding: 24px 28px;
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            gap: 20px;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.02);
-        }
-
-        .notice-left {
-            display: flex;
-            align-items: center;
             gap: 16px;
         }
 
-        .notice-icon-circle {
-            width: 44px;
-            height: 44px;
-            border-radius: 50%;
-            background: #eff6ff;
-            color: #2563eb;
+        /* ── Main card ── */
+        .addon-card {
+            background: #ffffff;
+            border: 1px solid #e2e8f0;
+            border-radius: 12px;
+            overflow: hidden;
+        }
+
+        /* ── Card header ── */
+        .addon-card-header {
+            padding: 20px 24px;
+            display: flex;
+            align-items: flex-start;
+            justify-content: space-between;
+            gap: 16px;
+        }
+
+        .addon-header-left {
+            display: flex;
+            align-items: center;
+            gap: 14px;
+        }
+
+        .addon-icon-wrap {
+            width: 52px;
+            height: 52px;
+            border-radius: 14px;
+            background: #25D366;
             display: flex;
             align-items: center;
             justify-content: center;
             flex-shrink: 0;
         }
 
-        .notice-title {
-            font-size: 0.95rem;
-            font-weight: 600;
-            color: #0f172a;
-            margin: 0 0 4px 0;
+        .addon-icon-wrap svg {
+            width: 28px;
+            height: 28px;
+            color: #ffffff;
+            stroke: #ffffff;
         }
 
-        .notice-subtitle {
+        .addon-header-text h1 {
+            font-size: 1.1rem;
+            font-weight: 700;
+            color: #0f172a;
+            margin: 0 0 3px 0;
+            font-family: 'Inter', sans-serif;
+            line-height: 1.3;
+        }
+
+        .addon-header-text p {
             font-size: 0.84rem;
             color: #64748b;
             margin: 0;
         }
 
-        .notice-btn {
+        .addon-badge {
             display: inline-flex;
             align-items: center;
-            gap: 8px;
-            padding: 9px 18px;
-            border-radius: 8px;
-            font-size: 0.86rem;
+            padding: 4px 12px;
+            border-radius: 6px;
+            font-size: 0.75rem;
+            font-weight: 500;
+            color: #475569;
+            background: #f1f5f9;
+            border: 1px solid #e2e8f0;
+            white-space: nowrap;
+            flex-shrink: 0;
+        }
+
+        /* ── Description ── */
+        .addon-description {
+            padding: 0 24px 20px 24px;
+            font-size: 0.9rem;
+            color: #374151;
+            line-height: 1.6;
+            border-bottom: 1px solid #f1f5f9;
+            margin: 0;
+        }
+
+        /* ── Feature list ── */
+        .addon-features {
+            padding: 20px 24px;
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+            border-bottom: 1px solid #f1f5f9;
+        }
+
+        .addon-feature-item {
+            display: flex;
+            align-items: flex-start;
+            gap: 12px;
+        }
+
+        .addon-feature-check {
+            width: 20px;
+            height: 20px;
+            color: #16a34a;
+            flex-shrink: 0;
+            margin-top: 1px;
+        }
+
+        .addon-feature-text h3 {
+            font-size: 0.9rem;
             font-weight: 600;
-            color: #059669;
-            background: #ecfdf5;
-            border: 1px solid #a7f3d0;
+            color: #1e293b;
+            margin: 0 0 3px 0;
+        }
+
+        .addon-feature-text p {
+            font-size: 0.82rem;
+            color: #64748b;
+            margin: 0;
+            line-height: 1.5;
+        }
+
+        /* ── Pricing footer ── */
+        .addon-pricing-footer {
+            padding: 20px 24px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 20px;
+        }
+
+        .addon-pricing-left {
+            display: flex;
+            flex-direction: column;
+            gap: 2px;
+        }
+
+        .addon-pricing-label {
+            font-size: 0.78rem;
+            color: #94a3b8;
+            font-weight: 500;
+            letter-spacing: 0.01em;
+        }
+
+        .addon-pricing-amount {
+            font-size: 1.4rem;
+            font-weight: 700;
+            color: #0f172a;
+            line-height: 1.2;
+        }
+
+        .addon-pricing-note {
+            font-size: 0.75rem;
+            color: #94a3b8;
+            margin-top: 4px;
+        }
+
+        .addon-subscribe-btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            padding: 10px 20px;
+            border-radius: 8px;
+            font-size: 0.875rem;
+            font-weight: 600;
+            color: #374151;
+            background: #f8fafc;
+            border: 1px solid #e2e8f0;
             text-decoration: none;
             cursor: pointer;
-            transition: all 0.2s ease;
+            transition: all 0.15s ease;
             white-space: nowrap;
+            flex-shrink: 0;
         }
 
-        .notice-btn:hover {
-            background: #d1fae5;
-            color: #047857;
+        .addon-subscribe-btn:hover {
+            background: #f1f5f9;
+            border-color: #cbd5e1;
+            color: #1e293b;
         }
 
-        @media (max-width: 768px) {
-            .integration-hero-card {
-                padding: 28px 20px;
-            }
-            .features-grid {
-                grid-template-columns: 1fr;
-            }
-            .integration-notice-card {
+        /* ── Disclaimer ── */
+        .addon-disclaimer {
+            font-size: 0.75rem;
+            color: #94a3b8;
+            padding: 0 24px 16px 24px;
+            border-top: none;
+        }
+
+        @media (max-width: 640px) {
+            .addon-pricing-footer {
                 flex-direction: column;
                 align-items: flex-start;
             }
-            .notice-btn {
+            .addon-subscribe-btn {
                 width: 100%;
                 justify-content: center;
             }
@@ -255,110 +223,89 @@
 
 <body class="dashboard-body" style="min-height: calc(100vh / 0.93);">
 
-    <!-- Global Sidebar Shell Placeholder -->
     <div id="global-sidebar"></div>
 
-    <!-- Main Content Wrapper -->
     <div class="main-wrapper" id="mainWrapper">
 
-        <!-- Global Header Shell Placeholder -->
         <div id="global-header"></div>
 
-        <!-- Page Content -->
         <main class="content-area" style="padding: 32px 24px; background: #f8fafc;">
-            <div class="integration-scaffold-container">
+            <div class="addon-page-content">
 
-                <!-- Hero Scaffolding Card -->
-                <div class="integration-hero-card">
-                    <div class="integration-hero-icon-wrap">
-                        <i data-feather="message-circle" style="width: 36px; height: 36px;"></i>
+                <div class="addon-card">
+
+                    <!-- Header -->
+                    <div class="addon-card-header">
+                        <div class="addon-header-left">
+                            <div class="addon-icon-wrap">
+                                <!-- WhatsApp-style speech bubble SVG -->
+                                <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                    <path d="M21 11.5C21.0034 12.8199 20.6951 14.1219 20.1 15.3C19.3944 16.7118 18.3098 17.8992 16.9674 18.7293C15.6251 19.5594 14.0782 19.9994 12.5 20C11.1801 20.0035 9.87812 19.6951 8.7 19.1L3 21L4.9 15.3C4.30493 14.1219 3.99656 12.8199 4 11.5C4.00061 9.92179 4.44061 8.37488 5.27072 7.03258C6.10083 5.69028 7.28825 4.6056 8.7 3.90003C9.87812 3.30496 11.1801 2.99659 12.5 3.00003H13C15.0843 3.11502 17.053 3.99479 18.5291 5.47089C20.0052 6.94699 20.885 8.91568 21 11V11.5Z" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                                </svg>
+                            </div>
+                            <div class="addon-header-text">
+                                <h1>WhatsApp Integration</h1>
+                                <p>Automate customer communication</p>
+                            </div>
+                        </div>
+                        <span class="addon-badge">Optional add-on</span>
                     </div>
 
-                    <div class="integration-badge-row">
-                        <span class="badge-status">
-                            <i data-feather="clock" style="width: 12px; height: 12px;"></i> Coming Soon
-                        </span>
-                        <span class="badge-addon-tier">
-                            <i data-feather="package" style="width: 12px; height: 12px;"></i> Planned Add-on
-                        </span>
-                    </div>
-
-                    <h1 class="integration-hero-title">WhatsApp Integration</h1>
-                    <p class="integration-hero-desc">
-                        Streamline salon communication with automated appointment confirmations, reminders, and customer updates through WhatsApp.
+                    <!-- Description -->
+                    <p class="addon-description">
+                        Connect your salon to WhatsApp and keep customers informed automatically.
                     </p>
 
-                    <!-- Feature Overview Highlights -->
-                    <div class="features-grid">
-                        <div class="feature-card">
-                            <div class="feature-icon-circle">
-                                <i data-feather="check-circle" style="width: 20px; height: 20px;"></i>
+                    <!-- Features -->
+                    <div class="addon-features">
+                        <div class="addon-feature-item">
+                            <i data-feather="check-circle" class="addon-feature-check"></i>
+                            <div class="addon-feature-text">
+                                <h3>Booking confirmations</h3>
+                                <p>Notify customers when their appointments are booked.</p>
                             </div>
-                            <h3 class="feature-card-title">Booking Confirmations</h3>
-                            <p class="feature-card-desc">
-                                Send immediate branded confirmation messages to clients as soon as an appointment is scheduled.
-                            </p>
                         </div>
-
-                        <div class="feature-card">
-                            <div class="feature-icon-circle">
-                                <i data-feather="bell" style="width: 20px; height: 20px;"></i>
+                        <div class="addon-feature-item">
+                            <i data-feather="check-circle" class="addon-feature-check"></i>
+                            <div class="addon-feature-text">
+                                <h3>Appointment reminders</h3>
+                                <p>Reduce missed appointments with scheduled reminders.</p>
                             </div>
-                            <h3 class="feature-card-title">Smart Reminders</h3>
-                            <p class="feature-card-desc">
-                                Automated reminders delivered 24 hours and 2 hours before appointments to minimize costly no-shows.
-                            </p>
                         </div>
-
-                        <div class="feature-card">
-                            <div class="feature-icon-circle">
-                                <i data-feather="refresh-cw" style="width: 20px; height: 20px;"></i>
+                        <div class="addon-feature-item">
+                            <i data-feather="check-circle" class="addon-feature-check"></i>
+                            <div class="addon-feature-text">
+                                <h3>Cancellation and rescheduling updates</h3>
+                                <p>Keep customers informed when appointment details change.</p>
                             </div>
-                            <h3 class="feature-card-title">Rescheduling & Updates</h3>
-                            <p class="feature-card-desc">
-                                Keep customers informed in real-time when appointment times, stylists, or services change.
-                            </p>
-                        </div>
-
-                        <div class="feature-card">
-                            <div class="feature-icon-circle">
-                                <i data-feather="inbox" style="width: 20px; height: 20px;"></i>
-                            </div>
-                            <h3 class="feature-card-title">Dispatch History & Logs</h3>
-                            <p class="feature-card-desc">
-                                Transparent message delivery tracking and notification logs right inside your BharatBots workspace.
-                            </p>
                         </div>
                     </div>
-                </div>
 
-                <!-- Add-on Architecture Integration Notice -->
-                <div class="integration-notice-card">
-                    <div class="notice-left">
-                        <div class="notice-icon-circle">
-                            <i data-feather="info" style="width: 22px; height: 22px;"></i>
+                    <!-- Pricing footer -->
+                    <div class="addon-pricing-footer">
+                        <div class="addon-pricing-left">
+                            <span class="addon-pricing-label">Monthly add-on fee</span>
+                            <div class="addon-pricing-amount">Your price here</div>
+                            <div class="addon-pricing-note">Messaging charges may be additional.</div>
                         </div>
-                        <div>
-                            <h4 class="notice-title">Add-on System Integration</h4>
-                            <p class="notice-subtitle">
-                                WhatsApp Integration will be available as an add-on module. You will be able to connect your Meta WhatsApp Business account and manage subscriptions through Billing & Subscriptions.
-                            </p>
-                        </div>
+                        <a href="billing-subscription.html" class="addon-subscribe-btn">
+                            Subscribe &rarr;
+                        </a>
                     </div>
-                    <a href="billing-subscription.html" class="notice-btn">
-                        <span>View Add-ons</span>
-                        <i data-feather="arrow-right" style="width: 15px; height: 15px;"></i>
-                    </a>
+
+                    <!-- Disclaimer -->
+                    <p class="addon-disclaimer">
+                        Illustrative layout &mdash; final pricing and available features are yet to be decided.
+                    </p>
+
                 </div>
 
             </div>
         </main>
     </div>
 
-    <!-- Scripts -->
     <script type="module" src="scripts/app-shell.js"></script>
     <script>
-        // Init Feather Icons
         if (window.feather) feather.replace();
     </script>
     <script src="logout.js"></script>
