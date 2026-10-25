@@ -5,7 +5,7 @@
 'use strict';
 
 import { state, CATALOG_ADDONS, setCatalogAddons, syncCatalogWithActiveAddons, validModes } from './billing-state.js';
-import { getCompanyId, formatDateDisplay, getAddonVisualMeta } from './billing-helpers.js';
+import { getCompanyId, formatDateDisplay, getAddonVisualMeta, parseRawFeatureKeys, formatFeatureLabel } from './billing-helpers.js';
 import {
     renderCurrentPlan,
     renderActiveAddons,
@@ -416,10 +416,7 @@ export async function loadPlanFeatures(supabase, planId) {
             if (metaMap.has(key)) {
                 return metaMap.get(key);
             }
-            const label = key
-                .split('_')
-                .map(w => w.charAt(0).toUpperCase() + w.slice(1).toLowerCase())
-                .join(' ');
+            const label = formatFeatureLabel(key);
             return { label, order: 999 };
         }
 
@@ -437,27 +434,8 @@ export async function loadPlanFeatures(supabase, planId) {
             console.error('[Billing] Error fetching plan-specific features:', planRes.error);
         }
 
-        function extractKeys(rows) {
-            const list = [];
-            (rows || []).forEach(r => {
-                if (!r || !r.feature_key) return;
-                const raw = String(r.feature_key).trim();
-                if (raw.startsWith('[') && raw.endsWith(']')) {
-                    try {
-                        const parsed = JSON.parse(raw);
-                        if (Array.isArray(parsed)) list.push(...parsed);
-                    } catch { list.push(raw); }
-                } else if (raw.includes(',')) {
-                    list.push(...raw.split(',').map(s => s.trim()).filter(Boolean));
-                } else {
-                    list.push(raw);
-                }
-            });
-            return [...new Set(list)];
-        }
-
-        const allFeatureKeys = extractKeys(allRes.data);
-        const includedKeys = extractKeys(planRes.data);
+        const allFeatureKeys = parseRawFeatureKeys(allRes.data);
+        const includedKeys = parseRawFeatureKeys(planRes.data);
         const includedKeySet = new Set(includedKeys);
         const notIncludedKeys = allFeatureKeys.filter(k => !includedKeySet.has(k));
 
@@ -566,10 +544,7 @@ export async function loadActiveSubscriptionViaRpc(supabase, companyId) {
 
         function getFeatureInfo(key) {
             if (metaMap.has(key)) return metaMap.get(key);
-            const label = key
-                .split('_')
-                .map(w => w.charAt(0).toUpperCase() + w.slice(1).toLowerCase())
-                .join(' ');
+            const label = formatFeatureLabel(key);
             return { label, order: 999 };
         }
 
@@ -582,8 +557,12 @@ export async function loadActiveSubscriptionViaRpc(supabase, companyId) {
             });
         };
 
-        const includedKeys = rpcRes.features?.included_keys || [];
-        const excludedKeys = rpcRes.features?.excluded_keys || [];
+        const rawIncluded = rpcRes.features?.included_keys || [];
+        const rawExcluded = rpcRes.features?.excluded_keys || [];
+        const includedKeys = parseRawFeatureKeys(rawIncluded);
+        const includedKeySet = new Set(includedKeys);
+        const excludedKeys = parseRawFeatureKeys(rawExcluded).filter(k => !includedKeySet.has(k));
+
         state.features = {
             included: sortFeatures(includedKeys).map(k => getFeatureInfo(k).label),
             excluded: sortFeatures(excludedKeys).map(k => getFeatureInfo(k).label),

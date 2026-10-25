@@ -215,7 +215,7 @@ export function getPlanUpgradeMetadata(featureKey) {
         minimumPlan = 'Advance';
         category = 'Marketing & Growth Suite';
     } else if (analyticsFeatures.includes(featureKey)) {
-        minimumPlan = PLAN_NAMES.ADVANCE;
+        minimumPlan = 'Advance';
         category = 'Advanced Analytics & Financial Reporting';
     }
 

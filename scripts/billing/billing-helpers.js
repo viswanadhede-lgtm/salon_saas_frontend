@@ -105,3 +105,48 @@ export function detectCardBrand(num) {
     if (/^3[47]/.test(clean)) return 'AMEX';
     return 'CARD';
 }
+
+// ── Feature Keys Parser & Normalizer ───────────────────────────
+
+export function parseRawFeatureKeys(items) {
+    const list = [];
+    (items || []).forEach(item => {
+        if (!item) return;
+        const raw = typeof item === 'object' && item.feature_key !== undefined
+            ? String(item.feature_key).trim()
+            : String(item).trim();
+
+        if (raw.startsWith('[') && raw.endsWith(']')) {
+            try {
+                const parsed = JSON.parse(raw);
+                if (Array.isArray(parsed)) {
+                    parsed.forEach(p => {
+                        if (typeof p === 'string' && p.trim()) list.push(p.trim());
+                    });
+                } else if (parsed) {
+                    list.push(String(parsed).trim());
+                }
+            } catch {
+                list.push(raw);
+            }
+        } else if (raw.includes(',')) {
+            list.push(...raw.split(',').map(s => s.trim()).filter(Boolean));
+        } else if (raw) {
+            list.push(raw);
+        }
+    });
+    return [...new Set(list)];
+}
+
+export function formatFeatureLabel(key, metaMap = null) {
+    if (!key) return '';
+    const cleanKey = String(key).trim().replace(/^["']|["']$/g, '');
+    if (metaMap && metaMap.has(cleanKey)) {
+        return metaMap.get(cleanKey).label;
+    }
+    return cleanKey
+        .split('_')
+        .map(w => w.charAt(0).toUpperCase() + w.slice(1).toLowerCase())
+        .join(' ');
+}
+

@@ -4,7 +4,7 @@
 'use strict';
 
 import { state, CATALOG_ADDONS } from './billing-state.js';
-import { fmtCurrency, formatBillingAddress, showToast, formatDateDisplay } from './billing-helpers.js';
+import { fmtCurrency, formatBillingAddress, showToast, formatDateDisplay, parseRawFeatureKeys, formatFeatureLabel } from './billing-helpers.js';
 
 // DOM reference object — populated by initRenders() called from the orchestrator
 let dom = {};
@@ -238,16 +238,25 @@ export function renderPlanFeatures() {
         return;
     }
 
-    dom.featuresIncludedCountBadge.textContent = `${state.features.included.length} Included`;
+    // Defensive unpacking: guarantee one feature per item, never raw JSON string arrays
+    const unpackList = (list) => {
+        const parsedKeys = parseRawFeatureKeys(list);
+        return parsedKeys.map(k => formatFeatureLabel(k));
+    };
 
-    if (state.features.included.length === 0) {
+    const includedItems = unpackList(state.features.included);
+    const excludedItems = unpackList(state.features.excluded).filter(f => !includedItems.includes(f));
+
+    dom.featuresIncludedCountBadge.textContent = `${includedItems.length} Included`;
+
+    if (includedItems.length === 0) {
         dom.featuresIncludedList.innerHTML = `
             <div class="empty-neutral-state" style="padding: 1rem 0; color: #94a3b8;">
                 No features assigned to this plan.
             </div>
         `;
     } else {
-        dom.featuresIncludedList.innerHTML = state.features.included.map(item => `
+        dom.featuresIncludedList.innerHTML = includedItems.map(item => `
             <div class="feature-item">
                 <span class="feature-check-icon"><i data-feather="check"></i></span>
                 <span>${item}</span>
@@ -255,9 +264,9 @@ export function renderPlanFeatures() {
         `).join('');
     }
 
-    if (state.features.excluded && state.features.excluded.length > 0) {
+    if (excludedItems && excludedItems.length > 0) {
         if (dom.featuresExcludedCol) dom.featuresExcludedCol.style.display = 'flex';
-        dom.featuresExcludedList.innerHTML = state.features.excluded.map(item => `
+        dom.featuresExcludedList.innerHTML = excludedItems.map(item => `
             <div class="feature-item feature-item--excluded">
                 <span class="feature-check-icon"><i data-feather="x"></i></span>
                 <span>${item}</span>
