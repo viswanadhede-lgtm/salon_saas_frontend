@@ -1253,8 +1253,9 @@
     align-items: center;
     justify-content: center;
     z-index: 9999;
-    padding: 1rem;
+    padding: 1.5rem;
     box-sizing: border-box;
+    overflow-y: auto;
 }
 
 .billing-modal-overlay.is-open {
@@ -1675,7 +1676,11 @@
 .billing-modal-box--two-col {
     max-width: 1360px;
     width: 95vw;
-    min-height: 640px;
+    min-height: 0;
+    max-height: calc(90vh / 0.93);
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
 }
 
 .billing-modal-box--two-col .billing-modal-header {
@@ -1707,7 +1712,8 @@
     padding: 0 !important;
     gap: 0 !important;
     flex: 1;
-    min-height: 520px;
+    min-height: 0;
+    overflow: hidden;
 }
 
 .manage-addons-col {
@@ -1716,6 +1722,7 @@
     display: flex;
     flex-direction: column;
     min-width: 0;
+    overflow-y: auto;
 }
 
 .manage-addons-col--left {
