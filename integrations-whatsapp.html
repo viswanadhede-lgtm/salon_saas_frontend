@@ -1,0 +1,370 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <script src="scripts/auth-loader.js"></script>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="WhatsApp Integration for BharatBots Salon SaaS.">
+    <title>WhatsApp Integration - BharatBots</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="styles.css">
+    <link rel="stylesheet" href="dashboard.css">
+    <link rel="stylesheet" href="submenu.css">
+    <link rel="stylesheet" href="styles/global-layout.css">
+    <!-- Feather Icons -->
+    <script src="https://unpkg.com/feather-icons"></script>
+    <style>
+        .integration-scaffold-container {
+            max-width: 1040px;
+            margin: 0 auto;
+            display: flex;
+            flex-direction: column;
+            gap: 24px;
+        }
+
+        .integration-hero-card {
+            background: #ffffff;
+            border: 1px solid #e2e8f0;
+            border-radius: 16px;
+            padding: 40px 36px;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.04), 0 2px 4px -2px rgba(0, 0, 0, 0.03);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            text-align: center;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .integration-hero-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 4px;
+            background: linear-gradient(90deg, #10b981 0%, #059669 100%);
+        }
+
+        .integration-hero-icon-wrap {
+            width: 72px;
+            height: 72px;
+            border-radius: 20px;
+            background: #ecfdf5;
+            color: #059669;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-bottom: 20px;
+            box-shadow: 0 4px 12px rgba(16, 185, 129, 0.15);
+        }
+
+        .integration-badge-row {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin-bottom: 12px;
+        }
+
+        .badge-status {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            font-size: 0.75rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            padding: 4px 12px;
+            border-radius: 9999px;
+            background: #fef3c7;
+            color: #92400e;
+            border: 1px solid #fde68a;
+        }
+
+        .badge-addon-tier {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            font-size: 0.75rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            padding: 4px 12px;
+            border-radius: 9999px;
+            background: #f1f5f9;
+            color: #475569;
+            border: 1px solid #e2e8f0;
+        }
+
+        .integration-hero-title {
+            font-size: 1.85rem;
+            font-weight: 700;
+            color: #0f172a;
+            margin: 0 0 10px 0;
+            font-family: 'Inter', system-ui, sans-serif;
+        }
+
+        .integration-hero-desc {
+            font-size: 1.05rem;
+            color: #64748b;
+            max-width: 680px;
+            margin: 0 auto 28px auto;
+            line-height: 1.6;
+        }
+
+        .features-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(230px, 1fr));
+            gap: 20px;
+            width: 100%;
+            text-align: left;
+            margin-top: 12px;
+        }
+
+        .feature-card {
+            background: #f8fafc;
+            border: 1px solid #e2e8f0;
+            border-radius: 12px;
+            padding: 22px 20px;
+            transition: all 0.2s ease;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        .feature-card:hover {
+            background: #ffffff;
+            border-color: #cbd5e1;
+            transform: translateY(-2px);
+            box-shadow: 0 6px 16px rgba(0, 0, 0, 0.05);
+        }
+
+        .feature-icon-circle {
+            width: 40px;
+            height: 40px;
+            border-radius: 10px;
+            background: #ffffff;
+            border: 1px solid #e2e8f0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #059669;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.04);
+        }
+
+        .feature-card-title {
+            font-size: 0.95rem;
+            font-weight: 600;
+            color: #1e293b;
+            margin: 0;
+        }
+
+        .feature-card-desc {
+            font-size: 0.84rem;
+            color: #64748b;
+            line-height: 1.5;
+            margin: 0;
+        }
+
+        .integration-notice-card {
+            background: #ffffff;
+            border: 1px solid #e2e8f0;
+            border-radius: 12px;
+            padding: 24px 28px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 20px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.02);
+        }
+
+        .notice-left {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+        }
+
+        .notice-icon-circle {
+            width: 44px;
+            height: 44px;
+            border-radius: 50%;
+            background: #eff6ff;
+            color: #2563eb;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+        }
+
+        .notice-title {
+            font-size: 0.95rem;
+            font-weight: 600;
+            color: #0f172a;
+            margin: 0 0 4px 0;
+        }
+
+        .notice-subtitle {
+            font-size: 0.84rem;
+            color: #64748b;
+            margin: 0;
+        }
+
+        .notice-btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            padding: 9px 18px;
+            border-radius: 8px;
+            font-size: 0.86rem;
+            font-weight: 600;
+            color: #059669;
+            background: #ecfdf5;
+            border: 1px solid #a7f3d0;
+            text-decoration: none;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            white-space: nowrap;
+        }
+
+        .notice-btn:hover {
+            background: #d1fae5;
+            color: #047857;
+        }
+
+        @media (max-width: 768px) {
+            .integration-hero-card {
+                padding: 28px 20px;
+            }
+            .features-grid {
+                grid-template-columns: 1fr;
+            }
+            .integration-notice-card {
+                flex-direction: column;
+                align-items: flex-start;
+            }
+            .notice-btn {
+                width: 100%;
+                justify-content: center;
+            }
+        }
+    </style>
+</head>
+
+<body class="dashboard-body" style="min-height: calc(100vh / 0.93);">
+
+    <!-- Global Sidebar Shell Placeholder -->
+    <div id="global-sidebar"></div>
+
+    <!-- Main Content Wrapper -->
+    <div class="main-wrapper" id="mainWrapper">
+
+        <!-- Global Header Shell Placeholder -->
+        <div id="global-header"></div>
+
+        <!-- Page Content -->
+        <main class="content-area" style="padding: 32px 24px; background: #f8fafc;">
+            <div class="integration-scaffold-container">
+
+                <!-- Hero Scaffolding Card -->
+                <div class="integration-hero-card">
+                    <div class="integration-hero-icon-wrap">
+                        <i data-feather="message-circle" style="width: 36px; height: 36px;"></i>
+                    </div>
+
+                    <div class="integration-badge-row">
+                        <span class="badge-status">
+                            <i data-feather="clock" style="width: 12px; height: 12px;"></i> Coming Soon
+                        </span>
+                        <span class="badge-addon-tier">
+                            <i data-feather="package" style="width: 12px; height: 12px;"></i> Planned Add-on
+                        </span>
+                    </div>
+
+                    <h1 class="integration-hero-title">WhatsApp Integration</h1>
+                    <p class="integration-hero-desc">
+                        Streamline salon communication with automated appointment confirmations, reminders, and customer updates through WhatsApp.
+                    </p>
+
+                    <!-- Feature Overview Highlights -->
+                    <div class="features-grid">
+                        <div class="feature-card">
+                            <div class="feature-icon-circle">
+                                <i data-feather="check-circle" style="width: 20px; height: 20px;"></i>
+                            </div>
+                            <h3 class="feature-card-title">Booking Confirmations</h3>
+                            <p class="feature-card-desc">
+                                Send immediate branded confirmation messages to clients as soon as an appointment is scheduled.
+                            </p>
+                        </div>
+
+                        <div class="feature-card">
+                            <div class="feature-icon-circle">
+                                <i data-feather="bell" style="width: 20px; height: 20px;"></i>
+                            </div>
+                            <h3 class="feature-card-title">Smart Reminders</h3>
+                            <p class="feature-card-desc">
+                                Automated reminders delivered 24 hours and 2 hours before appointments to minimize costly no-shows.
+                            </p>
+                        </div>
+
+                        <div class="feature-card">
+                            <div class="feature-icon-circle">
+                                <i data-feather="refresh-cw" style="width: 20px; height: 20px;"></i>
+                            </div>
+                            <h3 class="feature-card-title">Rescheduling & Updates</h3>
+                            <p class="feature-card-desc">
+                                Keep customers informed in real-time when appointment times, stylists, or services change.
+                            </p>
+                        </div>
+
+                        <div class="feature-card">
+                            <div class="feature-icon-circle">
+                                <i data-feather="inbox" style="width: 20px; height: 20px;"></i>
+                            </div>
+                            <h3 class="feature-card-title">Dispatch History & Logs</h3>
+                            <p class="feature-card-desc">
+                                Transparent message delivery tracking and notification logs right inside your BharatBots workspace.
+                            </p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Add-on Architecture Integration Notice -->
+                <div class="integration-notice-card">
+                    <div class="notice-left">
+                        <div class="notice-icon-circle">
+                            <i data-feather="info" style="width: 22px; height: 22px;"></i>
+                        </div>
+                        <div>
+                            <h4 class="notice-title">Add-on System Integration</h4>
+                            <p class="notice-subtitle">
+                                WhatsApp Integration will be available as an add-on module. You will be able to connect your Meta WhatsApp Business account and manage subscriptions through Billing & Subscriptions.
+                            </p>
+                        </div>
+                    </div>
+                    <a href="billing-subscription.html" class="notice-btn">
+                        <span>View Add-ons</span>
+                        <i data-feather="arrow-right" style="width: 15px; height: 15px;"></i>
+                    </a>
+                </div>
+
+            </div>
+        </main>
+    </div>
+
+    <!-- Scripts -->
+    <script type="module" src="scripts/app-shell.js"></script>
+    <script>
+        // Init Feather Icons
+        if (window.feather) feather.replace();
+    </script>
+    <script src="logout.js"></script>
+    <script src="change-password.js"></script>
+    <script type="module" src="scripts/global-auth-guard.js"></script>
+    <script type="module" src="scripts/sub-features/sub-feature-gate.js"></script>
+</body>
+
+</html>

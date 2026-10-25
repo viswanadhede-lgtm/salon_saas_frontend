@@ -357,6 +357,12 @@ export const SUB_FEATURES_MAP = {
     // 15. Marketing: Ad Campaigns (ad-campaigns.html)
     [FEATURES.MARKETING_CAMPAIGNS]: [],
 
+    // Integrations: Website Booking (integrations-website-booking.html)
+    [FEATURES.INTEGRATIONS_WEBSITE_BOOKING]: [],
+
+    // Integrations: WhatsApp Integration (integrations-whatsapp.html)
+    [FEATURES.INTEGRATIONS_WHATSAPP]: [],
+
     // 16. Analytics Overview (overview.html)
     [FEATURES.ANALYTICS_OVERVIEW]: [],
 

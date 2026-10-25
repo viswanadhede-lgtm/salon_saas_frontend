@@ -62,6 +62,10 @@ export const FEATURES = {
     MARKETING_MEMBERSHIPS:               'marketing_memberships',           // 14. memberships.html
     MARKETING_CAMPAIGNS:                 'marketing_campaigns',             // 15. ad-campaigns.html
 
+    // Integrations
+    INTEGRATIONS_WEBSITE_BOOKING:        'integrations_website_booking',    // integrations-website-booking.html
+    INTEGRATIONS_WHATSAPP:               'integrations_whatsapp',           // integrations-whatsapp.html
+
     // Analytics
     ANALYTICS_OVERVIEW:                  'analytics_overview',              // 16. overview.html
     REPORTS_ACCESS:                      'reports_access',                  // 17. reports.html
@@ -133,6 +137,8 @@ export const MODULES_META = [
     { key: FEATURES.MARKETING_COUPONS,               label: 'Coupons',                         icon: 'percent'       },
     { key: FEATURES.MARKETING_MEMBERSHIPS,           label: 'Memberships',                     icon: 'award'         },
     { key: FEATURES.MARKETING_CAMPAIGNS,             label: 'Ad Campaigns',                    icon: 'speaker'       },
+    { key: FEATURES.INTEGRATIONS_WEBSITE_BOOKING,    label: 'Website Booking',                 icon: 'calendar'      },
+    { key: FEATURES.INTEGRATIONS_WHATSAPP,           label: 'WhatsApp Integration',            icon: 'message-circle'},
     { key: FEATURES.ANALYTICS_OVERVIEW,              label: 'Overview',                        icon: 'pie-chart'     },
     { key: FEATURES.REPORTS_ACCESS,                  label: 'Reports',                         icon: 'bar-chart-2'   },
     { key: FEATURES.ANALYTICS_EXPENSES,              label: 'Expenses',                        icon: 'dollar-sign'   },
