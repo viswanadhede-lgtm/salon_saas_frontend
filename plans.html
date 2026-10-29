@@ -56,30 +56,35 @@
 </head>
 <body class="plans-page">
     <div class="plans-container">
-        <!-- Header -->
-        <div class="plans-header">
-            <div class="logo">
-                <svg width="32" height="32" viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg">
-                    <rect x="2" y="6" width="28" height="20" rx="4" stroke="currentColor" stroke-width="2"/>
-                    <path d="M8 12C8 12 11 16 16 16C21 16 24 12 24 12" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
-                    <circle cx="16" cy="16" r="2" fill="currentColor"/>
-                </svg>
-                <span>BharathBots</span>
-            </div>
-            <h1>Choose your plan</h1>
-            <p>Start with a plan that fits your salon. You can upgrade anytime.</p>
-
-            <!-- Billing Toggle -->
-            <div style="margin-top: 1.75rem; display: flex; flex-direction: column; align-items: center; gap: 0.75rem;">
-                <div style="display: inline-flex; align-items: center; background: #f1f5f9; border-radius: 9999px; padding: 4px; gap: 4px;">
-                    <button id="toggleMonthly" onclick="setBilling('monthly')" style="padding: 0.45rem 1.25rem; border-radius: 9999px; border: none; font-size: 0.9rem; font-weight: 600; cursor: pointer; background: var(--primary); color: white; transition: all 0.2s;">Monthly</button>
-                    <button id="toggleAnnual" onclick="setBilling('annual')" style="padding: 0.45rem 1.25rem; border-radius: 9999px; border: none; font-size: 0.9rem; font-weight: 600; cursor: pointer; background: transparent; color: var(--text-muted); transition: all 0.2s;">Annual <span style="margin-left: 4px; background: #fef3c7; color: #92400e; font-size: 0.75rem; padding: 2px 8px; border-radius: 9999px;">Save ~17%</span></button>
+        <!-- Header - Horizontal Sleek Layout -->
+        <header class="plans-header">
+            <!-- Top bar: Brand on left, Free trial badge on right -->
+            <div class="plans-top-bar">
+                <div class="logo">
+                    <svg width="28" height="28" viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <rect x="2" y="6" width="28" height="20" rx="4" stroke="currentColor" stroke-width="2"/>
+                        <path d="M8 12C8 12 11 16 16 16C21 16 24 12 24 12" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+                        <circle cx="16" cy="16" r="2" fill="currentColor"/>
+                    </svg>
+                    <span>BharathBots</span>
                 </div>
-                <div style="display: inline-flex; align-items: center; background: #ecfdf5; color: #047857; padding: 0.5rem 1.1rem; border-radius: 9999px; font-weight: 600; font-size: 0.9rem; border: 1px solid #10b981;">
+                <div class="trial-pill">
                     🎁 7-Day Free Trial on any plan &mdash; no credit card required!
                 </div>
             </div>
-        </div>
+
+            <!-- Headline row: Title/Subtitle on left, Billing toggle on right -->
+            <div class="plans-headline-row">
+                <div class="headline-text">
+                    <h1>Choose your plan</h1>
+                    <p>Start with a plan that fits your salon. You can upgrade anytime.</p>
+                </div>
+                <div class="billing-toggle-pill">
+                    <button id="toggleMonthly" onclick="setBilling('monthly')">Monthly</button>
+                    <button id="toggleAnnual" onclick="setBilling('annual')">Annual <span>Save ~17%</span></button>
+                </div>
+            </div>
+        </header>
 
         <!-- Plans Grid -->
         <div class="plans-grid">

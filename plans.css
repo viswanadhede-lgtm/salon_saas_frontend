@@ -6,7 +6,7 @@
     background-size: cover;
     display: flex;
     justify-content: center;
-    padding: 2rem 1.5rem 3rem;
+    padding: 1.25rem 1.5rem 2.5rem;
     min-height: 100vh;
 }
 
@@ -18,53 +18,111 @@
     animation: fadeIn 0.6s ease-out;
 }
 
-/* Header */
+/* Header - Horizontal Compact Bar */
 .plans-header {
-    text-align: center;
-    margin-bottom: 2.25rem;
+    margin-bottom: 1.25rem;
+}
+
+.plans-top-bar {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 0.75rem;
 }
 
 .plans-header .logo {
     display: inline-flex;
     align-items: center;
-    gap: 0.65rem;
-    justify-content: center;
+    gap: 0.6rem;
     color: #ffffff;
-    margin-top: 0;
-    margin-bottom: 1rem;
-    font-size: 1.35rem;
+    font-size: 1.25rem;
     font-weight: 700;
+    margin: 0;
     filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.3));
 }
 
-.plans-header h1 {
-    font-size: 2.35rem;
+.trial-pill {
+    display: inline-flex;
+    align-items: center;
+    background: rgba(236, 253, 245, 0.95);
+    backdrop-filter: blur(8px);
+    color: #047857;
+    padding: 0.35rem 0.95rem;
+    border-radius: 9999px;
+    font-weight: 600;
+    font-size: 0.82rem;
+    border: 1px solid rgba(16, 185, 129, 0.6);
+    box-shadow: 0 3px 10px rgba(0, 0, 0, 0.15);
+}
+
+.plans-headline-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-end;
+    gap: 1.5rem;
+}
+
+.headline-text {
+    text-align: left;
+}
+
+.headline-text h1 {
+    font-size: 1.95rem;
     font-weight: 800;
     letter-spacing: -0.03em;
     color: #ffffff;
-    margin-bottom: 0.5rem;
+    margin: 0 0 0.25rem 0;
     text-shadow: 0 2px 10px rgba(0, 0, 0, 0.4);
 }
 
-.plans-header p {
-    font-size: 1.05rem;
+.headline-text p {
+    font-size: 0.95rem;
     color: rgba(255, 255, 255, 0.92);
-    max-width: 620px;
-    margin: 0 auto;
-    line-height: 1.5;
+    margin: 0;
+    line-height: 1.4;
     text-shadow: 0 1px 4px rgba(0, 0, 0, 0.3);
 }
 
-/* Billing Toggle Styling Overrides */
-.plans-header #toggleMonthly,
-.plans-header #toggleAnnual {
-    font-family: inherit;
+/* Billing Toggle Styling */
+.billing-toggle-pill {
+    display: inline-flex;
+    align-items: center;
+    background: rgba(255, 255, 255, 0.96);
+    backdrop-filter: blur(10px);
+    border-radius: 9999px;
+    padding: 3px;
+    gap: 3px;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
 }
 
-.plans-header > div > div:first-child {
-    background: rgba(255, 255, 255, 0.95) !important;
-    backdrop-filter: blur(10px);
-    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.18) !important;
+.billing-toggle-pill button {
+    padding: 0.4rem 1.1rem;
+    border-radius: 9999px;
+    border: none;
+    font-size: 0.85rem;
+    font-weight: 600;
+    cursor: pointer;
+    font-family: inherit;
+    transition: all 0.2s;
+}
+
+#toggleMonthly {
+    background: var(--primary);
+    color: white;
+}
+
+#toggleAnnual {
+    background: transparent;
+    color: var(--text-muted);
+}
+
+#toggleAnnual span {
+    margin-left: 4px;
+    background: #fef3c7;
+    color: #92400e;
+    font-size: 0.72rem;
+    padding: 2px 7px;
+    border-radius: 9999px;
 }
 
 /* Grid Layout - 3 Equal Columns for Growth, Advance, Pro */
@@ -214,6 +272,23 @@
 }
 
 /* Responsive adjustments */
+@media (max-width: 768px) {
+    .plans-top-bar {
+        flex-direction: column;
+        gap: 0.75rem;
+        text-align: center;
+    }
+    .plans-headline-row {
+        flex-direction: column;
+        align-items: center;
+        text-align: center;
+        gap: 1rem;
+    }
+    .headline-text {
+        text-align: center;
+    }
+}
+
 @media (max-width: 1024px) {
     .plans-grid {
         grid-template-columns: repeat(2, 1fr);
