@@ -16,7 +16,8 @@ document.addEventListener('DOMContentLoaded', async () => {
     let isPlanLoaded = false;
     let planDisplayName = 'Selected Plan';
 
-    const dynamicAddonsPricing = {};
+    // Pre-selected add-ons from addons.html (each has: addon_id, name, billing_cycle, price, razorpay_plan_id)
+    const selectedAddons = JSON.parse(localStorage.getItem('selected_addons') || '[]');
 
     // Session token — sent with every API call
     const token = localStorage.getItem('token') || '';
@@ -54,38 +55,13 @@ document.addEventListener('DOMContentLoaded', async () => {
         activationMode = 'immediate';
     }
 
-    // 3. Billing Toggle Handlers
-    const btnMonthly = document.getElementById('toggleMonthly');
-    const btnAnnual = document.getElementById('toggleAnnual');
-
-    if (btnMonthly) {
-        btnMonthly.addEventListener('click', () => {
-            if (billingCycle === 'monthly') return;
-            billingCycle = 'monthly';
-            btnMonthly.classList.add('active');
-            if (btnAnnual) btnAnnual.classList.remove('active');
-            updatePricingDisplay();
-        });
-    }
-
-    if (btnAnnual) {
-        btnAnnual.addEventListener('click', () => {
-            if (billingCycle === 'annual') return;
-            billingCycle = 'annual';
-            btnAnnual.classList.add('active');
-            if (btnMonthly) btnMonthly.classList.remove('active');
-            updatePricingDisplay();
-        });
-    }
-
-    // Initialize billing cycle based on saved preference
+    // Initialize billing cycle from signup_data (set on plans.html, not editable here)
     billingCycle = (savedBillingCycle === 'annual' || savedBillingCycle === 'yearly') ? 'annual' : 'monthly';
-    if (billingCycle === 'annual') {
-        if (btnAnnual) btnAnnual.classList.add('active');
-        if (btnMonthly) btnMonthly.classList.remove('active');
-    } else {
-        if (btnMonthly) btnMonthly.classList.add('active');
-        if (btnAnnual) btnAnnual.classList.remove('active');
+
+    // Update the read-only billing cycle display
+    const billingCycleLabel = document.getElementById('billingCycleLabel');
+    if (billingCycleLabel) {
+        billingCycleLabel.textContent = billingCycle === 'annual' ? 'Annual (Save 17%)' : 'Monthly';
     }
 
     // 4. Activation Mode Radio Handlers
@@ -135,11 +111,11 @@ document.addEventListener('DOMContentLoaded', async () => {
         });
     }
 
-    // 5. Fetch Plan & Add-ons
+    // 5. Fetch Plan & render pre-selected add-ons from localStorage
     const planSuccess = await fetchPlanAndRender(planId, planName);
     if (!planSuccess) return;
 
-    await fetchAddons();
+    loadPreSelectedAddons();
 
     // 6. Unified Primary CTA Button
     const btnSubmit = document.getElementById('btnSubmitPayment');
@@ -210,94 +186,51 @@ document.addEventListener('DOMContentLoaded', async () => {
         }
     }
 
-    async function fetchAddons() {
+    // ==========================================
+    // Load Pre-Selected Add-ons from localStorage
+    // (Selection was done on addons.html — payments page is read-only invoice)
+    // ==========================================
+
+    function loadPreSelectedAddons() {
         const container = document.getElementById('addonsListContainer');
-        if (!container) return;
+        const block = document.getElementById('selectedAddonsBlock');
 
-        try {
-            const { data: addonsArray, error } = await supabase
-                .from('add_ons')
-                .select('*')
-                .eq('status', 'active');
+        if (!container) {
+            updatePricingDisplay();
+            return;
+        }
 
-            if (error) throw error;
-
-            const activeAddons = addonsArray || [];
-
-            if (activeAddons.length === 0) {
-                container.innerHTML = '<p style="color: var(--text-muted); font-size: 0.85rem; padding: 10px 0;">No optional add-ons currently available.</p>';
-                return;
-            }
-
-            let addonsHtml = '';
-
-            activeAddons.forEach(addon => {
-                const monPrice = parseFloat(addon.price_monthly) || 0;
-                const annPrice = parseFloat(addon.price_yearly) || 0;
-
-                dynamicAddonsPricing[addon.addon_id] = {
-                    id: addon.addon_id,
-                    name: addon.name,
-                    description: addon.description || '',
-                    monthly: monPrice,
-                    annual: annPrice
-                };
-
-                const descHtml = addon.description ? `<p>${addon.description}</p>` : '';
-
-                addonsHtml += `
-                    <div class="addon-card" id="card_${addon.addon_id}" data-id="${addon.addon_id}">
-                        <div class="addon-card-left">
-                            <input type="checkbox" value="${addon.addon_id}" id="chk_${addon.addon_id}" class="addon-checkbox">
-                            <div class="addon-text">
-                                <h4>${addon.name}</h4>
-                                ${descHtml}
-                            </div>
+        if (selectedAddons.length === 0) {
+            container.innerHTML = `
+                <div class="no-addons-note">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <circle cx="12" cy="12" r="10"></circle>
+                        <line x1="12" y1="8" x2="12" y2="12"></line>
+                        <line x1="12" y1="16" x2="12.01" y2="16"></line>
+                    </svg>
+                    No add-ons selected. <a href="addons.html">Add some →</a>
+                </div>`;
+        } else {
+            let html = '';
+            selectedAddons.forEach(item => {
+                const cycleLabel = item.billing_cycle === 'monthly' ? 'Monthly' : 'Annual';
+                const cycleCls   = item.billing_cycle === 'monthly' ? 'monthly' : 'yearly';
+                const priceFmt   = `₹${item.price.toLocaleString('en-IN', { minimumFractionDigits: 2 })}`;
+                html += `
+                    <div class="selected-addon-item">
+                        <div class="selected-addon-info">
+                            <span class="selected-addon-check">✓</span>
+                            <span class="selected-addon-name">${item.name}</span>
+                            <span class="selected-addon-cycle ${cycleCls}">${cycleLabel}</span>
                         </div>
-                        <span class="addon-price-badge" id="price_${addon.addon_id}">+₹${monPrice.toLocaleString('en-IN')}/mo</span>
+                        <span class="selected-addon-price">${priceFmt}</span>
                     </div>
                 `;
             });
-
-            container.innerHTML = addonsHtml;
-
-            // Bind click and change events for addon cards
-            activeAddons.forEach(addon => {
-                const card = document.getElementById(`card_${addon.addon_id}`);
-                const chk = document.getElementById(`chk_${addon.addon_id}`);
-
-                if (card && chk) {
-                    card.addEventListener('click', (e) => {
-                        // Prevent double-toggling if directly clicked on checkbox input
-                        if (e.target !== chk) {
-                            chk.checked = !chk.checked;
-                        }
-                        if (chk.checked) {
-                            card.classList.add('selected');
-                        } else {
-                            card.classList.remove('selected');
-                        }
-                        updatePricingDisplay();
-                    });
-
-                    chk.addEventListener('change', () => {
-                        if (chk.checked) {
-                            card.classList.add('selected');
-                        } else {
-                            card.classList.remove('selected');
-                        }
-                        updatePricingDisplay();
-                    });
-                }
-            });
-
-            // Re-render display with current cycle
-            updatePricingDisplay();
-
-        } catch (err) {
-            console.error('[fetchAddons] Error fetching add-ons:', err);
-            container.innerHTML = '<p style="color: var(--text-muted); font-size: 0.85rem; padding: 10px 0;">Could not load add-ons at this time.</p>';
+            container.innerHTML = html;
         }
+
+        updatePricingDisplay();
     }
 
     // ==========================================
@@ -309,57 +242,51 @@ document.addEventListener('DOMContentLoaded', async () => {
         const cycleSuffix = isAnnual ? '/ yr' : '/ mo';
         const fullCycle = isAnnual ? 'Annual' : 'Monthly';
 
-        // 1. Update cycle badge in invoice
+        // 1. Update cycle badge on invoice
         const receiptCyclePill = document.getElementById('receiptCyclePill');
         if (receiptCyclePill) receiptCyclePill.textContent = fullCycle;
 
-        // 2. Update Add-on price tags on cards
-        Object.keys(dynamicAddonsPricing).forEach(addonId => {
-            const priceEl = document.getElementById('price_' + addonId);
-            if (priceEl) {
-                const item = dynamicAddonsPricing[addonId];
-                const amt = isAnnual ? item.annual : item.monthly;
-                priceEl.textContent = `+₹${amt.toLocaleString('en-IN')}${cycleSuffix}`;
-            }
-        });
-
-        // 3. Plan base cost
+        // 2. Plan base cost (uses plan billing cycle from signup_data)
         const planCost = isAnnual ? basePlanAnnual : basePlanMonthly;
         const receiptPlanPriceEl = document.getElementById('receiptPlanPrice');
         if (receiptPlanPriceEl) {
             receiptPlanPriceEl.textContent = `₹${planCost.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
         }
 
-        // 4. Calculate Selected Add-ons
+        // 3. Render pre-selected add-ons as static invoice lines
+        //    Each add-on has its OWN billing cycle (monthly or yearly) chosen on addons.html
         let addonsTotal = 0;
         let addonsInvoiceHtml = '';
 
-        const checkboxes = document.querySelectorAll('.addon-checkbox:checked');
-        checkboxes.forEach(chk => {
-            const item = dynamicAddonsPricing[chk.value];
-            if (item) {
-                const cost = isAnnual ? item.annual : item.monthly;
-                addonsTotal += cost;
+        if (selectedAddons.length > 0) {
+            selectedAddons.forEach(item => {
+                addonsTotal += item.price;
+                const itemCycleLabel = item.billing_cycle === 'monthly' ? 'mo' : 'yr';
+                const itemCycleFullLabel = item.billing_cycle === 'monthly' ? 'Monthly' : 'Annual';
+                const priceFmt = `₹${item.price.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
                 addonsInvoiceHtml += `
                     <div class="dynamic-addon-row">
-                        <span class="addon-name">+ ${item.name}</span>
-                        <span class="addon-cost">₹${cost.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
+                        <div class="addon-name-cycle">
+                            <span class="addon-name">+ ${item.name}</span>
+                            <span class="addon-cycle-tag ${item.billing_cycle}">${itemCycleFullLabel}</span>
+                        </div>
+                        <span class="addon-cost">${priceFmt}</span>
                     </div>
                 `;
-            }
-        });
+            });
+        }
 
         const dynContainer = document.getElementById('dynamicAddonsContainer');
         if (dynContainer) dynContainer.innerHTML = addonsInvoiceHtml;
 
-        // 5. Subtotal
+        // 4. Subtotal = plan cost + all add-on costs
         const subtotal = planCost + addonsTotal;
         const subtotalEl = document.getElementById('receiptSubtotalPrice');
         if (subtotalEl) {
             subtotalEl.textContent = `₹${subtotal.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
         }
 
-        // 6. Dates calculation
+        // 5. Date calculations
         const trialEndDate = new Date();
         trialEndDate.setDate(trialEndDate.getDate() + 7);
         const formattedTrialDate = trialEndDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
@@ -375,19 +302,18 @@ document.addEventListener('DOMContentLoaded', async () => {
         const trialRenewDateEl = document.getElementById('trialRenewDate');
         if (trialRenewDateEl) trialRenewDateEl.textContent = formattedTrialDate;
 
-        // 7. Adjust Invoice Breakdown based on Activation Mode
-        const discountRow = document.getElementById('receiptDiscountRow');
+        // 6. Adjust invoice based on Activation Mode
+        const discountRow     = document.getElementById('receiptDiscountRow');
         const trialDiscountEl = document.getElementById('receiptTrialDiscount');
-        const totalPriceEl = document.getElementById('receiptTotalPrice');
+        const totalPriceEl    = document.getElementById('receiptTotalPrice');
         const totalDueSubtext = document.getElementById('totalDueSubtext');
-        const btnSubmitText = document.getElementById('btnSubmitText');
+        const btnSubmitText   = document.getElementById('btnSubmitText');
         const summaryStatusPill = document.getElementById('summaryStatusPill');
         const recurringNoteText = document.getElementById('recurringNoteText');
 
         const formattedSubtotal = `₹${subtotal.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
 
         if (activationMode === 'trial') {
-            // Trial Mode: 100% off today
             if (discountRow) discountRow.style.display = 'flex';
             if (trialDiscountEl) trialDiscountEl.textContent = `-${formattedSubtotal}`;
             if (totalPriceEl) {
@@ -404,7 +330,6 @@ document.addEventListener('DOMContentLoaded', async () => {
                 recurringNoteText.innerHTML = `First recurring charge: <strong>${formattedTrialDate} &bull; ${formattedSubtotal} ${cycleSuffix}</strong>`;
             }
         } else {
-            // Immediate Pay Mode: full subtotal due now
             if (discountRow) discountRow.style.display = 'none';
             if (totalPriceEl) {
                 totalPriceEl.textContent = formattedSubtotal;

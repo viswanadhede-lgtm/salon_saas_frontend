@@ -275,7 +275,7 @@ async function submitOnboarding() {
         btn.style.backgroundColor = '#10b981';
 
         setTimeout(() => {
-            window.location.href = `payments.html?company_id=${company_id}`;
+            window.location.href = `addons.html?company_id=${company_id}`;
         }, 800);
 
     } catch (err) {

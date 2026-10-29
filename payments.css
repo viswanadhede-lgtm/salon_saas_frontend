@@ -716,6 +716,181 @@ body.payments-page {
     line-height: 1.35;
 }
 
+/* Billing Cycle Read-only Display */
+.billing-cycle-display {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    background: #f8fafc;
+    border: 1.5px solid var(--border-color);
+    border-radius: 9px;
+    padding: 10px 14px;
+    font-size: 0.9rem;
+    font-weight: 600;
+    color: var(--text-main);
+}
+
+.cycle-display-icon {
+    color: var(--text-muted);
+    display: flex;
+    align-items: center;
+}
+
+.cycle-display-note {
+    font-size: 0.78rem;
+    font-weight: 400;
+    color: var(--text-muted);
+    margin-left: auto;
+}
+
+.cycle-change-link {
+    color: var(--accent);
+    text-decoration: none;
+    font-weight: 600;
+}
+
+.cycle-change-link:hover {
+    text-decoration: underline;
+}
+
+/* Addons Change Link */
+.addons-change-link {
+    font-size: 0.78rem;
+    font-weight: 600;
+    color: var(--text-muted);
+    text-decoration: none;
+    border: 1px solid var(--border-color);
+    padding: 2px 8px;
+    border-radius: 5px;
+    transition: all 0.15s;
+}
+
+.addons-change-link:hover {
+    color: var(--accent);
+    border-color: var(--accent);
+}
+
+/* Selected Addon Items (read-only) */
+.selected-addon-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 9px 12px;
+    border: 1.5px solid var(--border-color);
+    border-radius: 9px;
+    margin-bottom: 8px;
+    background: #ffffff;
+}
+
+.selected-addon-info {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex: 1;
+}
+
+.selected-addon-check {
+    color: #16a34a;
+    font-weight: 700;
+    font-size: 0.85rem;
+}
+
+.selected-addon-name {
+    font-weight: 600;
+    font-size: 0.9rem;
+    color: var(--text-main);
+}
+
+.selected-addon-cycle {
+    font-size: 0.68rem;
+    font-weight: 700;
+    padding: 2px 7px;
+    border-radius: 4px;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+}
+
+.selected-addon-cycle.monthly {
+    background: #eff6ff;
+    color: #1d4ed8;
+}
+
+.selected-addon-cycle.yearly {
+    background: #f0fdf4;
+    color: #15803d;
+}
+
+.selected-addon-price {
+    font-weight: 700;
+    font-size: 0.9rem;
+    color: var(--text-main);
+}
+
+/* No addons note */
+.no-addons-note {
+    display: flex;
+    align-items: center;
+    gap: 7px;
+    font-size: 0.83rem;
+    color: var(--text-muted);
+    padding: 10px 12px;
+    background: #f8fafc;
+    border-radius: 8px;
+    border: 1px dashed var(--border-color);
+}
+
+.no-addons-note a {
+    color: var(--accent);
+    text-decoration: none;
+    font-weight: 600;
+}
+
+/* Dynamic addon invoice rows — per-addon cycle tag */
+.dynamic-addon-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-size: 0.85rem;
+    color: #475569;
+    padding-left: 6px;
+    border-left: 2px solid #e2e8f0;
+    margin-bottom: 6px;
+}
+
+.addon-name-cycle {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.addon-name {
+    font-weight: 500;
+}
+
+.addon-cycle-tag {
+    font-size: 0.65rem;
+    font-weight: 700;
+    padding: 1px 5px;
+    border-radius: 3px;
+    text-transform: uppercase;
+    letter-spacing: 0.03em;
+}
+
+.addon-cycle-tag.monthly {
+    background: #eff6ff;
+    color: #1d4ed8;
+}
+
+.addon-cycle-tag.yearly {
+    background: #f0fdf4;
+    color: #15803d;
+}
+
+.addon-cost {
+    font-weight: 600;
+    color: var(--text-main);
+}
+
 /* Skeleton loader */
 .skeleton-loader {
     padding: 16px;
