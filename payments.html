@@ -16,109 +16,192 @@
 </head>
 <body class="payments-page">
     <div class="payments-container">
-        <!-- Header -->
-        <div class="payments-header">
-            <div class="logo">
-                <svg width="32" height="32" viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg">
-                    <rect x="2" y="6" width="28" height="20" rx="4" stroke="currentColor" stroke-width="2"/>
-                    <path d="M8 12C8 12 11 16 16 16C21 16 24 12 24 12" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
-                    <circle cx="16" cy="16" r="2" fill="currentColor"/>
-                </svg>
-                <span>BharathBots</span>
+        
+        <!-- Compact 2-Row Header -->
+        <header class="payments-header">
+            <div class="payments-top-bar">
+                <div class="logo">
+                    <svg width="28" height="28" viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <rect x="2" y="6" width="28" height="20" rx="4" stroke="currentColor" stroke-width="2"/>
+                        <path d="M8 12C8 12 11 16 16 16C21 16 24 12 24 12" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+                        <circle cx="16" cy="16" r="2" fill="currentColor"/>
+                    </svg>
+                    <span>BharathBots</span>
+                </div>
+                <div class="secure-badge">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect>
+                        <path d="M7 11V7a5 5 0 0 1 10 0v4"></path>
+                    </svg>
+                    <span>256-bit Secure Checkout &bull; Powered by Razorpay</span>
+                </div>
             </div>
-            <h1>Activate your workspace</h1>
-            <p>Review your selected plan and set up billing to continue.</p>
-        </div>
+            
+            <div class="payments-headline-row">
+                <h1>Complete your activation</h1>
+                <p>Configure billing, select optional add-ons, and start your free trial.</p>
+            </div>
+        </header>
 
         <div id="paymentMessage" class="payment-message" style="display: none;"></div>
 
-
-
-        <!-- Three Column Layout -->
-        <div class="three-col-layout">
+        <!-- 2-Column Professional Checkout Grid -->
+        <div class="checkout-grid">
             
-            <!-- Column 1: Plan Summary -->
-            <div class="column-block plan-block">
-                <h2>Your Selection</h2>
-                <div class="summary-card" id="planSummaryCard">
-                    <!-- Injected via JS -->
-                    <div class="skeleton-loader">Loading plan details...</div>
+            <!-- Left Column: Configure & Setup -->
+            <div class="checkout-card config-card">
+                <div class="card-section-header">
+                    <h2>Configure &amp; Setup</h2>
+                    <span class="step-indicator">Step 3 of 3</span>
                 </div>
-            </div>
 
-            <!-- Column 2: Order Summary & Actions -->
-            <div class="column-block order-block">
-                <h2>Configure & Pay</h2>
-                
-                <div class="order-container">
-                    <!-- Billing Toggle -->
+                <!-- Billing Cycle Selector -->
+                <div class="form-group-block">
+                    <label class="group-label">Billing Cycle</label>
                     <div class="billing-toggle-wrapper">
-                        <button id="toggleMonthly" class="billing-btn active">Monthly</button>
-                        <button id="toggleAnnual" class="billing-btn">Annually (Save 17%)</button>
+                        <button id="toggleMonthly" type="button" class="billing-btn active">Monthly</button>
+                        <button id="toggleAnnual" type="button" class="billing-btn">Annual <span class="badge-save">Save 17%</span></button>
                     </div>
-
-                    <!-- Addons -->
-                    <div class="addons-list" id="addonsListContainer">
-                        <h3 class="subsection-title">Supercharge your plan</h3>
-                        
-                        <!-- Dynamically Injected Addons Go Here -->
-                        <div class="skeleton-loader" style="padding: 20px; text-align: center; color: var(--text-muted); font-size: 0.9rem;">
-                            Loading available add-ons...
-                        </div>
-                    </div>
-
-                    <!-- Cost Breakdown Receipt -->
-                    <div class="receipt-box">
-                        <h3 class="subsection-title">Order Summary</h3>
-                        
-                        <div class="receipt-row">
-                            <span id="receiptPlanName">Plan Cost</span>
-                            <span id="receiptPlanPrice">₹0</span>
-                        </div>
-                        
-                        <div id="dynamicAddonsContainer">
-                            <!-- Injected JS Add-on Lines Go Here -->
-                        </div>
-                        
-                        <hr class="receipt-divider">
-                        
-                        <div class="receipt-row total-row">
-                            <span>Total Due</span>
-                            <span id="receiptTotalPrice">₹0</span>
-                        </div>
-                        <div class="billing-note" id="billingNote">Billed monthly</div>
-                    </div>
-
-                    <!-- Activation Action -->
-                    <button class="btn-primary btn-large" id="btnPayNow">
-                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lock-icon"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect><path d="M7 11V7a5 5 0 0 1 10 0v4"></path></svg>
-                        Pay & Activate
-                    </button>
-                    <p class="secure-text">🔒 Secure Payments via Razorpay.</p>
                 </div>
-            </div>
 
-            <!-- Column 3: Free Trial -->
-            <div class="column-block trial-block">
-                <h2>No Credit Card?</h2>
-                <div class="trial-card-side">
-                    <div class="trial-content">
-                        <h3>Start Free Trial</h3>
-                        <p>Experience the full feature set absolutely free for 7 days. A payment method is required to begin — <strong>you won't be charged during the trial.</strong></p>
-                        
-                        <ul class="trial-benefits">
-                            <li><svg class="check-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg> ₹0 charged today</li>
-                            <li><svg class="check-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg> Instant access on mandate</li>
-                            <li><svg class="check-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg> Auto-renew after 7 days</li>
-                            <li><svg class="check-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg> Cancel anytime before trial ends</li>
-                        </ul>
+                <!-- Available Add-ons -->
+                <div class="form-group-block addons-block">
+                    <div class="addons-header">
+                        <label class="group-label">Available Add-ons</label>
+                        <span class="addons-hint">Select extra power-ups for your salon</span>
                     </div>
                     
-                    <button id="btnStartTrial" class="btn-secondary btn-trial">🔒 Start 7-Day Free Trial</button>
-                    <p class="trial-note">You'll be redirected to Razorpay to securely save your payment method. Your 7-day trial begins immediately after mandate setup. Billing only starts after the trial period ends.</p>
+                    <div class="addons-list" id="addonsListContainer">
+                        <div class="skeleton-loader">Loading available add-ons...</div>
+                    </div>
+                </div>
+
+                <!-- Activation Mode Selector -->
+                <div class="form-group-block activation-mode-block" id="activationModeContainer">
+                    <label class="group-label">Payment &amp; Activation Mode</label>
+                    
+                    <div class="activation-options">
+                        <!-- Option 1: 7-Day Free Trial (Default) -->
+                        <label class="activation-option active" id="optionTrialLabel">
+                            <input type="radio" name="activationMode" value="trial" id="modeTrial" checked>
+                            <div class="option-details">
+                                <div class="option-title-row">
+                                    <span class="option-title">7-Day Free Trial</span>
+                                    <span class="recommended-badge">Recommended</span>
+                                </div>
+                                <p class="option-subtext" id="trialSubtext">&#8377;0 charged today. Renews on <strong id="trialRenewDate">in 7 days</strong>. Cancel anytime.</p>
+                            </div>
+                        </label>
+
+                        <!-- Option 2: Pay Immediately -->
+                        <label class="activation-option" id="optionImmediateLabel">
+                            <input type="radio" name="activationMode" value="immediate" id="modeImmediate">
+                            <div class="option-details">
+                                <div class="option-title-row">
+                                    <span class="option-title">Pay Immediately</span>
+                                </div>
+                                <p class="option-subtext">Instant billing and permanent activation without trial mandate.</p>
+                            </div>
+                        </label>
+                    </div>
+                </div>
+
+                <!-- Single Primary CTA Button -->
+                <button type="button" class="btn-checkout-primary" id="btnSubmitPayment">
+                    <svg class="lock-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect>
+                        <path d="M7 11V7a5 5 0 0 1 10 0v4"></path>
+                    </svg>
+                    <span id="btnSubmitText">Start 7-Day Free Trial &rarr; (&#8377;0 Due Today)</span>
+                </button>
+
+                <!-- Payment Trust Badges -->
+                <div class="payment-trust-bar">
+                    <span class="trust-label">Accepted:</span>
+                    <span class="trust-pill">UPI Autopay</span>
+                    <span class="trust-pill">Visa</span>
+                    <span class="trust-pill">Mastercard</span>
+                    <span class="trust-pill">RuPay</span>
+                    <span class="trust-pill">NetBanking</span>
                 </div>
             </div>
-            
+
+            <!-- Right Column: Pure Checkout Summary / Invoice ONLY -->
+            <div class="checkout-card summary-card-col">
+                <div class="card-section-header">
+                    <h2>Checkout Summary</h2>
+                    <span class="summary-status-pill" id="summaryStatusPill">7-Day Free Trial</span>
+                </div>
+
+                <!-- Invoice Breakdown Box -->
+                <div class="invoice-box">
+                    <div class="invoice-header">
+                        <h3>Invoice Breakdown</h3>
+                        <span class="invoice-currency">All prices in INR (&#8377;)</span>
+                    </div>
+
+                    <!-- Base Plan Row -->
+                    <div class="invoice-row plan-row">
+                        <div class="invoice-item-info">
+                            <span class="invoice-item-title" id="receiptPlanName">Loading Plan...</span>
+                            <span class="invoice-cycle-pill" id="receiptCyclePill">Monthly</span>
+                        </div>
+                        <span class="invoice-item-price" id="receiptPlanPrice">&#8377;0.00</span>
+                    </div>
+
+                    <!-- Dynamic Addons Injected Here -->
+                    <div id="dynamicAddonsContainer" class="dynamic-addons-list">
+                        <!-- JS injects addon rows -->
+                    </div>
+
+                    <div class="invoice-divider"></div>
+
+                    <!-- Subtotal Row -->
+                    <div class="invoice-row subtotal-row">
+                        <span>Subtotal</span>
+                        <span id="receiptSubtotalPrice">&#8377;0.00</span>
+                    </div>
+
+                    <!-- Trial Discount Row (Dynamic) -->
+                    <div class="invoice-row discount-row" id="receiptDiscountRow">
+                        <span class="discount-label">
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z"></path><line x1="7" y1="7" x2="7.01" y2="7"></line></svg>
+                            7-Day Trial Discount (100% off)
+                        </span>
+                        <span class="discount-amount" id="receiptTrialDiscount">-&#8377;0.00</span>
+                    </div>
+
+                    <div class="invoice-divider bold-divider"></div>
+
+                    <!-- Total Due Today Row -->
+                    <div class="invoice-row total-due-row">
+                        <div>
+                            <span class="total-label">Total Due Today</span>
+                            <span class="total-subtext" id="totalDueSubtext">No charge during 7-day trial</span>
+                        </div>
+                        <span class="total-amount highlight-green" id="receiptTotalPrice">&#8377;0.00</span>
+                    </div>
+
+                    <!-- Recurring Charge Schedule -->
+                    <div class="recurring-note-box" id="recurringBillingNote">
+                        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg>
+                        <span id="recurringNoteText">First recurring charge: <strong>Nov 5, 2026 &bull; &#8377;1,499.00 / month</strong></span>
+                    </div>
+                </div>
+
+                <!-- Risk Reversal Guarantee Box -->
+                <div class="guarantee-box">
+                    <svg class="guarantee-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path>
+                        <polyline points="9 12 11 14 15 10"></polyline>
+                    </svg>
+                    <div class="guarantee-text">
+                        <strong>Zero Risk Guarantee</strong>
+                        <p>Cancel anytime from your dashboard with 1 click before the renewal date to avoid any charges.</p>
+                    </div>
+                </div>
+            </div>
+
         </div>
     </div>
 
