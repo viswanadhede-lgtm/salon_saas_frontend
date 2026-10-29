@@ -1,24 +1,32 @@
 /**
  * config/plan-limits-manager.js
  * ─────────────────────────────────────────────────────────────────────────────
- * PLAN LIMITS & USAGE COUNTER ENFORCEMENT
+ * DYNAMIC PLAN LIMITS & USAGE COUNTER ENFORCEMENT
  * ─────────────────────────────────────────────────────────────────────────────
  *
- * PURPOSE:
- *   Enforces plan-tier capacity ceilings (max_branches, max_users, max_staff)
- *   before creation modals open or records are submitted.
+ * ARCHITECTURAL DESIGN:
+ *   1. Ceilings (maxLimit):
+ *      Dynamically queried from `public.plan_limits` table:
+ *      - Matches `plan_id` (UUID) or `plan_name` (Text) and `limit_key`.
+ *      - Fallback constants are only a safety net if DB is disconnected.
  *
- * ARCHITECTURAL ROLE:
- *   - Part of Gate 3: Quantitative resource gating (in contrast to qualitative page access).
- *   - Checks both `public.plan_limits` (for allowed ceiling) and real-time database counts
- *     (for accurate capacity measurement, updating `public.usage_counters`).
- *   - When limit is reached, blocks action and opens the Plan Upgrade modal.
+ *   2. Usage (currentCount):
+ *      Dynamically queried from `public.usage_counters` table:
+ *      - Matches `company_id` (UUID) and `limit_key` (Text).
+ *      - Reads `current_count` directly from `usage_counters`.
+ *      - Self-heals: if the `usage_counters` row hasn't been created yet,
+ *        it counts live records from the source table (branches, users, staff)
+ *        and saves it to `usage_counters`.
+ *
+ *   3. Real-Time Synchronization:
+ *      `refreshUsageCounter(limitKey)` is called immediately after an insert or
+ *      delete in branches, users, and staff to keep `usage_counters` 100% accurate.
  * ─────────────────────────────────────────────────────────────────────────────
  */
 
 import { supabase } from '../lib/supabase.js';
 
-// Fallback limits if plan_limits row has not been seeded in DB yet
+// Safe in-memory fallbacks ONLY if DB connection is offline or tables are unseeded
 const FALLBACK_PLAN_LIMITS = {
     Growth: {
         max_branches: 1,
@@ -85,12 +93,13 @@ function resolveCompanyAndPlan() {
 
 /**
  * Checks if the company is within its plan allowance for a given resource.
+ * Dynamically queries `public.plan_limits` for maximum and `public.usage_counters` for current usage.
  *
- * @param {'max_branches' | 'max_users' | 'max_staff'} resourceKey
+ * @param {'max_branches' | 'max_users' | 'max_staff'} limitKey
  * @returns {Promise<{ allowed: boolean, currentCount: number, maxLimit: number, planName: string, meta: Object }>}
  */
-export async function checkResourceLimit(resourceKey) {
-    const meta = RESOURCE_META[resourceKey] || {
+export async function checkResourceLimit(limitKey) {
+    const meta = RESOURCE_META[limitKey] || {
         singular: 'item',
         plural: 'items',
         title: 'Plan Limit Reached',
@@ -125,14 +134,17 @@ export async function checkResourceLimit(resourceKey) {
             } catch (_) {}
         }
 
-        // 1. Fetch Plan Max Limit from plan_limits table
+        // ─────────────────────────────────────────────────────────────────────
+        // 1. DYNAMICALLY LOAD MAX CEILING FROM `public.plan_limits` TABLE
+        // ─────────────────────────────────────────────────────────────────────
         let maxLimit = null;
+
         if (planId) {
             const { data: limitRow } = await supabase
                 .from('plan_limits')
                 .select('limit_value')
                 .eq('plan_id', planId)
-                .eq('limit_key', resourceKey)
+                .eq('limit_key', limitKey)
                 .maybeSingle();
 
             if (limitRow && limitRow.limit_value !== null && limitRow.limit_value !== undefined) {
@@ -140,13 +152,13 @@ export async function checkResourceLimit(resourceKey) {
             }
         }
 
-        // If not found by plan_id, try by plan_name
+        // If not found by plan_id, query by plan_name
         if ((maxLimit === null || isNaN(maxLimit)) && planName) {
             const { data: limitRowByName } = await supabase
                 .from('plan_limits')
                 .select('limit_value')
                 .ilike('plan_name', planName)
-                .eq('limit_key', resourceKey)
+                .eq('limit_key', limitKey)
                 .maybeSingle();
 
             if (limitRowByName && limitRowByName.limit_value !== null && limitRowByName.limit_value !== undefined) {
@@ -154,30 +166,63 @@ export async function checkResourceLimit(resourceKey) {
             }
         }
 
-        // Fallback to configured defaults if not found in DB
-        if (maxLimit === null || isNaN(maxLimit)) {
-            const planFallback = FALLBACK_PLAN_LIMITS[planName] || FALLBACK_PLAN_LIMITS['Growth'];
-            maxLimit = planFallback[resourceKey] ?? 9999;
+        // ─────────────────────────────────────────────────────────────────────
+        // 2. DYNAMICALLY LOAD CURRENT USAGE FROM `public.usage_counters` TABLE
+        // ─────────────────────────────────────────────────────────────────────
+        let currentCount = null;
+        let usageCounterRow = null;
+
+        const { data: usageData, error: usageErr } = await supabase
+            .from('usage_counters')
+            .select('id, current_count, max_limit')
+            .eq('company_id', companyId)
+            .eq('limit_key', limitKey)
+            .maybeSingle();
+
+        if (!usageErr && usageData) {
+            usageCounterRow = usageData;
+            if (usageData.current_count !== null && usageData.current_count !== undefined) {
+                currentCount = parseInt(usageData.current_count, 10);
+            }
+            if (maxLimit === null && usageData.max_limit !== null && usageData.max_limit !== undefined) {
+                maxLimit = parseInt(usageData.max_limit, 10);
+            }
         }
 
-        // 2. Fetch Real-time Current Count directly from table (excluding soft-deleted)
-        let currentCount = 0;
-        if (meta.table) {
+        // ─────────────────────────────────────────────────────────────────────
+        // 3. SELF-HEALING FALLBACK:
+        // If usage_counters row is missing or uninitialized, calculate live count
+        // and initialize the row so future queries read directly from usage_counters
+        // ─────────────────────────────────────────────────────────────────────
+        if (currentCount === null && meta.table) {
             const { count, error } = await supabase
                 .from(meta.table)
                 .select('id', { count: 'exact', head: true })
                 .eq('company_id', companyId)
                 .neq('status', 'deleted');
 
-            if (!error && count !== null) {
-                currentCount = count;
-            }
+            currentCount = (!error && count !== null) ? count : 0;
+
+            // Seed/sync into usage_counters so next reads are instant
+            syncUsageCounterDb(companyId, planId, limitKey, currentCount, maxLimit).catch(e => {
+                console.warn('[PlanLimits] Sync usage_counters notice:', e.message);
+            });
         }
 
-        // 3. Asynchronously sync usage_counters in background
-        syncUsageCounterDb(companyId, planId, resourceKey, currentCount, maxLimit).catch(e => {
-            console.warn('[PlanLimits] Non-blocking usage_counters sync notice:', e.message);
-        });
+        // Fallback default ceiling if plan_limits row wasn't seeded in DB
+        if (maxLimit === null || isNaN(maxLimit)) {
+            const planFallback = FALLBACK_PLAN_LIMITS[planName] || FALLBACK_PLAN_LIMITS['Growth'];
+            maxLimit = planFallback[limitKey] ?? 9999;
+        }
+
+        // Keep usage_counters.max_limit synchronized with plan_limits in background
+        if (usageCounterRow && usageCounterRow.max_limit !== maxLimit) {
+            supabase
+                .from('usage_counters')
+                .update({ max_limit: maxLimit, updated_at: new Date().toISOString() })
+                .eq('id', usageCounterRow.id)
+                .then();
+        }
 
         const allowed = currentCount < maxLimit;
 
@@ -190,31 +235,33 @@ export async function checkResourceLimit(resourceKey) {
         };
     } catch (err) {
         console.error('[PlanLimits] Error checking resource limit:', err);
-        // Fail open so an error never locks a paying customer out of legitimate work
+        // Fail open so an unexpected error never locks a paying customer out
         return { allowed: true, currentCount: 0, maxLimit: 9999, planName: 'Current', meta };
     }
 }
 
 /**
- * Background helper to keep usage_counters table up to date.
+ * Syncs / upserts a counter row in `public.usage_counters`.
  */
-async function syncUsageCounterDb(companyId, planId, resourceKey, currentCount, maxLimit) {
+export async function syncUsageCounterDb(companyId, planId, limitKey, currentCount, maxLimit = null) {
     if (!companyId) return;
 
     try {
         const { data: existing } = await supabase
             .from('usage_counters')
-            .select('id')
+            .select('id, max_limit')
             .eq('company_id', companyId)
-            .eq('resource_key', resourceKey)
+            .eq('limit_key', limitKey)
             .maybeSingle();
+
+        const resolvedMax = maxLimit !== null ? maxLimit : existing?.max_limit ?? null;
 
         if (existing) {
             await supabase
                 .from('usage_counters')
                 .update({
                     current_count: currentCount,
-                    max_limit: maxLimit,
+                    ...(resolvedMax !== null ? { max_limit: resolvedMax } : {}),
                     updated_at: new Date().toISOString()
                 })
                 .eq('id', existing.id);
@@ -226,12 +273,42 @@ async function syncUsageCounterDb(companyId, planId, resourceKey, currentCount, 
                     company_id: companyId,
                     branch_id: branchId,
                     plan_id: planId,
-                    resource_key: resourceKey,
+                    limit_key: limitKey,
                     current_count: currentCount,
-                    max_limit: maxLimit
+                    max_limit: resolvedMax
                 });
         }
-    } catch (_) {}
+    } catch (e) {
+        console.warn('[PlanLimits] syncUsageCounterDb notice:', e);
+    }
+}
+
+/**
+ * Re-counts active items in source table and updates `usage_counters.current_count`.
+ * Call this immediately after creating or deleting a branch, user, or staff member.
+ *
+ * @param {'max_branches' | 'max_users' | 'max_staff'} limitKey
+ */
+export async function refreshUsageCounter(limitKey) {
+    const meta = RESOURCE_META[limitKey];
+    if (!meta || !meta.table) return;
+
+    try {
+        const { companyId, planId } = resolveCompanyAndPlan();
+        if (!companyId) return;
+
+        const { count, error } = await supabase
+            .from(meta.table)
+            .select('id', { count: 'exact', head: true })
+            .eq('company_id', companyId)
+            .neq('status', 'deleted');
+
+        if (!error && count !== null) {
+            await syncUsageCounterDb(companyId, planId, limitKey, count);
+        }
+    } catch (e) {
+        console.warn('[PlanLimits] refreshUsageCounter notice:', e);
+    }
 }
 
 /**

@@ -2,7 +2,7 @@ import { supabase } from './lib/supabase.js';
 import { FEATURES } from './config/feature-registry.js';
 import { SUB_FEATURES } from './config/sub-feature-registry.js';
 import { applySubFeatureGates } from './scripts/sub-features/sub-feature-gate.js';
-import { checkResourceLimit, showPlanLimitModal } from './config/plan-limits-manager.js';
+import { checkResourceLimit, showPlanLimitModal, refreshUsageCounter } from './config/plan-limits-manager.js';
 
 let liveStaffData = [];
 
@@ -540,6 +540,7 @@ function attachEventListeners() {
                 }
 
                 showToast('Staff member added successfully');
+                refreshUsageCounter('max_staff');
                 if (window.notifyEvent) {
                     window.notifyEvent('staff', 'evt_staff_added', {
                         title: 'New Staff Added',
@@ -706,6 +707,7 @@ function attachEventListeners() {
                 staffToDelete = null;
 
                 showToast('Staff member deleted successfully');
+                refreshUsageCounter('max_staff');
                 if (window.notifyEvent) {
                     window.notifyEvent('staff', 'evt_staff_deleted', {
                         title: 'Staff Deleted',

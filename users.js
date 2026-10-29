@@ -1,6 +1,6 @@
 // users.js — Users page logic
 import { supabase } from './lib/supabase.js';
-import { checkResourceLimit, showPlanLimitModal } from './config/plan-limits-manager.js';
+import { checkResourceLimit, showPlanLimitModal, refreshUsageCounter } from './config/plan-limits-manager.js';
 
 (async function () {
     const getCompanyId = () => {
@@ -405,6 +405,7 @@ import { checkResourceLimit, showPlanLimitModal } from './config/plan-limits-man
                     if (error) throw error;
                     await loadUsers();
                     showToast(`User "${user.name}" has been deleted.`);
+                    refreshUsageCounter('max_users');
                 } catch (err) {
                     console.error('Error deleting user:', err);
                     showToast('Failed to delete user', true);
@@ -621,6 +622,7 @@ import { checkResourceLimit, showPlanLimitModal } from './config/plan-limits-man
                 const { error } = await supabase.from('users').insert([payload]);
                 if (error) throw error;
                 showToast('User created successfully. They can now log in!');
+                refreshUsageCounter('max_users');
             }
 
             closeModal();

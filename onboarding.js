@@ -236,7 +236,7 @@ async function submitOnboarding() {
                 company_id,
                 branch_id,
                 plan_id: planId,
-                resource_key: resourceKey,
+                limit_key: resourceKey,
                 current_count: currentCount,
                 max_limit: limit.limit_value
             });

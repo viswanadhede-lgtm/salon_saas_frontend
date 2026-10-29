@@ -1,6 +1,6 @@
 import { supabase } from './lib/supabase.js';
 import { populateGlobalHeader } from './scripts/global-auth-guard.js';
-import { checkResourceLimit, showPlanLimitModal } from './config/plan-limits-manager.js';
+import { checkResourceLimit, showPlanLimitModal, refreshUsageCounter } from './config/plan-limits-manager.js';
 
 document.addEventListener('DOMContentLoaded', async () => {
 
@@ -398,6 +398,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             renderTable();
             updateGlobalContext();
             showToast('Branch has been deleted.', 'success');
+            refreshUsageCounter('max_branches');
         } catch (err) {
             console.error("Error deleting branch:", err);
             showToast("Failed to delete branch", 'error');
@@ -555,6 +556,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
                     if (error) throw error;
                     showToast('Branch added successfully!', 'success');
+                    refreshUsageCounter('max_branches');
                 }
 
                 closePanel();
