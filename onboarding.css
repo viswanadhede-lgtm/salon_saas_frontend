@@ -209,24 +209,6 @@
     line-height: 1.4;
 }
 
-/* Readonly Inputs (e.g. Country & Timezone) */
-.form-input-readonly,
-.form-group input[readonly] {
-    background-color: #f8fafc !important;
-    color: #64748b !important;
-    border-color: #e2e8f0 !important;
-    cursor: default;
-    user-select: none;
-    font-weight: 500;
-}
-
-.form-input-readonly:focus,
-.form-group input[readonly]:focus {
-    border-color: #e2e8f0 !important;
-    box-shadow: none !important;
-    outline: none !important;
-}
-
 .form-group input::placeholder {
     color: #94a3b8;
 }
