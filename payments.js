@@ -14,7 +14,6 @@ document.addEventListener('DOMContentLoaded', async () => {
     const planNameRaw     = params.get('plan_name')     || signupData.plan_name || 'Selected';
     const savedCycle      = params.get('billing_cycle') || signupData.billing_cycle || 'monthly';
     const billingCycle    = (savedCycle === 'annual' || savedCycle === 'yearly') ? 'annual' : 'monthly';
-    const selectedAddons  = JSON.parse(localStorage.getItem('selected_addons') || '[]');
 
     // Buttons & interactive elements
     const btnPayNow   = document.getElementById('btnPayNow');
@@ -70,16 +69,10 @@ document.addEventListener('DOMContentLoaded', async () => {
         return;
     }
 
-    // ── Calculate totals ────────────────────────────────────────────
-    const addonsTotal  = selectedAddons.reduce((sum, a) => sum + (parseFloat(a.price) || 0), 0);
-    const payNowTotal  = basePlanPrice + addonsTotal;   // Pay Now: plan + all add-ons
-    const trialDueAmt  = addonsTotal;                   // Trial: ₹0 plan + add-ons charged now
-
     // ── Populate "Your order" section ───────────────────────────────
     const cycleLabel = billingCycle === 'annual' ? 'Annual' : 'Monthly';
     const periodStr  = billingCycle === 'annual' ? '/year'  : '/month';
 
-    // Plan row
     setText('orderPlanName',   `${planDisplayName} Plan`);
     setText('orderPlanMeta',   `BharathBots app · ${cycleLabel}`);
     setText('orderPlanPrice',  `₹${fmt(basePlanPrice)}`);
@@ -91,72 +84,21 @@ document.addEventListener('DOMContentLoaded', async () => {
         trialTag.style.display = 'block';
     }
 
-    // Add-on rows
-    const addonRowsEl = document.getElementById('orderAddonRows');
-    if (addonRowsEl) {
-        if (selectedAddons.length === 0) {
-            addonRowsEl.innerHTML = '';
-        } else {
-            addonRowsEl.innerHTML = selectedAddons.map(a => {
-                const ac = a.billing_cycle === 'monthly' ? 'Monthly' : 'Annual';
-                const ap = a.billing_cycle === 'monthly' ? '/month' : '/year';
-                return `
-                <div class="order-item">
-                    <div class="order-item-icon">
-                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                            <circle cx="12" cy="12" r="3"></circle>
-                            <path d="M19.07 4.93a10 10 0 0 1 0 14.14M4.93 4.93a10 10 0 0 0 0 14.14"></path>
-                        </svg>
-                    </div>
-                    <div class="order-item-info">
-                        <div class="order-item-name">${escHtml(a.name)}</div>
-                        <div class="order-item-meta">Add-on · ${ac}</div>
-                    </div>
-                    <div class="order-item-price-col">
-                        <span class="order-item-price">₹${fmt(a.price)}</span>
-                        <span class="order-item-period">${ap}</span>
-                    </div>
-                </div>`;
-            }).join('');
-        }
-    }
-
     // ── Populate "Pay Now" card ─────────────────────────────────────
-    setText('payNowTotal',     `₹${fmt(payNowTotal)}`);
-    setText('btnPayNowAmount', `₹${fmt(payNowTotal)}`);
+    setText('payNowTotal',     `₹${fmt(basePlanPrice)}`);
+    setText('btnPayNowAmount', `₹${fmt(basePlanPrice)}`);
 
     // ── Populate "Trial" card ───────────────────────────────────────
-    setText('trialDueToday', `₹${fmt(trialDueAmt)}`);
+    setText('trialDueToday', '₹0');
 
-    // Show add-on row inside trial card only if there are add-ons
+    // Hide add-on row in trial card (no add-ons in onboarding)
     const trialAddonRow = document.getElementById('trialAddonRow');
-    if (trialAddonRow) {
-        if (selectedAddons.length > 0) {
-            trialAddonRow.style.display = 'flex';
-            setText('trialAddonTotal', `₹${fmt(addonsTotal)}`);
-        } else {
-            trialAddonRow.style.display = 'none';
-        }
-    }
+    if (trialAddonRow) trialAddonRow.style.display = 'none';
 
-    // Fine print
-    const fpPlanRenew  = document.getElementById('fpPlanRenew');
-    const fpAddonRenew = document.getElementById('fpAddonRenew');
+    // Fine print — plan renewal info only
+    const fpPlanRenew = document.getElementById('fpPlanRenew');
     if (fpPlanRenew) {
         fpPlanRenew.textContent = `₹${fmt(basePlanPrice)}${periodStr}`;
-    }
-    if (fpAddonRenew && addonsTotal > 0) {
-        if (selectedAddons.length === 1) {
-            const a  = selectedAddons[0];
-            const ap = a.billing_cycle === 'monthly' ? '/month' : '/year';
-            fpAddonRenew.textContent = `The add-on renews separately at ₹${fmt(a.price)}${ap}.`;
-        } else {
-            const parts = selectedAddons.map(a => {
-                const ap = a.billing_cycle === 'monthly' ? '/month' : '/year';
-                return `${escHtml(a.name)} at ₹${fmt(a.price)}${ap}`;
-            });
-            fpAddonRenew.textContent = `Add-ons renew separately: ${parts.join(', ')}.`;
-        }
     }
 
     // ── Enable buttons ──────────────────────────────────────────────
@@ -178,11 +120,8 @@ document.addEventListener('DOMContentLoaded', async () => {
         });
     }
 
-    // ── Edit plan link: preserve company_id ────────────────────────
-    const editLink = document.querySelector('.order-edit-link');
-    if (editLink && companyId) {
-        editLink.href = `addons.html?company_id=${encodeURIComponent(companyId)}`;
-    }
+    // ── Edit plan link ──────────────────────────────────────────────
+    // (links to plans.html — no add-ons page in onboarding flow)
 
     // ══════════════════════════════════════════════════════════════
     // PAYMENT TRIGGER: Pay Now (immediate subscription)
