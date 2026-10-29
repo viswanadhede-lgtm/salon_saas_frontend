@@ -38,39 +38,39 @@ export const FEATURES = {
     // =========================================================================
 
     // Core System
-    DASHBOARD_ACCESS: 'dashboard_access',                // 1.  dashboard.html
-    BOOKINGS_MANAGEMENT: 'bookings_management',             // 2.  bookings.html
-    CUSTOMERS_MANAGEMENT: 'customers_management',            // 3.  customers.html
+    DASHBOARD_ACCESS:                    'dashboard_access',                // 1.  dashboard.html
+    BOOKINGS_MANAGEMENT:                 'bookings_management',             // 2.  bookings.html
+    CUSTOMERS_MANAGEMENT:                'customers_management',            // 3.  customers.html
 
     // Staff
-    STAFF_MANAGEMENT: 'staff_management',                // 4.  staff.html
-    STAFF_SCHEDULES: 'staff_schedules',                 // 5.  staff-schedule.html
-    SERVICES_MANAGEMENT: 'services_management',             // 6.  services.html
+    STAFF_MANAGEMENT:                    'staff_management',                // 4.  staff.html
+    STAFF_SCHEDULES:                     'staff_schedules',                 // 5.  staff-schedule.html
+    SERVICES_MANAGEMENT:                 'services_management',             // 6.  services.html
 
     // Sales / POS
-    POS_SYSTEM: 'pos_system',                      // 7.  pos.html
-    PRODUCT_MANAGEMENT: 'product_management',              // 8.  products.html
-    SALES_HISTORY: 'sales_history',                   // 9.  sales-history.html
+    POS_SYSTEM:                          'pos_system',                      // 7.  pos.html
+    PRODUCT_MANAGEMENT:                  'product_management',              // 8.  products.html
+    SALES_HISTORY:                       'sales_history',                   // 9.  sales-history.html
 
     // Payments
-    PENDING_PAYMENTS: 'pending_payments',                // 10. pending-payments.html
-    PAYMENTS_HISTORY: 'payments_history',                // 11. payments-history.html
+    PENDING_PAYMENTS:                    'pending_payments',                // 10. pending-payments.html
+    PAYMENTS_HISTORY:                    'payments_history',                // 11. payments-history.html
 
     // Marketing
-    MARKETING_OFFERS: 'marketing_offers',                // 12. offers.html
-    MARKETING_COUPONS: 'marketing_coupons',               // 13. coupons.html
-    MARKETING_MEMBERSHIPS: 'marketing_memberships',           // 14. memberships.html
+    MARKETING_OFFERS:                    'marketing_offers',                // 12. offers.html
+    MARKETING_COUPONS:                   'marketing_coupons',               // 13. coupons.html
+    MARKETING_MEMBERSHIPS:               'marketing_memberships',           // 14. memberships.html
 
     // Analytics
-    ANALYTICS_OVERVIEW: 'analytics_overview',              // 16. overview.html
-    REPORTS_ACCESS: 'reports_access',                  // 17. reports.html
-    ANALYTICS_EXPENSES: 'analytics_expenses',              // 18. expenses.html
+    ANALYTICS_OVERVIEW:                  'analytics_overview',              // 16. overview.html
+    REPORTS_ACCESS:                      'reports_access',                  // 17. reports.html
+    ANALYTICS_EXPENSES:                  'analytics_expenses',              // 18. expenses.html
 
     // Settings & Management
-    COMPANY_SETTINGS: 'company_settings',                // 19. company.html
-    USER_MANAGEMENT: 'user_management',                 // 20. users.html
-    ROLES_PERMISSIONS: 'roles_permissions',               // 21. roles-permissions.html
-    BILLING_SUBSCRIPTION_MANAGEMENT: 'billing_subscription_management', // 22. billing-subscription.html
+    COMPANY_SETTINGS:                    'company_settings',                // 19. company.html
+    USER_MANAGEMENT:                     'user_management',                 // 20. users.html
+    ROLES_PERMISSIONS:                   'roles_permissions',               // 21. roles-permissions.html
+    BILLING_SUBSCRIPTION_MANAGEMENT:     'billing_subscription_management', // 22. billing-subscription.html
 
 
     // =========================================================================
@@ -78,44 +78,44 @@ export const FEATURES = {
     // =========================================================================
 
     // ── DASHBOARD ─────────────────────────────────────────────────────────────
-    DASHBOARD_TODAYS_REVENUE: 'dashboard_todays_revenue',        // 23. todays-revenue.html
-    DASHBOARD_UPCOMING_APPOINTMENTS: 'dashboard_upcoming_appointments', // 24. upcoming-appointments.html
-    DASHBOARD_COMPLETED_APPOINTMENTS: 'dashboard_completed_appointments',// 25. completed-appointments.html
-    DASHBOARD_NO_SHOWS_CANCELLATIONS: 'dashboard_no_shows_cancellations',// 26. no-shows-cancellations.html
+    DASHBOARD_TODAYS_REVENUE:            'dashboard_todays_revenue',        // 23. todays-revenue.html
+    DASHBOARD_UPCOMING_APPOINTMENTS:     'dashboard_upcoming_appointments', // 24. upcoming-appointments.html
+    DASHBOARD_COMPLETED_APPOINTMENTS:    'dashboard_completed_appointments',// 25. completed-appointments.html
+    DASHBOARD_NO_SHOWS_CANCELLATIONS:    'dashboard_no_shows_cancellations',// 26. no-shows-cancellations.html
 
     // ── REPORTS ───────────────────────────────────────────────────────────────
-    REPORTS_CATEGORY: 'reports_category',                // 27. report-category.html
-    REPORTS_DETAIL: 'reports_detail',                  // 28. report-detail.html
-    REPORT_FINANCIAL: 'report_financial',                // 29. financial reports
-    REPORT_STAFF_PERFORMANCE: 'report_staff_performance',        // 30. staff performance reports
-    REPORT_BOOKINGS: 'report_bookings',                 // 31. bookings reports
-    REPORT_CUSTOMERS: 'report_customers',                // 32. customers reports
-    REPORT_PRODUCT_SALES: 'report_product_sales',            // 33. product sales reports
-    REPORT_DISCOUNT_USAGES: 'report_discount_usages',          // 34. discount usages reports
-    REPORT_MEMBERSHIPS: 'report_memberships',              // 35. memberships reports
+    REPORTS_CATEGORY:                    'reports_category',                // 27. report-category.html
+    REPORTS_DETAIL:                      'reports_detail',                  // 28. report-detail.html
+    REPORT_FINANCIAL:                    'report_financial',                // 29. financial reports
+    REPORT_STAFF_PERFORMANCE:            'report_staff_performance',        // 30. staff performance reports
+    REPORT_BOOKINGS:                     'report_bookings',                 // 31. bookings reports
+    REPORT_CUSTOMERS:                    'report_customers',                // 32. customers reports
+    REPORT_PRODUCT_SALES:                'report_product_sales',            // 33. product sales reports
+    REPORT_DISCOUNT_USAGES:              'report_discount_usages',          // 34. discount usages reports
+    REPORT_MEMBERSHIPS:                  'report_memberships',              // 35. memberships reports
 
     // ── COMPANY ───────────────────────────────────────────────────────────────
-    BRANCH_MANAGEMENT: 'branch_management',               // 36. branches.html
-    SETTINGS_BUSINESS: 'settings_business',               // 37. settings-business.html
-    SETTINGS_CONTACT: 'settings_contact',                // 38. settings-contact.html
-    SETTINGS_HOURS: 'settings_hours',                  // 39. settings-hours.html
-    SETTINGS_TAX: 'settings_tax',                    // 40. settings-tax.html
-    SETTINGS_PAYMENTS: 'settings_payments',               // 41. settings-payments.html
-    SETTINGS_NOTIFICATIONS: 'settings_notifications',          // 42. settings-notifications.html
-    SETTINGS_INVOICE: 'settings_invoice',                // 43. settings-invoice.html
-    SETTINGS_INVOICE_COMMON: 'settings_invoice_common',         // 44. settings-invoice-common.html
-    SETTINGS_INVOICE_BOOKING: 'settings_invoice_booking',        // 45. settings-invoice-booking.html
-    SETTINGS_INVOICE_POS: 'settings_invoice_pos',            // 46. settings-invoice-pos.html
-    SETTINGS_INVOICE_MEMBERSHIP: 'settings_invoice_membership',     // 47. settings-invoice-membership.html
+    BRANCH_MANAGEMENT:                   'branch_management',               // 36. branches.html
+    SETTINGS_BUSINESS:                   'settings_business',               // 37. settings-business.html
+    SETTINGS_CONTACT:                    'settings_contact',                // 38. settings-contact.html
+    SETTINGS_HOURS:                      'settings_hours',                  // 39. settings-hours.html
+    SETTINGS_TAX:                        'settings_tax',                    // 40. settings-tax.html
+    SETTINGS_PAYMENTS:                   'settings_payments',               // 41. settings-payments.html
+    SETTINGS_NOTIFICATIONS:              'settings_notifications',          // 42. settings-notifications.html
+    SETTINGS_INVOICE:                    'settings_invoice',                // 43. settings-invoice.html
+    SETTINGS_INVOICE_COMMON:             'settings_invoice_common',         // 44. settings-invoice-common.html
+    SETTINGS_INVOICE_BOOKING:            'settings_invoice_booking',        // 45. settings-invoice-booking.html
+    SETTINGS_INVOICE_POS:                'settings_invoice_pos',            // 46. settings-invoice-pos.html
+    SETTINGS_INVOICE_MEMBERSHIP:         'settings_invoice_membership',     // 47. settings-invoice-membership.html
 
     // ── HEADER ────────────────────────────────────────────────────────────────
-    NOTIFICATIONS: 'notifications',                   // 48. notifications.html
-    SUPPORT: 'support',                         // 49. support.html
-    ISSUE_HISTORY: 'issue_history',                   // 50. issue-history.html
-    USER_GUIDE: 'user_guide',                      // 51. user_guide.html
+    NOTIFICATIONS:                       'notifications',                   // 48. notifications.html
+    SUPPORT:                             'support',                         // 49. support.html
+    ISSUE_HISTORY:                       'issue_history',                   // 50. issue-history.html
+    USER_GUIDE:                          'user_guide',                      // 51. user_guide.html
 
     // ── BILLING ───────────────────────────────────────────────────────────────
-    MANAGE_ADDONS: 'manage_addons',                   // 52. manage-addons.html
+    MANAGE_ADDONS:                       'manage_addons',                   // 52. manage-addons.html
 };
 
 
@@ -127,67 +127,67 @@ export const FEATURES = {
 export const MODULES_META = [
 
     // GROUP A — Core System Features
-    { key: FEATURES.DASHBOARD_ACCESS, label: 'Dashboard', icon: 'home' },
-    { key: FEATURES.BOOKINGS_MANAGEMENT, label: 'Bookings', icon: 'calendar' },
-    { key: FEATURES.CUSTOMERS_MANAGEMENT, label: 'Customers', icon: 'users' },
-    { key: FEATURES.STAFF_MANAGEMENT, label: 'Staff Providers', icon: 'user-check' },
-    { key: FEATURES.STAFF_SCHEDULES, label: 'Staff Schedules', icon: 'clock' },
-    { key: FEATURES.SERVICES_MANAGEMENT, label: 'Services', icon: 'scissors' },
-    { key: FEATURES.POS_SYSTEM, label: 'Point of Sale', icon: 'shopping-cart' },
-    { key: FEATURES.PRODUCT_MANAGEMENT, label: 'Products', icon: 'box' },
-    { key: FEATURES.SALES_HISTORY, label: 'Sales History', icon: 'clipboard' },
-    { key: FEATURES.PENDING_PAYMENTS, label: 'Pending Payments', icon: 'clock' },
-    { key: FEATURES.PAYMENTS_HISTORY, label: 'Payments History', icon: 'credit-card' },
-    { key: FEATURES.MARKETING_OFFERS, label: 'Offers', icon: 'tag' },
-    { key: FEATURES.MARKETING_COUPONS, label: 'Coupons', icon: 'percent' },
-    { key: FEATURES.MARKETING_MEMBERSHIPS, label: 'Memberships', icon: 'award' },
-    { key: FEATURES.ANALYTICS_OVERVIEW, label: 'Overview', icon: 'pie-chart' },
-    { key: FEATURES.REPORTS_ACCESS, label: 'Reports', icon: 'bar-chart-2' },
-    { key: FEATURES.ANALYTICS_EXPENSES, label: 'Expenses', icon: 'dollar-sign' },
-    { key: FEATURES.COMPANY_SETTINGS, label: 'Company Settings', icon: 'settings' },
-    { key: FEATURES.USER_MANAGEMENT, label: 'Users', icon: 'users' },
-    { key: FEATURES.ROLES_PERMISSIONS, label: 'Roles & Permissions', icon: 'shield' },
-    { key: FEATURES.BILLING_SUBSCRIPTION_MANAGEMENT, label: 'Billing & Subscriptions', icon: 'credit-card' },
+    { key: FEATURES.DASHBOARD_ACCESS,                label: 'Dashboard',                       icon: 'home'          },
+    { key: FEATURES.BOOKINGS_MANAGEMENT,             label: 'Bookings',                        icon: 'calendar'      },
+    { key: FEATURES.CUSTOMERS_MANAGEMENT,            label: 'Customers',                       icon: 'users'         },
+    { key: FEATURES.STAFF_MANAGEMENT,                label: 'Staff Providers',                 icon: 'user-check'    },
+    { key: FEATURES.STAFF_SCHEDULES,                 label: 'Staff Schedules',                 icon: 'clock'         },
+    { key: FEATURES.SERVICES_MANAGEMENT,             label: 'Services',                        icon: 'scissors'      },
+    { key: FEATURES.POS_SYSTEM,                      label: 'Point of Sale',                   icon: 'shopping-cart' },
+    { key: FEATURES.PRODUCT_MANAGEMENT,              label: 'Products',                        icon: 'box'           },
+    { key: FEATURES.SALES_HISTORY,                   label: 'Sales History',                   icon: 'clipboard'     },
+    { key: FEATURES.PENDING_PAYMENTS,                label: 'Pending Payments',                icon: 'clock'         },
+    { key: FEATURES.PAYMENTS_HISTORY,                label: 'Payments History',                icon: 'credit-card'   },
+    { key: FEATURES.MARKETING_OFFERS,                label: 'Offers',                          icon: 'tag'           },
+    { key: FEATURES.MARKETING_COUPONS,               label: 'Coupons',                         icon: 'percent'       },
+    { key: FEATURES.MARKETING_MEMBERSHIPS,           label: 'Memberships',                     icon: 'award'         },
+    { key: FEATURES.ANALYTICS_OVERVIEW,              label: 'Overview',                        icon: 'pie-chart'     },
+    { key: FEATURES.REPORTS_ACCESS,                  label: 'Reports',                         icon: 'bar-chart-2'   },
+    { key: FEATURES.ANALYTICS_EXPENSES,              label: 'Expenses',                        icon: 'dollar-sign'   },
+    { key: FEATURES.COMPANY_SETTINGS,                label: 'Company Settings',                icon: 'settings'      },
+    { key: FEATURES.USER_MANAGEMENT,                 label: 'Users',                           icon: 'users'         },
+    { key: FEATURES.ROLES_PERMISSIONS,               label: 'Roles & Permissions',             icon: 'shield'        },
+    { key: FEATURES.BILLING_SUBSCRIPTION_MANAGEMENT, label: 'Billing & Subscriptions',         icon: 'credit-card'   },
 
     // GROUP B — Supporting Features
 
     // Dashboard
-    { key: FEATURES.DASHBOARD_TODAYS_REVENUE, label: 'Dashboard: Todays Revenue', icon: 'dollar-sign' },
-    { key: FEATURES.DASHBOARD_UPCOMING_APPOINTMENTS, label: 'Dashboard: Upcoming Appointments', icon: 'calendar' },
-    { key: FEATURES.DASHBOARD_COMPLETED_APPOINTMENTS, label: 'Dashboard: Completed Appointments', icon: 'check-circle' },
-    { key: FEATURES.DASHBOARD_NO_SHOWS_CANCELLATIONS, label: 'Dashboard: No Shows & Cancellations', icon: 'x-circle' },
+    { key: FEATURES.DASHBOARD_TODAYS_REVENUE,        label: 'Dashboard: Todays Revenue',           icon: 'dollar-sign'  },
+    { key: FEATURES.DASHBOARD_UPCOMING_APPOINTMENTS, label: 'Dashboard: Upcoming Appointments',    icon: 'calendar'     },
+    { key: FEATURES.DASHBOARD_COMPLETED_APPOINTMENTS,label: 'Dashboard: Completed Appointments',   icon: 'check-circle' },
+    { key: FEATURES.DASHBOARD_NO_SHOWS_CANCELLATIONS,label: 'Dashboard: No Shows & Cancellations', icon: 'x-circle'     },
 
     // Reports
-    { key: FEATURES.REPORTS_CATEGORY, label: 'Reports: Category View', icon: 'bar-chart-2' },
-    { key: FEATURES.REPORTS_DETAIL, label: 'Reports: Detail View', icon: 'bar-chart-2' },
-    { key: FEATURES.REPORT_FINANCIAL, label: 'Reports: Financial', icon: 'dollar-sign' },
-    { key: FEATURES.REPORT_STAFF_PERFORMANCE, label: 'Reports: Staff Performance', icon: 'user-check' },
-    { key: FEATURES.REPORT_BOOKINGS, label: 'Reports: Bookings', icon: 'calendar' },
-    { key: FEATURES.REPORT_CUSTOMERS, label: 'Reports: Customers', icon: 'users' },
-    { key: FEATURES.REPORT_PRODUCT_SALES, label: 'Reports: Product Sales', icon: 'package' },
-    { key: FEATURES.REPORT_DISCOUNT_USAGES, label: 'Reports: Discount Usages', icon: 'tag' },
-    { key: FEATURES.REPORT_MEMBERSHIPS, label: 'Reports: Memberships', icon: 'award' },
+    { key: FEATURES.REPORTS_CATEGORY,               label: 'Reports: Category View',              icon: 'bar-chart-2'  },
+    { key: FEATURES.REPORTS_DETAIL,                  label: 'Reports: Detail View',                icon: 'bar-chart-2'  },
+    { key: FEATURES.REPORT_FINANCIAL,                label: 'Reports: Financial',                  icon: 'dollar-sign'  },
+    { key: FEATURES.REPORT_STAFF_PERFORMANCE,        label: 'Reports: Staff Performance',          icon: 'user-check'   },
+    { key: FEATURES.REPORT_BOOKINGS,                 label: 'Reports: Bookings',                   icon: 'calendar'     },
+    { key: FEATURES.REPORT_CUSTOMERS,                label: 'Reports: Customers',                  icon: 'users'        },
+    { key: FEATURES.REPORT_PRODUCT_SALES,            label: 'Reports: Product Sales',              icon: 'package'      },
+    { key: FEATURES.REPORT_DISCOUNT_USAGES,          label: 'Reports: Discount Usages',            icon: 'tag'          },
+    { key: FEATURES.REPORT_MEMBERSHIPS,              label: 'Reports: Memberships',                icon: 'award'        },
 
     // Company
-    { key: FEATURES.BRANCH_MANAGEMENT, label: 'Branches', icon: 'map-pin' },
-    { key: FEATURES.SETTINGS_BUSINESS, label: 'Settings: Business', icon: 'briefcase' },
-    { key: FEATURES.SETTINGS_CONTACT, label: 'Settings: Contact', icon: 'phone' },
-    { key: FEATURES.SETTINGS_HOURS, label: 'Settings: Hours', icon: 'clock' },
-    { key: FEATURES.SETTINGS_TAX, label: 'Settings: Tax', icon: 'file-text' },
-    { key: FEATURES.SETTINGS_PAYMENTS, label: 'Settings: Payments', icon: 'credit-card' },
-    { key: FEATURES.SETTINGS_NOTIFICATIONS, label: 'Settings: Notifications', icon: 'bell' },
-    { key: FEATURES.SETTINGS_INVOICE, label: 'Settings: Invoice', icon: 'file-text' },
-    { key: FEATURES.SETTINGS_INVOICE_COMMON, label: 'Settings: Invoice Common', icon: 'file-text' },
-    { key: FEATURES.SETTINGS_INVOICE_BOOKING, label: 'Settings: Invoice Booking', icon: 'file-text' },
-    { key: FEATURES.SETTINGS_INVOICE_POS, label: 'Settings: Invoice POS', icon: 'file-text' },
-    { key: FEATURES.SETTINGS_INVOICE_MEMBERSHIP, label: 'Settings: Invoice Membership', icon: 'file-text' },
+    { key: FEATURES.BRANCH_MANAGEMENT,              label: 'Branches',                            icon: 'map-pin'      },
+    { key: FEATURES.SETTINGS_BUSINESS,              label: 'Settings: Business',                  icon: 'briefcase'    },
+    { key: FEATURES.SETTINGS_CONTACT,               label: 'Settings: Contact',                   icon: 'phone'        },
+    { key: FEATURES.SETTINGS_HOURS,                 label: 'Settings: Hours',                     icon: 'clock'        },
+    { key: FEATURES.SETTINGS_TAX,                   label: 'Settings: Tax',                       icon: 'file-text'    },
+    { key: FEATURES.SETTINGS_PAYMENTS,              label: 'Settings: Payments',                  icon: 'credit-card'  },
+    { key: FEATURES.SETTINGS_NOTIFICATIONS,         label: 'Settings: Notifications',             icon: 'bell'         },
+    { key: FEATURES.SETTINGS_INVOICE,               label: 'Settings: Invoice',                   icon: 'file-text'    },
+    { key: FEATURES.SETTINGS_INVOICE_COMMON,        label: 'Settings: Invoice Common',            icon: 'file-text'    },
+    { key: FEATURES.SETTINGS_INVOICE_BOOKING,       label: 'Settings: Invoice Booking',           icon: 'file-text'    },
+    { key: FEATURES.SETTINGS_INVOICE_POS,           label: 'Settings: Invoice POS',               icon: 'file-text'    },
+    { key: FEATURES.SETTINGS_INVOICE_MEMBERSHIP,    label: 'Settings: Invoice Membership',        icon: 'file-text'    },
 
     // Header
-    { key: FEATURES.NOTIFICATIONS, label: 'Notifications', icon: 'bell' },
-    { key: FEATURES.SUPPORT, label: 'Support', icon: 'help-circle' },
-    { key: FEATURES.ISSUE_HISTORY, label: 'Issue History', icon: 'alert-circle' },
-    { key: FEATURES.USER_GUIDE, label: 'User Guide', icon: 'book-open' },
+    { key: FEATURES.NOTIFICATIONS,                  label: 'Notifications',                       icon: 'bell'         },
+    { key: FEATURES.SUPPORT,                        label: 'Support',                             icon: 'help-circle'  },
+    { key: FEATURES.ISSUE_HISTORY,                  label: 'Issue History',                       icon: 'alert-circle' },
+    { key: FEATURES.USER_GUIDE,                     label: 'User Guide',                          icon: 'book-open'    },
 
     // Billing Sub-Pages
-    { key: FEATURES.MANAGE_ADDONS, label: 'Manage Add-ons', icon: 'sliders' },
+    { key: FEATURES.MANAGE_ADDONS,                  label: 'Manage Add-ons',                      icon: 'sliders'      },
 ];
