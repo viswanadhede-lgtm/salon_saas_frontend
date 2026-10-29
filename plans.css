@@ -228,10 +228,20 @@
     white-space: nowrap;
 }
 
-/* Features List */
+/* Features List - Fixed height with invisible internal scrolling */
 .plan-features {
     flex: 1;
+    height: 250px;
+    max-height: 250px;
+    overflow-y: auto;
+    scrollbar-width: none; /* Firefox */
+    -ms-overflow-style: none; /* IE and Edge */
     margin-bottom: 1.5rem;
+    padding-right: 2px;
+}
+
+.plan-features::-webkit-scrollbar {
+    display: none; /* Chrome, Safari, Opera */
 }
 
 .feature-subtitle {
