@@ -202,19 +202,21 @@
 .price {
     display: flex;
     align-items: baseline;
+    flex-wrap: wrap;
+    gap: 0.2rem;
 }
 
 .price .currency {
     font-size: 1.35rem;
     font-weight: 600;
     color: var(--text-main);
-    margin-right: 0.2rem;
+    margin-right: 0.15rem;
 }
 
 .price .amount {
-    font-size: 2.85rem;
+    font-size: 2.6rem;
     font-weight: 800;
-    letter-spacing: -0.05em;
+    letter-spacing: -0.04em;
     color: var(--text-main);
     line-height: 1;
 }
@@ -222,7 +224,8 @@
 .price .period {
     font-size: 0.95rem;
     color: var(--text-muted);
-    margin-left: 0.4rem;
+    margin-left: 0.25rem;
+    white-space: nowrap;
 }
 
 /* Features List */
