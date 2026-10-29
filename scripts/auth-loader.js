@@ -11,6 +11,7 @@
         '/pricing.html',
         '/plans.html',
         '/onboarding.html',
+        '/addons.html',
         '/payment-result.html',
         '/payments.html'
     ];
