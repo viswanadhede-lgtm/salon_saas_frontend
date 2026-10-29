@@ -1,8 +1,8 @@
 /**
  * config/plan-features-manager.js
- * ─────────────────────────────────────────────────────────────────────────────
- * PLAN FEATURES MANAGER — Commercial plan tier gating & feature flags.
- * ─────────────────────────────────────────────────────────────────────────────
+ * â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+ * PLAN FEATURES MANAGER â€” Commercial plan tier gating & feature flags.
+ * â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
  *
  * PURPOSE:
  *   Governs commercial page-level access based on the salon's purchased plan
@@ -19,11 +19,11 @@
  *   array in the `feature_key` column (e.g. '["dashboard_access", "pos_system", ...]').
  *
  * SECTIONS:
- *   1. PLAN TIERS & DEFAULT MATRICES — Baseline feature sets per tier.
- *   2. DATABASE RESOLVER & CACHE     — Single-row loader & sessionStorage caching.
- *   3. PLAN EVALUATION LOGIC         — Feature inclusion & upgrade prompt metadata.
- *   4. INTEGRATION & EXPORT API      — Public helpers (isFeatureUnlocked, showPlanUpgradeModal).
- * ─────────────────────────────────────────────────────────────────────────────
+ *   1. PLAN TIERS & DEFAULT MATRICES â€” Baseline feature sets per tier.
+ *   2. DATABASE RESOLVER & CACHE     â€” Single-row loader & sessionStorage caching.
+ *   3. PLAN EVALUATION LOGIC         â€” Feature inclusion & upgrade prompt metadata.
+ *   4. INTEGRATION & EXPORT API      â€” Public helpers (isFeatureUnlocked, showPlanUpgradeModal).
+ * â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
  */
 
 import { FEATURES } from './feature-registry.js';
@@ -34,12 +34,12 @@ const PLAN_CACHE_STORAGE_KEY = 'salon_plan_features_cache';
 const PLAN_CACHE_TTL_MS = 5 * 60 * 1000; // 5 minutes cache TTL
 
 
-// ─────────────────────────────────────────────────────────────────────────────
-// SECTION 1 — FEATURE CATALOG
+// â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// SECTION 1 â€” FEATURE CATALOG
 // Complete master list of all application features, sourced from the feature
 // registry. Permissions are resolved dynamically from `public.plan_features`
-// at runtime — no hardcoded plan names or UUIDs.
-// ─────────────────────────────────────────────────────────────────────────────
+// at runtime â€” no hardcoded plan names or UUIDs.
+// â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 /**
  * Universal catalog of every feature the app can expose.
@@ -49,10 +49,10 @@ const PLAN_CACHE_TTL_MS = 5 * 60 * 1000; // 5 minutes cache TTL
 export const ALL_APP_FEATURES = Object.values(FEATURES);
 
 
-// ─────────────────────────────────────────────────────────────────────────────
-// SECTION 2 — DATABASE RESOLVER & FAST SESSION CACHE
+// â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// SECTION 2 â€” DATABASE RESOLVER & FAST SESSION CACHE
 // Reads and writes to the single JSON row in `public.plan_features`.
-// ─────────────────────────────────────────────────────────────────────────────
+// â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 /**
  * Safely parses single-row JSON string array from `public.plan_features`.
@@ -169,10 +169,10 @@ export async function syncPlanFeaturesToDb(planId, featureKeys) {
 }
 
 
-// ─────────────────────────────────────────────────────────────────────────────
-// SECTION 3 — PLAN EVALUATION LOGIC
+// â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// SECTION 3 â€” PLAN EVALUATION LOGIC
 // Checks if a feature is unlocked, and generates upgrade prompt metadata.
-// ─────────────────────────────────────────────────────────────────────────────
+// â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 /**
  * Evaluates whether a given feature key is included in the allowed features list.
@@ -198,7 +198,15 @@ export function getPlanUpgradeMetadata(featureKey) {
     const marketingFeatures = [
         FEATURES.MARKETING_OFFERS,
         FEATURES.MARKETING_COUPONS,
-        FEATURES.MARKETING_MEMBERSHIPS
+        FEATURES.MARKETING_MEMBERSHIPS,
+        FEATURES.SETTINGS_INVOICE_MEMBERSHIP
+    ];
+    const advancedReportFeatures = [
+        FEATURES.REPORT_BOOKINGS,
+        FEATURES.REPORT_CUSTOMERS,
+        FEATURES.REPORT_PRODUCT_SALES,
+        FEATURES.REPORT_DISCOUNT_USAGES,
+        FEATURES.REPORT_MEMBERSHIPS
     ];
     const analyticsFeatures = [
         FEATURES.REPORTS_ACCESS,
@@ -213,7 +221,12 @@ export function getPlanUpgradeMetadata(featureKey) {
     let promptTitle = `Upgrade to ${minimumPlan} Plan`;
     let promptMessage = `This module is part of the ${minimumPlan} Plan. Upgrade today to unlock ${category} for your salon.`;
 
-    if (marketingFeatures.includes(featureKey)) {
+    if (advancedReportFeatures.includes(featureKey)) {
+        minimumPlan = 'Advance';
+        category = 'Advanced Reports Library';
+        promptTitle = `Upgrade to ${minimumPlan} Plan`;
+        promptMessage = `This report is part of the ${minimumPlan} Plan. Upgrade today to unlock advanced report analytics for your salon.`;
+    } else if (marketingFeatures.includes(featureKey)) {
         minimumPlan = 'Advance';
         category = 'Marketing & Growth Suite';
         promptTitle = `Upgrade to ${minimumPlan} Plan`;
@@ -236,10 +249,10 @@ export function getPlanUpgradeMetadata(featureKey) {
 }
 
 
-// ─────────────────────────────────────────────────────────────────────────────
-// SECTION 4 — INTEGRATION & EXPORT API
+// â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// SECTION 4 â€” INTEGRATION & EXPORT API
 // Public methods used across UI templates, modals, and the Global Auth Guard.
-// ─────────────────────────────────────────────────────────────────────────────
+// â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 /**
  * Master async resolver: returns the active salon's plan features profile.
@@ -273,7 +286,7 @@ export async function getCurrentPlanFeatures(forceRefresh = false) {
     }
 
     // If DB returned no features, the plan has no permissions configured yet.
-    // features stays [] — the auth guard will treat all modules as locked.
+    // features stays [] â€” the auth guard will treat all modules as locked.
 
     const profile = {
         planId,
@@ -315,7 +328,7 @@ export function getCurrentPlanFeaturesSync() {
         }
     } catch { /* fall through */ }
 
-    // No valid cache — return empty profile (cold start, pending DB resolution via getCurrentPlanFeatures)
+    // No valid cache â€” return empty profile (cold start, pending DB resolution via getCurrentPlanFeatures)
     return {
         planId: localStorage.getItem('plan_id') || null,
         planName: localStorage.getItem('plan_name') || null,
@@ -370,7 +383,7 @@ export function showPlanUpgradeModal(featureKey) {
     overlay.innerHTML = `
         <div style="background: #ffffff; border-radius: 12px; max-width: 440px; width: 90%; padding: 28px; text-align: center; box-shadow: 0 20px 25px -5px rgba(0,0,0,0.2);">
             <div style="width: 56px; height: 56px; border-radius: 50%; background: #fef3c7; color: #d97706; display: flex; align-items: center; justify-content: center; margin: 0 auto 16px; font-size: 26px;">
-                ⭐
+                â­
             </div>
             <h3 style="margin: 0 0 8px; font-size: 20px; font-weight: 700; color: #111827;">${meta.promptTitle}</h3>
             <p style="margin: 0 0 24px; font-size: 14px; color: #4b5563; line-height: 1.5;">${meta.promptMessage}</p>

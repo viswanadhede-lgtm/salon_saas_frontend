@@ -86,6 +86,13 @@ export const FEATURES = {
     // ── REPORTS ───────────────────────────────────────────────────────────────
     REPORTS_CATEGORY:                    'reports_category',                // 27. report-category.html
     REPORTS_DETAIL:                      'reports_detail',                  // 28. report-detail.html
+    REPORT_FINANCIAL:                    'report_financial',                // Financial Reports
+    REPORT_STAFF_PERFORMANCE:            'report_staff_performance',        // Staff Performance Reports
+    REPORT_BOOKINGS:                     'report_bookings',                 // Bookings Reports
+    REPORT_CUSTOMERS:                    'report_customers',                // Customers Reports
+    REPORT_PRODUCT_SALES:                'report_product_sales',            // Product Sales Reports
+    REPORT_DISCOUNT_USAGES:              'report_discount_usages',          // Discount Usages Reports
+    REPORT_MEMBERSHIPS:                  'report_memberships',              // Memberships Reports
 
     // ── COMPANY ───────────────────────────────────────────────────────────────
     BRANCH_MANAGEMENT:                   'branch_management',               // 29. branches.html
@@ -153,6 +160,13 @@ export const MODULES_META = [
     // Reports
     { key: FEATURES.REPORTS_CATEGORY,               label: 'Reports: Category View',              icon: 'bar-chart-2'  },
     { key: FEATURES.REPORTS_DETAIL,                  label: 'Reports: Detail View',                icon: 'bar-chart-2'  },
+    { key: FEATURES.REPORT_FINANCIAL,                label: 'Reports: Financial',                  icon: 'dollar-sign'  },
+    { key: FEATURES.REPORT_STAFF_PERFORMANCE,        label: 'Reports: Staff Performance',          icon: 'user-check'   },
+    { key: FEATURES.REPORT_BOOKINGS,                 label: 'Reports: Bookings',                   icon: 'calendar'     },
+    { key: FEATURES.REPORT_CUSTOMERS,                label: 'Reports: Customers',                  icon: 'users'        },
+    { key: FEATURES.REPORT_PRODUCT_SALES,            label: 'Reports: Product Sales',              icon: 'package'      },
+    { key: FEATURES.REPORT_DISCOUNT_USAGES,          label: 'Reports: Discount Usages',            icon: 'tag'          },
+    { key: FEATURES.REPORT_MEMBERSHIPS,              label: 'Reports: Memberships',                icon: 'award'        },
 
     // Company
     { key: FEATURES.BRANCH_MANAGEMENT,              label: 'Branches',                            icon: 'map-pin'      },

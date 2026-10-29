@@ -82,6 +82,13 @@ export const READ_ACCESS_FEATURES = {
         FEATURES.DASHBOARD_NO_SHOWS_CANCELLATIONS,     // 26. no-shows-cancellations.html
         FEATURES.REPORTS_CATEGORY,                     // 27. report-category.html
         FEATURES.REPORTS_DETAIL,                       // 28. report-detail.html
+        FEATURES.REPORT_FINANCIAL,                     // Financial Reports
+        FEATURES.REPORT_STAFF_PERFORMANCE,             // Staff Performance Reports
+        FEATURES.REPORT_BOOKINGS,                      // Bookings Reports
+        FEATURES.REPORT_CUSTOMERS,                     // Customers Reports
+        FEATURES.REPORT_PRODUCT_SALES,                 // Product Sales Reports
+        FEATURES.REPORT_DISCOUNT_USAGES,               // Discount Usages Reports
+        FEATURES.REPORT_MEMBERSHIPS,                   // Memberships Reports
         FEATURES.BRANCH_MANAGEMENT,                    // 29. branches.html
         FEATURES.SETTINGS_BUSINESS,                    // 30. settings-business.html
         FEATURES.SETTINGS_CONTACT,                     // 31. settings-contact.html

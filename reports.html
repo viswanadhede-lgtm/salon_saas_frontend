@@ -41,7 +41,7 @@
             <div class="category-grid">
 
                 <!-- 1. Financial -->
-                <a href="report-category.html?cat=financial" class="category-card" data-sub-feature="report_view_basic"
+                <a href="report-category.html?cat=financial" class="category-card" data-plan-feature="report_financial" data-sub-feature="report_financial_view"
                    style="--cat-color-a:#3b82f6; --cat-color-b:#6366f1;">
                     <div class="category-card-top">
                         <div class="category-icon-wrap bg-blue">
@@ -67,7 +67,7 @@
                 </a>
 
                 <!-- 2. Memberships -->
-                <a href="report-category.html?cat=memberships" class="category-card" data-sub-feature="report_view_basic"
+                <a href="report-category.html?cat=memberships" class="category-card" data-plan-feature="report_memberships" data-sub-feature="report_memberships_view"
                    style="--cat-color-a:#7c3aed; --cat-color-b:#9333ea;">
                     <div class="category-card-top">
                         <div class="category-icon-wrap bg-purple">
@@ -91,7 +91,7 @@
                 </a>
 
                 <!-- 3. Bookings -->
-                <a href="report-category.html?cat=bookings" class="category-card" data-sub-feature="report_view_basic"
+                <a href="report-category.html?cat=bookings" class="category-card" data-plan-feature="report_bookings" data-sub-feature="report_bookings_view"
                    style="--cat-color-a:#6366f1; --cat-color-b:#8b5cf6;">
                     <div class="category-card-top">
                         <div class="category-icon-wrap bg-indigo">
@@ -115,7 +115,7 @@
                 </a>
 
                 <!-- 4. Customers -->
-                <a href="report-category.html?cat=customers" class="category-card" data-sub-feature="report_view_basic"
+                <a href="report-category.html?cat=customers" class="category-card" data-plan-feature="report_customers" data-sub-feature="report_customers_view"
                    style="--cat-color-a:#8b5cf6; --cat-color-b:#a855f7;">
                     <div class="category-card-top">
                         <div class="category-icon-wrap bg-violet">
@@ -127,7 +127,7 @@
                         <h3>Customers</h3>
                         <div class="category-sub-pills">
                             <span class="sub-pill">Customer Overview</span>
-                            <span class="sub-pill">Customer 360° Insights</span>
+                            <span class="sub-pill">Customer 360Â° Insights</span>
                         </div>
                     </div>
                     <div class="category-card-footer">
@@ -136,7 +136,7 @@
                 </a>
 
                 <!-- 5. Staff -->
-                <a href="report-category.html?cat=staff" class="category-card" data-sub-feature="report_view_basic"
+                <a href="report-category.html?cat=staff" class="category-card" data-plan-feature="report_staff_performance" data-sub-feature="report_staff_performance_view"
                    style="--cat-color-a:#f59e0b; --cat-color-b:#d97706;">
                     <div class="category-card-top">
                         <div class="category-icon-wrap bg-amber">
@@ -148,7 +148,7 @@
                         <h3>Staff Performance</h3>
                         <div class="category-sub-pills">
                             <span class="sub-pill">Staff Overview</span>
-                            <span class="sub-pill">Staff 360° Insights</span>
+                            <span class="sub-pill">Staff 360Â° Insights</span>
                         </div>
                     </div>
                     <div class="category-card-footer">
@@ -157,7 +157,7 @@
                 </a>
 
                 <!-- 6. Product Sales -->
-                <a href="report-category.html?cat=products" class="category-card" data-sub-feature="report_view_basic"
+                <a href="report-category.html?cat=products" class="category-card" data-plan-feature="report_product_sales" data-sub-feature="report_product_sales_view"
                    style="--cat-color-a:#0ea5e9; --cat-color-b:#0284c7;">
                     <div class="category-card-top">
                         <div class="category-icon-wrap bg-sky">
@@ -183,7 +183,7 @@
                 </a>
 
                 <!-- 7. Discount Usages -->
-                <a href="report-category.html?cat=discounts" class="category-card" data-sub-feature="report_view_basic"
+                <a href="report-category.html?cat=discounts" class="category-card" data-plan-feature="report_discount_usages" data-sub-feature="report_discount_usages_view"
                    style="--cat-color-a:#f43f5e; --cat-color-b:#e11d48;">
                     <div class="category-card-top">
                         <div class="category-icon-wrap bg-rose">
@@ -223,6 +223,50 @@
     <script src="change-password.js"></script>
     <script type="module" src="scripts/global-auth-guard.js"></script>
     <script type="module" src="scripts/sub-features/sub-feature-gate.js"></script>
+    <script type="module">
+        import { isFeatureUnlocked, showPlanUpgradeModal, resolvePlanFeatures } from './config/plan-features-manager.js';
+
+        async function applyReportPlanGates() {
+            try {
+                const planProfile = await resolvePlanFeatures();
+                const cards = document.querySelectorAll('.category-card[data-plan-feature]');
+
+                cards.forEach(card => {
+                    const planKey = card.getAttribute('data-plan-feature');
+                    if (!planKey) return;
+
+                    const unlocked = isFeatureUnlocked(planKey, planProfile);
+                    if (!unlocked) {
+                        card.classList.add('plan-locked');
+
+                        // Inject lock pill in card header
+                        const topBar = card.querySelector('.category-card-top');
+                        if (topBar && !card.querySelector('.plan-lock-pill')) {
+                            const badge = document.createElement('span');
+                            badge.className = 'plan-lock-pill';
+                            badge.innerHTML = '🔒 Advance Plan';
+                            topBar.appendChild(badge);
+                        }
+
+                        // Intercept clicks to show upgrade modal
+                        card.addEventListener('click', (e) => {
+                            e.preventDefault();
+                            e.stopPropagation();
+                            showPlanUpgradeModal(planKey);
+                        });
+                    }
+                });
+            } catch (err) {
+                console.warn('[ReportsHub] Error evaluating report plan gates:', err);
+            }
+        }
+
+        if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', applyReportPlanGates);
+        } else {
+            applyReportPlanGates();
+        }
+    </script>
 </body>
 
 </html>

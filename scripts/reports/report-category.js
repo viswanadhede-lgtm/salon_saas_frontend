@@ -2,6 +2,20 @@
 // Dynamically renders sub-report cards based on ?cat= URL parameter
 
 import { supabase } from '../../lib/supabase.js';
+import { isFeatureUnlocked, showPlanUpgradeModal, resolvePlanFeatures } from '../../config/plan-features-manager.js';
+
+const CAT_FEATURE_MAP = {
+    financial:         'report_financial',
+    staff:             'report_staff_performance',
+    bookings:          'report_bookings',
+    customers:         'report_customers',
+    products:          'report_product_sales',
+    'product-sales':   'report_product_sales',
+    discounts:         'report_discount_usages',
+    'discount-usages': 'report_discount_usages',
+    memberships:       'report_memberships',
+    membership:        'report_memberships'
+};
 
 // ============================================================
 // Category Configuration
@@ -126,7 +140,7 @@ const CATEGORIES = {
             },
             {
                 type: 'cust-insights',
-                label: 'Customer 360° Insights',
+                label: 'Customer 360Â° Insights',
                 desc: 'Individual customer dossier, multi-channel spend & activity history',
                 icon: 'user-check',
                 colorClass: 'bg-purple'
@@ -135,7 +149,7 @@ const CATEGORIES = {
     },
     staff: {
         title: 'Staff Performance',
-        subtitle: 'Staff headcount, capacity timeline, service volume, revenue generation and individual performance 360°',
+        subtitle: 'Staff headcount, capacity timeline, service volume, revenue generation and individual performance 360Â°',
         icon: 'user-check',
         colorClass: 'bg-amber',
         subReports: [
@@ -148,7 +162,7 @@ const CATEGORIES = {
             },
             {
                 type: 'staff-insights',
-                label: 'Staff 360° Insights',
+                label: 'Staff 360Â° Insights',
                 desc: 'Individual staff profile, service bookings, retail POS sales, membership sales & revenue contribution share',
                 icon: 'award',
                 colorClass: 'bg-indigo'
@@ -280,11 +294,40 @@ CATEGORIES['discount-usages'] = CATEGORIES.discounts;
 // Render
 // ============================================================
 
-document.addEventListener('DOMContentLoaded', () => {
+document.addEventListener('DOMContentLoaded', async () => {
     const urlParams = new URLSearchParams(window.location.search);
     const cat = (urlParams.get('cat') || 'financial').toLowerCase();
 
     const config = CATEGORIES[cat] || CATEGORIES['financial'];
+
+    // Plan Tier Gating Check
+    const requiredFeature = CAT_FEATURE_MAP[cat];
+    if (requiredFeature) {
+        try {
+            const planProfile = await resolvePlanFeatures();
+            if (!isFeatureUnlocked(requiredFeature, planProfile)) {
+                showPlanUpgradeModal(requiredFeature);
+
+                const bannerTitle = document.getElementById('bannerTitle');
+                if (bannerTitle) bannerTitle.textContent = `${config.title} Reports (Locked)`;
+
+                const grid = document.getElementById('subReportsGrid');
+                if (grid) {
+                    grid.innerHTML = `
+                        <div style="grid-column: 1 / -1; padding: 48px 24px; text-align: center; background: #ffffff; border-radius: 12px; border: 1.5px dashed #cbd5e1;">
+                            <div style="font-size: 36px; margin-bottom: 12px;">🔒</div>
+                            <h3 style="margin: 0 0 8px 0; font-size: 18px; color: #0f172a;">${config.title} Reports Locked</h3>
+                            <p style="margin: 0 0 20px 0; font-size: 14px; color: #64748b;">This report category is part of the Advance Plan. Upgrade today to unlock detailed ${config.title.toLowerCase()} analytics.</p>
+                            <a href="plans.html?flow=upgrade" style="display: inline-block; padding: 10px 20px; background: #6366f1; color: #ffffff; font-weight: 600; font-size: 14px; border-radius: 8px; text-decoration: none;">Upgrade to Advance</a>
+                        </div>
+                    `;
+                }
+                return;
+            }
+        } catch (gateErr) {
+            console.warn('[ReportCategory] Gate check error:', gateErr);
+        }
+    }
 
     // Update page <title>
     document.title = `${config.title} Reports - BharathBots`;

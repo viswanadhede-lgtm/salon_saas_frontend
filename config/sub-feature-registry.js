@@ -125,6 +125,13 @@ export const SUB_FEATURES = {
 
     // ── Page 17: Reports (reports.html) ──────────────────────────────────────
     REPORT_VIEW_BASIC:                   'report_view_basic',
+    REPORT_FINANCIAL_VIEW:               'report_financial_view',
+    REPORT_STAFF_PERFORMANCE_VIEW:       'report_staff_performance_view',
+    REPORT_BOOKINGS_VIEW:                'report_bookings_view',
+    REPORT_CUSTOMERS_VIEW:               'report_customers_view',
+    REPORT_PRODUCT_SALES_VIEW:           'report_product_sales_view',
+    REPORT_DISCOUNT_USAGES_VIEW:         'report_discount_usages_view',
+    REPORT_MEMBERSHIPS_VIEW:             'report_memberships_view',
 
     // ── Page 18: Expenses (expenses.html) ────────────────────────────────────
     EXPENSES_CREATE:                     'expenses_create',
@@ -362,7 +369,14 @@ export const SUB_FEATURES_MAP = {
 
     // 17. Reports (reports.html)
     [FEATURES.REPORTS_ACCESS]: [
-        { key: SUB_FEATURES.REPORT_VIEW_BASIC,       label: 'View Reports' }
+        { key: SUB_FEATURES.REPORT_VIEW_BASIC,             label: 'View Reports Hub' },
+        { key: SUB_FEATURES.REPORT_FINANCIAL_VIEW,         label: 'View Financial Reports' },
+        { key: SUB_FEATURES.REPORT_STAFF_PERFORMANCE_VIEW, label: 'View Staff Performance Reports' },
+        { key: SUB_FEATURES.REPORT_BOOKINGS_VIEW,          label: 'View Bookings Reports' },
+        { key: SUB_FEATURES.REPORT_CUSTOMERS_VIEW,         label: 'View Customers Reports' },
+        { key: SUB_FEATURES.REPORT_PRODUCT_SALES_VIEW,     label: 'View Product Sales Reports' },
+        { key: SUB_FEATURES.REPORT_DISCOUNT_USAGES_VIEW,   label: 'View Discount Usages Reports' },
+        { key: SUB_FEATURES.REPORT_MEMBERSHIPS_VIEW,       label: 'View Memberships Reports' }
     ],
 
     // 18. Expenses (expenses.html)
