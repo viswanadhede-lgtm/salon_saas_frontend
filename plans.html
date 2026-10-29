@@ -37,18 +37,19 @@
             pointer-events: none;
         }
 
-        /* Locked feature row */
+        /* Locked feature row - Option B: Soft Rose Circle with ✕ */
         .feature-locked {
-            color: #cbd5e1;
-            text-decoration: line-through;
+            color: #64748b;
+            text-decoration: none;
         }
-        .feature-locked .x-icon {
-            display: inline-block;
+        .x-circle-icon {
+            width: 17px;
+            height: 17px;
+            margin-right: 0.6rem;
+            flex-shrink: 0;
+            margin-top: 2px;
         }
         .feature-locked .check-icon {
-            display: none;
-        }
-        li:not(.feature-locked) .x-icon {
             display: none;
         }
     </style>
@@ -105,14 +106,18 @@
                         <li><svg class="check-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>Sales history &amp; refunds</li>
                         <li><svg class="check-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>Expenses tracking &amp; finance report</li>
                         <li class="feature-locked">
-                            <svg class="check-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>
-                            <svg class="x-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:15px;height:15px;margin-right:8px;flex-shrink:0;"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
-                            Marketing (offers, coupons, memberships)
+                            <svg class="x-circle-icon" viewBox="0 0 20 20" fill="none">
+                                <circle cx="10" cy="10" r="8.5" fill="#ffe4e6" stroke="#fecdd3" stroke-width="1.2"/>
+                                <path d="M7 7L13 13M13 7L7 13" stroke="#e11d48" stroke-width="1.8" stroke-linecap="round"/>
+                            </svg>
+                            <span>Marketing (offers, coupons, memberships)</span>
                         </li>
                         <li class="feature-locked">
-                            <svg class="check-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>
-                            <svg class="x-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:15px;height:15px;margin-right:8px;flex-shrink:0;"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
-                            Full reports, roles &amp; data exports
+                            <svg class="x-circle-icon" viewBox="0 0 20 20" fill="none">
+                                <circle cx="10" cy="10" r="8.5" fill="#ffe4e6" stroke="#fecdd3" stroke-width="1.2"/>
+                                <path d="M7 7L13 13M13 7L7 13" stroke="#e11d48" stroke-width="1.8" stroke-linecap="round"/>
+                            </svg>
+                            <span>Full reports, roles &amp; data exports</span>
                         </li>
                     </ul>
                 </div>
