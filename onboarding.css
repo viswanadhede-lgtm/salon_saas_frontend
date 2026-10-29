@@ -277,15 +277,20 @@
     font-weight: 700;
     border-radius: 0.75rem;
     cursor: pointer;
-    transition: all 0.2s ease;
-    border: none;
-    box-shadow: 0 6px 20px rgba(15, 23, 42, 0.25);
+    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+    background: #f8fafc;
+    color: #1e293b;
+    border: 1.5px solid #cbd5e1;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
     letter-spacing: -0.01em;
 }
 
 .btn-submit-onboarding:hover {
+    background: #ffffff;
+    color: var(--accent);
+    border-color: var(--accent);
     transform: translateY(-2px);
-    box-shadow: 0 10px 25px rgba(15, 23, 42, 0.32);
+    box-shadow: 0 8px 24px -2px rgba(217, 70, 239, 0.25);
 }
 
 .btn-submit-onboarding:active {
@@ -296,6 +301,14 @@
     cursor: not-allowed;
     opacity: 0.75;
     transform: none;
+}
+
+.btn-submit-onboarding svg {
+    transition: transform 0.2s ease;
+}
+
+.btn-submit-onboarding:hover svg {
+    transform: translateX(3px);
 }
 
 .setup-helper-note {
