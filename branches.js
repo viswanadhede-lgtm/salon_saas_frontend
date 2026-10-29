@@ -1,5 +1,6 @@
 import { supabase } from './lib/supabase.js';
 import { populateGlobalHeader } from './scripts/global-auth-guard.js';
+import { checkResourceLimit, showPlanLimitModal } from './config/plan-limits-manager.js';
 
 document.addEventListener('DOMContentLoaded', async () => {
 
@@ -408,7 +409,14 @@ document.addEventListener('DOMContentLoaded', async () => {
         currentEditId = null;
     }
 
-    if (btnAdd) btnAdd.addEventListener('click', () => openPanel('add'));
+    if (btnAdd) btnAdd.addEventListener('click', async () => {
+        const limitCheck = await checkResourceLimit('max_branches');
+        if (!limitCheck.allowed) {
+            showPlanLimitModal(limitCheck);
+            return;
+        }
+        openPanel('add');
+    });
     if (btnClose) btnClose.addEventListener('click', closePanel);
     if (btnCancel) btnCancel.addEventListener('click', closePanel);
     if (overlay) {
@@ -469,6 +477,14 @@ document.addEventListener('DOMContentLoaded', async () => {
                 showToast('PIN Code is required', 'error');
                 document.getElementById('branchPincode')?.focus();
                 return;
+            }
+
+            if (!currentEditId) {
+                const limitCheck = await checkResourceLimit('max_branches');
+                if (!limitCheck.allowed) {
+                    showPlanLimitModal(limitCheck);
+                    return;
+                }
             }
 
             const oText = btnSave.textContent;

@@ -2,6 +2,7 @@ import { supabase } from './lib/supabase.js';
 import { FEATURES } from './config/feature-registry.js';
 import { SUB_FEATURES } from './config/sub-feature-registry.js';
 import { applySubFeatureGates } from './scripts/sub-features/sub-feature-gate.js';
+import { checkResourceLimit, showPlanLimitModal } from './config/plan-limits-manager.js';
 
 let liveStaffData = [];
 
@@ -468,13 +469,26 @@ function attachEventListeners() {
     // ADD Staff Modal logic
     const addStaffModal = document.getElementById('addStaffModal');
     if (addStaffModal) {
-        document.getElementById('btnAddStaff')?.addEventListener('click', () => addStaffModal.classList.add('active'));
+        document.getElementById('btnAddStaff')?.addEventListener('click', async () => {
+            const limitCheck = await checkResourceLimit('max_staff');
+            if (!limitCheck.allowed) {
+                showPlanLimitModal(limitCheck);
+                return;
+            }
+            addStaffModal.classList.add('active');
+        });
         document.getElementById('btnCancelAddStaff')?.addEventListener('click', () => addStaffModal.classList.remove('active'));
         document.getElementById('btnCloseAddStaffModal')?.addEventListener('click', () => addStaffModal.classList.remove('active'));
         addStaffModal.addEventListener('click', e => { if (e.target === addStaffModal) addStaffModal.classList.remove('active'); });
         
         document.getElementById('addStaffForm')?.addEventListener('submit', async function(e) {
             e.preventDefault();
+
+            const limitCheck = await checkResourceLimit('max_staff');
+            if (!limitCheck.allowed) {
+                showPlanLimitModal(limitCheck);
+                return;
+            }
             
             const phoneVal = document.getElementById('sfPhone').value.trim();
             // Duplicate Check

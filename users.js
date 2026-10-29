@@ -1,5 +1,6 @@
 // users.js — Users page logic
 import { supabase } from './lib/supabase.js';
+import { checkResourceLimit, showPlanLimitModal } from './config/plan-limits-manager.js';
 
 (async function () {
     const getCompanyId = () => {
@@ -499,7 +500,14 @@ import { supabase } from './lib/supabase.js';
         updateEyeIcon(false);
     }
 
-    document.getElementById('btnAddUser').addEventListener('click', () => openModal('add'));
+    document.getElementById('btnAddUser').addEventListener('click', async () => {
+        const limitCheck = await checkResourceLimit('max_users');
+        if (!limitCheck.allowed) {
+            showPlanLimitModal(limitCheck);
+            return;
+        }
+        openModal('add');
+    });
     document.getElementById('closeUserModal').addEventListener('click', closeModal);
     document.getElementById('btnCancelUser').addEventListener('click', closeModal);
     overlay.addEventListener('click', (e) => { if (e.target === overlay) closeModal(); });
@@ -522,6 +530,14 @@ import { supabase } from './lib/supabase.js';
         if (editingId === null && !password) {
             showToast('Password is required for new users.', true);
             return;
+        }
+
+        if (editingId === null) {
+            const limitCheck = await checkResourceLimit('max_users');
+            if (!limitCheck.allowed) {
+                showPlanLimitModal(limitCheck);
+                return;
+            }
         }
 
         saveBtn.disabled = true;
