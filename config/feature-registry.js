@@ -1,4 +1,4 @@
-﻿/**
+/**
  * config/feature-registry.js
  * ─────────────────────────────────────────────────────────────────────────────
  * FEATURE REGISTRY — Single source of truth for all app features / pages.
@@ -23,7 +23,7 @@
  *                                (keep key value unchanged to avoid breaking imports)
  *   - Page removed             → delete key from FEATURES + its MODULES_META entry
  *
- * TOTAL: 22 Group A (sidebar) + 22 Group B (sub-pages) = 44 app pages
+ * TOTAL: 22 Group A (sidebar) + 30 Group B (sub-pages) = 52 total keys
  * ─────────────────────────────────────────────────────────────────────────────
  */
 
