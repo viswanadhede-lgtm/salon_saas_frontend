@@ -86,22 +86,12 @@
 
                         <div class="row-group row-country-tz">
                             <div class="form-group col-country">
-                                <label for="country">Country <span class="required">*</span></label>
-                                <select id="country" class="form-select" required>
-                                    <option value="IN" selected>India</option>
-                                    <option value="US">United States</option>
-                                    <option value="UK">United Kingdom</option>
-                                    <option value="AE">UAE</option>
-                                </select>
+                                <label for="country">Country</label>
+                                <input type="text" id="country" value="India" readonly class="form-input-readonly">
                             </div>
                             <div class="form-group col-tz">
-                                <label for="timezone">Timezone <span class="required">*</span></label>
-                                <select id="timezone" class="form-select" required>
-                                    <option value="Asia/Kolkata" selected>(UTC+05:30) India (IST)</option>
-                                    <option value="America/New_York">(UTC-05:00) Eastern Time</option>
-                                    <option value="Europe/London">(UTC+00:00) London</option>
-                                    <option value="Asia/Dubai">(UTC+04:00) Dubai</option>
-                                </select>
+                                <label for="timezone">Timezone</label>
+                                <input type="text" id="timezone" value="IST (UTC+05:30)" readonly class="form-input-readonly">
                             </div>
                         </div>
                     </div>
