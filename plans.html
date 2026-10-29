@@ -36,6 +36,21 @@
             font-weight: 700;
             pointer-events: none;
         }
+
+        /* Locked feature row */
+        .feature-locked {
+            color: #cbd5e1;
+            text-decoration: line-through;
+        }
+        .feature-locked .x-icon {
+            display: inline-block;
+        }
+        .feature-locked .check-icon {
+            display: none;
+        }
+        li:not(.feature-locked) .x-icon {
+            display: none;
+        }
     </style>
 </head>
 <body class="plans-page">
@@ -60,141 +75,128 @@
                     <button id="toggleAnnual" onclick="setBilling('annual')" style="padding: 0.45rem 1.25rem; border-radius: 9999px; border: none; font-size: 0.9rem; font-weight: 600; cursor: pointer; background: transparent; color: var(--text-muted); transition: all 0.2s;">Annual <span style="margin-left: 4px; background: #fef3c7; color: #92400e; font-size: 0.75rem; padding: 2px 8px; border-radius: 9999px;">Save ~17%</span></button>
                 </div>
                 <div style="display: inline-flex; align-items: center; background: #ecfdf5; color: #047857; padding: 0.5rem 1.1rem; border-radius: 9999px; font-weight: 600; font-size: 0.9rem; border: 1px solid #10b981;">
-                    ✨ 7-Day Free Trial on any plan &mdash; no credit card required!
+                    🎁 7-Day Free Trial on any plan &mdash; no credit card required!
                 </div>
             </div>
         </div>
 
         <!-- Plans Grid -->
         <div class="plans-grid">
-            <!-- Basic Plan -->
+
+            <!-- ── GROWTH PLAN ─────────────────────────────── -->
             <div class="plan-card">
                 <div class="plan-card-header">
-                    <h3>Basic</h3>
-                    <p style="font-size: 0.85rem; color: var(--text-muted); margin-top: 4px; margin-bottom: 20px;">Best for small salons starting digital operations</p>
+                    <h3>Growth</h3>
+                    <p style="font-size: 0.85rem; color: var(--text-muted); margin-top: 4px; margin-bottom: 20px;">For solo stylists &amp; small salons</p>
                     <div class="price">
                         <span class="currency">₹</span>
-                        <span class="amount" data-monthly="1,999" data-annual="19,999">1,999</span>
-                        <span class="period" data-monthly="/ month" data-annual="/ year">/ month</span>
+                        <span class="amount" data-monthly="799" data-annual="665">799</span>
+                        <span class="period" data-monthly="/ month" data-annual="/ month">/ month</span>
                     </div>
                 </div>
-                
+
                 <div class="plan-features">
                     <ul>
+                        <!-- Limits -->
                         <li><svg class="check-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>1 Branch</li>
                         <li><svg class="check-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>Up to 5 staff accounts</li>
+                        <li><svg class="check-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>2 user logins</li>
+                        <!-- Core -->
                         <li><svg class="check-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>Bookings management</li>
                         <li><svg class="check-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>Customers CRM</li>
+                        <li><svg class="check-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>Staff &amp; Schedules</li>
                         <li><svg class="check-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>Services management</li>
-                        <li><svg class="check-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>Basic dashboard analytics</li>
-                        <li><svg class="check-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>Basic reports</li>
-                        <li><svg class="check-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>Payment tracking</li>
-                        <li><svg class="check-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>Staff schedule view</li>
-                        <li><svg class="check-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>Owner + Staff roles only</li>
-                        <li><svg class="check-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>Email support</li>
-                        <li style="color: #94a3b8; text-decoration: line-through;"><svg class="check-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="stroke: #cbd5e1;"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>POS system</li>
-                        <li style="color: #94a3b8; text-decoration: line-through;"><svg class="check-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="stroke: #cbd5e1;"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>Marketing tools</li>
-                        <li style="color: #94a3b8; text-decoration: line-through;"><svg class="check-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="stroke: #cbd5e1;"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>Advanced analytics</li>
-                        <li style="color: #94a3b8; text-decoration: line-through;"><svg class="check-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="stroke: #cbd5e1;"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>Multi-branch</li>
+                        <li><svg class="check-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>Point of Sale (POS)</li>
+                        <li><svg class="check-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>Products &amp; Inventory</li>
+                        <li><svg class="check-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>Sales History &amp; Refunds</li>
+                        <li><svg class="check-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>Payments History</li>
+                        <li><svg class="check-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>Expenses tracking</li>
+                        <li><svg class="check-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>Finance report</li>
+                        <!-- Locked -->
+                        <li class="feature-locked">
+                            <svg class="check-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>
+                            <svg class="x-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:16px;height:16px;margin-right:8px;flex-shrink:0;"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+                            Marketing tools
+                        </li>
+                        <li class="feature-locked">
+                            <svg class="check-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>
+                            <svg class="x-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:16px;height:16px;margin-right:8px;flex-shrink:0;"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+                            Full reports &amp; exports
+                        </li>
+                        <li class="feature-locked">
+                            <svg class="check-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>
+                            <svg class="x-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:16px;height:16px;margin-right:8px;flex-shrink:0;"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+                            Roles &amp; Permissions
+                        </li>
+                        <li class="feature-locked">
+                            <svg class="check-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>
+                            <svg class="x-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:16px;height:16px;margin-right:8px;flex-shrink:0;"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+                            Multi-branch
+                        </li>
                     </ul>
                 </div>
-                
-                <button class="btn-primary btn-plan" data-plan="basic">Select Plan</button>
+
+                <button class="btn-primary btn-plan" data-plan="growth">Select Plan</button>
             </div>
 
-            <!-- Advance Plan -->
+            <!-- ── ADVANCE PLAN (Most Popular) ─────────────── -->
             <div class="plan-card plan-featured">
-                <div class="popular-badge">Most Popular</div>
+                <div class="popular-badge">MOST POPULAR</div>
                 <div class="plan-card-header">
                     <h3>Advance</h3>
-                    <p style="font-size: 0.85rem; color: var(--text-muted); margin-top: 4px; margin-bottom: 20px;">For busy, multi-stylist salons</p>
+                    <p style="font-size: 0.85rem; color: var(--text-muted); margin-top: 4px; margin-bottom: 20px;">For growing salons with a team</p>
                     <div class="price">
                         <span class="currency">₹</span>
-                        <span class="amount" data-monthly="4,999" data-annual="49,999">4,999</span>
-                        <span class="period" data-monthly="/ month" data-annual="/ year">/ month</span>
+                        <span class="amount" data-monthly="1,499" data-annual="1,249">1,499</span>
+                        <span class="period" data-monthly="/ month" data-annual="/ month">/ month</span>
                     </div>
                 </div>
-                
+
                 <div class="plan-features">
-                    <div class="feature-subtitle">Everything in Basic, plus:</div>
+                    <div class="feature-subtitle">Everything in Growth, plus:</div>
                     <ul>
                         <li><svg class="check-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>Up to 3 branches</li>
-                        <li><svg class="check-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>Up to 12 staff accounts</li>
-                        <li><svg class="check-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>POS system</li>
-                        <li><svg class="check-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>Product sales</li>
-                        <li><svg class="check-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>Sales history</li>
-                        <li><svg class="check-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>Advanced reports</li>
-                        <li><svg class="check-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>Offers & coupons</li>
-                        <li><svg class="check-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>Appointment reminders</li>
-                        <li><svg class="check-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>Customer search intelligence</li>
-                        <li><svg class="check-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>Roles & permissions system</li>
-                        <li><svg class="check-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>Marketing campaigns</li>
+                        <li><svg class="check-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>Up to 10 staff accounts</li>
+                        <li><svg class="check-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>5 user logins</li>
+                        <li><svg class="check-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>Offers &amp; Coupons</li>
+                        <li><svg class="check-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>Memberships</li>
+                        <li><svg class="check-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>Full Reports (Staff, Service, Customer)</li>
+                        <li><svg class="check-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>Roles &amp; Permissions</li>
+                        <li><svg class="check-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>All data exports (CSV / PDF)</li>
                     </ul>
                 </div>
-                
-                <button class="btn-primary btn-plan featured-btn" data-plan="advance">Select Plan</button>
+
+                <button class="btn-primary btn-plan" data-plan="advance">Select Plan</button>
             </div>
 
-            <!-- Pro Plan -->
+            <!-- ── PRO PLAN ────────────────────────────────── -->
             <div class="plan-card">
                 <div class="plan-card-header">
                     <h3>Pro</h3>
-                    <p style="font-size: 0.85rem; color: var(--text-muted); margin-top: 4px; margin-bottom: 20px;">Best for multi-branch chains</p>
+                    <p style="font-size: 0.85rem; color: var(--text-muted); margin-top: 4px; margin-bottom: 20px;">For multi-branch salon chains</p>
                     <div class="price">
                         <span class="currency">₹</span>
-                        <span class="amount" data-monthly="9,999" data-annual="99,999">9,999</span>
-                        <span class="period" data-monthly="/ month" data-annual="/ year">/ month</span>
+                        <span class="amount" data-monthly="2,999" data-annual="2,499">2,999</span>
+                        <span class="period" data-monthly="/ month" data-annual="/ month">/ month</span>
                     </div>
                 </div>
-                
+
                 <div class="plan-features">
                     <div class="feature-subtitle">Everything in Advance, plus:</div>
                     <ul>
                         <li><svg class="check-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>Up to 10 branches</li>
                         <li><svg class="check-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>Unlimited staff</li>
-                        <li><svg class="check-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>Membership programs</li>
-                        <li><svg class="check-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>Online booking page</li>
-                        <li><svg class="check-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>Ad campaign tools</li>
-                        <li><svg class="check-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>Deep analytics dashboard</li>
-                        <li><svg class="check-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>Branch performance comparison</li>
-                        <li><svg class="check-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>Custom fields</li>
-                        <li><svg class="check-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>Advanced permissions</li>
+                        <li><svg class="check-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>10 user logins</li>
+                        <li><svg class="check-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>Unlimited services</li>
                         <li><svg class="check-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>Priority support</li>
                     </ul>
                 </div>
-                
+
                 <button class="btn-primary btn-plan" data-plan="pro">Select Plan</button>
             </div>
 
-            <!-- Enterprise Plan -->
-            <div class="plan-card">
-                <div class="plan-card-header">
-                    <h3>Enterprise</h3>
-                    <p style="font-size: 0.85rem; color: var(--text-muted); margin-top: 4px; margin-bottom: 20px;">For large franchise networks</p>
-                    <div class="price" id="enterprisePriceBlock">
-                        <span class="currency" id="enterpriseCurrency">₹</span>
-                        <span class="amount" id="enterpriseAmount">19,999+</span>
-                        <span class="period" id="enterprisePeriod">/ month</span>
-                    </div>
-                </div>
-                
-                <div class="plan-features">
-                    <div class="feature-subtitle">Everything in Pro, plus:</div>
-                    <ul>
-                        <li><svg class="check-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>Unlimited branches</li>
-                        <li><svg class="check-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>AI receptionist</li>
-                        <li><svg class="check-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>WhatsApp booking automation</li>
-                        <li><svg class="check-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>Custom integrations</li>
-                        <li><svg class="check-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>Dedicated support & SLA</li>
-                        <li><svg class="check-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>Custom analytics</li>
-                        <li><svg class="check-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>White label options</li>
-                    </ul>
-                </div>
-                
-                <button class="btn-primary btn-plan" data-plan="enterprise">Contact Sales</button>
-            </div>
-        </div>
-    </div>
+        </div><!-- /plans-grid -->
+    </div><!-- /plans-container -->
 
     <!-- Scripts -->
     <script type="module" src="scripts/plans.js"></script>
@@ -202,4 +204,3 @@
     <script type="module" src="scripts/sub-features/sub-feature-gate.js"></script>
 </body>
 </html>
-

@@ -30,21 +30,7 @@
                 el.textContent = el.getAttribute('data-' + mode);
             });
 
-            // Update Enterprise card separately
-            const entCurrency = document.getElementById('enterpriseCurrency');
-            const entAmount   = document.getElementById('enterpriseAmount');
-            const entPeriod   = document.getElementById('enterprisePeriod');
-            if (mode === 'annual') {
-                entCurrency.style.display = 'none';
-                entAmount.textContent     = 'Contact Sales';
-                entPeriod.textContent     = 'for annual pricing';
-                entAmount.style.fontSize  = '1.8rem';
-            } else {
-                entCurrency.style.display = '';
-                entAmount.textContent     = '19,999+';
-                entPeriod.textContent     = '/ month';
-                entAmount.style.fontSize  = '';
-            }
+            // No Enterprise card — nothing extra needed
         }
 
 
@@ -75,7 +61,7 @@ export function initPlans() {
 
                 // Determine User's current plan level
                 const appContextStr = localStorage.getItem('appContext');
-                let userPlan = 'basic'; // Default fallback
+                let userPlan = 'growth'; // Default fallback
                 if (appContextStr) {
                     try {
                         const context = JSON.parse(appContextStr);
@@ -87,8 +73,8 @@ export function initPlans() {
                     }
                 }
 
-                // Define plan hierarchy
-                const planHierarchy = { 'basic': 1, 'advance': 2, 'pro': 3, 'enterprise': 4 };
+                // Define plan hierarchy (Growth=1, Advance=2, Pro=3)
+                const planHierarchy = { 'growth': 1, 'advance': 2, 'pro': 3 };
                 const userPlanLevel = planHierarchy[userPlan] || 1;
 
                 // Update the Banner
@@ -136,12 +122,8 @@ export function initPlans() {
                     } 
                     else {
                         // Higher Tier (Upgrade)
-                        if (cardPlanStr !== 'enterprise') {
-                            const prettyName = cardPlanStr.charAt(0).toUpperCase() + cardPlanStr.slice(1);
-                            btn.innerHTML = `UPGRADE <span style="display:block; font-size:0.75rem; font-weight:normal; opacity:0.9;">to ${prettyName}</span>`;
-                        } else {
-                            btn.innerHTML = `UPGRADE <span style="display:block; font-size:0.75rem; font-weight:normal; opacity:0.9;">Contact Sales</span>`;
-                        }
+                        const prettyName = cardPlanStr.charAt(0).toUpperCase() + cardPlanStr.slice(1);
+                        btn.innerHTML = `UPGRADE <span style="display:block; font-size:0.75rem; font-weight:normal; opacity:0.9;">to ${prettyName}</span>`;
                     }
                 });
             }
@@ -192,10 +174,9 @@ export function initPlans() {
                     
                     setTimeout(() => {
                         const planMapping = {
-                            'basic': { id: 'd0d4cc8f-3498-4da1-b5e5-2887b9b39dce', name: 'Basic' },
+                            'growth':  { id: 'd0d4cc8f-3498-4da1-b5e5-2887b9b39dce', name: 'Growth' },
                             'advance': { id: 'b42bcd41-217a-4ddb-9451-20e040984277', name: 'Advance' },
-                            'pro': { id: 'b32fe38d-a715-4166-acf1-b970bd845c21', name: 'Pro' },
-                            'enterprise': { id: '2e86d143-72aa-4ae4-a925-ded2b8475dc8', name: 'Enterprise' }
+                            'pro':     { id: 'b32fe38d-a715-4166-acf1-b970bd845c21', name: 'Pro' }
                         };
                         const mappedPlan = planMapping[selectedPlan] || { id: selectedPlan, name: selectedPlan };
                         

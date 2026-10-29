@@ -927,6 +927,7 @@
 
 // Direct supabase insert - one row insert only. just like notifications table write.
 
+
 // ==============================================================================================================================
 //  MANAGE ADD-ONS (manage-addons.html)
 // ==============================================================================================================================
@@ -999,7 +1000,7 @@
 
            // GROUP A - CORE LEVEL FEATURE PAGES - Total 22 HTML PAGES - these are the pages present in the SIDE BAR
         
-           // GROUP B - SUB LEVEL FEATURE PAGES - Total 23 HTML PAGES - These are the sub - pages that are not the direct pages but are accessed from the SIDE BAR Pages.
+           // GROUP B - SUB LEVEL FEATURE PAGES - Total 22 HTML PAGES - These are the sub - pages that are not the direct pages but are accessed from the SIDE BAR Pages.
        
 
 // CONFIG FILE 2:- SUB FEATURE REGISTRY 
@@ -1102,8 +1103,41 @@
 
             
 //===========================================================================================================================================================================
+// ON BOARDING / SIGN-UP PROCESS:
+//===========================================================================================================================================================================
+
+// 1. When clicking "Set up your workspace" (onboarding.html): It writes to 7 tables
+    
+     // 1. Companies
+     // 2. Branches
+     // 3. Roles
+     // 4. Role_permissions
+     // 5. Users
+     // 6. Usage_counters
+     // 7. Profiles
+     
+// 2. After clicking the setup your workspace customer will be directed to the payments page .. there he will choose either PAY NOW or START FREE TRAIL.. then 2 tables are written:
+
+     // A. IF HE CHOOSES  PAY-NOW option then the EDGE FUNCTION - [create-razorpay-subscription] will insert into the tables below and when the payment is successful or failed then the EDGE FUNCTION - [razorpay-webhook] - updates the same tables.
+     
+         // 1. Subscriptions
+         // 2. Payments
+
+     // B. When start Free Trail is clicked.     
+     
+         // EDGE FUNCION - [create-razorpay-subscription] will insert the rows in the two tables and when the mandate is authorized in the razorpay then the Edge Function - [razorpay-webhook] updates those tables.
+
+             // 1. Subscriptions
+             // 2. Payments
 
 
+// 3. When the Payment is successful, The EDGE FUNCTION - [razorpay-webhook] - Updates the below columns in the tables below:
+  
+     // 1. Subscriptions [STATUS from created to ACTIVE]
+     // 2. Payments [STATUS from created to PAID]
+
+     
+   
 
 
 
