@@ -153,6 +153,15 @@ body.checkout-page-body {
     background: transparent;
 }
 
+/* Enclosing card — mirrors the right column's order-summary-card */
+.checkout-left-card {
+    background: #ffffff;
+    border: 1px solid #e2e8f0;
+    border-radius: 16px;
+    padding: 26px 28px;
+    box-shadow: 0 4px 20px -2px rgba(0, 0, 0, 0.05);
+}
+
 .page-title-box {
     margin-bottom: 24px;
 }
