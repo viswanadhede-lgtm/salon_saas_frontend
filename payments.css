@@ -455,35 +455,36 @@ body.checkout-page-body {
 
 /* ── FREE TRIAL BANNER CARD ────────────────────────────────────────── */
 .free-trial-banner {
-    background: #16a34a;
-    border: none;
-    border-radius: 10px;
+    background: #f0fdf4;
+    border: 1.5px solid #86efac;
+    border-radius: 12px;
     padding: 12px 18px;
     display: flex;
     align-items: center;
-    justify-content: center;
-    gap: 10px;
+    justify-content: space-between;
     margin-top: 12px;
     cursor: pointer;
-    transition: all 0.15s ease;
-    box-shadow: 0 4px 12px rgba(22, 163, 74, 0.35);
-    width: 100%;
+    transition: all 0.2s ease;
 }
 
 .free-trial-banner:hover {
-    background: #15803d;
-    transform: translateY(-1px);
-    box-shadow: 0 6px 16px rgba(22, 163, 74, 0.4);
+    border-color: #22c55e;
+    background: #ecfdf5;
+    box-shadow: 0 4px 14px rgba(34, 197, 94, 0.12);
 }
 
 .trial-left-wrap {
     display: flex;
     align-items: center;
-    gap: 10px;
+    gap: 16px;
 }
 
 .gift-icon-box {
-    color: #ffffff;
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    background: #dcfce7;
+    color: #16a34a;
     display: flex;
     align-items: center;
     justify-content: center;
@@ -491,14 +492,20 @@ body.checkout-page-body {
 }
 
 .trial-text-wrap h3 {
-    margin: 0;
+    margin: 0 0 2px 0;
     font-size: 0.88rem;
     font-weight: 700;
-    color: #ffffff;
+    color: #15803d;
+}
+
+.trial-text-wrap p {
+    margin: 0;
+    font-size: 0.76rem;
+    color: #475569;
 }
 
 .trial-arrow-btn {
-    color: #ffffff;
+    color: #16a34a;
     display: flex;
     align-items: center;
     justify-content: center;
