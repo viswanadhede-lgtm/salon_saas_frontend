@@ -1,12 +1,12 @@
 -- ============================================================================
--- RPC FUNCTION: public.onboard_company_workspace (UPDATED)
+-- RPC FUNCTION: public.onboard_company_workspace (DYNAMIC PERMISSIONS)
 -- Purpose: Atomically provisions an entire tenant workspace during onboarding.
 --
 -- UPDATES APPLIED:
--- 1. ONLY inserts the 'Owner' role into public.roles (removed Manager, Receptionist, Staff).
--- 2. In public.role_permissions, writes the COMPLETE unified list of all features
---    and sub-features as a single JSON array string into permission_key:
---    '["feature_1", "feature_2", ... , "sub_feature_1", "sub_feature_2", ...]'
+-- 1. ONLY inserts the 'Owner' role into public.roles (no Manager, Receptionist, Staff).
+-- 2. Dynamically queries public.plan_features (feature_key) and public.plan_sub_features (sub_feature_key)
+--    for the selected plan and combines them into one single string: [features + sub_features].
+-- 3. Zero hardcoded features or sub-features in this RPC.
 -- ============================================================================
 
 CREATE OR REPLACE FUNCTION public.onboard_company_workspace(
@@ -50,12 +50,11 @@ DECLARE
     v_pin_code             text;
     v_country              text;
 
-    -- Permissions Processing
+    -- Dynamic Permissions Retrieval
     v_raw_features         text;
     v_raw_sub_features     text;
     v_features_json        jsonb := '[]'::jsonb;
     v_sub_feats_json       jsonb := '[]'::jsonb;
-    v_final_perms_json     jsonb := '[]'::jsonb;
     v_permissions_text     text;
 BEGIN
     -- ─────────────────────────────────────────────────────────────────────────
@@ -249,18 +248,17 @@ BEGIN
     );
 
     -- ─────────────────────────────────────────────────────────────────────────
-    -- 6. RESOLVE & INSERT ROLE PERMISSIONS
-    -- Unpacks the full array of features + subfeatures for the selected plan
-    -- and stores as a single JSON array string in permission_key.
+    -- 6. DYNAMICALLY QUERY PLAN FEATURES & PLAN SUB-FEATURES
+    --    Combines [features] + [sub_features] into a single JSON array string.
     -- ─────────────────────────────────────────────────────────────────────────
-    -- A. Fetch raw feature_key from plan_features
+    -- A. Fetch raw feature_key string from public.plan_features
     SELECT feature_key
     INTO v_raw_features
     FROM public.plan_features
     WHERE plan_id = v_plan_id
     LIMIT 1;
 
-    -- Fallback by plan_name if not found by plan_id
+    -- If not found by plan_id, look up using plan_name via public.plans
     IF (v_raw_features IS NULL OR v_raw_features = '') AND v_plan_name IS NOT NULL THEN
         SELECT pf.feature_key
         INTO v_raw_features
@@ -273,7 +271,7 @@ BEGIN
         LIMIT 1;
     END IF;
 
-    -- Parse features into jsonb array
+    -- Parse raw feature string into JSONB array
     IF v_raw_features IS NOT NULL AND TRIM(v_raw_features) LIKE '[%]' THEN
         BEGIN
             v_features_json := TRIM(v_raw_features)::jsonb;
@@ -282,22 +280,14 @@ BEGIN
         END;
     END IF;
 
-    -- Fallback if stored as multiple rows
-    IF jsonb_array_length(v_features_json) = 0 THEN
-        SELECT COALESCE(jsonb_agg(feature_key), '[]'::jsonb)
-        INTO v_features_json
-        FROM public.plan_features
-        WHERE plan_id = v_plan_id AND feature_key NOT LIKE '[%]';
-    END IF;
-
-    -- B. Fetch raw sub_feature_key from plan_sub_features
+    -- B. Fetch raw sub_feature_key string from public.plan_sub_features
     SELECT sub_feature_key
     INTO v_raw_sub_features
     FROM public.plan_sub_features
     WHERE plan_id = v_plan_id
     LIMIT 1;
 
-    -- Fallback by plan_name if not found by plan_id
+    -- If not found by plan_id, look up using plan_name via public.plans
     IF (v_raw_sub_features IS NULL OR v_raw_sub_features = '') AND v_plan_name IS NOT NULL THEN
         SELECT psf.sub_feature_key
         INTO v_raw_sub_features
@@ -310,7 +300,7 @@ BEGIN
         LIMIT 1;
     END IF;
 
-    -- Parse sub-features into jsonb array
+    -- Parse raw sub-feature string into JSONB array
     IF v_raw_sub_features IS NOT NULL AND TRIM(v_raw_sub_features) LIKE '[%]' THEN
         BEGIN
             v_sub_feats_json := TRIM(v_raw_sub_features)::jsonb;
@@ -319,37 +309,10 @@ BEGIN
         END;
     END IF;
 
-    -- Fallback if stored as multiple rows
-    IF jsonb_array_length(v_sub_feats_json) = 0 THEN
-        SELECT COALESCE(jsonb_agg(sub_feature_key), '[]'::jsonb)
-        INTO v_sub_feats_json
-        FROM public.plan_sub_features
-        WHERE plan_id = v_plan_id AND sub_feature_key NOT LIKE '[%]';
-    END IF;
+    -- C. Combine both arrays: [feature keys] + [sub feature keys] into one single string
+    v_permissions_text := (COALESCE(v_features_json, '[]'::jsonb) || COALESCE(v_sub_feats_json, '[]'::jsonb))::text;
 
-    -- C. Merge all features + subfeatures into one complete, distinct list
-    SELECT COALESCE(jsonb_agg(elem ORDER BY elem), '[]'::jsonb)
-    INTO v_final_perms_json
-    FROM (
-        SELECT DISTINCT jsonb_array_elements_text(v_features_json) AS elem
-        UNION
-        SELECT DISTINCT jsonb_array_elements_text(v_sub_feats_json) AS elem
-    ) combined
-    WHERE elem IS NOT NULL AND elem <> '';
-
-    -- D. Safe fallback: If plan tables had no rows, populate the full standard keys for the plan
-    IF jsonb_array_length(v_final_perms_json) = 0 THEN
-        IF LOWER(v_plan_name) LIKE '%growth%' THEN
-            -- Growth Plan (41 features + 74 sub-features = 115 total)
-            v_final_perms_json := '["analytics_expenses","analytics_overview","billing_subscription_management","bookings_management","company_settings","customers_management","dashboard_access","dashboard_completed_appointments","dashboard_no_shows_cancellations","dashboard_todays_revenue","dashboard_upcoming_appointments","issue_history","manage_addons","notifications","payments_history","pending_payments","pos_system","product_management","report_financial","report_staff_performance","reports_access","reports_category","reports_detail","roles_permissions","sales_history","services_management","settings_business","settings_contact","settings_hours","settings_invoice","settings_invoice_booking","settings_invoice_common","settings_invoice_pos","settings_notifications","settings_payments","settings_tax","staff_management","staff_schedules","support","user_guide","user_management","dashboard_create_booking","create_booking","update_booking","cancel_booking","view_booking_details","reschedule_booking","export_bookings","filter_bookings","create_customer","edit_customer","delete_customer","view_customer_details","view_customer_history","export_customers","filter_customers","create_staff","edit_staff","delete_staff","view_staff_details","manage_staff_services","export_staff","filter_staff","create_schedule","edit_schedule","delete_schedule","bulk_update_schedule","export_schedules","filter_schedules","create_service","edit_service","delete_service","create_category","edit_category","delete_category","manage_prices","export_services","filter_services","pos_create_sale","pos_quick_billing","pos_apply_discount","pos_cancel_sale","pos_print_receipt","pos_reorder_items","add_product","edit_product","delete_product","adjust_stock","create_product_category","edit_product_category","delete_product_category","export_products","filter_products","view_sale_details","reprint_sale_receipt","refund_sale","rebook_from_sale","export_sales_history","filter_sales_history","process_pending_payment","cancel_pending_payment","view_pending_payment_details","export_pending_payments","filter_pending_payments","view_payment_details","refund_payment","reprint_payment_receipt","export_payments_history","filter_payments_history","export_analytics_overview","filter_analytics_overview","view_report_financial","view_report_staff","export_report","filter_report","add_expense","edit_expense","delete_expense","create_expense_category","edit_expense_category","delete_expense_category","export_expenses","filter_expenses","edit_business_settings","edit_contact_settings","edit_operating_hours","edit_tax_settings","edit_payment_settings","edit_notification_settings","edit_common_invoice_settings","edit_booking_invoice_settings","edit_pos_invoice_settings","user_create","user_edit","user_delete","user_toggle_status","export_users","filter_users","role_create","role_edit","role_delete","permission_assign","export_roles","view_current_subscription","view_billing_history","upgrade_subscription","cancel_subscription","view_addons","activate_addon","deactivate_addon","notification_mark_read","notification_clear_all","support_ticket_create","support_ticket_reply","support_ticket_close","view_user_guide"]'::jsonb;
-        ELSE
-            -- Advance / Pro Plan (All 51 features + all 97 sub-features = 148 total)
-            v_final_perms_json := '["analytics_expenses","analytics_overview","billing_subscription_management","bookings_management","branch_management","company_settings","customers_management","dashboard_access","dashboard_completed_appointments","dashboard_no_shows_cancellations","dashboard_todays_revenue","dashboard_upcoming_appointments","issue_history","manage_addons","marketing_coupons","marketing_memberships","marketing_offers","notifications","payments_history","pending_payments","pos_system","product_management","report_bookings","report_customers","report_discount_usages","report_financial","report_memberships","report_product_sales","report_staff_performance","reports_access","reports_category","reports_detail","roles_permissions","sales_history","services_management","settings_business","settings_contact","settings_hours","settings_invoice","settings_invoice_booking","settings_invoice_common","settings_invoice_membership","settings_invoice_pos","settings_notifications","settings_payments","settings_tax","staff_management","staff_schedules","support","user_guide","user_management","dashboard_create_booking","create_booking","update_booking","cancel_booking","view_booking_details","reschedule_booking","export_bookings","filter_bookings","create_customer","edit_customer","delete_customer","view_customer_details","view_customer_history","export_customers","filter_customers","create_staff","edit_staff","delete_staff","view_staff_details","manage_staff_services","export_staff","filter_staff","create_schedule","edit_schedule","delete_schedule","bulk_update_schedule","export_schedules","filter_schedules","create_service","edit_service","delete_service","create_category","edit_category","delete_category","manage_prices","export_services","filter_services","pos_create_sale","pos_quick_billing","pos_apply_discount","pos_cancel_sale","pos_print_receipt","pos_reorder_items","add_product","edit_product","delete_product","adjust_stock","create_product_category","edit_product_category","delete_product_category","export_products","filter_products","view_sale_details","reprint_sale_receipt","refund_sale","rebook_from_sale","export_sales_history","filter_sales_history","process_pending_payment","cancel_pending_payment","view_pending_payment_details","export_pending_payments","filter_pending_payments","create_offer","edit_offer","delete_offer","toggle_offer_status","export_offers","filter_offers","create_coupon","edit_coupon","delete_coupon","toggle_coupon_status","export_coupons","filter_coupons","create_membership","edit_membership","delete_membership","toggle_membership_status","assign_membership","cancel_membership","export_memberships","filter_memberships","export_analytics_overview","filter_analytics_overview","view_report_financial","view_report_staff","view_report_bookings","view_report_customers","view_report_product_sales","view_report_discount_usages","view_report_memberships","export_report","filter_report","add_expense","edit_expense","delete_expense","create_expense_category","edit_expense_category","delete_expense_category","export_expenses","filter_expenses","branch_create","branch_edit","branch_delete","branch_switch","export_branches","edit_business_settings","edit_contact_settings","edit_operating_hours","edit_tax_settings","edit_payment_settings","edit_notification_settings","edit_common_invoice_settings","edit_booking_invoice_settings","edit_pos_invoice_settings","edit_membership_invoice_settings","user_create","user_edit","user_delete","user_toggle_status","export_users","filter_users","role_create","role_edit","role_delete","permission_assign","export_roles","view_current_subscription","view_billing_history","upgrade_subscription","cancel_subscription","view_addons","activate_addon","deactivate_addon","notification_mark_read","notification_clear_all","support_ticket_create","support_ticket_reply","support_ticket_close","view_user_guide"]'::jsonb;
-        END IF;
-    END IF;
-
-    v_permissions_text := v_final_perms_json::text;
-
+    -- Insert the Owner's permission row
     INSERT INTO public.role_permissions (
         id,
         company_id,
