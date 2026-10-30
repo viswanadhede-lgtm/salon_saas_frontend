@@ -96,21 +96,46 @@ document.addEventListener('DOMContentLoaded', async () => {
     const isAdvance = planDisplayName.includes('ADVANCE');
     const isPro     = planDisplayName.includes('PRO');
 
-    let subtitleText = 'Advanced features to grow your business.';
-    let badgeText    = 'Most Popular';
+    let subtitleText = 'All core features to manage your business';
+    let badgeText    = 'Starter plan';
+    let b1Title = 'All core features',             b1Desc = 'Everything you need to run your business';
+    let b2Title = 'Multiple staff & Multi Logins', b2Desc = 'Manage team access with ease';
+    let b3Title = 'Basic Reporting',               b3Desc = 'Essential financial & sales tracking';
+    let b4Title = 'Email Support',                 b4Desc = 'Help when you need it via email';
 
     if (isAdvance) {
-        subtitleText = 'Multi-branch operations & marketing suite.';
-        badgeText    = 'Best Value';
+        subtitleText = 'Advanced Features to grow your Business';
+        badgeText    = 'Most Popular';
+        b1Title = 'All Advanced Features';      b1Desc = 'Marketing suite, coupons & memberships';
+        b2Title = 'Multiple staff & Branches';  b2Desc = 'Multi-branch operations with ease';
+        b3Title = 'Advanced Reporting';         b3Desc = 'Deep analytics & full reports';
+        b4Title = 'Email & Live Chat';          b4Desc = 'Fast help via email & live chat';
     } else if (isPro) {
-        subtitleText = 'Maximum capacity, custom limits & priority VIP support.';
-        badgeText    = 'Enterprise Grade';
+        subtitleText = 'Advanced Features to grow your Business';
+        badgeText    = 'Multi Branch Salon Chains';
+        b1Title = 'All Advanced Features';      b1Desc = 'Unrestricted platform access & top limits';
+        b2Title = 'Multiple staff & Branches';  b2Desc = 'Enterprise branch & team capacity';
+        b3Title = 'Advanced Reporting';         b3Desc = 'Deep insights, analytics & exports';
+        b4Title = '24/7 Priority Support';      b4Desc = 'Dedicated VIP support anytime';
     }
 
     setText('dispPlanSubtitle', subtitleText);
-    setText('sumPlanSub',      subtitleText);
+    setText('sumPlanSub',       subtitleText);
     setText('dispPlanBadge',    badgeText);
     setText('sumPlanBadge',     badgeText);
+
+    // Update 4 Plan Benefits in Left Card
+    setText('benefitTitle1', b1Title);
+    setText('benefitDesc1',  b1Desc);
+    setText('benefitTitle2', b2Title);
+    setText('benefitDesc2',  b2Desc);
+    setText('benefitTitle3', b3Title);
+    setText('benefitDesc3',  b3Desc);
+    setText('benefitTitle4', b4Title);
+    setText('benefitDesc4',  b4Desc);
+
+    // Update Free Trial Banner Subtitle
+    setText('trialBannerDesc', 'Set up the mandate & Enjoy 7 days Free Trial. You can cancel anytime.');
 
     // Calculate annual discount percentage
     const annualMonthlyEquiv = Math.round(yearlyPrice / 12);
@@ -126,33 +151,6 @@ document.addEventListener('DOMContentLoaded', async () => {
     const saveBadge = document.querySelector('.save-badge-pill');
     if (saveBadge && discountPercent > 0) {
         saveBadge.textContent = `Save ${discountPercent}%`;
-    }
-
-    // Dynamic checklist bullets in Order Summary
-    const featureList = document.getElementById('summaryFeatureList');
-    if (featureList) {
-        if (isGrowth) {
-            featureList.innerHTML = `
-                <li><span class="check-icon">✓</span> All 41 core system features</li>
-                <li><span class="check-icon">✓</span> Up to 10 staff & 1 branch</li>
-                <li><span class="check-icon">✓</span> Financial & Staff reports</li>
-                <li><span class="check-icon">✓</span> Standard customer support</li>
-            `;
-        } else if (isAdvance) {
-            featureList.innerHTML = `
-                <li><span class="check-icon">✓</span> All 51 features & 97 sub-features</li>
-                <li><span class="check-icon">✓</span> Marketing suite (Coupons & Memberships)</li>
-                <li><span class="check-icon">✓</span> Up to 3 branches & 20 staff</li>
-                <li><span class="check-icon">✓</span> Full analytics & all 7 report categories</li>
-            `;
-        } else if (isPro) {
-            featureList.innerHTML = `
-                <li><span class="check-icon">✓</span> Unrestricted full platform access</li>
-                <li><span class="check-icon">✓</span> Up to 10 branches & 50 staff</li>
-                <li><span class="check-icon">✓</span> Advanced data export & audit logs</li>
-                <li><span class="check-icon">✓</span> Dedicated 24/7 priority support</li>
-            `;
-        }
     }
 
     // ── Function to Synchronize Dynamic Pricing ─────────────────────
