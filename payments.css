@@ -521,7 +521,7 @@ body.checkout-page-body {
    ═════════════════════════════════════════════════════════════════════ */
 .checkout-right-col {
     position: sticky;
-    top: 90px;
+    top: 0;
 }
 
 .order-summary-card {
