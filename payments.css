@@ -9,6 +9,11 @@ body.checkout-page-body {
     padding: 0;
     font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
     background-color: #f8fafc;
+    background-image: url('assets/images/onboarding-bg.png');
+    background-size: cover;
+    background-position: center center;
+    background-repeat: no-repeat;
+    background-attachment: fixed;
     color: #0f172a;
     min-height: 100vh;
     -webkit-font-smoothing: antialiased;
