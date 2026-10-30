@@ -775,10 +775,10 @@ body.checkout-page-body {
     box-shadow: none;
 }
 
-/* Actions Wrapper at bottom of Order Summary */
+/* Actions Wrapper in Order Summary */
 .summary-actions-box {
-    margin-top: auto;
-    padding-top: 10px;
+    margin-top: 14px;
+    padding-top: 0;
 }
 
 .summary-footer-note {
