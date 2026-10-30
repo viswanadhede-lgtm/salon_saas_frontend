@@ -37,6 +37,8 @@ document.addEventListener('DOMContentLoaded', async () => {
         if (btnTrial) btnTrial.style.display = 'none';
         const trialInfo = document.getElementById('trialInfoBanner');
         if (trialInfo) trialInfo.style.display = 'none';
+        const choiceDiv = document.getElementById('choiceDivider');
+        if (choiceDiv) choiceDiv.style.display = 'none';
     }
 
     // ── Fetch plan details from Supabase ────────────────────────────

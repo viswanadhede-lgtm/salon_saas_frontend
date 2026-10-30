@@ -147,7 +147,7 @@ body.checkout-page-body {
     display: grid;
     grid-template-columns: 1.5fr 1fr;
     gap: 20px;
-    align-items: start;
+    align-items: stretch;
 }
 
 /* ═════════════════════════════════════════════════════════════════════
@@ -155,6 +155,8 @@ body.checkout-page-body {
    ═════════════════════════════════════════════════════════════════════ */
 .checkout-left-col {
     background: transparent;
+    display: flex;
+    flex-direction: column;
 }
 
 /* Enclosing card — mirrors the right column's order-summary-card */
@@ -165,6 +167,10 @@ body.checkout-page-body {
     padding: 18px 22px;
     box-shadow: 0 4px 20px -2px rgba(0, 0, 0, 0.05);
     margin-left: 20px;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    height: 100%;
 }
 
 .page-title-box {
@@ -525,6 +531,8 @@ body.checkout-page-body {
 .checkout-right-col {
     position: sticky;
     top: 0;
+    display: flex;
+    flex-direction: column;
 }
 
 .order-summary-card {
@@ -533,6 +541,9 @@ body.checkout-page-body {
     border-radius: 16px;
     padding: 18px 20px;
     box-shadow: 0 4px 20px -2px rgba(0, 0, 0, 0.05);
+    display: flex;
+    flex-direction: column;
+    height: 100%;
 }
 
 .summary-card-header {
@@ -764,10 +775,51 @@ body.checkout-page-body {
     box-shadow: none;
 }
 
+/* Actions Wrapper at bottom of Order Summary */
+.summary-actions-box {
+    margin-top: auto;
+    padding-top: 10px;
+}
+
+.summary-footer-note {
+    font-size: 0.74rem;
+    color: #94a3b8;
+    text-align: center;
+    margin-top: 8px;
+    margin-bottom: 2px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 5px;
+}
+
+/* Choice Divider between Pay Now and Free Trial */
+.checkout-choice-divider {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin: 14px 0 10px 0;
+}
+
+.choice-line {
+    flex: 1;
+    height: 1px;
+    background: #e2e8f0;
+}
+
+.choice-text {
+    font-size: 0.72rem;
+    font-weight: 700;
+    color: #94a3b8;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    white-space: nowrap;
+}
+
 /* Secondary Trial Button */
 .btn-checkout-trial {
     width: 100%;
-    margin-top: 8px;
+    margin-top: 0;
     padding: 12px 16px;
     border-radius: 10px;
     background: #15803d;
@@ -795,17 +847,6 @@ body.checkout-page-body {
     cursor: not-allowed;
     transform: none;
     box-shadow: none;
-}
-
-.summary-footer-note {
-    font-size: 0.74rem;
-    color: #94a3b8;
-    text-align: center;
-    margin-top: 12px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: 5px;
 }
 
 /* Spinner */
