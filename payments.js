@@ -35,6 +35,8 @@ document.addEventListener('DOMContentLoaded', async () => {
     // ── Hide trial banner for upgrade / renew flows ─────────────────
     if (flow === 'upgrade' || flow === 'renew') {
         if (btnTrial) btnTrial.style.display = 'none';
+        const trialInfo = document.getElementById('trialInfoBanner');
+        if (trialInfo) trialInfo.style.display = 'none';
     }
 
     // ── Fetch plan details from Supabase ────────────────────────────
