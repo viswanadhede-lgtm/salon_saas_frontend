@@ -109,7 +109,7 @@ body.checkout-page-body {
 
 /* ── Main Checkout Container ───────────────────────────────────────── */
 .checkout-main {
-    padding: 28px 8px 60px;
+    padding: 12px 8px 16px;
 }
 
 .checkout-container {
@@ -142,7 +142,7 @@ body.checkout-page-body {
 .checkout-layout-grid {
     display: grid;
     grid-template-columns: 1.5fr 1fr;
-    gap: 32px;
+    gap: 20px;
     align-items: start;
 }
 
@@ -158,38 +158,38 @@ body.checkout-page-body {
     background: #ffffff;
     border: 1px solid #e2e8f0;
     border-radius: 16px;
-    padding: 26px 28px;
+    padding: 18px 22px;
     box-shadow: 0 4px 20px -2px rgba(0, 0, 0, 0.05);
     margin-left: 20px;
 }
 
 .page-title-box {
-    margin-bottom: 24px;
+    margin-bottom: 12px;
 }
 
 .page-heading {
-    font-size: 1.65rem;
+    font-size: 1.3rem;
     font-weight: 800;
     color: #0f172a;
     letter-spacing: -0.025em;
-    margin: 0 0 6px 0;
+    margin: 0 0 3px 0;
 }
 
 .page-subheading {
-    font-size: 0.95rem;
+    font-size: 0.82rem;
     color: #64748b;
     margin: 0;
 }
 
 .checkout-step-section {
-    margin-bottom: 28px;
+    margin-bottom: 12px;
 }
 
 .section-label-row {
     display: flex;
     align-items: center;
     gap: 10px;
-    margin-bottom: 12px;
+    margin-bottom: 8px;
 }
 
 .section-step-num {
@@ -216,7 +216,7 @@ body.checkout-page-body {
     background: #ffffff;
     border: 1px solid #e2e8f0;
     border-radius: 12px;
-    padding: 18px 22px;
+    padding: 10px 16px;
     display: flex;
     align-items: center;
     justify-content: space-between;
@@ -226,13 +226,13 @@ body.checkout-page-body {
 .plan-card-left {
     display: flex;
     align-items: center;
-    gap: 14px;
+    gap: 12px;
 }
 
 .plan-avatar-box {
-    width: 44px;
-    height: 44px;
-    border-radius: 12px;
+    width: 36px;
+    height: 36px;
+    border-radius: 10px;
     background: #f3e8ff;
     color: #9333ea;
     display: flex;
@@ -311,18 +311,18 @@ body.checkout-page-body {
 .billing-cycle-grid {
     display: grid;
     grid-template-columns: 1fr 1fr;
-    gap: 16px;
+    gap: 10px;
 }
 
 .cycle-option-card {
     background: #ffffff;
     border: 1.5px solid #e2e8f0;
-    border-radius: 12px;
-    padding: 16px 18px;
+    border-radius: 10px;
+    padding: 10px 14px;
     cursor: pointer;
     display: flex;
     align-items: flex-start;
-    gap: 12px;
+    gap: 10px;
     transition: all 0.15s ease;
     user-select: none;
 }
@@ -394,14 +394,14 @@ body.checkout-page-body {
 }
 
 .cycle-cost {
-    font-size: 0.96rem;
+    font-size: 0.88rem;
     font-weight: 700;
     color: #0f172a;
-    margin-bottom: 3px;
+    margin-bottom: 2px;
 }
 
 .cycle-note {
-    font-size: 0.78rem;
+    font-size: 0.72rem;
     color: #64748b;
 }
 
@@ -409,25 +409,25 @@ body.checkout-page-body {
 .benefits-grid {
     display: grid;
     grid-template-columns: repeat(4, 1fr);
-    gap: 12px;
+    gap: 8px;
 }
 
 .benefit-card {
     background: #ffffff;
     border: 1px solid #e2e8f0;
-    border-radius: 12px;
-    padding: 14px 12px;
+    border-radius: 10px;
+    padding: 10px 10px;
     text-align: left;
 }
 
 .benefit-icon-box {
-    width: 32px;
-    height: 32px;
-    border-radius: 8px;
+    width: 26px;
+    height: 26px;
+    border-radius: 6px;
     display: flex;
     align-items: center;
     justify-content: center;
-    margin-bottom: 10px;
+    margin-bottom: 6px;
 }
 
 .icon-green  { background: #dcfce7; color: #16a34a; }
@@ -454,11 +454,11 @@ body.checkout-page-body {
     background: #f0fdf4;
     border: 1.5px solid #86efac;
     border-radius: 12px;
-    padding: 18px 22px;
+    padding: 12px 18px;
     display: flex;
     align-items: center;
     justify-content: space-between;
-    margin-top: 24px;
+    margin-top: 12px;
     cursor: pointer;
     transition: all 0.2s ease;
 }
@@ -476,8 +476,8 @@ body.checkout-page-body {
 }
 
 .gift-icon-box {
-    width: 44px;
-    height: 44px;
+    width: 36px;
+    height: 36px;
     border-radius: 50%;
     background: #dcfce7;
     color: #16a34a;
@@ -488,15 +488,15 @@ body.checkout-page-body {
 }
 
 .trial-text-wrap h3 {
-    margin: 0 0 3px 0;
-    font-size: 0.98rem;
+    margin: 0 0 2px 0;
+    font-size: 0.88rem;
     font-weight: 700;
     color: #15803d;
 }
 
 .trial-text-wrap p {
     margin: 0;
-    font-size: 0.82rem;
+    font-size: 0.76rem;
     color: #475569;
 }
 
@@ -524,20 +524,20 @@ body.checkout-page-body {
     background: #ffffff;
     border: 1px solid #e2e8f0;
     border-radius: 16px;
-    padding: 26px 24px;
+    padding: 18px 20px;
     box-shadow: 0 4px 20px -2px rgba(0, 0, 0, 0.05);
 }
 
 .summary-card-header {
-    margin-bottom: 18px;
+    margin-bottom: 12px;
 }
 
 .summary-title {
-    font-size: 1.25rem;
+    font-size: 1.05rem;
     font-weight: 800;
     color: #0f172a;
     letter-spacing: -0.02em;
-    margin: 0 0 3px 0;
+    margin: 0 0 2px 0;
 }
 
 .summary-sub {
@@ -551,8 +551,8 @@ body.checkout-page-body {
     background: #faf5ff;
     border: 1px solid #f3e8ff;
     border-radius: 10px;
-    padding: 12px 14px;
-    margin-bottom: 16px;
+    padding: 9px 12px;
+    margin-bottom: 10px;
 }
 
 .sp-left {
@@ -604,15 +604,15 @@ body.checkout-page-body {
 /* Feature Checklist */
 .summary-features-list {
     list-style: none;
-    margin: 0 0 20px 0;
+    margin: 0 0 12px 0;
     padding: 0;
     display: flex;
     flex-direction: column;
-    gap: 8px;
+    gap: 5px;
 }
 
 .summary-features-list li {
-    font-size: 0.84rem;
+    font-size: 0.78rem;
     color: #475569;
     display: flex;
     align-items: center;
@@ -630,17 +630,17 @@ body.checkout-page-body {
     background: #f8fafc;
     border: 1px solid #f1f5f9;
     border-radius: 10px;
-    padding: 14px 16px;
-    margin-bottom: 20px;
+    padding: 10px 14px;
+    margin-bottom: 12px;
 }
 
 .pricing-row {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    font-size: 0.86rem;
+    font-size: 0.80rem;
     color: #475569;
-    margin-bottom: 8px;
+    margin-bottom: 5px;
 }
 
 .pricing-val {
@@ -651,7 +651,7 @@ body.checkout-page-body {
 .pricing-divider {
     height: 1px;
     background: #e2e8f0;
-    margin: 10px 0;
+    margin: 6px 0;
 }
 
 .total-row {
@@ -673,20 +673,20 @@ body.checkout-page-body {
 
 /* Payment Methods */
 .payment-methods-box {
-    margin-bottom: 20px;
+    margin-bottom: 12px;
 }
 
 .pm-title {
-    font-size: 0.82rem;
+    font-size: 0.78rem;
     font-weight: 700;
     color: #0f172a;
-    margin-bottom: 3px;
+    margin-bottom: 2px;
 }
 
 .pm-note {
-    font-size: 0.74rem;
+    font-size: 0.70rem;
     color: #64748b;
-    margin: 0 0 10px 0;
+    margin: 0 0 7px 0;
     line-height: 1.4;
 }
 
@@ -728,11 +728,11 @@ body.checkout-page-body {
 /* Primary Pay Button */
 .btn-checkout-primary {
     width: 100%;
-    padding: 15px 18px;
+    padding: 12px 16px;
     border-radius: 10px;
     background: #2563eb;
     color: #ffffff;
-    font-size: 0.95rem;
+    font-size: 0.88rem;
     font-weight: 700;
     border: none;
     cursor: pointer;
