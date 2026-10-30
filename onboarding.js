@@ -14,6 +14,28 @@ document.addEventListener('DOMContentLoaded', () => {
     if (planEl) {
         planEl.textContent = planName;
     }
+
+    // Attach event listeners for form submission & button click
+    const form = document.getElementById('onboardingForm');
+    if (form) {
+        form.addEventListener('submit', (e) => {
+            e.preventDefault();
+            submitOnboarding();
+        });
+    }
+
+    const btnSubmit = document.getElementById('btnSubmit');
+    if (btnSubmit) {
+        btnSubmit.addEventListener('click', (e) => {
+            const formEl = document.getElementById('onboardingForm');
+            if (formEl && formEl.checkValidity && !formEl.checkValidity()) {
+                // Let native browser form validation highlight invalid inputs
+                return;
+            }
+            e.preventDefault();
+            submitOnboarding();
+        });
+    }
 });
 
 // Helper for displaying validation/API errors
@@ -33,13 +55,13 @@ function displayError(msg, focusFieldId = null) {
 }
 
 // ----------------------------------------------------------------
-// SUBMIT ONBOARDING (Unified Salon + Branch Creation)
+// SUBMIT ONBOARDING (Atomic Workspace Creation via RPC)
 // ----------------------------------------------------------------
 
 async function submitOnboarding() {
     const btn = document.getElementById('btnSubmit');
     const errDiv = document.getElementById('apiError');
-    const originalContent = btn.innerHTML;
+    const originalContent = btn ? btn.innerHTML : '<span>Create My Salon & Continue</span>';
     
     if (errDiv) errDiv.style.display = 'none';
 
@@ -68,21 +90,32 @@ async function submitOnboarding() {
     if (!branchPhone) return displayError("Please enter the Branch Phone number.", 'locationPhone');
 
     // 2. Set Button Loading State
-    btn.innerHTML = `
-        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="animation: spin 1s linear infinite;">
-            <circle cx="12" cy="12" r="10" stroke-opacity="0.25"></circle>
-            <path d="M12 2a10 10 0 0 1 10 10"></path>
-        </svg>
-        <span>Setting up your workspace...</span>
-    `;
-    btn.disabled = true;
+    if (btn) {
+        btn.innerHTML = `
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="animation: spin 1s linear infinite;">
+                <circle cx="12" cy="12" r="10" stroke-opacity="0.25"></circle>
+                <path d="M12 2a10 10 0 0 1 10 10"></path>
+            </svg>
+            <span>Setting up your workspace...</span>
+        `;
+        btn.disabled = true;
+    }
 
     try {
         const data = JSON.parse(localStorage.getItem("signup_data") || '{}');
         const token = localStorage.getItem('auth_token') || localStorage.getItem('token');
-        const user_id = data.user_id;
+        let user_id = data.user_id;
 
-        if (!token || !user_id) {
+        // Fallback: check active Supabase Auth session if user_id wasn't in signup_data
+        if (!user_id) {
+            const { data: sessionData } = await supabase.auth.getSession();
+            if (sessionData?.session?.user?.id) {
+                user_id = sessionData.session.user.id;
+                data.user_id = user_id;
+            }
+        }
+
+        if (!user_id) {
             throw new Error("Authentication session missing! Please sign up or sign in again.");
         }
 
@@ -96,183 +129,103 @@ async function submitOnboarding() {
             'plan_01': 'd0d4cc8f-3498-4da1-b5e5-2887b9b39dce',
             'plan_02': 'b42bcd41-217a-4ddb-9451-20e040984277',
             'plan_03': 'b32fe38d-a715-4166-acf1-b970bd845c21',
-            'trial':   '7e0af07f-b57b-40e7-a23a-6e8104c8033c'
+            'growth':  'd0d4cc8f-3498-4da1-b5e5-2887b9b39dce',
+            'advance': 'b42bcd41-217a-4ddb-9451-20e040984277',
+            'pro':     'b32fe38d-a715-4166-acf1-b970bd845c21',
+            'trial':   'd0d4cc8f-3498-4da1-b5e5-2887b9b39dce'
         };
 
-        const activePlanId = data.plan_id || 'trial';
-        const planId = planIdMapping[activePlanId] || activePlanId;
-        const planName = data.plan_name || 'Free Trial';
-        const nowIso = new Date().toISOString();
+        const activePlanId = data.plan_id || localStorage.getItem('selected_plan') || 'growth';
+        const planId = planIdMapping[String(activePlanId).toLowerCase()] || activePlanId;
+        const planName = data.plan_name || localStorage.getItem('selected_plan_name') || 'Growth';
 
-        // 1. Insert Company
-        const { data: compData, error: compErr } = await supabase.from('companies').insert({
+        const countryNameMap = {
+            'IN': 'India',
+            'US': 'United States',
+            'UK': 'United Kingdom',
+            'AE': 'UAE'
+        };
+        const countryName = countryNameMap[country] || country || 'India';
+
+        // 3. Prepare Payload for Atomic Onboarding RPC
+        const rpcPayload = {
+            user_id: user_id,
+            full_name: data.full_name || '',
+            email: data.email || '',
+            phone: data.phone || businessPhone || branchPhone || '',
+            password_hash: data.password_hash || null,
             company_name: companyName,
-            owner_user_id: user_id,
+            business_category: businessType,
+            business_structure: 'single_location',
+            business_phone: businessPhone,
             plan_id: planId,
             plan_name: planName,
-            status: 'active'
-        });
-
-        if (compErr || !compData || !compData.length) {
-            throw new Error("Failed to create Company: " + (compErr?.message || "Unknown database error"));
-        }
-        const company_id = compData[0].company_id || compData[0].id;
-        const company_created_at = compData[0].created_at || nowIso;
-
-        // 2. Insert Branch
-        const { data: bData, error: bErr } = await supabase.from('branches').insert({
-            company_id,
             branch_name: branchName,
             branch_phone: branchPhone,
             branch_address: branchAddress,
-            branch_email: data.email,
-            manager_user_id: user_id,
-            status: 'active'
+            city: branchCity,
+            state: branchState,
+            pin_code: branchPincode,
+            country: countryName
+        };
+
+        // 4. Execute Atomic Single-Transaction Onboarding
+        const { data: res, error: rpcErr } = await supabase.rpc('onboard_company_workspace', {
+            p_data: rpcPayload
         });
 
-        if (bErr || !bData || !bData.length) {
-            throw new Error("Failed to create Branch: " + (bErr?.message || "Unknown database error"));
-        }
-        const branch_id = bData[0].branch_id || bData[0].id;
-
-        // 3. Insert Role (Default Owner Role)
-        const { data: roleData, error: rErr } = await supabase.from('roles').insert({
-            company_id,
-            branch_id,
-            role_name: 'Owner',
-            is_default: true,
-            description: 'System Owner Role',
-            status: 'active'
-        });
-
-        let role_id = null;
-        if (!rErr && roleData && roleData.length) {
-            role_id = roleData[0].role_id || roleData[0].id;
-
-            // 4. Role Permissions (Granular based on Plan Features)
-            try {
-                const [planFeatsRes, planSubFeatsRes] = await Promise.all([
-                    supabase.from('plan_features').select('feature_key').eq('plan_id', planId),
-                    supabase.from('plan_sub_features').select('sub_feature_key').eq('plan_id', planId)
-                ]);
-                
-                const parseKeys = (rows, col) => {
-                    const list = [];
-                    (rows || []).forEach(r => {
-                        const val = r?.[col];
-                        if (!val) return;
-                        const raw = String(val).trim();
-                        if (raw.startsWith('[') && raw.endsWith(']')) {
-                            try {
-                                const parsed = JSON.parse(raw);
-                                if (Array.isArray(parsed)) list.push(...parsed);
-                            } catch { list.push(raw); }
-                        } else if (raw.includes(',')) {
-                            list.push(...raw.split(',').map(s => s.trim()).filter(Boolean));
-                        } else {
-                            list.push(raw);
-                        }
-                    });
-                    return list;
-                };
-
-                const featureKeys = parseKeys(planFeatsRes.data, 'feature_key');
-                const subFeatureKeys = parseKeys(planSubFeatsRes.data, 'sub_feature_key');
-                const allAllowedKeys = [...new Set([...featureKeys, ...subFeatureKeys])];
-
-                const ownerKeys = allAllowedKeys.length > 0 ? allAllowedKeys : ['ALL'];
-                const singlePermRow = {
-                    company_id,
-                    branch_id,
-                    role_id,
-                    role_name: 'Owner',
-                    permission_key: JSON.stringify(ownerKeys),
-                    status: 'active'
-                };
-                const { error: permErr } = await supabase.from('role_permissions').insert(singlePermRow);
-                if (permErr) console.warn("Failed to insert single-row owner permissions:", permErr.message);
-            } catch (permException) {
-                console.error("Error setting up role permissions:", permException);
-            }
+        if (rpcErr) {
+            throw new Error(rpcErr.message || 'Database error during workspace creation.');
         }
 
-        // 5. Insert User
-        const { error: userErr } = await supabase.from('users').insert({
-            user_id,
-            company_id,
-            branch_id,
-            name: data.full_name,
-            email: data.email,
-            phone: data.phone || null,
-            password_hash: data.password_hash || null,
-            role_id,
-            role_name: 'Owner',
-            status: 'active'
-        });
-        if (userErr) throw new Error('Failed to create User record: ' + userErr.message);
-
-        // 6. Fetch plan_limits and insert usage_counters
-        const DEFAULT_LIMITS = [
-            { limit_key: 'max_branches', limit_value: 1 },
-            { limit_key: 'max_users',    limit_value: 5 },
-            { limit_key: 'max_staff',    limit_value: 10 },
-            { limit_key: 'max_services', limit_value: 20 }
-        ];
-
-        const { data: planLimits } = await supabase
-            .from('plan_limits')
-            .select('*')
-            .eq('plan_id', planId);
-
-        const limitsToUse = (Array.isArray(planLimits) && planLimits.length > 0)
-            ? planLimits
-            : DEFAULT_LIMITS;
-
-        for (const limit of limitsToUse) {
-            const resourceKey = limit.limit_key;
-            const currentCount = resourceKey === 'max_branches' ? 1 : 0;
-
-            const { error: ucErr } = await supabase.from('usage_counters').insert({
-                company_id,
-                branch_id,
-                plan_id: planId,
-                limit_key: resourceKey,
-                current_count: currentCount,
-                max_limit: limit.limit_value
-            });
-            if (ucErr) console.error('[usage_counters] Insert error:', ucErr);
+        if (!res || res.success === false) {
+            throw new Error(res?.error || res?.message || 'Failed to initialize workspace.');
         }
 
-        // 7. Insert Profile
-        const nameParts = (data.full_name || '').split(' ');
-        const first_name = nameParts[0];
-        const last_name = nameParts.length > 1 ? nameParts.slice(1).join(' ') : '';
-        const { error: profileErr } = await supabase.from('profiles').insert({
-            user_id,
-            company_id,
-            branch_id,
-            first_name,
-            last_name,
-            phone: data.phone || null,
-            email: data.email,
-            role_id,
-            role_name: 'Owner',
-            joined_on: company_created_at
-        });
-        if (profileErr) throw new Error('Failed to create Profile record: ' + profileErr.message);
+        // 5. Save Workspace Context
+        const company_id = res.company_id;
+        const branch_id  = res.branch_id;
+        const role_id    = res.role_id;
 
-        // 8. Save context to localStorage
         localStorage.setItem('company_id', company_id);
         localStorage.setItem('active_branch_id', branch_id);
         if (role_id) localStorage.setItem('role_id', role_id);
+        localStorage.setItem('plan_id', planId);
+        localStorage.setItem('plan_name', planName);
 
-        btn.innerHTML = `
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-                <polyline points="20 6 9 17 4 12"></polyline>
-            </svg>
-            <span>Workspace Created! Redirecting...</span>
-        `;
-        btn.style.backgroundColor = '#10b981';
+        const appContext = {
+            company: {
+                id: company_id,
+                company_id: company_id,
+                company_name: companyName,
+                plan_id: planId,
+                plan_name: planName
+            },
+            branch: {
+                id: branch_id,
+                branch_id: branch_id,
+                name: branchName
+            },
+            user: {
+                id: user_id,
+                name: data.full_name || '',
+                email: data.email || '',
+                role_id: role_id,
+                role_name: 'Owner'
+            }
+        };
+        localStorage.setItem('appContext', JSON.stringify(appContext));
+
+        // 6. Success Feedback & Redirect
+        if (btn) {
+            btn.innerHTML = `
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                    <polyline points="20 6 9 17 4 12"></polyline>
+                </svg>
+                <span>Workspace Created! Redirecting...</span>
+            `;
+            btn.style.backgroundColor = '#10b981';
+        }
 
         setTimeout(() => {
             window.location.href = `payments.html?company_id=${company_id}`;
@@ -280,8 +233,10 @@ async function submitOnboarding() {
 
     } catch (err) {
         console.error("Onboarding Error:", err);
-        btn.innerHTML = originalContent;
-        btn.disabled = false;
+        if (btn) {
+            btn.innerHTML = originalContent;
+            btn.disabled = false;
+        }
         displayError(err.message || 'An error occurred during database setup. Please try again.');
     }
 }
