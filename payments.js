@@ -57,6 +57,8 @@ document.addEventListener('DOMContentLoaded', async () => {
         if (trialInfo) trialInfo.style.display = 'none';
         const choiceDiv = document.getElementById('choiceDivider');
         if (choiceDiv) choiceDiv.style.display = 'none';
+        const trialNote = document.getElementById('trialMandateNote');
+        if (trialNote) trialNote.style.display = 'none';
     }
 
     // ── Fetch plan details from Supabase public.plans ───────────────

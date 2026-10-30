@@ -882,6 +882,16 @@ body.checkout-page-body {
     box-shadow: none;
 }
 
+/* Trial Mandate Explanation Note */
+.trial-mandate-note {
+    font-size: 0.69rem;
+    color: #64748b;
+    line-height: 1.4;
+    text-align: center;
+    margin-top: 8px;
+    padding: 0 4px;
+}
+
 /* Spinner */
 .spinner-inline {
     display: inline-block;
