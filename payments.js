@@ -176,9 +176,15 @@ document.addEventListener('DOMContentLoaded', async () => {
 
         // Right Order Summary breakdown
         setText('sumPlanPrice',    `₹ ${fmt(currentAmount)}`);
-        setText('sumBillingCycle', isAnnual ? 'Annual' : 'Monthly');
         setText('sumSubtotal',     `₹ ${fmt(currentAmount)}`);
         setText('sumGrandTotal',   `₹ ${fmt(currentAmount)}`);
+
+        // Update Mini Plan Box Cycle Badge
+        const cycleBadge = document.getElementById('sumCycleBadge');
+        if (cycleBadge) {
+            cycleBadge.textContent = isAnnual ? 'Annual' : 'Monthly';
+            cycleBadge.className = isAnnual ? 'sp-cycle-badge annual' : 'sp-cycle-badge';
+        }
     }
 
     // Initial render
