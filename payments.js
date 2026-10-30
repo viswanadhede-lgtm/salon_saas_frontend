@@ -8,10 +8,10 @@ document.addEventListener('DOMContentLoaded', async () => {
     const flow        = params.get('flow'); // 'upgrade' | 'renew' | undefined
     const msgDiv      = document.getElementById('paymentMessage');
 
-    // Read localStorage
+    // Read localStorage & params
     const signupData      = JSON.parse(localStorage.getItem('signup_data') || '{}');
-    const planId          = params.get('plan_id')       || signupData.plan_id;
-    const planNameRaw     = params.get('plan_name')     || signupData.plan_name || localStorage.getItem('selected_plan') || 'Growth';
+    let effectivePlanId   = params.get('plan_id')   || signupData.plan_id;
+    let effectivePlanName = params.get('plan_name') || signupData.plan_name || localStorage.getItem('selected_plan') || '';
     const savedCycle      = params.get('billing_cycle') || signupData.billing_cycle || 'monthly';
     
     let currentCycle      = (savedCycle === 'annual' || savedCycle === 'yearly') ? 'annual' : 'monthly';
@@ -22,14 +22,32 @@ document.addEventListener('DOMContentLoaded', async () => {
     const cycleCardMonthly = document.getElementById('cycleCardMonthly');
     const cycleCardAnnual  = document.getElementById('cycleCardAnnual');
 
-    // ── Guard: must have company & plan ────────────────────────────
+    // ── Guard: must have company ────────────────────────────────────
     if (!companyId) {
         showMessage('No company ID found. Please return to the signup page.', 'error');
         return;
     }
-    if (!planId) {
-        showMessage('No plan selected. Please return to the plans page.', 'error');
-        return;
+
+    // If plan info is missing from URL & localStorage, fetch from public.companies
+    if ((!effectivePlanId || !effectivePlanName) && companyId) {
+        try {
+            const { data: compData } = await supabase
+                .from('companies')
+                .select('company_id, plan_id, plan_name')
+                .eq('company_id', companyId)
+                .maybeSingle();
+
+            if (compData) {
+                if (compData.plan_id && !effectivePlanId)     effectivePlanId   = compData.plan_id;
+                if (compData.plan_name && !effectivePlanName) effectivePlanName = compData.plan_name;
+            }
+        } catch (compErr) {
+            console.warn('[payments] Could not lookup company plan info:', compErr);
+        }
+    }
+
+    if (!effectivePlanId && !effectivePlanName) {
+        effectivePlanName = 'Growth';
     }
 
     // ── Hide trial banner for upgrade / renew flows ─────────────────
@@ -41,50 +59,79 @@ document.addEventListener('DOMContentLoaded', async () => {
         if (choiceDiv) choiceDiv.style.display = 'none';
     }
 
-    // ── Fetch plan details from Supabase ────────────────────────────
+    // ── Fetch plan details from Supabase public.plans ───────────────
     let monthlyPrice    = 799;
     let yearlyPrice     = 7990;
-    let planDisplayName = planNameRaw.toUpperCase();
+    let planDisplayName = (effectivePlanName || 'Growth').toUpperCase();
     let isPlanLoaded    = false;
     let dbPlan          = null;
 
     try {
-        const { data, error } = await supabase
-            .from('plans')
-            .select('plan_id, id, plan_name, price_monthly, price_yearly, status')
-            .or(`plan_id.eq.${planId},id.eq.${planId}`)
-            .eq('status', 'active')
-            .maybeSingle();
-
-        if (error) throw error;
-
-        if (data) {
-            dbPlan = data;
-            monthlyPrice    = parseFloat(data.price_monthly) || 799;
-            yearlyPrice     = parseFloat(data.price_yearly)  || (monthlyPrice * 10);
-            planDisplayName = (data.plan_name || planNameRaw).toUpperCase();
-        } else {
-            // Fallback: If not found by UUID, try lookup by plan name
-            const { data: planByName } = await supabase
+        // 1. Try lookup by plan_id UUID (strictly using plan_id column)
+        if (effectivePlanId) {
+            const { data: planById, error: errId } = await supabase
                 .from('plans')
-                .select('plan_id, id, plan_name, price_monthly, price_yearly, status')
-                .ilike('plan_name', planNameRaw)
+                .select('plan_id, plan_name, price_monthly, price_yearly, status')
+                .eq('plan_id', effectivePlanId)
+                .eq('status', 'active')
+                .maybeSingle();
+
+            if (planById) {
+                dbPlan = planById;
+            }
+        }
+
+        // 2. If not found by plan_id UUID, lookup by plan_name
+        if (!dbPlan && effectivePlanName) {
+            const { data: planByName, error: errName } = await supabase
+                .from('plans')
+                .select('plan_id, plan_name, price_monthly, price_yearly, status')
+                .ilike('plan_name', effectivePlanName.trim())
                 .eq('status', 'active')
                 .maybeSingle();
 
             if (planByName) {
                 dbPlan = planByName;
-                monthlyPrice    = parseFloat(planByName.price_monthly) || 799;
-                yearlyPrice     = parseFloat(planByName.price_yearly)  || (monthlyPrice * 10);
-                planDisplayName = planByName.plan_name.toUpperCase();
+            }
+        }
+
+        // 3. If found in database, assign exact prices & IDs
+        if (dbPlan) {
+            effectivePlanId = dbPlan.plan_id;
+            monthlyPrice    = parseFloat(dbPlan.price_monthly) || 799;
+            yearlyPrice     = parseFloat(dbPlan.price_yearly)  || (monthlyPrice * 10);
+            planDisplayName = (dbPlan.plan_name || effectivePlanName).toUpperCase();
+        } else {
+            // 4. Offline Fallback matching plans.html pricing
+            const normName = planDisplayName.toLowerCase();
+            if (normName.includes('advance')) {
+                monthlyPrice = 1499;
+                yearlyPrice  = 14990;
+            } else if (normName.includes('pro')) {
+                monthlyPrice = 2999;
+                yearlyPrice  = 29990;
+            } else {
+                monthlyPrice = 799;
+                yearlyPrice  = 7990;
             }
         }
 
         isPlanLoaded = true;
 
     } catch (err) {
-        console.error('[payments] Failed to fetch plan from database:', err);
-        isPlanLoaded = true; // Fall back gracefully to defaults so user is not blocked
+        console.error('[payments] Failed to fetch plan from database, using plans page reference:', err);
+        const normName = planDisplayName.toLowerCase();
+        if (normName.includes('advance')) {
+            monthlyPrice = 1499;
+            yearlyPrice  = 14990;
+        } else if (normName.includes('pro')) {
+            monthlyPrice = 2999;
+            yearlyPrice  = 29990;
+        } else {
+            monthlyPrice = 799;
+            yearlyPrice  = 7990;
+        }
+        isPlanLoaded = true;
     }
 
     // ── Update Plan Details in DOM ──────────────────────────────────
@@ -206,13 +253,13 @@ document.addEventListener('DOMContentLoaded', async () => {
     // ── Button Handlers ─────────────────────────────────────────────
     if (btnPayNow) {
         btnPayNow.addEventListener('click', () => {
-            triggerOrderCreation(btnPayNow, planId, companyId, currentCycle, false);
+            triggerOrderCreation(btnPayNow, effectivePlanId, companyId, currentCycle, false);
         });
     }
 
     if (btnTrial) {
         btnTrial.addEventListener('click', () => {
-            triggerSubscriptionCheckout(btnTrial, companyId, planId, currentCycle, true);
+            triggerSubscriptionCheckout(btnTrial, companyId, effectivePlanId, currentCycle, true);
         });
     }
 

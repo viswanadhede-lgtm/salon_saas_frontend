@@ -228,7 +228,7 @@ async function submitOnboarding() {
         }
 
         setTimeout(() => {
-            window.location.href = `payments.html?company_id=${company_id}`;
+            window.location.href = `payments.html?company_id=${company_id}&plan_id=${planId}&plan_name=${encodeURIComponent(planName)}`;
         }, 800);
 
     } catch (err) {
