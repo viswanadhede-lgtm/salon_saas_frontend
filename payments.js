@@ -11,14 +11,16 @@ document.addEventListener('DOMContentLoaded', async () => {
     // Read localStorage
     const signupData      = JSON.parse(localStorage.getItem('signup_data') || '{}');
     const planId          = params.get('plan_id')       || signupData.plan_id;
-    const planNameRaw     = params.get('plan_name')     || signupData.plan_name || 'Selected';
+    const planNameRaw     = params.get('plan_name')     || signupData.plan_name || localStorage.getItem('selected_plan') || 'Growth';
     const savedCycle      = params.get('billing_cycle') || signupData.billing_cycle || 'monthly';
-    const billingCycle    = (savedCycle === 'annual' || savedCycle === 'yearly') ? 'annual' : 'monthly';
+    
+    let currentCycle      = (savedCycle === 'annual' || savedCycle === 'yearly') ? 'annual' : 'monthly';
 
     // Buttons & interactive elements
-    const btnPayNow   = document.getElementById('btnPayNow');
-    const btnTrial    = document.getElementById('btnTrial');
-    const cardTrial   = document.getElementById('cardTrial');
+    const btnPayNow       = document.getElementById('btnPayNow');
+    const btnTrial        = document.getElementById('btnTrial');
+    const cycleCardMonthly = document.getElementById('cycleCardMonthly');
+    const cycleCardAnnual  = document.getElementById('cycleCardAnnual');
 
     // ── Guard: must have company & plan ────────────────────────────
     if (!companyId) {
@@ -30,102 +32,185 @@ document.addEventListener('DOMContentLoaded', async () => {
         return;
     }
 
-    // ── Hide trial card for upgrade / renew flows ───────────────────
+    // ── Hide trial banner for upgrade / renew flows ─────────────────
     if (flow === 'upgrade' || flow === 'renew') {
-        if (cardTrial) cardTrial.style.display = 'none';
+        if (btnTrial) btnTrial.style.display = 'none';
     }
 
-    // ── Fetch plan from Supabase ────────────────────────────────────
-    let basePlanPrice   = 0;
-    let planDisplayName = planNameRaw.charAt(0).toUpperCase() + planNameRaw.slice(1);
+    // ── Fetch plan details from Supabase ────────────────────────────
+    let monthlyPrice    = 799;
+    let yearlyPrice     = 7990;
+    let planDisplayName = planNameRaw.toUpperCase();
     let isPlanLoaded    = false;
+    let dbPlan          = null;
 
     try {
-        const { data: dbPlan, error } = await supabase
+        const { data, error } = await supabase
             .from('plans')
-            .select('plan_id, plan_name, price_monthly, price_yearly, status')
-            .eq('plan_id', planId)
+            .select('plan_id, id, plan_name, price_monthly, price_yearly, status')
+            .or(`plan_id.eq.${planId},id.eq.${planId}`)
             .eq('status', 'active')
             .maybeSingle();
 
         if (error) throw error;
 
-        if (!dbPlan) {
-            showMessage('Selected plan is no longer active. Please choose another plan.', 'error');
-            return;
+        if (data) {
+            dbPlan = data;
+            monthlyPrice    = parseFloat(data.price_monthly) || 799;
+            yearlyPrice     = parseFloat(data.price_yearly)  || (monthlyPrice * 10);
+            planDisplayName = (data.plan_name || planNameRaw).toUpperCase();
+        } else {
+            // Fallback: If not found by UUID, try lookup by plan name
+            const { data: planByName } = await supabase
+                .from('plans')
+                .select('plan_id, id, plan_name, price_monthly, price_yearly, status')
+                .ilike('plan_name', planNameRaw)
+                .eq('status', 'active')
+                .maybeSingle();
+
+            if (planByName) {
+                dbPlan = planByName;
+                monthlyPrice    = parseFloat(planByName.price_monthly) || 799;
+                yearlyPrice     = parseFloat(planByName.price_yearly)  || (monthlyPrice * 10);
+                planDisplayName = planByName.plan_name.toUpperCase();
+            }
         }
 
-        basePlanPrice   = billingCycle === 'annual'
-            ? parseFloat(dbPlan.price_yearly)  || 0
-            : parseFloat(dbPlan.price_monthly) || 0;
-        planDisplayName = dbPlan.plan_name
-            ? (dbPlan.plan_name.charAt(0).toUpperCase() + dbPlan.plan_name.slice(1))
-            : planDisplayName;
         isPlanLoaded = true;
 
     } catch (err) {
-        console.error('[payments] Failed to fetch plan:', err);
-        showMessage('Could not load plan pricing. Please refresh the page.', 'error');
-        return;
+        console.error('[payments] Failed to fetch plan from database:', err);
+        isPlanLoaded = true; // Fall back gracefully to defaults so user is not blocked
     }
 
-    // ── Populate "Your order" section ───────────────────────────────
-    const cycleLabel = billingCycle === 'annual' ? 'Annual' : 'Monthly';
-    const periodStr  = billingCycle === 'annual' ? '/year'  : '/month';
+    // ── Update Plan Details in DOM ──────────────────────────────────
+    setText('dispPlanName', planDisplayName);
+    setText('sumPlanName',  planDisplayName);
 
-    setText('orderPlanName',   `${planDisplayName} Plan`);
-    setText('orderPlanMeta',   `BharathBots app · ${cycleLabel}`);
-    setText('orderPlanPrice',  `₹${fmt(basePlanPrice)}`);
-    setText('orderPlanPeriod', periodStr);
+    // Plan-specific subtitles and badges
+    const isGrowth  = planDisplayName.includes('GROWTH');
+    const isAdvance = planDisplayName.includes('ADVANCE');
+    const isPro     = planDisplayName.includes('PRO');
 
-    // Show trial tag only for new signups (not upgrade/renew)
-    const trialTag = document.getElementById('orderTrialTag');
-    if (trialTag && flow !== 'upgrade' && flow !== 'renew') {
-        trialTag.style.display = 'block';
+    let subtitleText = 'Advanced features to grow your business.';
+    let badgeText    = 'Most Popular';
+
+    if (isAdvance) {
+        subtitleText = 'Multi-branch operations & marketing suite.';
+        badgeText    = 'Best Value';
+    } else if (isPro) {
+        subtitleText = 'Maximum capacity, custom limits & priority VIP support.';
+        badgeText    = 'Enterprise Grade';
     }
 
-    // ── Populate "Pay Now" card ─────────────────────────────────────
-    setText('payNowTotal',     `₹${fmt(basePlanPrice)}`);
-    setText('btnPayNowAmount', `₹${fmt(basePlanPrice)}`);
+    setText('dispPlanSubtitle', subtitleText);
+    setText('sumPlanSub',      subtitleText);
+    setText('dispPlanBadge',    badgeText);
+    setText('sumPlanBadge',     badgeText);
 
-    // ── Populate "Trial" card ───────────────────────────────────────
-    setText('trialDueToday', '₹0');
+    // Calculate annual discount percentage
+    const annualMonthlyEquiv = Math.round(yearlyPrice / 12);
+    const regularAnnualCost  = monthlyPrice * 12;
+    const discountPercent    = regularAnnualCost > 0 
+        ? Math.round(((regularAnnualCost - yearlyPrice) / regularAnnualCost) * 100) 
+        : 17;
 
-    // Hide add-on row in trial card (no add-ons in onboarding)
-    const trialAddonRow = document.getElementById('trialAddonRow');
-    if (trialAddonRow) trialAddonRow.style.display = 'none';
+    setText('dispMonthlyCost',  `₹ ${fmt(monthlyPrice)} per month`);
+    setText('dispAnnualCost',   `₹ ${fmt(yearlyPrice)} per year`);
+    setText('dispAnnualEquiv',  `That's only ₹ ${fmt(annualMonthlyEquiv)} per month`);
 
-    // Fine print — plan renewal info only
-    const fpPlanRenew = document.getElementById('fpPlanRenew');
-    if (fpPlanRenew) {
-        fpPlanRenew.textContent = `₹${fmt(basePlanPrice)}${periodStr}`;
+    const saveBadge = document.querySelector('.save-badge-pill');
+    if (saveBadge && discountPercent > 0) {
+        saveBadge.textContent = `Save ${discountPercent}%`;
     }
 
-    // ── Enable buttons ──────────────────────────────────────────────
-    if (btnPayNow) btnPayNow.disabled = false;
-    if (btnTrial)  btnTrial.disabled  = false;
+    // Dynamic checklist bullets in Order Summary
+    const featureList = document.getElementById('summaryFeatureList');
+    if (featureList) {
+        if (isGrowth) {
+            featureList.innerHTML = `
+                <li><span class="check-icon">✓</span> All 41 core system features</li>
+                <li><span class="check-icon">✓</span> Up to 10 staff & 1 branch</li>
+                <li><span class="check-icon">✓</span> Financial & Staff reports</li>
+                <li><span class="check-icon">✓</span> Standard customer support</li>
+            `;
+        } else if (isAdvance) {
+            featureList.innerHTML = `
+                <li><span class="check-icon">✓</span> All 51 features & 97 sub-features</li>
+                <li><span class="check-icon">✓</span> Marketing suite (Coupons & Memberships)</li>
+                <li><span class="check-icon">✓</span> Up to 3 branches & 20 staff</li>
+                <li><span class="check-icon">✓</span> Full analytics & all 7 report categories</li>
+            `;
+        } else if (isPro) {
+            featureList.innerHTML = `
+                <li><span class="check-icon">✓</span> Unrestricted full platform access</li>
+                <li><span class="check-icon">✓</span> Up to 10 branches & 50 staff</li>
+                <li><span class="check-icon">✓</span> Advanced data export & audit logs</li>
+                <li><span class="check-icon">✓</span> Dedicated 24/7 priority support</li>
+            `;
+        }
+    }
 
-    // ── Button handlers ─────────────────────────────────────────────
+    // ── Function to Synchronize Dynamic Pricing ─────────────────────
+    function renderPricing() {
+        const isAnnual = currentCycle === 'annual';
+        const currentAmount = isAnnual ? yearlyPrice : monthlyPrice;
+
+        // Toggle card visual states
+        if (isAnnual) {
+            cycleCardAnnual?.classList.add('active');
+            cycleCardMonthly?.classList.remove('active');
+        } else {
+            cycleCardMonthly?.classList.add('active');
+            cycleCardAnnual?.classList.remove('active');
+        }
+
+        // Left plan rate display
+        setText('dispPlanRate',   `₹ ${fmt(currentAmount)}`);
+        setText('dispPlanPeriod', isAnnual ? '/ year' : '/ month');
+        setText('dispBilledCycleLink', isAnnual ? 'Billed annually ⌵' : 'Billed monthly ⌵');
+
+        // Right Order Summary breakdown
+        setText('sumPlanPrice',    `₹ ${fmt(currentAmount)}`);
+        setText('sumBillingCycle', isAnnual ? 'Annual' : 'Monthly');
+        setText('sumSubtotal',     `₹ ${fmt(currentAmount)}`);
+        setText('sumGrandTotal',   `₹ ${fmt(currentAmount)}`);
+    }
+
+    // Initial render
+    renderPricing();
+
+    // ── Cycle Card Selection Listeners ──────────────────────────────
+    if (cycleCardMonthly) {
+        cycleCardMonthly.addEventListener('click', () => {
+            currentCycle = 'monthly';
+            renderPricing();
+        });
+    }
+
+    if (cycleCardAnnual) {
+        cycleCardAnnual.addEventListener('click', () => {
+            currentCycle = 'annual';
+            renderPricing();
+        });
+    }
+
+    // ── Button Handlers ─────────────────────────────────────────────
     if (btnPayNow) {
         btnPayNow.addEventListener('click', () => {
-            if (!isPlanLoaded) { showMessage('Plan pricing unavailable. Please refresh.', 'error'); return; }
-            triggerOrderCreation(btnPayNow, planId, companyId, billingCycle, false);
+            triggerOrderCreation(btnPayNow, planId, companyId, currentCycle, false);
         });
     }
 
     if (btnTrial) {
         btnTrial.addEventListener('click', () => {
-            if (!isPlanLoaded) { showMessage('Plan pricing unavailable. Please refresh.', 'error'); return; }
-            triggerSubscriptionCheckout(btnTrial, companyId, planId, billingCycle, true);
+            triggerSubscriptionCheckout(btnTrial, companyId, planId, currentCycle, true);
         });
     }
 
-    // ── Edit plan link ──────────────────────────────────────────────
-    // (links to plans.html — no add-ons page in onboarding flow)
-
-    // ══════════════════════════════════════════════════════════════
-    // PAYMENT TRIGGER: Pay Now (immediate subscription)
-    // ══════════════════════════════════════════════════════════════
+    // ═════════════════════════════════════════════════════════════════
+    // PAYMENT TRIGGER: Pay Now (Immediate Subscription)
+    // ═════════════════════════════════════════════════════════════════
 
     async function triggerOrderCreation(btn, planId, companyId, cycle, isTrial) {
         const originalHtml = btn.innerHTML;
@@ -152,7 +237,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             }, accessToken);
 
             openRazorpay(btn, originalHtml, data, {
-                description: `${planDisplayName} Plan — ${cycleLabel} Subscription`,
+                description: `${planDisplayName} Plan — ${cycle === 'annual' ? 'Annual' : 'Monthly'} Subscription`,
                 flowType:    'paid'
             });
 
@@ -163,9 +248,9 @@ document.addEventListener('DOMContentLoaded', async () => {
         }
     }
 
-    // ══════════════════════════════════════════════════════════════
-    // PAYMENT TRIGGER: Start Free Trial
-    // ══════════════════════════════════════════════════════════════
+    // ═════════════════════════════════════════════════════════════════
+    // PAYMENT TRIGGER: Start Free Trial (Authorization Mandate)
+    // ═════════════════════════════════════════════════════════════════
 
     async function triggerSubscriptionCheckout(btn, companyId, planId, cycle, isTrial) {
         const originalHtml = btn.innerHTML;
@@ -209,9 +294,9 @@ document.addEventListener('DOMContentLoaded', async () => {
         }
     }
 
-    // ══════════════════════════════════════════════════════════════
-    // Shared helpers
-    // ══════════════════════════════════════════════════════════════
+    // ═════════════════════════════════════════════════════════════════
+    // Shared Payment Helpers
+    // ═════════════════════════════════════════════════════════════════
 
     async function callEdgeFunction(body, accessToken) {
         const SUPABASE_URL      = 'https://qxmgyxjwpxkdbgldpdil.supabase.co';
@@ -271,7 +356,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                 email,
                 contact: phone
             },
-            theme: { color: '#4f46e5' },
+            theme: { color: '#2563eb' },
             handler: function(response) {
                 setLoading(btn, 'Verifying payment…');
                 showMessage('Payment authorized! Redirecting…', 'success');
@@ -325,7 +410,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
 
     function setLoading(btn, text) {
-        btn.innerHTML = `<span class="spinner-inline"></span>${text}`;
+        btn.innerHTML = `<span class="spinner-inline"></span> ${text}`;
         btn.disabled  = true;
     }
 
@@ -339,13 +424,5 @@ document.addEventListener('DOMContentLoaded', async () => {
             minimumFractionDigits: 0,
             maximumFractionDigits: 2
         });
-    }
-
-    function escHtml(str) {
-        return String(str)
-            .replace(/&/g, '&amp;')
-            .replace(/</g, '&lt;')
-            .replace(/>/g, '&gt;')
-            .replace(/"/g, '&quot;');
     }
 });

@@ -4,7 +4,7 @@
     <script src="scripts/auth-loader.js"></script>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta name="description" content="Complete your BharathBots activation.">
+    <meta name="description" content="Complete your BharathBots subscription checkout.">
     <title>Checkout - BharathBots</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -13,164 +13,360 @@
     <link rel="stylesheet" href="payments.css">
     <script src="https://checkout.razorpay.com/v1/checkout.js"></script>
 </head>
-<body class="payments-page">
+<body class="checkout-page-body">
 
-    <!-- ── Header (floating on background) ─────────────────────────── -->
-    <header class="payments-header">
-        <div class="payments-top-bar">
-            <div class="logo">
-                <svg width="28" height="28" viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg">
-                    <rect x="2" y="6" width="28" height="20" rx="4" stroke="currentColor" stroke-width="2"/>
-                    <path d="M8 12C8 12 11 16 16 16C21 16 24 12 24 12" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
-                    <circle cx="16" cy="16" r="2" fill="currentColor"/>
-                </svg>
-                <span>BharathBots</span>
+    <!-- ── Top Header Navigation ──────────────────────────────────── -->
+    <header class="checkout-nav-header">
+        <div class="checkout-nav-inner">
+            <!-- Brand Logo -->
+            <a href="index.html" class="brand-logo">
+                <span class="brand-text">BHARATHBOTS</span>
+            </a>
+
+            <!-- 3-Step Breadcrumbs Indicator -->
+            <div class="checkout-steps-indicator">
+                <div class="step-item active">
+                    <span class="step-badge">1</span>
+                    <span class="step-title">Checkout</span>
+                </div>
+                <div class="step-divider"></div>
+                <div class="step-item">
+                    <span class="step-badge">2</span>
+                    <span class="step-title">Payment</span>
+                </div>
+                <div class="step-divider"></div>
+                <div class="step-item">
+                    <span class="step-badge">3</span>
+                    <span class="step-title">Confirmation</span>
+                </div>
             </div>
-            <div class="secure-badge">
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+
+            <!-- Security Badge -->
+            <div class="checkout-secure-pill">
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
                     <rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect>
                     <path d="M7 11V7a5 5 0 0 1 10 0v4"></path>
                 </svg>
-                Payments are 100% Secure
+                <span>Secure Checkout</span>
             </div>
-        </div>
-        <div class="payments-headline-row">
-            <h1>Complete your activation</h1>
-            <p>Review your plan and add-ons, then choose how to activate BharathBots.</p>
         </div>
     </header>
 
-    <!-- ── Main Body ───────────────────────────────────────────────── -->
-    <main class="pay-main">
-        <div class="pay-body-inner">
+    <!-- ── Main Checkout Container (2-Column Grid) ───────────────── -->
+    <main class="checkout-main">
+        <div class="checkout-container">
 
-            <!-- Global error / info message -->
+            <!-- Global Alert / Status Message -->
             <div id="paymentMessage" class="payment-message" style="display:none;"></div>
 
-            <!-- ── Your Order ──────────────────────────────────────── -->
-            <section class="pay-section">
-                <h2 class="pay-section-title">Your order</h2>
+            <div class="checkout-layout-grid">
 
-                <div class="order-card">
-                    <!-- Plan Row -->
-                    <div class="order-item plan-item" id="orderPlanItem">
-                        <div class="order-item-icon plan-icon">
-                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                                <line x1="8" y1="6" x2="21" y2="6"></line>
-                                <line x1="8" y1="12" x2="21" y2="12"></line>
-                                <line x1="8" y1="18" x2="21" y2="18"></line>
-                                <line x1="3" y1="6" x2="3.01" y2="6"></line>
-                                <line x1="3" y1="12" x2="3.01" y2="12"></line>
-                                <line x1="3" y1="18" x2="3.01" y2="18"></line>
+                <!-- ═════════════════════════════════════════════════════════════
+                     LEFT COLUMN: Plan & Billing Customization
+                     ═════════════════════════════════════════════════════════════ -->
+                <div class="checkout-left-col">
+                    
+                    <div class="page-title-box">
+                        <h1 class="page-heading">Complete Your Subscription</h1>
+                        <p class="page-subheading">Choose your plan, billing cycle and get started.</p>
+                    </div>
+
+                    <!-- STEP 1: Selected Plan -->
+                    <div class="checkout-step-section">
+                        <div class="section-label-row">
+                            <span class="section-step-num">1</span>
+                            <span class="section-step-name">Selected Plan</span>
+                        </div>
+
+                        <div class="selected-plan-card">
+                            <div class="plan-card-left">
+                                <div class="plan-avatar-box">
+                                    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                                        <path d="M2 4l3 12h14l3-12-6 7-4-7-4 7-6-7z"></path>
+                                        <circle cx="12" cy="18" r="2"></circle>
+                                    </svg>
+                                </div>
+                                <div class="plan-meta-info">
+                                    <div class="plan-name-row">
+                                        <h3 class="plan-title" id="dispPlanName">GROWTH</h3>
+                                        <span class="plan-badge-pill" id="dispPlanBadge">Most Popular</span>
+                                    </div>
+                                    <p class="plan-subtitle" id="dispPlanSubtitle">Advanced features to grow your business.</p>
+                                </div>
+                            </div>
+
+                            <div class="plan-card-right">
+                                <div class="plan-rate-display">
+                                    <span class="rate-amount" id="dispPlanRate">₹ 799</span>
+                                    <span class="rate-period" id="dispPlanPeriod">/ month</span>
+                                </div>
+                                <a href="plans.html" class="change-plan-link" id="dispBilledCycleLink">Billed monthly ⌵</a>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- STEP 2: Choose Billing Cycle -->
+                    <div class="checkout-step-section">
+                        <div class="section-label-row">
+                            <span class="section-step-num">2</span>
+                            <span class="section-step-name">Choose Billing Cycle</span>
+                        </div>
+
+                        <div class="billing-cycle-grid">
+                            <!-- Monthly Option Card -->
+                            <div class="cycle-option-card active" id="cycleCardMonthly">
+                                <div class="cycle-radio-col">
+                                    <div class="custom-radio"></div>
+                                </div>
+                                <div class="cycle-details">
+                                    <div class="cycle-title">Monthly</div>
+                                    <div class="cycle-cost" id="dispMonthlyCost">₹ 799 per month</div>
+                                    <div class="cycle-note">Flexibility to cancel anytime</div>
+                                </div>
+                            </div>
+
+                            <!-- Annual Option Card -->
+                            <div class="cycle-option-card" id="cycleCardAnnual">
+                                <div class="cycle-radio-col">
+                                    <div class="custom-radio"></div>
+                                </div>
+                                <div class="cycle-details">
+                                    <div class="cycle-title-row">
+                                        <span class="cycle-title">Annual</span>
+                                        <span class="save-badge-pill">Save 17%</span>
+                                    </div>
+                                    <div class="cycle-cost" id="dispAnnualCost">₹ 7,990 per year</div>
+                                    <div class="cycle-note" id="dispAnnualEquiv">That's only ₹ 665 per month</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- STEP 3: Plan Benefits -->
+                    <div class="checkout-step-section">
+                        <div class="section-label-row">
+                            <span class="section-step-num">3</span>
+                            <span class="section-step-name">Plan Benefits</span>
+                        </div>
+
+                        <div class="benefits-grid">
+                            <!-- Benefit 1 -->
+                            <div class="benefit-card">
+                                <div class="benefit-icon-box icon-green">
+                                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                                        <line x1="18" y1="20" x2="18" y2="10"></line>
+                                        <line x1="12" y1="20" x2="12" y2="4"></line>
+                                        <line x1="6" y1="20" x2="6" y2="14"></line>
+                                    </svg>
+                                </div>
+                                <div class="benefit-info">
+                                    <h4>All core features</h4>
+                                    <p>Everything you need to run your business</p>
+                                </div>
+                            </div>
+
+                            <!-- Benefit 2 -->
+                            <div class="benefit-card">
+                                <div class="benefit-icon-box icon-orange">
+                                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                                        <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path>
+                                        <circle cx="9" cy="7" r="4"></circle>
+                                        <path d="M23 21v-2a4 4 0 0 0-3-3.87"></path>
+                                        <path d="M16 3.13a4 4 0 0 1 0 7.75"></path>
+                                    </svg>
+                                </div>
+                                <div class="benefit-info">
+                                    <h4>Multiple staff & branches</h4>
+                                    <p>Manage your team with ease</p>
+                                </div>
+                            </div>
+
+                            <!-- Benefit 3 -->
+                            <div class="benefit-card">
+                                <div class="benefit-icon-box icon-purple">
+                                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                                        <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+                                        <polyline points="14 2 14 8 20 8"></polyline>
+                                        <line x1="16" y1="13" x2="8" y2="13"></line>
+                                        <line x1="16" y1="17" x2="8" y2="17"></line>
+                                        <polyline points="10 9 9 9 8 9"></polyline>
+                                    </svg>
+                                </div>
+                                <div class="benefit-info">
+                                    <h4>Advanced reporting</h4>
+                                    <p>Get insights and grow faster</p>
+                                </div>
+                            </div>
+
+                            <!-- Benefit 4 -->
+                            <div class="benefit-card">
+                                <div class="benefit-icon-box icon-red">
+                                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                                        <path d="M3 18v-6a9 9 0 0 1 18 0v6"></path>
+                                        <path d="M21 19a2 2 0 0 1-2 2h-1a2 2 0 0 1-2-2v-3a2 2 0 0 1 2-2h3zM3 19a2 2 0 0 0 2 2h1a2 2 0 0 0 2-2v-3a2 2 0 0 0-2-2H3z"></path>
+                                    </svg>
+                                </div>
+                                <div class="benefit-info">
+                                    <h4>Priority support</h4>
+                                    <p>Get help when you need it</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- FREE TRIAL ACTION BANNER -->
+                    <div class="free-trial-banner" id="btnTrial">
+                        <div class="trial-left-wrap">
+                            <div class="gift-icon-box">
+                                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round">
+                                    <polyline points="20 12 20 22 4 22 4 12"></polyline>
+                                    <rect x="2" y="7" width="20" height="5"></rect>
+                                    <line x1="12" y1="22" x2="12" y2="7"></line>
+                                    <path d="M12 7H7.5a2.5 2.5 0 0 1 0-5C11 2 12 7 12 7z"></path>
+                                    <path d="M12 7h4.5a2.5 2.5 0 0 0 0-5C13 2 12 7 12 7z"></path>
+                                </svg>
+                            </div>
+                            <div class="trial-text-wrap">
+                                <h3>Start Free Trial & Explore All Features</h3>
+                                <p>No immediate payment required. Experience the full plan before committing.</p>
+                            </div>
+                        </div>
+                        <div class="trial-arrow-btn">
+                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                                <line x1="5" y1="12" x2="19" y2="12"></line>
+                                <polyline points="12 5 19 12 12 19"></polyline>
                             </svg>
                         </div>
-                        <div class="order-item-info">
-                            <div class="order-item-name" id="orderPlanName">Loading...</div>
-                            <div class="order-item-meta" id="orderPlanMeta">BharathBots app &middot; --</div>
-                            <div class="order-trial-tag" id="orderTrialTag" style="display:none;">7-day trial available</div>
-                        </div>
-                        <div class="order-item-price-col">
-                            <span class="order-item-price" id="orderPlanPrice">&#8377;--</span>
-                            <span class="order-item-period" id="orderPlanPeriod">/month</span>
-                        </div>
                     </div>
 
-                    <!-- Edit Link -->
-                    <div class="order-edit-row">
-                        <a href="plans.html" class="order-edit-link">← Change plan</a>
-                    </div>
-                </div>
-            </section>
-
-            <!-- ── Choose How to Start ─────────────────────────────── -->
-            <section class="pay-section">
-                <h2 class="pay-section-title">Choose how to start</h2>
-                <p class="pay-section-sub">Select the option that works best for your business.</p>
-
-                <!-- Option A: Pay Now (Immediate) -->
-                <div class="activation-card" id="cardPayNow">
-                    <div class="activation-card-header">
-                        <div class="activation-card-title-row">
-                            <div class="activation-icon immediate-icon">
-                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-                                    <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"></polygon>
-                                </svg>
-                            </div>
-                            <div>
-                                <div class="activation-name">Pay Now</div>
-                                <div class="activation-desc">Activate your paid plan immediately.</div>
-                            </div>
-                        </div>
-                        <span class="activation-badge">Immediate</span>
-                    </div>
-
-                    <div class="activation-breakdown">
-                        <div class="breakdown-row">
-                            <span class="breakdown-label">Total due today</span>
-                            <span class="breakdown-value" id="payNowTotal">&#8377;--</span>
-                        </div>
-                    </div>
-
-                    <button class="btn-pay-now" id="btnPayNow" disabled>
-                        Pay Now &ndash; <span id="btnPayNowAmount">&#8377;--</span>
-                    </button>
                 </div>
 
-                <!-- Option B: Start Free Trial for 7 Days -->
-                <div class="activation-card trial-card" id="cardTrial">
-                    <div class="activation-card-header">
-                        <div class="activation-card-title-row">
-                            <div class="activation-icon trial-icon">
-                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                                    <rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect>
-                                    <line x1="16" y1="2" x2="16" y2="6"></line>
-                                    <line x1="8" y1="2" x2="8" y2="6"></line>
-                                    <line x1="3" y1="10" x2="21" y2="10"></line>
-                                </svg>
+                <!-- ═════════════════════════════════════════════════════════════
+                     RIGHT COLUMN: Order Summary Card (Sticky)
+                     ═════════════════════════════════════════════════════════════ -->
+                <div class="checkout-right-col">
+                    <div class="order-summary-card">
+                        
+                        <div class="summary-card-header">
+                            <h2 class="summary-title">Order Summary</h2>
+                            <p class="summary-sub">Review your plan details before proceeding.</p>
+                        </div>
+
+                        <!-- Mini Plan Snapshot -->
+                        <div class="summary-plan-box">
+                            <div class="sp-left">
+                                <div class="sp-icon-box">
+                                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                                        <path d="M2 4l3 12h14l3-12-6 7-4-7-4 7-6-7z"></path>
+                                        <circle cx="12" cy="18" r="2"></circle>
+                                    </svg>
+                                </div>
+                                <div class="sp-text">
+                                    <div class="sp-name-row">
+                                        <strong id="sumPlanName">GROWTH</strong>
+                                        <span class="sp-badge" id="sumPlanBadge">Most Popular</span>
+                                    </div>
+                                    <div class="sp-sub" id="sumPlanSub">Advanced features to grow your business.</div>
+                                </div>
                             </div>
-                            <div>
-                                <div class="activation-name">Start Free Trial for 7 Days</div>
-                                <div class="activation-desc">Try the app before your first plan charge.</div>
+                        </div>
+
+                        <!-- Plan Feature Checklist -->
+                        <ul class="summary-features-list" id="summaryFeatureList">
+                            <li><span class="check-icon">✓</span> All core features</li>
+                            <li><span class="check-icon">✓</span> Multiple staff & branches</li>
+                            <li><span class="check-icon">✓</span> Advanced reporting</li>
+                            <li><span class="check-icon">✓</span> Priority support</li>
+                        </ul>
+
+                        <!-- Financial Calculation Table -->
+                        <div class="summary-pricing-table">
+                            <div class="pricing-row">
+                                <span class="pricing-label">Plan Price</span>
+                                <span class="pricing-val" id="sumPlanPrice">₹ 799</span>
+                            </div>
+                            <div class="pricing-row">
+                                <span class="pricing-label">Billing Cycle</span>
+                                <span class="pricing-val" id="sumBillingCycle">Monthly</span>
+                            </div>
+                            
+                            <div class="pricing-divider"></div>
+                            
+                            <div class="pricing-row subtotal-row">
+                                <span class="pricing-label">Subtotal</span>
+                                <span class="pricing-val" id="sumSubtotal">₹ 799</span>
+                            </div>
+
+                            <div class="pricing-divider"></div>
+
+                            <div class="pricing-row total-row">
+                                <span class="total-label">Total</span>
+                                <span class="total-val" id="sumGrandTotal">₹ 799</span>
                             </div>
                         </div>
+
+                        <!-- Accepted Payment Methods -->
+                        <div class="payment-methods-box">
+                            <div class="pm-title">Accepted Payment Methods</div>
+                            <p class="pm-note">You'll choose your preferred payment method securely in Razorpay Checkout.</p>
+                            
+                            <div class="pm-badges-row">
+                                <span class="pm-pill">VISA</span>
+                                <span class="pm-pill pm-mc">
+                                    <span class="mc-dot red"></span>
+                                    <span class="mc-dot orange"></span>
+                                </span>
+                                <span class="pm-pill">RuPay</span>
+                                <span class="pm-pill pm-upi">UPI</span>
+                                <span class="pm-pill pm-nb">
+                                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                        <line x1="3" y1="21" x2="21" y2="21"></line>
+                                        <line x1="3" y1="10" x2="21" y2="10"></line>
+                                        <polyline points="5 6 12 3 19 6"></polyline>
+                                        <line x1="4" y1="10" x2="4" y2="21"></line>
+                                        <line x1="20" y1="10" x2="20" y2="21"></line>
+                                        <line x1="8" y1="14" x2="8" y2="17"></line>
+                                        <line x1="12" y1="14" x2="12" y2="17"></line>
+                                        <line x1="16" y1="14" x2="16" y2="17"></line>
+                                    </svg>
+                                    Net Banking
+                                </span>
+                                <span class="pm-pill pm-wallet">
+                                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                        <path d="M20 12V8H6a2 2 0 0 1-2-2c0-1.1.9-2 2-2h12v4"></path>
+                                        <path d="M4 6v12a2 2 0 0 0 2 2h14v-4"></path>
+                                        <circle cx="18" cy="14" r="2"></circle>
+                                    </svg>
+                                    Wallets
+                                </span>
+                            </div>
+                        </div>
+
+                        <!-- Primary Pay Now Button -->
+                        <button class="btn-checkout-primary" id="btnPayNow">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                                <rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect>
+                                <path d="M7 11V7a5 5 0 0 1 10 0v4"></path>
+                            </svg>
+                            <span>Pay Now & Activate Subscription</span>
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                                <line x1="5" y1="12" x2="19" y2="12"></line>
+                                <polyline points="12 5 19 12 12 19"></polyline>
+                            </svg>
+                        </button>
+
+                        <div class="summary-footer-note">
+                            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect>
+                                <path d="M7 11V7a5 5 0 0 1 10 0v4"></path>
+                            </svg>
+                            <span>Secure payment powered by Razorpay</span>
+                        </div>
+
                     </div>
-
-                    <div class="activation-breakdown">
-                        <div class="breakdown-row">
-                            <span class="breakdown-label">App plan today</span>
-                            <span class="breakdown-value trial-zero">&#8377;0</span>
-                        </div>
-                        <div class="breakdown-row" id="trialAddonRow" style="display:none;">
-                            <span class="breakdown-label">Add-on today</span>
-                            <span class="breakdown-value" id="trialAddonTotal">&#8377;0</span>
-                        </div>
-                        <div class="breakdown-row due-today-row">
-                            <span class="breakdown-label due-label">Due today</span>
-                            <span class="breakdown-value due-value" id="trialDueToday">&#8377;0</span>
-                        </div>
-                    </div>
-
-                    <button class="btn-trial" id="btnTrial" disabled>
-                        Start Free Trial for 7 Days
-                    </button>
-
-                    <p class="trial-fine-print" id="trialFinePrint">
-                        After 7 days, your app plan renews at <strong id="fpPlanRenew">&#8377;--/month</strong> unless cancelled.
-                        <span id="fpAddonRenew"></span>
-                        Applicable taxes and the exact charge date will be disclosed.
-                    </p>
                 </div>
-            </section>
 
-            <!-- ── Secure Footer ───────────────────────────────────── -->
-            <div class="pay-secure-footer">
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                    <rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect>
-                    <path d="M7 11V7a5 5 0 0 1 10 0v4"></path>
-                </svg>
-                <span>Secure payment &middot; Your subscription details are protected</span>
             </div>
-
         </div>
     </main>
 
