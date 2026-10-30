@@ -1106,20 +1106,19 @@
 // ON BOARDING / SIGN-UP PROCESS:
 //===========================================================================================================================================================================
 
-// 1. When clicking "Create My Salon & Continue" (onboarding.html):
-//    Calls atomic PostgreSQL RPC: public.onboard_company_workspace(p_data jsonb)
-//    Atomically provisions the entire tenant workspace across 9 tables in a single transaction:
+// 1. When clicked on "Create My Salon & Continue button" the frontend will trigger the RPC FUNCTION - [onboard_company_workspace], This RPC FUNCTION will writes to 9 tables
     
-     // 1. Companies             (Creates company tenant, owner details, plan)
-     // 2. Branches              (Creates primary head branch with address and manager)
-     // 3. Company_settings      (Initializes business category & structure)
-     // 4. Company_contacts      (Initializes primary contact phone, email & address)
-     // 5. Roles                 (Seeds Owner, Manager, Receptionist, Staff)
-     // 6. Role_permissions      (Grants owner permissions dynamically mapped from plan_features & plan_sub_features)
-     // 7. Users                 (Links Supabase Auth user_id to company & role)
-     // 8. Profiles              (Creates owner profile with first & last name)
-     // 9. Usage_counters        (Seeds resource limit tracking from plan_limits)
-// 2. After clicking the setup your workspace customer will be directed to the payments page .. there he will choose either PAY NOW or START FREE TRAIL.. then 2 tables are written:
+     // 1. Companies
+     // 2. Branches
+     // 3. Roles
+     // 4. Role_permissions
+     // 5. Users
+     // 6. Usage_counters
+     // 7. Profiles
+     // 8. Company settings
+     // 9. Company Contacts
+     
+// 2. After clicking the "Create My Salon & Continue button", customer will be directed to the payments page .. there he will choose either PAY NOW or START FREE TRAIL.. then 2 tables are written:
 
      // A. IF HE CHOOSES  PAY-NOW option then the EDGE FUNCTION - [create-razorpay-subscription] will insert into the tables below and when the payment is successful or failed then the EDGE FUNCTION - [razorpay-webhook] - updates the same tables.
      
@@ -1134,7 +1133,7 @@
              // 2. Payments
 
 
-// 3. When the Payment is successful, The EDGE FUNCTION - [razorpay-webhook] - Updates the below columns in the tables below:
+// 3. When the Payment is successful, The EDGE FUNCTION - [razorpay-webhook] - Updates the below cells or columns in the tables below:
   
      // 1. Subscriptions [STATUS from created to ACTIVE]
      // 2. Payments [STATUS from created to PAID]
