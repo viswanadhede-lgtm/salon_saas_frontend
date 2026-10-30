@@ -24,9 +24,9 @@ body.checkout-page-body {
 }
 
 .checkout-nav-inner {
-    max-width: 1200px;
+    max-width: 1400px;
     margin: 0 auto;
-    padding: 14px 24px;
+    padding: 14px 16px;
     display: flex;
     align-items: center;
     justify-content: space-between;
@@ -109,11 +109,11 @@ body.checkout-page-body {
 
 /* ── Main Checkout Container ───────────────────────────────────────── */
 .checkout-main {
-    padding: 36px 20px 60px;
+    padding: 28px 8px 60px;
 }
 
 .checkout-container {
-    max-width: 1200px;
+    max-width: 1400px;
     margin: 0 auto;
 }
 
