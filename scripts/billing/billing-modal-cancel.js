@@ -62,10 +62,10 @@ export function resetCancelModalForm() {
 // ── Modal Open/Close ───────────────────────────────────────────
 
 export function openCancelSubscriptionModal() {
-    const rawStatus = (state.plan.status || '').trim().toLowerCase();
-    const isScheduledCancellation = (rawStatus === 'active' || rawStatus === 'trial') &&
-                                    state.plan.autoRenew === false &&
-                                    state.plan.cancelAtCycleEnd === true;
+    const isScheduledCancellation = state.plan.cancelAtCycleEnd === true ||
+                                    state.plan.autoRenew === false ||
+                                    state.currentMode === 'cancelled' ||
+                                    (state.plan.status && state.plan.status.toLowerCase() === 'cancelled');
     if (isScheduledCancellation) {
         showToast('Subscription is already scheduled for cancellation.');
         return;

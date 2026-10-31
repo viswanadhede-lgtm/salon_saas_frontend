@@ -514,16 +514,15 @@ export async function loadActiveSubscriptionViaRpc(supabase, companyId) {
             state.planId = sub.plan_id || null;
 
             const rawStatus = (sub.status || 'Active').trim().toLowerCase();
-            const isAutoRenew = sub.auto_renew === true;
+            const isAutoRenew = sub.auto_renew !== false;
             const isCancelAtCycleEnd = sub.cancel_at_cycle_end === true;
             const isExpired = rawStatus === 'expired';
-            const isScheduledCancellation = (rawStatus === 'active' || rawStatus === 'trial') &&
-                                            !isAutoRenew &&
-                                            isCancelAtCycleEnd;
+            const isScheduledCancellation = isCancelAtCycleEnd ||
+                ((rawStatus === 'active' || rawStatus === 'trial' || rawStatus === 'past_due' || rawStatus === 'cancelled') && !isAutoRenew);
 
             if (isExpired) {
                 state.currentMode = 'noplan';
-            } else if (rawStatus === 'cancelled') {
+            } else if (isScheduledCancellation || rawStatus === 'cancelled') {
                 state.currentMode = 'cancelled';
             } else {
                 state.currentMode = 'active';
@@ -893,16 +892,15 @@ export async function loadActiveSubscription() {
         }
 
         const rawStatus = (sub.status || 'Active').trim().toLowerCase();
-        const isAutoRenew = sub.auto_renew === true;
+        const isAutoRenew = sub.auto_renew !== false;
         const isCancelAtCycleEnd = sub.cancel_at_cycle_end === true;
         const isExpired = rawStatus === 'expired';
-        const isScheduledCancellation = (rawStatus === 'active' || rawStatus === 'trial') &&
-                                        !isAutoRenew &&
-                                        isCancelAtCycleEnd;
+        const isScheduledCancellation = isCancelAtCycleEnd ||
+            ((rawStatus === 'active' || rawStatus === 'trial' || rawStatus === 'past_due' || rawStatus === 'cancelled') && !isAutoRenew);
 
         if (isExpired) {
             state.currentMode = 'noplan';
-        } else if (rawStatus === 'cancelled') {
+        } else if (isScheduledCancellation || rawStatus === 'cancelled') {
             state.currentMode = 'cancelled';
         } else {
             state.currentMode = 'active';
