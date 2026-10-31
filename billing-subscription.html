@@ -45,49 +45,44 @@
                 <div class="billing-row-2col">
                     <!-- Current Plan Card -->
                     <div class="billing-plan-card" id="currentPlanCard">
-                        <div>
+                        <div class="plan-card-inner">
                             <div class="plan-header-top">
-                                <div class="plan-badge" id="planBadge">
-                                    <i data-feather="zap"></i>
-                                    <span id="planNameBadge">—</span>
-                                </div>
+                                <h3 class="plan-card-name" id="planNameBadge">—</h3>
                                 <span class="status-pill is-active" id="planStatusPill">
                                     <span class="status-indicator-dot"></span>
                                     <span id="planStatusText">—</span>
                                 </span>
                             </div>
 
-                            <div class="plan-price-block" id="planPriceBlock">
-                                <span class="plan-price-amount" id="planPriceAmount">—</span>
-                                <span class="plan-price-frequency" id="planPricePeriod"></span>
+                            <p class="plan-card-subtitle" id="planSubNotice">Your subscription is active.</p>
+
+                            <!-- Subtle horizontal divider -->
+                            <div class="plan-card-divider"></div>
+
+                            <div id="planPriceBlock" style="display: none;"><span id="planPriceAmount"></span><span id="planPricePeriod"></span></div>
+
+                            <!-- Three information rows -->
+                            <div class="plan-info-rows" id="planMetaGrid">
+                                <div class="plan-info-row">
+                                    <span class="plan-info-label">Subscription status</span>
+                                    <span class="plan-info-value" id="metaStatus">—</span>
+                                </div>
+                                <div class="plan-info-row">
+                                    <span class="plan-info-label">Automatic renewal</span>
+                                    <span class="plan-info-value" id="metaAutoRenew">—</span>
+                                </div>
+                                <div class="plan-info-row">
+                                    <span class="plan-info-label">Ends on</span>
+                                    <span class="plan-info-value" id="metaValidUntil">—</span>
+                                </div>
+
+                                <!-- Hidden legacy meta elements to preserve DOM reference stability -->
+                                <span id="metaStartDate" style="display: none;"></span>
+                                <span id="metaNextBilling" style="display: none;"></span>
                             </div>
 
-                            <!-- Trial Banner (hidden by default, shown when state.plan.isTrial === true) -->
-                            <div class="plan-trial-banner" id="planTrialBanner" style="display: none;">
-                                <i data-feather="clock"></i>
-                                <span id="planTrialBannerText">Your free trial ends on —. First charge on —.</span>
-                            </div>
-
-                            <p class="billing-card-subtitle" id="planSubNotice" style="margin-top: 0.5rem; margin-bottom: 0; font-size: 0.95rem; font-weight: 600;">Your current plan and subscription details</p>
-
-                            <div class="plan-meta-grid" id="planMetaGrid">
-                                <div class="meta-field-item">
-                                    <span class="meta-field-label">Status</span>
-                                    <span class="meta-field-value" id="metaStatus">—</span>
-                                </div>
-                                <div class="meta-field-item">
-                                    <span class="meta-field-label">Start Date</span>
-                                    <span class="meta-field-value" id="metaStartDate">—</span>
-                                </div>
-                                <div class="meta-field-item">
-                                    <span class="meta-field-label">Ends On</span>
-                                    <span class="meta-field-value" id="metaValidUntil">—</span>
-                                </div>
-                                <div class="meta-field-item">
-                                    <span class="meta-field-label">Next Billing Date</span>
-                                    <span class="meta-field-value" id="metaNextBilling">—</span>
-                                </div>
-                            </div>
+                            <!-- Hidden legacy trial elements to preserve DOM reference stability -->
+                            <div id="planTrialBanner" style="display: none;"><span id="planTrialBannerText"></span></div>
                         </div>
 
                         <div class="plan-card-actions" id="planActionsContainer">

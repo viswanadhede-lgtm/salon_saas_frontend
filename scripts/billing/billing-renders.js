@@ -31,143 +31,159 @@ export function openModal(modalEl) {
 export function renderCurrentPlan(handleRenewSubscription) {
     if (state.currentMode === 'noplan') {
         if (dom.currentPlanCard) dom.currentPlanCard.className = 'billing-plan-card billing-plan-card--noplan';
-        dom.planNameBadge.textContent = 'NO ACTIVE PLAN';
+        if (dom.planNameBadge) dom.planNameBadge.textContent = 'No Active Plan';
         if (dom.headerPlanBadge) dom.headerPlanBadge.textContent = 'No Plan';
 
-        dom.planStatusPill.className = 'status-pill is-unsubscribed';
-        dom.planStatusText.textContent = 'Not subscribed';
+        if (dom.planStatusPill) dom.planStatusPill.className = 'status-pill is-unsubscribed';
+        if (dom.planStatusText) dom.planStatusText.textContent = 'Not subscribed';
 
-        dom.planPriceBlock.innerHTML = `
-            <span class="plan-price-amount">—</span>
-            <span class="plan-price-frequency" style="color: var(--text-muted);">No subscription</span>
-        `;
+        if (dom.planSubNotice) {
+            dom.planSubNotice.style.display = 'block';
+            dom.planSubNotice.textContent = 'Choose a plan to start managing your salon digital operations.';
+        }
 
-        if (dom.planTrialBanner) dom.planTrialBanner.style.display = 'none';
+        if (dom.planMetaGrid) dom.planMetaGrid.style.display = 'none';
 
-        dom.planSubNotice.style.display = 'block';
-        dom.planSubNotice.textContent = 'Choose a plan to start managing your salon digital operations.';
-
-        dom.planMetaGrid.style.display = 'none';
-
-        dom.planActionsContainer.innerHTML = `
-            <button type="button" class="btn-plain btn-plain-primary" onclick="window.location.href='plans.html'">
-                <i data-feather="check-circle"></i>
-                <span>Choose Plan</span>
-            </button>
-        `;
+        if (dom.planActionsContainer) {
+            dom.planActionsContainer.style.display = 'block';
+            dom.planActionsContainer.innerHTML = `
+                <button type="button" class="btn-plain btn-plain-primary" onclick="window.location.href='plans.html'">
+                    <i data-feather="check-circle"></i>
+                    <span>Choose Plan</span>
+                </button>
+            `;
+        }
         if (window.feather) feather.replace();
         return;
     }
 
-    // Active or Cancelled
-    dom.planMetaGrid.style.display = 'grid';
-    const planDisplayName = state.plan.name || '—';
-    dom.planNameBadge.textContent = planDisplayName === '—' ? '—' : (planDisplayName.toLowerCase().includes('plan') ? planDisplayName : `${planDisplayName} Plan`);
-    if (dom.headerPlanBadge) dom.headerPlanBadge.textContent = planDisplayName;
+    if (dom.planMetaGrid) dom.planMetaGrid.style.display = 'flex';
 
-    if (!state.plan.name && !state.plan.price) {
-        dom.planPriceBlock.innerHTML = `
-            <span class="plan-price-amount">—</span>
-            <span class="plan-price-frequency"></span>
-        `;
-    } else {
-        const cycleLabel = (state.plan.cycle === 'annual' || state.plan.cycle === 'annually' || state.plan.cycle === 'yearly') ? '/ year' : '/ month';
-        dom.planPriceBlock.innerHTML = `
-            <span class="plan-price-amount">${fmtCurrency(state.plan.price)}</span>
-            <span class="plan-price-frequency">${cycleLabel}</span>
-        `;
-    }
+    // ── Database Triple-Condition Check (Single Source of Truth) ──
+    const rawStatus = (state.plan.status || '').trim().toLowerCase();
+    const isAutoRenew = state.plan.autoRenew === true;
+    const isCancelAtCycleEnd = state.plan.cancelAtCycleEnd === true;
+
+    const isScheduledCancellation = (rawStatus === 'active' || rawStatus === 'trial') &&
+                                    !isAutoRenew &&
+                                    isCancelAtCycleEnd;
+
+    const isActuallyCancelled = rawStatus === 'cancelled' || (state.currentMode === 'cancelled' && !isScheduledCancellation);
+
+    const planDisplayName = state.plan.name || '—';
+    const formattedPlanTitle = planDisplayName === '—'
+        ? '—'
+        : (planDisplayName.toLowerCase().includes('plan') ? planDisplayName : `${planDisplayName} Plan`);
+
+    if (dom.planNameBadge) dom.planNameBadge.textContent = formattedPlanTitle;
+    if (dom.headerPlanBadge) dom.headerPlanBadge.textContent = planDisplayName;
 
     const isTrial = state.plan.isTrial === true;
     const trialEndDate = state.plan.trialEndAt ? formatDateDisplay(state.plan.trialEndAt) : state.plan.validUntil;
+    const actualEndDate = (isTrial && trialEndDate && trialEndDate !== '—')
+        ? trialEndDate
+        : (state.plan.validUntil && state.plan.validUntil !== '—' ? state.plan.validUntil : '—');
 
-    if (state.currentMode === 'cancelled' || state.plan.status?.toLowerCase() === 'cancelled') {
+    const metaAutoRenew = document.getElementById('metaAutoRenew');
+
+    if (isScheduledCancellation) {
+        // ── B. Scheduled Cancellation ──────────────────────────────
+        // Database confirms: status === 'active' && auto_renew === false && cancel_at_cycle_end === true
         if (dom.currentPlanCard) dom.currentPlanCard.className = 'billing-plan-card billing-plan-card--cancelled';
-        dom.planStatusPill.className = 'status-pill is-cancelling';
-        dom.planStatusText.textContent = 'Scheduled for cancellation';
+        if (dom.planStatusPill) dom.planStatusPill.className = 'status-pill is-cancelling';
+        if (dom.planStatusText) dom.planStatusText.textContent = 'Scheduled for cancellation';
 
-        if (isTrial) {
+        if (dom.planSubNotice) {
             dom.planSubNotice.style.display = 'block';
-            dom.planSubNotice.textContent = trialEndDate && trialEndDate !== '—'
-                ? `Your trial remains active until ${trialEndDate}. You will not be charged.`
-                : 'Your trial is scheduled for cancellation.';
-
-            dom.metaStatus.textContent = 'Scheduled for cancellation';
-
-            if (dom.planTrialBanner) {
-                dom.planTrialBanner.style.display = 'flex';
-                if (dom.planTrialBannerText) {
-                    dom.planTrialBannerText.textContent = `Your free trial ends on ${trialEndDate || '—'}. Your subscription is scheduled for cancellation and will not be charged.`;
-                }
-            }
-        } else {
-            dom.planSubNotice.style.display = 'block';
-            dom.planSubNotice.textContent = state.plan.validUntil && state.plan.validUntil !== '—'
-                ? `Your subscription remains active until ${state.plan.validUntil}.`
+            dom.planSubNotice.textContent = actualEndDate && actualEndDate !== '—'
+                ? `Your subscription remains active until ${actualEndDate}.`
                 : 'Your subscription is scheduled for cancellation.';
-
-            dom.metaStatus.textContent = 'Scheduled for cancellation';
-
-            if (dom.planTrialBanner) dom.planTrialBanner.style.display = 'none';
         }
 
-        dom.metaStartDate.textContent = state.plan.startDate || '—';
-        dom.metaValidUntil.textContent = (isTrial && trialEndDate) ? trialEndDate : (state.plan.validUntil || '—');
-        dom.metaNextBilling.textContent = 'None';
+        if (dom.metaStatus) dom.metaStatus.textContent = 'Active';
+        if (metaAutoRenew) metaAutoRenew.textContent = 'Disabled';
+        if (dom.metaValidUntil) dom.metaValidUntil.textContent = actualEndDate;
 
-        dom.planActionsContainer.innerHTML = '';
+        // Hidden legacy elements for safety
+        if (dom.metaStartDate) dom.metaStartDate.textContent = state.plan.startDate || '—';
+        if (dom.metaNextBilling) dom.metaNextBilling.textContent = 'None';
+        if (dom.planTrialBanner) dom.planTrialBanner.style.display = 'none';
+
+        // Scheduled cancellation hides change plan / actions
+        if (dom.planActionsContainer) {
+            dom.planActionsContainer.innerHTML = '';
+            dom.planActionsContainer.style.display = 'none';
+        }
+
+    } else if (isActuallyCancelled) {
+        // ── C. Actually Cancelled Subscription ──────────────────────
+        // Database reports: status === 'cancelled'
+        if (dom.currentPlanCard) dom.currentPlanCard.className = 'billing-plan-card billing-plan-card--cancelled';
+        if (dom.planStatusPill) dom.planStatusPill.className = 'status-pill is-unsubscribed';
+        if (dom.planStatusText) dom.planStatusText.textContent = 'Cancelled';
+
+        if (dom.planSubNotice) {
+            dom.planSubNotice.style.display = 'block';
+            dom.planSubNotice.textContent = 'Your subscription has ended.';
+        }
+
+        if (dom.metaStatus) dom.metaStatus.textContent = 'Cancelled';
+        if (metaAutoRenew) metaAutoRenew.textContent = 'Disabled';
+        if (dom.metaValidUntil) dom.metaValidUntil.textContent = actualEndDate;
+
+        if (dom.metaStartDate) dom.metaStartDate.textContent = state.plan.startDate || '—';
+        if (dom.metaNextBilling) dom.metaNextBilling.textContent = 'None';
+        if (dom.planTrialBanner) dom.planTrialBanner.style.display = 'none';
+
+        if (dom.planActionsContainer) {
+            dom.planActionsContainer.innerHTML = '';
+            dom.planActionsContainer.style.display = 'none';
+        }
+
     } else {
-        // State: Active / Trial
+        // ── A. Normal Active Subscription (or Active Trial) ────────
+        // Database confirms: status === 'active' && auto_renew === true && cancel_at_cycle_end === false
         if (dom.currentPlanCard) dom.currentPlanCard.className = 'billing-plan-card billing-plan-card--active';
 
         if (isTrial) {
-            dom.planStatusPill.className = 'status-pill is-trial';
-            dom.planStatusText.textContent = 'Free Trial';
-
-            dom.planSubNotice.style.display = 'block';
-            dom.planSubNotice.textContent = 'You are currently on a 7-day free trial.';
-
-            dom.metaStatus.textContent = 'Free Trial';
-
-            if (dom.planTrialBanner) {
-                dom.planTrialBanner.style.display = 'flex';
-                if (dom.planTrialBannerText) {
-                    dom.planTrialBannerText.textContent = `Your free trial ends on ${trialEndDate || '—'}. First charge on ${trialEndDate || '—'}.`;
-                }
+            if (dom.planStatusPill) dom.planStatusPill.className = 'status-pill is-trial';
+            if (dom.planStatusText) dom.planStatusText.textContent = 'Free Trial';
+            if (dom.planSubNotice) {
+                dom.planSubNotice.style.display = 'block';
+                dom.planSubNotice.textContent = 'You are currently on a 7-day free trial.';
             }
+            if (dom.metaStatus) dom.metaStatus.textContent = 'Free Trial';
+            if (metaAutoRenew) metaAutoRenew.textContent = isAutoRenew ? 'Enabled' : 'Disabled';
+            if (dom.metaValidUntil) dom.metaValidUntil.textContent = actualEndDate;
         } else {
-            dom.planStatusPill.className = 'status-pill is-active';
-            dom.planStatusText.textContent = state.plan.status || 'Active';
-
-            dom.planSubNotice.style.display = 'block';
-            dom.planSubNotice.textContent = state.plan.autoRenew === false
-                ? 'Your current plan and subscription details (Auto-renew disabled)'
-                : 'Your current plan and subscription details';
-
-            dom.metaStatus.textContent = state.plan.status || '—';
-
-            if (dom.planTrialBanner) dom.planTrialBanner.style.display = 'none';
+            if (dom.planStatusPill) dom.planStatusPill.className = 'status-pill is-active';
+            if (dom.planStatusText) dom.planStatusText.textContent = 'Active';
+            if (dom.planSubNotice) {
+                dom.planSubNotice.style.display = 'block';
+                dom.planSubNotice.textContent = 'Your subscription is active.';
+            }
+            if (dom.metaStatus) dom.metaStatus.textContent = 'Active';
+            if (metaAutoRenew) metaAutoRenew.textContent = isAutoRenew ? 'Enabled' : 'Disabled';
+            if (dom.metaValidUntil) dom.metaValidUntil.textContent = actualEndDate;
         }
 
-        dom.metaStartDate.textContent = state.plan.startDate || '—';
-        dom.metaValidUntil.textContent = (isTrial && trialEndDate) ? trialEndDate : (state.plan.validUntil || '—');
-        dom.metaNextBilling.textContent = state.plan.autoRenew === false
-            ? (state.plan.nextBillingDate && state.plan.nextBillingDate !== 'None' ? `${state.plan.nextBillingDate} (No renewal)` : 'None')
-            : (isTrial && trialEndDate ? trialEndDate : (state.plan.nextBillingDate || '—'));
+        // Hidden legacy elements for safety
+        if (dom.metaStartDate) dom.metaStartDate.textContent = state.plan.startDate || '—';
+        if (dom.metaNextBilling) dom.metaNextBilling.textContent = isTrial && trialEndDate ? trialEndDate : (state.plan.nextBillingDate || '—');
+        if (dom.planTrialBanner) dom.planTrialBanner.style.display = 'none';
 
+        // Keep change plan functionality
         const currentPlanParam = encodeURIComponent((state.plan.name || '').toLowerCase().replace(/\s+plan$/, ''));
         const changePlanHref = currentPlanParam ? `plans.html?current=${currentPlanParam}` : 'plans.html';
-        dom.planActionsContainer.innerHTML = `
-            <button type="button" class="btn-plain btn-plain-primary" id="btnChangePlan" onclick="window.location.href='${changePlanHref}'">
-                <i data-feather="refresh-cw"></i>
-                <span>Change Plan</span>
-            </button>
-        `;
-    }
-
-    const metaAutoRenew = document.getElementById('metaAutoRenew');
-    if (metaAutoRenew) {
-        metaAutoRenew.textContent = state.plan.autoRenew ? 'Auto-renew enabled' : 'Auto-renew disabled';
+        if (dom.planActionsContainer) {
+            dom.planActionsContainer.style.display = 'block';
+            dom.planActionsContainer.innerHTML = `
+                <button type="button" class="btn-plain btn-plain-primary" id="btnChangePlan" onclick="window.location.href='${changePlanHref}'">
+                    <i data-feather="refresh-cw"></i>
+                    <span>Change Plan</span>
+                </button>
+            `;
+        }
     }
 
     if (window.feather) feather.replace();
@@ -715,33 +731,53 @@ export function renderSubscriptionManagement(openCancelSubscriptionModal, handle
     const subManageDesc = document.getElementById('subManageDesc');
     const subManageActions = document.getElementById('subManageActions');
 
-    const isScheduledCancellation = state.plan.cancelAtCycleEnd === true ||
-                                    state.plan.autoRenew === false ||
-                                    state.currentMode === 'cancelled' ||
-                                    (state.plan.status && state.plan.status.toLowerCase() === 'cancelled');
+    // CRITICAL: Database is the single source of truth!
+    const rawStatus = (state.plan.status || '').trim().toLowerCase();
+    const isAutoRenew = state.plan.autoRenew === true;
+    const isCancelAtCycleEnd = state.plan.cancelAtCycleEnd === true;
+
+    const isScheduledCancellation = (rawStatus === 'active' || rawStatus === 'trial') &&
+                                    !isAutoRenew &&
+                                    isCancelAtCycleEnd;
+
+    const isActuallyCancelled = rawStatus === 'cancelled' || (state.currentMode === 'cancelled' && !isScheduledCancellation);
 
     const isTrial = state.plan.isTrial === true;
-    const planDisplayName = state.plan.name || 'Plan';
     const trialEndDate = state.plan.trialEndAt ? formatDateDisplay(state.plan.trialEndAt) : state.plan.validUntil;
-    const validUntil = (isTrial && trialEndDate && trialEndDate !== '—')
+    const actualEndDate = (isTrial && trialEndDate && trialEndDate !== '—')
         ? trialEndDate
         : (state.plan.validUntil && state.plan.validUntil !== '—' ? state.plan.validUntil : 'the end of your billing cycle');
 
     if (isScheduledCancellation) {
+        if (dom.subscriptionManagementSection) {
+            dom.subscriptionManagementSection.classList.add('is-scheduled-cancel');
+        }
         if (subManageTitle) subManageTitle.textContent = 'Subscription Management';
         if (subManageDesc) {
-            if (isTrial) {
-                subManageDesc.innerHTML = `Your free trial is scheduled for cancellation. Your <strong>${planDisplayName}</strong> trial remains active until <strong>${validUntil}</strong> and you will not be charged.`;
-            } else {
-                subManageDesc.innerHTML = `Your subscription is scheduled for cancellation. Your <strong>${planDisplayName}</strong> remains active until <strong>${validUntil}</strong> and will not renew after that date.`;
-            }
+            subManageDesc.textContent = `Your subscription will remain active until ${actualEndDate}. You can continue using all your plan features until then. Your subscription will not renew automatically.`;
         }
         if (subManageActions) {
             subManageActions.innerHTML = `
-                <span class="status-badge-scheduled">Scheduled for Cancellation</span>
+                <span class="status-badge-scheduled">Cancellation scheduled</span>
+            `;
+        }
+    } else if (isActuallyCancelled) {
+        if (dom.subscriptionManagementSection) {
+            dom.subscriptionManagementSection.classList.add('is-scheduled-cancel');
+        }
+        if (subManageTitle) subManageTitle.textContent = 'Subscription Management';
+        if (subManageDesc) {
+            subManageDesc.textContent = 'Your subscription has ended and your plan is no longer active.';
+        }
+        if (subManageActions) {
+            subManageActions.innerHTML = `
+                <span class="status-badge-scheduled">Cancelled</span>
             `;
         }
     } else {
+        if (dom.subscriptionManagementSection) {
+            dom.subscriptionManagementSection.classList.remove('is-scheduled-cancel');
+        }
         if (subManageTitle) subManageTitle.textContent = 'Subscription Management';
         if (subManageDesc) {
             subManageDesc.textContent = isTrial
@@ -755,7 +791,7 @@ export function renderSubscriptionManagement(openCancelSubscriptionModal, handle
                 </button>
             `;
             const btnCancel = document.getElementById('btnTriggerCancelModal');
-            if (btnCancel) {
+            if (btnCancel && openCancelSubscriptionModal) {
                 btnCancel.onclick = openCancelSubscriptionModal;
             }
         }

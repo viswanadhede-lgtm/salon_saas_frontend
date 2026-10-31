@@ -121,56 +121,112 @@
    ROW 1: Current Plan & Active Add-ons
    ============================================================ */
 
-/* Rich Sapphire-Indigo Current Plan Card */
+/* Clean, Compact White Current Plan Card */
 .billing-plan-card {
-    background: linear-gradient(135deg, #0f172a 0%, #1e3a8a 50%, #2563eb 100%);
-    border: 1px solid rgba(255, 255, 255, 0.15);
-    border-radius: var(--radius-lg);
-    padding: 1.85rem;
+    background: #ffffff !important;
+    border: 1px solid #e2e8f0 !important;
+    border-radius: 12px !important;
+    padding: 1.5rem !important;
     display: flex;
     flex-direction: column;
     justify-content: space-between;
-    gap: 1.5rem;
-    box-shadow: 0 10px 30px rgba(30, 58, 138, 0.25);
+    gap: 1rem;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05), 0 1px 2px rgba(0, 0, 0, 0.03) !important;
     position: relative;
-    overflow: hidden;
-    color: #ffffff;
+    color: #0f172a !important;
 }
 
 .billing-plan-card--active {
-    background: linear-gradient(135deg, #0f172a 0%, #1e3a8a 50%, #2563eb 100%) !important;
-    box-shadow: 0 10px 30px rgba(30, 58, 138, 0.25) !important;
+    background: #ffffff !important;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05) !important;
+    border-color: #e2e8f0 !important;
+    color: #0f172a !important;
 }
 
 .billing-plan-card--cancelled {
-    background: linear-gradient(135deg, #451a03 0%, #78350f 50%, #b45309 100%) !important;
-    box-shadow: 0 10px 30px rgba(180, 83, 9, 0.25) !important;
+    background: #ffffff !important;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05) !important;
+    border-color: #e2e8f0 !important;
+    color: #0f172a !important;
 }
 
 .billing-plan-card--noplan {
-    background: linear-gradient(135deg, #1e293b 0%, #334155 100%) !important;
-    box-shadow: 0 10px 30px rgba(15, 23, 42, 0.18) !important;
+    background: #ffffff !important;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05) !important;
+    border-color: #e2e8f0 !important;
+    color: #0f172a !important;
 }
 
-/* Decorative ambient glow circle */
+/* Remove decorative ambient glow circle */
 .billing-plan-card::after {
-    content: '';
-    position: absolute;
-    top: -50px;
-    right: -50px;
-    width: 220px;
-    height: 220px;
-    background: radial-gradient(circle, rgba(99, 102, 241, 0.35) 0%, transparent 70%);
-    border-radius: 50%;
-    pointer-events: none;
+    display: none !important;
+}
+
+.plan-card-inner {
+    display: flex;
+    flex-direction: column;
+    width: 100%;
 }
 
 .plan-header-top {
     display: flex;
     justify-content: space-between;
-    align-items: flex-start;
+    align-items: center;
     position: relative;
     z-index: 1;
+    margin-bottom: 0.35rem;
+    width: 100%;
+}
+
+.plan-card-name {
+    font-size: 1.25rem;
+    font-weight: 700;
+    color: #0f172a;
+    margin: 0;
+    line-height: 1.3;
+}
+
+.plan-card-subtitle {
+    font-size: 0.88rem;
+    color: #64748b;
+    margin: 0;
+    line-height: 1.4;
+}
+
+.plan-card-divider {
+    height: 1px;
+    background: #f1f5f9;
+    border: none;
+    margin: 1.15rem 0 0.85rem 0;
+    width: 100%;
+}
+
+.plan-info-rows {
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+    width: 100%;
+}
+
+.plan-info-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-size: 0.88rem;
+    padding: 0.15rem 0;
+}
+
+.plan-info-label {
+    color: #64748b;
+    font-weight: 500;
+    font-size: 0.88rem;
+}
+
+.plan-info-value {
+    color: #0f172a;
+    font-weight: 600;
+    font-size: 0.88rem;
+    text-align: right;
 }
 
 .plan-badge {
@@ -264,47 +320,54 @@
 }
 
 .status-pill.is-active {
-    background: rgba(16, 185, 129, 0.22);
-    color: #6ee7b7;
-    border: 1px solid rgba(16, 185, 129, 0.4);
+    background: #ecfdf5 !important;
+    color: #047857 !important;
+    border: 1px solid #a7f3d0 !important;
 }
 
 .status-pill.is-active .status-indicator-dot {
-    background: #34d399;
-    box-shadow: 0 0 8px #34d399;
-    animation: pulse-green 2s infinite ease;
-}
-
-@keyframes pulse-green {
-    0%, 100% { transform: scale(1); opacity: 1; }
-    50% { transform: scale(1.35); opacity: 0.7; }
+    background: #10b981 !important;
+    box-shadow: none !important;
+    animation: none !important;
 }
 
 .status-pill.is-cancelling {
-    background: rgba(245, 158, 11, 0.22);
-    color: #fde68a;
-    border: 1px solid rgba(245, 158, 11, 0.4);
+    background: #fffbeb !important;
+    color: #b45309 !important;
+    border: 1px solid #fde68a !important;
 }
 
 .status-pill.is-cancelling .status-indicator-dot {
-    background: #fbbf24;
+    background: #f59e0b !important;
+    box-shadow: none !important;
+    animation: none !important;
 }
 
 .status-pill.is-trial {
-    background: rgba(99, 102, 241, 0.22);
-    color: #c7d2fe;
-    border: 1px solid rgba(129, 140, 248, 0.45);
+    background: #eef2ff !important;
+    color: #4338ca !important;
+    border: 1px solid #c7d2fe !important;
 }
 
 .status-pill.is-trial .status-indicator-dot {
-    background: #818cf8;
-    box-shadow: 0 0 8px #818cf8;
-    animation: pulse-indigo 2s infinite ease;
+    background: #6366f1 !important;
+    box-shadow: none !important;
+    animation: none !important;
 }
 
-@keyframes pulse-indigo {
-    0%, 100% { transform: scale(1); opacity: 1; }
-    50% { transform: scale(1.35); opacity: 0.7; }
+.status-badge-scheduled {
+    display: inline-flex;
+    align-items: center;
+    padding: 6px 14px;
+    font-size: 0.82rem;
+    font-weight: 600;
+    color: #b45309;
+    background: #fef3c7;
+    border: 1px solid #fde68a;
+    border-radius: 9999px;
+    white-space: nowrap;
+    user-select: none;
+    cursor: default;
 }
 
 .plan-trial-banner {
@@ -350,20 +413,27 @@
     z-index: 1;
 }
 
-/* Primary plan button (white elevation button on dark card) */
+/* Primary plan button on clean white card */
 .billing-plan-card .btn-plain-primary {
-    background: #ffffff;
-    color: #1e3a8a;
-    border: none;
-    font-weight: 700;
-    box-shadow: 0 4px 14px rgba(0, 0, 0, 0.2);
+    background: #f8fafc;
+    color: #0f172a;
+    border: 1px solid #e2e8f0;
+    font-weight: 600;
+    font-size: 0.88rem;
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+    border-radius: 8px;
+    padding: 8px 16px;
+    width: 100%;
+    justify-content: center;
+    margin-top: 1rem;
 }
 
 .billing-plan-card .btn-plain-primary:hover {
-    background: #f8fafc;
-    color: #1d4ed8;
-    transform: translateY(-1px);
-    box-shadow: 0 6px 20px rgba(0, 0, 0, 0.28);
+    background: #f1f5f9;
+    border-color: #cbd5e1;
+    color: #0f172a;
+    transform: none;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
 }
 
 /* Secondary plan button (frosted glass button) */
@@ -1050,6 +1120,20 @@
     border: 1px solid #fecaca;
     border-radius: var(--radius-lg);
     margin-top: 0.5rem;
+    gap: 1.5rem;
+}
+
+.subscription-management-section.is-scheduled-cancel {
+    background: #fffbeb;
+    border: 1px solid #fde68a;
+}
+
+.subscription-management-section.is-scheduled-cancel .sub-manage-text h4 {
+    color: #92400e;
+}
+
+.subscription-management-section.is-scheduled-cancel .sub-manage-text p {
+    color: #b45309;
 }
 
 .sub-manage-text h4 {
