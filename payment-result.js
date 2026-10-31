@@ -75,11 +75,14 @@ document.addEventListener('DOMContentLoaded', async () => {
 
         for (let attempt = 1; attempt <= MAX_POLL_ATTEMPTS; attempt++) {
             try {
-                // 1. Query subscriptions table as single source of truth
+                // 1. Query subscriptions table as single source of truth.
+                //    razorpay_subscription_id is the Razorpay "sub_..." ID returned
+                //    in the URL callback and stored as a UNIQUE text column.
+                //    (The old 'subscription_id' text column no longer exists in the schema.)
                 let { data: sub, error: subError } = await supabase
                     .from('subscriptions')
                     .select('*')
-                    .eq('subscription_id', reference_id)
+                    .eq('razorpay_subscription_id', reference_id)
                     .maybeSingle();
 
                 if (subError) {
@@ -105,6 +108,8 @@ document.addEventListener('DOMContentLoaded', async () => {
                     console.log(`[payment-result] Poll attempt ${attempt}: Subscription status is "${status}"`);
 
                     // Active state reached
+                    // 'trial' = mandate authenticated, billing deferred 7 days
+                    // 'active' = first invoice paid, subscription live
                     if (['active', 'trial', 'trialing'].includes(status)) {
                         markDone(step2);
                         markActive(step3);
@@ -134,7 +139,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                         localStorage.removeItem('userSubFeatures');
                         localStorage.removeItem('appContext');
 
-                        showSuccess();
+                        showSuccess(sub);
 
                         setTimeout(() => {
                             window.location.href = 'dashboard.html';
@@ -194,14 +199,17 @@ document.addEventListener('DOMContentLoaded', async () => {
         el.classList.add('failed');
     }
 
-    function showSuccess() {
+    function showSuccess(sub) {
         iconArea.classList.remove('error');
         iconArea.classList.add('success');
         resultIcon.innerHTML = `
             <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="#10b981" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
                 <polyline points="20 6 9 17 4 12"></polyline>
             </svg>`;
-        if (flowType === 'paid') {
+        // Determine trial vs paid from the actual DB row (is_trial boolean) first,
+        // falling back to the URL flow_type param for older code paths.
+        const isTrial = (sub && sub.is_trial === true) || flowType === 'trial';
+        if (!isTrial) {
             heading.textContent = 'Subscription Activated!';
             subtext.textContent = 'Your paid subscription is now active. Redirecting you to your dashboard...';
         } else {

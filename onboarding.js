@@ -124,20 +124,47 @@ async function submitOnboarding() {
             localStorage.setItem("signup_data", JSON.stringify(data));
         }
 
-        // Map legacy string ids to correct Supabase UUIDs
-        const planIdMapping = {
-            'plan_01': 'd0d4cc8f-3498-4da1-b5e5-2887b9b39dce',
-            'plan_02': 'b42bcd41-217a-4ddb-9451-20e040984277',
-            'plan_03': 'b32fe38d-a715-4166-acf1-b970bd845c21',
-            'growth':  'd0d4cc8f-3498-4da1-b5e5-2887b9b39dce',
-            'advance': 'b42bcd41-217a-4ddb-9451-20e040984277',
-            'pro':     'b32fe38d-a715-4166-acf1-b970bd845c21',
-            'trial':   'd0d4cc8f-3498-4da1-b5e5-2887b9b39dce'
-        };
+        // Resolve the plan_id for the workspace RPC.
+        //
+        // Priority:
+        // 1. plan_id already stored in signup_data (UUID from dynamic DB fetch in plans.js)
+        // 2. Fallback: fetch from public.plans by plan_name (handles cases where plans.js
+        //    could not reach the DB during plan selection)
+        // 3. Last resort: send the name as-is and let the RPC handle it gracefully.
+        //
+        // NOTE: The old hardcoded UUID mapping is removed. Those UUIDs were stale and
+        //       no longer match the live database records.
+        let activePlanId   = data.plan_id   || null;
+        const activePlanName = data.plan_name || localStorage.getItem('selected_plan') || 'growth';
+        let planName = activePlanName || 'Growth';
 
-        const activePlanId = data.plan_id || localStorage.getItem('selected_plan') || 'growth';
-        const planId = planIdMapping[String(activePlanId).toLowerCase()] || activePlanId;
-        const planName = data.plan_name || localStorage.getItem('selected_plan_name') || 'Growth';
+        // If no UUID was stored, attempt a live fetch from public.plans
+        if (!activePlanId || String(activePlanId).length < 30) {
+            try {
+                const { data: planRow, error: planFetchErr } = await supabase
+                    .from('plans')
+                    .select('plan_id, plan_name')
+                    .ilike('plan_name', activePlanName.replace(/^plan_0?[123]$/i, 'growth'))
+                    .eq('status', 'active')
+                    .maybeSingle();
+
+                if (!planFetchErr && planRow) {
+                    activePlanId = planRow.plan_id;
+                    planName     = planRow.plan_name;
+                } else {
+                    console.warn('[onboarding] Live plan fetch failed, using name only:', planFetchErr?.message);
+                    activePlanId = null; // RPC will receive null and should use its own default
+                }
+            } catch (fetchErr) {
+                console.warn('[onboarding] Could not fetch plan from DB:', fetchErr);
+                activePlanId = null;
+            }
+        } else {
+            // UUID was already present from plans.js dynamic fetch — use it directly
+            planName = data.plan_name || planName;
+        }
+
+        const planId = activePlanId;
 
         const countryNameMap = {
             'IN': 'India',

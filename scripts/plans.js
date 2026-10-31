@@ -161,53 +161,77 @@ export function initPlans() {
             const planButtons = document.querySelectorAll('.btn-plan');
             
             planButtons.forEach(btn => {
-                btn.addEventListener('click', (e) => {
-                    // Ignored disabled buttons just in case
+                btn.addEventListener('click', async (e) => {
+                    // Ignore disabled buttons
                     if (btn.disabled) return;
 
                     const selectedPlan = btn.getAttribute('data-plan');
                     const originalHtml = btn.innerHTML;
-                    
-                    // Small visual feedback loop
+
+                    // Small visual feedback
                     btn.textContent = 'Selecting...';
                     btn.style.opacity = '0.8';
-                    
-                    setTimeout(() => {
-                        const planMapping = {
-                            'growth':  { id: 'd0d4cc8f-3498-4da1-b5e5-2887b9b39dce', name: 'Growth' },
-                            'advance': { id: 'b42bcd41-217a-4ddb-9451-20e040984277', name: 'Advance' },
-                            'pro':     { id: 'b32fe38d-a715-4166-acf1-b970bd845c21', name: 'Pro' }
-                        };
-                        const mappedPlan = planMapping[selectedPlan] || { id: selectedPlan, name: selectedPlan };
-                        
-                        // Store in local storage
+
+                    try {
+                        // Dynamically fetch plan record from public.plans by plan_name
+                        // This avoids hardcoded UUIDs that become stale when the DB changes.
+                        let planId   = null;
+                        let planName = selectedPlan
+                            ? selectedPlan.charAt(0).toUpperCase() + selectedPlan.slice(1)
+                            : 'Growth';
+
+                        try {
+                            // Dynamic import keeps supabase out of this script's global scope
+                            const { supabase } = await import('../lib/supabase.js');
+                            const { data: planRow, error: planErr } = await supabase
+                                .from('plans')
+                                .select('plan_id, plan_name')
+                                .ilike('plan_name', selectedPlan || 'growth')
+                                .eq('status', 'active')
+                                .maybeSingle();
+
+                            if (!planErr && planRow) {
+                                planId   = planRow.plan_id;
+                                planName = planRow.plan_name;
+                            } else {
+                                console.warn('[plans] Could not fetch plan from DB, using plan name only:', planErr?.message);
+                            }
+                        } catch (dbErr) {
+                            console.warn('[plans] Dynamic plan fetch failed:', dbErr);
+                        }
+
+                        // Store in localStorage for the payments / onboarding pages
                         localStorage.setItem('selected_plan', selectedPlan);
                         let signupData = JSON.parse(localStorage.getItem('signup_data') || '{}');
-                        signupData.plan_id = mappedPlan.id;
-                        signupData.plan_name = mappedPlan.name;
+                        signupData.plan_id       = planId;   // DB UUID (null if offline)
+                        signupData.plan_name     = planName;
                         signupData.billing_cycle = currentBilling;
                         localStorage.setItem('signup_data', JSON.stringify(signupData));
 
                         btn.textContent = 'Selected!';
                         btn.style.backgroundColor = '#10b981'; // Success green
                         btn.style.color = 'white';
-                        
+
                         setTimeout(() => {
                             const params = new URLSearchParams(window.location.search);
                             // Both `renew` AND `upgrade` flows skip onboarding and go straight to payments
                             if (params.get('flow') === 'renew' || params.get('flow') === 'upgrade') {
-                                // Existing user flow - skip onboarding
-                                // Safely retrieve company_id stored during login
+                                // Existing user flow — skip onboarding
                                 const companyId = localStorage.getItem('company_id') || '';
-                                const flowVal = params.get('flow');
+                                const flowVal   = params.get('flow');
                                 window.location.href = `payments.html?company_id=${companyId}&flow=${flowVal}`;
                             } else {
-                                // New user flow - route to onboarding (to create salon and branch)
+                                // New user flow — route to onboarding (to create salon and branch)
                                 window.location.href = 'onboarding.html';
                             }
                         }, 800);
-                        
-                    }, 600);
+
+                    } catch (err) {
+                        console.error('[plans] Plan selection error:', err);
+                        // Restore button on unexpected error
+                        btn.innerHTML = originalHtml;
+                        btn.style.opacity = '';
+                    }
                 });
             });
 }
