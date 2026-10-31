@@ -42,6 +42,8 @@ export function renderCurrentPlan(handleRenewSubscription) {
             <span class="plan-price-frequency" style="color: var(--text-muted);">No subscription</span>
         `;
 
+        if (dom.planTrialBanner) dom.planTrialBanner.style.display = 'none';
+
         dom.planSubNotice.style.display = 'block';
         dom.planSubNotice.textContent = 'Choose a plan to start managing your salon digital operations.';
 
@@ -76,21 +78,48 @@ export function renderCurrentPlan(handleRenewSubscription) {
         `;
     }
 
+    const isTrial = state.plan.isTrial === true;
+    const trialEndDate = state.plan.trialEndAt ? formatDateDisplay(state.plan.trialEndAt) : state.plan.validUntil;
+
     if (state.currentMode === 'cancelled' || state.plan.status?.toLowerCase() === 'cancelled') {
         if (dom.currentPlanCard) dom.currentPlanCard.className = 'billing-plan-card billing-plan-card--cancelled';
         dom.planStatusPill.className = 'status-pill is-cancelling';
-        dom.planStatusText.textContent = state.plan.validUntil && state.plan.validUntil !== '—'
-            ? `Cancels on ${state.plan.validUntil}`
-            : 'Cancels at end of cycle';
 
-        dom.planSubNotice.style.display = 'block';
-        dom.planSubNotice.textContent = state.plan.validUntil && state.plan.validUntil !== '—'
-            ? `Your subscription remains active until ${state.plan.validUntil}.`
-            : 'Your subscription is scheduled for cancellation.';
+        if (isTrial) {
+            dom.planStatusText.textContent = trialEndDate && trialEndDate !== '—'
+                ? `Trial ends ${trialEndDate}`
+                : 'Trial Cancelling';
 
-        dom.metaStatus.textContent = 'Cancels at end of cycle';
+            dom.planSubNotice.style.display = 'block';
+            dom.planSubNotice.textContent = trialEndDate && trialEndDate !== '—'
+                ? `Your trial remains active until ${trialEndDate}. You will not be charged.`
+                : 'Your trial is scheduled for cancellation.';
+
+            dom.metaStatus.textContent = 'Trial (Cancelling)';
+
+            if (dom.planTrialBanner) {
+                dom.planTrialBanner.style.display = 'flex';
+                if (dom.planTrialBannerText) {
+                    dom.planTrialBannerText.textContent = `Your free trial ends on ${trialEndDate || '—'}. Your subscription is scheduled for cancellation and will not be charged.`;
+                }
+            }
+        } else {
+            dom.planStatusText.textContent = state.plan.validUntil && state.plan.validUntil !== '—'
+                ? `Cancels on ${state.plan.validUntil}`
+                : 'Cancels at end of cycle';
+
+            dom.planSubNotice.style.display = 'block';
+            dom.planSubNotice.textContent = state.plan.validUntil && state.plan.validUntil !== '—'
+                ? `Your subscription remains active until ${state.plan.validUntil}.`
+                : 'Your subscription is scheduled for cancellation.';
+
+            dom.metaStatus.textContent = 'Cancels at end of cycle';
+
+            if (dom.planTrialBanner) dom.planTrialBanner.style.display = 'none';
+        }
+
         dom.metaStartDate.textContent = state.plan.startDate || '—';
-        dom.metaValidUntil.textContent = state.plan.validUntil || '—';
+        dom.metaValidUntil.textContent = (isTrial && trialEndDate) ? trialEndDate : (state.plan.validUntil || '—');
         dom.metaNextBilling.textContent = 'None';
 
         dom.planActionsContainer.innerHTML = `
@@ -105,22 +134,43 @@ export function renderCurrentPlan(handleRenewSubscription) {
             btnReactivate.onclick = handleRenewSubscription;
         }
     } else {
-        // State: Active
+        // State: Active / Trial
         if (dom.currentPlanCard) dom.currentPlanCard.className = 'billing-plan-card billing-plan-card--active';
-        dom.planStatusPill.className = 'status-pill is-active';
-        dom.planStatusText.textContent = state.plan.status || 'Active';
 
-        dom.planSubNotice.style.display = 'block';
-        dom.planSubNotice.textContent = state.plan.autoRenew === false
-            ? 'Your current plan and subscription details (Auto-renew disabled)'
-            : 'Your current plan and subscription details';
+        if (isTrial) {
+            dom.planStatusPill.className = 'status-pill is-trial';
+            dom.planStatusText.textContent = 'Free Trial';
 
-        dom.metaStatus.textContent = state.plan.status || '—';
+            dom.planSubNotice.style.display = 'block';
+            dom.planSubNotice.textContent = 'You are currently on a 7-day free trial.';
+
+            dom.metaStatus.textContent = 'Free Trial';
+
+            if (dom.planTrialBanner) {
+                dom.planTrialBanner.style.display = 'flex';
+                if (dom.planTrialBannerText) {
+                    dom.planTrialBannerText.textContent = `Your free trial ends on ${trialEndDate || '—'}. First charge on ${trialEndDate || '—'}.`;
+                }
+            }
+        } else {
+            dom.planStatusPill.className = 'status-pill is-active';
+            dom.planStatusText.textContent = state.plan.status || 'Active';
+
+            dom.planSubNotice.style.display = 'block';
+            dom.planSubNotice.textContent = state.plan.autoRenew === false
+                ? 'Your current plan and subscription details (Auto-renew disabled)'
+                : 'Your current plan and subscription details';
+
+            dom.metaStatus.textContent = state.plan.status || '—';
+
+            if (dom.planTrialBanner) dom.planTrialBanner.style.display = 'none';
+        }
+
         dom.metaStartDate.textContent = state.plan.startDate || '—';
-        dom.metaValidUntil.textContent = state.plan.validUntil || '—';
+        dom.metaValidUntil.textContent = (isTrial && trialEndDate) ? trialEndDate : (state.plan.validUntil || '—');
         dom.metaNextBilling.textContent = state.plan.autoRenew === false
             ? (state.plan.nextBillingDate && state.plan.nextBillingDate !== 'None' ? `${state.plan.nextBillingDate} (No renewal)` : 'None')
-            : (state.plan.nextBillingDate || '—');
+            : (isTrial && trialEndDate ? trialEndDate : (state.plan.nextBillingDate || '—'));
 
         const currentPlanParam = encodeURIComponent((state.plan.name || '').toLowerCase().replace(/\s+plan$/, ''));
         const changePlanHref = currentPlanParam ? `plans.html?current=${currentPlanParam}` : 'plans.html';
@@ -682,17 +732,26 @@ export function renderSubscriptionManagement(openCancelSubscriptionModal, handle
     const subManageDesc = document.getElementById('subManageDesc');
     const subManageActions = document.getElementById('subManageActions');
 
-    const isScheduledCancellation = state.plan.autoRenew === false ||
+    const isScheduledCancellation = state.plan.cancelAtCycleEnd === true ||
+                                    state.plan.autoRenew === false ||
                                     state.currentMode === 'cancelled' ||
                                     (state.plan.status && state.plan.status.toLowerCase() === 'cancelled');
 
+    const isTrial = state.plan.isTrial === true;
     const planDisplayName = state.plan.name || 'Plan';
-    const validUntil = state.plan.validUntil && state.plan.validUntil !== '—' ? state.plan.validUntil : 'the end of your billing cycle';
+    const trialEndDate = state.plan.trialEndAt ? formatDateDisplay(state.plan.trialEndAt) : state.plan.validUntil;
+    const validUntil = (isTrial && trialEndDate && trialEndDate !== '—')
+        ? trialEndDate
+        : (state.plan.validUntil && state.plan.validUntil !== '—' ? state.plan.validUntil : 'the end of your billing cycle');
 
     if (isScheduledCancellation) {
         if (subManageTitle) subManageTitle.textContent = 'Subscription Management';
         if (subManageDesc) {
-            subManageDesc.innerHTML = `Your subscription is scheduled for cancellation. Your <strong>${planDisplayName}</strong> remains active until <strong>${validUntil}</strong> and will not renew after that date.`;
+            if (isTrial) {
+                subManageDesc.innerHTML = `Your free trial is scheduled for cancellation. Your <strong>${planDisplayName}</strong> trial remains active until <strong>${validUntil}</strong> and you will not be charged.`;
+            } else {
+                subManageDesc.innerHTML = `Your subscription is scheduled for cancellation. Your <strong>${planDisplayName}</strong> remains active until <strong>${validUntil}</strong> and will not renew after that date.`;
+            }
         }
         if (subManageActions) {
             subManageActions.innerHTML = `
@@ -710,12 +769,14 @@ export function renderSubscriptionManagement(openCancelSubscriptionModal, handle
     } else {
         if (subManageTitle) subManageTitle.textContent = 'Subscription Management';
         if (subManageDesc) {
-            subManageDesc.textContent = 'Manage your subscription or cancel your plan.';
+            subManageDesc.textContent = isTrial
+                ? 'Manage your subscription or cancel anytime before your trial ends.'
+                : 'Manage your subscription or cancel your plan.';
         }
         if (subManageActions) {
             subManageActions.innerHTML = `
                 <button type="button" class="btn-cancel-plain" id="btnTriggerCancelModal">
-                    Cancel Subscription
+                    ${isTrial ? 'Cancel Free Trial' : 'Cancel Subscription'}
                 </button>
             `;
             const btnCancel = document.getElementById('btnTriggerCancelModal');

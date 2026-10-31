@@ -5,7 +5,7 @@
 'use strict';
 
 import { state } from './billing-state.js';
-import { showToast, getCompanyId } from './billing-helpers.js';
+import { showToast, getCompanyId, formatDateDisplay } from './billing-helpers.js';
 import { openModal, closeModal } from './billing-renders.js';
 import { loadActiveSubscriptionOnce } from './billing-api.js';
 
@@ -62,7 +62,8 @@ export function resetCancelModalForm() {
 // ── Modal Open/Close ───────────────────────────────────────────
 
 export function openCancelSubscriptionModal() {
-    const isScheduledCancellation = state.plan.autoRenew === false ||
+    const isScheduledCancellation = state.plan.cancelAtCycleEnd === true ||
+                                    state.plan.autoRenew === false ||
                                     state.currentMode === 'cancelled' ||
                                     (state.plan.status && state.plan.status.toLowerCase() === 'cancelled');
     if (isScheduledCancellation) {
@@ -70,17 +71,27 @@ export function openCancelSubscriptionModal() {
         return;
     }
 
+    const isTrial = state.plan.isTrial === true;
     const rawPlanName = state.plan.name || 'Current';
     const planDisplay = rawPlanName.toLowerCase().includes('plan') ? rawPlanName : `${rawPlanName} Plan`;
-    const validUntil = state.plan.validUntil && state.plan.validUntil !== '—' ? state.plan.validUntil : '';
+    const trialEndDate = state.plan.trialEndAt ? formatDateDisplay(state.plan.trialEndAt) : state.plan.validUntil;
+    const validUntil = (isTrial && trialEndDate && trialEndDate !== '—')
+        ? trialEndDate
+        : (state.plan.validUntil && state.plan.validUntil !== '—' ? state.plan.validUntil : '');
 
     if (dom.cancelModalSubtitle) {
-        dom.cancelModalSubtitle.textContent = validUntil
-            ? `Your ${planDisplay} will remain active until ${validUntil}. Your subscription will not renew after this date.`
-            : `Your ${planDisplay} will remain active until the end of your billing cycle. Your subscription will not renew after this date.`;
+        if (isTrial) {
+            dom.cancelModalSubtitle.textContent = validUntil
+                ? `Your ${planDisplay} trial will remain active until ${validUntil}. You will not be charged when the trial ends.`
+                : `Your ${planDisplay} trial will be cancelled and you will not be charged.`;
+        } else {
+            dom.cancelModalSubtitle.textContent = validUntil
+                ? `Your ${planDisplay} will remain active until ${validUntil}. Your subscription will not renew after this date.`
+                : `Your ${planDisplay} will remain active until the end of your billing cycle. Your subscription will not renew after this date.`;
+        }
     }
     if (dom.cancelInfoActiveDate) {
-        dom.cancelInfoActiveDate.textContent = validUntil || 'the end of your billing cycle';
+        dom.cancelInfoActiveDate.textContent = validUntil || (isTrial ? 'the end of your trial' : 'the end of your billing cycle');
     }
     resetCancelModalForm();
     openModal(dom.modalCancelSub);

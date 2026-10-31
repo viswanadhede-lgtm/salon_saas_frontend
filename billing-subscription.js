@@ -73,6 +73,8 @@
             planPriceBlock: document.getElementById('planPriceBlock'),
             planPriceAmount: document.getElementById('planPriceAmount'),
             planPricePeriod: document.getElementById('planPricePeriod'),
+            planTrialBanner: document.getElementById('planTrialBanner'),
+            planTrialBannerText: document.getElementById('planTrialBannerText'),
             planSubNotice: document.getElementById('planSubNotice'),
             planMetaGrid: document.getElementById('planMetaGrid'),
             metaStatus: document.getElementById('metaStatus'),

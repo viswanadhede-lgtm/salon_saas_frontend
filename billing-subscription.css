@@ -290,6 +290,47 @@
     background: #fbbf24;
 }
 
+.status-pill.is-trial {
+    background: rgba(99, 102, 241, 0.22);
+    color: #c7d2fe;
+    border: 1px solid rgba(129, 140, 248, 0.45);
+}
+
+.status-pill.is-trial .status-indicator-dot {
+    background: #818cf8;
+    box-shadow: 0 0 8px #818cf8;
+    animation: pulse-indigo 2s infinite ease;
+}
+
+@keyframes pulse-indigo {
+    0%, 100% { transform: scale(1); opacity: 1; }
+    50% { transform: scale(1.35); opacity: 0.7; }
+}
+
+.plan-trial-banner {
+    display: none;
+    align-items: center;
+    gap: 8px;
+    margin-top: 0.85rem;
+    padding: 8px 12px;
+    background: rgba(255, 255, 255, 0.12);
+    border: 1px solid rgba(255, 255, 255, 0.22);
+    border-radius: 8px;
+    font-size: 0.85rem;
+    font-weight: 600;
+    color: #ffffff;
+    backdrop-filter: blur(6px);
+    position: relative;
+    z-index: 1;
+}
+
+.plan-trial-banner i {
+    width: 15px;
+    height: 15px;
+    stroke: #38bdf8;
+    flex-shrink: 0;
+}
+
 .status-pill.is-unsubscribed {
     background: rgba(148, 163, 184, 0.2);
     color: #cbd5e1;
