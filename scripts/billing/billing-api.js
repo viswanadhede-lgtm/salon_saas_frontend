@@ -548,11 +548,16 @@ export async function loadActiveSubscriptionViaRpc(supabase, companyId) {
             const isAutoRenew = sub.auto_renew !== false;
             const isCancelAtCycleEnd = sub.cancel_at_cycle_end === true;
             const isExpired = rawStatus === 'expired';
-            const isScheduledCancellation = isCancelAtCycleEnd ||
-                ((rawStatus === 'active' || rawStatus === 'trial' || rawStatus === 'past_due' || rawStatus === 'cancelled') && !isAutoRenew);
+            const isTrialSub = sub.is_trial === true || rawStatus === 'trial';
+            const isTrialCancelled = isTrialSub && rawStatus === 'cancelled';
+            const isScheduledCancellation = !isTrialCancelled && (isCancelAtCycleEnd ||
+                ((rawStatus === 'active' || rawStatus === 'trial' || rawStatus === 'past_due' || rawStatus === 'cancelled') && !isAutoRenew));
 
             if (isExpired) {
                 state.currentMode = 'noplan';
+            } else if (isTrialCancelled) {
+                // Trial cancelled immediately — access ends now, not at trial_end_at
+                state.currentMode = 'trialCancelled';
             } else if (isScheduledCancellation || rawStatus === 'cancelled') {
                 state.currentMode = 'cancelled';
             } else {
@@ -574,20 +579,26 @@ export async function loadActiveSubscriptionViaRpc(supabase, companyId) {
             const periodStart = sub.current_period_start_at || sub.subscription_start_date || null;
             const periodEnd   = sub.current_period_end_at   || sub.subscription_end_date   || null;
 
+            // For a cancelled trial, effective end is cancelled_at (not trial_end_at)
+            const effectivePeriodEnd = isTrialCancelled
+                ? (sub.cancelled_at || periodEnd)
+                : periodEnd;
+
             state.plan = {
                 name: formattedPlanName,
                 cycle: cycleKey,
                 price: billingAmountRupees,
                 startDate: formatDateDisplay(periodStart),
-                validUntil: formatDateDisplay(periodEnd),
+                validUntil: formatDateDisplay(effectivePeriodEnd),
                 nextBillingDate: (!isAutoRenew || isScheduledCancellation || rawStatus === 'cancelled')
                     ? 'None'
                     : (sub.next_billing_at ? formatDateDisplay(sub.next_billing_at) : 'None'),
                 status: isScheduledCancellation ? 'Active' : (rawStatus.charAt(0).toUpperCase() + rawStatus.slice(1)),
                 autoRenew: isAutoRenew,
                 // New trial / cancellation fields
-                isTrial: sub.is_trial === true,
+                isTrial: isTrialSub,
                 trialEndAt: sub.trial_end_at || null,
+                cancelledAt: sub.cancelled_at || null,
                 cancelAtCycleEnd: isCancelAtCycleEnd,
                 cancellationRequested: isCancelAtCycleEnd || Boolean(sub.cancellation_requested_at),
                 cancellationRequestedAt: sub.cancellation_requested_at || null
@@ -931,11 +942,16 @@ export async function loadActiveSubscription() {
         const isAutoRenew = sub.auto_renew !== false;
         const isCancelAtCycleEnd = sub.cancel_at_cycle_end === true;
         const isExpired = rawStatus === 'expired';
-        const isScheduledCancellation = isCancelAtCycleEnd ||
-            ((rawStatus === 'active' || rawStatus === 'trial' || rawStatus === 'past_due' || rawStatus === 'cancelled') && !isAutoRenew);
+        const isTrialSub = sub.is_trial === true || rawStatus === 'trial';
+        const isTrialCancelled = isTrialSub && rawStatus === 'cancelled';
+        const isScheduledCancellation = !isTrialCancelled && (isCancelAtCycleEnd ||
+            ((rawStatus === 'active' || rawStatus === 'trial' || rawStatus === 'past_due' || rawStatus === 'cancelled') && !isAutoRenew));
 
         if (isExpired) {
             state.currentMode = 'noplan';
+        } else if (isTrialCancelled) {
+            // Trial cancelled immediately — access ends now, not at trial_end_at
+            state.currentMode = 'trialCancelled';
         } else if (isScheduledCancellation || rawStatus === 'cancelled') {
             state.currentMode = 'cancelled';
         } else {
@@ -959,20 +975,26 @@ export async function loadActiveSubscription() {
         const periodStart = sub.current_period_start_at || sub.subscription_start_date || null;
         const periodEnd   = sub.current_period_end_at   || sub.subscription_end_date   || null;
 
+        // For a cancelled trial, effective end is cancelled_at (not trial_end_at)
+        const effectivePeriodEnd = isTrialCancelled
+            ? (sub.cancelled_at || periodEnd)
+            : periodEnd;
+
         state.plan = {
             name: formattedPlanName,
             cycle: cycleKey,
             price: billingAmountRupees,
             startDate: formatDateDisplay(periodStart),
-            validUntil: formatDateDisplay(periodEnd),
+            validUntil: formatDateDisplay(effectivePeriodEnd),
             nextBillingDate: (!isAutoRenew || isScheduledCancellation || rawStatus === 'cancelled')
                 ? 'None'
                 : (sub.next_billing_at ? formatDateDisplay(sub.next_billing_at) : 'None'),
             status: isScheduledCancellation ? 'Active' : (rawStatus.charAt(0).toUpperCase() + rawStatus.slice(1)),
             autoRenew: isAutoRenew,
             // New trial / cancellation fields
-            isTrial: sub.is_trial === true,
+            isTrial: isTrialSub,
             trialEndAt: sub.trial_end_at || null,
+            cancelledAt: sub.cancelled_at || null,
             cancelAtCycleEnd: isCancelAtCycleEnd,
             cancellationRequested: isCancelAtCycleEnd || Boolean(sub.cancellation_requested_at),
             cancellationRequestedAt: sub.cancellation_requested_at || null

@@ -65,6 +65,7 @@ export function openCancelSubscriptionModal() {
     const isScheduledCancellation = state.plan.cancelAtCycleEnd === true ||
                                     state.plan.autoRenew === false ||
                                     state.currentMode === 'cancelled' ||
+                                    state.currentMode === 'trialCancelled' ||
                                     (state.plan.status && state.plan.status.toLowerCase() === 'cancelled');
     if (isScheduledCancellation) {
         showToast('Subscription is already scheduled for cancellation.');
@@ -75,24 +76,65 @@ export function openCancelSubscriptionModal() {
     const rawPlanName = state.plan.name || 'Current';
     const planDisplay = rawPlanName.toLowerCase().includes('plan') ? rawPlanName : `${rawPlanName} Plan`;
     const trialEndDate = state.plan.trialEndAt ? formatDateDisplay(state.plan.trialEndAt) : state.plan.validUntil;
-    const validUntil = (isTrial && trialEndDate && trialEndDate !== '—')
-        ? trialEndDate
-        : (state.plan.validUntil && state.plan.validUntil !== '—' ? state.plan.validUntil : '');
+    const validUntil = (!isTrial && state.plan.validUntil && state.plan.validUntil !== '—')
+        ? state.plan.validUntil
+        : '';
 
+    // ── Update modal title ────────────────────────────────────────────────────
+    const modalTitleEl = document.getElementById('cancelModalTitle');
+    if (modalTitleEl) {
+        modalTitleEl.textContent = isTrial ? 'Cancel Free Trial?' : 'Cancel Subscription?';
+    }
+
+    // ── Update modal subtitle ─────────────────────────────────────────────────
     if (dom.cancelModalSubtitle) {
         if (isTrial) {
-            dom.cancelModalSubtitle.textContent = validUntil
-                ? `Your ${planDisplay} trial will remain active until ${validUntil}. You will not be charged when the trial ends.`
-                : `Your ${planDisplay} trial will be cancelled and you will not be charged.`;
+            dom.cancelModalSubtitle.textContent =
+                'Are you sure you want to cancel your free trial? Your trial access will end immediately. Your payment mandate will be revoked and you will not be charged.';
         } else {
             dom.cancelModalSubtitle.textContent = validUntil
                 ? `Your ${planDisplay} will remain active until ${validUntil}. Your subscription will not renew after this date.`
                 : `Your ${planDisplay} will remain active until the end of your billing cycle. Your subscription will not renew after this date.`;
         }
     }
-    if (dom.cancelInfoActiveDate) {
-        dom.cancelInfoActiveDate.textContent = validUntil || (isTrial ? 'the end of your trial' : 'the end of your billing cycle');
+
+    // ── Update "What happens after cancellation?" info list ───────────────────
+    const cancelInfoList = document.getElementById('cancelInfoList');
+    if (cancelInfoList) {
+        if (isTrial) {
+            cancelInfoList.innerHTML = `
+                <li>Your trial access ends <strong>immediately</strong> upon confirmation.</li>
+                <li>Your payment mandate (auto-debit authorisation) will be revoked.</li>
+                <li>You will not be charged — no subscription payments will be made.</li>
+                <li>You can subscribe to a paid plan at any time to restore full access.</li>
+            `;
+        } else {
+            const activeDateHtml = validUntil
+                ? `<strong id="cancelInfoActiveDate">${validUntil}</strong>`
+                : `<strong id="cancelInfoActiveDate">the end of your billing cycle</strong>`;
+            cancelInfoList.innerHTML = `
+                <li>Your subscription remains active until ${activeDateHtml}.</li>
+                <li>It will not renew after that date.</li>
+                <li>No further subscription payment will be charged after cancellation.</li>
+                <li>Your active add-ons will also end when your subscription ends.</li>
+            `;
+        }
+    } else if (dom.cancelInfoActiveDate && !isTrial) {
+        dom.cancelInfoActiveDate.textContent = validUntil || 'the end of your billing cycle';
     }
+
+    // ── Update confirm button label ───────────────────────────────────────────
+    if (dom.btnConfirmCancelSubscription) {
+        dom.btnConfirmCancelSubscription.textContent = isTrial ? 'Cancel Free Trial' : 'Confirm Cancellation';
+        dom.btnConfirmCancelSubscription.disabled = true; // Reset; user must still select a reason
+    }
+
+    // ── Update keep/dismiss button label ─────────────────────────────────────
+    const keepBtn = document.querySelector('#modalCancelSub .btn-plain-primary[data-close-modal]');
+    if (keepBtn) {
+        keepBtn.textContent = isTrial ? 'Keep Free Trial' : 'Keep Subscription';
+    }
+
     resetCancelModalForm();
     openModal(dom.modalCancelSub);
 }
@@ -179,9 +221,10 @@ export function bindCancelModalEvents() {
                 return;
             }
 
+            const isTrial = state.plan.isTrial === true;
             const originalBtnText = dom.btnConfirmCancelSubscription.textContent;
             dom.btnConfirmCancelSubscription.disabled = true;
-            dom.btnConfirmCancelSubscription.textContent = 'Cancelling...';
+            dom.btnConfirmCancelSubscription.textContent = isTrial ? 'Cancelling trial...' : 'Cancelling...';
 
             try {
                 const SUPABASE_URL = 'https://qxmgyxjwpxkdbgldpdil.supabase.co';
@@ -200,7 +243,9 @@ export function bindCancelModalEvents() {
                         subscription_id: state.localSubscriptionId || state.razorpaySubscriptionId || state.subscriptionId || null,
                         reason: reasonKey,
                         feedback: reasonKey === 'other' ? customText : '',
-                        cancel_at_cycle_end: true
+                        // Trials are cancelled immediately (cancel_at_cycle_end: false).
+                        // Paid subscriptions are cancelled at the end of the billing cycle (cancel_at_cycle_end: true).
+                        cancel_at_cycle_end: isTrial ? false : true
                     })
                 });
 
@@ -213,9 +258,16 @@ export function bindCancelModalEvents() {
                 closeModal(dom.modalCancelSub);
                 resetCancelModalForm();
 
-                showToast('Your subscription has been scheduled for cancellation.', 'success');
+                // Show context-appropriate success message
+                if (isTrial) {
+                    showToast('Your free trial has been cancelled. Access has ended.', 'success');
+                } else {
+                    showToast('Your subscription has been scheduled for cancellation.', 'success');
+                }
 
-                // Reload active subscription data from DB so plan card & state update immediately
+                // Reload active subscription data from DB so plan card & state update immediately.
+                // The Realtime listener will also trigger this, but calling it directly ensures
+                // immediate feedback without waiting for the Realtime event.
                 await loadActiveSubscriptionOnce();
 
             } catch (err) {

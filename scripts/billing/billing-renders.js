@@ -59,7 +59,53 @@ export function renderCurrentPlan(handleRenewSubscription) {
         return;
     }
 
-    // Active or Cancelled
+    // ── Trial Cancelled: immediate access revocation ───────────────────────────
+    if (state.currentMode === 'trialCancelled') {
+        if (dom.currentPlanCard) dom.currentPlanCard.className = 'billing-plan-card billing-plan-card--cancelled';
+
+        const planDisplayName = state.plan.name || '—';
+        dom.planNameBadge.textContent = planDisplayName === '—' ? '—' : (planDisplayName.toLowerCase().includes('plan') ? planDisplayName : `${planDisplayName} Plan`);
+        if (dom.headerPlanBadge) dom.headerPlanBadge.textContent = planDisplayName;
+
+        if (!state.plan.name && !state.plan.price) {
+            dom.planPriceBlock.innerHTML = `<span class="plan-price-amount">—</span><span class="plan-price-frequency"></span>`;
+        } else {
+            const cycleLabel = (state.plan.cycle === 'annual' || state.plan.cycle === 'annually' || state.plan.cycle === 'yearly') ? '/ year' : '/ month';
+            dom.planPriceBlock.innerHTML = `
+                <span class="plan-price-amount">${fmtCurrency(state.plan.price)}</span>
+                <span class="plan-price-frequency">${cycleLabel}</span>
+            `;
+        }
+
+        dom.planStatusPill.className = 'status-pill is-unsubscribed';
+        dom.planStatusText.textContent = 'Trial Ended';
+
+        dom.planSubNotice.style.display = 'block';
+        dom.planSubNotice.textContent = 'Your free trial has been cancelled. Subscribe to a plan to restore full access.';
+
+        if (dom.planTrialBanner) dom.planTrialBanner.style.display = 'none';
+
+        dom.planMetaGrid.style.display = 'grid';
+        dom.metaStatus.textContent = 'Trial Cancelled';
+        dom.metaStartDate.textContent = state.plan.startDate || '—';
+        dom.metaValidUntil.textContent = state.plan.cancelledAt ? formatDateDisplay(state.plan.cancelledAt) : (state.plan.validUntil || '—');
+        dom.metaNextBilling.textContent = 'None';
+
+        dom.planActionsContainer.innerHTML = `
+            <button type="button" class="btn-plain btn-plain-primary" onclick="window.location.href='plans.html'">
+                <i data-feather="check-circle"></i>
+                <span>Choose Plan</span>
+            </button>
+        `;
+
+        const metaAutoRenew = document.getElementById('metaAutoRenew');
+        if (metaAutoRenew) metaAutoRenew.textContent = 'Auto-renew disabled';
+
+        if (window.feather) feather.replace();
+        return;
+    }
+
+    // Active or Cancelled (paid subscription)
     dom.planMetaGrid.style.display = 'grid';
     const planDisplayName = state.plan.name || '—';
     dom.planNameBadge.textContent = planDisplayName === '—' ? '—' : (planDisplayName.toLowerCase().includes('plan') ? planDisplayName : `${planDisplayName} Plan`);
@@ -714,6 +760,24 @@ export function renderSubscriptionManagement(openCancelSubscriptionModal, handle
     const subManageTitle = document.getElementById('subManageTitle');
     const subManageDesc = document.getElementById('subManageDesc');
     const subManageActions = document.getElementById('subManageActions');
+
+    // ── Trial cancelled: immediate cancellation, access ended ─────────────────
+    if (state.currentMode === 'trialCancelled') {
+        if (subManageTitle) subManageTitle.textContent = 'Subscription Management';
+        if (subManageDesc) {
+            subManageDesc.textContent = 'Your free trial has been cancelled. Subscribe to a plan to restore full access to all features.';
+        }
+        if (subManageActions) {
+            subManageActions.innerHTML = `
+                <button type="button" class="btn-plain btn-plain-primary" onclick="window.location.href='plans.html'">
+                    <i data-feather="check-circle"></i>
+                    <span>Choose a Plan</span>
+                </button>
+            `;
+        }
+        if (window.feather) feather.replace();
+        return;
+    }
 
     const isScheduledCancellation = state.plan.cancelAtCycleEnd === true ||
                                     state.plan.autoRenew === false ||

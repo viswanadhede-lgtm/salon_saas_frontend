@@ -11,13 +11,13 @@ export let CATALOG_ADDONS = [];
 // ── URL-based dev mode resolution ─────────────────────────────
 const _urlParams = new URLSearchParams(window.location.search);
 const _paramState = _urlParams.get('state');
-export const validModes = ['active', 'noplan', 'cancelled'];
+export const validModes = ['active', 'noplan', 'cancelled', 'trialCancelled'];
 const _initialMode = validModes.includes(_paramState) ? _paramState : 'active';
 
 // ── Application State ──────────────────────────────────────────
 // Single shared mutable object — every module must import this same reference.
 export const state = {
-    currentMode: _initialMode,  // 'active' | 'noplan' | 'cancelled'
+    currentMode: _initialMode,  // 'active' | 'noplan' | 'cancelled' | 'trialCancelled'
 
     // ── Subscription identifiers ───────────────────────────────
     // Keep these TWO distinct fields — they are different things:
@@ -54,6 +54,7 @@ export const state = {
         // ── New fields from updated subscriptions schema ──────
         isTrial: false,                  // subscriptions.is_trial
         trialEndAt: null,                // subscriptions.trial_end_at (ISO string)
+        cancelledAt: null,               // subscriptions.cancelled_at (ISO string) — set on immediate cancellation
         cancelAtCycleEnd: false,         // subscriptions.cancel_at_cycle_end
         cancellationRequested: false,    // boolean indicating cancellation requested
         cancellationRequestedAt: null    // subscriptions.cancellation_requested_at

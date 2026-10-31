@@ -450,7 +450,7 @@ export function evaluateSubscription(sub) {
             isExpired = true;
             reason = 'period_ended';
         }
-    } else if (rawStatus === 'trial' || isTrial) {
+    } else if (rawStatus === 'trial' || (isTrial && rawStatus !== 'cancelled')) {
         if (!endDate || isTimeValid) {
             accessLevel = 'full';
             isExpired = false;
@@ -460,6 +460,13 @@ export function evaluateSubscription(sub) {
             isExpired = true;
             reason = 'trial_ended';
         }
+    } else if (isTrial && rawStatus === 'cancelled') {
+        // Trial was cancelled immediately — access ends NOW, regardless of trial_end_at.
+        // The Edge Function performs immediate cancellation for trials (cancel_at_cycle_end: false),
+        // setting cancelled_at = NOW(). Do not use trial_end_at as a grace period here.
+        accessLevel = 'read-only';
+        isExpired = true;
+        reason = 'trial_cancelled_immediately';
     } else if (rawStatus === 'authenticated') {
         // Mandate setup and authorized — active access during onboarding/setup
         accessLevel = 'full';
@@ -477,7 +484,8 @@ export function evaluateSubscription(sub) {
             reason = 'pending_payment';
         }
     } else if (rawStatus === 'cancelled') {
-        // Scheduled cancellation at cycle end: retain access until period end date
+        // Paid subscription scheduled for cancellation at cycle end: retain access until period end date.
+        // Note: Trial + cancelled is handled above by the isTrial branch (immediate access revocation).
         if (isTimeValid) {
             accessLevel = 'full';
             isExpired = false;
@@ -521,6 +529,7 @@ export function evaluateSubscription(sub) {
         startDate: startDate,
         endDate: effectiveEndDateStr,
         trialEndAt: sub.trial_end_at || null,
+        cancelledAt: sub.cancelled_at || null,
         nextBillingAt: sub.next_billing_at || null,
         daysRemaining,
         isExpiringSoon,
