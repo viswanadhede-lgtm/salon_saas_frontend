@@ -185,7 +185,8 @@ export function bindCancelModalEvents() {
                     },
                     body: JSON.stringify({
                         company_id: companyId,
-                        subscription_id: state.subscriptionId || null,
+                        // cancel-subscription v2 prefers the local subscriptions.id UUID
+                        subscription_id: state.localSubscriptionId || state.razorpaySubscriptionId || state.subscriptionId || null,
                         reason: reasonKey,
                         feedback: customText,
                         cancel_at_cycle_end: true

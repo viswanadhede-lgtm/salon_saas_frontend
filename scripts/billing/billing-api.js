@@ -317,7 +317,7 @@ export async function loadPaymentHistory(supabase, companyId) {
     try {
         const { data, error } = await supabase
             .from('payments')
-            .select('id, payment_id, invoice_id, order_id, subscription_id, amount, status, payment_method, created_at, plan_id')
+            .select('id, razorpay_payment_id, razorpay_invoice_id, razorpay_subscription_id, amount_minor, status, payment_method, payment_type, captured_at, authorized_at, failed_at, failure_description, created_at, plan_id')
             .eq('company_id', companyId)
             .order('created_at', { ascending: false });
 
@@ -331,12 +331,13 @@ export async function loadPaymentHistory(supabase, companyId) {
         state.paymentHistory = (data || []).map(row => {
             const planTitle = (state.plan && state.plan.name) ? `${state.plan.name} Plan` : 'Subscription';
             const formattedDate = formatDateDisplay(row.created_at);
-            const amt = Number(row.amount) || 0;
+            // amount_minor is in paise → convert to rupees
+            const amt = (Number(row.amount_minor) || 0) / 100;
             const rawMethod = (row.payment_method || 'Razorpay').trim();
             const displayMethod = rawMethod.charAt(0).toUpperCase() + rawMethod.slice(1);
             const rawStatus = (row.status || 'paid').trim();
             const displayStatus = rawStatus.charAt(0).toUpperCase() + rawStatus.slice(1);
-            const displayId = row.invoice_id || row.payment_id || row.order_id || `PAY-${row.id}`;
+            const displayId = row.razorpay_invoice_id || row.razorpay_payment_id || `PAY-${row.id}`;
 
             return {
                 id: displayId,
@@ -345,7 +346,7 @@ export async function loadPaymentHistory(supabase, companyId) {
                 description: planTitle,
                 amount: amt,
                 method: displayMethod,
-                paymentRef: row.payment_id || row.order_id || '—',
+                paymentRef: row.razorpay_payment_id || '—',
                 status: displayStatus,
                 addons: [],
                 items: [
@@ -363,7 +364,7 @@ export async function loadPaymentHistory(supabase, companyId) {
         if (data && data.length > 0) {
             const latest = data[0];
             const rawMethod = (latest.payment_method || '').toLowerCase().trim();
-            state.paymentMethod.paymentRef = latest.payment_id || latest.order_id || '';
+            state.paymentMethod.paymentRef = latest.razorpay_payment_id || '';
             state.paymentMethod.lastPaidDate = formatDateDisplay(latest.created_at);
             state.paymentMethod.methodName = latest.payment_method || 'Razorpay';
 
@@ -492,6 +493,8 @@ export async function loadActiveSubscriptionViaRpc(supabase, companyId) {
         const sub = rpcRes.subscription;
         if (!sub) {
             state.currentMode = 'noplan';
+            state.localSubscriptionId = null;
+            state.razorpaySubscriptionId = null;
             state.subscriptionId = null;
             state.planId = null;
             state.features = { included: [], excluded: [], loaded: true };
@@ -499,12 +502,23 @@ export async function loadActiveSubscriptionViaRpc(supabase, companyId) {
             state.activeAddonIds = [];
             state.addonsLoaded = true;
         } else {
-            state.subscriptionId = sub.subscription_id || null;
+            // ── Subscription identifiers ──────────────────────────────────
+            // subscriptions.id        → local UUID primary key (for cancel calls)
+            // subscriptions.razorpay_subscription_id → "sub_..." text (from Razorpay)
+            // The RPC may return either or both. Prefer the explicit columns.
+            state.localSubscriptionId    = sub.id || sub.local_id || null;
+            state.razorpaySubscriptionId = sub.razorpay_subscription_id || null;
+            // Legacy alias — some render modules still read state.subscriptionId.
+            // Keep it set to the razorpay ID so display labels remain correct.
+            state.subscriptionId         = state.razorpaySubscriptionId || state.localSubscriptionId;
             state.planId = sub.plan_id || null;
+
             const rawStatus = (sub.status || 'Active').trim().toLowerCase();
             const isAutoRenew = sub.auto_renew !== false;
+            const isCancelAtCycleEnd = sub.cancel_at_cycle_end === true;
             const isExpired = rawStatus === 'expired';
-            const isScheduledCancellation = (rawStatus === 'active' || rawStatus === 'trial' || rawStatus === 'past_due' || rawStatus === 'cancelled') && !isAutoRenew;
+            const isScheduledCancellation = isCancelAtCycleEnd ||
+                ((rawStatus === 'active' || rawStatus === 'trial' || rawStatus === 'past_due' || rawStatus === 'cancelled') && !isAutoRenew);
 
             if (isExpired) {
                 state.currentMode = 'noplan';
@@ -520,17 +534,31 @@ export async function loadActiveSubscriptionViaRpc(supabase, companyId) {
                 ? sub.plan_name.charAt(0).toUpperCase() + sub.plan_name.slice(1)
                 : '';
 
+            // ── Amount: billing_amount_minor is in paise → convert to rupees ──
+            const billingAmountRupees = sub.billing_amount_minor != null
+                ? Number(sub.billing_amount_minor) / 100
+                : (sub.billing_amount != null ? Number(sub.billing_amount) : 0);
+
+            // ── Date columns: new schema uses *_at suffix instead of *_date ──
+            const periodStart = sub.current_period_start_at || sub.subscription_start_date || null;
+            const periodEnd   = sub.current_period_end_at   || sub.subscription_end_date   || null;
+
             state.plan = {
                 name: formattedPlanName,
                 cycle: cycleKey,
-                price: sub.billing_amount != null ? Number(sub.billing_amount) : 0,
-                startDate: formatDateDisplay(sub.subscription_start_date),
-                validUntil: formatDateDisplay(sub.subscription_end_date),
+                price: billingAmountRupees,
+                startDate: formatDateDisplay(periodStart),
+                validUntil: formatDateDisplay(periodEnd),
                 nextBillingDate: (!isAutoRenew || isScheduledCancellation || rawStatus === 'cancelled')
                     ? 'None'
                     : (sub.next_billing_at ? formatDateDisplay(sub.next_billing_at) : 'None'),
                 status: isScheduledCancellation ? 'Active' : (rawStatus.charAt(0).toUpperCase() + rawStatus.slice(1)),
-                autoRenew: isAutoRenew
+                autoRenew: isAutoRenew,
+                // New trial / cancellation fields
+                isTrial: sub.is_trial === true,
+                trialEndAt: sub.trial_end_at || null,
+                cancelAtCycleEnd: isCancelAtCycleEnd,
+                cancellationRequestedAt: sub.cancellation_requested_at || null
             };
         }
 
@@ -645,20 +673,22 @@ export async function loadActiveSubscriptionViaRpc(supabase, companyId) {
         const planTitle = (state.plan && state.plan.name) ? `${state.plan.name} Plan` : 'Subscription';
         state.paymentHistory = (rpcRes.payment_history || []).map(row => {
             const formattedDate = formatDateDisplay(row.created_at);
-            const amt = Number(row.amount) || 0;
+            // Amount: amount_minor is in paise (÷100 for rupees), fallback to amount
+            const amt = row.amount_minor != null ? (Number(row.amount_minor) / 100) : (Number(row.amount) || 0);
             const rawMethod = (row.payment_method || 'Razorpay').trim();
             const displayMethod = rawMethod.charAt(0).toUpperCase() + rawMethod.slice(1);
             const rawStatus = (row.status || 'paid').trim();
             const displayStatus = rawStatus.charAt(0).toUpperCase() + rawStatus.slice(1);
+            const displayId = row.razorpay_invoice_id || row.razorpay_payment_id || row.invoice_id || row.payment_id || row.order_id || `PAY-${row.id}`;
 
             return {
-                id: row.id,
+                id: displayId,
                 date: formattedDate,
                 rawDate: row.created_at,
                 description: planTitle,
                 amount: amt,
                 method: displayMethod,
-                paymentRef: row.payment_id || row.order_id || '—',
+                paymentRef: row.razorpay_payment_id || row.payment_id || row.order_id || '—',
                 status: displayStatus,
                 addons: [],
                 items: [
@@ -674,9 +704,9 @@ export async function loadActiveSubscriptionViaRpc(supabase, companyId) {
 
         // 8. Process Payment Method (if available from payments)
         const pm = rpcRes.payment_method;
-        if (pm && (pm.payment_method || pm.payment_id)) {
+        if (pm && (pm.payment_method || pm.razorpay_payment_id || pm.payment_id)) {
             const rawMethod = (pm.payment_method || '').toLowerCase().trim();
-            state.paymentMethod.paymentRef = pm.payment_id || '';
+            state.paymentMethod.paymentRef = pm.razorpay_payment_id || pm.payment_id || '';
             state.paymentMethod.lastPaidDate = formatDateDisplay(pm.created_at);
             state.paymentMethod.methodName = pm.payment_method || 'Razorpay';
 
@@ -736,6 +766,8 @@ export async function loadActiveSubscription() {
     if (!companyId) {
         console.warn('[Billing] No active company detected. Showing empty plan state.');
         state.currentMode = 'noplan';
+        state.localSubscriptionId = null;
+        state.razorpaySubscriptionId = null;
         state.subscriptionId = null;
         state.planId = null;
         state.features = { included: [], excluded: [], loaded: true };
@@ -766,7 +798,7 @@ export async function loadActiveSubscription() {
         // 1. Fetch subscription for current company (prefer active/trial/past_due/cancelled status)
         let { data: subRows, error: subErr } = await supabase
             .from('subscriptions')
-            .select('subscription_id, company_id, plan_id, billing_cycle, billing_amount, status, subscription_start_date, subscription_end_date, next_billing_at, auto_renew, plan_name, created_at')
+            .select('id, razorpay_subscription_id, company_id, plan_id, billing_cycle, billing_amount_minor, status, is_trial, trial_start_at, trial_end_at, current_period_start_at, current_period_end_at, next_billing_at, auto_renew, cancel_at_cycle_end, cancellation_requested_at, plan_name, created_at')
             .eq('company_id', companyId)
             .in('status', ['active', 'trial', 'past_due', 'cancelled'])
             .order('created_at', { ascending: false })
@@ -780,7 +812,7 @@ export async function loadActiveSubscription() {
         if (!subRows || subRows.length === 0) {
             const { data: recentRows, error: recentErr } = await supabase
                 .from('subscriptions')
-                .select('subscription_id, company_id, plan_id, billing_cycle, billing_amount, status, subscription_start_date, subscription_end_date, next_billing_at, auto_renew, plan_name, created_at')
+                .select('id, razorpay_subscription_id, company_id, plan_id, billing_cycle, billing_amount_minor, status, is_trial, trial_start_at, trial_end_at, current_period_start_at, current_period_end_at, next_billing_at, auto_renew, cancel_at_cycle_end, cancellation_requested_at, plan_name, created_at')
                 .eq('company_id', companyId)
                 .order('created_at', { ascending: false })
                 .limit(1);
@@ -798,7 +830,7 @@ export async function loadActiveSubscription() {
                 if (userId) {
                     const { data: userSubRows } = await supabase
                         .from('subscriptions')
-                        .select('subscription_id, company_id, plan_id, billing_cycle, billing_amount, status, subscription_start_date, subscription_end_date, next_billing_at, auto_renew, plan_name, created_at')
+                        .select('id, razorpay_subscription_id, company_id, plan_id, billing_cycle, billing_amount_minor, status, is_trial, trial_start_at, trial_end_at, current_period_start_at, current_period_end_at, next_billing_at, auto_renew, cancel_at_cycle_end, cancellation_requested_at, plan_name, created_at')
                         .eq('user_id', userId)
                         .order('created_at', { ascending: false })
                         .limit(1);
@@ -812,6 +844,8 @@ export async function loadActiveSubscription() {
         if (!subRows || subRows.length === 0) {
             console.log('[Billing] No subscription record found for company:', companyId);
             state.currentMode = 'noplan';
+            state.localSubscriptionId = null;
+            state.razorpaySubscriptionId = null;
             state.subscriptionId = null;
             state.planId = null;
             state.features = { included: [], excluded: [], loaded: true };
@@ -833,7 +867,13 @@ export async function loadActiveSubscription() {
         }
 
         const sub = subRows[0];
-        state.subscriptionId = sub.subscription_id || null;
+        // ── Subscription identifiers ──────────────────────────────────────────
+        // subscriptions.id               → local UUID PK (send to cancel-subscription)
+        // subscriptions.razorpay_subscription_id → "sub_..." Razorpay text ID
+        state.localSubscriptionId    = sub.id || null;
+        state.razorpaySubscriptionId = sub.razorpay_subscription_id || null;
+        // Legacy alias kept for render modules that still read state.subscriptionId
+        state.subscriptionId         = state.razorpaySubscriptionId || state.localSubscriptionId;
         state.planId = sub.plan_id || null;
         let planName = sub.plan_name;
 
@@ -852,8 +892,10 @@ export async function loadActiveSubscription() {
 
         const rawStatus = (sub.status || 'Active').trim().toLowerCase();
         const isAutoRenew = sub.auto_renew !== false;
+        const isCancelAtCycleEnd = sub.cancel_at_cycle_end === true;
         const isExpired = rawStatus === 'expired';
-        const isScheduledCancellation = (rawStatus === 'active' || rawStatus === 'trial' || rawStatus === 'past_due' || rawStatus === 'cancelled') && !isAutoRenew;
+        const isScheduledCancellation = isCancelAtCycleEnd ||
+            ((rawStatus === 'active' || rawStatus === 'trial' || rawStatus === 'past_due' || rawStatus === 'cancelled') && !isAutoRenew);
 
         if (isExpired) {
             state.currentMode = 'noplan';
@@ -871,17 +913,31 @@ export async function loadActiveSubscription() {
             ? planName.charAt(0).toUpperCase() + planName.slice(1)
             : '';
 
+        // ── Amount: billing_amount_minor is in paise → convert to rupees ──────
+        const billingAmountRupees = sub.billing_amount_minor != null
+            ? Number(sub.billing_amount_minor) / 100
+            : (sub.billing_amount != null ? Number(sub.billing_amount) : 0);
+
+        // ── Date columns: new schema uses *_at suffix instead of *_date ────────
+        const periodStart = sub.current_period_start_at || sub.subscription_start_date || null;
+        const periodEnd   = sub.current_period_end_at   || sub.subscription_end_date   || null;
+
         state.plan = {
             name: formattedPlanName,
             cycle: cycleKey,
-            price: sub.billing_amount != null ? Number(sub.billing_amount) : 0,
-            startDate: formatDateDisplay(sub.subscription_start_date),
-            validUntil: formatDateDisplay(sub.subscription_end_date),
+            price: billingAmountRupees,
+            startDate: formatDateDisplay(periodStart),
+            validUntil: formatDateDisplay(periodEnd),
             nextBillingDate: (!isAutoRenew || isScheduledCancellation || rawStatus === 'cancelled')
                 ? 'None'
                 : (sub.next_billing_at ? formatDateDisplay(sub.next_billing_at) : 'None'),
             status: isScheduledCancellation ? 'Active' : (rawStatus.charAt(0).toUpperCase() + rawStatus.slice(1)),
-            autoRenew: isAutoRenew
+            autoRenew: isAutoRenew,
+            // New trial / cancellation fields
+            isTrial: sub.is_trial === true,
+            trialEndAt: sub.trial_end_at || null,
+            cancelAtCycleEnd: isCancelAtCycleEnd,
+            cancellationRequestedAt: sub.cancellation_requested_at || null
         };
 
         renderCurrentPlan(_renderCallbacks.handleRenewSubscription);
@@ -890,7 +946,7 @@ export async function loadActiveSubscription() {
         // billing information, and payment history in parallel
         await Promise.all([
             loadPlanFeatures(supabase, sub.plan_id),
-            loadActiveAddons(supabase, sub.subscription_id, companyId),
+            loadActiveAddons(supabase, state.localSubscriptionId, companyId),
             loadAvailableAddonsCatalog(supabase),
             loadBillingSettings(supabase, companyId),
             loadBillingInformation(supabase, companyId),

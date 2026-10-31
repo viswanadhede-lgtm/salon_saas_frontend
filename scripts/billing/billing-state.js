@@ -18,7 +18,16 @@ const _initialMode = validModes.includes(_paramState) ? _paramState : 'active';
 // Single shared mutable object — every module must import this same reference.
 export const state = {
     currentMode: _initialMode,  // 'active' | 'noplan' | 'cancelled'
-    subscriptionId: null,
+
+    // ── Subscription identifiers ───────────────────────────────
+    // Keep these TWO distinct fields — they are different things:
+    //   localSubscriptionId  = subscriptions.id (UUID primary key in Supabase)
+    //   razorpaySubscriptionId = subscriptions.razorpay_subscription_id (text, "sub_...")
+    // The cancel-subscription edge function accepts either but we send the UUID.
+    // The legacy `subscriptionId` alias is retained so existing render code still works.
+    localSubscriptionId: null,      // subscriptions.id UUID
+    razorpaySubscriptionId: null,   // subscriptions.razorpay_subscription_id text
+    subscriptionId: null,           // alias → kept for backward compat with render modules
     activeAddons: [],
     addonsLoaded: false,
     planId: null,
@@ -41,7 +50,12 @@ export const state = {
         validUntil: '—',
         nextBillingDate: '—',
         status: '',
-        autoRenew: true
+        autoRenew: true,
+        // ── New fields from updated subscriptions schema ──────
+        isTrial: false,                  // subscriptions.is_trial
+        trialEndAt: null,                // subscriptions.trial_end_at (ISO string)
+        cancelAtCycleEnd: false,         // subscriptions.cancel_at_cycle_end
+        cancellationRequestedAt: null    // subscriptions.cancellation_requested_at
     },
     activeAddonIds: [],
     paymentMethod: {
