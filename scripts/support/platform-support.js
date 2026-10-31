@@ -100,13 +100,16 @@ import { supabase } from '../../lib/supabase.js';
             const { data: subRows, error } = await supabase
                 .from('subscriptions')
                 .select(`
-                    subscription_id,
+                    id,
                     company_id,
                     plan_id,
                     plan_name,
                     status,
-                    subscription_start_date,
-                    subscription_end_date,
+                    is_trial,
+                    trial_start_at,
+                    trial_end_at,
+                    current_period_start_at,
+                    current_period_end_at,
                     billing_cycle,
                     auto_renew,
                     created_at
@@ -126,15 +129,20 @@ import { supabase } from '../../lib/supabase.js';
                 return { allowed: false, reason: 'inactive_subscription' };
             }
 
-            // ── Pick-best subscription: prefer unexpired active/trial/trialing rows ──
-            const VALID_STATUSES = ['active', 'trial', 'trialing'];
+            // ── Pick-best subscription: prefer unexpired active/trial/trialing/authenticated rows ──
+            const VALID_STATUSES = ['active', 'trial', 'trialing', 'authenticated'];
             const today = new Date();
 
             const validSubs = subRows.filter(sub => {
                 const st = (sub.status || '').toLowerCase().trim();
                 if (!VALID_STATUSES.includes(st)) return false;
-                const endDate = sub.subscription_end_date ? new Date(sub.subscription_end_date) : null;
-                return endDate && !isNaN(endDate.getTime()) && endDate > today;
+                const isTrial = sub.is_trial === true || st === 'trial';
+                const endStr = isTrial
+                    ? (sub.trial_end_at || sub.current_period_end_at)
+                    : (sub.current_period_end_at || sub.trial_end_at);
+                if (!endStr) return true; // Newly activated
+                const endDate = new Date(endStr);
+                return !isNaN(endDate.getTime()) && endDate > today;
             });
 
             if (validSubs.length > 0) {
@@ -152,24 +160,24 @@ import { supabase } from '../../lib/supabase.js';
         }
 
         // ── 3. Status check ───────────────────────────────────────────
-        const ENTITLEMENT_STATUSES = ['active', 'trial', 'trialing'];
+        const ENTITLEMENT_STATUSES = ['active', 'trial', 'trialing', 'authenticated'];
         const normStatus = (subscription.status || '').trim().toLowerCase();
         if (!ENTITLEMENT_STATUSES.includes(normStatus)) {
             return { allowed: false, reason: 'inactive_subscription' };
         }
 
         // ── 4. Expiry check ───────────────────────────────────────────
-        // Null, missing, or invalid end date is treated as expired.
-        const endDateStr = subscription.subscription_end_date || null;
-        if (!endDateStr) {
-            return { allowed: false, reason: 'expired_subscription' };
-        }
-        const endDate = new Date(endDateStr);
-        if (isNaN(endDate.getTime())) {
-            return { allowed: false, reason: 'expired_subscription' };
-        }
-        if (endDate <= new Date()) {
-            return { allowed: false, reason: 'expired_subscription' };
+        // Null, missing, or invalid end date is treated as active if newly authenticated/activated
+        const isSubTrial = subscription.is_trial === true || normStatus === 'trial';
+        const endDateStr = isSubTrial
+            ? (subscription.trial_end_at || subscription.current_period_end_at || null)
+            : (subscription.current_period_end_at || subscription.trial_end_at || null);
+
+        if (endDateStr) {
+            const endDate = new Date(endDateStr);
+            if (!isNaN(endDate.getTime()) && endDate <= new Date()) {
+                return { allowed: false, reason: 'expired_subscription' };
+            }
         }
 
         // ── 5. Plan allowlist check ───────────────────────────────────

@@ -326,6 +326,11 @@ function resolveUserId() {
 }
 
 /**
+ * Authoritative columns from public.subscriptions matching deployed schema.
+ */
+const SUB_COLUMNS = 'id, company_id, plan_id, user_id, razorpay_subscription_id, razorpay_plan_id, razorpay_customer_id, customer_name, customer_email, customer_phone, plan_name, billing_cycle, billing_amount_minor, currency, status, is_trial, trial_start_at, trial_end_at, authenticated_at, activated_at, current_period_start_at, current_period_end_at, next_billing_at, auto_renew, cancel_at_cycle_end, cancellation_requested_at, cancelled_at, paused_at, resumed_at, halted_at, ended_at, last_payment_at, last_payment_failure_at, failure_count, grace_period_end_at, total_count, paid_count, remaining_count, remarks, metadata, last_webhook_event_at, created_at, updated_at';
+
+/**
  * Direct query to Supabase `public.subscriptions` table.
  * Falls back to user_id if company has no direct row.
  */
@@ -337,7 +342,7 @@ async function fetchSubscriptionRecord(companyId, userId) {
         if (companyId) {
             const { data, error } = await supabase
                 .from('subscriptions')
-                .select('subscription_id, company_id, plan_id, plan_name, billing_cycle, billing_amount, status, subscription_start_date, subscription_end_date, next_billing_at, auto_renew, created_at')
+                .select(SUB_COLUMNS)
                 .eq('company_id', companyId)
                 .order('created_at', { ascending: false })
                 .limit(1);
@@ -345,19 +350,25 @@ async function fetchSubscriptionRecord(companyId, userId) {
             if (!error && data && data.length > 0) {
                 return data[0];
             }
+            if (error) {
+                console.warn('[SubscriptionState] Error fetching subscription for company:', error.message || error);
+            }
         }
 
         // 2. Secondary fallback lookup by user_id
         if (userId) {
             const { data: userData, error: userError } = await supabase
                 .from('subscriptions')
-                .select('subscription_id, company_id, plan_id, plan_name, billing_cycle, billing_amount, status, subscription_start_date, subscription_end_date, next_billing_at, auto_renew, created_at')
+                .select(SUB_COLUMNS)
                 .eq('user_id', userId)
                 .order('created_at', { ascending: false })
                 .limit(1);
 
             if (!userError && userData && userData.length > 0) {
                 return userData[0];
+            }
+            if (userError) {
+                console.warn('[SubscriptionState] Error fetching subscription for user:', userError.message || userError);
             }
         }
 
@@ -381,10 +392,17 @@ export function evaluateSubscription(sub) {
             status: 'none',
             planName: 'Free / Expired',
             planId: null,
+            localSubscriptionId: null,
+            razorpaySubscriptionId: null,
             billingCycle: 'none',
+            billingAmount: 0,
             autoRenew: false,
+            isTrial: false,
+            cancelAtCycleEnd: false,
             startDate: null,
             endDate: null,
+            trialEndAt: null,
+            nextBillingAt: null,
             daysRemaining: 0,
             isExpiringSoon: false,
             isExpired: true,
@@ -394,8 +412,21 @@ export function evaluateSubscription(sub) {
     }
 
     const rawStatus = (sub.status || '').toLowerCase().trim();
-    const endDate = sub.subscription_end_date ? new Date(sub.subscription_end_date) : null;
+    const isTrial = sub.is_trial === true || rawStatus === 'trial';
+
+    // Determine effective period end date:
+    // If it's a trial, prefer trial_end_at, then current_period_end_at.
+    // Otherwise prefer current_period_end_at, then trial_end_at.
+    const effectiveEndDateStr = isTrial
+        ? (sub.trial_end_at || sub.current_period_end_at || null)
+        : (sub.current_period_end_at || sub.trial_end_at || null);
+
+    const endDate = effectiveEndDateStr ? new Date(effectiveEndDateStr) : null;
     const isTimeValid = endDate ? endDate.getTime() > now.getTime() : false;
+
+    // Check if within grace period
+    const graceEndDate = sub.grace_period_end_at ? new Date(sub.grace_period_end_at) : null;
+    const isInGracePeriod = graceEndDate ? graceEndDate.getTime() > now.getTime() : false;
 
     // Calculate days remaining
     let daysRemaining = 0;
@@ -403,23 +434,50 @@ export function evaluateSubscription(sub) {
         daysRemaining = Math.max(0, Math.ceil((endDate.getTime() - now.getTime()) / (1000 * 60 * 60 * 24)));
     }
 
-    // Determine access level based on status & date math
+    // Determine access level based on status check constraint:
+    // ['created', 'authenticated', 'trial', 'active', 'pending', 'halted', 'paused', 'cancelled', 'completed']
     let accessLevel = 'read-only';
     let isExpired = true;
     let reason = '';
 
-    if (rawStatus === 'active' || rawStatus === 'trial') {
-        if (isTimeValid) {
+    if (rawStatus === 'active') {
+        if (!endDate || isTimeValid) {
             accessLevel = 'full';
             isExpired = false;
-            reason = rawStatus;
+            reason = 'active';
         } else {
             accessLevel = 'read-only';
             isExpired = true;
             reason = 'period_ended';
         }
+    } else if (rawStatus === 'trial' || isTrial) {
+        if (!endDate || isTimeValid) {
+            accessLevel = 'full';
+            isExpired = false;
+            reason = 'trial';
+        } else {
+            accessLevel = 'read-only';
+            isExpired = true;
+            reason = 'trial_ended';
+        }
+    } else if (rawStatus === 'authenticated') {
+        // Mandate setup and authorized — active access during onboarding/setup
+        accessLevel = 'full';
+        isExpired = false;
+        reason = 'authenticated_in_setup';
+    } else if (rawStatus === 'pending') {
+        // Pending renewal charge: maintain access if within grace period
+        if (isInGracePeriod || isTimeValid) {
+            accessLevel = 'full';
+            isExpired = false;
+            reason = 'pending_in_grace_period';
+        } else {
+            accessLevel = 'read-only';
+            isExpired = true;
+            reason = 'pending_payment';
+        }
     } else if (rawStatus === 'cancelled') {
-        // Scheduled cancellation: cancelled auto-renew but period still running
+        // Scheduled cancellation at cycle end: retain access until period end date
         if (isTimeValid) {
             accessLevel = 'full';
             isExpired = false;
@@ -429,7 +487,7 @@ export function evaluateSubscription(sub) {
             isExpired = true;
             reason = 'cancelled_and_period_ended';
         }
-    } else if (rawStatus === 'past_due' || rawStatus === 'suspended' || rawStatus === 'expired') {
+    } else if (rawStatus === 'paused' || rawStatus === 'halted' || rawStatus === 'completed') {
         accessLevel = 'read-only';
         isExpired = true;
         reason = rawStatus;
@@ -441,15 +499,29 @@ export function evaluateSubscription(sub) {
 
     const isExpiringSoon = !isExpired && daysRemaining > 0 && daysRemaining <= 5;
 
+    // Convert amount from minor units (paise) to major (rupees)
+    const amountRupees = sub.billing_amount_minor != null
+        ? Number(sub.billing_amount_minor) / 100
+        : (sub.billing_amount != null ? Number(sub.billing_amount) : 0);
+
+    const startDate = sub.current_period_start_at || sub.trial_start_at || sub.created_at || null;
+
     return {
         accessLevel,                                    // 'full' | 'read-only'
         status: rawStatus || 'unknown',
         planName: sub.plan_name || 'Standard Plan',
         planId: sub.plan_id || null,
+        localSubscriptionId: sub.id || null,
+        razorpaySubscriptionId: sub.razorpay_subscription_id || null,
         billingCycle: sub.billing_cycle || 'monthly',
+        billingAmount: amountRupees,
         autoRenew: sub.auto_renew !== false,
-        startDate: sub.subscription_start_date || null,
-        endDate: sub.subscription_end_date || null,
+        isTrial: isTrial,
+        cancelAtCycleEnd: sub.cancel_at_cycle_end === true,
+        startDate: startDate,
+        endDate: effectiveEndDateStr,
+        trialEndAt: sub.trial_end_at || null,
+        nextBillingAt: sub.next_billing_at || null,
         daysRemaining,
         isExpiringSoon,
         isExpired,
@@ -579,6 +651,8 @@ export function isSubscriptionExpired() {
 export function clearSubscriptionCache() {
     try {
         sessionStorage.removeItem(CACHE_STORAGE_KEY);
+        localStorage.removeItem('subscriptionState');
+        localStorage.removeItem('authCacheTimestamp');
     } catch { /* non-blocking */ }
 }
 

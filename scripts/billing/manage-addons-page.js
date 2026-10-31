@@ -69,7 +69,7 @@ async function loadPageData() {
         // 1. Fetch Subscription Info
         const { data: subData } = await supabase
             .from('subscriptions')
-            .select('id, plan_id, status, billing_cycle, current_period_end')
+            .select('id, plan_id, status, billing_cycle, current_period_end_at')
             .eq('company_id', pageState.companyId)
             .order('created_at', { ascending: false })
             .limit(1);
@@ -82,12 +82,12 @@ async function loadPageData() {
             if (sub.plan_id) {
                 const { data: pData } = await supabase
                     .from('plans')
-                    .select('name, price_monthly, price_yearly')
-                    .eq('id', sub.plan_id)
+                    .select('plan_name, price_monthly, price_yearly')
+                    .eq('plan_id', sub.plan_id)
                     .limit(1);
 
                 if (pData && pData[0]) {
-                    pageState.plan.name = pData[0].name || 'Current Plan';
+                    pageState.plan.name = pData[0].plan_name || 'Current Plan';
                     pageState.plan.price = sub.billing_cycle === 'yearly'
                         ? (pData[0].price_yearly || 0)
                         : (pData[0].price_monthly || 0);
