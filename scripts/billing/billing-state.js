@@ -55,6 +55,7 @@ export const state = {
         isTrial: false,                  // subscriptions.is_trial
         trialEndAt: null,                // subscriptions.trial_end_at (ISO string)
         cancelAtCycleEnd: false,         // subscriptions.cancel_at_cycle_end
+        cancellationRequested: false,    // boolean indicating cancellation requested
         cancellationRequestedAt: null    // subscriptions.cancellation_requested_at
     },
     activeAddonIds: [],

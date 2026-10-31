@@ -558,6 +558,7 @@ export async function loadActiveSubscriptionViaRpc(supabase, companyId) {
                 isTrial: sub.is_trial === true,
                 trialEndAt: sub.trial_end_at || null,
                 cancelAtCycleEnd: isCancelAtCycleEnd,
+                cancellationRequested: isCancelAtCycleEnd || Boolean(sub.cancellation_requested_at),
                 cancellationRequestedAt: sub.cancellation_requested_at || null
             };
         }
@@ -937,6 +938,7 @@ export async function loadActiveSubscription() {
             isTrial: sub.is_trial === true,
             trialEndAt: sub.trial_end_at || null,
             cancelAtCycleEnd: isCancelAtCycleEnd,
+            cancellationRequested: isCancelAtCycleEnd || Boolean(sub.cancellation_requested_at),
             cancellationRequestedAt: sub.cancellation_requested_at || null
         };
 

@@ -84,18 +84,15 @@ export function renderCurrentPlan(handleRenewSubscription) {
     if (state.currentMode === 'cancelled' || state.plan.status?.toLowerCase() === 'cancelled') {
         if (dom.currentPlanCard) dom.currentPlanCard.className = 'billing-plan-card billing-plan-card--cancelled';
         dom.planStatusPill.className = 'status-pill is-cancelling';
+        dom.planStatusText.textContent = 'Scheduled for cancellation';
 
         if (isTrial) {
-            dom.planStatusText.textContent = trialEndDate && trialEndDate !== '—'
-                ? `Trial ends ${trialEndDate}`
-                : 'Trial Cancelling';
-
             dom.planSubNotice.style.display = 'block';
             dom.planSubNotice.textContent = trialEndDate && trialEndDate !== '—'
                 ? `Your trial remains active until ${trialEndDate}. You will not be charged.`
                 : 'Your trial is scheduled for cancellation.';
 
-            dom.metaStatus.textContent = 'Trial (Cancelling)';
+            dom.metaStatus.textContent = 'Scheduled for cancellation';
 
             if (dom.planTrialBanner) {
                 dom.planTrialBanner.style.display = 'flex';
@@ -104,16 +101,12 @@ export function renderCurrentPlan(handleRenewSubscription) {
                 }
             }
         } else {
-            dom.planStatusText.textContent = state.plan.validUntil && state.plan.validUntil !== '—'
-                ? `Cancels on ${state.plan.validUntil}`
-                : 'Cancels at end of cycle';
-
             dom.planSubNotice.style.display = 'block';
             dom.planSubNotice.textContent = state.plan.validUntil && state.plan.validUntil !== '—'
                 ? `Your subscription remains active until ${state.plan.validUntil}.`
                 : 'Your subscription is scheduled for cancellation.';
 
-            dom.metaStatus.textContent = 'Cancels at end of cycle';
+            dom.metaStatus.textContent = 'Scheduled for cancellation';
 
             if (dom.planTrialBanner) dom.planTrialBanner.style.display = 'none';
         }
@@ -122,17 +115,7 @@ export function renderCurrentPlan(handleRenewSubscription) {
         dom.metaValidUntil.textContent = (isTrial && trialEndDate) ? trialEndDate : (state.plan.validUntil || '—');
         dom.metaNextBilling.textContent = 'None';
 
-        dom.planActionsContainer.innerHTML = `
-            <button type="button" class="btn-plain btn-plain-primary" id="btnReactivateSub">
-                <i data-feather="refresh-cw"></i>
-                <span>Reactivate Subscription</span>
-            </button>
-        `;
-
-        const btnReactivate = document.getElementById('btnReactivateSub');
-        if (btnReactivate) {
-            btnReactivate.onclick = handleRenewSubscription;
-        }
+        dom.planActionsContainer.innerHTML = '';
     } else {
         // State: Active / Trial
         if (dom.currentPlanCard) dom.currentPlanCard.className = 'billing-plan-card billing-plan-card--active';
@@ -756,15 +739,7 @@ export function renderSubscriptionManagement(openCancelSubscriptionModal, handle
         if (subManageActions) {
             subManageActions.innerHTML = `
                 <span class="status-badge-scheduled">Scheduled for Cancellation</span>
-                <button type="button" class="btn-renew-sub" id="btnRenewSubscription">
-                    <i data-feather="refresh-cw"></i>
-                    <span>Renew Subscription</span>
-                </button>
             `;
-            const btnRenew = document.getElementById('btnRenewSubscription');
-            if (btnRenew) {
-                btnRenew.onclick = handleRenewSubscription;
-            }
         }
     } else {
         if (subManageTitle) subManageTitle.textContent = 'Subscription Management';

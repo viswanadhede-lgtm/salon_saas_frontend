@@ -155,7 +155,7 @@ export function bindCancelModalEvents() {
                     return;
                 }
             } else {
-                customText = CANCELLATION_REASONS[reasonKey] || reasonKey;
+                customText = '';
             }
 
             const companyId = getCompanyId();
@@ -199,7 +199,7 @@ export function bindCancelModalEvents() {
                         // cancel-subscription v2 prefers the local subscriptions.id UUID
                         subscription_id: state.localSubscriptionId || state.razorpaySubscriptionId || state.subscriptionId || null,
                         reason: reasonKey,
-                        feedback: customText,
+                        feedback: reasonKey === 'other' ? customText : '',
                         cancel_at_cycle_end: true
                     })
                 });
@@ -213,7 +213,7 @@ export function bindCancelModalEvents() {
                 closeModal(dom.modalCancelSub);
                 resetCancelModalForm();
 
-                showToast(result.message || 'Subscription scheduled for cancellation at billing cycle end.', 'success');
+                showToast('Your subscription has been scheduled for cancellation.', 'success');
 
                 // Reload active subscription data from DB so plan card & state update immediately
                 await loadActiveSubscriptionOnce();
