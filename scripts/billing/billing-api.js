@@ -22,6 +22,37 @@ import {
 // Preserved exactly as in original — prevents concurrent subscription loads.
 let isSubLoading = false;
 
+// Realtime subscription channel for live database updates
+let subRealtimeChannel = null;
+
+export function setupSubscriptionRealtime(supabase, companyId) {
+    if (!supabase || !companyId || subRealtimeChannel) return;
+    try {
+        subRealtimeChannel = supabase
+            .channel(`public:subscriptions:${companyId}`)
+            .on(
+                'postgres_changes',
+                {
+                    event: '*',
+                    schema: 'public',
+                    table: 'subscriptions',
+                    filter: `company_id=eq.${companyId}`
+                },
+                (payload) => {
+                    console.log('[Billing Realtime] Subscription change detected:', payload?.eventType);
+                    loadActiveSubscriptionOnce();
+                }
+            )
+            .subscribe((status) => {
+                if (status === 'SUBSCRIBED') {
+                    console.log('[Billing Realtime] Subscribed to subscription updates for company:', companyId);
+                }
+            });
+    } catch (err) {
+        console.warn('[Billing Realtime] Could not initialize realtime listener:', err);
+    }
+}
+
 // Render callbacks set by the orchestrator so api can trigger re-renders
 let _renderCallbacks = {};
 
@@ -782,11 +813,15 @@ export async function loadActiveSubscription() {
         renderCurrentPlan(_renderCallbacks.handleRenewSubscription);
         renderPlanFeatures();
         renderActiveAddons();
+        renderSubscriptionManagement(_renderCallbacks.openCancelSubscriptionModal, _renderCallbacks.handleRenewSubscription);
         return;
     }
 
     try {
         const { supabase } = await import('../../lib/supabase.js');
+
+        // Setup Realtime listener on subscriptions table for live updates
+        setupSubscriptionRealtime(supabase, companyId);
 
         // 0. Attempt Master Unified Read RPC first
         const rpcLoaded = await loadActiveSubscriptionViaRpc(supabase, companyId);
@@ -864,6 +899,7 @@ export async function loadActiveSubscription() {
             renderActiveAddons();
             renderBillingSummary();
             renderBillingInfo();
+            renderSubscriptionManagement(_renderCallbacks.openCancelSubscriptionModal, _renderCallbacks.handleRenewSubscription);
             return;
         }
 
@@ -958,6 +994,7 @@ export async function loadActiveSubscription() {
         renderBillingSummary();
         renderBillingInfo();
         renderPaymentMethod();
+        renderSubscriptionManagement(_renderCallbacks.openCancelSubscriptionModal, _renderCallbacks.handleRenewSubscription);
 
         if (window.feather) feather.replace();
     } catch (err) {
