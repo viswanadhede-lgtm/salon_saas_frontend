@@ -552,7 +552,7 @@ export function initGlobalBookingModal() {
     // ----------------------------------------------------------------
     // HELPERS: Sync scroll-list height so overflow-y:auto kicks in
     // CSS flex/grid height propagation is unreliable cross-browser;
-    // we measure directly and set an explicit height on the scroll container.
+    // we measure directly and set max-height on the scroll container.
     // ----------------------------------------------------------------
     function syncPickerListHeight() {
         const modal  = document.getElementById('addServicesModal');
@@ -562,11 +562,8 @@ export function initGlobalBookingModal() {
         const modalBottom = modal.getBoundingClientRect().bottom;
         const listTop     = list.getBoundingClientRect().top;
         const footerH     = footer ? footer.offsetHeight : 58;
-        const available   = modalBottom - listTop - footerH - 8; // 8px bottom buffer
-        const h = Math.max(80, available);
-        list.style.flex      = 'none';      // stop flex:1 from fighting the explicit height
-        list.style.height    = h + 'px';
-        list.style.maxHeight = '';          // clear any leftover max-height
+        const available   = modalBottom - listTop - footerH - 8; // 8px buffer
+        list.style.maxHeight = Math.max(80, available) + 'px';
     }
 
     // ----------------------------------------------------------------
@@ -578,13 +575,7 @@ export function initGlobalBookingModal() {
         if (isPicker) {
             const toggleRow = document.getElementById('pickerSelectedToggleRow');
             if (toggleRow) {
-                // On Packages tab: hide the top bar entirely (each package has its own staff control)
-                // On Services tab: show it when there are services
-                if (activePickerRhsTab === 'packages') {
-                    toggleRow.style.display = 'none';
-                } else {
-                    toggleRow.style.display = itemsArray.some(it => it.type === 'service') ? 'flex' : 'none';
-                }
+                toggleRow.style.display = itemsArray.length > 0 ? 'flex' : 'none';
             }
             const btnClearAll = document.getElementById('btnClearAllSelected');
             if (btnClearAll) {
@@ -662,11 +653,6 @@ export function initGlobalBookingModal() {
                             <span class="meta-dot">·</span>
                             <span class="package-price">${priceDisplay}</span>
                         </div>
-                        ${isExpanded && incServices.length > 1 ? `
-                        <button type="button" class="btn-pkg-apply-all-staff" data-uid="${pkg.uid}" title="Apply the first selected staff to all services in this package">
-                            <i data-feather="users"></i>
-                            <span>Apply same staff to all</span>
-                        </button>` : ''}
                     </div>
                     <div class="package-header-right">
                         <button type="button" class="btn-package-toggle" data-uid="${pkg.uid}" title="${isExpanded ? 'Collapse package' : 'Expand to view services'}">
@@ -778,25 +764,6 @@ export function initGlobalBookingModal() {
             });
         });
 
-        // Attach Per-Package "Apply same staff to all" Listeners
-        containerEl.querySelectorAll('.btn-pkg-apply-all-staff').forEach(btn => {
-            btn.addEventListener('click', (e) => {
-                e.stopPropagation();
-                const pkgUid  = btn.dataset.uid;
-                const pkgItem = itemsArray.find(it => it.uid === pkgUid);
-                if (!pkgItem || !Array.isArray(pkgItem.services)) return;
-                // Find the first service that already has a staff selected
-                const firstWithStaff = pkgItem.services.find(s => s.staffId);
-                if (!firstWithStaff) return; // nothing selected yet — nothing to copy
-                pkgItem.services.forEach(s => {
-                    s.staffId   = firstWithStaff.staffId;
-                    s.staffName = firstWithStaff.staffName;
-                });
-                renderSelectedList(containerEl, itemsArray, isPicker);
-                validateForm();
-            });
-        });
-
         // Attach Package Delete Listeners
         containerEl.querySelectorAll('.btn-package-delete').forEach(btn => {
             btn.addEventListener('click', (e) => {
@@ -886,7 +853,7 @@ export function initGlobalBookingModal() {
 
         // Sync the scroll-list height after every render (picker only)
         if (isPicker) {
-            setTimeout(syncPickerListHeight, 0);
+            requestAnimationFrame(syncPickerListHeight);
         }
     }
 
@@ -1341,7 +1308,7 @@ export function initGlobalBookingModal() {
         pickerOverlay.classList.add('active');
 
         // After the overlay is visible, sync the list height
-        setTimeout(syncPickerListHeight, 0);
+        requestAnimationFrame(syncPickerListHeight);
     }
 
     function closePickerModal() {
