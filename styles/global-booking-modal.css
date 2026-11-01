@@ -718,6 +718,7 @@
     min-height: 0;
     display: grid;
     grid-template-columns: 40fr 60fr;
+    grid-template-rows: 1fr;
     overflow: hidden;
 }
 
