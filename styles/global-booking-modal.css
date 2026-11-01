@@ -528,7 +528,7 @@
 
 /* Left Column: Catalog Browser */
 .picker-catalog-col {
-    padding: 1.15rem 1.5rem 0.5rem 1.5rem;
+    padding: 1.15rem 0.5rem 0.5rem 1.5rem;
     border-right: 1px solid #e2e8f0;
     display: flex;
     flex-direction: column;
@@ -542,6 +542,7 @@
     padding: 4px;
     border-radius: 8px;
     margin-bottom: 12px;
+    margin-right: 12px;
 }
 
 .picker-tab-btn {
@@ -577,6 +578,7 @@
 .picker-search-wrapper {
     position: relative;
     margin-bottom: 12px;
+    margin-right: 12px;
     display: flex;
     align-items: center;
 }
@@ -619,6 +621,7 @@
     overflow-x: auto;
     padding-bottom: 8px;
     margin-bottom: 12px;
+    margin-right: 12px;
     scrollbar-width: thin;
 }
 
@@ -653,7 +656,7 @@
     display: flex;
     flex-direction: column;
     gap: 8px;
-    padding-right: 4px;
+    padding-right: 12px;
 }
 
 .catalog-item-card {
