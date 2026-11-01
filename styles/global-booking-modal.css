@@ -946,6 +946,7 @@
     flex-direction: column;
     background: #fafafa;
     overflow: hidden;
+    min-height: 0;
 }
 
 .picker-selected-header {
@@ -1156,6 +1157,7 @@
 
 .picker-selected-list {
     flex: 1;
+    min-height: 0;
     overflow-y: auto;
     display: flex;
     flex-direction: column;
