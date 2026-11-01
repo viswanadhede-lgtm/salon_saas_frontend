@@ -510,7 +510,7 @@
 #addServicesModal .picker-body {
     flex: 1;
     display: grid;
-    grid-template-columns: 1.15fr 1fr;
+    grid-template-columns: 37fr 63fr;
     overflow: hidden;
 }
 
