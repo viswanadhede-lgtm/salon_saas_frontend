@@ -261,6 +261,11 @@
     gap: 6px;
 }
 
+.item-meta .item-price {
+    color: #059669;
+    font-weight: 600;
+}
+
 .item-card-right {
     display: flex;
     align-items: center;

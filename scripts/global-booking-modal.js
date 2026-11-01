@@ -599,7 +599,7 @@ export function initGlobalBookingModal() {
                         <p class="item-meta">
                             <span>${durationDisplay}</span>
                             <span>|</span>
-                            <span>${priceDisplay}</span>
+                            <span class="item-price">${priceDisplay}</span>
                         </p>
                     </div>
                 </div>
