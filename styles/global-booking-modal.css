@@ -4,9 +4,9 @@
 
 /* ── Main Booking Modal (#bookingModal) ────────────────────────── */
 #bookingModal {
-    width: 820px;
-    max-width: 95vw;
-    max-height: 90vh;
+    width: 1020px;
+    max-width: 96vw;
+    max-height: 92vh;
     display: flex;
     flex-direction: column;
     background: #ffffff;
@@ -298,15 +298,15 @@
 }
 
 .item-staff-select {
-    padding: 6px 10px;
-    font-size: 0.84rem;
+    padding: 6px 12px;
+    font-size: 0.86rem;
     color: #0f172a;
     border: 1px solid #cbd5e1;
     border-radius: 6px;
     background: #ffffff;
     cursor: pointer;
-    min-width: 130px;
-    max-width: 180px;
+    min-width: 150px;
+    max-width: 220px;
 }
 
 .item-staff-select:focus {
@@ -470,10 +470,10 @@
 }
 
 #addServicesModal {
-    width: 980px;
-    max-width: 95vw;
-    height: 85vh;
-    max-height: 720px;
+    width: 1180px;
+    max-width: 96vw;
+    height: 88vh;
+    max-height: 760px;
     background: #ffffff;
     border-radius: 16px;
     box-shadow: 0 25px 50px -12px rgba(15, 23, 42, 0.3);
@@ -834,3 +834,4 @@
         border-bottom: 1px solid #e2e8f0;
     }
 }
+
