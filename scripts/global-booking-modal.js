@@ -1,3 +1,6 @@
+// scripts/global-booking-modal.js — Unified, High-Performance Global Booking Modal
+// Aligned with the two-modal workflow: Main Booking Modal + Add Services / Packages Picker.
+
 import { supabase } from '../lib/supabase.js';
 
 function getCompanyId() {
@@ -20,152 +23,359 @@ function generateUUID() {
 }
 
 // ----------------------------------------------------------------
-// PREMIUM BOOKING MODAL LOGIC (Global) — Multi-Service Support
+// Category / Service Visual Meta Mapper
 // ----------------------------------------------------------------
+function getCategoryMeta(categoryName, serviceName) {
+    const text = `${categoryName || ''} ${serviceName || ''}`.toLowerCase();
+    if (text.includes('hair') || text.includes('cut') || text.includes('trim') || text.includes('shave') || text.includes('beard')) {
+        return { icon: 'scissors', theme: 'theme-purple' };
+    }
+    if (text.includes('color') || text.includes('colour') || text.includes('highlight') || text.includes('dye')) {
+        return { icon: 'feather', theme: 'theme-rose' };
+    }
+    if (text.includes('spa') || text.includes('massage') || text.includes('relax') || text.includes('therapy')) {
+        return { icon: 'droplet', theme: 'theme-teal' };
+    }
+    if (text.includes('facial') || text.includes('skin') || text.includes('glow') || text.includes('clean')) {
+        return { icon: 'star', theme: 'theme-amber' };
+    }
+    if (text.includes('nail') || text.includes('manicure') || text.includes('pedicure')) {
+        return { icon: 'disc', theme: 'theme-blue' };
+    }
+    if (text.includes('makeup') || text.includes('bridal') || text.includes('groom')) {
+        return { icon: 'eye', theme: 'theme-rose' };
+    }
+    if (text.includes('package')) {
+        return { icon: 'package', theme: 'theme-indigo' };
+    }
+    return { icon: 'tag', theme: 'theme-indigo' };
+}
 
-let liveCustomersDB = [];
-let liveServicesDB  = [];
-let liveStaffDB     = [];
-let livePackagesDB  = [];
+// ----------------------------------------------------------------
+// GLOBAL STATE & DATA REGISTRIES
+// ----------------------------------------------------------------
+let liveCustomersDB       = [];
+let liveServicesDB        = [];
+let liveCategoriesDB      = [];
+let liveStaffDB           = [];
+let livePackagesDB        = [];
 let livePackageServicesDB = [];
-let rowCounter      = 0;
+
+// Single Source of Truth for current booking items
+let selectedBookingItems  = [];
+// Working copy while Picker Modal is open
+let pickerDraftItems      = [];
+
+// Picker UI State
+let activePickerTab       = 'services'; // 'services' | 'packages'
+let activeCategoryFilter  = 'all';      // 'all' | category_id
+let pickerSearchQuery     = '';
+let isStaffSyncAll        = false;
+
+let selectedCustomerId    = null;
 let isGlobalBookingModalInitialized = false;
 
-// Expose liveCustomersDB on window so the submit handler's duplicate-phone
-// guard can always reference it regardless of module boundary.
+// Expose liveCustomersDB for external lookups
 Object.defineProperty(window, 'liveCustomersDB', {
     get() { return liveCustomersDB; },
     configurable: true
 });
 
+// ----------------------------------------------------------------
+// DOM INJECTION: Stylesheet + Main Modal + Picker Modal
+// ----------------------------------------------------------------
 export function ensureBookingModalHtml() {
-    if (document.getElementById('bookingModalOverlay')) return;
-    if (!document.body) return;
+    // 1. Inject Stylesheet if not already present
+    if (!document.getElementById('globalBookingModalStyles')) {
+        const linkEl = document.createElement('link');
+        linkEl.id = 'globalBookingModalStyles';
+        linkEl.rel = 'stylesheet';
+        linkEl.href = 'styles/global-booking-modal.css';
+        document.head.appendChild(linkEl);
+    }
 
-    const modalHtml = `
-    <!-- Premium New Booking Modal (Global Component) -->
-    <div class="modal-overlay" id="bookingModalOverlay">
-        <div class="modal-container" id="bookingModal">
-            <!-- Header -->
-            <div class="modal-header">
-                <div class="header-titles">
-                    <h2>New Booking</h2>
-                    <p class="subtitle">Create a new appointment for a customer.</p>
+    // 2. Inject Main Modal (#bookingModalOverlay) if missing
+    if (!document.getElementById('bookingModalOverlay')) {
+        const modalHtml = `
+        <div class="modal-overlay" id="bookingModalOverlay">
+            <div class="modal-container" id="bookingModal">
+                <!-- Header -->
+                <div class="modal-header">
+                    <div class="header-titles">
+                        <h2>New Booking</h2>
+                        <p class="subtitle">Create a new appointment for a customer.</p>
+                    </div>
+                    <button type="button" class="modal-close" id="closeBookingModal"><i data-feather="x"></i></button>
                 </div>
-                <button class="modal-close" id="closeBookingModal"><i data-feather="x"></i></button>
-            </div>
 
-            <div class="modal-body" style="padding: 1.5rem; overflow-y: auto;">
-                <div class="modal-form-side" style="width: 100%; max-width: none; flex: 1; padding: 0; border: none;">
-                    <div style="width: 100%; display: grid; grid-template-columns: 1fr 1fr; gap: 32px;">
-
-                        <!-- LEFT COLUMN -->
-                        <div style="display: flex; flex-direction: column;">
-                            <!-- Customer Ident -->
+                <!-- Body -->
+                <div class="modal-body">
+                    <!-- Top Grid: Customer Info (Left) + Date/Time (Right) -->
+                    <div class="booking-top-grid">
+                        <!-- Left Column: Customer details -->
+                        <div class="booking-col">
                             <div class="form-group relative">
-                                <label class="form-label" for="phoneSearch">Phone Number <span
-                                        class="text-rose">*</span></label>
-                                <input type="tel" id="phoneSearch" class="form-input" placeholder="Enter phone number"
-                                    autocomplete="off">
+                                <label class="form-label" for="phoneSearch">Phone Number <span class="text-rose">*</span></label>
+                                <input type="tel" id="phoneSearch" class="form-input" placeholder="Enter phone number" autocomplete="off">
                                 <div class="search-suggestions" id="searchSuggestions"></div>
                             </div>
 
-                            <div class="customer-badge-container" id="customerBadgeContainer"
-                                style="display:none; margin-bottom: 8px;">
+                            <div class="customer-badge-container" id="customerBadgeContainer" style="display:none; margin-bottom: 4px;">
                                 <span class="badge-pill existing-badge" id="customerBadge">Existing Customer</span>
                             </div>
 
-                            <div class="form-group span-full" id="newCustomerBadgeContainer"
-                                style="display:none; margin-bottom: 8px;">
+                            <div class="form-group span-full" id="newCustomerBadgeContainer" style="display:none; margin-bottom: 4px;">
                                 <span class="badge-pill new-badge" id="newCustomerBadge">New Customer</span>
                             </div>
 
                             <div class="form-group" id="customerNameGroup">
-                                <label class="form-label" for="customerName">Customer Name <span
-                                        class="text-rose">*</span></label>
-                                <input type="text" id="customerName" class="form-input"
-                                    placeholder="Enter customer name">
+                                <label class="form-label" for="customerName">Customer Name <span class="text-rose">*</span></label>
+                                <input type="text" id="customerName" class="form-input" placeholder="Enter customer name">
                             </div>
 
                             <div class="form-group" id="customerEmailGroup">
-                                <label class="form-label" for="customerEmail">Email <span id="emailOptionalLabel"
-                                        class="text-muted"></span></label>
-                                <input type="email" id="customerEmail" class="form-input"
-                                    placeholder="Enter email address">
-                            </div>
-
-                            <!-- Booking Notes -->
-                            <div class="form-group section-gap flex-grow" style="margin-bottom: 1.5rem;">
-                                <label class="form-label" for="bookingNotes">Booking Notes <span
-                                        class="text-muted">(Optional)</span></label>
-                                <textarea id="bookingNotes" class="form-input form-textarea"
-                                    placeholder="Add optional notes for this booking..."
-                                    style="min-height: 120px;"></textarea>
+                                <label class="form-label" for="customerEmail">Email <span id="emailOptionalLabel" class="text-muted">(Optional)</span></label>
+                                <input type="email" id="customerEmail" class="form-input" placeholder="Enter email address">
                             </div>
                         </div>
 
-                        <!-- RIGHT COLUMN -->
-                        <div style="display: flex; flex-direction: column; gap: 0;">
-                            <!-- Dynamic Service + Staff rows (injected by JS) -->
-                            <div id="serviceRowsContainer" style="display:flex; flex-direction:column; gap:0; margin-bottom:14px;"></div>
-
-                            <!-- Date & Time -->
-                            <div class="form-grid section-gap">
-                                <div class="form-group">
-                                    <label class="form-label" for="bookingDate">Date <span
-                                            class="text-rose">*</span></label>
-                                    <input type="date" id="bookingDate" class="form-input">
+                        <!-- Right Column: Date & Time -->
+                        <div class="booking-col">
+                            <div class="form-group">
+                                <label class="form-label" for="bookingDate">Date <span class="text-rose">*</span></label>
+                                <input type="date" id="bookingDate" class="form-input">
+                            </div>
+                            <div class="form-group">
+                                <label class="form-label" for="bookingTime">Time <span class="text-rose">*</span></label>
+                                <div class="relative" style="display: flex; gap: 8px;">
+                                    <input type="time" id="bookingTime" class="form-input" style="flex: 1;">
+                                    <button type="button" class="btn btn-secondary" id="btnTimeNow" style="padding: 0 16px; height: 42px; font-size: 13px; font-weight: 600;">Now</button>
                                 </div>
-                                <div class="form-group">
-                                    <label class="form-label" for="bookingTime">Time <span
-                                            class="text-rose">*</span></label>
-                                    <div class="relative" style="display: flex; gap: 8px;">
-                                        <input type="time" id="bookingTime" class="form-input" style="flex: 1;">
-                                        <button type="button" class="btn btn-secondary" id="btnTimeNow"
-                                            style="padding: 0 12px; height: 40px; font-size: 13px;">Now</button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Services & Packages Section -->
+                    <div class="booking-services-section">
+                        <div class="booking-services-header">
+                            <div class="services-header-left">
+                                <span class="services-header-title">
+                                    <i data-feather="scissors"></i>
+                                    <span>Services &amp; Packages</span>
+                                </span>
+                                <span class="services-count-pill" id="mainServicesCountPill">0 Selected</span>
+                            </div>
+                            <label class="staff-sync-toggle">
+                                <span>Apply same staff to all</span>
+                                <input type="checkbox" id="mainStaffSyncToggle">
+                            </label>
+                        </div>
+
+                        <!-- Selected Items Container -->
+                        <div class="selected-services-list" id="mainSelectedServicesList">
+                            <!-- Rendered dynamically -->
+                        </div>
+
+                        <!-- Bottom action bar: + Add button + Duration/Amount chips -->
+                        <div class="booking-services-bottom-bar">
+                            <button type="button" class="btn-add-services-modal" id="btnOpenAddServicesModal">
+                                <i data-feather="plus"></i>
+                                <span>Add Services / Packages</span>
+                            </button>
+                            <div class="services-summary-chips">
+                                <div class="summary-chip-item">
+                                    <i data-feather="clock" style="width:16px;height:16px;color:#64748b;"></i>
+                                    <div>
+                                        <div class="summary-chip-label">Total Duration</div>
+                                        <div class="summary-chip-val" id="mainTotalDurationVal">0 min</div>
+                                    </div>
+                                </div>
+                                <div class="summary-chip-divider"></div>
+                                <div class="summary-chip-item">
+                                    <i data-feather="dollar-sign" style="width:16px;height:16px;color:#16a34a;"></i>
+                                    <div>
+                                        <div class="summary-chip-label">Total Amount</div>
+                                        <div class="summary-chip-val price" id="mainTotalAmountVal">₹0</div>
                                     </div>
                                 </div>
                             </div>
                         </div>
-                    </div> <!-- /inner form container -->
+                    </div>
+
+                    <!-- Notes Section -->
+                    <div class="booking-notes-section">
+                        <div class="form-group" style="margin-bottom:0;">
+                            <label class="form-label" for="bookingNotes">Booking Notes <span class="text-muted">(Optional)</span></label>
+                            <textarea id="bookingNotes" class="form-input form-textarea" placeholder="Add optional notes for this booking..." style="min-height: 80px;"></textarea>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Footer -->
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" id="btnCancelBooking">Cancel</button>
+                    <button type="button" class="btn btn-primary" id="btnConfirmBooking" disabled>Confirm Booking</button>
                 </div>
             </div>
+        </div>
+        `;
+        document.body.insertAdjacentHTML('beforeend', modalHtml);
+    }
 
-            <div class="modal-footer">
-                <button type="button" class="btn btn-secondary" id="btnCancelBooking">Cancel</button>
-                <button type="button" class="btn btn-primary" id="btnConfirmBooking" disabled>Confirm Booking</button>
+    // 3. Inject Picker Modal (#addServicesModalOverlay) if missing
+    if (!document.getElementById('addServicesModalOverlay')) {
+        const pickerHtml = `
+        <div class="modal-overlay" id="addServicesModalOverlay">
+            <div class="modal-container" id="addServicesModal">
+                <!-- Header -->
+                <div class="picker-header">
+                    <div>
+                        <h3>Add Services / Packages</h3>
+                        <p>Select one or more services or packages and assign staff.</p>
+                    </div>
+                    <button type="button" class="modal-close" id="btnClosePickerModal"><i data-feather="x"></i></button>
+                </div>
+
+                <!-- Body (2 Columns) -->
+                <div class="picker-body">
+                    <!-- Left: Catalog Browser -->
+                    <div class="picker-catalog-col">
+                        <!-- Switcher Tabs -->
+                        <div class="picker-tabs">
+                            <button type="button" class="picker-tab-btn active" id="pickerTabServices">
+                                <i data-feather="scissors"></i>
+                                <span>Services</span>
+                            </button>
+                            <button type="button" class="picker-tab-btn" id="pickerTabPackages">
+                                <i data-feather="package"></i>
+                                <span>Packages</span>
+                            </button>
+                        </div>
+
+                        <!-- Search -->
+                        <div class="picker-search-wrapper">
+                            <i data-feather="search"></i>
+                            <input type="text" class="picker-search-input" id="pickerSearchInput" placeholder="Search services...">
+                        </div>
+
+                        <!-- Category Pills (shown only on Services tab) -->
+                        <div class="picker-categories-pills" id="pickerCategoryPills">
+                            <!-- Populated dynamically -->
+                        </div>
+
+                        <!-- Catalog Items List -->
+                        <div class="picker-catalog-list" id="pickerCatalogList">
+                            <!-- Populated dynamically -->
+                        </div>
+                    </div>
+
+                    <!-- Right: Selected Items Review -->
+                    <div class="picker-selected-col">
+                        <div class="picker-selected-header">
+                            <span class="picker-selected-title" id="pickerSelectedCountTitle">Selected Services (0)</span>
+                            <button type="button" class="btn-clear-all" id="btnClearAllSelected">
+                                <i data-feather="trash-2" style="width:14px;height:14px;"></i>
+                                <span>Clear All</span>
+                            </button>
+                        </div>
+
+                        <div class="picker-selected-toggle-row">
+                            <label class="staff-sync-toggle">
+                                <span>Apply same staff to all</span>
+                                <input type="checkbox" id="pickerStaffSyncToggle">
+                            </label>
+                        </div>
+
+                        <div class="picker-selected-list" id="pickerSelectedList">
+                            <!-- Populated dynamically -->
+                        </div>
+
+                        <!-- Summary Box -->
+                        <div class="picker-summary-box">
+                            <div class="summary-chip-item">
+                                <i data-feather="clock" style="width:16px;height:16px;color:#64748b;"></i>
+                                <div>
+                                    <div class="summary-chip-label">Total Duration</div>
+                                    <div class="summary-chip-val" id="pickerTotalDurationVal">0 min</div>
+                                </div>
+                            </div>
+                            <div class="summary-chip-divider"></div>
+                            <div class="summary-chip-item">
+                                <i data-feather="dollar-sign" style="width:16px;height:16px;color:#16a34a;"></i>
+                                <div>
+                                    <div class="summary-chip-label">Total Amount</div>
+                                    <div class="summary-chip-val price" id="pickerTotalAmountVal">₹0</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Footer -->
+                <div class="picker-footer">
+                    <button type="button" class="btn btn-secondary" id="btnCancelPickerModal">Cancel</button>
+                    <button type="button" class="btn-add-to-booking" id="btnAddPickerToBooking">
+                        <i data-feather="check"></i>
+                        <span>Add to Booking</span>
+                    </button>
+                </div>
             </div>
         </div>
-    </div>`;
+        `;
+        document.body.insertAdjacentHTML('beforeend', pickerHtml);
+    }
 
-    document.body.insertAdjacentHTML('beforeend', modalHtml);
+    // 4. Inject Double-booking Confirmation Overlay if missing
+    if (!document.getElementById('staffOverrideConfirmOverlay')) {
+        document.body.insertAdjacentHTML('beforeend', `
+        <div class="modal-overlay custom-logout-overlay" id="staffOverrideConfirmOverlay" style="z-index:10010;backdrop-filter:blur(8px);">
+            <div class="logout-modal" style="background:#fff;border-radius:16px;padding:32px;width:420px;max-width:90vw;text-align:center;box-shadow:0 20px 25px -5px rgba(0,0,0,.1),0 10px 10px -5px rgba(0,0,0,.04);">
+                <div style="width:64px;height:64px;border-radius:50%;background:#fef3c7;display:flex;align-items:center;justify-content:center;margin:0 auto 20px;">
+                    <i data-feather="alert-triangle" style="color:#f59e0b;width:32px;height:32px;"></i>
+                </div>
+                <h2 style="font-size:1.35rem;font-weight:700;color:#0f172a;margin-bottom:8px;">Override Booking?</h2>
+                <p id="staffOverrideReason" style="color:#64748b;font-size:0.95rem;margin-bottom:24px;line-height:1.6;"></p>
+                <div style="display:flex;gap:12px;justify-content:center;">
+                    <button id="btnCancelOverride" style="flex:1;padding:12px 20px;border-radius:8px;border:1px solid #e2e8f0;background:#fff;color:#64748b;font-weight:600;cursor:pointer;font-size:0.95rem;">Go Back</button>
+                    <button id="btnConfirmOverride" style="flex:1;padding:12px 20px;border-radius:8px;border:none;background:#f59e0b;color:#fff;font-weight:600;cursor:pointer;font-size:0.95rem;">Yes, Confirm</button>
+                </div>
+            </div>
+        </div>`);
+    }
+
     if (window.feather && feather.replace) {
         feather.replace();
     }
 }
 
+// ----------------------------------------------------------------
+// INITIALIZE GLOBAL BOOKING MODAL
+// ----------------------------------------------------------------
 export function initGlobalBookingModal() {
     if (isGlobalBookingModalInitialized && document.getElementById('bookingModalOverlay')) return;
 
     ensureBookingModalHtml();
 
-    const serviceRowsContainer = document.getElementById('serviceRowsContainer');
-    const phoneSearch          = document.getElementById('phoneSearch');
-
-    // Guard: if modal not present on this page, bail silently
-    if (!serviceRowsContainer || !phoneSearch) return;
+    const bookingModalOverlay    = document.getElementById('bookingModalOverlay');
+    const phoneSearch            = document.getElementById('phoneSearch');
+    if (!bookingModalOverlay || !phoneSearch) return;
 
     isGlobalBookingModalInitialized = true;
 
-    // ── Core elements ─────────────────────────────────────────────────────
+    // Elements — Main Modal
     const btnNewBooking          = document.getElementById('btnNewBooking');
     const btnNewBookingPage      = document.getElementById('btnNewBookingPage');
-    const modalOverlay           = document.getElementById('bookingModalOverlay');
-    const btnCloseModal          = document.getElementById('closeBookingModal');
+    const closeBookingModal      = document.getElementById('closeBookingModal');
     const btnCancelBooking       = document.getElementById('btnCancelBooking');
     const btnConfirmBooking      = document.getElementById('btnConfirmBooking');
-    // btnAddService is built dynamically inside the first service row
+    const btnOpenAddServices     = document.getElementById('btnOpenAddServicesModal');
+    const mainSelectedList       = document.getElementById('mainSelectedServicesList');
+    const mainCountPill          = document.getElementById('mainServicesCountPill');
+    const mainStaffSyncToggle    = document.getElementById('mainStaffSyncToggle');
+    const mainTotalDurationVal   = document.getElementById('mainTotalDurationVal');
+    const mainTotalAmountVal     = document.getElementById('mainTotalAmountVal');
 
+    // Elements — Customer form
     const searchSuggestions         = document.getElementById('searchSuggestions');
     const newCustomerBadgeContainer = document.getElementById('newCustomerBadgeContainer');
     const customerBadgeContainer    = document.getElementById('customerBadgeContainer');
@@ -176,275 +386,549 @@ export function initGlobalBookingModal() {
     const bookingDate               = document.getElementById('bookingDate');
     const bookingTime               = document.getElementById('bookingTime');
     const bookingNotes              = document.getElementById('bookingNotes');
+    const btnTimeNow                = document.getElementById('btnTimeNow');
 
-    if (!modalOverlay) return;
+    // Elements — Picker Modal
+    const pickerOverlay          = document.getElementById('addServicesModalOverlay');
+    const btnClosePicker         = document.getElementById('btnClosePickerModal');
+    const btnCancelPicker        = document.getElementById('btnCancelPickerModal');
+    const btnAddPickerToBooking  = document.getElementById('btnAddPickerToBooking');
+    const pickerTabServices      = document.getElementById('pickerTabServices');
+    const pickerTabPackages      = document.getElementById('pickerTabPackages');
+    const pickerSearchInput      = document.getElementById('pickerSearchInput');
+    const pickerCategoryPills    = document.getElementById('pickerCategoryPills');
+    const pickerCatalogList      = document.getElementById('pickerCatalogList');
+    const pickerSelectedList     = document.getElementById('pickerSelectedList');
+    const pickerCountTitle       = document.getElementById('pickerSelectedCountTitle');
+    const btnClearAllSelected    = document.getElementById('btnClearAllSelected');
+    const pickerStaffSyncToggle  = document.getElementById('pickerStaffSyncToggle');
+    const pickerTotalDurationVal = document.getElementById('pickerTotalDurationVal');
+    const pickerTotalAmountVal   = document.getElementById('pickerTotalAmountVal');
 
-    // State
-    let selectedCustomerId = null;
+    // Elements — Override Modal
+    const overrideOverlay        = document.getElementById('staffOverrideConfirmOverlay');
+    const overrideReasonEl       = document.getElementById('staffOverrideReason');
+    const btnCancelOverride      = document.getElementById('btnCancelOverride');
 
-    // ── Customer helpers ──────────────────────────────────────────────────
+    // ── Helper: Customer State ──────────────────────────────────────────
     function setNewCustomerState() {
+        if (!customerName || !customerEmail) return;
         customerName.value = '';
         customerEmail.value = '';
         customerName.readOnly = false;
         customerEmail.readOnly = false;
-        customerName.classList.remove('read-only-input');
-        customerEmail.classList.remove('read-only-input');
         customerName.placeholder = 'Enter customer name';
         customerEmail.placeholder = 'Enter email address';
         if (emailOptionalLabel) emailOptionalLabel.textContent = '(Optional)';
     }
 
     function setExistingCustomerState(name, email) {
+        if (!customerName || !customerEmail) return;
         customerName.value = name;
         customerEmail.value = email || '';
         customerName.readOnly = false;
         customerEmail.readOnly = false;
-        customerName.classList.remove('read-only-input');
-        customerEmail.classList.remove('read-only-input');
         customerName.placeholder = 'Existing customer name';
         customerEmail.placeholder = 'Existing customer email';
         if (emailOptionalLabel) emailOptionalLabel.textContent = '';
     }
 
-    // ── Build a single Service + Staff row ────────────────────────────────
-    function buildServiceRow(rowId, isFirst) {
-        const svcOptions = liveServicesDB.map(s =>
-            `<option value="${s.service_id}" data-type="service" style="color: #0f172a; font-weight: normal;" data-duration="${s.duration || 0}" data-price="${s.price || 0}">${s.service_name}</option>`
-        ).join('');
+    // ── Helper: Duration & Currency Formatting ──────────────────────────
+    function fmtPrice(amount) {
+        const n = Number(amount) || 0;
+        return `₹${n.toLocaleString('en-IN')}`;
+    }
 
-        const pkgOptions = livePackagesDB.map(p =>
-            `<option value="${p.package_id}" data-type="package" style="color: #0f172a; font-weight: normal;" data-duration="0" data-price="${p.final_price || 0}">${p.package_name}</option>`
-        ).join('');
-        
-        const combinedOptions = `
-            <optgroup label="Services" style="color: #1d4ed8; font-weight: 600;">
-                ${svcOptions}
-            </optgroup>
-            ${pkgOptions ? `
-            <optgroup label="Packages" style="color: #1d4ed8; font-weight: 600;">
-                ${pkgOptions}
-            </optgroup>` : ''}
-        `;
+    function timeToMins(tStr) {
+        if (!tStr) return 0;
+        const [h, m] = tStr.split(':').map(Number);
+        return (h * 60) + m;
+    }
 
-        const staffOptions = liveStaffDB.map(m =>
-            `<option value="${m.staff_id}">${m.staff_name || m.name}</option>`
-        ).join('');
+    function minsToTime24(mins) {
+        let total = mins % (24 * 60);
+        let h = Math.floor(total / 60);
+        let m = total % 60;
+        return `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}`;
+    }
 
-        const div = document.createElement('div');
-        div.className = 'service-booking-row';
-        div.dataset.rowId = rowId;
+    function minsToDisplay(mins) {
+        const ampm = Math.floor(mins / 60) >= 12 ? 'PM' : 'AM';
+        let h = Math.floor(mins / 60) % 12;
+        if (h === 0) h = 12;
+        return `${String(h).padStart(2, '0')}:${String(mins % 60).padStart(2, '0')} ${ampm}`;
+    }
 
-        // Separator for additional rows
-        const separatorHtml = !isFirst
-            ? `<hr style="border:none; border-top:1px dashed #e2e8f0; margin: 0 0 12px 0;">`
-            : '';
-
-        div.innerHTML = `
-            ${separatorHtml}
-            <div class="form-group" style="margin-top:0; margin-bottom:8px;">
-                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:6px;">
-                    <label class="form-label" style="margin-bottom:0;">Service or Package <span class="text-rose">*</span></label>
-                    ${isFirst
-                        ? `<button type="button" id="btnAddBookingItem"
-                            style="font-size:0.78rem; padding:3px 10px; border-radius:6px;
-                            border:1.5px solid var(--accent, #d946ef);
-                            background:var(--accent, #d946ef); color:#fff; font-weight:600; cursor:pointer;
-                            display:flex; align-items:center; gap:3px; transition:all 0.2s;">+ Add Item</button>`
-                        : `<button type="button" class="btn-remove-row"
-                            style="font-size:0.75rem; padding:2px 8px; border-radius:5px; border:1px solid #fca5a5;
-                            background:#fff5f5; color:#ef4444; font-weight:600; cursor:pointer; line-height:1.5;">✕ Remove</button>`
-                    }
-                </div>
-                <select class="form-select svc-select">
-                    <option value="" disabled selected>Select a service or package</option>
-                    ${combinedOptions}
-                </select>
-                
-                <!-- Service Meta: Duration and Price -->
-                <div class="svc-meta form-grid" style="display:none; margin-top:8px;">
-                    <div class="form-group" style="margin-bottom:0;">
-                        <label class="form-label">Duration</label>
-                        <input type="text" class="form-input read-only-input svc-duration" readonly placeholder="—">
-                    </div>
-                    <div class="form-group" style="margin-bottom:0;">
-                        <label class="form-label">Price</label>
-                        <input type="text" class="form-input read-only-input svc-price" readonly placeholder="—">
-                    </div>
-                </div>
-                
-                <!-- Package Meta: Included Services and Final Price -->
-                <div class="pkg-meta" style="display:none; margin-top:8px; padding:12px; background:#f8fafc; border-radius:8px; border:1px solid #e2e8f0;">
-                    <div style="display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:8px;">
-                        <label class="form-label" style="margin-bottom:0; color:#334155;">Included Services</label>
-                        <div style="text-align:right;">
-                            <div style="font-size:0.75rem; color:#64748b; font-weight:600; text-transform:uppercase;">Package Price</div>
-                            <div class="pkg-price-display" style="font-size:1.1rem; color:#15803d; font-weight:700;">—</div>
-                        </div>
-                    </div>
-                    <div class="pkg-services-list" style="display:flex; flex-wrap:wrap; gap:6px;"></div>
-                </div>
-            </div>
-            <div class="form-group section-gap" style="margin-bottom:0;">
-                <label class="form-label" for="bookingStaff">Staff <span class="text-rose">*</span></label>
-                <select class="form-select staff-select">
-                    <option value="" disabled selected>Select staff member</option>
-                    ${staffOptions}
-                </select>
-            </div>
-        `;
-
-        const svcSel      = div.querySelector('.svc-select');
-        const staffSel    = div.querySelector('.staff-select');
-        const svcMeta     = div.querySelector('.svc-meta');
-        const svcDuration = div.querySelector('.svc-duration');
-        const svcPrice    = div.querySelector('.svc-price');
-        
-        const pkgMeta         = div.querySelector('.pkg-meta');
-        const pkgPriceDisplay = div.querySelector('.pkg-price-display');
-        const pkgServicesList = div.querySelector('.pkg-services-list');
-
-        // Service/Package selected
-        svcSel.addEventListener('change', () => {
-            const opt = svcSel.options[svcSel.selectedIndex];
-            if (opt && opt.value) {
-                const type  = opt.dataset.type;
-                const price = parseFloat(opt.dataset.price || 0);
-
-                if (type === 'service') {
-                    const dur = opt.dataset.duration;
-                    svcDuration.value  = dur && dur !== '0' ? `${dur} min` : '—';
-                    svcPrice.value     = price ? `₹${price.toLocaleString('en-IN')}` : '—';
-                    svcMeta.style.display = 'grid';
-                    pkgMeta.style.display = 'none';
-                } else if (type === 'package') {
-                    pkgPriceDisplay.textContent = price ? `₹${price.toLocaleString('en-IN')}` : '—';
-                    
-                    const includedServices = livePackageServicesDB.filter(ps => ps.package_id === opt.value);
-                    if (includedServices.length > 0) {
-                        pkgServicesList.innerHTML = includedServices.map(ps => 
-                            `<span style="display:inline-flex; align-items:center; background:#e0e7ff; color:#3730a3; padding:2px 8px; border-radius:12px; font-size:0.75rem; font-weight:600;">${ps.service_name || 'Service'}</span>`
-                        ).join('');
-                    } else {
-                        pkgServicesList.innerHTML = `<span style="font-size:0.8rem; color:#94a3b8;">No specific services defined</span>`;
-                    }
-                    
-                    svcMeta.style.display = 'none';
-                    pkgMeta.style.display = 'block';
-                }
-            } else {
-                svcMeta.style.display = 'none';
-                pkgMeta.style.display = 'none';
-            }
-            validateForm();
-        });
-
-        // Staff selected → auto-sync all other staff selects in the container
-        staffSel.addEventListener('change', () => {
-            const syncVal = staffSel.value;
-            serviceRowsContainer.querySelectorAll('.staff-select').forEach(sel => {
-                if (sel !== staffSel) sel.value = syncVal;
-            });
-            validateForm();
-        });
-
-        // Remove row (non-first only)
-        if (!isFirst) {
-            div.querySelector('.btn-remove-row').addEventListener('click', () => {
-                div.remove();
-                // Re-label remaining rows
-                relabelRows();
-                validateForm();
-            });
+    function showMsg(msg, isError = false) {
+        if (typeof window.toast === 'function') {
+            window.toast(msg);
+        } else {
+            console[isError ? 'error' : 'log']('[Booking Modal]', msg);
+            if (isError) alert(msg);
         }
-
-        return div;
     }
 
-    // Re-index "Service N" labels after a row is removed
-    function relabelRows() {
-        serviceRowsContainer.querySelectorAll('.service-booking-row').forEach((row, i) => {
-            const label = row.querySelector('span[style*="text-transform"]');
-            if (label) label.textContent = `Service ${i + 1}`;
-        });
-    }
-
-    // ── Populate all selects with live DB data ────────────────────────────
+    // ── Database Data Loader ────────────────────────────────────────────
     async function populateBookingDropdowns() {
         try {
             const company_id = getCompanyId();
             const branch_id  = getBranchId();
 
-            const [svcRes, staffRes, custRes, pkgRes, pkgSvcRes] = await Promise.all([
+            const [svcRes, staffRes, custRes, pkgRes, pkgSvcRes, catRes] = await Promise.all([
                 supabase.from('services').select('*').eq('company_id', company_id).eq('branch_id', branch_id),
                 supabase.from('staff').select('*').eq('company_id', company_id).eq('branch_id', branch_id),
                 supabase.from('customers').select('*').eq('company_id', company_id).eq('branch_id', branch_id),
                 supabase.from('packages').select('*').eq('company_id', company_id).eq('branch_id', branch_id).eq('is_active', true).neq('status', 'deleted'),
-                supabase.from('package_services').select('*')
+                supabase.from('package_services').select('*'),
+                supabase.from('service_categories').select('category_id, category_name').eq('company_id', company_id).eq('branch_id', branch_id).neq('status', 'deleted')
             ]);
 
-            liveServicesDB  = (svcRes.data  || []).filter(s => (s.status || '').trim().toLowerCase() === 'active');
-            liveStaffDB     = (staffRes.data || []).filter(s => s.status !== 'deleted');
-            liveCustomersDB = custRes.data || [];
-            livePackagesDB  = pkgRes.data || [];
+            liveCategoriesDB      = catRes.data || [];
+            liveStaffDB           = (staffRes.data || []).filter(s => s.status !== 'deleted');
+            liveCustomersDB       = custRes.data || [];
+            livePackagesDB        = pkgRes.data || [];
             livePackageServicesDB = pkgSvcRes.data || [];
 
-            // Repopulate options in all existing rows
-            serviceRowsContainer.querySelectorAll('.service-booking-row').forEach(row => {
-                const svcSel   = row.querySelector('.svc-select');
-                const staffSel = row.querySelector('.staff-select');
-                const prevSvc  = svcSel.value;
-                const prevStf  = staffSel.value;
-                
-                const combinedOptions = `
-                    <optgroup label="Services" style="color: #1d4ed8; font-weight: 600;">
-                        ${liveServicesDB.map(s => `<option value="${s.service_id}" data-type="service" style="color: #0f172a; font-weight: normal;" data-duration="${s.duration || 0}" data-price="${s.price || 0}" ${prevSvc === s.service_id ? 'selected' : ''}>${s.service_name}</option>`).join('')}
-                    </optgroup>
-                    ${livePackagesDB.length > 0 ? `
-                    <optgroup label="Packages" style="color: #1d4ed8; font-weight: 600;">
-                        ${livePackagesDB.map(p => `<option value="${p.package_id}" data-type="package" style="color: #0f172a; font-weight: normal;" data-duration="0" data-price="${p.final_price || 0}" ${prevSvc === p.package_id ? 'selected' : ''}>${p.package_name}</option>`).join('')}
-                    </optgroup>` : ''}
-                `;
-
-                svcSel.innerHTML = `<option value="" disabled ${!prevSvc ? 'selected' : ''}>Select a service or package</option>` + combinedOptions;
-
-                staffSel.innerHTML = `<option value="" disabled ${!prevStf ? 'selected' : ''}>Select staff member</option>` +
-                    liveStaffDB.map(m =>
-                        `<option value="${m.staff_id}" ${prevStf === m.staff_id ? 'selected' : ''}>${m.staff_name || m.name}</option>`
-                    ).join('');
-            });
+            // Map category_name into services for filtering and badges
+            const catMap = new Map(liveCategoriesDB.map(c => [c.category_id, c.category_name]));
+            liveServicesDB = (svcRes.data || [])
+                .filter(s => (s.status || '').trim().toLowerCase() === 'active')
+                .map(s => ({
+                    ...s,
+                    category_name: catMap.get(s.category_id) || s.category_name || 'General'
+                }));
 
         } catch (err) {
-            console.error('Error loading booking dropdowns:', err);
+            console.error('[Booking Modal] Error loading dropdown data:', err);
         }
     }
 
-    // ── Reset all service rows to a single empty row ──────────────────────
-    function resetServiceRows() {
-        serviceRowsContainer.innerHTML = '';
-        rowCounter = 0;
-        
-        const firstRow = buildServiceRow(rowCounter++, true);
-        serviceRowsContainer.appendChild(firstRow);
+    // ----------------------------------------------------------------
+    // RENDER: Selected Items List (Shared by Main Modal & Picker Modal)
+    // ----------------------------------------------------------------
+    function renderSelectedList(containerEl, itemsArray, isPicker) {
+        if (!containerEl) return;
 
-        // Wire the + Add Item button (it lives inside the first row)
-        const btnAddBookingItem = firstRow.querySelector('#btnAddBookingItem');
-        if (btnAddBookingItem) {
-            btnAddBookingItem.addEventListener('click', () => {
-                serviceRowsContainer.appendChild(buildServiceRow(rowCounter++, false));
-                // Auto-sync staff from first row into new row
-                const firstStaff = serviceRowsContainer.querySelector('.staff-select');
-                if (firstStaff && firstStaff.value) {
-                    serviceRowsContainer.querySelectorAll('.staff-select').forEach(sel => {
-                        sel.value = firstStaff.value;
+        if (itemsArray.length === 0) {
+            containerEl.innerHTML = `
+                <div class="selected-services-empty">
+                    <p style="margin:0;font-weight:500;">No services selected yet.</p>
+                    <p style="margin:4px 0 0 0;font-size:0.8rem;color:#94a3b8;">Click below to add services or packages to this appointment.</p>
+                </div>
+            `;
+            return;
+        }
+
+        const staffOptionsHtml = (selectedStaffId) => {
+            return `<option value="" disabled ${!selectedStaffId ? 'selected' : ''}>Select staff</option>` +
+                liveStaffDB.map(st => `
+                    <option value="${st.staff_id}" ${st.staff_id === selectedStaffId ? 'selected' : ''}>${st.staff_name || st.name}</option>
+                `).join('');
+        };
+
+        containerEl.innerHTML = itemsArray.map((item, index) => {
+            const visual = getCategoryMeta(item.categoryName, item.name);
+            const durationDisplay = item.duration ? `${item.duration} min` : '—';
+            const priceDisplay = fmtPrice(item.price);
+
+            return `
+            <div class="selected-item-card" data-uid="${item.uid}" data-index="${index}" draggable="true">
+                <div class="item-card-left">
+                    <span class="drag-handle" title="Drag to reorder">:::</span>
+                    <div class="service-icon-tile ${visual.theme}">
+                        <i data-feather="${visual.icon}"></i>
+                    </div>
+                    <div class="item-info">
+                        <h4 class="item-name">${item.name}</h4>
+                        <p class="item-meta">
+                            <span>${durationDisplay}</span>
+                            <span>|</span>
+                            <span>${priceDisplay}</span>
+                        </p>
+                    </div>
+                </div>
+
+                <div class="item-card-right">
+                    <div class="item-staff-group">
+                        <span class="item-staff-label">Staff <span class="text-rose">*</span></span>
+                        <select class="item-staff-select" data-uid="${item.uid}">
+                            ${staffOptionsHtml(item.staffId)}
+                        </select>
+                    </div>
+                    <button type="button" class="btn-item-delete" data-uid="${item.uid}" title="Remove item">
+                        <i data-feather="trash-2"></i>
+                    </button>
+                </div>
+            </div>
+            `;
+        }).join('');
+
+        if (window.feather && feather.replace) {
+            feather.replace();
+        }
+
+        // Attach Staff Select Listeners
+        containerEl.querySelectorAll('.item-staff-select').forEach(sel => {
+            sel.addEventListener('change', () => {
+                const uid = sel.dataset.uid;
+                const newStaffId = sel.value;
+                const opt = sel.options[sel.selectedIndex];
+                const newStaffName = opt ? opt.textContent : '';
+
+                if (isStaffSyncAll) {
+                    // Update all items in this collection
+                    itemsArray.forEach(it => {
+                        it.staffId = newStaffId;
+                        it.staffName = newStaffName;
                     });
+                    // Re-render so all dropdowns reflect the selected staff
+                    renderSelectedList(containerEl, itemsArray, isPicker);
+                } else {
+                    const found = itemsArray.find(it => it.uid === uid);
+                    if (found) {
+                        found.staffId = newStaffId;
+                        found.staffName = newStaffName;
+                    }
                 }
                 validateForm();
             });
-        }
+        });
+
+        // Attach Delete Item Listeners
+        containerEl.querySelectorAll('.btn-item-delete').forEach(btn => {
+            btn.addEventListener('click', () => {
+                const uid = btn.dataset.uid;
+                const idx = itemsArray.findIndex(it => it.uid === uid);
+                if (idx !== -1) {
+                    itemsArray.splice(idx, 1);
+                    renderSelectedList(containerEl, itemsArray, isPicker);
+                    updateTotals();
+                    if (isPicker) {
+                        renderCatalogItems();
+                    }
+                    validateForm();
+                }
+            });
+        });
+
+        // Attach Drag & Drop Reordering Listeners
+        setupDragAndDrop(containerEl, itemsArray, isPicker);
     }
 
-    // ── Open / Close ──────────────────────────────────────────────────────
+    // ── Drag & Drop Implementation ──────────────────────────────────────
+    function setupDragAndDrop(containerEl, itemsArray, isPicker) {
+        let draggedItemUid = null;
+
+        containerEl.querySelectorAll('.selected-item-card').forEach(card => {
+            card.addEventListener('dragstart', (e) => {
+                draggedItemUid = card.dataset.uid;
+                card.classList.add('dragging');
+                e.dataTransfer.effectAllowed = 'move';
+                e.dataTransfer.setData('text/plain', draggedItemUid);
+            });
+
+            card.addEventListener('dragend', () => {
+                card.classList.remove('dragging');
+                containerEl.querySelectorAll('.selected-item-card').forEach(c => c.classList.remove('dragging'));
+            });
+
+            card.addEventListener('dragover', (e) => {
+                e.preventDefault();
+                e.dataTransfer.dropEffect = 'move';
+            });
+
+            card.addEventListener('drop', (e) => {
+                e.preventDefault();
+                const targetUid = card.dataset.uid;
+                if (!draggedItemUid || draggedItemUid === targetUid) return;
+
+                const srcIndex = itemsArray.findIndex(it => it.uid === draggedItemUid);
+                const tgtIndex = itemsArray.findIndex(it => it.uid === targetUid);
+
+                if (srcIndex !== -1 && tgtIndex !== -1) {
+                    const [movedItem] = itemsArray.splice(srcIndex, 1);
+                    itemsArray.splice(tgtIndex, 0, movedItem);
+                    renderSelectedList(containerEl, itemsArray, isPicker);
+                }
+            });
+        });
+    }
+
+    // ----------------------------------------------------------------
+    // TOTALS & METRICS RECALCULATION
+    // ----------------------------------------------------------------
+    function updateTotals() {
+        // 1. Main Modal Metrics
+        const mainCount = selectedBookingItems.length;
+        const mainDuration = selectedBookingItems.reduce((acc, it) => acc + (parseInt(it.duration) || 0), 0);
+        const mainAmount = selectedBookingItems.reduce((acc, it) => acc + (parseFloat(it.price) || 0), 0);
+
+        if (mainCountPill) mainCountPill.textContent = `${mainCount} Selected`;
+        if (mainTotalDurationVal) mainTotalDurationVal.textContent = `${mainDuration} min`;
+        if (mainTotalAmountVal) mainTotalAmountVal.textContent = fmtPrice(mainAmount);
+
+        // 2. Picker Modal Metrics
+        const pickerCount = pickerDraftItems.length;
+        const pickerDuration = pickerDraftItems.reduce((acc, it) => acc + (parseInt(it.duration) || 0), 0);
+        const pickerAmount = pickerDraftItems.reduce((acc, it) => acc + (parseFloat(it.price) || 0), 0);
+
+        if (pickerCountTitle) pickerCountTitle.textContent = `Selected Services (${pickerCount})`;
+        if (pickerTotalDurationVal) pickerTotalDurationVal.textContent = `${pickerDuration} min`;
+        if (pickerTotalAmountVal) pickerTotalAmountVal.textContent = fmtPrice(pickerAmount);
+    }
+
+    // ----------------------------------------------------------------
+    // RENDER: Catalog Items (Left Column of Picker)
+    // ----------------------------------------------------------------
+    function renderCatalogItems() {
+        if (!pickerCatalogList) return;
+
+        const isServicesTab = activePickerTab === 'services';
+        const query = (pickerSearchQuery || '').toLowerCase().trim();
+
+        if (isServicesTab) {
+            // Filter services by category and search query
+            const filteredServices = liveServicesDB.filter(svc => {
+                const matchesCat = (activeCategoryFilter === 'all') || (svc.category_id === activeCategoryFilter);
+                const matchesSearch = !query ||
+                    (svc.service_name && svc.service_name.toLowerCase().includes(query)) ||
+                    (svc.category_name && svc.category_name.toLowerCase().includes(query));
+                return matchesCat && matchesSearch;
+            });
+
+            if (filteredServices.length === 0) {
+                pickerCatalogList.innerHTML = `
+                    <div style="padding: 2rem 1rem; text-align: center; color: #94a3b8; font-size: 0.9rem;">
+                        No services found matching your criteria.
+                    </div>
+                `;
+                return;
+            }
+
+            pickerCatalogList.innerHTML = filteredServices.map(svc => {
+                const isAdded = pickerDraftItems.some(it => it.id === svc.service_id && it.type === 'service');
+                const visual = getCategoryMeta(svc.category_name, svc.service_name);
+
+                return `
+                <div class="catalog-item-card">
+                    <div class="catalog-item-left">
+                        <div class="service-icon-tile ${visual.theme}">
+                            <i data-feather="${visual.icon}"></i>
+                        </div>
+                        <div class="catalog-item-info">
+                            <h4 class="catalog-item-name">${svc.service_name}</h4>
+                            <p class="catalog-item-meta">${svc.duration ? `${svc.duration} min` : '0 min'} | ${fmtPrice(svc.price)}</p>
+                        </div>
+                    </div>
+                    <div>
+                        ${isAdded
+                            ? `<button type="button" class="btn-catalog-action action-added" data-id="${svc.service_id}" data-type="service">
+                                   <i data-feather="check"></i> <span>Added</span>
+                               </button>`
+                            : `<button type="button" class="btn-catalog-action action-add" data-id="${svc.service_id}" data-type="service">
+                                   <i data-feather="plus"></i> <span>Add</span>
+                               </button>`
+                        }
+                    </div>
+                </div>
+                `;
+            }).join('');
+
+        } else {
+            // Packages Tab
+            const filteredPackages = livePackagesDB.filter(pkg => {
+                return !query || (pkg.package_name && pkg.package_name.toLowerCase().includes(query));
+            });
+
+            if (filteredPackages.length === 0) {
+                pickerCatalogList.innerHTML = `
+                    <div style="padding: 2rem 1rem; text-align: center; color: #94a3b8; font-size: 0.9rem;">
+                        No packages available.
+                    </div>
+                `;
+                return;
+            }
+
+            pickerCatalogList.innerHTML = filteredPackages.map(pkg => {
+                const isAdded = pickerDraftItems.some(it => it.packageId === pkg.package_id || it.id === pkg.package_id);
+                const incServices = livePackageServicesDB.filter(ps => ps.package_id === pkg.package_id);
+                const incNames = incServices.map(ps => ps.service_name).join(', ') || 'Custom package services';
+
+                return `
+                <div class="catalog-item-card">
+                    <div class="catalog-item-left">
+                        <div class="service-icon-tile theme-indigo">
+                            <i data-feather="package"></i>
+                        </div>
+                        <div class="catalog-item-info">
+                            <h4 class="catalog-item-name">${pkg.package_name}</h4>
+                            <p class="catalog-item-meta" title="${incNames}" style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:260px;">
+                                ${incServices.length} Services | ${fmtPrice(pkg.final_price)}
+                            </p>
+                        </div>
+                    </div>
+                    <div>
+                        ${isAdded
+                            ? `<button type="button" class="btn-catalog-action action-added" data-id="${pkg.package_id}" data-type="package">
+                                   <i data-feather="check"></i> <span>Added</span>
+                               </button>`
+                            : `<button type="button" class="btn-catalog-action action-add" data-id="${pkg.package_id}" data-type="package">
+                                   <i data-feather="plus"></i> <span>Add</span>
+                               </button>`
+                        }
+                    </div>
+                </div>
+                `;
+            }).join('');
+        }
+
+        if (window.feather && feather.replace) {
+            feather.replace();
+        }
+
+        // Attach Click Listeners to + Add / ✓ Added buttons
+        pickerCatalogList.querySelectorAll('.btn-catalog-action').forEach(btn => {
+            btn.addEventListener('click', () => {
+                const id   = btn.dataset.id;
+                const type = btn.dataset.type;
+
+                if (type === 'service') {
+                    const svc = liveServicesDB.find(s => s.service_id === id);
+                    if (!svc) return;
+
+                    const isCurrentlyAdded = pickerDraftItems.some(it => it.id === id && it.type === 'service');
+                    if (isCurrentlyAdded) {
+                        // Remove from picker draft
+                        pickerDraftItems = pickerDraftItems.filter(it => !(it.id === id && it.type === 'service'));
+                    } else {
+                        // Add to picker draft
+                        const defaultStaff = isStaffSyncAll && pickerDraftItems.length > 0 && pickerDraftItems[0].staffId
+                            ? pickerDraftItems[0].staffId
+                            : '';
+                        const defaultStaffName = isStaffSyncAll && pickerDraftItems.length > 0 && pickerDraftItems[0].staffName
+                            ? pickerDraftItems[0].staffName
+                            : '';
+
+                        pickerDraftItems.push({
+                            uid: 'item_' + generateUUID(),
+                            type: 'service',
+                            id: svc.service_id,
+                            name: svc.service_name,
+                            categoryName: svc.category_name,
+                            duration: parseInt(svc.duration) || 0,
+                            price: parseFloat(svc.price) || 0,
+                            staffId: defaultStaff,
+                            staffName: defaultStaffName,
+                            packageId: null,
+                            packageName: null
+                        });
+                    }
+                } else if (type === 'package') {
+                    const pkg = livePackagesDB.find(p => p.package_id === id);
+                    if (!pkg) return;
+
+                    const isCurrentlyAdded = pickerDraftItems.some(it => it.packageId === id || it.id === id);
+                    if (isCurrentlyAdded) {
+                        // Remove all package services
+                        pickerDraftItems = pickerDraftItems.filter(it => it.packageId !== id && it.id !== id);
+                    } else {
+                        // Expand individual package services per Decision 1
+                        const incServices = livePackageServicesDB.filter(ps => ps.package_id === id);
+                        const defaultStaff = isStaffSyncAll && pickerDraftItems.length > 0 && pickerDraftItems[0].staffId
+                            ? pickerDraftItems[0].staffId
+                            : '';
+                        const defaultStaffName = isStaffSyncAll && pickerDraftItems.length > 0 && pickerDraftItems[0].staffName
+                            ? pickerDraftItems[0].staffName
+                            : '';
+
+                        if (incServices.length > 0) {
+                            const perItemPrice = Math.round((Number(pkg.final_price) || 0) / incServices.length);
+                            incServices.forEach((ps, idx) => {
+                                const matchedSvc = liveServicesDB.find(s => s.service_id === ps.service_id);
+                                pickerDraftItems.push({
+                                    uid: 'item_' + generateUUID(),
+                                    type: 'package_service',
+                                    id: ps.service_id,
+                                    name: `${ps.service_name} (${pkg.package_name})`,
+                                    categoryName: matchedSvc?.category_name || 'Package',
+                                    duration: matchedSvc ? (parseInt(matchedSvc.duration) || 0) : 30,
+                                    // Allocate price so total equals pkg.final_price
+                                    price: idx === incServices.length - 1
+                                        ? ((Number(pkg.final_price) || 0) - perItemPrice * (incServices.length - 1))
+                                        : perItemPrice,
+                                    staffId: defaultStaff,
+                                    staffName: defaultStaffName,
+                                    packageId: pkg.package_id,
+                                    packageName: pkg.package_name
+                                });
+                            });
+                        } else {
+                            pickerDraftItems.push({
+                                uid: 'item_' + generateUUID(),
+                                type: 'package',
+                                id: pkg.package_id,
+                                name: pkg.package_name,
+                                categoryName: 'Package',
+                                duration: 60,
+                                price: parseFloat(pkg.final_price) || 0,
+                                staffId: defaultStaff,
+                                staffName: defaultStaffName,
+                                packageId: pkg.package_id,
+                                packageName: pkg.package_name
+                            });
+                        }
+                    }
+                }
+
+                renderCatalogItems();
+                renderSelectedList(pickerSelectedList, pickerDraftItems, true);
+                updateTotals();
+            });
+        });
+    }
+
+    // ----------------------------------------------------------------
+    // RENDER: Category Pills (Left Column of Picker)
+    // ----------------------------------------------------------------
+    function renderCategoryPills() {
+        if (!pickerCategoryPills) return;
+
+        if (activePickerTab === 'packages') {
+            // Decision 1: Hide category filters in the Packages tab
+            pickerCategoryPills.style.display = 'none';
+            return;
+        }
+
+        pickerCategoryPills.style.display = 'flex';
+
+        let html = `
+            <button type="button" class="category-pill ${activeCategoryFilter === 'all' ? 'active' : ''}" data-cat-id="all">
+                All
+            </button>
+        `;
+
+        liveCategoriesDB.forEach(cat => {
+            html += `
+                <button type="button" class="category-pill ${activeCategoryFilter === cat.category_id ? 'active' : ''}" data-cat-id="${cat.category_id}">
+                    ${cat.category_name}
+                </button>
+            `;
+        });
+
+        pickerCategoryPills.innerHTML = html;
+
+        pickerCategoryPills.querySelectorAll('.category-pill').forEach(pill => {
+            pill.addEventListener('click', () => {
+                activeCategoryFilter = pill.dataset.catId;
+                renderCategoryPills();
+                renderCatalogItems();
+            });
+        });
+    }
+
+    // ----------------------------------------------------------------
+    // MODAL OPEN / CLOSE LIFECYCLE
+    // ----------------------------------------------------------------
     async function openModal() {
         phoneSearch.value = '';
         setNewCustomerState();
@@ -462,158 +946,155 @@ export function initGlobalBookingModal() {
             bookingDate.value = `${yyyy}-${mm}-${dd}`;
         }
 
-        searchSuggestions.style.display = 'none';
+        if (searchSuggestions) searchSuggestions.style.display = 'none';
         if (newCustomerBadgeContainer) newCustomerBadgeContainer.style.display = 'none';
         if (customerBadgeContainer)    customerBadgeContainer.style.display    = 'none';
 
         selectedCustomerId = null;
-        resetServiceRows();
+        selectedBookingItems = [];
+        pickerDraftItems     = [];
+        isStaffSyncAll       = false;
+
+        if (mainStaffSyncToggle) mainStaffSyncToggle.checked = false;
+        if (pickerStaffSyncToggle) pickerStaffSyncToggle.checked = false;
+
+        renderSelectedList(mainSelectedList, selectedBookingItems, false);
+        updateTotals();
         validateForm();
 
-        modalOverlay.classList.add('active');
+        bookingModalOverlay.classList.add('active');
         setTimeout(() => phoneSearch.focus(), 100);
+
         await populateBookingDropdowns();
     }
 
-    // ── External hook: open modal and pre-fill customer + services (for rebook) ──
-    window.openAndPrefillBooking = async function({ customerId, name, phone, email, serviceIds = [], staffIds = [] }) {
-        // Step 1: open the modal and await full dropdown population
-        await openModal();
+    function closeModal() {
+        bookingModalOverlay.classList.remove('active');
+        pickerOverlay.classList.remove('active');
+    }
 
-        // Step 2: lock-in the existing customer
-        if (customerId) {
-            window.setGlobalBookingCustomer(customerId, name, phone, email);
+    // ── Picker Modal Lifecycle ──────────────────────────────────────────
+    function openPickerModal() {
+        // Clone current confirmed items into picker working draft
+        pickerDraftItems = JSON.parse(JSON.stringify(selectedBookingItems));
+
+        activePickerTab      = 'services';
+        activeCategoryFilter = 'all';
+        pickerSearchQuery    = '';
+
+        if (pickerSearchInput) {
+            pickerSearchInput.value = '';
+            pickerSearchInput.placeholder = 'Search services...';
         }
 
-        // Step 3: now that dropdowns are populated, fill services/packages
-        if (serviceIds.length > 0) {
-            const container = document.getElementById('serviceRowsContainer');
-            if (container) {
-                const btnAdd = container.querySelector('#btnAddBookingItem');
-                // Add extra rows as needed
-                while (container.querySelectorAll('.service-booking-row').length < serviceIds.length && btnAdd) {
-                    btnAdd.click();
-                }
+        if (pickerTabServices) pickerTabServices.classList.add('active');
+        if (pickerTabPackages) pickerTabPackages.classList.remove('active');
 
-                const rows = container.querySelectorAll('.service-booking-row');
-                rows.forEach((row, i) => {
-                    if (i < serviceIds.length) {
-                        const svcSel   = row.querySelector('.svc-select');
-                        const staffSel = row.querySelector('.staff-select');
+        if (pickerStaffSyncToggle) {
+            pickerStaffSyncToggle.checked = isStaffSyncAll;
+        }
 
-                        if (svcSel && serviceIds[i]) {
-                            svcSel.value = serviceIds[i];
-                            svcSel.dispatchEvent(new Event('change', { bubbles: true }));
-                        }
+        renderCategoryPills();
+        renderCatalogItems();
+        renderSelectedList(pickerSelectedList, pickerDraftItems, true);
+        updateTotals();
 
-                        const stfId = staffIds[i] || staffIds[0];
-                        if (staffSel && stfId) {
-                            staffSel.value = stfId;
-                            staffSel.dispatchEvent(new Event('change', { bubbles: true }));
-                        }
-                    }
+        pickerOverlay.classList.add('active');
+    }
+
+    function closePickerModal() {
+        pickerOverlay.classList.remove('active');
+    }
+
+    // ----------------------------------------------------------------
+    // EVENT BINDINGS
+    // ----------------------------------------------------------------
+
+    // ── Picker Tabs ─────────────────────────────────────────────────
+    pickerTabServices?.addEventListener('click', () => {
+        activePickerTab = 'services';
+        pickerTabServices.classList.add('active');
+        pickerTabPackages.classList.remove('active');
+        if (pickerSearchInput) pickerSearchInput.placeholder = 'Search services...';
+        renderCategoryPills();
+        renderCatalogItems();
+    });
+
+    pickerTabPackages?.addEventListener('click', () => {
+        activePickerTab = 'packages';
+        pickerTabPackages.classList.add('active');
+        pickerTabServices.classList.remove('active');
+        if (pickerSearchInput) pickerSearchInput.placeholder = 'Search packages...';
+        renderCategoryPills();
+        renderCatalogItems();
+    });
+
+    pickerSearchInput?.addEventListener('input', (e) => {
+        pickerSearchQuery = e.target.value;
+        renderCatalogItems();
+    });
+
+    // ── Picker Actions ──────────────────────────────────────────────
+    btnClearAllSelected?.addEventListener('click', () => {
+        pickerDraftItems = [];
+        renderSelectedList(pickerSelectedList, pickerDraftItems, true);
+        renderCatalogItems();
+        updateTotals();
+    });
+
+    pickerStaffSyncToggle?.addEventListener('change', (e) => {
+        isStaffSyncAll = e.target.checked;
+        if (mainStaffSyncToggle) mainStaffSyncToggle.checked = isStaffSyncAll;
+
+        if (isStaffSyncAll && pickerDraftItems.length > 0) {
+            const firstStaff = pickerDraftItems[0].staffId;
+            const firstStaffName = pickerDraftItems[0].staffName;
+            if (firstStaff) {
+                pickerDraftItems.forEach(it => {
+                    it.staffId = firstStaff;
+                    it.staffName = firstStaffName;
                 });
+                renderSelectedList(pickerSelectedList, pickerDraftItems, true);
             }
         }
+    });
 
+    mainStaffSyncToggle?.addEventListener('change', (e) => {
+        isStaffSyncAll = e.target.checked;
+        if (pickerStaffSyncToggle) pickerStaffSyncToggle.checked = isStaffSyncAll;
+
+        if (isStaffSyncAll && selectedBookingItems.length > 0) {
+            const firstStaff = selectedBookingItems[0].staffId;
+            const firstStaffName = selectedBookingItems[0].staffName;
+            if (firstStaff) {
+                selectedBookingItems.forEach(it => {
+                    it.staffId = firstStaff;
+                    it.staffName = firstStaffName;
+                });
+                renderSelectedList(mainSelectedList, selectedBookingItems, false);
+                validateForm();
+            }
+        }
+    });
+
+    // ── Commit Picker Selection to Main Booking Modal ───────────────
+    btnAddPickerToBooking?.addEventListener('click', () => {
+        // Commit draft to single source of truth
+        selectedBookingItems = JSON.parse(JSON.stringify(pickerDraftItems));
+        renderSelectedList(mainSelectedList, selectedBookingItems, false);
+        updateTotals();
+        closePickerModal();
         validateForm();
-    };
-
-    function closeModal() {
-        modalOverlay.classList.remove('active');
-    }
-
-    // btnAddService listener is attached in resetServiceRows() after first row is built
-
-    // ── Override Confirmation Modal ───────────────────────────────────────
-    if (!document.getElementById('staffOverrideConfirmOverlay')) {
-        document.body.insertAdjacentHTML('beforeend', `
-        <div class="modal-overlay custom-logout-overlay" id="staffOverrideConfirmOverlay" style="z-index:9999;backdrop-filter:blur(8px);">
-            <div class="logout-modal" style="background:#fff;border-radius:16px;padding:32px;width:420px;max-width:90vw;text-align:center;box-shadow:0 20px 25px -5px rgba(0,0,0,.1),0 10px 10px -5px rgba(0,0,0,.04);">
-                <div style="width:64px;height:64px;border-radius:50%;background:#fef3c7;display:flex;align-items:center;justify-content:center;margin:0 auto 20px;">
-                    <i data-feather="alert-triangle" style="color:#f59e0b;width:32px;height:32px;"></i>
-                </div>
-                <h2 style="font-size:1.35rem;font-weight:700;color:#0f172a;margin-bottom:8px;">Override Booking?</h2>
-                <p id="staffOverrideReason" style="color:#64748b;font-size:0.95rem;margin-bottom:24px;line-height:1.6;"></p>
-                <div style="display:flex;gap:12px;justify-content:center;">
-                    <button id="btnCancelOverride" style="flex:1;padding:12px 20px;border-radius:8px;border:1px solid #e2e8f0;background:#fff;color:#64748b;font-weight:600;cursor:pointer;font-size:0.95rem;">Go Back</button>
-                    <button id="btnConfirmOverride" style="flex:1;padding:12px 20px;border-radius:8px;border:none;background:#f59e0b;color:#fff;font-weight:600;cursor:pointer;font-size:0.95rem;">Yes, Confirm</button>
-                </div>
-            </div>
-        </div>`);
-    }
-
-    const overrideOverlay   = document.getElementById('staffOverrideConfirmOverlay');
-    const overrideReasonEl  = document.getElementById('staffOverrideReason');
-    const btnCancelOverride = document.getElementById('btnCancelOverride');
-
-    btnCancelOverride?.addEventListener('click', () => {
-        overrideOverlay.classList.remove('active');
-        modalOverlay.classList.add('active');
-    });
-    overrideOverlay?.addEventListener('click', (e) => {
-        if (e.target === overrideOverlay) {
-            overrideOverlay.classList.remove('active');
-            modalOverlay.classList.add('active');
-        }
     });
 
-    if (window.feather) feather.replace();
-
-    // ── Open/Close triggers ───────────────────────────────────────────────
-    window.openGlobalBookingModal = openModal;
-
-    btnNewBooking?.addEventListener('click', (e) => {
-        e.preventDefault();
-        openModal();
-    });
-    btnNewBookingPage?.addEventListener('click', (e) => {
-        e.preventDefault();
-        openModal();
-    });
-    btnCloseModal?.addEventListener('click', closeModal);
-    btnCancelBooking?.addEventListener('click', closeModal);
-    modalOverlay.addEventListener('click', (e) => { if (e.target === modalOverlay) closeModal(); });
-
-    // Ensure header button is bound when shell finishes mounting
-    document.addEventListener('app-shell:ready', () => {
-        const headerBtn = document.getElementById('btnNewBooking');
-        if (headerBtn && !headerBtn.dataset.bookingModalBound) {
-            headerBtn.dataset.bookingModalBound = '1';
-            headerBtn.addEventListener('click', (e) => {
-                e.preventDefault();
-                openModal();
-            });
-        }
+    btnOpenAddServices?.addEventListener('click', openPickerModal);
+    btnClosePicker?.addEventListener('click', closePickerModal);
+    btnCancelPicker?.addEventListener('click', closePickerModal);
+    pickerOverlay?.addEventListener('click', (e) => {
+        if (e.target === pickerOverlay) closePickerModal();
     });
 
-    // ── Branch change → refresh modal dropdowns ──────────────────────────
-    window.addEventListener('branch:changed', async () => {
-        // Only refresh if the modal is currently open
-        if (modalOverlay.classList.contains('active')) {
-            await populateBookingDropdowns();
-        } else {
-            // Invalidate cached data so next open gets fresh branch data
-            liveCustomersDB = [];
-            liveServicesDB  = [];
-            liveStaffDB     = [];
-            livePackagesDB  = [];
-            livePackageServicesDB = [];
-        }
-    });
-
-    // Handle auto-open if navigated with ?action=new
-    try {
-        const urlParams = new URLSearchParams(window.location.search);
-        if (urlParams.get('action') === 'new') {
-            openModal();
-            const url = new URL(window.location.href);
-            url.searchParams.delete('action');
-            window.history.replaceState({}, document.title, url.pathname + (url.search ? url.search : '') + url.hash);
-        }
-    } catch { /* ignore */ }
-
-    // ── Phone search ──────────────────────────────────────────────────────
+    // ── Phone Search & Autocomplete ─────────────────────────────────
     phoneSearch.addEventListener('input', (e) => {
         const val = e.target.value.trim();
         if (customerBadgeContainer)    customerBadgeContainer.style.display    = 'none';
@@ -671,7 +1152,7 @@ export function initGlobalBookingModal() {
         }
     });
 
-    // Date/time listeners
+    // Date/Time input validation listeners
     [customerName, bookingDate, bookingTime].forEach(el => {
         if (el) {
             el.addEventListener('change', validateForm);
@@ -679,40 +1160,30 @@ export function initGlobalBookingModal() {
         }
     });
 
-    // ── External API for pre-filling ──────────────────────────────────────
-    window.setGlobalBookingCustomer = function(customerId, name, phone, email) {
-        if (!customerId) return;
-        selectedCustomerId = customerId;
-        phoneSearch.value = phone || '';
-        setExistingCustomerState(name || '', email || '');
-        
-        searchSuggestions.style.display = 'none';
-        if (newCustomerBadgeContainer) newCustomerBadgeContainer.style.display = 'none';
-        if (customerBadgeContainer) {
-            customerBadgeContainer.style.display = 'block';
-            if (customerBadge) customerBadge.textContent = 'Existing Customer';
+    // Time Now Button
+    btnTimeNow?.addEventListener('click', () => {
+        if (!bookingDate.value) {
+            const t = new Date();
+            bookingDate.value = `${t.getFullYear()}-${String(t.getMonth()+1).padStart(2,'0')}-${String(t.getDate()).padStart(2,'0')}`;
         }
+        const now = new Date();
+        bookingTime.value = `${String(now.getHours()).padStart(2,'0')}:${String(now.getMinutes()).padStart(2,'0')}`;
         validateForm();
-    };
+    });
 
-    // ── Form Validation ───────────────────────────────────────────────────
+    // ── Form Validation ─────────────────────────────────────────────
     function validateForm() {
-        const hasPhone     = phoneSearch.value.trim().length >= 10;
-        const hasName      = selectedCustomerId || (customerName && customerName.value.trim().length > 0);
+        const hasPhone      = phoneSearch.value.trim().length >= 10;
+        const hasName       = selectedCustomerId || (customerName && customerName.value.trim().length > 0);
         const validCustomer = hasPhone && hasName;
 
-        const rows = serviceRowsContainer.querySelectorAll('.service-booking-row');
-        let allRowsValid = rows.length > 0;
-        rows.forEach(row => {
-            const svc   = row.querySelector('.svc-select');
-            const staff = row.querySelector('.staff-select');
-            if (!svc?.value || !staff?.value) allRowsValid = false;
-        });
+        const hasItems      = selectedBookingItems.length > 0;
+        const allStaffSet   = hasItems && selectedBookingItems.every(it => it.staffId && it.staffId.trim().length > 0);
 
-        const hasDate = bookingDate?.value !== '';
-        const hasTime = bookingTime?.value !== '';
+        const hasDate       = bookingDate?.value !== '';
+        const hasTime       = bookingTime?.value !== '';
 
-        if (validCustomer && allRowsValid && hasDate && hasTime) {
+        if (validCustomer && hasItems && allStaffSet && hasDate && hasTime) {
             btnConfirmBooking.disabled = false;
         } else {
             btnConfirmBooking.disabled = true;
@@ -735,62 +1206,19 @@ export function initGlobalBookingModal() {
         }
     }
 
-    // ── Now Button ────────────────────────────────────────────────────────
-    document.getElementById('btnTimeNow')?.addEventListener('click', () => {
-        if (!bookingDate.value) {
-            const t = new Date();
-            bookingDate.value = `${t.getFullYear()}-${String(t.getMonth()+1).padStart(2,'0')}-${String(t.getDate()).padStart(2,'0')}`;
-        }
-        const now = new Date();
-        bookingTime.value = `${String(now.getHours()).padStart(2,'0')}:${String(now.getMinutes()).padStart(2,'0')}`;
-        validateForm();
-    });
-
-    // ── Helpers ───────────────────────────────────────────────────────────
-    function showMsg(msg, isError = false) {
-        if (typeof window.toast === 'function') {
-            window.toast(msg);
-        } else {
-            console[isError ? 'error' : 'log']('[Booking Modal]', msg);
-            if (isError) alert(msg);
-        }
-    }
-
-    function calculateEndTime(startTimeStr, durationMins) {
-        if (!startTimeStr || !durationMins) return null;
-        const [hh, mm] = startTimeStr.split(':').map(Number);
-        let totalMins = hh * 60 + mm + parseInt(durationMins);
-        let endH = Math.floor(totalMins / 60);
-        let endM = totalMins % 60;
-        // Return 24-hour format (HH:MM) — required by PostgreSQL TIME column
-        return `${endH.toString().padStart(2, '0')}:${endM.toString().padStart(2, '0')}`;
-    }
-
-    function timeToMins(tStr) {
-        if (!tStr) return 0;
-        const [h, m] = tStr.split(':').map(Number);
-        return (h * 60) + m;
-    }
-
-    function minsToTime(mins) {
-        const ampm = Math.floor(mins / 60) >= 12 ? 'PM' : 'AM';
-        let h = Math.floor(mins / 60) % 12;
-        if (h === 0) h = 12;
-        return `${String(h).padStart(2, '0')}:${String(mins % 60).padStart(2, '0')} ${ampm}`;
-    }
-
-    // ── Build payload array (one per service row) ─────────────────────────
+    // ----------------------------------------------------------------
+    // PAYLOAD BUILDER & SUBMISSION
+    // ----------------------------------------------------------------
     function buildPayloads(targetId, targetName, groupBookingId) {
-        const rows = serviceRowsContainer.querySelectorAll('.service-booking-row');
-        return Array.from(rows).map(row => {
-            const svcSel   = row.querySelector('.svc-select');
-            const staffSel = row.querySelector('.staff-select');
-            const opt      = svcSel.options[svcSel.selectedIndex];
-            const duration = parseInt(opt?.dataset?.duration || 0);
-            const price    = parseFloat(opt?.dataset?.price || 0);
-            const type     = opt?.dataset?.type || 'service';
-            
-            const nameSuffix = type === 'package' ? ' (Package)' : '';
+        let currentStartMins = timeToMins(bookingTime.value);
+
+        return selectedBookingItems.map((item) => {
+            const itemDuration = parseInt(item.duration) || 0;
+            const startTimeStr = minsToTime24(currentStartMins);
+            const endTimeStr   = minsToTime24(currentStartMins + itemDuration);
+
+            // Sequential service timing
+            currentStartMins += itemDuration;
 
             return {
                 company_id:      getCompanyId(),
@@ -800,28 +1228,28 @@ export function initGlobalBookingModal() {
                 customer_name:   targetName,
                 customer_mail:   customerEmail?.value.trim() || null,
                 customer_phone:  phoneSearch.value.trim(),
-                service_id:      svcSel.value,
-                service_name:    (opt?.textContent?.trim() || '') + nameSuffix,
-                staff_id:        staffSel.value,
-                staff_name:      staffSel.options[staffSel.selectedIndex]?.text || '',
+                service_id:      item.id,
+                service_name:    item.name,
+                staff_id:        item.staffId,
+                staff_name:      item.staffName,
                 booking_date:    bookingDate.value,
-                start_time:      bookingTime.value,
-                end_time:        calculateEndTime(bookingTime.value, duration) || null,
+                start_time:      startTimeStr,
+                end_time:        endTimeStr,
                 notes:           bookingNotes?.value.trim() || '',
-                price:           price,
+                price:           Number(item.price) || 0,
                 status:          'booked',
                 booking_type:    'walk-in'
             };
         });
     }
 
-    // ── Create bookings (atomic RPC) ────────────────────────────────────
+    // ── Create bookings via atomic RPC ──────────────────────────────
     async function createBookings(payloads) {
         try {
             console.log('[createBookings] payloads:', payloads);
             const totalPrice = payloads.reduce((sum, p) => sum + (Number(p.price) || 0), 0);
 
-            // Build services array for the RPC
+            // Build services array for RPC
             const services = payloads.map(p => ({
                 service_id:   p.service_id,
                 staff_id:     p.staff_id,
@@ -833,8 +1261,7 @@ export function initGlobalBookingModal() {
                 status:       p.status || 'booked'
             }));
 
-            // Single atomic RPC call — creates customer (if new), bookings rows,
-            // summary row, and triggers initial business_transactions entry
+            // Atomic RPC
             const { data, error } = await supabase.rpc('create_booking_atomic', {
                 p_booking_id:      payloads[0].booking_id,
                 p_company_id:      payloads[0].company_id,
@@ -843,7 +1270,7 @@ export function initGlobalBookingModal() {
                 p_customer_name:   payloads[0].customer_name || 'Walk-in Customer',
                 p_customer_email:  payloads[0].customer_mail || null,
                 p_customer_phone:  payloads[0].customer_phone || '',
-                p_is_new_customer: false, // Customer already created/checked in the submit handler
+                p_is_new_customer: false,
                 p_services:        services,
                 p_booking_date:    payloads[0].booking_date,
                 p_notes:           payloads[0].notes || null,
@@ -855,6 +1282,7 @@ export function initGlobalBookingModal() {
             if (!error) {
                 const label = payloads.length > 1 ? `${payloads.length} bookings` : 'Booking';
                 showMsg(`${label} created successfully!`);
+
                 if (window.notifyEvent) {
                     try {
                         window.notifyEvent('bookings', 'evt_booking_created', {
@@ -876,6 +1304,7 @@ export function initGlobalBookingModal() {
                         console.error('[createBookings] notifyEvent error:', eventErr);
                     }
                 }
+
                 if (window.notifyCustomer) {
                     try {
                         window.notifyCustomer('booking', 'booking_confirm', {
@@ -893,17 +1322,18 @@ export function initGlobalBookingModal() {
                         console.error('[createBookings] notifyCustomer error:', custNotifyErr);
                     }
                 }
+
                 overrideOverlay?.classList.remove('active');
                 closeModal();
 
-                // Refresh page-specific data if available
+                // Refresh bookings table if available
                 try {
                     if (typeof window.fetchBookings === 'function') await window.fetchBookings();
                 } catch (refreshErr) {
                     console.warn('[Booking Modal] fetchBookings refresh error:', refreshErr);
                 }
-                
-                // Refresh dashboard data if the functions are available globally
+
+                // Refresh dashboard if available
                 try {
                     if (typeof window.refreshAllData === 'function') {
                         window.refreshAllData(getBranchId());
@@ -927,29 +1357,28 @@ export function initGlobalBookingModal() {
         }
     }
 
-    // ── Submit ────────────────────────────────────────────────────────────
+    // ── Confirm Booking Button Handler ──────────────────────────────
     btnConfirmBooking.addEventListener('click', async () => {
-        let targetName     = customerName?.value.trim();
-        let targetId       = selectedCustomerId;
+        let targetName = customerName?.value.trim();
+        let targetId   = selectedCustomerId;
         const groupBookingId = generateUUID();
 
         const originalText = btnConfirmBooking.textContent;
         btnConfirmBooking.textContent = 'Saving...';
         btnConfirmBooking.disabled    = true;
 
-        // Create new customer if needed
+        // Auto-create new customer if needed
         if (!targetId && phoneSearch.value.trim().length >= 10) {
             const typedPhone = phoneSearch.value.trim();
             const digitsOnly = typedPhone.replace(/\D/g, '');
-            
-            // Check if phone already exists (use module-scoped liveCustomersDB directly)
+
             const existingCust = liveCustomersDB.find(c => {
                 const cPhone = String(c.customer_phone || c.phone || '').replace(/\D/g, '');
                 return cPhone === digitsOnly || cPhone === typedPhone;
             });
-            
+
             if (existingCust) {
-                showMsg('Customer with this phone number already exists! Please select them from the search results above.', true);
+                showMsg('Customer with this phone number already exists! Please select them from the suggestions.', true);
                 btnConfirmBooking.textContent = originalText;
                 btnConfirmBooking.disabled    = false;
                 return;
@@ -963,7 +1392,8 @@ export function initGlobalBookingModal() {
                     customer_phone: typedPhone,
                     customer_email: customerEmail?.value.trim() || '',
                     status:         'active'
-                });
+                }).select();
+
                 if (custErr) throw custErr;
                 if (newCust && newCust.length > 0) {
                     targetId = newCust[0].customer_id;
@@ -987,7 +1417,7 @@ export function initGlobalBookingModal() {
         const payloads = buildPayloads(targetId, targetName, groupBookingId);
 
         try {
-            // Staff overlap check against first service row only
+            // Staff overlap check against first service row
             const first = payloads[0];
             const { data: existing, error: bErr } = await supabase
                 .from('bookings')
@@ -995,7 +1425,7 @@ export function initGlobalBookingModal() {
                 .eq('staff_id', first.staff_id)
                 .eq('booking_date', first.booking_date);
 
-            let isAvailable  = true;
+            let isAvailable   = true;
             let overlapReason = '';
 
             if (!bErr && existing && existing.length > 0) {
@@ -1006,7 +1436,7 @@ export function initGlobalBookingModal() {
                     const ebEnd   = ebStart + (eb.duration || 0);
                     if (newStart < ebEnd && newEnd > ebStart) {
                         isAvailable   = false;
-                        overlapReason = `Staff is already booked from ${minsToTime(ebStart)} to ${minsToTime(ebEnd)}.`;
+                        overlapReason = `Staff is already booked from ${minsToDisplay(ebStart)} to ${minsToDisplay(ebEnd)}.`;
                         break;
                     }
                 }
@@ -1020,14 +1450,14 @@ export function initGlobalBookingModal() {
             }
 
             // Show override modal
-            modalOverlay.classList.remove('active');
+            bookingModalOverlay.classList.remove('active');
             if (overrideReasonEl) {
                 overrideReasonEl.textContent = overlapReason + ' Do you want to override and double-book?';
             }
             overrideOverlay?.classList.add('active');
             if (window.feather) feather.replace();
 
-            const oldBtn      = document.getElementById('btnConfirmOverride');
+            const oldBtn       = document.getElementById('btnConfirmOverride');
             const freshConfirm = oldBtn?.cloneNode(true);
             oldBtn?.parentNode.replaceChild(freshConfirm, oldBtn);
 
@@ -1049,4 +1479,120 @@ export function initGlobalBookingModal() {
             btnConfirmBooking.disabled    = false;
         }
     });
+
+    // ── External API Hook for Pre-filling (Rebook feature) ──────────
+    window.openAndPrefillBooking = async function({ customerId, name, phone, email, serviceIds = [], staffIds = [] }) {
+        await openModal();
+
+        if (customerId) {
+            window.setGlobalBookingCustomer(customerId, name, phone, email);
+        }
+
+        if (serviceIds.length > 0) {
+            selectedBookingItems = [];
+            serviceIds.forEach((sId, idx) => {
+                const svc = liveServicesDB.find(s => s.service_id === sId);
+                if (svc) {
+                    const stfId = staffIds[idx] || staffIds[0] || '';
+                    const matchedStaff = liveStaffDB.find(st => st.staff_id === stfId);
+                    selectedBookingItems.push({
+                        uid: 'item_' + generateUUID(),
+                        type: 'service',
+                        id: svc.service_id,
+                        name: svc.service_name,
+                        categoryName: svc.category_name,
+                        duration: parseInt(svc.duration) || 0,
+                        price: parseFloat(svc.price) || 0,
+                        staffId: stfId,
+                        staffName: matchedStaff ? (matchedStaff.staff_name || matchedStaff.name) : '',
+                        packageId: null,
+                        packageName: null
+                    });
+                }
+            });
+            renderSelectedList(mainSelectedList, selectedBookingItems, false);
+            updateTotals();
+        }
+        validateForm();
+    };
+
+    window.setGlobalBookingCustomer = function(customerId, name, phone, email) {
+        if (!customerId) return;
+        selectedCustomerId = customerId;
+        phoneSearch.value = phone || '';
+        setExistingCustomerState(name || '', email || '');
+
+        if (searchSuggestions) searchSuggestions.style.display = 'none';
+        if (newCustomerBadgeContainer) newCustomerBadgeContainer.style.display = 'none';
+        if (customerBadgeContainer) {
+            customerBadgeContainer.style.display = 'block';
+            if (customerBadge) customerBadge.textContent = 'Existing Customer';
+        }
+        validateForm();
+    };
+
+    // ── Triggers ────────────────────────────────────────────────────
+    window.openGlobalBookingModal = openModal;
+
+    btnNewBooking?.addEventListener('click', (e) => {
+        e.preventDefault();
+        openModal();
+    });
+    btnNewBookingPage?.addEventListener('click', (e) => {
+        e.preventDefault();
+        openModal();
+    });
+    closeBookingModal?.addEventListener('click', closeModal);
+    btnCancelBooking?.addEventListener('click', closeModal);
+    bookingModalOverlay.addEventListener('click', (e) => {
+        if (e.target === bookingModalOverlay) closeModal();
+    });
+
+    btnCancelOverride?.addEventListener('click', () => {
+        overrideOverlay.classList.remove('active');
+        bookingModalOverlay.classList.add('active');
+    });
+    overrideOverlay?.addEventListener('click', (e) => {
+        if (e.target === overrideOverlay) {
+            overrideOverlay.classList.remove('active');
+            bookingModalOverlay.classList.add('active');
+        }
+    });
+
+    // App shell header binding
+    document.addEventListener('app-shell:ready', () => {
+        const headerBtn = document.getElementById('btnNewBooking');
+        if (headerBtn && !headerBtn.dataset.bookingModalBound) {
+            headerBtn.dataset.bookingModalBound = '1';
+            headerBtn.addEventListener('click', (e) => {
+                e.preventDefault();
+                openModal();
+            });
+        }
+    });
+
+    // Branch changed event
+    window.addEventListener('branch:changed', async () => {
+        if (bookingModalOverlay.classList.contains('active')) {
+            await populateBookingDropdowns();
+        } else {
+            liveCustomersDB       = [];
+            liveServicesDB        = [];
+            liveCategoriesDB      = [];
+            liveStaffDB           = [];
+            livePackagesDB        = [];
+            livePackageServicesDB = [];
+        }
+    });
+
+    // Handle auto-open query param (?action=new)
+    try {
+        const urlParams = new URLSearchParams(window.location.search);
+        if (urlParams.get('action') === 'new') {
+            openModal();
+            const url = new URL(window.location.href);
+            url.searchParams.delete('action');
+            window.history.replaceState({}, document.title, url.pathname + (url.search ? url.search : '') + url.hash);
+        }
+    } catch { /* ignore */ }
 }
