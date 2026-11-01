@@ -402,7 +402,57 @@
 .package-header-right {
     display: flex;
     align-items: center;
-    gap: 4px;
+    gap: 8px;
+}
+
+.pkg-staff-sync-toggle {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    margin-right: 6px;
+    font-size: 0.76rem;
+    color: #475569;
+    font-weight: 500;
+    cursor: pointer;
+    user-select: none;
+}
+
+.pkg-staff-sync-toggle span {
+    white-space: nowrap;
+}
+
+.pkg-staff-sync-toggle input[type="checkbox"] {
+    position: relative;
+    width: 32px;
+    height: 18px;
+    appearance: none;
+    background: #cbd5e1;
+    outline: none;
+    border-radius: 18px;
+    cursor: pointer;
+    transition: background 0.2s ease;
+    margin: 0;
+}
+
+.pkg-staff-sync-toggle input[type="checkbox"]:checked {
+    background: #9333ea;
+}
+
+.pkg-staff-sync-toggle input[type="checkbox"]::before {
+    content: '';
+    position: absolute;
+    width: 14px;
+    height: 14px;
+    border-radius: 50%;
+    top: 2px;
+    left: 2px;
+    background: #ffffff;
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
+    transition: transform 0.2s ease;
+}
+
+.pkg-staff-sync-toggle input[type="checkbox"]:checked::before {
+    transform: translateX(14px);
 }
 
 .btn-package-toggle,
@@ -714,22 +764,27 @@
 }
 
 #addServicesModal .picker-body {
-    flex: 1;
+    flex: 1 1 0px;
     min-height: 0;
-    display: grid;
-    grid-template-columns: 40fr 60fr;
-    grid-template-rows: 1fr;
+    height: 100%;
+    display: flex;
+    flex-direction: row;
     overflow: hidden;
 }
 
 /* Left Column: Catalog Browser */
 .picker-catalog-col {
+    flex: 0 0 40%;
+    width: 40%;
+    max-width: 40%;
+    height: 100%;
+    min-height: 0;
+    box-sizing: border-box;
     padding: 1.15rem 0.5rem 0.5rem 1.5rem;
     border-right: 1px solid #e2e8f0;
     display: flex;
     flex-direction: column;
     overflow: hidden;
-    min-height: 0;
 }
 
 /* Tabs Switcher: [Services] [Packages] */
@@ -848,12 +903,16 @@
 
 /* Catalog Items List */
 .picker-catalog-list {
-    flex: 1;
+    flex: 1 1 0px;
+    min-height: 0;
     overflow-y: auto;
+    overflow-x: hidden;
     display: flex;
     flex-direction: column;
     gap: 8px;
     padding-right: 12px;
+    scrollbar-width: thin;
+    scrollbar-color: #cbd5e1 transparent;
 }
 
 .catalog-item-card {
@@ -944,15 +1003,21 @@
 
 /* Right Column: Selected Services (Review / Cart) */
 .picker-selected-col {
+    flex: 0 0 60%;
+    width: 60%;
+    max-width: 60%;
+    height: 100%;
+    min-height: 0;
+    box-sizing: border-box;
     padding: 1.15rem 0.5rem 0.35rem 1.5rem;
     display: flex;
     flex-direction: column;
     background: #fafafa;
     overflow: hidden;
-    min-height: 0;
 }
 
 .picker-selected-header {
+    flex-shrink: 0;
     display: flex;
     justify-content: space-between;
     align-items: center;
@@ -1124,6 +1189,7 @@
 
 /* Sub-row: Clear All on LHS + Apply same staff to all on RHS */
 .picker-selected-toggle-row {
+    flex-shrink: 0;
     display: flex;
     justify-content: space-between;
     align-items: center;
@@ -1159,14 +1225,44 @@
 }
 
 .picker-selected-list {
-    flex: 1;
+    flex: 1 1 0px;
     min-height: 0;
     overflow-y: auto;
+    overflow-x: hidden;
     display: flex;
     flex-direction: column;
     gap: 8px;
     padding-right: 12px;
-    padding-bottom: 6px;
+    padding-bottom: 16px;
+    scrollbar-width: thin;
+    scrollbar-color: #cbd5e1 transparent;
+}
+
+.picker-selected-list::-webkit-scrollbar,
+.picker-catalog-list::-webkit-scrollbar {
+    width: 6px;
+}
+
+.picker-selected-list::-webkit-scrollbar-track,
+.picker-catalog-list::-webkit-scrollbar-track {
+    background: transparent;
+}
+
+.picker-selected-list::-webkit-scrollbar-thumb,
+.picker-catalog-list::-webkit-scrollbar-thumb {
+    background: #cbd5e1;
+    border-radius: 4px;
+}
+
+.picker-selected-list::-webkit-scrollbar-thumb:hover,
+.picker-catalog-list::-webkit-scrollbar-thumb:hover {
+    background: #94a3b8;
+}
+
+.selected-item-card,
+.selected-package-card,
+.catalog-item-card {
+    flex-shrink: 0;
 }
 
 /* Old bottom summary box is removed */
@@ -1216,12 +1312,20 @@
         gap: 16px;
     }
     #addServicesModal .picker-body {
-        grid-template-columns: 1fr;
+        flex-direction: column;
         overflow-y: auto;
     }
     .picker-catalog-col {
+        flex: 0 0 auto;
+        width: 100%;
+        max-width: 100%;
         border-right: none;
         border-bottom: 1px solid #e2e8f0;
+    }
+    .picker-selected-col {
+        flex: 0 0 auto;
+        width: 100%;
+        max-width: 100%;
     }
 }
 

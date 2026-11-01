@@ -550,23 +550,6 @@ export function initGlobalBookingModal() {
     }
 
     // ----------------------------------------------------------------
-    // HELPERS: Sync scroll-list height so overflow-y:auto kicks in
-    // CSS flex/grid height propagation is unreliable cross-browser;
-    // we measure directly and set max-height on the scroll container.
-    // ----------------------------------------------------------------
-    function syncPickerListHeight() {
-        const modal  = document.getElementById('addServicesModal');
-        const list   = document.getElementById('pickerSelectedList');
-        if (!modal || !list) return;
-        const footer = modal.querySelector('.picker-footer');
-        const modalBottom = modal.getBoundingClientRect().bottom;
-        const listTop     = list.getBoundingClientRect().top;
-        const footerH     = footer ? footer.offsetHeight : 58;
-        const available   = modalBottom - listTop - footerH - 8; // 8px buffer
-        list.style.maxHeight = Math.max(80, available) + 'px';
-    }
-
-    // ----------------------------------------------------------------
     // RENDER: Selected Items List (Shared by Main Modal & Picker Modal)
     // ----------------------------------------------------------------
     function renderSelectedList(containerEl, itemsArray, isPicker) {
@@ -575,14 +558,18 @@ export function initGlobalBookingModal() {
         if (isPicker) {
             const toggleRow = document.getElementById('pickerSelectedToggleRow');
             if (toggleRow) {
-                toggleRow.style.display = itemsArray.length > 0 ? 'flex' : 'none';
+                // On Packages tab: hide the top bar entirely (each package card has its own staff control)
+                // On Services tab: show only when individual services exist
+                if (activePickerRhsTab === 'packages') {
+                    toggleRow.style.display = 'none';
+                } else {
+                    toggleRow.style.display = itemsArray.some(it => it.type === 'service') ? 'flex' : 'none';
+                }
             }
             const btnClearAll = document.getElementById('btnClearAllSelected');
             if (btnClearAll) {
-                const hasCurrentTabItems = activePickerRhsTab === 'services'
-                    ? itemsArray.some(it => it.type === 'service')
-                    : itemsArray.some(it => it.type === 'package');
-                btnClearAll.style.visibility = hasCurrentTabItems ? 'visible' : 'hidden';
+                const hasServices = itemsArray.some(it => it.type === 'service');
+                btnClearAll.style.visibility = (activePickerRhsTab === 'services' && hasServices) ? 'visible' : 'hidden';
             }
 
             // Sync active state of RHS tab buttons
@@ -655,6 +642,12 @@ export function initGlobalBookingModal() {
                         </div>
                     </div>
                     <div class="package-header-right">
+                        ${incServices.length > 1 ? `
+                        <label class="pkg-staff-sync-toggle" title="Apply same staff to all services in this package" onclick="event.stopPropagation();">
+                            <span>apply same staff to all</span>
+                            <input type="checkbox" class="pkg-staff-sync-checkbox" data-uid="${pkg.uid}" ${pkg.syncStaff ? 'checked' : ''}>
+                        </label>
+                        ` : ''}
                         <button type="button" class="btn-package-toggle" data-uid="${pkg.uid}" title="${isExpanded ? 'Collapse package' : 'Expand to view services'}">
                             <i data-feather="${isExpanded ? 'chevron-up' : 'chevron-down'}"></i>
                         </button>
@@ -804,6 +797,30 @@ export function initGlobalBookingModal() {
             });
         });
 
+        // Attach Per-Package Staff Sync Toggle Listeners
+        containerEl.querySelectorAll('.pkg-staff-sync-checkbox').forEach(cb => {
+            cb.addEventListener('change', (e) => {
+                e.stopPropagation();
+                const pkgUid = cb.dataset.uid;
+                const pkgItem = itemsArray.find(it => it.uid === pkgUid);
+                if (!pkgItem || !Array.isArray(pkgItem.services)) return;
+
+                pkgItem.syncStaff = cb.checked;
+
+                if (pkgItem.syncStaff) {
+                    const firstWithStaff = pkgItem.services.find(s => s.staffId);
+                    if (firstWithStaff) {
+                        pkgItem.services.forEach(s => {
+                            s.staffId = firstWithStaff.staffId;
+                            s.staffName = firstWithStaff.staffName;
+                        });
+                    }
+                }
+                renderSelectedList(containerEl, itemsArray, isPicker);
+                validateForm();
+            });
+        });
+
         // Attach Nested Package Service Staff Select Listeners
         containerEl.querySelectorAll('.package-nested-staff-select').forEach(sel => {
             sel.addEventListener('change', () => {
@@ -819,10 +836,18 @@ export function initGlobalBookingModal() {
                 } else {
                     const pkgItem = itemsArray.find(it => it.uid === pkgUid);
                     if (pkgItem && Array.isArray(pkgItem.services)) {
-                        const svcItem = pkgItem.services.find(s => s.uid === svcUid);
-                        if (svcItem) {
-                            svcItem.staffId = newStaffId;
-                            svcItem.staffName = newStaffName;
+                        if (pkgItem.syncStaff) {
+                            pkgItem.services.forEach(s => {
+                                s.staffId = newStaffId;
+                                s.staffName = newStaffName;
+                            });
+                            renderSelectedList(containerEl, itemsArray, isPicker);
+                        } else {
+                            const svcItem = pkgItem.services.find(s => s.uid === svcUid);
+                            if (svcItem) {
+                                svcItem.staffId = newStaffId;
+                                svcItem.staffName = newStaffName;
+                            }
                         }
                     }
                 }
@@ -850,11 +875,6 @@ export function initGlobalBookingModal() {
 
         // Attach Drag & Drop Reordering Listeners
         setupDragAndDrop(containerEl, itemsArray, isPicker);
-
-        // Sync the scroll-list height after every render (picker only)
-        if (isPicker) {
-            requestAnimationFrame(syncPickerListHeight);
-        }
     }
 
     // ── Drag & Drop Implementation ──────────────────────────────────────
@@ -1300,15 +1320,13 @@ export function initGlobalBookingModal() {
             pickerStaffSyncToggle.checked = isStaffSyncAll;
         }
 
+        pickerSelectedList?.removeAttribute('style');
         renderCategoryPills();
         renderCatalogItems();
         renderSelectedList(pickerSelectedList, pickerDraftItems, true);
         updateTotals();
 
         pickerOverlay.classList.add('active');
-
-        // After the overlay is visible, sync the list height
-        requestAnimationFrame(syncPickerListHeight);
     }
 
     function closePickerModal() {
