@@ -109,7 +109,8 @@
     gap: 6px;
 }
 
-.services-header-title i {
+.services-header-title i,
+.services-header-title svg {
     width: 17px;
     height: 17px;
     color: #9333ea;
@@ -339,7 +340,8 @@
     background: #fef2f2;
 }
 
-.btn-item-delete i {
+.btn-item-delete i,
+.btn-item-delete svg {
     width: 16px;
     height: 16px;
 }
@@ -377,7 +379,8 @@
     border-color: #9333ea;
 }
 
-.btn-add-services-modal i {
+.btn-add-services-modal i,
+.btn-add-services-modal svg {
     width: 16px;
     height: 16px;
 }
@@ -546,7 +549,8 @@
     transition: all 0.15s ease;
 }
 
-.picker-tab-btn i {
+.picker-tab-btn i,
+.picker-tab-btn svg {
     width: 15px;
     height: 15px;
 }
@@ -561,9 +565,12 @@
 .picker-search-wrapper {
     position: relative;
     margin-bottom: 12px;
+    display: flex;
+    align-items: center;
 }
 
-.picker-search-wrapper i {
+.picker-search-wrapper i,
+.picker-search-wrapper svg {
     position: absolute;
     left: 12px;
     top: 50%;
@@ -571,11 +578,13 @@
     width: 16px;
     height: 16px;
     color: #94a3b8;
+    pointer-events: none;
+    z-index: 2;
 }
 
 .picker-search-input {
     width: 100%;
-    padding: 9px 12px 9px 36px;
+    padding: 9px 12px 9px 38px;
     border: 1px solid #cbd5e1;
     border-radius: 8px;
     font-size: 0.88rem;
@@ -583,6 +592,7 @@
     outline: none;
     transition: border-color 0.15s ease;
     box-sizing: border-box;
+    background: #ffffff;
 }
 
 .picker-search-input:focus {
