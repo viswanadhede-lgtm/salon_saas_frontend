@@ -288,8 +288,12 @@ export function ensureBookingModalHtml() {
                             </div>
                         </div>
 
-                        <!-- Sub-row: Apply same staff to all (right-aligned above services) -->
+                        <!-- Sub-row: Clear All on LHS + Apply same staff to all on RHS -->
                         <div class="picker-selected-toggle-row" id="pickerSelectedToggleRow">
+                            <button type="button" class="btn-clear-all" id="btnClearAllSelected">
+                                <i data-feather="trash-2"></i>
+                                <span>Clear All</span>
+                            </button>
                             <label class="staff-sync-toggle">
                                 <span>Apply same staff to all</span>
                                 <input type="checkbox" id="pickerStaffSyncToggle">
@@ -392,7 +396,7 @@ export function initGlobalBookingModal() {
     const pickerCatalogList      = document.getElementById('pickerCatalogList');
     const pickerSelectedList     = document.getElementById('pickerSelectedList');
     const pickerCountTitle       = document.getElementById('pickerSelectedCountTitle');
-    // btnClearAllSelected is rendered dynamically inside the list; no static ref needed
+    const btnClearAllSelected    = document.getElementById('btnClearAllSelected');
     const pickerStaffSyncToggle  = document.getElementById('pickerStaffSyncToggle');
     const pickerTotalDurationVal = document.getElementById('pickerTotalDurationVal');
     const pickerTotalAmountVal   = document.getElementById('pickerTotalAmountVal');
@@ -561,30 +565,10 @@ export function initGlobalBookingModal() {
             `;
         }).join('');
 
-        const clearAllHtml = (isPicker && itemsArray.length > 0) ? `
-            <div class="picker-list-clear-row-bottom" id="btnClearAllSelected">
-                <button type="button" class="btn-clear-all" id="btnClearAllSelectedInner">
-                    <i data-feather="trash-2" style="width:13px;height:13px;"></i>
-                    <span>Clear All</span>
-                </button>
-            </div>
-        ` : '';
-
-        containerEl.innerHTML = itemsCardsHtml + clearAllHtml;
+        containerEl.innerHTML = itemsCardsHtml;
 
         if (window.feather && feather.replace) {
             feather.replace();
-        }
-
-        // Attach Clear All (dynamic, inside list, picker only)
-        const clearAllInner = containerEl.querySelector('#btnClearAllSelectedInner');
-        if (clearAllInner) {
-            clearAllInner.addEventListener('click', () => {
-                pickerDraftItems.splice(0, pickerDraftItems.length);
-                renderSelectedList(containerEl, itemsArray, isPicker);
-                renderCatalogItems();
-                updateTotals();
-            });
         }
 
         // Attach Staff Select Listeners
@@ -1060,7 +1044,12 @@ export function initGlobalBookingModal() {
     });
 
     // ── Picker Actions ──────────────────────────────────────────────
-    // Note: Clear All is rendered dynamically inside the list; listener is in renderSelectedList()
+    btnClearAllSelected?.addEventListener('click', () => {
+        pickerDraftItems = [];
+        renderSelectedList(pickerSelectedList, pickerDraftItems, true);
+        renderCatalogItems();
+        updateTotals();
+    });
 
     pickerStaffSyncToggle?.addEventListener('change', (e) => {
         isStaffSyncAll = e.target.checked;
