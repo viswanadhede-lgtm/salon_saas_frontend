@@ -583,31 +583,36 @@ export function initGlobalBookingModal() {
         };
 
         const renderServiceCardHtml = (item, index) => {
+            const visual = getCategoryMeta(item.categoryName, item.name);
             const durationDisplay = item.duration ? `${item.duration} min` : '—';
             const priceDisplay = fmtPrice(item.price);
 
             return `
             <div class="selected-item-card" data-uid="${item.uid}" data-index="${index}" draggable="true">
-                <div class="item-card-top-row">
-                    <div class="item-card-heading">
+                <div class="item-card-left">
+                    <span class="drag-handle" title="Drag to reorder">:::</span>
+                    <div class="service-icon-tile ${visual.theme}">
+                        <i data-feather="${visual.icon}"></i>
+                    </div>
+                    <div class="item-info">
                         <h4 class="item-name">${item.name}</h4>
                         <p class="item-meta">
                             <span>${durationDisplay}</span>
-                            <span class="meta-dot">·</span>
-                            <span class="item-price">${priceDisplay}</span>
-                            <span class="meta-dot">·</span>
-                            <span class="item-type-label">Individual service</span>
+                            <span>|</span>
+                            <span>${priceDisplay}</span>
                         </p>
                     </div>
-                    <button type="button" class="btn-item-delete" data-uid="${item.uid}" title="Remove service">
+                </div>
+                <div class="item-card-right">
+                    <div class="item-staff-group">
+                        <span class="item-staff-label">Staff <span class="text-rose">*</span></span>
+                        <select class="item-staff-select" data-uid="${item.uid}">
+                            ${staffOptionsHtml(item.staffId)}
+                        </select>
+                    </div>
+                    <button type="button" class="btn-item-delete" data-uid="${item.uid}" title="Remove item">
                         <i data-feather="trash-2"></i>
                     </button>
-                </div>
-                <div class="item-card-bottom-row">
-                    <span class="item-staff-label">Assigned staff <span class="text-rose">*</span></span>
-                    <select class="item-staff-select" data-uid="${item.uid}">
-                        ${staffOptionsHtml(item.staffId)}
-                    </select>
                 </div>
             </div>
             `;

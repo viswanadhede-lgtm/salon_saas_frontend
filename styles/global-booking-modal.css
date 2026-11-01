@@ -192,14 +192,14 @@
 /* Selected Item Card (Used in both Main Modal and Picker Modal) */
 .selected-item-card {
     display: flex;
-    flex-direction: column;
-    gap: 10px;
-    padding: 12px 14px;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    padding: 10px 14px;
     background: #ffffff;
     border: 1px solid #e2e8f0;
-    border-radius: 12px;
+    border-radius: 10px;
     transition: all 0.15s ease;
-    margin-bottom: 8px;
 }
 
 .selected-item-card:hover {
@@ -213,55 +213,96 @@
     background: #fdf4ff;
 }
 
-.item-card-top-row {
+.item-card-left {
     display: flex;
-    align-items: flex-start;
-    justify-content: space-between;
-    gap: 10px;
-}
-
-.item-card-heading {
-    display: flex;
-    flex-direction: column;
-    gap: 3px;
+    align-items: center;
+    gap: 12px;
+    flex: 1;
     min-width: 0;
 }
 
-.item-card-heading .item-name {
-    font-size: 0.94rem;
-    font-weight: 700;
+.drag-handle {
+    cursor: grab;
+    color: #94a3b8;
+    display: flex;
+    align-items: center;
+    padding: 2px;
+    font-size: 1.1rem;
+    line-height: 1;
+    user-select: none;
+}
+
+.drag-handle:active {
+    cursor: grabbing;
+}
+
+.item-info {
+    display: flex;
+    flex-direction: column;
+    min-width: 0;
+}
+
+.item-name {
+    font-size: 0.92rem;
+    font-weight: 600;
     color: #0f172a;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
     margin: 0;
 }
 
-.item-card-heading .item-meta {
+.item-meta {
     font-size: 0.8rem;
     color: #64748b;
-    margin: 0;
+    margin: 2px 0 0 0;
     display: flex;
     align-items: center;
     gap: 6px;
 }
 
-.item-card-heading .item-price {
-    font-weight: 600;
-    color: #059669;
+.item-card-right {
+    display: flex;
+    align-items: center;
+    gap: 12px;
 }
 
-.item-card-heading .item-type-label {
-    color: #64748b;
+.item-staff-group {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.item-staff-label {
     font-size: 0.78rem;
+    font-weight: 600;
+    color: #64748b;
+    white-space: nowrap;
 }
 
-.item-card-heading .meta-dot {
-    color: #94a3b8;
-    font-weight: 700;
+.item-staff-select {
+    padding: 8px 12px;
+    font-size: 0.86rem;
+    color: #0f172a;
+    border: 1px solid #cbd5e1;
+    border-radius: 6px;
+    background: #ffffff;
+    cursor: pointer;
+    min-width: 150px;
+    max-width: 220px;
+    height: 38px;
+}
+
+.item-staff-select:focus {
+    border-color: #9333ea;
+    outline: none;
+    box-shadow: 0 0 0 2px rgba(147, 51, 234, 0.15);
 }
 
 .btn-item-delete {
     background: none;
     border: none;
-    padding: 4px;
+    padding: 6px;
     border-radius: 6px;
     color: #94a3b8;
     cursor: pointer;
@@ -281,39 +322,6 @@
 .btn-item-delete svg {
     width: 16px;
     height: 16px;
-}
-
-.item-card-bottom-row {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: 12px;
-    padding-top: 8px;
-    border-top: 1px dashed #f1f5f9;
-}
-
-.item-card-bottom-row .item-staff-label {
-    font-size: 0.82rem;
-    font-weight: 500;
-    color: #475569;
-}
-
-.item-card-bottom-row .item-staff-select {
-    padding: 6px 10px;
-    font-size: 0.84rem;
-    color: #0f172a;
-    background: #ffffff;
-    border: 1px solid #cbd5e1;
-    border-radius: 8px;
-    outline: none;
-    cursor: pointer;
-    min-width: 140px;
-    transition: border-color 0.15s ease;
-}
-
-.item-card-bottom-row .item-staff-select:focus {
-    border-color: #9333ea;
-    box-shadow: 0 0 0 2px rgba(147, 51, 234, 0.1);
 }
 
 /* Selected Package Card (Expandable Group) */
