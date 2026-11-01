@@ -329,10 +329,10 @@ export function ensureBookingModalHtml() {
 
                 <!-- Footer -->
                 <div class="picker-footer">
-                    <button type="button" class="btn btn-secondary" id="btnCancelPickerModal">Cancel</button>
+                    <button type="button" class="btn btn-secondary" id="btnCancelPickerModal">Go Back</button>
                     <button type="button" class="btn-add-to-booking" id="btnAddPickerToBooking">
-                        <i data-feather="check"></i>
-                        <span>Add to Booking</span>
+                        <i data-feather="check-circle"></i>
+                        <span>Confirm Selection</span>
                     </button>
                 </div>
             </div>

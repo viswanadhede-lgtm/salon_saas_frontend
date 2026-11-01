@@ -1295,6 +1295,12 @@
     transition: all 0.15s ease;
 }
 
+.btn-add-to-booking svg,
+.btn-add-to-booking i {
+    width: 16px;
+    height: 16px;
+}
+
 .btn-add-to-booking:hover:not(:disabled) {
     background: #7e22ce;
     border-color: #7e22ce;
