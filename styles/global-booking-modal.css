@@ -399,6 +399,35 @@
     color: #059669;
 }
 
+/* Per-package "Apply same staff to all" button (inside expanded package header) */
+.btn-pkg-apply-all-staff {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    margin-top: 6px;
+    padding: 4px 10px;
+    border: 1px solid #d8b4fe;
+    border-radius: 14px;
+    background: #faf5ff;
+    color: #7c3aed;
+    font-size: 0.77rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.15s ease;
+    line-height: 1;
+    width: fit-content;
+}
+
+.btn-pkg-apply-all-staff:hover {
+    background: #ede9fe;
+    border-color: #7c3aed;
+}
+
+.btn-pkg-apply-all-staff svg {
+    width: 12px;
+    height: 12px;
+}
+
 .package-header-right {
     display: flex;
     align-items: center;
