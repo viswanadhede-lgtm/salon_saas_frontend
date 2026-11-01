@@ -183,12 +183,8 @@ export function ensureBookingModalHtml() {
                             <!-- Rendered dynamically -->
                         </div>
 
-                        <!-- Bottom action bar: + Add button + Duration/Amount chips -->
+                        <!-- Bottom action bar: Total Duration/Amount chips on Left + Add button on Right -->
                         <div class="booking-services-bottom-bar">
-                            <button type="button" class="btn-add-services-modal" id="btnOpenAddServicesModal">
-                                <i data-feather="plus"></i>
-                                <span>Add Services / Packages</span>
-                            </button>
                             <div class="services-summary-chips">
                                 <div class="summary-chip-item">
                                     <i data-feather="clock" style="width:16px;height:16px;color:#64748b;"></i>
@@ -206,6 +202,10 @@ export function ensureBookingModalHtml() {
                                     </div>
                                 </div>
                             </div>
+                            <button type="button" class="btn-add-services-modal" id="btnOpenAddServicesModal">
+                                <i data-feather="plus"></i>
+                                <span>Add Services / Packages</span>
+                            </button>
                         </div>
                     </div>
                 </div>
