@@ -1280,29 +1280,6 @@
     background: #ffffff;
 }
 
-.picker-footer-right {
-    display: flex;
-    align-items: center;
-    gap: 14px;
-}
-
-.picker-staff-warning {
-    display: inline-flex;
-    align-items: center;
-    gap: 6px;
-    font-size: 0.82rem;
-    color: #e11d48;
-    font-weight: 500;
-    user-select: none;
-}
-
-.picker-staff-warning svg,
-.picker-staff-warning i {
-    width: 15px;
-    height: 15px;
-    color: #e11d48;
-}
-
 .btn-add-to-booking {
     background: #9333ea;
     border: 1px solid #9333ea;

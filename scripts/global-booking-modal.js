@@ -330,16 +330,10 @@ export function ensureBookingModalHtml() {
                 <!-- Footer -->
                 <div class="picker-footer">
                     <button type="button" class="btn btn-secondary" id="btnCancelPickerModal">Cancel</button>
-                    <div class="picker-footer-right">
-                        <span class="picker-staff-warning" id="pickerStaffWarning" style="display:none;">
-                            <i data-feather="alert-circle"></i>
-                            <span>Assign staff to all items</span>
-                        </span>
-                        <button type="button" class="btn-add-to-booking" id="btnAddPickerToBooking" disabled>
-                            <i data-feather="check"></i>
-                            <span>Add to Booking</span>
-                        </button>
-                    </div>
+                    <button type="button" class="btn-add-to-booking" id="btnAddPickerToBooking">
+                        <i data-feather="check"></i>
+                        <span>Add to Booking</span>
+                    </button>
                 </div>
             </div>
         </div>
@@ -800,7 +794,6 @@ export function initGlobalBookingModal() {
                     }
                 }
                 validateForm();
-                if (isPicker) validatePickerModal();
             });
         });
 
@@ -825,7 +818,6 @@ export function initGlobalBookingModal() {
                 }
                 renderSelectedList(containerEl, itemsArray, isPicker);
                 validateForm();
-                if (isPicker) validatePickerModal();
             });
         });
 
@@ -860,7 +852,6 @@ export function initGlobalBookingModal() {
                     }
                 }
                 validateForm();
-                if (isPicker) validatePickerModal();
             });
         });
 
@@ -878,17 +869,12 @@ export function initGlobalBookingModal() {
                         renderCatalogItems();
                     }
                     validateForm();
-                    if (isPicker) validatePickerModal();
                 }
             });
         });
 
         // Attach Drag & Drop Reordering Listeners
         setupDragAndDrop(containerEl, itemsArray, isPicker);
-
-        if (isPicker) {
-            validatePickerModal();
-        }
     }
 
     // ── Drag & Drop Implementation ──────────────────────────────────────
@@ -991,39 +977,6 @@ export function initGlobalBookingModal() {
 
         if (pickerTotalDurationVal) pickerTotalDurationVal.textContent = `${picker.duration} min`;
         if (pickerTotalAmountVal) pickerTotalAmountVal.textContent = fmtPrice(picker.amount);
-
-        validatePickerModal();
-    }
-
-    // ----------------------------------------------------------------
-    // VALIDATION: Picker Modal Staff Assignment Check
-    // ----------------------------------------------------------------
-    function validatePickerModal() {
-        if (!btnAddPickerToBooking) return;
-        const warningEl = document.getElementById('pickerStaffWarning');
-        const assignableEntries = getAllAssignableEntries(pickerDraftItems);
-        const hasItems = assignableEntries.length > 0;
-        const allStaffSet = hasItems && assignableEntries.every(entry => {
-            const id = entry.get();
-            return id && String(id).trim().length > 0;
-        });
-
-        if (!hasItems) {
-            btnAddPickerToBooking.disabled = true;
-            if (warningEl) warningEl.style.display = 'none';
-            btnAddPickerToBooking.title = 'Select at least one service or package';
-        } else if (!allStaffSet) {
-            btnAddPickerToBooking.disabled = true;
-            if (warningEl) {
-                warningEl.style.display = 'inline-flex';
-                if (window.feather && feather.replace) feather.replace();
-            }
-            btnAddPickerToBooking.title = 'Please assign staff to all services before adding to booking';
-        } else {
-            btnAddPickerToBooking.disabled = false;
-            if (warningEl) warningEl.style.display = 'none';
-            btnAddPickerToBooking.title = 'Add selected services and packages to booking';
-        }
     }
 
     // ----------------------------------------------------------------
@@ -1372,7 +1325,6 @@ export function initGlobalBookingModal() {
         renderCatalogItems();
         renderSelectedList(pickerSelectedList, pickerDraftItems, true);
         updateTotals();
-        validatePickerModal();
 
         pickerOverlay.classList.add('active');
     }
@@ -1471,21 +1423,6 @@ export function initGlobalBookingModal() {
 
     // ── Commit Picker Selection to Main Booking Modal ───────────────
     btnAddPickerToBooking?.addEventListener('click', () => {
-        const assignableEntries = getAllAssignableEntries(pickerDraftItems);
-        if (assignableEntries.length === 0) {
-            showMsg('Please select at least one service or package.', true);
-            return;
-        }
-        const hasUnassigned = assignableEntries.some(entry => {
-            const id = entry.get();
-            return !id || !String(id).trim();
-        });
-        if (hasUnassigned) {
-            showMsg('Please assign staff to all selected services before adding to booking.', true);
-            validatePickerModal();
-            return;
-        }
-
         // Commit draft to single source of truth
         selectedBookingItems = JSON.parse(JSON.stringify(pickerDraftItems));
         renderSelectedList(mainSelectedList, selectedBookingItems, false);
