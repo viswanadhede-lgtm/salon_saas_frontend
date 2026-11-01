@@ -67,7 +67,8 @@ let selectedBookingItems  = [];
 let pickerDraftItems      = [];
 
 // Picker UI State
-let activePickerTab       = 'services'; // 'services' | 'packages'
+let activePickerTab       = 'services'; // 'services' | 'packages' (LHS catalog)
+let activePickerRhsTab    = 'services'; // 'services' | 'packages' (RHS selected items)
 let activeCategoryFilter  = 'all';      // 'all' | category_id
 let pickerSearchQuery     = '';
 let isStaffSyncAll        = false;
@@ -293,11 +294,17 @@ export function ensureBookingModalHtml() {
 
                     <!-- Right: Selected Items Review -->
                     <div class="picker-selected-col">
-                        <!-- Header: Title + Count Badge -->
+                        <!-- Header: RHS Pill Tabs (Services / Packages) -->
                         <div class="picker-selected-header">
-                            <div class="picker-selected-title-group">
-                                <span class="picker-selected-title">Selected Services</span>
-                                <span class="picker-count-badge" id="pickerSelectedCountBadge">0</span>
+                            <div class="picker-rhs-tabs" id="pickerRhsTabs">
+                                <button type="button" class="picker-rhs-tab-btn active" id="pickerRhsTabServices">
+                                    <span>Selected Services</span>
+                                    <span class="picker-count-badge" id="pickerServicesCountBadge">0</span>
+                                </button>
+                                <button type="button" class="picker-rhs-tab-btn" id="pickerRhsTabPackages">
+                                    <span>Selected Packages</span>
+                                    <span class="picker-count-badge" id="pickerPackagesCountBadge">0</span>
+                                </button>
                             </div>
                         </div>
 
@@ -409,6 +416,10 @@ export function initGlobalBookingModal() {
     const pickerCatalogList      = document.getElementById('pickerCatalogList');
     const pickerSelectedList     = document.getElementById('pickerSelectedList');
     const pickerCountBadge       = document.getElementById('pickerSelectedCountBadge');
+    const pickerRhsTabServices   = document.getElementById('pickerRhsTabServices');
+    const pickerRhsTabPackages   = document.getElementById('pickerRhsTabPackages');
+    const pickerServicesCountBadge = document.getElementById('pickerServicesCountBadge');
+    const pickerPackagesCountBadge = document.getElementById('pickerPackagesCountBadge');
     const btnClearAllSelected    = document.getElementById('btnClearAllSelected');
     const pickerStaffSyncToggle  = document.getElementById('pickerStaffSyncToggle');
     const pickerTotalDurationVal = document.getElementById('pickerTotalDurationVal');
@@ -514,6 +525,31 @@ export function initGlobalBookingModal() {
     }
 
     // ----------------------------------------------------------------
+    // Helper: Collect all staff-assignable entries across services & packages
+    // ----------------------------------------------------------------
+    function getAllAssignableEntries(itemsArray) {
+        const list = [];
+        (itemsArray || []).forEach(it => {
+            if (it.type === 'service') {
+                list.push({
+                    uid: it.uid,
+                    get: () => it.staffId,
+                    set: (id, name) => { it.staffId = id; it.staffName = name; }
+                });
+            } else if (it.type === 'package' && Array.isArray(it.services)) {
+                it.services.forEach(s => {
+                    list.push({
+                        uid: s.uid,
+                        get: () => s.staffId,
+                        set: (id, name) => { s.staffId = id; s.staffName = name; }
+                    });
+                });
+            }
+        });
+        return list;
+    }
+
+    // ----------------------------------------------------------------
     // RENDER: Selected Items List (Shared by Main Modal & Picker Modal)
     // ----------------------------------------------------------------
     function renderSelectedList(containerEl, itemsArray, isPicker) {
@@ -521,17 +557,22 @@ export function initGlobalBookingModal() {
 
         if (isPicker) {
             const toggleRow = document.getElementById('pickerSelectedToggleRow');
-            if (toggleRow) toggleRow.style.display = itemsArray.length > 0 ? 'flex' : 'none';
-        }
+            if (toggleRow) {
+                toggleRow.style.display = itemsArray.length > 0 ? 'flex' : 'none';
+            }
+            const btnClearAll = document.getElementById('btnClearAllSelected');
+            if (btnClearAll) {
+                const hasCurrentTabItems = activePickerRhsTab === 'services'
+                    ? itemsArray.some(it => it.type === 'service')
+                    : itemsArray.some(it => it.type === 'package');
+                btnClearAll.style.visibility = hasCurrentTabItems ? 'visible' : 'hidden';
+            }
 
-        if (itemsArray.length === 0) {
-            containerEl.innerHTML = `
-                <div class="selected-services-empty">
-                    <p style="margin:0;font-weight:500;">No services selected yet.</p>
-                    <p style="margin:4px 0 0 0;font-size:0.8rem;color:#94a3b8;">Click below to add services or packages to this appointment.</p>
-                </div>
-            `;
-            return;
+            // Sync active state of RHS tab buttons
+            const tabServicesBtn = document.getElementById('pickerRhsTabServices');
+            const tabPackagesBtn = document.getElementById('pickerRhsTabPackages');
+            if (tabServicesBtn) tabServicesBtn.classList.toggle('active', activePickerRhsTab === 'services');
+            if (tabPackagesBtn) tabPackagesBtn.classList.toggle('active', activePickerRhsTab === 'packages');
         }
 
         const staffOptionsHtml = (selectedStaffId) => {
@@ -541,50 +582,185 @@ export function initGlobalBookingModal() {
                 `).join('');
         };
 
-        const itemsCardsHtml = itemsArray.map((item, index) => {
-            const visual = getCategoryMeta(item.categoryName, item.name);
+        const renderServiceCardHtml = (item, index) => {
             const durationDisplay = item.duration ? `${item.duration} min` : '—';
             const priceDisplay = fmtPrice(item.price);
 
             return `
             <div class="selected-item-card" data-uid="${item.uid}" data-index="${index}" draggable="true">
-                <div class="item-card-left">
-                    <span class="drag-handle" title="Drag to reorder">:::</span>
-                    <div class="service-icon-tile ${visual.theme}">
-                        <i data-feather="${visual.icon}"></i>
-                    </div>
-                    <div class="item-info">
+                <div class="item-card-top-row">
+                    <div class="item-card-heading">
                         <h4 class="item-name">${item.name}</h4>
                         <p class="item-meta">
                             <span>${durationDisplay}</span>
-                            <span>|</span>
-                            <span>${priceDisplay}</span>
+                            <span class="meta-dot">·</span>
+                            <span class="item-price">${priceDisplay}</span>
+                            <span class="meta-dot">·</span>
+                            <span class="item-type-label">Individual service</span>
                         </p>
                     </div>
-                </div>
-
-                <div class="item-card-right">
-                    <div class="item-staff-group">
-                        <span class="item-staff-label">Staff <span class="text-rose">*</span></span>
-                        <select class="item-staff-select" data-uid="${item.uid}">
-                            ${staffOptionsHtml(item.staffId)}
-                        </select>
-                    </div>
-                    <button type="button" class="btn-item-delete" data-uid="${item.uid}" title="Remove item">
+                    <button type="button" class="btn-item-delete" data-uid="${item.uid}" title="Remove service">
                         <i data-feather="trash-2"></i>
                     </button>
                 </div>
+                <div class="item-card-bottom-row">
+                    <span class="item-staff-label">Assigned staff <span class="text-rose">*</span></span>
+                    <select class="item-staff-select" data-uid="${item.uid}">
+                        ${staffOptionsHtml(item.staffId)}
+                    </select>
+                </div>
             </div>
             `;
-        }).join('');
+        };
 
-        containerEl.innerHTML = itemsCardsHtml;
+        const renderPackageCardHtml = (pkg, index) => {
+            const incServices = Array.isArray(pkg.services) ? pkg.services : [];
+            const isExpanded = pkg.expanded !== false; // default true
+            const priceDisplay = fmtPrice(pkg.price);
+
+            return `
+            <div class="selected-package-card ${isExpanded ? 'expanded' : 'collapsed'}" data-uid="${pkg.uid}" data-index="${index}">
+                <div class="package-card-header" data-uid="${pkg.uid}">
+                    <div class="package-header-left">
+                        <div class="package-title-row">
+                            <span class="package-title">${pkg.packageName || pkg.name}</span>
+                            <span class="package-badge">Package</span>
+                        </div>
+                        <div class="package-meta">
+                            <span>${incServices.length} included services</span>
+                            <span class="meta-dot">·</span>
+                            <span class="package-price">${priceDisplay}</span>
+                        </div>
+                    </div>
+                    <div class="package-header-right">
+                        <button type="button" class="btn-package-toggle" data-uid="${pkg.uid}" title="${isExpanded ? 'Collapse package' : 'Expand to view services'}">
+                            <i data-feather="${isExpanded ? 'chevron-up' : 'chevron-down'}"></i>
+                        </button>
+                        <button type="button" class="btn-package-delete" data-uid="${pkg.uid}" title="Remove package">
+                            <i data-feather="trash-2"></i>
+                        </button>
+                    </div>
+                </div>
+
+                ${isExpanded ? `
+                    <div class="package-nested-services">
+                        ${incServices.map(svc => `
+                            <div class="package-nested-service-row" data-pkg-uid="${pkg.uid}" data-svc-uid="${svc.uid}">
+                                <div class="nested-service-info">
+                                    <span class="nested-service-name">${svc.serviceName}</span>
+                                    <span class="nested-service-duration">${svc.duration ? `${svc.duration} min` : '—'}</span>
+                                </div>
+                                <div class="nested-service-staff">
+                                    <select class="package-nested-staff-select" data-pkg-uid="${pkg.uid}" data-svc-uid="${svc.uid}">
+                                        ${staffOptionsHtml(svc.staffId)}
+                                    </select>
+                                </div>
+                            </div>
+                        `).join('')}
+                    </div>
+                ` : `
+                    <div class="package-collapsed-note" data-uid="${pkg.uid}">
+                        <span>Expand to view included services and assign staff.</span>
+                    </div>
+                `}
+            </div>
+            `;
+        };
+
+        if (isPicker) {
+            // Picker Modal: filtered by activePickerRhsTab
+            if (activePickerRhsTab === 'services') {
+                const servicesList = itemsArray.filter(it => it.type === 'service');
+                if (servicesList.length === 0) {
+                    containerEl.innerHTML = `
+                        <div class="selected-services-empty">
+                            <p style="margin:0;font-weight:600;color:#64748b;">No individual services selected.</p>
+                            <p style="margin:4px 0 0 0;font-size:0.82rem;color:#94a3b8;">Click "+ Add" on any service on the left to add it here.</p>
+                        </div>
+                    `;
+                } else {
+                    containerEl.innerHTML = servicesList.map((item, idx) => renderServiceCardHtml(item, idx)).join('');
+                }
+            } else {
+                // 'packages' tab
+                const packagesList = itemsArray.filter(it => it.type === 'package');
+                if (packagesList.length === 0) {
+                    containerEl.innerHTML = `
+                        <div class="selected-services-empty">
+                            <p style="margin:0;font-weight:600;color:#64748b;">No packages selected.</p>
+                            <p style="margin:4px 0 0 0;font-size:0.82rem;color:#94a3b8;">Switch to the Packages tab on the left to add a package.</p>
+                        </div>
+                    `;
+                } else {
+                    containerEl.innerHTML = packagesList.map((pkg, idx) => renderPackageCardHtml(pkg, idx)).join('');
+                }
+            }
+        } else {
+            // Main Booking Modal: Option A – Grouped Package Cards (All items displayed together)
+            const servicesList = itemsArray.filter(it => it.type === 'service');
+            const packagesList = itemsArray.filter(it => it.type === 'package');
+
+            if (servicesList.length === 0 && packagesList.length === 0) {
+                containerEl.innerHTML = `
+                    <div class="selected-services-empty">
+                        <p style="margin:0;font-weight:600;color:#64748b;">No services selected yet.</p>
+                        <p style="margin:4px 0 0 0;font-size:0.82rem;color:#94a3b8;">Click "Add Services / Packages" above to select services.</p>
+                    </div>
+                `;
+            } else {
+                let html = '';
+                if (servicesList.length > 0) {
+                    if (packagesList.length > 0) {
+                        html += `<div class="main-group-title">Individual Services (${servicesList.length})</div>`;
+                    }
+                    html += servicesList.map((item, idx) => renderServiceCardHtml(item, idx)).join('');
+                }
+                if (packagesList.length > 0) {
+                    if (servicesList.length > 0) {
+                        html += `<div class="main-group-title" style="margin-top:12px;">Packages (${packagesList.length})</div>`;
+                    }
+                    html += packagesList.map((pkg, idx) => renderPackageCardHtml(pkg, idx)).join('');
+                }
+                containerEl.innerHTML = html;
+            }
+        }
 
         if (window.feather && feather.replace) {
             feather.replace();
         }
 
-        // Attach Staff Select Listeners
+        // Attach Expand/Collapse Package Listeners
+        containerEl.querySelectorAll('.package-card-header, .package-collapsed-note').forEach(headerEl => {
+            headerEl.addEventListener('click', (e) => {
+                if (e.target.closest('.btn-package-delete') || e.target.closest('select')) return;
+                const uid = headerEl.dataset.uid;
+                const pkgItem = itemsArray.find(it => it.uid === uid);
+                if (pkgItem) {
+                    pkgItem.expanded = !pkgItem.expanded;
+                    renderSelectedList(containerEl, itemsArray, isPicker);
+                }
+            });
+        });
+
+        // Attach Package Delete Listeners
+        containerEl.querySelectorAll('.btn-package-delete').forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                e.stopPropagation();
+                const uid = btn.dataset.uid;
+                const idx = itemsArray.findIndex(it => it.uid === uid);
+                if (idx !== -1) {
+                    itemsArray.splice(idx, 1);
+                    renderSelectedList(containerEl, itemsArray, isPicker);
+                    updateTotals();
+                    if (isPicker) {
+                        renderCatalogItems();
+                    }
+                    validateForm();
+                }
+            });
+        });
+
+        // Attach Standalone Service Staff Select Listeners
         containerEl.querySelectorAll('.item-staff-select').forEach(sel => {
             sel.addEventListener('change', () => {
                 const uid = sel.dataset.uid;
@@ -593,12 +769,7 @@ export function initGlobalBookingModal() {
                 const newStaffName = opt ? opt.textContent : '';
 
                 if (isStaffSyncAll) {
-                    // Update all items in this collection
-                    itemsArray.forEach(it => {
-                        it.staffId = newStaffId;
-                        it.staffName = newStaffName;
-                    });
-                    // Re-render so all dropdowns reflect the selected staff
+                    getAllAssignableEntries(itemsArray).forEach(entry => entry.set(newStaffId, newStaffName));
                     renderSelectedList(containerEl, itemsArray, isPicker);
                 } else {
                     const found = itemsArray.find(it => it.uid === uid);
@@ -611,9 +782,36 @@ export function initGlobalBookingModal() {
             });
         });
 
-        // Attach Delete Item Listeners
+        // Attach Nested Package Service Staff Select Listeners
+        containerEl.querySelectorAll('.package-nested-staff-select').forEach(sel => {
+            sel.addEventListener('change', () => {
+                const pkgUid = sel.dataset.pkgUid;
+                const svcUid = sel.dataset.svcUid;
+                const newStaffId = sel.value;
+                const opt = sel.options[sel.selectedIndex];
+                const newStaffName = opt ? opt.textContent : '';
+
+                if (isStaffSyncAll) {
+                    getAllAssignableEntries(itemsArray).forEach(entry => entry.set(newStaffId, newStaffName));
+                    renderSelectedList(containerEl, itemsArray, isPicker);
+                } else {
+                    const pkgItem = itemsArray.find(it => it.uid === pkgUid);
+                    if (pkgItem && Array.isArray(pkgItem.services)) {
+                        const svcItem = pkgItem.services.find(s => s.uid === svcUid);
+                        if (svcItem) {
+                            svcItem.staffId = newStaffId;
+                            svcItem.staffName = newStaffName;
+                        }
+                    }
+                }
+                validateForm();
+            });
+        });
+
+        // Attach Standalone Service Delete Listeners
         containerEl.querySelectorAll('.btn-item-delete').forEach(btn => {
-            btn.addEventListener('click', () => {
+            btn.addEventListener('click', (e) => {
+                e.stopPropagation();
                 const uid = btn.dataset.uid;
                 const idx = itemsArray.findIndex(it => it.uid === uid);
                 if (idx !== -1) {
@@ -659,13 +857,17 @@ export function initGlobalBookingModal() {
                 const targetUid = card.dataset.uid;
                 if (!draggedItemUid || draggedItemUid === targetUid) return;
 
-                const srcIndex = itemsArray.findIndex(it => it.uid === draggedItemUid);
-                const tgtIndex = itemsArray.findIndex(it => it.uid === targetUid);
+                const srcItem = itemsArray.find(it => it.uid === draggedItemUid);
+                const tgtItem = itemsArray.find(it => it.uid === targetUid);
 
-                if (srcIndex !== -1 && tgtIndex !== -1) {
-                    const [movedItem] = itemsArray.splice(srcIndex, 1);
-                    itemsArray.splice(tgtIndex, 0, movedItem);
-                    renderSelectedList(containerEl, itemsArray, isPicker);
+                if (srcItem && tgtItem && srcItem.type === tgtItem.type) {
+                    const srcIndex = itemsArray.indexOf(srcItem);
+                    const tgtIndex = itemsArray.indexOf(tgtItem);
+                    if (srcIndex !== -1 && tgtIndex !== -1) {
+                        const [movedItem] = itemsArray.splice(srcIndex, 1);
+                        itemsArray.splice(tgtIndex, 0, movedItem);
+                        renderSelectedList(containerEl, itemsArray, isPicker);
+                    }
                 }
             });
         });
@@ -675,23 +877,59 @@ export function initGlobalBookingModal() {
     // TOTALS & METRICS RECALCULATION
     // ----------------------------------------------------------------
     function updateTotals() {
-        // 1. Main Modal Metrics
-        const mainCount = selectedBookingItems.length;
-        const mainDuration = selectedBookingItems.reduce((acc, it) => acc + (parseInt(it.duration) || 0), 0);
-        const mainAmount = selectedBookingItems.reduce((acc, it) => acc + (parseFloat(it.price) || 0), 0);
+        const calculateMetrics = (arr) => {
+            let duration = 0;
+            let amount   = 0;
+            let svcCount = 0;
+            let pkgCount = 0;
 
-        if (mainCountPill) mainCountPill.textContent = `${mainCount} Selected`;
-        if (mainTotalDurationVal) mainTotalDurationVal.textContent = `${mainDuration} min`;
-        if (mainTotalAmountVal) mainTotalAmountVal.textContent = fmtPrice(mainAmount);
+            (arr || []).forEach(item => {
+                if (item.type === 'service') {
+                    svcCount++;
+                    duration += (parseInt(item.duration) || 0);
+                    amount   += (parseFloat(item.price) || 0);
+                } else if (item.type === 'package') {
+                    pkgCount++;
+                    amount += (parseFloat(item.price) || 0);
+                    if (Array.isArray(item.services)) {
+                        item.services.forEach(s => {
+                            duration += (parseInt(s.duration) || 0);
+                        });
+                    } else {
+                        duration += (parseInt(item.duration) || 0);
+                    }
+                }
+            });
+
+            return { duration, amount, svcCount, pkgCount };
+        };
+
+        // 1. Main Modal Metrics
+        const main = calculateMetrics(selectedBookingItems);
+        if (mainCountPill) {
+            if (main.pkgCount > 0 && main.svcCount > 0) {
+                mainCountPill.textContent = `${main.svcCount} Svc · ${main.pkgCount} Pkg`;
+            } else if (main.pkgCount > 0) {
+                mainCountPill.textContent = `${main.pkgCount} ${main.pkgCount === 1 ? 'Package' : 'Packages'} Selected`;
+            } else {
+                mainCountPill.textContent = `${main.svcCount} Selected`;
+            }
+        }
+        if (mainTotalDurationVal) mainTotalDurationVal.textContent = `${main.duration} min`;
+        if (mainTotalAmountVal) mainTotalAmountVal.textContent = fmtPrice(main.amount);
 
         // 2. Picker Modal Metrics
-        const pickerCount = pickerDraftItems.length;
-        const pickerDuration = pickerDraftItems.reduce((acc, it) => acc + (parseInt(it.duration) || 0), 0);
-        const pickerAmount = pickerDraftItems.reduce((acc, it) => acc + (parseFloat(it.price) || 0), 0);
+        const picker = calculateMetrics(pickerDraftItems);
+        const pickerSvcBadge = document.getElementById('pickerServicesCountBadge');
+        const pickerPkgBadge = document.getElementById('pickerPackagesCountBadge');
+        if (pickerSvcBadge) pickerSvcBadge.textContent = picker.svcCount;
+        if (pickerPkgBadge) pickerPkgBadge.textContent = picker.pkgCount;
 
-        if (pickerCountBadge) pickerCountBadge.textContent = pickerCount;
-        if (pickerTotalDurationVal) pickerTotalDurationVal.textContent = `${pickerDuration} min`;
-        if (pickerTotalAmountVal) pickerTotalAmountVal.textContent = fmtPrice(pickerAmount);
+        // Fallback for legacy badge if present
+        if (pickerCountBadge) pickerCountBadge.textContent = picker.svcCount + picker.pkgCount;
+
+        if (pickerTotalDurationVal) pickerTotalDurationVal.textContent = `${picker.duration} min`;
+        if (pickerTotalAmountVal) pickerTotalAmountVal.textContent = fmtPrice(picker.amount);
     }
 
     // ----------------------------------------------------------------
@@ -767,7 +1005,7 @@ export function initGlobalBookingModal() {
             }
 
             pickerCatalogList.innerHTML = filteredPackages.map(pkg => {
-                const isAdded = pickerDraftItems.some(it => it.packageId === pkg.package_id || it.id === pkg.package_id);
+                const isAdded = pickerDraftItems.some(it => it.type === 'package' && (it.packageId === pkg.package_id || it.id === pkg.package_id));
                 const incServices = livePackageServicesDB.filter(ps => ps.package_id === pkg.package_id);
                 const incNames = incServices.map(ps => ps.service_name).join(', ') || 'Custom package services';
 
@@ -819,12 +1057,16 @@ export function initGlobalBookingModal() {
                         pickerDraftItems = pickerDraftItems.filter(it => !(it.id === id && it.type === 'service'));
                     } else {
                         // Add to picker draft
-                        const defaultStaff = isStaffSyncAll && pickerDraftItems.length > 0 && pickerDraftItems[0].staffId
-                            ? pickerDraftItems[0].staffId
-                            : '';
-                        const defaultStaffName = isStaffSyncAll && pickerDraftItems.length > 0 && pickerDraftItems[0].staffName
-                            ? pickerDraftItems[0].staffName
-                            : '';
+                        let defaultStaff = '';
+                        let defaultStaffName = '';
+                        if (isStaffSyncAll) {
+                            const firstAssigned = getAllAssignableEntries(pickerDraftItems).find(e => e.get() && e.get().trim().length > 0);
+                            if (firstAssigned) {
+                                defaultStaff = firstAssigned.get();
+                                const stObj = liveStaffDB.find(st => st.staff_id === defaultStaff);
+                                defaultStaffName = stObj ? (stObj.staff_name || stObj.name) : '';
+                            }
+                        }
 
                         pickerDraftItems.push({
                             uid: 'item_' + generateUUID(),
@@ -839,61 +1081,72 @@ export function initGlobalBookingModal() {
                             packageId: null,
                             packageName: null
                         });
+
+                        // Auto-switch to Selected Services tab
+                        activePickerRhsTab = 'services';
                     }
                 } else if (type === 'package') {
                     const pkg = livePackagesDB.find(p => p.package_id === id);
                     if (!pkg) return;
 
-                    const isCurrentlyAdded = pickerDraftItems.some(it => it.packageId === id || it.id === id);
+                    const isCurrentlyAdded = pickerDraftItems.some(it => it.type === 'package' && (it.packageId === id || it.id === id));
                     if (isCurrentlyAdded) {
-                        // Remove all package services
-                        pickerDraftItems = pickerDraftItems.filter(it => it.packageId !== id && it.id !== id);
+                        // Remove package and all included services in 1 click
+                        pickerDraftItems = pickerDraftItems.filter(it => !(it.type === 'package' && (it.packageId === id || it.id === id)));
                     } else {
-                        // Expand individual package services per Decision 1
+                        // Add package as an expandable group per Decision 1 & 2
                         const incServices = livePackageServicesDB.filter(ps => ps.package_id === id);
-                        const defaultStaff = isStaffSyncAll && pickerDraftItems.length > 0 && pickerDraftItems[0].staffId
-                            ? pickerDraftItems[0].staffId
-                            : '';
-                        const defaultStaffName = isStaffSyncAll && pickerDraftItems.length > 0 && pickerDraftItems[0].staffName
-                            ? pickerDraftItems[0].staffName
-                            : '';
+                        let defaultStaff = '';
+                        let defaultStaffName = '';
+                        if (isStaffSyncAll) {
+                            const firstAssigned = getAllAssignableEntries(pickerDraftItems).find(e => e.get() && e.get().trim().length > 0);
+                            if (firstAssigned) {
+                                defaultStaff = firstAssigned.get();
+                                const stObj = liveStaffDB.find(st => st.staff_id === defaultStaff);
+                                defaultStaffName = stObj ? (stObj.staff_name || stObj.name) : '';
+                            }
+                        }
 
-                        if (incServices.length > 0) {
-                            const perItemPrice = Math.round((Number(pkg.final_price) || 0) / incServices.length);
-                            incServices.forEach((ps, idx) => {
-                                const matchedSvc = liveServicesDB.find(s => s.service_id === ps.service_id);
-                                pickerDraftItems.push({
-                                    uid: 'item_' + generateUUID(),
-                                    type: 'package_service',
-                                    id: ps.service_id,
-                                    name: `${ps.service_name} (${pkg.package_name})`,
-                                    categoryName: matchedSvc?.category_name || 'Package',
-                                    duration: matchedSvc ? (parseInt(matchedSvc.duration) || 0) : 30,
-                                    // Allocate price so total equals pkg.final_price
-                                    price: idx === incServices.length - 1
-                                        ? ((Number(pkg.final_price) || 0) - perItemPrice * (incServices.length - 1))
-                                        : perItemPrice,
-                                    staffId: defaultStaff,
-                                    staffName: defaultStaffName,
-                                    packageId: pkg.package_id,
-                                    packageName: pkg.package_name
-                                });
-                            });
-                        } else {
-                            pickerDraftItems.push({
-                                uid: 'item_' + generateUUID(),
-                                type: 'package',
-                                id: pkg.package_id,
-                                name: pkg.package_name,
-                                categoryName: 'Package',
-                                duration: 60,
-                                price: parseFloat(pkg.final_price) || 0,
+                        const pkgPrice = parseFloat(pkg.final_price) || 0;
+                        const numSvc = incServices.length;
+                        const perItemPrice = numSvc > 0 ? Math.round(pkgPrice / numSvc) : pkgPrice;
+                        let totalDuration = 0;
+
+                        const nestedServices = incServices.map((ps, idx) => {
+                            const matchedSvc = liveServicesDB.find(s => s.service_id === ps.service_id);
+                            const dur = matchedSvc ? (parseInt(matchedSvc.duration) || 0) : 30;
+                            totalDuration += dur;
+                            const allocPrice = (idx === numSvc - 1)
+                                ? (pkgPrice - perItemPrice * (numSvc - 1))
+                                : perItemPrice;
+
+                            return {
+                                uid: 'pkgsvc_' + generateUUID(),
+                                serviceId: ps.service_id,
+                                serviceName: ps.service_name,
+                                duration: dur,
+                                price: allocPrice,
                                 staffId: defaultStaff,
                                 staffName: defaultStaffName,
-                                packageId: pkg.package_id,
-                                packageName: pkg.package_name
-                            });
-                        }
+                                categoryName: matchedSvc?.category_name || 'Package'
+                            };
+                        });
+
+                        pickerDraftItems.push({
+                            uid: 'pkg_' + generateUUID(),
+                            type: 'package',
+                            packageId: pkg.package_id,
+                            id: pkg.package_id,
+                            packageName: pkg.package_name,
+                            name: pkg.package_name,
+                            price: pkgPrice,
+                            duration: totalDuration || 60,
+                            expanded: true, // Auto-expanded by default per Decision 1 & 2
+                            services: nestedServices
+                        });
+
+                        // Auto-switch to Selected Packages tab per Decision 1
+                        activePickerRhsTab = 'packages';
                     }
                 }
 
@@ -971,6 +1224,7 @@ export function initGlobalBookingModal() {
         selectedBookingItems = [];
         pickerDraftItems     = [];
         isStaffSyncAll       = false;
+        activePickerRhsTab   = 'services';
 
         if (mainStaffSyncToggle) mainStaffSyncToggle.checked = false;
         if (pickerStaffSyncToggle) pickerStaffSyncToggle.checked = false;
@@ -1001,6 +1255,9 @@ export function initGlobalBookingModal() {
         pickerDraftItems = JSON.parse(JSON.stringify(selectedBookingItems));
 
         activePickerTab      = 'services';
+        activePickerRhsTab   = pickerDraftItems.some(it => it.type === 'service')
+            ? 'services'
+            : (pickerDraftItems.some(it => it.type === 'package') ? 'packages' : 'services');
         activeCategoryFilter = 'all';
         pickerSearchQuery    = '';
 
@@ -1056,9 +1313,26 @@ export function initGlobalBookingModal() {
         renderCatalogItems();
     });
 
+    // ── Picker RHS Tabs (Selected Services / Selected Packages) ────
+    pickerRhsTabServices?.addEventListener('click', () => {
+        activePickerRhsTab = 'services';
+        renderSelectedList(pickerSelectedList, pickerDraftItems, true);
+    });
+
+    pickerRhsTabPackages?.addEventListener('click', () => {
+        activePickerRhsTab = 'packages';
+        renderSelectedList(pickerSelectedList, pickerDraftItems, true);
+    });
+
     // ── Picker Actions ──────────────────────────────────────────────
     btnClearAllSelected?.addEventListener('click', () => {
-        pickerDraftItems = [];
+        if (activePickerRhsTab === 'services') {
+            pickerDraftItems = pickerDraftItems.filter(it => it.type !== 'service');
+        } else if (activePickerRhsTab === 'packages') {
+            pickerDraftItems = pickerDraftItems.filter(it => it.type !== 'package');
+        } else {
+            pickerDraftItems = [];
+        }
         renderSelectedList(pickerSelectedList, pickerDraftItems, true);
         renderCatalogItems();
         updateTotals();
@@ -1069,13 +1343,13 @@ export function initGlobalBookingModal() {
         if (mainStaffSyncToggle) mainStaffSyncToggle.checked = isStaffSyncAll;
 
         if (isStaffSyncAll && pickerDraftItems.length > 0) {
-            const firstStaff = pickerDraftItems[0].staffId;
-            const firstStaffName = pickerDraftItems[0].staffName;
-            if (firstStaff) {
-                pickerDraftItems.forEach(it => {
-                    it.staffId = firstStaff;
-                    it.staffName = firstStaffName;
-                });
+            const entries = getAllAssignableEntries(pickerDraftItems);
+            const firstAssigned = entries.find(entry => entry.get() && entry.get().trim().length > 0);
+            if (firstAssigned) {
+                const firstStaff = firstAssigned.get();
+                const stObj = liveStaffDB.find(st => st.staff_id === firstStaff);
+                const firstStaffName = stObj ? (stObj.staff_name || stObj.name) : '';
+                entries.forEach(entry => entry.set(firstStaff, firstStaffName));
                 renderSelectedList(pickerSelectedList, pickerDraftItems, true);
             }
         }
@@ -1086,13 +1360,13 @@ export function initGlobalBookingModal() {
         if (pickerStaffSyncToggle) pickerStaffSyncToggle.checked = isStaffSyncAll;
 
         if (isStaffSyncAll && selectedBookingItems.length > 0) {
-            const firstStaff = selectedBookingItems[0].staffId;
-            const firstStaffName = selectedBookingItems[0].staffName;
-            if (firstStaff) {
-                selectedBookingItems.forEach(it => {
-                    it.staffId = firstStaff;
-                    it.staffName = firstStaffName;
-                });
+            const entries = getAllAssignableEntries(selectedBookingItems);
+            const firstAssigned = entries.find(entry => entry.get() && entry.get().trim().length > 0);
+            if (firstAssigned) {
+                const firstStaff = firstAssigned.get();
+                const stObj = liveStaffDB.find(st => st.staff_id === firstStaff);
+                const firstStaffName = stObj ? (stObj.staff_name || stObj.name) : '';
+                entries.forEach(entry => entry.set(firstStaff, firstStaffName));
                 renderSelectedList(mainSelectedList, selectedBookingItems, false);
                 validateForm();
             }
@@ -1199,8 +1473,9 @@ export function initGlobalBookingModal() {
         const hasName       = selectedCustomerId || (customerName && customerName.value.trim().length > 0);
         const validCustomer = hasPhone && hasName;
 
-        const hasItems      = selectedBookingItems.length > 0;
-        const allStaffSet   = hasItems && selectedBookingItems.every(it => it.staffId && it.staffId.trim().length > 0);
+        const assignableEntries = getAllAssignableEntries(selectedBookingItems);
+        const hasItems          = assignableEntries.length > 0;
+        const allStaffSet       = hasItems && assignableEntries.every(entry => entry.get() && entry.get().trim().length > 0);
 
         const hasDate       = bookingDate?.value !== '';
         const hasTime       = bookingTime?.value !== '';
@@ -1233,36 +1508,70 @@ export function initGlobalBookingModal() {
     // ----------------------------------------------------------------
     function buildPayloads(targetId, targetName, groupBookingId) {
         let currentStartMins = timeToMins(bookingTime.value);
+        const payloads = [];
 
-        return selectedBookingItems.map((item) => {
-            const itemDuration = parseInt(item.duration) || 0;
-            const startTimeStr = minsToTime24(currentStartMins);
-            const endTimeStr   = minsToTime24(currentStartMins + itemDuration);
+        selectedBookingItems.forEach((item) => {
+            if (item.type === 'service') {
+                const itemDuration = parseInt(item.duration) || 0;
+                const startTimeStr = minsToTime24(currentStartMins);
+                const endTimeStr   = minsToTime24(currentStartMins + itemDuration);
+                currentStartMins += itemDuration;
 
-            // Sequential service timing
-            currentStartMins += itemDuration;
+                payloads.push({
+                    company_id:      getCompanyId(),
+                    branch_id:       getBranchId(),
+                    booking_id:      groupBookingId,
+                    customer_id:     targetId || null,
+                    customer_name:   targetName,
+                    customer_mail:   customerEmail?.value.trim() || null,
+                    customer_phone:  phoneSearch.value.trim(),
+                    service_id:      item.id,
+                    service_name:    item.name,
+                    staff_id:        item.staffId,
+                    staff_name:      item.staffName,
+                    booking_date:    bookingDate.value,
+                    start_time:      startTimeStr,
+                    end_time:        endTimeStr,
+                    duration:        itemDuration,
+                    notes:           bookingNotes?.value.trim() || '',
+                    price:           Number(item.price) || 0,
+                    status:          'booked',
+                    booking_type:    'walk-in'
+                });
+            } else if (item.type === 'package') {
+                const incServices = Array.isArray(item.services) ? item.services : [];
+                incServices.forEach((svc) => {
+                    const svcDuration = parseInt(svc.duration) || 0;
+                    const startTimeStr = minsToTime24(currentStartMins);
+                    const endTimeStr   = minsToTime24(currentStartMins + svcDuration);
+                    currentStartMins += svcDuration;
 
-            return {
-                company_id:      getCompanyId(),
-                branch_id:       getBranchId(),
-                booking_id:      groupBookingId,
-                customer_id:     targetId || null,
-                customer_name:   targetName,
-                customer_mail:   customerEmail?.value.trim() || null,
-                customer_phone:  phoneSearch.value.trim(),
-                service_id:      item.id,
-                service_name:    item.name,
-                staff_id:        item.staffId,
-                staff_name:      item.staffName,
-                booking_date:    bookingDate.value,
-                start_time:      startTimeStr,
-                end_time:        endTimeStr,
-                notes:           bookingNotes?.value.trim() || '',
-                price:           Number(item.price) || 0,
-                status:          'booked',
-                booking_type:    'walk-in'
-            };
+                    payloads.push({
+                        company_id:      getCompanyId(),
+                        branch_id:       getBranchId(),
+                        booking_id:      groupBookingId,
+                        customer_id:     targetId || null,
+                        customer_name:   targetName,
+                        customer_mail:   customerEmail?.value.trim() || null,
+                        customer_phone:  phoneSearch.value.trim(),
+                        service_id:      svc.serviceId,
+                        service_name:    `${svc.serviceName} (${item.packageName || item.name})`,
+                        staff_id:        svc.staffId,
+                        staff_name:      svc.staffName,
+                        booking_date:    bookingDate.value,
+                        start_time:      startTimeStr,
+                        end_time:        endTimeStr,
+                        duration:        svcDuration,
+                        notes:           bookingNotes?.value.trim() || '',
+                        price:           Number(svc.price) || 0,
+                        status:          'booked',
+                        booking_type:    'walk-in'
+                    });
+                });
+            }
         });
+
+        return payloads;
     }
 
     // ── Create bookings via atomic RPC ──────────────────────────────
