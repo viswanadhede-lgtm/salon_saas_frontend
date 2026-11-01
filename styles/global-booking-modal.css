@@ -305,7 +305,7 @@
 }
 
 .item-staff-select {
-    padding: 6px 12px;
+    padding: 8px 12px;
     font-size: 0.86rem;
     color: #0f172a;
     border: 1px solid #cbd5e1;
@@ -314,6 +314,7 @@
     cursor: pointer;
     min-width: 150px;
     max-width: 220px;
+    height: 38px;
 }
 
 .item-staff-select:focus {
@@ -400,7 +401,6 @@
     align-items: center;
     gap: 8px;
 }
-
 .summary-chip-divider {
     width: 1px;
     height: 24px;
@@ -743,13 +743,22 @@
     display: flex;
     justify-content: space-between;
     align-items: center;
-    margin-bottom: 12px;
+    margin-bottom: 10px;
+    padding-bottom: 10px;
+    border-bottom: 1px solid #e2e8f0;
 }
 
 .picker-selected-title {
     font-size: 0.95rem;
     font-weight: 700;
     color: #0f172a;
+}
+
+/* Clear All — rendered dynamically above first service item */
+.picker-list-clear-row {
+    display: flex;
+    justify-content: flex-end;
+    padding-bottom: 4px;
 }
 
 .btn-clear-all {
@@ -762,16 +771,16 @@
     display: flex;
     align-items: center;
     gap: 4px;
+    padding: 0;
 }
 
 .btn-clear-all:hover {
     text-decoration: underline;
 }
 
+/* Toggle row (now removed from DOM — kept as fallback) */
 .picker-selected-toggle-row {
-    margin-bottom: 12px;
-    padding-bottom: 10px;
-    border-bottom: 1px solid #e2e8f0;
+    display: none;
 }
 
 .picker-selected-list {
@@ -783,7 +792,7 @@
     padding-right: 4px;
 }
 
-/* Summary Box in Picker */
+/* Summary Box in Picker — single row: icon + label + value side by side */
 .picker-summary-box {
     margin-top: 14px;
     background: #ffffff;
@@ -793,6 +802,7 @@
     display: flex;
     align-items: center;
     justify-content: space-around;
+    flex-shrink: 0;
 }
 
 /* Picker Modal Footer */
