@@ -550,6 +550,23 @@ export function initGlobalBookingModal() {
     }
 
     // ----------------------------------------------------------------
+    // HELPERS: Sync scroll-list height so overflow-y:auto kicks in
+    // CSS flex/grid height propagation is unreliable cross-browser;
+    // we measure directly and set max-height on the scroll container.
+    // ----------------------------------------------------------------
+    function syncPickerListHeight() {
+        const modal  = document.getElementById('addServicesModal');
+        const list   = document.getElementById('pickerSelectedList');
+        if (!modal || !list) return;
+        const footer = modal.querySelector('.picker-footer');
+        const modalBottom = modal.getBoundingClientRect().bottom;
+        const listTop     = list.getBoundingClientRect().top;
+        const footerH     = footer ? footer.offsetHeight : 58;
+        const available   = modalBottom - listTop - footerH - 8; // 8px buffer
+        list.style.maxHeight = Math.max(80, available) + 'px';
+    }
+
+    // ----------------------------------------------------------------
     // RENDER: Selected Items List (Shared by Main Modal & Picker Modal)
     // ----------------------------------------------------------------
     function renderSelectedList(containerEl, itemsArray, isPicker) {
@@ -833,6 +850,11 @@ export function initGlobalBookingModal() {
 
         // Attach Drag & Drop Reordering Listeners
         setupDragAndDrop(containerEl, itemsArray, isPicker);
+
+        // Sync the scroll-list height after every render (picker only)
+        if (isPicker) {
+            requestAnimationFrame(syncPickerListHeight);
+        }
     }
 
     // ── Drag & Drop Implementation ──────────────────────────────────────
@@ -1284,6 +1306,9 @@ export function initGlobalBookingModal() {
         updateTotals();
 
         pickerOverlay.classList.add('active');
+
+        // After the overlay is visible, sync the list height
+        requestAnimationFrame(syncPickerListHeight);
     }
 
     function closePickerModal() {
