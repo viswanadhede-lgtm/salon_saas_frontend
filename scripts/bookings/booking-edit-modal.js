@@ -5,7 +5,7 @@ import { statusBadge } from './bookings-table.js';
 import { loadEditDropdownData, fetchBookings } from './bookings-data.js';
 
 // ─── Edit Modal: Build a single service + staff + price row ───────────────────
-export function buildEditServiceRow(rowId, isFirst, prefillSvcId = '', prefillStaffId = '', prefillPrice = '', dbId = null) {
+export function buildEditServiceRow(rowId, isFirst, prefillSvcId = '', prefillStaffId = '', prefillPrice = '', dbId = null, prefillPkgId = null) {
     const svcOptions = editState.liveServices.map(s =>
         `<option value="${s.service_id}" data-type="service" data-price="${s.price || 0}" ${
             prefillSvcId === s.service_id ? 'selected' : ''}>${s.service_name}</option>`
@@ -35,6 +35,9 @@ export function buildEditServiceRow(rowId, isFirst, prefillSvcId = '', prefillSt
     div.className    = 'edit-service-row';
     div.dataset.rowId = rowId;
     if (dbId) div.dataset.dbId = dbId; // Supabase row PK — used for targeted UPDATE/DELETE
+    if (prefillPkgId) div.dataset.packageId = prefillPkgId; // Preserve verified package UUID
+    div.dataset.originalPkgId = prefillPkgId || '';
+    div.dataset.originalSvcId = prefillSvcId || '';
 
     const colors = ['#f8fafc', '#fdf4ff', '#f0fdf4', '#fffbeb', '#fef2f2', '#f0f9ff'];
     const cardBg = colors[rowId % colors.length];
@@ -71,7 +74,7 @@ export function buildEditServiceRow(rowId, isFirst, prefillSvcId = '', prefillSt
         </div>
     `;
 
-    // Auto-fill price when service changes
+    // Auto-fill price and manage package_id when service changes
     const svcSel     = div.querySelector('.edit-svc-select');
     const priceInput = div.querySelector('.edit-svc-price');
     svcSel.addEventListener('change', () => {
@@ -79,6 +82,18 @@ export function buildEditServiceRow(rowId, isFirst, prefillSvcId = '', prefillSt
         if (opt?.value) {
             const p = parseFloat(opt.dataset.price || 0);
             if (p && !priceInput.value) priceInput.value = p;
+        }
+
+        // Maintain or update package_id according to actual user action:
+        if (opt?.dataset.type === 'package') {
+            // User explicitly chose a package from the dropdown
+            div.dataset.packageId = opt.value;
+        } else if (opt?.value === div.dataset.originalSvcId && div.dataset.originalPkgId) {
+            // User restored back to the original service of this package: retain original package UUID
+            div.dataset.packageId = div.dataset.originalPkgId;
+        } else {
+            // Changed to a different standalone service: clear package association
+            delete div.dataset.packageId;
         }
         syncEditServiceDropdowns();
     });
@@ -343,7 +358,8 @@ export async function openEditBookingModal(bookingId) {
             container.appendChild(buildEditServiceRow(
                 editState.rowCounter++, i === 0,
                 row.service_id || '', row.staff_id || '', row.price ?? '',
-                row.id || null
+                row.id || null,
+                row.package_id || null
             ));
         });
         syncEditServiceDropdowns();
@@ -354,7 +370,7 @@ export async function openEditBookingModal(bookingId) {
             addBtn.onclick = () => {
                 const firstStaff = container.querySelector('.edit-staff-select')?.value || '';
                 const nextId = container.querySelectorAll('.edit-service-row').length;
-                container.appendChild(buildEditServiceRow(nextId, false, '', firstStaff, '', null));
+                container.appendChild(buildEditServiceRow(nextId, false, '', firstStaff, '', null, null));
                 syncEditServiceDropdowns();
             };
         }
@@ -457,9 +473,12 @@ export function attachEditModalListeners() {
                 const staffSel   = row.querySelector('.edit-staff-select');
                 const priceInput = row.querySelector('.edit-svc-price');
                 const opt        = svcSel?.options[svcSel.selectedIndex];
+                const isPkgOpt   = opt?.dataset.type === 'package';
+                const pkgId      = isPkgOpt ? svcSel?.value : (row.dataset.packageId || null);
 
                 return {
                     service_id:   svcSel?.value || null,
+                    package_id:   pkgId || null,
                     service_name: opt?.textContent?.trim() || '',
                     staff_id:     staffSel?.value || null,
                     staff_name:   staffSel?.options[staffSel.selectedIndex]?.text || '',

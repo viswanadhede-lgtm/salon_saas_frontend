@@ -1169,6 +1169,7 @@ export function initGlobalBookingModal() {
 
                             return {
                                 uid: 'pkgsvc_' + generateUUID(),
+                                packageId: pkg.package_id,
                                 serviceId: ps.service_id,
                                 serviceName: ps.service_name,
                                 duration: dur,
@@ -1574,6 +1575,7 @@ export function initGlobalBookingModal() {
                     customer_mail:   customerEmail?.value.trim() || null,
                     customer_phone:  phoneSearch.value.trim(),
                     service_id:      item.id,
+                    package_id:      null,
                     service_name:    item.name,
                     staff_id:        item.staffId,
                     staff_name:      item.staffName,
@@ -1603,6 +1605,7 @@ export function initGlobalBookingModal() {
                         customer_mail:   customerEmail?.value.trim() || null,
                         customer_phone:  phoneSearch.value.trim(),
                         service_id:      svc.serviceId,
+                        package_id:      svc.packageId || item.packageId || null,
                         service_name:    `${svc.serviceName} (${item.packageName || item.name})`,
                         staff_id:        svc.staffId,
                         staff_name:      svc.staffName,
@@ -1631,6 +1634,7 @@ export function initGlobalBookingModal() {
             // Build services array for RPC
             const services = payloads.map(p => ({
                 service_id:   p.service_id,
+                package_id:   p.package_id || null,
                 staff_id:     p.staff_id,
                 service_name: p.service_name,
                 staff_name:   p.staff_name,
