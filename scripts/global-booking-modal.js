@@ -139,17 +139,24 @@ export function ensureBookingModalHtml() {
                             </div>
                         </div>
 
-                        <!-- Right Column: Date & Time -->
+                        <!-- Right Column: Description on top, Date/Time/Now on 3rd row -->
                         <div class="booking-col">
-                            <div class="form-group">
-                                <label class="form-label" for="bookingDate">Date <span class="text-rose">*</span></label>
-                                <input type="date" id="bookingDate" class="form-input">
+                            <div class="form-group" style="margin-bottom: 0;">
+                                <label class="form-label" for="bookingNotes">Booking Notes <span class="text-muted">(Optional)</span></label>
+                                <textarea id="bookingNotes" class="form-input form-textarea" placeholder="Add optional notes for this booking..." style="height: 114px; min-height: 114px; resize: vertical;"></textarea>
                             </div>
-                            <div class="form-group">
-                                <label class="form-label" for="bookingTime">Time <span class="text-rose">*</span></label>
-                                <div class="relative" style="display: flex; gap: 8px;">
-                                    <input type="time" id="bookingTime" class="form-input" style="flex: 1;">
-                                    <button type="button" class="btn btn-secondary" id="btnTimeNow" style="padding: 0 16px; height: 42px; font-size: 13px; font-weight: 600;">Now</button>
+
+                            <div class="booking-datetime-row">
+                                <div class="form-group" style="flex: 1;">
+                                    <label class="form-label" for="bookingDate">Date <span class="text-rose">*</span></label>
+                                    <input type="date" id="bookingDate" class="form-input">
+                                </div>
+                                <div class="form-group" style="flex: 1.15;">
+                                    <label class="form-label" for="bookingTime">Time <span class="text-rose">*</span></label>
+                                    <div class="relative" style="display: flex; gap: 6px;">
+                                        <input type="time" id="bookingTime" class="form-input" style="flex: 1;">
+                                        <button type="button" class="btn btn-secondary" id="btnTimeNow" style="padding: 0 12px; height: 40px; font-size: 12px; font-weight: 600;">Now</button>
+                                    </div>
                                 </div>
                             </div>
                         </div>
@@ -199,14 +206,6 @@ export function ensureBookingModalHtml() {
                                     </div>
                                 </div>
                             </div>
-                        </div>
-                    </div>
-
-                    <!-- Notes Section -->
-                    <div class="booking-notes-section">
-                        <div class="form-group" style="margin-bottom:0;">
-                            <label class="form-label" for="bookingNotes">Booking Notes <span class="text-muted">(Optional)</span></label>
-                            <textarea id="bookingNotes" class="form-input form-textarea" placeholder="Add optional notes for this booking..." style="min-height: 80px;"></textarea>
                         </div>
                     </div>
                 </div>
