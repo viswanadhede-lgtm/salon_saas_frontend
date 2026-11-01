@@ -293,9 +293,12 @@ export function ensureBookingModalHtml() {
 
                     <!-- Right: Selected Items Review -->
                     <div class="picker-selected-col">
-                        <!-- Header: Title -->
+                        <!-- Header: Title + Count Badge -->
                         <div class="picker-selected-header">
-                            <span class="picker-selected-title" id="pickerSelectedCountTitle">Selected Services (0)</span>
+                            <div class="picker-selected-title-group">
+                                <span class="picker-selected-title">Selected Services</span>
+                                <span class="picker-count-badge" id="pickerSelectedCountBadge">0</span>
+                            </div>
                         </div>
 
                         <!-- Sub-row: Clear All on LHS + Apply same staff to all on RHS -->
@@ -405,7 +408,7 @@ export function initGlobalBookingModal() {
     const pickerCategoryPills    = document.getElementById('pickerCategoryPills');
     const pickerCatalogList      = document.getElementById('pickerCatalogList');
     const pickerSelectedList     = document.getElementById('pickerSelectedList');
-    const pickerCountTitle       = document.getElementById('pickerSelectedCountTitle');
+    const pickerCountBadge       = document.getElementById('pickerSelectedCountBadge');
     const btnClearAllSelected    = document.getElementById('btnClearAllSelected');
     const pickerStaffSyncToggle  = document.getElementById('pickerStaffSyncToggle');
     const pickerTotalDurationVal = document.getElementById('pickerTotalDurationVal');
@@ -686,7 +689,7 @@ export function initGlobalBookingModal() {
         const pickerDuration = pickerDraftItems.reduce((acc, it) => acc + (parseInt(it.duration) || 0), 0);
         const pickerAmount = pickerDraftItems.reduce((acc, it) => acc + (parseFloat(it.price) || 0), 0);
 
-        if (pickerCountTitle) pickerCountTitle.textContent = `Selected Services (${pickerCount})`;
+        if (pickerCountBadge) pickerCountBadge.textContent = pickerCount;
         if (pickerTotalDurationVal) pickerTotalDurationVal.textContent = `${pickerDuration} min`;
         if (pickerTotalAmountVal) pickerTotalAmountVal.textContent = fmtPrice(pickerAmount);
     }
