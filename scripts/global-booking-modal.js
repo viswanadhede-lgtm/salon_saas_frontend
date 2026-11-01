@@ -482,11 +482,12 @@ export function initGlobalBookingModal() {
             // Map category_name into services for filtering and badges
             const catMap = new Map(liveCategoriesDB.map(c => [c.category_id, c.category_name]));
             liveServicesDB = (svcRes.data || [])
-                .filter(s => (s.status || '').trim().toLowerCase() === 'active')
+                .filter(s => { const st = (s.status || '').trim().toLowerCase(); return st === 'active' || st === ''; })
                 .map(s => ({
                     ...s,
                     category_name: catMap.get(s.category_id) || s.category_name || 'General'
                 }));
+            console.log('[Booking Modal] Loaded: ' + liveServicesDB.length + ' services, ' + liveStaffDB.length + ' staff, ' + liveCategoriesDB.length + ' categories');
 
         } catch (err) {
             console.error('[Booking Modal] Error loading dropdown data:', err);
@@ -973,6 +974,11 @@ export function initGlobalBookingModal() {
         setTimeout(() => phoneSearch.focus(), 100);
 
         await populateBookingDropdowns();
+
+        // Refresh the main modal UI now that data has loaded
+        renderSelectedList(mainSelectedList, selectedBookingItems, false);
+        updateTotals();
+        validateForm();
     }
 
     function closeModal() {
