@@ -228,11 +228,34 @@ export function ensureBookingModalHtml() {
             <div class="modal-container" id="addServicesModal">
                 <!-- Header -->
                 <div class="picker-header">
-                    <div>
+                    <div class="picker-header-left">
                         <h3>Add Services / Packages</h3>
                         <p>Select one or more services or packages and assign staff.</p>
                     </div>
-                    <button type="button" class="modal-close" id="btnClosePickerModal"><i data-feather="x"></i></button>
+                    <div class="picker-header-right">
+                        <div class="picker-modal-summary-card" id="pickerModalSummaryCard">
+                            <div class="summary-chip-pill">
+                                <div class="chip-icon-circle duration">
+                                    <i data-feather="clock"></i>
+                                </div>
+                                <div class="chip-content">
+                                    <span class="chip-title">Total Duration</span>
+                                    <span class="chip-value" id="pickerTotalDurationVal">0 min</span>
+                                </div>
+                            </div>
+                            <div class="summary-chip-sep"></div>
+                            <div class="summary-chip-pill">
+                                <div class="chip-icon-circle amount">
+                                    <i data-feather="dollar-sign"></i>
+                                </div>
+                                <div class="chip-content">
+                                    <span class="chip-title">Total Amount</span>
+                                    <span class="chip-value price" id="pickerTotalAmountVal">₹0</span>
+                                </div>
+                            </div>
+                        </div>
+                        <button type="button" class="modal-close" id="btnClosePickerModal"><i data-feather="x"></i></button>
+                    </div>
                 </div>
 
                 <!-- Body (2 Columns) -->
@@ -270,22 +293,9 @@ export function ensureBookingModalHtml() {
 
                     <!-- Right: Selected Items Review -->
                     <div class="picker-selected-col">
-                        <!-- Header: Title on Left + Summary Chips on Right -->
+                        <!-- Header: Title -->
                         <div class="picker-selected-header">
                             <span class="picker-selected-title" id="pickerSelectedCountTitle">Selected Services (0)</span>
-                            <div class="picker-header-summary-chips">
-                                <div class="summary-chip-item">
-                                    <i data-feather="clock" style="width:15px;height:15px;color:#64748b;"></i>
-                                    <span class="summary-chip-label">Total Duration</span>
-                                    <span class="summary-chip-val" id="pickerTotalDurationVal">0 min</span>
-                                </div>
-                                <div class="summary-chip-divider"></div>
-                                <div class="summary-chip-item">
-                                    <i data-feather="dollar-sign" style="width:15px;height:15px;color:#16a34a;"></i>
-                                    <span class="summary-chip-label">Total Amount</span>
-                                    <span class="summary-chip-val price" id="pickerTotalAmountVal">₹0</span>
-                                </div>
-                            </div>
                         </div>
 
                         <!-- Sub-row: Clear All on LHS + Apply same staff to all on RHS -->
