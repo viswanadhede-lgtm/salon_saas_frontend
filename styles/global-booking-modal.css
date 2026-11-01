@@ -754,11 +754,32 @@
     color: #0f172a;
 }
 
-/* Clear All — rendered dynamically above first service item */
-.picker-list-clear-row {
+/* Header Summary Chips in Picker Modal */
+.picker-header-summary-chips {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    background: #ffffff;
+    border: 1px solid #e2e8f0;
+    border-radius: 8px;
+    padding: 6px 14px;
+}
+
+/* Sub-row: Apply same staff to all (right-aligned above services) */
+.picker-selected-toggle-row {
     display: flex;
     justify-content: flex-end;
+    align-items: center;
+    margin-bottom: 8px;
     padding-bottom: 4px;
+}
+
+/* Clear All — rendered dynamically at bottom of selected list */
+.picker-list-clear-row-bottom {
+    display: flex;
+    justify-content: flex-end;
+    padding: 8px 0 2px 0;
+    margin-top: 4px;
 }
 
 .btn-clear-all {
@@ -771,16 +792,14 @@
     display: flex;
     align-items: center;
     gap: 4px;
-    padding: 0;
+    padding: 4px 8px;
+    border-radius: 6px;
+    transition: all 0.15s ease;
 }
 
 .btn-clear-all:hover {
+    background: #fef2f2;
     text-decoration: underline;
-}
-
-/* Toggle row (now removed from DOM — kept as fallback) */
-.picker-selected-toggle-row {
-    display: none;
 }
 
 .picker-selected-list {
@@ -792,17 +811,9 @@
     padding-right: 4px;
 }
 
-/* Summary Box in Picker — single row: icon + label + value side by side */
+/* Old bottom summary box is removed */
 .picker-summary-box {
-    margin-top: 14px;
-    background: #ffffff;
-    border: 1px solid #e2e8f0;
-    border-radius: 10px;
-    padding: 10px 16px;
-    display: flex;
-    align-items: center;
-    justify-content: space-around;
-    flex-shrink: 0;
+    display: none;
 }
 
 /* Picker Modal Footer */

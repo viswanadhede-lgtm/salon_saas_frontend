@@ -270,33 +270,35 @@ export function ensureBookingModalHtml() {
 
                     <!-- Right: Selected Items Review -->
                     <div class="picker-selected-col">
-                        <!-- Header: title + Apply same staff to all (right-aligned) -->
+                        <!-- Header: Title on Left + Summary Chips on Right -->
                         <div class="picker-selected-header">
                             <span class="picker-selected-title" id="pickerSelectedCountTitle">Selected Services (0)</span>
+                            <div class="picker-header-summary-chips">
+                                <div class="summary-chip-item">
+                                    <i data-feather="clock" style="width:15px;height:15px;color:#64748b;"></i>
+                                    <span class="summary-chip-label">Total Duration</span>
+                                    <span class="summary-chip-val" id="pickerTotalDurationVal">0 min</span>
+                                </div>
+                                <div class="summary-chip-divider"></div>
+                                <div class="summary-chip-item">
+                                    <i data-feather="dollar-sign" style="width:15px;height:15px;color:#16a34a;"></i>
+                                    <span class="summary-chip-label">Total Amount</span>
+                                    <span class="summary-chip-val price" id="pickerTotalAmountVal">₹0</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Sub-row: Apply same staff to all (right-aligned above services) -->
+                        <div class="picker-selected-toggle-row" id="pickerSelectedToggleRow">
                             <label class="staff-sync-toggle">
                                 <span>Apply same staff to all</span>
                                 <input type="checkbox" id="pickerStaffSyncToggle">
                             </label>
                         </div>
 
-                        <!-- Selected list with Clear All anchored above the first item -->
+                        <!-- Selected list -->
                         <div class="picker-selected-list" id="pickerSelectedList">
                             <!-- Populated dynamically -->
-                        </div>
-
-                        <!-- Summary Box -->
-                        <div class="picker-summary-box">
-                            <div class="summary-chip-item">
-                                <i data-feather="clock" style="width:16px;height:16px;color:#64748b;"></i>
-                                <span class="summary-chip-label">Total Duration</span>
-                                <span class="summary-chip-val" id="pickerTotalDurationVal">0 min</span>
-                            </div>
-                            <div class="summary-chip-divider"></div>
-                            <div class="summary-chip-item">
-                                <i data-feather="dollar-sign" style="width:16px;height:16px;color:#16a34a;"></i>
-                                <span class="summary-chip-label">Total Amount</span>
-                                <span class="summary-chip-val price" id="pickerTotalAmountVal">₹0</span>
-                            </div>
                         </div>
                     </div>
                 </div>
@@ -500,6 +502,11 @@ export function initGlobalBookingModal() {
     function renderSelectedList(containerEl, itemsArray, isPicker) {
         if (!containerEl) return;
 
+        if (isPicker) {
+            const toggleRow = document.getElementById('pickerSelectedToggleRow');
+            if (toggleRow) toggleRow.style.display = itemsArray.length > 0 ? 'flex' : 'none';
+        }
+
         if (itemsArray.length === 0) {
             containerEl.innerHTML = `
                 <div class="selected-services-empty">
@@ -517,13 +524,7 @@ export function initGlobalBookingModal() {
                 `).join('');
         };
 
-        containerEl.innerHTML = (isPicker ? `
-            <div class="picker-list-clear-row" id="btnClearAllSelected">
-                <button type="button" class="btn-clear-all" id="btnClearAllSelectedInner">
-                    <i data-feather="trash-2" style="width:13px;height:13px;"></i>
-                    <span>Clear All</span>
-                </button>
-            </div>` : '') + itemsArray.map((item, index) => {
+        const itemsCardsHtml = itemsArray.map((item, index) => {
             const visual = getCategoryMeta(item.categoryName, item.name);
             const durationDisplay = item.duration ? `${item.duration} min` : '—';
             const priceDisplay = fmtPrice(item.price);
@@ -559,6 +560,17 @@ export function initGlobalBookingModal() {
             </div>
             `;
         }).join('');
+
+        const clearAllHtml = (isPicker && itemsArray.length > 0) ? `
+            <div class="picker-list-clear-row-bottom" id="btnClearAllSelected">
+                <button type="button" class="btn-clear-all" id="btnClearAllSelectedInner">
+                    <i data-feather="trash-2" style="width:13px;height:13px;"></i>
+                    <span>Clear All</span>
+                </button>
+            </div>
+        ` : '';
+
+        containerEl.innerHTML = itemsCardsHtml + clearAllHtml;
 
         if (window.feather && feather.replace) {
             feather.replace();
