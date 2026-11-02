@@ -220,6 +220,11 @@ export function ensureBookingModalHtml() {
                             <!-- Rendered dynamically -->
                         </div>
 
+                        <!-- Empty State Helper Text (visible only when empty) -->
+                        <div class="rhs-empty-container" id="mainRhsEmptyContainer">
+                            <p class="rhs-empty-text">No Services or Packages selected. Click below to select</p>
+                        </div>
+
                         <!-- Add Services Button -->
                         <button type="button" class="btn-add-services-modal" id="btnOpenAddServicesModal">
                             <i data-feather="plus"></i>
@@ -971,12 +976,16 @@ export function initGlobalBookingModal() {
 
         const mainRhsPanel = document.querySelector('.booking-right-panel');
         const mainRhsActionStrip = document.getElementById('mainRhsActionStrip');
+        const mainRhsEmptyContainer = document.getElementById('mainRhsEmptyContainer');
         if (mainRhsPanel) {
             mainRhsPanel.classList.toggle('is-empty', !hasMainItems);
             mainRhsPanel.classList.toggle('has-items', hasMainItems);
         }
         if (mainRhsActionStrip) {
             mainRhsActionStrip.style.display = hasMainItems ? 'flex' : 'none';
+        }
+        if (mainRhsEmptyContainer) {
+            mainRhsEmptyContainer.style.display = hasMainItems ? 'none' : 'flex';
         }
 
         if (mainCountPill) {
