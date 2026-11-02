@@ -161,13 +161,13 @@
     flex-direction: column;
     gap: 10px;
     overflow-y: auto;
-    background: #FFFDF7;
+    background: #ffffff;
     scrollbar-width: thin;
-    scrollbar-color: #d9d3c2 transparent;
+    scrollbar-color: #cbd5e1 transparent;
 }
 
 .booking-right-panel::-webkit-scrollbar { width: 5px; }
-.booking-right-panel::-webkit-scrollbar-thumb { background: #d9d3c2; border-radius: 4px; }
+.booking-right-panel::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 4px; }
 
 /* RHS header row: badge left, count pill right */
 .booking-rhs-header {
@@ -222,11 +222,11 @@
     flex-direction: column;
     gap: 8px;
     scrollbar-width: thin;
-    scrollbar-color: #d9d3c2 transparent;
+    scrollbar-color: #cbd5e1 transparent;
 }
 
 .booking-right-panel .selected-services-list::-webkit-scrollbar { width: 4px; }
-.booking-right-panel .selected-services-list::-webkit-scrollbar-thumb { background: #d9d3c2; border-radius: 4px; }
+.booking-right-panel .selected-services-list::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 4px; }
 
 /* ── Date / Time Row ─────────────────────────────────────────────── */
 .booking-datetime-row {
@@ -341,7 +341,7 @@
     text-align: center;
     color: #64748b;
     font-size: 0.88rem;
-    background: #faf7ee;
+    background: #f8fafc;
 }
 
 /* Selected Item Card (Used in both Main Modal and Picker Modal) */
