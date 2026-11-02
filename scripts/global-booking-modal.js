@@ -69,6 +69,7 @@ let pickerDraftItems      = [];
 // Picker UI State
 let activePickerTab       = 'services'; // 'services' | 'packages' (LHS catalog)
 let activePickerRhsTab    = 'services'; // 'services' | 'packages' (RHS selected items)
+let activeMainRhsTab      = 'services'; // 'services' | 'packages' (Main Modal RHS selected items)
 let activeCategoryFilter  = 'all';      // 'all' | category_id
 let pickerSearchQuery     = '';
 let isStaffSyncAll        = false;
@@ -204,12 +205,24 @@ export function ensureBookingModalHtml() {
                             <span class="services-count-pill" id="mainServicesCountPill" style="display:none;">0 Selected</span>
                         </div>
 
+                        <!-- RHS Tabs: Included Services / Included Packages (hidden when empty) -->
+                        <div class="main-rhs-tabs" id="mainRhsTabs" style="display:none;">
+                            <button type="button" class="main-rhs-tab-btn active" id="mainRhsTabServices">
+                                <span>Included Services</span>
+                                <span class="main-tab-count-badge" id="mainServicesTabCount">0</span>
+                            </button>
+                            <button type="button" class="main-rhs-tab-btn" id="mainRhsTabPackages">
+                                <span>Included Packages</span>
+                                <span class="main-tab-count-badge" id="mainPackagesTabCount">0</span>
+                            </button>
+                        </div>
+
                         <!-- Action strip: Clear All + Staff Sync toggle (hidden when empty) -->
                         <div class="booking-rhs-action-strip" id="mainRhsActionStrip" style="display:none;">
                             <button type="button" class="btn-clear-all-main" id="btnMainClearAll" style="display:none;">
                                 🗑 Clear All
                             </button>
-                            <label class="staff-sync-toggle">
+                            <label class="staff-sync-toggle" id="mainStaffSyncToggleRow">
                                 <span>Apply same staff to all</span>
                                 <input type="checkbox" id="mainStaffSyncToggle">
                             </label>
@@ -445,6 +458,11 @@ export function initGlobalBookingModal() {
     const pickerPackagesCountBadge = document.getElementById('pickerPackagesCountBadge');
     const btnClearAllSelected    = document.getElementById('btnClearAllSelected');
     const btnMainClearAll        = document.getElementById('btnMainClearAll');
+    const mainRhsTabs            = document.getElementById('mainRhsTabs');
+    const mainRhsTabServices     = document.getElementById('mainRhsTabServices');
+    const mainRhsTabPackages     = document.getElementById('mainRhsTabPackages');
+    const mainServicesTabCount   = document.getElementById('mainServicesTabCount');
+    const mainPackagesTabCount   = document.getElementById('mainPackagesTabCount');
     const pickerStaffSyncToggle  = document.getElementById('pickerStaffSyncToggle');
     const pickerTotalDurationVal = document.getElementById('pickerTotalDurationVal');
     const pickerTotalAmountVal   = document.getElementById('pickerTotalAmountVal');
@@ -601,6 +619,29 @@ export function initGlobalBookingModal() {
             const tabPackagesBtn = document.getElementById('pickerRhsTabPackages');
             if (tabServicesBtn) tabServicesBtn.classList.toggle('active', activePickerRhsTab === 'services');
             if (tabPackagesBtn) tabPackagesBtn.classList.toggle('active', activePickerRhsTab === 'packages');
+        } else {
+            // Main Modal: Sync active state of RHS tab buttons and controls
+            const mainTabServicesBtn = document.getElementById('mainRhsTabServices');
+            const mainTabPackagesBtn = document.getElementById('mainRhsTabPackages');
+            if (mainTabServicesBtn) mainTabServicesBtn.classList.toggle('active', activeMainRhsTab === 'services');
+            if (mainTabPackagesBtn) mainTabPackagesBtn.classList.toggle('active', activeMainRhsTab === 'packages');
+
+            const mainToggleRow = document.getElementById('mainStaffSyncToggleRow');
+            if (mainToggleRow) {
+                // On Packages tab: hide the staff sync toggle (each package card has its own staff sync control)
+                if (activeMainRhsTab === 'packages') {
+                    mainToggleRow.style.display = 'none';
+                } else {
+                    mainToggleRow.style.display = itemsArray.some(it => it.type === 'service') ? 'flex' : 'none';
+                }
+            }
+            const btnMainClear = document.getElementById('btnMainClearAll');
+            if (btnMainClear) {
+                const hasTabItems = activeMainRhsTab === 'services'
+                    ? itemsArray.some(it => it.type === 'service')
+                    : itemsArray.some(it => it.type === 'package');
+                btnMainClear.style.visibility = hasTabItems ? 'visible' : 'hidden';
+            }
         }
 
         const staffOptionsHtml = (selectedStaffId) => {
@@ -735,27 +776,35 @@ export function initGlobalBookingModal() {
                 }
             }
         } else {
-            // Main Booking Modal: Option A – Grouped Package Cards (All items displayed together)
+            // Main Booking Modal: Filtered by activeMainRhsTab ('services' | 'packages')
             const servicesList = itemsArray.filter(it => it.type === 'service');
             const packagesList = itemsArray.filter(it => it.type === 'package');
 
-            if (servicesList.length === 0 && packagesList.length === 0) {
+            if (itemsArray.length === 0) {
                 containerEl.innerHTML = '';
+            } else if (activeMainRhsTab === 'services') {
+                if (servicesList.length === 0) {
+                    containerEl.innerHTML = `
+                        <div class="selected-services-empty" style="padding:28px 16px;text-align:center;">
+                            <p style="margin:0;font-weight:600;color:#64748b;">No individual services included.</p>
+                            <p style="margin:4px 0 0 0;font-size:0.82rem;color:#94a3b8;">Click "+ Add Services / Packages" below to select services.</p>
+                        </div>
+                    `;
+                } else {
+                    containerEl.innerHTML = servicesList.map((item, idx) => renderServiceCardHtml(item, idx)).join('');
+                }
             } else {
-                let html = '';
-                if (servicesList.length > 0) {
-                    if (packagesList.length > 0) {
-                        html += `<div class="main-group-title">Individual Services (${servicesList.length})</div>`;
-                    }
-                    html += servicesList.map((item, idx) => renderServiceCardHtml(item, idx)).join('');
+                // 'packages' tab
+                if (packagesList.length === 0) {
+                    containerEl.innerHTML = `
+                        <div class="selected-services-empty" style="padding:28px 16px;text-align:center;">
+                            <p style="margin:0;font-weight:600;color:#64748b;">No packages included.</p>
+                            <p style="margin:4px 0 0 0;font-size:0.82rem;color:#94a3b8;">Click "+ Add Services / Packages" below to select a package.</p>
+                        </div>
+                    `;
+                } else {
+                    containerEl.innerHTML = packagesList.map((pkg, idx) => renderPackageCardHtml(pkg, idx)).join('');
                 }
-                if (packagesList.length > 0) {
-                    if (servicesList.length > 0) {
-                        html += `<div class="main-group-title" style="margin-top:12px;">Packages (${packagesList.length})</div>`;
-                    }
-                    html += packagesList.map((pkg, idx) => renderPackageCardHtml(pkg, idx)).join('');
-                }
-                containerEl.innerHTML = html;
             }
         }
 
@@ -977,10 +1026,20 @@ export function initGlobalBookingModal() {
         const mainRhsPanel = document.querySelector('.booking-right-panel');
         const mainRhsActionStrip = document.getElementById('mainRhsActionStrip');
         const mainRhsEmptyContainer = document.getElementById('mainRhsEmptyContainer');
+        const mainRhsTabs = document.getElementById('mainRhsTabs');
+        const mainServicesTabCount = document.getElementById('mainServicesTabCount');
+        const mainPackagesTabCount = document.getElementById('mainPackagesTabCount');
+
         if (mainRhsPanel) {
             mainRhsPanel.classList.toggle('is-empty', !hasMainItems);
             mainRhsPanel.classList.toggle('has-items', hasMainItems);
         }
+        if (mainRhsTabs) {
+            mainRhsTabs.style.display = hasMainItems ? 'flex' : 'none';
+        }
+        if (mainServicesTabCount) mainServicesTabCount.textContent = main.svcCount;
+        if (mainPackagesTabCount) mainPackagesTabCount.textContent = main.pkgCount;
+
         if (mainRhsActionStrip) {
             mainRhsActionStrip.style.display = hasMainItems ? 'flex' : 'none';
         }
@@ -1318,6 +1377,7 @@ export function initGlobalBookingModal() {
         pickerDraftItems     = [];
         isStaffSyncAll       = false;
         activePickerRhsTab   = 'services';
+        activeMainRhsTab     = 'services';
 
         if (mainStaffSyncToggle) mainStaffSyncToggle.checked = false;
         if (pickerStaffSyncToggle) pickerStaffSyncToggle.checked = false;
@@ -1467,10 +1527,28 @@ export function initGlobalBookingModal() {
         }
     });
 
+    // ── Main RHS Tabs (Included Services / Included Packages) ───────
+    mainRhsTabServices?.addEventListener('click', () => {
+        activeMainRhsTab = 'services';
+        renderSelectedList(mainSelectedList, selectedBookingItems, false);
+    });
+
+    mainRhsTabPackages?.addEventListener('click', () => {
+        activeMainRhsTab = 'packages';
+        renderSelectedList(mainSelectedList, selectedBookingItems, false);
+    });
+
     // ── Commit Picker Selection to Main Booking Modal ───────────────
     btnAddPickerToBooking?.addEventListener('click', () => {
         // Commit draft to single source of truth
         selectedBookingItems = JSON.parse(JSON.stringify(pickerDraftItems));
+        const servicesCount = selectedBookingItems.filter(it => it.type === 'service').length;
+        const packagesCount = selectedBookingItems.filter(it => it.type === 'package').length;
+        if (activeMainRhsTab === 'services' && servicesCount === 0 && packagesCount > 0) {
+            activeMainRhsTab = 'packages';
+        } else if (activeMainRhsTab === 'packages' && packagesCount === 0 && servicesCount > 0) {
+            activeMainRhsTab = 'services';
+        }
         renderSelectedList(mainSelectedList, selectedBookingItems, false);
         updateTotals();
         closePickerModal();
@@ -1483,7 +1561,13 @@ export function initGlobalBookingModal() {
 
     // ── Main Modal Clear All ─────────────────────────────────────
     btnMainClearAll?.addEventListener('click', () => {
-        selectedBookingItems = [];
+        if (activeMainRhsTab === 'services') {
+            selectedBookingItems = selectedBookingItems.filter(it => it.type !== 'service');
+        } else if (activeMainRhsTab === 'packages') {
+            selectedBookingItems = selectedBookingItems.filter(it => it.type !== 'package');
+        } else {
+            selectedBookingItems = [];
+        }
         renderSelectedList(mainSelectedList, selectedBookingItems, false);
         updateTotals();
         validateForm();

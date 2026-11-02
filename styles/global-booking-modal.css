@@ -220,6 +220,66 @@
     margin-bottom: 6px;
 }
 
+/* RHS Tabs: Included Services / Included Packages */
+.main-rhs-tabs {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-shrink: 0;
+    margin-top: 4px;
+    margin-bottom: 8px;
+}
+
+.main-rhs-tab-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 7px;
+    padding: 6px 14px;
+    border-radius: 20px;
+    border: 1px solid #e2e8f0;
+    background: #f8fafc;
+    color: #475569;
+    font-size: 0.84rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.15s ease;
+    user-select: none;
+}
+
+.main-rhs-tab-btn:hover {
+    color: #0f172a;
+    background: #f1f5f9;
+    border-color: #cbd5e1;
+}
+
+.main-rhs-tab-btn.active {
+    background: #eff6ff;
+    color: #1d4ed8;
+    border-color: #93c5fd;
+    box-shadow: 0 1px 2px rgba(37, 99, 235, 0.08);
+}
+
+.main-tab-count-badge {
+    min-width: 20px;
+    height: 20px;
+    border-radius: 50%;
+    padding: 0 5px;
+    background: #e2e8f0;
+    color: #475569;
+    font-size: 0.72rem;
+    font-weight: 700;
+    line-height: 1;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.15s ease;
+}
+
+.main-rhs-tab-btn.active .main-tab-count-badge {
+    background: #2563eb;
+    color: #ffffff;
+}
+
 /* RHS action strip: Clear All left, Staff sync toggle right */
 .booking-rhs-action-strip {
     display: flex;
@@ -272,6 +332,7 @@
 }
 
 /* Adjust add-services button in RHS panel */
+.booking-right-panel.is-empty .main-rhs-tabs,
 .booking-right-panel.is-empty .booking-rhs-action-strip,
 .booking-right-panel.is-empty .selected-services-list,
 .booking-right-panel.is-empty .services-count-pill {
