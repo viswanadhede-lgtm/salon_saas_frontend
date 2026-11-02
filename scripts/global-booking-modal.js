@@ -106,73 +106,94 @@ export function ensureBookingModalHtml() {
                         <h2>New Booking</h2>
                         <p class="subtitle">Create a new appointment for a customer.</p>
                     </div>
-                    <button type="button" class="modal-close" id="closeBookingModal"><i data-feather="x"></i></button>
+                    <div class="booking-header-right">
+                        <!-- Summary Capsule Banner -->
+                        <div class="booking-summary-banner">
+                            <div class="booking-banner-metric">
+                                <i data-feather="clock" style="width:13px;height:13px;"></i>
+                                <span class="booking-banner-label">TOTAL DURATION</span>
+                                <strong id="mainTotalDurationVal">0 min</strong>
+                            </div>
+                            <div class="booking-banner-sep"></div>
+                            <div class="booking-banner-metric price">
+                                <i data-feather="dollar-sign" style="width:13px;height:13px;color:#10b981;"></i>
+                                <span class="booking-banner-label">TOTAL AMOUNT</span>
+                                <strong id="mainTotalAmountVal">₹0</strong>
+                            </div>
+                        </div>
+                        <button type="button" class="modal-close" id="closeBookingModal"><i data-feather="x"></i></button>
+                    </div>
                 </div>
 
-                <!-- Body -->
+                <!-- Body: Side-by-side LHS (40%) + RHS (60%) -->
                 <div class="modal-body">
-                    <!-- Top Grid: Customer Info (Left) + Date/Time (Right) -->
-                    <div class="booking-top-grid">
-                        <!-- Left Column: Customer details -->
-                        <div class="booking-col">
-                            <div class="form-group relative">
-                                <label class="form-label" for="phoneSearch">Phone Number <span class="text-rose">*</span></label>
-                                <input type="tel" id="phoneSearch" class="form-input" placeholder="Enter phone number" autocomplete="off">
-                                <div class="search-suggestions" id="searchSuggestions"></div>
-                            </div>
 
-                            <div class="customer-badge-container" id="customerBadgeContainer" style="display:none; margin-bottom: 4px;">
-                                <span class="badge-pill existing-badge" id="customerBadge">Existing Customer</span>
-                            </div>
+                    <!-- LEFT PANEL: Customer & Schedule -->
+                    <div class="booking-left-panel">
+                        <span class="booking-section-badge">
+                            <i data-feather="user" style="width:12px;height:12px;"></i>
+                            Customer &amp; Schedule
+                        </span>
 
-                            <div class="form-group span-full" id="newCustomerBadgeContainer" style="display:none; margin-bottom: 4px;">
-                                <span class="badge-pill new-badge" id="newCustomerBadge">New Customer</span>
-                            </div>
+                        <div class="form-group relative">
+                            <label class="form-label" for="phoneSearch">Phone Number <span class="text-rose">*</span></label>
+                            <input type="tel" id="phoneSearch" class="form-input" placeholder="Enter phone number" autocomplete="off">
+                            <div class="search-suggestions" id="searchSuggestions"></div>
+                        </div>
 
-                            <div class="form-group" id="customerNameGroup">
-                                <label class="form-label" for="customerName">Customer Name <span class="text-rose">*</span></label>
-                                <input type="text" id="customerName" class="form-input" placeholder="Enter customer name">
-                            </div>
+                        <div class="customer-badge-container" id="customerBadgeContainer" style="display:none; margin-bottom: 4px;">
+                            <span class="badge-pill existing-badge" id="customerBadge">Existing Customer</span>
+                        </div>
 
-                            <div class="form-group" id="customerEmailGroup">
-                                <label class="form-label" for="customerEmail">Email <span id="emailOptionalLabel" class="text-muted">(Optional)</span></label>
-                                <input type="email" id="customerEmail" class="form-input" placeholder="Enter email address">
+                        <div class="form-group span-full" id="newCustomerBadgeContainer" style="display:none; margin-bottom: 4px;">
+                            <span class="badge-pill new-badge" id="newCustomerBadge">New Customer</span>
+                        </div>
+
+                        <div class="form-group" id="customerNameGroup">
+                            <label class="form-label" for="customerName">Customer Name <span class="text-rose">*</span></label>
+                            <input type="text" id="customerName" class="form-input" placeholder="Enter customer name">
+                        </div>
+
+                        <div class="form-group" id="customerEmailGroup">
+                            <label class="form-label" for="customerEmail">Email <span id="emailOptionalLabel" class="text-muted">(Optional)</span></label>
+                            <input type="email" id="customerEmail" class="form-input" placeholder="Enter email address">
+                        </div>
+
+                        <div class="booking-datetime-row">
+                            <div class="form-group" style="flex: 1;">
+                                <label class="form-label" for="bookingDate">Date <span class="text-rose">*</span></label>
+                                <input type="date" id="bookingDate" class="form-input">
+                            </div>
+                            <div class="form-group" style="flex: 1.15;">
+                                <label class="form-label" for="bookingTime">Time <span class="text-rose">*</span></label>
+                                <div class="relative" style="display: flex; gap: 6px;">
+                                    <input type="time" id="bookingTime" class="form-input" style="flex: 1;">
+                                    <button type="button" class="btn btn-secondary" id="btnTimeNow" style="padding: 0 12px; height: 40px; font-size: 12px; font-weight: 600;">Now</button>
+                                </div>
                             </div>
                         </div>
 
-                        <!-- Right Column: Description on top, Date/Time/Now on 3rd row -->
-                        <div class="booking-col">
-                            <div class="form-group" style="margin-bottom: 0;">
-                                <label class="form-label" for="bookingNotes">Booking Notes <span class="text-muted">(Optional)</span></label>
-                                <textarea id="bookingNotes" class="form-input form-textarea" placeholder="Add optional notes for this booking..." style="height: 114px; min-height: 114px; resize: vertical;"></textarea>
-                            </div>
-
-                            <div class="booking-datetime-row">
-                                <div class="form-group" style="flex: 1;">
-                                    <label class="form-label" for="bookingDate">Date <span class="text-rose">*</span></label>
-                                    <input type="date" id="bookingDate" class="form-input">
-                                </div>
-                                <div class="form-group" style="flex: 1.15;">
-                                    <label class="form-label" for="bookingTime">Time <span class="text-rose">*</span></label>
-                                    <div class="relative" style="display: flex; gap: 6px;">
-                                        <input type="time" id="bookingTime" class="form-input" style="flex: 1;">
-                                        <button type="button" class="btn btn-secondary" id="btnTimeNow" style="padding: 0 12px; height: 40px; font-size: 12px; font-weight: 600;">Now</button>
-                                    </div>
-                                </div>
-                            </div>
+                        <div class="form-group">
+                            <label class="form-label" for="bookingNotes">Booking Notes <span class="text-muted">(Optional)</span></label>
+                            <textarea id="bookingNotes" class="form-input form-textarea" placeholder="Add optional notes for this booking..." style="height: 90px; min-height: 70px; resize: vertical;"></textarea>
                         </div>
                     </div>
 
-                    <!-- Services & Packages Section -->
-                    <div class="booking-services-section">
-                        <div class="booking-services-header">
-                            <div class="services-header-left">
-                                <span class="services-header-title">
-                                    <i data-feather="scissors"></i>
-                                    <span>Services &amp; Packages</span>
-                                </span>
-                                <span class="services-count-pill" id="mainServicesCountPill">0 Selected</span>
-                            </div>
+                    <!-- RIGHT PANEL: Selected Services / Packages (cream #FFFDF7) -->
+                    <div class="booking-right-panel">
+                        <div class="booking-rhs-header">
+                            <span class="booking-section-badge">
+                                <i data-feather="star" style="width:12px;height:12px;"></i>
+                                Selected Services / Packages
+                            </span>
+                            <span class="services-count-pill" id="mainServicesCountPill">0 Selected</span>
+                        </div>
+
+                        <!-- Action strip: Clear All + Staff Sync toggle -->
+                        <div class="booking-rhs-action-strip">
+                            <button type="button" class="btn-clear-all-main" id="btnMainClearAll" style="display:none;">
+                                🗑 Clear All
+                            </button>
                             <label class="staff-sync-toggle">
                                 <span>Apply same staff to all</span>
                                 <input type="checkbox" id="mainStaffSyncToggle">
@@ -184,31 +205,13 @@ export function ensureBookingModalHtml() {
                             <!-- Rendered dynamically -->
                         </div>
 
-                        <!-- Bottom action bar: Total Duration/Amount chips on Left + Add button on Right -->
-                        <div class="booking-services-bottom-bar">
-                            <div class="services-summary-chips">
-                                <div class="summary-chip-item">
-                                    <i data-feather="clock" style="width:16px;height:16px;color:#64748b;"></i>
-                                    <div>
-                                        <div class="summary-chip-label">Total Duration</div>
-                                        <div class="summary-chip-val" id="mainTotalDurationVal">0 min</div>
-                                    </div>
-                                </div>
-                                <div class="summary-chip-divider"></div>
-                                <div class="summary-chip-item">
-                                    <i data-feather="dollar-sign" style="width:16px;height:16px;color:#16a34a;"></i>
-                                    <div>
-                                        <div class="summary-chip-label">Total Amount</div>
-                                        <div class="summary-chip-val price" id="mainTotalAmountVal">₹0</div>
-                                    </div>
-                                </div>
-                            </div>
-                            <button type="button" class="btn-add-services-modal" id="btnOpenAddServicesModal">
-                                <i data-feather="plus"></i>
-                                <span>Add Services / Packages</span>
-                            </button>
-                        </div>
+                        <!-- Add Services Button -->
+                        <button type="button" class="btn-add-services-modal" id="btnOpenAddServicesModal">
+                            <i data-feather="plus"></i>
+                            <span>Add Services / Packages</span>
+                        </button>
                     </div>
+
                 </div>
 
                 <!-- Footer -->
@@ -421,6 +424,7 @@ export function initGlobalBookingModal() {
     const pickerServicesCountBadge = document.getElementById('pickerServicesCountBadge');
     const pickerPackagesCountBadge = document.getElementById('pickerPackagesCountBadge');
     const btnClearAllSelected    = document.getElementById('btnClearAllSelected');
+    const btnMainClearAll        = document.getElementById('btnMainClearAll');
     const pickerStaffSyncToggle  = document.getElementById('pickerStaffSyncToggle');
     const pickerTotalDurationVal = document.getElementById('pickerTotalDurationVal');
     const pickerTotalAmountVal   = document.getElementById('pickerTotalAmountVal');
@@ -965,6 +969,11 @@ export function initGlobalBookingModal() {
         if (mainTotalDurationVal) mainTotalDurationVal.textContent = `${main.duration} min`;
         if (mainTotalAmountVal) mainTotalAmountVal.textContent = fmtPrice(main.amount);
 
+        // Show/hide main modal Clear All button
+        if (btnMainClearAll) {
+            btnMainClearAll.style.display = (main.svcCount + main.pkgCount > 0) ? 'inline-flex' : 'none';
+        }
+
         // 2. Picker Modal Metrics
         const picker = calculateMetrics(pickerDraftItems);
         const pickerSvcBadge = document.getElementById('pickerServicesCountBadge');
@@ -1435,6 +1444,14 @@ export function initGlobalBookingModal() {
     btnOpenAddServices?.addEventListener('click', openPickerModal);
     btnClosePicker?.addEventListener('click', closePickerModal);
     btnCancelPicker?.addEventListener('click', closePickerModal);
+
+    // ── Main Modal Clear All ─────────────────────────────────────
+    btnMainClearAll?.addEventListener('click', () => {
+        selectedBookingItems = [];
+        renderSelectedList(mainSelectedList, selectedBookingItems, false);
+        updateTotals();
+        validateForm();
+    });
     pickerOverlay?.addEventListener('click', (e) => {
         if (e.target === pickerOverlay) closePickerModal();
     });

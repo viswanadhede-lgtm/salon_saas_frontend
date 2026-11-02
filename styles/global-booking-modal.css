@@ -4,9 +4,10 @@
 
 /* ── Main Booking Modal (#bookingModal) ────────────────────────── */
 #bookingModal {
-    width: 1020px;
+    width: 1180px;
     max-width: 96vw;
-    max-height: 92vh;
+    height: 88vh;
+    max-height: 760px;
     display: flex;
     flex-direction: column;
     background: #ffffff;
@@ -16,11 +17,63 @@
 }
 
 #bookingModal .modal-header {
-    padding: 1.25rem 1.75rem;
+    padding: 1rem 1.75rem;
     border-bottom: 1px solid #f1f5f9;
     display: flex;
     justify-content: space-between;
-    align-items: flex-start;
+    align-items: center;
+    flex-shrink: 0;
+}
+
+/* Header right: summary banner + close button */
+.booking-header-right {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+}
+
+/* Summary capsule banner in header (matches picker modal style) */
+.booking-summary-banner {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    background: #f8fafc;
+    border: 1px solid #e2e8f0;
+    border-radius: 30px;
+    padding: 5px 16px 5px 12px;
+    box-shadow: 0 1px 3px rgba(15, 23, 42, 0.04);
+}
+
+.booking-banner-metric {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 0.72rem;
+    font-weight: 600;
+    color: #64748b;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+}
+
+.booking-banner-metric strong {
+    font-size: 0.88rem;
+    font-weight: 700;
+    color: #0f172a;
+}
+
+.booking-banner-metric.price strong {
+    color: #10b981;
+}
+
+.booking-banner-label {
+    white-space: nowrap;
+}
+
+.booking-banner-sep {
+    width: 1px;
+    height: 18px;
+    background: #cbd5e1;
+    opacity: 0.8;
 }
 
 #bookingModal .modal-header .header-titles h2 {
@@ -38,37 +91,56 @@
     margin-bottom: 0;
 }
 
+/* ── Modal Body: Side-by-side LHS (40%) + RHS (60%) ─────────────── */
 #bookingModal .modal-body {
-    padding: 1.5rem 1.75rem;
-    overflow-y: auto;
-    flex: 1;
+    display: flex;
+    flex-direction: row;
+    flex: 1 1 0px;
+    min-height: 0;
+    overflow: hidden;
 }
 
-/* Top 2-Column Grid (Customer info on Left, Description + Date/Time on Right) */
-.booking-top-grid {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 32px;
-    margin-bottom: 1.5rem;
+/* ── Section Badges (symmetrical, blue, matching picker) ─────────── */
+.booking-section-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 0.72rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: #2563eb;
+    margin-bottom: 4px;
+    flex-shrink: 0;
 }
 
-.booking-col {
+/* ── LEFT PANEL: Customer & Schedule ────────────────────────────── */
+.booking-left-panel {
+    flex: 0 0 40%;
+    width: 40%;
+    max-width: 40%;
+    height: 100%;
+    min-height: 0;
+    box-sizing: border-box;
+    padding: 1.25rem 1.5rem;
+    border-right: 1px solid #e2e8f0;
     display: flex;
     flex-direction: column;
     gap: 12px;
+    overflow-y: auto;
+    background: #ffffff;
+    scrollbar-width: thin;
+    scrollbar-color: #cbd5e1 transparent;
 }
 
-.booking-datetime-row {
-    display: flex;
-    gap: 12px;
-    align-items: flex-start;
-}
+.booking-left-panel::-webkit-scrollbar { width: 5px; }
+.booking-left-panel::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 4px; }
 
-.booking-col .form-group {
+.booking-left-panel .form-group {
     margin-bottom: 0;
 }
 
-.booking-col .form-label {
+.booking-left-panel .form-label {
     display: block;
     font-size: 0.85rem;
     font-weight: 600;
@@ -76,44 +148,127 @@
     margin-bottom: 6px;
 }
 
+/* ── RIGHT PANEL: Selected Services / Packages ──────────────────── */
+.booking-right-panel {
+    flex: 0 0 60%;
+    width: 60%;
+    max-width: 60%;
+    height: 100%;
+    min-height: 0;
+    box-sizing: border-box;
+    padding: 1.25rem 1.5rem;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    overflow-y: auto;
+    background: #FFFDF7;
+    scrollbar-width: thin;
+    scrollbar-color: #d9d3c2 transparent;
+}
+
+.booking-right-panel::-webkit-scrollbar { width: 5px; }
+.booking-right-panel::-webkit-scrollbar-thumb { background: #d9d3c2; border-radius: 4px; }
+
+/* RHS header row: badge left, count pill right */
+.booking-rhs-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-shrink: 0;
+}
+
+/* RHS action strip: Clear All left, Staff sync toggle right */
+.booking-rhs-action-strip {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-shrink: 0;
+    min-height: 24px;
+}
+
+/* Clear All button in RHS */
+.btn-clear-all-main {
+    display: none;
+    align-items: center;
+    gap: 4px;
+    font-size: 0.78rem;
+    font-weight: 600;
+    color: #ef4444;
+    background: transparent;
+    border: none;
+    cursor: pointer;
+    padding: 0;
+    transition: color 0.15s ease;
+}
+
+.btn-clear-all-main:hover {
+    color: #dc2626;
+    text-decoration: underline;
+}
+
+/* Adjust add-services button to full width in RHS */
+.booking-right-panel .btn-add-services-modal {
+    flex: none;
+    max-width: 100%;
+    margin-top: auto;
+}
+
+/* Selected services list inside right panel */
+.booking-right-panel .selected-services-list {
+    flex: 1 1 0px;
+    min-height: 0;
+    overflow-y: auto;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    scrollbar-width: thin;
+    scrollbar-color: #d9d3c2 transparent;
+}
+
+.booking-right-panel .selected-services-list::-webkit-scrollbar { width: 4px; }
+.booking-right-panel .selected-services-list::-webkit-scrollbar-thumb { background: #d9d3c2; border-radius: 4px; }
+
+/* ── Date / Time Row ─────────────────────────────────────────────── */
+.booking-datetime-row {
+    display: flex;
+    gap: 12px;
+    align-items: flex-start;
+}
+
+.booking-datetime-row .form-group {
+    margin-bottom: 0;
+}
+
+/* ── Responsive: stack on small screens ──────────────────────────── */
+@media (max-width: 860px) {
+    #bookingModal .modal-body {
+        flex-direction: column;
+        overflow-y: auto;
+    }
+    .booking-left-panel,
+    .booking-right-panel {
+        flex: none;
+        width: 100%;
+        max-width: 100%;
+        height: auto;
+        overflow-y: visible;
+    }
+    .booking-left-panel {
+        border-right: none;
+        border-bottom: 1px solid #e2e8f0;
+    }
+    .booking-right-panel {
+        min-height: 300px;
+    }
+}
+
 .text-rose {
     color: #e11d48;
 }
 
-/* ── Services & Packages Section in Main Modal ─────────────────── */
+/* ── Services & Packages Section — kept for Picker Modal compatibility ── */
 .booking-services-section {
-    border-top: 1px solid #f1f5f9;
-    padding-top: 1.25rem;
-    margin-bottom: 1.25rem;
-}
-
-.booking-services-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    margin-bottom: 0.85rem;
-}
-
-.services-header-left {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-}
-
-.services-header-title {
-    font-size: 0.95rem;
-    font-weight: 700;
-    color: #0f172a;
-    display: flex;
-    align-items: center;
-    gap: 6px;
-}
-
-.services-header-title i,
-.services-header-title svg {
-    width: 17px;
-    height: 17px;
-    color: #9333ea;
+    display: none; /* No longer used in main modal body */
 }
 
 .services-count-pill {
@@ -175,7 +330,7 @@
     display: flex;
     flex-direction: column;
     gap: 8px;
-    margin-bottom: 12px;
+    margin-bottom: 0;
 }
 
 /* Empty State for Selected Services */
@@ -186,7 +341,7 @@
     text-align: center;
     color: #64748b;
     font-size: 0.88rem;
-    background: #f8fafc;
+    background: #faf7ee;
 }
 
 /* Selected Item Card (Used in both Main Modal and Picker Modal) */
@@ -591,19 +746,15 @@
 .service-icon-tile.theme-indigo { background: #e0e7ff; color: #4f46e5; }
 .service-icon-tile.theme-emerald{ background: #d1fae5; color: #059669; }
 
-/* Services Action & Summary Bar */
+/* Services Action & Summary Bar — kept for legacy reference, no longer rendered in main modal */
 .booking-services-bottom-bar {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    gap: 16px;
-    margin-top: 14px;
-    flex-wrap: wrap;
+    display: none;
 }
 
+/* ── Add Services Button (full width in RHS panel) ─────────────── */
 .btn-add-services-modal {
-    flex: 1;
-    max-width: 320px;
+    width: 100%;
+    max-width: 100%;
     padding: 10px 16px;
     border: 1.5px dashed #c084fc;
     border-radius: 8px;
@@ -617,6 +768,7 @@
     justify-content: center;
     gap: 6px;
     transition: all 0.15s ease;
+    flex-shrink: 0;
 }
 
 .btn-add-services-modal:hover {
@@ -630,6 +782,7 @@
     height: 16px;
 }
 
+/* Summary chips — used only in picker modal header */
 .services-summary-chips {
     display: flex;
     align-items: center;
@@ -670,12 +823,13 @@
 }
 
 #bookingModal .modal-footer {
-    padding: 1rem 1.75rem;
+    padding: 0.75rem 1.75rem;
     border-top: 1px solid #f1f5f9;
     display: flex;
     justify-content: space-between;
     align-items: center;
     background: #ffffff;
+    flex-shrink: 0;
 }
 
 #btnConfirmBooking {
