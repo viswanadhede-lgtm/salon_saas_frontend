@@ -6,7 +6,7 @@ import { renderBookings, toggleSvcExtra } from './scripts/bookings/bookings-tabl
 import { getFilteredBookings, populateStaffFilter, attachFilterListeners, toggleSort, _applyPendingStaffFilter } from './scripts/bookings/bookings-filters.js?v=2.4.0';
 import { renderCalendar, initCalendarListeners } from './scripts/bookings/bookings-calendar.js?v=2.4.3';
 import { setupModals } from './scripts/bookings/booking-modals-inject.js?v=2.4.2';
-import { openEditBookingModal, showPaymentNotCompletedModal, attachEditModalListeners } from './scripts/bookings/booking-edit-modal.js?v=2.4.0';
+import { openEditBookingModal, showPaymentNotCompletedModal, attachEditModalListeners } from './scripts/bookings/booking-edit-modal.js?v=2.5.0';
 import { updateBookingStatus, confirmUpdateBookingStatus, attachStatusActionsListeners } from './scripts/bookings/booking-status-actions.js?v=2.4.0';
 import { openBookingPayment } from './scripts/bookings/booking-payment-bridge.js?v=2.4.0';
 import { 
@@ -19,6 +19,7 @@ import {
     triggerRefund, 
     attachViewModalsListeners 
 } from './scripts/bookings/booking-view-modals.js?v=2.4.2';
+import { initGlobalBookingModal } from './scripts/global-booking-modal.js';
 
 // ─── Wire Data Refresh Handler ───────────────────────────────────────────────
 setOnBookingsRefreshed(() => {
@@ -95,6 +96,7 @@ function attachBranchListener() {
 // ─── Page Initialization ──────────────────────────────────────────────────────
 export async function initBookings() {
     window.fetchBookings = fetchBookings;
+    initGlobalBookingModal();
     setupModals();
     attachTabListeners();
     initCalendarListeners();

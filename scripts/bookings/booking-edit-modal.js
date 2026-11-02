@@ -178,6 +178,10 @@ export function revertStatusAndClosePnc() {
 
 // ─── Open Edit Booking Modal ──────────────────────────────────────────────────
 export async function openEditBookingModal(bookingId) {
+    if (typeof window !== 'undefined' && typeof window.openGlobalEditBookingModal === 'function') {
+        return await window.openGlobalEditBookingModal(bookingId);
+    }
+
     const b = (getLiveBookings() || []).find(x => (x.booking_id || x.id) === bookingId);
     if (!b) return;
 
