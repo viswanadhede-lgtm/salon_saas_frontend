@@ -126,7 +126,7 @@
     border-right: 1px solid #e2e8f0;
     display: flex;
     flex-direction: column;
-    gap: 18px;
+    gap: 36px;
     overflow-y: auto;
     background: #ffffff;
     scrollbar-width: thin;
