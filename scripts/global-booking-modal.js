@@ -884,24 +884,23 @@ export function initGlobalBookingModal() {
                 const opt = sel.options[sel.selectedIndex];
                 const newStaffName = opt ? opt.textContent : '';
 
-                if (isStaffSyncAll) {
-                    getAllAssignableEntries(itemsArray).forEach(entry => entry.set(newStaffId, newStaffName));
-                    renderSelectedList(containerEl, itemsArray, isPicker);
-                } else {
-                    const pkgItem = itemsArray.find(it => it.uid === pkgUid);
-                    if (pkgItem && Array.isArray(pkgItem.services)) {
-                        if (pkgItem.syncStaff) {
-                            pkgItem.services.forEach(s => {
-                                s.staffId = newStaffId;
-                                s.staffName = newStaffName;
-                            });
-                            renderSelectedList(containerEl, itemsArray, isPicker);
-                        } else {
-                            const svcItem = pkgItem.services.find(s => s.uid === svcUid);
-                            if (svcItem) {
-                                svcItem.staffId = newStaffId;
-                                svcItem.staffName = newStaffName;
-                            }
+                // Always scope to this specific package — never bleed across packages or to standalone services.
+                // isStaffSyncAll (Services tab global toggle) must NOT affect nested package staff selects.
+                const pkgItem = itemsArray.find(it => it.uid === pkgUid);
+                if (pkgItem && Array.isArray(pkgItem.services)) {
+                    if (pkgItem.syncStaff) {
+                        // Per-package "apply same staff to all" — sync only within this package
+                        pkgItem.services.forEach(s => {
+                            s.staffId = newStaffId;
+                            s.staffName = newStaffName;
+                        });
+                        renderSelectedList(containerEl, itemsArray, isPicker);
+                    } else {
+                        // No sync — update only the individual service within this package
+                        const svcItem = pkgItem.services.find(s => s.uid === svcUid);
+                        if (svcItem) {
+                            svcItem.staffId = newStaffId;
+                            svcItem.staffName = newStaffName;
                         }
                     }
                 }
