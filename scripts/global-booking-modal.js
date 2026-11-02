@@ -207,28 +207,22 @@ export function ensureBookingModalHtml() {
                             </button>
                         </div>
 
-                        <!-- RHS Tabs: Included Services / Included Packages + Add Services Button (hidden when empty) -->
+                        <!-- RHS Tabs: Included Services / Included Packages + Edit Services Button (hidden when empty) -->
                         <div class="main-rhs-tabs" id="mainRhsTabs" style="display:none;">
-                            <button type="button" class="main-rhs-tab-btn active" id="mainRhsTabServices">
-                                <span>Included Services</span>
-                                <span class="main-tab-count-badge" id="mainServicesTabCount">0</span>
+                            <div class="main-rhs-tabs-left">
+                                <button type="button" class="main-rhs-tab-btn active" id="mainRhsTabServices">
+                                    <span>Included Services</span>
+                                    <span class="main-tab-count-badge" id="mainServicesTabCount">0</span>
+                                </button>
+                                <button type="button" class="main-rhs-tab-btn" id="mainRhsTabPackages">
+                                    <span>Included Packages</span>
+                                    <span class="main-tab-count-badge" id="mainPackagesTabCount">0</span>
+                                </button>
+                            </div>
+                            <button type="button" class="btn-edit-services-top" id="btnOpenAddServicesTop">
+                                <i data-feather="edit-2"></i>
+                                <span>Edit Services / Packages</span>
                             </button>
-                            <button type="button" class="main-rhs-tab-btn" id="mainRhsTabPackages">
-                                <span>Included Packages</span>
-                                <span class="main-tab-count-badge" id="mainPackagesTabCount">0</span>
-                            </button>
-                            <button type="button" class="btn-add-services-top" id="btnOpenAddServicesTop">
-                                <i data-feather="plus"></i>
-                                <span>Add Services / Packages</span>
-                            </button>
-                        </div>
-
-                        <!-- Action strip: Staff Sync toggle (hidden when empty) -->
-                        <div class="booking-rhs-action-strip" id="mainRhsActionStrip" style="display:none;">
-                            <label class="staff-sync-toggle" id="mainStaffSyncToggleRow">
-                                <span>Apply same staff to all</span>
-                                <input type="checkbox" id="mainStaffSyncToggle">
-                            </label>
                         </div>
 
                         <!-- Selected Items Container (hidden when empty) -->
@@ -424,7 +418,6 @@ export function initGlobalBookingModal() {
     const btnOpenAddServices     = document.getElementById('btnOpenAddServicesModal');
     const btnOpenAddServicesTop  = document.getElementById('btnOpenAddServicesTop');
     const mainSelectedList       = document.getElementById('mainSelectedServicesList');
-    const mainStaffSyncToggle    = document.getElementById('mainStaffSyncToggle');
     const mainTotalDurationVal   = document.getElementById('mainTotalDurationVal');
     const mainTotalAmountVal     = document.getElementById('mainTotalAmountVal');
 
@@ -627,15 +620,6 @@ export function initGlobalBookingModal() {
             if (mainTabServicesBtn) mainTabServicesBtn.classList.toggle('active', activeMainRhsTab === 'services');
             if (mainTabPackagesBtn) mainTabPackagesBtn.classList.toggle('active', activeMainRhsTab === 'packages');
 
-            const mainToggleRow = document.getElementById('mainStaffSyncToggleRow');
-            if (mainToggleRow) {
-                // On Packages tab: hide the staff sync toggle (each package card has its own staff sync control)
-                if (activeMainRhsTab === 'packages') {
-                    mainToggleRow.style.display = 'none';
-                } else {
-                    mainToggleRow.style.display = itemsArray.some(it => it.type === 'service') ? 'flex' : 'none';
-                }
-            }
             const btnMainClear = document.getElementById('btnMainClearAll');
             if (btnMainClear) {
                 const hasTabItems = activeMainRhsTab === 'services'
@@ -1025,7 +1009,6 @@ export function initGlobalBookingModal() {
         const hasMainItems = (main.svcCount + main.pkgCount) > 0;
 
         const mainRhsPanel = document.querySelector('.booking-right-panel');
-        const mainRhsActionStrip = document.getElementById('mainRhsActionStrip');
         const mainRhsEmptyContainer = document.getElementById('mainRhsEmptyContainer');
         const mainRhsTabs = document.getElementById('mainRhsTabs');
         const mainServicesTabCount = document.getElementById('mainServicesTabCount');
@@ -1041,9 +1024,6 @@ export function initGlobalBookingModal() {
         if (mainServicesTabCount) mainServicesTabCount.textContent = main.svcCount;
         if (mainPackagesTabCount) mainPackagesTabCount.textContent = main.pkgCount;
 
-        if (mainRhsActionStrip) {
-            mainRhsActionStrip.style.display = hasMainItems ? 'flex' : 'none';
-        }
         if (mainRhsEmptyContainer) {
             mainRhsEmptyContainer.style.display = hasMainItems ? 'none' : 'flex';
         }
@@ -1492,24 +1472,6 @@ export function initGlobalBookingModal() {
                 const firstStaffName = stObj ? (stObj.staff_name || stObj.name) : '';
                 entries.forEach(entry => entry.set(firstStaff, firstStaffName));
                 renderSelectedList(pickerSelectedList, pickerDraftItems, true);
-            }
-        }
-    });
-
-    mainStaffSyncToggle?.addEventListener('change', (e) => {
-        isStaffSyncAll = e.target.checked;
-        if (pickerStaffSyncToggle) pickerStaffSyncToggle.checked = isStaffSyncAll;
-
-        if (isStaffSyncAll && selectedBookingItems.length > 0) {
-            const entries = getAllAssignableEntries(selectedBookingItems);
-            const firstAssigned = entries.find(entry => entry.get() && entry.get().trim().length > 0);
-            if (firstAssigned) {
-                const firstStaff = firstAssigned.get();
-                const stObj = liveStaffDB.find(st => st.staff_id === firstStaff);
-                const firstStaffName = stObj ? (stObj.staff_name || stObj.name) : '';
-                entries.forEach(entry => entry.set(firstStaff, firstStaffName));
-                renderSelectedList(mainSelectedList, selectedBookingItems, false);
-                validateForm();
             }
         }
     });
