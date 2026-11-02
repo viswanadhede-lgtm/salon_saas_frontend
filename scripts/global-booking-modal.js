@@ -418,6 +418,7 @@ export function initGlobalBookingModal() {
     const btnOpenAddServices     = document.getElementById('btnOpenAddServicesModal');
     const btnOpenAddServicesTop  = document.getElementById('btnOpenAddServicesTop');
     const mainSelectedList       = document.getElementById('mainSelectedServicesList');
+    const mainStaffSyncToggle    = document.getElementById('mainStaffSyncToggle');  // kept for picker sync, no UI in main modal
     const mainTotalDurationVal   = document.getElementById('mainTotalDurationVal');
     const mainTotalAmountVal     = document.getElementById('mainTotalAmountVal');
 
@@ -1346,7 +1347,6 @@ export function initGlobalBookingModal() {
         activePickerRhsTab   = 'services';
         activeMainRhsTab     = 'services';
 
-        if (mainStaffSyncToggle) mainStaffSyncToggle.checked = false;
         if (pickerStaffSyncToggle) pickerStaffSyncToggle.checked = false;
 
         renderSelectedList(mainSelectedList, selectedBookingItems, false);
@@ -1461,7 +1461,6 @@ export function initGlobalBookingModal() {
 
     pickerStaffSyncToggle?.addEventListener('change', (e) => {
         isStaffSyncAll = e.target.checked;
-        if (mainStaffSyncToggle) mainStaffSyncToggle.checked = isStaffSyncAll;
 
         if (isStaffSyncAll && pickerDraftItems.length > 0) {
             const entries = getAllAssignableEntries(pickerDraftItems);
