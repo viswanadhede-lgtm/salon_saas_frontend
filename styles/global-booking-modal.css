@@ -6,8 +6,8 @@
 #bookingModal {
     width: 1180px;
     max-width: 96vw;
-    height: 88vh;
-    max-height: 760px;
+    height: 92vh;
+    max-height: 820px;
     display: flex;
     flex-direction: column;
     background: #ffffff;
@@ -116,17 +116,17 @@
 
 /* ── LEFT PANEL: Customer & Schedule ────────────────────────────── */
 .booking-left-panel {
-    flex: 0 0 40%;
-    width: 40%;
-    max-width: 40%;
+    flex: 0 0 525px;
+    width: 525px;
+    max-width: 525px;
     height: 100%;
     min-height: 0;
     box-sizing: border-box;
-    padding: 1.25rem 1.5rem;
+    padding: 1rem 1.5rem;
     border-right: 1px solid #e2e8f0;
     display: flex;
     flex-direction: column;
-    gap: 12px;
+    gap: 9px;
     overflow-y: auto;
     background: #ffffff;
     scrollbar-width: thin;
@@ -142,21 +142,21 @@
 
 .booking-left-panel .form-label {
     display: block;
-    font-size: 0.85rem;
+    font-size: 0.82rem;
     font-weight: 600;
     color: #334155;
-    margin-bottom: 6px;
+    margin-bottom: 4px;
 }
 
 /* ── RIGHT PANEL: Selected Services / Packages ──────────────────── */
 .booking-right-panel {
-    flex: 0 0 60%;
-    width: 60%;
-    max-width: 60%;
+    flex: 1 1 0px;
+    width: auto;
+    min-width: 0;
     height: 100%;
     min-height: 0;
     box-sizing: border-box;
-    padding: 1.25rem 1.5rem;
+    padding: 1rem 1.5rem;
     display: flex;
     flex-direction: column;
     gap: 10px;

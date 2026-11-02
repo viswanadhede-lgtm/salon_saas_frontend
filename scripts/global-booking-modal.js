@@ -175,7 +175,7 @@ export function ensureBookingModalHtml() {
 
                         <div class="form-group">
                             <label class="form-label" for="bookingNotes">Booking Notes <span class="text-muted">(Optional)</span></label>
-                            <textarea id="bookingNotes" class="form-input form-textarea" placeholder="Add optional notes for this booking..." style="height: 90px; min-height: 70px; resize: vertical;"></textarea>
+                            <textarea id="bookingNotes" class="form-input form-textarea" placeholder="Add optional notes for this booking..." style="height: 72px; min-height: 60px; resize: vertical;"></textarea>
                         </div>
                     </div>
 
