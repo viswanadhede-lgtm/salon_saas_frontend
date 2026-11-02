@@ -126,7 +126,7 @@
     border-right: 1px solid #e2e8f0;
     display: flex;
     flex-direction: column;
-    gap: 14px;
+    gap: 18px;
     overflow-y: auto;
     background: #ffffff;
     scrollbar-width: thin;
@@ -283,54 +283,25 @@
 .booking-right-panel .selected-services-list::-webkit-scrollbar { width: 4px; }
 .booking-right-panel .selected-services-list::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 4px; }
 
-/* ── LHS Section Groups & Card Boxes ────────────────────────────── */
+/* ── LHS Section Groups (with header divider line matching RHS) ─── */
 .lhs-section-group {
     display: flex;
     flex-direction: column;
-    gap: 7px;
+    gap: 12px;
 }
 
 .lhs-sub-label {
-    display: inline-flex;
+    display: flex;
     align-items: center;
-    gap: 5px;
+    gap: 6px;
     font-size: 0.72rem;
     font-weight: 700;
     text-transform: uppercase;
     letter-spacing: 0.07em;
     color: #2563eb;
-    padding-left: 2px;
-}
-
-.lhs-card-box {
-    background: #ffffff;
-    border: 1px solid #e2e8f0;
-    border-radius: 12px;
-    padding: 14px 16px;
-    display: flex;
-    flex-direction: column;
-    gap: 12px;
-    box-shadow: 0 1px 3px rgba(15, 23, 42, 0.02);
-    transition: border-color 0.15s ease, box-shadow 0.15s ease;
-}
-
-.lhs-card-box:focus-within {
-    border-color: #cbd5e1;
-    box-shadow: 0 2px 6px rgba(15, 23, 42, 0.04);
-}
-
-.lhs-card-box.notes-box {
-    padding: 12px 14px;
-}
-
-.lhs-card-box.notes-box .form-textarea {
-    border: 1px solid #e2e8f0;
-    border-radius: 8px;
-    padding: 10px 12px;
-    font-size: 0.86rem;
-    line-height: 1.45;
-    width: 100%;
-    box-sizing: border-box;
+    padding-bottom: 10px;
+    border-bottom: 1px solid #e2e8f0;
+    margin-bottom: 2px;
 }
 
 .lhs-notes-section {
