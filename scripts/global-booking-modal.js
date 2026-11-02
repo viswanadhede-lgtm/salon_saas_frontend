@@ -186,9 +186,6 @@ export function ensureBookingModalHtml() {
                             </div>
                         </div>
 
-                        <!-- ── BOOKING NOTES SECTION ── -->
-                        <div class="lhs-section-group lhs-notes-section">
-
                         <!-- ── STATUS & PAYMENT SECTION (Edit Mode only) ── -->
                         <div class="lhs-section-group" id="bookingStatusPaymentGroup" style="display:none;">
                             <div class="lhs-sub-label">
@@ -266,9 +263,17 @@ export function ensureBookingModalHtml() {
                 </div>
 
                 <!-- Footer -->
-                <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" id="btnCancelBooking">Cancel</button>
-                    <button type="button" class="btn btn-primary" id="btnConfirmBooking" disabled>Confirm Booking</button>
+                <div class="modal-footer" style="display:flex;justify-content:space-between;align-items:center;">
+                    <div>
+                        <button type="button" id="btnCancelThisBooking" style="display:none;padding:8px 16px;border-radius:8px;border:1px solid #fca5a5;background:#fff5f5;color:#dc2626;font-size:0.85rem;font-weight:600;cursor:pointer;align-items:center;gap:6px;transition:all 0.2s;">
+                            <i data-feather="x-circle" style="width:14px;height:14px;"></i>
+                            <span>Cancel Booking</span>
+                        </button>
+                    </div>
+                    <div style="display:flex;gap:10px;align-items:center;">
+                        <button type="button" class="btn btn-secondary" id="btnCancelBooking">Cancel</button>
+                        <button type="button" class="btn btn-primary" id="btnConfirmBooking" disabled>Confirm Booking</button>
+                    </div>
                 </div>
             </div>
         </div>
@@ -1373,6 +1378,10 @@ export function initGlobalBookingModal() {
         const spGroup = document.getElementById('bookingStatusPaymentGroup');
         if (spGroup) spGroup.style.display = 'none';
 
+        // Hide cancel booking danger button
+        const btnCancelThis = document.getElementById('btnCancelThisBooking');
+        if (btnCancelThis) btnCancelThis.style.display = 'none';
+
         // Re-enable customer fields
         ['phoneSearch', 'customerName', 'customerEmail'].forEach(id => {
             const el = document.getElementById(id);
@@ -1419,7 +1428,9 @@ export function initGlobalBookingModal() {
         validateForm();
 
         bookingModalOverlay.classList.add('active');
-        setTimeout(() => phoneSearch.focus(), 100);
+        setTimeout(() => {
+            if (!editModeBookingId && phoneSearch) phoneSearch.focus();
+        }, 100);
 
         await populateBookingDropdowns();
 
@@ -1490,15 +1501,19 @@ export function initGlobalBookingModal() {
         ['phoneSearch', 'customerName', 'customerEmail'].forEach(id => {
             const el = document.getElementById(id);
             if (el) {
-                el.setAttribute('readonly', true);
-                el.setAttribute('disabled', true);
+                el.setAttribute('readonly', 'true');
+                el.removeAttribute('disabled');
                 el.style.background = '#f8fafc';
                 el.style.cursor     = 'not-allowed';
-                el.style.color      = '#64748b';
+                el.style.color      = '#334155';
             }
         });
 
-        // 7. Fetch all booking rows
+        // 7. Reset scroll on left panel so Customer is visible at top
+        const leftPanel = bookingModal.querySelector('.booking-left-panel');
+        if (leftPanel) leftPanel.scrollTop = 0;
+
+        // 8. Fetch all booking rows
         let allRows = [];
         try {
             const { data, error } = await supabase
@@ -1521,7 +1536,7 @@ export function initGlobalBookingModal() {
         const firstRow = allRows[0];
         editModeBookingData = firstRow;
 
-        // 8. Pre-fill customer info (read-only)
+        // 9. Pre-fill customer info (read-only)
         selectedCustomerId = firstRow.customer_id || null;
         const phoneEl = document.getElementById('phoneSearch');
         if (phoneEl) { phoneEl.value = firstRow.customer_phone || ''; }
@@ -1536,19 +1551,34 @@ export function initGlobalBookingModal() {
         if (newCustomerBadgeContainer) newCustomerBadgeContainer.style.display = 'none';
         if (customerBadgeContainer) {
             customerBadgeContainer.style.display = 'block';
-            if (customerBadge) customerBadge.textContent = 'Existing Customer';
+            if (customerBadge) customerBadge.textContent = 'Existing Customer (Locked)';
         }
 
-        // 9. Pre-fill date / time / notes
-        if (bookingDate && firstRow.booking_date) bookingDate.value = firstRow.booking_date;
+        // 10. Pre-fill date / time / notes (relax date min in edit mode)
+        if (bookingDate) {
+            bookingDate.removeAttribute('min');
+            if (firstRow.booking_date) bookingDate.value = firstRow.booking_date;
+        }
         if (bookingTime && firstRow.start_time)   bookingTime.value = firstRow.start_time.slice(0, 5);
         if (bookingNotes && firstRow.notes)        bookingNotes.value = firstRow.notes;
 
-        // 10. Pre-fill status dropdown
+        // 11. Pre-fill status dropdown
         const statusSelect = document.getElementById('bookingStatusSelect');
         if (statusSelect && firstRow.status) statusSelect.value = firstRow.status;
 
-        // 11. Render payment strip
+        // 12. Cancel Booking button in footer
+        const btnCancelThis = document.getElementById('btnCancelThisBooking');
+        if (btnCancelThis) {
+            const isCancellable = !['cancelled', 'completed', 'no-show', 'no_show'].includes((firstRow.status || '').toLowerCase());
+            btnCancelThis.style.display = isCancellable ? 'inline-flex' : 'none';
+            btnCancelThis.onclick = () => {
+                if (!confirm('Are you sure you want to cancel this booking?')) return;
+                if (statusSelect) statusSelect.value = 'cancelled';
+                btnConfirmBooking?.click();
+            };
+        }
+
+        // 13. Render payment strip
         renderEditPaymentStrip(firstRow);
 
         // 12. Convert DB rows → selectedBookingItems
