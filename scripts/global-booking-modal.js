@@ -202,10 +202,12 @@ export function ensureBookingModalHtml() {
                                 <i data-feather="star" style="width:12px;height:12px;"></i>
                                 Selected Services / Packages
                             </span>
-                            <span class="services-count-pill" id="mainServicesCountPill" style="display:none;">0 Selected</span>
+                            <button type="button" class="btn-clear-all-main" id="btnMainClearAll" style="display:none;">
+                                🗑 Clear All
+                            </button>
                         </div>
 
-                        <!-- RHS Tabs: Included Services / Included Packages (hidden when empty) -->
+                        <!-- RHS Tabs: Included Services / Included Packages + Add Services Button (hidden when empty) -->
                         <div class="main-rhs-tabs" id="mainRhsTabs" style="display:none;">
                             <button type="button" class="main-rhs-tab-btn active" id="mainRhsTabServices">
                                 <span>Included Services</span>
@@ -215,13 +217,14 @@ export function ensureBookingModalHtml() {
                                 <span>Included Packages</span>
                                 <span class="main-tab-count-badge" id="mainPackagesTabCount">0</span>
                             </button>
+                            <button type="button" class="btn-add-services-top" id="btnOpenAddServicesTop">
+                                <i data-feather="plus"></i>
+                                <span>Add Services / Packages</span>
+                            </button>
                         </div>
 
-                        <!-- Action strip: Clear All + Staff Sync toggle (hidden when empty) -->
+                        <!-- Action strip: Staff Sync toggle (hidden when empty) -->
                         <div class="booking-rhs-action-strip" id="mainRhsActionStrip" style="display:none;">
-                            <button type="button" class="btn-clear-all-main" id="btnMainClearAll" style="display:none;">
-                                🗑 Clear All
-                            </button>
                             <label class="staff-sync-toggle" id="mainStaffSyncToggleRow">
                                 <span>Apply same staff to all</span>
                                 <input type="checkbox" id="mainStaffSyncToggle">
@@ -233,16 +236,14 @@ export function ensureBookingModalHtml() {
                             <!-- Rendered dynamically -->
                         </div>
 
-                        <!-- Empty State Helper Text (visible only when empty) -->
+                        <!-- Empty State Helper Text & Add button (visible only when empty) -->
                         <div class="rhs-empty-container" id="mainRhsEmptyContainer">
                             <p class="rhs-empty-text">No Services or Packages selected. Click below to select</p>
+                            <button type="button" class="btn-add-services-modal" id="btnOpenAddServicesModal">
+                                <i data-feather="plus"></i>
+                                <span>Add Services / Packages</span>
+                            </button>
                         </div>
-
-                        <!-- Add Services Button -->
-                        <button type="button" class="btn-add-services-modal" id="btnOpenAddServicesModal">
-                            <i data-feather="plus"></i>
-                            <span>Add Services / Packages</span>
-                        </button>
                     </div>
 
                 </div>
@@ -421,8 +422,8 @@ export function initGlobalBookingModal() {
     const btnCancelBooking       = document.getElementById('btnCancelBooking');
     const btnConfirmBooking      = document.getElementById('btnConfirmBooking');
     const btnOpenAddServices     = document.getElementById('btnOpenAddServicesModal');
+    const btnOpenAddServicesTop  = document.getElementById('btnOpenAddServicesTop');
     const mainSelectedList       = document.getElementById('mainSelectedServicesList');
-    const mainCountPill          = document.getElementById('mainServicesCountPill');
     const mainStaffSyncToggle    = document.getElementById('mainStaffSyncToggle');
     const mainTotalDurationVal   = document.getElementById('mainTotalDurationVal');
     const mainTotalAmountVal     = document.getElementById('mainTotalAmountVal');
@@ -640,7 +641,7 @@ export function initGlobalBookingModal() {
                 const hasTabItems = activeMainRhsTab === 'services'
                     ? itemsArray.some(it => it.type === 'service')
                     : itemsArray.some(it => it.type === 'package');
-                btnMainClear.style.visibility = hasTabItems ? 'visible' : 'hidden';
+                btnMainClear.style.display = hasTabItems ? 'inline-flex' : 'none';
             }
         }
 
@@ -1047,24 +1048,10 @@ export function initGlobalBookingModal() {
             mainRhsEmptyContainer.style.display = hasMainItems ? 'none' : 'flex';
         }
 
-        if (mainCountPill) {
-            if (!hasMainItems) {
-                mainCountPill.style.display = 'none';
-            } else {
-                mainCountPill.style.display = 'inline-flex';
-                if (main.pkgCount > 0 && main.svcCount > 0) {
-                    mainCountPill.textContent = `${main.svcCount} Svc · ${main.pkgCount} Pkg`;
-                } else if (main.pkgCount > 0) {
-                    mainCountPill.textContent = `${main.pkgCount} ${main.pkgCount === 1 ? 'Package' : 'Packages'} Selected`;
-                } else {
-                    mainCountPill.textContent = `${main.svcCount} Selected`;
-                }
-            }
-        }
         if (mainTotalDurationVal) mainTotalDurationVal.textContent = `${main.duration} min`;
         if (mainTotalAmountVal) mainTotalAmountVal.textContent = fmtPrice(main.amount);
 
-        // Show/hide main modal Clear All button
+        // Show/hide main modal Clear All button in header
         if (btnMainClearAll) {
             btnMainClearAll.style.display = hasMainItems ? 'inline-flex' : 'none';
         }
@@ -1556,6 +1543,7 @@ export function initGlobalBookingModal() {
     });
 
     btnOpenAddServices?.addEventListener('click', openPickerModal);
+    btnOpenAddServicesTop?.addEventListener('click', openPickerModal);
     btnClosePicker?.addEventListener('click', closePickerModal);
     btnCancelPicker?.addEventListener('click', closePickerModal);
 
