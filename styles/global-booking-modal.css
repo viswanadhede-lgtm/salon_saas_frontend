@@ -228,7 +228,44 @@
 .booking-right-panel .selected-services-list::-webkit-scrollbar { width: 4px; }
 .booking-right-panel .selected-services-list::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 4px; }
 
-/* ── Date / Time Row ─────────────────────────────────────────────── */
+/* ── Sub-sections inside LHS panel ──────────────────────────────── */
+.lhs-sub-section {
+    display: flex;
+    flex-direction: column;
+    gap: 9px;
+    padding-top: 14px;
+    border-top: 1px solid #f1f5f9;
+}
+
+/* First sub-section gets slightly less top space since badge is above */
+.booking-left-panel .lhs-sub-section:first-of-type {
+    padding-top: 10px;
+}
+
+.lhs-sub-label {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    font-size: 0.7rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.07em;
+    color: #94a3b8;
+    margin-bottom: 2px;
+}
+
+/* Notes section stretches to fill remaining space */
+.lhs-notes-section {
+    flex: 1 1 0px;
+    min-height: 0;
+}
+
+.lhs-notes-section .form-input {
+    flex: 1 1 0px;
+    min-height: 60px;
+}
+
+
 .booking-datetime-row {
     display: flex;
     gap: 12px;

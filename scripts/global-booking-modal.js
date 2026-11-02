@@ -135,47 +135,67 @@ export function ensureBookingModalHtml() {
                             Customer &amp; Schedule
                         </span>
 
-                        <div class="form-group relative">
-                            <label class="form-label" for="phoneSearch">Phone Number <span class="text-rose">*</span></label>
-                            <input type="tel" id="phoneSearch" class="form-input" placeholder="Enter phone number" autocomplete="off">
-                            <div class="search-suggestions" id="searchSuggestions"></div>
-                        </div>
-
-                        <div class="customer-badge-container" id="customerBadgeContainer" style="display:none; margin-bottom: 4px;">
-                            <span class="badge-pill existing-badge" id="customerBadge">Existing Customer</span>
-                        </div>
-
-                        <div class="form-group span-full" id="newCustomerBadgeContainer" style="display:none; margin-bottom: 4px;">
-                            <span class="badge-pill new-badge" id="newCustomerBadge">New Customer</span>
-                        </div>
-
-                        <div class="form-group" id="customerNameGroup">
-                            <label class="form-label" for="customerName">Customer Name <span class="text-rose">*</span></label>
-                            <input type="text" id="customerName" class="form-input" placeholder="Enter customer name">
-                        </div>
-
-                        <div class="form-group" id="customerEmailGroup">
-                            <label class="form-label" for="customerEmail">Email <span id="emailOptionalLabel" class="text-muted">(Optional)</span></label>
-                            <input type="email" id="customerEmail" class="form-input" placeholder="Enter email address">
-                        </div>
-
-                        <div class="booking-datetime-row">
-                            <div class="form-group" style="flex: 1;">
-                                <label class="form-label" for="bookingDate">Date <span class="text-rose">*</span></label>
-                                <input type="date" id="bookingDate" class="form-input">
+                        <!-- ── CUSTOMER SECTION ── -->
+                        <div class="lhs-sub-section">
+                            <div class="lhs-sub-label">
+                                <i data-feather="user" style="width:11px;height:11px;"></i>
+                                Customer
                             </div>
-                            <div class="form-group" style="flex: 1.15;">
-                                <label class="form-label" for="bookingTime">Time <span class="text-rose">*</span></label>
-                                <div class="relative" style="display: flex; gap: 6px;">
-                                    <input type="time" id="bookingTime" class="form-input" style="flex: 1;">
-                                    <button type="button" class="btn btn-secondary" id="btnTimeNow" style="padding: 0 12px; height: 40px; font-size: 12px; font-weight: 600;">Now</button>
+
+                            <div class="form-group relative">
+                                <label class="form-label" for="phoneSearch">Phone Number <span class="text-rose">*</span></label>
+                                <input type="tel" id="phoneSearch" class="form-input" placeholder="Enter phone number" autocomplete="off">
+                                <div class="search-suggestions" id="searchSuggestions"></div>
+                            </div>
+
+                            <div class="customer-badge-container" id="customerBadgeContainer" style="display:none;">
+                                <span class="badge-pill existing-badge" id="customerBadge">Existing Customer</span>
+                            </div>
+
+                            <div class="form-group span-full" id="newCustomerBadgeContainer" style="display:none;">
+                                <span class="badge-pill new-badge" id="newCustomerBadge">New Customer</span>
+                            </div>
+
+                            <div class="form-group" id="customerNameGroup">
+                                <label class="form-label" for="customerName">Customer Name <span class="text-rose">*</span></label>
+                                <input type="text" id="customerName" class="form-input" placeholder="Enter customer name">
+                            </div>
+
+                            <div class="form-group" id="customerEmailGroup">
+                                <label class="form-label" for="customerEmail">Email <span id="emailOptionalLabel" class="text-muted">(Optional)</span></label>
+                                <input type="email" id="customerEmail" class="form-input" placeholder="Enter email address">
+                            </div>
+                        </div>
+
+                        <!-- ── SCHEDULE SECTION ── -->
+                        <div class="lhs-sub-section">
+                            <div class="lhs-sub-label">
+                                <i data-feather="calendar" style="width:11px;height:11px;"></i>
+                                Schedule
+                            </div>
+
+                            <div class="booking-datetime-row">
+                                <div class="form-group" style="flex: 1;">
+                                    <label class="form-label" for="bookingDate">Date <span class="text-rose">*</span></label>
+                                    <input type="date" id="bookingDate" class="form-input">
+                                </div>
+                                <div class="form-group" style="flex: 1.2;">
+                                    <label class="form-label" for="bookingTime">Time <span class="text-rose">*</span></label>
+                                    <div style="display: flex; gap: 6px;">
+                                        <input type="time" id="bookingTime" class="form-input" style="flex: 1;">
+                                        <button type="button" class="btn btn-secondary" id="btnTimeNow" style="padding: 0 12px; height: 40px; font-size: 12px; font-weight: 600; white-space: nowrap;">Now</button>
+                                    </div>
                                 </div>
                             </div>
                         </div>
 
-                        <div class="form-group">
-                            <label class="form-label" for="bookingNotes">Booking Notes <span class="text-muted">(Optional)</span></label>
-                            <textarea id="bookingNotes" class="form-input form-textarea" placeholder="Add optional notes for this booking..." style="height: 72px; min-height: 60px; resize: vertical;"></textarea>
+                        <!-- ── BOOKING NOTES SECTION ── -->
+                        <div class="lhs-sub-section lhs-notes-section">
+                            <div class="lhs-sub-label">
+                                <i data-feather="file-text" style="width:11px;height:11px;"></i>
+                                Booking Notes
+                            </div>
+                            <textarea id="bookingNotes" class="form-input form-textarea" placeholder="Add optional notes for this booking..." style="height: 72px; min-height: 60px; resize: vertical; flex: 1;"></textarea>
                         </div>
                     </div>
 
