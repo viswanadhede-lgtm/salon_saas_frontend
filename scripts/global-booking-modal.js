@@ -105,6 +105,7 @@ export function ensureBookingModalHtml() {
                 <div class="modal-header">
                     <div class="header-titles">
                         <h2>New Booking</h2>
+                        <span id="editBookingIdBadge" style="display:none;font-family:monospace;font-size:0.72rem;font-weight:700;background:#e0e7ff;color:#4338ca;padding:2px 8px;border-radius:6px;margin-left:8px;vertical-align:middle;"></span>
                         <p class="subtitle">Create a new appointment for a customer.</p>
                     </div>
                     <div class="booking-header-right">
@@ -183,6 +184,28 @@ export function ensureBookingModalHtml() {
                                     </div>
                                 </div>
                             </div>
+                        </div>
+
+                        <!-- ── BOOKING NOTES SECTION ── -->
+                        <div class="lhs-section-group lhs-notes-section">
+
+                        <!-- ── STATUS & PAYMENT SECTION (Edit Mode only) ── -->
+                        <div class="lhs-section-group" id="bookingStatusPaymentGroup" style="display:none;">
+                            <div class="lhs-sub-label">
+                                <i data-feather="activity" style="width:11px;height:11px;"></i>
+                                Status &amp; Payment
+                            </div>
+                            <div class="form-group" style="margin-bottom:10px;">
+                                <label class="form-label" for="bookingStatusSelect">Booking Status</label>
+                                <select id="bookingStatusSelect" class="form-select" style="font-weight:600;">
+                                    <option value="booked">Booked</option>
+                                    <option value="confirmed">Confirmed</option>
+                                    <option value="completed">Completed</option>
+                                    <option value="cancelled">Cancelled</option>
+                                    <option value="no-show">No-Show</option>
+                                </select>
+                            </div>
+                            <div id="bookingPaymentStrip" style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-top:4px;"></div>
                         </div>
 
                         <!-- ── BOOKING NOTES SECTION ── -->
@@ -1328,7 +1351,40 @@ export function initGlobalBookingModal() {
     // ----------------------------------------------------------------
     // MODAL OPEN / CLOSE LIFECYCLE
     // ----------------------------------------------------------------
+    let editModeBookingId   = null; // null = create mode, string = edit mode
+    let editModeBookingData = null; // first row of the booking (for payment status etc.)
+
     async function openModal() {
+        // Reset edit mode
+        editModeBookingId   = null;
+        editModeBookingData = null;
+
+        // Reset header to create mode
+        const h2El = bookingModal.querySelector('.header-titles h2');
+        if (h2El) h2El.textContent = 'New Booking';
+        const subtitleEl = bookingModal.querySelector('.header-titles .subtitle');
+        if (subtitleEl) subtitleEl.textContent = 'Create a new appointment for a customer.';
+        const idBadge = document.getElementById('editBookingIdBadge');
+        if (idBadge) idBadge.style.display = 'none';
+        const confirmBtn = document.getElementById('btnConfirmBooking');
+        if (confirmBtn) confirmBtn.textContent = 'Confirm Booking';
+
+        // Hide status/payment group
+        const spGroup = document.getElementById('bookingStatusPaymentGroup');
+        if (spGroup) spGroup.style.display = 'none';
+
+        // Re-enable customer fields
+        ['phoneSearch', 'customerName', 'customerEmail'].forEach(id => {
+            const el = document.getElementById(id);
+            if (el) {
+                el.removeAttribute('readonly');
+                el.removeAttribute('disabled');
+                el.style.background = '';
+                el.style.cursor     = '';
+                el.style.color      = '';
+            }
+        });
+
         phoneSearch.value = '';
         setNewCustomerState();
         if (bookingDate) bookingDate.value = '';
@@ -1376,6 +1432,201 @@ export function initGlobalBookingModal() {
     function closeModal() {
         bookingModalOverlay.classList.remove('active');
         pickerOverlay.classList.remove('active');
+    }
+
+    // ── Payment strip helper (edit mode) ────────────────────────────
+    function renderEditPaymentStrip(bookingRow) {
+        const strip = document.getElementById('bookingPaymentStrip');
+        if (!strip) return;
+        const pay      = (bookingRow?.payment_status || bookingRow?.payment || '').toLowerCase();
+        const totalAmt = Number(bookingRow?.final_amount ?? bookingRow?.total_price ?? bookingRow?.price ?? 0);
+        const amtStr   = '₹' + totalAmt.toLocaleString('en-IN');
+        const bId      = bookingRow?.booking_id;
+
+        if (pay === 'paid') {
+            strip.innerHTML = `<span style="display:inline-flex;align-items:center;gap:5px;padding:5px 12px;border-radius:20px;font-size:0.8rem;font-weight:600;background:#d1fae5;color:#059669;">✓ Paid ${amtStr}</span>`;
+        } else {
+            strip.innerHTML = `
+                <span style="display:inline-flex;align-items:center;gap:5px;padding:5px 12px;border-radius:20px;font-size:0.8rem;font-weight:600;background:#fef3c7;color:#b45309;">
+                    ● ${pay === 'partial' ? 'Partial' : 'Unpaid'} ${amtStr}
+                </span>
+                <button type="button" onclick="if(window.openBookingPayment) window.openBookingPayment('${bId}')" style="padding:5px 12px;border-radius:20px;border:1px solid #f97316;background:#fff7ed;color:#ea580c;font-size:0.8rem;font-weight:600;cursor:pointer;display:inline-flex;align-items:center;gap:5px;">
+                    💳 Collect Payment
+                </button>
+            `;
+        }
+    }
+
+    // ── Open Edit Modal ──────────────────────────────────────────────
+    async function openEditModal(bookingId) {
+        // 1. Reset everything via openModal()
+        await openModal();
+
+        // 2. Set edit mode
+        editModeBookingId = bookingId;
+
+        // 3. Update header title / badge / subtitle
+        const h2El = bookingModal.querySelector('.header-titles h2');
+        if (h2El) h2El.textContent = 'Edit Booking';
+
+        const idBadge = document.getElementById('editBookingIdBadge');
+        if (idBadge) {
+            idBadge.textContent = '#' + String(bookingId).slice(0, 8).toUpperCase();
+            idBadge.style.display = 'inline';
+        }
+
+        const subtitleEl = bookingModal.querySelector('.header-titles .subtitle');
+        if (subtitleEl) subtitleEl.textContent = 'Update schedule, services, assigned staff, or status.';
+
+        // 4. Update footer button text
+        const confirmBtn = document.getElementById('btnConfirmBooking');
+        if (confirmBtn) confirmBtn.textContent = 'Update Booking';
+
+        // 5. Show Status & Payment section
+        const spGroup = document.getElementById('bookingStatusPaymentGroup');
+        if (spGroup) spGroup.style.display = 'block';
+
+        // 6. Make customer fields read-only
+        ['phoneSearch', 'customerName', 'customerEmail'].forEach(id => {
+            const el = document.getElementById(id);
+            if (el) {
+                el.setAttribute('readonly', true);
+                el.setAttribute('disabled', true);
+                el.style.background = '#f8fafc';
+                el.style.cursor     = 'not-allowed';
+                el.style.color      = '#64748b';
+            }
+        });
+
+        // 7. Fetch all booking rows
+        let allRows = [];
+        try {
+            const { data, error } = await supabase
+                .from('bookings')
+                .select('*')
+                .eq('booking_id', bookingId);
+            if (error) throw error;
+            allRows = data || [];
+        } catch (err) {
+            console.error('[openEditModal] fetch error:', err);
+            if (window.toast) window.toast('Failed to load booking: ' + err.message, 'error');
+            return;
+        }
+
+        if (!allRows.length) {
+            console.warn('[openEditModal] No rows found for booking_id:', bookingId);
+            return;
+        }
+
+        const firstRow = allRows[0];
+        editModeBookingData = firstRow;
+
+        // 8. Pre-fill customer info (read-only)
+        selectedCustomerId = firstRow.customer_id || null;
+        const phoneEl = document.getElementById('phoneSearch');
+        if (phoneEl) { phoneEl.value = firstRow.customer_phone || ''; }
+
+        const nameEl = document.getElementById('customerName');
+        if (nameEl) { nameEl.value = firstRow.customer_name || ''; }
+
+        const emailEl = document.getElementById('customerEmail');
+        if (emailEl) { emailEl.value = firstRow.customer_email || firstRow.customer_mail || ''; }
+
+        // Show existing customer badge
+        if (newCustomerBadgeContainer) newCustomerBadgeContainer.style.display = 'none';
+        if (customerBadgeContainer) {
+            customerBadgeContainer.style.display = 'block';
+            if (customerBadge) customerBadge.textContent = 'Existing Customer';
+        }
+
+        // 9. Pre-fill date / time / notes
+        if (bookingDate && firstRow.booking_date) bookingDate.value = firstRow.booking_date;
+        if (bookingTime && firstRow.start_time)   bookingTime.value = firstRow.start_time.slice(0, 5);
+        if (bookingNotes && firstRow.notes)        bookingNotes.value = firstRow.notes;
+
+        // 10. Pre-fill status dropdown
+        const statusSelect = document.getElementById('bookingStatusSelect');
+        if (statusSelect && firstRow.status) statusSelect.value = firstRow.status;
+
+        // 11. Render payment strip
+        renderEditPaymentStrip(firstRow);
+
+        // 12. Convert DB rows → selectedBookingItems
+        const packageMap     = new Map();
+        const standaloneRows = [];
+
+        for (const row of allRows) {
+            if (row.package_id) {
+                if (!packageMap.has(row.package_id)) {
+                    packageMap.set(row.package_id, {
+                        uid:         'pkg_' + generateUUID(),
+                        type:        'package',
+                        id:          row.package_id,
+                        packageId:   row.package_id,
+                        name:        '',
+                        packageName: '',
+                        price:       0,
+                        duration:    0,
+                        syncStaff:   false,
+                        services:    []
+                    });
+                }
+                const pkg = packageMap.get(row.package_id);
+                if (!pkg.packageName) {
+                    const match = (row.service_name || '').match(/\(([^)]+)\)$/);
+                    pkg.packageName = match ? match[1] : (row.service_name || '');
+                }
+                if (!pkg.name) pkg.name = pkg.packageName;
+
+                const matchedSvc = liveServicesDB.find(s => s.service_id === row.service_id);
+                const dur = matchedSvc ? (parseInt(matchedSvc.duration) || 0) : 0;
+                pkg.duration += dur;
+                pkg.price    += Number(row.price) || 0;
+
+                pkg.services.push({
+                    uid:         'svc_' + generateUUID(),
+                    serviceId:   row.service_id,
+                    packageId:   row.package_id,
+                    serviceName: matchedSvc
+                        ? matchedSvc.service_name
+                        : (row.service_name || '').replace(/\s*\([^)]*\)$/, ''),
+                    duration:    dur,
+                    price:       Number(row.price) || 0,
+                    staffId:     row.staff_id   || '',
+                    staffName:   row.staff_name || ''
+                });
+            } else {
+                standaloneRows.push(row);
+            }
+        }
+
+        selectedBookingItems = [];
+        for (const row of standaloneRows) {
+            const matchedSvc = liveServicesDB.find(s => s.service_id === row.service_id);
+            selectedBookingItems.push({
+                uid:          'item_' + generateUUID(),
+                type:         'service',
+                id:           row.service_id,
+                name:         row.service_name || (matchedSvc ? matchedSvc.service_name : ''),
+                categoryName: matchedSvc ? matchedSvc.category_name : '',
+                duration:     matchedSvc ? (parseInt(matchedSvc.duration) || 0) : 0,
+                price:        Number(row.price) || 0,
+                staffId:      row.staff_id   || '',
+                staffName:    row.staff_name || '',
+                packageId:    null,
+                packageName:  null
+            });
+        }
+        for (const [, pkg] of packageMap) {
+            selectedBookingItems.push(pkg);
+        }
+
+        // 13. Render lists, totals, validation
+        renderSelectedList(mainSelectedList, selectedBookingItems, false);
+        updateTotals();
+        validateForm();
+
+        if (window.feather) window.feather.replace();
     }
 
     // ── Picker Modal Lifecycle ──────────────────────────────────────────
@@ -1838,13 +2089,100 @@ export function initGlobalBookingModal() {
 
     // ── Confirm Booking Button Handler ──────────────────────────────
     btnConfirmBooking.addEventListener('click', async () => {
-        let targetName = customerName?.value.trim();
-        let targetId   = selectedCustomerId;
-        const groupBookingId = generateUUID();
-
         const originalText = btnConfirmBooking.textContent;
         btnConfirmBooking.textContent = 'Saving...';
         btnConfirmBooking.disabled    = true;
+
+        // ── EDIT MODE ──────────────────────────────────────────────
+        if (editModeBookingId) {
+            try {
+                // Build services array from selectedBookingItems
+                let currentMins = bookingTime?.value
+                    ? timeToMins(bookingTime.value)
+                    : 0;
+
+                const services = [];
+                for (const item of selectedBookingItems) {
+                    if (item.type === 'service') {
+                        const dur          = parseInt(item.duration) || 0;
+                        const startTimeStr = minsToTime24(currentMins);
+                        const endTimeStr   = minsToTime24(currentMins + dur);
+                        currentMins       += dur;
+                        services.push({
+                            service_id:   item.id,
+                            package_id:   null,
+                            staff_id:     item.staffId   || '',
+                            service_name: item.name      || '',
+                            staff_name:   item.staffName || '',
+                            start_time:   startTimeStr,
+                            end_time:     endTimeStr,
+                            price:        Number(item.price) || 0,
+                            status:       document.getElementById('bookingStatusSelect')?.value || 'booked'
+                        });
+                    } else if (item.type === 'package') {
+                        const incServices = Array.isArray(item.services) ? item.services : [];
+                        for (const svc of incServices) {
+                            const dur          = parseInt(svc.duration) || 0;
+                            const startTimeStr = minsToTime24(currentMins);
+                            const endTimeStr   = minsToTime24(currentMins + dur);
+                            currentMins       += dur;
+                            services.push({
+                                service_id:   svc.serviceId,
+                                package_id:   svc.packageId || item.packageId || null,
+                                staff_id:     svc.staffId   || '',
+                                service_name: `${svc.serviceName} (${item.packageName || item.name})`,
+                                staff_name:   svc.staffName || '',
+                                start_time:   startTimeStr,
+                                end_time:     endTimeStr,
+                                price:        Number(svc.price) || 0,
+                                status:       document.getElementById('bookingStatusSelect')?.value || 'booked'
+                            });
+                        }
+                    }
+                }
+
+                const { error: updateErr } = await supabase.rpc('update_booking_atomic', {
+                    p_booking_id:   editModeBookingId,
+                    p_company_id:   getCompanyId(),
+                    p_branch_id:    getBranchId(),
+                    p_booking_date: bookingDate?.value || '',
+                    p_start_time:   bookingTime?.value || '',
+                    p_notes:        bookingNotes?.value?.trim() || null,
+                    p_status:       document.getElementById('bookingStatusSelect')?.value || 'booked',
+                    p_services:     services
+                });
+
+                if (updateErr) throw updateErr;
+
+                if (window.toast) window.toast('Booking updated successfully!');
+                try {
+                    if (typeof window.fetchBookings === 'function') await window.fetchBookings();
+                } catch (refreshErr) {
+                    console.warn('[EditModal] fetchBookings refresh error:', refreshErr);
+                }
+                try {
+                    if (typeof window.refreshAllData === 'function') {
+                        window.refreshAllData(getBranchId());
+                    }
+                } catch (dashErr) {
+                    console.warn('[EditModal] Dashboard refresh error:', dashErr);
+                }
+                closeModal();
+            } catch (err) {
+                console.error('[updateBooking] exception:', err);
+                if (window.toast) window.toast('Error updating booking: ' + err.message, 'error');
+                else showMsg('Error updating booking: ' + err.message, true);
+            } finally {
+                btnConfirmBooking.textContent = originalText;
+                btnConfirmBooking.disabled    = false;
+            }
+            return;
+        }
+
+        // ── CREATE MODE (existing flow) ────────────────────────────
+        let targetName = customerName?.value.trim();
+        let targetId   = selectedCustomerId;
+        const groupBookingId = generateUUID();
 
         // Auto-create new customer if needed
         if (!targetId && phoneSearch.value.trim().length >= 10) {
@@ -2011,7 +2349,8 @@ export function initGlobalBookingModal() {
     };
 
     // ── Triggers ────────────────────────────────────────────────────
-    window.openGlobalBookingModal = openModal;
+    window.openGlobalBookingModal     = openModal;
+    window.openGlobalEditBookingModal = openEditModal;
 
     btnNewBooking?.addEventListener('click', (e) => {
         e.preventDefault();

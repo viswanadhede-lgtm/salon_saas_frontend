@@ -1703,3 +1703,33 @@
     }
 }
 
+/* ── Edit Mode Styles ─────────────────────────────────────────── */
+
+/* Read-only customer fields in edit mode */
+.booking-modal-edit-mode #phoneSearch,
+.booking-modal-edit-mode #customerName,
+.booking-modal-edit-mode #customerEmail {
+    background: #f8fafc;
+    color: #64748b;
+    cursor: not-allowed;
+    border-color: #e2e8f0;
+}
+
+/* Booking ID badge in header */
+#editBookingIdBadge {
+    font-family: monospace;
+    font-size: 0.72rem;
+    font-weight: 700;
+    background: #e0e7ff;
+    color: #4338ca;
+    padding: 2px 8px;
+    border-radius: 6px;
+    margin-left: 8px;
+    vertical-align: middle;
+}
+
+/* Status select color coding */
+#bookingStatusSelect option[value="completed"] { color: #059669; }
+#bookingStatusSelect option[value="cancelled"] { color: #dc2626; }
+#bookingStatusSelect option[value="no-show"]   { color: #ea580c; }
+

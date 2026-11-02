@@ -383,7 +383,14 @@ export async function openEditBookingModal(bookingId) {
 }
 
 if (typeof window !== 'undefined') {
-    window.openEditBookingModal = openEditBookingModal;
+    window.openEditBookingModal = async (bookingId) => {
+        if (window.openGlobalEditBookingModal) {
+            await window.openGlobalEditBookingModal(bookingId);
+        } else {
+            // fallback - shouldn't happen if global-booking-modal.js is loaded
+            console.warn('[EditModal] openGlobalEditBookingModal not available');
+        }
+    };
     window.showPaymentNotCompletedModal = showPaymentNotCompletedModal;
 }
 
