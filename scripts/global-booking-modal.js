@@ -586,6 +586,19 @@ export function initGlobalBookingModal() {
         return list;
     }
 
+    // Returns only standalone service entries (excludes package nested services).
+    // Used by the Services-tab "Apply same staff to all" toggle so it never
+    // bleeds into package staff assignments.
+    function getServiceOnlyEntries(itemsArray) {
+        return (itemsArray || [])
+            .filter(it => it.type === 'service')
+            .map(it => ({
+                uid: it.uid,
+                get: () => it.staffId,
+                set: (id, name) => { it.staffId = id; it.staffName = name; }
+            }));
+    }
+
     // ----------------------------------------------------------------
     // RENDER: Selected Items List (Shared by Main Modal & Picker Modal)
     // ----------------------------------------------------------------
@@ -838,7 +851,8 @@ export function initGlobalBookingModal() {
                 const newStaffName = opt ? opt.textContent : '';
 
                 if (isStaffSyncAll) {
-                    getAllAssignableEntries(itemsArray).forEach(entry => entry.set(newStaffId, newStaffName));
+                    // Only sync across standalone services — never touch package staff assignments
+                    getServiceOnlyEntries(itemsArray).forEach(entry => entry.set(newStaffId, newStaffName));
                     renderSelectedList(containerEl, itemsArray, isPicker);
                 } else {
                     const found = itemsArray.find(it => it.uid === uid);
@@ -1178,7 +1192,8 @@ export function initGlobalBookingModal() {
                         let defaultStaff = '';
                         let defaultStaffName = '';
                         if (isStaffSyncAll) {
-                            const firstAssigned = getAllAssignableEntries(pickerDraftItems).find(e => e.get() && e.get().trim().length > 0);
+                            // Only inherit from other standalone services, not packages
+                            const firstAssigned = getServiceOnlyEntries(pickerDraftItems).find(e => e.get() && e.get().trim().length > 0);
                             if (firstAssigned) {
                                 defaultStaff = firstAssigned.get();
                                 const stObj = liveStaffDB.find(st => st.staff_id === defaultStaff);
@@ -1216,14 +1231,9 @@ export function initGlobalBookingModal() {
                         const incServices = livePackageServicesDB.filter(ps => ps.package_id === id);
                         let defaultStaff = '';
                         let defaultStaffName = '';
-                        if (isStaffSyncAll) {
-                            const firstAssigned = getAllAssignableEntries(pickerDraftItems).find(e => e.get() && e.get().trim().length > 0);
-                            if (firstAssigned) {
-                                defaultStaff = firstAssigned.get();
-                                const stObj = liveStaffDB.find(st => st.staff_id === defaultStaff);
-                                defaultStaffName = stObj ? (stObj.staff_name || stObj.name) : '';
-                            }
-                        }
+                        // Packages are staff-synced independently via their own per-package toggle.
+                        // isStaffSyncAll (Services tab) must NOT auto-assign staff to package services.
+                        // defaultStaff intentionally stays '' so each package service starts unassigned.
 
                         const pkgPrice = parseFloat(pkg.final_price) || 0;
                         const numSvc = incServices.length;
@@ -1462,7 +1472,8 @@ export function initGlobalBookingModal() {
         isStaffSyncAll = e.target.checked;
 
         if (isStaffSyncAll && pickerDraftItems.length > 0) {
-            const entries = getAllAssignableEntries(pickerDraftItems);
+            // Only sync standalone services — packages are managed independently via their own per-package toggle
+            const entries = getServiceOnlyEntries(pickerDraftItems);
             const firstAssigned = entries.find(entry => entry.get() && entry.get().trim().length > 0);
             if (firstAssigned) {
                 const firstStaff = firstAssigned.get();
