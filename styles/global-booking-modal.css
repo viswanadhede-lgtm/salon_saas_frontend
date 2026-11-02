@@ -122,11 +122,11 @@
     height: 100%;
     min-height: 0;
     box-sizing: border-box;
-    padding: 1rem 1.5rem;
+    padding: 1.25rem 1.5rem 2rem 1.5rem;
     border-right: 1px solid #e2e8f0;
     display: flex;
     flex-direction: column;
-    gap: 9px;
+    gap: 14px;
     overflow-y: auto;
     background: #ffffff;
     scrollbar-width: thin;
@@ -148,6 +148,46 @@
     margin-bottom: 4px;
 }
 
+.form-label-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 4px;
+}
+
+.form-label-row .form-label {
+    margin-bottom: 0;
+}
+
+.customer-badge-inline {
+    display: inline-flex;
+    align-items: center;
+}
+
+.badge-pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    padding: 2px 8px;
+    border-radius: 999px;
+    font-size: 0.72rem;
+    font-weight: 700;
+    letter-spacing: 0.02em;
+    line-height: 1.2;
+}
+
+.badge-pill.existing-badge {
+    background: #ecfdf5;
+    color: #059669;
+    border: 1px solid #a7f3d0;
+}
+
+.badge-pill.new-badge {
+    background: #eff6ff;
+    color: #2563eb;
+    border: 1px solid #bfdbfe;
+}
+
 /* ── RIGHT PANEL: Selected Services / Packages ──────────────────── */
 .booking-right-panel {
     flex: 1 1 0px;
@@ -156,7 +196,7 @@
     height: 100%;
     min-height: 0;
     box-sizing: border-box;
-    padding: 1rem 1.5rem;
+    padding: 1.25rem 1.5rem 1.75rem 1.5rem;
     display: flex;
     flex-direction: column;
     gap: 10px;
@@ -206,8 +246,20 @@
     text-decoration: underline;
 }
 
-/* Adjust add-services button to full width in RHS */
-.booking-right-panel .btn-add-services-modal {
+/* Adjust add-services button in RHS panel */
+.booking-right-panel.is-empty .booking-rhs-action-strip,
+.booking-right-panel.is-empty .selected-services-list,
+.booking-right-panel.is-empty .services-count-pill {
+    display: none !important;
+}
+
+.booking-right-panel.is-empty .btn-add-services-modal {
+    margin-top: 32px;
+    padding: 14px 24px;
+    font-size: 0.92rem;
+}
+
+.booking-right-panel.has-items .btn-add-services-modal {
     flex: none;
     max-width: 100%;
     margin-top: auto;
@@ -232,37 +284,39 @@
 .lhs-sub-section {
     display: flex;
     flex-direction: column;
-    gap: 9px;
-    padding-top: 14px;
+    gap: 13px;
+    padding-top: 18px;
     border-top: 1px solid #f1f5f9;
 }
 
-/* First sub-section gets slightly less top space since badge is above */
+/* First sub-section starts clean at top since top title was removed */
 .booking-left-panel .lhs-sub-section:first-of-type {
-    padding-top: 10px;
+    padding-top: 2px;
+    border-top: none;
 }
 
 .lhs-sub-label {
     display: inline-flex;
     align-items: center;
     gap: 5px;
-    font-size: 0.7rem;
+    font-size: 0.72rem;
     font-weight: 700;
     text-transform: uppercase;
     letter-spacing: 0.07em;
     color: #2563eb;
-    margin-bottom: 2px;
+    margin-bottom: 3px;
 }
 
 /* Notes section stretches to fill remaining space */
 .lhs-notes-section {
     flex: 1 1 0px;
     min-height: 0;
+    padding-bottom: 8px;
 }
 
-.lhs-notes-section .form-input {
-    flex: 1 1 0px;
-    min-height: 60px;
+.lhs-notes-section .form-textarea {
+    height: 95px;
+    min-height: 85px;
 }
 
 
@@ -788,35 +842,45 @@
     display: none;
 }
 
-/* ── Add Services Button (full width in RHS panel) ─────────────── */
+/* ── Add Services Button (smooth, polished pill) ─────────────── */
 .btn-add-services-modal {
     width: 100%;
     max-width: 100%;
-    padding: 10px 16px;
-    border: 1.5px dashed #c084fc;
-    border-radius: 8px;
-    background: #faf5ff;
-    color: #9333ea;
-    font-size: 0.9rem;
+    padding: 12px 20px;
+    border: 1.5px solid #e9d5ff;
+    border-radius: 12px;
+    background: linear-gradient(180deg, #faf5ff 0%, #f3e8ff 100%);
+    color: #7e22ce;
+    font-size: 0.88rem;
     font-weight: 600;
     cursor: pointer;
-    display: flex;
+    display: inline-flex;
     align-items: center;
     justify-content: center;
-    gap: 6px;
-    transition: all 0.15s ease;
+    gap: 8px;
+    box-shadow: 0 1px 3px rgba(124, 58, 237, 0.08), 0 1px 2px rgba(124, 58, 237, 0.04);
+    transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
     flex-shrink: 0;
 }
 
 .btn-add-services-modal:hover {
-    background: #f3e8ff;
-    border-color: #9333ea;
+    background: linear-gradient(180deg, #f5f3ff 0%, #ede9fe 100%);
+    border-color: #c4b5fd;
+    color: #6d28d9;
+    box-shadow: 0 4px 14px rgba(124, 58, 237, 0.16);
+    transform: translateY(-1px);
+}
+
+.btn-add-services-modal:active {
+    transform: translateY(0);
+    box-shadow: 0 1px 2px rgba(124, 58, 237, 0.1);
 }
 
 .btn-add-services-modal i,
 .btn-add-services-modal svg {
     width: 16px;
     height: 16px;
+    stroke-width: 2.2;
 }
 
 /* Summary chips — used only in picker modal header */

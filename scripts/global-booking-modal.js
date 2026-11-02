@@ -130,11 +130,6 @@ export function ensureBookingModalHtml() {
 
                     <!-- LEFT PANEL: Customer & Schedule -->
                     <div class="booking-left-panel">
-                        <span class="booking-section-badge">
-                            <i data-feather="user" style="width:12px;height:12px;"></i>
-                            Customer &amp; Schedule
-                        </span>
-
                         <!-- ── CUSTOMER SECTION ── -->
                         <div class="lhs-sub-section">
                             <div class="lhs-sub-label">
@@ -143,17 +138,17 @@ export function ensureBookingModalHtml() {
                             </div>
 
                             <div class="form-group relative">
-                                <label class="form-label" for="phoneSearch">Phone Number <span class="text-rose">*</span></label>
+                                <div class="form-label-row">
+                                    <label class="form-label" for="phoneSearch">Phone Number <span class="text-rose">*</span></label>
+                                    <div class="customer-badge-inline" id="customerBadgeContainer" style="display:none;">
+                                        <span class="badge-pill existing-badge" id="customerBadge">Existing Customer</span>
+                                    </div>
+                                    <div class="customer-badge-inline" id="newCustomerBadgeContainer" style="display:none;">
+                                        <span class="badge-pill new-badge" id="newCustomerBadge">New Customer</span>
+                                    </div>
+                                </div>
                                 <input type="tel" id="phoneSearch" class="form-input" placeholder="Enter phone number" autocomplete="off">
                                 <div class="search-suggestions" id="searchSuggestions"></div>
-                            </div>
-
-                            <div class="customer-badge-container" id="customerBadgeContainer" style="display:none;">
-                                <span class="badge-pill existing-badge" id="customerBadge">Existing Customer</span>
-                            </div>
-
-                            <div class="form-group span-full" id="newCustomerBadgeContainer" style="display:none;">
-                                <span class="badge-pill new-badge" id="newCustomerBadge">New Customer</span>
                             </div>
 
                             <div class="form-group" id="customerNameGroup">
@@ -195,22 +190,22 @@ export function ensureBookingModalHtml() {
                                 <i data-feather="file-text" style="width:11px;height:11px;"></i>
                                 Booking Notes
                             </div>
-                            <textarea id="bookingNotes" class="form-input form-textarea" placeholder="Add optional notes for this booking..." style="height: 72px; min-height: 60px; resize: vertical; flex: 1;"></textarea>
+                            <textarea id="bookingNotes" class="form-input form-textarea" placeholder="Add optional notes for this booking..." style="height: 95px; min-height: 85px; resize: vertical;"></textarea>
                         </div>
                     </div>
 
-                    <!-- RIGHT PANEL: Selected Services / Packages (cream #FFFDF7) -->
-                    <div class="booking-right-panel">
+                    <!-- RIGHT PANEL: Selected Services / Packages -->
+                    <div class="booking-right-panel is-empty">
                         <div class="booking-rhs-header">
                             <span class="booking-section-badge">
                                 <i data-feather="star" style="width:12px;height:12px;"></i>
                                 Selected Services / Packages
                             </span>
-                            <span class="services-count-pill" id="mainServicesCountPill">0 Selected</span>
+                            <span class="services-count-pill" id="mainServicesCountPill" style="display:none;">0 Selected</span>
                         </div>
 
-                        <!-- Action strip: Clear All + Staff Sync toggle -->
-                        <div class="booking-rhs-action-strip">
+                        <!-- Action strip: Clear All + Staff Sync toggle (hidden when empty) -->
+                        <div class="booking-rhs-action-strip" id="mainRhsActionStrip" style="display:none;">
                             <button type="button" class="btn-clear-all-main" id="btnMainClearAll" style="display:none;">
                                 🗑 Clear All
                             </button>
@@ -220,7 +215,7 @@ export function ensureBookingModalHtml() {
                             </label>
                         </div>
 
-                        <!-- Selected Items Container -->
+                        <!-- Selected Items Container (hidden when empty) -->
                         <div class="selected-services-list" id="mainSelectedServicesList">
                             <!-- Rendered dynamically -->
                         </div>
@@ -740,12 +735,7 @@ export function initGlobalBookingModal() {
             const packagesList = itemsArray.filter(it => it.type === 'package');
 
             if (servicesList.length === 0 && packagesList.length === 0) {
-                containerEl.innerHTML = `
-                    <div class="selected-services-empty">
-                        <p style="margin:0;font-weight:600;color:#64748b;">No services selected yet.</p>
-                        <p style="margin:4px 0 0 0;font-size:0.82rem;color:#94a3b8;">Click "Add Services / Packages" above to select services.</p>
-                    </div>
-                `;
+                containerEl.innerHTML = '';
             } else {
                 let html = '';
                 if (servicesList.length > 0) {
@@ -977,13 +967,30 @@ export function initGlobalBookingModal() {
 
         // 1. Main Modal Metrics
         const main = calculateMetrics(selectedBookingItems);
+        const hasMainItems = (main.svcCount + main.pkgCount) > 0;
+
+        const mainRhsPanel = document.querySelector('.booking-right-panel');
+        const mainRhsActionStrip = document.getElementById('mainRhsActionStrip');
+        if (mainRhsPanel) {
+            mainRhsPanel.classList.toggle('is-empty', !hasMainItems);
+            mainRhsPanel.classList.toggle('has-items', hasMainItems);
+        }
+        if (mainRhsActionStrip) {
+            mainRhsActionStrip.style.display = hasMainItems ? 'flex' : 'none';
+        }
+
         if (mainCountPill) {
-            if (main.pkgCount > 0 && main.svcCount > 0) {
-                mainCountPill.textContent = `${main.svcCount} Svc · ${main.pkgCount} Pkg`;
-            } else if (main.pkgCount > 0) {
-                mainCountPill.textContent = `${main.pkgCount} ${main.pkgCount === 1 ? 'Package' : 'Packages'} Selected`;
+            if (!hasMainItems) {
+                mainCountPill.style.display = 'none';
             } else {
-                mainCountPill.textContent = `${main.svcCount} Selected`;
+                mainCountPill.style.display = 'inline-flex';
+                if (main.pkgCount > 0 && main.svcCount > 0) {
+                    mainCountPill.textContent = `${main.svcCount} Svc · ${main.pkgCount} Pkg`;
+                } else if (main.pkgCount > 0) {
+                    mainCountPill.textContent = `${main.pkgCount} ${main.pkgCount === 1 ? 'Package' : 'Packages'} Selected`;
+                } else {
+                    mainCountPill.textContent = `${main.svcCount} Selected`;
+                }
             }
         }
         if (mainTotalDurationVal) mainTotalDurationVal.textContent = `${main.duration} min`;
@@ -991,7 +998,7 @@ export function initGlobalBookingModal() {
 
         // Show/hide main modal Clear All button
         if (btnMainClearAll) {
-            btnMainClearAll.style.display = (main.svcCount + main.pkgCount > 0) ? 'inline-flex' : 'none';
+            btnMainClearAll.style.display = hasMainItems ? 'inline-flex' : 'none';
         }
 
         // 2. Picker Modal Metrics
