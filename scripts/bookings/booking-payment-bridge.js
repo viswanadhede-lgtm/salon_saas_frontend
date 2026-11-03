@@ -152,12 +152,14 @@ export async function openBookingPayment(bookingIdOrRow, options = {}) {
 
         // ── After GPM renders, replace the flat table with the two-section layout
         requestAnimationFrame(() => _renderBookingServicesSections(items, totalOriginal));
+        setTimeout(() => _renderBookingServicesSections(items, totalOriginal), 50);
+        setTimeout(() => _renderBookingServicesSections(items, totalOriginal), 150);
     } else {
         alert('Payment modal not loaded. Please refresh the page.');
     }
 }
 
-// ── Two-section renderer: Individual Services + Packages + Grand Total ─────────
+// ── Two-section renderer: Included Services + Included Packages + Grand Total ──
 function _renderBookingServicesSections(items, grandTotal) {
     const tableWrap  = document.getElementById('gpmTableWrap');
     const headerEl   = document.getElementById('gpmItemsHeader');
@@ -170,33 +172,37 @@ function _renderBookingServicesSections(items, grandTotal) {
 
     const svcsTotal = svcs.reduce((s, i) => s + (i.price || 0), 0);
     const pkgsTotal = pkgs.reduce((s, i) => s + (i.price || 0), 0);
-    const svcCount  = svcs.length;
-    const pkgCount  = pkgs.length;
-    const lineCount = svcCount + pkgCount;
 
-    // Update header
-    if (headerEl) headerEl.textContent = `Booked Services (${lineCount} line${lineCount !== 1 ? 's' : ''})`;
-    if (subtotalEl) subtotalEl.textContent = '';   // Grand total shown inside the section
+    // ── 1. Card heading: BOOKED SERVICES & PACKAGES ─────────────────────────
+    if (headerEl) headerEl.textContent = 'BOOKED SERVICES & PACKAGES';
+    if (subtotalEl) subtotalEl.textContent = '';
     if (noteEl) noteEl.style.display = 'none';
 
     const fmt = v => '₹' + Math.round(v).toLocaleString('en-IN');
 
-    const rowStyle   = 'padding:9px 8px; border-bottom:1px solid #f8fafc; color:#334155; font-size:0.84rem; vertical-align:middle;';
-    const thStyle    = 'padding:7px 8px; font-size:0.72rem; font-weight:700; color:#64748b; border-bottom:1px solid #f1f5f9; text-align:left;';
-    const secHeader  = (label, count, subtotalAmt, color) => `
+    const rowStyle = 'padding:10px 8px; border-bottom:1px solid #f8fafc; color:#334155; font-size:0.84rem; vertical-align:middle;';
+    const thStyle  = 'padding:8px 8px; font-size:0.72rem; font-weight:700; color:#64748b; border-bottom:1px solid #f1f5f9; text-align:left;';
+
+    // ── Shared section header builder: Included services / Included packages ─
+    // Same pill badge style and green section price (#059669)
+    const secHeader = (label, count, subtotalAmt, accentColor, badgeBg) => `
         <div style="display:flex; justify-content:space-between; align-items:center;
-                    padding:8px 4px 6px 2px; margin-top:4px; border-bottom:2px solid ${color}20;">
-            <span style="font-size:0.8rem; font-weight:700; color:${color}; text-transform:uppercase; letter-spacing:0.04em;">
-                ${label} <span style="background:${color}18; border-radius:10px; padding:1px 7px; font-size:0.72rem;">${count}</span>
-            </span>
-            <span style="font-size:0.82rem; font-weight:700; color:#0f172a;">${fmt(subtotalAmt)}</span>
+                    padding:10px 4px 8px 2px; margin-top:12px; border-bottom:1.5px solid #e2e8f0;">
+            <div style="display:flex; align-items:center; gap:8px;">
+                <span style="font-size:0.82rem; font-weight:700; color:#1e293b; text-transform:uppercase; letter-spacing:0.04em;">
+                    ${label}
+                </span>
+                <span style="background:${badgeBg}; color:${accentColor}; border-radius:12px; padding:2px 10px;
+                             font-size:0.75rem; font-weight:700; letter-spacing:0.02em;">${count}</span>
+            </div>
+            <span style="font-size:0.92rem; font-weight:800; color:#059669;">${fmt(subtotalAmt)}</span>
         </div>`;
 
-    // ── Individual Services Section ──────────────────────────────────────────
+    // ── 2. Included services Section ─────────────────────────────────────────
     let svcHtml = '';
     if (svcs.length > 0) {
-        svcHtml = secHeader('Individual Services', svcs.length, svcsTotal, '#4f46e5');
-        svcHtml += `<table style="width:100%; border-collapse:collapse; margin-bottom:4px;">
+        svcHtml = secHeader('Included services', svcs.length, svcsTotal, '#4f46e5', '#e0e7ff');
+        svcHtml += `<table style="width:100%; border-collapse:collapse; margin-bottom:6px; margin-top:6px;">
             <thead><tr>
                 <th style="${thStyle} width:24px;">#</th>
                 <th style="${thStyle}">Service</th>
@@ -208,72 +214,130 @@ function _renderBookingServicesSections(items, grandTotal) {
                 ${svcs.map((s, i) => `<tr>
                     <td style="${rowStyle} font-weight:700; color:#0f172a;">${i + 1}</td>
                     <td style="${rowStyle} font-weight:600; color:#0f172a;">${s.name}</td>
-                    <td style="${rowStyle}">${s.staff || 'Assigned'}</td>
-                    <td style="${rowStyle}">${s.time || '—'}</td>
-                    <td style="${rowStyle} font-weight:700; text-align:right;">${fmt(s.price)}</td>
+                    <td style="${rowStyle}">
+                        <span style="background:#f8fafc; color:#475569; border:1px solid #e2e8f0; padding:2px 8px; border-radius:10px; font-size:0.75rem; font-weight:600;">
+                            ${s.staff || 'Assigned'}
+                        </span>
+                    </td>
+                    <td style="${rowStyle} color:#64748b;">${s.time || '—'}</td>
+                    <td style="${rowStyle} font-weight:800; text-align:right; color:#059669;">${fmt(s.price)}</td>
                 </tr>`).join('')}
             </tbody>
         </table>`;
     }
 
-    // ── Packages Section ─────────────────────────────────────────────────────
+    // ── 3 & 4. Included packages (clickable cards matching add services/packages modal)
     let pkgHtml = '';
     if (pkgs.length > 0) {
-        pkgHtml = secHeader('Packages', pkgs.length, pkgsTotal, '#0891b2');
+        pkgHtml = secHeader('Included packages', pkgs.length, pkgsTotal, '#0284c7', '#e0f2fe');
+        pkgHtml += '<div style="display:flex; flex-direction:column; gap:10px; margin-top:10px;">';
+
         pkgs.forEach((pkg, pi) => {
-            const subSvcs = pkg._services || [];
+            const subSvcs  = pkg._services || [];
+            const cardId   = `gpmPkgCard_${pi}`;
+            const bodyId   = `gpmPkgBody_${pi}`;
+            const arrowId  = `gpmPkgArrow_${pi}`;
+
             pkgHtml += `
-            <div style="margin:8px 0; border:1px solid #e0f2fe; border-radius:10px; overflow:hidden;">
-                <div style="display:flex; justify-content:space-between; align-items:center;
-                            padding:10px 14px; background:#f0f9ff; border-bottom:1px solid #e0f2fe;">
-                    <div style="display:flex; align-items:center; gap:8px;">
-                        <span style="font-size:1rem;">🎁</span>
-                        <span style="font-weight:700; font-size:0.88rem; color:#0c4a6e;">${pkg.name}</span>
-                        <span style="font-size:0.72rem; color:#0369a1; background:#e0f2fe;
-                                     border-radius:10px; padding:1px 7px; font-weight:600;">
-                            ${subSvcs.length} service${subSvcs.length !== 1 ? 's' : ''}
-                        </span>
+            <div id="${cardId}" style="border:1px solid #e2e8f0; border-radius:12px; overflow:hidden;
+                                       background:#ffffff; box-shadow:0 1px 3px rgba(0,0,0,0.03); transition:all 0.2s;"
+                 onmouseover="this.style.borderColor='#cbd5e1'; this.style.boxShadow='0 3px 12px rgba(15,23,42,0.06)';"
+                 onmouseout="this.style.borderColor='#e2e8f0'; this.style.boxShadow='0 1px 3px rgba(0,0,0,0.03)';">
+
+                <!-- Clickable package header card -->
+                <div onclick="
+                        var b=document.getElementById('${bodyId}');
+                        var a=document.getElementById('${arrowId}');
+                        var open=b.style.display!=='none';
+                        b.style.display=open?'none':'block';
+                        a.style.transform=open?'rotate(0deg)':'rotate(180deg)';
+                    "
+                    style="display:flex; justify-content:space-between; align-items:center;
+                           padding:12px 16px; cursor:pointer; user-select:none; background:#ffffff;">
+                    <div style="display:flex; align-items:center; gap:12px;">
+                        <div style="width:36px; height:36px; border-radius:10px; background:#eff6ff; border:1px solid #dbeafe;
+                                    display:flex; align-items:center; justify-content:center; color:#2563eb; font-size:1.05rem; flex-shrink:0;">
+                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <line x1="16.5" y1="9.4" x2="7.5" y2="4.21"></line>
+                                <path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"></path>
+                                <polyline points="3.27 6.96 12 12.01 20.73 6.96"></polyline>
+                                <line x1="12" y1="22.08" x2="12" y2="12"></line>
+                            </svg>
+                        </div>
+                        <div>
+                            <div style="display:flex; align-items:center; gap:8px;">
+                                <span style="font-weight:700; font-size:0.92rem; color:#0f172a;">${pkg.name}</span>
+                                <span style="background:#e0e7ff; color:#4338ca; font-size:0.68rem; font-weight:700; padding:2px 8px; border-radius:12px; letter-spacing:0.02em;">PACKAGE</span>
+                            </div>
+                            <div style="font-size:0.75rem; color:#64748b; margin-top:2px; display:flex; align-items:center; gap:6px;">
+                                <span>${subSvcs.length} included services</span>
+                                <span>·</span>
+                                <span style="color:#2563eb; font-weight:600;">Click to view</span>
+                            </div>
+                        </div>
                     </div>
-                    <span style="font-weight:800; font-size:0.95rem; color:#0c4a6e;">${fmt(pkg.price)}</span>
+                    <div style="display:flex; align-items:center; gap:12px;">
+                        <span style="font-weight:800; font-size:1.05rem; color:#059669;">${fmt(pkg.price)}</span>
+                        <div style="width:28px; height:28px; border-radius:6px; background:#f1f5f9; display:flex; align-items:center; justify-content:center; transition:background 0.15s;">
+                            <svg id="${arrowId}" width="16" height="16" viewBox="0 0 24 24" fill="none"
+                                 stroke="#64748b" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"
+                                 style="transition:transform 0.25s; flex-shrink:0;">
+                                <polyline points="6 9 12 15 18 9"></polyline>
+                            </svg>
+                        </div>
+                    </div>
                 </div>
-                ${subSvcs.length > 0 ? `
-                <table style="width:100%; border-collapse:collapse;">
-                    <thead><tr>
-                        <th style="${thStyle} padding-left:20px; background:#fafeff;">Service</th>
-                        <th style="${thStyle} background:#fafeff;">Staff</th>
-                        <th style="${thStyle} background:#fafeff;">Time</th>
-                    </tr></thead>
-                    <tbody>
-                        ${subSvcs.map(s => `<tr style="background:#fafeff;">
-                            <td style="${rowStyle} padding-left:20px; font-size:0.8rem;">
-                                <span style="color:#94a3b8; margin-right:6px;">└</span>${s.service_name || '—'}
-                            </td>
-                            <td style="${rowStyle} font-size:0.8rem; color:#475569;">${s.staff_name || 'Assigned'}</td>
-                            <td style="${rowStyle} font-size:0.8rem; color:#475569;">${s.start_time || '—'}</td>
-                        </tr>`).join('')}
-                    </tbody>
-                </table>` : ''}
+
+                <!-- Collapsible nested services table (hidden by default) -->
+                <div id="${bodyId}" style="display:none; border-top:1px solid #f1f5f9; background:#fafbfc; padding:2px 0 6px 0;">
+                    ${subSvcs.length > 0 ? `
+                    <table style="width:100%; border-collapse:collapse;">
+                        <thead><tr>
+                            <th style="${thStyle} padding-left:18px;">Service</th>
+                            <th style="${thStyle}">Staff</th>
+                            <th style="${thStyle}">Time</th>
+                        </tr></thead>
+                        <tbody>
+                            ${subSvcs.map(s => {
+                                const cleanName = (s.service_name || '—').replace(/\s*\([^)]*\)\s*$/, '').trim() || s.service_name;
+                                return `<tr>
+                                    <td style="${rowStyle} padding-left:18px; font-size:0.82rem; font-weight:600; color:#1e293b;">
+                                        <span style="color:#94a3b8; margin-right:6px;">└</span>${cleanName}
+                                    </td>
+                                    <td style="${rowStyle} font-size:0.82rem;">
+                                        <span style="background:#f1f5f9; color:#334155; border:1px solid #e2e8f0; padding:2px 8px; border-radius:10px; font-size:0.75rem; font-weight:600;">
+                                            ${s.staff_name || 'Assigned'}
+                                        </span>
+                                    </td>
+                                    <td style="${rowStyle} font-size:0.82rem; color:#64748b;">${s.start_time || '—'}</td>
+                                </tr>`;
+                            }).join('')}
+                        </tbody>
+                    </table>` : `<div style="padding:12px 18px; font-size:0.82rem; color:#64748b;">No services recorded for this package.</div>`}
+                </div>
             </div>`;
         });
+
+        pkgHtml += '</div>';
     }
 
     // ── Grand Total Summary ───────────────────────────────────────────────────
     const summaryHtml = `
-        <div style="margin-top:12px; border-top:2px solid #e2e8f0; padding-top:10px;">
+        <div style="margin-top:14px; border-top:2px solid #e2e8f0; padding-top:10px;">
             ${svcs.length > 0 && pkgs.length > 0 ? `
-            <div style="display:flex; justify-content:space-between; padding:4px 2px;
-                        font-size:0.82rem; color:#64748b;">
-                <span>Services Subtotal</span><span style="font-weight:600;">${fmt(svcsTotal)}</span>
+            <div style="display:flex; justify-content:space-between; padding:4px 2px; font-size:0.82rem; color:#64748b;">
+                <span>Services Subtotal</span>
+                <span style="font-weight:700; color:#059669;">${fmt(svcsTotal)}</span>
             </div>
-            <div style="display:flex; justify-content:space-between; padding:4px 2px;
-                        font-size:0.82rem; color:#64748b;">
-                <span>Packages Subtotal</span><span style="font-weight:600;">${fmt(pkgsTotal)}</span>
+            <div style="display:flex; justify-content:space-between; padding:4px 2px; font-size:0.82rem; color:#64748b;">
+                <span>Packages Subtotal</span>
+                <span style="font-weight:700; color:#059669;">${fmt(pkgsTotal)}</span>
             </div>` : ''}
             <div style="display:flex; justify-content:space-between; align-items:center;
-                        margin-top:6px; padding:10px 14px; background:#eff6ff;
-                        border:1px solid #dbeafe; border-radius:10px;">
-                <span style="font-weight:700; font-size:0.92rem; color:#1e40af;">Grand Total</span>
-                <span style="font-weight:900; font-size:1.25rem; color:#0f172a;">${fmt(grandTotal)}</span>
+                        margin-top:8px; padding:12px 16px; background:#f0fdf4;
+                        border:1.5px solid #86efac; border-radius:10px;">
+                <span style="font-weight:700; font-size:0.92rem; color:#166534;">Grand Total</span>
+                <span style="font-weight:900; font-size:1.3rem; color:#059669;">${fmt(grandTotal)}</span>
             </div>
         </div>`;
 
