@@ -173,26 +173,34 @@ function _renderBookingServicesSections(items, grandTotal) {
     const svcsTotal = svcs.reduce((s, i) => s + (i.price || 0), 0);
     const pkgsTotal = pkgs.reduce((s, i) => s + (i.price || 0), 0);
 
-    // ── 1. Card heading: BOOKED SERVICES & PACKAGES ─────────────────────────
-    if (headerEl) headerEl.textContent = 'BOOKED SERVICES & PACKAGES';
+    // Consistent theme blue color across all titles
+    const BLUE_COLOR    = '#4f46e5';
+    const BLUE_BADGE_BG = '#e0e7ff';
+    const fmt = v => '₹' + Math.round(v).toLocaleString('en-IN');
+
+    // ── 1. Card heading: BOOKED SERVICES & PACKAGES (same blue color) ────────
+    if (headerEl) {
+        headerEl.textContent = 'BOOKED SERVICES & PACKAGES';
+        headerEl.style.color = BLUE_COLOR;
+        headerEl.style.fontWeight = '700';
+        headerEl.style.letterSpacing = '0.03em';
+    }
     if (subtotalEl) subtotalEl.textContent = '';
     if (noteEl) noteEl.style.display = 'none';
-
-    const fmt = v => '₹' + Math.round(v).toLocaleString('en-IN');
 
     const rowStyle = 'padding:10px 8px; border-bottom:1px solid #f8fafc; color:#334155; font-size:0.84rem; vertical-align:middle;';
     const thStyle  = 'padding:8px 8px; font-size:0.72rem; font-weight:700; color:#64748b; border-bottom:1px solid #f1f5f9; text-align:left;';
 
     // ── Shared section header builder: Included services / Included packages ─
-    // Same pill badge style and green section price (#059669)
-    const secHeader = (label, count, subtotalAmt, accentColor, badgeBg) => `
+    // Both titles in the exact same blue color (#4f46e5) with identical badge style
+    const secHeader = (label, count, subtotalAmt) => `
         <div style="display:flex; justify-content:space-between; align-items:center;
-                    padding:10px 4px 8px 2px; margin-top:12px; border-bottom:1.5px solid #e2e8f0;">
+                    padding:10px 4px 8px 2px; margin-top:12px; border-bottom:1.5px solid #e0e7ff;">
             <div style="display:flex; align-items:center; gap:8px;">
-                <span style="font-size:0.82rem; font-weight:700; color:#1e293b; text-transform:uppercase; letter-spacing:0.04em;">
+                <span style="font-size:0.82rem; font-weight:700; color:${BLUE_COLOR}; text-transform:uppercase; letter-spacing:0.04em;">
                     ${label}
                 </span>
-                <span style="background:${badgeBg}; color:${accentColor}; border-radius:12px; padding:2px 10px;
+                <span style="background:${BLUE_BADGE_BG}; color:${BLUE_COLOR}; border-radius:12px; padding:2px 10px;
                              font-size:0.75rem; font-weight:700; letter-spacing:0.02em;">${count}</span>
             </div>
             <span style="font-size:0.92rem; font-weight:800; color:#059669;">${fmt(subtotalAmt)}</span>
@@ -201,7 +209,7 @@ function _renderBookingServicesSections(items, grandTotal) {
     // ── 2. Included services Section ─────────────────────────────────────────
     let svcHtml = '';
     if (svcs.length > 0) {
-        svcHtml = secHeader('Included services', svcs.length, svcsTotal, '#4f46e5', '#e0e7ff');
+        svcHtml = secHeader('Included services', svcs.length, svcsTotal);
         svcHtml += `<table style="width:100%; border-collapse:collapse; margin-bottom:6px; margin-top:6px;">
             <thead><tr>
                 <th style="${thStyle} width:24px;">#</th>
@@ -226,10 +234,10 @@ function _renderBookingServicesSections(items, grandTotal) {
         </table>`;
     }
 
-    // ── 3 & 4. Included packages (clickable cards matching add services/packages modal)
+    // ── 3 & 4. Included packages (same blue title & badge, clickable cards) ──
     let pkgHtml = '';
     if (pkgs.length > 0) {
-        pkgHtml = secHeader('Included packages', pkgs.length, pkgsTotal, '#0284c7', '#e0f2fe');
+        pkgHtml = secHeader('Included packages', pkgs.length, pkgsTotal);
         pkgHtml += '<div style="display:flex; flex-direction:column; gap:10px; margin-top:10px;">';
 
         pkgs.forEach((pkg, pi) => {
@@ -241,7 +249,7 @@ function _renderBookingServicesSections(items, grandTotal) {
             pkgHtml += `
             <div id="${cardId}" style="border:1px solid #e2e8f0; border-radius:12px; overflow:hidden;
                                        background:#ffffff; box-shadow:0 1px 3px rgba(0,0,0,0.03); transition:all 0.2s;"
-                 onmouseover="this.style.borderColor='#cbd5e1'; this.style.boxShadow='0 3px 12px rgba(15,23,42,0.06)';"
+                 onmouseover="this.style.borderColor='#c7d2fe'; this.style.boxShadow='0 3px 12px rgba(79,70,229,0.08)';"
                  onmouseout="this.style.borderColor='#e2e8f0'; this.style.boxShadow='0 1px 3px rgba(0,0,0,0.03)';">
 
                 <!-- Clickable package header card -->
@@ -255,8 +263,8 @@ function _renderBookingServicesSections(items, grandTotal) {
                     style="display:flex; justify-content:space-between; align-items:center;
                            padding:12px 16px; cursor:pointer; user-select:none; background:#ffffff;">
                     <div style="display:flex; align-items:center; gap:12px;">
-                        <div style="width:36px; height:36px; border-radius:10px; background:#eff6ff; border:1px solid #dbeafe;
-                                    display:flex; align-items:center; justify-content:center; color:#2563eb; font-size:1.05rem; flex-shrink:0;">
+                        <div style="width:36px; height:36px; border-radius:10px; background:#eef2ff; border:1px solid #c7d2fe;
+                                    display:flex; align-items:center; justify-content:center; color:${BLUE_COLOR}; font-size:1.05rem; flex-shrink:0;">
                             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                                 <line x1="16.5" y1="9.4" x2="7.5" y2="4.21"></line>
                                 <path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"></path>
@@ -267,12 +275,12 @@ function _renderBookingServicesSections(items, grandTotal) {
                         <div>
                             <div style="display:flex; align-items:center; gap:8px;">
                                 <span style="font-weight:700; font-size:0.92rem; color:#0f172a;">${pkg.name}</span>
-                                <span style="background:#e0e7ff; color:#4338ca; font-size:0.68rem; font-weight:700; padding:2px 8px; border-radius:12px; letter-spacing:0.02em;">PACKAGE</span>
+                                <span style="background:${BLUE_BADGE_BG}; color:${BLUE_COLOR}; font-size:0.68rem; font-weight:700; padding:2px 8px; border-radius:12px; letter-spacing:0.02em;">PACKAGE</span>
                             </div>
                             <div style="font-size:0.75rem; color:#64748b; margin-top:2px; display:flex; align-items:center; gap:6px;">
                                 <span>${subSvcs.length} included services</span>
                                 <span>·</span>
-                                <span style="color:#2563eb; font-weight:600;">Click to view</span>
+                                <span style="color:${BLUE_COLOR}; font-weight:600;">Click to view</span>
                             </div>
                         </div>
                     </div>
@@ -280,7 +288,7 @@ function _renderBookingServicesSections(items, grandTotal) {
                         <span style="font-weight:800; font-size:1.05rem; color:#059669;">${fmt(pkg.price)}</span>
                         <div style="width:28px; height:28px; border-radius:6px; background:#f1f5f9; display:flex; align-items:center; justify-content:center; transition:background 0.15s;">
                             <svg id="${arrowId}" width="16" height="16" viewBox="0 0 24 24" fill="none"
-                                 stroke="#64748b" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"
+                                 stroke="${BLUE_COLOR}" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"
                                  style="transition:transform 0.25s; flex-shrink:0;">
                                 <polyline points="6 9 12 15 18 9"></polyline>
                             </svg>
