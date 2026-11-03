@@ -15,32 +15,42 @@ const manageState = {
 const STATUS_CONFIGS = {
     'booked': {
         label: 'Booked',
-        color: '#7c3aed',
-        bg: '#ede9fe',
+        color: '#6d28d9',
+        border: '#c4b5fd',
+        bg: '#f5f3ff',
+        dot: '#7c3aed',
         iconSvg: `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#7c3aed" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect><line x1="16" y1="2" x2="16" y2="6"></line><line x1="8" y1="2" x2="8" y2="6"></line><line x1="3" y1="10" x2="21" y2="10"></line></svg>`
     },
     'in progress': {
         label: 'In Progress',
-        color: '#2563eb',
-        bg: '#dbeafe',
+        color: '#1d4ed8',
+        border: '#93c5fd',
+        bg: '#eff6ff',
+        dot: '#2563eb',
         iconSvg: `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#2563eb" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="5 3 19 12 5 21 5 3"></polygon></svg>`
     },
     'completed': {
         label: 'Completed',
-        color: '#16a34a',
-        bg: '#dcfce7',
+        color: '#15803d',
+        border: '#86efac',
+        bg: '#f0fdf4',
+        dot: '#16a34a',
         iconSvg: `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#16a34a" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><polyline points="16 9 10 15 7 12"></polyline></svg>`
     },
     'cancelled': {
         label: 'Cancelled',
-        color: '#dc2626',
-        bg: '#fee2e2',
+        color: '#b91c1c',
+        border: '#fca5a5',
+        bg: '#fef2f2',
+        dot: '#dc2626',
         iconSvg: `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#dc2626" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><line x1="15" y1="9" x2="9" y2="15"></line><line x1="9" y1="9" x2="15" y2="15"></line></svg>`
     },
     'no-show': {
         label: 'No-show',
-        color: '#ea580c',
-        bg: '#ffedd5',
+        color: '#c2410c',
+        border: '#fdba74',
+        bg: '#fff7ed',
+        dot: '#ea580c',
         iconSvg: `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#ea580c" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><line x1="4.93" y1="4.93" x2="19.07" y2="19.07"></line></svg>`
     }
 };
@@ -225,31 +235,77 @@ function selectDropdownStatus(statusKey) {
     const cfg = STATUS_CONFIGS[key] || STATUS_CONFIGS['booked'];
     manageState.selectedStatus = key;
 
-    // Update Trigger display
+    // 1. Update Selected Trigger Field background, border, text, and chevron color
+    const triggerEl = document.getElementById('mbStatusDropdownTrigger');
+    if (triggerEl) {
+        triggerEl.style.background = cfg.bg;
+        triggerEl.style.borderColor = cfg.border;
+        triggerEl.style.boxShadow = `0 1px 3px ${cfg.bg}`;
+    }
+
     const triggerContent = document.getElementById('mbStatusTriggerContent');
     if (triggerContent) {
         triggerContent.innerHTML = `
             ${cfg.iconSvg}
-            <span style="font-size:0.88rem;font-weight:600;color:#0f172a;">${cfg.label}</span>
+            <span style="font-size:0.88rem;font-weight:700;color:${cfg.color};">${cfg.label}</span>
         `;
     }
 
-    // Update option highlights in dropdown menu
+    const chevronEl = document.getElementById('mbStatusChevron');
+    if (chevronEl) {
+        chevronEl.style.stroke = cfg.color;
+    }
+
+    // 2. Also keep the Booking Summary status badge synchronized
+    const badgeEl = document.getElementById('mbSummaryStatusBadge');
+    if (badgeEl) {
+        badgeEl.textContent = `● ${cfg.label}`;
+        badgeEl.style.background = cfg.bg;
+        badgeEl.style.color = cfg.color;
+    }
+
+    // 3. Update option items in dropdown menu with their specific colors
     const options = document.querySelectorAll('#mbStatusDropdownMenu .mb-status-option');
     options.forEach(opt => {
         const optStatus = (opt.dataset.status || '').toLowerCase().trim();
+        const optCfg = STATUS_CONFIGS[optStatus] || STATUS_CONFIGS['booked'];
+        const textSpan = opt.querySelector('span');
         const checkIcon = opt.querySelector('.mb-check-icon');
+
         if (optStatus === key) {
-            opt.style.background = '#f5f3ff';
-            opt.querySelector('span').style.color = '#6d28d9';
-            opt.querySelector('span').style.fontWeight = '600';
-            if (checkIcon) checkIcon.style.display = 'block';
+            opt.style.background = optCfg.bg;
+            if (textSpan) {
+                textSpan.style.color = optCfg.color;
+                textSpan.style.fontWeight = '700';
+            }
+            if (checkIcon) {
+                checkIcon.style.display = 'block';
+                checkIcon.style.stroke = optCfg.color;
+            }
         } else {
             opt.style.background = 'transparent';
-            opt.querySelector('span').style.color = '#0f172a';
-            opt.querySelector('span').style.fontWeight = '500';
-            if (checkIcon) checkIcon.style.display = 'none';
+            if (textSpan) {
+                textSpan.style.color = '#334155';
+                textSpan.style.fontWeight = '500';
+            }
+            if (checkIcon) {
+                checkIcon.style.display = 'none';
+            }
         }
+
+        // Add distinct hover tint per status option
+        opt.onmouseenter = () => {
+            if ((opt.dataset.status || '').toLowerCase().trim() !== manageState.selectedStatus) {
+                opt.style.background = optCfg.bg;
+                if (textSpan) textSpan.style.color = optCfg.color;
+            }
+        };
+        opt.onmouseleave = () => {
+            if ((opt.dataset.status || '').toLowerCase().trim() !== manageState.selectedStatus) {
+                opt.style.background = 'transparent';
+                if (textSpan) textSpan.style.color = '#334155';
+            }
+        };
     });
 }
 

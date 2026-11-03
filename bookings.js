@@ -23,7 +23,7 @@ import {
     openBookingUpdateChoiceModal, 
     openManageBookingModal, 
     attachManageModalListeners 
-} from './scripts/bookings/booking-manage-modal.js?v=1.0.2';
+} from './scripts/bookings/booking-manage-modal.js?v=1.0.3';
 import { initGlobalBookingModal } from './scripts/global-booking-modal.js';
 
 // ─── Wire Data Refresh Handler ───────────────────────────────────────────────
