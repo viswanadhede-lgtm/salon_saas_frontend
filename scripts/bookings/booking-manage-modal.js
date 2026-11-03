@@ -360,7 +360,7 @@ export async function saveManageBookingStatus() {
 export function attachManageModalListeners() {
     document.addEventListener('click', (e) => {
         // 1. Choice Modal Close
-        if (e.target.closest('#btnCloseUpdateChoiceModal') || e.target.id === 'bookingUpdateChoiceModal') {
+        if (e.target.closest('#btnCloseUpdateChoiceModal') || e.target.closest('#btnCancelUpdateChoiceModal') || e.target.id === 'bookingUpdateChoiceModal') {
             closeBookingUpdateChoiceModal();
             return;
         }

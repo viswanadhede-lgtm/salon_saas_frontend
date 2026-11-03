@@ -3,6 +3,8 @@
 // ─── Inject Modals ───────────────────────────────────────────────────────────
 export function setupModals() {
     document.querySelectorAll('#editBookingModal').forEach(m => m.remove());
+    document.querySelectorAll('#bookingUpdateChoiceModal').forEach(m => m.remove());
+    document.querySelectorAll('#manageBookingModal').forEach(m => m.remove());
 
     if (!document.getElementById('editBookingModal')) {
         document.body.insertAdjacentHTML('beforeend', `
@@ -482,6 +484,14 @@ export function setupModals() {
                     </div>
 
                 </div>
+
+                <!-- Footer: Close Button -->
+                <div style="padding:14px 24px;border-top:1px solid #f1f5f9;display:flex;justify-content:flex-end;align-items:center;background:#ffffff;border-radius:0 0 16px 16px;">
+                    <button type="button" id="btnCancelUpdateChoiceModal" style="padding:8px 20px;border-radius:8px;border:1px solid #cbd5e1;background:#ffffff;color:#475569;font-size:0.86rem;font-weight:600;cursor:pointer;transition:all 0.15s;" onmouseover="this.style.background='#f8fafc'" onmouseout="this.style.background='#ffffff'">
+                        Close
+                    </button>
+                </div>
+
             </div>
         </div>`);
     }

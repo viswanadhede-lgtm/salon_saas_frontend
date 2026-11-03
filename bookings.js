@@ -2,10 +2,10 @@
 import { FEATURES } from './config/feature-registry.js';
 import { getLiveBookings } from './scripts/bookings/bookings-state.js';
 import { fetchBookings, setOnBookingsRefreshed } from './scripts/bookings/bookings-data.js';
-import { renderBookings, toggleSvcExtra } from './scripts/bookings/bookings-table.js?v=2.4.1';
+import { renderBookings, toggleSvcExtra } from './scripts/bookings/bookings-table.js?v=2.4.2';
 import { getFilteredBookings, populateStaffFilter, attachFilterListeners, toggleSort, _applyPendingStaffFilter } from './scripts/bookings/bookings-filters.js?v=2.4.0';
 import { renderCalendar, initCalendarListeners } from './scripts/bookings/bookings-calendar.js?v=2.4.3';
-import { setupModals } from './scripts/bookings/booking-modals-inject.js?v=2.4.2';
+import { setupModals } from './scripts/bookings/booking-modals-inject.js?v=2.4.4';
 import { openEditBookingModal, showPaymentNotCompletedModal, attachEditModalListeners } from './scripts/bookings/booking-edit-modal.js?v=2.5.0';
 import { updateBookingStatus, confirmUpdateBookingStatus, attachStatusActionsListeners } from './scripts/bookings/booking-status-actions.js?v=2.4.0';
 import { openBookingPayment } from './scripts/bookings/booking-payment-bridge.js?v=2.4.0';
@@ -23,7 +23,7 @@ import {
     openBookingUpdateChoiceModal, 
     openManageBookingModal, 
     attachManageModalListeners 
-} from './scripts/bookings/booking-manage-modal.js?v=1.0.0';
+} from './scripts/bookings/booking-manage-modal.js?v=1.0.1';
 import { initGlobalBookingModal } from './scripts/global-booking-modal.js';
 
 // ─── Wire Data Refresh Handler ───────────────────────────────────────────────
