@@ -14,9 +14,9 @@ import {
 import { showToast } from './memberships-utils.js';
 import {
     fetchPlansAndMemberCountsApi,
-    insertSinglePlanApi,
-    updateSinglePlanApi,
-    softDeletePlanApi
+    createMembershipPlanRpcApi,
+    updateMembershipPlanRpcApi,
+    deleteMembershipPlanRpcApi
 } from './memberships-api.js';
 import { populateAssignPlanDropdown } from './memberships-assign-modal.js';
 
@@ -248,15 +248,16 @@ export function deletePlan(id) {
 
 export async function executeDeletePlan(id) {
     try {
-        // Guard: block delete if plan still has active members
-        const plan = getCurrentPlans().find(p => (p.membership_id || p.id) === id);
-        if (plan && plan.member_count > 0) {
-            showToast(`Cannot delete — this plan has ${plan.member_count} active member${plan.member_count > 1 ? 's' : ''}. Cancel their memberships first.`);
-            return;
+        const { data, error } = await deleteMembershipPlanRpcApi({
+            p_company_id: getCompanyId(),
+            p_branch_id: getBranchId(),
+            p_membership_id: id
+        });
+        if (error) throw error;
+        if (data && !data.success) {
+            throw new Error(data.error || 'Failed to delete plan');
         }
 
-        const { error } = await softDeletePlanApi(id);
-        if (error) throw error;
         showToast('Membership plan deleted successfully.');
         if (window.notifyEvent) {
             window.notifyEvent('marketing', 'evt_marketing_membership', {
@@ -326,17 +327,37 @@ export async function handleSavePlan() {
         };
 
         if (isEditing) {
-            // Simple UPDATE — one row, fully atomic, no delete+reinsert
-            const { error } = await updateSinglePlanApi(currentEditId, planData);
-            if (error) throw error;
-        } else {
-            // INSERT — one clean row per plan
-            const { error } = await insertSinglePlanApi({
-                ...planData,
-                plan_name,
-                membership_id: crypto.randomUUID()
+            const { data, error } = await updateMembershipPlanRpcApi({
+                p_company_id:      getCompanyId(),
+                p_branch_id:       getBranchId(),
+                p_membership_id:   currentEditId,
+                p_plan_name:       null,
+                p_price:           parseFloat(price),
+                p_duration:        parseInt(duration, 10),
+                p_discount_type:   discount_type,
+                p_discount_value:  parseFloat(discount_value),
+                p_all_services:    all_services,
+                p_all_products:    all_products,
+                p_all_memberships: all_memberships,
+                p_status:          'active'
             });
             if (error) throw error;
+            if (data && !data.success) throw new Error(data.error || 'Failed to update plan');
+        } else {
+            const { data, error } = await createMembershipPlanRpcApi({
+                p_company_id:      getCompanyId(),
+                p_branch_id:       getBranchId(),
+                p_plan_name:       plan_name,
+                p_price:           parseFloat(price),
+                p_duration:        parseInt(duration, 10),
+                p_discount_type:   discount_type,
+                p_discount_value:  parseFloat(discount_value),
+                p_all_services:    all_services,
+                p_all_products:    all_products,
+                p_all_memberships: all_memberships
+            });
+            if (error) throw error;
+            if (data && !data.success) throw new Error(data.error || 'Failed to create plan');
         }
 
         showToast(isEditing ? 'Plan updated successfully.' : 'Plan created successfully.');

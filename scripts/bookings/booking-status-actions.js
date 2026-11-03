@@ -1,6 +1,6 @@
 // scripts/bookings/booking-status-actions.js
 import { supabase } from '../../lib/supabase.js';
-import { getLiveBookings, statusUpdateState } from './bookings-state.js';
+import { getCompanyId, getBranchId, getLiveBookings, statusUpdateState } from './bookings-state.js';
 import { fetchBookings } from './bookings-data.js';
 
 export function updateBookingStatus(bookingId, newStatus) {
@@ -61,22 +61,18 @@ export async function confirmUpdateBookingStatus() {
     document.getElementById('fullScreenUpdateStatusLoader')?.classList.add('active');
     
     try {
-        const { error: dbError } = await supabase
-            .from('bookings')
-            .update({ status: newStatus, updated_at: new Date().toISOString() })
-            .eq('booking_id', bookingId);
+        const { data: rpcResult, error: rpcError } = await supabase.rpc('update_booking_status_atomic', {
+            p_booking_id: bookingId,
+            p_company_id: getCompanyId(),
+            p_branch_id:  getBranchId(),
+            p_new_status: newStatus
+        });
 
-        if (dbError) {
-            console.error('Supabase status update error:', dbError);
-            window.toast && window.toast('Error: ' + dbError.message);
+        if (rpcError) {
+            console.error('[Status Update] RPC error:', rpcError);
+            window.toast && window.toast('Error: ' + rpcError.message);
             return;
         }
-        
-        const { error: summaryErr } = await supabase
-            .from('bookings_for_business_transaction')
-            .update({ status: newStatus, updated_at: new Date().toISOString() })
-            .eq('booking_id', bookingId);
-        if (summaryErr) console.error('[Status Update] summary update error:', summaryErr);
 
         window.toast && window.toast(`Booking status updated to ${newStatus}`);
         // Fire notification based on the new status

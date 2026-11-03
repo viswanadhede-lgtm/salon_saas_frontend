@@ -1,7 +1,10 @@
 // scripts/memberships/memberships-api.js
+// Hardened Module 3: All mutations routed through Authoritative Atomic RPCs.
+// Zero direct table mutations on transactional tables.
+
 import { supabase } from '../../lib/supabase.js';
 
-// ── Customers ──────────────────────────────────────────────────────────────
+// ── Customers (Read-Only) ──────────────────────────────────────────────────
 export async function fetchCustomersApi(companyId, branchId) {
     return await supabase
         .from('customers')
@@ -18,14 +21,7 @@ export async function fetchCustomerByIdApi(customerId) {
         .maybeSingle();
 }
 
-export async function createCustomerApi(customerPayload) {
-    return await supabase
-        .from('customers')
-        .insert(customerPayload)
-        .select();
-}
-
-// ── Services ───────────────────────────────────────────────────────────────
+// ── Services (Read-Only) ───────────────────────────────────────────────────
 export async function fetchServicesApi(companyId, branchId) {
     return await supabase
         .from('services')
@@ -34,7 +30,7 @@ export async function fetchServicesApi(companyId, branchId) {
         .eq('branch_id', branchId);
 }
 
-// ── Plans ──────────────────────────────────────────────────────────────────
+// ── Plans (Read-Only) ──────────────────────────────────────────────────────
 export async function fetchPlansAndMemberCountsApi(companyId, branchId) {
     return await Promise.all([
         supabase
@@ -53,30 +49,20 @@ export async function fetchPlansAndMemberCountsApi(companyId, branchId) {
     ]);
 }
 
-// ── Single-row plan insert (new schema: 1 plan = 1 row) ───────────────────
-export async function insertSinglePlanApi(planData) {
-    return await supabase
-        .from('memberships')
-        .insert(planData);
+// ── Plan Management via Stored Procedures ─────────────────────────────────
+export async function createMembershipPlanRpcApi(rpcPayload) {
+    return await supabase.rpc('create_membership_plan', rpcPayload);
 }
 
-// ── Single-row plan update (edit: simple UPDATE by membership_id) ──────────
-export async function updateSinglePlanApi(planId, planData) {
-    return await supabase
-        .from('memberships')
-        .update(planData)
-        .eq('membership_id', planId);
+export async function updateMembershipPlanRpcApi(rpcPayload) {
+    return await supabase.rpc('update_membership_plan', rpcPayload);
 }
 
-// ── Soft delete (fixed chain order) ───────────────────────────────────────
-export async function softDeletePlanApi(planId) {
-    return await supabase
-        .from('memberships')
-        .update({ status: 'deleted', updated_at: new Date().toISOString() })
-        .eq('membership_id', planId);
+export async function deleteMembershipPlanRpcApi(rpcPayload) {
+    return await supabase.rpc('delete_membership_plan', rpcPayload);
 }
 
-// ── Purchases ──────────────────────────────────────────────────────────────
+// ── Purchases (Read-Only) ──────────────────────────────────────────────────
 export async function fetchPurchasesApi(companyId, branchId) {
     return await supabase
         .from('membership_purchases')
@@ -100,71 +86,6 @@ export async function checkDuplicateActivePurchaseApi(customerId, membershipId, 
     return await dupQuery;
 }
 
-export async function insertMembershipPurchaseApi(purchasePayload) {
-    return await supabase
-        .from('membership_purchases')
-        .insert(purchasePayload);
-}
-
-export async function assignMembershipRpcApi(rpcPayload) {
-    return await supabase.rpc('assign_membership', rpcPayload);
-}
-
-export async function cancelMembershipRpcApi(rpcPayload) {
-    return await supabase.rpc('cancel_membership', rpcPayload);
-}
-
-export async function processMembershipRefundRpcApi(rpcPayload) {
-    return await supabase.rpc('process_membership_refund', rpcPayload);
-}
-
-export async function cancelMembershipPurchaseApi(purchaseId, notes, cancelledDate) {
-    let res = await supabase
-        .from('membership_purchases')
-        .update({ status: 'cancelled', notes: notes, cancelled_date: cancelledDate })
-        .eq('purchase_id', purchaseId);
-
-    if (res.error) {
-        // fallback if pk is id
-        res = await supabase
-            .from('membership_purchases')
-            .update({ status: 'cancelled', notes: notes, cancelled_date: cancelledDate })
-            .eq('id', purchaseId);
-    }
-    return res;
-}
-
-export async function updatePurchaseRefundStatusApi(purchaseId, updateData) {
-    let res = await supabase
-        .from('membership_purchases')
-        .update(updateData)
-        .eq('purchase_id', purchaseId);
-
-    if (res.error) {
-        res = await supabase
-            .from('membership_purchases')
-            .update(updateData)
-            .eq('id', purchaseId);
-    }
-    return res;
-}
-
-export async function markMembershipsExpiredApi(purchaseIds) {
-    if (!purchaseIds || purchaseIds.length === 0) return { data: null, error: null };
-    let res = await supabase
-        .from('membership_purchases')
-        .update({ status: 'expired' })
-        .in('purchase_id', purchaseIds);
-
-    if (res.error) {
-        res = await supabase
-            .from('membership_purchases')
-            .update({ status: 'expired' })
-            .in('id', purchaseIds);
-    }
-    return res;
-}
-
 export async function fetchPurchaseByIdApi(purchaseId) {
     const res = await supabase
         .from('membership_purchases')
@@ -182,25 +103,33 @@ export async function fetchPurchaseByIdApi(purchaseId) {
     return res;
 }
 
-// ── Business Transactions (Ledger) ─────────────────────────────────────────
-export async function insertCancellationLedgerApi(ledgerPayload) {
-    return await supabase
-        .from('business_transactions')
-        .insert([ledgerPayload]);
+// ── Memberships Transactional RPCs ─────────────────────────────────────────
+export async function assignMembershipRpcApi(rpcPayload) {
+    return await supabase.rpc('assign_membership_atomic', rpcPayload);
 }
 
+export async function cancelMembershipRpcApi(rpcPayload) {
+    return await supabase.rpc('cancel_membership_atomic', rpcPayload);
+}
+
+export async function processMembershipRefundRpcApi(rpcPayload) {
+    return await supabase.rpc('process_membership_refund_atomic', rpcPayload);
+}
+
+export async function syncExpiredMembershipsRpcApi(companyId, branchId) {
+    return await supabase.rpc('sync_expired_memberships', {
+        p_company_id: companyId,
+        p_branch_id: branchId
+    });
+}
+
+// ── Business Transactions Ledger (Read-Only) ───────────────────────────────
 export async function fetchTransactionsForPurchaseApi(purchaseId) {
     return await supabase
         .from('business_transactions')
         .select('*')
         .eq('reference_id', purchaseId)
         .eq('reference_type', 'membership');
-}
-
-export async function insertRefundTransactionApi(refundPayload) {
-    return await supabase
-        .from('business_transactions')
-        .insert(refundPayload);
 }
 
 export async function fetchTransactionsSummaryForPurchaseApi(purchaseId) {

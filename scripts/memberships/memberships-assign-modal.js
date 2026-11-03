@@ -13,8 +13,6 @@ import { showToast } from './memberships-utils.js';
 import {
     fetchCustomersApi,
     checkDuplicateActivePurchaseApi,
-    createCustomerApi,
-    insertMembershipPurchaseApi,
     assignMembershipRpcApi
 } from './memberships-api.js';
 import { loadPurchases } from './memberships-purchases-table.js';

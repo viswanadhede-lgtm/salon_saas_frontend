@@ -5,7 +5,7 @@ import {
     getCurrentPurchases,
     setCurrentPurchases
 } from './memberships-state.js';
-import { fetchPurchasesApi, markMembershipsExpiredApi } from './memberships-api.js';
+import { fetchPurchasesApi, syncExpiredMembershipsRpcApi } from './memberships-api.js';
 
 // ── Purchases Workflow ─────────────────────────────────────────────────────
 
@@ -40,9 +40,8 @@ export async function loadPurchases(isBackground = false) {
             // 1. Update in-memory objects immediately so render shows State 2 (Expired)
             expiredPurchases.forEach(p => { p.status = 'expired'; });
 
-            // 2. Persist status = 'expired' directly to the Supabase database table
-            const expiredIds = expiredPurchases.map(p => p.purchase_id || p.id).filter(Boolean);
-            markMembershipsExpiredApi(expiredIds).catch(err => {
+            // 2. Authoritative backend synchronization of expired memberships
+            syncExpiredMembershipsRpcApi(getCompanyId(), getBranchId()).catch(err => {
                 console.warn('Failed to sync expired memberships to DB:', err);
             });
 
