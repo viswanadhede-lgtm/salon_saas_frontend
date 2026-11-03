@@ -19,6 +19,11 @@ import {
     triggerRefund, 
     attachViewModalsListeners 
 } from './scripts/bookings/booking-view-modals.js?v=2.4.2';
+import { 
+    openBookingUpdateChoiceModal, 
+    openManageBookingModal, 
+    attachManageModalListeners 
+} from './scripts/bookings/booking-manage-modal.js?v=1.0.0';
 import { initGlobalBookingModal } from './scripts/global-booking-modal.js';
 
 // ─── Wire Data Refresh Handler ───────────────────────────────────────────────
@@ -49,6 +54,8 @@ if (typeof window !== 'undefined') {
     window.toggleSort                  = toggleSort;
     window.toggleSvcExtra              = toggleSvcExtra;
     window._applyPendingStaffFilter    = _applyPendingStaffFilter;
+    window.openBookingUpdateChoiceModal = openBookingUpdateChoiceModal;
+    window.openManageBookingModal      = openManageBookingModal;
 }
 
 // ─── Tab Switching Logic ──────────────────────────────────────────────────────
@@ -105,6 +112,7 @@ export async function initBookings() {
     attachEditModalListeners();
     attachStatusActionsListeners();
     attachViewModalsListeners();
+    attachManageModalListeners();
 
     // Listen for global payment recording event
     document.addEventListener('payment-recorded', async () => {

@@ -244,7 +244,7 @@ export function buildRow(b, includeDate = false) {
 
                 // State 1: status = booked / confirmed / etc. -> Update
                 return `
-                <button onclick="window.openEditBookingModal('${bookingId}')"
+                <button onclick="window.openBookingUpdateChoiceModal ? window.openBookingUpdateChoiceModal('${bookingId}') : window.openEditBookingModal('${bookingId}')"
                     data-sub-feature="update_booking"
                     style="width:90px;padding:5px 8px;border-radius:6px;border:1px solid #e2e8f0;background:#ffffff;color:#1e293b;font-size:0.78rem;font-weight:600;cursor:pointer;white-space:nowrap;transition:all 0.2s;box-shadow:0 1px 2px rgba(0,0,0,0.04);display:inline-flex;align-items:center;justify-content:center;gap:6px;"
                     onmouseover="this.style.background='#f8fafc';this.style.borderColor='#cbd5e1'" 

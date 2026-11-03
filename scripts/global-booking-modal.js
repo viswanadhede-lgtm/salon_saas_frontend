@@ -186,25 +186,6 @@ export function ensureBookingModalHtml() {
                             </div>
                         </div>
 
-                        <!-- ── STATUS & PAYMENT SECTION (Edit Mode only) ── -->
-                        <div class="lhs-section-group" id="bookingStatusPaymentGroup" style="display:none;">
-                            <div class="lhs-sub-label">
-                                <i data-feather="activity" style="width:11px;height:11px;"></i>
-                                Status &amp; Payment
-                            </div>
-                            <div class="form-group" style="margin-bottom:10px;">
-                                <label class="form-label" for="bookingStatusSelect">Booking Status</label>
-                                <select id="bookingStatusSelect" class="form-select" style="font-weight:600;">
-                                    <option value="booked">Booked</option>
-                                    <option value="confirmed">Confirmed</option>
-                                    <option value="completed">Completed</option>
-                                    <option value="cancelled">Cancelled</option>
-                                    <option value="no-show">No-Show</option>
-                                </select>
-                            </div>
-                            <div id="bookingPaymentStrip" style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-top:4px;"></div>
-                        </div>
-
                         <!-- ── BOOKING NOTES SECTION ── -->
                         <div class="lhs-section-group lhs-notes-section">
                             <div class="lhs-sub-label">
@@ -1374,10 +1355,6 @@ export function initGlobalBookingModal() {
         const confirmBtn = document.getElementById('btnConfirmBooking');
         if (confirmBtn) confirmBtn.textContent = 'Confirm Booking';
 
-        // Hide status/payment group
-        const spGroup = document.getElementById('bookingStatusPaymentGroup');
-        if (spGroup) spGroup.style.display = 'none';
-
         // Hide cancel booking danger button
         const btnCancelThis = document.getElementById('btnCancelThisBooking');
         if (btnCancelThis) btnCancelThis.style.display = 'none';
@@ -1445,29 +1422,6 @@ export function initGlobalBookingModal() {
         pickerOverlay.classList.remove('active');
     }
 
-    // ── Payment strip helper (edit mode) ────────────────────────────
-    function renderEditPaymentStrip(bookingRow) {
-        const strip = document.getElementById('bookingPaymentStrip');
-        if (!strip) return;
-        const pay      = (bookingRow?.payment_status || bookingRow?.payment || '').toLowerCase();
-        const totalAmt = Number(bookingRow?.final_amount ?? bookingRow?.total_price ?? bookingRow?.price ?? 0);
-        const amtStr   = '₹' + totalAmt.toLocaleString('en-IN');
-        const bId      = bookingRow?.booking_id;
-
-        if (pay === 'paid') {
-            strip.innerHTML = `<span style="display:inline-flex;align-items:center;gap:5px;padding:5px 12px;border-radius:20px;font-size:0.8rem;font-weight:600;background:#d1fae5;color:#059669;">✓ Paid ${amtStr}</span>`;
-        } else {
-            strip.innerHTML = `
-                <span style="display:inline-flex;align-items:center;gap:5px;padding:5px 12px;border-radius:20px;font-size:0.8rem;font-weight:600;background:#fef3c7;color:#b45309;">
-                    ● ${pay === 'partial' ? 'Partial' : 'Unpaid'} ${amtStr}
-                </span>
-                <button type="button" onclick="if(window.openBookingPayment) window.openBookingPayment('${bId}')" style="padding:5px 12px;border-radius:20px;border:1px solid #f97316;background:#fff7ed;color:#ea580c;font-size:0.8rem;font-weight:600;cursor:pointer;display:inline-flex;align-items:center;gap:5px;">
-                    💳 Collect Payment
-                </button>
-            `;
-        }
-    }
-
     // ── Open Edit Modal ──────────────────────────────────────────────
     async function openEditModal(bookingId) {
         // 1. Reset everything via openModal()
@@ -1487,17 +1441,13 @@ export function initGlobalBookingModal() {
         }
 
         const subtitleEl = bookingModal.querySelector('.header-titles .subtitle');
-        if (subtitleEl) subtitleEl.textContent = 'Update schedule, services, assigned staff, or status.';
+        if (subtitleEl) subtitleEl.textContent = 'Update schedule, services, or assigned staff.';
 
         // 4. Update footer button text
         const confirmBtn = document.getElementById('btnConfirmBooking');
         if (confirmBtn) confirmBtn.textContent = 'Update Booking';
 
-        // 5. Show Status & Payment section
-        const spGroup = document.getElementById('bookingStatusPaymentGroup');
-        if (spGroup) spGroup.style.display = 'block';
-
-        // 6. Make customer fields read-only
+        // 5. Make customer fields read-only
         ['phoneSearch', 'customerName', 'customerEmail'].forEach(id => {
             const el = document.getElementById(id);
             if (el) {
@@ -1562,26 +1512,7 @@ export function initGlobalBookingModal() {
         if (bookingTime && firstRow.start_time)   bookingTime.value = firstRow.start_time.slice(0, 5);
         if (bookingNotes && firstRow.notes)        bookingNotes.value = firstRow.notes;
 
-        // 11. Pre-fill status dropdown
-        const statusSelect = document.getElementById('bookingStatusSelect');
-        if (statusSelect && firstRow.status) statusSelect.value = firstRow.status;
-
-        // 12. Cancel Booking button in footer
-        const btnCancelThis = document.getElementById('btnCancelThisBooking');
-        if (btnCancelThis) {
-            const isCancellable = !['cancelled', 'completed', 'no-show', 'no_show'].includes((firstRow.status || '').toLowerCase());
-            btnCancelThis.style.display = isCancellable ? 'inline-flex' : 'none';
-            btnCancelThis.onclick = () => {
-                if (!confirm('Are you sure you want to cancel this booking?')) return;
-                if (statusSelect) statusSelect.value = 'cancelled';
-                btnConfirmBooking?.click();
-            };
-        }
-
-        // 13. Render payment strip
-        renderEditPaymentStrip(firstRow);
-
-        // 12. Convert DB rows → selectedBookingItems
+        // 11. Convert DB rows → selectedBookingItems
         const packageMap     = new Map();
         const standaloneRows = [];
 
@@ -2132,6 +2063,8 @@ export function initGlobalBookingModal() {
                     : 0;
 
                 const services = [];
+                const currentStatus = editModeBookingData?.status || 'booked';
+
                 for (const item of selectedBookingItems) {
                     if (item.type === 'service') {
                         const dur          = parseInt(item.duration) || 0;
@@ -2147,7 +2080,7 @@ export function initGlobalBookingModal() {
                             start_time:   startTimeStr,
                             end_time:     endTimeStr,
                             price:        Number(item.price) || 0,
-                            status:       document.getElementById('bookingStatusSelect')?.value || 'booked'
+                            status:       currentStatus
                         });
                     } else if (item.type === 'package') {
                         const incServices = Array.isArray(item.services) ? item.services : [];
@@ -2165,7 +2098,7 @@ export function initGlobalBookingModal() {
                                 start_time:   startTimeStr,
                                 end_time:     endTimeStr,
                                 price:        Number(svc.price) || 0,
-                                status:       document.getElementById('bookingStatusSelect')?.value || 'booked'
+                                status:       currentStatus
                             });
                         }
                     }
@@ -2178,7 +2111,7 @@ export function initGlobalBookingModal() {
                     p_booking_date: bookingDate?.value || '',
                     p_start_time:   bookingTime?.value || '',
                     p_notes:        bookingNotes?.value?.trim() || null,
-                    p_status:       document.getElementById('bookingStatusSelect')?.value || 'booked',
+                    p_status:       currentStatus,
                     p_services:     services
                 });
 
