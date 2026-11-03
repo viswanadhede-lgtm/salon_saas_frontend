@@ -496,11 +496,16 @@ export function setupModals() {
         </div>`);
     }
 
-    // ── Manage Booking Modal (Matching Screenshot with Summary & Status Dropdown) ──
+    // ── Manage Booking Modal (Two-Column Layout: Left Summary, Right Status & Action) ──
     if (!document.getElementById('manageBookingModal')) {
         document.body.insertAdjacentHTML('beforeend', `
+        <style id="manageBookingModalStyles">
+            @media (max-width: 768px) {
+                #manageBookingGrid { grid-template-columns: 1fr !important; }
+            }
+        </style>
         <div class="modal-overlay" id="manageBookingModal" style="z-index:9999;backdrop-filter:blur(6px);">
-            <div class="modal-container" style="width:740px !important;max-width:95vw !important;background:#ffffff;border-radius:16px;box-shadow:0 25px 50px -12px rgba(0,0,0,0.25);border:1px solid #e2e8f0;overflow:hidden;display:flex;flex-direction:column;max-height:92vh;">
+            <div class="modal-container" style="width:860px !important;max-width:96vw !important;background:#ffffff;border-radius:16px;box-shadow:0 25px 50px -12px rgba(0,0,0,0.25);border:1px solid #e2e8f0;overflow:hidden;display:flex;flex-direction:column;">
                 
                 <!-- Header -->
                 <div style="padding:18px 24px;border-bottom:1px solid #f1f5f9;display:flex;justify-content:space-between;align-items:center;background:#ffffff;">
@@ -518,21 +523,39 @@ export function setupModals() {
                     </button>
                 </div>
 
-                <!-- Body -->
-                <div style="padding:22px 24px;overflow-y:auto;display:flex;flex-direction:column;gap:20px;background:#ffffff;">
+                <!-- Body: 2-Column Grid (Left: Summary, Right: Status & Action) -->
+                <div id="manageBookingGrid" style="padding:22px 24px;display:grid;grid-template-columns:1.08fr 1fr;gap:20px;background:#ffffff;align-items:stretch;">
                     
-                    <!-- Booking Summary Card -->
-                    <div style="background:#f8fafc;border:1px solid #eef2f6;border-radius:14px;padding:20px 22px;display:flex;flex-direction:column;gap:18px;">
+                    <!-- LEFT COLUMN: Booking Summary Card -->
+                    <div style="background:#f8fafc;border:1px solid #eef2f6;border-radius:14px;padding:20px;display:flex;flex-direction:column;justify-content:space-between;gap:16px;">
                         
-                        <!-- Summary Row 1: ID, Date, Time, Duration, Status Badge -->
-                        <div style="display:grid;grid-template-columns:140px 1.1fr 1fr 1fr auto;gap:14px;align-items:center;">
-                            <!-- Booking ID -->
+                        <!-- ID & Status Pill -->
+                        <div style="display:flex;justify-content:space-between;align-items:center;border-bottom:1px solid #e2e8f0;padding-bottom:12px;">
                             <div>
-                                <div style="font-size:0.72rem;color:#64748b;font-weight:500;margin-bottom:4px;">Booking ID</div>
-                                <span id="mbSummaryBkId" style="font-family:monospace;font-size:0.82rem;font-weight:700;background:#ede9fe;color:#4f46e5;padding:3px 8px;border-radius:6px;display:inline-block;">#--------</span>
+                                <div style="font-size:0.72rem;color:#64748b;font-weight:600;text-transform:uppercase;letter-spacing:0.04em;margin-bottom:3px;">Booking ID</div>
+                                <span id="mbSummaryBkId" style="font-family:monospace;font-size:0.84rem;font-weight:700;background:#ede9fe;color:#4f46e5;padding:3px 9px;border-radius:6px;display:inline-block;">#--------</span>
                             </div>
+                            <div>
+                                <span id="mbSummaryStatusBadge" style="display:inline-flex;align-items:center;gap:6px;padding:4px 12px;border-radius:20px;font-size:0.76rem;font-weight:600;background:#ede9fe;color:#4f46e5;">
+                                    ● Booked
+                                </span>
+                            </div>
+                        </div>
 
-                            <!-- Date -->
+                        <!-- Customer Info -->
+                        <div style="display:flex;flex-direction:column;gap:6px;background:#ffffff;border:1px solid #f1f5f9;border-radius:10px;padding:12px;">
+                            <div style="display:flex;align-items:center;gap:8px;font-size:0.83rem;font-weight:600;color:#1e293b;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">
+                                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#6366f1" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0;"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg>
+                                <span id="mbSummaryEmail" style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">—</span>
+                            </div>
+                            <div style="display:flex;align-items:center;gap:8px;font-size:0.83rem;font-weight:600;color:#1e293b;">
+                                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#6366f1" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0;"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"></path></svg>
+                                <span id="mbSummaryPhone">—</span>
+                            </div>
+                        </div>
+
+                        <!-- Schedule & Amount Grid -->
+                        <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
                             <div>
                                 <div style="display:flex;align-items:center;gap:6px;font-size:0.72rem;color:#64748b;font-weight:500;">
                                     <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#6366f1" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect><line x1="16" y1="2" x2="16" y2="6"></line><line x1="8" y1="2" x2="8" y2="6"></line><line x1="3" y1="10" x2="21" y2="10"></line></svg>
@@ -540,8 +563,6 @@ export function setupModals() {
                                 </div>
                                 <div id="mbSummaryDate" style="font-size:0.86rem;font-weight:700;color:#0f172a;margin-top:2px;">—</div>
                             </div>
-
-                            <!-- Time -->
                             <div>
                                 <div style="display:flex;align-items:center;gap:6px;font-size:0.72rem;color:#64748b;font-weight:500;">
                                     <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#6366f1" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg>
@@ -549,8 +570,6 @@ export function setupModals() {
                                 </div>
                                 <div id="mbSummaryTime" style="font-size:0.86rem;font-weight:700;color:#0f172a;margin-top:2px;">—</div>
                             </div>
-
-                            <!-- Duration -->
                             <div>
                                 <div style="display:flex;align-items:center;gap:6px;font-size:0.72rem;color:#64748b;font-weight:500;">
                                     <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#6366f1" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 22h14"></path><path d="M5 2h14"></path><path d="M17 22v-4.172a2 2 0 0 0-.586-1.414L12 12l-4.414 4.414A2 2 0 0 0 7 17.828V22"></path><path d="M7 2v4.172a2 2 0 0 0 .586 1.414L12 12l4.414-4.414A2 2 0 0 0 17 6.172V2"></path></svg>
@@ -558,149 +577,126 @@ export function setupModals() {
                                 </div>
                                 <div id="mbSummaryDuration" style="font-size:0.86rem;font-weight:700;color:#0f172a;margin-top:2px;">—</div>
                             </div>
-
-                            <!-- Status Badge -->
-                            <div style="text-align:right;">
-                                <span id="mbSummaryStatusBadge" style="display:inline-flex;align-items:center;gap:6px;padding:3px 12px;border-radius:20px;font-size:0.76rem;font-weight:600;background:#ede9fe;color:#4f46e5;">
-                                    ● Booked
-                                </span>
+                            <div>
+                                <div style="display:flex;align-items:center;gap:6px;font-size:0.72rem;color:#64748b;font-weight:500;">
+                                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#059669" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><ellipse cx="12" cy="5" rx="9" ry="3"></ellipse><path d="M21 12c0 1.66-4 3-9 3s-9-1.34-9-3"></path><path d="M3 5v14c0 1.66 4 3 9 3s9-1.34 9-3V5"></path></svg>
+                                    <span>Amount</span>
+                                </div>
+                                <div id="mbSummaryAmount" style="font-size:1.1rem;font-weight:700;color:#059669;margin-top:2px;">₹0</div>
                             </div>
                         </div>
 
-                        <!-- Divider line -->
-                        <div style="height:1px;background:#e2e8f0;opacity:0.8;"></div>
-
-                        <!-- Summary Row 2: Customer, Services, Staff, Amount -->
-                        <div style="display:grid;grid-template-columns:180px 1.2fr 1fr auto;gap:14px;align-items:center;">
-                            <!-- Customer Contact -->
-                            <div style="display:flex;flex-direction:column;gap:5px;min-width:0;">
-                                <div style="display:flex;align-items:center;gap:7px;font-size:0.82rem;font-weight:600;color:#1e293b;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">
-                                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#64748b" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0;"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg>
-                                    <span id="mbSummaryEmail" style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">—</span>
-                                </div>
-                                <div style="display:flex;align-items:center;gap:7px;font-size:0.82rem;font-weight:600;color:#1e293b;">
-                                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#64748b" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0;"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"></path></svg>
-                                    <span id="mbSummaryPhone">—</span>
-                                </div>
-                            </div>
-
-                            <!-- Services -->
-                            <div style="min-width:0;">
+                        <!-- Services & Staff -->
+                        <div style="border-top:1px solid #e2e8f0;padding-top:12px;display:grid;grid-template-columns:1fr 1fr;gap:12px;">
+                            <div>
                                 <div style="display:flex;align-items:center;gap:6px;font-size:0.72rem;color:#64748b;font-weight:500;">
-                                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#6366f1" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0;"><circle cx="6" cy="6" r="3"></circle><circle cx="6" cy="18" r="3"></circle><line x1="20" y1="4" x2="8.12" y2="15.88"></line><line x1="14.47" y1="14.48" x2="20" y2="20"></line><line x1="8.12" y1="8.12" x2="12" y2="12"></line></svg>
+                                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#6366f1" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="6" cy="6" r="3"></circle><circle cx="6" cy="18" r="3"></circle><line x1="20" y1="4" x2="8.12" y2="15.88"></line><line x1="14.47" y1="14.48" x2="20" y2="20"></line><line x1="8.12" y1="8.12" x2="12" y2="12"></line></svg>
                                     <span>Services</span>
                                 </div>
                                 <div id="mbSummaryServices" style="font-size:0.86rem;font-weight:700;color:#0f172a;margin-top:2px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">—</div>
                             </div>
-
-                            <!-- Staff -->
-                            <div style="min-width:0;">
+                            <div>
                                 <div style="display:flex;align-items:center;gap:6px;font-size:0.72rem;color:#64748b;font-weight:500;">
-                                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#6366f1" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0;"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle><path d="M23 21v-2a4 4 0 0 0-3-3.87"></path><path d="M16 3.13a4 4 0 0 1 0 7.75"></path></svg>
+                                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#6366f1" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle><path d="M23 21v-2a4 4 0 0 0-3-3.87"></path><path d="M16 3.13a4 4 0 0 1 0 7.75"></path></svg>
                                     <span>Staff</span>
                                 </div>
                                 <div id="mbSummaryStaff" style="font-size:0.86rem;font-weight:700;color:#0f172a;margin-top:2px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">—</div>
                             </div>
-
-                            <!-- Amount -->
-                            <div style="text-align:right;">
-                                <div style="display:inline-flex;align-items:center;gap:6px;font-size:0.72rem;color:#64748b;font-weight:500;">
-                                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#059669" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><ellipse cx="12" cy="5" rx="9" ry="3"></ellipse><path d="M21 12c0 1.66-4 3-9 3s-9-1.34-9-3"></path><path d="M3 5v14c0 1.66 4 3 9 3s9-1.34 9-3V5"></path></svg>
-                                    <span>Amount</span>
-                                </div>
-                                <div id="mbSummaryAmount" style="font-size:1.15rem;font-weight:700;color:#059669;margin-top:2px;">₹0</div>
-                            </div>
                         </div>
 
                     </div>
 
-                    <!-- Update Booking Status Section -->
-                    <div style="display:flex;flex-direction:column;gap:14px;padding-top:4px;">
-                        <!-- Header with pulse/activity icon -->
-                        <div style="display:flex;align-items:center;gap:10px;">
-                            <div style="width:34px;height:34px;border-radius:8px;background:#ede9fe;color:#7c3aed;display:flex;align-items:center;justify-content:center;">
-                                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"></polyline></svg>
-                            </div>
-                            <div>
-                                <h3 style="font-size:0.95rem;font-weight:700;color:#0f172a;margin:0;">Update Booking Status</h3>
-                                <p style="font-size:0.8rem;color:#64748b;margin:1px 0 0 0;">Change the current status of this appointment.</p>
-                            </div>
-                        </div>
-
-                        <!-- Dropdown Field -->
+                    <!-- RIGHT COLUMN: Update Booking Status Section & Action -->
+                    <div style="background:#ffffff;border:1px solid #eef2f6;border-radius:14px;padding:20px;display:flex;flex-direction:column;justify-content:space-between;gap:16px;">
+                        
                         <div>
-                            <label style="display:block;font-size:0.8rem;font-weight:600;color:#334155;margin-bottom:6px;">Booking Status</label>
-                            
-                            <!-- Dropdown Trigger -->
-                            <div id="mbStatusDropdownTrigger" style="display:flex;align-items:center;justify-content:space-between;padding:10px 14px;border:1.5px solid #cbd5e1;border-radius:8px;background:#ffffff;cursor:pointer;font-size:0.88rem;font-weight:600;color:#0f172a;transition:all 0.15s;"
-                                onmouseover="this.style.borderColor='#94a3b8'" onmouseout="this.style.borderColor='#cbd5e1'">
-                                <div id="mbStatusTriggerContent" style="display:flex;align-items:center;gap:8px;">
-                                    <!-- Populated dynamically -->
+                            <!-- Header with pulse/activity icon -->
+                            <div style="display:flex;align-items:center;gap:10px;margin-bottom:14px;">
+                                <div style="width:36px;height:36px;border-radius:8px;background:#ede9fe;color:#7c3aed;display:flex;align-items:center;justify-content:center;flex-shrink:0;">
+                                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"></polyline></svg>
                                 </div>
-                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#64748b" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"></polyline></svg>
+                                <div>
+                                    <h3 style="font-size:0.96rem;font-weight:700;color:#0f172a;margin:0;">Update Booking Status</h3>
+                                    <p style="font-size:0.78rem;color:#64748b;margin:1px 0 0 0;">Change the current status of this appointment.</p>
+                                </div>
                             </div>
 
-                            <!-- Custom Dropdown Options Menu (Matching Screenshot) -->
-                            <div id="mbStatusDropdownMenu" style="margin-top:6px;background:#ffffff;border:1.5px solid #e2e8f0;border-radius:10px;box-shadow:0 10px 25px -5px rgba(0,0,0,0.08), 0 8px 10px -6px rgba(0,0,0,0.03);padding:6px;display:flex;flex-direction:column;gap:3px;">
+                            <!-- Dropdown Field -->
+                            <div>
+                                <label style="display:block;font-size:0.8rem;font-weight:600;color:#334155;margin-bottom:6px;">Booking Status</label>
                                 
-                                <!-- Option: Booked -->
-                                <div class="mb-status-option" data-status="booked" style="display:flex;align-items:center;justify-content:space-between;padding:10px 12px;border-radius:8px;cursor:pointer;transition:background 0.12s;">
-                                    <div style="display:flex;align-items:center;gap:10px;">
-                                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#7c3aed" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect><line x1="16" y1="2" x2="16" y2="6"></line><line x1="8" y1="2" x2="8" y2="6"></line><line x1="3" y1="10" x2="21" y2="10"></line></svg>
-                                        <span style="font-size:0.86rem;font-weight:500;color:#0f172a;">Booked</span>
+                                <!-- Dropdown Trigger -->
+                                <div id="mbStatusDropdownTrigger" style="display:flex;align-items:center;justify-content:space-between;padding:10px 14px;border:1.5px solid #cbd5e1;border-radius:8px;background:#ffffff;cursor:pointer;font-size:0.88rem;font-weight:600;color:#0f172a;transition:all 0.15s;"
+                                    onmouseover="this.style.borderColor='#94a3b8'" onmouseout="this.style.borderColor='#cbd5e1'">
+                                    <div id="mbStatusTriggerContent" style="display:flex;align-items:center;gap:8px;">
+                                        <!-- Populated dynamically -->
                                     </div>
-                                    <svg class="mb-check-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#7c3aed" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="display:none;"><polyline points="20 6 9 17 4 12"></polyline></svg>
+                                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#64748b" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"></polyline></svg>
                                 </div>
 
-                                <!-- Option: In Progress -->
-                                <div class="mb-status-option" data-status="in progress" style="display:flex;align-items:center;justify-content:space-between;padding:10px 12px;border-radius:8px;cursor:pointer;transition:background 0.12s;">
-                                    <div style="display:flex;align-items:center;gap:10px;">
-                                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#2563eb" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="5 3 19 12 5 21 5 3"></polygon></svg>
-                                        <span style="font-size:0.86rem;font-weight:500;color:#0f172a;">In Progress</span>
+                                <!-- Custom Dropdown Options Menu -->
+                                <div id="mbStatusDropdownMenu" style="margin-top:6px;background:#ffffff;border:1.5px solid #e2e8f0;border-radius:10px;box-shadow:0 10px 25px -5px rgba(0,0,0,0.08), 0 8px 10px -6px rgba(0,0,0,0.03);padding:4px;display:flex;flex-direction:column;gap:2px;">
+                                    
+                                    <!-- Option: Booked -->
+                                    <div class="mb-status-option" data-status="booked" style="display:flex;align-items:center;justify-content:space-between;padding:9px 12px;border-radius:7px;cursor:pointer;transition:background 0.12s;">
+                                        <div style="display:flex;align-items:center;gap:10px;">
+                                            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#7c3aed" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect><line x1="16" y1="2" x2="16" y2="6"></line><line x1="8" y1="2" x2="8" y2="6"></line><line x1="3" y1="10" x2="21" y2="10"></line></svg>
+                                            <span style="font-size:0.85rem;font-weight:500;color:#0f172a;">Booked</span>
+                                        </div>
+                                        <svg class="mb-check-icon" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#7c3aed" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="display:none;"><polyline points="20 6 9 17 4 12"></polyline></svg>
                                     </div>
-                                    <svg class="mb-check-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#2563eb" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="display:none;"><polyline points="20 6 9 17 4 12"></polyline></svg>
-                                </div>
 
-                                <!-- Option: Completed -->
-                                <div class="mb-status-option" data-status="completed" style="display:flex;align-items:center;justify-content:space-between;padding:10px 12px;border-radius:8px;cursor:pointer;transition:background 0.12s;">
-                                    <div style="display:flex;align-items:center;gap:10px;">
-                                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#16a34a" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><polyline points="16 9 10 15 7 12"></polyline></svg>
-                                        <span style="font-size:0.86rem;font-weight:500;color:#0f172a;">Completed</span>
+                                    <!-- Option: In Progress -->
+                                    <div class="mb-status-option" data-status="in progress" style="display:flex;align-items:center;justify-content:space-between;padding:9px 12px;border-radius:7px;cursor:pointer;transition:background 0.12s;">
+                                        <div style="display:flex;align-items:center;gap:10px;">
+                                            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#2563eb" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="5 3 19 12 5 21 5 3"></polygon></svg>
+                                            <span style="font-size:0.85rem;font-weight:500;color:#0f172a;">In Progress</span>
+                                        </div>
+                                        <svg class="mb-check-icon" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#2563eb" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="display:none;"><polyline points="20 6 9 17 4 12"></polyline></svg>
                                     </div>
-                                    <svg class="mb-check-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#16a34a" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="display:none;"><polyline points="20 6 9 17 4 12"></polyline></svg>
-                                </div>
 
-                                <!-- Option: Cancelled -->
-                                <div class="mb-status-option" data-status="cancelled" style="display:flex;align-items:center;justify-content:space-between;padding:10px 12px;border-radius:8px;cursor:pointer;transition:background 0.12s;">
-                                    <div style="display:flex;align-items:center;gap:10px;">
-                                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#dc2626" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><line x1="15" y1="9" x2="9" y2="15"></line><line x1="9" y1="9" x2="15" y2="15"></line></svg>
-                                        <span style="font-size:0.86rem;font-weight:500;color:#0f172a;">Cancelled</span>
+                                    <!-- Option: Completed -->
+                                    <div class="mb-status-option" data-status="completed" style="display:flex;align-items:center;justify-content:space-between;padding:9px 12px;border-radius:7px;cursor:pointer;transition:background 0.12s;">
+                                        <div style="display:flex;align-items:center;gap:10px;">
+                                            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#16a34a" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><polyline points="16 9 10 15 7 12"></polyline></svg>
+                                            <span style="font-size:0.85rem;font-weight:500;color:#0f172a;">Completed</span>
+                                        </div>
+                                        <svg class="mb-check-icon" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#16a34a" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="display:none;"><polyline points="20 6 9 17 4 12"></polyline></svg>
                                     </div>
-                                    <svg class="mb-check-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#dc2626" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="display:none;"><polyline points="20 6 9 17 4 12"></polyline></svg>
-                                </div>
 
-                                <!-- Option: No-show -->
-                                <div class="mb-status-option" data-status="no-show" style="display:flex;align-items:center;justify-content:space-between;padding:10px 12px;border-radius:8px;cursor:pointer;transition:background 0.12s;">
-                                    <div style="display:flex;align-items:center;gap:10px;">
-                                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#ea580c" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><line x1="4.93" y1="4.93" x2="19.07" y2="19.07"></line></svg>
-                                        <span style="font-size:0.86rem;font-weight:500;color:#0f172a;">No-show</span>
+                                    <!-- Option: Cancelled -->
+                                    <div class="mb-status-option" data-status="cancelled" style="display:flex;align-items:center;justify-content:space-between;padding:9px 12px;border-radius:7px;cursor:pointer;transition:background 0.12s;">
+                                        <div style="display:flex;align-items:center;gap:10px;">
+                                            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#dc2626" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><line x1="15" y1="9" x2="9" y2="15"></line><line x1="9" y1="9" x2="15" y2="15"></line></svg>
+                                            <span style="font-size:0.85rem;font-weight:500;color:#0f172a;">Cancelled</span>
+                                        </div>
+                                        <svg class="mb-check-icon" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#dc2626" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="display:none;"><polyline points="20 6 9 17 4 12"></polyline></svg>
                                     </div>
-                                    <svg class="mb-check-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#ea580c" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="display:none;"><polyline points="20 6 9 17 4 12"></polyline></svg>
-                                </div>
 
+                                    <!-- Option: No-show -->
+                                    <div class="mb-status-option" data-status="no-show" style="display:flex;align-items:center;justify-content:space-between;padding:9px 12px;border-radius:7px;cursor:pointer;transition:background 0.12s;">
+                                        <div style="display:flex;align-items:center;gap:10px;">
+                                            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#ea580c" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><line x1="4.93" y1="4.93" x2="19.07" y2="19.07"></line></svg>
+                                            <span style="font-size:0.85rem;font-weight:500;color:#0f172a;">No-show</span>
+                                        </div>
+                                        <svg class="mb-check-icon" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#ea580c" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="display:none;"><polyline points="20 6 9 17 4 12"></polyline></svg>
+                                    </div>
+
+                                </div>
                             </div>
                         </div>
+
+                        <!-- Update Status Button -->
+                        <div style="margin-top:10px;display:flex;justify-content:flex-end;">
+                            <button type="button" id="btnMbUpdateStatus" style="width:100%;background:#7c3aed;color:#ffffff;border:none;border-radius:8px;padding:11px 20px;font-size:0.9rem;font-weight:600;cursor:pointer;display:inline-flex;align-items:center;justify-content:center;gap:8px;box-shadow:0 1px 3px rgba(124,58,237,0.25);transition:all 0.15s;"
+                                onmouseover="this.style.background='#6d28d9'" onmouseout="this.style.background='#7c3aed'">
+                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>
+                                Update Status
+                            </button>
+                        </div>
+
                     </div>
 
-                </div>
-
-                <!-- Footer: ONLY "Update Status" button (No Cancel button per user specification) -->
-                <div style="padding:16px 24px;border-top:1px solid #eef2f6;display:flex;justify-content:flex-end;align-items:center;background:#ffffff;border-radius:0 0 16px 16px;">
-                    <button type="button" id="btnMbUpdateStatus" style="background:#7c3aed;color:#ffffff;border:none;border-radius:8px;padding:10px 24px;font-size:0.88rem;font-weight:600;cursor:pointer;display:inline-flex;align-items:center;gap:8px;box-shadow:0 1px 3px rgba(124,58,237,0.25);transition:all 0.15s;"
-                        onmouseover="this.style.background='#6d28d9'" onmouseout="this.style.background='#7c3aed'">
-                        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>
-                        Update Status
-                    </button>
                 </div>
 
             </div>
