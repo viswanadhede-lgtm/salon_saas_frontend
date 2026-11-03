@@ -184,12 +184,24 @@ All database routines are organized with explicit `search_path = platform, share
 | `delete_membership_plan` | `app` & `public` | **DEFINER** | `jsonb` | ✅ `platform, shared, app, public, pg_temp` | Soft-deletes a plan with active member guard (blocks deletion if active subscribers exist). |
 | `sync_expired_memberships` | `app` & `public` | **DEFINER** | `jsonb` | ✅ `platform, shared, app, public, pg_temp` | Batch syncs expired active memberships to status `'expired'` based on `CURRENT_DATE`. |
 
-### 4.5 General Business RPCs
+### 4.5 Module 4: Services & Packages Operations & Catalog RPCs (100% Migrated & Hardened)
 
 | Routine Name | Schema | Security Type | Return Type | Fixed search_path? | Purpose / Business Scope |
 |---|---|---|---|---|---|
-| `create_package_atomic` | `app` & `public` | **DEFINER** | `jsonb` | ✅ `platform, shared, app, public, pg_temp` | Bundles services into a new package definition. |
-| `update_package_atomic` | `app` & `public` | **DEFINER** | `jsonb` | ✅ `platform, shared, app, public, pg_temp` | Modifies existing package services and pricing. |
+| `create_service_category_atomic` | `app` & `public` | **DEFINER** | `jsonb` | ✅ `platform, shared, app, public, pg_temp` | Creates catalog category with tenant access check, case-insensitive duplicate guard, and description trimming. |
+| `update_service_category_atomic` | `app` & `public` | **DEFINER** | `jsonb` | ✅ `platform, shared, app, public, pg_temp` | Updates category details and **atomically cascades new name to `app.services.category_name`** in the same transaction. |
+| `delete_service_category_atomic` | `app` & `public` | **DEFINER** | `jsonb` | ✅ `platform, shared, app, public, pg_temp` | Soft-deletes category (`status = 'deleted'`); **blocks deletion if active services remain assigned**. |
+| `create_service_atomic` | `app` & `public` | **DEFINER** | `jsonb` | ✅ `platform, shared, app, public, pg_temp` | Creates service with `price >= 0`, `duration >= 1`, verified category ownership, and duplicate name prevention. |
+| `update_service_atomic` | `app` & `public` | **DEFINER** | `jsonb` | ✅ `platform, shared, app, public, pg_temp` | Updates service attributes; validates price/duration; **atomically cascades service name changes to `package_services`**. |
+| `delete_service_atomic` | `app` & `public` | **DEFINER** | `jsonb` | ✅ `platform, shared, app, public, pg_temp` | Soft-deletes service; **blocks if service is in active package or scheduled in future active bookings**. |
+| `create_package_atomic` | `app` & `public` | **DEFINER** | `jsonb` | ✅ `platform, shared, app, public, pg_temp` | Bundles services into package atomically; validates `final_price <= original_price` and service tenant ownership. |
+| `update_package_atomic` | `app` & `public` | **DEFINER** | `jsonb` | ✅ `platform, shared, app, public, pg_temp` | Updates package details and synchronizes `package_services` mapping atomically in one transaction. |
+| `delete_package_atomic` | `app` & `public` | **DEFINER** | `jsonb` | ✅ `platform, shared, app, public, pg_temp` | Soft-deletes package (`status = 'deleted'`, `is_active = false`); **blocks if upcoming active bookings reference package**. |
+
+### 4.6 General Business RPCs
+
+| Routine Name | Schema | Security Type | Return Type | Fixed search_path? | Purpose / Business Scope |
+|---|---|---|---|---|---|
 | `onboard_company_workspace` | `shared` & `public` | **DEFINER** | `jsonb` | ✅ `platform, shared, app, public, pg_temp` | Initializes default roles, branches, and settings for a new company. |
 | `cancel_company_subscription` | `platform` & `public` | **DEFINER** | `jsonb` | ✅ `platform, shared, app, public, pg_temp` | Logs and cancels tenant SaaS subscription. |
 | `activate_subscription_addon` | `platform` & `public` | **DEFINER** | `jsonb` | ✅ `platform, shared, app, public, pg_temp` | Activates add-on entitlement for tenant. |
@@ -199,7 +211,7 @@ All database routines are organized with explicit `search_path = platform, share
 | `save_contact_settings` | `shared` & `public` | **DEFINER** | `jsonb` | ✅ `platform, shared, app, public, pg_temp` | Updates branch contact details. |
 | `mark_all_notifications_read` | `app` & `public` | **DEFINER** | `jsonb` | ✅ `platform, shared, app, public, pg_temp` | Updates notification read flags for user. |
 
-### 4.6 Analytical & Reporting Routines
+### 4.7 Analytical & Reporting Routines
 
 | Routine Name | Security Type | Return Type | Fixed search_path? | Scope |
 |---|---|---|---|---|
@@ -302,6 +314,7 @@ All active Edge Functions deployed on Supabase:
 | `20261103000006_harden_booking_payments_and_refunds` | 2026-11-03 | Unit 3 (Bookings): Deployed hardened `app.process_booking_payment_atomic` (multi-tenant check, server-side coupon validation, authoritative final amount, discount usage tracking) and `app.process_booking_refund_atomic` (RBAC authorization, duplicate refund guard, 100% full refund policy, customer spend reversal). | `app.process_booking_payment_atomic`, `app.process_booking_refund_atomic` | **Deployed & Verified** |
 | `20261103000007_harden_pos_module` | 2026-11-03 | Module 2 (POS): Hardened `app.create_pos_sale_atomic` (catalog price lookup, deterministic row-locking, negative stock prevention, server coupon validation, discount usage tracking, customer LTV spend update) and `app.process_pos_refund_atomic` (tenant verification, returnable quantity guard, stock re-increment, price-weighted proportional discount reversal, customer spend decrement) with PostgREST public wrappers and financial ledger trigger hardening. | `app.create_pos_sale_atomic`, `public.create_pos_sale_atomic`, `app.process_pos_refund_atomic`, `public.process_pos_refund_atomic`, `public.trg_pos_sale_business_transaction` | **Deployed & Verified** |
 | `20261103000008_harden_memberships_module` | 2026-11-03 | Module 3 (Memberships): Hardened `app.assign_membership_atomic` (catalog price authority, 6-step coupon validation, coupon usage count increment, customer phone deduplication, duplicate active membership guard, customer LTV update), `app.cancel_membership_atomic` (tenant verification, active-status precondition, atomic cancellation ledger entry), `app.process_membership_refund_atomic` (max refundable limit, spend reversal, discount reversal), plan CRUD RPCs (`create_membership_plan`, `update_membership_plan`, `delete_membership_plan` with active subscriber guard), and batch expiration sync (`sync_expired_memberships`). | `app.assign_membership_atomic`, `app.cancel_membership_atomic`, `app.process_membership_refund_atomic`, `app.create_membership_plan`, `app.update_membership_plan`, `app.delete_membership_plan`, `app.sync_expired_memberships` (with public wrappers) | **Deployed & Verified** |
+| `20261103000009_harden_services_module` | 2026-11-03 | Module 4 (Services & Packages): Hardened `create_service_category_atomic`, `update_service_category_atomic` (atomic cascade to `services.category_name`), `delete_service_category_atomic` (active service dependency guard), `create_service_atomic`, `update_service_atomic` (cascade to `package_services`), `delete_service_atomic` (active package and future booking guards), `create_package_atomic` (`final_price <= original_price` and service tenant validation), `update_package_atomic` (atomic `package_services` resync), and `delete_package_atomic` (future booking guard). | `app` & `public` categories, services, and packages stored procedures (9 functions) | **Deployed & Verified** |
 
 ---
 
@@ -328,10 +341,10 @@ All active Edge Functions deployed on Supabase:
   - [x] Stage 3: Backend Implementation (`app.assign_membership_atomic`, `app.cancel_membership_atomic`, `app.process_membership_refund_atomic`, Plan CRUD RPCs, `sync_expired_memberships`)
   - [x] Stage 4: Testing & Validation (13 automated integration tests passed)
   - [x] Stage 5: Frontend Integration & Cleanup (Retired `scripts/payment-membership.js`, purged 10 direct mutations, audit complete in `docs/modules/memberships/MEMBERSHIPS_MODULE_AUDIT.md`)
-- [ ] **Module 4: SERVICES & PACKAGES (Catalog Authority, Custom Pricing, Bundling)**:
-  - Stage 1: Investigation & Logic Inventory
-  - Stage 2: Architecture & Specification
-  - Stage 3: Backend Implementation
-  - Stage 4: Testing & Validation
-  - Stage 5: Frontend Integration
+- [x] **Module 4: SERVICES & PACKAGES (Catalog Authority, Custom Pricing, Bundling) (100% Complete & Verified)**:
+  - [x] Stage 1: Investigation & Logic Inventory (`docs/modules/services/SERVICES_STAGE1_INVESTIGATION.md`)
+  - [x] Stage 2: Architecture & Specification (`docs/modules/services/SERVICES_ARCHITECTURE_SPEC.md`)
+  - [x] Stage 3: Backend Implementation (`create_service_category_atomic`, `update_service_category_atomic`, `delete_service_category_atomic`, `create_service_atomic`, `update_service_atomic`, `delete_service_atomic`, `create_package_atomic`, `update_package_atomic`, `delete_package_atomic`)
+  - [x] Stage 4: Testing & Validation (14 automated integration tests passed)
+  - [x] Stage 5: Frontend Integration & Zero-Mutation Audit (`scripts/services/services-api.js`, `service-categories.js`, audit complete in `docs/modules/services/SERVICES_MODULE_AUDIT.md`)
 

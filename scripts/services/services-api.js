@@ -64,110 +64,72 @@ export async function fetchPackageServicesForBreakdown(packageId) {
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// WRITE OPERATIONS & DEPENDENCY CHECKS
+// WRITE OPERATIONS (AUTHORITATIVE BACKEND-FIRST STORED PROCEDURES)
 // ─────────────────────────────────────────────────────────────────────────────
 
 export async function insertService(payload) {
-    const companyId = getCompanyId();
-    const branchId = getBranchId();
+    const companyId = payload?.company_id || getCompanyId();
+    const branchId = payload?.branch_id || getBranchId();
 
     if (!companyId || !branchId) {
         return { data: null, error: { message: 'Missing company or branch context' } };
     }
 
-    return await supabase
-        .from('services')
-        .insert(payload);
-}
-
-export async function updateService(serviceId, payload) {
-    const companyId = getCompanyId();
-    const branchId = getBranchId();
-
-    if (!companyId || !branchId) {
-        return { data: null, error: { message: 'Missing company or branch context' } };
-    }
-
-    const { data, error } = await supabase
-        .from('services')
-        .update(payload)
-        .eq('service_id', serviceId)
-        .eq('company_id', companyId)
-        .eq('branch_id', branchId)
-        .select();
+    const { data, error } = await supabase.rpc('create_service_atomic', {
+        p_company_id: companyId,
+        p_branch_id: branchId,
+        p_service_name: payload.service_name,
+        p_category_id: payload.category_id,
+        p_price: Number(payload.price),
+        p_duration: Number(payload.duration),
+        p_description: payload.description || null,
+        p_status: payload.status || 'active'
+    });
 
     if (error) {
         return { data: null, error };
     }
 
-    if (!data || data.length === 0) {
-        return { data: null, error: { message: 'No matching service found to update for this company and branch.' } };
+    if (data && data.success === false) {
+        return { data: null, error: { message: data.error } };
+    }
+
+    return { data, error: null };
+}
+
+export async function updateService(serviceId, payload) {
+    const companyId = payload?.company_id || getCompanyId();
+    const branchId = payload?.branch_id || getBranchId();
+
+    if (!companyId || !branchId) {
+        return { data: null, error: { message: 'Missing company or branch context' } };
+    }
+
+    const { data, error } = await supabase.rpc('update_service_atomic', {
+        p_company_id: companyId,
+        p_branch_id: branchId,
+        p_service_id: serviceId,
+        p_service_name: payload.service_name !== undefined ? payload.service_name : null,
+        p_category_id: payload.category_id !== undefined ? payload.category_id : null,
+        p_price: payload.price !== undefined ? Number(payload.price) : null,
+        p_duration: payload.duration !== undefined ? Number(payload.duration) : null,
+        p_description: payload.description !== undefined ? payload.description : null,
+        p_status: payload.status !== undefined ? payload.status : null
+    });
+
+    if (error) {
+        return { data: null, error };
+    }
+
+    if (data && data.success === false) {
+        return { data: null, error: { message: data.error } };
     }
 
     return { data, error: null };
 }
 
 export async function checkServiceDependencies(serviceId) {
-    const companyId = getCompanyId();
-    const branchId = getBranchId();
-
-    // 1. Check if referenced in packages
-    try {
-        const { data: pkgServices, error: psError } = await supabase
-            .from('package_services')
-            .select('package_id, service_name')
-            .eq('service_id', serviceId);
-
-        if (!psError && pkgServices && pkgServices.length > 0) {
-            const pkgIds = pkgServices.map(ps => ps.package_id).filter(Boolean);
-            if (pkgIds.length > 0) {
-                let pkgQuery = supabase
-                    .from('packages')
-                    .select('package_id, package_name, is_active')
-                    .in('package_id', pkgIds)
-                    .eq('is_active', true)
-                    .neq('status', 'deleted');
-                if (companyId) pkgQuery = pkgQuery.eq('company_id', companyId);
-                if (branchId) pkgQuery = pkgQuery.eq('branch_id', branchId);
-
-                const { data: activePkgs, error: pError } = await pkgQuery;
-                if (!pError && activePkgs && activePkgs.length > 0) {
-                    const pkgNames = activePkgs.map(p => p.package_name).join(', ');
-                    return {
-                        hasDependency: true,
-                        reason: `Cannot delete this service because it is currently included in active package(s): ${pkgNames}. Please remove it from the package(s) or deactivate them first.`
-                    };
-                }
-            }
-        }
-    } catch (e) {
-        console.warn('Error checking package dependencies:', e);
-    }
-
-    // 2. Check if referenced in future active bookings
-    try {
-        const todayStr = new Date().toISOString().split('T')[0];
-        let bookingQuery = supabase
-            .from('bookings')
-            .select('booking_id, booking_date, status')
-            .eq('service_id', serviceId)
-            .eq('status', 'booked')
-            .gte('booking_date', todayStr);
-
-        if (companyId) bookingQuery = bookingQuery.eq('company_id', companyId);
-        if (branchId) bookingQuery = bookingQuery.eq('branch_id', branchId);
-
-        const { data: futureBookings, error: bError } = await bookingQuery;
-        if (!bError && futureBookings && futureBookings.length > 0) {
-            return {
-                hasDependency: true,
-                reason: `Cannot delete this service because there are ${futureBookings.length} upcoming active booking(s) scheduled for it. Please reschedule or cancel the booking(s) first.`
-            };
-        }
-    } catch (e) {
-        console.warn('Error checking booking dependencies:', e);
-    }
-
+    // Authoritative check is enforced transactionally inside app.delete_service_atomic
     return { hasDependency: false, reason: null };
 }
 
@@ -179,23 +141,21 @@ export async function softDeleteService(serviceId) {
         return { data: null, error: { message: 'Missing company or branch context' } };
     }
 
-    const payload = {
-        status: 'deleted',
-        updated_at: new Date().toISOString()
-    };
+    const { data, error } = await supabase.rpc('delete_service_atomic', {
+        p_company_id: companyId,
+        p_branch_id: branchId,
+        p_service_id: serviceId
+    });
 
-    const { data, error } = await supabase
-        .from('services')
-        .update(payload)
-        .eq('service_id', serviceId)
-        .eq('company_id', companyId)
-        .eq('branch_id', branchId);
-
-    if (!error && (!data || data.length === 0)) {
-        return { data: null, error: { message: 'No matching service found to delete for this company and branch.' } };
+    if (error) {
+        return { data: null, error };
     }
 
-    return { data, error };
+    if (data && data.success === false) {
+        return { data: null, error: { message: data.error } };
+    }
+
+    return { data, error: null };
 }
 
 export async function createPackageAtomic(payload) {
@@ -220,14 +180,18 @@ export async function createPackageAtomic(payload) {
         p_branch_id: branchId,
         p_package_name: package_name,
         p_description: description || null,
-        p_original_price: original_price,
-        p_final_price: final_price,
+        p_original_price: Number(original_price) || 0,
+        p_final_price: Number(final_price) || 0,
         p_is_active: is_active !== false,
         p_service_ids: service_ids || []
     });
 
     if (error) {
         return { data: null, error };
+    }
+
+    if (data && data.success === false) {
+        return { data: null, error: { message: data.error } };
     }
 
     return { data, error: null };
@@ -251,226 +215,50 @@ export async function updatePackageAtomic(pkgId, payload) {
     } = payload;
 
     const { data, error } = await supabase.rpc('update_package_atomic', {
-        p_package_id: pkgId,
         p_company_id: companyId,
         p_branch_id: branchId,
-        p_package_name: package_name,
-        p_description: description || null,
-        p_original_price: original_price,
-        p_final_price: final_price,
-        p_is_active: is_active !== false,
-        p_service_ids: service_ids || []
+        p_package_id: pkgId,
+        p_package_name: package_name !== undefined ? package_name : null,
+        p_description: description !== undefined ? description : null,
+        p_original_price: original_price !== undefined ? Number(original_price) : null,
+        p_final_price: final_price !== undefined ? Number(final_price) : null,
+        p_is_active: is_active !== undefined ? (is_active !== false) : null,
+        p_service_ids: service_ids !== undefined ? service_ids : null
     });
 
     if (error) {
         return { data: null, error };
     }
 
+    if (data && data.success === false) {
+        return { data: null, error: { message: data.error } };
+    }
+
     return { data, error: null };
 }
 
+// Deprecated legacy stubs redirected to atomic RPCs or disabled to prevent direct mutations
 export async function insertPackage(payload) {
-    const companyId = getCompanyId();
-    const branchId = getBranchId();
-
-    if (!companyId || !branchId) {
-        return { data: null, error: { message: 'Missing company or branch context' } };
-    }
-
-    const status = payload.is_active === false ? 'inactive' : 'active';
-
-    return await supabase
-        .from('packages')
-        .insert({
-            ...payload,
-            company_id: companyId,
-            branch_id: branchId,
-            status: status
-        })
-        .select();
+    return await createPackageAtomic(payload);
 }
 
 export async function insertPackageServices(psPayloads) {
-    const companyId = getCompanyId();
-    const branchId = getBranchId();
-
-    if (!companyId || !branchId) {
-        return { data: null, error: { message: 'Missing company or branch context' } };
-    }
-
-    if (!psPayloads || psPayloads.length === 0) {
-        return { data: [], error: null };
-    }
-
-    // Verify parent package ownership in the active company and branch and ensure not deleted
-    const pkgIds = [...new Set(psPayloads.map(p => p.package_id).filter(Boolean))];
-    if (pkgIds.length === 0) {
-        return { data: null, error: { message: 'No valid package_id provided in payloads.' } };
-    }
-
-    const { data: validPkgs, error: checkError } = await supabase
-        .from('packages')
-        .select('package_id')
-        .in('package_id', pkgIds)
-        .eq('company_id', companyId)
-        .eq('branch_id', branchId)
-        .neq('status', 'deleted');
-
-    if (checkError) {
-        return { data: null, error: checkError };
-    }
-
-    const validPkgIdSet = new Set((validPkgs || []).map(p => p.package_id));
-    const allValid = pkgIds.every(id => validPkgIdSet.has(id));
-    if (!allValid) {
-        return { data: null, error: { message: 'Cannot insert package services: package does not belong to active company and branch, or is deleted.' } };
-    }
-
-    return await supabase
-        .from('package_services')
-        .insert(psPayloads);
+    console.warn('insertPackageServices is deprecated: service mapping is handled atomically inside create_package_atomic.');
+    return { data: [], error: null };
 }
 
 export async function updatePackage(pkgId, payload) {
-    const companyId = getCompanyId();
-    const branchId = getBranchId();
-
-    if (!companyId || !branchId) {
-        return { data: null, error: { message: 'Missing company or branch context' } };
-    }
-
-    const updatePayload = { ...payload };
-    if ('is_active' in payload && !('status' in payload)) {
-        updatePayload.status = payload.is_active ? 'active' : 'inactive';
-    }
-    updatePayload.updated_at = new Date().toISOString();
-
-    const { data, error } = await supabase
-        .from('packages')
-        .update(updatePayload)
-        .eq('package_id', pkgId)
-        .eq('company_id', companyId)
-        .eq('branch_id', branchId)
-        .neq('status', 'deleted')
-        .select();
-
-    if (error) {
-        return { data: null, error };
-    }
-
-    if (!data || data.length === 0) {
-        return { data: null, error: { message: 'No matching package found to update for this company and branch, or package is already deleted.' } };
-    }
-
-    return { data, error: null };
+    return await updatePackageAtomic(pkgId, payload);
 }
 
 export async function deletePackageServices(pkgId) {
-    const companyId = getCompanyId();
-    const branchId = getBranchId();
-
-    if (!companyId || !branchId) {
-        return { data: null, error: { message: 'Missing company or branch context' } };
-    }
-
-    // Verify parent package ownership in the active company and branch and ensure not deleted
-    const { data: pkg, error: checkError } = await supabase
-        .from('packages')
-        .select('package_id')
-        .eq('package_id', pkgId)
-        .eq('company_id', companyId)
-        .eq('branch_id', branchId)
-        .neq('status', 'deleted')
-        .maybeSingle();
-
-    if (checkError) {
-        return { data: null, error: checkError };
-    }
-    if (!pkg) {
-        return { data: null, error: { message: 'Cannot delete package services: package does not belong to active company and branch, or is deleted.' } };
-    }
-
-    return await supabase
-        .from('package_services')
-        .delete()
-        .eq('package_id', pkgId);
+    console.warn('deletePackageServices is deprecated: service mapping is handled atomically inside update_package_atomic.');
+    return { data: [], error: null };
 }
 
 export async function checkPackageDependencies(packageId) {
-    const companyId = getCompanyId();
-    const branchId = getBranchId();
-
-    try {
-        const now = new Date();
-        const todayStr = new Date(now.getTime() - (now.getTimezoneOffset() * 60000)).toISOString().split('T')[0];
-
-        // 1. Check line-item bookings referencing this package
-        let bookingQuery = supabase
-            .from('bookings')
-            .select('booking_id, booking_date, status')
-            .eq('service_id', packageId)
-            .in('status', ['booked', 'confirmed'])
-            .gte('booking_date', todayStr);
-
-        if (companyId) bookingQuery = bookingQuery.eq('company_id', companyId);
-        if (branchId) bookingQuery = bookingQuery.eq('branch_id', branchId);
-
-        const { data: futureBookings, error: bError } = await bookingQuery;
-        if (bError) {
-            console.error('Error querying bookings for package dependencies:', bError);
-            return {
-                hasDependency: false,
-                reason: null,
-                error: { message: `Failed to check bookings: ${bError.message || 'Database query error'}` }
-            };
-        }
-
-        if (futureBookings && futureBookings.length > 0) {
-            return {
-                hasDependency: true,
-                reason: `Cannot delete this package because there are ${futureBookings.length} upcoming active booking(s) scheduled for it. Please reschedule or cancel the booking(s) first.`,
-                error: null
-            };
-        }
-
-        // 2. Check summary transactions referencing this package
-        let bbtQuery = supabase
-            .from('bookings_for_business_transaction')
-            .select('booking_id, booking_date, status')
-            .ilike('service_id', `%${packageId}%`)
-            .in('status', ['booked', 'confirmed'])
-            .gte('booking_date', todayStr);
-
-        if (companyId) bbtQuery = bbtQuery.eq('company_id', companyId);
-        if (branchId) bbtQuery = bbtQuery.eq('branch_id', branchId);
-
-        const { data: futureBbt, error: bbtError } = await bbtQuery;
-        if (bbtError) {
-            console.error('Error querying booking transactions for package dependencies:', bbtError);
-            return {
-                hasDependency: false,
-                reason: null,
-                error: { message: `Failed to check booking transactions: ${bbtError.message || 'Database query error'}` }
-            };
-        }
-
-        if (futureBbt && futureBbt.length > 0) {
-            return {
-                hasDependency: true,
-                reason: `Cannot delete this package because there are ${futureBbt.length} upcoming active booking transaction(s) scheduled for it. Please reschedule or cancel the booking(s) first.`,
-                error: null
-            };
-        }
-
-        return { hasDependency: false, reason: null, error: null };
-    } catch (e) {
-        console.error('Unexpected error checking package booking dependencies:', e);
-        return {
-            hasDependency: false,
-            reason: null,
-            error: { message: `Unexpected error checking package dependencies: ${e.message || 'Unknown error'}` }
-        };
-    }
+    // Authoritative check is enforced transactionally inside app.delete_package_atomic
+    return { hasDependency: false, reason: null, error: null };
 }
 
 export async function deletePackage(pkgId) {
@@ -481,27 +269,18 @@ export async function deletePackage(pkgId) {
         return { data: null, error: { message: 'Missing company or branch context' } };
     }
 
-    const payload = {
-        status: 'deleted',
-        is_active: false,
-        updated_at: new Date().toISOString()
-    };
-
-    const { data, error } = await supabase
-        .from('packages')
-        .update(payload)
-        .eq('package_id', pkgId)
-        .eq('company_id', companyId)
-        .eq('branch_id', branchId)
-        .neq('status', 'deleted')
-        .select();
+    const { data, error } = await supabase.rpc('delete_package_atomic', {
+        p_company_id: companyId,
+        p_branch_id: branchId,
+        p_package_id: pkgId
+    });
 
     if (error) {
         return { data: null, error };
     }
 
-    if (!data || data.length === 0) {
-        return { data: null, error: { message: 'No matching package found to delete for this company and branch, or it is already deleted.' } };
+    if (data && data.success === false) {
+        return { data: null, error: { message: data.error } };
     }
 
     return { data, error: null };
