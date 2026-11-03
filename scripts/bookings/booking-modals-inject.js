@@ -631,11 +631,11 @@ export function setupModals() {
                                     <div id="mbStatusTriggerContent" style="display:flex;align-items:center;gap:8px;">
                                         <!-- Populated dynamically -->
                                     </div>
-                                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#64748b" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"></polyline></svg>
+                                    <svg id="mbStatusChevron" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#64748b" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="transition:transform 0.2s ease;"><polyline points="6 9 12 15 18 9"></polyline></svg>
                                 </div>
 
-                                <!-- Custom Dropdown Options Menu -->
-                                <div id="mbStatusDropdownMenu" style="margin-top:6px;background:#ffffff;border:1.5px solid #e2e8f0;border-radius:10px;box-shadow:0 10px 25px -5px rgba(0,0,0,0.08), 0 8px 10px -6px rgba(0,0,0,0.03);padding:4px;display:flex;flex-direction:column;gap:2px;">
+                                <!-- Custom Dropdown Options Menu (Closed by default) -->
+                                <div id="mbStatusDropdownMenu" style="display:none;margin-top:6px;background:#ffffff;border:1.5px solid #e2e8f0;border-radius:10px;box-shadow:0 10px 25px -5px rgba(0,0,0,0.08), 0 8px 10px -6px rgba(0,0,0,0.03);padding:4px;flex-direction:column;gap:2px;">
                                     
                                     <!-- Option: Booked -->
                                     <div class="mb-status-option" data-status="booked" style="display:flex;align-items:center;justify-content:space-between;padding:9px 12px;border-radius:7px;cursor:pointer;transition:background 0.12s;">

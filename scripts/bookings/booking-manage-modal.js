@@ -191,8 +191,12 @@ export async function openManageBookingModal(bookingId) {
         amtEl.textContent = `₹${Number(amt).toLocaleString('en-IN')}`;
     }
 
-    // 9. Initialize Dropdown with Current Status
+    // 9. Initialize Dropdown with Current Status (Closed by default)
     selectDropdownStatus(currentStatus);
+    const menuEl = document.getElementById('mbStatusDropdownMenu');
+    if (menuEl) menuEl.style.display = 'none';
+    const chevronEl = document.getElementById('mbStatusChevron');
+    if (chevronEl) chevronEl.style.transform = 'rotate(0deg)';
 
     // Open Modal
     const modal = document.getElementById('manageBookingModal');
@@ -207,6 +211,10 @@ export function closeManageBookingModal() {
     if (modal) {
         modal.classList.remove('active');
     }
+    const menuEl = document.getElementById('mbStatusDropdownMenu');
+    if (menuEl) menuEl.style.display = 'none';
+    const chevronEl = document.getElementById('mbStatusChevron');
+    if (chevronEl) chevronEl.style.transform = 'rotate(0deg)';
     manageState.activeBookingId = null;
     manageState.activeBooking = null;
 }
@@ -396,20 +404,39 @@ export function attachManageModalListeners() {
         const trigger = e.target.closest('#mbStatusDropdownTrigger');
         if (trigger) {
             const menu = document.getElementById('mbStatusDropdownMenu');
+            const chevron = document.getElementById('mbStatusChevron');
             if (menu) {
-                menu.style.display = menu.style.display === 'none' ? 'flex' : 'none';
+                const isClosed = menu.style.display === 'none' || !menu.style.display;
+                menu.style.display = isClosed ? 'flex' : 'none';
+                if (chevron) {
+                    chevron.style.transform = isClosed ? 'rotate(180deg)' : 'rotate(0deg)';
+                }
             }
             return;
         }
 
-        // 6. Dropdown Option Click
+        // 6. Dropdown Option Click (Select & Close Dropdown)
         const option = e.target.closest('.mb-status-option');
         if (option && option.closest('#mbStatusDropdownMenu')) {
             const statusKey = option.dataset.status;
             if (statusKey) {
                 selectDropdownStatus(statusKey);
             }
+            const menu = document.getElementById('mbStatusDropdownMenu');
+            if (menu) menu.style.display = 'none';
+            const chevron = document.getElementById('mbStatusChevron');
+            if (chevron) chevron.style.transform = 'rotate(0deg)';
             return;
+        }
+
+        // 6b. Click Outside Dropdown to Close
+        if (!e.target.closest('#mbStatusDropdownTrigger') && !e.target.closest('#mbStatusDropdownMenu')) {
+            const menu = document.getElementById('mbStatusDropdownMenu');
+            if (menu && menu.style.display !== 'none') {
+                menu.style.display = 'none';
+                const chevron = document.getElementById('mbStatusChevron');
+                if (chevron) chevron.style.transform = 'rotate(0deg)';
+            }
         }
 
         // 7. Click "Update Status" button in footer

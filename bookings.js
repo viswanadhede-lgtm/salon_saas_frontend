@@ -5,7 +5,7 @@ import { fetchBookings, setOnBookingsRefreshed } from './scripts/bookings/bookin
 import { renderBookings, toggleSvcExtra } from './scripts/bookings/bookings-table.js?v=2.4.2';
 import { getFilteredBookings, populateStaffFilter, attachFilterListeners, toggleSort, _applyPendingStaffFilter } from './scripts/bookings/bookings-filters.js?v=2.4.0';
 import { renderCalendar, initCalendarListeners } from './scripts/bookings/bookings-calendar.js?v=2.4.3';
-import { setupModals } from './scripts/bookings/booking-modals-inject.js?v=2.4.5';
+import { setupModals } from './scripts/bookings/booking-modals-inject.js?v=2.4.6';
 import { openEditBookingModal, showPaymentNotCompletedModal, attachEditModalListeners } from './scripts/bookings/booking-edit-modal.js?v=2.5.0';
 import { updateBookingStatus, confirmUpdateBookingStatus, attachStatusActionsListeners } from './scripts/bookings/booking-status-actions.js?v=2.4.0';
 import { openBookingPayment } from './scripts/bookings/booking-payment-bridge.js?v=2.4.0';
@@ -23,7 +23,7 @@ import {
     openBookingUpdateChoiceModal, 
     openManageBookingModal, 
     attachManageModalListeners 
-} from './scripts/bookings/booking-manage-modal.js?v=1.0.1';
+} from './scripts/bookings/booking-manage-modal.js?v=1.0.2';
 import { initGlobalBookingModal } from './scripts/global-booking-modal.js';
 
 // ─── Wire Data Refresh Handler ───────────────────────────────────────────────
