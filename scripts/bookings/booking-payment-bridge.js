@@ -202,35 +202,37 @@ function _renderBookingServicesSections(items, grandTotal) {
         headerEl.style.fontWeight = '700';
         headerEl.style.letterSpacing = '0.03em';
     }
+
+    // ── Hide default orphan subtotal bar in gpmItemsCard ──────────────────────
+    const subtotalLabelEl = document.getElementById('gpmServicesSubtotalLabel');
+    const defaultSubtotalBar = subtotalEl?.closest('div[style*="justify-content:space-between"]')
+        || subtotalLabelEl?.parentElement?.parentElement
+        || (subtotalLabelEl ? subtotalLabelEl.closest('div') : null);
+    if (defaultSubtotalBar) {
+        defaultSubtotalBar.style.display = 'none';
+    }
+    if (subtotalLabelEl) subtotalLabelEl.textContent = '';
     if (subtotalEl) subtotalEl.textContent = '';
     if (noteEl) noteEl.style.display = 'none';
 
     const rowStyle = 'padding:10px 8px; border-bottom:1px solid #f8fafc; color:#334155; font-size:0.84rem; vertical-align:middle;';
     const thStyle  = 'padding:8px 8px; font-size:0.72rem; font-weight:700; color:#64748b; border-bottom:1px solid #f1f5f9; text-align:left;';
 
-    // ── Shared section header builder: Included services / Included packages ─
-    // Title in blue (#4f46e5), badge, and "Subtotal: ₹XXXX" in green
-    const secHeader = (label, count, subtotalAmt) => `
-        <div style="display:flex; justify-content:space-between; align-items:center;
-                    padding:10px 4px 8px 2px; border-bottom:1.5px solid #e0e7ff;">
-            <div style="display:flex; align-items:center; gap:8px;">
-                <span style="font-size:0.82rem; font-weight:700; color:${BLUE_COLOR}; text-transform:uppercase; letter-spacing:0.04em;">
-                    ${label}
-                </span>
-                <span style="background:${BLUE_BADGE_BG}; color:${BLUE_COLOR}; border-radius:12px; padding:2px 10px;
-                             font-size:0.75rem; font-weight:700; letter-spacing:0.02em;">${count}</span>
-            </div>
-            <div style="display:flex; align-items:center; gap:6px;">
-                <span style="font-size:0.8rem; font-weight:600; color:#64748b;">Subtotal:</span>
-                <span style="font-size:0.92rem; font-weight:800; color:#059669;">${fmt(subtotalAmt)}</span>
-            </div>
+    // ── Shared section header builder: Title and badge only (subtotal placed at bottom)
+    const secHeader = (label, count) => `
+        <div style="display:flex; align-items:center; gap:8px; padding:10px 4px 8px 2px; border-bottom:1.5px solid #e0e7ff;">
+            <span style="font-size:0.82rem; font-weight:700; color:${BLUE_COLOR}; text-transform:uppercase; letter-spacing:0.04em;">
+                ${label}
+            </span>
+            <span style="background:${BLUE_BADGE_BG}; color:${BLUE_COLOR}; border-radius:12px; padding:2px 10px;
+                         font-size:0.75rem; font-weight:700; letter-spacing:0.02em;">${count}</span>
         </div>`;
 
-    // ── 2. Included services Section ─────────────────────────────────────────
+    // ── 2. Included services Section (with subtotal at the bottom) ───────────
     let svcHtml = '';
     if (svcs.length > 0) {
-        svcHtml = secHeader('Included services', svcs.length, svcsTotal);
-        svcHtml += `<table style="width:100%; border-collapse:collapse; margin-bottom:6px; margin-top:6px;">
+        svcHtml = secHeader('Included services', svcs.length);
+        svcHtml += `<table style="width:100%; border-collapse:collapse; margin-bottom:4px; margin-top:6px;">
             <thead><tr>
                 <th style="${thStyle} width:28px;">#</th>
                 <th style="${thStyle}">Service</th>
@@ -251,13 +253,18 @@ function _renderBookingServicesSections(items, grandTotal) {
                     <td style="${rowStyle} font-weight:700; text-align:right; color:#0f172a;">${fmt(s.price)}</td>
                 </tr>`).join('')}
             </tbody>
-        </table>`;
+        </table>
+        <!-- Subtotal placed at bottom of Included services section -->
+        <div style="display:flex; justify-content:flex-end; align-items:center; gap:8px; padding:10px 8px 4px 8px; border-top:1px solid #f1f5f9;">
+            <span style="font-size:0.82rem; font-weight:600; color:#64748b;">Subtotal:</span>
+            <span style="font-size:0.95rem; font-weight:800; color:#059669;">${fmt(svcsTotal)}</span>
+        </div>`;
     }
 
-    // ── 3 & 4. Included packages (with generous breathing room, order numbers, duration)
+    // ── 3 & 4. Included packages (with subtotal at bottom of section) ─────────
     let pkgHtml = '';
     if (pkgs.length > 0) {
-        const pkgHeaderHtml = secHeader('Included packages', pkgs.length, pkgsTotal);
+        const pkgHeaderHtml = secHeader('Included packages', pkgs.length);
         let cardsHtml = '<div style="display:flex; flex-direction:column; gap:10px; margin-top:10px;">';
 
         pkgs.forEach((pkg, pi) => {
@@ -351,8 +358,15 @@ function _renderBookingServicesSections(items, grandTotal) {
 
         cardsHtml += '</div>';
 
+        // Subtotal placed at bottom of Included packages section
+        const pkgSubtotalRow = `
+            <div style="display:flex; justify-content:flex-end; align-items:center; gap:8px; padding:10px 8px 4px 8px; border-top:1px solid #f1f5f9; margin-top:10px;">
+                <span style="font-size:0.82rem; font-weight:600; color:#64748b;">Subtotal:</span>
+                <span style="font-size:0.95rem; font-weight:800; color:#059669;">${fmt(pkgsTotal)}</span>
+            </div>`;
+
         // 5. Breathing space between sections (margin-top: 26px)
-        pkgHtml = `<div style="margin-top:26px;">${pkgHeaderHtml}${cardsHtml}</div>`;
+        pkgHtml = `<div style="margin-top:26px;">${pkgHeaderHtml}${cardsHtml}${pkgSubtotalRow}</div>`;
     }
 
     // ── Grand Total Summary ───────────────────────────────────────────────────
