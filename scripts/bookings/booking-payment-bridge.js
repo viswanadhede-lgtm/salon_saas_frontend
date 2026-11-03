@@ -31,14 +31,14 @@ export async function openBookingPayment(bookingIdOrRow, options = {}) {
     const customerPhone = (row && (row.customer_phone || row.phone)) || '';
 
     // ── Fetch individual service rows from `bookings` table ──────────────────
-    // Each row has: service_name, staff_name, price, start_time, package_id
+    // Each row has: service_name, staff_name, price, start_time, end_time, package_id
     // package_id = null  → individual service
     // package_id = UUID  → belongs to a package (group by package_id)
     let svcRows = [];
     try {
         const { data, error: svcErr } = await supabase
             .from('bookings')
-            .select('service_name, staff_name, price, booking_date, start_time, package_id')
+            .select('service_name, staff_name, price, booking_date, start_time, end_time, package_id, service_id')
             .eq('booking_id', targetId)
             .order('package_id', { ascending: true, nullsFirst: true })
             .order('created_at',  { ascending: true });
@@ -83,6 +83,8 @@ export async function openBookingPayment(bookingIdOrRow, options = {}) {
                 name:       (s.service_name || '').trim() || 'Service',
                 staff:      (s.staff_name   || '').trim() || 'Assigned',
                 time:       s.start_time || '',
+                end_time:   s.end_time || '',
+                duration:   calcDurationMinutes(s.start_time, s.end_time),
                 price:      Number(s.price) || 0,
                 _type:      'service'
             });
@@ -107,19 +109,21 @@ export async function openBookingPayment(bookingIdOrRow, options = {}) {
             const apptDate = (row && (row.appointment_date || row.booking_date || row.date)) || 'Today';
             const apptTime = (row && (row.appointment_time || row.start_time || row.time)) || '';
             items = svcNames.map(s => ({
-                name:  s.trim(),
-                time:  apptTime,
-                staff: 'Assigned',
-                price: Math.round(totalOriginal / Math.max(1, svcNames.length)),
-                _type: 'service'
+                name:     s.trim(),
+                time:     apptTime,
+                duration: '—',
+                staff:    'Assigned',
+                price:    Math.round(totalOriginal / Math.max(1, svcNames.length)),
+                _type:    'service'
             }));
         } else {
             items = [{
-                name:  'Salon Service Appointment',
-                staff: (row && (row.staff_name || row.staff)) || 'Assigned',
-                time:  (row && (row.appointment_time || row.start_time || row.time)) || '',
-                price: totalOriginal,
-                _type: 'service'
+                name:     'Salon Service Appointment',
+                staff:    (row && (row.staff_name || row.staff)) || 'Assigned',
+                time:     (row && (row.appointment_time || row.start_time || row.time)) || '',
+                duration: '—',
+                price:    totalOriginal,
+                _type:    'service'
             }];
         }
     }
@@ -159,6 +163,19 @@ export async function openBookingPayment(bookingIdOrRow, options = {}) {
     }
 }
 
+// Helper to calculate duration in minutes between start_time and end_time (HH:MM:SS)
+function calcDurationMinutes(startTime, endTime) {
+    if (!startTime || !endTime) return '—';
+    try {
+        const [sh, sm] = String(startTime).split(':').map(Number);
+        const [eh, em] = String(endTime).split(':').map(Number);
+        const diff = (eh * 60 + (em || 0)) - (sh * 60 + (sm || 0));
+        return diff > 0 ? `${diff} min` : '—';
+    } catch {
+        return '—';
+    }
+}
+
 // ── Two-section renderer: Included Services + Included Packages + Grand Total ──
 function _renderBookingServicesSections(items, grandTotal) {
     const tableWrap  = document.getElementById('gpmTableWrap');
@@ -192,10 +209,10 @@ function _renderBookingServicesSections(items, grandTotal) {
     const thStyle  = 'padding:8px 8px; font-size:0.72rem; font-weight:700; color:#64748b; border-bottom:1px solid #f1f5f9; text-align:left;';
 
     // ── Shared section header builder: Included services / Included packages ─
-    // Both titles in the exact same blue color (#4f46e5) with identical badge style
+    // Title in blue (#4f46e5), badge, and "Subtotal: ₹XXXX" in green
     const secHeader = (label, count, subtotalAmt) => `
         <div style="display:flex; justify-content:space-between; align-items:center;
-                    padding:10px 4px 8px 2px; margin-top:12px; border-bottom:1.5px solid #e0e7ff;">
+                    padding:10px 4px 8px 2px; border-bottom:1.5px solid #e0e7ff;">
             <div style="display:flex; align-items:center; gap:8px;">
                 <span style="font-size:0.82rem; font-weight:700; color:${BLUE_COLOR}; text-transform:uppercase; letter-spacing:0.04em;">
                     ${label}
@@ -203,7 +220,10 @@ function _renderBookingServicesSections(items, grandTotal) {
                 <span style="background:${BLUE_BADGE_BG}; color:${BLUE_COLOR}; border-radius:12px; padding:2px 10px;
                              font-size:0.75rem; font-weight:700; letter-spacing:0.02em;">${count}</span>
             </div>
-            <span style="font-size:0.92rem; font-weight:800; color:#059669;">${fmt(subtotalAmt)}</span>
+            <div style="display:flex; align-items:center; gap:6px;">
+                <span style="font-size:0.8rem; font-weight:600; color:#64748b;">Subtotal:</span>
+                <span style="font-size:0.92rem; font-weight:800; color:#059669;">${fmt(subtotalAmt)}</span>
+            </div>
         </div>`;
 
     // ── 2. Included services Section ─────────────────────────────────────────
@@ -212,33 +232,33 @@ function _renderBookingServicesSections(items, grandTotal) {
         svcHtml = secHeader('Included services', svcs.length, svcsTotal);
         svcHtml += `<table style="width:100%; border-collapse:collapse; margin-bottom:6px; margin-top:6px;">
             <thead><tr>
-                <th style="${thStyle} width:24px;">#</th>
+                <th style="${thStyle} width:28px;">#</th>
                 <th style="${thStyle}">Service</th>
                 <th style="${thStyle}">Staff</th>
-                <th style="${thStyle}">Time</th>
+                <th style="${thStyle}">Duration</th>
                 <th style="${thStyle} text-align:right;">Price</th>
             </tr></thead>
             <tbody>
                 ${svcs.map((s, i) => `<tr>
-                    <td style="${rowStyle} font-weight:700; color:#0f172a;">${i + 1}</td>
+                    <td style="${rowStyle} width:28px; font-weight:700; color:#64748b; font-size:0.8rem;">${i + 1}</td>
                     <td style="${rowStyle} font-weight:600; color:#0f172a;">${s.name}</td>
                     <td style="${rowStyle}">
                         <span style="background:#f8fafc; color:#475569; border:1px solid #e2e8f0; padding:2px 8px; border-radius:10px; font-size:0.75rem; font-weight:600;">
                             ${s.staff || 'Assigned'}
                         </span>
                     </td>
-                    <td style="${rowStyle} color:#64748b;">${s.time || '—'}</td>
-                    <td style="${rowStyle} font-weight:800; text-align:right; color:#059669;">${fmt(s.price)}</td>
+                    <td style="${rowStyle} color:#64748b;">${s.duration || '—'}</td>
+                    <td style="${rowStyle} font-weight:700; text-align:right; color:#0f172a;">${fmt(s.price)}</td>
                 </tr>`).join('')}
             </tbody>
         </table>`;
     }
 
-    // ── 3 & 4. Included packages (same blue title & badge, clickable cards) ──
+    // ── 3 & 4. Included packages (with generous breathing room, order numbers, duration)
     let pkgHtml = '';
     if (pkgs.length > 0) {
-        pkgHtml = secHeader('Included packages', pkgs.length, pkgsTotal);
-        pkgHtml += '<div style="display:flex; flex-direction:column; gap:10px; margin-top:10px;">';
+        const pkgHeaderHtml = secHeader('Included packages', pkgs.length, pkgsTotal);
+        let cardsHtml = '<div style="display:flex; flex-direction:column; gap:10px; margin-top:10px;">';
 
         pkgs.forEach((pkg, pi) => {
             const subSvcs  = pkg._services || [];
@@ -246,7 +266,7 @@ function _renderBookingServicesSections(items, grandTotal) {
             const bodyId   = `gpmPkgBody_${pi}`;
             const arrowId  = `gpmPkgArrow_${pi}`;
 
-            pkgHtml += `
+            cardsHtml += `
             <div id="${cardId}" style="border:1px solid #e2e8f0; border-radius:12px; overflow:hidden;
                                        background:#ffffff; box-shadow:0 1px 3px rgba(0,0,0,0.03); transition:all 0.2s;"
                  onmouseover="this.style.borderColor='#c7d2fe'; this.style.boxShadow='0 3px 12px rgba(79,70,229,0.08)';"
@@ -277,10 +297,8 @@ function _renderBookingServicesSections(items, grandTotal) {
                                 <span style="font-weight:700; font-size:0.92rem; color:#0f172a;">${pkg.name}</span>
                                 <span style="background:${BLUE_BADGE_BG}; color:${BLUE_COLOR}; font-size:0.68rem; font-weight:700; padding:2px 8px; border-radius:12px; letter-spacing:0.02em;">PACKAGE</span>
                             </div>
-                            <div style="font-size:0.75rem; color:#64748b; margin-top:2px; display:flex; align-items:center; gap:6px;">
-                                <span>${subSvcs.length} included services</span>
-                                <span>·</span>
-                                <span style="color:${BLUE_COLOR}; font-weight:600;">Click to view</span>
+                            <div style="font-size:0.75rem; color:#64748b; margin-top:2px;">
+                                ${subSvcs.length} included services
                             </div>
                         </div>
                     </div>
@@ -296,28 +314,33 @@ function _renderBookingServicesSections(items, grandTotal) {
                     </div>
                 </div>
 
-                <!-- Collapsible nested services table (hidden by default) -->
+                <!-- Collapsible nested services table with serial numbers & duration -->
                 <div id="${bodyId}" style="display:none; border-top:1px solid #f1f5f9; background:#fafbfc; padding:2px 0 6px 0;">
                     ${subSvcs.length > 0 ? `
                     <table style="width:100%; border-collapse:collapse;">
                         <thead><tr>
-                            <th style="${thStyle} padding-left:18px;">Service</th>
+                            <th style="${thStyle} width:28px; padding-left:18px;">#</th>
+                            <th style="${thStyle}">Service</th>
                             <th style="${thStyle}">Staff</th>
-                            <th style="${thStyle}">Time</th>
+                            <th style="${thStyle}">Duration</th>
                         </tr></thead>
                         <tbody>
-                            ${subSvcs.map(s => {
+                            ${subSvcs.map((s, idx) => {
                                 const cleanName = (s.service_name || '—').replace(/\s*\([^)]*\)\s*$/, '').trim() || s.service_name;
+                                const dur = calcDurationMinutes(s.start_time, s.end_time);
                                 return `<tr>
-                                    <td style="${rowStyle} padding-left:18px; font-size:0.82rem; font-weight:600; color:#1e293b;">
-                                        <span style="color:#94a3b8; margin-right:6px;">└</span>${cleanName}
+                                    <td style="${rowStyle} width:28px; padding-left:18px; font-weight:700; color:#64748b; font-size:0.8rem;">
+                                        ${idx + 1}
+                                    </td>
+                                    <td style="${rowStyle} font-size:0.82rem; font-weight:600; color:#1e293b;">
+                                        ${cleanName}
                                     </td>
                                     <td style="${rowStyle} font-size:0.82rem;">
                                         <span style="background:#f1f5f9; color:#334155; border:1px solid #e2e8f0; padding:2px 8px; border-radius:10px; font-size:0.75rem; font-weight:600;">
                                             ${s.staff_name || 'Assigned'}
                                         </span>
                                     </td>
-                                    <td style="${rowStyle} font-size:0.82rem; color:#64748b;">${s.start_time || '—'}</td>
+                                    <td style="${rowStyle} font-size:0.82rem; color:#64748b;">${dur}</td>
                                 </tr>`;
                             }).join('')}
                         </tbody>
@@ -326,12 +349,15 @@ function _renderBookingServicesSections(items, grandTotal) {
             </div>`;
         });
 
-        pkgHtml += '</div>';
+        cardsHtml += '</div>';
+
+        // 5. Breathing space between sections (margin-top: 26px)
+        pkgHtml = `<div style="margin-top:26px;">${pkgHeaderHtml}${cardsHtml}</div>`;
     }
 
     // ── Grand Total Summary ───────────────────────────────────────────────────
     const summaryHtml = `
-        <div style="margin-top:14px; border-top:2px solid #e2e8f0; padding-top:10px;">
+        <div style="margin-top:20px; border-top:2px solid #e2e8f0; padding-top:12px;">
             ${svcs.length > 0 && pkgs.length > 0 ? `
             <div style="display:flex; justify-content:space-between; padding:4px 2px; font-size:0.82rem; color:#64748b;">
                 <span>Services Subtotal</span>
