@@ -30,27 +30,53 @@ export async function openBookingPayment(bookingIdOrRow, options = {}) {
     const customerName = (row && (row.customer_name || row.customer)) || 'Walk-in Customer';
     const customerPhone = (row && (row.customer_phone || row.phone)) || '';
 
-    // Extract services list from booking
+    // Extract services list — fetch individual rows from `bookings` table
+    // so each service shows its real price and assigned staff (not an equal split).
     let items = [];
-    if (row && (row.service_name || row.services)) {
-        const svcNames = (row.service_name || row.services || '').split(',');
-        const apptDate = (row && (row.appointment_date || row.booking_date || row.date)) || 'Today';
-        const apptTime = (row && (row.appointment_time || row.start_time || row.time)) || '';
-        items = svcNames.map(s => ({
-            name: s.trim(),
-            subtitle: `${apptDate}${apptTime ? ' at ' + apptTime : ''}`,
-            quantity: 1,
-            price: Math.round(totalOriginal / Math.max(1, svcNames.length))
-        }));
-    } else {
-        const apptDate = (row && (row.appointment_date || row.booking_date || row.date)) || 'Today';
-        const staffName = (row && (row.staff_name || row.staff)) || 'Assigned';
-        items = [{
-            name: 'Salon Service Appointment',
-            subtitle: `${apptDate} · Staff: ${staffName}`,
-            quantity: 1,
-            price: totalOriginal
-        }];
+    try {
+        const { data: svcRows, error: svcErr } = await supabase
+            .from('bookings')
+            .select('service_name, staff_name, price, booking_date, start_time')
+            .eq('booking_id', targetId)
+            .order('created_at', { ascending: true });
+
+        if (!svcErr && svcRows && svcRows.length > 0) {
+            items = svcRows.map(s => {
+                const apptDate = s.booking_date || (row && (row.appointment_date || row.booking_date || row.date)) || 'Today';
+                const apptTime = s.start_time   || (row && (row.appointment_time || row.start_time || row.time)) || '';
+                const staffLabel = (s.staff_name || '').trim() || 'Assigned';
+                return {
+                    name:     (s.service_name || '').trim() || 'Service',
+                    subtitle: `${apptDate}${apptTime ? ' at ' + apptTime : ''} · ${staffLabel}`,
+                    quantity: 1,
+                    price:    Number(s.price) || 0
+                };
+            });
+        }
+    } catch (_) { /* fall through to estimate below */ }
+
+    // Fallback: if DB fetch failed or returned nothing, estimate from summary row
+    if (items.length === 0) {
+        if (row && (row.service_name || row.services)) {
+            const svcNames = (row.service_name || row.services || '').split(',');
+            const apptDate = (row && (row.appointment_date || row.booking_date || row.date)) || 'Today';
+            const apptTime = (row && (row.appointment_time || row.start_time || row.time)) || '';
+            items = svcNames.map(s => ({
+                name:     s.trim(),
+                subtitle: `${apptDate}${apptTime ? ' at ' + apptTime : ''}`,
+                quantity: 1,
+                price:    Math.round(totalOriginal / Math.max(1, svcNames.length))
+            }));
+        } else {
+            const apptDate  = (row && (row.appointment_date || row.booking_date || row.date)) || 'Today';
+            const staffName = (row && (row.staff_name || row.staff)) || 'Assigned';
+            items = [{
+                name:     'Salon Service Appointment',
+                subtitle: `${apptDate} · Staff: ${staffName}`,
+                quantity: 1,
+                price:    totalOriginal
+            }];
+        }
     }
 
     if (!window.openGlobalPaymentModal) {
